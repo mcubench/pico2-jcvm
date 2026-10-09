@@ -92,8 +92,7 @@ requested software implementation without a physical device for now.
   non-atomic counterpart. The path checks ranges and matching array types and
   snapshots input to preserve overlap semantics. Focused ASan tests cover an
   overlapping byte copy plus bounds/type errors. Reference copying remains
-  unsupported; transaction atomicity is unavailable. Commit SHA is being
-  finalized in the latest progress entry.
+  unsupported; transaction atomicity is unavailable. Commit: `8e92ec1`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 

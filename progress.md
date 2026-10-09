@@ -155,5 +155,5 @@
 - Validation: `./tools/test-jcarray` passed transient sizing, clear-event selection, overlapping native copy, and invalid-copy error checks under AddressSanitizer with leak detection disabled. `./tools/check-vm-syntax` and `./tools/test-jcvmarray` passed. ARM and RISC-V build wrappers are absent (both commands returned 127); hardware validation was intentionally skipped.
 - Result: Primitive array copying now works through the active applet heap, including self-overlap. Persistent array atomicity is not guaranteed because transactions are not implemented.
 - Decision: Retain the primitive copy implementation and continue with the compare/fill utilities used by Java Card `Util`.
-- Commit: `pending`
+- Commit: `8e92ec1`
 - Artifacts/logs: no archived logs; focused tests emitted the PASS records above
