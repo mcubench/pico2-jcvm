@@ -237,3 +237,13 @@
 - Decision: Continue with the user source trees untracked and only stage files explicitly belonging to implementation steps.
 - Commit: `ae783a2`
 - Artifacts/logs: no archived logs; 63 content hashes matched
+
+## 2026-10-09 — Report integrity arrays as unsupported
+
+- Step/experiment: `wp5-integrity-array-capability`
+- Change: Implemented `isIntegritySensitiveArraysSupported()` to return `FALSE` because this runtime has no integrity-array storage or verification mechanism. Added a linked host assertion for the capability result.
+- Validation: `./tools/test-jcarray` passed, including `TEST:PASS jni_integrity_arrays_capability`. `./tools/check-vm-syntax` passed with existing warnings in upstream headers. `./tools/build arm` and `./tools/build riscv` both returned 127 because `tools/build` is absent. Hardware validation was intentionally skipped.
+- Result: Capability probing now reports the runtime's actual support level without throwing `NotYetImplemented`; integrity-sensitive array operations remain unavailable.
+- Decision: Keep integrity-array construction and operations unsupported until the backing verification feature is designed. Continue mapping remaining native and lifecycle gaps.
+- Commit: pending
+- Artifacts/logs: no archived logs

@@ -117,6 +117,10 @@ requested software implementation without a physical device for now.
 - Implemented `getAssignedChannel()` as channel 0 for the single-channel
   transport. The linked ASan test verifies it; logical channels are not
   supported. Commit: `657e589`.
+- Implemented the SensitiveArrays integrity-array capability probe as
+  `FALSE`, matching the absence of integrity storage and verification in this
+  runtime. The linked ASan test now checks the capability result; operations
+  that require integrity arrays remain unsupported. Pending commit.
 - The documentation finalization commit `bff7c23` accidentally included 63
   previously untracked provided source files from stale index entries. Their
   worktree copies were hash-verified and retained; corrective commit `ae783a2`
@@ -174,4 +178,7 @@ establish the host baseline.
   ARM and RISC-V build wrappers remain absent.
 - Latest basic-channel fallback: linked ASan test and syntax check passed;
   ARM and RISC-V build wrappers remain absent.
+- Latest integrity-array capability fallback: linked ASan test passed and
+  emitted `TEST:PASS jni_integrity_arrays_capability`; syntax check passed.
+  ARM and RISC-V builds could not run because `tools/build` is absent.
 - Hardware validation: intentionally skipped; no device was requested yet.

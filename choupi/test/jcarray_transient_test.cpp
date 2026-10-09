@@ -16,6 +16,8 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(jref_t);
 jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet();
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAssignedChannel();
+jbool_t
+fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitiveArraysSupported();
 std::shared_ptr<JC_Array>
 fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(jshort_t,
                                                                    jbyte_t);
@@ -42,6 +44,12 @@ int main() {
   if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_getAssignedChannel() !=
       0) {
     std::cerr << "default transport did not select the basic channel\n";
+    return 1;
+  }
+  const auto integrityArraysSupported =
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitiveArraysSupported();
+  if (integrityArraysSupported != jcvm::FALSE) {
+    std::cerr << "unsupported integrity-sensitive arrays were reported available\n";
     return 1;
   }
   jcvm::JC_Array bytes(heap, 7, jcvm::JAVA_ARRAY_T_BYTE, true,
@@ -215,5 +223,6 @@ int main() {
   std::cout << "TEST:PASS jni_transient_factory\n";
   std::cout << "TEST:PASS jni_selecting_applet_fallback\n";
   std::cout << "TEST:PASS jni_basic_channel_fallback\n";
+  std::cout << "TEST:PASS jni_integrity_arrays_capability\n";
   return 0;
 }

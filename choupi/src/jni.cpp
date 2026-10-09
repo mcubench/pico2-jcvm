@@ -379,8 +379,8 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitive(jref_t) {
 
 jbool_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitiveArraysSupported() {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+  // Integrity-sensitive array storage and verification are not implemented.
+  return FALSE;
 }
 
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeIntegritySensitiveArray(
