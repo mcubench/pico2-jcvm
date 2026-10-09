@@ -81,8 +81,8 @@ requested software implementation without a physical device for now.
   int array factories. Invalid lengths and clear events map to the specified VM
   exceptions. Syntax and array tests pass; target builds remain unavailable.
   Object transient arrays still lack reference-type metadata in their native
-  signature, and actual reset/deselect clearing awaits lifecycle hooks. Commit
-  SHA is being finalized in the latest progress entry.
+  signature, and actual reset/deselect clearing awaits lifecycle hooks. Commit:
+  `e56d14f`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
