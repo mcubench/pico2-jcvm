@@ -26,6 +26,10 @@ requested software implementation without a physical device for now.
 - Fixed `JCVMArray::fill()` to populate each element and removed the ignored
   return qualifier from `size()`. The focused strict host test passed with
   `TEST:PASS jcvmarray_fill`; committed as `0d293ae`.
+- Implemented the `putstatic_a` path and nested persistent reference-array
+  element tags in the VM persistence layer. Syntax checks passed using a
+  temporary variadic `ffi.h` shim; this does not prove ABI compatibility or
+  runtime persistence behavior. See the latest progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
