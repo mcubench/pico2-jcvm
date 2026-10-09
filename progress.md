@@ -115,5 +115,5 @@
 - Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`; `./tools/test-jcvmarray` passed with `TEST:PASS jcvmarray_fill`. ARM and RISC-V build attempts returned 127 because `tools/build` is absent. Hardware validation was intentionally skipped.
 - Result: Capability queries return zero without raising `NotYetImplemented`. Mutating transaction calls remain unimplemented; no runtime/APDU measurement was possible.
 - Decision: Retain the honest capability values; transaction operations still require atomic persistence support.
-- Commit: `<pending>`
+- Commit: `53660ca`
 - Artifacts/logs: `/tmp/pico2-vm-syntax.log`; no hardware log
