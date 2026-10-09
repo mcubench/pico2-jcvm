@@ -33,7 +33,7 @@ requested software implementation without a physical device for now.
   latest progress entry.
 - Added guards for transient/non-reference persistent arrays and index bounds
   in the child-reference writer. Its syntax check and the JCVM array test both
-  pass; runtime persistence has not been verified.
+  pass; runtime persistence has not been verified. Commit: `7e04f97`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
