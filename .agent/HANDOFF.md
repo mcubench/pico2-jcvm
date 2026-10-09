@@ -108,6 +108,10 @@ requested software implementation without a physical device for now.
   linked ASan test passes, closing the earlier native runtime-test gap for
   these paths. Java exception dispatch and actual card lifecycle events remain
   untested. Commit: `64fe919`.
+- Expanded factory coverage to boolean, byte, short, and int arrays, including
+  both valid clear events and `isTransient(null)`. All pass in the linked ASan
+  host test. Object array creation remains unsupported. Commit SHA is being
+  finalized in the latest progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
@@ -155,4 +159,6 @@ establish the host baseline.
 - Latest transient-native runtime test: linked ASan test exercised factory,
   `isTransient`, and invalid argument paths; syntax checks passed. Target build
   wrappers were not rerun because only test files changed.
+- Latest primitive-factory coverage: linked ASan test passed all four primitive
+  array types and null handling; only test code changed.
 - Hardware validation: intentionally skipped; no device was requested yet.

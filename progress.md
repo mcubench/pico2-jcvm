@@ -197,3 +197,13 @@
 - Decision: Keep this host native regression harness and continue examining the remaining JCSystem behavior required by AlgTest.
 - Commit: `64fe919`
 - Artifacts/logs: no archived logs; test emitted the PASS records above
+
+## 2026-10-09 — Cover all primitive transient factories
+
+- Step/experiment: `wp5-transient-native-factory-coverage`
+- Change: Extended the linked native test to exercise boolean, byte, short, and int transient factories with both clear events, and verify `isTransient(null)` raises `NullPointerException`.
+- Validation: `./tools/test-jcarray` passed the full linked ASan suite, including factory type/length metadata and null handling. Target builds and VM syntax checks were not rerun because only test code changed.
+- Result: Every implemented primitive transient factory and the null query path now have runtime-level host coverage. Object arrays and Java exception dispatch remain outside this step.
+- Decision: Continue with native system-memory reporting and the residual AlgTest API surface.
+- Commit: `pending`
+- Artifacts/logs: no archived logs; test emitted the PASS records above

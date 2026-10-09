@@ -17,6 +17,15 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(jref_t);
 std::shared_ptr<JC_Array>
 fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(jshort_t,
                                                                    jbyte_t);
+std::shared_ptr<JC_Array>
+fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientBooleanArray(
+    jshort_t, jbyte_t);
+std::shared_ptr<JC_Array>
+fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientShortArray(jshort_t,
+                                                                    jbyte_t);
+std::shared_ptr<JC_Array>
+fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientIntArray(jshort_t,
+                                                                  jbyte_t);
 }
 
 int main() {
@@ -55,12 +64,39 @@ int main() {
   const auto nativeTransient =
       jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(
           3, static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_RESET));
+  const auto nativeBoolean =
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientBooleanArray(
+          2, static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_DESELECT));
+  const auto nativeShort =
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientShortArray(
+          4, static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_RESET));
+  const auto nativeInt =
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientIntArray(
+          5, static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_DESELECT));
   if (nativeTransient->size() != 3 || !nativeTransient->isTransientArray() ||
       nativeTransient->getClearEvent() != jcvm::CLEAR_ON_RESET ||
+      nativeBoolean->size() != 2 ||
+      nativeBoolean->getType() != jcvm::JAVA_ARRAY_T_BOOLEAN ||
+      nativeShort->size() != 4 ||
+      nativeShort->getType() != jcvm::JAVA_ARRAY_T_SHORT ||
+      nativeInt->size() != 5 ||
+      nativeInt->getType() != jcvm::JAVA_ARRAY_T_INT ||
       jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(bytesRef) !=
           static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_DESELECT)) {
     std::cerr << "transient native factory or query returned wrong metadata\n";
     return 1;
+  }
+
+  try {
+    jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(
+        jcvm::jref_t{});
+    std::cerr << "isTransient accepted a null reference\n";
+    return 1;
+  } catch (jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::NullPointerException) {
+      std::cerr << "isTransient null raised wrong exception\n";
+      return 1;
+    }
   }
 
   try {
