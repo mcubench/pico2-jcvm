@@ -185,5 +185,5 @@
 - Validation: `./tools/test-jcarray` passed a three-byte fill from a two-byte pattern, plus prior clear/copy/compare checks, under AddressSanitizer with leak detection disabled. `./tools/check-vm-syntax` passed with existing upstream warnings. Both target build commands returned 127 because `tools/build` is absent. Hardware validation was intentionally skipped.
 - Result: The native fill helper now handles pattern repetition and bounds errors. Binding and semantics against the missing Java Card SDK implementation are not verified; persistent writes are not transactional.
 - Decision: Continue mapping the remaining native methods against the shipped AlgTest calls and available VM APIs.
-- Commit: `pending`
+- Commit: `bb5d2b8`
 - Artifacts/logs: no archived logs; focused test emitted `TEST:PASS jni_array_fill_pattern`

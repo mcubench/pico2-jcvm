@@ -102,8 +102,7 @@ requested software implementation without a physical device for now.
 - Implemented byte `arrayFillGeneric` and its non-atomic counterpart. The
   helper repeats bytes from the supplied pattern offset and returns the target
   end offset. A focused ASan test covers repetition; compatibility with the
-  missing Java Card SDK binding has not been verified. Commit SHA is being
-  finalized in the latest progress entry.
+  missing Java Card SDK binding has not been verified. Commit: `bb5d2b8`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
