@@ -51,6 +51,7 @@ requested software implementation without a physical device for now.
   `a740f5e`.
 - Fixed persistent instance class-index initialization and reference get/set
   behavior. Syntax passes; filesystem round-trip behavior is not validated.
+  Commit: `a05147e`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 

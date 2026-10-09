@@ -38,16 +38,6 @@
 - Commit: `7e04f97`
 - Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
 
-## 2026-10-09 — Fix persistent instance field reference access
-
-- Step/experiment: `wp5-persistent-instance-reference-access`
-- Change: Corrected the persistent-instance constructor to retain the supplied class index, returned values from persistent reference reads, and routed persistent reference writes through the null-safe serializer. This closes two defects found while repairing persistent tag reconstruction.
-- Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`, including `jc_instance.cpp`; the previous constructor self-initialization and unused-parameter warnings are gone.
-- Result: Persistent class identity and reference reads/writes now use defined code paths. The C++ syntax test does not exercise filesystem behavior; persistent `getFields()` deserialization remains incomplete.
-- Decision: Retain the fixes and continue with other VM runtime gaps. Full target builds and hardware validation are still unavailable.
-- Commit: pending
-- Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
-
 ## 2026-10-09 — Implement object-deletion fallback natives
 
 - Step/experiment: `wp5-object-deletion-natives`
@@ -86,4 +76,14 @@
 - Result: Touched VM translation units parse successfully. Existing upstream warnings remain. Native `Exceptions` enum-to-Java-object mapping, uncaught-exception status words, full target builds, and runtime handler tests remain incomplete.
 - Decision: Retain this first Java-object exception dispatch path; continue WP5 with native exception mapping and lifecycle/APDU integration. Device validation is intentionally deferred.
 - Commit: `476a938`
+- Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
+
+## 2026-10-09 — Fix persistent instance field reference access
+
+- Step/experiment: `wp5-persistent-instance-reference-access`
+- Change: Corrected the persistent-instance constructor to retain the supplied class index, returned values from persistent reference reads, and routed persistent reference writes through the null-safe serializer. This closes two defects found while repairing persistent tag reconstruction.
+- Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`, including `jc_instance.cpp`; the previous constructor self-initialization and unused-parameter warnings are gone.
+- Result: Persistent class identity and reference reads/writes now use defined code paths. The C++ syntax test does not exercise filesystem behavior; persistent `getFields()` deserialization remains incomplete.
+- Decision: Retain the fixes and continue with other VM runtime gaps. Full target builds and hardware validation are still unavailable.
+- Commit: `a05147e`
 - Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
