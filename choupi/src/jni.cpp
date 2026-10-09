@@ -136,6 +136,36 @@ jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
 
   return static_cast<jshort_t>(destinationOffset + length);
 }
+
+jshort_t fillArrayRange(const jref_t destinationRef,
+                        const jshort_t destinationOffset,
+                        const jshort_t length, const jref_t patternRef,
+                        const jshort_t patternOffset) {
+  Heap &heap = Context::getActiveContext().getHeap();
+  auto destination = heap.getArray(destinationRef);
+  auto pattern = heap.getArray(patternRef);
+  checkArrayRange(*destination, destinationOffset, length);
+  checkArrayRange(*pattern, patternOffset, length == 0 ? 0 : 1);
+  if (destination->getType() != JAVA_ARRAY_T_BYTE ||
+      pattern->getType() != JAVA_ARRAY_T_BYTE) {
+    throw Exceptions::SecurityException;
+  }
+
+  const uint16_t patternLength =
+      static_cast<uint16_t>(pattern->size() - patternOffset);
+  if (length > 0 && patternLength == 0) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+
+  for (jshort_t index = 0; index < length; ++index) {
+    const uint16_t patternIndex = static_cast<uint16_t>(
+        patternOffset + (static_cast<uint16_t>(index) % patternLength));
+    destination->setByteEntry(
+        static_cast<uint16_t>(destinationOffset + index),
+        pattern->getByteEntry(patternIndex));
+  }
+  return static_cast<jshort_t>(destinationOffset + length);
+}
 } // namespace
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
@@ -153,15 +183,19 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepackNonAtomic(
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
-    jref_t, jshort_t, jshort_t, jref_t, jshort_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+    const jref_t destination, const jshort_t destinationOffset,
+    const jshort_t length, const jref_t pattern,
+    const jshort_t patternOffset) {
+  return fillArrayRange(destination, destinationOffset, length, pattern,
+                        patternOffset);
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGenericNonAtomic(
-    jref_t, jshort_t, jshort_t, jref_t, jshort_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+    const jref_t destination, const jshort_t destinationOffset,
+    const jshort_t length, const jref_t pattern,
+    const jshort_t patternOffset) {
+  return fillArrayRange(destination, destinationOffset, length, pattern,
+                        patternOffset);
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(

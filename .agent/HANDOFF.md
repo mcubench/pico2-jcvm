@@ -99,13 +99,18 @@ requested software implementation without a physical device for now.
   tracking is not implemented. Commit: `92ef957`. A follow-up checked the
   Java Card primitive ordering and corrected the comparison to signed bytes;
   that correction is committed as `e088119`.
+- Implemented byte `arrayFillGeneric` and its non-atomic counterpart. The
+  helper repeats bytes from the supplied pattern offset and returns the target
+  end offset. A focused ASan test covers repetition; compatibility with the
+  missing Java Card SDK binding has not been verified. Commit SHA is being
+  finalized in the latest progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
 ## Next action
 
-Continue WP5 with the pattern-based fill helper and remaining native utilities
-used by AlgTest (`Util` array operations and `JCSystem` queries). Wire the transient clear primitive into
+Continue WP5 by mapping the remaining native methods against the supplied
+AlgTest calls and available VM APIs. Wire the transient clear primitive into
 select/deselect/reset dispatch when that lifecycle layer is introduced.
 VM-internal exception
 mapping and the Java API/APDU pieces remain open. The provided `tools/build` wrapper is
@@ -141,4 +146,6 @@ establish the host baseline.
 - Latest native array-compare step: focused ASan comparison checks, including
   signed byte ordering, passed; syntax checks passed; target build wrappers
   returned 127 because the wrapper is absent.
+- Latest native array-fill step: focused ASan pattern repetition, syntax checks
+  passed; ARM/RISC-V build wrappers returned 127 because the wrapper is absent.
 - Hardware validation: intentionally skipped; no device was requested yet.

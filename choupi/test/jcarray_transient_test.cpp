@@ -8,6 +8,8 @@
 namespace jcvm {
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
     jref_t, jshort_t, jshort_t, jref_t, jshort_t);
+jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
+    jref_t, jshort_t, jshort_t, jref_t, jshort_t);
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
     jref_t, jshort_t, jref_t, jshort_t, jshort_t);
 }
@@ -20,6 +22,8 @@ int main() {
                        jcvm::CLEAR_ON_DESELECT);
   jcvm::JC_Array shorts(heap, 5, jcvm::JAVA_ARRAY_T_SHORT, true,
                         jcvm::CLEAR_ON_RESET);
+  jcvm::JC_Array pattern(heap, 2, jcvm::JAVA_ARRAY_T_BYTE, true,
+                         jcvm::CLEAR_ON_RESET);
 
   if (bytes.size() != 7 || shorts.size() != 5 ||
       !bytes.isTransientArray() || !shorts.isTransientArray() ||
@@ -39,6 +43,9 @@ int main() {
 
   const jcvm::jref_t bytesRef = heap.addArray(bytes);
   const jcvm::jref_t shortsRef = heap.addArray(shorts);
+  pattern.setByteEntry(0, 0x12);
+  pattern.setByteEntry(1, 0x34);
+  const jcvm::jref_t patternRef = heap.addArray(pattern);
 
   const auto copyEnd =
       jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
@@ -74,6 +81,16 @@ int main() {
     return 1;
   }
 
+  const auto fillEnd =
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
+          bytesRef, 4, 3, patternRef, 0);
+  if (fillEnd != 7 || storedBytes->getByteEntry(4) != 0x12 ||
+      storedBytes->getByteEntry(5) != 0x34 ||
+      storedBytes->getByteEntry(6) != 0x12) {
+    std::cerr << "pattern array fill did not repeat its pattern\n";
+    return 1;
+  }
+
   try {
     jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
         bytesRef, 0, 1, shortsRef, 0);
@@ -106,5 +123,6 @@ int main() {
   std::cout << "TEST:PASS jni_array_copy_overlap\n";
   std::cout << "TEST:PASS jni_array_copy_errors\n";
   std::cout << "TEST:PASS jni_array_compare\n";
+  std::cout << "TEST:PASS jni_array_fill_pattern\n";
   return 0;
 }

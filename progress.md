@@ -177,3 +177,13 @@
 - Decision: Keep signed comparison and continue with the remaining utility natives.
 - Commit: `e088119`
 - Artifacts/logs: no archived logs; focused test emitted `TEST:PASS jni_array_compare`
+
+## 2026-10-09 — Implement native pattern array fill
+
+- Step/experiment: `wp5-native-array-fill-pattern`
+- Change: Implemented `arrayFillGeneric` and its non-atomic counterpart for byte arrays. They validate target/pattern offsets, repeat the pattern bytes from `patternOffset`, and return the destination end offset.
+- Validation: `./tools/test-jcarray` passed a three-byte fill from a two-byte pattern, plus prior clear/copy/compare checks, under AddressSanitizer with leak detection disabled. `./tools/check-vm-syntax` passed with existing upstream warnings. Both target build commands returned 127 because `tools/build` is absent. Hardware validation was intentionally skipped.
+- Result: The native fill helper now handles pattern repetition and bounds errors. Binding and semantics against the missing Java Card SDK implementation are not verified; persistent writes are not transactional.
+- Decision: Continue mapping the remaining native methods against the shipped AlgTest calls and available VM APIs.
+- Commit: `pending`
+- Artifacts/logs: no archived logs; focused test emitted `TEST:PASS jni_array_fill_pattern`
