@@ -58,7 +58,7 @@ requested software implementation without a physical device for now.
   keep cached field types and values aligned with serialized records. Syntax
   and the array regression test pass. No persistence round-trip test is
   possible without the filesystem implementation; missing child records still
-  cannot be typed from the current class metadata API.
+  cannot be typed from the current class metadata API. Commit: `5263602`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
