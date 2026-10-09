@@ -110,8 +110,7 @@ requested software implementation without a physical device for now.
   untested. Commit: `64fe919`.
 - Expanded factory coverage to boolean, byte, short, and int arrays, including
   both valid clear events and `isTransient(null)`. All pass in the linked ASan
-  host test. Object array creation remains unsupported. Commit SHA is being
-  finalized in the latest progress entry.
+  host test. Object array creation remains unsupported. Commit: `bacd8fc`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 

@@ -205,5 +205,5 @@
 - Validation: `./tools/test-jcarray` passed the full linked ASan suite, including factory type/length metadata and null handling. Target builds and VM syntax checks were not rerun because only test code changed.
 - Result: Every implemented primitive transient factory and the null query path now have runtime-level host coverage. Object arrays and Java exception dispatch remain outside this step.
 - Decision: Continue with native system-memory reporting and the residual AlgTest API surface.
-- Commit: `pending`
+- Commit: `bacd8fc`
 - Artifacts/logs: no archived logs; test emitted the PASS records above
