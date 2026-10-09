@@ -103,6 +103,11 @@ requested software implementation without a physical device for now.
   helper repeats bytes from the supplied pattern offset and returns the target
   end offset. A focused ASan test covers repetition; compatibility with the
   missing Java Card SDK binding has not been verified. Commit: `bb5d2b8`.
+- Expanded the host native test to call the transient byte-array factory,
+  `isTransient`, and invalid length/event paths using a live `Context`. The
+  linked ASan test passes, closing the earlier native runtime-test gap for
+  these paths. Java exception dispatch and actual card lifecycle events remain
+  untested. Commit SHA is being finalized in the latest progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
@@ -147,4 +152,7 @@ establish the host baseline.
   returned 127 because the wrapper is absent.
 - Latest native array-fill step: focused ASan pattern repetition, syntax checks
   passed; ARM/RISC-V build wrappers returned 127 because the wrapper is absent.
+- Latest transient-native runtime test: linked ASan test exercised factory,
+  `isTransient`, and invalid argument paths; syntax checks passed. Target build
+  wrappers were not rerun because only test files changed.
 - Hardware validation: intentionally skipped; no device was requested yet.

@@ -187,3 +187,13 @@
 - Decision: Continue mapping the remaining native methods against the shipped AlgTest calls and available VM APIs.
 - Commit: `bb5d2b8`
 - Artifacts/logs: no archived logs; focused test emitted `TEST:PASS jni_array_fill_pattern`
+
+## 2026-10-09 — Exercise transient natives with an active context
+
+- Step/experiment: `wp5-transient-native-runtime-test`
+- Change: Extended the focused native test to call the transient byte-array factory, query transient state, and verify invalid lengths and clear events raise their VM exception codes. The test now uses the active `Context` and its heap directly.
+- Validation: `./tools/test-jcarray` passed all transient, clear, copy, compare, fill, and factory checks under AddressSanitizer with leak detection disabled. `./tools/check-vm-syntax` and `./tools/test-jcvmarray` passed. Target builds were not rerun because this step changed tests only.
+- Result: The active-context and primitive transient-factory paths now have a linked host runtime test, beyond translation-unit syntax coverage. This does not test Java-level exception dispatch or card lifecycle integration.
+- Decision: Keep this host native regression harness and continue examining the remaining JCSystem behavior required by AlgTest.
+- Commit: `pending`
+- Artifacts/logs: no archived logs; test emitted the PASS records above

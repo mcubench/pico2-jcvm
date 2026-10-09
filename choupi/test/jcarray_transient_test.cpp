@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <memory>
 
 namespace jcvm {
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
@@ -12,6 +13,10 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
     jref_t, jshort_t, jshort_t, jref_t, jshort_t);
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
     jref_t, jshort_t, jref_t, jshort_t, jshort_t);
+jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(jref_t);
+std::shared_ptr<JC_Array>
+fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(jshort_t,
+                                                                   jbyte_t);
 }
 
 int main() {
@@ -46,6 +51,41 @@ int main() {
   pattern.setByteEntry(0, 0x12);
   pattern.setByteEntry(1, 0x34);
   const jcvm::jref_t patternRef = heap.addArray(pattern);
+
+  const auto nativeTransient =
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(
+          3, static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_RESET));
+  if (nativeTransient->size() != 3 || !nativeTransient->isTransientArray() ||
+      nativeTransient->getClearEvent() != jcvm::CLEAR_ON_RESET ||
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(bytesRef) !=
+          static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_DESELECT)) {
+    std::cerr << "transient native factory or query returned wrong metadata\n";
+    return 1;
+  }
+
+  try {
+    jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(
+        -1, static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_RESET));
+    std::cerr << "negative transient array length was accepted\n";
+    return 1;
+  } catch (jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::NegativeArraySizeException) {
+      std::cerr << "negative transient array length raised wrong exception\n";
+      return 1;
+    }
+  }
+
+  try {
+    jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(
+        1, 0);
+    std::cerr << "invalid transient clear event was accepted\n";
+    return 1;
+  } catch (jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::SecurityException) {
+      std::cerr << "invalid clear event raised wrong exception\n";
+      return 1;
+    }
+  }
 
   const auto copyEnd =
       jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
@@ -124,5 +164,6 @@ int main() {
   std::cout << "TEST:PASS jni_array_copy_errors\n";
   std::cout << "TEST:PASS jni_array_compare\n";
   std::cout << "TEST:PASS jni_array_fill_pattern\n";
+  std::cout << "TEST:PASS jni_transient_factory\n";
   return 0;
 }
