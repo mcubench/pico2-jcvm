@@ -41,6 +41,7 @@ requested software implementation without a physical device for now.
   Commit: `476a938`.
 - Fixed the typed class/interface matcher to return `FALSE` on non-match; the
   expanded syntax check passes. CAP hierarchy runtime tests remain pending.
+  Commit: `6f7f1bc`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
