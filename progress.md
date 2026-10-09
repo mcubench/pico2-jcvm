@@ -38,6 +38,16 @@
 - Commit: `7e04f97`
 - Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
 
+## 2026-10-09 — Implement object-deletion fallback natives
+
+- Step/experiment: `wp5-object-deletion-natives`
+- Change: `isObjectDeletionSupported()` now returns `FALSE`, and `requestObjectDeletion()` is a no-op as specified for a platform without object-deletion support.
+- Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`, including `jni.cpp`. The syntax check uses a temporary FFI shim and does not prove generated ABI linkage.
+- Result: Both native stubs now provide the defined unsupported-platform behavior instead of raising `NotYetImplemented`. No target build or runtime APDU test was possible with current prerequisites.
+- Decision: Retain and continue with other WP5 native methods. Hardware validation remains intentionally deferred.
+- Commit: pending
+- Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
+
 ## 2026-10-09 — Define false class-cast results
 
 - Step/experiment: `wp5-exception-type-match`
