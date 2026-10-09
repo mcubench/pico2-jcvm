@@ -255,5 +255,5 @@
 - Validation: `./tools/test-jcarray` passed, including `TEST:PASS jni_integrity_sensitive_query`. `./tools/check-vm-syntax` passed with existing upstream header warnings. `./tools/build arm` and `./tools/build riscv` both returned 127 because `tools/build` is absent. Hardware validation was intentionally skipped.
 - Result: The native query now follows Java Card's null and ordinary-object behavior. Sensitive-result side-channel tracking remains unavailable.
 - Decision: Keep array creation and integrity assertion operations unsupported. Continue remaining VM-native and lifecycle work.
-- Commit: pending
+- Commit: `3ef6da7`
 - Artifacts/logs: no archived logs

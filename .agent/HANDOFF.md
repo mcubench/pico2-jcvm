@@ -123,8 +123,8 @@ requested software implementation without a physical device for now.
   that require integrity arrays remain unsupported. Commit: `32c88dd`.
 - Implemented `isIntegritySensitive(Object)` as `FALSE` for non-null objects
   and `NullPointerException` for null, since this runtime never creates or
-  tracks sensitive arrays. Focused host tests cover both cases; see commit
-  `pending` until the progress record is committed.
+  tracks sensitive arrays. Focused host tests cover both cases; commit:
+  `3ef6da7`.
 - The documentation finalization commit `bff7c23` accidentally included 63
   previously untracked provided source files from stale index entries. Their
   worktree copies were hash-verified and retained; corrective commit `ae783a2`
