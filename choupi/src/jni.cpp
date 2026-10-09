@@ -33,6 +33,33 @@
 #include "types.hpp"
 
 namespace jcvm {
+
+namespace {
+ClearEvent getTransientClearEvent(const jbyte_t event) {
+  switch (event) {
+  case static_cast<jbyte_t>(ClearEvent::CLEAR_ON_RESET):
+    return ClearEvent::CLEAR_ON_RESET;
+  case static_cast<jbyte_t>(ClearEvent::CLEAR_ON_DESELECT):
+    return ClearEvent::CLEAR_ON_DESELECT;
+  default:
+    throw Exceptions::SecurityException;
+  }
+}
+
+std::shared_ptr<JC_Array> makeTransientArray(const jshort_t length,
+                                             const jbyte_t event,
+                                             const jc_array_type type) {
+  if (length < 0) {
+    throw Exceptions::NegativeArraySizeException;
+  }
+
+  Heap &heap = Context::getActiveContext().getHeap();
+  return std::make_shared<JC_Array>(
+      heap, static_cast<uint16_t>(length), type, true,
+      getTransientClearEvent(event));
+}
+} // namespace
+
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
     jref_t, jshort_t, jshort_t, jref_t, jshort_t) {
   // TODO: to implement;
@@ -74,30 +101,40 @@ jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet() {
   throw Exceptions::NotYetImplemented;
 }
 
-jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(jref_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(
+    const jref_t objectref) {
+  if (objectref.isNullPointer()) {
+    throw Exceptions::NullPointerException;
+  }
+
+  Heap &heap = Context::getActiveContext().getHeap();
+  if (objectref.isArray()) {
+    auto array = heap.getArray(objectref);
+    if (array->isTransientArray()) {
+      return static_cast<jbyte_t>(array->getClearEvent());
+    }
+    return 0;
+  }
+
+  return 0;
 }
 
 std::shared_ptr<JC_Array>
-fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientBooleanArray(jshort_t,
-                                                                      jbyte_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientBooleanArray(
+    const jshort_t length, const jbyte_t event) {
+  return makeTransientArray(length, event, JAVA_ARRAY_T_BOOLEAN);
 }
 
 std::shared_ptr<JC_Array>
-fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(jshort_t,
-                                                                   jbyte_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(
+    const jshort_t length, const jbyte_t event) {
+  return makeTransientArray(length, event, JAVA_ARRAY_T_BYTE);
 }
 
 std::shared_ptr<JC_Array>
-fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientShortArray(jshort_t,
-                                                                    jbyte_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientShortArray(
+    const jshort_t length, const jbyte_t event) {
+  return makeTransientArray(length, event, JAVA_ARRAY_T_SHORT);
 }
 
 std::shared_ptr<JC_Array>
@@ -221,10 +258,9 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_clearArray(jref_t) {
 }
 
 std::shared_ptr<JC_Array>
-fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientIntArray(jshort_t,
-                                                                  jbyte_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientIntArray(
+    const jshort_t length, const jbyte_t event) {
+  return makeTransientArray(length, event, JAVA_ARRAY_T_INT);
 }
 
 } // namespace jcvm

@@ -76,14 +76,22 @@ requested software implementation without a physical device for now.
   `CLEAR_ON_RESET`. Focused copy/move and transient-size tests pass; the latter
   uses AddressSanitizer with leak detection disabled due an environment-level
   LeakSanitizer failure. Commit: `6fa7232`.
+- Added an RAII active-context binding around interpreter execution, implemented
+  `isTransient`, and implemented primitive transient boolean, byte, short, and
+  int array factories. Invalid lengths and clear events map to the specified VM
+  exceptions. Syntax and array tests pass; target builds remain unavailable.
+  Object transient arrays still lack reference-type metadata in their native
+  signature, and actual reset/deselect clearing awaits lifecycle hooks. Commit
+  SHA is being finalized in the latest progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
 ## Next action
 
-Continue WP5 by binding native calls to the active context, then implement
-transient-array creation and lifecycle clearing. VM-internal exception mapping
-and the Java API/APDU pieces remain open. The provided `tools/build` wrapper is
+Continue WP5 with the native utility methods used by AlgTest (`Util` array
+operations and `JCSystem` queries). Then wire transient clearing once applet
+select/deselect/reset lifecycle dispatch is introduced. VM-internal exception
+mapping and the Java API/APDU pieces remain open. The provided `tools/build` wrapper is
 currently absent, and calls for both architectures return status 127. When
 dependencies and build tools are restored, populate the pinned submodules
 (`654f374`, `ac9f752`, `d490faf`), verify the CHOUPI source revision, and
@@ -104,4 +112,7 @@ establish the host baseline.
 - Latest array storage step: `./tools/test-jcvmarray` passed its fill and
   copy/move checks; `./tools/test-jcarray` passed `TEST:PASS
   jcarray_transient_size` under AddressSanitizer (LeakSanitizer disabled).
+- Latest active-context/transient-native step: `./tools/check-vm-syntax`,
+  `./tools/test-jcvmarray`, and `./tools/test-jcarray` passed; both target build
+  wrapper calls returned 127 because `tools/build` is absent.
 - Hardware validation: intentionally skipped; no device was requested yet.

@@ -39,6 +39,19 @@
 
 namespace jcvm {
 
+namespace {
+class ActiveContextScope {
+private:
+  Context *previous;
+
+public:
+  explicit ActiveContextScope(Context &context) noexcept
+      : previous(Context::setActiveContext(&context)) {}
+
+  ~ActiveContextScope() noexcept { Context::setActiveContext(previous); }
+};
+} // namespace
+
 /**
  * Default constructor.
  *
@@ -68,6 +81,7 @@ Interpretor::Interpretor(
 uint16_t Interpretor::run() noexcept {
 
   Context &context = this->getCurrentContext();
+  ActiveContextScope active_context(context);
   Package package = context.getCurrentPackage();
 
   TRACE_JCVM_DEBUG("Executing starting applet");
