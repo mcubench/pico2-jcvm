@@ -215,5 +215,5 @@
 - Validation: `./tools/test-jcarray` passed its linked ASan suite, including the selecting-applet fallback. `./tools/check-vm-syntax` passed with existing upstream warnings. ARM and RISC-V build wrappers are absent (both returned 127); hardware validation was intentionally skipped.
 - Result: Calls no longer raise `NotYetImplemented` in the current static-entry execution model. The result must become stateful when applet selection is added.
 - Decision: Keep the conservative fallback and continue with remaining required natives and lifecycle integration.
-- Commit: `pending`
+- Commit: `3446422`
 - Artifacts/logs: no archived logs; test emitted `TEST:PASS jni_selecting_applet_fallback`

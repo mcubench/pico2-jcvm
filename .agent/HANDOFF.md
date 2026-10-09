@@ -113,8 +113,7 @@ requested software implementation without a physical device for now.
   host test. Object array creation remains unsupported. Commit: `bacd8fc`.
 - Implemented `selectingApplet()` as `FALSE` in the current runtime because it
   has no applet selection or pending-select state. The linked ASan test passes;
-  this must become stateful with lifecycle dispatch. Commit SHA is being
-  finalized in the latest progress entry.
+  this must become stateful with lifecycle dispatch. Commit: `3446422`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
