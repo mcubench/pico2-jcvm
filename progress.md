@@ -105,5 +105,5 @@
 - Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`; `./tools/test-jcvmarray` passed with `TEST:PASS jcvmarray_fill`. Both instructed builds were attempted but `./tools/build` is absent (status 127 for ARM and RISC-V). Hardware validation was intentionally skipped.
 - Result: Uncaught C++ VM exceptions and unmatched Java `athrow` paths now return `0x6F00` from the runtime entry instead of hanging. Runtime/APDU delivery is not yet connected, and VM exceptions are not yet materialized as Java objects. No runtime measurement was possible.
 - Decision: Retain the failure status path and continue WP5 with Java exception mapping and APDU integration.
-- Commit: `<pending>`
+- Commit: `ff6a4b8`
 - Artifacts/logs: `/tmp/pico2-vm-syntax.log`; no hardware log

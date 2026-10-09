@@ -63,6 +63,7 @@ requested software implementation without a physical device for now.
   `run()` returns `0x6F00` on an uncaught VM exception, including an `athrow`
   with no matching handler, and the C runtime entry returns that status. This
   still does not map VM exceptions to Java objects or send a status over APDU.
+  Commit: `ff6a4b8`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
