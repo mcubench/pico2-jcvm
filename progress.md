@@ -38,6 +38,16 @@
 - Commit: `7e04f97`
 - Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
 
+## 2026-10-09 — Define false class-cast results
+
+- Step/experiment: `wp5-exception-type-match`
+- Change: Made `Class_Handler::docheckcast()` return `FALSE` when a class does not implement the requested interface, instead of falling through without a result. This makes typed exception-handler matching deterministic on non-matches.
+- Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`, including `jc_class.cpp`; no compiler errors or missing-return diagnostic were emitted.
+- Result: The exception matcher translation unit parses with a defined non-match path. The syntax check still uses a temporary FFI shim and does not exercise CAP hierarchy data.
+- Decision: Retain this fix as part of WP5 exception dispatch. Runtime type-hierarchy tests and full architecture builds remain pending dependencies.
+- Commit: pending
+- Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
+
 ## 2026-10-09 — Dispatch Java athrow handlers
 
 - Step/experiment: `wp5-athrow-dispatch`
