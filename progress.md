@@ -65,7 +65,7 @@
 - Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`, including `jc_instance.cpp`; the prior uninitialized-index and self-initialization warnings disappeared. `./tools/test-jcvmarray` remains passing.
 - Result: Persistent instance tags and reference access have defined code paths. `JC_Instance::getFields()` still cannot deserialize a complete persistent field vector, so reserializing loaded objects remains incomplete; runtime persistence checks and full builds are unavailable.
 - Decision: Retain these fixes and continue implementing persistent-object field reconstruction after the dependency/API model is available. Hardware validation remains deferred.
-- Commit: pending
+- Commit: `a740f5e`
 - Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
 
 ## 2026-10-09 — Dispatch Java athrow handlers
