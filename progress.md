@@ -27,3 +27,13 @@
 - Decision: Retain this implementation step and continue the remaining exception, APDU, and lifecycle work after restoring the required source dependencies. Hardware validation was intentionally skipped.
 - Commit: `ab1957b`
 - Artifacts/logs: `/tmp/vm-syntax.log` (temporary syntax-check output; no hardware log)
+
+## 2026-10-09 — Validate persistent reference-array writes
+
+- Step/experiment: `wp5-persistent-array-reference-guard`
+- Change: Added transient-array, element-type, and index checks to the persistent reference-array setter before it writes the indexed child tag.
+- Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_static_reference_syntax`; `./tools/test-jcvmarray` passed with `TEST:PASS jcvmarray_fill`.
+- Result: The setter and the related static persistence translation units pass syntax checking. The syntax shim does not validate the generated Rust FFI ABI, and persistent storage behavior remains unverified at runtime.
+- Decision: Keep the bounds/type guard; continue to the remaining WP5 runtime gaps. Hardware and full target builds remain unavailable.
+- Commit: pending
+- Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log

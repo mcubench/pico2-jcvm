@@ -31,6 +31,9 @@ requested software implementation without a physical device for now.
   temporary variadic `ffi.h` shim; this does not prove ABI compatibility or
   runtime persistence behavior. The step is committed as `ab1957b`; see the
   latest progress entry.
+- Added guards for transient/non-reference persistent arrays and index bounds
+  in the child-reference writer. Its syntax check and the JCVM array test both
+  pass; runtime persistence has not been verified.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 

@@ -980,7 +980,8 @@ FlashMemory_Handler::getPersistentField_Array_Byte(const fs::Tag &tag,
 #ifdef JCVM_SECURE_HEAP_ACCESS
   auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);
 
-  if (array->size() <= index) {
+  if (array->isTransientArray() ||
+      array->getType() != JAVA_ARRAY_T_REFERENCE || array->size() <= index) {
     throw Exceptions::SecurityException;
   }
 
