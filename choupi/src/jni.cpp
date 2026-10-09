@@ -357,8 +357,8 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_requestObjectDeletion() {
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAssignedChannel() {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+  // The current transport has no logical-channel support; use the basic channel.
+  return 0;
 }
 
 jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletActive(jref_t) {

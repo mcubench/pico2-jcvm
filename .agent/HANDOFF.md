@@ -114,6 +114,9 @@ requested software implementation without a physical device for now.
 - Implemented `selectingApplet()` as `FALSE` in the current runtime because it
   has no applet selection or pending-select state. The linked ASan test passes;
   this must become stateful with lifecycle dispatch. Commit: `3446422`.
+- Implemented `getAssignedChannel()` as channel 0 for the single-channel
+  transport. The linked ASan test verifies it; logical channels are not
+  supported. Commit SHA is being finalized in the latest progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
@@ -164,5 +167,7 @@ establish the host baseline.
 - Latest primitive-factory coverage: linked ASan test passed all four primitive
   array types and null handling; only test code changed.
 - Latest selecting-applet fallback: linked ASan test and syntax check passed;
+  ARM and RISC-V build wrappers remain absent.
+- Latest basic-channel fallback: linked ASan test and syntax check passed;
   ARM and RISC-V build wrappers remain absent.
 - Hardware validation: intentionally skipped; no device was requested yet.
