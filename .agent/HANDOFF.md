@@ -44,7 +44,7 @@ requested software implementation without a physical device for now.
   Commit: `6f7f1bc`.
 - Implemented the object-deletion capability fallback natives (`FALSE` and
   no-op). Syntax check passes; target builds and runtime native dispatch tests
-  remain unavailable.
+  remain unavailable. Commit: `512337f`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 

@@ -45,7 +45,7 @@
 - Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`, including `jni.cpp`. The syntax check uses a temporary FFI shim and does not prove generated ABI linkage.
 - Result: Both native stubs now provide the defined unsupported-platform behavior instead of raising `NotYetImplemented`. No target build or runtime APDU test was possible with current prerequisites.
 - Decision: Retain and continue with other WP5 native methods. Hardware validation remains intentionally deferred.
-- Commit: pending
+- Commit: `512337f`
 - Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
 
 ## 2026-10-09 — Define false class-cast results
