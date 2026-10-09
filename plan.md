@@ -10,7 +10,7 @@ Oct 9, 2026 · @PetrS
 
 
 
-The port is done when an unmodified JCAlgTest v1.8.4 applet CAP is loaded onto a Raspberry Pi Pico 2 running CHOUPI, and the stock JCAlgTest host client, run on a PC, completes the "supported algorithms" test and writes a results file. The plan gets there in phases, and each phase leaves a runnable, testable state behind.
+The port is done when the supplied JCAlgTest v1.8.2 applet CAP is loaded onto a Raspberry Pi Pico 2 running CHOUPI, and the matching JCAlgTest host client, run on a PC, completes the "supported algorithms" test and writes a results file. The plan gets there in phases, and each phase leaves a runnable, testable state behind.
 
 
 
@@ -48,9 +48,9 @@ Acceptance criteria:
 
 \- \[ ] AC1: `gp --list` (GlobalPlatformPro) on the host lists the Pico 2 card's ISD over PC/SC, without custom drivers on Linux and Windows.
 
-\- \[ ] AC2: The JCAlgTest v1.8.4 release CAP (supported-algorithms applet, Java Card version variant compatible with CHOUPI) installs via `gp --install`, and is selectable by AID.
+\- \[ ] AC2: The supplied JCAlgTest v1.8.2 CAP (supported-algorithms applet, Java Card version variant compatible with CHOUPI) installs via `gp --install`, and is selectable by AID.
 
-\- \[ ] AC3: The JCAlgTest v1.8.4 host client's "supported algorithms" mode runs to completion against the Pico 2 with no transport errors.
+\- \[ ] AC3: The JCAlgTest v1.8.2 host client's "supported algorithms" mode runs to completion against the Pico 2 with no transport errors.
 
 \- \[ ] AC4: The produced results CSV matches what CHOUPI really implements, cross-checked against a reference simulator run (jCardSim) for the same algorithm list.
 
@@ -120,33 +120,33 @@ The toolchain is also stale. It needs Rust nightly-2020-03-10 with `xargo`, and 
 
 
 
-\## What JCAlgTest v1.8.4 needs from the card
+\## What JCAlgTest v1.8.2 needs from the card
 
 
 
-Use `AlgTest\_v1.8.4\_jc305.cap`. It is CAP format 2.1, which is the only format CHOUPI parses. It also imports API version 1.6, which is exactly what CHOUPI's `javacard-api` build exports.
+Use the supplied `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` and matching sources under `AlgTest_JavaCard/src305/`, as requested. The source identifies itself as v1.8.2 (17 Nov 2024). Do not carry over CAP metadata assumptions from the earlier v1.8.4 analysis: inspect the v1.8.2 CAP header and import table against the ROM mask before attempting installation.
 
 
 
-The \[v1.8.4 release](https://github.com/crocs-muni/JCAlgTest/releases/tag/v1.8.4) (29 Sep 2026) ships `AlgTest\_dist\_1.8.4.zip`. The zip holds `AlgTestJClient.jar` and three CAP variants: jc222, jc304 and jc305. The jc222 variant imports API version 1.3. CHOUPI's import check (`jc\_cap\_header.hpp`) requires an exact major and minor version match, so the jc222 CAP would fail to link. Relaxing that check to the spec rule (major equal, minor at least the required one) is a small fix, but it isn't needed for the target CAP.
+The supplied tree includes v1.8.0 and v1.8.2 artifacts; use only the v1.8.2 CAP and its matching host client. The earlier v1.8.4 release notes and import/version conclusions do not establish compatibility for v1.8.2.
 
 
 
-| Property | Value in `AlgTest\_v1.8.4\_jc305.cap` | CHOUPI today |
+| Property | Value in the supplied v1.8.2 artifact | CHOUPI today |
 
 | --- | --- | --- |
 
-| CAP file format | 2.1 (compact) | Only 2.1 supported: matches |
+| CAP file format | Must be read from the supplied v1.8.2 CAP before linking | CHOUPI currently parses format 2.1 |
 
 | Package AID | `4A43416C6754657374` ("JCAlgTest") | Needs a package registry and an on-card loader |
 
 | Applet AID selected by client | `4A43416C675465737431` ("JCAlgTest1"), legacy fallback `6D7970616330303031` | No applet registry or SELECT handling |
 
-| Imports | `java.lang` 1.0, `javacard.framework` 1.6, `javacard.security` 1.6, `javacardx.crypto` 1.6 | Same AIDs and versions exported by the ROM mask: matches |
+| Imports | Must be read from the supplied v1.8.2 CAP before linking | Verify exact AIDs and versions against the ROM mask |
 
-| Size | about 31 KB of components (Method component 19 KB) | Fits easily in 4 MB of flash |
+| Size | CAP file is about 129 KB; component size must be measured by the CAP parser | Target reports 2 MiB flash; confirm partition budget before loading |
 
-| Transient RAM | 600 + 528 bytes `CLEAR\_ON\_DESELECT`, falling back to `CLEAR\_ON\_RESET`, then 130 + 8 bytes | Transient arrays not implemented |
+| Transient RAM | Measure from the v1.8.2 applet path before setting the acceptance budget | Transient arrays not implemented |
 
 | Extended APDU | Not used (the `ExtendedLength` import is commented out) | Not needed |
 
@@ -230,13 +230,13 @@ Memory map:
 
 | ROM mask (XIP) | next 1 MiB | Java Card API packages, starter, static images |
 
-| Persistent store | top 1 MiB of the 4 MiB | Filesystem: loaded CAPs, static fields, persistent objects, registry, keys |
+| Persistent store | top 512 KiB of the reported 2 MiB | Filesystem: loaded CAPs, static fields, persistent objects, registry, keys |
 
 | SRAM | `0x20000000`, 520 KiB | OS-private region, shared RW and RO, per-context JCVM stack and heap, transient arrays, USB buffers |
 
 
 
-The sizes are planning values to confirm in WP1. The filesystem offsets are derived from `PICO\_FLASH\_SIZE\_BYTES`, as `board.md` requires.
+The device was identified read-only with `picotool info -a`: RP2350 revision A4, QFN60, `pico2`, and 2048 KiB reported flash (`FLASH_DEVINFO=0x0c00`). Use `PICO_FLASH_SIZE_BYTES=2097152` as the working build size and confirm physical flash capacity before relying on persistent-store offsets. Derive filesystem offsets from the declared size, as `board.md` requires.
 
 
 
@@ -252,7 +252,7 @@ The \[rp2350-skills](https://github.com/mcubench/rp2350-skills) repo (commit `c9
 
 | --- | --- | --- |
 
-| Establish board identity first; declare real flash size (`board.md`) | WP1 | `PICO\_FLASH\_SIZE\_BYTES=4194304` set before `pico\_sdk\_init()`. The persistent store sits in the top flash sectors, with offsets derived from the declared size and 4 KiB erase granularity. |
+| Establish board identity first; declare real flash size (`board.md`) | WP1 | Use the device-reported `PICO\_FLASH\_SIZE\_BYTES=2097152` before `pico\_sdk\_init()` and verify physical capacity before persistent writes. Derive top-sector store offsets from this value and 4 KiB erase granularity. |
 
 | `IMAGE\_DEF` in first 4 KiB; UF2 family `rp2350-arm-s` (`board.md`) | WP1, WP2 | Build on pico-sdk crt0 and boot2. Rust `choupi-os` links as a `staticlib` for `thumbv8m.main-none-eabihf` and is never the image owner. |
 
@@ -328,7 +328,7 @@ Exit criterion: the PC build runs the original ROM mask, and the OS tests pass o
 
 1\. Add a `CHOUPI\_TARGET\_PICO2` CMake branch using `pico\_sdk\_init()`, with these settings:
 
-&#x20;  - `PICO\_PLATFORM=rp2350-arm-s` and `PICO\_FLASH\_SIZE\_BYTES=4194304`
+&#x20;  - `PICO\_PLATFORM=rp2350-arm-s` and `PICO\_FLASH\_SIZE\_BYTES=2097152` (reported by the connected board; verify before partition writes)
 
 &#x20;  - `PICO\_CXX\_ENABLE\_EXCEPTIONS=1`, because the JCVM signals every error by `throw`
 
@@ -382,7 +382,7 @@ Exit criteria:
 
 1\. Port `flash\_ll` to the SDK `flash\_range\_erase/program`, wrapped in `flash\_safe\_execute`. The code runs from SRAM and core 1 is never launched.
 
-2\. Re-parameterise the filesystem for 4 KiB erase sectors. Place it in the top 1 MiB of the declared 4 MiB, with the ROM mask below it.
+2\. Re-parameterise the filesystem for 4 KiB erase sectors. Place it in the top 512 KiB of the reported 2 MiB, with the ROM mask below it.
 
 3\. Implement the filesystem transaction meta-block, which `choupi-os` `TODO.md` already designs. It is the foundation for `JCSystem` transactions and for anti-tearing.
 
@@ -462,7 +462,7 @@ Exit criterion: `pcsc\_scan` shows the reader and the ATR, and `opensc-tool -s` 
 
 
 
-Exit criterion: on the PC build, a golden test applet exercising try/catch, transient arrays and the APDU echo path passes, followed by the JCAlgTest applet pre-masked into ROM (built to JCA from v1.8.4 source with the converter shipped in the repo).
+Exit criterion: on the PC build, a golden test applet exercising try/catch, transient arrays and the APDU echo path passes, followed by the supplied v1.8.2 JCAlgTest applet pre-masked into ROM (built to JCA with the converter shipped in the repo).
 
 
 
@@ -496,7 +496,7 @@ Implement the Issuer Security Domain natively in C++ inside the JCRE. This is fa
 
 
 
-Exit criterion: `gp --list`, `gp --install AlgTest\_v1.8.4\_jc305.cap` and `gp --delete` succeed on the PC build through vpcd, then on the Pico 2 through CCID.
+Exit criterion: `gp --list`, `gp --install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` and `gp --delete` succeed on the PC build through vpcd, then on the Pico 2 through CCID.
 
 
 
@@ -572,7 +572,7 @@ Test assets to build:
 
 \- \*\*Golden applets.\*\* About 6 small Java Card applets, compiled to CAP 2.1 against CHOUPI's export files. They isolate one feature each: exceptions, transients, statics, APDU, install parameters, and persistence.
 
-\- \*\*A JCAlgTest pre-masked build.\*\* The v1.8.4 applet source converted to JCA and placed in the ROM mask. It runs the client before WP6 exists, which separates "VM cannot run AlgTest" from "loader is broken".
+\- \*\*A JCAlgTest pre-masked build.\*\* The supplied v1.8.2 applet source converted to JCA and placed in the ROM mask. It runs the matching client before WP6 exists, which separates "VM cannot run AlgTest" from "loader is broken".
 
 \- \*\*A host monitor in the rp2350-skills style.\*\* It requires exactly one `BOOT` with a fresh run ID, then `TEST:` records in order. It fails on timeout, reset or `FAULT`, and archives the log with the firmware hash.
 
@@ -718,7 +718,7 @@ Open decisions:
 
 
 
-\- \[JCAlgTest v1.8.4 release](https://github.com/crocs-muni/JCAlgTest/releases/tag/v1.8.4). Repository cloned at tag v1.8.4; the CAP manifests, applet source and AlgTest\\\_JClient were inspected locally.
+\- The supplied `AlgTest_JavaCard` tree: source identifies v1.8.2 and includes `AlgTest_v1.8.2_jc305.cap`; use matching sources/client and validate CAP imports against the chosen ROM mask.
 
 \- \[mcubench/rp2350-skills](https://github.com/mcubench/rp2350-skills) at commit c989b7e: SKILL.md, AGENTS.md and the three reference files.
 

@@ -15,13 +15,21 @@ requested software implementation without a physical device for now.
   `choupi/javacard-sdk/javacard-api/`, and
   `choupi/javacard-sdk/rommask/` are empty dependency directories, despite
   their entries in `choupi/.gitmodules`.
-- The AlgTest directory contains CAPs labeled v1.8.0 and v1.8.2; the plan's
-  target artifact is v1.8.4. Do not silently treat these as equivalent.
-- The environment currently has no `cmake`, `cargo`, `rustc`, Pico SDK, or
-  ARM embedded compiler. A read-only `git ls-remote` attempt failed because
-  `github.com` could not be resolved.
-- `tools/doctor` now reports host build prerequisites, SDK presence, and
-  dependency checkout status. It does not flash hardware.
+- The user selected JCAlgTest v1.8.2. `AlgTest_JavaCard/src305` identifies
+  itself as v1.8.2 and the matching `AlgTest_v1.8.2_jc305.cap` is present.
+  CAP import metadata still needs comparison with the ROM mask.
+- A repository-local toolchain is installed under `.local-toolchain/`; use
+  `./tools/env <command>` to select it. It includes CMake/Ninja, ARM and
+  RISC-V compilers, stable Rust with the Cortex-M33 target, Pico SDK 2.3.1,
+  pioasm, and picotool. See `.agent/TOOLCHAIN.md` for versions and hashes.
+- The board is visible in BOOTSEL mode. Read-only `picotool info -a` reported
+  RP2350 A4, QFN60, 2048 KiB flash, and an existing RISC-V image named
+  `pico2_btc_miner`. No firmware was written; the flash size is a device report
+  pending independent physical confirmation.
+- `tools/doctor` finds the host toolchain through `./tools/env` but still fails
+  on unpopulated CHOUPI OS/API/ROM-mask dependencies. `tools/build`,
+  `tools/common.sh`, `tools/cycle`, and `tools/monitor` are absent, and the
+  documented `pico2_trng` CMake target is not present in this checkout.
 - Diagnostics and continuity setup are committed as `1616b59`.
 - Fixed `JCVMArray::fill()` to populate each element and removed the ignored
   return qualifier from `size()`. The focused strict host test passed with
@@ -139,10 +147,11 @@ AlgTest calls and available VM APIs. Wire the transient clear primitive into
 select/deselect/reset dispatch when that lifecycle layer is introduced.
 VM-internal exception
 mapping and the Java API/APDU pieces remain open. The provided `tools/build` wrapper is
-currently absent, and calls for both architectures return status 127. When
-dependencies and build tools are restored, populate the pinned submodules
-(`654f374`, `ac9f752`, `d490faf`), verify the CHOUPI source revision, and
-establish the host baseline.
+currently absent; the next Pico work must add the targets/wrappers described by
+`reference/compilation.md`, then restore the pinned Java Card dependencies
+(`654f374`, `ac9f752`, `d490faf`) and establish a real target build before any
+flash operation. Preserve the local `.local-toolchain/`, `AlgTest_JavaCard/`,
+and CHOUPI source tree.
 
 ## Latest validation
 
@@ -188,4 +197,12 @@ establish the host baseline.
 - Latest integrity-sensitive query: linked ASan test passed and emitted
   `TEST:PASS jni_integrity_sensitive_query`; syntax check passed. ARM and
   RISC-V builds could not run because `tools/build` is absent.
-- Hardware validation: intentionally skipped; no device was requested yet.
+- Firmware runtime validation is still pending: the connected device has only
+  been queried read-only; no image has been built or flashed.
+- Toolchain setup: `bash -n tools/env` passed. `./tools/env rustup target
+  list --installed` includes `thumbv8m.main-none-eabihf`; CMake/Ninja, both
+  compiler prefixes, and picotool version checks passed. `./tools/env
+  ./tools/doctor` now reports the host tools and Pico SDK as present, but exits
+  1 for the missing OS/API/ROM-mask dependencies. Both `./tools/env
+  ./tools/build arm` and `riscv` remain unavailable because `tools/build` does
+  not exist. Read-only device info passed only under reviewed escalation.
