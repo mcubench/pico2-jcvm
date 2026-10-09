@@ -11,6 +11,7 @@ sources=(
   "${repo_root}/choupi/src/jc_handlers/jc_static.cpp"
   "${repo_root}/choupi/src/jc_handlers/jc_class.cpp"
   "${repo_root}/choupi/src/jc_handlers/flashmemory.cpp"
+  "${repo_root}/choupi/src/jc_types/jc_instance.cpp"
   "${repo_root}/choupi/src/frame.cpp"
   "${repo_root}/choupi/src/interpretor.cpp"
   "${repo_root}/choupi/src/jni.cpp"

@@ -45,6 +45,9 @@ requested software implementation without a physical device for now.
 - Implemented the object-deletion capability fallback natives (`FALSE` and
   no-op). Syntax check passes; target builds and runtime native dispatch tests
   remain unavailable. Commit: `512337f`.
+- Repaired persistent instance class/tag handling and reference-field get/set.
+  Syntax checks pass, but `JC_Instance::getFields()` still cannot reconstruct
+  a persistent object's typed field vector; this remains open for WP5.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
