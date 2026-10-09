@@ -119,7 +119,7 @@ requested software implementation without a physical device for now.
   supported. Commit: `657e589`.
 - The documentation finalization commit `bff7c23` accidentally included 63
   previously untracked provided source files from stale index entries. Their
-  worktree copies were hash-verified and retained; the following correction
+  worktree copies were hash-verified and retained; corrective commit `ae783a2`
   removes them from the index again. Keep the provided source trees untracked.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
