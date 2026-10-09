@@ -1,0 +1,31 @@
+# Session continuity
+
+This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
+`plan.md`, this file, and `.agent/HANDOFF.md` before making substantial changes.
+
+## Change discipline
+
+- Preserve every pre-existing worktree change, especially the provided
+  `choupi/` and `AlgTest_JavaCard/` trees.
+- Keep each implementation change to one coherent step. Validate it with the
+  available build, test, or inspection, append to root `progress.md`, and make a
+  new commit containing the step. Do not amend earlier commits.
+- Do not claim hardware validation unless an attached Pico 2 was actually
+  flashed and its finite serial log inspected. Hardware is currently not
+  required for this task.
+- Do not invoke compiler binaries directly. Use the repository build wrappers
+  once available.
+- Keep `.agent/HANDOFF.md` current with completed work, blockers, and the next
+  concrete action. Never replace or remove earlier `progress.md` records.
+
+## Source and dependency handling
+
+- The planned target is RP2350 Cortex-M33. The plan lists RISC-V as out of
+  scope, while repository `AGENTS.md` includes a RISC-V build workflow; follow
+  the more specific plan when choosing implementation scope and report any
+  unavoidable divergence.
+- Preserve the user-provided source and CAP artifacts. Do not replace the
+  supplied AlgTest version without inspecting and recording its provenance.
+- The pinned CHOUPI OS and Java Card SDK dependencies are submodules declared
+  in `choupi/.gitmodules`; verify that they are populated before attempting a
+  full build.

@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+vm_root="${repo_root}/choupi"
+missing=0
+
+report_command() {
+  local name="$1"
+  local required="$2"
+  if command -v "${name}" >/dev/null 2>&1; then
+    printf 'OK      %-20s %s\n' "${name}" "$(command -v "${name}")"
+  else
+    printf '%-7s %-20s %s\n' "$([[ "${required}" == yes ]] && printf MISSING || printf OPTIONAL)" "${name}" 'not found on PATH'
+    [[ "${required}" == yes ]] && missing=1
+  fi
+}
+
+report_path() {
+  local label="$1"
+  local path="$2"
+  local required="$3"
+  if [[ -e "${path}" ]]; then
+    printf 'OK      %-20s %s\n' "${label}" "${path}"
+  else
+    printf '%-7s %-20s %s\n' "$([[ "${required}" == yes ]] && printf MISSING || printf OPTIONAL)" "${label}" "${path}"
+    [[ "${required}" == yes ]] && missing=1
+  fi
+}
+
+printf 'CHOUPI Pico 2 development diagnostics\n'
+printf 'Repository: %s\n' "${repo_root}"
+if git -C "${repo_root}" rev-parse --short HEAD >/dev/null 2>&1; then
+  printf 'Source:     %s%s\n' "$(git -C "${repo_root}" rev-parse --short HEAD)" \
+    "$(git -C "${repo_root}" diff --quiet && git -C "${repo_root}" diff --cached --quiet || printf ' (modified)')"
+fi
+
+printf '\nHost tools\n'
+report_command cmake yes
+report_command ninja no
+report_command make yes
+report_command cargo yes
+report_command rustc yes
+report_command ant yes
+report_command java yes
+report_command maven no
+report_command picotool no
+
+printf '\nPico SDK\n'
+if [[ -n "${PICO_SDK_PATH:-}" ]]; then
+  report_path PICO_SDK_PATH "${PICO_SDK_PATH}" yes
+  report_path sdk_import "${PICO_SDK_PATH}/external/pico_sdk_import.cmake" yes
+else
+  printf 'MISSING PICO_SDK_PATH       environment variable is unset\n'
+  missing=1
+fi
+
+printf '\nCHOUPI sources\n'
+report_path choupi_source "${vm_root}/src/main.cpp" yes
+report_path choupi_os "${vm_root}/os/Cargo.toml" yes
+report_path javacard_api "${vm_root}/javacard-sdk/javacard-api/build.xml" yes
+report_path rommask "${vm_root}/javacard-sdk/rommask/pom.xml" yes
+
+printf '\nBoard status\n'
+printf 'INFO    hardware             not required for host diagnostics or build checks\n'
+printf 'INFO    flashing             not performed by this command\n'
+
+if ((missing)); then
+  printf '\nRESULT: missing required build prerequisites\n'
+  exit 1
+fi
+
+printf '\nRESULT: required host build prerequisites are present\n'
