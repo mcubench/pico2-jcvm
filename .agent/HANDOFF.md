@@ -22,6 +22,7 @@ requested software implementation without a physical device for now.
   `github.com` could not be resolved.
 - `tools/doctor` now reports host build prerequisites, SDK presence, and
   dependency checkout status. It does not flash hardware.
+- Diagnostics and continuity setup are committed as `1616b59`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
