@@ -371,10 +371,14 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_assertIntegrity(jref_t) {
   throw Exceptions::NotYetImplemented;
 }
 
-jbool_t
-fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitive(jref_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitive(
+    const jref_t objectref) {
+  if (objectref.isNullPointer()) {
+    throw Exceptions::NullPointerException;
+  }
+
+  // This VM does not create or track integrity-sensitive arrays.
+  return FALSE;
 }
 
 jbool_t

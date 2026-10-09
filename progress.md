@@ -247,3 +247,13 @@
 - Decision: Keep integrity-array construction and operations unsupported until the backing verification feature is designed. Continue mapping remaining native and lifecycle gaps.
 - Commit: `32c88dd`
 - Artifacts/logs: no archived logs
+
+## 2026-10-09 — Query integrity sensitivity conservatively
+
+- Step/experiment: `wp5-integrity-sensitive-query`
+- Change: Implemented `isIntegritySensitive(Object)` to throw `NullPointerException` for null and return `FALSE` for non-null objects because the VM does not create or track integrity-sensitive arrays. Added linked host checks for both cases.
+- Validation: `./tools/test-jcarray` passed, including `TEST:PASS jni_integrity_sensitive_query`. `./tools/check-vm-syntax` passed with existing upstream header warnings. `./tools/build arm` and `./tools/build riscv` both returned 127 because `tools/build` is absent. Hardware validation was intentionally skipped.
+- Result: The native query now follows Java Card's null and ordinary-object behavior. Sensitive-result side-channel tracking remains unavailable.
+- Decision: Keep array creation and integrity assertion operations unsupported. Continue remaining VM-native and lifecycle work.
+- Commit: pending
+- Artifacts/logs: no archived logs

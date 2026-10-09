@@ -121,6 +121,10 @@ requested software implementation without a physical device for now.
   `FALSE`, matching the absence of integrity storage and verification in this
   runtime. The linked ASan test now checks the capability result; operations
   that require integrity arrays remain unsupported. Commit: `32c88dd`.
+- Implemented `isIntegritySensitive(Object)` as `FALSE` for non-null objects
+  and `NullPointerException` for null, since this runtime never creates or
+  tracks sensitive arrays. Focused host tests cover both cases; see commit
+  `pending` until the progress record is committed.
 - The documentation finalization commit `bff7c23` accidentally included 63
   previously untracked provided source files from stale index entries. Their
   worktree copies were hash-verified and retained; corrective commit `ae783a2`
@@ -181,4 +185,7 @@ establish the host baseline.
 - Latest integrity-array capability fallback: linked ASan test passed and
   emitted `TEST:PASS jni_integrity_arrays_capability`; syntax check passed.
   ARM and RISC-V builds could not run because `tools/build` is absent.
+- Latest integrity-sensitive query: linked ASan test passed and emitted
+  `TEST:PASS jni_integrity_sensitive_query`; syntax check passed. ARM and
+  RISC-V builds could not run because `tools/build` is absent.
 - Hardware validation: intentionally skipped; no device was requested yet.

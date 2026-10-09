@@ -18,6 +18,8 @@ jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet();
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAssignedChannel();
 jbool_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitiveArraysSupported();
+jbool_t
+fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitive(jref_t);
 std::shared_ptr<JC_Array>
 fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(jshort_t,
                                                                    jbyte_t);
@@ -80,6 +82,22 @@ int main() {
   pattern.setByteEntry(0, 0x12);
   pattern.setByteEntry(1, 0x34);
   const jcvm::jref_t patternRef = heap.addArray(pattern);
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitive(
+          bytesRef) != jcvm::FALSE) {
+    std::cerr << "ordinary array was reported as integrity-sensitive\n";
+    return 1;
+  }
+  try {
+    jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitive(
+        jcvm::jref_t{});
+    std::cerr << "isIntegritySensitive accepted a null reference\n";
+    return 1;
+  } catch (jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::NullPointerException) {
+      std::cerr << "isIntegritySensitive null raised wrong exception\n";
+      return 1;
+    }
+  }
 
   const auto nativeTransient =
       jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(
@@ -224,5 +242,6 @@ int main() {
   std::cout << "TEST:PASS jni_selecting_applet_fallback\n";
   std::cout << "TEST:PASS jni_basic_channel_fallback\n";
   std::cout << "TEST:PASS jni_integrity_arrays_capability\n";
+  std::cout << "TEST:PASS jni_integrity_sensitive_query\n";
   return 0;
 }
