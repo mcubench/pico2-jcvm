@@ -195,5 +195,5 @@
 - Validation: `./tools/test-jcarray` passed all transient, clear, copy, compare, fill, and factory checks under AddressSanitizer with leak detection disabled. `./tools/check-vm-syntax` and `./tools/test-jcvmarray` passed. Target builds were not rerun because this step changed tests only.
 - Result: The active-context and primitive transient-factory paths now have a linked host runtime test, beyond translation-unit syntax coverage. This does not test Java-level exception dispatch or card lifecycle integration.
 - Decision: Keep this host native regression harness and continue examining the remaining JCSystem behavior required by AlgTest.
-- Commit: `pending`
+- Commit: `64fe919`
 - Artifacts/logs: no archived logs; test emitted the PASS records above

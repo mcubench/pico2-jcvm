@@ -107,7 +107,7 @@ requested software implementation without a physical device for now.
   `isTransient`, and invalid length/event paths using a live `Context`. The
   linked ASan test passes, closing the earlier native runtime-test gap for
   these paths. Java exception dispatch and actual card lifecycle events remain
-  untested. Commit SHA is being finalized in the latest progress entry.
+  untested. Commit: `64fe919`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
