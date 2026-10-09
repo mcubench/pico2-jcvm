@@ -227,3 +227,13 @@
 - Decision: Keep channel 0 as the only supported channel and continue with remaining runtime integration gaps.
 - Commit: `657e589`
 - Artifacts/logs: no archived logs; test emitted `TEST:PASS jni_basic_channel_fallback`
+
+## 2026-10-09 — Restore user source files to untracked state
+
+- Step/experiment: `preserve-provided-source-index`
+- Change: The handoff finalization commit `bff7c23` unintentionally included 63 pre-existing untracked CHOUPI source files due to stale staged entries. Removed only those paths from the index while retaining their working-tree contents; no source files were rewritten.
+- Validation: Compared Git blob hashes for all 63 paths against `bff7c23`; all 63 matched with zero mismatches. The current implementation files and progress records remain committed separately.
+- Result: The supplied source files are preserved in the worktree and removed from the repository commit; the accidental commit remains in history followed by this corrective commit.
+- Decision: Continue with the user source trees untracked and only stage files explicitly belonging to implementation steps.
+- Commit: `pending`
+- Artifacts/logs: no archived logs; 63 content hashes matched

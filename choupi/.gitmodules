@@ -1,9 +1,0 @@
-[submodule "os"]
-	path = os
-	url = https://github.com/gavz/choupi-os
-[submodule "javacard-sdk/rommask"]
-	path = javacard-sdk/rommask
-	url = https://github.com/gavz/rommask
-[submodule "javacard-sdk/javacard-api"]
-	path = javacard-sdk/javacard-api
-	url = https://github.com/gavz/javacard-api
