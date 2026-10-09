@@ -96,8 +96,7 @@ requested software implementation without a physical device for now.
 - Implemented `arrayCompareGeneric` for byte arrays with range checks, unsigned
   comparison, and ternary results. The focused ASan test covers equality,
   signed-byte boundary ordering, and normal less-than ordering. SensitiveResult
-  tracking is not implemented. Commit SHA is being finalized in the latest
-  progress entry.
+  tracking is not implemented. Commit: `92ef957`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
