@@ -64,6 +64,11 @@ requested software implementation without a physical device for now.
   with no matching handler, and the C runtime entry returns that status. This
   still does not map VM exceptions to Java objects or send a status over APDU.
   Commit: `ff6a4b8`.
+- The `JCSystem` transaction information natives report zero active depth and
+  zero commit capacity, matching the runtime's lack of transaction support.
+  AlgTest's system-information path queries maximum commit capacity. Mutating
+  transaction calls remain unimplemented. Syntax and array regression checks
+  pass; target builds remain unavailable. Commit: pending.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 

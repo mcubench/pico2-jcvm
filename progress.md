@@ -107,3 +107,13 @@
 - Decision: Retain the failure status path and continue WP5 with Java exception mapping and APDU integration.
 - Commit: `ff6a4b8`
 - Artifacts/logs: `/tmp/pico2-vm-syntax.log`; no hardware log
+
+## 2026-10-09 — Report zero transaction capacity
+
+- Step/experiment: `wp5-transaction-capacity-reporting`
+- Change: Implemented the JCSystem transaction information natives to report zero transaction depth, zero unused commit capacity, and zero maximum commit capacity. This lets AlgTest's system-information query report the runtime's actual lack of transactional persistence.
+- Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`; `./tools/test-jcvmarray` passed with `TEST:PASS jcvmarray_fill`. ARM and RISC-V build attempts returned 127 because `tools/build` is absent. Hardware validation was intentionally skipped.
+- Result: Capability queries return zero without raising `NotYetImplemented`. Mutating transaction calls remain unimplemented; no runtime/APDU measurement was possible.
+- Decision: Retain the honest capability values; transaction operations still require atomic persistence support.
+- Commit: `<pending>`
+- Artifacts/logs: `/tmp/pico2-vm-syntax.log`; no hardware log

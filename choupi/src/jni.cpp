@@ -134,18 +134,18 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_commitTransaction() {
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getTransactionDepth() {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+  // Transactions are not implemented, so a transaction is never active.
+  return 0;
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getUnusedCommitCapacity() {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+  // No commit buffer is available until transactional persistence is added.
+  return 0;
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getMaxCommitCapacity() {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+  // Report the absence of a transaction commit buffer to capability probes.
+  return 0;
 }
 
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getPreviousContextAID() {
