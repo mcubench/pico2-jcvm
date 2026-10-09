@@ -179,10 +179,10 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
   }
 
   for (jshort_t index = 0; index < length; ++index) {
-    const auto firstByte = static_cast<uint8_t>(first->getByteEntry(
-        static_cast<uint16_t>(firstOffset + index)));
-    const auto secondByte = static_cast<uint8_t>(second->getByteEntry(
-        static_cast<uint16_t>(secondOffset + index)));
+    const jbyte_t firstByte =
+        first->getByteEntry(static_cast<uint16_t>(firstOffset + index));
+    const jbyte_t secondByte =
+        second->getByteEntry(static_cast<uint16_t>(secondOffset + index));
     if (firstByte < secondByte) {
       return -1;
     }

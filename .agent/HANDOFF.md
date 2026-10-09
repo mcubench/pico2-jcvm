@@ -93,8 +93,8 @@ requested software implementation without a physical device for now.
   snapshots input to preserve overlap semantics. Focused ASan tests cover an
   overlapping byte copy plus bounds/type errors. Reference copying remains
   unsupported; transaction atomicity is unavailable. Commit: `8e92ec1`.
-- Implemented `arrayCompareGeneric` for byte arrays with range checks, unsigned
-  comparison, and ternary results. The focused ASan test covers equality,
+- Implemented `arrayCompareGeneric` for byte arrays with range checks, signed
+  Java byte comparison, and ternary results. The focused ASan test covers equality,
   signed-byte boundary ordering, and normal less-than ordering. SensitiveResult
   tracking is not implemented. Commit: `92ef957`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
@@ -137,6 +137,6 @@ establish the host baseline.
   cases; syntax and JCVM array tests passed; both target build calls returned
   127 because the wrapper is absent.
 - Latest native array-compare step: focused ASan comparison checks, including
-  unsigned byte ordering, passed; syntax checks passed; target build wrappers
+  signed byte ordering, passed; syntax checks passed; target build wrappers
   returned 127 because the wrapper is absent.
 - Hardware validation: intentionally skipped; no device was requested yet.

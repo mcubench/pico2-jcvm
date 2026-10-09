@@ -69,7 +69,7 @@ int main() {
       jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
           bytesRef, 0, bytesRef, 1, 1) >= 0 ||
       jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
-          bytesRef, 0, bytesRef, 6, 1) >= 0) {
+          bytesRef, 0, bytesRef, 6, 1) <= 0) {
     std::cerr << "byte array comparison returned an incorrect ordering\n";
     return 1;
   }

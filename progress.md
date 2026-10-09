@@ -167,3 +167,13 @@
 - Decision: Continue with the pattern-based fill helper and then resolve the remaining AlgTest native/API dependencies.
 - Commit: `92ef957`
 - Artifacts/logs: no archived logs; focused tests emitted the PASS records above
+
+## 2026-10-09 — Correct byte array comparison ordering
+
+- Step/experiment: `wp5-native-array-compare-signed-order`
+- Change: Changed `arrayCompareGeneric` to compare Java Card byte values as signed `jbyte_t` values. Kept the required -1/0/1 result and added a boundary assertion for comparing `0x01` with `0xFF` (-1).
+- Validation: `./tools/test-jcarray` and `./tools/check-vm-syntax` passed. The syntax check reports existing upstream warnings. ARM and RISC-V build wrappers are absent (both returned 127); hardware validation was intentionally skipped.
+- Result: The implementation follows Java Card's byte primitive ordering; Oracle's `Util.arrayCompare` API specifies the ternary result but does not explicitly state signedness, so the signed interpretation follows Java's signed `byte` type.
+- Decision: Keep signed comparison and continue with the remaining utility natives.
+- Commit: `pending`
+- Artifacts/logs: no archived logs; focused test emitted `TEST:PASS jni_array_compare`
