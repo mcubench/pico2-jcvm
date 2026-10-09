@@ -22,6 +22,7 @@ requested software implementation without a physical device for now.
   `./tools/env <command>` to select it. It includes CMake/Ninja, ARM and
   RISC-V compilers, stable Rust with the Cortex-M33 target, Pico SDK 2.3.1,
   pioasm, and picotool. See `.agent/TOOLCHAIN.md` for versions and hashes.
+  Setup and the hardware report are committed as `db99639`.
 - The board is visible in BOOTSEL mode. Read-only `picotool info -a` reported
   RP2350 A4, QFN60, 2048 KiB flash, and an existing RISC-V image named
   `pico2_btc_miner`. No firmware was written; the flash size is a device report
