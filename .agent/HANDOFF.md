@@ -29,7 +29,8 @@ requested software implementation without a physical device for now.
 - Implemented the `putstatic_a` path and nested persistent reference-array
   element tags in the VM persistence layer. Syntax checks passed using a
   temporary variadic `ffi.h` shim; this does not prove ABI compatibility or
-  runtime persistence behavior. See the latest progress entry.
+  runtime persistence behavior. The step is committed as `ab1957b`; see the
+  latest progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
