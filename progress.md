@@ -15,5 +15,5 @@
 - Validation: `bash -n tools/test-jcvmarray` passed. The first strict compile exposed a pre-existing ignored-qualifier warning on `size()`; after removing it, `./tools/test-jcvmarray` passed with `TEST:PASS jcvmarray_fill` under `-Wall -Wextra -Werror -pedantic`.
 - Result: All four elements received `0xBEEF`; zero-length fill completed without touching storage.
 - Decision: Retain the fix. Full ARM/RISC-V builds remain unavailable because the SDK, Rust OS and build tools are missing; no hardware run was attempted.
-- Commit: pending
+- Commit: `0d293ae`
 - Artifacts/logs: Test emits `TEST:PASS jcvmarray_fill` on success.
