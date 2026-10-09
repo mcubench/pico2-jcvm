@@ -34,6 +34,10 @@ requested software implementation without a physical device for now.
 - Added guards for transient/non-reference persistent arrays and index bounds
   in the child-reference writer. Its syntax check and the JCVM array test both
   pass; runtime persistence has not been verified. Commit: `7e04f97`.
+- Implemented Java-object `athrow` table dispatch across current and caller
+  frames, saving each frame's opcode address and restoring package context as
+  frames unwind. Syntax checks pass, but no runtime tests are possible yet;
+  native `Exceptions` mapping and uncaught status-word handling are still open.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 

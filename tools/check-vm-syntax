@@ -7,8 +7,12 @@ include_dir="$(mktemp -d)"
 trap 'rm -rf "${include_dir}"' EXIT
 sources=(
   "${repo_root}/choupi/src/jc_bytecodes/bc_static.cpp"
+  "${repo_root}/choupi/src/jc_bytecodes/bc_exceptions.cpp"
   "${repo_root}/choupi/src/jc_handlers/jc_static.cpp"
   "${repo_root}/choupi/src/jc_handlers/flashmemory.cpp"
+  "${repo_root}/choupi/src/frame.cpp"
+  "${repo_root}/choupi/src/interpretor.cpp"
+  "${repo_root}/choupi/src/stack.cpp"
 )
 
 # The Rust OS submodule that generates ffi.h is not populated in this
@@ -42,4 +46,4 @@ fi
 printf 'Host syntax compiler: %s\n' "$(command -v "${compiler}")"
 "${compiler}" -std=c++17 -Wall -Wextra -fsyntax-only \
   -I"${include_dir}" -I"${repo_root}/choupi/src" "${sources[@]}"
-printf 'TEST:PASS vm_static_reference_syntax\n'
+printf 'TEST:PASS vm_core_syntax\n'
