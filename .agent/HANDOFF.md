@@ -23,6 +23,9 @@ requested software implementation without a physical device for now.
 - `tools/doctor` now reports host build prerequisites, SDK presence, and
   dependency checkout status. It does not flash hardware.
 - Diagnostics and continuity setup are committed as `1616b59`.
+- Fixed `JCVMArray::fill()` to populate each element and removed the ignored
+  return qualifier from `size()`. The focused strict host test passed with
+  `TEST:PASS jcvmarray_fill`; see the latest `progress.md` entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 

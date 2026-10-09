@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+compiler="${CXX:-c++}"
+build_dir="$(mktemp -d)"
+trap 'rm -rf "${build_dir}"' EXIT
+
+if ! command -v "${compiler}" >/dev/null 2>&1; then
+  printf 'ERROR: C++ compiler not found: %s\n' "${compiler}" >&2
+  exit 1
+fi
+
+printf 'Host test compiler: %s\n' "$(command -v "${compiler}")"
+"${compiler}" -std=c++17 -Wall -Wextra -Werror -pedantic \
+  "${repo_root}/choupi/test/jcvmarray_test.cpp" \
+  -o "${build_dir}/jcvmarray_test"
+"${build_dir}/jcvmarray_test"
