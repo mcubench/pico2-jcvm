@@ -75,7 +75,7 @@ requested software implementation without a physical device for now.
   array payload, reports transient element counts correctly, and recognizes
   `CLEAR_ON_RESET`. Focused copy/move and transient-size tests pass; the latter
   uses AddressSanitizer with leak detection disabled due an environment-level
-  LeakSanitizer failure. Commit pending.
+  LeakSanitizer failure. Commit: `6fa7232`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
