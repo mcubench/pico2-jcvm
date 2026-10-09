@@ -87,7 +87,7 @@ requested software implementation without a physical device for now.
   the heap clears only transient arrays registered for the requested event. A
   focused ASan test verifies reset and deselect selection. The clear primitive
   is not yet called by lifecycle dispatch because that dispatch does not exist.
-  Commit SHA is being finalized in the latest progress entry.
+  Commit: `6d3630e`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
