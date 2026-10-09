@@ -52,20 +52,34 @@ requested software implementation without a physical device for now.
 - Fixed persistent instance class-index initialization and reference get/set
   behavior. Syntax passes; filesystem round-trip behavior is not validated.
   Commit: `a05147e`.
+- Persistent instances now retain their original filesystem tag separately
+  from their field storage, and `getFields()` lazily rebuilds typed field
+  values, including split-word ints and reference/array values. Setters also
+  keep cached field types and values aligned with serialized records. Syntax
+  and the array regression test pass. No persistence round-trip test is
+  possible without the filesystem implementation; missing child records still
+  cannot be typed from the current class metadata API.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
 ## Next action
 
-When the dependency sources and build environment are available, populate the
-pinned submodules (`654f374`, `ac9f752`, `d490faf`), verify the CHOUPI source
-revision, establish the host baseline, and begin WP1's Pico 2 CMake/startup
-branch. Until then, continue with VM-only work that can be safely inspected
-without the missing OS and SDK APIs; avoid claiming build validation.
+Continue WP5 by reviewing native exception mapping and APDU lifecycle code,
+then implement a coherent software-only step with available validation. The
+provided `tools/build` wrapper is currently absent, and calls for both
+architectures return status 127. When dependencies and build tools are
+restored, populate the pinned submodules (`654f374`, `ac9f752`, `d490faf`),
+verify the CHOUPI source revision, establish the host baseline, and begin WP1's
+Pico 2 CMake/startup branch.
 
 ## Latest validation
 
 - `bash -n tools/doctor`: passed.
 - `./tools/doctor`: returned 1 and reported the missing tools, SDK variable,
   and dependency checkout paths listed in `progress.md`.
+- Latest VM syntax check: `TEST:PASS vm_core_syntax`; existing upstream
+  warnings remain.
+- Latest `./tools/test-jcvmarray`: `TEST:PASS jcvmarray_fill`.
+- `./tools/build arm` and `./tools/build riscv`: wrapper absent; both calls
+  returned status 127.
 - Hardware validation: intentionally skipped; no device was requested yet.

@@ -127,6 +127,8 @@ public:
 #endif /* JCVM_INT_SUPPORTED */
   /// Get int data store in flash memory.
   static jref_t getPersistentField_Reference(const fs::Tag &tag, Heap &heap);
+  /// Read the serialized field type stored at a tag.
+  static FieldType getPersistentField_Type(const fs::Tag &tag);
   /// Store a persistent object or array reference under a tag.
   static void setPersistentField_Reference(const fs::Tag &tag,
                                            const jref_t value, Heap &heap);

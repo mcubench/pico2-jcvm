@@ -479,6 +479,15 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
   }
 }
 
+/** Return the stored representation of one persistent instance field. */
+FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &tag) {
+  auto [length, data] = FlashMemory_Handler::getDataInPlaceFromTag(tag);
+  if (length == 0) {
+    throw Exceptions::SecurityException;
+  }
+  return static_cast<FieldType>(data[0]);
+}
+
 /**
  * Persist a reference-valued static field.
  *
@@ -660,6 +669,12 @@ void FlashMemory_Handler::setPersistentField_Instance(
       break;
     }
 
+    case FieldType::FIELD_TYPE_UNINITIALIZED: {
+      FlashMemory_Handler::setPersistentField_Reference(field_tag, jref_t(),
+                                                        heap);
+      break;
+    }
+
     case FieldType::FIELD_TYPE_ARRAY_BYTE:
     case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
     case FieldType::FIELD_TYPE_ARRAY_SHORT:
@@ -686,7 +701,6 @@ void FlashMemory_Handler::setPersistentField_Instance(
       break;
     }
 
-    case FieldType::FIELD_TYPE_UNINITIALIZED:
     default:
       throw Exceptions::SecurityException;
     }

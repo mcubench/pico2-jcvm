@@ -84,14 +84,16 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
                          const jclass_index_t claz_index,
                          const fs::Tag &tag) noexcept
     : JC_Object(owner, true), packageID(packageID), claz(claz_index) {
-
-  jc_field_t field_tag[tag.len];
-
+  this->persistent_tag_length = tag.len;
   for (uint8_t idx = 0; idx < tag.len; idx++) {
-    field_tag[idx].value = tag.value[idx];
+    this->persistent_tag_value[idx] = tag.value[idx];
   }
 
-  this->fields = new JCVMArray<jc_field_t>(tag.len, field_tag);
+  Class_Handler class_handler(this->packageID);
+  const uint16_t fields_size =
+      class_handler.getInstanceFieldsSize(this->claz);
+  this->fields = new JCVMArray<jc_field_t>(fields_size);
+  this->persistent_fields_loaded = false;
 }
 
 /*
@@ -111,11 +113,9 @@ JC_Instance::~JC_Instance() noexcept {
 fs::Tag JC_Instance::recomputeOriginalTag() const noexcept {
   fs::Tag tag;
 
-  tag.len = this->fields->size();
-
-  for (decltype(this->fields->size()) idx = 0; idx < this->fields->size();
-       idx++) {
-    tag.value[idx] = static_cast<uint8_t>(this->fields->at(idx).value);
+  tag.len = this->persistent_tag_length;
+  for (uint8_t idx = 0; idx < tag.len; idx++) {
+    tag.value[idx] = this->persistent_tag_value[idx];
   }
 
   return tag;
@@ -260,6 +260,11 @@ const jref_t JC_Instance::getField_Reference(const uint16_t index) {
  */
 void JC_Instance::setField_Byte(uint16_t index, jbyte_t value) {
   if (this->isPersistent()) {
+    (void)this->getFields();
+  }
+  this->fields->at(index).type = FieldType::FIELD_TYPE_BYTE;
+  this->fields->at(index).value = static_cast<jword_t>(BYTE_TO_WORD(value));
+  if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
 
@@ -270,7 +275,6 @@ void JC_Instance::setField_Byte(uint16_t index, jbyte_t value) {
     // TODO: the instance data value type should be saved.
 #endif /* JCVM_TYPED_HEAP */
 
-    this->fields->at(index).value = (jword_t)(BYTE_TO_WORD(value));
   }
 }
 
@@ -282,6 +286,11 @@ void JC_Instance::setField_Byte(uint16_t index, jbyte_t value) {
  */
 void JC_Instance::setField_Short(const uint16_t index, const jshort_t value) {
   if (this->isPersistent()) {
+    (void)this->getFields();
+  }
+  this->fields->at(index).type = FieldType::FIELD_TYPE_SHORT;
+  this->fields->at(index).value = static_cast<jword_t>(value);
+  if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
 
@@ -292,7 +301,6 @@ void JC_Instance::setField_Short(const uint16_t index, const jshort_t value) {
     // TODO: the instance data value type should be saved.
 #endif /* JCVM_TYPED_HEAP */
 
-    this->fields->at(index).value = (jword_t)(value);
   }
 }
 
@@ -305,6 +313,15 @@ void JC_Instance::setField_Short(const uint16_t index, const jshort_t value) {
  */
 void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
   if (this->isPersistent()) {
+    (void)this->getFields();
+  }
+  this->fields->at(index).type = FieldType::FIELD_TYPE_INT;
+  this->fields->at(index).value = static_cast<jword_t>(INT_2_MSSHORTS(value));
+  this->fields->at(static_cast<uint16_t>(index + 1)).type =
+      FieldType::FIELD_TYPE_UNINITIALIZED;
+  this->fields->at(static_cast<uint16_t>(index + 1)).value =
+      static_cast<jword_t>(INT_2_LSSHORTS(value));
+  if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
 
@@ -315,9 +332,6 @@ void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
     // TODO: the instance data value type should be saved.
 #endif /* JCVM_TYPED_HEAP */
 
-    this->fields->at(index).value = (jword_t)(INT_2_MSSHORTS(value));
-    this->fields->at((uint16_t)(index + 1)).value =
-        (jword_t)(INT_2_LSSHORTS(value));
   }
 }
 
@@ -331,6 +345,49 @@ void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
  */
 void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
   if (this->isPersistent()) {
+    (void)this->getFields();
+  }
+  jc_field_t &field = this->fields->at(index);
+  field.value = static_cast<jword_t>(ref.compact());
+  if (ref.isNullPointer()) {
+    field.type = FieldType::FIELD_TYPE_UNINITIALIZED;
+  } else if (ref.isArray()) {
+    const auto array = this->getOwner().getArray(ref);
+    switch (array->getType()) {
+    case JAVA_ARRAY_T_BYTE:
+      field.type = array->isTransientArray()
+                       ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE
+                       : FieldType::FIELD_TYPE_ARRAY_BYTE;
+      break;
+    case JAVA_ARRAY_T_BOOLEAN:
+      field.type = array->isTransientArray()
+                       ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN
+                       : FieldType::FIELD_TYPE_ARRAY_BOOLEAN;
+      break;
+    case JAVA_ARRAY_T_SHORT:
+      field.type = array->isTransientArray()
+                       ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT
+                       : FieldType::FIELD_TYPE_ARRAY_SHORT;
+      break;
+#ifdef JCVM_INT_SUPPORTED
+    case JAVA_ARRAY_T_INT:
+      field.type = array->isTransientArray()
+                       ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT
+                       : FieldType::FIELD_TYPE_ARRAY_INT;
+      break;
+#endif /* JCVM_INT_SUPPORTED */
+    case JAVA_ARRAY_T_REFERENCE:
+      field.type = array->isTransientArray()
+                       ? FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT
+                       : FieldType::FIELD_TYPE_ARRAY_OBJECT;
+      break;
+    default:
+      throw Exceptions::SecurityException;
+    }
+  } else {
+    field.type = FieldType::FIELD_TYPE_OBJECT;
+  }
+  if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
     FlashMemory_Handler::setPersistentField_Reference(tag, ref,
@@ -341,7 +398,6 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
     // TODO: the instance data value type should be saved.
 #endif /* JCVM_TYPED_HEAP */
 
-    this->fields->at(index).value = (jword_t)(ref.compact());
   }
 }
 
@@ -366,12 +422,67 @@ auto JC_Instance::getNumberOfFields() const noexcept
  *
  * @return the number of instance field.
  */
-auto JC_Instance::getFields() const noexcept -> decltype(fields) {
-  if (this->isPersistent()) {
-    throw Exceptions::NotYetImplemented;
-  } else {
+auto JC_Instance::getFields() const -> decltype(fields) {
+  if (!this->isPersistent() || this->persistent_fields_loaded) {
     return this->fields;
   }
+
+  for (uint16_t index = 0; index < this->fields->size(); index++) {
+    const fs::Tag field_tag = FlashMemory_Handler::computeTag(
+        this->recomputeOriginalTag(), index);
+    jc_field_t &field = this->fields->at(index);
+    field.type = FlashMemory_Handler::getPersistentField_Type(field_tag);
+
+    switch (field.type) {
+    case FieldType::FIELD_TYPE_BYTE:
+    case FieldType::FIELD_TYPE_BOOLEAN:
+      field.value = static_cast<jword_t>(
+          BYTE_TO_WORD(FlashMemory_Handler::getPersistentField_Byte(field_tag)));
+      break;
+    case FieldType::FIELD_TYPE_SHORT:
+      field.value = static_cast<jword_t>(
+          FlashMemory_Handler::getPersistentField_Short(field_tag));
+      break;
+#ifdef JCVM_INT_SUPPORTED
+    case FieldType::FIELD_TYPE_INT: {
+      const jint_t value = FlashMemory_Handler::getPersistentField_Int(field_tag);
+      field.value = static_cast<jword_t>(INT_2_MSSHORTS(value));
+      if (index + 1 >= this->fields->size()) {
+        throw Exceptions::SecurityException;
+      }
+      this->fields->at(++index).type = FieldType::FIELD_TYPE_UNINITIALIZED;
+      this->fields->at(index).value =
+          static_cast<jword_t>(INT_2_LSSHORTS(value));
+      break;
+    }
+#endif /* JCVM_INT_SUPPORTED */
+    case FieldType::FIELD_TYPE_OBJECT:
+    case FieldType::FIELD_TYPE_ARRAY_BYTE:
+    case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
+    case FieldType::FIELD_TYPE_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+    case FieldType::FIELD_TYPE_ARRAY_INT:
+#endif /* JCVM_INT_SUPPORTED */
+    case FieldType::FIELD_TYPE_ARRAY_OBJECT:
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
+#endif /* JCVM_INT_SUPPORTED */
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT:
+    case FieldType::FIELD_TYPE_UNINITIALIZED:
+      field.value = static_cast<jword_t>(
+          FlashMemory_Handler::getPersistentField_Reference(
+              field_tag, const_cast<JC_Instance *>(this)->getOwner())
+              .compact());
+      break;
+    default:
+      throw Exceptions::SecurityException;
+    }
+  }
+  this->persistent_fields_loaded = true;
+  return this->fields;
 }
 
 } // namespace jcvm

@@ -87,3 +87,13 @@
 - Decision: Retain the fixes and continue with other VM runtime gaps. Full target builds and hardware validation are still unavailable.
 - Commit: `a05147e`
 - Artifacts/logs: `/tmp/vm-syntax.log`; no hardware log
+
+## 2026-10-09 — Load persistent instance fields
+
+- Step/experiment: `wp5-persistent-instance-fields`
+- Change: Separated persistent object tags from the in-memory field vector and implemented lazy reconstruction of stored byte, boolean, short, int, reference, and array fields. Field setters now keep the cached type/value representation in sync, including null references and the two-word int layout.
+- Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`; `./tools/test-jcvmarray` passed with `TEST:PASS jcvmarray_fill`. `./tools/build arm` and `./tools/build riscv` could not run because the instructed `tools/build` wrapper is absent (status 127). Hardware validation was intentionally skipped; no device was requested.
+- Result: VM translation units pass syntax checking, with pre-existing upstream warnings. Filesystem round-trip behavior is not measured because the filesystem submodule and runtime are absent. Missing child records cannot be typed using the current class metadata API.
+- Decision: Retain the lazy field reconstruction and proceed to the remaining exception/APDU lifecycle gaps. Full target builds and hardware validation remain blocked by the missing build wrapper, toolchain, SDK, and OS sources.
+- Commit: `<pending>`
+- Artifacts/logs: `/tmp/pico2-vm-syntax.log`; no hardware log
