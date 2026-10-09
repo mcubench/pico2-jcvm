@@ -96,7 +96,9 @@ requested software implementation without a physical device for now.
 - Implemented `arrayCompareGeneric` for byte arrays with range checks, signed
   Java byte comparison, and ternary results. The focused ASan test covers equality,
   signed-byte boundary ordering, and normal less-than ordering. SensitiveResult
-  tracking is not implemented. Commit: `92ef957`.
+  tracking is not implemented. Commit: `92ef957`. A follow-up checked the
+  Java Card primitive ordering and corrected the comparison to signed bytes;
+  that correction is committed as `e088119`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 

@@ -175,5 +175,5 @@
 - Validation: `./tools/test-jcarray` and `./tools/check-vm-syntax` passed. The syntax check reports existing upstream warnings. ARM and RISC-V build wrappers are absent (both returned 127); hardware validation was intentionally skipped.
 - Result: The implementation follows Java Card's byte primitive ordering; Oracle's `Util.arrayCompare` API specifies the ternary result but does not explicitly state signedness, so the signed interpretation follows Java's signed `byte` type.
 - Decision: Keep signed comparison and continue with the remaining utility natives.
-- Commit: `pending`
+- Commit: `e088119`
 - Artifacts/logs: no archived logs; focused test emitted `TEST:PASS jni_array_compare`
