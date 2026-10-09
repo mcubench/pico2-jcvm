@@ -65,7 +65,7 @@ Interpretor::Interpretor(
 /**
  * Runs the Java Card interpretor.
  */
-void Interpretor::run() noexcept {
+uint16_t Interpretor::run() noexcept {
 
   Context &context = this->getCurrentContext();
   Package package = context.getCurrentPackage();
@@ -116,10 +116,14 @@ void Interpretor::run() noexcept {
       (bytecodes.*bc)();
     } catch (Exceptions e) {
       this->startJCVMException(e);
+      return this->status_word;
     } catch (...) {
       this->startJCVMException(Exceptions::SecurityException);
+      return this->status_word;
     }
   }
+
+  return this->status_word;
 }
 
 /**
@@ -239,9 +243,7 @@ void Interpretor::startJCVMException(Exceptions e) {
 #ifdef PC_VERSION
   TRACE_JCVM_ERR("^C to stop the program execution ...");
 #endif /* PC_VERSION */
-
-  while (1) {
-  }
+  this->status_word = 0x6F00;
 }
 
 } // namespace jcvm

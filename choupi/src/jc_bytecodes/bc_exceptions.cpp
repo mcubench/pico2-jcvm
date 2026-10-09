@@ -162,6 +162,10 @@ void Bytecodes::doThrow(jref_t objectref) {
       this->context.backToPreviousPackageID();
     }
   }
+
+  // An exception with no matching handler must not look like normal method
+  // completion to the interpreter.
+  throw Exceptions::SecurityException;
 }
 
 } // namespace jcvm

@@ -97,3 +97,13 @@
 - Decision: Retain the lazy field reconstruction and proceed to the remaining exception/APDU lifecycle gaps. Full target builds and hardware validation remain blocked by the missing build wrapper, toolchain, SDK, and OS sources.
 - Commit: `5263602`
 - Artifacts/logs: `/tmp/pico2-vm-syntax.log`; no hardware log
+
+## 2026-10-09 — Return status for uncaught VM exceptions
+
+- Step/experiment: `wp5-uncaught-exception-status`
+- Change: Replaced the interpreter's infinite uncaught-exception loop with status word `0x6F00`. `Interpretor::run()` returns its status, `runtime()` propagates it, and an `athrow` that exhausts all frames is distinguished from normal method completion.
+- Validation: `./tools/check-vm-syntax` passed with `TEST:PASS vm_core_syntax`; `./tools/test-jcvmarray` passed with `TEST:PASS jcvmarray_fill`. Both instructed builds were attempted but `./tools/build` is absent (status 127 for ARM and RISC-V). Hardware validation was intentionally skipped.
+- Result: Uncaught C++ VM exceptions and unmatched Java `athrow` paths now return `0x6F00` from the runtime entry instead of hanging. Runtime/APDU delivery is not yet connected, and VM exceptions are not yet materialized as Java objects. No runtime measurement was possible.
+- Decision: Retain the failure status path and continue WP5 with Java exception mapping and APDU integration.
+- Commit: `<pending>`
+- Artifacts/logs: `/tmp/pico2-vm-syntax.log`; no hardware log

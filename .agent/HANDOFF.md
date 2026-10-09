@@ -59,18 +59,21 @@ requested software implementation without a physical device for now.
   and the array regression test pass. No persistence round-trip test is
   possible without the filesystem implementation; missing child records still
   cannot be typed from the current class metadata API. Commit: `5263602`.
+- The interpreter no longer spins forever after a VM-internal exception.
+  `run()` returns `0x6F00` on an uncaught VM exception, including an `athrow`
+  with no matching handler, and the C runtime entry returns that status. This
+  still does not map VM exceptions to Java objects or send a status over APDU.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
 ## Next action
 
-Continue WP5 by reviewing native exception mapping and APDU lifecycle code,
-then implement a coherent software-only step with available validation. The
-provided `tools/build` wrapper is currently absent, and calls for both
-architectures return status 127. When dependencies and build tools are
-restored, populate the pinned submodules (`654f374`, `ac9f752`, `d490faf`),
-verify the CHOUPI source revision, establish the host baseline, and begin WP1's
-Pico 2 CMake/startup branch.
+Continue WP5 by implementing VM-internal exception-to-Java-object mapping and
+the Java API/APDU pieces. Then establish a host golden applet harness before
+starting WP6. The provided `tools/build` wrapper is currently absent, and
+calls for both architectures return status 127. When dependencies and build
+tools are restored, populate the pinned submodules (`654f374`, `ac9f752`,
+`d490faf`), verify the CHOUPI source revision, and establish the host baseline.
 
 ## Latest validation
 
@@ -82,4 +85,6 @@ Pico 2 CMake/startup branch.
 - Latest `./tools/test-jcvmarray`: `TEST:PASS jcvmarray_fill`.
 - `./tools/build arm` and `./tools/build riscv`: wrapper absent; both calls
   returned status 127.
+- Latest interpreter exception/status step: `./tools/check-vm-syntax` passed
+  with `TEST:PASS vm_core_syntax`; `./tools/test-jcvmarray` passed.
 - Hardware validation: intentionally skipped; no device was requested yet.
