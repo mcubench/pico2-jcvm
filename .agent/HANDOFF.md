@@ -38,6 +38,7 @@ requested software implementation without a physical device for now.
   frames, saving each frame's opcode address and restoring package context as
   frames unwind. Syntax checks pass, but no runtime tests are possible yet;
   native `Exceptions` mapping and uncaught status-word handling are still open.
+  Commit: `476a938`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
