@@ -225,5 +225,5 @@
 - Validation: `./tools/test-jcarray` passed its linked ASan suite, including the channel fallback. `./tools/check-vm-syntax` passed with existing upstream warnings. ARM and RISC-V build wrappers are absent (both returned 127); hardware validation was intentionally skipped.
 - Result: Basic-channel calls no longer raise `NotYetImplemented`. Additional logical channels remain unsupported.
 - Decision: Keep channel 0 as the only supported channel and continue with remaining runtime integration gaps.
-- Commit: `pending`
+- Commit: `657e589`
 - Artifacts/logs: no archived logs; test emitted `TEST:PASS jni_basic_channel_fallback`

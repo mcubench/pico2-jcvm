@@ -116,7 +116,7 @@ requested software implementation without a physical device for now.
   this must become stateful with lifecycle dispatch. Commit: `3446422`.
 - Implemented `getAssignedChannel()` as channel 0 for the single-channel
   transport. The linked ASan test verifies it; logical channels are not
-  supported. Commit SHA is being finalized in the latest progress entry.
+  supported. Commit: `657e589`.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
