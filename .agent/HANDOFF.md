@@ -49,6 +49,8 @@ requested software implementation without a physical device for now.
   Syntax checks pass, but `JC_Instance::getFields()` still cannot reconstruct
   a persistent object's typed field vector; this remains open for WP5. Commit:
   `a740f5e`.
+- Fixed persistent instance class-index initialization and reference get/set
+  behavior. Syntax passes; filesystem round-trip behavior is not validated.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
