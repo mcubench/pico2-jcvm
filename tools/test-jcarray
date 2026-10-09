@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+compiler="${CXX:-c++}"
+build_dir="$(mktemp -d)"
+trap 'rm -rf "${build_dir}"' EXIT
+
+cat >"${build_dir}/ffi.h" <<'EOF'
+#pragma once
+extern "C" {
+int fs_length(...);
+int fs_read(...);
+int fs_read_inplace(...);
+int fs_write(...);
+int fs_read_1b_at(...);
+int fs_read_2b_at(...);
+int fs_read_4b_at(...);
+int fs_write_1b_at(...);
+int fs_write_2b_at(...);
+int fs_write_4b_at(...);
+void path_applet_field(...);
+void path_cap(...);
+void path_package_list(...);
+void path_static(...);
+}
+EOF
+
+cat >"${build_dir}/filesystem_stub.cpp" <<'EOF'
+#include <cstdint>
+extern "C" int fs_length(const uint8_t *, uint8_t, uint32_t *) {
+  return 0;
+}
+EOF
+
+if ! command -v "${compiler}" >/dev/null 2>&1; then
+  printf 'ERROR: C++ compiler not found: %s\n' "${compiler}" >&2
+  exit 1
+fi
+
+"${compiler}" -std=c++17 -Wall -Wextra -ffunction-sections -fdata-sections \
+  -fsanitize=address -I"${build_dir}" -I"${repo_root}/choupi/src" \
+  "${repo_root}/choupi/test/jcarray_transient_test.cpp" \
+  "${repo_root}/choupi/src/jc_types/jc_array.cpp" \
+  "${repo_root}/choupi/src/jc_types/jc_object.cpp" \
+  "${repo_root}/choupi/src/heap.cpp" "${build_dir}/filesystem_stub.cpp" \
+  -Wl,--gc-sections -o "${build_dir}/jcarray_transient_test"
+ASAN_OPTIONS=detect_leaks=0 "${build_dir}/jcarray_transient_test"

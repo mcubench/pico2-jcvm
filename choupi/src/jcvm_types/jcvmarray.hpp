@@ -31,6 +31,8 @@
 #include "../jc_config.h"
 #include "../types.hpp"
 
+#include <type_traits>
+
 #ifdef JCVM_ARRAY_SIZE_CHECK
 #include "../exceptions.hpp"
 #endif /* JCVM_ARRAY_SIZE_CHECK */
@@ -43,12 +45,23 @@ private:
   bool allocated_data;
   T *array;
 
+  void release() noexcept {
+    if (this->allocated_data) {
+      delete[] this->array;
+    }
+    this->array = nullptr;
+    this->length = 0;
+    this->allocated_data = false;
+  }
+
 public:
   /*
    * Default class constructor.
    */
   JCVMArray(const uint16_t length) noexcept {
     this->length = length;
+    this->array = nullptr;
+    this->allocated_data = false;
 
     if (this->length > 0) {
       this->array = new T[length]{};
@@ -64,13 +77,76 @@ public:
     this->allocated_data = false;
   }
 
+  JCVMArray(const uint16_t length, T *data, const bool take_ownership) noexcept {
+    this->length = length;
+    this->array = data;
+    this->allocated_data = take_ownership;
+  }
+
+  JCVMArray(const JCVMArray &other) {
+    this->length = other.length;
+    this->array = nullptr;
+    this->allocated_data = false;
+
+    if constexpr (std::is_const_v<T>) {
+      this->array = other.array;
+    } else if (this->length > 0) {
+      this->array = new T[this->length];
+      this->allocated_data = true;
+      for (uint16_t index = 0; index < this->length; ++index) {
+        this->array[index] = other.array[index];
+      }
+    }
+  }
+
+  JCVMArray(JCVMArray &&other) noexcept
+      : length(other.length), allocated_data(other.allocated_data),
+        array(other.array) {
+    other.length = 0;
+    other.allocated_data = false;
+    other.array = nullptr;
+  }
+
+  JCVMArray &operator=(const JCVMArray &other) {
+    if (this == &other) {
+      return *this;
+    }
+
+    this->release();
+    this->length = other.length;
+
+    if constexpr (std::is_const_v<T>) {
+      this->array = other.array;
+    } else if (this->length > 0) {
+      this->array = new T[this->length];
+      this->allocated_data = true;
+      for (uint16_t index = 0; index < this->length; ++index) {
+        this->array[index] = other.array[index];
+      }
+    }
+    return *this;
+  }
+
+  JCVMArray &operator=(JCVMArray &&other) noexcept {
+    if (this == &other) {
+      return *this;
+    }
+
+    this->release();
+    this->length = other.length;
+    this->allocated_data = other.allocated_data;
+    this->array = other.array;
+    other.length = 0;
+    other.allocated_data = false;
+    other.array = nullptr;
+    return *this;
+  }
+
   /*
    * Default class destructor.
    */
   ~JCVMArray() noexcept {
-    if (this->allocated_data) {
-      delete[] this->array;
-    }
+    this->release();
   }
 
   /*

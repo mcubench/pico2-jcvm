@@ -117,3 +117,13 @@
 - Decision: Retain the honest capability values; transaction operations still require atomic persistence support.
 - Commit: `53660ca`
 - Artifacts/logs: `/tmp/pico2-vm-syntax.log`; no hardware log
+
+## 2026-10-09 — Fix Java Card array storage ownership
+
+- Step/experiment: `wp5-transient-array-storage`
+- Change: Added safe deep-copy/move ownership to mutable `JCVMArray` instances while retaining non-owning `const` CAP views. `JC_Array` now frees its backing storage once, allocates the full persistent tagged payload, returns correct transient element counts, and names the reset clear event `CLEAR_ON_RESET`.
+- Validation: `./tools/test-jcvmarray` passed `jcvmarray_fill` and `jcvmarray_copy_move`. `./tools/test-jcarray` passed `TEST:PASS jcarray_transient_size` under AddressSanitizer with LeakSanitizer disabled because LeakSanitizer fails in this environment. `./tools/check-vm-syntax` passed. ARM and RISC-V build attempts returned 127 because `tools/build` is absent; hardware validation was intentionally skipped.
+- Result: Mutable copies no longer alias backing storage, moved-from arrays become empty, read-only CAP views remain views, transient byte/short arrays report their requested element counts, and sanitizer checks found no double-free or out-of-bounds access in the focused transient-size case.
+- Decision: Retain the ownership and sizing fixes; next connect native array creation to the active execution context and implement actual clear-event lifecycle behavior.
+- Commit: `<pending>`
+- Artifacts/logs: no archived logs; test wrappers emitted the PASS records above

@@ -69,17 +69,25 @@ requested software implementation without a physical device for now.
   AlgTest's system-information path queries maximum commit capacity. Mutating
   transaction calls remain unimplemented. Syntax and array regression checks
   pass; target builds remain unavailable. Commit: `53660ca`.
+- Fixed `JCVMArray` ownership semantics for mutable copies and moves while
+  preserving non-owning read-only CAP views. `JC_Array` now lets its backing
+  buffer owner free storage exactly once, allocates the full tagged persistent
+  array payload, reports transient element counts correctly, and recognizes
+  `CLEAR_ON_RESET`. Focused copy/move and transient-size tests pass; the latter
+  uses AddressSanitizer with leak detection disabled due an environment-level
+  LeakSanitizer failure. Commit pending.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
 ## Next action
 
-Continue WP5 by implementing VM-internal exception-to-Java-object mapping and
-the Java API/APDU pieces. Then establish a host golden applet harness before
-starting WP6. The provided `tools/build` wrapper is currently absent, and
-calls for both architectures return status 127. When dependencies and build
-tools are restored, populate the pinned submodules (`654f374`, `ac9f752`,
-`d490faf`), verify the CHOUPI source revision, and establish the host baseline.
+Continue WP5 by binding native calls to the active context, then implement
+transient-array creation and lifecycle clearing. VM-internal exception mapping
+and the Java API/APDU pieces remain open. The provided `tools/build` wrapper is
+currently absent, and calls for both architectures return status 127. When
+dependencies and build tools are restored, populate the pinned submodules
+(`654f374`, `ac9f752`, `d490faf`), verify the CHOUPI source revision, and
+establish the host baseline.
 
 ## Latest validation
 
@@ -93,4 +101,7 @@ tools are restored, populate the pinned submodules (`654f374`, `ac9f752`,
   returned status 127.
 - Latest interpreter exception/status step: `./tools/check-vm-syntax` passed
   with `TEST:PASS vm_core_syntax`; `./tools/test-jcvmarray` passed.
+- Latest array storage step: `./tools/test-jcvmarray` passed its fill and
+  copy/move checks; `./tools/test-jcarray` passed `TEST:PASS
+  jcarray_transient_size` under AddressSanitizer (LeakSanitizer disabled).
 - Hardware validation: intentionally skipped; no device was requested yet.
