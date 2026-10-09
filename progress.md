@@ -157,3 +157,13 @@
 - Decision: Retain the primitive copy implementation and continue with the compare/fill utilities used by Java Card `Util`.
 - Commit: `8e92ec1`
 - Artifacts/logs: no archived logs; focused tests emitted the PASS records above
+
+## 2026-10-09 — Implement native byte array comparison
+
+- Step/experiment: `wp5-native-array-compare`
+- Change: Implemented `arrayCompareGeneric` for byte arrays with null/range checking and Java Card ternary comparison results. Bytes compare as unsigned values; incompatible types raise `SecurityException`.
+- Validation: `./tools/test-jcarray` passed native comparison checks, including ordering `0x01` before `0xFF`, alongside transient clear and copy cases. `./tools/check-vm-syntax` and `./tools/test-jcvmarray` passed. Both target build commands returned 127 because `tools/build` is absent. Hardware validation was intentionally skipped.
+- Result: Java Card byte-array compare semantics now have a tested native path. Comparison does not include Java Card `SensitiveResult` tracking.
+- Decision: Continue with the pattern-based fill helper and then resolve the remaining AlgTest native/API dependencies.
+- Commit: `pending`
+- Artifacts/logs: no archived logs; focused tests emitted the PASS records above

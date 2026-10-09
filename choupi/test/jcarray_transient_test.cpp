@@ -8,6 +8,8 @@
 namespace jcvm {
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
     jref_t, jshort_t, jshort_t, jref_t, jshort_t);
+jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
+    jref_t, jshort_t, jref_t, jshort_t, jshort_t);
 }
 
 int main() {
@@ -33,6 +35,7 @@ int main() {
   for (uint16_t index = 0; index < shorts.size(); ++index) {
     shorts.setShortEntry(index, static_cast<jcvm::jshort_t>(index + 1));
   }
+  bytes.setByteEntry(6, static_cast<jcvm::jbyte_t>(0xFF));
 
   const jcvm::jref_t bytesRef = heap.addArray(bytes);
   const jcvm::jref_t shortsRef = heap.addArray(shorts);
@@ -59,6 +62,16 @@ int main() {
       std::cerr << "negative array copy offset raised the wrong exception\n";
       return 1;
     }
+  }
+
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
+          bytesRef, 0, bytesRef, 0, 6) != 0 ||
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
+          bytesRef, 0, bytesRef, 1, 1) >= 0 ||
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
+          bytesRef, 0, bytesRef, 6, 1) >= 0) {
+    std::cerr << "byte array comparison returned an incorrect ordering\n";
+    return 1;
   }
 
   try {
@@ -92,5 +105,6 @@ int main() {
   std::cout << "TEST:PASS jcarray_clear_events\n";
   std::cout << "TEST:PASS jni_array_copy_overlap\n";
   std::cout << "TEST:PASS jni_array_copy_errors\n";
+  std::cout << "TEST:PASS jni_array_compare\n";
   return 0;
 }

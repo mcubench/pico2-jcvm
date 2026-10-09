@@ -93,13 +93,18 @@ requested software implementation without a physical device for now.
   snapshots input to preserve overlap semantics. Focused ASan tests cover an
   overlapping byte copy plus bounds/type errors. Reference copying remains
   unsupported; transaction atomicity is unavailable. Commit: `8e92ec1`.
+- Implemented `arrayCompareGeneric` for byte arrays with range checks, unsigned
+  comparison, and ternary results. The focused ASan test covers equality,
+  signed-byte boundary ordering, and normal less-than ordering. SensitiveResult
+  tracking is not implemented. Commit SHA is being finalized in the latest
+  progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
 ## Next action
 
-Continue WP5 with native compare/fill utilities used by AlgTest (`Util` array
-operations and `JCSystem` queries). Wire the transient clear primitive into
+Continue WP5 with the pattern-based fill helper and remaining native utilities
+used by AlgTest (`Util` array operations and `JCSystem` queries). Wire the transient clear primitive into
 select/deselect/reset dispatch when that lifecycle layer is introduced.
 VM-internal exception
 mapping and the Java API/APDU pieces remain open. The provided `tools/build` wrapper is
@@ -132,4 +137,7 @@ establish the host baseline.
 - Latest native array-copy step: focused ASan tests passed overlap and error
   cases; syntax and JCVM array tests passed; both target build calls returned
   127 because the wrapper is absent.
+- Latest native array-compare step: focused ASan comparison checks, including
+  unsigned byte ordering, passed; syntax checks passed; target build wrappers
+  returned 127 because the wrapper is absent.
 - Hardware validation: intentionally skipped; no device was requested yet.

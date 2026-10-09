@@ -165,9 +165,32 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGenericNonAtomic(
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
-    jref_t, jshort_t, jref_t, jshort_t, jshort_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+    const jref_t firstRef, const jshort_t firstOffset,
+    const jref_t secondRef, const jshort_t secondOffset,
+    const jshort_t length) {
+  Heap &heap = Context::getActiveContext().getHeap();
+  auto first = heap.getArray(firstRef);
+  auto second = heap.getArray(secondRef);
+  checkArrayRange(*first, firstOffset, length);
+  checkArrayRange(*second, secondOffset, length);
+  if (first->getType() != JAVA_ARRAY_T_BYTE ||
+      second->getType() != JAVA_ARRAY_T_BYTE) {
+    throw Exceptions::SecurityException;
+  }
+
+  for (jshort_t index = 0; index < length; ++index) {
+    const auto firstByte = static_cast<uint8_t>(first->getByteEntry(
+        static_cast<uint16_t>(firstOffset + index)));
+    const auto secondByte = static_cast<uint8_t>(second->getByteEntry(
+        static_cast<uint16_t>(secondOffset + index)));
+    if (firstByte < secondByte) {
+      return -1;
+    }
+    if (firstByte > secondByte) {
+      return 1;
+    }
+  }
+  return 0;
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
