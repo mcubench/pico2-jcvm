@@ -28,8 +28,27 @@ EOF
 
 cat >"${build_dir}/filesystem_stub.cpp" <<'EOF'
 #include <cstdint>
+#include "jc_handlers/flashmemory.hpp"
 extern "C" int fs_length(const uint8_t *, uint8_t, uint32_t *) {
   return 0;
+}
+
+namespace jcvm {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+const jbyte_t FlashMemory_Handler::getPersistentField_Array_Byte(
+    const fs::Tag &, const uint16_t, Heap &) { return 0; }
+void FlashMemory_Handler::setPersistentField_Array_Byte(
+    const fs::Tag &, const uint16_t, const jbyte_t, Heap &) {}
+const jshort_t FlashMemory_Handler::getPersistentField_Array_Short(
+    const fs::Tag &, const uint16_t, Heap &) { return 0; }
+void FlashMemory_Handler::setPersistentField_Array_Short(
+    const fs::Tag &, const uint16_t, const jshort_t, Heap &) {}
+const jint_t FlashMemory_Handler::getPersistentField_Array_Int(
+    const fs::Tag &, const uint16_t, Heap &) { return 0; }
+void FlashMemory_Handler::setPersistentField_Array_Int(
+    const fs::Tag &, const uint16_t, const jint_t, Heap &) {}
+#pragma GCC diagnostic pop
 }
 EOF
 
@@ -43,6 +62,7 @@ fi
   "${repo_root}/choupi/test/jcarray_transient_test.cpp" \
   "${repo_root}/choupi/src/jc_types/jc_array.cpp" \
   "${repo_root}/choupi/src/jc_types/jc_object.cpp" \
+  "${repo_root}/choupi/src/jc_types/jref_t.cpp" \
   "${repo_root}/choupi/src/heap.cpp" "${build_dir}/filesystem_stub.cpp" \
   -Wl,--gc-sections -o "${build_dir}/jcarray_transient_test"
 ASAN_OPTIONS=detect_leaks=0 "${build_dir}/jcarray_transient_test"

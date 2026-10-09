@@ -691,4 +691,15 @@ const ClearEvent JC_Array::getClearEvent() const noexcept {
   return this->clear;
 }
 
+/**
+ * Clear transient array contents to the Java Card default value.
+ */
+void JC_Array::clearTransientData() {
+  if (!this->isTransientArray()) {
+    throw Exceptions::SecurityException;
+  }
+
+  this->array.fill(0);
+}
+
 } // namespace jcvm

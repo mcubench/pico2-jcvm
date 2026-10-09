@@ -170,6 +170,8 @@ public:
 
   /// Get clear event
   const ClearEvent getClearEvent() const noexcept;
+  /// Zero the contents of a transient array.
+  void clearTransientData();
 };
 
 } // namespace jcvm

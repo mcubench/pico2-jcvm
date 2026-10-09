@@ -83,14 +83,20 @@ requested software implementation without a physical device for now.
   Object transient arrays still lack reference-type metadata in their native
   signature, and actual reset/deselect clearing awaits lifecycle hooks. Commit:
   `e56d14f`.
+- Added `JC_Array::clearTransientData()` and `Heap::clearTransientArrays(event)`;
+  the heap clears only transient arrays registered for the requested event. A
+  focused ASan test verifies reset and deselect selection. The clear primitive
+  is not yet called by lifecycle dispatch because that dispatch does not exist.
+  Commit SHA is being finalized in the latest progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
 ## Next action
 
 Continue WP5 with the native utility methods used by AlgTest (`Util` array
-operations and `JCSystem` queries). Then wire transient clearing once applet
-select/deselect/reset lifecycle dispatch is introduced. VM-internal exception
+operations and `JCSystem` queries). Wire the transient clear primitive into
+select/deselect/reset dispatch when that lifecycle layer is introduced.
+VM-internal exception
 mapping and the Java API/APDU pieces remain open. The provided `tools/build` wrapper is
 currently absent, and calls for both architectures return status 127. When
 dependencies and build tools are restored, populate the pinned submodules
@@ -115,4 +121,7 @@ establish the host baseline.
 - Latest active-context/transient-native step: `./tools/check-vm-syntax`,
   `./tools/test-jcvmarray`, and `./tools/test-jcarray` passed; both target build
   wrapper calls returned 127 because `tools/build` is absent.
+- Latest transient-clear primitive step: `./tools/test-jcarray` passed both
+  `jcarray_transient_size` and `jcarray_clear_events`; syntax and JCVM array
+  tests passed; both target build wrapper calls returned 127.
 - Hardware validation: intentionally skipped; no device was requested yet.
