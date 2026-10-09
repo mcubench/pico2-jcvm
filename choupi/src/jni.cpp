@@ -234,8 +234,8 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
 }
 
 jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet() {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+  // The current VM has no applet selection lifecycle or pending-select state.
+  return FALSE;
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(

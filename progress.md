@@ -207,3 +207,13 @@
 - Decision: Continue with native system-memory reporting and the residual AlgTest API surface.
 - Commit: `bacd8fc`
 - Artifacts/logs: no archived logs; test emitted the PASS records above
+
+## 2026-10-09 — Report no pending applet selection
+
+- Step/experiment: `wp5-selecting-applet-static-entry`
+- Change: Implemented `selectingApplet()` to return `FALSE` while the VM has no applet selection lifecycle or pending-select state.
+- Validation: `./tools/test-jcarray` passed its linked ASan suite, including the selecting-applet fallback. `./tools/check-vm-syntax` passed with existing upstream warnings. ARM and RISC-V build wrappers are absent (both returned 127); hardware validation was intentionally skipped.
+- Result: Calls no longer raise `NotYetImplemented` in the current static-entry execution model. The result must become stateful when applet selection is added.
+- Decision: Keep the conservative fallback and continue with remaining required natives and lifecycle integration.
+- Commit: `pending`
+- Artifacts/logs: no archived logs; test emitted `TEST:PASS jni_selecting_applet_fallback`

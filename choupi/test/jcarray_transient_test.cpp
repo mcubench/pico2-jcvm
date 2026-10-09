@@ -14,6 +14,7 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
     jref_t, jshort_t, jref_t, jshort_t, jshort_t);
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(jref_t);
+jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet();
 std::shared_ptr<JC_Array>
 fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(jshort_t,
                                                                    jbyte_t);
@@ -32,6 +33,11 @@ int main() {
   jcvm::Context context(0, 0);
   jcvm::Context::setActiveContext(&context);
   jcvm::Heap &heap = context.getHeap();
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet() !=
+      jcvm::FALSE) {
+    std::cerr << "selectingApplet reported a pending selection without a JCRE\n";
+    return 1;
+  }
   jcvm::JC_Array bytes(heap, 7, jcvm::JAVA_ARRAY_T_BYTE, true,
                        jcvm::CLEAR_ON_DESELECT);
   jcvm::JC_Array shorts(heap, 5, jcvm::JAVA_ARRAY_T_SHORT, true,
@@ -201,5 +207,6 @@ int main() {
   std::cout << "TEST:PASS jni_array_compare\n";
   std::cout << "TEST:PASS jni_array_fill_pattern\n";
   std::cout << "TEST:PASS jni_transient_factory\n";
+  std::cout << "TEST:PASS jni_selecting_applet_fallback\n";
   return 0;
 }

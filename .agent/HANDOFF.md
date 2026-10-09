@@ -111,6 +111,10 @@ requested software implementation without a physical device for now.
 - Expanded factory coverage to boolean, byte, short, and int arrays, including
   both valid clear events and `isTransient(null)`. All pass in the linked ASan
   host test. Object array creation remains unsupported. Commit: `bacd8fc`.
+- Implemented `selectingApplet()` as `FALSE` in the current runtime because it
+  has no applet selection or pending-select state. The linked ASan test passes;
+  this must become stateful with lifecycle dispatch. Commit SHA is being
+  finalized in the latest progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
@@ -160,4 +164,6 @@ establish the host baseline.
   wrappers were not rerun because only test files changed.
 - Latest primitive-factory coverage: linked ASan test passed all four primitive
   array types and null handling; only test code changed.
+- Latest selecting-applet fallback: linked ASan test and syntax check passed;
+  ARM and RISC-V build wrappers remain absent.
 - Hardware validation: intentionally skipped; no device was requested yet.
