@@ -88,12 +88,18 @@ requested software implementation without a physical device for now.
   focused ASan test verifies reset and deselect selection. The clear primitive
   is not yet called by lifecycle dispatch because that dispatch does not exist.
   Commit: `6d3630e`.
+- Implemented native primitive array copy for `arrayCopyRepack` and its
+  non-atomic counterpart. The path checks ranges and matching array types and
+  snapshots input to preserve overlap semantics. Focused ASan tests cover an
+  overlapping byte copy plus bounds/type errors. Reference copying remains
+  unsupported; transaction atomicity is unavailable. Commit SHA is being
+  finalized in the latest progress entry.
 - The requested `.agent/SESSION_CONTINUITY.md` was absent and has now been
   created. Root `progress.md` will be append-only.
 
 ## Next action
 
-Continue WP5 with the native utility methods used by AlgTest (`Util` array
+Continue WP5 with native compare/fill utilities used by AlgTest (`Util` array
 operations and `JCSystem` queries). Wire the transient clear primitive into
 select/deselect/reset dispatch when that lifecycle layer is introduced.
 VM-internal exception
@@ -124,4 +130,7 @@ establish the host baseline.
 - Latest transient-clear primitive step: `./tools/test-jcarray` passed both
   `jcarray_transient_size` and `jcarray_clear_events`; syntax and JCVM array
   tests passed; both target build wrapper calls returned 127.
+- Latest native array-copy step: focused ASan tests passed overlap and error
+  cases; syntax and JCVM array tests passed; both target build calls returned
+  127 because the wrapper is absent.
 - Hardware validation: intentionally skipped; no device was requested yet.

@@ -1,11 +1,19 @@
+#include "../src/context.hpp"
 #include "../src/heap.hpp"
 #include "../src/jc_types/jc_array.hpp"
 
 #include <cstdint>
 #include <iostream>
 
+namespace jcvm {
+jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+    jref_t, jshort_t, jshort_t, jref_t, jshort_t);
+}
+
 int main() {
-  jcvm::Heap heap(0);
+  jcvm::Context context(0, 0);
+  jcvm::Context::setActiveContext(&context);
+  jcvm::Heap &heap = context.getHeap();
   jcvm::JC_Array bytes(heap, 7, jcvm::JAVA_ARRAY_T_BYTE, true,
                        jcvm::CLEAR_ON_DESELECT);
   jcvm::JC_Array shorts(heap, 5, jcvm::JAVA_ARRAY_T_SHORT, true,
@@ -28,9 +36,45 @@ int main() {
 
   const jcvm::jref_t bytesRef = heap.addArray(bytes);
   const jcvm::jref_t shortsRef = heap.addArray(shorts);
+
+  const auto copyEnd =
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+          bytesRef, 0, 4, bytesRef, 2);
+  auto storedBytes = heap.getArray(bytesRef);
+  if (copyEnd != 6 || storedBytes->getByteEntry(0) != 1 ||
+      storedBytes->getByteEntry(1) != 2 ||
+      storedBytes->getByteEntry(2) != 1 ||
+      storedBytes->getByteEntry(5) != 4) {
+    std::cerr << "overlapping array copy did not preserve source values\n";
+    return 1;
+  }
+
+  try {
+    jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+        bytesRef, -1, 1, bytesRef, 0);
+    std::cerr << "negative array copy offset was accepted\n";
+    return 1;
+  } catch (jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::ArrayIndexOutOfBoundsException) {
+      std::cerr << "negative array copy offset raised the wrong exception\n";
+      return 1;
+    }
+  }
+
+  try {
+    jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+        bytesRef, 0, 1, shortsRef, 0);
+    std::cerr << "copy between incompatible array types was accepted\n";
+    return 1;
+  } catch (jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::ArrayStoreException) {
+      std::cerr << "incompatible array copy raised the wrong exception\n";
+      return 1;
+    }
+  }
+
   heap.clearTransientArrays(jcvm::CLEAR_ON_RESET);
 
-  auto storedBytes = heap.getArray(bytesRef);
   auto storedShorts = heap.getArray(shortsRef);
   if (storedBytes->getByteEntry(0) != 1 ||
       storedShorts->getShortEntry(0) != 0) {
@@ -46,5 +90,7 @@ int main() {
 
   std::cout << "TEST:PASS jcarray_transient_size\n";
   std::cout << "TEST:PASS jcarray_clear_events\n";
+  std::cout << "TEST:PASS jni_array_copy_overlap\n";
+  std::cout << "TEST:PASS jni_array_copy_errors\n";
   return 0;
 }

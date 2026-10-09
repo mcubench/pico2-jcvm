@@ -64,5 +64,8 @@ fi
   "${repo_root}/choupi/src/jc_types/jc_object.cpp" \
   "${repo_root}/choupi/src/jc_types/jref_t.cpp" \
   "${repo_root}/choupi/src/heap.cpp" "${build_dir}/filesystem_stub.cpp" \
+  "${repo_root}/choupi/src/context.cpp" \
+  "${repo_root}/choupi/src/stack.cpp" \
+  "${repo_root}/choupi/src/jni.cpp" \
   -Wl,--gc-sections -o "${build_dir}/jcarray_transient_test"
 ASAN_OPTIONS=detect_leaks=0 "${build_dir}/jcarray_transient_test"

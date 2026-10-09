@@ -32,6 +32,8 @@
 #include "jc_types/jref_t.hpp"
 #include "types.hpp"
 
+#include <vector>
+
 namespace jcvm {
 
 namespace {
@@ -58,18 +60,96 @@ std::shared_ptr<JC_Array> makeTransientArray(const jshort_t length,
       heap, static_cast<uint16_t>(length), type, true,
       getTransientClearEvent(event));
 }
+
+void checkArrayRange(const JC_Array &array, const jshort_t offset,
+                     const jshort_t length) {
+  if (offset < 0 || length < 0 ||
+      static_cast<uint32_t>(offset) + static_cast<uint32_t>(length) >
+          array.size()) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+}
+
+uint32_t readArrayElement(JC_Array &array, const uint16_t index) {
+  switch (array.getType()) {
+  case JAVA_ARRAY_T_BOOLEAN:
+  case JAVA_ARRAY_T_BYTE:
+    return static_cast<uint8_t>(array.getByteEntry(index));
+  case JAVA_ARRAY_T_SHORT:
+    return static_cast<uint16_t>(array.getShortEntry(index));
+#ifdef JCVM_INT_SUPPORTED
+  case JAVA_ARRAY_T_INT:
+    return static_cast<uint32_t>(array.getIntEntry(index));
+#endif
+  case JAVA_ARRAY_T_REFERENCE:
+    throw Exceptions::NotYetImplemented;
+  }
+
+  throw Exceptions::SecurityException;
+}
+
+void writeArrayElement(JC_Array &array, const uint16_t index,
+                       const uint32_t value) {
+  switch (array.getType()) {
+  case JAVA_ARRAY_T_BOOLEAN:
+  case JAVA_ARRAY_T_BYTE:
+    array.setByteEntry(index, static_cast<jbyte_t>(value));
+    return;
+  case JAVA_ARRAY_T_SHORT:
+    array.setShortEntry(index, static_cast<jshort_t>(value));
+    return;
+#ifdef JCVM_INT_SUPPORTED
+  case JAVA_ARRAY_T_INT:
+    array.setIntEntry(index, static_cast<jint_t>(value));
+    return;
+#endif
+  case JAVA_ARRAY_T_REFERENCE:
+    throw Exceptions::NotYetImplemented;
+  }
+
+  throw Exceptions::SecurityException;
+}
+
+jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
+                        const jshort_t length, const jref_t destinationRef,
+                        const jshort_t destinationOffset) {
+  Heap &heap = Context::getActiveContext().getHeap();
+  auto source = heap.getArray(sourceRef);
+  auto destination = heap.getArray(destinationRef);
+  checkArrayRange(*source, sourceOffset, length);
+  checkArrayRange(*destination, destinationOffset, length);
+  if (source->getType() != destination->getType()) {
+    throw Exceptions::ArrayStoreException;
+  }
+
+  std::vector<uint32_t> elements;
+  elements.reserve(static_cast<size_t>(length));
+  for (jshort_t index = 0; index < length; ++index) {
+    elements.push_back(readArrayElement(
+        *source, static_cast<uint16_t>(sourceOffset + index)));
+  }
+  for (jshort_t index = 0; index < length; ++index) {
+    writeArrayElement(*destination,
+                      static_cast<uint16_t>(destinationOffset + index),
+                      elements[static_cast<size_t>(index)]);
+  }
+
+  return static_cast<jshort_t>(destinationOffset + length);
+}
 } // namespace
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
-    jref_t, jshort_t, jshort_t, jref_t, jshort_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+    const jref_t source, const jshort_t sourceOffset, const jshort_t length,
+    const jref_t destination, const jshort_t destinationOffset) {
+  return copyArrayRange(source, sourceOffset, length, destination,
+                        destinationOffset);
 };
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepackNonAtomic(
-    jref_t, jshort_t, jshort_t, jref_t, jshort_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+    const jref_t source, const jshort_t sourceOffset, const jshort_t length,
+    const jref_t destination, const jshort_t destinationOffset) {
+  return copyArrayRange(source, sourceOffset, length, destination,
+                        destinationOffset);
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(

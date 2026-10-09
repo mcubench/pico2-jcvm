@@ -147,3 +147,13 @@
 - Decision: Keep the tested heap clearing primitive; connect it when select/deselect/reset dispatch is implemented, and continue filling the `Util` natives.
 - Commit: `6d3630e`
 - Artifacts/logs: no archived logs; focused tests emitted the PASS records above
+
+## 2026-10-09 — Implement primitive native array copying
+
+- Step/experiment: `wp5-native-array-copy`
+- Change: Implemented overlapping-range-safe `arrayCopyRepack` and its non-atomic counterpart for same-type primitive arrays, with negative/range checks and incompatible-type errors. The copy snapshots source values before writing, so overlapping copies behave correctly. Reference-array copying remains unimplemented because it requires firewall class compatibility handling.
+- Validation: `./tools/test-jcarray` passed transient sizing, clear-event selection, overlapping native copy, and invalid-copy error checks under AddressSanitizer with leak detection disabled. `./tools/check-vm-syntax` and `./tools/test-jcvmarray` passed. ARM and RISC-V build wrappers are absent (both commands returned 127); hardware validation was intentionally skipped.
+- Result: Primitive array copying now works through the active applet heap, including self-overlap. Persistent array atomicity is not guaranteed because transactions are not implemented.
+- Decision: Retain the primitive copy implementation and continue with the compare/fill utilities used by Java Card `Util`.
+- Commit: `pending`
+- Artifacts/logs: no archived logs; focused tests emitted the PASS records above
