@@ -435,7 +435,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed with their RP2350 UF2 checks. `./tools/cycle choupi` flashed the Pico 2 and captured the 18-second serial window, then returned failure because startup still hit the overlay limit.
 - Result: The same startup workload reached 4,096 records and 20,754/131,072 bytes, then failed writing a 6-byte record at tag length 27 (`0214020101000000…`). Skipping absent null references did not change the dominant record growth. Runtime returned exception 5 at opcode `0x7F`, status `6F00`; no `TEST:PASS` was observed.
 - Decision: Trace nested object/array persistence at deep tags to find why startup expands thousands of records before increasing capacity further. The supplied CAP remains uninstalled.
-- Commit: pending
+- Commit: `f9add8b`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T095555Z.log` (SHA-256 `5f0fe823120a2db9cfc7fd09598c2a17106942f82df07883a8c6688615fbd9e4`)
 
 ## 2026-10-10 — Compress nested CHOUPI persistence keys
