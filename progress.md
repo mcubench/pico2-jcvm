@@ -357,3 +357,13 @@
 - Decision: Continue resolving Maven build dependencies, then generate and inspect the ROM mask with the selected JCAlgTest v1.8.2 CAP and current API JCA exports.
 - Commit: `3cc059a`
 - Artifacts/logs: source at `choupi/javacard-sdk/rommask/capmap-free` (nested submodule commit `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4`); no build log archived
+
+## 2026-10-10 — Generate source-derived JCAlgTest ROM mask
+
+- Step/experiment: `wp5-jcalgtest-rommask-generation`
+- Change: Built and packaged capmap-free and the ROM-mask generator, converted the supplied v1.8.2 `src305` applet sources to JCA with the JC 3.0.5u3 converter, and fixed two JCA parser incompatibilities exposed by this applet: label indexes were truncated to signed bytes and uppercase `TRUE`/`FALSE` field names tokenized as boolean literals.
+- Validation: `./tools/env mvn -f choupi/javacard-sdk/rommask/capmap-free/pom.xml install -DskipTests` passed. `./tools/env mvn -f choupi/javacard-sdk/rommask/pom.xml package assembly:single -DskipTests` passed with existing unchecked-conversion warnings; Maven tests were skipped. The Ant JCAlgTest source build passed, and the Java Card converter reported zero errors and zero warnings for JCA conversion. ROM-mask generation then parsed all 21 JCA packages, resolved imports, and returned 0, writing 56,776 bytes of content into a 524,300-byte padded image. Generated native header size is 22,135 bytes and reports 34 native methods. The JCA imports match all four selected CAP imports. `git diff --check` passed; no firmware build or board flash was attempted.
+- Result: A ROM-mask image containing the API and source-derived JCAlgTest applet is generated. The source-rebuilt CAP is 131,545 bytes with SHA-256 `daccd8838322995f02a5200d9ebd61a4bf237d293031875424813acd7a7df68b`, which differs from the supplied CAP (131,538 bytes; SHA-256 `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`). Thus this validates source-based pre-masking, not loading the exact supplied CAP.
+- Decision: Continue the RP2350 CHOUPI integration and card-install path; the generated ROM mask is not itself board firmware, and the supplied CAP has not been installed on the board.
+- Commit: `af1091315fd7fd17baeae773ecf7553fd785ae37` (nested ROM-mask repository)
+- Artifacts/logs: `build/choupi-rommask/flash-algtest.bin` (SHA-256 `93a6678b3288e4ee92de2fc8df4e40b9f0bef2b297f1ceae3b761ce3a71e35e6`); `build/choupi-rommask/jni-algtest.hpp` (SHA-256 `935e124965e192b871a0782276845c02736220e496f428d46cfddbd0170e35a1`); `build/choupi-algtest/classes/algtest/javacard/algtest.jca` (SHA-256 `a7915e412d1fb80d389bfa722b5cb70df859db1243230b0a2a9751938868bdd8`)

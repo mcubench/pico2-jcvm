@@ -28,8 +28,14 @@ v1.8.2 and preserve the provided source trees.
   (`A0000000620001` v1.0; `A0000000620102`, `A0000000620101`, and
   `A0000000620201` v1.6), size 131,538 bytes, SHA-256
   `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
-  Generated API JCA packages now match these identifiers and versions;
-  ROM-mask generation and complete import resolution remain unverified.
+  Generated API JCA packages match these identifiers and versions. The v1.8.2
+  `src305` Java sources also convert to JCA with those imports; the ROM-mask
+  generator now succeeds with all 21 API/applet JCA packages after nested
+  ROM-mask parser fix `af1091315fd7fd17baeae773ecf7553fd785ae37`. The resulting
+  source-derived image is `build/choupi-rommask/flash-algtest.bin` (524,300
+  bytes, SHA-256 `93a6678b3288e4ee92de2fc8df4e40b9f0bef2b297f1ceae3b761ce3a71e35e6`).
+  The rebuilt CAP differs from the supplied CAP, and this pre-mask image has
+  not been integrated into firmware or flashed.
   Filtered CapDump output: `artifacts/logs/capdump-v182-20261010.txt`.
 - A repository-local toolchain is installed under `.local-toolchain/`; use
   `./tools/env <command>` to select it. It includes CMake/Ninja, ARM and
@@ -271,8 +277,8 @@ standalone smoke output; it is not running CHOUPI or JCAlgTest. Preserve
   headers and `program_options` are absent. The user supplied a public GitHub
   mirror; `capmap-free` is now initialized at the exact pinned commit
   `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4`, and `./tools/env
-  ./tools/doctor` passes. Installing its Maven artifacts still fails because
-  Maven Central DNS is unavailable and the assembly plugin cannot be resolved.
+  ./tools/doctor` passes. With reviewed network access, the capmap Maven install
+  and ROM-mask generator package both pass.
   Existing CHOUPI supports host/STM32 only; its OS lacks an RP2350
   architecture, and the root Pico SDK target remains the smoke app. USB
   CCID/APDU and on-card CAP installation are absent, so no CHOUPI/CAP flash was
