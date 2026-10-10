@@ -515,5 +515,5 @@
 - Validation: `./tools/cycle choupi` rebuilt and passed ARM and RISC-V gates, flashed the ARM image, and captured 18 seconds. The cycle failed because the capture had no output. A separate 8-second capture with pyserial DTR asserted was also silent. The ARM ELF `.bss` fell from 462,236 to 232,860 bytes; `.data` remains 9,920 bytes. The device is visible as RP2350 CDC after the cycle.
 - Result: The reduced image boots far enough to enumerate USB CDC, but CHOUPI still produces no `BOOT` marker or runtime status. The monitor log SHA-256 is `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`, identical to previous silent captures. Increasing available heap by about 224 KiB did not restore serial output.
 - Decision: Keep this as a diagnostic baseline only; isolate the CDC capture path with the small TRNG firmware, then trace CHOUPI startup before further persistence changes.
-- Commit: `<recorded after commit>`
+- Commit: root `5f3a72b`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T112137Z.log`; current ARM image `build/arm/pico2_choupi.uf2` (SHA-256 `0a265f608a5c5ea44f90bcb46ced51a308b8d909967ffd8071dd89ef6f6d675d`)
