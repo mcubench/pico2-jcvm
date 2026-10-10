@@ -407,3 +407,5 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
 - The four latest cycle logs are being archived under `artifacts/logs/`; their
   outcomes are `SecurityException` at tag length 61, `Out of memory`, and two
   silent captures. No passing CHOUPI runtime evidence exists yet.
+- The storage implementation is in root commit `f2da673`; the four capture
+  files and this progress record are in root commit `87c1bbe`.
