@@ -31,7 +31,10 @@ v1.8.2 and preserve the provided source trees.
   Generated API JCA packages match these identifiers and versions. The v1.8.2
   `src305` Java sources also convert to JCA with those imports; the ROM-mask
   generator now succeeds with all 21 API/applet JCA packages after nested
-  ROM-mask parser fix `af1091315fd7fd17baeae773ecf7553fd785ae37`. The resulting
+  ROM-mask parser fix `af1091315fd7fd17baeae773ecf7553fd785ae37`. Its
+  Makefile's removed Maven assembly goal was corrected in nested commit
+  `f2a3f0e8eb945e3fa027f359be78844cf1306f42`, and
+  `./tools/env make -C choupi/javacard-sdk/rommask` now passes. The resulting
   source-derived image is `build/choupi-rommask/flash-algtest.bin` (524,300
   bytes, SHA-256 `93a6678b3288e4ee92de2fc8df4e40b9f0bef2b297f1ceae3b761ce3a71e35e6`).
   The rebuilt CAP differs from the supplied CAP, and this pre-mask image has
