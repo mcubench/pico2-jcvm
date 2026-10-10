@@ -384,6 +384,8 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   source. First hardware capture after parent compression passed previous
   arena/file limits but failed on `SecurityException id=29` while descending
   a 61-byte persistent path (`artifacts/logs/cycle-choupi-20261010T101555Z.log`).
+- Root implementation/progress commit: `f2da673` (`Compress nested CHOUPI
+  persistence keys`).
 - Increasing tag buffers to 128 bytes passed builds, but hardware then
   reported `*** PANIC *** Out of memory` shortly after BOOT
   (`artifacts/logs/cycle-choupi-20261010T101744Z.log`). Instance tags were
