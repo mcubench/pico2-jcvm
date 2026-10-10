@@ -465,5 +465,5 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed, including UF2 family checks. Hardware validation was skipped because `picotool info -a` reports no accessible BOOTSEL device and the last monitor capture had no CHOUPI serial output.
 - Result: The overlay tag comparison cannot read a dangling pair from an odd-length hash collision candidate. Runtime behavior remains unverified.
 - Decision: Keep both architecture build gates; resume the hardware cycle after physical BOOTSEL reconnect.
-- Commit: root pending
+- Commit: root `9b73e3a`
 - Artifacts/logs: none; current UF2 `build/arm/pico2_choupi.uf2`

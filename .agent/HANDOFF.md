@@ -413,3 +413,4 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   comparisons and prevents uncompressed 128-byte keys from overflowing the
   record header. ARM/RISC-V builds pass. Hardware validation is pending a
   physical BOOTSEL reconnect; current RP2350 is only visible as USB serial.
+- The guard is in root commit `9b73e3a`.
