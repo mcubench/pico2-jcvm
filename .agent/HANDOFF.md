@@ -448,3 +448,24 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` (SHA-256
   `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`),
   uninstalled; the current CDC firmware has no APDU/CCID or CAP loader.
+
+## JCAlgTest package compatibility check (2026-10-10)
+
+- Exact requested CAP remains `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`,
+  SHA-256 `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+- Its import component requests `java/lang` AID `A0000000620001` v1.0,
+  `javacard/framework` AID `A0000000620101` v1.6,
+  `javacard/security` AID `A0000000620102` v1.6, and `javacardx/crypto`
+  AID `A0000000620201` v1.6. Generated JCA metadata under
+  `build/choupi-algtest/rommask-input/` reports matching package IDs and
+  versions. This verifies package-description compatibility only; it does not
+  prove CHOUPI runtime method resolution or CAP installation support.
+- `./tools/env picotool info -a` still fails with `ERROR: Failed to initialise
+  libUSB`; no flash was attempted. Host inspection found no GlobalPlatformPro,
+  GPShell, PC/SC service, or smart-card reader tools. The current CHOUPI image
+  exposes CDC only and has no APDU/CCID transport or CAP loader, so the CAP is
+  not installed.
+- Resume after the board re-enumerates in BOOTSEL: pass both architecture
+  builds, flash/capture CHOUPI and resolve startup failures, then implement or
+  establish an APDU and CAP installation path. Do not claim the CAP installed
+  until successful on-device installation is observed.
