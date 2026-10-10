@@ -65,10 +65,11 @@ v1.8.2 and preserve the provided source trees.
   `.local-toolchain/`. The Java Card API Ant `build` passes with JDK 8. The
   Maven wrapper is visible through `./tools/env`. `tools/doctor` checks the
   pinned `capmap-free` submodule and JC 3.0.5u3 API kit explicitly. The CAP
-  parser has since been restored from the user-provided GitHub mirror at its
-  exact pinned commit. Maven's local repository is redirected inside
-  `.local-toolchain/`; resolution of Maven Central currently fails because
-  DNS is unavailable.
+  parser is restored from the user-provided GitHub mirror at its exact pinned
+  commit; the nested `.gitmodules` URL now points to that mirror, and the
+  submodule remote was synchronized. Maven's local repository is redirected
+  inside `.local-toolchain/`; required artifacts have been resolved and the
+  ROM-mask build passes.
 - Diagnostics and continuity setup are committed as `1616b59`.
 - Fixed `JCVMArray::fill()` to populate each element and removed the ignored
   return qualifier from `size()`. The focused strict host test passed with
@@ -181,16 +182,17 @@ v1.8.2 and preserve the provided source trees.
 
 ## Next action
 
-Find source for the exact pinned `capmap-free` commit or replace its parsing
-role with a small compatible CAP reader after documenting the parser API used
-by `rommask`. The Bitbucket repository returns 404/access denied and the
-initial public mirror search found no copy. Maven Central DNS also fails in
-this environment. The API export patch is built and its JCA metadata matches
-all four CAP imports. Next restore CAP parsing and Maven artifacts, generate
-the ROM mask, and attempt the first CHOUPI ARM configuration. Continue WP5
-native and lifecycle work in parallel. The board currently emits the passing
-standalone smoke output; it is not running CHOUPI or JCAlgTest. Preserve
-`.local-toolchain/`, `AlgTest_JavaCard/`, and the CHOUPI source tree.
+Continue the RP2350 port and CAP installation path. The restored parser and
+API source-derived ROM mask are ready, but no RP2350 CHOUPI firmware target,
+USB CCID/APDU transport, or on-card CAP loader exists. First inspect the Pico
+SDK integration boundary and CHOUPI's interpreter entry path, then implement a
+minimal RP2350 target and card lifecycle/loader before attempting an upload.
+The supplied CAP differs from the source-rebuilt CAP, so preserve and target
+the exact supplied file when implementing installation. The board currently
+runs the passing standalone smoke image; do not claim CHOUPI or JCAlgTest is
+running until a built image is flashed and its bounded serial/APDU output is
+inspected. Preserve `.local-toolchain/`, `AlgTest_JavaCard/`, and the CHOUPI
+source tree.
 
 ## Latest validation
 
@@ -200,9 +202,11 @@ standalone smoke output; it is not running CHOUPI or JCAlgTest. Preserve
   `TEST:PASS random_stream_varies` and `TEST:SUMMARY pass=1 fail=0`; log:
   `artifacts/logs/cycle-arm-20261010T053019Z.log`.
 - Dependency restoration: OS and ROM-mask checkouts match pinned full commits;
-  the API is at its pinned commit plus local patch `d570ce3`. ROM-mask
-  generation and CHOUPI compilation remain unvalidated because `capmap-free`
-  is missing.
+  the API is at its pinned commit plus local patch `d570ce3`. The
+  `capmap-free` submodule is at `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4`,
+  and its nested URL points to the user-provided GitHub mirror. The doctor and
+  ROM-mask Maven build pass. The source-derived ROM mask was generated, but
+  CHOUPI firmware compilation and CAP installation remain unavailable.
 - `bash -n tools/doctor`: passed. `./tools/env ./tools/doctor` reports all
   host tools, Pico SDK, API kit, and top-level sources present; expected exit
   status is 1 for missing `rommask/capmap-free/pom.xml`.
@@ -272,8 +276,8 @@ standalone smoke output; it is not running CHOUPI or JCAlgTest. Preserve
   compiler prefixes, and picotool version checks passed. `./tools/env
   ./tools/doctor` now passes after restoring `capmap-free`. Maven 3.10.0 is
   available through `./tools/env`; the API build passes with Temurin 8u504.
-  CAP-parser Maven installation still fails because Maven Central DNS is
-  unavailable. Root smoke wrappers pass for both ISAs. Board queries and
+  CAP-parser Maven installation and ROM-mask packaging now pass. Root smoke
+  wrappers pass for both ISAs. Board queries and
   cycles required reviewed escalation.
 - Previous deployment-readiness attempt found the parser missing and Bitbucket
   requested credentials; CHOUPI PC configuration also failed because Boost

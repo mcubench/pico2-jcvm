@@ -377,3 +377,13 @@
 - Decision: Use this `make` path in later ROM-mask integration builds; device upload remains blocked on the separate RP2350 CHOUPI and card-manager work.
 - Commit: `f2a3f0e8eb945e3fa027f359be78844cf1306f42` (nested ROM-mask repository); progress record in `b4485e9`
 - Artifacts/logs: rebuilt nested artifact `choupi/javacard-sdk/rommask/target/rommask-1.0-jar-with-dependencies.jar`; no separate log archived
+
+## 2026-10-10 — Persist capmap-free GitHub mirror URL
+
+- Step/experiment: `wp1-persist-capmap-free-mirror`
+- Change: Changed the ROM-mask nested submodule URL from inaccessible Bitbucket to the user-provided GitHub mirror so a fresh checkout can fetch the parser source.
+- Validation: Ran `git submodule sync capmap-free`; verified the submodule remote is `https://github.com/pancanaka/capmap-free.git` and its checkout remains exact pinned commit `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4`. `./tools/env ./tools/doctor` returned 0. `./tools/env make -C choupi/javacard-sdk/rommask` passed in the preceding step. No firmware was flashed.
+- Result: Both source and checkout metadata use the public GitHub mirror; a fresh submodule initialization can fetch the parser without Bitbucket credentials.
+- Decision: Continue RP2350 CHOUPI target and CAP installation work. The current source-derived image is not firmware and does not install the supplied CAP.
+- Commit: `2302f926528a9f9001124d8f4b5cf6cd98e1de5c` (nested ROM-mask repository); root record pending
+- Artifacts/logs: Submodule source `choupi/javacard-sdk/rommask/capmap-free` at `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4`; no new log
