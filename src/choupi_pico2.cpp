@@ -54,6 +54,24 @@ void report_fs_write_failure(const char *operation, const uint8_t *tag,
   std::fflush(stdout);
 }
 
+void report_fs_write_rejection(const char *reason, const uint8_t *tag,
+                               uint8_t tag_length, uint32_t offset,
+                               uint32_t length, uint32_t file_length) {
+  std::printf("CHOUPI:FS_WRITE_REJECT reason=%s tag_len=%u offset=%lu size=%lu file_size=%lu files=%u bytes=%lu/%lu tag=",
+              reason, static_cast<unsigned>(tag_length),
+              static_cast<unsigned long>(offset),
+              static_cast<unsigned long>(length),
+              static_cast<unsigned long>(file_length),
+              static_cast<unsigned>(overlay_file_count),
+              static_cast<unsigned long>(overlay_bytes_used),
+              static_cast<unsigned long>(kMaxOverlayBytes));
+  for (uint8_t index = 0; index < tag_length && index < 8; ++index) {
+    std::printf("%02X", tag[index]);
+  }
+  std::printf("\r\n");
+  std::fflush(stdout);
+}
+
 bool tags_equal(const uint8_t *left, uint8_t left_length,
                 const uint8_t *right, uint8_t right_length) {
   return left_length == right_length &&
@@ -382,8 +400,14 @@ bool write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
               const uint8_t *data, uint32_t length) {
   const uint8_t *existing = nullptr;
   uint32_t existing_length = 0;
-  if (!find_file(tag, tag_length, &existing, &existing_length) ||
-      offset > existing_length || length > existing_length - offset) {
+  if (!find_file(tag, tag_length, &existing, &existing_length)) {
+    report_fs_write_rejection("missing-record", tag, tag_length, offset,
+                              length, 0);
+    return false;
+  }
+  if (offset > existing_length || length > existing_length - offset) {
+    report_fs_write_rejection("out-of-range", tag, tag_length, offset,
+                              length, existing_length);
     return false;
   }
   auto *file = find_overlay(tag, tag_length);
@@ -404,11 +428,14 @@ bool write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
   }
   file = allocate_overlay(tag, tag_length);
   if (file == nullptr) {
-    report_fs_write_failure("update", tag, tag_length, existing_length);
+    report_fs_write_rejection("index-full", tag, tag_length, offset, length,
+                              existing_length);
     return false;
   }
-  file->offset = static_cast<uint32_t>(overlay_bytes_used);
+  file->offset = static_cast<uint16_t>(overlay_bytes_used);
   if (!append_overlay(*file, tag, existing, existing_length)) {
+    report_fs_write_rejection("overlay-capacity", tag, tag_length, offset,
+                              length, existing_length);
     return false;
   }
   std::memcpy(overlay_data(*file) + offset, data, length);

@@ -637,3 +637,13 @@
 - Decision: Keep the SRAM reduction; instrument filesystem write rejection causes and retry the hardware cycle to identify why persistence throws IOException.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T213245Z.log`
+
+## 2026-10-10 — Add filesystem write rejection diagnostics
+
+- Step/experiment: `wp1-choupi-fs-write-rejection-diagnostic`
+- Change: Added explicit reasons and requested/existing ranges when `write_at()` rejects a missing file or out-of-range write; also report full-index and overlay-capacity rejection. Narrowed the new file offset assignment to the 16-bit overlay representation.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` passed both build gates but could not transition the running CHOUPI image to BOOTSEL; it recorded no flash progress or serial output and failed the runtime gate. Diagnostic UF2 SHA-256: `1de6bce7ed146f0a4a709f3180650305c6d62eb2a902d0eb95d774dd49b88e13`.
+- Result: The diagnostic image has not been flashed. The current app remains running and software force-reboot did not expose BOOTSEL.
+- Decision: Re-enter BOOTSEL with the physical button, verify, then repeat `./tools/cycle choupi` to capture the write rejection.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T213559Z.log` (silent; SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`)

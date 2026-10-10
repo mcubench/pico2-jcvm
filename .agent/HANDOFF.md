@@ -635,3 +635,10 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   Next: instrument `write_at()` rejection causes, rebuild both architectures,
   then rerun `./tools/cycle choupi`. The user-provided v1.8.2 CAP is not yet
   installed; CAP transport/loader work remains after runtime startup.
+- Added `CHOUPI:FS_WRITE_REJECT` diagnostics in `write_at()` for missing records,
+  out-of-range writes, index exhaustion, or overlay capacity; both architecture
+  builds pass. UF2 SHA-256:
+  `1de6bce7ed146f0a4a709f3180650305c6d62eb2a902d0eb95d774dd49b88e13`.
+  The cycle could not enter BOOTSEL from the running CHOUPI app and captured no
+  output, so this image is not yet flashed. Physically hold BOOTSEL while
+  reconnecting and verify before the next cycle.
