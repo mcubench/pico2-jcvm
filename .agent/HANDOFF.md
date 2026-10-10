@@ -55,8 +55,9 @@ v1.8.2 and preserve the provided source trees.
 - Maven 3.10.0 and Eclipse Temurin JDK 8u504 are installed under
   `.local-toolchain/`. The Java Card API Ant `build` passes with JDK 8. The
   Maven wrapper is visible through `./tools/env`. `tools/doctor` checks the
-  pinned `capmap-free` submodule and JC 3.0.5u3 API kit explicitly; it reports
-  the unavailable CAP parser. Maven's local repository is redirected inside
+  pinned `capmap-free` submodule and JC 3.0.5u3 API kit explicitly. The CAP
+  parser has since been restored from the user-provided GitHub mirror at its
+  exact pinned commit. Maven's local repository is redirected inside
   `.local-toolchain/`; resolution of Maven Central currently fails because
   DNS is unavailable.
 - Diagnostics and continuity setup are committed as `1616b59`.
@@ -260,16 +261,19 @@ standalone smoke output; it is not running CHOUPI or JCAlgTest. Preserve
 - Toolchain setup: `bash -n tools/env` passed. `./tools/env rustup target
   list --installed` includes `thumbv8m.main-none-eabihf`; CMake/Ninja, both
   compiler prefixes, and picotool version checks passed. `./tools/env
-  ./tools/doctor` reports host tools and Pico SDK present, but
-  exits 1 for the missing CAP parser. Maven 3.10.0 is available through
-  `./tools/env`; the API build passes with Temurin 8u504. Root smoke wrappers
-  pass for both ISAs. Board queries and cycles required reviewed escalation.
-- Latest deployment-readiness attempt: diagnostics still report missing
-  `rommask/capmap-free/pom.xml`; fetching pinned gitlink
-  `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4` from Bitbucket fails because the
-  host requests credentials. CHOUPI PC CMake configuration fails because
-  Boost headers and `program_options` are absent. Existing CHOUPI supports
-  host/STM32 only; its OS lacks an RP2350 architecture, and the root Pico SDK
-  target remains the smoke app. USB CCID/APDU and on-card CAP installation are
-  absent, so no CHOUPI/CAP flash was attempted. See the newest deployment
-  readiness record in `progress.md`.
+  ./tools/doctor` now passes after restoring `capmap-free`. Maven 3.10.0 is
+  available through `./tools/env`; the API build passes with Temurin 8u504.
+  CAP-parser Maven installation still fails because Maven Central DNS is
+  unavailable. Root smoke wrappers pass for both ISAs. Board queries and
+  cycles required reviewed escalation.
+- Previous deployment-readiness attempt found the parser missing and Bitbucket
+  requested credentials; CHOUPI PC configuration also failed because Boost
+  headers and `program_options` are absent. The user supplied a public GitHub
+  mirror; `capmap-free` is now initialized at the exact pinned commit
+  `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4`, and `./tools/env
+  ./tools/doctor` passes. Installing its Maven artifacts still fails because
+  Maven Central DNS is unavailable and the assembly plugin cannot be resolved.
+  Existing CHOUPI supports host/STM32 only; its OS lacks an RP2350
+  architecture, and the root Pico SDK target remains the smoke app. USB
+  CCID/APDU and on-card CAP installation are absent, so no CHOUPI/CAP flash was
+  attempted. See latest `progress.md` record.
