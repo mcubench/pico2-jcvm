@@ -12,11 +12,13 @@ v1.8.2 and preserve the provided source trees.
   starting revision. `choupi/` and `AlgTest_JavaCard/` are user-provided,
   untracked source trees; preserve them and commit only files belonging to a
   completed step.
-- The CHOUPI C++ VM source is present. Its dependency checkouts now match the
-  pinned revisions: OS `654f374067b2e7c1571fec1410adcd1e41a60c96`, API
-  `d490faf358d4740def8eaf60017d5cc367f7383e`, and ROM mask
-  `ac9f75253d476a8b2a838d459727df6e7a4a5107`. They remain nested Git
-  checkouts inside the user-provided untracked `choupi/` tree. The OS's
+- The CHOUPI C++ VM source is present. The OS matches pinned revision
+  `654f374067b2e7c1571fec1410adcd1e41a60c96`; the ROM mask matches
+  `ac9f75253d476a8b2a838d459727df6e7a4a5107`. The Java Card API starts from
+  pinned revision `d490faf358d4740def8eaf60017d5cc367f7383e` with local patch
+  commit `d570ce3` aligning Framework, Security, and Crypto package export
+  metadata with JCAlgTest v1.8.2 imports. They remain nested Git checkouts
+  inside the user-provided untracked `choupi/` tree. The OS's
   STM32CubeF4 submodule is not initialized; it is specific to the old STM32
   target.
 - The user selected JCAlgTest v1.8.2. `AlgTest_JavaCard/src305` identifies
@@ -26,7 +28,8 @@ v1.8.2 and preserve the provided source trees.
   (`A0000000620001` v1.0; `A0000000620102`, `A0000000620101`, and
   `A0000000620201` v1.6), size 131,538 bytes, SHA-256
   `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
-  Import compatibility against the generated ROM mask remains unverified.
+  Generated API JCA packages now match these identifiers and versions;
+  ROM-mask generation and complete import resolution remain unverified.
   Filtered CapDump output: `artifacts/logs/capdump-v182-20261010.txt`.
 - A repository-local toolchain is installed under `.local-toolchain/`; use
   `./tools/env <command>` to select it. It includes CMake/Ninja, ARM and
@@ -171,12 +174,12 @@ Find source for the exact pinned `capmap-free` commit or replace its parsing
 role with a small compatible CAP reader after documenting the parser API used
 by `rommask`. The Bitbucket repository returns 404/access denied and the
 initial public mirror search found no copy. Maven Central DNS also fails in
-this environment. The CAP metadata is recorded, but import compatibility
-against a generated ROM mask remains open. Continue the first CHOUPI ARM
-configuration when the dependencies permit, and continue WP5 native and
-lifecycle work in parallel. The board currently emits the passing standalone
-smoke output; it is not running CHOUPI or JCAlgTest. Preserve the local
-`.local-toolchain/`, `AlgTest_JavaCard/`, and CHOUPI source tree.
+this environment. The API export patch is built and its JCA metadata matches
+all four CAP imports. Next restore CAP parsing and Maven artifacts, generate
+the ROM mask, and attempt the first CHOUPI ARM configuration. Continue WP5
+native and lifecycle work in parallel. The board currently emits the passing
+standalone smoke output; it is not running CHOUPI or JCAlgTest. Preserve
+`.local-toolchain/`, `AlgTest_JavaCard/`, and the CHOUPI source tree.
 
 ## Latest validation
 
@@ -185,9 +188,10 @@ smoke output; it is not running CHOUPI or JCAlgTest. Preserve the local
   all passed. The 8-second capture emitted repeated
   `TEST:PASS random_stream_varies` and `TEST:SUMMARY pass=1 fail=0`; log:
   `artifacts/logs/cycle-arm-20261010T053019Z.log`.
-- Dependency restoration: all three pinned CHOUPI dependencies are checked
-  out at the full commit IDs listed under Current state. ROM-mask generation
-  and CHOUPI compilation remain unvalidated because `capmap-free` is missing.
+- Dependency restoration: OS and ROM-mask checkouts match pinned full commits;
+  the API is at its pinned commit plus local patch `d570ce3`. ROM-mask
+  generation and CHOUPI compilation remain unvalidated because `capmap-free`
+  is missing.
 - `bash -n tools/doctor`: passed. `./tools/env ./tools/doctor` reports all
   host tools, Pico SDK, API kit, and top-level sources present; expected exit
   status is 1 for missing `rommask/capmap-free/pom.xml`.
@@ -196,10 +200,13 @@ smoke output; it is not running CHOUPI or JCAlgTest. Preserve the local
   `TEST:SUMMARY pass=1 fail=0`; no `FAULT` or failure records appeared.
 - JCAlgTest v1.8.2 CAP inspection: JC 3.0.5u3 CapDump returned 0. CAP format
   2.1, package/applet AIDs, four imports, size, and SHA-256 are recorded above;
-  compatibility with the ROM-mask exports is unverified.
+  this exposed three API export mismatches. After patching API build settings,
+  successful JCA output has exact matching identifiers and versions. Full
+  ROM-mask import resolution remains unverified.
 - Java Card API: `JAVA_HOME=$PWD/.local-toolchain/java8` with that JDK's `bin`
   prepended to `PATH`, then `./tools/env ant -f
-  choupi/javacard-sdk/javacard-api/build.xml build`: `BUILD SUCCESSFUL`.
+  choupi/javacard-sdk/javacard-api/build.xml clean build`: `BUILD SUCCESSFUL`;
+  Framework, Security, and Crypto generated JCA headers match the CAP imports.
 - Latest VM syntax check: `TEST:PASS vm_core_syntax`; existing upstream
   warnings remain.
 - Latest `./tools/test-jcvmarray`: `TEST:PASS jcvmarray_fill`.
