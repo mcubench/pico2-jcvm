@@ -21,7 +21,13 @@ v1.8.2 and preserve the provided source trees.
   target.
 - The user selected JCAlgTest v1.8.2. `AlgTest_JavaCard/src305` identifies
   itself as v1.8.2 and the matching `AlgTest_v1.8.2_jc305.cap` is present.
-  CAP import metadata still needs comparison with the ROM mask.
+  Read-only Java Card SDK CapDump inspection confirms CAP format 2.1, package
+  AID `4A43416C6754657374`, applet AID `4A43416C675465737431`, four imports
+  (`A0000000620001` v1.0; `A0000000620102`, `A0000000620101`, and
+  `A0000000620201` v1.6), size 131,538 bytes, SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+  Import compatibility against the generated ROM mask remains unverified.
+  Filtered CapDump output: `artifacts/logs/capdump-v182-20261010.txt`.
 - A repository-local toolchain is installed under `.local-toolchain/`; use
   `./tools/env <command>` to select it. It includes CMake/Ninja, ARM and
   RISC-V compilers, stable Rust with the Cortex-M33 target, Pico SDK 2.3.1,
@@ -164,12 +170,13 @@ v1.8.2 and preserve the provided source trees.
 Find source for the exact pinned `capmap-free` commit or replace its parsing
 role with a small compatible CAP reader after documenting the parser API used
 by `rommask`. The Bitbucket repository returns 404/access denied and the
-initial public mirror search found no copy. Once CAP parsing is available,
-build the ROM mask, inspect the supplied JCAlgTest v1.8.2 CAP header/imports,
-then attempt the first CHOUPI ARM configuration. Continue WP5 native and
-lifecycle work in parallel where possible. The smoke image is not a CHOUPI or
-JCAlgTest runtime; preserve the local `.local-toolchain/`, `AlgTest_JavaCard/`,
-and CHOUPI source tree.
+initial public mirror search found no copy. Maven Central DNS also fails in
+this environment. The CAP metadata is recorded, but import compatibility
+against a generated ROM mask remains open. Continue the first CHOUPI ARM
+configuration when the dependencies permit, and continue WP5 native and
+lifecycle work in parallel. The board currently emits the passing standalone
+smoke output; it is not running CHOUPI or JCAlgTest. Preserve the local
+`.local-toolchain/`, `AlgTest_JavaCard/`, and CHOUPI source tree.
 
 ## Latest validation
 
@@ -184,6 +191,12 @@ and CHOUPI source tree.
 - `bash -n tools/doctor`: passed. `./tools/env ./tools/doctor` reports all
   host tools, Pico SDK, API kit, and top-level sources present; expected exit
   status is 1 for missing `rommask/capmap-free/pom.xml`.
+- Fresh `./tools/env ./tools/monitor --seconds 8` on the connected board
+  returned 0 with 8 repetitions of `TEST:PASS random_stream_varies` and
+  `TEST:SUMMARY pass=1 fail=0`; no `FAULT` or failure records appeared.
+- JCAlgTest v1.8.2 CAP inspection: JC 3.0.5u3 CapDump returned 0. CAP format
+  2.1, package/applet AIDs, four imports, size, and SHA-256 are recorded above;
+  compatibility with the ROM-mask exports is unverified.
 - Java Card API: `JAVA_HOME=$PWD/.local-toolchain/java8` with that JDK's `bin`
   prepended to `PATH`, then `./tools/env ant -f
   choupi/javacard-sdk/javacard-api/build.xml build`: `BUILD SUCCESSFUL`.
@@ -231,7 +244,7 @@ and CHOUPI source tree.
 - Toolchain setup: `bash -n tools/env` passed. `./tools/env rustup target
   list --installed` includes `thumbv8m.main-none-eabihf`; CMake/Ninja, both
   compiler prefixes, and picotool version checks passed. `./tools/env
-  `./tools/env ./tools/doctor` reports host tools and Pico SDK present, but
+  ./tools/doctor` reports host tools and Pico SDK present, but
   exits 1 for the missing CAP parser. Maven 3.10.0 is available through
   `./tools/env`; the API build passes with Temurin 8u504. Root smoke wrappers
   pass for both ISAs. Board queries and cycles required reviewed escalation.
