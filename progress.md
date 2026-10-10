@@ -627,3 +627,13 @@
 - Decision: Physically hold BOOTSEL while reconnecting, then confirm `boot type: bootsel` before flashing.
 - Commit: pending
 - Artifacts/logs: none
+
+## 2026-10-10 — Boot CHOUPI after overlay SRAM reduction
+
+- Step/experiment: `wp1-choupi-overlay-32k-hardware`
+- Change: Flashed the committed 32 KiB overlay arena and compact 8-byte index on the RP2350 Pico 2 after confirming BOOTSEL.
+- Validation: `./tools/cycle choupi` passed ARM and RISC-V build gates, visibly flashed 100%, and captured the 18-second serial stream. The cycle failed the runtime acceptance gate on an uncaught VM exception.
+- Result: `fs_init()` completed and the former heap exhaustion is gone. A 36,870-byte allocation succeeded at `0x2006C000..0x20075006`, then CHOUPI reported `VM_EXCEPTION id=5 opcode=0x87 pc=0x10043C01` (IOException from `putfield_a`). The image-relative PC maps into ROM-mask record tag `0114`, at data offset `0x1B1`. Log SHA-256: `d2b068c660382e1b828004aea92132bd3f8f0cdccac0086a17369fd3c63d5d2f`.
+- Decision: Keep the SRAM reduction; instrument filesystem write rejection causes and retry the hardware cycle to identify why persistence throws IOException.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T213245Z.log`

@@ -626,3 +626,12 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   subsequent `picotool info -a` still found only the USB serial app (exit 249).
   This software recovery attempt did not flash anything; physical BOOTSEL is
   required for the next try.
+- The board was later confirmed in BOOTSEL. The 32 KiB candidate flashed at
+  100%, passed both architecture builds, completed `fs_init()`, and no longer
+  runs out of memory. Its runtime fails with `VM_EXCEPTION id=5 opcode=0x87`
+  (`IOException` in `putfield_a`) at `0x10043C01`; that address maps into
+  ROM-mask tag `0114`, data offset `0x1B1`. Log SHA-256 is
+  `d2b068c660382e1b828004aea92132bd3f8f0cdccac0086a17369fd3c63d5d2f`.
+  Next: instrument `write_at()` rejection causes, rebuild both architectures,
+  then rerun `./tools/cycle choupi`. The user-provided v1.8.2 CAP is not yet
+  installed; CAP transport/loader work remains after runtime startup.
