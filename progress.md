@@ -505,5 +505,5 @@
 - Validation: The cycle rebuilt and passed the ARM and RISC-V image gates, then flashed `build/arm/pico2_choupi.uf2`. Its 18-second CDC monitor capture failed the runtime-output gate. The log contains the reboot and monitor start but no CHOUPI output, `TEST:PASS`, or `TEST:SUMMARY`. A follow-up read-only device query sees the Pico as USB serial and confirms it is no longer in BOOTSEL. UF2 SHA-256: `9cc85d9051fb9f55d52682d4f772ea16316d144fb123686381415203bad85fc6`.
 - Result: The board has the CHOUPI image, but runtime startup is still unverified; the capture SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c` matches earlier silent captures. Exact JCAlgTest v1.8.2 CAP remains uninstalled because current firmware has no APDU/CCID transport or CAP loader.
 - Decision: Diagnose why the post-flash CDC capture is silent before claiming a working CHOUPI runtime; then add an installation transport/loader and install the exact CAP.
-- Commit: `<recorded after commit>`
+- Commit: root `8c9b584`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T111732Z.log`; `build/arm/pico2_choupi.uf2`
