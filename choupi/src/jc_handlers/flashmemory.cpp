@@ -36,8 +36,64 @@
 
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 
 namespace jcvm {
+
+namespace {
+
+constexpr uint8_t kPersistentObjectAlias = 0xFE;
+constexpr size_t kMaxPersistentObjectDepth = TAG_MAX_LENGTH / 2 + 1;
+
+struct PersistentObjectFrame {
+  const JC_Instance *instance = nullptr;
+};
+
+PersistentObjectFrame persistent_object_stack[kMaxPersistentObjectDepth];
+size_t persistent_object_depth = 0;
+
+class PersistentObjectFrameGuard {
+public:
+  explicit PersistentObjectFrameGuard(const JC_Instance *instance) noexcept {
+    if (persistent_object_depth < kMaxPersistentObjectDepth) {
+      auto &frame = persistent_object_stack[persistent_object_depth++];
+      frame.instance = instance;
+      this->active = true;
+    }
+  }
+
+  ~PersistentObjectFrameGuard() noexcept {
+    if (this->active) {
+      persistent_object_stack[--persistent_object_depth] =
+          PersistentObjectFrame{};
+    }
+  }
+
+  bool isActive() const noexcept { return this->active; }
+
+private:
+  bool active = false;
+};
+
+bool is_persistent_object_active(const JC_Instance *instance) {
+  for (size_t index = 0; index < persistent_object_depth; ++index) {
+    if (persistent_object_stack[index].instance == instance) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void write_persistent_object_alias(const fs::Tag &tag,
+                                   const fs::Tag &target_tag) {
+  uint8_t data[2 + TAG_MAX_LENGTH] = {kPersistentObjectAlias, target_tag.len};
+  std::memcpy(data + 2, target_tag.value, target_tag.len);
+  if (fs_write(tag.value, tag.len, data, 2 + target_tag.len)) {
+    throw Exceptions::IOException;
+  }
+}
+
+} // namespace
 
 /// Get packages array length
 static constexpr uint16_t getPackagesArrayLength() {
@@ -372,6 +428,26 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
 
   FieldType type = static_cast<FieldType>(data[0]);
 
+  if (data[0] == kPersistentObjectAlias) {
+    if (length < 2 || data[1] == 0 ||
+        length != static_cast<uint32_t>(2u + data[1]) ||
+        data[1] > TAG_MAX_LENGTH) {
+      throw Exceptions::SecurityException;
+    }
+    fs::Tag target_tag;
+    target_tag.len = data[1];
+    std::memcpy(target_tag.value, data + 2, target_tag.len);
+    auto [target_length, target_data] =
+        FlashMemory_Handler::getDataInPlaceFromTag(target_tag);
+    if (target_length < 4 || target_data[0] != FieldType::FIELD_TYPE_OBJECT) {
+      throw Exceptions::SecurityException;
+    }
+    const jpackage_ID_t package = target_data[1];
+    const jclass_index_t claz =
+        static_cast<jclass_index_t>(BYTES_TO_SHORT(target_data[2], target_data[3]));
+    return heap.addInstance(JC_Instance(heap, package, claz, target_tag));
+  }
+
   if (type == FieldType::FIELD_TYPE_UNINITIALIZED) {
 #ifdef JCVM_ARRAY_SIZE_CHECK
     if (length != sizeof(uint8_t)) {
@@ -489,6 +565,9 @@ FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &tag) {
   if (length == 0) {
     throw Exceptions::SecurityException;
   }
+  if (data[0] == kPersistentObjectAlias) {
+    return FieldType::FIELD_TYPE_OBJECT;
+  }
   return static_cast<FieldType>(data[0]);
 }
 
@@ -543,6 +622,10 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
   }
 
   auto instance = heap.getInstance(value);
+  if (instance->hasPersistentTag()) {
+    write_persistent_object_alias(tag, instance->getPersistentTag());
+    return;
+  }
   FlashMemory_Handler::setPersistentField_Instance(tag, *instance, heap);
   } catch (Exceptions exception) {
     std::printf("CHOUPI:PERSIST_EXCEPTION id=%u tag_len=%u ref=%04X\r\n",
@@ -628,6 +711,21 @@ void FlashMemory_Handler::setPersistentField_Array(const fs::Tag &tag,
  */
 void FlashMemory_Handler::setPersistentField_Instance(
     const fs::Tag &tag, const JC_Instance &instance, Heap &heap) {
+  if (is_persistent_object_active(&instance)) {
+    if (!instance.hasPersistentTag()) {
+      throw Exceptions::IOException;
+    }
+    write_persistent_object_alias(tag, instance.getPersistentTag());
+    return;
+  }
+  if (!instance.hasPersistentTag()) {
+    const_cast<JC_Instance &>(instance).setPersistentTag(tag);
+  }
+  PersistentObjectFrameGuard frame(&instance);
+  if (!frame.isActive()) {
+    throw Exceptions::IOException;
+  }
+
   auto fields = instance.getFields();
 
   if (fields == nullptr) {

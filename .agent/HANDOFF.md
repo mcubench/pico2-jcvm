@@ -414,3 +414,32 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   record header. ARM/RISC-V builds pass. Hardware validation is pending a
   physical BOOTSEL reconnect; current RP2350 is only visible as USB serial.
 - The guard is in root commit `9b73e3a`.
+
+## Latest recursive-persistence attempt (2026-10-10)
+
+- User confirmed the Pico 2 was reinserted in BOOTSEL. `picotool info -a`
+  identified the RP2350 A4 and confirmed `boot type: bootsel`; the CHOUPI
+  image flashed successfully. Serial then showed 16,384 overlay records in use
+  at 171,176/262,144 bytes, followed by Java Card exception id 5 and `6F00`.
+- The repeated reference `0x0094` at increasing tag depths indicates cyclic
+  object serialization. Added a persistent-object alias record to break a
+  reference back to an active/canonical object, and mapped alias reads back to
+  the target's persistent tag. ARM and RISC-V builds pass.
+- A first cycle with a full-tag recursion stack panicked `Out of memory`
+  (`artifacts/logs/cycle-choupi-20261010T110210Z.log`). Reduced the tracker to
+  pointers and moved the canonical compact tag into each instance. The next
+  cycle did not capture runtime output; afterward `picotool info -a` and
+  `lsusb` both failed to initialize libusb. Its log
+  `artifacts/logs/cycle-choupi-20261010T110427Z.log` is byte-identical to an
+  older silent capture, so it does not prove which firmware ran.
+- Current UF2 SHA-256 is
+  `a0682558fd222e51b7e93b434a46dea99a0887853ef05c73ee6378793e80fef8`.
+  Source changes and a failed experiment record are pending commit. Preserve
+  unrelated changes in the tree.
+- Next action: reconnect the Pico while holding BOOTSEL, verify it with
+  `picotool info -a`, then flash/capture again. If runtime starts, verify that
+  aliases reduce startup expansion and that no `TEST:FAIL`, `FAULT`, or timeout
+  occurs. The exact CAP remains
+  `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` (SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`),
+  uninstalled; the current CDC firmware has no APDU/CCID or CAP loader.

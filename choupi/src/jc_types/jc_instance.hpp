@@ -51,6 +51,7 @@ private:
   bool persistent_tag_compressed = false;
   uint8_t persistent_tag_value[68] = {};
   uint8_t *persistent_tag_overflow = nullptr;
+  bool has_persistent_tag = false;
   mutable bool persistent_fields_loaded = true;
 
   /**
@@ -75,6 +76,10 @@ public:
   jpackage_ID_t getPackageID() const noexcept;
   /// Get class index
   jclass_index_t getClassIndex() const noexcept;
+  /// Get or assign the canonical tag used when serializing this object.
+  bool hasPersistentTag() const noexcept;
+  fs::Tag getPersistentTag() const noexcept;
+  void setPersistentTag(const fs::Tag &tag);
   /// Set package ID
   void setPackageID(const jpackage_ID_t packageID) noexcept;
   /// Set class index

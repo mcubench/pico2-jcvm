@@ -467,3 +467,13 @@
 - Decision: Keep both architecture build gates; resume the hardware cycle after physical BOOTSEL reconnect.
 - Commit: root `9b73e3a`
 - Artifacts/logs: none; current UF2 `build/arm/pico2_choupi.uf2`
+
+## 2026-10-10 — Add aliases for recursive persistent object references
+
+- Step/experiment: `wp1-choupi-persistent-cycle-alias`
+- Change: Detect persistent object references that recur during serialization and store a compact alias to the object's canonical persistence tag. Alias reads reconstruct a persistent instance from that canonical record. The in-progress object tracker stores pointers only to reduce SRAM overhead.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed with UF2 family checks. The first hardware cycle emitted `*** PANIC *** Out of memory` after adding a full tag per recursion frame. After reducing tracker storage, a second cycle could not capture serial output; `./tools/env picotool info -a` and `lsusb` both reported libusb initialization failure, so runtime validation is incomplete. `git -c core.whitespace=cr-at-eol diff --check` passed.
+- Result: Compile-time compatibility is confirmed. No passing CHOUPI runtime result is established. The latest built image SHA-256 is `a0682558fd222e51b7e93b434a46dea99a0887853ef05c73ee6378793e80fef8`.
+- Decision: Reconnect the Pico 2 in BOOTSEL, verify enumeration, then rerun the hardware cycle and inspect alias behavior. The exact v1.8.2 CAP remains uninstalled; the firmware still exposes CDC without an APDU/CAP loader.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T110210Z.log` (SHA-256 `e6d1bd36833d7925933168533ad3ca86d17504970da2656b148030d81c514dd8`, OOM); `artifacts/logs/cycle-choupi-20261010T110427Z.log` (SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`, no output)
