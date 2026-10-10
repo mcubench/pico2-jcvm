@@ -527,3 +527,13 @@
 - Decision: Reconnect the Pico physically while holding BOOTSEL, confirm `boot type: bootsel`, then reflash and capture. Do not attempt another software-only flash until bootloader mode is verified.
 - Commit: root `d7c3dd0`
 - Artifacts/logs: `artifacts/logs/cycle-arm-20261010T112446Z.log` (SHA-256 `62457db617d9013e2c91a67bf6cfb2a74b8600d7c50b952b091d8dd9fc4e7e13`)
+
+## 2026-10-10 — Prepare GlobalPlatformPro installation client
+
+- Step/experiment: `wp1-globalplatformpro-cap-client`
+- Change: Cloned official GlobalPlatformPro tag `v26.06.04` (source commit `5f3f4a2c7f6ae147da1351955deaeec9872eff47`) into the ignored repository toolchain and built the self-contained CLI JAR with the repository Maven/Java environment.
+- Validation: `./tools/env mvn -f .local-toolchain/globalplatformpro/pom.xml -DskipTests package` completed with `BUILD SUCCESS`; Maven skipped test execution. `java -jar .../gp.jar --help` lists `--install`, and `--version` reports GlobalPlatformPro 26.06.04 on Java 21.0.12.1. JAR SHA-256: `38b464deabb20f48ba4fa1379354e41e913f635a537c9ea5cd2b1e919e0f908c`.
+- Result: A ready CLI exists at `.local-toolchain/globalplatformpro/tool/target/gp.jar`. The host has no PC/SC socket or reader, and the Pico exposes CDC, so GPPro cannot yet send APDUs to this device. Exact CAP remains uninstalled.
+- Decision: Keep the CLI ready; continue with CHOUPI startup and establish an APDU transport/reader before installation.
+- Commit: `<recorded after commit>`
+- Artifacts/logs: `.local-toolchain/globalplatformpro/tool/target/gp.jar` (ignored toolchain artifact; SHA-256 above)

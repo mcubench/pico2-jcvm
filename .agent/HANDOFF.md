@@ -525,3 +525,16 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   BOOTSEL button while reconnecting USB, then verify `boot type: bootsel` with
   `./tools/env picotool info -a`. Only then rerun the CHOUPI cycle. Both build
   gates must pass before flashing. The exact CAP remains uninstalled.
+
+## GlobalPlatformPro client prepared (2026-10-10)
+
+- Built the official GlobalPlatformPro `v26.06.04` source (commit
+  `5f3f4a2c7f6ae147da1351955deaeec9872eff47`) in the ignored local toolchain.
+  Self-contained CLI: `.local-toolchain/globalplatformpro/tool/target/gp.jar`,
+  SHA-256 `38b464deabb20f48ba4fa1379354e41e913f635a537c9ea5cd2b1e919e0f908c`.
+  `--help` and `--version` both work with Java 21; Maven build succeeded with
+  tests skipped.
+- No PC/SC socket/service or card reader is present. Current Pico CHOUPI
+  firmware provides CDC and does not implement CCID/APDU, so GPPro is ready
+  but cannot connect to it. Do not claim CAP installation until there is an
+  APDU path and on-device install confirmation.
