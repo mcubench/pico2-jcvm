@@ -10,6 +10,7 @@ endif()
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 project(pico2_trng C CXX ASM)
+set(PICO_CXX_ENABLE_EXCEPTIONS 1 CACHE BOOL "Enable C++ exceptions for CHOUPI")
 add_compile_options(-Wall -Wextra -Werror)
 if(LOCAL_ARM_NEWLIB_INCLUDE)
   include_directories(SYSTEM "${LOCAL_ARM_NEWLIB_INCLUDE}")
@@ -26,3 +27,26 @@ target_link_libraries(pico2_trng PRIVATE pico_stdlib pico_rand)
 pico_enable_stdio_usb(pico2_trng 1)
 pico_enable_stdio_uart(pico2_trng 0)
 pico_add_extra_outputs(pico2_trng)
+
+# Compile CHOUPI's platform-independent C++ VM against each RP2350 toolchain.
+# Platform startup and the Rust OS are integrated in a later bring-up step.
+file(GLOB_RECURSE CHOUPI_VM_SOURCES CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/*.cpp")
+list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX "/main(_arm|_pc)?\\.cpp$")
+if(CHOUPI_VM_SOURCES)
+  add_library(choupi_vm_core OBJECT ${CHOUPI_VM_SOURCES})
+  target_include_directories(choupi_vm_core PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/choupi/os/src"
+    "${CMAKE_CURRENT_BINARY_DIR}/choupi-generated")
+  # The upstream CAP structs are packed by format design, and the source has
+  # harmless const-by-value and debug-only parameter diagnostics. Keep the
+  # root smoke target's strict warning policy while excluding these legacy
+  # diagnostics from this compatibility compile.
+  target_compile_options(choupi_vm_core PRIVATE
+    -Wno-ignored-qualifiers
+    -Wno-address-of-packed-member
+    -Wno-unused-parameter
+    -Wno-array-bounds)
+  set_target_properties(choupi_vm_core PROPERTIES CXX_STANDARD 17)
+endif()

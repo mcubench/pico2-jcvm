@@ -40,6 +40,16 @@ v1.8.2 and preserve the provided source trees.
   The rebuilt CAP differs from the supplied CAP, and this pre-mask image has
   not been integrated into firmware or flashed.
   Filtered CapDump output: `artifacts/logs/capdump-v182-20261010.txt`.
+- The root Pico build now has a `choupi_vm_core` object target that cross
+  compiles all 34 platform-independent CHOUPI C++ translation units for both
+  RP2350 ISA builds. `tools/build` stages the generated source-derived JCA
+  header and requires it before claiming a successful CHOUPI-core build.
+  Successful wrapper builds still produce only the `pico2_trng` UF2; the VM
+  core is not linked, no Rust OS implementation is part of the image, and no
+  APDU/CAP installation route exists yet. The object build suppresses four
+  legacy diagnostic classes from upstream sources (`ignored-qualifiers`,
+  `address-of-packed-member`, `unused-parameter`, and `array-bounds`); this
+  needs review before treating the build as warning-clean.
 - A repository-local toolchain is installed under `.local-toolchain/`; use
   `./tools/env <command>` to select it. It includes CMake/Ninja, ARM and
   RISC-V compilers, stable Rust with the Cortex-M33 target, Pico SDK 2.3.1,
@@ -183,16 +193,16 @@ v1.8.2 and preserve the provided source trees.
 ## Next action
 
 Continue the RP2350 port and CAP installation path. The restored parser and
-API source-derived ROM mask are ready, but no RP2350 CHOUPI firmware target,
-USB CCID/APDU transport, or on-card CAP loader exists. First inspect the Pico
-SDK integration boundary and CHOUPI's interpreter entry path, then implement a
-minimal RP2350 target and card lifecycle/loader before attempting an upload.
-The supplied CAP differs from the source-rebuilt CAP, so preserve and target
-the exact supplied file when implementing installation. The board currently
-runs the passing standalone smoke image; do not claim CHOUPI or JCAlgTest is
-running until a built image is flashed and its bounded serial/APDU output is
-inspected. Preserve `.local-toolchain/`, `AlgTest_JavaCard/`, and the CHOUPI
-source tree.
+API source-derived ROM mask are ready, and the VM C++ sources now cross-compile
+for both Pico 2 ISA targets. Next link an ARM CHOUPI firmware image with a
+Pico-specific entry point and a documented single-context runtime/storage
+shim. Then add an install path for the exact supplied CAP, initially over a
+bounded CDC protocol if CCID is not ready. The supplied CAP differs from the
+source-rebuilt CAP, so target the exact supplied file when implementing the
+loader. The board currently runs the passing standalone smoke image; do not
+claim CHOUPI or JCAlgTest is running until a built image is flashed and its
+bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
+`AlgTest_JavaCard/`, and the CHOUPI source tree.
 
 ## Latest validation
 

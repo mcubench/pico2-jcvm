@@ -397,3 +397,13 @@
 - Decision: Preserve the smoke firmware until an integrated CHOUPI target and both build gates are ready; continue RP2350 runtime and transport implementation.
 - Commit: `2a7a2017bd818d0f54e9d8d84cbfada430d4a825`
 - Artifacts/logs: `artifacts/logs/monitor-after-capmap-20261010.log` (SHA-256 `9f4162fb209ebfb97a74d03517a55fe9d6e279b0354999ba7d7bbe7d6a76b5dd`)
+
+## 2026-10-10 — Cross-compile CHOUPI VM core for RP2350
+
+- Step/experiment: `wp1-rp2350-choupi-core-cross-compile`
+- Change: Added a Pico SDK `choupi_vm_core` object target that compiles the platform-independent CHOUPI C++ sources, enables C++ exceptions, stages the generated source-derived `jni.hpp`, and makes the build wrapper fail if that header is missing.
+- Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` returned 0; both wrappers validated their RP2350 UF2 family. The core compiled all 34 C++ translation units for each target. A small set of upstream warning classes is suppressed for this compatibility build (`ignored-qualifiers`, `address-of-packed-member`, `unused-parameter`, `array-bounds`); warnings are therefore not claimed clean. `git diff --check` passed. No CHOUPI image was linked or flashed, and no CAP was installed.
+- Result: CHOUPI VM C++ sources are cross-compilable by the installed RP2350 ARM and RISC-V toolchains. The produced UF2 remains the smoke application; the Rust OS, filesystem shim, startup, and APDU/card-manager path remain unintegrated.
+- Decision: Link an ARM-only minimal CHOUPI firmware path next, then implement a CDC CAP loader or CCID card manager for the exact supplied v1.8.2 CAP.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/choupi-core-arm-build.log` (SHA-256 `325a749aa6d71fb0217f94d3cfa60caa3d49ef4250f40db5f9f64834325323ba`); `artifacts/logs/choupi-core-riscv-build.log` (SHA-256 `646933b36ea464ea5df3f7d73cbeb48f74ca8b35c9b93210ddd085403aec59ae`)
