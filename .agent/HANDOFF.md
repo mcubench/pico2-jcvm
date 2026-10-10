@@ -642,3 +642,8 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   The cycle could not enter BOOTSEL from the running CHOUPI app and captured no
   output, so this image is not yet flashed. Physically hold BOOTSEL while
   reconnecting and verify before the next cycle.
+- Added load/store phase exception diagnostics around persistent
+  `setField_Reference()`; ARM and RISC-V builds pass. The diagnostic candidate
+  UF2 hash is `18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`.
+  The board still reports USB serial, not BOOTSEL; flash the candidate after a
+  physical BOOTSEL reconnect. CAP installation remains pending.

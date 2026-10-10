@@ -455,7 +455,18 @@ void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
  */
 void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
   if (this->isPersistent()) {
-    (void)this->getFields();
+    std::printf("CHOUPI:PUTFIELD_A phase=load index=%u package=%u class=%u\r\n",
+                static_cast<unsigned>(index),
+                static_cast<unsigned>(this->packageID),
+                static_cast<unsigned>(this->claz));
+    try {
+      (void)this->getFields();
+    } catch (Exceptions exception) {
+      std::printf("CHOUPI:PUTFIELD_A phase=load-fail id=%u index=%u\r\n",
+                  static_cast<unsigned>(exception),
+                  static_cast<unsigned>(index));
+      throw;
+    }
   }
   jc_field_t &field = this->fields->at(index);
   field.value = static_cast<jword_t>(ref.compact());
@@ -505,8 +516,19 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
   if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
-    FlashMemory_Handler::setPersistentField_Reference(tag, ref,
-                                                      this->getOwner());
+    std::printf("CHOUPI:PUTFIELD_A phase=store tag_len=%u index=%u\r\n",
+                static_cast<unsigned>(tag.len),
+                static_cast<unsigned>(index));
+    try {
+      FlashMemory_Handler::setPersistentField_Reference(tag, ref,
+                                                        this->getOwner());
+    } catch (Exceptions exception) {
+      std::printf("CHOUPI:PUTFIELD_A phase=store-fail id=%u tag_len=%u index=%u\r\n",
+                  static_cast<unsigned>(exception),
+                  static_cast<unsigned>(tag.len),
+                  static_cast<unsigned>(index));
+      throw;
+    }
   } else {
 
 #ifdef JCVM_TYPED_HEAP
