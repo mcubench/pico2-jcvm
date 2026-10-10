@@ -36,9 +36,10 @@ v1.8.2 and preserve the provided source trees.
   RISC-V compilers, stable Rust with the Cortex-M33 target, Pico SDK 2.3.1,
   pioasm, and picotool. See `.agent/TOOLCHAIN.md` for versions and hashes.
   Setup and the hardware report are committed as `db99639`.
-- The board is visible in BOOTSEL mode. Read-only `picotool info -a` reported
-  RP2350 A4, QFN60, 2048 KiB flash, and an existing RISC-V image named
-  `pico2_btc_miner`. Before flashing, saved a read-only 2 MiB backup at
+- The board was initially identified in BOOTSEL mode. Read-only
+  `picotool info -a` reported RP2350 A4, QFN60, 2048 KiB flash, and an
+  existing RISC-V image named `pico2_btc_miner`. Before replacing it, saved a
+  read-only 2 MiB backup at
   `artifacts/backups/flash-before-smoke-20261010.bin`, SHA-256
   `49a650c2093df2e2d528ec4ef9adce788db95133c7303b5f96d852d8b5ecc078`.
   Flash size remains a device report pending independent physical confirmation.
