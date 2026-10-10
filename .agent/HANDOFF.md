@@ -647,3 +647,10 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   UF2 hash is `18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`.
   The board still reports USB serial, not BOOTSEL; flash the candidate after a
   physical BOOTSEL reconnect. CAP installation remains pending.
+- User asked to enter BOOTSEL without asking them. Tried `picotool reboot -f`
+  and `-F`, direct `picotool load -F`, CDC 1200-baud reset, and direct libusb
+  class/interface request to reset interface 2. None changed the live device
+  from USB serial (same bus/device 1:116); serial read remained empty. Do not
+  claim the diagnostic image was flashed. The current VM appears unresponsive
+  after its IOException (inference); the new diagnostics are compiled but await
+  a responsive reset path. Continue software analysis without asking the user.

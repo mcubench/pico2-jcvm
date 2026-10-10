@@ -657,3 +657,13 @@
 - Decision: Physically enter BOOTSEL, flash this candidate, and capture whether the failure occurs at load or store and any filesystem rejection reason.
 - Commit: pending
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`
+
+## 2026-10-10 — Attempt software-only BOOTSEL recovery
+
+- Step/experiment: `wp1-choupi-usb-reset-recovery`
+- Change: Tried all available USB software reset paths against the running Pico app: `picotool reboot -f/-F -u`, `picotool load -F`, CDC 1200 baud, and direct libusb control transfers to the enumerated reset interface (including a claimed interface and class/interface request).
+- Validation: Each tool path reported a BOOTSEL request or returned from the transfer, but `picotool info -a` still reported only CDC serial mode (exit 249). The USB device remained at bus 1, device 116. Keeping `/dev/ttyACM0` open during reset yielded zero bytes and did not change the device mode. `lsusb -t` shows CDC interfaces 0/1 and reset interface 2.
+- Result: No software-only path reached BOOTSEL; the diagnostic image remains unflashed. The running VM emitted no further serial output after its IOException trace, consistent with firmware no longer servicing the reset path (inference from host observations).
+- Decision: Keep the latest diagnostic candidate ready. Do not claim a reset or flash. Continue software-only source analysis; hardware flash remains unavailable until the device responds to a supported reset.
+- Commit: pending
+- Artifacts/logs: none; command results recorded above
