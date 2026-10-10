@@ -608,3 +608,11 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   This cycle was a runtime failure, not a pass. Board is now running CHOUPI;
   re-enter BOOTSEL physically before a subsequent flash. Exact CAP remains
   uninstalled.
+- Candidate follow-up: the 32 KiB overlay plus 8-byte index build passes both
+  ISA wrappers and produces `build/arm/pico2_choupi.uf2` with SHA-256
+  `46f2b453d33ada46fa1cda9e681f18648f53e00ac966b76bc9aa1faf49bda137`.
+  `picotool info -a` sees a USB serial app but no BOOTSEL device; a software
+  `picotool reboot -f -u` request did not yield BOOTSEL enumeration. This
+  candidate has not been flashed. Next action: hold BOOTSEL while reconnecting,
+  confirm BOOTSEL, then run `./tools/cycle choupi`. The runtime and CAP install
+  remain incomplete.

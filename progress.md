@@ -597,3 +597,13 @@
 - Decision: Free further static SRAM while retaining a smaller overlay, rebuild both architectures, and repeat the real board cycle. The Pico must be physically returned to BOOTSEL. CAP remains uninstalled.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T212007Z.log`
+
+## 2026-10-10 — Reduce CHOUPI overlay SRAM footprint
+
+- Step/experiment: `wp1-choupi-overlay-arena-32k-compact-index`
+- Change: Reduced the overlay byte arena to 32 KiB and compacted each overlay index entry from 12 to 8 bytes by using 16-bit offsets and sizes; the arena bound ensures both fields fit while retaining up to 8,192 indexed files.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The built ARM CHOUPI UF2 SHA-256 is `46f2b453d33ada46fa1cda9e681f18648f53e00ac966b76bc9aa1faf49bda137`. No runtime test has been recorded yet: USB shows the Pico in serial application mode, and `picotool reboot -f -u` did not re-enumerate it in BOOTSEL.
+- Result: Both variants compile; static SRAM usage is reduced by about 96 KiB relative to the previous 64 KiB arena/index configuration. The VM runtime behavior and capacity impact have not been measured.
+- Decision: Flash and inspect a finite serial capture after the Pico is confirmed in BOOTSEL. Do not treat this candidate as a runtime pass.
+- Commit: pending
+- Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `46f2b453d33ada46fa1cda9e681f18648f53e00ac966b76bc9aa1faf49bda137`

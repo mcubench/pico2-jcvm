@@ -18,16 +18,16 @@ namespace {
 
 constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
-constexpr size_t kMaxOverlayBytes = 64 * 1024;
+constexpr size_t kMaxOverlayBytes = 32 * 1024;
 
 struct OverlayFile {
   uint16_t hash = 0;
   uint8_t tag_length = 0;
   uint8_t flags = 0;
-  uint32_t offset = 0;
-  uint32_t size = 0;
+  uint16_t offset = 0;
+  uint16_t size = 0;
 };
-static_assert(sizeof(OverlayFile) == 12, "overlay index entry must be 12 bytes");
+static_assert(sizeof(OverlayFile) == 8, "overlay index entry must be 8 bytes");
 
 constexpr uint8_t kOverlayUsed = 1u << 0;
 constexpr uint8_t kOverlayHasRecord = 1u << 1;
