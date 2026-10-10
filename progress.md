@@ -674,5 +674,5 @@
 - Validation: `picotool reboot -F -u` returned 0 but left the RP2350 in CDC mode. `usbreset 001/116` reported `No such device`; the Pico then disappeared from `lsusb`. The root port reports `not attached`; `/dev/ttyACM0` is absent. Toggling the per-port sysfs `disable` control was denied by host permissions. No flash was attempted.
 - Result: No software path brought the board into BOOTSEL. Device is currently absent from the host USB bus; no hardware runtime output was captured.
 - Decision: Continue software analysis with the existing built diagnostic firmware. Upload and hardware verification remain pending until the RP2350 reappears.
-- Commit: pending
+- Commit: `256edf8e6ca33ed9584877d7ca8bdd842c01cbe4`
 - Artifacts/logs: none; UF2 awaiting upload at `build/arm/pico2_choupi.uf2` (SHA-256 `18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`)
