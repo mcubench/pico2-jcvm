@@ -1,0 +1,28 @@
+cmake_minimum_required(VERSION 3.20)
+
+if(NOT DEFINED PICO_BOARD)
+  set(PICO_BOARD pico2 CACHE STRING "Pico board")
+endif()
+if(NOT DEFINED PICO_FLASH_SIZE_BYTES)
+  set(PICO_FLASH_SIZE_BYTES 2097152 CACHE STRING "Reported Pico 2 flash size")
+endif()
+
+include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+
+project(pico2_trng C CXX ASM)
+add_compile_options(-Wall -Wextra -Werror)
+if(LOCAL_ARM_NEWLIB_INCLUDE)
+  include_directories(SYSTEM "${LOCAL_ARM_NEWLIB_INCLUDE}")
+  include_directories(SYSTEM "${LOCAL_ARM_NEWLIB_INCLUDE}/c++/14.2.1")
+  include_directories(SYSTEM "${LOCAL_ARM_NEWLIB_INCLUDE}/c++/14.2.1/arm-none-eabi")
+endif()
+if(LOCAL_ARM_NEWLIB_LIBRARY_DIR)
+  link_directories("${LOCAL_ARM_NEWLIB_LIBRARY_DIR}")
+endif()
+pico_sdk_init()
+
+add_executable(pico2_trng src/board_smoke.c)
+target_link_libraries(pico2_trng PRIVATE pico_stdlib pico_rand)
+pico_enable_stdio_usb(pico2_trng 1)
+pico_enable_stdio_uart(pico2_trng 0)
+pico_add_extra_outputs(pico2_trng)

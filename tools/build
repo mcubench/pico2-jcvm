@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -eq 1 ]] || die "usage: ./tools/build arm|riscv"
+case "$1" in
+  arm) arch=arm; platform=rp2350-arm-s ;;
+  riscv) arch=riscv; platform=rp2350-riscv ;;
+  *) die "unsupported architecture '$1' (choose arm or riscv)" ;;
+esac
+
+require_sdk
+require_command cmake
+require_command ninja
+require_command picotool
+build_dir="${repo_root}/build/${arch}"
+linker_flags=""
+arm_newlib_include=""
+arm_newlib_dir=""
+if [[ "${arch}" == arm ]]; then
+  arm_newlib_dir="${tool_root}/usr/lib/arm-none-eabi/newlib/thumb/v8-m.main+fp/softfp"
+  arm_newlib_include="${tool_root}/usr/include/newlib"
+  [[ -f "${arm_newlib_dir}/libc.a" && -f "${arm_newlib_dir}/libg.a" ]] || \
+    die "ARM Newlib libraries not found under ${arm_newlib_dir}"
+  [[ -f "${arm_newlib_include}/assert.h" ]] || die "ARM Newlib headers not found under ${arm_newlib_include}"
+  linker_flags="-L${arm_newlib_dir}"
+fi
+cmake -S "${repo_root}" -B "${build_dir}" -G Ninja \
+  -U CMAKE_C_FLAGS -U CMAKE_CXX_FLAGS \
+  -DPICO_SDK_PATH="${PICO_SDK_PATH}" \
+  -DPICO_BOARD=pico2 \
+  -DPICO_PLATFORM="${platform}" \
+  -DPICO_FLASH_SIZE_BYTES=2097152 \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DLOCAL_ARM_NEWLIB_INCLUDE="${arm_newlib_include}" \
+  -DLOCAL_ARM_NEWLIB_LIBRARY_DIR="${arm_newlib_dir}" \
+  -DCMAKE_EXE_LINKER_FLAGS="${linker_flags}"
+cmake --build "${build_dir}" --target pico2_trng
+image="${build_dir}/pico2_trng.uf2"
+[[ -s "${image}" ]] || die "build did not produce ${image}"
+picotool info -a "${image}"
+printf 'BUILD:PASS arch=%s image=%s\n' "${arch}" "${image#${repo_root}/}"
