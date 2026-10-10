@@ -572,3 +572,24 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   passed. Diagnostic UF2 SHA-256:
   `19532c092fa19bcc7dd1e43e8d5aa84450755e112a02225ec12b697836f3cc9b`.
   This build has not yet been flashed; BOOTSEL reconnect is still required.
+
+## Heap allocation localized on the Pico 2 (2026-10-10)
+
+- After the user reconnected the board in BOOTSEL, `./tools/cycle choupi`
+  passed both ARM/RISC-V build gates, visibly flashed 100%, and captured the
+  diagnostic image. Log: `artifacts/logs/cycle-choupi-20261010T133620Z.log`
+  (SHA-256
+  `9846ef5043fbd4b74f828a4a4da3260b538933db5455d9bf8027c56c7e51a9fb`).
+- `fs_init()` completed; the failure occurs after `CHOUPI:STAGE runtime:start`.
+  The Pico SDK reports a 36,870-byte allocation succeeding at
+  `0x20068FB0..0x20071FB6`, followed by another 36,870-byte allocation failure
+  and `*** PANIC *** / Out of memory`. The request call site is not yet known.
+- Reduced the overlay byte arena from 128 KiB to 64 KiB (saving exactly
+  65,536 bytes of static SRAM) to increase room for the second runtime
+  allocation. Both architecture builds passed. New candidate UF2 SHA-256:
+  `a590f7b12e9a9ebc66ffa202921e9878cc12b8457d667ed65f29aba97046c9f5`;
+  `.bss` ends at `0x2002B56C`, down 65,536 bytes from `0x2003B56C`.
+- This reduced-arena image has not yet been flashed. The board is running the
+  heap-diagnostic image; verify BOOTSEL after physical reconnection, then run
+  `./tools/cycle choupi`. Do not call the runtime a pass unless the cycle
+  captures the expected TEST summary. CAP installation remains unimplemented.
