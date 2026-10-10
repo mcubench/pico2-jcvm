@@ -35,6 +35,7 @@
 #include "ffi.h"
 
 #include <cassert>
+#include <cstdio>
 
 namespace jcvm {
 
@@ -227,6 +228,9 @@ fs::Tag FlashMemory_Handler::computeTag(const fs::Tag &tag,
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   if (new_tag.len > (sizeof(new_tag.value) / sizeof(new_tag.value[0]))) {
+    std::printf("CHOUPI:PERSIST_TAG_LIMIT base_len=%u new_len=%u capacity=%u\r\n",
+                tag.len, new_tag.len,
+                static_cast<unsigned>(sizeof(new_tag.value)));
     throw Exceptions::SecurityException;
   }
 
@@ -498,6 +502,24 @@ FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &tag) {
 void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
                                                        const jref_t value,
                                                        Heap &heap) {
+  static uint16_t deep_trace_count = 0;
+  if (tag.len >= 19 && deep_trace_count < 64) {
+    if (value.isArray()) {
+      auto array = heap.getArray(value);
+      std::printf("CHOUPI:PERSIST_REF tag_len=%u ref=%04X array_type=%u size=%u\r\n",
+                  tag.len, value.compact(), static_cast<unsigned>(array->getType()),
+                  static_cast<unsigned>(array->size()));
+    } else {
+      auto instance = heap.getInstance(value);
+      std::printf("CHOUPI:PERSIST_REF tag_len=%u ref=%04X package=%u class=%u\r\n",
+                  tag.len, value.compact(),
+                  static_cast<unsigned>(instance->getPackageID()),
+                  static_cast<unsigned>(instance->getClassIndex()));
+    }
+    ++deep_trace_count;
+  }
+
+  try {
   if (value.isNullPointer()) {
     // Missing child records already decode as null in
     // getPersistentField_Reference(). Avoid allocating one filesystem entry
@@ -522,6 +544,12 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
 
   auto instance = heap.getInstance(value);
   FlashMemory_Handler::setPersistentField_Instance(tag, *instance, heap);
+  } catch (Exceptions exception) {
+    std::printf("CHOUPI:PERSIST_EXCEPTION id=%u tag_len=%u ref=%04X\r\n",
+                static_cast<unsigned>(exception), tag.len, value.compact());
+    std::fflush(stdout);
+    throw;
+  }
 }
 
 /*
@@ -583,6 +611,8 @@ void FlashMemory_Handler::setPersistentField_Array(const fs::Tag &tag,
     break;
 
   default:
+    std::printf("CHOUPI:PERSIST_INVALID array-type=%u tag_len=%u\r\n",
+                static_cast<unsigned>(array.getType()), tag.len);
     throw Exceptions::SecurityException;
   }
 
@@ -601,6 +631,7 @@ void FlashMemory_Handler::setPersistentField_Instance(
   auto fields = instance.getFields();
 
   if (fields == nullptr) {
+    std::printf("CHOUPI:PERSIST_INVALID fields=null tag_len=%u\r\n", tag.len);
     // TODO: It's a normal behavior?
     throw Exceptions::SecurityException;
   }
@@ -668,6 +699,8 @@ void FlashMemory_Handler::setPersistentField_Instance(
       jref_t objectref = static_cast<jref_t>(field.value);
 
       if (objectref.isArray()) {
+        std::printf("CHOUPI:PERSIST_INVALID object-field-is-array tag_len=%u ref=%04X\r\n",
+                    field_tag.len, objectref.compact());
         throw Exceptions::SecurityException;
       }
 
@@ -700,6 +733,9 @@ void FlashMemory_Handler::setPersistentField_Instance(
       jref_t arrayref = static_cast<jref_t>(field.value);
 
       if (!arrayref.isArray()) { // Is an array?
+        std::printf("CHOUPI:PERSIST_INVALID array-field-is-object tag_len=%u ref=%04X type=%u\r\n",
+                    field_tag.len, arrayref.compact(),
+                    static_cast<unsigned>(field.type));
         throw Exceptions::SecurityException;
       }
 
@@ -710,6 +746,8 @@ void FlashMemory_Handler::setPersistentField_Instance(
     }
 
     default:
+      std::printf("CHOUPI:PERSIST_INVALID field-type=%u tag_len=%u\r\n",
+                  static_cast<unsigned>(field.type), field_tag.len);
       throw Exceptions::SecurityException;
     }
   }

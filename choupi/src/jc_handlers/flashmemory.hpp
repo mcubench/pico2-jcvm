@@ -46,7 +46,7 @@ class Heap;        // Forward declaration of Heap
 
 namespace fs {
 
-#define TAG_MAX_LENGTH 32
+#define TAG_MAX_LENGTH 128
 
 struct Tag {
   uint8_t len = 0;

@@ -32,7 +32,32 @@
 #include "../jc_utils.hpp"
 #include "jc_array.hpp"
 
+#include <cstdio>
+#include <cstring>
+
 namespace jcvm {
+
+namespace {
+
+uint8_t persistent_tag_root_length(uint8_t first, uint8_t length) {
+  if (length == 0) {
+    return 0;
+  }
+  switch (first) {
+  case 0x00:
+    return 1;
+  case 0x01:
+    return length >= 2 ? 2 : 0;
+  case 0x02:
+    return length >= 3 ? 3 : 0;
+  case 0x03:
+    return length >= 5 ? 5 : 0;
+  default:
+    return 0;
+  }
+}
+
+} // namespace
 
 /**
  * Default constructor.
@@ -85,8 +110,34 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
                          const fs::Tag &tag) noexcept
     : JC_Object(owner, true), packageID(packageID), claz(claz_index) {
   this->persistent_tag_length = tag.len;
-  for (uint8_t idx = 0; idx < tag.len; idx++) {
-    this->persistent_tag_value[idx] = tag.value[idx];
+  const uint8_t root_length =
+      persistent_tag_root_length(tag.value[0], tag.len);
+  this->persistent_tag_compressed = root_length != 0 &&
+                                    ((tag.len - root_length) & 1) == 0 &&
+                                    tag.len > root_length;
+  for (uint8_t idx = root_length; this->persistent_tag_compressed &&
+                                  idx < tag.len; idx += 2) {
+    if (tag.value[idx] != tag.value[idx + 1]) {
+      this->persistent_tag_compressed = false;
+    }
+  }
+  const uint8_t stored_length =
+      this->persistent_tag_compressed
+          ? static_cast<uint8_t>(root_length + (tag.len - root_length) / 2)
+          : tag.len;
+  uint8_t *stored_tag = this->persistent_tag_value;
+  if (stored_length > sizeof(this->persistent_tag_value)) {
+    this->persistent_tag_overflow = new uint8_t[stored_length];
+    stored_tag = this->persistent_tag_overflow;
+  }
+  if (this->persistent_tag_compressed) {
+    std::memcpy(stored_tag, tag.value, root_length);
+    uint8_t output = root_length;
+    for (uint8_t idx = root_length; idx < tag.len; idx += 2) {
+      stored_tag[output++] = tag.value[idx];
+    }
+  } else {
+    std::memcpy(stored_tag, tag.value, tag.len);
   }
 
   Class_Handler class_handler(this->packageID);
@@ -100,6 +151,7 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
  * Default destructor
  */
 JC_Instance::~JC_Instance() noexcept {
+  delete[] this->persistent_tag_overflow;
   if (this->fields != nullptr) {
     delete this->fields;
   }
@@ -114,8 +166,20 @@ fs::Tag JC_Instance::recomputeOriginalTag() const noexcept {
   fs::Tag tag;
 
   tag.len = this->persistent_tag_length;
-  for (uint8_t idx = 0; idx < tag.len; idx++) {
-    tag.value[idx] = this->persistent_tag_value[idx];
+  const uint8_t *stored_tag = this->persistent_tag_overflow == nullptr
+                                  ? this->persistent_tag_value
+                                  : this->persistent_tag_overflow;
+  if (this->persistent_tag_compressed) {
+    const uint8_t root_length =
+        persistent_tag_root_length(stored_tag[0], tag.len);
+    std::memcpy(tag.value, stored_tag, root_length);
+    uint8_t input = root_length;
+    for (uint8_t idx = root_length; idx < tag.len; idx += 2) {
+      tag.value[idx] = stored_tag[input];
+      tag.value[idx + 1] = stored_tag[input++];
+    }
+  } else {
+    std::memcpy(tag.value, stored_tag, tag.len);
   }
 
   return tag;
@@ -382,6 +446,11 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
                        : FieldType::FIELD_TYPE_ARRAY_OBJECT;
       break;
     default:
+      std::printf("CHOUPI:PERSIST_INVALID loaded-field-type=%u index=%u package=%u class=%u\r\n",
+                  static_cast<unsigned>(field.type),
+                  static_cast<unsigned>(index),
+                  static_cast<unsigned>(this->packageID),
+                  static_cast<unsigned>(this->claz));
       throw Exceptions::SecurityException;
     }
   } else {
@@ -478,6 +547,11 @@ auto JC_Instance::getFields() const -> decltype(fields) {
               .compact());
       break;
     default:
+      std::printf("CHOUPI:PERSIST_INVALID loaded-field-type=%u index=%u package=%u class=%u\r\n",
+                  static_cast<unsigned>(field.type),
+                  static_cast<unsigned>(index),
+                  static_cast<unsigned>(this->packageID),
+                  static_cast<unsigned>(this->claz));
       throw Exceptions::SecurityException;
     }
   }

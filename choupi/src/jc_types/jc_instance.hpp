@@ -47,9 +47,10 @@ class JC_Instance : public JC_Object {
 private:
   jpackage_ID_t packageID;
   jclass_index_t claz;
-  static constexpr uint8_t persistent_tag_capacity = 32;
   uint8_t persistent_tag_length = 0;
-  uint8_t persistent_tag_value[persistent_tag_capacity] = {};
+  bool persistent_tag_compressed = false;
+  uint8_t persistent_tag_value[68] = {};
+  uint8_t *persistent_tag_overflow = nullptr;
   mutable bool persistent_fields_loaded = true;
 
   /**

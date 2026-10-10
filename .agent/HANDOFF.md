@@ -371,3 +371,34 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
 - Increased overlay metadata capacity to 4,096. Both `./tools/build arm` and `./tools/build riscv` pass. The latest hardware cycle flashed the image and failed at 4,096 files / 20,754 bytes, while writing a six-byte record at tag length 27. The VM reports exception id 5 at opcode `0x7F`, then status `6F00`. Log: `artifacts/logs/cycle-choupi-20261010T095555Z.log`, SHA-256 `5f0fe823120a2db9cfc7fd09598c2a17106942f82df07883a8c6688615fbd9e4`.
 - Next action: trace recursive persistence at deeper tags, identify cyclic/shared object expansion, and fix the serialization path rather than keep multiplying overlay slots. Continue requiring both builds before flash. The exact JCAlgTest v1.8.2 CAP is still not installed; firmware has CDC only and lacks an APDU/CCID or CAP loader.
 - Preserve all unrelated staged or untracked work. Commit the current storage experiment with this progress record, then continue diagnosis.
+
+## Latest parent-compressed storage update (2026-10-10)
+
+- The Pico filesystem shim now uses a 16,384-entry hash index and 256 KiB
+  packed arena. Tags compress repeated field-index byte pairs; most nested
+  records refer to the parent tag by a stable index slot. Record updates use
+  the stored key encoding when accounting for replaced bytes.
+- The required nested OS prototype update is committed as
+  `choupi/os` commit `f994d5e` (`Expand persistent filesystem tag buffers`).
+- Both `./tools/build arm` and `./tools/build riscv` pass for the current
+  source. First hardware capture after parent compression passed previous
+  arena/file limits but failed on `SecurityException id=29` while descending
+  a 61-byte persistent path (`artifacts/logs/cycle-choupi-20261010T101555Z.log`).
+- Increasing tag buffers to 128 bytes passed builds, but hardware then
+  reported `*** PANIC *** Out of memory` shortly after BOOT
+  (`artifacts/logs/cycle-choupi-20261010T101744Z.log`). Instance tags were
+  changed to compact repeated-pair encoding in a 68-byte inline buffer with
+  overflow storage. Two later cycles returned no CHOUPI serial lines after
+  `MONITOR:START` (`101940Z`, `102236Z`). The 8-second independent monitor was
+  also silent. Read-only `picotool info -a` sees a USB serial connection but
+  reports no accessible BOOTSEL device.
+- User has been asked to reconnect the Pico 2 while holding BOOTSEL. Continue
+  independent source and continuity work while awaiting that response; do not
+  flash until both architecture builds pass. The exact CAP remains
+  `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` (SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`)
+  and is not installed. Firmware exposes CDC only; no APDU/CAP loader exists.
+- Next action: after BOOTSEL re-enumerates, reflash the current compact-tag
+  build and capture serial output; shrink the static overlay arena if startup
+  still exhausts the available RAM. Preserve unrelated changes and append a
+  progress record plus a new commit for each validated step.
