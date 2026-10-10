@@ -264,3 +264,12 @@ standalone smoke output; it is not running CHOUPI or JCAlgTest. Preserve
   exits 1 for the missing CAP parser. Maven 3.10.0 is available through
   `./tools/env`; the API build passes with Temurin 8u504. Root smoke wrappers
   pass for both ISAs. Board queries and cycles required reviewed escalation.
+- Latest deployment-readiness attempt: diagnostics still report missing
+  `rommask/capmap-free/pom.xml`; fetching pinned gitlink
+  `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4` from Bitbucket fails because the
+  host requests credentials. CHOUPI PC CMake configuration fails because
+  Boost headers and `program_options` are absent. Existing CHOUPI supports
+  host/STM32 only; its OS lacks an RP2350 architecture, and the root Pico SDK
+  target remains the smoke app. USB CCID/APDU and on-card CAP installation are
+  absent, so no CHOUPI/CAP flash was attempted. See the newest deployment
+  readiness record in `progress.md`.
