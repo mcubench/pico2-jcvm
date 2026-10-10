@@ -555,5 +555,5 @@
 - Validation: Recomputed each SHA-256. The two silent CHOUPI logs are byte-identical at `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`; the silent TRNG log is `62457db617d9013e2c91a67bf6cfb2a74b8600d7c50b952b091d8dd9fc4e7e13`.
 - Result: All current failed captures are preserved without adding unrelated pre-existing logs.
 - Decision: Resume hardware validation after a physical BOOTSEL reconnect and verify flash completion before interpreting serial output.
-- Commit: `<recorded after commit>`
+- Commit: root `99978ab`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T111732Z.log`, `artifacts/logs/cycle-choupi-20261010T112137Z.log`, `artifacts/logs/cycle-arm-20261010T112446Z.log`
