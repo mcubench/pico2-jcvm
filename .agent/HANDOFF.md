@@ -309,3 +309,32 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   architecture, and the root Pico SDK target remains the smoke app. USB
   CCID/APDU and on-card CAP installation are absent, so no CHOUPI/CAP flash was
   attempted. See latest `progress.md` record.
+
+## Latest bring-up state (2026-10-10)
+
+- The root now links `pico2_choupi.uf2` for `rp2350-arm-s`. `tools/build` also
+  cross-compiles the VM core for `rp2350-riscv`; `tools/cycle choupi` enforces
+  both builds before flashing. ARM and RISC-V build gates pass.
+- The CHOUPI image contains `build/choupi-rommask/flash-algtest.bin`, generated
+  from JCA rebuilt from the v1.8.2 `src305` sources. It is not the exact user
+  CAP. The image starts on the Pico 2 and emits CDC logs, but startup fails:
+  latest serial log `artifacts/logs/cycle-choupi-20261010T084216Z.log` reports
+  `PUTFIELD_A` object `0x0000`, value `0x0007`, `NullPointerException`, and
+  `6F00`. The wrapper's `TEST:FAIL choupi_runtime` is expected and must not be
+  treated as a pass.
+- Source debugging in the user-provided, untracked `choupi/` tree has locally
+  fixed field constant-pool token resolution, primitive `NEWARRAY` bytecode to
+  internal array-type mapping, and new arrays remaining heap-backed until
+  persisted. It also has temporary exception and field-reference traces. These
+  edits are not in a root commit; preserve them and never stage the full
+  provided source tree. Current lead: inspect starter/app initialization and
+  why it dereferences element 0 of a new reference array before assignment.
+- `gp`, `pcsc_scan`, and `opensc-tool` are absent. The installed TinyUSB SDK
+  provides CDC but no CCID class, and the current firmware has no APDU/card
+  manager. The exact supplied CAP
+  `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` remains uninstalled (SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`). Do
+  not report the source-derived prelinked package as installation of this CAP.
+- New root changes for the CHOUPI target and cycle wrapper plus the failed
+  board experiment are awaiting the incremental root commit. Recent successful
+  board access required reviewed USB escalation; the cycle log is archived.

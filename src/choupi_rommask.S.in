@@ -1,0 +1,9 @@
+.section .rodata.choupi_rommask,"a"
+.balign 4
+.global choupi_rommask_start
+.type choupi_rommask_start, %object
+choupi_rommask_start:
+.incbin "@CHOUPI_ROMMASK_IMAGE@"
+.global choupi_rommask_end
+choupi_rommask_end:
+.size choupi_rommask_start, choupi_rommask_end - choupi_rommask_start

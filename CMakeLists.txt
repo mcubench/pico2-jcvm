@@ -47,6 +47,38 @@ if(CHOUPI_VM_SOURCES)
     -Wno-ignored-qualifiers
     -Wno-address-of-packed-member
     -Wno-unused-parameter
-    -Wno-array-bounds)
+    -Wno-array-bounds
+    -Wno-format)
+  target_compile_definitions(choupi_vm_core PRIVATE DEBUG)
   set_target_properties(choupi_vm_core PROPERTIES CXX_STANDARD 17)
+endif()
+
+if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
+  set(CHOUPI_ROMMASK_IMAGE
+    "${CMAKE_CURRENT_SOURCE_DIR}/build/choupi-rommask/flash-algtest.bin")
+  if(NOT EXISTS "${CHOUPI_ROMMASK_IMAGE}")
+    message(FATAL_ERROR "Missing CHOUPI ROM-mask image: ${CHOUPI_ROMMASK_IMAGE}")
+  endif()
+  configure_file(src/choupi_rommask.S.in
+    "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S" @ONLY)
+  add_executable(pico2_choupi
+    choupi/src/main.cpp
+    src/choupi_pico2.cpp
+    "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
+    $<TARGET_OBJECTS:choupi_vm_core>)
+  target_include_directories(pico2_choupi PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/choupi/os/src"
+    "${CMAKE_CURRENT_BINARY_DIR}/choupi-generated")
+  target_compile_options(pico2_choupi PRIVATE
+    -Wno-ignored-qualifiers
+    -Wno-address-of-packed-member
+    -Wno-unused-parameter
+    -Wno-array-bounds
+    -Wno-format)
+  target_compile_definitions(pico2_choupi PRIVATE DEBUG)
+  target_link_libraries(pico2_choupi PRIVATE pico_stdlib)
+  pico_enable_stdio_usb(pico2_choupi 1)
+  pico_enable_stdio_uart(pico2_choupi 0)
+  pico_add_extra_outputs(pico2_choupi)
 endif()

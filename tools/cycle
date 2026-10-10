@@ -2,12 +2,16 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-[[ $# -eq 1 ]] || die "usage: ./tools/cycle arm|riscv"
+[[ $# -eq 1 ]] || die "usage: ./tools/cycle arm|riscv|choupi"
 arch="$1"
-[[ "$arch" == arm || "$arch" == riscv ]] || die "choose arm or riscv"
+[[ "$arch" == arm || "$arch" == riscv || "$arch" == choupi ]] || die "choose arm, riscv, or choupi"
 "${repo_root}/tools/build" arm
 "${repo_root}/tools/build" riscv
-image="${repo_root}/build/${arch}/pico2_trng.uf2"
+if [[ "${arch}" == choupi ]]; then
+  image="${repo_root}/build/arm/pico2_choupi.uf2"
+else
+  image="${repo_root}/build/${arch}/pico2_trng.uf2"
+fi
 log_dir="${repo_root}/artifacts/logs"
 mkdir -p "$log_dir"
 log_file="${log_dir}/cycle-${arch}-$(date -u +%Y%m%dT%H%M%SZ).log"
@@ -19,7 +23,14 @@ monitor_status=${PIPESTATUS[0]}
 set -e
 (( monitor_status == 0 )) || die "serial monitor failed with status ${monitor_status}; log: ${log_file}"
 normalized_log="$(tr -d '\r' < "$log_file")"
-if ! grep -q '^TEST:PASS random_stream_varies$' <<<"${normalized_log}" || \
+if [[ "${arch}" == choupi ]]; then
+  if ! grep -q '^BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi$' <<<"${normalized_log}" || \
+      ! grep -q '^TEST:PASS choupi_runtime$' <<<"${normalized_log}" || \
+      ! grep -q '^TEST:SUMMARY pass=1 fail=0$' <<<"${normalized_log}" || \
+      grep -Eq '^TEST:FAIL|^FAULT' <<<"${normalized_log}"; then
+    die "CHOUPI runtime output did not pass; inspect ${log_file}"
+  fi
+elif ! grep -q '^TEST:PASS random_stream_varies$' <<<"${normalized_log}" || \
     grep -Eq '^TEST:FAIL|^FAULT' <<<"${normalized_log}"; then
   die "hardware test output did not pass; inspect ${log_file}"
 fi
