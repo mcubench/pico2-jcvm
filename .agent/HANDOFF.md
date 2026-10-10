@@ -469,3 +469,25 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   builds, flash/capture CHOUPI and resolve startup failures, then implement or
   establish an APDU and CAP installation path. Do not claim the CAP installed
   until successful on-device installation is observed.
+
+## Latest Pico 2 flash attempt (2026-10-10)
+
+- `./tools/build arm` and `./tools/build riscv` both pass for the current
+  source. The normal sandbox cannot initialize libUSB, but elevated read-only
+  `picotool info -a` detected the RP2350 as a CDC device running firmware.
+- The authorized repository command `./tools/cycle choupi` was run with USB
+  device access. It rebuilt both targets, `picotool load -f -x` rebooted the
+  connected device into BOOTSEL, and the cycle proceeded to the serial monitor,
+  indicating the CHOUPI UF2 load completed. Current ARM UF2 SHA-256 is
+  `9cc85d9051fb9f55d52682d4f772ea16316d144fb123686381415203bad85fc6`.
+- The 18-second monitor emitted no serial bytes and the cycle exited nonzero
+  (`artifacts/logs/cycle-choupi-20261010T111732Z.log`, SHA-256
+  `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`). This
+  is byte-identical to earlier silent captures. The post-cycle device query
+  sees a CDC device again, not BOOTSEL. Do not treat this as a passing runtime
+  test or as evidence of a usable JCVM.
+- Next investigate early startup/CDC silence (including whether firmware has
+  reached the USB log path) before continuing the persistent-alias experiment.
+  Both architecture builds must still pass before any additional flash. Once
+  CHOUPI runs, it still needs APDU/CCID or another host protocol and a CAP
+  loader; the exact JCAlgTest v1.8.2 CAP has not been installed.
