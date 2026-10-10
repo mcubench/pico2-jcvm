@@ -17,8 +17,8 @@ extern "C" uint16_t runtime(uint8_t package_id, uint8_t class_id,
 namespace {
 
 constexpr size_t kRomFsOffset = 0x20000;
-constexpr size_t kMaxOverlayFiles = 16384;
-constexpr size_t kMaxOverlayBytes = 256 * 1024;
+constexpr size_t kMaxOverlayFiles = 8192;
+constexpr size_t kMaxOverlayBytes = 128 * 1024;
 
 struct OverlayFile {
   uint16_t hash = 0;

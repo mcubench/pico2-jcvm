@@ -491,3 +491,20 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   Both architecture builds must still pass before any additional flash. Once
   CHOUPI runs, it still needs APDU/CCID or another host protocol and a CAP
   loader; the exact JCAlgTest v1.8.2 CAP has not been installed.
+
+## Reduced SRAM arena experiment (2026-10-10)
+
+- Changed the Pico overlay capacity in `src/choupi_pico2.cpp` to 8,192 file
+  records and 128 KiB of record bytes. Both architecture builds passed and the
+  CHOUPI cycle successfully loaded the ARM UF2 after a forced BOOTSEL reboot.
+- Capture `artifacts/logs/cycle-choupi-20261010T112137Z.log` had no serial
+  bytes; its SHA-256 is `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`.
+  A separate 8-second pyserial capture with DTR asserted was also silent.
+- The ARM ELF `.bss` is now 232,860 bytes (was 462,236); `.data` is 9,920
+  bytes. The image enumerates as CDC, but it still emits no BOOT/runtime
+  message. More heap did not resolve the silence. UF2 SHA-256 is
+  `0a265f608a5c5ea44f90bcb46ced51a308b8d909967ffd8071dd89ef6f6d675d`.
+- Next flash the known-good TRNG firmware with the cycle wrapper to confirm
+  serial capture, then trace CHOUPI startup before further overlay tuning. Keep
+  both architecture build gates before each flash. The exact v1.8.2 CAP is
+  still not installed; CHOUPI has no APDU/CAP loading path.
