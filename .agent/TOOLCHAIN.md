@@ -21,6 +21,10 @@ Installed or fetched locally:
 - `riscv32-pico-elf` GCC 16 and its matching target libraries
 - Raspberry Pi Pico SDK 2.3.1 at commit `079c6f39023649b154152db30f1d781e884879bc`, including its submodules
 - Raspberry Pi `picotool` 2.3.1 and `pioasm` 2.3.1 tools
+- Apache Maven 3.10.0, exposed through `./tools/env` and the build wrappers
+- Eclipse Temurin JDK 8u504 under `.local-toolchain/java8` for the legacy Java
+  Card API Ant build; invoke Ant with `JAVA_HOME` and `PATH` set to that local
+  JDK. The usual wrapper environment continues to use host Java 21.
 
 The Pico SDK and Raspberry Pi binary tool archives were fetched from their
 official GitHub releases. SHA-256 checks for `pico-sdk-tools-2.3.1-x86_64-lin`
@@ -48,7 +52,18 @@ reviewed escalation for board queries and cycles.
 RP2350 smoke target, flash only after both ISA builds pass, and capture bounded
 USB CDC output. The smoke result checks that `get_rand_32()` varies across a
 small sample; it is not an entropy-quality assessment and does not validate the
-CHOUPI VM. The OS, Java Card API, and ROM-mask source checkouts are now present
-at the plan's pinned commits inside `choupi/`. The nested STM32CubeF4 submodule
-is uninitialized and Maven is not installed, so the legacy dependency build has
-not yet been validated.
+CHOUPI VM. The OS, Java Card API, and ROM-mask source checkouts are present at
+the plan's pinned commits inside `choupi/`. The Java Card API Ant build passes
+with JDK 8. ROM-mask generation is blocked because its pinned `capmap-free`
+Bitbucket submodule is inaccessible; `tools/doctor` checks this dependency and
+the JC 3.0.5u3 API kit explicitly. The OS's nested STM32CubeF4 submodule is
+uninitialized because it belongs to the legacy STM32 target.
+Maven's local artifact repository is redirected to `.local-toolchain/m2` so
+Maven does not write outside this checkout. The first ROM-mask Maven attempt
+could not resolve Maven Central because DNS/network access is unavailable in
+this environment.
+
+Maven 3.10.0 archive SHA-512:
+`908b1501bfb420bf7c8affb855534a9c407fd6099367bfb9f2f2dcb8e9799102bffb84518cde74c679bd76870247c6528683abdd620581bffa90f95d92d175aa`.
+Temurin JDK 8u504 archive SHA-256:
+`9c70e102f527ac674ac2fe9c7d47b9a04e2d19842ba5ab8e9b33f368bbadfaea`.

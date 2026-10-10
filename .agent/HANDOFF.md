@@ -42,10 +42,13 @@ v1.8.2 and preserve the provided source trees.
   confirms changing output from `get_rand_32()`; it does not assess entropy or
   execute CHOUPI. Final log: `artifacts/logs/cycle-arm-20261010T053019Z.log`.
   Implementation commit: `9bd89df`.
-- `tools/doctor` finds the host toolchain through `./tools/env` but still fails
-  on unpopulated CHOUPI OS/API/ROM-mask dependencies. The root smoke CMake
-  target and `tools/build`, `tools/common.sh`, `tools/cycle`, and `tools/monitor`
-  are now present and have passed the hardware smoke cycle.
+- Maven 3.10.0 and Eclipse Temurin JDK 8u504 are installed under
+  `.local-toolchain/`. The Java Card API Ant `build` passes with JDK 8. The
+  Maven wrapper is visible through `./tools/env`. `tools/doctor` checks the
+  pinned `capmap-free` submodule and JC 3.0.5u3 API kit explicitly; it reports
+  the unavailable CAP parser. Maven's local repository is redirected inside
+  `.local-toolchain/`; resolution of Maven Central currently fails because
+  DNS is unavailable.
 - Diagnostics and continuity setup are committed as `1616b59`.
 - Fixed `JCVMArray::fill()` to populate each element and removed the ignored
   return qualifier from `size()`. The focused strict host test passed with
@@ -158,16 +161,15 @@ v1.8.2 and preserve the provided source trees.
 
 ## Next action
 
-Continue WP5 by mapping the remaining native methods against the supplied
-AlgTest calls and available VM APIs. Wire the transient clear primitive into
-select/deselect/reset dispatch when that lifecycle layer is introduced.
-VM-internal exception
-mapping and the Java API/APDU pieces remain open. The standalone RP2350 build
-wrappers and hardware smoke cycle now work, and the pinned source dependencies
-are present. Next, integrate CHOUPI with the Pico SDK target and establish its
-first real ARM build. The smoke image is not a CHOUPI or JCAlgTest runtime.
-Preserve the local `.local-toolchain/`,
-`AlgTest_JavaCard/`, and CHOUPI source tree.
+Find source for the exact pinned `capmap-free` commit or replace its parsing
+role with a small compatible CAP reader after documenting the parser API used
+by `rommask`. The Bitbucket repository returns 404/access denied and the
+initial public mirror search found no copy. Once CAP parsing is available,
+build the ROM mask, inspect the supplied JCAlgTest v1.8.2 CAP header/imports,
+then attempt the first CHOUPI ARM configuration. Continue WP5 native and
+lifecycle work in parallel where possible. The smoke image is not a CHOUPI or
+JCAlgTest runtime; preserve the local `.local-toolchain/`, `AlgTest_JavaCard/`,
+and CHOUPI source tree.
 
 ## Latest validation
 
@@ -176,13 +178,15 @@ Preserve the local `.local-toolchain/`,
   all passed. The 8-second capture emitted repeated
   `TEST:PASS random_stream_varies` and `TEST:SUMMARY pass=1 fail=0`; log:
   `artifacts/logs/cycle-arm-20261010T053019Z.log`.
-- Dependency restoration: `./tools/env ./tools/doctor` passed after checking
-  out all three pinned CHOUPI dependencies. Their exact full commit IDs are
-  listed under Current state. Full ROM-mask generation and CHOUPI compilation
-  are not validated yet; Maven is not installed.
-- `bash -n tools/doctor`: passed.
-- `./tools/doctor`: returned 1 and reported the missing tools, SDK variable,
-  and dependency checkout paths listed in `progress.md`.
+- Dependency restoration: all three pinned CHOUPI dependencies are checked
+  out at the full commit IDs listed under Current state. ROM-mask generation
+  and CHOUPI compilation remain unvalidated because `capmap-free` is missing.
+- `bash -n tools/doctor`: passed. `./tools/env ./tools/doctor` reports all
+  host tools, Pico SDK, API kit, and top-level sources present; expected exit
+  status is 1 for missing `rommask/capmap-free/pom.xml`.
+- Java Card API: `JAVA_HOME=$PWD/.local-toolchain/java8` with that JDK's `bin`
+  prepended to `PATH`, then `./tools/env ant -f
+  choupi/javacard-sdk/javacard-api/build.xml build`: `BUILD SUCCESSFUL`.
 - Latest VM syntax check: `TEST:PASS vm_core_syntax`; existing upstream
   warnings remain.
 - Latest `./tools/test-jcvmarray`: `TEST:PASS jcvmarray_fill`.
@@ -227,6 +231,7 @@ Preserve the local `.local-toolchain/`,
 - Toolchain setup: `bash -n tools/env` passed. `./tools/env rustup target
   list --installed` includes `thumbv8m.main-none-eabihf`; CMake/Ninja, both
   compiler prefixes, and picotool version checks passed. `./tools/env
-  ./tools/doctor` reports the host tools and Pico SDK as present, but exits 1
-  for the missing OS/API/ROM-mask dependencies. The root smoke build wrappers
-  now pass for both ISAs. Board queries and cycles required reviewed escalation.
+  `./tools/env ./tools/doctor` reports host tools and Pico SDK present, but
+  exits 1 for the missing CAP parser. Maven 3.10.0 is available through
+  `./tools/env`; the API build passes with Temurin 8u504. Root smoke wrappers
+  pass for both ISAs. Board queries and cycles required reviewed escalation.

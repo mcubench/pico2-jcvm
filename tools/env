@@ -12,7 +12,8 @@ fi
 
 export RUSTUP_HOME="${RUSTUP_HOME:-${local_home}/rustup}"
 export CARGO_HOME="${CARGO_HOME:-${local_home}/cargo}"
-export PATH="${CARGO_HOME}/bin:${toolchain_root}/usr/bin:${toolchain_root}/pioasm:${toolchain_root}/picotool:${local_home}/toolchain/riscv/bin:${PATH}"
+export MAVEN_OPTS="${MAVEN_OPTS:-} -Dmaven.repo.local=${local_home}/m2"
+export PATH="${CARGO_HOME}/bin:${toolchain_root}/usr/bin:${toolchain_root}/pioasm:${toolchain_root}/picotool:${local_home}/maven/apache-maven-3.10.0/bin:${local_home}/toolchain/riscv/bin:${PATH}"
 export LD_LIBRARY_PATH="${toolchain_root}/usr/lib/x86_64-linux-gnu:${local_home}/toolchain/riscv/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 export PICO_HOME="${PICO_HOME:-${local_home}}"
 export PICO_SDK_PATH="${PICO_SDK_PATH:-${PICO_HOME}/sdk}"

@@ -5,7 +5,8 @@ local_root="${repo_root}/.local-toolchain"
 tool_root="${local_root}/root"
 export PICO_HOME="${PICO_HOME:-${local_root}}"
 export PICO_SDK_PATH="${PICO_SDK_PATH:-${PICO_HOME}/sdk}"
-export PATH="${tool_root}/usr/bin:${tool_root}/pioasm:${tool_root}/picotool:${local_root}/toolchain/riscv/bin:${PATH}"
+export MAVEN_OPTS="${MAVEN_OPTS:-} -Dmaven.repo.local=${local_root}/m2"
+export PATH="${tool_root}/usr/bin:${tool_root}/pioasm:${tool_root}/picotool:${local_root}/maven/apache-maven-3.10.0/bin:${local_root}/toolchain/riscv/bin:${PATH}"
 export LD_LIBRARY_PATH="${tool_root}/usr/lib/x86_64-linux-gnu:${local_root}/toolchain/riscv/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
 die() {

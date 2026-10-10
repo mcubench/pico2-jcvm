@@ -43,7 +43,7 @@ report_command cargo yes
 report_command rustc yes
 report_command ant yes
 report_command java yes
-report_command maven no
+report_command mvn yes
 report_command picotool no
 
 printf '\nPico SDK\n'
@@ -60,6 +60,8 @@ report_path choupi_source "${vm_root}/src/main.cpp" yes
 report_path choupi_os "${vm_root}/os/Cargo.toml" yes
 report_path javacard_api "${vm_root}/javacard-sdk/javacard-api/build.xml" yes
 report_path rommask "${vm_root}/javacard-sdk/rommask/pom.xml" yes
+report_path capmap_free "${vm_root}/javacard-sdk/rommask/capmap-free/pom.xml" yes
+report_path jc305u3_kit "${vm_root}/javacard-sdk/javacard-api/sdks/jc305u3_kit/lib/api_classic.jar" yes
 
 printf '\nBoard status\n'
 printf 'INFO    hardware             not required for host diagnostics or build checks\n'
