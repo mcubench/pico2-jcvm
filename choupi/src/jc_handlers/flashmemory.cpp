@@ -499,6 +499,14 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
                                                        const jref_t value,
                                                        Heap &heap) {
   if (value.isNullPointer()) {
+    // Missing child records already decode as null in
+    // getPersistentField_Reference(). Avoid allocating one filesystem entry
+    // for every empty slot in a persistent reference array. If a record
+    // exists in ROM or the overlay, retain an explicit null marker so an
+    // existing value is still cleared.
+    if (!fs_exists(tag.value, tag.len)) {
+      return;
+    }
     const uint8_t uninitialized =
         static_cast<uint8_t>(FieldType::FIELD_TYPE_UNINITIALIZED);
     FlashMemory_Handler::setDataFromTag(tag, sizeof(uninitialized),

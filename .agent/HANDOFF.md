@@ -363,3 +363,11 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
 - Next action: restore Pico USB/BOOTSEL access, capture the sparse interpreter
   heartbeat on the packed-arena image, and continue diagnosing startup before
   adding an exact-CAP installation route. Preserve all pending worktree edits.
+
+## Latest continuation update (2026-10-10)
+
+- User put the Pico 2 into BOOTSEL. `picotool info -a` confirmed RP2350 A4, chip ID `0xd92e743d5f640c0f`, and `boot type: bootsel`.
+- The 2,048-record overlay image flashed successfully and confirmed startup still exhausted the overlay at 2,048 files / 10,394 bytes. A runtime null-reference optimization did not relieve the file-count growth.
+- Increased overlay metadata capacity to 4,096. Both `./tools/build arm` and `./tools/build riscv` pass. The latest hardware cycle flashed the image and failed at 4,096 files / 20,754 bytes, while writing a six-byte record at tag length 27. The VM reports exception id 5 at opcode `0x7F`, then status `6F00`. Log: `artifacts/logs/cycle-choupi-20261010T095555Z.log`, SHA-256 `5f0fe823120a2db9cfc7fd09598c2a17106942f82df07883a8c6688615fbd9e4`.
+- Next action: trace recursive persistence at deeper tags, identify cyclic/shared object expansion, and fix the serialization path rather than keep multiplying overlay slots. Continue requiring both builds before flash. The exact JCAlgTest v1.8.2 CAP is still not installed; firmware has CDC only and lacks an APDU/CCID or CAP loader.
+- Preserve all unrelated staged or untracked work. Commit the current storage experiment with this progress record, then continue diagnosis.

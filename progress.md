@@ -427,3 +427,13 @@
 - Decision: Recover the board's USB/BOOTSEL connection, then capture the sparse VM heartbeat and diagnose any remaining startup or arena limit before implementing CAP installation transport.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T094700Z.log` (SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`); `build/arm/pico2_choupi.uf2` (SHA-256 `8990a465f60f89b9baa724d1c05856605e77d7224e090f6f16b4a711f172c8b8`); ROM mask `build/choupi-rommask/flash-algtest.bin` remains source-derived, not the exact supplied CAP.
+
+## 2026-10-10 — Expand startup overlay and skip absent null references
+
+- Step/experiment: `wp1-choupi-overlay-4096`
+- Change: Avoided creating overlay records for null references whose tags do not exist in ROM or overlay storage, while preserving explicit null writes for existing tags. Increased the packed overlay file index from 2,048 to 4,096 entries after the previous hardware capture reached the old ceiling.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed with their RP2350 UF2 checks. `./tools/cycle choupi` flashed the Pico 2 and captured the 18-second serial window, then returned failure because startup still hit the overlay limit.
+- Result: The same startup workload reached 4,096 records and 20,754/131,072 bytes, then failed writing a 6-byte record at tag length 27 (`0214020101000000…`). Skipping absent null references did not change the dominant record growth. Runtime returned exception 5 at opcode `0x7F`, status `6F00`; no `TEST:PASS` was observed.
+- Decision: Trace nested object/array persistence at deep tags to find why startup expands thousands of records before increasing capacity further. The supplied CAP remains uninstalled.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T095555Z.log` (SHA-256 `5f0fe823120a2db9cfc7fd09598c2a17106942f82df07883a8c6688615fbd9e4`)
