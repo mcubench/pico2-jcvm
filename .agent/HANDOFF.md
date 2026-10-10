@@ -616,3 +616,9 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   candidate has not been flashed. Next action: hold BOOTSEL while reconnecting,
   confirm BOOTSEL, then run `./tools/cycle choupi`. The runtime and CAP install
   remain incomplete.
+- A later `./tools/cycle choupi` passed both build gates but produced no serial
+  bytes; its log is byte-identical to a prior silent capture. A separate
+  20-second capture with the reader attached before `picotool reboot -f -a`
+  was also silent. No successful flash or runtime is confirmed. The Pico
+  enumerates as USB serial, not BOOTSEL. Next action remains a physical
+  BOOTSEL reconnect, verify with `picotool info -a`, and repeat the cycle.
