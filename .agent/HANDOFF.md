@@ -664,3 +664,16 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   `disable` control is not writable to this account. No flash occurred.
 - Keep the built diagnostic UF2 ready (`18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`).
   Continue source analysis; do not claim CHOUPI or JCAlgTest hardware success.
+
+## Persistent field default handling (2026-10-11)
+
+- `JC_Instance::getFields()` now checks `fs_exists()` before trying to decode a
+  persistent field type. Missing per-field records are initialized as
+  `FIELD_TYPE_UNINITIALIZED` with zero value, matching the existing reference
+  getter's null behavior and avoiding an `IOException` for an absent record.
+- ARM and RISC-V wrapper builds pass. New ARM UF2 SHA-256:
+  `2860767cb505cddcc6c6ec372eeceb4b7d5bd5d0e77026c909ae816294e3de03`.
+  The firmware has not been flashed: Pico USB port 3 remains `not attached`.
+  Runtime behavior is unverified. On the next enumeration, enter BOOTSEL if
+  available, flash through `./tools/cycle choupi`, and inspect the bounded log
+  for the persistence phase markers and `TEST:SUMMARY`.

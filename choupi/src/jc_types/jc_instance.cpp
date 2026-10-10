@@ -31,6 +31,7 @@
 #include "../jc_handlers/jc_cp.hpp"
 #include "../jc_utils.hpp"
 #include "jc_array.hpp"
+#include "ffi.h"
 
 #include <cstdio>
 #include <cstring>
@@ -568,6 +569,14 @@ auto JC_Instance::getFields() const -> decltype(fields) {
     const fs::Tag field_tag = FlashMemory_Handler::computeTag(
         this->recomputeOriginalTag(), index);
     jc_field_t &field = this->fields->at(index);
+    // Persistent fields with no record have never been assigned. Match the
+    // reference getter's missing-tag behavior instead of asking the type
+    // reader to turn the expected absence into an IOException.
+    if (!fs_exists(field_tag.value, field_tag.len)) {
+      field.type = FieldType::FIELD_TYPE_UNINITIALIZED;
+      field.value = 0;
+      continue;
+    }
     field.type = FlashMemory_Handler::getPersistentField_Type(field_tag);
 
     switch (field.type) {

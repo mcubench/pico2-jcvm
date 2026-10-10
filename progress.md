@@ -676,3 +676,13 @@
 - Decision: Continue software analysis with the existing built diagnostic firmware. Upload and hardware verification remain pending until the RP2350 reappears.
 - Commit: `256edf8e6ca33ed9584877d7ca8bdd842c01cbe4`
 - Artifacts/logs: none; UF2 awaiting upload at `build/arm/pico2_choupi.uf2` (SHA-256 `18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`)
+
+## 2026-10-11 — Treat missing persistent instance fields as defaults
+
+- Step/experiment: `wp1-choupi-missing-persistent-field-defaults`
+- Change: `JC_Instance::getFields()` now detects absent field tags before type decoding and initializes those entries to `FIELD_TYPE_UNINITIALIZED` with value zero. This follows the existing missing-reference behavior and avoids propagating an IOException for a never-written child record.
+- Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. `git -c core.whitespace=cr-at-eol diff --check -- choupi/src/jc_types/jc_instance.cpp` passed. Hardware execution was not attempted because xHCI port 3 reports `not attached` and no Pico device is enumerated.
+- Result: Both target variants compile. The missing-record path is addressed in source; runtime behavior and whether this resolves the observed `putfield_a` IOException remain unverified.
+- Decision: Keep the candidate ready and flash it with `./tools/cycle choupi` when USB/BOOTSEL enumeration returns. JCAlgTest v1.8.2 remains uninstalled.
+- Commit: pending
+- Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `2860767cb505cddcc6c6ec372eeceb4b7d5bd5d0e77026c909ae816294e3de03`; last board trace remains `artifacts/logs/cycle-choupi-20261010T213245Z.log`
