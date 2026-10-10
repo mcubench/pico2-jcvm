@@ -543,3 +543,26 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   firmware provides CDC and does not implement CCID/APDU, so GPPro is ready
   but cannot connect to it. Do not claim CAP installation until there is an
   APDU path and on-device install confirmation.
+
+## BOOTSEL flash confirms CHOUPI heap panic (2026-10-10)
+
+- Physical BOOTSEL was confirmed with `picotool info -a` (RP2350 A4, 2 MB
+  flash). The next `./tools/cycle choupi` passed ARM and RISC-V builds, flashed
+  the ARM UF2 with visible 100% progress, rebooted it, and captured
+  `BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi` followed by Pico SDK
+  `*** PANIC *** / Out of memory`. Log:
+  `artifacts/logs/cycle-choupi-20261010T115001Z.log` (SHA-256
+  `e01b623fc94299571e1f72fde115acf6b0a7e3bbbe853f6ae9bc9954775c2903`).
+- Source inspection traced the panic text to `pico_malloc`'s allocation guard.
+  Added temporary serial stage markers around `fs_init()` and `runtime()` in
+  `src/choupi_pico2.cpp`; ARM and RISC-V builds passed. The following cycle
+  could not flash because the board had left BOOTSEL; its monitor repeated the
+  previous panic and its log is byte-identical to an earlier silent capture
+  (`9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`).
+- Current stage-marker UF2 hash: `b49438a577524d767b9c859fa2a0de49475c2bce461f29bc97b5c11b04322c65`.
+  `picotool reboot -f -u` also failed to produce a BOOTSEL device. The user
+  was asked to hold BOOTSEL while reconnecting USB; verify boot mode before
+  the next cycle. The stage-marker image is not yet flashed. After identifying
+  the allocation phase, address SRAM pressure and repeat both build gates and
+  the real board cycle. CAP installation is still blocked by missing APDU/CCID
+  transport and loader support.

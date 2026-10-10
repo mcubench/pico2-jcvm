@@ -579,6 +579,7 @@ int main_arm(void) {
   }
   sleep_ms(500);
   printf("BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi\r\n");
+  printf("CHOUPI:STAGE fs_init:start\r\n");
   fflush(stdout);
   if (fs_init() != 0) {
     printf("TEST:FAIL choupi_fs_init\r\n");
@@ -586,11 +587,17 @@ int main_arm(void) {
       tight_loop_contents();
     }
   }
+  printf("CHOUPI:STAGE fs_init:done\r\n");
+  fflush(stdout);
 
   uint16_t status = 0x6F00;
   try {
+    printf("CHOUPI:STAGE runtime:start\r\n");
+    fflush(stdout);
     status = runtime(STARTING_JAVACARD_PACKAGE, STARTING_JAVACARD_CLASS,
                      STARTING_JAVACARD_METHOD);
+    printf("CHOUPI:STAGE runtime:done\r\n");
+    fflush(stdout);
   } catch (...) {
     printf("TEST:FAIL choupi_uncaught_exception\r\n");
   }
