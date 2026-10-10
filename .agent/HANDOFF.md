@@ -404,3 +404,6 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   build and capture serial output; shrink the static overlay arena if startup
   still exhausts the available RAM. Preserve unrelated changes and append a
   progress record plus a new commit for each validated step.
+- The four latest cycle logs are being archived under `artifacts/logs/`; their
+  outcomes are `SecurityException` at tag length 61, `Out of memory`, and two
+  silent captures. No passing CHOUPI runtime evidence exists yet.
