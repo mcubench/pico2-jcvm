@@ -476,16 +476,18 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   source. The normal sandbox cannot initialize libUSB, but elevated read-only
   `picotool info -a` detected the RP2350 as a CDC device running firmware.
 - The authorized repository command `./tools/cycle choupi` was run with USB
-  device access. It rebuilt both targets, `picotool load -f -x` rebooted the
-  connected device into BOOTSEL, and the cycle proceeded to the serial monitor,
-  indicating the CHOUPI UF2 load completed. Current ARM UF2 SHA-256 is
-  `9cc85d9051fb9f55d52682d4f772ea16316d144fb123686381415203bad85fc6`.
+  device access and rebuilt both targets. `picotool load -f -x` returned zero
+  and the cycle proceeded to the serial monitor, but its log has no flash
+  progress/completion message. The silent capture therefore does not establish
+  whether the UF2 was written or which image is running. Candidate ARM UF2
+  SHA-256 is `9cc85d9051fb9f55d52682d4f772ea16316d144fb123686381415203bad85fc6`.
 - The 18-second monitor emitted no serial bytes and the cycle exited nonzero
   (`artifacts/logs/cycle-choupi-20261010T111732Z.log`, SHA-256
   `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`). This
   is byte-identical to earlier silent captures. The post-cycle device query
-  sees a CDC device again, not BOOTSEL. Do not treat this as a passing runtime
-  test or as evidence of a usable JCVM.
+  sees an RP2350 CDC interface but does not confirm BOOTSEL or the running
+  image. Do not treat this as a passing runtime test or as evidence of a usable
+  JCVM.
 - Next investigate early startup/CDC silence (including whether firmware has
   reached the USB log path) before continuing the persistent-alias experiment.
   Both architecture builds must still pass before any additional flash. Once
@@ -495,14 +497,17 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
 ## Reduced SRAM arena experiment (2026-10-10)
 
 - Changed the Pico overlay capacity in `src/choupi_pico2.cpp` to 8,192 file
-  records and 128 KiB of record bytes. Both architecture builds passed and the
-  CHOUPI cycle successfully loaded the ARM UF2 after a forced BOOTSEL reboot.
+  records and 128 KiB of record bytes. Both architecture builds passed; the
+  CHOUPI load command returned zero and the cycle proceeded to capture, but
+  the log did not show flash progress/completion and the running image was not
+  independently verified.
 - Capture `artifacts/logs/cycle-choupi-20261010T112137Z.log` had no serial
   bytes; its SHA-256 is `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`.
   A separate 8-second pyserial capture with DTR asserted was also silent.
 - The ARM ELF `.bss` is now 232,860 bytes (was 462,236); `.data` is 9,920
-  bytes. The image enumerates as CDC, but it still emits no BOOT/runtime
-  message. More heap did not resolve the silence. UF2 SHA-256 is
+  bytes. An RP2350 CDC device enumerated afterward, but it still emitted no
+  BOOT/runtime message and the running image was not verified. More heap did
+  not resolve the silence. Candidate UF2 SHA-256 is
   `0a265f608a5c5ea44f90bcb46ced51a308b8d909967ffd8071dd89ef6f6d675d`.
 - Next flash the known-good TRNG firmware with the cycle wrapper to confirm
   serial capture, then trace CHOUPI startup before further overlay tuning. Keep

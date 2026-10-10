@@ -501,9 +501,9 @@
 ## 2026-10-10 — Flash current CHOUPI image on Pico 2
 
 - Step/experiment: `wp1-choupi-current-image-hardware-cycle`
-- Change: Ran the repository CHOUPI cycle with USB device access after the normal sandbox could not initialize libUSB. `picotool load -f` rebooted the RP2350 from its CDC firmware into BOOTSEL and the cycle loaded the current ARM CHOUPI UF2.
-- Validation: The cycle rebuilt and passed the ARM and RISC-V image gates, then flashed `build/arm/pico2_choupi.uf2`. Its 18-second CDC monitor capture failed the runtime-output gate. The log contains the reboot and monitor start but no CHOUPI output, `TEST:PASS`, or `TEST:SUMMARY`. A follow-up read-only device query sees the Pico as USB serial and confirms it is no longer in BOOTSEL. UF2 SHA-256: `9cc85d9051fb9f55d52682d4f772ea16316d144fb123686381415203bad85fc6`.
-- Result: The board has the CHOUPI image, but runtime startup is still unverified; the capture SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c` matches earlier silent captures. Exact JCAlgTest v1.8.2 CAP remains uninstalled because current firmware has no APDU/CCID transport or CAP loader.
+- Change: Ran the repository CHOUPI cycle with USB device access after the normal sandbox could not initialize libUSB. `picotool load -f` was asked to reboot the RP2350 from CDC into BOOTSEL; the cycle command returned success from the load stage and proceeded to monitor.
+- Validation: The cycle rebuilt and passed the ARM and RISC-V image gates. Its 18-second CDC monitor capture failed the runtime-output gate. The log contains the reboot request and monitor start but no flash progress/completion message, CHOUPI output, `TEST:PASS`, or `TEST:SUMMARY`. A follow-up read-only query saw an RP2350 USB serial interface, but did not establish BOOTSEL mode or which image was executing. Candidate UF2 SHA-256: `9cc85d9051fb9f55d52682d4f772ea16316d144fb123686381415203bad85fc6`.
+- Result: The load command returned zero, but the capture SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c` matches earlier silent captures and does not prove the image was written or that CHOUPI started. Exact JCAlgTest v1.8.2 CAP remains uninstalled because no working APDU/CCID transport or CAP loader exists.
 - Decision: Diagnose why the post-flash CDC capture is silent before claiming a working CHOUPI runtime; then add an installation transport/loader and install the exact CAP.
 - Commit: root `8c9b584`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T111732Z.log`; `build/arm/pico2_choupi.uf2`
@@ -512,8 +512,8 @@
 
 - Step/experiment: `wp1-choupi-arena-sram-reduction`
 - Change: Reduced the static Pico overlay index from 16,384 to 8,192 entries and the byte arena from 256 KiB to 128 KiB to give the Rust VM more dynamic heap.
-- Validation: `./tools/cycle choupi` rebuilt and passed ARM and RISC-V gates, flashed the ARM image, and captured 18 seconds. The cycle failed because the capture had no output. A separate 8-second capture with pyserial DTR asserted was also silent. The ARM ELF `.bss` fell from 462,236 to 232,860 bytes; `.data` remains 9,920 bytes. The device is visible as RP2350 CDC after the cycle.
-- Result: The reduced image boots far enough to enumerate USB CDC, but CHOUPI still produces no `BOOT` marker or runtime status. The monitor log SHA-256 is `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`, identical to previous silent captures. Increasing available heap by about 224 KiB did not restore serial output.
+- Validation: `./tools/cycle choupi` rebuilt and passed ARM and RISC-V gates; the load command returned zero and the cycle captured 18 seconds. The capture had no output. A separate 8-second capture with pyserial DTR asserted was also silent. The ARM ELF `.bss` fell from 462,236 to 232,860 bytes; `.data` remains 9,920 bytes. The device later appeared as RP2350 CDC, but its running image was not verified.
+- Result: This cycle does not establish whether the reduced image booted; no `BOOT` marker or runtime status was captured. The monitor log SHA-256 is `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`, identical to previous silent captures. Increasing available heap by about 224 KiB did not restore serial output.
 - Decision: Keep this as a diagnostic baseline only; isolate the CDC capture path with the small TRNG firmware, then trace CHOUPI startup before further persistence changes.
 - Commit: root `5f3a72b`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T112137Z.log`; current ARM image `build/arm/pico2_choupi.uf2` (SHA-256 `0a265f608a5c5ea44f90bcb46ced51a308b8d909967ffd8071dd89ef6f6d675d`)
