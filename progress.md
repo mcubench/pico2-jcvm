@@ -617,3 +617,13 @@
 - Decision: Have the board physically enter BOOTSEL, confirm it with `picotool info -a`, then retry the cycle and check for visible flash progress and startup output.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T212553Z.log`; `artifacts/logs/serial-reset-capture-20261010.log`
+
+## 2026-10-10 — Verify software BOOTSEL recovery path
+
+- Step/experiment: `wp1-choupi-force-bootsel-recovery`
+- Change: Retried the documented `picotool reboot -F -u` transition with direct USB access after the silent upload attempt.
+- Validation: The command returned success and reported that the device was asked to reboot into BOOTSEL; the following `picotool info -a` still found only USB serial mode and exited 249.
+- Result: Software recovery does not leave this board accessible in BOOTSEL. No firmware write occurred during this experiment.
+- Decision: Physically hold BOOTSEL while reconnecting, then confirm `boot type: bootsel` before flashing.
+- Commit: pending
+- Artifacts/logs: none

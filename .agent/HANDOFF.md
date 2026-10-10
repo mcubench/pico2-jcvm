@@ -622,3 +622,7 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   was also silent. No successful flash or runtime is confirmed. The Pico
   enumerates as USB serial, not BOOTSEL. Next action remains a physical
   BOOTSEL reconnect, verify with `picotool info -a`, and repeat the cycle.
+- A direct `picotool reboot -F -u` also reported a BOOTSEL request, but
+  subsequent `picotool info -a` still found only the USB serial app (exit 249).
+  This software recovery attempt did not flash anything; physical BOOTSEL is
+  required for the next try.
