@@ -338,3 +338,28 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
 - New root changes for the CHOUPI target and cycle wrapper plus the failed
   board experiment are awaiting the incremental root commit. Recent successful
   board access required reviewed USB escalation; the cycle log is archived.
+
+## Latest startup/storage diagnostics (2026-10-10)
+
+- Added bounded VM exception output and a one-line heartbeat per million
+  bytecodes in `choupi/src/interpretor.cpp`. Both ARM and RISC-V builds pass.
+- Hardware diagnostic sequence found the earlier `6F00` was an `IOException`
+  during `putstatic_a`: the Pico overlay exhausted its 24 file slots while
+  persisting CHOUPI startup state. Fixed tables at 48, 128, and 512 slots also
+  exhausted. A dynamic `realloc` prototype ran out of memory. Current
+  `src/choupi_pico2.cpp` uses 2,048 compact metadata records plus a static
+  128 KiB packed byte arena to avoid per-file heap fragmentation.
+- The current packed-arena UF2 builds for both architectures. Its board cycle
+  did not capture BOOT, heartbeat, or TEST output during 18 seconds; a separate
+  60-second monitor was also silent. The last `picotool reboot -u -f` returned
+  success, but the host then lost USB enumeration and `usbreset` could not find
+  the device. The current image is not hardware-validated. Latest cycle log:
+  `artifacts/logs/cycle-choupi-20261010T094700Z.log`; UF2 SHA-256
+  `8990a465f60f89b9baa724d1c05856605e77d7224e090f6f16b4a711f172c8b8`.
+- The exact CAP remains `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`, SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`, and is
+  still not installed. Firmware currently has CDC only, with no APDU/CCID or
+  CAP loader. Do not call the embedded source-derived ROM mask an installation.
+- Next action: restore Pico USB/BOOTSEL access, capture the sparse interpreter
+  heartbeat on the packed-arena image, and continue diagnosing startup before
+  adding an exact-CAP installation route. Preserve all pending worktree edits.

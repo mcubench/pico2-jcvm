@@ -17,18 +17,36 @@ extern "C" uint16_t runtime(uint8_t package_id, uint8_t class_id,
 namespace {
 
 constexpr size_t kRomFsOffset = 0x20000;
-constexpr size_t kMaxOverlayFiles = 24;
-constexpr size_t kMaxOverlayBytes = 4096;
+constexpr size_t kMaxOverlayFiles = 2048;
+constexpr size_t kMaxOverlayBytes = 128 * 1024;
 
 struct OverlayFile {
   bool used = false;
   uint8_t tag_length = 0;
   uint8_t tag[32]{};
+  uint32_t offset = 0;
   uint32_t size = 0;
-  uint8_t bytes[kMaxOverlayBytes]{};
 };
 
 OverlayFile overlay[kMaxOverlayFiles];
+size_t overlay_file_count = 0;
+uint8_t overlay_bytes[kMaxOverlayBytes];
+size_t overlay_bytes_used = 0;
+
+void report_fs_write_failure(const char *operation, const uint8_t *tag,
+                             uint8_t tag_length, uint32_t length) {
+  std::printf("CHOUPI:FS_WRITE_FAIL op=%s tag_len=%u size=%lu files=%u bytes=%lu/%lu tag=",
+              operation, static_cast<unsigned>(tag_length),
+              static_cast<unsigned long>(length),
+              static_cast<unsigned>(overlay_file_count),
+              static_cast<unsigned long>(overlay_bytes_used),
+              static_cast<unsigned long>(kMaxOverlayBytes));
+  for (uint8_t index = 0; index < tag_length && index < 8; ++index) {
+    std::printf("%02X", tag[index]);
+  }
+  std::printf("\r\n");
+  std::fflush(stdout);
+}
 
 bool tags_equal(const uint8_t *left, uint8_t left_length,
                 const uint8_t *right, uint8_t right_length) {
@@ -37,7 +55,8 @@ bool tags_equal(const uint8_t *left, uint8_t left_length,
 }
 
 OverlayFile *find_overlay(const uint8_t *tag, uint8_t tag_length) {
-  for (auto &file : overlay) {
+  for (size_t index = 0; index < overlay_file_count; ++index) {
+    auto &file = overlay[index];
     if (file.used && tags_equal(file.tag, file.tag_length, tag, tag_length)) {
       return &file;
     }
@@ -52,15 +71,41 @@ OverlayFile *allocate_overlay(const uint8_t *tag, uint8_t tag_length) {
   if (auto *file = find_overlay(tag, tag_length)) {
     return file;
   }
-  for (auto &file : overlay) {
-    if (!file.used) {
-      file.used = true;
-      file.tag_length = tag_length;
-      std::memcpy(file.tag, tag, tag_length);
-      return &file;
+  if (overlay_file_count == kMaxOverlayFiles) {
+    return nullptr;
+  }
+  auto &file = overlay[overlay_file_count++];
+  file = OverlayFile{};
+  file.used = true;
+  file.tag_length = tag_length;
+  std::memcpy(file.tag, tag, tag_length);
+  return &file;
+}
+
+bool append_overlay(OverlayFile &file, const uint8_t *data, uint32_t length) {
+  const size_t old_size = file.size;
+  const size_t new_used = overlay_bytes_used - old_size + length;
+  if (new_used > kMaxOverlayBytes) {
+    return false;
+  }
+  const size_t old_offset = file.offset;
+  if (old_size != 0) {
+    std::memmove(overlay_bytes + old_offset,
+                 overlay_bytes + old_offset + old_size,
+                 overlay_bytes_used - old_offset - old_size);
+    for (size_t index = 0; index < overlay_file_count; ++index) {
+      if (&overlay[index] != &file && overlay[index].offset > old_offset) {
+        overlay[index].offset -= static_cast<uint32_t>(old_size);
+      }
     }
   }
-  return nullptr;
+  file.offset = static_cast<uint32_t>(overlay_bytes_used - old_size);
+  if (length != 0) {
+    std::memcpy(overlay_bytes + file.offset, data, length);
+  }
+  file.size = length;
+  overlay_bytes_used = new_used;
+  return true;
 }
 
 bool find_rom_file(const uint8_t *tag, uint8_t tag_length,
@@ -116,7 +161,7 @@ bool find_rom_file(const uint8_t *tag, uint8_t tag_length,
 bool find_file(const uint8_t *tag, uint8_t tag_length,
                const uint8_t **data, uint32_t *length) {
   if (auto *file = find_overlay(tag, tag_length)) {
-    *data = file->bytes;
+    *data = overlay_bytes + file->offset;
     *length = file->size;
     return true;
   }
@@ -131,15 +176,29 @@ bool write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
       offset > existing_length || length > existing_length - offset) {
     return false;
   }
-  auto *file = allocate_overlay(tag, tag_length);
-  if (file == nullptr || existing_length > sizeof(file->bytes)) {
+  auto *file = find_overlay(tag, tag_length);
+  if (file != nullptr) {
+    if (file->size != existing_length) {
+      report_fs_write_failure("update-size", tag, tag_length, existing_length);
+      return false;
+    }
+    std::memcpy(overlay_bytes + file->offset + offset, data, length);
+    return true;
+  }
+
+  file = allocate_overlay(tag, tag_length);
+  if (file == nullptr ||
+      overlay_bytes_used + existing_length > kMaxOverlayBytes) {
+    report_fs_write_failure("update", tag, tag_length, existing_length);
     return false;
   }
-  if (file->size != existing_length) {
-    std::memcpy(file->bytes, existing, existing_length);
-    file->size = existing_length;
+  file->offset = static_cast<uint32_t>(overlay_bytes_used);
+  file->size = existing_length;
+  if (existing_length != 0) {
+    std::memcpy(overlay_bytes + file->offset, existing, existing_length);
   }
-  std::memcpy(file->bytes + offset, data, length);
+  overlay_bytes_used += existing_length;
+  std::memcpy(overlay_bytes + file->offset + offset, data, length);
   return true;
 }
 
@@ -152,9 +211,8 @@ void set_path(uint8_t (*tag)[32], uint8_t *length,
 } // namespace
 
 extern "C" uint8_t fs_init(void) {
-  for (auto &file : overlay) {
-    file = OverlayFile{};
-  }
+  overlay_file_count = 0;
+  overlay_bytes_used = 0;
   return 0;
 }
 
@@ -189,15 +247,11 @@ extern "C" uint8_t fs_read(const uint8_t *tag, uint8_t tag_length,
 
 extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
                             const uint8_t *data, uint32_t length) {
-  if (length > kMaxOverlayBytes) {
-    return 1;
-  }
   auto *file = allocate_overlay(tag, tag_length);
-  if (file == nullptr) {
+  if (file == nullptr || !append_overlay(*file, data, length)) {
+    report_fs_write_failure("new", tag, tag_length, length);
     return 1;
   }
-  std::memcpy(file->bytes, data, length);
-  file->size = length;
   return 0;
 }
 
@@ -287,12 +341,13 @@ extern "C" void path_applet_field(uint8_t applet, uint8_t package,
 
 int main_arm(void) {
   stdio_init_all();
-  for (unsigned int attempt = 0; attempt < 16 && !stdio_usb_connected();
+  for (unsigned int attempt = 0; attempt < 120 && !stdio_usb_connected();
        ++attempt) {
     printf("BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi\r\n");
     fflush(stdout);
     sleep_ms(250);
   }
+  sleep_ms(500);
   printf("BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi\r\n");
   fflush(stdout);
   if (fs_init() != 0) {

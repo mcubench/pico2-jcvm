@@ -33,6 +33,8 @@
 #include "jc_handlers/jc_export.hpp"
 #include "jc_handlers/jc_method.hpp"
 
+#include <cstdio>
+
 #ifdef DEBUG
 #include <string>
 #endif /* DEBUG */
@@ -106,11 +108,18 @@ uint16_t Interpretor::run() noexcept {
   Stack &stack = context.getStack();
 
   //  the interpretor runs until the Java Card stack is empty
+  uint32_t instruction_count = 0;
   while (stack.empty() == false) {
     stack.getCurrentFrame().setInstructionPC(stack.getPC().getValue());
 
     // fetch: reading byte code value
     uint8_t bytecode = stack.getPC().getNextByte();
+    ++instruction_count;
+    if (instruction_count % 1000000u == 0) {
+      std::printf("CHOUPI:VM_PROGRESS ops=%lu opcode=0x%02X pc=%p\r\n",
+                  static_cast<unsigned long>(instruction_count), bytecode,
+                  static_cast<const void *>(stack.getPC().getValue()));
+    }
 
     // bytecodes interface
     Bytecodes bytecodes(context);
@@ -129,9 +138,18 @@ uint16_t Interpretor::run() noexcept {
       // execute
       (bytecodes.*bc)();
     } catch (Exceptions e) {
+      std::printf("CHOUPI:VM_EXCEPTION id=%u opcode=0x%02X pc=%p\r\n",
+                  static_cast<unsigned>(e), bytecode,
+                  static_cast<const void *>(stack.getPC().getValue()));
+      TRACE_JCVM_ERR("Exception %u at opcode 0x%02X pc=%p",
+                     static_cast<unsigned>(e), bytecode,
+                     static_cast<const void *>(stack.getPC().getValue()));
       this->startJCVMException(e);
       return this->status_word;
     } catch (...) {
+      std::printf("CHOUPI:VM_EXCEPTION id=unknown opcode=0x%02X pc=%p\r\n",
+                  bytecode,
+                  static_cast<const void *>(stack.getPC().getValue()));
       this->startJCVMException(Exceptions::SecurityException);
       return this->status_word;
     }
