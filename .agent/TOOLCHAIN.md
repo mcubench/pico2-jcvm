@@ -35,10 +35,17 @@ The complete local toolchain directory occupies 5.9 GiB.
 The connected board reported RP2350 revision A4, QFN60, and 2048 KiB flash
 (`FLASH_DEVINFO=0x0c00`) via read-only `picotool info -a`. Treat 2 MiB as the
 working flash size until physical capacity is independently confirmed. The
-board was in BOOTSEL mode; no firmware was written. The sandbox could not
-access USB device nodes without reviewed escalation, so hardware access may
-need that permission in later cycles.
+current ARM smoke firmware was built and flashed after both architecture builds
+passed. Its bounded 8-second CDC log is
+`artifacts/logs/cycle-arm-20261010T053019Z.log`. Before the first flash, a
+read-only 2 MiB image of the prior `pico2_btc_miner` firmware was saved at
+`artifacts/backups/flash-before-smoke-20261010.bin` (SHA-256
+`49a650c2093df2e2d528ec4ef9adce788db95133c7303b5f96d852d8b5ecc078`). The
+flash size has not been independently measured. USB device access required a
+reviewed escalation for board queries and cycles.
 
-These tools only establish a local environment. Firmware build wrappers and
-RP2350 runtime integration are separate repository work. Do not flash until
-both architecture builds pass, as required by the root `AGENTS.md`.
+`tools/build`, `tools/cycle`, and `tools/monitor` now build the standalone
+RP2350 smoke target, flash only after both ISA builds pass, and capture bounded
+USB CDC output. The smoke result checks that `get_rand_32()` varies across a
+small sample; it is not an entropy-quality assessment and does not validate the
+CHOUPI VM. CHOUPI's OS, Java Card API, and ROM-mask submodules remain empty.

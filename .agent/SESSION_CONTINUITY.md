@@ -11,8 +11,8 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
   available build, test, or inspection, append to root `progress.md`, and make a
   new commit containing the step. Do not amend earlier commits.
 - Do not claim hardware validation unless an attached Pico 2 was actually
-  flashed and its finite serial log inspected. Hardware is currently not
-  required for this task.
+  flashed and its finite serial log inspected. The Pico 2 is now connected;
+  follow root `AGENTS.md` build gates before flashing and record bounded logs.
 - Do not invoke compiler binaries directly. Use the repository build wrappers
   once available.
 - Keep `.agent/HANDOFF.md` current with completed work, blockers, and the next

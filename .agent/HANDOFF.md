@@ -3,7 +3,8 @@
 ## Objective
 
 Implement `plan.md` for CHOUPI on Pico 2, following root `AGENTS.md`. The user
-requested software implementation without a physical device for now.
+has connected the Pico 2 and requested real-board bring-up. Use JCAlgTest
+v1.8.2 and preserve the provided source trees.
 
 ## Current state
 
@@ -25,12 +26,23 @@ requested software implementation without a physical device for now.
   Setup and the hardware report are committed as `db99639`.
 - The board is visible in BOOTSEL mode. Read-only `picotool info -a` reported
   RP2350 A4, QFN60, 2048 KiB flash, and an existing RISC-V image named
-  `pico2_btc_miner`. No firmware was written; the flash size is a device report
-  pending independent physical confirmation.
+  `pico2_btc_miner`. Before flashing, saved a read-only 2 MiB backup at
+  `artifacts/backups/flash-before-smoke-20261010.bin`, SHA-256
+  `49a650c2093df2e2d528ec4ef9adce788db95133c7303b5f96d852d8b5ecc078`.
+  Flash size remains a device report pending independent physical confirmation.
+- Added the root Pico SDK smoke target and `tools/build`, `tools/cycle`, and
+  `tools/monitor`. The final `./tools/env ./tools/cycle arm` passed: both ARM
+  and RISC-V built with warnings as errors, picotool reported the expected UF2
+  families, and the board emitted repeated `TEST:PASS random_stream_varies`
+  and `TEST:SUMMARY pass=1 fail=0` records during the bounded 8-second serial
+  capture. The board currently runs this ARM smoke firmware. This check only
+  confirms changing output from `get_rand_32()`; it does not assess entropy or
+  execute CHOUPI. Final log: `artifacts/logs/cycle-arm-20261010T053019Z.log`.
+  Implementation commit: `9bd89df`.
 - `tools/doctor` finds the host toolchain through `./tools/env` but still fails
-  on unpopulated CHOUPI OS/API/ROM-mask dependencies. `tools/build`,
-  `tools/common.sh`, `tools/cycle`, and `tools/monitor` are absent, and the
-  documented `pico2_trng` CMake target is not present in this checkout.
+  on unpopulated CHOUPI OS/API/ROM-mask dependencies. The root smoke CMake
+  target and `tools/build`, `tools/common.sh`, `tools/cycle`, and `tools/monitor`
+  are now present and have passed the hardware smoke cycle.
 - Diagnostics and continuity setup are committed as `1616b59`.
 - Fixed `JCVMArray::fill()` to populate each element and removed the ignored
   return qualifier from `size()`. The focused strict host test passed with
@@ -147,15 +159,21 @@ Continue WP5 by mapping the remaining native methods against the supplied
 AlgTest calls and available VM APIs. Wire the transient clear primitive into
 select/deselect/reset dispatch when that lifecycle layer is introduced.
 VM-internal exception
-mapping and the Java API/APDU pieces remain open. The provided `tools/build` wrapper is
-currently absent; the next Pico work must add the targets/wrappers described by
-`reference/compilation.md`, then restore the pinned Java Card dependencies
-(`654f374`, `ac9f752`, `d490faf`) and establish a real target build before any
-flash operation. Preserve the local `.local-toolchain/`, `AlgTest_JavaCard/`,
-and CHOUPI source tree.
+mapping and the Java API/APDU pieces remain open. The standalone RP2350 build
+wrappers and hardware smoke cycle now work. Next, populate or otherwise resolve
+the pinned Java Card dependencies (`654f374`, `ac9f752`, `d490faf`) and integrate
+CHOUPI with the Pico SDK target. The OS, Java Card API, and ROM-mask submodule
+directories are currently empty, so the standalone smoke image is not a CHOUPI
+or JCAlgTest runtime. Preserve the local `.local-toolchain/`,
+`AlgTest_JavaCard/`, and CHOUPI source tree.
 
 ## Latest validation
 
+- Current board bring-up: `bash -n tools/common.sh tools/build tools/cycle
+  tools/monitor`, ARM build, RISC-V build, and `./tools/env ./tools/cycle arm`
+  all passed. The 8-second capture emitted repeated
+  `TEST:PASS random_stream_varies` and `TEST:SUMMARY pass=1 fail=0`; log:
+  `artifacts/logs/cycle-arm-20261010T053019Z.log`.
 - `bash -n tools/doctor`: passed.
 - `./tools/doctor`: returned 1 and reported the missing tools, SDK variable,
   and dependency checkout paths listed in `progress.md`.
@@ -198,12 +216,11 @@ and CHOUPI source tree.
 - Latest integrity-sensitive query: linked ASan test passed and emitted
   `TEST:PASS jni_integrity_sensitive_query`; syntax check passed. ARM and
   RISC-V builds could not run because `tools/build` is absent.
-- Firmware runtime validation is still pending: the connected device has only
-  been queried read-only; no image has been built or flashed.
+- Firmware runtime validation is still pending for CHOUPI: the connected board
+  runs the standalone smoke firmware and its bounded USB serial test passed.
 - Toolchain setup: `bash -n tools/env` passed. `./tools/env rustup target
   list --installed` includes `thumbv8m.main-none-eabihf`; CMake/Ninja, both
   compiler prefixes, and picotool version checks passed. `./tools/env
-  ./tools/doctor` now reports the host tools and Pico SDK as present, but exits
-  1 for the missing OS/API/ROM-mask dependencies. Both `./tools/env
-  ./tools/build arm` and `riscv` remain unavailable because `tools/build` does
-  not exist. Read-only device info passed only under reviewed escalation.
+  ./tools/doctor` reports the host tools and Pico SDK as present, but exits 1
+  for the missing OS/API/ROM-mask dependencies. The root smoke build wrappers
+  now pass for both ISAs. Board queries and cycles required reviewed escalation.
