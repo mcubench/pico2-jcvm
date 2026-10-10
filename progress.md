@@ -537,3 +537,13 @@
 - Decision: Keep the CLI ready; continue with CHOUPI startup and establish an APDU transport/reader before installation.
 - Commit: root `d9ac44d`
 - Artifacts/logs: `.local-toolchain/globalplatformpro/tool/target/gp.jar` (ignored toolchain artifact; SHA-256 above)
+
+## 2026-10-10 — Clarify Pico flash evidence
+
+- Step/experiment: `wp1-flash-evidence-wording-correction`
+- Change: Corrected the handoff and earlier progress records to distinguish a successful `picotool` command exit from independently verified UF2 flash completion.
+- Validation: Reviewed the three latest silent cycle logs; each lacks the flash progress/completion output present in older confirmed loads. `git diff --check` passed.
+- Result: Hardware notes now state that the running image is uncertain until BOOTSEL is confirmed and a load is evidenced.
+- Decision: Physically re-enter BOOTSEL and rerun the requested image cycle before reporting flash success.
+- Commit: root `4eae0e1`
+- Artifacts/logs: corrected evidence references `artifacts/logs/cycle-choupi-20261010T111732Z.log`, `112137Z.log`, and `cycle-arm-20261010T112446Z.log`
