@@ -249,6 +249,14 @@ standalone smoke output; it is not running CHOUPI or JCAlgTest. Preserve
   RISC-V builds could not run because `tools/build` is absent.
 - Firmware runtime validation is still pending for CHOUPI: the connected board
   runs the standalone smoke firmware and its bounded USB serial test passed.
+- Latest physical cycle: `./tools/env ./tools/cycle arm` rebuilt ARM and RISC-V,
+  flashed the ARM smoke image, and captured 8 seconds from `/dev/ttyACM0`.
+  Output had eight passing `random_stream_varies` checks and eight passing
+  summaries; no `TEST:FAIL` or `FAULT` appeared. Log:
+  `artifacts/logs/cycle-arm-20261010T060906Z.log` (SHA-256
+  `7bccbc03281e0f93c2e4068856903570b648bb44f51f452576162222072b7dd9`). The
+  image is still only standalone smoke firmware; CHOUPI/JCAlgTest are not yet
+  running on the board.
 - Toolchain setup: `bash -n tools/env` passed. `./tools/env rustup target
   list --installed` includes `thumbv8m.main-none-eabihf`; CMake/Ninja, both
   compiler prefixes, and picotool version checks passed. `./tools/env
