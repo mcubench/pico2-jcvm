@@ -508,3 +508,20 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   serial capture, then trace CHOUPI startup before further overlay tuning. Keep
   both architecture build gates before each flash. The exact v1.8.2 CAP is
   still not installed; CHOUPI has no APDU/CAP loading path.
+
+## USB capture/BOOTSEL diagnostic (2026-10-10)
+
+- `./tools/cycle arm` passed both architecture builds and ran the ARM TRNG
+  flash command, but its 8-second capture had no `BOOT`/`TEST` output
+  (`artifacts/logs/cycle-arm-20261010T112446Z.log`, SHA-256
+  `62457db617d9013e2c91a67bf6cfb2a74b8600d7c50b952b091d8dd9fc4e7e13`). This
+  is a second independent image with the same silent serial outcome; the image
+  currently running is therefore uncertain.
+- `picotool info -a` after the cycle finds only the RP2350 CDC interface, not
+  BOOTSEL. `picotool reboot -f -u` returned “The device was asked to reboot
+  into BOOTSEL mode,” but a follow-up query still found CDC. USB descriptor
+  reads also reported `Resource temporarily unavailable` for device status.
+- Next required hardware action: physically unplug the Pico 2, hold its
+  BOOTSEL button while reconnecting USB, then verify `boot type: bootsel` with
+  `./tools/env picotool info -a`. Only then rerun the CHOUPI cycle. Both build
+  gates must pass before flashing. The exact CAP remains uninstalled.
