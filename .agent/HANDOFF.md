@@ -434,7 +434,7 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   older silent capture, so it does not prove which firmware ran.
 - Current UF2 SHA-256 is
   `a0682558fd222e51b7e93b434a46dea99a0887853ef05c73ee6378793e80fef8`.
-  Source changes and a failed experiment record are pending commit. Preserve
+  Source changes and a failed experiment record are in root commit `654219f`. Preserve
   unrelated changes in the tree.
 - Next action: reconnect the Pico while holding BOOTSEL, verify it with
   `picotool info -a`, then flash/capture again. If runtime starts, verify that
