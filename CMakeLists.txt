@@ -54,6 +54,11 @@ if(CHOUPI_VM_SOURCES)
 endif()
 
 if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
+  if(TARGET pico_malloc)
+    target_compile_definitions(pico_malloc INTERFACE
+      PICO_DEBUG_MALLOC=1
+      PICO_DEBUG_MALLOC_LOW_WATER=0x20070000)
+  endif()
   set(CHOUPI_ROMMASK_IMAGE
     "${CMAKE_CURRENT_SOURCE_DIR}/build/choupi-rommask/flash-algtest.bin")
   if(NOT EXISTS "${CHOUPI_ROMMASK_IMAGE}")

@@ -566,3 +566,9 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   the allocation phase, address SRAM pressure and repeat both build gates and
   the real board cycle. CAP installation is still blocked by missing APDU/CCID
   transport and loader support.
+- Added Pico SDK allocator diagnostics to the ARM CHOUPI target: it now emits
+  failed allocation sizes and allocations crossing `0x20070000`, without
+  logging ordinary low-address allocations. ARM and RISC-V wrapper builds
+  passed. Diagnostic UF2 SHA-256:
+  `19532c092fa19bcc7dd1e43e8d5aa84450755e112a02225ec12b697836f3cc9b`.
+  This build has not yet been flashed; BOOTSEL reconnect is still required.
