@@ -485,5 +485,5 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed with UF2 family checks. Hardware validation was skipped because the previous cycle left the Pico unenumerated; `picotool info -a` and `lsusb` report libusb initialization failure.
 - Result: Both target builds include the updated object mode. No runtime result was captured. UF2 SHA-256: `9cc85d9051fb9f55d52682d4f772ea16316d144fb123686381415203bad85fc6`.
 - Decision: Reconnect the Pico in BOOTSEL and rerun the CHOUPI cycle before accepting the alias implementation. The exact JCAlgTest v1.8.2 CAP remains uninstalled.
-- Commit: pending
+- Commit: root `06fdf87`
 - Artifacts/logs: current image `build/arm/pico2_choupi.uf2`; no new hardware log

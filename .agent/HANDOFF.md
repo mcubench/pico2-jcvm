@@ -440,7 +440,7 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   instance persistent so later field updates write through its canonical tag.
   Both target builds pass again; current UF2 SHA-256 is
   `9cc85d9051fb9f55d52682d4f772ea16316d144fb123686381415203bad85fc6`.
-  This refinement is pending commit and has not been run on hardware.
+  This refinement is in root commit `06fdf87` and has not been run on hardware.
 - Next action: reconnect the Pico while holding BOOTSEL, verify it with
   `picotool info -a`, then flash/capture again. If runtime starts, verify that
   aliases reduce startup expansion and that no `TEST:FAIL`, `FAULT`, or timeout
