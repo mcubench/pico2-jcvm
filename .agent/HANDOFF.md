@@ -409,3 +409,7 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   silent captures. No passing CHOUPI runtime evidence exists yet.
 - The storage implementation is in root commit `f2da673`; the four capture
   files and this progress record are in root commit `87c1bbe`.
+- A follow-up guard now rejects odd-length candidates before compressed-pair
+  comparisons and prevents uncompressed 128-byte keys from overflowing the
+  record header. ARM/RISC-V builds pass. Hardware validation is pending a
+  physical BOOTSEL reconnect; current RP2350 is only visible as USB serial.

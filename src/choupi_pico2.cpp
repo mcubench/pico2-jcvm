@@ -172,7 +172,8 @@ bool stored_tag_matches(const OverlayFile &file, const uint8_t *tag,
     return tags_equal(stored, file.tag_length, tag, tag_length);
   }
   const uint8_t root_length = tag_root_length(tag, tag_length);
-  if (root_length == 0 ||
+  if (root_length == 0 || tag_length <= root_length ||
+      ((tag_length - root_length) & 1) != 0 ||
       !tags_equal(stored, root_length, tag, root_length)) {
     return false;
   }
@@ -221,7 +222,8 @@ OverlayFile *find_overlay(const uint8_t *tag, uint8_t tag_length,
 }
 
 OverlayFile *allocate_overlay(const uint8_t *tag, uint8_t tag_length) {
-  if (tag_length > 128) {
+  if (tag_length > 128 ||
+      (tag_length > 127 && !is_compressible_tag(tag, tag_length))) {
     return nullptr;
   }
   if (auto *file = find_overlay(tag, tag_length)) {
@@ -262,6 +264,9 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
                                                tag_root_length(tag, file.tag_length)) /
                                                   2)
                                         : file.tag_length);
+  if (key_length > 0x7F) {
+    return false;
+  }
   const size_t old_record_size = overlay_has_record(file)
                                      ? 1 + stored_tag_length(file) + file.size
                                      : 0;

@@ -457,3 +457,13 @@
 - Decision: Resume hardware diagnosis when the Pico 2 is back in BOOTSEL; next capture must distinguish USB enumeration from firmware startup and runtime output.
 - Commit: root `87c1bbe`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T101555Z.log` (`bd2241808eb99b562619366e36fdbef5030649495c7276922a8b985a44ed9f62`); `artifacts/logs/cycle-choupi-20261010T101744Z.log` (`b2f9490d81aacadc9c7458bd39197b3724d1f775550231efce5a6c85d6c230d7`); `artifacts/logs/cycle-choupi-20261010T101940Z.log` and `102236Z.log` (`9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`)
+
+## 2026-10-10 — Guard compressed overlay tag comparisons
+
+- Step/experiment: `wp1-choupi-overlay-tag-guard`
+- Change: Added parity and minimum-length checks before decoding compressed field-index pairs, and reject uncompressed 128-byte keys that cannot fit the packed record header.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed, including UF2 family checks. Hardware validation was skipped because `picotool info -a` reports no accessible BOOTSEL device and the last monitor capture had no CHOUPI serial output.
+- Result: The overlay tag comparison cannot read a dangling pair from an odd-length hash collision candidate. Runtime behavior remains unverified.
+- Decision: Keep both architecture build gates; resume the hardware cycle after physical BOOTSEL reconnect.
+- Commit: root pending
+- Artifacts/logs: none; current UF2 `build/arm/pico2_choupi.uf2`
