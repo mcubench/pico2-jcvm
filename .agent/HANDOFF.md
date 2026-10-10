@@ -593,3 +593,18 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   heap-diagnostic image; verify BOOTSEL after physical reconnection, then run
   `./tools/cycle choupi`. Do not call the runtime a pass unless the cycle
   captures the expected TEST summary. CAP installation remains unimplemented.
+
+## 64 KiB overlay hardware attempt (2026-10-10)
+
+- The user reconnected the Pico in BOOTSEL; `picotool info -a` confirmed RP2350
+  A4 and BOOTSEL. The 64 KiB arena candidate passed both architecture build
+  gates, flashed with visible 100% progress, and was captured by the monitor.
+- It still fails after `runtime:start`: `malloc 16390 2006EFE0->20072FE6`,
+  then `malloc 36870 failed to allocate memory`, followed by
+  `*** PANIC *** / Out of memory`. Log
+  `artifacts/logs/cycle-choupi-20261010T212007Z.log` SHA-256
+  `4ea1a3f80e2bb24e5665d4e3e3e178e76fa6cc858a3e20fd5d3d31acee11761c`.
+- UF2 hash `a590f7b12e9a9ebc66ffa202921e9878cc12b8457d667ed65f29aba97046c9f5`.
+  This cycle was a runtime failure, not a pass. Board is now running CHOUPI;
+  re-enter BOOTSEL physically before a subsequent flash. Exact CAP remains
+  uninstalled.

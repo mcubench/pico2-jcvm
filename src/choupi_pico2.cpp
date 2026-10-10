@@ -18,7 +18,7 @@ namespace {
 
 constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
-constexpr size_t kMaxOverlayBytes = 128 * 1024;
+constexpr size_t kMaxOverlayBytes = 64 * 1024;
 
 struct OverlayFile {
   uint16_t hash = 0;
