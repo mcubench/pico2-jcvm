@@ -654,3 +654,13 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   claim the diagnostic image was flashed. The current VM appears unresponsive
   after its IOException (inference); the new diagnostics are compiled but await
   a responsive reset path. Continue software analysis without asking the user.
+
+## USB recovery update (2026-10-11)
+
+- Retried `picotool reboot -F -u`; it returned success but the device remained
+  in USB serial mode. `usbreset 001/116` then reported `No such device`; the
+  Pico disappeared from `lsusb`, and its xHCI root port now reports
+  `not attached`. `/dev/ttyACM0` is absent. The per-port xHCI sysfs
+  `disable` control is not writable to this account. No flash occurred.
+- Keep the built diagnostic UF2 ready (`18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`).
+  Continue source analysis; do not claim CHOUPI or JCAlgTest hardware success.
