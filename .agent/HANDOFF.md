@@ -12,10 +12,13 @@ v1.8.2 and preserve the provided source trees.
   starting revision. `choupi/` and `AlgTest_JavaCard/` are user-provided,
   untracked source trees; preserve them and commit only files belonging to a
   completed step.
-- The CHOUPI C++ VM source is present. `choupi/os/`,
-  `choupi/javacard-sdk/javacard-api/`, and
-  `choupi/javacard-sdk/rommask/` are empty dependency directories, despite
-  their entries in `choupi/.gitmodules`.
+- The CHOUPI C++ VM source is present. Its dependency checkouts now match the
+  pinned revisions: OS `654f374067b2e7c1571fec1410adcd1e41a60c96`, API
+  `d490faf358d4740def8eaf60017d5cc367f7383e`, and ROM mask
+  `ac9f75253d476a8b2a838d459727df6e7a4a5107`. They remain nested Git
+  checkouts inside the user-provided untracked `choupi/` tree. The OS's
+  STM32CubeF4 submodule is not initialized; it is specific to the old STM32
+  target.
 - The user selected JCAlgTest v1.8.2. `AlgTest_JavaCard/src305` identifies
   itself as v1.8.2 and the matching `AlgTest_v1.8.2_jc305.cap` is present.
   CAP import metadata still needs comparison with the ROM mask.
@@ -160,11 +163,10 @@ AlgTest calls and available VM APIs. Wire the transient clear primitive into
 select/deselect/reset dispatch when that lifecycle layer is introduced.
 VM-internal exception
 mapping and the Java API/APDU pieces remain open. The standalone RP2350 build
-wrappers and hardware smoke cycle now work. Next, populate or otherwise resolve
-the pinned Java Card dependencies (`654f374`, `ac9f752`, `d490faf`) and integrate
-CHOUPI with the Pico SDK target. The OS, Java Card API, and ROM-mask submodule
-directories are currently empty, so the standalone smoke image is not a CHOUPI
-or JCAlgTest runtime. Preserve the local `.local-toolchain/`,
+wrappers and hardware smoke cycle now work, and the pinned source dependencies
+are present. Next, integrate CHOUPI with the Pico SDK target and establish its
+first real ARM build. The smoke image is not a CHOUPI or JCAlgTest runtime.
+Preserve the local `.local-toolchain/`,
 `AlgTest_JavaCard/`, and CHOUPI source tree.
 
 ## Latest validation
@@ -174,6 +176,10 @@ or JCAlgTest runtime. Preserve the local `.local-toolchain/`,
   all passed. The 8-second capture emitted repeated
   `TEST:PASS random_stream_varies` and `TEST:SUMMARY pass=1 fail=0`; log:
   `artifacts/logs/cycle-arm-20261010T053019Z.log`.
+- Dependency restoration: `./tools/env ./tools/doctor` passed after checking
+  out all three pinned CHOUPI dependencies. Their exact full commit IDs are
+  listed under Current state. Full ROM-mask generation and CHOUPI compilation
+  are not validated yet; Maven is not installed.
 - `bash -n tools/doctor`: passed.
 - `./tools/doctor`: returned 1 and reported the missing tools, SDK variable,
   and dependency checkout paths listed in `progress.md`.

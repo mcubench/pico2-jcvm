@@ -48,4 +48,7 @@ reviewed escalation for board queries and cycles.
 RP2350 smoke target, flash only after both ISA builds pass, and capture bounded
 USB CDC output. The smoke result checks that `get_rand_32()` varies across a
 small sample; it is not an entropy-quality assessment and does not validate the
-CHOUPI VM. CHOUPI's OS, Java Card API, and ROM-mask submodules remain empty.
+CHOUPI VM. The OS, Java Card API, and ROM-mask source checkouts are now present
+at the plan's pinned commits inside `choupi/`. The nested STM32CubeF4 submodule
+is uninitialized and Maven is not installed, so the legacy dependency build has
+not yet been validated.
