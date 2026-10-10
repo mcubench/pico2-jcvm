@@ -387,3 +387,13 @@
 - Decision: Continue RP2350 CHOUPI target and CAP installation work. The current source-derived image is not firmware and does not install the supplied CAP.
 - Commit: `2302f926528a9f9001124d8f4b5cf6cd98e1de5c` (nested ROM-mask repository); root record pending
 - Artifacts/logs: Submodule source `choupi/javacard-sdk/rommask/capmap-free` at `c94b09a128eaa7c4d20d53d9c24e4c12f810caf4`; no new log
+
+## 2026-10-10 — Refresh Pico 2 baseline after parser restoration
+
+- Step/experiment: `wp1-post-capmap-board-refresh`
+- Change: Rebuilt both repository smoke images and captured the connected Pico 2's current serial output after restoring the CAP parser dependencies; no firmware source changed.
+- Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both returned 0 and picotool validated `rp2350-arm-s` and `rp2350-riscv` UF2s. `./tools/env ./tools/monitor --seconds 8` returned 0 and emitted eight `TEST:PASS random_stream_varies` plus `TEST:SUMMARY pass=1 fail=0` pairs, with no failure or fault records.
+- Result: Both baseline architectures still build, and the board remains responsive on the previously flashed ARM smoke image. These checks do not build or run CHOUPI and do not install the supplied CAP.
+- Decision: Preserve the smoke firmware until an integrated CHOUPI target and both build gates are ready; continue RP2350 runtime and transport implementation.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/monitor-after-capmap-20261010.log` (SHA-256 `9f4162fb209ebfb97a74d03517a55fe9d6e279b0354999ba7d7bbe7d6a76b5dd`)

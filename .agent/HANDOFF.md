@@ -279,6 +279,15 @@ source tree.
   CAP-parser Maven installation and ROM-mask packaging now pass. Root smoke
   wrappers pass for both ISAs. Board queries and
   cycles required reviewed escalation.
+- Latest post-mirror board refresh: `./tools/env ./tools/build arm` and
+  `./tools/env ./tools/build riscv` both returned 0 and validated their
+  respective UF2 families. The 8-second `./tools/env ./tools/monitor
+  --seconds 8` returned 0 from `/dev/serial/by-id/usb-Raspberry_Pi_Pico_...`,
+  emitting eight `TEST:PASS random_stream_varies` and
+  `TEST:SUMMARY pass=1 fail=0` pairs. Archived capture:
+  `artifacts/logs/monitor-after-capmap-20261010.log` (SHA-256
+  `9f4162fb209ebfb97a74d03517a55fe9d6e279b0354999ba7d7bbe7d6a76b5dd`). The
+  board remains on the smoke image; this does not validate CHOUPI or CAP load.
 - Previous deployment-readiness attempt found the parser missing and Bitbucket
   requested credentials; CHOUPI PC configuration also failed because Boost
   headers and `program_options` are absent. The user supplied a public GitHub
