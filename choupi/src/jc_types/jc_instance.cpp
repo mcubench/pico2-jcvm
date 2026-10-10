@@ -228,6 +228,7 @@ void JC_Instance::setPersistentTag(const fs::Tag &tag) {
     std::memcpy(stored_tag, tag.value, tag.len);
   }
   this->has_persistent_tag = true;
+  this->setPersistent(true);
 }
 
 /*
