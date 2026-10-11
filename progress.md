@@ -794,5 +794,5 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` passed. `picotool reboot -F -u` reported that it requested BOOTSEL, but `picotool info -a` found only CDC. `picotool load -f -x build/arm/pico2_choupi.uf2` returned without flash progress or application-reboot confirmation; `./tools/env ./tools/monitor --seconds 8` returned silently. Hardware validation is pending.
 - Result: The previous flashed image completed loading all 15 fields but emitted no later runtime marker. This diagnostic candidate is not confirmed flashed.
 - Decision: Reuse this candidate at the next BOOTSEL window; inspect whether it stops before field access, while looking up an array, or while writing persistent storage.
-- Commit: `<pending metadata follow-up>`
+- Commit: `360085f` (metadata follow-up)
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, SHA-256 `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`; prior hardware trace `artifacts/logs/cycle-choupi-20261011T070346Z.log`
