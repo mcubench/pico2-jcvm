@@ -774,3 +774,24 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
 - Next: when BOOTSEL is available, run `./tools/cycle choupi` for the move
   ownership fix and confirm the field count is 15 and runtime reaches its test
   summary. JCAlgTest v1.8.2 still has no APDU/CAP installation path.
+
+## Persistent field load fix and continuation trace (2026-10-11)
+
+- User made the Pico available in BOOTSEL. `./tools/env ./tools/cycle choupi`
+  rebuilt ARM and RISC-V successfully, flashed the ARM image to 100%, and
+  rebooted the application. The ownership fix changed package 20/class 121's
+  field vector from the corrupted length 8,912 to the expected 15; all field
+  loads (indexes 0–14) completed. The 18-second cycle still failed without
+  `TEST:SUMMARY`. Log:
+  `artifacts/logs/cycle-choupi-20261011T070346Z.log`.
+- Added a diagnostic candidate around `JC_Instance::setField_Reference()` for
+  class 121. Both ARM and RISC-V builds pass. UF2 SHA-256:
+  `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`.
+- Tried `picotool reboot -F -u`; it returned success, but `picotool info -a`
+  still saw CDC, no BOOTSEL. `picotool load -f -x` then returned without any
+  `Loading into Flash` progress or reboot confirmation. A finite serial monitor
+  was silent. Treat this diagnostic candidate as unflashed.
+- Next: use the candidate after BOOTSEL reappears, then inspect the class-121
+  reference and whether execution reaches array lookup or persistent write.
+  No JCAlgTest v1.8.2 CAP installation has occurred; firmware still lacks an
+  APDU transport and CAP installer.

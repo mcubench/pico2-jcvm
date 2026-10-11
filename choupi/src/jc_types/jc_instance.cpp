@@ -487,12 +487,30 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
       throw;
     }
   }
+  if (this->packageID == 20 && this->claz == 121) {
+    std::printf("CHOUPI:PUTFIELD_A phase=loaded index=%u ref=0x%04X array=%u null=%u\r\n",
+                static_cast<unsigned>(index),
+                static_cast<unsigned>(ref.compact()), ref.isArray() ? 1u : 0u,
+                ref.isNullPointer() ? 1u : 0u);
+    std::fflush(stdout);
+  }
   jc_field_t &field = this->fields->at(index);
   field.value = static_cast<jword_t>(ref.compact());
   if (ref.isNullPointer()) {
     field.type = FieldType::FIELD_TYPE_UNINITIALIZED;
   } else if (ref.isArray()) {
+    if (this->packageID == 20 && this->claz == 121) {
+      std::printf("CHOUPI:PUTFIELD_A phase=array-lookup index=%u\r\n",
+                  static_cast<unsigned>(index));
+      std::fflush(stdout);
+    }
     const auto array = this->getOwner().getArray(ref);
+    if (this->packageID == 20 && this->claz == 121) {
+      std::printf("CHOUPI:PUTFIELD_A phase=array-found index=%u type=%u\r\n",
+                  static_cast<unsigned>(index),
+                  static_cast<unsigned>(array->getType()));
+      std::fflush(stdout);
+    }
     switch (array->getType()) {
     case JAVA_ARRAY_T_BYTE:
       field.type = array->isTransientArray()
@@ -541,6 +559,11 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
     try {
       FlashMemory_Handler::setPersistentField_Reference(tag, ref,
                                                         this->getOwner());
+      if (this->packageID == 20 && this->claz == 121) {
+        std::printf("CHOUPI:PUTFIELD_A phase=stored index=%u\r\n",
+                    static_cast<unsigned>(index));
+        std::fflush(stdout);
+      }
     } catch (Exceptions exception) {
       std::printf("CHOUPI:PUTFIELD_A phase=store-fail id=%u tag_len=%u index=%u\r\n",
                   static_cast<unsigned>(exception),
