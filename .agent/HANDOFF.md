@@ -677,3 +677,21 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   Runtime behavior is unverified. On the next enumeration, enter BOOTSEL if
   available, flash through `./tools/cycle choupi`, and inspect the bounded log
   for the persistence phase markers and `TEST:SUMMARY`.
+
+## Latest Pico field-load attempt (2026-10-11)
+
+- The default-field candidate above was flashed from BOOTSEL at visible 100%.
+  Both architecture builds passed. Runtime advanced through two reference field
+  stores in package 20/class 57 and then stopped producing output after
+  `CHOUPI:PUTFIELD_A phase=load index=0 package=20 class=121`. The 18-second
+  cycle failed with no `TEST:SUMMARY`; a separate eight-second monitor was
+  silent. Log: `artifacts/logs/cycle-choupi-20261011T053229Z.log`, SHA-256
+  `909b217b6fa27f343c27dcf7bb3ec4f5c2f2909ca36bf25c2a335ddfeedd2134`.
+- `picotool reboot -F -u` again left the app in CDC mode. A USB bus reset then
+  removed it from the host bus. No BOOTSEL or serial device is currently
+  enumerated.
+- A new capped trace in `JC_Instance::getFields()` marks entry/exit of
+  `fs_exists`, decoded type, and value completion. ARM and RISC-V wrapper builds
+  pass. Candidate UF2 SHA-256:
+  `a2deabc677b6672431386a1b0aef3eb05cc6debf906b1f0bc478d19f2b86f543`.
+  It has not been flashed; use it after BOOTSEL enumeration returns.
