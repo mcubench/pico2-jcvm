@@ -1226,3 +1226,23 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   processing are not implemented. Next connect the persistent CAP to CHOUPI
   CAP loading, invoke installation/lifecycle methods, and route selected
   applet APDUs into the VM.
+
+## Persisted CAP connected to CHOUPI package resolution — 2026-10-11
+
+- `FlashMemory_Handler` now exposes the validated flash CAP as reserved package
+  ID 63, returns it from `getCap(63)`, and checks its Applet component in
+  `findAppletByAID`. This leaves static ROM package 20 unchanged. The CCID
+  SELECT path requires that lookup to resolve the saved AID and install-method
+  offset before returning FCI.
+- First experiment scanned all enabled ROM packages before checking the dynamic
+  CAP; it exceeded the USB servicing budget and the watchdog took the device
+  to BOOTSEL. The resolver now checks the one dynamic CAP first and contains
+  lookup exceptions at the C bridge. GPPro SELECT then returned the expected
+  FCI / `9000` in 55 ms.
+- ARM/RISC-V builds and the flashed CHOUPI runtime cycle passed. Artifacts and
+  hashes are in the latest `wp7-vm-dynamic-cap-resolution` entry in
+  `progress.md`. Implementation commit:
+  `69616aea484ebf27307ec6fb758a71e99f1b682d`.
+- Next: invoke the CAP's install method with the required applet constructor
+  and install parameters; then preserve applet instance state and dispatch
+  SELECT/process/deselect through the VM. No applet bytecode has run yet.

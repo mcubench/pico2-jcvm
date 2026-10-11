@@ -1146,3 +1146,13 @@
 - Decision: Persistence and AID selection are now verified. Next implement actual applet installation/lifecycle execution and APDU dispatch through the CHOUPI VM before describing JCAlgTest as executable.
 - Commit: `a42a2a9a05ab65ad92edcb0729735d8cdac62bce`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T123949Z.log` (SHA-256 `2d1b24d01b181a568091a8dde4d73b36fe2242533fb2ccdbcd42b20665b2274e`); `artifacts/logs/gp-install-persistent-cap-20261011.txt` (SHA-256 `b1f53baf3f6dff3a76254887f5d1715c5c7f292767cd98a97cdbdd1946304b88`); `artifacts/logs/gp-list-persistent-cap-20261011.txt` (SHA-256 `8d0488571acaa39bc0acf779adc130e180d56787b13ab8d171ac84210a47ac92`); `artifacts/logs/gp-select-persistent-cap-20261011.txt` (SHA-256 `6e022dca655b14d3d649feef486b6326405414c5954e74f7f7d2a2999df2bb21`)
+
+## 2026-10-11 — Resolve persisted CAP through the CHOUPI VM
+
+- Step/experiment: `wp7-vm-dynamic-cap-resolution`
+- Change: Exposed the flash-backed JCAlgTest CAP to `FlashMemory_Handler` as reserved package ID 63, added `getCap(63)`, and taught the VM's existing `findAppletByAID` path to read the installed CAP's applet component and install-method offset. Applet SELECT now requires this VM lookup to resolve the stored AID before returning its FCI. The resolver checks the dynamic CAP first so it does not scan unrelated ROM packages inside the USB service path; exceptions from malformed package lookup are contained at the C bridge.
+- Validation: ARM and RISC-V wrapper builds passed. `./tools/cycle choupi` flashed the Pico 2 and passed `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL`, `FAULT`, or timeout. GPPro's real SELECT-by-AID returned `6F0C840A4A43416C675465737431 9000` in 55 ms, which now requires CHOUPI's CAP parser to find the stored AID and install offset. An earlier resolver ordering timed out at 16.7 seconds and triggered watchdog recovery; moving the dynamic lookup ahead of ROM enumeration fixed the APDU path.
+- Result: The persistent CAP is now connected to CHOUPI's package parser and AID resolver, while static package 20 remains unchanged. The install method is not invoked yet, and APDUs are still not dispatched to applet code.
+- Decision: Next implement a bounded VM entry path for the CAP install method and then route applet APDUs through a persistent selected-applet context.
+- Commit: `69616aea484ebf27307ec6fb758a71e99f1b682d`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T134038Z.log` (SHA-256 `eb7da84d5f0a1250269fab46c1f0c3b8ac2df3c15b0659b5fc518a511da32a03`); `artifacts/logs/gp-select-vm-cap-resolver-20261011.txt` (SHA-256 `ee917c37eb53abfa4564c9ecb820c448d271e49bae12fcb7f34f657ef650af0f`)
