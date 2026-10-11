@@ -1346,5 +1346,5 @@
   unverified.
 - Decision: Continue offline verification of JC305 tokens against API exports;
   perform the install runtime check when the Pico is available again.
-- Commit: pending
+- Commit: `ef90fea8677801c93c49db5c973afcb7eb360e13`
 - Artifacts/logs: `artifacts/logs/gp-install-jc305-native-index-20261011.txt`
