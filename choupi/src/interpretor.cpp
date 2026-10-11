@@ -317,6 +317,11 @@ Context &Interpretor::getCurrentContext() noexcept(
   return this->contexts.front();
 }
 
+bool Interpretor::installAppletRegistered() noexcept {
+  return this->startsAtMethodOffset &&
+         this->getCurrentContext().wasAppletRegistered();
+}
+
 void Interpretor::startJCVMException(Exceptions e) {
 
 #ifdef DEBUG

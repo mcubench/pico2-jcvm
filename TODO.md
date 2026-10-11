@@ -29,6 +29,8 @@ out explicitly.
 - [ ] Find and fix the current install-method failure using trustworthy runtime
   evidence. The last recorded GPPro attempt returned `6A80`; the stale watchdog
   scratch marker is not reliable enough to identify its cause.
+- [x] Track calls to the imported JC305 `Applet.register` virtual methods during
+  install and reject a successful VM return if no registration call occurred.
 - [ ] Implement `Applet.register()` and `register(byte[], short, byte)` so a
   successful Java install creates the persistent, selectable instance.
 - [ ] Make failed installation atomic: remove partial instances/package state

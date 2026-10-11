@@ -74,6 +74,12 @@ jpackage_ID_t Context::getCurrentPackageID() noexcept {
  */
 jpackage_ID_t Context::getAppletID() noexcept { return this->applet_ID; }
 
+void Context::markAppletRegistered() noexcept { this->applet_registered = true; }
+
+bool Context::wasAppletRegistered() const noexcept {
+  return this->applet_registered;
+}
+
 /**
  * Get context Java Card stack.
  *

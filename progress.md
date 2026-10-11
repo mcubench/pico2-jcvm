@@ -1348,3 +1348,22 @@
   perform the install runtime check when the Pico is available again.
 - Commit: `ef90fea8677801c93c49db5c973afcb7eb360e13`
 - Artifacts/logs: `artifacts/logs/gp-install-jc305-native-index-20261011.txt`
+
+## 2026-10-11 — Require Applet.register during installation
+
+- Step/experiment: `wp7-install-register-call-tracking`
+- Change: Added a per-context marker for calls to the JC305 imported Applet
+  `register()` overloads. The install bridge returns the marker to the GP
+  loader, which now refuses to persist an instance AID when Java install
+  returns without invoking registration.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed with no
+  compiler errors or warnings. Hardware and PC/SC validation were intentionally
+  skipped while continuing offline implementation.
+- Result: A successful interpreter return alone can no longer create a
+  selectable GP registry entry; a recognized Applet registration method call
+  is also required. The JC305 method mapping and actual instance persistence are
+  not yet runtime-verified.
+- Decision: Continue implementing the registered applet instance and lifecycle
+  bridge, then verify it on the board when physical testing resumes.
+- Commit: pending
+- Artifacts/logs: none (offline wrapper builds only)

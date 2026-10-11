@@ -25,6 +25,11 @@
   applet-install entry as a Java byte array, offset 0, and byte length. The last
   APDU trace carries `C9 00`; ARM and RISC-V wrapper builds pass after the
   change, but runtime behavior still needs physical validation.
+- The VM now records invocation of the imported JC305 `Applet.register()` or
+  `register(byte[], short, byte)` virtual method during install. GP INSTALL will
+  not persist the selectable AID if Java install returns without that call.
+  This does not yet persist the Java applet object or prove the method mapping
+  at runtime.
 - Next: validate the token mappings and method/CP interpretation from local CAP
   and export metadata, fix the install execution path, build both targets, and
   make a focused commit with a progress entry. Physical flash validation is

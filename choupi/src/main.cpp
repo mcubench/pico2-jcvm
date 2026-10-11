@@ -75,6 +75,7 @@ uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
 uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
                                 const uint8_t *install_data,
                                 uint8_t install_length,
+                                uint8_t *applet_registered,
                                 uint8_t *exception_id,
                                 uint8_t *exception_opcode,
                                 uint32_t *exception_pc,
@@ -89,6 +90,9 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
                                 method_offset, install_data, install_length);
   const uint16_t status = interpretor.run();
+  if (applet_registered != nullptr) {
+    *applet_registered = interpretor.installAppletRegistered() ? 1 : 0;
+  }
   if (exception_id != nullptr) {
     *exception_id = interpretor.lastExceptionId();
   }

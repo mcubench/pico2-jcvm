@@ -13,6 +13,7 @@ extern "C" uint16_t runtime_install_method(uint8_t package_id,
                                             uint16_t method_offset,
                                             const uint8_t *install_data,
                                             uint8_t install_length,
+                                            uint8_t *applet_registered,
                                            uint8_t *exception_id,
                                            uint8_t *exception_opcode,
                                            uint32_t *exception_pc,
@@ -313,16 +314,18 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     install_failure_stage_ = 4;
     return false;
   }
+  uint8_t applet_registered = 0;
   install_vm_status_ = runtime_install_method(
       resolved_package_id, install_method_offset, install_parameters,
       static_cast<uint8_t>(install_parameters_length),
+      &applet_registered,
       &install_vm_exception_id_,
       &install_vm_exception_opcode_, &install_vm_exception_pc_,
       &install_vm_exception_prefix_,
       &install_vm_exception_operand_, &install_vm_exception_stack_depth_,
       &install_vm_exception_opcode_history_,
       &install_vm_exception_depth_history_);
-  if (install_vm_status_ != 0x9000) {
+  if (install_vm_status_ != 0x9000 || applet_registered == 0) {
     install_failure_stage_ = 5;
     return false;
   }

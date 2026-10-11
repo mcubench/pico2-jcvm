@@ -78,6 +78,7 @@ public:
   uint8_t lastExceptionStackDepth() const noexcept {
     return last_exception_stack_depth;
   }
+  bool installAppletRegistered() noexcept;
 
   /// Get the current context
   Context &getCurrentContext() noexcept(

@@ -41,6 +41,8 @@ class Context {
 private:
   /// Applet ID.
   japplet_ID_t applet_ID;
+  /// Set when the active install method invokes Applet.register().
+  bool applet_registered = false;
   /// Current Java Card stack.
   Stack stack;
   /// Linked-list where the executed Packages ID is stored. The Head of the
@@ -61,6 +63,9 @@ public:
   jpackage_ID_t getCurrentPackageID() noexcept;
   /// Get applet ID
   japplet_ID_t getAppletID() noexcept;
+  /// Record and query Applet.register() calls during installation.
+  void markAppletRegistered() noexcept;
+  bool wasAppletRegistered() const noexcept;
   /// Get context Java Card stack.
   Stack &getStack() noexcept;
   /// Get context heap.
