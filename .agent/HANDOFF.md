@@ -11,8 +11,11 @@ v1.8.2 and preserve the provided source trees.
 - Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device
   before calling picotool, so a transient USB passthrough drop can recover when
   the Pico re-enumerates. Shell syntax and the changed-file whitespace check
-  pass; no Pico was visible on the host bus during a 60-second observation,
-  so hardware flashing could not be attempted. The pre-watchdog image remains
+  pass. `./tools/env ./tools/cycle choupi` passed both architecture builds, but
+  the 120-second USB wait expired without any RP-series device present; no
+  flash was attempted. Log:
+  `artifacts/logs/cycle-choupi-20261011T082732Z.log` (SHA-256
+  `fe2431031ef112a6a2d8c0294c29c9bcf8b380b2e50976af86beccde606d204f`). The pre-watchdog image remains
   installed; the watchdog candidate is still ready at
   `build/arm/pico2_choupi.uf2` (SHA-256
   `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`).

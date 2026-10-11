@@ -851,8 +851,8 @@
 
 - Step/experiment: `wp1-pico-flash-hotplug-wait`
 - Change: Updated `tools/flash` to detect RP-series USB devices in sysfs and wait up to 120 seconds for re-enumeration before invoking picotool. This avoids spending the force-load timeout on a Pico that is absent from the host USB bus and lets a transient passthrough disconnect recover within the bounded wait.
-- Validation: `bash -n tools/flash` passed. `git diff --check -- tools/flash` passed. A 60-second host USB observation found no RP-series device; `./tools/doctor` confirmed host prerequisites but does not inspect the live USB connection. Hardware flashing was not attempted because the board is not enumerated.
-- Result: The flasher will resume automatically if the Pico reappears within 120 seconds of a cycle starting. Current watchdog UF2 remains unflashed; no hardware validation was possible in this step.
+- Validation: `bash -n tools/flash` and scoped `git diff --check -- tools/flash .agent/HANDOFF.md progress.md` passed. A 60-second initial USB observation found no RP-series device. Then `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds and exercised the hot-plug wait for its full 120 seconds, but no device appeared; the cycle exited 1 before picotool or serial monitoring. Hardware flashing was not attempted because the board is not enumerated.
+- Result: The hot-plug wait runs as intended and reports a reconnect-specific failure at timeout. Current watchdog UF2 remains unflashed; no hardware validation was possible in this step.
 - Decision: Keep the wait bounded and fail with a reconnect-specific message if USB does not return; rerun the gated CHOUPI cycle once the RP-series device enumerates.
 - Commit: `5f6842b` (metadata follow-up records this SHA)
-- Artifacts/logs: no new log; watchdog UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T082732Z.log`, SHA-256 `fe2431031ef112a6a2d8c0294c29c9bcf8b380b2e50976af86beccde606d204f`; watchdog UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`
