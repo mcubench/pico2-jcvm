@@ -1026,3 +1026,13 @@
 - Decision: Continue toward interpreter-backed applet install and APDU processing.
 - Commit: pending
 - Artifacts/logs: none
+
+## 2026-10-11 — Reflash CHOUPI after Pico 2 replug
+
+- Step/experiment: `wp5-pico2-reflash-aid-registry`
+- Change: No source change during this hardware cycle. Rebuilt and flashed the ARM CHOUPI image containing the CAP AID parser and package registry lookup.
+- Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds. The sandboxed attempt could not initialize libusb; with user-authorized device access, picotool saw the CDC device, but force-load could not locate its reset interface. The wrapper's CDC 1200-baud fallback entered BOOTSEL after 2 seconds, and normal UF2 load reached 100%. The bounded capture completed with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` was present. Post-flash picotool saw the re-enumerated RP2350 CDC device at bus 1/address 21.
+- Result: The board is running the updated CHOUPI image. The flashing recovery sequence worked end-to-end through its CDC fallback. PC/SC currently reports no reader; no APDU or GPPro probe was made after this flash.
+- Decision: Restore the PC/SC daemon/reader for the re-enumerated node, then continue with interpreter-backed applet lifecycle and APDU dispatch. The static registry lookup is not yet used for SELECT or install.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T111329Z.log` (SHA-256 `354482ef6091f85a04b5192fea4a17574600f2523042b465a6410f72768b8009`); flashed ARM UF2 SHA-256 `ec437a81244d1729c4d6713825d50c79daec6252cb22041b009819cbca8b8a45`

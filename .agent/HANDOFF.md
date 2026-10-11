@@ -1042,3 +1042,20 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   possible in this session.
 - The package-level registry lookup and its build record are committed as
   `fe7e12f`.
+
+## Reflash after replug — 2026-10-11
+
+- The updated ARM CHOUPI UF2 containing the AID parser and package-level
+  registry lookup is now flashed. Both wrapper builds passed. Picotool force
+  reset failed because it could not locate the reset interface; `tools/flash`
+  then used CDC 1200 baud, entered BOOTSEL within 2 seconds, and loaded the UF2
+  to 100%.
+- The bounded hardware cycle passed with repeated `TEST:PASS choupi_runtime`
+  and `TEST:SUMMARY pass=1 fail=0`, no `TEST:FAIL` or `FAULT`. Log:
+  `artifacts/logs/cycle-choupi-20261011T111329Z.log`, SHA-256
+  `354482ef6091f85a04b5192fea4a17574600f2523042b465a6410f72768b8009`.
+  UF2 SHA-256: `ec437a81244d1729c4d6713825d50c79daec6252cb22041b009819cbca8b8a45`.
+- Post-flash USB re-enumerated as RP2350 CDC bus 1/address 21. PC/SC has no
+  active daemon/reader at present, so no post-flash APDU test was possible.
+  Applet install/process lifecycle and APDU dispatch remain unimplemented;
+  the registry lookup is not yet connected to SELECT.
