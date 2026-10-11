@@ -18,6 +18,7 @@ v1.8.2 and preserve the provided source trees.
   watchdog marker `opcode=8F count=1 stage=17 context=00000003` shows imported
   class lookup now reaches Class component offset 3, beyond the previous bad
   `0x0300` index. No successful INSTALL status or applet SELECT was observed.
+  Fix commit: `86b96a3c2aefb14dbf698257271fa0ae90c58f9b`.
   Logs: `artifacts/logs/gp-install-class-offset-endian-fix-20261011.txt`,
   `artifacts/logs/cdc-class-offset-install-capture-20261011.txt`, and
   `artifacts/logs/cdc-class-offset-endian-fix-20261011.txt`. Next add markers
