@@ -76,6 +76,7 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
                                 const uint8_t *install_data,
                                 uint8_t install_length,
                                 uint8_t *applet_registered,
+                                uint16_t *applet_class_index,
                                 uint8_t *exception_id,
                                 uint8_t *exception_opcode,
                                 uint32_t *exception_pc,
@@ -91,11 +92,13 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
                                 method_offset, install_data, install_length);
   const uint16_t status = interpretor.run();
   bool applet_persisted = false;
+  uint16_t registered_class_index = 0xffff;
   if (status == 0x9000 && interpretor.installAppletRegistered()) {
     try {
       const jcvm::jref_t applet_ref = interpretor.installAppletReference();
       jcvm::Context &context = interpretor.getCurrentContext();
       const auto applet = context.getHeap().getInstance(applet_ref);
+      registered_class_index = applet->getClassIndex();
       const jcvm::fs::Tag instance_tag =
           jcvm::FlashMemory_Handler::getAppletInstanceTag(
               context.getAppletID(), applet->getPackageID(),
@@ -109,6 +112,9 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
   }
   if (applet_registered != nullptr) {
     *applet_registered = applet_persisted ? 1 : 0;
+  }
+  if (applet_class_index != nullptr) {
+    *applet_class_index = applet_persisted ? registered_class_index : 0xffff;
   }
   if (exception_id != nullptr) {
     *exception_id = interpretor.lastExceptionId();

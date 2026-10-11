@@ -8,12 +8,14 @@ extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
                                              const uint8_t *data,
                                              uint32_t length);
 extern "C" uint8_t choupi_store_cap_instance(const uint8_t *aid,
-                                              uint8_t aid_length);
+                                              uint8_t aid_length,
+                                              uint16_t applet_class_index);
 extern "C" uint16_t runtime_install_method(uint8_t package_id,
                                             uint16_t method_offset,
                                             const uint8_t *install_data,
                                             uint8_t install_length,
                                             uint8_t *applet_registered,
+                                            uint16_t *applet_class_index,
                                            uint8_t *exception_id,
                                            uint8_t *exception_opcode,
                                            uint32_t *exception_pc,
@@ -159,6 +161,7 @@ void CapLoadSession::reset() noexcept {
   load_package_aid_length_ = 0;
   applet_aid_length_ = 0;
   instance_aid_length_ = 0;
+  applet_class_index_ = 0xffff;
   load_data_length_ = 0;
   next_block_ = 0;
   loading_ = false;
@@ -315,26 +318,31 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     return false;
   }
   uint8_t applet_registered = 0;
+  uint16_t applet_class_index = 0xffff;
   install_vm_status_ = runtime_install_method(
       resolved_package_id, install_method_offset, install_parameters,
       static_cast<uint8_t>(install_parameters_length),
       &applet_registered,
+      &applet_class_index,
       &install_vm_exception_id_,
       &install_vm_exception_opcode_, &install_vm_exception_pc_,
       &install_vm_exception_prefix_,
       &install_vm_exception_operand_, &install_vm_exception_stack_depth_,
       &install_vm_exception_opcode_history_,
       &install_vm_exception_depth_history_);
-  if (install_vm_status_ != 0x9000 || applet_registered == 0) {
+  if (install_vm_status_ != 0x9000 || applet_registered == 0 ||
+      applet_class_index == 0xffff) {
     install_failure_stage_ = 5;
     return false;
   }
-  if (choupi_store_cap_instance(instance_aid, instance_aid_length) != 0) {
+  if (choupi_store_cap_instance(instance_aid, instance_aid_length,
+                                applet_class_index) != 0) {
     install_failure_stage_ = 6;
     return false;
   }
   std::memcpy(instance_aid_, instance_aid, instance_aid_length);
   instance_aid_length_ = instance_aid_length;
+  applet_class_index_ = applet_class_index;
   installed_ = true;
   return true;
 }
@@ -357,6 +365,15 @@ void CapLoadSession::restoreInstalled() noexcept {
   }
   std::memcpy(instance_aid_, instance_aid, instance_aid_length);
   instance_aid_length_ = instance_aid_length;
+  (void)cap_store_applet_class_index(applet_class_index_);
   loaded_ = true;
   installed_ = true;
+}
+
+bool CapLoadSession::appletClassIndex(uint16_t &class_index) const noexcept {
+  if (!installed_ || applet_class_index_ == 0xffff) {
+    return false;
+  }
+  class_index = applet_class_index_;
+  return true;
 }

@@ -1420,3 +1420,36 @@
 - Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2` (SHA-256
   `003a2a2d6fc7c936740dab4199c99bb01987c3c1d7ece7322006c2badb720cc6`); no
   serial log because flashing was blocked before device access.
+
+## 2026-10-11 — Persist registered applet class identity
+
+- Step/experiment: `wp7-persist-applet-class-index`
+- Change: Passed the registered object's class index from the VM install bridge
+  into the CAP slot metadata. Header version 2 stores that index with an
+  additional CRC; version-1 headers remain readable. The install writer rejects
+  the `0xFFFF` invalid-index sentinel. Updated TODO and handoff to distinguish
+  saved class identity from the still-missing reboot reconstruction/dispatch.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Two
+  `./tools/cycle choupi` attempts passed both build gates and flashed the ARM
+  CHOUPI image, but each bounded cycle timed out looking for serial within the
+  monitor's current 10-second enumeration window. A finite `./tools/monitor
+  --seconds 8` then passed on the same board with repeated
+  `TEST:SUMMARY pass=1 fail=0`. The board was detected as
+  `2e8a:0009 Raspberry Pi Pico 2 CHOUPI CCID`. No JCAlgTest installation was
+  attempted in this step.
+- Result: The registered class index is now persisted alongside the AID and
+  object state, but runtime class lookup/reconstruction is not implemented or
+  verified. The flash succeeded; the runtime self-check passed. The full cycle
+  command remains flaky because serial enumeration takes longer than its
+  current wait.
+- Decision: Keep the physical board in service. Extend serial-enumeration
+  tolerance, then resume applet reconstruction and GP INSTALL/SELECT/APDU tests.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/monitor-choupi-class-index-20261011.txt`
+  (SHA-256 `999f4652dea75934aa24ee1fa587049b982e30a2c63a8bc26701ca63d3b0a8ab`);
+  failed full-cycle captures `artifacts/logs/cycle-choupi-20261011T194021Z.log`
+  (SHA-256 `ce1d0a9ed3b293223a0b8814942fec0bc12a59b82cb86b622947a6f8cb5d0a85`)
+  and `artifacts/logs/cycle-choupi-20261011T194129Z.log` (SHA-256
+  `72da27a28c1bdc2e0e3a3b446e7efaf6fb4e277182d229d80b6cdfc2ebcb37a4`); ARM
+  UF2 `build/arm/pico2_choupi.uf2` (SHA-256
+  `afd2194987c9f06476e7e7098124e09b7ceadab12d1b22862f1f68268f64e4c4`).

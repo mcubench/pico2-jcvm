@@ -44,7 +44,6 @@ extern "C" void choupi_install_context(uint32_t context) {
 extern "C" void choupi_install_origin(uint32_t origin) {
   watchdog_hw->scratch[5] = origin;
 }
-
 namespace {
 
 bool watchdog_recovery_pending = false;
@@ -563,8 +562,9 @@ extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
 }
 
 extern "C" uint8_t choupi_store_cap_instance(const uint8_t *aid,
-                                              uint8_t aid_length) {
-  return cap_store_mark_installed(aid, aid_length) ? 0 : 1;
+                                              uint8_t aid_length,
+                                              uint16_t applet_class_index) {
+  return cap_store_mark_installed(aid, aid_length, applet_class_index) ? 0 : 1;
 }
 
 extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length) {

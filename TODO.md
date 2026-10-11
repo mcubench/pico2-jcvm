@@ -27,9 +27,11 @@ dependency because crates.io DNS/network access is unavailable.
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's
 fields under a reserved persistent applet root after a successful install
-method return. The AID registry path, duplicate/invalid registration handling,
-rollback, reboot reload, and runtime SELECT/process dispatch remain unverified
-or incomplete.
+method return. CAP metadata now also records the registered class index in a
+version-2 header while continuing to read version-1 headers. Reconstructing the
+instance after reboot and using the index for lifecycle/APDU dispatch is still
+incomplete; installation rollback and duplicate/invalid registration handling
+also remain unverified.
 
 - [x] Parse the INSTALL [for install and make selectable] parameter field and
   pass its exact bytes in a Java byte array with offset zero and the matching
@@ -44,6 +46,8 @@ or incomplete.
   scratch marker is not reliable enough to identify its cause.
 - [x] Track calls to the imported JC305 `Applet.register` virtual methods during
   install and reject a successful VM return if no registration call occurred.
+- [x] Store the registered applet class index beside the persistent AID using a
+  CRC-protected CAP metadata version, while retaining version-1 CAP readability.
 - [ ] Implement `Applet.register()` and `register(byte[], short, byte)` so a
   successful Java install creates the persistent, selectable instance.
 - [ ] Make failed installation atomic: remove partial instances/package state
@@ -51,7 +55,9 @@ or incomplete.
 
 ## Applet runtime and APDU lifecycle
 
-- [ ] Instantiate and persist applet state from the Java constructor.
+- [x] Persist the registered applet object and its fields after Java install.
+- [ ] Reconstruct the persisted applet object after reboot using its stored
+  class index, then dispatch applet lifecycle methods.
 - [ ] Dispatch SELECT, `select()`, `deselect()`, and `process()` through the
   interpreter for the selected applet.
 - [ ] Implement Java Card APDU buffer and incoming/outgoing command methods used

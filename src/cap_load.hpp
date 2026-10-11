@@ -45,6 +45,7 @@ public:
   }
   const uint8_t *instanceAid() const noexcept { return instance_aid_; }
   uint8_t instanceAidLength() const noexcept { return instance_aid_length_; }
+  bool appletClassIndex(uint16_t &class_index) const noexcept;
 
 private:
   static constexpr size_t kMaxLoadTlvLength = 28 * 1024;
@@ -55,6 +56,7 @@ private:
   uint8_t applet_aid_length_ = 0;
   uint8_t instance_aid_[16]{};
   uint8_t instance_aid_length_ = 0;
+  uint16_t applet_class_index_ = 0xffff;
   size_t load_data_length_ = 0;
   uint16_t next_block_ = 0;
   bool loading_ = false;

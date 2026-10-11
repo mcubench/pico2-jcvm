@@ -3,10 +3,13 @@
 ## Current session state — 2026-10-11
 
 - The user has returned physical testing to scope and asked to continue the
-  complete project autonomously. `./tools/cycle choupi` rebuilt ARM and RISC-V,
-  then stopped before flashing because `picotool` could not initialize libusb
-  (`-99`); this container has no `/dev/bus/usb`, and `lsusb` fails the same way.
-  Retry hardware only after the execution environment exposes the USB device.
+  complete project autonomously. This session regained USB passthrough through
+  an approved elevated host-device invocation: both architecture gates passed,
+  the Pico was flashed in BOOTSEL, and its USB identity returned as `2e8a:0009`
+  CHOUPI CCID. The full cycle's monitor discovery timed out twice, but a
+  subsequent finite 8-second serial capture passed. `tools/monitor` currently
+  waits only 10 seconds for serial enumeration; extend this bounded wait and
+  rerun `./tools/cycle choupi`.
 - Root `TODO.md` is the current acceptance-criteria tracker. The installed CAP
   blob and synthetic registry/SELECT path are not evidence that the Java
   constructor, `Applet.register`, or applet `process()` executed.
@@ -21,9 +24,12 @@
 - `Applet.register` receiver capture now flows through `Context` and
   `Interpretor`; after a successful install method return, `runtime_install_method`
   serializes the Java instance through `FlashMemory_Handler` under reserved
-  field tag `0xFF`. ARM and RISC-V wrapper builds pass. This is still a single
-  applet slot (applet owner 0), has no atomic cleanup if the card-manager AID
-  write fails, and has not been runtime-verified.
+  field tag `0xFF`. The CAP header version 2 now stores its class index and a
+  separate CRC while preserving version-1 header readability. ARM/RISC-V builds
+  and the CHOUPI runtime self-check pass on the physical board. Reboot
+  reconstruction, class-index dispatch, applet lifecycle/APDU handling, and
+  install rollback remain incomplete. This is still a single applet slot
+  (applet owner 0), with no atomic cleanup if the card-manager AID write fails.
 - The worktree contains preserved, uncommitted JC305 token-remapping and install
   diagnostics in `choupi/src/jc_bytecodes/bc_invoke.cpp`,
   `choupi/src/jc_handlers/jc_class.cpp`, `jc_cp.cpp`, `jc_cp.hpp`,
