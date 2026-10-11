@@ -1001,3 +1001,18 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   records the SHA.
 - Next: implement the minimal card manager/APDU lifecycle rather than treating
   the CCID layer as GlobalPlatform support.
+
+## CAP applet AID lookup primitive (2026-10-11)
+
+- Corrected `jc_cap_app::AID()` to read the CAP's one-byte AID length without
+  applying a two-byte network-order conversion, which had included the first
+  AID byte in the computed length.
+- Added a bounded `jc_cap_applet_component::findByAID()` walker. It validates
+  requested and stored AID lengths and ensures every variable-length applet
+  record (AID plus install method offset) fits inside the component payload.
+- `./tools/build arm` and `./tools/build riscv` pass. `git diff --check` passes.
+  This is compile validation only: PC/SC service and libusb are unavailable in
+  this VM session, and no hardware flash was attempted.
+- No applet registry, SELECT, install execution, or APDU processing exists yet.
+  Next integrate this lookup into the card manager and then build persistent
+  interpreter contexts/lifecycle calls.

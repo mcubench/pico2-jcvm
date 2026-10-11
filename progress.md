@@ -956,3 +956,13 @@
 - Decision: Implement card-manager SELECT/status behavior and Java Card applet lifecycle before retrying `gp --list`; do not claim the card is GlobalPlatform-compatible from CCID/PCSC transport alone.
 - Commit: `e37ad51`
 - Artifacts/logs: `artifacts/logs/gp-list-probe-20261011.txt` (SHA-256 `fb8f6f2fe5db66583677148c20699d483a4381f686724f669b7afb3b1537e086`)
+
+## 2026-10-11 — Add bounded CAP applet AID lookup
+
+- Step/experiment: `wp5-cap-applet-aid-index`
+- Change: Corrected `jc_cap_app::AID()` to use its one-byte AID length directly and added a bounded lookup that walks variable-length Applet component records, validates each 5–16 byte AID and record boundary, and compares the requested AID.
+- Validation: `./tools/build arm` and `./tools/build riscv` both passed. `git diff --check` passed. Hardware/APDU validation was skipped because the current VM session reports no usable libusb context and no PC/SC service; no flash was attempted.
+- Result: The VM has a safe CAP metadata primitive for locating applet entries by AID and reading the matching install method offset. No applet is selected or executed yet.
+- Decision: Next wire the lookup into a persistent applet registry/lifecycle path; do not treat this parser primitive as SELECT or install support.
+- Commit: pending
+- Artifacts/logs: none
