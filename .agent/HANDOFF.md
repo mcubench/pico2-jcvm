@@ -1141,3 +1141,13 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: implement SCP03 INITIALIZE UPDATE / EXTERNAL AUTHENTICATE using the
   default test keys, then implement GET STATUS and continue toward GP CAP load.
   Implementation and validation committed as `9e9e3ae`.
+
+## Raw GP read-only probes — 2026-10-11
+
+- GPPro raw APDU mode sent GET STATUS (`80F20000024F00`), GET DATA CPLC
+  (`80CA9F7F00`), and GET DATA Card Data (`80CA006600`) without opening a
+  secure channel. Each returned `6D00`; automatic discovery then SELECTed the
+  default ISD and received its valid FCI and `9000`. No write command ran.
+- Trace: `artifacts/logs/gp-raw-readonly-probes-20261011.txt`, SHA-256
+  `8795b672b2dd211d2ccc18ac4f5e05579671b6f22f49adaa2d7752fbefb4df5b`. Next implement SCP03; then add tag-form GET STATUS
+  and read-only GET DATA before any CAP loading.
