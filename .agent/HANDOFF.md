@@ -948,3 +948,23 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`.
 - Next: enter BOOTSEL once, run `./tools/env ./tools/cycle choupi`, and let the
   new watchdog provide autonomous BOOTSEL recovery if the VM stalls again.
+
+## Latest continuation — CCID APDU exchange mode (2026-10-11)
+
+- Changed the CCID class descriptor to `dwFeatures=0x00020042`: short APDU
+  exchange plus automatic parameter configuration/negotiation. The old zero
+  value declared character-level exchange while the firmware accepts complete
+  APDUs through `XfrBlock`.
+- Both architecture builds passed. The CHOUPI cycle flashed the updated ARM UF2
+  and passed `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. The
+  device's `lsusb -v` descriptor confirms short APDU mode and a 271-byte maximum
+  CCID message. See `progress.md` and
+  `artifacts/logs/cycle-choupi-20261011T101036Z.log`.
+- PC/SC APDU transmission is still unverified. Flashing re-enumerated the Pico
+  from USB node `001/016` to `001/018`; the ACL previously granted to `pcscd`
+  did not persist, so pcsc_scan found no reader. The current libccid udev rule
+  selects group `pcscd` only when `ID_USB_INTERFACES` identifies the device as
+  CCID, but this node appeared as `root:plugdev`. Restore pcscd access to the
+  current node or add a VID/PID-specific udev permission rule, then test a raw
+  APDU through GPPro. The current XfrBlock result remains placeholder `6D00`;
+  applet dispatch, CAP install, and GlobalPlatform support are not implemented.

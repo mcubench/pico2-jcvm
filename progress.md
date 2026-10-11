@@ -926,3 +926,13 @@
 - Decision: Reattach the Pico through VirtualBox; verify `lsusb -d 2e8a:0009`, then rerun `pcsc_scan -r`.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/pcsc-usb-absent-20261011.txt`
+
+## 2026-10-11 — Correct CCID APDU exchange declaration
+
+- Step/experiment: `wp5-ccid-short-apdu-feature-declaration`
+- Change: Changed the CCID descriptor `dwFeatures` from `0x00000000` (character-level exchange) to `0x00020042` (short APDU exchange with automatic parameter configuration/negotiation). The firmware's `XfrBlock` path consumes and returns complete APDUs, so the previous declaration disagreed with its transport behavior.
+- Validation: ARM and RISC-V wrapper builds passed. `./tools/env ./tools/cycle choupi` passed both build gates, entered BOOTSEL with the existing CDC 1200-baud fallback after picotool could not find a reset interface, flashed the ARM UF2 to 100%, and captured `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` with no `FAULT`. `lsusb -v -d 2e8a:0009` on the re-enumerated board reports `dwFeatures 00020042`, `Short APDU level exchange`, and `dwMaxCCIDMsgLen 271`. PC/SC APDU transmission was not verified: after flashing, the USB node changed from `001/016` to `001/018`, and pcscd had no reader because the prior per-node ACL did not carry over; a later scan also found its socket inactive.
+- Result: The board is running the updated firmware and the CCID descriptor now matches the raw APDU-level XfrBlock implementation. The GPPro/PCSC transaction path remains unverified until pcscd can access the current USB device node. The firmware still returns `6D00` for XfrBlock and does not implement applet dispatch or GP installation.
+- Decision: Restore pcscd access for the current/re-enumerated USB node, confirm `pcsc_scan -r` sees the reader, then send a harmless raw APDU through GPPro and confirm the returned `6D00` before implementing APDU dispatch.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T101036Z.log` (SHA-256 `b2493c96ac884b487e7685014a1e9864d643b69198ee2b5a4e0f84f752d1092b`); flashed ARM UF2 SHA-256 `d6116030ec2fcd82cccbc8be61f123b19ee18616ed8596725cfc98e3e817e12e`
