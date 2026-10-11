@@ -1508,7 +1508,7 @@
 - Decision: Wire this helper into a per-applet CCID context and SELECT path;
   restore PC/SC reader access through the user-authorized setup path when
   allowed by the active repository safety constraints.
-- Commit: pending
+- Commit: `845e86f`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195102Z.log` (SHA-256
   `420c05f8ea0ae1ae7689f31aa57a8e87ec4d611ca59a9cf5a00e20592d956595`); ARM
   UF2 SHA-256 `48c6a1a4871365ba6964e9b141c43eefda53abf61e2aa97507adfe66da17b9ac`.
