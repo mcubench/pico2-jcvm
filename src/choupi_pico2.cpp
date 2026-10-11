@@ -10,6 +10,7 @@
 #include "pico/stdlib.h"
 #include "hardware/watchdog.h"
 #include "pico/bootrom.h"
+#include "cap_store.hpp"
 
 extern "C" const uint8_t choupi_rommask_start[];
 extern "C" const uint8_t choupi_rommask_end[];
@@ -460,6 +461,7 @@ extern "C" uint8_t fs_init(void) {
   }
   overlay_file_count = 0;
   overlay_bytes_used = 0;
+  (void)cap_store_initialize();
   return 0;
 }
 
@@ -523,10 +525,12 @@ extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
       length > 28 * 1024) {
     return 1;
   }
-  uint8_t tag[128]{};
-  uint8_t tag_length = 0;
-  path_cap(package_id, &tag, &tag_length);
-  return fs_write(tag, tag_length, data, length);
+  return cap_store_write(data, length) ? 0 : 1;
+}
+
+extern "C" uint8_t choupi_store_cap_instance(const uint8_t *aid,
+                                              uint8_t aid_length) {
+  return cap_store_mark_installed(aid, aid_length) ? 0 : 1;
 }
 
 extern "C" uint8_t fs_read_1b_at(const uint8_t *tag, uint8_t tag_length,

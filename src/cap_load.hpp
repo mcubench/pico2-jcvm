@@ -14,6 +14,7 @@ public:
                     size_t length) noexcept;
   bool installAndMakeSelectable(const uint8_t *data,
                                 size_t length) noexcept;
+  void restoreInstalled() noexcept;
 
   bool installed() const noexcept { return installed_; }
   const uint8_t *instanceAid() const noexcept { return instance_aid_; }

@@ -79,6 +79,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     src/choupi_pico2.cpp
     src/ccid_device.cpp
     src/cap_load.cpp
+    src/cap_store.cpp
     src/scp03.cpp
     "${PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
@@ -94,7 +95,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     -Wno-array-bounds
     -Wno-format)
   target_compile_definitions(pico2_choupi PRIVATE DEBUG)
-  target_link_libraries(pico2_choupi PRIVATE pico_stdlib pico_rand
+  target_link_libraries(pico2_choupi PRIVATE pico_stdlib pico_rand pico_flash
     pico_mbedtls_headers)
   pico_enable_stdio_usb(pico2_choupi 1)
   # Supply a composite CDC + CCID configuration descriptor from the app. Keep

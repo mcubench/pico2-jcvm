@@ -100,6 +100,7 @@ void process_message(uint8_t rhport) {
   switch (command) {
   case 0x62: // PC_to_RDR_IccPowerOn
     slot_state = 0;
+    cap_load_session.restoreInstalled();
     send_response(rhport, 0x80, kAtr, sizeof(kAtr));
     break;
   case 0x63: // PC_to_RDR_IccPowerOff

@@ -1,10 +1,13 @@
 #include "cap_load.hpp"
+#include "cap_store.hpp"
 
 #include <cstring>
 
 extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
                                              const uint8_t *data,
                                              uint32_t length);
+extern "C" uint8_t choupi_store_cap_instance(const uint8_t *aid,
+                                              uint8_t aid_length);
 
 namespace {
 constexpr uint8_t kPackageAid[] = {0x4a, 0x43, 0x41, 0x6c, 0x67,
@@ -241,8 +244,33 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     return false;
   }
   if (offset != length) return false;
+  if (choupi_store_cap_instance(instance_aid, instance_aid_length) != 0) {
+    return false;
+  }
   std::memcpy(instance_aid_, instance_aid, instance_aid_length);
   instance_aid_length_ = instance_aid_length;
   installed_ = true;
   return true;
+}
+
+void CapLoadSession::restoreInstalled() noexcept {
+  reset();
+  uint32_t code_length = 0;
+  const uint8_t *code = cap_store_data(&code_length);
+  uint8_t instance_aid[16]{};
+  uint8_t instance_aid_length = 0;
+  if (code == nullptr ||
+      !cap_store_instance_aid(instance_aid, instance_aid_length) ||
+      !validate_cap_code(code, code_length, load_package_aid_,
+                         load_package_aid_length_, applet_aid_,
+                         applet_aid_length_) ||
+      !aid_matches(instance_aid, instance_aid_length, applet_aid_,
+                   applet_aid_length_)) {
+    reset();
+    return;
+  }
+  std::memcpy(instance_aid_, instance_aid, instance_aid_length);
+  instance_aid_length_ = instance_aid_length;
+  loaded_ = true;
+  installed_ = true;
 }
