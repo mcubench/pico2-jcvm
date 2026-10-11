@@ -886,3 +886,13 @@
 - Decision: Treat the static ROM-mask package as the completed alternative installation path for this board image. Keep APDU/CCID and GP installation as a separate future capability if runtime package management is needed.
 - Commit: `d747a27` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cap-component-compare-20261011.txt` (SHA-256 `f2106b97ad08d4505ce427fed9cf8daafd02453b1a22f66987022d92de2ec370`); `artifacts/logs/monitor-choupi-20261011T091500Z.log` (SHA-256 `02a4976d2be4c2e6f8df39c71db1451f94490a7a837434cb922342777d042ffb`); current ROM mask `build/choupi-rommask/flash-algtest.bin` SHA-256 `967a883ebf87955c74af84265218685414f82eaf584cab7e60651d719d11eda3`; current UF2 SHA-256 `48f170eb971f3e9f33505eeb0d40934eced68ad8b46c6f80a31248ad8741e3cb`
+
+## 2026-10-11 — Add and verify USB CCID transport
+
+- Step/experiment: `wp5-pico-ccid-transport`
+- Change: Added a composite CDC + CCID USB configuration and a TinyUSB CCID class driver for slot power, status, and XfrBlock messages. The APDU response remains a deliberate `6D00` placeholder until the VM has an APDU dispatcher. Retained the SDK CDC descriptor for the separate smoke target.
+- Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` passed before flash. `./tools/env ./tools/cycle choupi` flashed the ARM UF2 to 100%; the finite serial capture emitted `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`, with no `FAULT` or timeout. Elevated `lsusb -v -d 2e8a:0009` showed CDC interfaces 0-1 and CCID interface 2 with bulk endpoints 0x03/0x83. A direct libusb hardware exchange passed IccPowerOn (ATR `3b800181`), XfrBlock (response `6d00`), and IccPowerOff. The host has `libpcsclite1` but no `pcscd`/`pcsc_scan`; GlobalPlatformPro JAR artifacts are present.
+- Result: The board now exposes a working, USB-visible CCID transport alongside CDC diagnostics. The transport is hardware-verified, but it does not yet provide Java Card or GlobalPlatform behavior, and no CAP install was attempted through CCID.
+- Decision: Next implement an APDU dispatch route from CCID XfrBlock into CHOUPI and identify the VM's supported applet command lifecycle; then use an available PC/SC daemon or the direct USB probe for GPPro validation.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T093403Z.log` (SHA-256 `23c41afe5f954df2edf1b01eb26a5b90482a1288437d4f9dc30a1ffeb72702c9`); `artifacts/logs/ccid-probe-20261011.txt`; ARM UF2 SHA-256 `4f675fadf4913cf33d430494236c8853a6978a177873f9c5abe09b4a074eb995`

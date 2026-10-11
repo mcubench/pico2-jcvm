@@ -25,6 +25,8 @@ pico_sdk_init()
 add_executable(pico2_trng src/board_smoke.c)
 target_link_libraries(pico2_trng PRIVATE pico_stdlib pico_rand)
 pico_enable_stdio_usb(pico2_trng 1)
+target_sources(pico2_trng PRIVATE
+  "${PICO_SDK_PATH}/src/rp2_common/pico_stdio_usb/stdio_usb_descriptors.c")
 pico_enable_stdio_uart(pico2_trng 0)
 pico_add_extra_outputs(pico2_trng)
 
@@ -69,6 +71,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   add_executable(pico2_choupi
     choupi/src/main.cpp
     src/choupi_pico2.cpp
+    src/ccid_device.cpp
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
     $<TARGET_OBJECTS:choupi_vm_core>)
   target_include_directories(pico2_choupi PRIVATE
@@ -84,6 +87,13 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   target_compile_definitions(pico2_choupi PRIVATE DEBUG)
   target_link_libraries(pico2_choupi PRIVATE pico_stdlib)
   pico_enable_stdio_usb(pico2_choupi 1)
+  # Supply a composite CDC + CCID configuration descriptor from the app. Keep
+  # the SDK's CDC stdio implementation but omit its CDC-only descriptor object.
+  get_target_property(PICO_STDIO_USB_SOURCES pico_stdio_usb INTERFACE_SOURCES)
+  list(REMOVE_ITEM PICO_STDIO_USB_SOURCES
+    "${PICO_SDK_PATH}/src/rp2_common/pico_stdio_usb/stdio_usb_descriptors.c")
+  set_target_properties(pico_stdio_usb PROPERTIES
+    INTERFACE_SOURCES "${PICO_STDIO_USB_SOURCES}")
   pico_enable_stdio_uart(pico2_choupi 0)
   pico_add_extra_outputs(pico2_choupi)
 endif()

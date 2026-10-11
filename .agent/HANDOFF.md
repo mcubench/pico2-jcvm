@@ -8,6 +8,20 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- Added composite USB CDC + CCID firmware to the ARM CHOUPI image. The board
+  enumerates as `2e8a:0009` with CCID interface 2. After both architecture
+  builds passed, `./tools/env ./tools/cycle choupi` flashed the image and the
+  runtime emitted `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`.
+  Direct libusb CCID IccPowerOn, XfrBlock, and IccPowerOff exchanges succeeded;
+  details are in `artifacts/logs/ccid-probe-20261011.txt`. XfrBlock still
+  returns a deliberate `6D00` placeholder. There is no GlobalPlatform or Java
+  Card APDU dispatch and no runtime CAP install yet. The host has the
+  GlobalPlatformPro JAR artifacts, but `pcscd`/`pcsc_scan` are not installed.
+- Next: inspect the CHOUPI VM entry points for APDU dispatch and whether it can
+  instantiate/select the ROM-masked AlgTest applet. Wire CCID XfrBlock through
+  that path before attempting a real GPPro install; preserve the current static
+  ROM-mask install as a working fallback.
+
 - Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device.
   VirtualBox had stale USB passthrough until the user toggled the device off and
   on; afterward sysfs showed `2e8a:000f` RP2350 BOOTSEL and picotool flashed the

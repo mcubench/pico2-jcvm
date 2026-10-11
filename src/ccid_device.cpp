@@ -1,0 +1,293 @@
+#include <cstdint>
+#include <cstring>
+
+#include "device/usbd.h"
+#include "device/usbd_pvt.h"
+#include "pico/unique_id.h"
+#include "tusb.h"
+
+namespace {
+constexpr uint8_t kCcidInterface = 2;
+constexpr uint8_t kEndpointOut = 0x03;
+constexpr uint8_t kEndpointIn = 0x83;
+constexpr uint16_t kEndpointSize = 64;
+constexpr size_t kMaxMessage = 320;
+constexpr size_t kMaxCcidMessage = 300;
+constexpr uint8_t kAtr[] = {0x3b, 0x80, 0x01, 0x81};
+
+// The standard CDC interface remains available for diagnostics. CCID is the
+// third interface in this composite device and uses independent endpoints.
+constexpr uint16_t kConfigLength = TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN +
+                                  9 + 54 + 2 * 7;
+const uint8_t kConfiguration[] = {
+    TUD_CONFIG_DESCRIPTOR(1, 3, 0, kConfigLength,
+                          TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
+    TUD_CDC_DESCRIPTOR(0, 4, 0x81, 8, 0x02, 0x82, kEndpointSize),
+    9, TUSB_DESC_INTERFACE, kCcidInterface, 0, 2, 0x0b, 0, 0, 5,
+    54, 0x21, 0x10, 0x01, 0x00, 0x07, 0x02, 0x00, 0x00, 0x00,
+    0xa0, 0x0f, 0x00, 0x00, 0xa0, 0x0f, 0x00, 0x00, 0x00,
+    0x80, 0x25, 0x00, 0x00, 0x80, 0x25, 0x00, 0x00, 0x00,
+    0xfe, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x0f, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+    7, TUSB_DESC_ENDPOINT, kEndpointOut, TUSB_XFER_BULK, 64, 0, 0,
+    7, TUSB_DESC_ENDPOINT, kEndpointIn, TUSB_XFER_BULK, 64, 0, 0,
+};
+static_assert(sizeof(kConfiguration) == kConfigLength,
+              "USB configuration descriptor length is inconsistent");
+
+uint8_t rx_buffer[kMaxMessage];
+uint8_t tx_buffer[kMaxMessage];
+size_t rx_length = 0;
+size_t rx_expected = 0;
+uint8_t slot_state = 1; // present, inactive
+uint8_t ep_out = 0;
+uint8_t ep_in = 0;
+
+uint32_t read_le32(const uint8_t *p) {
+  return static_cast<uint32_t>(p[0]) |
+         (static_cast<uint32_t>(p[1]) << 8) |
+         (static_cast<uint32_t>(p[2]) << 16) |
+         (static_cast<uint32_t>(p[3]) << 24);
+}
+
+void queue_out(uint8_t rhport) {
+  if (ep_out != 0 && !usbd_edpt_busy(rhport, ep_out)) {
+    (void)usbd_edpt_xfer(rhport, ep_out, rx_buffer + rx_length,
+                         static_cast<uint16_t>(kEndpointSize));
+  }
+}
+
+void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
+                   size_t payload_length, uint8_t status = 0,
+                   uint8_t error = 0, uint8_t specific = 0) {
+  if (payload_length + 10 > sizeof(tx_buffer)) {
+    payload_length = 0;
+    status = 0x40; // failed
+    error = 0x01;  // command not supported
+  }
+  tx_buffer[0] = type;
+  tx_buffer[1] = static_cast<uint8_t>(payload_length);
+  tx_buffer[2] = static_cast<uint8_t>(payload_length >> 8);
+  tx_buffer[3] = static_cast<uint8_t>(payload_length >> 16);
+  tx_buffer[4] = static_cast<uint8_t>(payload_length >> 24);
+  tx_buffer[5] = 0; // slot
+  tx_buffer[6] = rx_buffer[6]; // sequence number
+  tx_buffer[7] = status;
+  tx_buffer[8] = error;
+  tx_buffer[9] = specific;
+  if (payload_length != 0) {
+    std::memcpy(tx_buffer + 10, payload, payload_length);
+  }
+  rx_length = 0;
+  rx_expected = 0;
+  (void)usbd_edpt_xfer(rhport, ep_in, tx_buffer,
+                       static_cast<uint16_t>(payload_length + 10));
+}
+
+void process_message(uint8_t rhport) {
+  const uint8_t command = rx_buffer[0];
+  switch (command) {
+  case 0x62: // PC_to_RDR_IccPowerOn
+    slot_state = 0;
+    send_response(rhport, 0x80, kAtr, sizeof(kAtr));
+    break;
+  case 0x63: // PC_to_RDR_IccPowerOff
+    slot_state = 1;
+    send_response(rhport, 0x81, nullptr, 0, slot_state);
+    break;
+  case 0x65: // PC_to_RDR_GetSlotStatus
+    send_response(rhport, 0x81, nullptr, 0, slot_state);
+    break;
+  case 0x6f: { // PC_to_RDR_XfrBlock
+    const size_t apdu_length = rx_expected - 10;
+    const uint8_t *apdu = rx_buffer + 10;
+    uint8_t response[] = {0x6d, 0x00};
+    // A transport-level probe is useful before the applet dispatcher exists.
+    // It does not claim to implement GlobalPlatform or Java Card APDUs.
+    if (apdu_length == 4 && apdu[0] == 0x00 && apdu[1] == 0x84) {
+      response[0] = 0x6d;
+    }
+    send_response(rhport, 0x80, response, sizeof(response));
+    break;
+  }
+  case 0x72: // PC_to_RDR_Abort
+    send_response(rhport, 0x81, nullptr, 0, slot_state);
+    break;
+  default:
+    send_response(rhport, 0x81, nullptr, 0, slot_state);
+    break;
+  }
+}
+
+void driver_init() {
+  rx_length = 0;
+  rx_expected = 0;
+  slot_state = 1;
+  ep_out = 0;
+  ep_in = 0;
+}
+
+bool driver_deinit() { return true; }
+
+void driver_reset(uint8_t) {
+  rx_length = 0;
+  rx_expected = 0;
+  slot_state = 1;
+  ep_out = 0;
+  ep_in = 0;
+}
+
+uint16_t driver_open(uint8_t rhport,
+                     tusb_desc_interface_t const *interface_desc,
+                     uint16_t max_length) {
+  if (interface_desc->bInterfaceClass != 0x0b ||
+      interface_desc->bInterfaceNumber != kCcidInterface) {
+    return 0;
+  }
+  uint16_t consumed = interface_desc->bLength;
+  const uint8_t *descriptor = reinterpret_cast<const uint8_t *>(interface_desc) +
+                              interface_desc->bLength;
+  while (consumed + 2 <= max_length && descriptor[1] != TUSB_DESC_INTERFACE) {
+    if (descriptor[1] == TUSB_DESC_ENDPOINT) {
+      auto endpoint = reinterpret_cast<const tusb_desc_endpoint_t *>(descriptor);
+      if (tu_edpt_dir(endpoint->bEndpointAddress) == TUSB_DIR_OUT) {
+        ep_out = endpoint->bEndpointAddress;
+      } else {
+        ep_in = endpoint->bEndpointAddress;
+      }
+      if (!usbd_edpt_open(rhport, endpoint)) {
+        return 0;
+      }
+    }
+    if (descriptor[0] < 2) {
+      return 0;
+    }
+    consumed = static_cast<uint16_t>(consumed + descriptor[0]);
+    descriptor += descriptor[0];
+  }
+  if (ep_out == 0 || ep_in == 0) {
+    return 0;
+  }
+  queue_out(rhport);
+  return consumed;
+}
+
+bool driver_control(uint8_t rhport, uint8_t stage,
+                    tusb_control_request_t const *request) {
+  if (stage != CONTROL_STAGE_SETUP || request->bmRequestType_bit.type !=
+                                          TUSB_REQ_TYPE_CLASS ||
+      request->wIndex != kCcidInterface) {
+    return false;
+  }
+  if (request->bRequest == 0x03 && request->bmRequestType_bit.direction ==
+                                       TUSB_DIR_IN) { // GetDataRates
+    static uint8_t rate[4] = {0x00, 0xc2, 0x01, 0x00}; // 115200 bit/s
+    return tud_control_xfer(rhport, request, rate, sizeof(rate));
+  }
+  return false;
+}
+
+bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
+                 uint32_t transferred) {
+  if (result != XFER_RESULT_SUCCESS) {
+    return false;
+  }
+  if (endpoint == ep_in) {
+    queue_out(rhport);
+    return true;
+  }
+  if (endpoint != ep_out || rx_length + transferred > sizeof(rx_buffer)) {
+    rx_length = 0;
+    rx_expected = 0;
+    queue_out(rhport);
+    return false;
+  }
+  rx_length += transferred;
+  if (rx_expected == 0 && rx_length >= 10) {
+    const uint32_t payload_length = read_le32(rx_buffer + 1);
+    if (payload_length + 10 > kMaxCcidMessage) {
+      rx_length = 0;
+      queue_out(rhport);
+      return false;
+    }
+    rx_expected = payload_length + 10;
+  }
+  if (rx_expected != 0 && rx_length >= rx_expected) {
+    process_message(rhport);
+  } else {
+    queue_out(rhport);
+  }
+  return true;
+}
+
+const usbd_class_driver_t kDriver = {
+    .name = "CCID",
+    .init = driver_init,
+    .deinit = driver_deinit,
+    .reset = driver_reset,
+    .open = driver_open,
+    .control_xfer_cb = driver_control,
+    .xfer_cb = driver_xfer,
+    .sof = nullptr,
+};
+} // namespace
+
+extern "C" usbd_class_driver_t const *usbd_app_driver_get_cb(
+    uint8_t *driver_count) {
+  *driver_count = 1;
+  return &kDriver;
+}
+
+extern "C" const uint8_t *tud_descriptor_device_cb(void) {
+  static const tusb_desc_device_t descriptor = {
+      .bLength = sizeof(tusb_desc_device_t),
+      .bDescriptorType = TUSB_DESC_DEVICE,
+      .bcdUSB = 0x0200,
+      .bDeviceClass = TUSB_CLASS_MISC,
+      .bDeviceSubClass = MISC_SUBCLASS_COMMON,
+      .bDeviceProtocol = MISC_PROTOCOL_IAD,
+      .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
+      .idVendor = 0x2e8a,
+      .idProduct = 0x0009,
+      .bcdDevice = 0x0100,
+      .iManufacturer = 1,
+      .iProduct = 2,
+      .iSerialNumber = 3,
+      .bNumConfigurations = 1,
+  };
+  return reinterpret_cast<const uint8_t *>(&descriptor);
+}
+
+extern "C" const uint8_t *tud_descriptor_configuration_cb(uint8_t) {
+  return kConfiguration;
+}
+
+extern "C" const uint16_t *tud_descriptor_string_cb(uint8_t index,
+                                                       uint16_t) {
+  static uint16_t descriptor[32];
+  static char serial[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1]{};
+  const char *value = nullptr;
+  if (index == 0) {
+    descriptor[0] = (TUSB_DESC_STRING << 8) | 4;
+    descriptor[1] = 0x0409;
+    descriptor[2] = 0x0409;
+    return descriptor;
+  }
+  if (index == 1) value = "Raspberry Pi";
+  if (index == 2) value = "Pico 2 CHOUPI CCID";
+  if (index == 3) {
+    if (serial[0] == '\0') {
+      pico_get_unique_board_id_string(serial, sizeof(serial));
+    }
+    value = serial;
+  }
+  if (index == 4) value = "CHOUPI CDC";
+  if (index == 5) value = "JCAlgTest CCID";
+  if (value == nullptr) return nullptr;
+  size_t length = std::strlen(value);
+  if (length > 31) length = 31;
+  descriptor[0] = static_cast<uint16_t>((TUSB_DESC_STRING << 8) | (2 + 2 * length));
+  for (size_t i = 0; i < length; ++i) descriptor[i + 1] = value[i];
+  return descriptor;
+}
