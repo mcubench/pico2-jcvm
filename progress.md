@@ -996,3 +996,13 @@
 - Decision: Continue with firmware lifecycle integration.
 - Commit: pending
 - Artifacts/logs: none
+
+## 2026-10-11 — Confirm v1.8.2 Applet component record layout
+
+- Step/experiment: `wp5-cap-applet-aid-index-artifact-check`
+- Change: No source change. Parsed the supplied CAP Applet component with a bounded Python inspection to verify the lookup's size accounting and variable-length record layout.
+- Validation: `AlgTest_v1.8.2_jc305.cap` contains Applet.cap component size 14, count 1, AID `4A43416C675465737431`, and big-endian install offset `0x3DA3` (15779); record traversal consumes the component exactly with zero trailing bytes.
+- Result: The new lookup's component-size convention matches the supplied JCAlgTest v1.8.2 Applet component.
+- Decision: Continue into applet lifecycle dispatch. Host hardware access is unavailable in this VM session (`lsusb` reports libusb initialization error -99; system bus/PCSC unavailable), so defer flashing until USB access returns.
+- Commit: pending
+- Artifacts/logs: supplied `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` (source artifact; no new log)

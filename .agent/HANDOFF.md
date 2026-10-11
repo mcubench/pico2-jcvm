@@ -1022,3 +1022,8 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   Both architecture builds passed for the implementation. The current session
   cannot access a PC/SC service or libusb device, so it has not flashed this
   source-only change.
+- A direct read-only parse of the supplied v1.8.2 `Applet.cap` confirmed the
+  component size is 14, with one applet AID `4A43416C675465737431` and install
+  method offset `0x3DA3`; the variable-length traversal consumes the component
+  exactly. Host hardware access in this session is unavailable (`lsusb` reports
+  libusb initialization error `-99`, and the system bus/PCSC service is absent).
