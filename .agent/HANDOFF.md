@@ -36,6 +36,7 @@ v1.8.2 and preserve the provided source trees.
   `/run/pcscd` (`Permission denied`). No system packages were installed and no
   daemon is running. Continue firmware work; retry GPPro once an unprivileged
   or system PC/SC socket is available.
+- The user-local PC/SC experiment is committed as `43059dc`.
 
 - Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device.
   VirtualBox had stale USB passthrough until the user toggled the device off and
