@@ -864,5 +864,5 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds, then its 120-second RP USB wait expired with status 1. `lsusb` showed only the two root hubs and VirtualBox USB Tablet; no RP-series VID was present in sysfs, no RPI-RP2 volume was mounted, and both `picotool info -a` and `picotool reboot -F -u` reported no accessible RP-series device. No flash or serial capture occurred.
 - Result: The BOOTSEL device is not enumerated to the shell running the flasher, so picotool cannot access it despite the user's report that it is visible in the VM. Watchdog candidate remains unflashed.
 - Decision: Retry immediately once the RP-series device is visible in this process's USB enumeration; keep the dual-build gate before flashing.
-- Commit: `<recorded in immediate metadata follow-up>`
+- Commit: `21812de` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T084337Z.log`, SHA-256 `fe2431031ef112a6a2d8c0294c29c9bcf8b380b2e50976af86beccde606d204f`; candidate UF2 SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`
