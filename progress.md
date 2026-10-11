@@ -1036,3 +1036,13 @@
 - Decision: Restore the PC/SC daemon/reader for the re-enumerated node, then continue with interpreter-backed applet lifecycle and APDU dispatch. The static registry lookup is not yet used for SELECT or install.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T111329Z.log` (SHA-256 `354482ef6091f85a04b5192fea4a17574600f2523042b465a6410f72768b8009`); flashed ARM UF2 SHA-256 `ec437a81244d1729c4d6713825d50c79daec6252cb22041b009819cbca8b8a45`
+
+## 2026-10-11 — Short-circuit known Pico reset failures
+
+- Step/experiment: `wp5-flash-recovery-error-classification`
+- Change: Updated `tools/flash` to classify picotool failures. A missing reset interface now triggers the known-working CDC 1200-baud BOOTSEL fallback immediately; a libusb initialization failure exits without polling or issuing reset attempts that cannot work in the current host context.
+- Validation: `bash -n tools/flash` and `git diff --check -- tools/flash` passed. Both architecture wrapper builds passed. The escalated hardware cycle reached the missing-reset-interface branch, used CDC fallback, entered BOOTSEL in 2 seconds, flashed to 100%, and passed repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. A sandboxed direct flash attempt produced the expected fast failure on `Failed to initialise libUSB`, without retries. No `TEST:FAIL` or `FAULT` appeared.
+- Result: The real-board recovery path avoids 65 seconds of known-useless polling for this CCID composite, and the no-libusb context now fails immediately. The updated CHOUPI image remains on the board.
+- Decision: Keep the wrapper's generic delayed BOOTSEL polling for other failure classes; restore PC/SC service/access before the next APDU probe.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T111923Z.log` (SHA-256 `0eadba75a08908f07b30507e136d9546cdc5b1e5ad705de91898ed70857bc584`); UF2 SHA-256 `ec437a81244d1729c4d6713825d50c79daec6252cb22041b009819cbca8b8a45`

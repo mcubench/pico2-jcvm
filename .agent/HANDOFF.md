@@ -1059,3 +1059,21 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   active daemon/reader at present, so no post-flash APDU test was possible.
   Applet install/process lifecycle and APDU dispatch remain unimplemented;
   the registry lookup is not yet connected to SELECT.
+
+## Faster flash recovery — 2026-10-11
+
+- `tools/flash` now classifies `picotool load` failures. If picotool reports a
+  missing reset interface, the wrapper goes directly to the known-working CDC
+  1200-baud reset rather than waiting through 45+20 seconds of BOOTSEL polling.
+  If libusb itself cannot initialize, it fails promptly instead of retrying
+  inaccessible operations.
+- Validated on the Pico 2: both builds passed, CDC fallback entered BOOTSEL in
+  2 seconds, the UF2 flashed to 100%, and finite serial output passed with
+  `TEST:SUMMARY pass=1 fail=0`. The failed reset-interface branch was exercised
+  by the successful cycle. The libusb-init fast-fail branch was also verified
+  without device access. Cycle log:
+  `artifacts/logs/cycle-choupi-20261011T111923Z.log`, SHA-256
+  `0eadba75a08908f07b30507e136d9546cdc5b1e5ad705de91898ed70857bc584`.
+- The board still re-enumerates as CDC after flashing. PC/SC has no active
+  daemon/reader, so APDU validation remains blocked; applet install/process and
+  GlobalPlatform support are still not implemented.

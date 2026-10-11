@@ -2,6 +2,8 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
+last_load_failure=unknown
+
 [[ $# -eq 1 ]] || die "usage: ./tools/flash <image.uf2>"
 image="$1"
 [[ -f "$image" ]] || die "flash image not found: ${image}"
@@ -102,6 +104,7 @@ run_load() {
   local normalized_load
   local -a load_command=(picotool load)
   load_capture="$(mktemp)"
+  last_load_failure=unknown
   if [[ "${mode}" == force ]]; then
     load_command+=(-f)
   fi
@@ -115,6 +118,11 @@ run_load() {
   rm -f "${load_capture}"
   if ((load_status != 0)); then
     printf 'FLASH:LOAD failed status=%s\n' "${load_status}"
+    if grep -qi 'Unable to locate reset interface' <<<"${normalized_load}"; then
+      last_load_failure=reset-interface-missing
+    elif grep -qi 'Failed to initialise libUSB' <<<"${normalized_load}"; then
+      last_load_failure=libusb-init
+    fi
     return 1
   fi
   if ! grep -Eq 'Loading into Flash:.*100%' <<<"${normalized_load}" || \
@@ -128,6 +136,19 @@ run_load() {
 
 recover_bootsel() {
   local attempt
+
+  # A missing picotool reset interface is deterministic for this composite
+  # CDC+CCID device. Do not spend the generic 45-second polling window waiting
+  # for a reboot that picotool could not request; use the CDC reset now.
+  if [[ "${last_load_failure}" == reset-interface-missing ]]; then
+    printf 'FLASH:BOOTSEL recovery=cdc-after-missing-reset-interface\n'
+    if request_cdc_bootsel && wait_for_bootsel 20; then
+      return 0
+    fi
+  elif [[ "${last_load_failure}" == libusb-init ]]; then
+    die "picotool cannot initialize libusb; no BOOTSEL or reset operation is possible in this host context"
+  fi
+
   if wait_for_bootsel 45; then
     return 0
   fi
