@@ -1199,6 +1199,7 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Important limit: the Pico filesystem overlay is only RAM-backed. The CAP
   disappears after reboot/reflash. Java Card applet install-method execution
   and selected-applet APDU dispatch are also unfinished.
+- The implementation and hardware validation are committed as `1107aaa`.
 - Next: add a safe bounded nonvolatile CAP slot, ensure image/slot separation,
   and verify persistence across reboot. Then connect SELECT/process to the
   CHOUPI lifecycle. Hardware logs are recorded in `progress.md`.
