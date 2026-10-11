@@ -81,6 +81,24 @@ Interpretor::Interpretor(
   this->isStaticStatingMethod = isStaticMethod;
 }
 
+Interpretor::Interpretor(const japplet_ID_t appletID,
+                         const jpackage_ID_t selectedPackageID,
+                         const uint16_t methodOffset,
+                         const uint16_t installArrayRef,
+                         const int16_t installOffset,
+                         const int8_t installLength) {
+  Context context(appletID, selectedPackageID);
+  this->contexts.push_back(context);
+  this->startingClass = 0;
+  this->startingMethod = 0;
+  this->isStaticStatingMethod = true;
+  this->startingMethodOffset = methodOffset;
+  this->installArrayRef = installArrayRef;
+  this->installOffset = installOffset;
+  this->installLength = installLength;
+  this->startsAtMethodOffset = true;
+}
+
 /**
  * Runs the Java Card interpretor.
  */
@@ -100,10 +118,17 @@ uint16_t Interpretor::run() noexcept {
 
     Export_Handler exportHandler(package);
 
-    uint16_t methodOffset = exportHandler.getExportedStaticMethodOffset(
-        this->startingClass, this->startingMethod);
-
-    methodHandler.callStaticMethod(methodOffset);
+    if (this->startsAtMethodOffset) {
+      methodHandler.callStaticMethod(this->startingMethodOffset);
+      Stack &stack = context.getStack();
+      stack.writeLocal_Reference(0, jref_t(this->installArrayRef));
+      stack.writeLocal_Short(1, this->installOffset);
+      stack.writeLocal_Short(2, this->installLength);
+    } else {
+      uint16_t methodOffset = exportHandler.getExportedStaticMethodOffset(
+          this->startingClass, this->startingMethod);
+      methodHandler.callStaticMethod(methodOffset);
+    }
 
   } else { // TODO: Virtual method => this is requirequired.
     // stack.push_Reference(THIS);

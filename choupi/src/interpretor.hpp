@@ -46,6 +46,13 @@ public:
                                                  .push_back(std::declval<
                                                             Context &>())));
 
+  /// Start a static method directly from its offset in the CAP Method
+  /// component. The three arguments match Applet.install(byte[], short, byte).
+  Interpretor(const japplet_ID_t appletID,
+              const jpackage_ID_t selectedPackageID,
+              const uint16_t methodOffset, const uint16_t installArrayRef,
+              const int16_t installOffset, const int8_t installLength);
+
   /// Run the Java Card Interpretor and return its ISO 7816 status word.
   uint16_t run() noexcept; // All exceptions must be handling there.
 
@@ -61,6 +68,11 @@ private:
   /// Class and method where the interpretor start.
   uint8_t startingClass, startingMethod;
   bool isStaticStatingMethod;
+  uint16_t startingMethodOffset = 0;
+  uint16_t installArrayRef = 0;
+  int16_t installOffset = 0;
+  int8_t installLength = 0;
+  bool startsAtMethodOffset = false;
   uint16_t status_word = 0x9000;
 };
 
