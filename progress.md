@@ -1367,3 +1367,32 @@
   bridge, then verify it on the board when physical testing resumes.
 - Commit: `36473c12e145b1b5f5e53c8fe53286f784c9f204`
 - Artifacts/logs: none (offline wrapper builds only)
+
+## 2026-10-11 — Bring up the PC build and retry the hardware cycle
+
+- Step/experiment: `wp4-pc-build-bootstrap-and-physical-retry`
+- Change: Added `tools/build-pc`, removed the PC executable's unused Boost
+  parser dependency, updated the Rust OS build commands for current Cargo, and
+  configured the Java Card API build to run under the bundled Java 8 compiler
+  while leaving Maven on the system JDK. Updated
+  the handoff and TODO with the renewed physical-testing scope and current host
+  limitations.
+- Validation: `./tools/build arm`, `./tools/build riscv`, Java Card API CAP
+  conversion, ROM-mask generation, and compilation of `src/main_pc.cpp` passed.
+  `./tools/build-pc` configured and generated the ROM mask, then failed because
+  Cargo could not resolve `ipc-channel` from crates.io in this network-isolated
+  environment. `./tools/cycle choupi` rebuilt both architectures, but flashing
+  stopped before writing because `picotool` reported `Failed to initialise
+  libUSB`; `/dev/bus/usb` is absent and `lsusb` reports the same libusb error.
+- Result: PC setup no longer requires Boost and JavaCard ROM artifacts can be
+  generated with the available Java 8 compiler. No hardware flash occurred.
+  Full PC linking and runtime validation remain blocked by the missing Cargo
+  dependency; hardware validation remains blocked by USB isolation.
+- Decision: Continue implementation from the plan. Retry PC build when Cargo
+  dependencies are available and retry board flashing when this environment can
+  access the VM's USB device.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T191905Z.log` (SHA-256
+  `3f6e644789143bebc2394f7b756f452d417d52bc7d23132a9428f042297f5cb3`); ARM
+  UF2 `build/arm/pico2_choupi.uf2` (SHA-256
+  `8dd273698c99943ff37462962b76a57197e44b2671436521e39a57ded4bdd38e`)

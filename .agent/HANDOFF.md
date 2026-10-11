@@ -2,12 +2,22 @@
 
 ## Current session state — 2026-10-11
 
-- The user asked to continue implementation without the physical device for now;
-  wait for an explicit return to board testing before running flash, monitor,
-  PC/SC, or USB-device commands.
+- The user has returned physical testing to scope and asked to continue the
+  complete project autonomously. `./tools/cycle choupi` rebuilt ARM and RISC-V,
+  then stopped before flashing because `picotool` could not initialize libusb
+  (`-99`); this container has no `/dev/bus/usb`, and `lsusb` fails the same way.
+  Retry hardware only after the execution environment exposes the USB device.
 - Root `TODO.md` is the current acceptance-criteria tracker. The installed CAP
   blob and synthetic registry/SELECT path are not evidence that the Java
   constructor, `Applet.register`, or applet `process()` executed.
+- A new `tools/build-pc` wrapper configures the CHOUPI PC build. The unnecessary
+  Boost command-line dependency is removed; current Cargo no longer accepts the
+  legacy `--out-dir` argument; and the JavaCard API build can select a Java 8
+  compiler while Maven runs on the system JDK. Java API CAP conversion and the
+  ROM-mask generation passed. The complete PC build remains blocked because
+  crates.io is unreachable and Cargo cannot download `ipc-channel`.
+- The PC `main_pc.cpp` translation unit compiles using the generated ROM-mask
+  JNI header. Existing packed-member warnings remain in upstream CAP headers.
 - The worktree contains preserved, uncommitted JC305 token-remapping and install
   diagnostics in `choupi/src/jc_bytecodes/bc_invoke.cpp`,
   `choupi/src/jc_handlers/jc_class.cpp`, `jc_cp.cpp`, `jc_cp.hpp`,
@@ -30,10 +40,9 @@
   not persist the selectable AID if Java install returns without that call.
   This does not yet persist the Java applet object or prove the method mapping
   at runtime.
-- Next: validate the token mappings and method/CP interpretation from local CAP
-  and export metadata, fix the install execution path, build both targets, and
-  make a focused commit with a progress entry. Physical flash validation is
-  pending the user's device.
+- Next: continue the plan's implementation in small validated commits; first
+  implement the Java `Applet.register` and persistent object handoff. When the
+  host USB device is exposed, run the guarded board cycle and GP INSTALL again.
 
 ## Objective
 

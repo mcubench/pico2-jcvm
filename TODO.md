@@ -18,6 +18,12 @@ out explicitly.
 
 ## Active: make v1.8.2 installation execute correctly
 
+Current environment note: physical testing has been re-enabled, but this
+session's container has no `/dev/bus/usb`, so `picotool` and `lsusb` fail during
+libusb initialization before a board can be accessed. The PC build wrapper is
+being brought up; Cargo currently cannot fetch the uncached `ipc-channel`
+dependency because crates.io DNS/network access is unavailable.
+
 - [x] Parse the INSTALL [for install and make selectable] parameter field and
   pass its exact bytes in a Java byte array with offset zero and the matching
   byte length to `Applet.install(byte[], short, byte)`.

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+build_dir="${repo_root}/build/choupi-pc"
+java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
+[[ -x "${java8_home}/bin/javac" ]] || \
+  die "Java 8 javac not found; set JAVA8_HOME to a JDK 8 installation"
+
+"${repo_root}/tools/env" cmake \
+  -S "${repo_root}/choupi" \
+  -B "${build_dir}" \
+  -DCHOUPI_TARGET_PC=ON \
+  -DCHOUPI_TARGET_STM32=OFF \
+  -DCHOUPI_OS_DEBUG=OFF \
+  -DCHOUPI_JCVM_DEBUG=ON \
+  -DCHOUPI_JAVA8_HOME="${java8_home}"
+
+"${repo_root}/tools/env" cmake --build "${build_dir}" --target choupi -j2
