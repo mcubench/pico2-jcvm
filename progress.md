@@ -1307,3 +1307,21 @@
 - Decision: Capture the `impdep1` native method index, implement the exact required operation, and retry installation.
 - Commit: `a71356d`
 - Artifacts/logs: `artifacts/logs/gp-install-jc305-token-remap-20261011.txt` (SHA-256 `6e4420cb27c2daf62c8f22cd08568ad71606fc3698ef62c0f132f63970eb6dcd`); `artifacts/logs/gp-install-jc305-method-token-remap-20261011.txt` (SHA-256 `195b05ec5d805c9f7bd34591311b4e13d5a892123e3a02e791261a1c4705802e`); flashed UF2 SHA-256 `877d322f5ebc4f03f8f3cee7112b11a202c82400cb4ba359ffc55796bb592022`.
+
+## 2026-10-11 — Add acceptance-criteria TODO tracker
+
+- Step/experiment: `project-todo-tracker`
+- Change: Added root `TODO.md` to track remaining plan work against the stated
+  acceptance criteria, and updated `.agent/HANDOFF.md` with current offline-only
+  scope and the preserved in-progress JC305 compatibility changes.
+- Validation: Compared tracker items with `plan.md`, existing progress records,
+  and the current worktree; confirmed it distinguishes CAP persistence and
+  registry/SELECT responses from actual applet installation and execution.
+  Builds and hardware checks were intentionally skipped because this is a
+  documentation-only step and the user requested offline implementation.
+- Result: Remaining installation, applet lifecycle, APDU, host integration,
+  simulator comparison, and final acceptance work are now visible in one root
+  checklist.
+- Decision: Continue with offline diagnosis of the JC305 install-method path.
+- Commit: pending
+- Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`

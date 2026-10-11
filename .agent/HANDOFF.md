@@ -1,5 +1,31 @@
 # Handoff
 
+## Current session state — 2026-10-11
+
+- The user asked to continue implementation without the physical device for now;
+  wait for an explicit return to board testing before running flash, monitor,
+  PC/SC, or USB-device commands.
+- Root `TODO.md` is the current acceptance-criteria tracker. The installed CAP
+  blob and synthetic registry/SELECT path are not evidence that the Java
+  constructor, `Applet.register`, or applet `process()` executed.
+- The worktree contains preserved, uncommitted JC305 token-remapping and install
+  diagnostics in `choupi/src/jc_bytecodes/bc_invoke.cpp`,
+  `choupi/src/jc_handlers/jc_class.cpp`, `jc_cp.cpp`, `jc_cp.hpp`,
+  `choupi/src/main.cpp`, and `src/choupi_pico2.cpp`. Do not overwrite or discard
+  them. `CMakeLists.txt`, `SKILL.md`, and `choupi/src/jni.cpp` have separate
+  pre-existing modifications and must remain out of unrelated commits.
+- Last known candidate runtime builds passed for ARM and RISC-V after the
+  Applet virtual-token high-bit adjustment. No board validation has occurred
+  after that change.
+- GP INSTALL most recently returned `6A80`. A proposed CP-tag mismatch was not
+  established: the CAP begins with CP entry 1 tagged as an instance-field
+  reference, but persisted watchdog scratch values are stale and the captured
+  PC has not been mapped reliably to this CAP method stream.
+- Next: validate the token mappings and method/CP interpretation from local CAP
+  and export metadata, fix the install execution path, build both targets, and
+  make a focused commit with a progress entry. Physical flash validation is
+  pending the user's device.
+
 ## Objective
 
 Implement `plan.md` for CHOUPI on Pico 2, following root `AGENTS.md`. The user
