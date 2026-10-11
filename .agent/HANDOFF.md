@@ -750,3 +750,27 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   prior empty log (`9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`).
   `picotool info -a` still sees only CDC at bus 1/address 120. The updated
   image is not confirmed flashed.
+
+## BOOTSEL replug and persistent instance corruption trace (2026-10-11)
+
+- The user replugged the Pico. `picotool info -a` then confirmed BOOTSEL and
+  identified the previous `pico2_choupi` image. `./tools/env ./tools/cycle
+  choupi` passed both builds and visibly flashed the current ARM candidate to
+  100%, then rebooted into CHOUPI.
+- The bounded runtime log is
+  `artifacts/logs/cycle-choupi-20261011T061811Z.log`, SHA-256
+  `09be7d9368d2d988d4d953f45daa37f5832b9991d152de1b1de424ceb7266d40`. It
+  reaches the persistent load for package 20/class 121. Three hierarchy
+  calculations each report one class with 15 declared fields, but the loaded
+  `JCVMArray` reports 8,912 fields. It completes existence checks for fields
+  0–63 before the 18-second capture ends without `TEST:SUMMARY`.
+- Source audit found `Heap::addInstance(JC_Instance instance)` copied the
+  object into `shared_ptr` using the implicit shallow copy. `JC_Instance` owns
+  raw `fields` and overflow-tag pointers and its destructor frees them, so the
+  by-value temporary can invalidate the heap copy. A move-only ownership fix
+  has been applied and both wrapper builds pass; it remains unflashed because
+  the board returned to CDC after the cycle. Updated ARM UF2 is pending hash
+  recording in `progress.md`.
+- Next: when BOOTSEL is available, run `./tools/cycle choupi` for the move
+  ownership fix and confirm the field count is 15 and runtime reaches its test
+  summary. JCAlgTest v1.8.2 still has no APDU/CAP installation path.
