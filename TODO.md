@@ -18,11 +18,12 @@ out explicitly.
 
 ## Active: make v1.8.2 installation execute correctly
 
-Current environment note: physical testing has been re-enabled, but this
-session's container has no `/dev/bus/usb`, so `picotool` and `lsusb` fail during
-libusb initialization before a board can be accessed. The PC build wrapper is
-being brought up; Cargo currently cannot fetch the uncached `ipc-channel`
-dependency because crates.io DNS/network access is unavailable.
+Current environment note: physical testing is active again. The repository
+cycle can flash the Pico and pass its finite serial checks. The PC/SC daemon is
+currently not running (`GlobalPlatformPro` returns `SCARD_E_NO_SERVICE`), so
+GPPro card operations need PC/SC restored before install testing can resume.
+The PC build wrapper is available; Cargo still cannot fetch the uncached
+`ipc-channel` dependency because crates.io DNS/network access is unavailable.
 
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's

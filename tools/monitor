@@ -14,8 +14,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# RP2350 USB CDC can appear well after picotool reports its reboot complete,
+# especially through a VM USB passthrough. Keep this wait bounded but allow
+# 30 seconds for enumeration before declaring the monitor unavailable.
 device=""
-for _ in $(seq 1 40); do
+for _ in $(seq 1 120); do
   for candidate in /dev/serial/by-id/* /dev/ttyACM*; do
     [[ -e "$candidate" ]] || continue
     device="$candidate"

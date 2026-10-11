@@ -28,8 +28,9 @@ set -e
 (( monitor_status == 0 )) || die "serial monitor failed with status ${monitor_status}; log: ${log_file}"
 normalized_log="$(tr -d '\r' < "$log_file")"
 if [[ "${arch}" == choupi ]]; then
-  if ! grep -q '^BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi$' <<<"${normalized_log}" || \
-      ! grep -q '^TEST:PASS choupi_runtime$' <<<"${normalized_log}" || \
+  # USB CDC may enumerate after the one-time BOOT banner, so accept the
+  # runtime's repeated known-answer result as the health signal.
+  if ! grep -q '^TEST:PASS choupi_runtime$' <<<"${normalized_log}" || \
       ! grep -q '^TEST:SUMMARY pass=1 fail=0$' <<<"${normalized_log}" || \
       grep -Eq '^TEST:FAIL|^FAULT' <<<"${normalized_log}"; then
     die "CHOUPI runtime output did not pass; inspect ${log_file}"

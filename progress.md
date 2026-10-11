@@ -1453,3 +1453,35 @@
   `72da27a28c1bdc2e0e3a3b446e7efaf6fb4e277182d229d80b6cdfc2ebcb37a4`); ARM
   UF2 `build/arm/pico2_choupi.uf2` (SHA-256
   `afd2194987c9f06476e7e7098124e09b7ceadab12d1b22862f1f68268f64e4c4`).
+
+## 2026-10-11 — Make the physical cycle tolerate USB CDC delay
+
+- Step/experiment: `wp4-robust-post-flash-serial-capture`
+- Change: Increased the bounded USB serial enumeration wait in `tools/monitor`
+  from 10 to 30 seconds. Updated `tools/cycle` so CHOUPI runtime health is
+  determined by the repeated `TEST:PASS`, `TEST:SUMMARY`, and fault markers;
+  the one-time BOOT banner is no longer required because CDC may attach after
+  it has already been printed.
+- Validation: `./tools/cycle choupi` passed end to end. ARM and RISC-V
+  wrappers passed, picotool recovered from a missing reset interface using
+  CDC 1200-baud BOOTSEL, flashed the CHOUPI UF2, and the monitor attached after
+  the delayed CDC enumeration. The 18-second capture had repeated
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`; no failure,
+  fault, or timeout occurred. The preceding run captured the same passing
+  runtime output but exited nonzero solely because the old BOOT-banner check
+  was not satisfied. A read-only GPPro `--list` probe currently returns
+  `SCARD_E_NO_SERVICE`; no card operation was attempted.
+- Result: The complete hardware cycle now survives the observed device reset
+  and delayed CDC enumeration behavior and reports pass on actual runtime
+  output. GP INSTALL remains pending until the host PC/SC daemon is available.
+- Decision: Keep the device in runtime mode, restore PC/SC access without
+  violating the no-sudo cycle constraint, then resume GPPro applet lifecycle
+  verification.
+- Commit: pending
+- Artifacts/logs: passing cycle
+  `artifacts/logs/cycle-choupi-20261011T194451Z.log` (SHA-256
+  `8e2efc766e495bffebfcc15722c8e5bfeaaab727ecdb91033df346d3c13c53b5`);
+  preceding monitor-check cycle
+  `artifacts/logs/cycle-choupi-20261011T194325Z.log` (SHA-256
+  `9364f8279d25adbffd9db1582312d2b6747451cae294e825767c11a6c10e7c0f`);
+  UF2 SHA-256 `afd2194987c9f06476e7e7098124e09b7ceadab12d1b22862f1f68268f64e4c4`.

@@ -4,12 +4,14 @@
 
 - The user has returned physical testing to scope and asked to continue the
   complete project autonomously. This session regained USB passthrough through
-  an approved elevated host-device invocation: both architecture gates passed,
-  the Pico was flashed in BOOTSEL, and its USB identity returned as `2e8a:0009`
-  CHOUPI CCID. The full cycle's monitor discovery timed out twice, but a
-  subsequent finite 8-second serial capture passed. `tools/monitor` currently
-  waits only 10 seconds for serial enumeration; extend this bounded wait and
-  rerun `./tools/cycle choupi`.
+  an approved elevated host-device invocation. `tools/monitor` now waits up to
+  30 seconds for USB CDC enumeration, and `tools/cycle` uses the repeated
+  runtime PASS/SUMMARY markers instead of requiring the one-time BOOT line.
+  The full `./tools/cycle choupi` now passes on the real board: ARM and RISC-V
+  builds pass, the Pico is flashed, and the 18-second capture reports repeated
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The reader still
+  needs a running PC/SC daemon for GPPro; current GPPro probe returns
+  `SCARD_E_NO_SERVICE`.
 - Root `TODO.md` is the current acceptance-criteria tracker. The installed CAP
   blob and synthetic registry/SELECT path are not evidence that the Java
   constructor, `Applet.register`, or applet `process()` executed.
