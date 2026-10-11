@@ -30,6 +30,7 @@
 #include "jc_types/jc_array.hpp"
 
 #include <algorithm>
+#include <utility>
 
 namespace jcvm {
 
@@ -145,11 +146,12 @@ jref_t Heap::addInstance(const jpackage_ID_t packageID,
  *
  * @param[instance] pointer to the new instance to add.
  */
-jref_t Heap::addInstance(JC_Instance instance) {
+jref_t Heap::addInstance(JC_Instance &&instance) {
   jref_t ref;
 
   // Creating and adding new instance in the heap.
-  this->instances.push_back(std::make_shared<JC_Instance>(instance));
+  this->instances.push_back(
+      std::make_shared<JC_Instance>(std::move(instance)));
 
   ref.setAsArray(false);
   ref.setOffset(this->instances.size());

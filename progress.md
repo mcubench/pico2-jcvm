@@ -776,3 +776,13 @@
 - Decision: Investigate object ownership between persistent instance construction and heap insertion; this discrepancy indicates the superclass calculation is not producing 8,912.
 - Commit: `c383486` (this record; metadata follow-up follows)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T061811Z.log`; flashed ARM UF2 SHA-256 `274b8128c4259b167c52bc4f363e96d88348dd1f9540f655932232d4f4ed568f`
+
+## 2026-10-11 — Transfer persistent instances into the heap safely
+
+- Step/experiment: `wp1-choupi-persistent-instance-move-ownership`
+- Change: Made `JC_Instance` move-only, transferring its owned field vector and overflow tag buffer while nulling the moved-from pointers. Changed `Heap::addInstance` to accept and move an rvalue instead of making a shallow copy.
+- Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. No hardware cycle was run for this change because `picotool info -a` reports the Pico in CDC mode, not BOOTSEL.
+- Result: The ownership bug matches the hardware trace where class sizing returned 15 but the persistent instance vector later reported 8,912. The fix is compile-validated but not yet hardware-verified.
+- Decision: Flash this candidate during the next BOOTSEL window and confirm the field vector remains 15 entries and the runtime reaches `TEST:SUMMARY`.
+- Commit: pending
+- Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `92ddc5aa9497f3020a302a253003f6074ebfcdb656eff9b7196beb406e7cfb98`; diagnosis log `artifacts/logs/cycle-choupi-20261011T061811Z.log`

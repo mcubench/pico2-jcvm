@@ -78,7 +78,7 @@ public:
   jref_t addInstance(const jpackage_ID_t packageID,
                      const jclass_index_t instantiated_class);
   /// Adding an instance in in the transient heap.
-  jref_t addInstance(JC_Instance intance);
+  jref_t addInstance(JC_Instance &&instance);
 
   /// Getting array from the transient heap.
   std::shared_ptr<JC_Array> getArray(const jref_t objectref)

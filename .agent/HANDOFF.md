@@ -769,8 +769,8 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   raw `fields` and overflow-tag pointers and its destructor frees them, so the
   by-value temporary can invalidate the heap copy. A move-only ownership fix
   has been applied and both wrapper builds pass; it remains unflashed because
-  the board returned to CDC after the cycle. Updated ARM UF2 is pending hash
-  recording in `progress.md`.
+  the board returned to CDC after the cycle. Updated ARM UF2 SHA-256:
+  `92ddc5aa9497f3020a302a253003f6074ebfcdb656eff9b7196beb406e7cfb98`.
 - Next: when BOOTSEL is available, run `./tools/cycle choupi` for the move
   ownership fix and confirm the field count is 15 and runtime reaches its test
   summary. JCAlgTest v1.8.2 still has no APDU/CAP installation path.

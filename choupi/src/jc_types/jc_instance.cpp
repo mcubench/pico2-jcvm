@@ -149,6 +149,24 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
   this->persistent_fields_loaded = false;
 }
 
+JC_Instance::JC_Instance(JC_Instance &&other) noexcept
+    : JC_Object(other.getOwner(), other.isPersistent()),
+      packageID(other.packageID), claz(other.claz),
+      persistent_tag_length(other.persistent_tag_length),
+      persistent_tag_compressed(other.persistent_tag_compressed),
+      persistent_tag_overflow(other.persistent_tag_overflow),
+      has_persistent_tag(other.has_persistent_tag),
+      persistent_fields_loaded(other.persistent_fields_loaded),
+      fields(other.fields) {
+  std::memcpy(this->persistent_tag_value, other.persistent_tag_value,
+              sizeof(this->persistent_tag_value));
+  other.persistent_tag_overflow = nullptr;
+  other.fields = nullptr;
+  other.persistent_tag_length = 0;
+  other.has_persistent_tag = false;
+  other.persistent_fields_loaded = true;
+}
+
 /*
  * Default destructor
  */
