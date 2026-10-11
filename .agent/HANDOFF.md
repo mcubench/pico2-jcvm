@@ -722,3 +722,19 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   superclass trace. Do not use repeated USB bus resets; prior host reset
   attempts made the Pico disappear. The exact JCAlgTest CAP is still not
   installed and no APDU/CAP loader exists in the current firmware.
+
+## Forced CHOUPI cycle after class-offset fix (2026-10-11)
+
+- `./tools/env ./tools/cycle choupi` passed both wrapper build gates and invoked
+  `picotool load -f -x` on the corrected ARM CHOUPI UF2. Picotool asked the
+  device to reboot into BOOTSEL and waited, but the cycle log has no
+  `Loading into Flash` progress and no “device was rebooted to start the
+  application” confirmation. Treat the image as not flashed.
+- The 18-second serial capture was empty, and its log SHA-256
+  `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c` matches
+  an earlier silent capture. Follow-up enumeration still sees CDC at bus
+  1/address 120, not BOOTSEL. A force-mode `picotool info -a -f` also waited
+  without yielding image metadata.
+- Next: keep the corrected UF2 ready and continue offline class/persistent
+  field analysis. No additional USB bus reset; the current app does not
+  successfully service the BOOTSEL transition.
