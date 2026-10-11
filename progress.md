@@ -944,5 +944,5 @@
 - Validation: `pcsc_scan -r` listed `Pico 2 CHOUPI CCID [JCAlgTest CCID] (D92E743D5F640C0F)`. GlobalPlatformPro connected using T=1 and ATR `3B800181`, began a transaction, transmitted `00A4040000`, and received `6D00` twice in 47 ms and 17 ms. The command exited 1 because GlobalPlatformPro then reported `Could not SELECT default selected: 0x6D00`; this is the firmware's known placeholder response, not a transport error. No rebuild or flash was needed.
 - Result: CCID enumeration, card activation, PC/SC transaction, and complete APDU request/response transport are verified end to end on hardware. Java Card applet dispatch and valid SELECT behavior remain absent.
 - Decision: Trace the CHOUPI runtime entry and implement the narrowest APDU-to-applet dispatch path needed to select and invoke the statically embedded JCAlgTest applet; keep GlobalPlatform CAP loading separate until lifecycle support exists.
-- Commit: pending
+- Commit: `eb6548f`
 - Artifacts/logs: `artifacts/logs/pcsc-apdu-probe-20261011.txt` (SHA-256 `615ae514e783cbc2f99e9ed6b22b84e66eeee1d9341824e60ca0fa7b68e618ec`)

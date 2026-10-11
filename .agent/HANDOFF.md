@@ -982,6 +982,8 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   and APDU-level XfrBlock request/response transport on the real board.
   Detailed output is in `artifacts/logs/pcsc-apdu-probe-20261011.txt` and the
   corresponding `progress.md` entry.
+- Probe log and progress record committed as `eb6548f`; the metadata follow-up
+  records this SHA.
 - Next: find a minimal route from XfrBlock into the statically embedded
   JCAlgTest applet. Applet lifecycle and CAP loading remain unsupported; do not
   report the placeholder `6D00` as an applet response.
