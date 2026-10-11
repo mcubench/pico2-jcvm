@@ -9,6 +9,36 @@ require_command picotool
 require_command timeout
 require_command stty
 
+rp_usb_present() {
+  local device
+  for device in /sys/bus/usb/devices/*; do
+    [[ -r "${device}/idVendor" ]] || continue
+    if [[ "$(<"${device}/idVendor")" == 2e8a ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+wait_for_rp_usb() {
+  local limit="$1"
+  local elapsed
+  for ((elapsed = 0; elapsed <= limit; elapsed++)); do
+    if rp_usb_present; then
+      printf 'FLASH:USB RP-series device detected wait_seconds=%s\n' "${elapsed}"
+      return 0
+    fi
+    if ((elapsed == 0)); then
+      printf 'FLASH:USB RP-series device absent; waiting up to %s seconds for re-enumeration\n' "${limit}"
+    fi
+    if ((elapsed < limit)); then
+      sleep 1
+    fi
+  done
+  printf 'FLASH:USB device wait timed out after %s seconds\n' "${limit}"
+  return 1
+}
+
 is_bootsel() {
   local info
   if ! info="$(timeout --signal=TERM --kill-after=2s 4s picotool info -a 2>&1)"; then
@@ -117,6 +147,7 @@ recover_bootsel() {
 }
 
 printf 'FLASH:IMAGE path=%s\n' "${image}"
+wait_for_rp_usb 120 || die "no RP-series USB device appeared; reconnect the Pico and retry"
 if is_bootsel; then
   printf 'FLASH:BOOTSEL already available\n'
   run_load normal || die "direct BOOTSEL flash failed"

@@ -6,6 +6,21 @@ Implement `plan.md` for CHOUPI on Pico 2, following root `AGENTS.md`. The user
 has connected the Pico 2 and requested real-board bring-up. Use JCAlgTest
 v1.8.2 and preserve the provided source trees.
 
+## Latest continuation
+
+- Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device
+  before calling picotool, so a transient USB passthrough drop can recover when
+  the Pico re-enumerates. Shell syntax and the changed-file whitespace check
+  pass; no Pico was visible on the host bus during a 60-second observation,
+  so hardware flashing could not be attempted. The pre-watchdog image remains
+  installed; the watchdog candidate is still ready at
+  `build/arm/pico2_choupi.uf2` (SHA-256
+  `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`).
+- Next: run `./tools/env ./tools/cycle choupi` when RP-series USB enumeration
+  returns. The cycle builds both architectures before using the flasher. Once
+  the watchdog image is confirmed flashed, inspect BOOTSEL recovery and resume
+  the stalled-interpreter trace.
+
 ## Current state
 
 - The root repository tracks only the plan and RP2350 references at the
