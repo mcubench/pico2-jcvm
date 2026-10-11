@@ -43,6 +43,7 @@ v1.8.2 and preserve the provided source trees.
   device; picotool saw no RP-series device). See
   `artifacts/logs/pcsc-usb-absent-20261011.txt`. Reattach the Pico in VirtualBox
   and verify `lsusb -d 2e8a:0009` before repeating `pcsc_scan -r`.
+- This passthrough diagnosis is committed as `f9efb4a`.
 
 - Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device.
   VirtualBox had stale USB passthrough until the user toggled the device off and

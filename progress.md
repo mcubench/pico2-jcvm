@@ -595,7 +595,7 @@
 - Validation: `./tools/cycle choupi` passed ARM and RISC-V build gates, flashed the RP2350 ARM UF2 with visible 100% progress, and captured 18 seconds of serial output. The runtime acceptance gate failed on `*** PANIC *** / Out of memory`.
 - Result: After `runtime:start`, a 16,390-byte allocation succeeded at `0x2006EFE0..0x20072FE6`, but a subsequent 36,870-byte allocation failed. The reduced arena alone did not let the VM start. Log SHA-256: `4ea1a3f80e2bb24e5665d4e3e3e178e76fa6cc858a3e20fd5d3d31acee11761c`; UF2 SHA-256: `a590f7b12e9a9ebc66ffa202921e9878cc12b8457d667ed65f29aba97046c9f5`.
 - Decision: Free further static SRAM while retaining a smaller overlay, rebuild both architectures, and repeat the real board cycle. The Pico must be physically returned to BOOTSEL. CAP remains uninstalled.
-- Commit: pending
+- Commit: `f9efb4a`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261010T212007Z.log`
 
 ## 2026-10-10 — Reduce CHOUPI overlay SRAM footprint
