@@ -30,6 +30,12 @@ v1.8.2 and preserve the provided source trees.
   WP3: implement APDU buffer + applet lifecycle dispatch and identify a
   non-root PC/SC daemon/driver route for host validation.
 - The APDU lifecycle audit is committed as `fea69ed`.
+- A user-local PC/SC daemon attempt is recorded in
+  `artifacts/logs/pcsc-user-local-20261011.txt`. `pcscd`/`libccid` were
+  downloaded and extracted under `/tmp`, but unprivileged pcscd cannot create
+  `/run/pcscd` (`Permission denied`). No system packages were installed and no
+  daemon is running. Continue firmware work; retry GPPro once an unprivileged
+  or system PC/SC socket is available.
 
 - Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device.
   VirtualBox had stale USB passthrough until the user toggled the device off and
