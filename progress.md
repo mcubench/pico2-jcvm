@@ -1116,3 +1116,13 @@
 - Decision: Continue with a GPPro install attempt to identify the first unsupported CAP-management command, then implement the smallest required sequence.
 - Commit: `ad08669`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T120932Z.log` (SHA-256 `b81dff57dafdea77f6b55412eb4c72b297f2a458a7002bcab28ce8d28fc81839`); `artifacts/logs/gp-list-probe-20261011-scp03-external-auth.txt` (SHA-256 `daf3e55a9f829a1fbe581e944e960ecb2c58607e2d7b6c493b08d2a6141b9eef`)
+
+## 2026-10-11 — Probe JCAlgTest v1.8.2 GP installation
+
+- Step/experiment: `wp7-gp-install-first-command`
+- Change: No firmware change. Attempted GlobalPlatformPro installation of the exact supplied `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` (SHA-256 `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`).
+- Validation: SCP03 authentication and GPPro's read-only registry probes succeeded. The first load command was `84 E6 02 00 1E ...` (INSTALL [for load]); firmware returned `6D00`, and GPPro exited 1. No LOAD block or successful install command followed, so the CAP was not written or installed.
+- Result: Card discovery and secure messaging are functional. GP LOAD/INSTALL command dispatch is the next blocker.
+- Decision: Implement bounded parsing/state for INSTALL [for load], then capture GPPro's LOAD block framing and decide how the board can persist the supplied CAP before accepting further install commands.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/gp-install-probe-20261011.txt` (SHA-256 `a12680db8ddcf252b83f7e584f95183f48b12f1ef59d814f132fa9efcbb82d0f`)

@@ -1170,3 +1170,16 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - CAP installation remains unsupported. Next run the authorized
   GlobalPlatformPro install attempt for the supplied JCAlgTest v1.8.2 CAP to
   identify the first GP LOAD/INSTALL APDU, then implement its sequence.
+
+## JCAlgTest v1.8.2 install probe — 2026-10-11
+
+- The exact supplied CAP hash is
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+- GlobalPlatformPro authenticated successfully, then sent secured
+  `84 E6 02 00` (INSTALL [for load]) with the package AID and ISD AID. The
+  board returned `6D00`; no LOAD block followed and the CAP was not installed.
+  Probe log: `artifacts/logs/gp-install-probe-20261011.txt`.
+- Next: add strict parsing and state for INSTALL [for load], capture the LOAD
+  command framing, and implement persistent CAP staging only after its size
+  and flash space requirements are known. Existing embedded static ROM-mask
+  package remains the boot-time runtime image.
