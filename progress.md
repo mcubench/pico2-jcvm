@@ -1066,3 +1066,13 @@
 - Decision: User runs `sudo ./tools/install-pcsc-sudoers` once, then `sudo -n /usr/local/sbin/pico2-pcsc-reader`; recheck with `pcsc_scan -r` and continue APDU/GPPro validation.
 - Commit: `97c7eeb`
 - Artifacts/logs: none
+
+## 2026-10-11 — Correct visudo preflight path
+
+- Step/experiment: `wp5-pcsc-installer-visudo-path`
+- Change: Corrected the installer preflight to check `/usr/sbin/visudo`, matching this host's installed path and the path already used for sudoers validation.
+- Validation: `bash -n` passed for both helper scripts; `/usr/sbin/visudo` is executable and parsed the generated no-argument command rule successfully. The user's first installer attempt exited at preflight before copying the helper or changing sudoers.
+- Result: The installer can proceed past the missing-command check on this host. Full installation and PC/SC recheck await the user's rerun.
+- Decision: Rerun `sudo ./tools/install-pcsc-sudoers`, then run the installed helper and check `pcsc_scan -r`.
+- Commit: pending
+- Artifacts/logs: none

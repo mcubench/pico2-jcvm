@@ -1101,3 +1101,11 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - After setup, run `sudo -n /usr/local/sbin/pico2-pcsc-reader`, then
   `pcsc_scan -r`. Continue with GPPro/APDU probes after the reader appears.
 - Shell syntax and standalone sudoers syntax validation passed. The setup is committed as `97c7eeb`.
+
+## Installer visudo path correction — 2026-10-11
+
+- The user's first run stopped before making system changes because the preflight
+  looked for `/usr/bin/visudo`; this host provides `/usr/sbin/visudo`. Corrected
+  the preflight path. `bash -n` and standalone sudoers parsing pass.
+- Next: user reruns `sudo ./tools/install-pcsc-sudoers`; then invoke the helper
+  and confirm `pcsc_scan -r` discovers the reader. Commit pending.

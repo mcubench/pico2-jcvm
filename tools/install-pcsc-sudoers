@@ -21,7 +21,7 @@ source_helper="${script_dir}/pico2-pcsc-reader-root"
 installed_helper=/usr/local/sbin/pico2-pcsc-reader
 sudoers_file=/etc/sudoers.d/pico2-pcsc-reader
 
-for required in /usr/bin/install /usr/bin/mktemp /usr/bin/visudo; do
+for required in /usr/bin/install /usr/bin/mktemp /usr/sbin/visudo; do
   if [[ ! -x "${required}" ]]; then
     printf 'Required command is missing: %s\n' "${required}" >&2
     exit 1
