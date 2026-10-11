@@ -1094,5 +1094,5 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds, flashed the ARM image, and captured repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`. GPPro parsed the corrected FCI and identified the ISD. It then sent SCP03 `INITIALIZE UPDATE` (`8050000008` plus an 8-byte host challenge), which still receives `6D00`; `gp --list` therefore remains unsuccessful. An earlier FCI iteration exposed an outer TLV length error (`6F0C`); it was corrected to `6F0A` before the passing cycle and final probe.
 - Result: Default ISD selection now proceeds through FCI discovery over real PC/SC/CCID. The next blocker is secure-channel initialization and then GET STATUS/card-manager responses.
 - Decision: Implement and validate SCP03 `INITIALIZE UPDATE`/`EXTERNAL AUTHENTICATE` on the default test keys, then continue GPPro listing and CAP loading.
-- Commit: pending
+- Commit: `9e9e3ae`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T114816Z.log` (SHA-256 `b9afd73bf1c011b45c69944f3c0189d3f449cec2169823d1b8cd08555f9ad02d`); `artifacts/logs/gp-list-probe-20261011-isd-fci-fixed.txt` (SHA-256 `da56ac7750d48a44cd75f5ce6949c7596bc26e98d4d38b6cccd9153fdc865cd7`); malformed-FCI trace `artifacts/logs/gp-list-probe-20261011-isd-fci.txt`

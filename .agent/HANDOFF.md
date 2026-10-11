@@ -1140,4 +1140,4 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   SHA-256 `da56ac7750d48a44cd75f5ce6949c7596bc26e98d4d38b6cccd9153fdc865cd7`.
 - Next: implement SCP03 INITIALIZE UPDATE / EXTERNAL AUTHENTICATE using the
   default test keys, then implement GET STATUS and continue toward GP CAP load.
-  Commit pending.
+  Implementation and validation committed as `9e9e3ae`.
