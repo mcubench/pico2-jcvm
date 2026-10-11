@@ -29,6 +29,7 @@ v1.8.2 and preserve the provided source trees.
   `SCARD_E_NO_SERVICE`; only libpcsclite is installed, not pcscd. Next work is
   WP3: implement APDU buffer + applet lifecycle dispatch and identify a
   non-root PC/SC daemon/driver route for host validation.
+- The APDU lifecycle audit is committed as `fea69ed`.
 
 - Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device.
   VirtualBox had stale USB passthrough until the user toggled the device off and
