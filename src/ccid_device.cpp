@@ -56,6 +56,8 @@ size_t rx_expected = 0;
 uint8_t slot_state = 1; // present, inactive
 uint8_t ep_out = 0;
 uint8_t ep_in = 0;
+volatile bool message_pending = false;
+uint8_t pending_rhport = 0;
 Scp03Session secure_channel;
 CapLoadSession cap_load_session;
 
@@ -322,6 +324,7 @@ void process_message(uint8_t rhport) {
 void driver_init() {
   rx_length = 0;
   rx_expected = 0;
+  message_pending = false;
   slot_state = 1;
   ep_out = 0;
   ep_in = 0;
@@ -334,6 +337,7 @@ bool driver_deinit() { return true; }
 void driver_reset(uint8_t) {
   rx_length = 0;
   rx_expected = 0;
+  message_pending = false;
   slot_state = 1;
   ep_out = 0;
   ep_in = 0;
@@ -417,7 +421,11 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     rx_expected = payload_length + 10;
   }
   if (rx_expected != 0 && rx_length >= rx_expected) {
-    process_message(rhport);
+    // TinyUSB invokes this class callback from its low-priority USB worker
+    // IRQ. Defer APDU parsing and especially VM INSTALL execution to the main
+    // loop so the IRQ never performs flash, allocation, or Java bytecode work.
+    pending_rhport = rhport;
+    message_pending = true;
   } else {
     queue_out(rhport);
   }
@@ -435,6 +443,15 @@ const usbd_class_driver_t kDriver = {
     .sof = nullptr,
 };
 } // namespace
+
+extern "C" void choupi_ccid_task(void) {
+  if (!message_pending) {
+    return;
+  }
+  const uint8_t rhport = pending_rhport;
+  message_pending = false;
+  process_message(rhport);
+}
 
 extern "C" usbd_class_driver_t const *usbd_app_driver_get_cb(
     uint8_t *driver_count) {

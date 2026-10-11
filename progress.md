@@ -1207,3 +1207,13 @@
 - Decision: Continue after a board USB detach/reattach or power reset; add targeted persistent CCID/VM stage breadcrumbs to distinguish a blocked bytecode/native call from an in-callback storage or USB deadlock. Keep the applet status unconfirmed until INSTALL returns `9000` and GET STATUS/SELECT verify it.
 - Commit: `005271c` (firmware under test); hardware-validation record: `53adb84`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T152212Z.log` (SHA-256 `4ab97132130d7c775e40dcd5c1a54a79b93542aa215d7d6a88caf7cd22ee4db5`); `artifacts/logs/gp-install-callback-safe-20261011.txt` (SHA-256 `c3c4dbf12611b67c7f8bcfa4a531dececac7d35babe810d01ca188ccf8e13746`); candidate/flashed UF2 SHA-256 `418c69e4e4c11f82e0866cf98479e9c1e61244e298044a7c1110ee9950900504`
+
+## 2026-10-11 — Defer CCID APDU processing out of TinyUSB IRQ
+
+- Step/experiment: `wp7-deferred-ccid-apdu-processing`
+- Change: The Pico SDK services TinyUSB from a low-priority worker IRQ, while the CCID OUT transfer callback previously performed the complete APDU synchronously, including Java VM INSTALL. The callback now queues a complete CCID message; `choupi_ccid_task()` processes it from CHOUPI's main loop and sends its response there. The OUT endpoint remains paused until the response transfer completes, preserving command order.
+- Validation: `./tools/build arm` and `./tools/build riscv` both passed. The real-board `./tools/cycle choupi` was attempted after both builds; it could not reset the stalled board. Picotool saw no BOOTSEL/reset interface, the initial BOOTSEL wait timed out after 45 seconds, three reboot requests failed, and CDC 1200-baud reset did not re-enumerate BOOTSEL. No hardware result for this change is available; the candidate was not flashed.
+- Result: Long VM/install work no longer runs in the TinyUSB USB worker IRQ in the candidate firmware. This is a concrete concurrency fix based on the Pico SDK call path, but hardware impact remains unverified.
+- Decision: Restore USB passthrough or power-cycle the board, flash this image, confirm the runtime self-test, then retry JCAlgTest v1.8.2 INSTALL. Keep the install status unconfirmed unless GPPro receives `9000` and GET STATUS/SELECT confirm it.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T153015Z.log` (SHA-256 `6c0412947bb6d39e26210f5ff214ca26bae5709bd3b9e7190978d244e56dde1f`); candidate UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `f34f79fce442792fb099e00977521c73e3d03f7892d7f9483cb34e4038016fab`)

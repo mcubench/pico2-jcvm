@@ -18,6 +18,7 @@ extern "C" const uint8_t choupi_rommask_start[];
 extern "C" const uint8_t choupi_rommask_end[];
 extern "C" uint16_t runtime(uint8_t package_id, uint8_t class_id,
                              uint8_t method_id);
+extern "C" void choupi_ccid_task(void);
 
 extern "C" void choupi_watchdog_update(void) { watchdog_update(); }
 extern "C" uint32_t choupi_time_us_32(void) { return time_us_32(); }
@@ -690,6 +691,7 @@ int main_arm(void) {
   printf("CHOUPI:STATUS sw=%04X\r\n", status);
   const bool passed = status == 0x9000;
   for (;;) {
+    choupi_ccid_task();
     printf("CHOUPI:STATUS sw=%04X\r\n", status);
     printf("TEST:%s choupi_runtime\r\n", passed ? "PASS" : "FAIL");
     printf("TEST:SUMMARY pass=%u fail=%u\r\n", passed ? 1u : 0u,

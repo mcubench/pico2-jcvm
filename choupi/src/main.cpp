@@ -56,6 +56,8 @@ int main
 extern "C" {
 #endif
 
+void choupi_ccid_task(void);
+
 uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
   TRACE_JCVM_DEBUG("Starting JCVM");
 
