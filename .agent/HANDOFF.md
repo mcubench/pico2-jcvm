@@ -18,6 +18,12 @@
   crates.io is unreachable and Cargo cannot download `ipc-channel`.
 - The PC `main_pc.cpp` translation unit compiles using the generated ROM-mask
   JNI header. Existing packed-member warnings remain in upstream CAP headers.
+- `Applet.register` receiver capture now flows through `Context` and
+  `Interpretor`; after a successful install method return, `runtime_install_method`
+  serializes the Java instance through `FlashMemory_Handler` under reserved
+  field tag `0xFF`. ARM and RISC-V wrapper builds pass. This is still a single
+  applet slot (applet owner 0), has no atomic cleanup if the card-manager AID
+  write fails, and has not been runtime-verified.
 - The worktree contains preserved, uncommitted JC305 token-remapping and install
   diagnostics in `choupi/src/jc_bytecodes/bc_invoke.cpp`,
   `choupi/src/jc_handlers/jc_class.cpp`, `jc_cp.cpp`, `jc_cp.hpp`,
@@ -40,9 +46,9 @@
   not persist the selectable AID if Java install returns without that call.
   This does not yet persist the Java applet object or prove the method mapping
   at runtime.
-- Next: continue the plan's implementation in small validated commits; first
-  implement the Java `Applet.register` and persistent object handoff. When the
-  host USB device is exposed, run the guarded board cycle and GP INSTALL again.
+- Next: implement/reload applet lifecycle state and make AID/object persistence
+  atomic, then wire SELECT/process dispatch. Retry hardware validation when the
+  USB device is exposed to this container.
 
 ## Objective
 

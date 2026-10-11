@@ -31,6 +31,7 @@
 #include "heap.hpp"
 #include "jc_config.h"
 #include "jc_handlers/package.hpp"
+#include "jc_types/jref_t.hpp"
 #include "jcvm_types/list.hpp"
 #include "stack.hpp"
 #include "types.hpp"
@@ -43,6 +44,7 @@ private:
   japplet_ID_t applet_ID;
   /// Set when the active install method invokes Applet.register().
   bool applet_registered = false;
+  jref_t registered_applet_ref;
   /// Current Java Card stack.
   Stack stack;
   /// Linked-list where the executed Packages ID is stored. The Head of the
@@ -64,8 +66,9 @@ public:
   /// Get applet ID
   japplet_ID_t getAppletID() noexcept;
   /// Record and query Applet.register() calls during installation.
-  void markAppletRegistered() noexcept;
+  void markAppletRegistered(jref_t applet_ref) noexcept;
   bool wasAppletRegistered() const noexcept;
+  jref_t getRegisteredAppletRef() const noexcept;
   /// Get context Java Card stack.
   Stack &getStack() noexcept;
   /// Get context heap.

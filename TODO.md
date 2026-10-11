@@ -24,6 +24,13 @@ libusb initialization before a board can be accessed. The PC build wrapper is
 being brought up; Cargo currently cannot fetch the uncached `ipc-channel`
 dependency because crates.io DNS/network access is unavailable.
 
+Registration implementation status: the VM captures the receiver passed to
+either imported JC305 `Applet.register` method and serializes that instance's
+fields under a reserved persistent applet root after a successful install
+method return. The AID registry path, duplicate/invalid registration handling,
+rollback, reboot reload, and runtime SELECT/process dispatch remain unverified
+or incomplete.
+
 - [x] Parse the INSTALL [for install and make selectable] parameter field and
   pass its exact bytes in a Java byte array with offset zero and the matching
   byte length to `Applet.install(byte[], short, byte)`.

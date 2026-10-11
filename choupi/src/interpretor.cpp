@@ -322,6 +322,13 @@ bool Interpretor::installAppletRegistered() noexcept {
          this->getCurrentContext().wasAppletRegistered();
 }
 
+jref_t Interpretor::installAppletReference() noexcept {
+  if (!this->installAppletRegistered()) {
+    return jref_t();
+  }
+  return this->getCurrentContext().getRegisteredAppletRef();
+}
+
 void Interpretor::startJCVMException(Exceptions e) {
 
 #ifdef DEBUG

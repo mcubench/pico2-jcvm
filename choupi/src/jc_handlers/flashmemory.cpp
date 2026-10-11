@@ -403,6 +403,15 @@ const fs::Tag FlashMemory_Handler::getPersistentFieldTag(
   return tag;
 }
 
+const fs::Tag FlashMemory_Handler::getAppletInstanceTag(
+    const japplet_ID_t applet_owner, const jpackage_ID_t package,
+    const jclass_index_t claz) noexcept {
+  // Instance-field counts are encoded as a byte, so field index 0xFF is
+  // reserved for the applet object's root record.
+  return FlashMemory_Handler::getPersistentFieldTag(
+      applet_owner, package, claz, 0xff);
+}
+
 /**
  * Get a static field from a tag. This field should be a serialized instance or
  * array

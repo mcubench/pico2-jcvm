@@ -79,6 +79,7 @@ public:
     return last_exception_stack_depth;
   }
   bool installAppletRegistered() noexcept;
+  jref_t installAppletReference() noexcept;
 
   /// Get the current context
   Context &getCurrentContext() noexcept(

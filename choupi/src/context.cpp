@@ -74,10 +74,17 @@ jpackage_ID_t Context::getCurrentPackageID() noexcept {
  */
 jpackage_ID_t Context::getAppletID() noexcept { return this->applet_ID; }
 
-void Context::markAppletRegistered() noexcept { this->applet_registered = true; }
+void Context::markAppletRegistered(const jref_t applet_ref) noexcept {
+  this->registered_applet_ref = applet_ref;
+  this->applet_registered = true;
+}
 
 bool Context::wasAppletRegistered() const noexcept {
   return this->applet_registered;
+}
+
+jref_t Context::getRegisteredAppletRef() const noexcept {
+  return this->registered_applet_ref;
 }
 
 /**

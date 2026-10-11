@@ -99,6 +99,10 @@ public:
                                              const jpackage_ID_t package,
                                              const jclass_index_t claz,
                                              const uint8_t field) noexcept;
+  /// Get the reserved root tag for the registered applet object.
+  static const fs::Tag getAppletInstanceTag(const japplet_ID_t applet_owner,
+                                            const jpackage_ID_t package,
+                                            const jclass_index_t claz) noexcept;
 
   /// Read byte from an address.
   static jbyte_t getByteFromAddr(const uint8_t *const address) noexcept;

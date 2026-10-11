@@ -90,8 +90,25 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
                                 method_offset, install_data, install_length);
   const uint16_t status = interpretor.run();
+  bool applet_persisted = false;
+  if (status == 0x9000 && interpretor.installAppletRegistered()) {
+    try {
+      const jcvm::jref_t applet_ref = interpretor.installAppletReference();
+      jcvm::Context &context = interpretor.getCurrentContext();
+      const auto applet = context.getHeap().getInstance(applet_ref);
+      const jcvm::fs::Tag instance_tag =
+          jcvm::FlashMemory_Handler::getAppletInstanceTag(
+              context.getAppletID(), applet->getPackageID(),
+              applet->getClassIndex());
+      jcvm::FlashMemory_Handler::setPersistentField_Instance(
+          instance_tag, *applet, context.getHeap());
+      applet_persisted = true;
+    } catch (...) {
+      TRACE_JCVM_ERR("Failed to persist registered applet instance");
+    }
+  }
   if (applet_registered != nullptr) {
-    *applet_registered = interpretor.installAppletRegistered() ? 1 : 0;
+    *applet_registered = applet_persisted ? 1 : 0;
   }
   if (exception_id != nullptr) {
     *exception_id = interpretor.lastExceptionId();
@@ -120,7 +137,9 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
   if (exception_depth_history != nullptr) {
     *exception_depth_history = interpretor.lastExceptionDepthHistory();
   }
-  return status;
+  return applet_persisted || !interpretor.installAppletRegistered()
+             ? status
+             : 0x6f00;
 }
 
 #ifdef __cplusplus

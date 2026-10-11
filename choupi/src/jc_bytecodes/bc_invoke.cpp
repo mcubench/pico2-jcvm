@@ -154,9 +154,6 @@ void Bytecodes::bc_invokevirtual() {
   // Calling the method and updating PC value
   method_handler.setPackage(method_offset.first);
   method_handler.callVirtualMethod(method_offset.second);
-  if (applet_register_call) {
-    this->context.markAppletRegistered();
-  }
 
   // checking if the this reference is non NULL
   jref_t objectref = stack.readLocal_Reference((uint8_t)0);
@@ -166,6 +163,9 @@ void Bytecodes::bc_invokevirtual() {
   }
 
   auto instance = context.getHeap().getInstance(objectref);
+  if (applet_register_call) {
+    this->context.markAppletRegistered(objectref);
+  }
 
   return;
 }

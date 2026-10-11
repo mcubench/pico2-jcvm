@@ -1396,3 +1396,27 @@
   `3f6e644789143bebc2394f7b756f452d417d52bc7d23132a9428f042297f5cb3`); ARM
   UF2 `build/arm/pico2_choupi.uf2` (SHA-256
   `8dd273698c99943ff37462962b76a57197e44b2671436521e39a57ded4bdd38e`)
+
+## 2026-10-11 — Persist the applet object on registration
+
+- Step/experiment: `wp7-register-persistent-applet-object`
+- Change: The VM now records the object reference received by either imported
+  JC305 `Applet.register` overload. After the install method returns `9000`, the
+  bridge serializes the instance and its persistent fields through the existing
+  flash object serializer under reserved applet field tag `0xFF`. A persistence
+  failure now makes GP INSTALL fail instead of reporting registration success.
+- Validation: `./tools/build arm` and `./tools/build riscv` both passed without
+  warnings or errors. Hardware and PC runtime checks were skipped: the
+  container cannot access `/dev/bus/usb`, and the PC build still lacks the
+  uncached Cargo `ipc-channel` dependency.
+- Result: Both architecture variants compile the object-reference handoff and
+  persistent serializer path. The implementation currently reserves applet
+  owner ID 0 and does not roll back the object if the later card-manager AID
+  write fails; neither the filesystem permission path nor reboot reload has
+  been exercised.
+- Decision: Next add a persistent instance index and cleanup/reload semantics,
+  then connect the object to SELECT and APDU lifecycle dispatch.
+- Commit: pending
+- Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2` (SHA-256
+  `003a2a2d6fc7c936740dab4199c99bb01987c3c1d7ece7322006c2badb720cc6`); no
+  serial log because flashing was blocked before device access.
