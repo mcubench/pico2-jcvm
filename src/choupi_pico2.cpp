@@ -8,7 +8,9 @@
 #include "ffi.h"
 #include "jni.hpp"
 #include "pico/stdlib.h"
+#include "hardware/timer.h"
 #include "hardware/watchdog.h"
+#include "hardware/structs/watchdog.h"
 #include "pico/bootrom.h"
 #include "cap_store.hpp"
 
@@ -18,8 +20,20 @@ extern "C" uint16_t runtime(uint8_t package_id, uint8_t class_id,
                              uint8_t method_id);
 
 extern "C" void choupi_watchdog_update(void) { watchdog_update(); }
+extern "C" uint32_t choupi_time_us_32(void) { return time_us_32(); }
+extern "C" void choupi_install_trace(uint32_t pc, uint8_t opcode,
+                                      uint32_t instruction_count) {
+  watchdog_hw->scratch[0] = 0x494e5354; // "INST"
+  watchdog_hw->scratch[1] = pc;
+  watchdog_hw->scratch[2] = (instruction_count & 0x00ffffffu) |
+                            (static_cast<uint32_t>(opcode) << 24);
+}
 
 namespace {
+
+bool watchdog_recovery_pending = false;
+uint32_t watchdog_recovery_pc = 0;
+uint32_t watchdog_recovery_info = 0;
 
 constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
@@ -622,10 +636,15 @@ extern "C" void path_applet_field(uint8_t applet, uint8_t package,
 }
 
 int main_arm(void) {
-  // A stalled VM can stop servicing USB reset requests. A watchdog timeout
-  // records this recovery path; on the next boot enter ROM BOOTSEL directly.
+  // A stalled VM can stop servicing USB requests. Preserve and report its last
+  // INSTALL opcode after the watchdog reset, then bring up the reader again.
   if (watchdog_enable_caused_reboot()) {
-    reset_usb_boot(0, 0);
+    const uint32_t trace_magic = watchdog_hw->scratch[0];
+    if (trace_magic == 0x494e5354) {
+      watchdog_recovery_pending = true;
+      watchdog_recovery_pc = watchdog_hw->scratch[1];
+      watchdog_recovery_info = watchdog_hw->scratch[2];
+    }
   }
 
   stdio_init_all();
@@ -651,6 +670,11 @@ int main_arm(void) {
   // Refresh once per VM instruction. If a native operation or handler wedges,
   // the next boot enters BOOTSEL instead of returning to an unresponsive app.
   watchdog_enable(15000, true);
+  if (!watchdog_recovery_pending) {
+    watchdog_hw->scratch[0] = 0;
+    watchdog_hw->scratch[1] = 0;
+    watchdog_hw->scratch[2] = 0;
+  }
 
   uint16_t status = 0x6F00;
   try {
@@ -670,6 +694,12 @@ int main_arm(void) {
     printf("TEST:%s choupi_runtime\r\n", passed ? "PASS" : "FAIL");
     printf("TEST:SUMMARY pass=%u fail=%u\r\n", passed ? 1u : 0u,
            passed ? 0u : 1u);
+    if (watchdog_recovery_pending) {
+      printf("CHOUPI:WATCHDOG_RECOVERY marker=494E5354 pc=%08lX opcode=%02lX count=%lu\r\n",
+             static_cast<unsigned long>(watchdog_recovery_pc),
+             static_cast<unsigned long>(watchdog_recovery_info >> 24),
+             static_cast<unsigned long>(watchdog_recovery_info & 0x00ffffffu));
+    }
     fflush(stdout);
     watchdog_update();
     sleep_ms(1000);

@@ -1167,3 +1167,13 @@
 - Decision: Preserve and parse GP INSTALL parameters, then connect the method entry to install and implement the first native behavior needed by the supplied applet.
 - Commit: `3e49fc9c9cec1c38aeed431b2ba281ccb3556934`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T134532Z.log` (SHA-256 `ecd917b5a265987b417bcfccf33365104e95e255fefed8d93d8aaeda03415884`); `artifacts/logs/gp-select-install-entry-20261011.txt` (SHA-256 `c8120829b3c7941b2bd2e48adb7db34ff8f7ff57b7fe0c9617eabed9046d74ab`)
+
+## 2026-10-11 — Bound and trace stalled CAP INSTALL execution
+
+- Step/experiment: `wp7-install-watchdog-trace`
+- Change: Added a five-second wall-clock budget to the raw install-method interpreter entry, with opcode/PC diagnostics; exposed the Pico timer through a platform bridge. Added watchdog scratch breadcrumbs for the last INSTALL opcode and repeatable recovery reporting, and kept CHOUPI running after a watchdog restart so the CCID/CDC device can re-enumerate without immediately entering BOOTSEL.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` flashed the real Pico 2 to 100% and passed `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` in `artifacts/logs/cycle-choupi-20261011T145623Z.log`. GlobalPlatformPro reloaded the exact v1.8.2 CAP (hash `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`), but INSTALL did not return; the subsequent transmit failed with `SCARD_F_COMM_ERROR`. CDC capture stopped producing output during the APDU. USB still enumerated as `2e8a:0009`, while pcscd had no usable reader. A later cycle retry could not reset this stalled device through picotool or CDC 1200-baud fallback.
+- Result: The watchdog and cycle work for normal runtime startup, but they have not contained or diagnosed the blocked INSTALL callback. The trace path is built and flashed; it still needs a successful watchdog-reset capture or other device reattachment to identify the last opcode.
+- Decision: Once the USB device is reattached or reset, collect the saved watchdog breadcrumb and continue isolating the blocking VM/native operation. Do not mark JCAlgTest installed: GP INSTALL has not returned `9000`.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T145623Z.log` (SHA-256 `3d100ceb51d258af55cef828aca9c0cdeeec31ff20a3bd6ae209f5dd7bc910ab`); `artifacts/logs/gp-install-watchdog-scratch-20261011-apdu.txt` (SHA-256 `1dce95fd4a3a37238e9343ab6056a32e08436a8c2d261c64956afa2144b02198`); `artifacts/logs/gp-install-watchdog-scratch-20261011.txt` (SHA-256 `2db80438b43563cd14175a572822f6a631fcda0d0a8fb689a33bc7c572fcf838`)

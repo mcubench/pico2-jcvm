@@ -37,6 +37,9 @@
 
 #ifndef PC_VERSION
 extern "C" void choupi_watchdog_update(void);
+extern "C" uint32_t choupi_time_us_32(void);
+extern "C" void choupi_install_trace(uint32_t pc, uint8_t opcode,
+                                      uint32_t instruction_count);
 #endif
 
 #ifdef DEBUG
@@ -138,6 +141,9 @@ uint16_t Interpretor::run() noexcept {
 
   //  the interpretor runs until the Java Card stack is empty
   uint32_t instruction_count = 0;
+#ifndef PC_VERSION
+  const uint32_t install_start_time_us = choupi_time_us_32();
+#endif
   uint8_t trace_after_putfield_a = 0;
   while (stack.empty() == false) {
 #ifndef PC_VERSION
@@ -149,6 +155,48 @@ uint16_t Interpretor::run() noexcept {
     const auto instruction_pc = stack.getPC().getValue();
     uint8_t bytecode = stack.getPC().getNextByte();
     ++instruction_count;
+    const auto operand_depth = static_cast<uint8_t>(
+        stack.getCurrentFrame().getTOS() - stack.getCurrentFrame().getOP());
+    this->opcode_history = (this->opcode_history << 8) | bytecode;
+    this->depth_history = (this->depth_history << 8) | operand_depth;
+#ifndef PC_VERSION
+    if (this->startsAtMethodOffset) {
+      choupi_install_trace(
+          static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc)),
+          bytecode, instruction_count);
+    }
+    // An INSTALL APDU is handled inside the USB CCID callback. Bound this
+    // synchronous entry so a bad CAP loop cannot starve USB/PCSC indefinitely.
+    if (this->startsAtMethodOffset && (instruction_count & 0xffu) == 0 &&
+        static_cast<uint32_t>(choupi_time_us_32() - install_start_time_us) >=
+            5000000u) {
+      this->last_exception_id = Exceptions::RuntimeException;
+      this->last_exception_opcode = bytecode;
+      this->last_exception_pc =
+          static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc));
+      this->last_exception_prefix = 0;
+      this->last_exception_operand = 0;
+      if (bytecode == 0x8b) {
+        this->last_exception_prefix =
+            (static_cast<uint32_t>(instruction_pc[-4]) << 24) |
+            (static_cast<uint32_t>(instruction_pc[-3]) << 16) |
+            (static_cast<uint32_t>(instruction_pc[-2]) << 8) |
+            static_cast<uint32_t>(instruction_pc[-1]);
+        this->last_exception_operand = static_cast<uint16_t>(
+            (static_cast<uint16_t>(instruction_pc[1]) << 8) |
+            instruction_pc[2]);
+      }
+      this->last_exception_stack_depth = operand_depth;
+      this->last_exception_opcode_history = this->opcode_history;
+      this->last_exception_depth_history = this->depth_history;
+      this->status_word = 0x6400;
+      std::printf("CHOUPI:INSTALL_METHOD_TIMEOUT instructions=%lu pc=%p\r\n",
+                  static_cast<unsigned long>(instruction_count),
+                  static_cast<const void *>(instruction_pc));
+      std::fflush(stdout);
+      return this->status_word;
+    }
+#endif
     if (bytecode == 0x87 || bytecode == 0xB1 || bytecode == 0xB5) {
       trace_after_putfield_a = 24;
     }
@@ -182,6 +230,26 @@ uint16_t Interpretor::run() noexcept {
       // execute
       (bytecodes.*bc)();
     } catch (Exceptions e) {
+      this->last_exception_id = e;
+      this->last_exception_opcode = bytecode;
+      this->last_exception_pc =
+          static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc));
+      this->last_exception_prefix = bytecode == 0x8b
+          ? (static_cast<uint32_t>(instruction_pc[-4]) << 24) |
+                (static_cast<uint32_t>(instruction_pc[-3]) << 16) |
+                (static_cast<uint32_t>(instruction_pc[-2]) << 8) |
+                static_cast<uint32_t>(instruction_pc[-1])
+          : 0;
+      if (bytecode == 0x8b) {
+        this->last_exception_operand = static_cast<uint16_t>(
+            (static_cast<uint16_t>(instruction_pc[1]) << 8) |
+            instruction_pc[2]);
+      }
+      this->last_exception_stack_depth = static_cast<uint8_t>(
+          stack.getCurrentFrame().getTOS() -
+          stack.getCurrentFrame().getOP());
+      this->last_exception_opcode_history = this->opcode_history;
+      this->last_exception_depth_history = this->depth_history;
       std::printf("CHOUPI:VM_EXCEPTION id=%u opcode=0x%02X pc=%p\r\n",
                   static_cast<unsigned>(e), bytecode,
                   static_cast<const void *>(stack.getPC().getValue()));
@@ -191,6 +259,21 @@ uint16_t Interpretor::run() noexcept {
       this->startJCVMException(e);
       return this->status_word;
     } catch (...) {
+      this->last_exception_id = Exceptions::SecurityException;
+      this->last_exception_opcode = bytecode;
+      this->last_exception_pc =
+          static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc));
+      this->last_exception_prefix = bytecode == 0x8b
+          ? (static_cast<uint32_t>(instruction_pc[-4]) << 24) |
+                (static_cast<uint32_t>(instruction_pc[-3]) << 16) |
+                (static_cast<uint32_t>(instruction_pc[-2]) << 8) |
+                static_cast<uint32_t>(instruction_pc[-1])
+          : 0;
+      this->last_exception_stack_depth = static_cast<uint8_t>(
+          stack.getCurrentFrame().getTOS() -
+          stack.getCurrentFrame().getOP());
+      this->last_exception_opcode_history = this->opcode_history;
+      this->last_exception_depth_history = this->depth_history;
       std::printf("CHOUPI:VM_EXCEPTION id=unknown opcode=0x%02X pc=%p\r\n",
                   bytecode,
                   static_cast<const void *>(stack.getPC().getValue()));
