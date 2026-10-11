@@ -61,9 +61,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
 - [ ] Reconstruct the persisted applet object after reboot using its stored
   class index, then dispatch applet lifecycle methods. A `Context` restore
   helper now resolves the reserved root, verifies package/class identity, and
-  eagerly decodes fields. CCID SELECT invokes this helper when version-2
-  metadata supplies the class index; the branch has not yet been exercised
-  against an installed applet.
+  eagerly decodes fields. CCID SELECT invokes it when version-2 metadata
+  supplies the class index and retains the resulting context for the card
+  session. This has not yet been exercised against an installed applet.
 - [ ] Dispatch SELECT, `select()`, `deselect()`, and `process()` through the
   interpreter for the selected applet.
 - [ ] Implement Java Card APDU buffer and incoming/outgoing command methods used

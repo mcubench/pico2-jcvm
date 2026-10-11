@@ -32,6 +32,9 @@
 
 #include "jc_handlers/flashmemory.hpp"
 
+#include <memory>
+#include <utility>
+
 #ifdef PC_VERSION
 extern int main_pc(int argc, char *argv[]);
 #else
@@ -52,6 +55,10 @@ int main
 #endif /* PC_VERSION */
 }
 
+namespace {
+std::unique_ptr<jcvm::Context> selected_applet_context;
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -63,16 +70,25 @@ void choupi_ccid_task(void);
 uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                  uint16_t class_index) {
   try {
-    jcvm::Context context(0, static_cast<jcvm::jpackage_ID_t>(package_id));
-    return context.restoreAppletInstance(
-               static_cast<jcvm::jpackage_ID_t>(package_id),
-               static_cast<jcvm::jclass_index_t>(class_index)) &&
-                   context.hasRestoredAppletInstance()
-               ? 0
-               : 1;
+    auto context = std::make_unique<jcvm::Context>(
+        0, static_cast<jcvm::jpackage_ID_t>(package_id));
+    if (!context->restoreAppletInstance(
+            static_cast<jcvm::jpackage_ID_t>(package_id),
+            static_cast<jcvm::jclass_index_t>(class_index)) ||
+        !context->hasRestoredAppletInstance()) {
+      selected_applet_context.reset();
+      return 1;
+    }
+    selected_applet_context = std::move(context);
+    return 0;
   } catch (...) {
+    selected_applet_context.reset();
     return 1;
   }
+}
+
+void choupi_vm_clear_selected_applet(void) {
+  selected_applet_context.reset();
 }
 
 uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {

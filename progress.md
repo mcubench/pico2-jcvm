@@ -1539,3 +1539,28 @@
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195521Z.log` (SHA-256
   `06de173c6f70be838090a032ccf11ad92c43e2a89e1225d631087b161c1b79a0`); ARM
   UF2 SHA-256 `2211ce2bcab208aa8abfaa884ec71853f685a14934c508d2721a4d07691a7f53`.
+
+## 2026-10-11 — Retain the selected applet context
+
+- Step/experiment: `wp7-retain-selected-applet-context`
+- Change: Successful v2 restore now stores its reconstructed `Context` in a
+  session-owned firmware pointer instead of destroying its heap after FCI
+  creation. Any SELECT APDU clears the previous context before routing the new
+  AID, and a failed restore clears the candidate context.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The real
+  `./tools/cycle choupi` passed both builds, recovered BOOTSEL through CDC,
+  flashed the ARM image, and captured repeated
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` over 18 seconds.
+  No applet SELECT APDU was sent, so context retention was build- and
+  boot-validated only. PC/SC still enumerates no reader because the daemon
+  account cannot open the current Pico node.
+- Result: A successfully reconstructed applet heap can now live across the
+  CCID selection boundary and is cleared on AID changes. There is still no
+  interpreter entry for applet `select()`, `process()`, or `deselect()`.
+- Decision: Add a per-APDU interpreter entry that consumes the retained
+  receiver/context, then validate it with the GPPro path when the reader is
+  available.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195927Z.log` (SHA-256
+  `dee9effae6d9a883e0837a526c74e693ef27c849814bb41ba69e85ea9f75b76e`); ARM
+  UF2 SHA-256 `a5f9b3a301d1919a4f5ba15ffc2df54183d3a0f46dee092fdcc9bd0c286d5896`.

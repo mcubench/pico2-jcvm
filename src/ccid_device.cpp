@@ -14,6 +14,7 @@ extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint16_t *install_offset);
 extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                              uint16_t class_index);
+extern "C" void choupi_vm_clear_selected_applet(void);
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;
@@ -131,6 +132,9 @@ void process_message(uint8_t rhport) {
     const uint8_t *apdu = rx_buffer + 10;
     uint8_t response[96] = {0x6d, 0x00}; // instruction not supported
     size_t response_length = 2;
+    if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
+      choupi_vm_clear_selected_applet();
+    }
     if (apdu_length >= 2 && apdu[0] == 0x80 && apdu[1] == 0x50) {
       size_t data_length = 0;
       if (secure_channel.initializeUpdate(apdu, apdu_length, response,

@@ -35,10 +35,11 @@
 - `Context::restoreAppletInstance(package, class)` now resolves the serialized
   root by tag, verifies the stored package and class, and eagerly decodes its
   persisted fields. CCID AID SELECT calls this helper when v2 metadata supplies
-  the class index, returning `6F00` if restoration fails. Both architecture
-  builds and the board runtime self-check pass, but the v2 SELECT branch has
-  not been exercised on the board and its returned reference is not retained
-  for Java lifecycle calls.
+  the class index, returning `6F00` if restoration fails. It retains the
+  reconstructed `Context` for the selected card session and clears it when
+  another AID is selected. Both architecture builds and the board runtime
+  self-check pass, but the v2 SELECT branch has not been exercised on the board
+  and no Java lifecycle call uses the retained reference yet.
 - The worktree contains preserved, uncommitted JC305 token-remapping and install
   diagnostics in `choupi/src/jc_bytecodes/bc_invoke.cpp`,
   `choupi/src/jc_handlers/jc_class.cpp`, `jc_cp.cpp`, `jc_cp.hpp`,
