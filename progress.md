@@ -1560,7 +1560,7 @@
 - Decision: Add a per-APDU interpreter entry that consumes the retained
   receiver/context, then validate it with the GPPro path when the reader is
   available.
-- Commit: pending
+- Commit: `d1fc0a7`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195927Z.log` (SHA-256
   `dee9effae6d9a883e0837a526c74e693ef27c849814bb41ba69e85ea9f75b76e`); ARM
   UF2 SHA-256 `a5f9b3a301d1919a4f5ba15ffc2df54183d3a0f46dee092fdcc9bd0c286d5896`.
