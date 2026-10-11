@@ -1074,5 +1074,5 @@
 - Validation: `bash -n` passed for both helper scripts; `/usr/sbin/visudo` is executable and parsed the generated no-argument command rule successfully. The user's first installer attempt exited at preflight before copying the helper or changing sudoers.
 - Result: The installer can proceed past the missing-command check on this host. Full installation and PC/SC recheck await the user's rerun.
 - Decision: Rerun `sudo ./tools/install-pcsc-sudoers`, then run the installed helper and check `pcsc_scan -r`.
-- Commit: pending
+- Commit: `5421889`
 - Artifacts/logs: none

@@ -1108,4 +1108,4 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   looked for `/usr/bin/visudo`; this host provides `/usr/sbin/visudo`. Corrected
   the preflight path. `bash -n` and standalone sudoers parsing pass.
 - Next: user reruns `sudo ./tools/install-pcsc-sudoers`; then invoke the helper
-  and confirm `pcsc_scan -r` discovers the reader. Commit pending.
+  and confirm `pcsc_scan -r` discovers the reader. Fix committed as `5421889`.
