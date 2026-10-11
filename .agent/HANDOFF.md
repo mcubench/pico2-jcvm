@@ -702,3 +702,19 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   package 20/class 121. Both builds pass; its UF2 SHA-256 is
   `5fa53345dbcabadbcaec146dc6aa07bc5e195f61fe320f49d6308e4fa8bedde4` and is
   unflashed. The board is again in CDC mode after the prior cycle.
+
+## USB BOOTSEL retry and class-token investigation (2026-10-11)
+
+- Retried `picotool reboot -F -u` with direct USB access. Picotool reported
+  “The device was asked to reboot into BOOTSEL mode,” but the follow-up still
+  found only the CDC app at bus 1/address 120 and no BOOTSEL device. No flash
+  was attempted; the hierarchy-trace UF2 remains pending.
+- Source inspection confirms `getClassInformation()` stores the CAP class
+  component byte offset, and `getClassFromClassIndex()` uses that offset
+  directly. Its companion `getClassRefFromClassIndex()` instead iterates
+  class/interface records by ordinal. This inconsistency can affect persistent
+  object class references and deserves a focused audit, but does not yet
+  explain the 8,912 field count: superclass traversal uses direct class refs.
+- Next: keep examining class-reference conversion and, when the board offers
+  BOOTSEL again, flash the prepared hierarchy-trace candidate. Do not use
+  repeated USB bus resets; prior host reset attempts made the Pico disappear.
