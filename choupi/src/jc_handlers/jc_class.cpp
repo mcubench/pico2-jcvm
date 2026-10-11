@@ -28,6 +28,8 @@
 #include "jc_class.hpp"
 #include "jc_cp.hpp"
 
+#include <cstdio>
+
 namespace jcvm {
 
 /*
@@ -453,14 +455,40 @@ Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
   auto claz = ConstantPool_Handler(package).getClassFromClassIndex(claz_index);
 
   uint16_t instance_size = 0;
+  uint16_t depth = 0;
+  const bool trace = this->package.getPackageID() == 20 && claz_index == 121;
+  if (trace) {
+    std::printf("CHOUPI:CLASS_FIELDS start package=%u class=%u\r\n",
+                static_cast<unsigned>(this->package.getPackageID()),
+                static_cast<unsigned>(claz_index));
+    std::fflush(stdout);
+  }
 
   do {
     ConstantPool_Handler cp_handler(package);
     instance_size += (claz->declared_instance_size & 0x00FF);
+    if (trace && depth < 64) {
+      std::printf("CHOUPI:CLASS_FIELDS step=%u package=%u declared=%u super_raw=%04X object=%u total=%u\r\n",
+                  static_cast<unsigned>(depth),
+                  static_cast<unsigned>(package.getPackageID()),
+                  static_cast<unsigned>(claz->declared_instance_size),
+                  static_cast<unsigned>(claz->super_class_ref.internal_classref),
+                  claz->isObjectClass() ? 1u : 0u,
+                  static_cast<unsigned>(instance_size));
+      std::fflush(stdout);
+    }
     auto pair = cp_handler.classref2class(claz->super_class_ref);
     package = pair.first;
     claz = pair.second;
+    ++depth;
   } while (!(claz->isObjectClass()));
+
+  if (trace) {
+    std::printf("CHOUPI:CLASS_FIELDS done depth=%u total=%u\r\n",
+                static_cast<unsigned>(depth),
+                static_cast<unsigned>(instance_size));
+    std::fflush(stdout);
+  }
 
   return instance_size;
 }

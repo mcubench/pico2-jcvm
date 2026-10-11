@@ -706,3 +706,13 @@
 - Decision: Preserve the candidate for the next BOOTSEL window. Continue toward a runtime pass before attempting the still-missing exact JCAlgTest CAP installation.
 - Commit: `0f417104cb79f12f6c3f4c6ea157296373d3872f`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, SHA-256 `a2deabc677b6672431386a1b0aef3eb05cc6debf906b1f0bc478d19f2b86f543`; no board log for this unflashed build
+
+## 2026-10-11 — Trace persistent class field sizing
+
+- Step/experiment: `wp1-choupi-class-field-count-trace`
+- Change: Added bounded diagnostics to `Class_Handler::getInstanceFieldsSize()` for package 20/class 121, logging each superclass step, declared instance size, raw superclass reference, object-class status, and accumulated field count.
+- Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. No flash was attempted because the RP2350 currently enumerates only as the USB serial application and does not enter BOOTSEL on the software request.
+- Result: The prior field-load trace measured 8,912 fields for package 20/class 121; this candidate should expose the hierarchy calculation that produced that count. Hardware output is pending.
+- Decision: Flash only after BOOTSEL returns, then check whether superclass traversal cycles or accumulates implausible class sizes.
+- Commit: pending
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, SHA-256 `5fa53345dbcabadbcaec146dc6aa07bc5e195f61fe320f49d6308e4fa8bedde4`; previous trace `artifacts/logs/cycle-choupi-20261011T053802Z.log`

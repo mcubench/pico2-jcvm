@@ -695,3 +695,10 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   pass. Candidate UF2 SHA-256:
   `a2deabc677b6672431386a1b0aef3eb05cc6debf906b1f0bc478d19f2b86f543`.
   It has not been flashed; use it after BOOTSEL enumeration returns.
+- That trace reached persistent class 121 with a reported field count of 8,912.
+  Each of fields 0–63 was processed far enough to complete its existence query;
+  no full vector completion marker existed yet. A follow-up candidate adds
+  bounded superclass-chain diagnostics to `getInstanceFieldsSize()` for
+  package 20/class 121. Both builds pass; its UF2 SHA-256 is
+  `5fa53345dbcabadbcaec146dc6aa07bc5e195f61fe320f49d6308e4fa8bedde4` and is
+  unflashed. The board is again in CDC mode after the prior cycle.
