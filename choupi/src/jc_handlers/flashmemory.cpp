@@ -1451,6 +1451,45 @@ bool FlashMemory_Handler::isPackageExist(const jpackage_ID_t id) {
 }
 
 /**
+ * Find a statically installed applet by its complete AID.
+ *
+ * @param[aid] requested applet AID bytes.
+ * @param[aid_length] number of bytes in the requested AID.
+ * @param[package_id] receives the package ID containing the applet.
+ * @param[install_method_offset] receives the applet install method offset.
+ * @return true if a matching applet entry was found.
+ */
+bool FlashMemory_Handler::findAppletByAID(
+    const uint8_t *aid, const uint8_t aid_length, jpackage_ID_t &package_id,
+    uint16_t &install_method_offset) {
+  if (aid == nullptr || aid_length < 5 || aid_length > 16) {
+    return false;
+  }
+
+  const std::shared_ptr<const uint8_t> packages =
+      FlashMemory_Handler::getPackagesArray();
+  for (uint8_t id = 0; id < JCVM_MAX_PACKAGES; ++id) {
+    if ((packages.get()[id / 8] & (1u << (id % 8))) == 0) {
+      continue;
+    }
+
+    const JC_Cap cap = FlashMemory_Handler::getCap(id);
+    const jc_cap_applet_component *applets = cap.getApplet();
+    if (applets == nullptr) {
+      continue;
+    }
+
+    const jc_cap_app *entry = applets->findByAID(aid, aid_length);
+    if (entry != nullptr) {
+      package_id = id;
+      install_method_offset = entry->install_method_offset();
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Get a CAP file from a package ID.
  *
  * @param[packageID] Package ID where the CAP file is located.

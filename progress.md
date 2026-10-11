@@ -1006,3 +1006,13 @@
 - Decision: Continue into applet lifecycle dispatch. Host hardware access is unavailable in this VM session (`lsusb` reports libusb initialization error -99; system bus/PCSC unavailable), so defer flashing until USB access returns.
 - Commit: pending
 - Artifacts/logs: supplied `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` (source artifact; no new log)
+
+## 2026-10-11 — Resolve applet AID across installed packages
+
+- Step/experiment: `wp5-applet-registry-aid-lookup`
+- Change: Added `FlashMemory_Handler::findAppletByAID()`. It walks the persistent package bitmap, parses each installed package CAP, skips packages without Applet components, and returns the matching package ID and install-method offset.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed; both generated their expected RP2350 UF2s. The supplied CAP layout was independently checked in the preceding step. `git diff --check` passed. Flashing was skipped because `picotool info -a` cannot initialize libusb (`-99`) in this VM session.
+- Result: Static ROM-mask applets can now be resolved through one registry API using their AID. No install method is invoked, no applet instance is retained, and no APDU is dispatched yet.
+- Decision: Next add interpreter entry/lifetime support for applet install and virtual process calls, with APDU data retained in context; then connect this registry query to a SELECT path.
+- Commit: pending
+- Artifacts/logs: none

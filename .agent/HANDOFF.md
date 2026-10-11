@@ -1027,3 +1027,16 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   method offset `0x3DA3`; the variable-length traversal consumes the component
   exactly. Host hardware access in this session is unavailable (`lsusb` reports
   libusb initialization error `-99`, and the system bus/PCSC service is absent).
+
+## Package-level AID resolution
+
+- Added `FlashMemory_Handler::findAppletByAID()` to scan the persisted package
+  bitmap and each installed CAP's Applet component, returning package ID and
+  install-method offset. ARM and RISC-V builds both pass. The supplied
+  JCAlgTest CAP's Applet component has been checked independently and matches
+  the parser's size accounting.
+- This lookup is not yet wired to CCID/SELECT, and it does not execute install
+  or process methods. Implementing that requires persistent VM context/app
+  instance state and a usable APDU buffer. `picotool info -a` currently fails
+  at libusb initialization (`-99`), so no flash or hardware validation is
+  possible in this session.

@@ -204,6 +204,10 @@ public:
   static void disablePackage(const jpackage_ID_t id);
   /// Is there package exist?
   static bool isPackageExist(const jpackage_ID_t id);
+  /// Find a statically installed applet by its complete AID.
+  static bool findAppletByAID(const uint8_t *aid, const uint8_t aid_length,
+                              jpackage_ID_t &package_id,
+                              uint16_t &install_method_offset);
   /// Get a CAP file from a package ID.
   static JC_Cap getCap(const jpackage_ID_t packageID);
 };
