@@ -37,6 +37,12 @@ v1.8.2 and preserve the provided source trees.
   daemon is running. Continue firmware work; retry GPPro once an unprivileged
   or system PC/SC socket is available.
 - The user-local PC/SC experiment is committed as `43059dc`.
+- After the CCID VID/PID plist arrays were aligned, the next PC/SC scan still
+  found no reader. Direct inspection showed the Pico absent from the VM USB bus
+  entirely (only root hubs and VirtualBox tablet in `lsusb`; no 2e8a sysfs
+  device; picotool saw no RP-series device). See
+  `artifacts/logs/pcsc-usb-absent-20261011.txt`. Reattach the Pico in VirtualBox
+  and verify `lsusb -d 2e8a:0009` before repeating `pcsc_scan -r`.
 
 - Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device.
   VirtualBox had stale USB passthrough until the user toggled the device off and
