@@ -796,3 +796,13 @@
 - Decision: Reuse this candidate at the next BOOTSEL window; inspect whether it stops before field access, while looking up an array, or while writing persistent storage.
 - Commit: `360085f` (metadata follow-up)
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, SHA-256 `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`; prior hardware trace `artifacts/logs/cycle-choupi-20261011T070346Z.log`
+
+## 2026-10-11 — Retry CHOUPI cycle with Pico attached over CDC
+
+- Step/experiment: `wp1-choupi-live-cdc-bootsel-retry`
+- Change: Re-ran the repository-gated CHOUPI cycle against the enumerated Pico and tried targeted and untargeted picotool BOOTSEL reboot requests.
+- Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V build gates, then picotool waited for a BOOTSEL device without reporting flash progress. The 18-second serial capture was silent and the cycle exited 1 with `CHOUPI runtime output did not pass`. `./tools/env ./tools/doctor` passed host and source checks. `picotool info -a` consistently identifies a CDC serial RP2350 at bus 1/address 124 and no BOOTSEL device.
+- Result: The board is connected, but the current firmware does not complete picotool's software BOOTSEL transition; the diagnostic UF2 remains unflashed.
+- Decision: Keep the candidate ready. A hardware BOOTSEL entry is needed to install it; do not treat USB enumeration as proof of bootloader mode.
+- Commit: `<pending metadata follow-up>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T071557Z.log`, SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`; candidate UF2 SHA-256 `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`

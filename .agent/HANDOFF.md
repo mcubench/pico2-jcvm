@@ -795,3 +795,23 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   reference and whether execution reaches array lookup or persistent write.
   No JCAlgTest v1.8.2 CAP installation has occurred; firmware still lacks an
   APDU transport and CAP installer.
+
+## Connected Pico CDC retry (2026-10-11)
+
+- The user said the device was present. Host enumeration confirmed the RP2350
+  at bus 1/address 124 as USB serial, while `picotool info -a` reported no
+  BOOTSEL device. Both generic and explicitly addressed `picotool reboot` requests
+  returned success text but the device stayed in CDC mode. Application reboot
+  and finite monitoring also produced no serial runtime output.
+- Re-ran `./tools/env ./tools/cycle choupi`. ARM and RISC-V build gates passed.
+  Picotool requested a BOOTSEL reboot, waited, and showed no flash progress;
+  serial capture was silent and the runtime gate failed. Log:
+  `artifacts/logs/cycle-choupi-20261011T071557Z.log` (SHA-256
+  `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`).
+- `./tools/env ./tools/doctor` reports all host tools, Pico SDK, CHOUPI sources,
+  and capmap-free present. The diagnostic UF2 remains ready at
+  `build/arm/pico2_choupi.uf2`, SHA-256
+  `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`.
+- Next: flash after the Pico appears in actual BOOTSEL mode, then inspect the
+  new `PUTFIELD_A` continuation markers. The attached CDC interface alone does
+  not expose a working software route into BOOTSEL in the current firmware.
