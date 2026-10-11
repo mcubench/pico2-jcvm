@@ -31,6 +31,11 @@
 #include "jc_export.hpp"
 #include "jc_import.hpp"
 
+#ifndef PC_VERSION
+extern "C" void choupi_install_stage(uint8_t stage);
+extern "C" void choupi_install_context(uint32_t context);
+#endif
+
 namespace jcvm {
 
 /**
@@ -320,6 +325,9 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
     noexcept
 #endif
 {
+#ifndef PC_VERSION
+  choupi_install_stage(11);
+#endif
   Package &package = this->package;
   auto cap = this->package.getCap();
 
@@ -333,9 +341,27 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
     //  High byte is set to one => clear it
     const uint8_t imported_package_token =
         classref.external_classref.package_token & 0x7F;
+#ifndef PC_VERSION
+    choupi_install_stage(12);
+    choupi_install_context(
+        (static_cast<uint32_t>(imported_package_token) << 8) |
+        classref.external_classref.class_token);
+#endif
     auto imported_package_ID =
         import_handler.getPackageAID(imported_package_token);
+#ifndef PC_VERSION
+    choupi_install_stage(13);
+#endif
+#ifndef PC_VERSION
+    choupi_install_stage(14);
+#endif
     auto package_index = import_handler.getPackageIndex(imported_package_ID);
+#ifndef PC_VERSION
+    choupi_install_stage(15);
+    choupi_install_context(
+        (static_cast<uint32_t>(package_index) << 16) |
+        classref.external_classref.class_token);
+#endif
 
     package = Package(package_index);
     cap = package.getCap();
@@ -345,7 +371,15 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
     class_token = HTONS(classref.internal_classref);
   }
 
+#ifndef PC_VERSION
+  choupi_install_stage(16);
+  choupi_install_context((static_cast<uint32_t>(package.getPackageID()) << 16) |
+                         class_token);
+#endif
   classFound = &(cap.getClass()->claz()[class_token]);
+#ifndef PC_VERSION
+  choupi_install_stage(17);
+#endif
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 

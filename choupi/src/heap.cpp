@@ -32,6 +32,10 @@
 #include <algorithm>
 #include <utility>
 
+#ifndef PC_VERSION
+extern "C" void choupi_install_stage(uint8_t stage);
+#endif
+
 namespace jcvm {
 
 /**
@@ -132,8 +136,14 @@ jref_t Heap::addInstance(const jpackage_ID_t packageID,
   jref_t ref;
 
   // Creating and adding new instance in the heap.
+#ifndef PC_VERSION
+  choupi_install_stage(3);
+#endif
   this->instances.push_back(
       std::make_shared<JC_Instance>(*this, packageID, instantiated_class));
+#ifndef PC_VERSION
+  choupi_install_stage(10);
+#endif
 
   ref.setAsArray(false);
   ref.setOffset(this->instances.size());

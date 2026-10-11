@@ -8,6 +8,24 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- Extended the `new` allocation breadcrumbs into `Heap::addInstance`, the
+  `JC_Instance` field array setup, and imported superclass resolution. ARM and
+  RISC-V builds passed; ARM UF2
+  `353781d080f00aa25da77990dc4eb6868b69dfcb2e00ea8fbe83a82c44d07af9` flashed
+  successfully and the 8-second serial monitor passed the normal runtime
+  test. GPPro again accepted all CAP LOAD blocks and stalled on INSTALL; after
+  recovery, the 5-second monitor had no watchdog marker from this attempt. The
+  prior build's saved marker is still
+  `pc=101C4EFA opcode=8F count=1 stage=6`, which places the stall inside
+  `getInstanceFieldsSize` immediately before `classref2class` resolves the
+  superclass. The new image reports resolver stages 11-17 and the imported
+  class/token context if a marker survives the next reset. GPPro trace:
+  `artifacts/logs/gp-install-superclass-resolution-20261011.txt`; CDC capture:
+  `artifacts/logs/cdc-superclass-stage-recovery-20261011.txt`. The CAP remains
+  uninstalled. Next resume with the board in application USB, run the bounded
+  install once, and inspect the new stage/context; if the watchdog marker is
+  again absent, capture serial immediately on its re-enumeration before
+  changing/resetting the board.
 - The latest diagnostic flash adds a persistent substage marker for `new`. Both
   ARM/RISC-V builds passed, the `f38acbf...` ARM UF2 flashed, and the 8-second
   CDC capture passed the normal runtime test. A bounded v1.8.2 GP INSTALL again

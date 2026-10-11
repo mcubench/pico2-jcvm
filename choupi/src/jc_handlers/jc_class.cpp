@@ -30,6 +30,11 @@
 
 #include <cstdio>
 
+#ifndef PC_VERSION
+extern "C" void choupi_install_stage(uint8_t stage);
+extern "C" void choupi_install_context(uint32_t context);
+#endif
+
 namespace jcvm {
 
 /*
@@ -451,6 +456,9 @@ Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
     noexcept
 #endif
 {
+#ifndef PC_VERSION
+  choupi_install_stage(5);
+#endif
   auto package = this->package;
   auto claz = ConstantPool_Handler(package).getClassFromClassIndex(claz_index);
 
@@ -477,7 +485,14 @@ Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
                   static_cast<unsigned>(instance_size));
       std::fflush(stdout);
     }
+#ifndef PC_VERSION
+    choupi_install_stage(6);
+    choupi_install_context(NTOHS(claz->super_class_ref.internal_classref));
+#endif
     auto pair = cp_handler.classref2class(claz->super_class_ref);
+#ifndef PC_VERSION
+    choupi_install_stage(7);
+#endif
     package = pair.first;
     claz = pair.second;
     ++depth;

@@ -37,6 +37,9 @@ extern "C" void choupi_install_trace(uint32_t pc, uint8_t opcode,
 extern "C" void choupi_install_stage(uint8_t stage) {
   watchdog_hw->scratch[3] = stage;
 }
+extern "C" void choupi_install_context(uint32_t context) {
+  watchdog_hw->scratch[4] = context;
+}
 
 namespace {
 
@@ -44,6 +47,7 @@ bool watchdog_recovery_pending = false;
 uint32_t watchdog_recovery_pc = 0;
 uint32_t watchdog_recovery_info = 0;
 uint32_t watchdog_recovery_stage = 0;
+uint32_t watchdog_recovery_context = 0;
 
 constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
@@ -655,6 +659,7 @@ int main_arm(void) {
       watchdog_recovery_pc = watchdog_hw->scratch[1];
       watchdog_recovery_info = watchdog_hw->scratch[2];
       watchdog_recovery_stage = watchdog_hw->scratch[3];
+      watchdog_recovery_context = watchdog_hw->scratch[4];
     }
   }
 
@@ -690,6 +695,7 @@ int main_arm(void) {
     watchdog_hw->scratch[1] = 0;
     watchdog_hw->scratch[2] = 0;
     watchdog_hw->scratch[3] = 0;
+    watchdog_hw->scratch[4] = 0;
   }
 
   uint16_t status = 0x6F00;
@@ -730,11 +736,12 @@ int main_arm(void) {
       printf("TEST:SUMMARY pass=%u fail=%u\r\n", passed ? 1u : 0u,
              passed ? 0u : 1u);
       if (watchdog_recovery_pending) {
-        printf("CHOUPI:WATCHDOG_RECOVERY marker=494E5354 pc=%08lX opcode=%02lX count=%lu stage=%lu\r\n",
+        printf("CHOUPI:WATCHDOG_RECOVERY marker=494E5354 pc=%08lX opcode=%02lX count=%lu stage=%lu context=%08lX\r\n",
                static_cast<unsigned long>(watchdog_recovery_pc),
                static_cast<unsigned long>(watchdog_recovery_info >> 24),
                static_cast<unsigned long>(watchdog_recovery_info & 0x00ffffffu),
-               static_cast<unsigned long>(watchdog_recovery_stage));
+               static_cast<unsigned long>(watchdog_recovery_stage),
+               static_cast<unsigned long>(watchdog_recovery_context));
       }
       fflush(stdout);
       next_report = delayed_by_ms(next_report, 1000);

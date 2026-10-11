@@ -36,6 +36,10 @@
 #include <cstdio>
 #include <cstring>
 
+#ifndef PC_VERSION
+extern "C" void choupi_install_stage(uint8_t stage);
+#endif
+
 namespace jcvm {
 
 namespace {
@@ -92,9 +96,18 @@ JC_Instance::JC_Instance(Heap &owner, const Package &package_owner,
 JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
                          const jclass_index_t claz) noexcept
     : JC_Object(owner, false), packageID(packageID), claz(claz) {
+#ifndef PC_VERSION
+  choupi_install_stage(4);
+#endif
   Class_Handler class_handler(this->packageID);
   uint16_t fields_size = class_handler.getInstanceFieldsSize(this->claz);
+#ifndef PC_VERSION
+  choupi_install_stage(8);
+#endif
   this->fields = new JCVMArray<jc_field_t>(fields_size);
+#ifndef PC_VERSION
+  choupi_install_stage(9);
+#endif
 };
 
 /**
