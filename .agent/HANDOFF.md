@@ -1100,4 +1100,4 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   arguments. No system file has been modified by this session.
 - After setup, run `sudo -n /usr/local/sbin/pico2-pcsc-reader`, then
   `pcsc_scan -r`. Continue with GPPro/APDU probes after the reader appears.
-- Shell syntax and standalone sudoers syntax validation passed. Commit pending.
+- Shell syntax and standalone sudoers syntax validation passed. The setup is committed as `97c7eeb`.

@@ -1064,5 +1064,5 @@
 - Validation: `bash -n tools/pico2-pcsc-reader-root tools/install-pcsc-sudoers` passed. `visudo -cf` accepted the generated exact command rule. No sudo command was run and no file outside the repository was modified. Hardware/PCSC recheck is pending user execution of the installer.
 - Result: The repo now contains a narrow setup that can remove the repeated sudo prompt for this recovery action. The system sudoers file and root helper remain uninstalled until the user runs the command below.
 - Decision: User runs `sudo ./tools/install-pcsc-sudoers` once, then `sudo -n /usr/local/sbin/pico2-pcsc-reader`; recheck with `pcsc_scan -r` and continue APDU/GPPro validation.
-- Commit: pending
+- Commit: `97c7eeb`
 - Artifacts/logs: none
