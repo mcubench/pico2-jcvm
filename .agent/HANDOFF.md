@@ -8,23 +8,25 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
-- Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device
-  before calling picotool, so a transient USB passthrough drop can recover when
-  the Pico re-enumerates. Shell syntax and the changed-file whitespace check
-  pass. Two subsequent `./tools/env ./tools/cycle choupi` attempts passed both
-  architecture builds, but each 120-second USB wait expired before a device
-  appeared. A live check showed only the VirtualBox tablet/root hubs in `lsusb`,
-  no `RPI-RP2` mount, and picotool reported no accessible RP-series device.
-  The most recent cycle log is
-  `artifacts/logs/cycle-choupi-20261011T084337Z.log` (SHA-256
-  `fe2431031ef112a6a2d8c0294c29c9bcf8b380b2e50976af86beccde606d204f`). No
-  flash was attempted. The pre-watchdog image remains installed; the watchdog candidate is still ready at
-  `build/arm/pico2_choupi.uf2` (SHA-256
-  `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`).
-- Next: once the RP-series device is enumerated in this shell's USB tree,
-  immediately run `./tools/env ./tools/cycle choupi`. The cycle builds both
-  architectures before using the flasher. Once the watchdog image is confirmed
-  flashed, inspect BOOTSEL recovery and resume the stalled-interpreter trace.
+- Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device.
+  VirtualBox had stale USB passthrough until the user toggled the device off and
+  on; afterward sysfs showed `2e8a:000f` RP2350 BOOTSEL and picotool flashed the
+  watchdog candidate to 100%. When the VM stalled, the watchdog reset into ROM
+  BOOTSEL; `picotool info -a` confirmed boot type `bootsel`.
+- Added a bounded trace of instructions after `putfield_a`, which showed opcode
+  `0xAD` (`getfield_a_this`) requesting repeated 36,870-byte persistent-array
+  buffers. Persistent non-transient arrays use flash for element I/O, so their
+  backing storage now keeps only the tag metadata; transient arrays retain full
+  buffers. The subsequent dual-build CHOUPI cycle passed and emitted
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. Latest log:
+  `artifacts/logs/cycle-choupi-20261011T090019Z.log` (SHA-256
+  `a093b8d548205e6a11dba34954509d6667fc9947cf14c18116f6f92a217f8cf7`); flashed
+  UF2 SHA-256 `48f170eb971f3e9f33505eeb0d40934eced68ad8b46c6f80a31248ad8741e3cb`.
+- Next: determine a CAP installation path for the supplied JCAlgTest 1.8.2 CAP.
+  Current USB firmware exposes CDC debug and has no APDU/CCID transport or CAP
+  installer, so do not claim the CAP is installed. Check whether the existing
+  ROM-mask build can integrate the CAP, or add the required card transport and
+  installer before attempting GlobalPlatformPro.
 
 ## Current state
 

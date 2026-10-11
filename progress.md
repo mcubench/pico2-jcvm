@@ -866,3 +866,13 @@
 - Decision: Retry immediately once the RP-series device is visible in this process's USB enumeration; keep the dual-build gate before flashing.
 - Commit: `21812de` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T084337Z.log`, SHA-256 `fe2431031ef112a6a2d8c0294c29c9bcf8b380b2e50976af86beccde606d204f`; candidate UF2 SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`
+
+## 2026-10-11 — Recover watchdog BOOTSEL and pass CHOUPI runtime
+
+- Step/experiment: `wp1-pico-watchdog-trace-and-array-memory-fix`
+- Change: Flashed the watchdog candidate after the user refreshed VirtualBox USB passthrough. Confirmed watchdog recovery to ROM BOOTSEL after the stalled runtime. Added a 24-instruction trace after `putfield_a`, which identified repeated 36,870-byte allocations while reading persistent arrays. Changed non-transient persistent arrays to allocate only tag metadata in RAM; their contents continue to use flash-backed element access. Transient arrays still allocate their full data buffer.
+- Validation: The first watchdog cycle passed both architecture builds and flashed the image at 100%; the VM stalled and watchdog recovery was confirmed by `picotool info -a` reporting `boot type: bootsel`. After the trace and array-storage change, `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds, flashed the updated image to 100%, and captured `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` with no `FAULT` or timeout.
+- Result: Watchdog recovery is hardware-verified. The memory fix allowed bytecode `0xAD` reads to continue past the prior second 36,870-byte allocation failure, and the full CHOUPI runtime test now passes on Pico 2. Current firmware is running the passing test loop.
+- Decision: Preserve the watchdog and bounded instruction trace while continuing to build an installation path for the supplied JCAlgTest v1.8.2 CAP. The current CDC firmware still lacks APDU/CCID and CAP installation support.
+- Commit: `<recorded in immediate metadata follow-up>`
+- Artifacts/logs: watchdog recovery run `artifacts/logs/cycle-choupi-20261011T085422Z.log` (SHA-256 `13126143227f832e1abd2b7160a63d5c91745cbb3727cdb0c0c1dafcba8a4d1f`); passing cycle `artifacts/logs/cycle-choupi-20261011T090019Z.log` (SHA-256 `a093b8d548205e6a11dba34954509d6667fc9947cf14c18116f6f92a217f8cf7`); flashed UF2 SHA-256 `48f170eb971f3e9f33505eeb0d40934eced68ad8b46c6f80a31248ad8741e3cb`

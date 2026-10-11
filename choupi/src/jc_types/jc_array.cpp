@@ -44,7 +44,7 @@ namespace jcvm {
  */
 JC_Array::JC_Array(Heap &owner, const uint16_t size, const jc_array_type type,
                    const bool isTransientArray, const ClearEvent event)
-    : JC_Object(owner, !isTransientArray), isTransient(isTransientArray),
+    : JC_Object(owner, false), isTransient(isTransientArray),
       type(type), reference_type(0xFFFF),
       array(size * JC_Array::getEntrySize(type)), clear(event) {
 #ifdef JCVM_SECURE_HEAP_ACCESS
@@ -74,7 +74,7 @@ JC_Array::JC_Array(Heap &owner, const uint16_t size, const jc_array_type type,
 JC_Array::JC_Array(Heap &owner, const uint16_t size, const jc_array_type type,
                    const jc_cp_offset_t reference_type,
                    const bool isTransientArray, const ClearEvent event)
-    : JC_Object(owner, !isTransientArray), isTransient(isTransientArray),
+    : JC_Object(owner, false), isTransient(isTransientArray),
       type(type), reference_type(reference_type),
       array(size * JC_Array::getEntrySize(type)), clear(event) {}
 
@@ -87,9 +87,13 @@ JC_Array::JC_Array(Heap &owner, const jc_array_type type,
                    const uint16_t length) noexcept
     : JC_Object(owner, true), isTransient(isTransientArray), type(type),
       reference_type(reference_type),
-      array(tag.len + length * JC_Array::getEntrySize(type) + sizeof(uint8_t),
+      array(tag.len +
+                (isTransientArray ? length * JC_Array::getEntrySize(type) : 0) +
+                sizeof(uint8_t),
             new uint8_t[tag.len +
-                        length * JC_Array::getEntrySize(type) +
+                        (isTransientArray
+                             ? length * JC_Array::getEntrySize(type)
+                             : 0) +
                         sizeof(uint8_t)],
             true),
       clear(event) {

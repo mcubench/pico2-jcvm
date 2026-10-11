@@ -113,6 +113,7 @@ uint16_t Interpretor::run() noexcept {
 
   //  the interpretor runs until the Java Card stack is empty
   uint32_t instruction_count = 0;
+  uint8_t trace_after_putfield_a = 0;
   while (stack.empty() == false) {
 #ifndef PC_VERSION
     choupi_watchdog_update();
@@ -120,8 +121,19 @@ uint16_t Interpretor::run() noexcept {
     stack.getCurrentFrame().setInstructionPC(stack.getPC().getValue());
 
     // fetch: reading byte code value
+    const auto instruction_pc = stack.getPC().getValue();
     uint8_t bytecode = stack.getPC().getNextByte();
     ++instruction_count;
+    if (bytecode == 0x87 || bytecode == 0xB1 || bytecode == 0xB5) {
+      trace_after_putfield_a = 24;
+    }
+    const bool trace_instruction = trace_after_putfield_a != 0;
+    if (trace_instruction) {
+      std::printf("CHOUPI:VM_TRACE before count=%lu opcode=0x%02X pc=%p\r\n",
+                  static_cast<unsigned long>(instruction_count), bytecode,
+                  static_cast<const void *>(instruction_pc));
+      std::fflush(stdout);
+    }
     if (instruction_count % 1000000u == 0) {
       std::printf("CHOUPI:VM_PROGRESS ops=%lu opcode=0x%02X pc=%p\r\n",
                   static_cast<unsigned long>(instruction_count), bytecode,
@@ -159,6 +171,13 @@ uint16_t Interpretor::run() noexcept {
                   static_cast<const void *>(stack.getPC().getValue()));
       this->startJCVMException(Exceptions::SecurityException);
       return this->status_word;
+    }
+    if (trace_instruction) {
+      std::printf("CHOUPI:VM_TRACE after count=%lu opcode=0x%02X pc=%p\r\n",
+                  static_cast<unsigned long>(instruction_count), bytecode,
+                  static_cast<const void *>(stack.getPC().getValue()));
+      std::fflush(stdout);
+      --trace_after_putfield_a;
     }
   }
 
