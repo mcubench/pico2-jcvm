@@ -21,6 +21,7 @@ v1.8.2 and preserve the provided source trees.
   instantiate/select the ROM-masked AlgTest applet. Wire CCID XfrBlock through
   that path before attempting a real GPPro install; preserve the current static
   ROM-mask install as a working fallback.
+- CCID transport step committed as `ffa3ddf`.
 
 - Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device.
   VirtualBox had stale USB passthrough until the user toggled the device off and
