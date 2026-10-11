@@ -38,6 +38,7 @@
 
 #ifndef PC_VERSION
 extern "C" void choupi_install_stage(uint8_t stage);
+extern "C" void choupi_install_context(uint32_t context);
 #endif
 
 namespace jcvm {
@@ -88,12 +89,16 @@ void Bytecodes::bc_new() {
 
 #ifndef PC_VERSION
   choupi_install_stage(1);
+  choupi_install_context(index);
 #endif
   ConstantPool_Handler cp(context.getCurrentPackage());
   auto instantiated_class = cp.getClassInformation(index);
 
 #ifndef PC_VERSION
   choupi_install_stage(2);
+  choupi_install_context(
+      (static_cast<uint32_t>(instantiated_class.first) << 16) |
+      instantiated_class.second);
 #endif
   jref_t objectref =
       heap.addInstance(instantiated_class.first, instantiated_class.second);

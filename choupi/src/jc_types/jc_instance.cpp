@@ -38,6 +38,7 @@
 
 #ifndef PC_VERSION
 extern "C" void choupi_install_stage(uint8_t stage);
+extern "C" void choupi_install_origin(uint32_t origin);
 #endif
 
 namespace jcvm {
@@ -98,6 +99,8 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
     : JC_Object(owner, false), packageID(packageID), claz(claz) {
 #ifndef PC_VERSION
   choupi_install_stage(4);
+  choupi_install_origin((static_cast<uint32_t>(this->packageID) << 16) |
+                        this->claz);
 #endif
   Class_Handler class_handler(this->packageID);
   uint16_t fields_size = class_handler.getInstanceFieldsSize(this->claz);

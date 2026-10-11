@@ -1297,3 +1297,13 @@
 - Decision: Add a separate watchdog origin field containing the allocated class package/index, then trace the `new` operand and instance-field walk to identify why an interface reaches `classref2class()`.
 - Commit: `1731f4f3da58751d7ffbb2fe8bfecdfcf260c6c1`
 - Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2` SHA-256 `9d07425d968219ca21cded897617091fe716d11896f4dc63d24f428c001dafd9`; runtime `artifacts/logs/cdc-classref-raw-context-20261011.txt` SHA-256 `c52635d6721f2745dee73246f41eff9a4226df965cacf514e37fee51d105c00b`; GP trace `artifacts/logs/gp-install-import-context-20261011.txt` SHA-256 `6fd7a6df24fbdb094d4fd3e7d71308683e4351a93afb48677706bc7c4da5ec26`; recovery `artifacts/logs/cdc-import-context-20261011.txt` SHA-256 `87ec93eb174d07434af7bd3b82524303e31082543516c96fc546f165158725e4`.
+
+## 2026-10-11 — Translate JC 3.0.5 imported class tokens
+
+- Step/experiment: `wp7-jc305-imported-class-token-remap`
+- Change: Added AID-based JC305-to-CHOUPI embedded class token mappings for `java/lang`, `javacard/framework`, `javacard/security`, and `javacardx/crypto`; applied them during external class resolution and imported static constructor lookup. Retained watchdog origin/context diagnostics to identify class-reference failures.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The real-board ARM image flashed with `FLASH:PASS`; the finite serial monitor reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. PC/SC discovery succeeded. GPPro loaded all 131,538 CAP bytes, with every LOAD block returning `9000`. First install execution reached `IndexOutOfBoundsException` at `invokespecial` PC `0x101C4E1B`; mapping the external constructor class advanced execution to `NotYetImplemented` at `impdep1` PC `0x10047BF8`. GP INSTALL returned `6A80`; applet installation is not confirmed. The 8-second monitor command initially hit USB re-enumeration delay, then a repeated finite capture passed.
+- Result: Imported class ABI mismatch is corrected far enough for the CAP's install method and constructor/native calls to execute. Remaining failure is inside a native call; the consumed native index has not yet been captured.
+- Decision: Capture the `impdep1` native method index, implement the exact required operation, and retry installation.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/gp-install-jc305-token-remap-20261011.txt` (SHA-256 `6e4420cb27c2daf62c8f22cd08568ad71606fc3698ef62c0f132f63970eb6dcd`); `artifacts/logs/gp-install-jc305-method-token-remap-20261011.txt` (SHA-256 `195b05ec5d805c9f7bd34591311b4e13d5a892123e3a02e791261a1c4705802e`); flashed UF2 SHA-256 `877d322f5ebc4f03f8f3cee7112b11a202c82400cb4ba359ffc55796bb592022`.

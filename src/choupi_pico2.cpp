@@ -33,6 +33,7 @@ extern "C" void choupi_install_trace(uint32_t pc, uint8_t opcode,
   watchdog_hw->scratch[2] = (instruction_count & 0x00ffffffu) |
                             (static_cast<uint32_t>(opcode) << 24);
   watchdog_hw->scratch[3] = 0;
+  watchdog_hw->scratch[5] = 0;
 }
 extern "C" void choupi_install_stage(uint8_t stage) {
   watchdog_hw->scratch[3] = stage;
@@ -40,14 +41,19 @@ extern "C" void choupi_install_stage(uint8_t stage) {
 extern "C" void choupi_install_context(uint32_t context) {
   watchdog_hw->scratch[4] = context;
 }
+extern "C" void choupi_install_origin(uint32_t origin) {
+  watchdog_hw->scratch[5] = origin;
+}
 
 namespace {
 
 bool watchdog_recovery_pending = false;
+bool watchdog_recovery_by_watchdog = false;
 uint32_t watchdog_recovery_pc = 0;
 uint32_t watchdog_recovery_info = 0;
 uint32_t watchdog_recovery_stage = 0;
 uint32_t watchdog_recovery_context = 0;
+uint32_t watchdog_recovery_origin = 0;
 
 constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
@@ -651,16 +657,16 @@ extern "C" void path_applet_field(uint8_t applet, uint8_t package,
 
 int main_arm(void) {
   // A stalled VM can stop servicing USB requests. Preserve and report its last
-  // INSTALL opcode after the watchdog reset, then bring up the reader again.
-  if (watchdog_enable_caused_reboot()) {
-    const uint32_t trace_magic = watchdog_hw->scratch[0];
-    if (trace_magic == 0x494e5354) {
-      watchdog_recovery_pending = true;
-      watchdog_recovery_pc = watchdog_hw->scratch[1];
-      watchdog_recovery_info = watchdog_hw->scratch[2];
-      watchdog_recovery_stage = watchdog_hw->scratch[3];
-      watchdog_recovery_context = watchdog_hw->scratch[4];
-    }
+  // INSTALL opcode after a reset, even if BOOTROM/USB recovery replaced the
+  // original watchdog reset-cause flag before this image started.
+  watchdog_recovery_by_watchdog = watchdog_enable_caused_reboot();
+  if (watchdog_hw->scratch[0] == 0x494e5354) {
+    watchdog_recovery_pending = true;
+    watchdog_recovery_pc = watchdog_hw->scratch[1];
+    watchdog_recovery_info = watchdog_hw->scratch[2];
+    watchdog_recovery_stage = watchdog_hw->scratch[3];
+    watchdog_recovery_context = watchdog_hw->scratch[4];
+    watchdog_recovery_origin = watchdog_hw->scratch[5];
   }
 
   stdio_init_all();
@@ -696,6 +702,7 @@ int main_arm(void) {
     watchdog_hw->scratch[2] = 0;
     watchdog_hw->scratch[3] = 0;
     watchdog_hw->scratch[4] = 0;
+    watchdog_hw->scratch[5] = 0;
   }
 
   uint16_t status = 0x6F00;
@@ -736,12 +743,14 @@ int main_arm(void) {
       printf("TEST:SUMMARY pass=%u fail=%u\r\n", passed ? 1u : 0u,
              passed ? 0u : 1u);
       if (watchdog_recovery_pending) {
-        printf("CHOUPI:WATCHDOG_RECOVERY marker=494E5354 pc=%08lX opcode=%02lX count=%lu stage=%lu context=%08lX\r\n",
+        printf("CHOUPI:WATCHDOG_RECOVERY marker=494E5354 cause=%s pc=%08lX opcode=%02lX count=%lu stage=%lu context=%08lX origin=%08lX\r\n",
+               watchdog_recovery_by_watchdog ? "watchdog" : "other",
                static_cast<unsigned long>(watchdog_recovery_pc),
                static_cast<unsigned long>(watchdog_recovery_info >> 24),
                static_cast<unsigned long>(watchdog_recovery_info & 0x00ffffffu),
                static_cast<unsigned long>(watchdog_recovery_stage),
-               static_cast<unsigned long>(watchdog_recovery_context));
+               static_cast<unsigned long>(watchdog_recovery_context),
+               static_cast<unsigned long>(watchdog_recovery_origin));
       }
       fflush(stdout);
       next_report = delayed_by_ms(next_report, 1000);

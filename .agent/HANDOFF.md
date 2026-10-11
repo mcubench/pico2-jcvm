@@ -1389,3 +1389,23 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   is a Java API no-op. Next parse/preserve install parameters and invoke the
   offset entry from INSTALL, then implement the first native call and truthful
   applet registration outcome.
+
+## JC 3.0.5 imported class-token compatibility — 2026-10-11
+
+- The JCAlgTest v1.8.2 CAP's imported API class tokens differ from CHOUPI's
+  embedded export component. AID-based mappings were added for java/lang,
+  javacard/framework, javacard/security, and javacardx/crypto and applied to
+  class resolution plus external invokespecial class lookup.
+- ARM/RISC-V builds passed. Real Pico 2 flash passed; the runtime self-test
+  reported `TEST:SUMMARY pass=1 fail=0`. GPPro successfully LOADed the entire
+  131,538-byte CAP. INSTALL now enters the Java install method, progressing
+  beyond the prior superclass/interface wedge. The first attempt reached
+  `IndexOutOfBoundsException` at `invokespecial` PC `0x101C4E1B`; after external
+  constructor class-token translation it advanced to `NotYetImplemented` at
+  `impdep1` PC `0x10047BF8`. The CAP is not installed.
+- Logs: `artifacts/logs/gp-install-jc305-token-remap-20261011.txt` and
+  `artifacts/logs/gp-install-jc305-method-token-remap-20261011.txt`.
+- Next: capture the native index consumed by `impdep1`, map it to the generated
+  native handler, implement the required constructor operation, then rebuild,
+  flash, and repeat GPPro INSTALL. Keep USB recovery via the bounded
+  `tools/flash` wrapper and user-authorized PC/SC helper.

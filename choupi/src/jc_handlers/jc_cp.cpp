@@ -31,12 +31,62 @@
 #include "jc_export.hpp"
 #include "jc_import.hpp"
 
+#include <cstring>
+
 #ifndef PC_VERSION
 extern "C" void choupi_install_stage(uint8_t stage);
 extern "C" void choupi_install_context(uint32_t context);
 #endif
 
 namespace jcvm {
+
+// JCAlgTest 1.8.2 was converted with the JC 3.0.5 API export files. The
+// embedded CHOUPI ROM-mask API uses the same package AIDs and versions but
+// assigns different export tokens to several classes. Translate those
+// imported tokens to the class tokens in the embedded API before consulting
+// its Export component.
+uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
+                                   const uint8_t token) noexcept {
+  static constexpr uint8_t java_lang[] = {
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+  static constexpr uint8_t javacard_framework[] = {
+      1,  3,  6,  13, 15, 8,  14, 18, 9,  11, 7,  16,
+      10, 19, 20, 21, 22, 2,  0,  4,  5,  12, 17};
+  static constexpr uint8_t javacard_security[] = {
+      0,  5,  3,  4,  1,  6,  7,  16, 17, 18, 12, 21, 25, 27, 28, 31, 30,
+      8,  9,  10, 19, 33, 26, 11, 13, 20, 23, 2,  14, 15, 22, 24, 29, 32};
+  static constexpr uint8_t javacardx_crypto[] = {0, 1, 2, 3};
+
+  const uint8_t *mapping = nullptr;
+  size_t mapping_size = 0;
+
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID, "\xA0\x00\x00\x00\x62\x00\x01", 7) ==
+          0) {
+    mapping = java_lang;
+    mapping_size = sizeof(java_lang);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0) {
+    mapping = javacard_framework;
+    mapping_size = sizeof(javacard_framework);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0) {
+    mapping = javacard_security;
+    mapping_size = sizeof(javacard_security);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x02\x01", 7) == 0) {
+    mapping = javacardx_crypto;
+    mapping_size = sizeof(javacardx_crypto);
+  }
+
+  if (mapping == nullptr || token >= mapping_size) {
+    return token;
+  }
+  return mapping[token];
+}
 
 /**
  * Get a cp_entry
@@ -92,13 +142,17 @@ ConstantPool_Handler::getClassInformation(const jc_cp_offset_t offset)
 
   if (classref.isExternalClassRef()) {
     Import_Handler importHandler(this->package);
-    package = importHandler.getPackageIndexFromOffset(
-        classref.external_classref.package_token);
+    const uint8_t package_token =
+        classref.external_classref.package_token & 0x7F;
+    const jc_cap_package_info *imported_package =
+        importHandler.getPackageAID(package_token);
+    package = importHandler.getPackageIndex(imported_package);
 
     Package importedPackage(package);
     Export_Handler exportHandler(importedPackage);
-    claz = exportHandler.getExportedClassOffset(
-        classref.external_classref.class_token);
+    const uint8_t class_token = remap_imported_class_token(
+        *imported_package, classref.external_classref.class_token);
+    claz = exportHandler.getExportedClassOffset(class_token);
   } else // is internal classref
   {
     package = this->package.getPackageID();
@@ -365,7 +419,7 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
         (static_cast<uint32_t>(imported_package_token) << 8) |
         classref.external_classref.class_token);
 #endif
-    auto imported_package_ID =
+    const jc_cap_package_info *imported_package_ID =
         import_handler.getPackageAID(imported_package_token);
 #ifndef PC_VERSION
     choupi_install_stage(13);
@@ -384,7 +438,9 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
     package = Package(package_index);
     cap = package.getCap();
 
-    class_token = BYTE_TO_SHORT(classref.external_classref.class_token);
+    class_token = remap_imported_class_token(
+        *imported_package_ID,
+        BYTE_TO_SHORT(classref.external_classref.class_token));
 #ifndef PC_VERSION
     choupi_install_stage(18);
     choupi_install_context(
