@@ -815,3 +815,20 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
 - Next: flash after the Pico appears in actual BOOTSEL mode, then inspect the
   new `PUTFIELD_A` continuation markers. The attached CDC interface alone does
   not expose a working software route into BOOTSEL in the current firmware.
+
+## Flash and run reference-field continuation trace (2026-10-11)
+
+- After the cycle and direct `picotool load` requests had waited without flash
+  progress, a later `picotool info -a` found the device in BOOTSEL mode. The
+  device had transitioned asynchronously; the by-id CDC node had disappeared.
+- `./tools/env ./tools/cycle choupi` then passed both builds, visibly flashed
+  `build/arm/pico2_choupi.uf2` to 100%, and rebooted the application.
+- The trace log is `artifacts/logs/cycle-choupi-20261011T074012Z.log`, SHA-256
+  `997029462d5e282bd5726b40c2985070f093fa3ca07dd2aad40fb19bd08937eb`. It
+  confirms class 121 field vector length 15, all field values loaded, array
+  lookups succeeding, and persistent store for field 0 returning. The run then
+  stops emitting runtime output before `TEST:SUMMARY`.
+- Current next step: add a capped interpreter instruction trace to identify
+  where execution stalls after `PUTFIELD_A phase=stored index=0`. The flashed
+  candidate hash is
+  `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`.
