@@ -8,6 +8,27 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- Startup polling fix, commit `ca9bba37aeb458c848bcfd85b4e301a3351801e`, is
+  now confirmed on hardware. The Pico appeared in RP2350 BOOTSEL (`2e8a:000f`);
+  `./tools/env ./tools/flash build/arm/pico2_choupi.uf2` reached 100% and
+  returned `FLASH:PASS`. After the application rebooted, USB enumerated as
+  `2e8a:0009`, CDC became available, and an 18-second monitor captured repeated
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` with no `FAULT` or
+  `TEST:FAIL`. The authorized PC/SC helper restored USB access, `pcsc_scan -r`
+  listed `Pico 2 CHOUPI CCID`, and GlobalPlatformPro `--list` connected over
+  T=1 and reported the ISD `OP_READY` with no applet instances.
+- Retried the exact supplied JCAlgTest v1.8.2 CAP. SCP03 authentication and all
+  CAP LOAD blocks returned `9000`; the final authenticated `84E60C00` INSTALL
+  then stalled. After about 17 seconds the host got
+  `SCARD_E_READER_UNAVAILABLE`; `2e8a:0009`, `/dev/ttyACM0`, and the PC/SC
+  reader all disappeared from the VM. Trace:
+  `artifacts/logs/gp-install-retry-20261011.txt`, SHA-256
+  `6287cb1c09e0855913307e521eddaa48a3cbe60baa2133c3033ef9ac28125f0b`.
+  No `9000` response, GET STATUS entry, or SELECT confirmation was received;
+  the applet remains uninstalled/unconfirmed. Next: restore BOOTSEL/application
+  USB passthrough, then inspect the latest persistent watchdog breadcrumb and
+  isolate the runtime operation reached by INSTALL before attempting another
+  CAP install.
 - Startup enumeration follow-up, commit `ca9bba37aeb458c848bcfd85b4e301a3351801e`:
   disabling the SDK IRQ worker also removed the only TinyUSB polling during
   the early `stdio_usb_connected()` wait. The CHOUPI startup now calls

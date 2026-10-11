@@ -1247,3 +1247,13 @@
 - Decision: Flash this candidate when BOOTSEL is visible, then run the finite monitor, refresh PC/SC permissions, verify the reader and CCID response completion, and repeat the JCAlgTest v1.8.2 INSTALL.
 - Commit: `ca9bba37aeb458c848bcfd85b4e301a3351801e`
 - Artifacts/logs: candidate `build/arm/pico2_choupi.uf2` (SHA-256 `e6b0802c22f6a07fe1a908782429c22027ed047666c67d7a331a00d5ffc78f8c`); build output not archived.
+
+## 2026-10-11 — Validate USB startup and retry JCAlgTest installation
+
+- Step/experiment: `wp7-startup-usb-validation-install-retry`
+- Change: Flashed the startup-polling CHOUPI ARM image after the user reattached the Pico in BOOTSEL; restored PC/SC access and retried the exact supplied JCAlgTest v1.8.2 CAP.
+- Validation: ARM and RISC-V wrapper builds had passed for this image. `./tools/env ./tools/flash build/arm/pico2_choupi.uf2` wrote 100% and returned `FLASH:PASS`. `./tools/env ./tools/monitor --seconds 18` captured repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0` with no `TEST:FAIL` or `FAULT`. The authorized PC/SC helper reported `PCSC:ACCESS_GRANTED`; `pcsc_scan -r` found `Pico 2 CHOUPI CCID`. GlobalPlatformPro `--list` connected over T=1 and returned the ISD in `OP_READY`, with no applet instance. GPPro authenticated using SCP03 and all CAP LOAD blocks returned `9000`; final authenticated INSTALL `84E60C00` did not return. After about 17 seconds, GPPro reported `SCARD_E_READER_UNAVAILABLE` and the Pico disappeared from guest USB. A subsequent `lsusb` showed no Pico and `pcsc_scan -r` showed no reader.
+- Result: CHOUPI startup, serial, and PC/SC reader discovery now work on the real board. The CAP load is accepted, but the install method still wedges the device before INSTALL `9000`; JCAlgTest v1.8.2 is not installed or confirmed.
+- Decision: Recover BOOTSEL/application USB passthrough and inspect the persisted install watchdog breadcrumb or instrument the operation that stalls before retrying INSTALL. Do not report the applet installed without a successful INSTALL and GET STATUS/SELECT confirmation.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/gp-install-retry-20261011.txt` (SHA-256 `6287cb1c09e0855913307e521eddaa48a3cbe60baa2133c3033ef9ac28125f0b`); flashed UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `e6b0802c22f6a07fe1a908782429c22027ed047666c67d7a331a00d5ffc78f8c`)
