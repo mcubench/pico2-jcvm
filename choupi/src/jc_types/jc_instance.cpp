@@ -565,19 +565,48 @@ auto JC_Instance::getFields() const -> decltype(fields) {
     return this->fields;
   }
 
+  static uint16_t field_load_trace_count = 0;
   for (uint16_t index = 0; index < this->fields->size(); index++) {
     const fs::Tag field_tag = FlashMemory_Handler::computeTag(
         this->recomputeOriginalTag(), index);
     jc_field_t &field = this->fields->at(index);
+    const bool trace = field_load_trace_count < 64;
+    if (trace) {
+      std::printf("CHOUPI:FIELD_LOAD exists:start package=%u class=%u index=%u count=%u tag_len=%u\r\n",
+                  static_cast<unsigned>(this->packageID),
+                  static_cast<unsigned>(this->claz),
+                  static_cast<unsigned>(index),
+                  static_cast<unsigned>(this->fields->size()),
+                  static_cast<unsigned>(field_tag.len));
+      std::fflush(stdout);
+    }
     // Persistent fields with no record have never been assigned. Match the
     // reference getter's missing-tag behavior instead of asking the type
     // reader to turn the expected absence into an IOException.
-    if (!fs_exists(field_tag.value, field_tag.len)) {
+    const bool field_exists = fs_exists(field_tag.value, field_tag.len) != 0;
+    if (trace) {
+      std::printf("CHOUPI:FIELD_LOAD exists:done package=%u class=%u index=%u exists=%u\r\n",
+                  static_cast<unsigned>(this->packageID),
+                  static_cast<unsigned>(this->claz),
+                  static_cast<unsigned>(index),
+                  field_exists ? 1u : 0u);
+      std::fflush(stdout);
+    }
+    if (!field_exists) {
       field.type = FieldType::FIELD_TYPE_UNINITIALIZED;
       field.value = 0;
+      ++field_load_trace_count;
       continue;
     }
     field.type = FlashMemory_Handler::getPersistentField_Type(field_tag);
+    if (trace) {
+      std::printf("CHOUPI:FIELD_LOAD type package=%u class=%u index=%u type=%u\r\n",
+                  static_cast<unsigned>(this->packageID),
+                  static_cast<unsigned>(this->claz),
+                  static_cast<unsigned>(index),
+                  static_cast<unsigned>(field.type));
+      std::fflush(stdout);
+    }
 
     switch (field.type) {
     case FieldType::FIELD_TYPE_BYTE:
@@ -631,6 +660,14 @@ auto JC_Instance::getFields() const -> decltype(fields) {
                   static_cast<unsigned>(this->claz));
       throw Exceptions::SecurityException;
     }
+    if (trace) {
+      std::printf("CHOUPI:FIELD_LOAD value:done package=%u class=%u index=%u\r\n",
+                  static_cast<unsigned>(this->packageID),
+                  static_cast<unsigned>(this->claz),
+                  static_cast<unsigned>(index));
+      std::fflush(stdout);
+    }
+    ++field_load_trace_count;
   }
   this->persistent_fields_loaded = true;
   return this->fields;
