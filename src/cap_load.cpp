@@ -2,7 +2,6 @@
 #include "cap_store.hpp"
 #include "jc_handlers/flashmemory.hpp"
 
-#include <cstdio>
 #include <cstring>
 
 extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
@@ -256,11 +255,6 @@ bool CapLoadSession::finishLoad() noexcept {
 
 bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
                                               size_t length) noexcept {
-  std::printf("CHOUPI:INSTALL_ENTRY loaded=%u installed=%u data_len=%lu\r\n",
-              static_cast<unsigned>(loaded_),
-              static_cast<unsigned>(installed_),
-              static_cast<unsigned long>(length));
-  std::fflush(stdout);
   install_failure_stage_ = 0;
   install_vm_status_ = 0;
   install_vm_exception_id_ = 0;
@@ -304,10 +298,6 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     install_failure_stage_ = 3;
     return false;
   }
-  std::printf("CHOUPI:INSTALL_PARSE_OK applet_aid_len=%u instance_aid_len=%u\r\n",
-              static_cast<unsigned>(applet_aid_length),
-              static_cast<unsigned>(instance_aid_length));
-  std::fflush(stdout);
   uint8_t resolved_package_id = 0;
   uint16_t install_method_offset = 0;
   if (choupi_vm_find_applet(applet_aid, applet_aid_length,
@@ -315,16 +305,8 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
       resolved_package_id != jcvm::FlashMemory_Handler::DYNAMIC_PACKAGE_ID ||
       install_method_offset == 0) {
     install_failure_stage_ = 4;
-    std::printf("CHOUPI:INSTALL_RESOLVE_FAIL package=%u offset=%u\r\n",
-                static_cast<unsigned>(resolved_package_id),
-                static_cast<unsigned>(install_method_offset));
-    std::fflush(stdout);
     return false;
   }
-  std::printf("CHOUPI:INSTALL_INVOKE package=%u offset=%u\r\n",
-              static_cast<unsigned>(resolved_package_id),
-              static_cast<unsigned>(install_method_offset));
-  std::fflush(stdout);
   install_vm_status_ = runtime_install_method(
       resolved_package_id, install_method_offset, &install_vm_exception_id_,
       &install_vm_exception_opcode_, &install_vm_exception_pc_,

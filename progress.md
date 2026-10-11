@@ -1187,3 +1187,13 @@
 - Decision: Resume after USB/PCSC recovery, capture callback/VM progress, and fix the operation that stalls before retrying INSTALL. Do not claim the JCAlgTest applet is installed.
 - Commit: `7315ae1`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T145623Z.log` (SHA-256 `3d100ceb51d258af55cef828aca9c0cdeeec31ff20a3bd6ae209f5dd7bc910ab`); `artifacts/logs/gp-install-watchdog-scratch-20261011-apdu.txt` (SHA-256 `1dce95fd4a3a37238e9343ab6056a32e08436a8c2d261c64956afa2144b02198`)
+
+## 2026-10-11 — Keep USB serial output out of INSTALL callbacks
+
+- Step/experiment: `wp7-no-serial-in-install-callback`
+- Change: Removed `printf`/`fflush` diagnostics from the CCID INSTALL, CAP loader, and raw install-method call path. Suppressed interpreter trace/progress/exception serial output for raw CAP-method execution while preserving its structured status and diagnostic response fields. This avoids depending on USB CDC servicing recursively from the TinyUSB CCID transfer callback.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` was attempted after both builds, but the active USB device did not enter BOOTSEL: picotool reported no reset interface and the CDC 1200-baud fallback timed out. Therefore the edited image was not flashed and this runtime hypothesis remains unverified on hardware.
+- Result: The candidate deadlock source is removed from the next build. The currently attached Pico still runs the prior image and its CCID/CDC paths remain unresponsive after the failed INSTALL.
+- Decision: Reattach/reset the Pico USB device, flash this image, then retry JCAlgTest v1.8.2 INSTALL with bounded PC/SC/CDC logs. If it still stalls, use the structured INSTALL diagnostic response and watchdog scratch trace to isolate the VM/native operation.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T151333Z.log` (SHA-256 `eb2a3afb5acc37989db615a51dafa3ca610836c50ed8fe049611c52953e72d2b`); candidate UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `418c69e4e4c11f82e0866cf98479e9c1e61244e298044a7c1110ee9950900504`)

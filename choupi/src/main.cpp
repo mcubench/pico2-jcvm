@@ -30,8 +30,6 @@
 #include "jc_config.h"
 #include "types.hpp"
 
-#include <cstdio>
-
 #include "jc_handlers/flashmemory.hpp"
 
 #ifdef PC_VERSION
@@ -109,11 +107,6 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
   if (exception_depth_history != nullptr) {
     *exception_depth_history = interpretor.lastExceptionDepthHistory();
   }
-  std::printf("CHOUPI:INSTALL_METHOD package=%u offset=%u sw=%04X\r\n",
-              static_cast<unsigned>(id_package),
-              static_cast<unsigned>(method_offset),
-              static_cast<unsigned>(status));
-  std::fflush(stdout);
   return status;
 }
 

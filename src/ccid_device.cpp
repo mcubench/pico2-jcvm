@@ -152,13 +152,6 @@ void process_message(uint8_t rhport) {
     const bool authenticated = secure_channel.active() &&
                               secure_channel.verifyCommand(
                                   apdu, apdu_length, command_data_length);
-    if (apdu_length >= 4 && apdu[1] == 0xe6 && apdu[2] == 0x0c) {
-      printf("CHOUPI:CCID_INSTALL auth=%u apdu_len=%lu data_len=%lu\r\n",
-             static_cast<unsigned>(authenticated),
-             static_cast<unsigned long>(apdu_length),
-             static_cast<unsigned long>(command_data_length));
-      fflush(stdout);
-    }
     if (authenticated && apdu_length >= 4) {
       const uint8_t instruction = apdu[1];
       const uint8_t p1 = apdu[2];

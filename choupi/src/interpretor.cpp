@@ -190,14 +190,11 @@ uint16_t Interpretor::run() noexcept {
       this->last_exception_opcode_history = this->opcode_history;
       this->last_exception_depth_history = this->depth_history;
       this->status_word = 0x6400;
-      std::printf("CHOUPI:INSTALL_METHOD_TIMEOUT instructions=%lu pc=%p\r\n",
-                  static_cast<unsigned long>(instruction_count),
-                  static_cast<const void *>(instruction_pc));
-      std::fflush(stdout);
       return this->status_word;
     }
 #endif
-    if (bytecode == 0x87 || bytecode == 0xB1 || bytecode == 0xB5) {
+    if (!this->startsAtMethodOffset &&
+        (bytecode == 0x87 || bytecode == 0xB1 || bytecode == 0xB5)) {
       trace_after_putfield_a = 24;
     }
     const bool trace_instruction = trace_after_putfield_a != 0;
@@ -207,7 +204,7 @@ uint16_t Interpretor::run() noexcept {
                   static_cast<const void *>(instruction_pc));
       std::fflush(stdout);
     }
-    if (instruction_count % 1000000u == 0) {
+    if (!this->startsAtMethodOffset && instruction_count % 1000000u == 0) {
       std::printf("CHOUPI:VM_PROGRESS ops=%lu opcode=0x%02X pc=%p\r\n",
                   static_cast<unsigned long>(instruction_count), bytecode,
                   static_cast<const void *>(stack.getPC().getValue()));
@@ -250,12 +247,14 @@ uint16_t Interpretor::run() noexcept {
           stack.getCurrentFrame().getOP());
       this->last_exception_opcode_history = this->opcode_history;
       this->last_exception_depth_history = this->depth_history;
-      std::printf("CHOUPI:VM_EXCEPTION id=%u opcode=0x%02X pc=%p\r\n",
-                  static_cast<unsigned>(e), bytecode,
-                  static_cast<const void *>(stack.getPC().getValue()));
-      TRACE_JCVM_ERR("Exception %u at opcode 0x%02X pc=%p",
-                     static_cast<unsigned>(e), bytecode,
-                     static_cast<const void *>(stack.getPC().getValue()));
+      if (!this->startsAtMethodOffset) {
+        std::printf("CHOUPI:VM_EXCEPTION id=%u opcode=0x%02X pc=%p\r\n",
+                    static_cast<unsigned>(e), bytecode,
+                    static_cast<const void *>(stack.getPC().getValue()));
+        TRACE_JCVM_ERR("Exception %u at opcode 0x%02X pc=%p",
+                       static_cast<unsigned>(e), bytecode,
+                       static_cast<const void *>(stack.getPC().getValue()));
+      }
       this->startJCVMException(e);
       return this->status_word;
     } catch (...) {
@@ -274,9 +273,11 @@ uint16_t Interpretor::run() noexcept {
           stack.getCurrentFrame().getOP());
       this->last_exception_opcode_history = this->opcode_history;
       this->last_exception_depth_history = this->depth_history;
-      std::printf("CHOUPI:VM_EXCEPTION id=unknown opcode=0x%02X pc=%p\r\n",
-                  bytecode,
-                  static_cast<const void *>(stack.getPC().getValue()));
+      if (!this->startsAtMethodOffset) {
+        std::printf("CHOUPI:VM_EXCEPTION id=unknown opcode=0x%02X pc=%p\r\n",
+                    bytecode,
+                    static_cast<const void *>(stack.getPC().getValue()));
+      }
       this->startJCVMException(Exceptions::SecurityException);
       return this->status_word;
     }
