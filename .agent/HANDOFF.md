@@ -1246,3 +1246,20 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: invoke the CAP's install method with the required applet constructor
   and install parameters; then preserve applet instance state and dispatch
   SELECT/process/deselect through the VM. No applet bytecode has run yet.
+
+
+## Raw CAP method invocation entry — 2026-10-11
+
+- Commit `3e49fc9c9cec1c38aeed431b2ba281ccb3556934` adds an interpreter
+  constructor that starts a static method by its Method-component offset and
+  seeds the `Applet.install(byte[], short, byte)` locals. Existing exported
+  method startup remains unchanged. ARM/RISC-V builds passed and the real
+  Pico cycle passed after USB access recovery (`TEST:SUMMARY pass=1 fail=0`).
+- GPPro read-only SELECT-by-AID still returns `6F0C840A4A43416C675465737431 9000`
+  after reflash (9 ms); see `artifacts/logs/gp-select-install-entry-20261011.txt`.
+- This is only an invocation primitive. It has not been called yet. GP INSTALL
+  discards its installation-parameter LV, JCAlgTest's constructor first calls
+  unimplemented `JCSystem.getAvailableMemory` natives, and `Applet.register()`
+  is a Java API no-op. Next parse/preserve install parameters and invoke the
+  offset entry from INSTALL, then implement the first native call and truthful
+  applet registration outcome.

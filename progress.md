@@ -1156,3 +1156,14 @@
 - Decision: Next implement a bounded VM entry path for the CAP install method and then route applet APDUs through a persistent selected-applet context.
 - Commit: `69616aea484ebf27307ec6fb758a71e99f1b682d`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T134038Z.log` (SHA-256 `eb7da84d5f0a1250269fab46c1f0c3b8ac2df3c15b0659b5fc518a511da32a03`); `artifacts/logs/gp-select-vm-cap-resolver-20261011.txt` (SHA-256 `ee917c37eb53abfa4564c9ecb820c448d271e49bae12fcb7f34f657ef650af0f`)
+
+
+## 2026-10-11 — Add raw CAP method invocation entry
+
+- Step/experiment: `wp7-raw-cap-method-entry`
+- Change: Added an interpreter constructor for invoking a static method directly from its CAP Method-component byte offset. It seeds the three Java Card method locals for `Applet.install(byte[], short, byte)` (array reference, offset, length), while leaving existing exported-method startup unchanged.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The real-board `./tools/cycle choupi` passed after USB access was restored: the ARM image flashed to 100%, repeated `TEST:PASS choupi_runtime`, and `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL`, `FAULT`, or timeout occurred. GlobalPlatformPro read-only SELECT-by-AID returned the persisted JCAlgTest FCI and `9000` in 9 ms; default ISD selection also returned `9000`.
+- Result: The VM now has the entry primitive needed to call the CAP's install method at its parser-provided offset. This step did not invoke that method or alter applet lifecycle state; `JCSystem.getAvailableMemory` still throws `NotYetImplemented`, and `Applet.register()` remains a no-op.
+- Decision: Preserve and parse GP INSTALL parameters, then connect the method entry to install and implement the first native behavior needed by the supplied applet.
+- Commit: `3e49fc9c9cec1c38aeed431b2ba281ccb3556934`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T134532Z.log` (SHA-256 `ecd917b5a265987b417bcfccf33365104e95e255fefed8d93d8aaeda03415884`); `artifacts/logs/gp-select-install-entry-20261011.txt` (SHA-256 `c8120829b3c7941b2bd2e48adb7db34ff8f7ff57b7fe0c9617eabed9046d74ab`)
