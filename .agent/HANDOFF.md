@@ -1166,6 +1166,7 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. Logs:
   `artifacts/logs/cycle-choupi-20261011T120932Z.log` and
   `artifacts/logs/gp-list-probe-20261011-scp03-external-auth.txt`.
+- Implementation and validation record committed as `ad08669`.
 - CAP installation remains unsupported. Next run the authorized
   GlobalPlatformPro install attempt for the supplied JCAlgTest v1.8.2 CAP to
   identify the first GP LOAD/INSTALL APDU, then implement its sequence.

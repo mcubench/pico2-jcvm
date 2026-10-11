@@ -1114,5 +1114,5 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` flashed the real Pico 2 and passed its bounded serial checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, no `TEST:FAIL` or `FAULT`). GlobalPlatformPro 26.06.04 `--debug --list` completed the SCP03 exchange: it accepted the card cryptogram, EXTERNAL AUTHENTICATE returned `9000`, and GET STATUS returned the ISD entry with lifecycle `OP_READY`. The subsequent registry probes returned `6A88` for absent applets/domains; `gp --list` exited 0.
 - Result: Default SCP03 authentication with test key `404142434445464748494A4B4C4D4E4F` and ISD discovery now work against the physical board. The v1.8.2 CAP is not installed yet; GP LOAD/INSTALL APDUs remain unsupported.
 - Decision: Continue with a GPPro install attempt to identify the first unsupported CAP-management command, then implement the smallest required sequence.
-- Commit: pending
+- Commit: `ad08669`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T120932Z.log` (SHA-256 `b81dff57dafdea77f6b55412eb4c72b297f2a458a7002bcab28ce8d28fc81839`); `artifacts/logs/gp-list-probe-20261011-scp03-external-auth.txt` (SHA-256 `daf3e55a9f829a1fbe581e944e960ecb2c58607e2d7b6c493b08d2a6141b9eef`)
