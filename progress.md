@@ -625,7 +625,7 @@
 - Validation: The command returned success and reported that the device was asked to reboot into BOOTSEL; the following `picotool info -a` still found only USB serial mode and exited 249.
 - Result: Software recovery does not leave this board accessible in BOOTSEL. No firmware write occurred during this experiment.
 - Decision: Physically hold BOOTSEL while reconnecting, then confirm `boot type: bootsel` before flashing.
-- Commit: pending
+- Commit: `d474832fe8217b714344a3a238a08d0c93a28771`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Correct applet header file mode
