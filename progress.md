@@ -635,7 +635,7 @@
 - Validation: Rechecked the file mode and ran `git diff --check`. The ARM and RISC-V builds from the immediately preceding code commit passed; source contents are unchanged.
 - Result: The applet metadata header is tracked as a regular source file.
 - Decision: Continue implementation from the committed parser primitive.
-- Commit: pending
+- Commit: `4cec0a400d364398bab6d9028c311f9f982e59b7`
 - Artifacts/logs: none
 
 ## 2026-10-10 — Boot CHOUPI after overlay SRAM reduction
