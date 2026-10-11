@@ -1056,3 +1056,13 @@
 - Decision: Grant user `pcscd` read/write access to `/dev/bus/usb/001/023`, restart `pcscd.service`, and rerun `pcsc_scan -r`; then continue with GPPro/APDU validation.
 - Commit: pending
 - Artifacts/logs: none
+
+## 2026-10-11 — Stage narrow passwordless PC/SC recovery helper
+
+- Step/experiment: `wp5-pcsc-nopasswd-helper`
+- Change: Added a root-installed helper that dynamically identifies exactly one Pico 2 CHOUPI CCID (`2e8a:0009`), grants the `pcscd` account read/write access to its current USB node, and restarts `pcscd.service`. Added a one-time installer that installs the helper root-owned and creates a `visudo`-validated sudoers rule for the invoking user, limited to that command with no arguments.
+- Validation: `bash -n tools/pico2-pcsc-reader-root tools/install-pcsc-sudoers` passed. `visudo -cf` accepted the generated exact command rule. No sudo command was run and no file outside the repository was modified. Hardware/PCSC recheck is pending user execution of the installer.
+- Result: The repo now contains a narrow setup that can remove the repeated sudo prompt for this recovery action. The system sudoers file and root helper remain uninstalled until the user runs the command below.
+- Decision: User runs `sudo ./tools/install-pcsc-sudoers` once, then `sudo -n /usr/local/sbin/pico2-pcsc-reader`; recheck with `pcsc_scan -r` and continue APDU/GPPro validation.
+- Commit: pending
+- Artifacts/logs: none

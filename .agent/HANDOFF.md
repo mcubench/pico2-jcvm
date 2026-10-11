@@ -1086,3 +1086,18 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `/dev/bus/usb/001/023`. Once `pcscd` is granted read/write access to that
   node and restarted, rerun the PC/SC/GPPro probes. Do not use sudo from the
   autonomous cycle; the user previously supplied and ran the ACL command.
+
+## Passwordless PC/SC recovery helper — 2026-10-11
+
+- Added `tools/pico2-pcsc-reader-root`, which dynamically finds exactly one
+  Pico 2 CHOUPI CCID (`2e8a:0009`), grants `pcscd` read/write access to its
+  current USB node, and restarts `pcscd.service`. It rejects arguments and
+  fails closed when the matching device is absent or ambiguous.
+- Added `tools/install-pcsc-sudoers`. The user must run
+  `sudo ./tools/install-pcsc-sudoers` once. It installs the helper as
+  root-owned at `/usr/local/sbin/pico2-pcsc-reader` and creates a `visudo`
+  checked NOPASSWD rule allowing the invoking user to run that helper with no
+  arguments. No system file has been modified by this session.
+- After setup, run `sudo -n /usr/local/sbin/pico2-pcsc-reader`, then
+  `pcsc_scan -r`. Continue with GPPro/APDU probes after the reader appears.
+- Shell syntax and standalone sudoers syntax validation passed. Commit pending.

@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+if (( EUID != 0 )); then
+  printf 'Run this installer once with sudo: sudo %s\n' "$0" >&2
+  exit 1
+fi
+
+requesting_user="${SUDO_USER:-}"
+if [[ -z "${requesting_user}" || "${requesting_user}" == root ||
+      ! "${requesting_user}" =~ ^[a-z_][a-z0-9_-]*$ ]] ||
+   ! getent passwd "${requesting_user}" >/dev/null; then
+  printf 'Could not identify a valid non-root SUDO_USER. Run via sudo.\n' >&2
+  exit 1
+fi
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source_helper="${script_dir}/pico2-pcsc-reader-root"
+installed_helper=/usr/local/sbin/pico2-pcsc-reader
+sudoers_file=/etc/sudoers.d/pico2-pcsc-reader
+
+for required in /usr/bin/install /usr/bin/mktemp /usr/bin/visudo; do
+  if [[ ! -x "${required}" ]]; then
+    printf 'Required command is missing: %s\n' "${required}" >&2
+    exit 1
+  fi
+done
+if [[ ! -f "${source_helper}" || -L "${source_helper}" ]]; then
+  printf 'Expected repository helper is missing or is a symlink: %s\n' \
+    "${source_helper}" >&2
+  exit 1
+fi
+if [[ -L "${installed_helper}" ]]; then
+  printf 'Refusing to replace symlink: %s\n' "${installed_helper}" >&2
+  exit 1
+fi
+
+temporary_sudoers="$(/usr/bin/mktemp /etc/sudoers.d/.pico2-pcsc-reader.XXXXXX)"
+cleanup() {
+  /usr/bin/rm -f -- "${temporary_sudoers}"
+}
+trap cleanup EXIT
+printf '%s ALL=(root) NOPASSWD: %s ""\n' \
+  "${requesting_user}" "${installed_helper}" >"${temporary_sudoers}"
+/usr/bin/chown root:root "${temporary_sudoers}"
+/usr/bin/chmod 0440 "${temporary_sudoers}"
+/usr/sbin/visudo -cf "${temporary_sudoers}"
+/usr/sbin/visudo -c
+
+if [[ -e "${sudoers_file}" || -L "${sudoers_file}" ]]; then
+  if [[ -L "${sudoers_file}" ]] || ! /usr/bin/cmp -s \
+      "${temporary_sudoers}" "${sudoers_file}"; then
+    printf 'Refusing to replace an existing, different file: %s\n' \
+      "${sudoers_file}" >&2
+    exit 1
+  fi
+fi
+
+/usr/bin/install -o root -g root -m 0755 "${source_helper}" "${installed_helper}"
+if [[ ! -e "${sudoers_file}" ]]; then
+  /usr/bin/install -o root -g root -m 0440 \
+    "${temporary_sudoers}" "${sudoers_file}"
+fi
+
+/usr/sbin/visudo -c
+printf 'Installed %s and passwordless sudo rule for %s.\n' \
+  "${installed_helper}" "${requesting_user}"
+printf 'Run: sudo -n %s\n' "${installed_helper}"
