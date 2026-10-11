@@ -946,3 +946,13 @@
 - Decision: Trace the CHOUPI runtime entry and implement the narrowest APDU-to-applet dispatch path needed to select and invoke the statically embedded JCAlgTest applet; keep GlobalPlatform CAP loading separate until lifecycle support exists.
 - Commit: `eb6548f`
 - Artifacts/logs: `artifacts/logs/pcsc-apdu-probe-20261011.txt` (SHA-256 `615ae514e783cbc2f99e9ed6b22b84e66eeee1d9341824e60ca0fa7b68e618ec`)
+
+## 2026-10-11 — Probe GlobalPlatformPro card listing
+
+- Step/experiment: `wp5-gp-list-over-pcsc`
+- Change: No firmware change. Ran the original `gp --list` acceptance probe with PC/SC access restored and saved its bounded APDU trace.
+- Validation: GlobalPlatformPro connected to the Pico over T=1 with ATR `3B800181`, began/ended a PC/SC transaction, sent SELECT-by-empty-AID `00A4040000`, and received `6D00` in 15 ms. It exited 1 with `Could not SELECT default selected: 0x6D00 (Invalid INStruction)`. The transport path is working; GP SELECT/card-manager behavior is not implemented. No build or flash was needed.
+- Result: AC1 is not met. The existing CCID returns its deliberate unsupported-instruction placeholder, so `gp --list` cannot select an ISD or list registry contents.
+- Decision: Implement card-manager SELECT/status behavior and Java Card applet lifecycle before retrying `gp --list`; do not claim the card is GlobalPlatform-compatible from CCID/PCSC transport alone.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/gp-list-probe-20261011.txt` (SHA-256 `fb8f6f2fe5db66583677148c20699d483a4381f686724f669b7afb3b1537e086`)

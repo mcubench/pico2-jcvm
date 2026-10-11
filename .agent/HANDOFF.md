@@ -987,3 +987,15 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: find a minimal route from XfrBlock into the statically embedded
   JCAlgTest applet. Applet lifecycle and CAP loading remain unsupported; do not
   report the placeholder `6D00` as an applet response.
+
+## GlobalPlatformPro list probe (2026-10-11)
+
+- With PC/SC access restored, `gp --debug --list` connects to the Pico over
+  T=1, receives ATR `3B800181`, and successfully transacts SELECT-by-empty-AID
+  `00A4040000`. The board returns `6D00`, so GPPro exits 1 with
+  `Could not SELECT default selected: 0x6D00 (Invalid INStruction)`.
+- This verifies APDU transport but confirms AC1 is not yet met: no ISD select,
+  GlobalPlatform card manager, applet registry, or SELECT dispatch exists.
+  Trace: `artifacts/logs/gp-list-probe-20261011.txt`.
+- Next: implement the minimal card manager/APDU lifecycle rather than treating
+  the CCID layer as GlobalPlatform support.
