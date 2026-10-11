@@ -824,5 +824,5 @@
 - Validation: `bash -n tools/flash` and `bash -n tools/cycle` passed. `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds; the new wrapper rejected the force-load's request-only result, polled BOOTSEL, retried, and failed closed when the device remained CDC. The cycle exited 1 rather than reporting an unverified flash. Inspection of the ARM map found both the CDC line-coding and vendor-reset callbacks linked. No watchdog firmware change has been built or flashed yet.
 - Result: The wrapper no longer treats picotool's successful reset request as proof of a flash. Current app USB reset callbacks are present but the stalled runtime does not enter BOOTSEL under software requests.
 - Decision: Keep the host retry bounded. Add a hardware watchdog recovery path so a stalled VM can boot into BOOTSEL after the next successful flash.
-- Commit: `<pending metadata follow-up>`
+- Commit: `dfd27a5` (metadata follow-up)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T074828Z.log`, SHA-256 `bf11511b61eb8b41c6675c41ad9f8985945d20757fbab9bf2c7ea82f252bc05b`; current ARM image SHA-256 `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`
