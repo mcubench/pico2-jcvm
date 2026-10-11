@@ -1126,3 +1126,13 @@
 - Decision: Implement bounded parsing/state for INSTALL [for load], then capture GPPro's LOAD block framing and decide how the board can persist the supplied CAP before accepting further install commands.
 - Commit: `726d8e8`
 - Artifacts/logs: `artifacts/logs/gp-install-probe-20261011.txt` (SHA-256 `a12680db8ddcf252b83f7e584f95183f48b12f1ef59d814f132fa9efcbb82d0f`)
+
+## 2026-10-11 — Transfer and select JCAlgTest v1.8.2
+
+- Step/experiment: `wp7-gp-cap-load-and-select`
+- Change: Added bounded GlobalPlatform LOAD block sequencing and C4 TLV reassembly for the supplied JCAlgTest package, validates its CAP component boundaries/package AID/applet AID, stores the raw CAP code in the CHOUPI runtime overlay, accepts INSTALL [for install and make selectable], reports the installed instance in GET STATUS, and returns FCI for SELECT-by-instance-AID. Increased the RAM overlay from 32 KiB to 64 KiB and sized SCP03 command-MAC workspace for the full 247-byte short-APDU payload.
+- Validation: ARM and RISC-V wrapper builds passed. `./tools/cycle choupi` flashed the Pico 2 and emitted `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, no `TEST:FAIL` or `FAULT`. GlobalPlatformPro 26.06.04 `--install` loaded the exact supplied CAP (hash `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`): all LOAD blocks and final INSTALL returned `9000`. A subsequent `--apdu 00A404000A4A43416C675465737431` returned FCI `6F0C840A4A43416C675465737431 9000`; GPPro `--list` had already confirmed the instance as `INITIALIZED` under the JCAlgTest package.
+- Result: Runtime GlobalPlatform CAP transfer, registration, and AID selection work on hardware. The Pico port's overlay is RAM-only and resets on reboot, so this install is not persistent yet; applet APDU processing is also not implemented.
+- Decision: Add a dedicated, bounded nonvolatile CAP slot or another persistence backend, preserving the existing ROM image and validating that the dynamic package survives reboot before calling installation complete. Then wire selected-applet APDUs into the CHOUPI lifecycle.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T122830Z.log` (SHA-256 `d14597b132051f6d730b1ab952d397a39cae3f53c86bb6e899c8d41258d2ca81`); `artifacts/logs/gp-install-cap-select-enabled-20261011.txt` (SHA-256 `624fc4f958fee15d14a1b418da77e9959dc0421ccab90d0bbcd6b9ed5928e97e`); `artifacts/logs/gp-select-algtest-probe-20261011-enabled.txt` (SHA-256 `c5d723732fac9ec030bea764f4446edc7680894535f7fff0668b1c6271d2b97b`)

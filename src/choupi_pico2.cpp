@@ -22,7 +22,7 @@ namespace {
 
 constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
-constexpr size_t kMaxOverlayBytes = 32 * 1024;
+constexpr size_t kMaxOverlayBytes = 64 * 1024;
 
 struct OverlayFile {
   uint16_t hash = 0;
@@ -514,6 +514,19 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
     return 1;
   }
   return 0;
+}
+
+extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
+                                            const uint8_t *data,
+                                            uint32_t length) {
+  if (package_id != 20 || data == nullptr || length == 0 ||
+      length > 28 * 1024) {
+    return 1;
+  }
+  uint8_t tag[128]{};
+  uint8_t tag_length = 0;
+  path_cap(package_id, &tag, &tag_length);
+  return fs_write(tag, tag_length, data, length);
 }
 
 extern "C" uint8_t fs_read_1b_at(const uint8_t *tag, uint8_t tag_length,

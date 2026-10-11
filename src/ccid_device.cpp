@@ -6,6 +6,7 @@
 #include "pico/unique_id.h"
 #include "tusb.h"
 #include "scp03.hpp"
+#include "cap_load.hpp"
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;
@@ -14,6 +15,8 @@ constexpr uint8_t kEndpointIn = 0x83;
 constexpr uint16_t kEndpointSize = 64;
 constexpr size_t kMaxMessage = 320;
 constexpr size_t kMaxCcidMessage = 300;
+constexpr uint8_t kAlgTestPackageAid[] = {0x4a, 0x43, 0x41, 0x6c, 0x67,
+                                          0x54, 0x65, 0x73, 0x74};
 constexpr uint8_t kAtr[] = {0x3b, 0x80, 0x01, 0x81};
 
 // The standard CDC interface remains available for diagnostics. CCID is the
@@ -49,6 +52,7 @@ uint8_t slot_state = 1; // present, inactive
 uint8_t ep_out = 0;
 uint8_t ep_in = 0;
 Scp03Session secure_channel;
+CapLoadSession cap_load_session;
 
 uint32_t read_le32(const uint8_t *p) {
   return static_cast<uint32_t>(p[0]) |
@@ -101,6 +105,7 @@ void process_message(uint8_t rhport) {
   case 0x63: // PC_to_RDR_IccPowerOff
     slot_state = 1;
     secure_channel.reset();
+    cap_load_session.abortTransfer();
     send_response(rhport, 0x81, nullptr, 0, slot_state);
     break;
   case 0x65: // PC_to_RDR_GetSlotStatus
@@ -109,7 +114,7 @@ void process_message(uint8_t rhport) {
   case 0x6f: { // PC_to_RDR_XfrBlock
     const size_t apdu_length = rx_expected - 10;
     const uint8_t *apdu = rx_buffer + 10;
-    uint8_t response[32] = {0x6d, 0x00}; // instruction not supported
+    uint8_t response[96] = {0x6d, 0x00}; // instruction not supported
     size_t response_length = 2;
     if (apdu_length >= 2 && apdu[0] == 0x80 && apdu[1] == 0x50) {
       size_t data_length = 0;
@@ -145,15 +150,56 @@ void process_message(uint8_t rhport) {
       const uint8_t instruction = apdu[1];
       const uint8_t p1 = apdu[2];
       const uint8_t p2 = apdu[3];
-      if (instruction == 0xf2 && p1 == 0x80 && (p2 & 0xfe) == 0x02) {
+      if (instruction == 0xe6 && p1 == 0x02 && p2 == 0x00 &&
+          cap_load_session.beginInstallForLoad(apdu + 5,
+                                               command_data_length)) {
+        response[0] = 0x90;
+        response[1] = 0x00;
+      } else if (instruction == 0xe8 &&
+                 cap_load_session.addLoadBlock(p1, p2, apdu + 5,
+                                               command_data_length)) {
+        response[0] = 0x90;
+        response[1] = 0x00;
+      } else if (instruction == 0xe6 && p1 == 0x0c && p2 == 0x00 &&
+                 cap_load_session.installAndMakeSelectable(
+                     apdu + 5, command_data_length)) {
+        response[0] = 0x90;
+        response[1] = 0x00;
+      } else if (instruction == 0xf2 && p1 == 0x80 &&
+                 (p2 & 0xfe) == 0x02) {
         constexpr uint8_t isd_registry_entry[] = {
             0xe3, 0x11, 0x4f, 0x08, 0xa0, 0x00, 0x00, 0x01, 0x51, 0x00,
             0x00, 0x00, 0x9f, 0x70, 0x01, 0x01, 0xc5, 0x01, 0x00};
         std::memcpy(response, isd_registry_entry,
                     sizeof(isd_registry_entry));
-        response[sizeof(isd_registry_entry)] = 0x90;
-        response[sizeof(isd_registry_entry) + 1] = 0x00;
-        response_length = sizeof(isd_registry_entry) + 2;
+        size_t registry_length = sizeof(isd_registry_entry);
+        if (cap_load_session.installed()) {
+          const uint8_t aid_length = cap_load_session.instanceAidLength();
+          uint8_t *entry = response + registry_length;
+          const size_t entry_length = 22 + aid_length;
+          entry[0] = 0xe3;
+          entry[1] = static_cast<uint8_t>(entry_length - 2);
+          entry[2] = 0x4f;
+          entry[3] = aid_length;
+          std::memcpy(entry + 4, cap_load_session.instanceAid(), aid_length);
+          size_t pos = 4 + aid_length;
+          entry[pos++] = 0xcc;
+          entry[pos++] = sizeof(kAlgTestPackageAid);
+          std::memcpy(entry + pos, kAlgTestPackageAid,
+                      sizeof(kAlgTestPackageAid));
+          pos += sizeof(kAlgTestPackageAid);
+          entry[pos++] = 0x9f;
+          entry[pos++] = 0x70;
+          entry[pos++] = 0x01;
+          entry[pos++] = 0x07; // selectable
+          entry[pos++] = 0xc5;
+          entry[pos++] = 0x01;
+          entry[pos++] = 0x00; // no privileges
+          registry_length += entry_length;
+        }
+        response[registry_length++] = 0x90;
+        response[registry_length++] = 0x00;
+        response_length = registry_length;
       } else if (instruction == 0xf2 || instruction == 0xca) {
         response[0] = 0x6a;
         response[1] = 0x88;
@@ -178,6 +224,24 @@ void process_message(uint8_t rhport) {
       response[sizeof(isd_fci)] = 0x90;
       response[sizeof(isd_fci) + 1] = 0x00;
       response_length = sizeof(isd_fci) + 2;
+    } else if (cap_load_session.installed() && apdu_length >= 5 &&
+               apdu[0] == 0x00 && apdu[1] == 0xa4 && apdu[2] == 0x04 &&
+               apdu[3] == 0x00 &&
+               apdu[4] == cap_load_session.instanceAidLength() &&
+               (apdu_length == 5u + static_cast<size_t>(apdu[4]) ||
+                (apdu_length == 6u + static_cast<size_t>(apdu[4]) &&
+                 apdu[apdu_length - 1] == 0x00)) &&
+               std::memcmp(apdu + 5, cap_load_session.instanceAid(),
+                           cap_load_session.instanceAidLength()) == 0) {
+      const uint8_t aid_length = cap_load_session.instanceAidLength();
+      response[0] = 0x6f;
+      response[1] = static_cast<uint8_t>(aid_length + 2);
+      response[2] = 0x84;
+      response[3] = aid_length;
+      std::memcpy(response + 4, cap_load_session.instanceAid(), aid_length);
+      response[4 + aid_length] = 0x90;
+      response[5 + aid_length] = 0x00;
+      response_length = 6 + aid_length;
     }
     send_response(rhport, 0x80, response, response_length);
     break;
@@ -197,6 +261,8 @@ void driver_init() {
   slot_state = 1;
   ep_out = 0;
   ep_in = 0;
+  secure_channel.reset();
+  cap_load_session.reset();
 }
 
 bool driver_deinit() { return true; }
@@ -207,6 +273,8 @@ void driver_reset(uint8_t) {
   slot_state = 1;
   ep_out = 0;
   ep_in = 0;
+  secure_channel.reset();
+  cap_load_session.abortTransfer();
 }
 
 uint16_t driver_open(uint8_t rhport,

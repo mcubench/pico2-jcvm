@@ -177,10 +177,10 @@ bool Scp03Session::verifyAndAdvance(uint8_t cla, uint8_t ins, uint8_t p1,
                                     uint8_t p2, const uint8_t *data,
                                     size_t data_length,
                                     const uint8_t *received_mac) noexcept {
-  if (data_length > 235 || received_mac == nullptr) {
+  if (data_length > 247 || received_mac == nullptr) {
     return false;
   }
-  std::array<uint8_t, 256> input{};
+  std::array<uint8_t, 272> input{};
   size_t input_length = 0;
   if (!make_cmac_input(cla, ins, p1, p2, data, data_length, chaining_value_,
                        input.data(), input.size(), input_length)) {

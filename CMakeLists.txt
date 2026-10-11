@@ -78,6 +78,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     choupi/src/main.cpp
     src/choupi_pico2.cpp
     src/ccid_device.cpp
+    src/cap_load.cpp
     src/scp03.cpp
     "${PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"

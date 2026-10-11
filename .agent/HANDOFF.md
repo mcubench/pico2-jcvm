@@ -1184,3 +1184,21 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   command framing, and implement persistent CAP staging only after its size
   and flash space requirements are known. Existing embedded static ROM-mask
   package remains the boot-time runtime image.
+
+## Runtime GP LOAD and applet SELECT — 2026-10-11
+
+- The CCID path now accepts the exact JCAlgTest v1.8.2 GlobalPlatform LOAD
+  sequence. It reassembles bounded C4 data blocks, checks component bounds and
+  package/applet AIDs, stores package 20 in the 64 KiB runtime overlay, accepts
+  INSTALL [for install and make selectable], and reports the instance in GET
+  STATUS. Full short-APDU SCP03 MAC inputs are supported.
+- ARM/RISC-V builds passed and the real board cycle emitted
+  `TEST:SUMMARY pass=1 fail=0`. GPPro `--install` returned success; a later
+  `--list` showed applet `4A43416C675465737431`, and SELECT-by-AID returned
+  `6F0C840A4A43416C675465737431 9000`.
+- Important limit: the Pico filesystem overlay is only RAM-backed. The CAP
+  disappears after reboot/reflash. Java Card applet install-method execution
+  and selected-applet APDU dispatch are also unfinished.
+- Next: add a safe bounded nonvolatile CAP slot, ensure image/slot separation,
+  and verify persistence across reboot. Then connect SELECT/process to the
+  CHOUPI lifecycle. Hardware logs are recorded in `progress.md`.
