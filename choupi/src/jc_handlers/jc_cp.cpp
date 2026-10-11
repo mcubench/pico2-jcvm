@@ -367,6 +367,18 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
     cap = package.getCap();
 
     class_token = BYTE_TO_SHORT(classref.external_classref.class_token);
+#ifndef PC_VERSION
+    choupi_install_stage(18);
+    choupi_install_context(
+        (static_cast<uint32_t>(package_index) << 16) | class_token);
+#endif
+    Export_Handler export_handler(package);
+    class_token = HTONS(export_handler.getExportedClassOffset(class_token));
+#ifndef PC_VERSION
+    choupi_install_stage(19);
+    choupi_install_context(
+        (static_cast<uint32_t>(package_index) << 16) | class_token);
+#endif
   } else { // is internal class_ref
     class_token = HTONS(classref.internal_classref);
   }

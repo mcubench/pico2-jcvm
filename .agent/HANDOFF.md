@@ -8,6 +8,23 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- Corrected imported exported-class offset byte order in
+  `resolveClassref()`. Both ARM and RISC-V wrapper builds passed; the elevated
+  flash wrapper reset through CDC 1200 baud, entered BOOTSEL after 2 seconds,
+  flashed to 100%, and reported `FLASH:PASS`. The 8-second serial monitor
+  passed repeated runtime checks. PC/SC and GlobalPlatformPro listing worked;
+  the exact JCAlgTest v1.8.2 CAP LOAD completed (`9000`), but final INSTALL
+  `84E60C00` again stalled and reset the device after 16.9 seconds. Captured
+  watchdog marker `opcode=8F count=1 stage=17 context=00000003` shows imported
+  class lookup now reaches Class component offset 3, beyond the previous bad
+  `0x0300` index. No successful INSTALL status or applet SELECT was observed.
+  Logs: `artifacts/logs/gp-install-class-offset-endian-fix-20261011.txt`,
+  `artifacts/logs/cdc-class-offset-install-capture-20261011.txt`, and
+  `artifacts/logs/cdc-class-offset-endian-fix-20261011.txt`. Next add markers
+  after `resolveClassref()` dynamic checks, through `classref2class()`, and
+  around the superclass field-size return; rebuild both targets, flash, and
+  retry once.
+
 - Extended the `new` allocation breadcrumbs into `Heap::addInstance`, the
   `JC_Instance` field array setup, and imported superclass resolution. ARM and
   RISC-V builds passed; ARM UF2
