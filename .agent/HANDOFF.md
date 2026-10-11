@@ -997,5 +997,7 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - This verifies APDU transport but confirms AC1 is not yet met: no ISD select,
   GlobalPlatform card manager, applet registry, or SELECT dispatch exists.
   Trace: `artifacts/logs/gp-list-probe-20261011.txt`.
+- Probe log and progress record committed as `e37ad51`; metadata follow-up
+  records the SHA.
 - Next: implement the minimal card manager/APDU lifecycle rather than treating
   the CCID layer as GlobalPlatform support.
