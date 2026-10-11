@@ -270,15 +270,33 @@ ConstantPool_Handler::classref2class(const jc_cap_class_ref classref)
 #endif
 {
   auto claz = this->resolveClassref(classref);
+#ifndef PC_VERSION
+  choupi_install_stage(23);
+  choupi_install_context(static_cast<uint32_t>(claz.first.getPackageID()));
+  choupi_install_stage(25);
+#endif
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 
-  if (IS_INTERFACE(claz.second)) { // Classref is an interface!
+  const bool is_interface = IS_INTERFACE(claz.second);
+#ifndef PC_VERSION
+  choupi_install_stage(26);
+  const uint32_t classref_context =
+      (static_cast<uint32_t>(claz.first.getPackageID()) << 24) |
+      (static_cast<uint32_t>(classref.external_classref.package_token) << 16) |
+      (static_cast<uint32_t>(classref.external_classref.class_token) << 8) |
+      (is_interface ? 1u : 0u);
+  choupi_install_context(classref_context);
+#endif
+  if (is_interface) { // Classref is an interface!
     throw Exceptions::SecurityException;
   }
 
 #endif /* JCVM_DYNAMIC_CHECKS_CAP */
 
+#ifndef PC_VERSION
+  choupi_install_stage(24);
+#endif
   return std::make_pair(
       claz.first, reinterpret_cast<const jc_cap_class_info *>(claz.second));
 }
@@ -391,6 +409,9 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
   classFound = &(cap.getClass()->claz()[class_token]);
 #ifndef PC_VERSION
   choupi_install_stage(17);
+  choupi_install_stage(20);
+  choupi_install_context((static_cast<uint32_t>(package.getPackageID()) << 16) |
+                         class_token);
 #endif
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
@@ -410,7 +431,14 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
 
 #endif /* JCVM_DYNAMIC_CHECKS_CAP */
 
-  return std::make_pair(package, classFound);
+#ifndef PC_VERSION
+  choupi_install_stage(21);
+#endif
+  auto resolved = std::make_pair(package, classFound);
+#ifndef PC_VERSION
+  choupi_install_stage(22);
+#endif
+  return resolved;
 };
 
 /*

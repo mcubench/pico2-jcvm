@@ -8,6 +8,18 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- The imported class offset byte-order fix is on the board and passed both target
+  builds, flash, and finite runtime checks. A bounded v1.8.2 GP INSTALL still
+  resets the card after the final `84E60C00`. New watchdog instrumentation
+  reports stage 26 with packed context `00820301`: resolved package ID 0, raw
+  package token `0x82` (external import index 2), class token 3, and interface
+  flag 1. Thus the superclass walk is interpreting a framework interface as a
+  class; the exact `new` operand/initial allocated class is still unknown.
+  Logs: `artifacts/logs/gp-install-import-context-20261011.txt` and
+  `artifacts/logs/cdc-import-context-20261011.txt`. Both builds pass and the
+  normal serial runtime self-check passes. Next add a watchdog origin field for
+  the allocated class package/index and inspect the `new` operand/field walk.
+
 - Corrected imported exported-class offset byte order in
   `resolveClassref()`. Both ARM and RISC-V wrapper builds passed; the elevated
   flash wrapper reset through CDC 1200 baud, entered BOOTSEL after 2 seconds,
