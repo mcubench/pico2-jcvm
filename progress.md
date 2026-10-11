@@ -844,5 +844,5 @@
 - Validation: Both `picotool reboot -F -a` and `picotool reboot -F -u` returned success text, but the following `picotool info -a` still found only USB serial at bus 1/address 126 and no BOOTSEL device. No flash was attempted.
 - Result: Chaining software reset requests does not recover the currently stalled image.
 - Decision: The watchdog candidate remains the recovery route for subsequent hangs; one initial BOOTSEL entry is still needed to install it.
-- Commit: `<pending metadata follow-up>`
+- Commit: `e86c53d` (metadata follow-up)
 - Artifacts/logs: no new cycle log; candidate UF2 remains `build/arm/pico2_choupi.uf2`, SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`
