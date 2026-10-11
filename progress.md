@@ -784,5 +784,5 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. No hardware cycle was run for this change because `picotool info -a` reports the Pico in CDC mode, not BOOTSEL.
 - Result: The ownership bug matches the hardware trace where class sizing returned 15 but the persistent instance vector later reported 8,912. The fix is compile-validated but not yet hardware-verified.
 - Decision: Flash this candidate during the next BOOTSEL window and confirm the field vector remains 15 entries and the runtime reaches `TEST:SUMMARY`.
-- Commit: pending
+- Commit: `45ace5d` (this record; metadata follow-up follows)
 - Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `92ddc5aa9497f3020a302a253003f6074ebfcdb656eff9b7196beb406e7cfb98`; diagnosis log `artifacts/logs/cycle-choupi-20261011T061811Z.log`
