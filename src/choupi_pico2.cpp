@@ -653,8 +653,12 @@ int main_arm(void) {
   }
 
   stdio_init_all();
-  for (unsigned int attempt = 0; attempt < 120 && !stdio_usb_connected();
-       ++attempt) {
+  for (unsigned int attempt = 0; attempt < 120; ++attempt) {
+    // IRQ background servicing is disabled so TinyUSB and CCID stay on one
+    // context. Drive enumeration here too; stdio output alone does not poll
+    // TinyUSB before the CDC host has connected.
+    tud_task();
+    if (stdio_usb_connected()) break;
     printf("BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi\r\n");
     fflush(stdout);
     sleep_ms(250);
