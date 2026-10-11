@@ -960,11 +960,13 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   device's `lsusb -v` descriptor confirms short APDU mode and a 271-byte maximum
   CCID message. See `progress.md` and
   `artifacts/logs/cycle-choupi-20261011T101036Z.log`.
+- Implementation and validation record committed as `4506ff7`; the final
+  progress metadata follow-up records this SHA.
 - PC/SC APDU transmission is still unverified. Flashing re-enumerated the Pico
   from USB node `001/016` to `001/018`; the ACL previously granted to `pcscd`
   did not persist, so pcsc_scan found no reader. The current libccid udev rule
-  selects group `pcscd` only when `ID_USB_INTERFACES` identifies the device as
-  CCID, but this node appeared as `root:plugdev`. Restore pcscd access to the
-  current node or add a VID/PID-specific udev permission rule, then test a raw
-  APDU through GPPro. The current XfrBlock result remains placeholder `6D00`;
+  matches `ID_USB_INTERFACES=:020200:0a0000:0b0000:` and assigns group `pcscd`,
+  but the live node still appears as `root:plugdev`; `udevadm test` confirms the
+  expected group, so trigger the current device's rule and restart pcscd. Then
+  test a raw APDU through GPPro. The current XfrBlock result remains placeholder `6D00`;
   applet dispatch, CAP install, and GlobalPlatform support are not implemented.
