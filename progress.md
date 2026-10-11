@@ -774,5 +774,5 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds, visibly flashed the ARM image to 100%, rebooted it, and captured 18 seconds of serial output. Runtime gate failed with no `TEST:SUMMARY`.
 - Result: For package 20/class 121, three hierarchy calculations each report depth 1 and 15 declared fields, while `JC_Instance::getFields()` reports vector length 8,912. The trace completes existence checks for indexes 0–63 before capture ends. Log SHA-256: `09be7d9368d2d988d4d953f45daa37f5832b9991d152de1b1de424ceb7266d40`.
 - Decision: Investigate object ownership between persistent instance construction and heap insertion; this discrepancy indicates the superclass calculation is not producing 8,912.
-- Commit: pending
+- Commit: `c383486` (this record; metadata follow-up follows)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T061811Z.log`; flashed ARM UF2 SHA-256 `274b8128c4259b167c52bc4f363e96d88348dd1f9540f655932232d4f4ed568f`
