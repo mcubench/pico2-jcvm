@@ -45,6 +45,8 @@ private:
   /// Set when the active install method invokes Applet.register().
   bool applet_registered = false;
   jref_t registered_applet_ref;
+  bool applet_instance_restored = false;
+  jref_t restored_applet_ref;
   /// Current Java Card stack.
   Stack stack;
   /// Linked-list where the executed Packages ID is stored. The Head of the
@@ -69,6 +71,11 @@ public:
   void markAppletRegistered(jref_t applet_ref) noexcept;
   bool wasAppletRegistered() const noexcept;
   jref_t getRegisteredAppletRef() const noexcept;
+  /// Restore the persisted applet root and eagerly decode its field graph.
+  bool restoreAppletInstance(jpackage_ID_t package_id,
+                             jclass_index_t class_index) noexcept;
+  bool hasRestoredAppletInstance() const noexcept;
+  jref_t getRestoredAppletRef() const noexcept;
   /// Get context Java Card stack.
   Stack &getStack() noexcept;
   /// Get context heap.

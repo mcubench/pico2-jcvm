@@ -27,6 +27,7 @@
 
 #include "context.hpp"
 #include "exceptions.hpp"
+#include "jc_handlers/flashmemory.hpp"
 
 namespace jcvm {
 
@@ -85,6 +86,40 @@ bool Context::wasAppletRegistered() const noexcept {
 
 jref_t Context::getRegisteredAppletRef() const noexcept {
   return this->registered_applet_ref;
+}
+
+bool Context::restoreAppletInstance(const jpackage_ID_t package_id,
+                                   const jclass_index_t class_index) noexcept {
+  this->applet_instance_restored = false;
+  this->restored_applet_ref = jref_t();
+  try {
+    const fs::Tag tag = FlashMemory_Handler::getAppletInstanceTag(
+        this->applet_ID, package_id, class_index);
+    const jref_t reference =
+        FlashMemory_Handler::getPersistentField_Reference(tag, this->heap);
+    if (reference.isNullPointer() || reference.isArray()) {
+      return false;
+    }
+    const auto instance = this->heap.getInstance(reference);
+    if (instance->getPackageID() != package_id ||
+        instance->getClassIndex() != class_index) {
+      return false;
+    }
+    (void)instance->getFields();
+    this->restored_applet_ref = reference;
+    this->applet_instance_restored = true;
+    return true;
+  } catch (...) {
+    return false;
+  }
+}
+
+bool Context::hasRestoredAppletInstance() const noexcept {
+  return this->applet_instance_restored;
+}
+
+jref_t Context::getRestoredAppletRef() const noexcept {
+  return this->restored_applet_ref;
 }
 
 /**

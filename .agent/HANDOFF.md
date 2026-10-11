@@ -32,6 +32,12 @@
   reconstruction, class-index dispatch, applet lifecycle/APDU handling, and
   install rollback remain incomplete. This is still a single applet slot
   (applet owner 0), with no atomic cleanup if the card-manager AID write fails.
+- `Context::restoreAppletInstance(package, class)` now resolves the serialized
+  root by tag, verifies the stored package and class, and eagerly decodes its
+  persisted fields. This helper builds on both architectures and the board
+  runtime self-check passes, but it is not yet wired into CCID SELECT, the
+  returned reference is not used for Java lifecycle calls, and restoration has
+  not been exercised on the board.
 - The worktree contains preserved, uncommitted JC305 token-remapping and install
   diagnostics in `choupi/src/jc_bytecodes/bc_invoke.cpp`,
   `choupi/src/jc_handlers/jc_class.cpp`, `jc_cp.cpp`, `jc_cp.hpp`,

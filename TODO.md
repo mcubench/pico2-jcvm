@@ -58,7 +58,10 @@ also remain unverified.
 
 - [x] Persist the registered applet object and its fields after Java install.
 - [ ] Reconstruct the persisted applet object after reboot using its stored
-  class index, then dispatch applet lifecycle methods.
+  class index, then dispatch applet lifecycle methods. A `Context` restore
+  helper now resolves the reserved root, verifies package/class identity, and
+  eagerly decodes fields; it is not yet wired into CCID SELECT or exercised
+  against an installed applet.
 - [ ] Dispatch SELECT, `select()`, `deselect()`, and `process()` through the
   interpreter for the selected applet.
 - [ ] Implement Java Card APDU buffer and incoming/outgoing command methods used

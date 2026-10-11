@@ -1485,3 +1485,30 @@
   `artifacts/logs/cycle-choupi-20261011T194325Z.log` (SHA-256
   `9364f8279d25adbffd9db1582312d2b6747451cae294e825767c11a6c10e7c0f`);
   UF2 SHA-256 `afd2194987c9f06476e7e7098124e09b7ceadab12d1b22862f1f68268f64e4c4`.
+
+## 2026-10-11 — Add persistent applet root reconstruction helper
+
+- Step/experiment: `wp7-restore-persistent-applet-root`
+- Change: Added a `Context` helper that resolves the reserved persistent
+  applet-instance tag, decodes it through CHOUPI's existing persistent-object
+  reader, verifies package and class identity, and eagerly loads its fields.
+  It records the reconstructed object reference for subsequent context use.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The real
+  `./tools/cycle choupi` passed both build gates, recovered BOOTSEL through
+  CDC, flashed the firmware, and captured repeated
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` during its
+  18-second monitor window. This cycle did not invoke the new restoration
+  helper. GPPro read-only listing is blocked by the host PC/SC driver state:
+  pcscd is running, but its `pcscd` account lacks access to the current USB
+  node, so no reader is enumerated. No privileged helper was invoked.
+- Result: The VM now has a bounded, validated way to reconstruct an applet
+  object graph when given its stored class index. Runtime SELECT, retaining the
+  object for applet lifecycle calls, and physical restoration/install checks
+  remain incomplete.
+- Decision: Wire this helper into a per-applet CCID context and SELECT path;
+  restore PC/SC reader access through the user-authorized setup path when
+  allowed by the active repository safety constraints.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195102Z.log` (SHA-256
+  `420c05f8ea0ae1ae7689f31aa57a8e87ec4d611ca59a9cf5a00e20592d956595`); ARM
+  UF2 SHA-256 `48c6a1a4871365ba6964e9b141c43eefda53abf61e2aa97507adfe66da17b9ac`.
