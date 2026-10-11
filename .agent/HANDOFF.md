@@ -1203,3 +1203,26 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: add a safe bounded nonvolatile CAP slot, ensure image/slot separation,
   and verify persistence across reboot. Then connect SELECT/process to the
   CHOUPI lifecycle. Hardware logs are recorded in `progress.md`.
+
+## JCAlgTest CAP persistence across reboot — 2026-10-11
+
+- Added a dedicated 256 KiB RP2350 flash slot at offset `0x1C0000`, with a
+  CRC-protected header and payload. The firmware image ends at `0x1009FED4`,
+  below this slot. The CAP is not exposed as the embedded CHOUPI filesystem's
+  package record; that lookup collision caused a VM exception on the first
+  persistence reboot attempt. After separating these paths, the CHOUPI runtime
+  self-check passed again.
+- CAP restoration now happens on CCID card power-on, after `fs_init()` has
+  initialized the flash-backed CAP cache. GlobalPlatformPro confirmed the
+  installed `4A43416C675465737431` instance survives a firmware reflash/reboot;
+  registry listing reports it `INITIALIZED`, and SELECT returns its `6F/84`
+  FCI with `9000`.
+- Validation: both architecture builds passed; `./tools/cycle choupi` passed
+  `TEST:SUMMARY pass=1 fail=0`; GPPro `--list` and SELECT-by-AID passed after
+  reboot. Logs and hashes are in `progress.md` and
+  `artifacts/logs/*persistent-cap-20261011*`.
+- Commit: `a42a2a9a05ab65ad92edcb0729735d8cdac62bce`.
+- Remaining: the applet's install method/lifecycle and selected applet APDU
+  processing are not implemented. Next connect the persistent CAP to CHOUPI
+  CAP loading, invoke installation/lifecycle methods, and route selected
+  applet APDUs into the VM.
