@@ -713,8 +713,12 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   component byte offset, and `getClassFromClassIndex()` uses that offset
   directly. Its companion `getClassRefFromClassIndex()` instead iterates
   class/interface records by ordinal. This inconsistency can affect persistent
-  object class references and deserves a focused audit, but does not yet
-  explain the 8,912 field count: superclass traversal uses direct class refs.
-- Next: keep examining class-reference conversion and, when the board offers
-  BOOTSEL again, flash the prepared hierarchy-trace candidate. Do not use
-  repeated USB bus resets; prior host reset attempts made the Pico disappear.
+  object class references. Fixed that helper to encode the stored byte offset
+  in CAP byte order; both wrapper builds pass. Updated ARM CHOUPI UF2 SHA-256:
+  `274b8128c4259b167c52bc4f363e96d88348dd1f9540f655932232d4f4ed568f`.
+  The change does not explain the 8,912 field count by itself, since superclass
+  traversal uses direct class refs.
+- Next: after BOOTSEL is available, flash the corrected image, then collect the
+  superclass trace. Do not use repeated USB bus resets; prior host reset
+  attempts made the Pico disappear. The exact JCAlgTest CAP is still not
+  installed and no APDU/CAP loader exists in the current firmware.
