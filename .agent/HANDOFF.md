@@ -1040,3 +1040,5 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   instance state and a usable APDU buffer. `picotool info -a` currently fails
   at libusb initialization (`-99`), so no flash or hardware validation is
   possible in this session.
+- The package-level registry lookup and its build record are committed as
+  `fe7e12f`.

@@ -1016,3 +1016,13 @@
 - Decision: Next add interpreter entry/lifetime support for applet install and virtual process calls, with APDU data retained in context; then connect this registry query to a SELECT path.
 - Commit: pending
 - Artifacts/logs: none
+
+## 2026-10-11 — Record package AID registry commit
+
+- Step/experiment: `wp5-applet-registry-aid-lookup-commit-metadata`
+- Change: Recorded the package-level AID lookup commit and its build result.
+- Validation: ARM/RISC-V wrapper builds passed before the change was committed.
+- Result: Implementation and required progress/handoff are committed as `fe7e12f`.
+- Decision: Continue toward interpreter-backed applet install and APDU processing.
+- Commit: pending
+- Artifacts/logs: none
