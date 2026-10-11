@@ -30,6 +30,8 @@
 #include "jc_config.h"
 #include "types.hpp"
 
+#include <cstdio>
+
 #include "jc_handlers/flashmemory.hpp"
 
 #ifdef PC_VERSION
@@ -66,6 +68,53 @@ uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
                                 id_class, id_method, true);
   return interpretor.run();
+}
+
+uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
+                                uint8_t *exception_id,
+                                uint8_t *exception_opcode,
+                                uint32_t *exception_pc,
+                                uint32_t *exception_prefix,
+                                uint16_t *exception_operand,
+                                uint8_t *exception_stack_depth,
+                                uint32_t *exception_opcode_history,
+                                uint32_t *exception_depth_history) {
+  TRACE_JCVM_DEBUG("Starting CAP install method at offset %u",
+                   static_cast<unsigned>(method_offset));
+  jcvm::Interpretor interpretor(0,
+                                static_cast<jcvm::jpackage_ID_t>(id_package),
+                                method_offset, 0, 0, 0);
+  const uint16_t status = interpretor.run();
+  if (exception_id != nullptr) {
+    *exception_id = interpretor.lastExceptionId();
+  }
+  if (exception_opcode != nullptr) {
+    *exception_opcode = interpretor.lastExceptionOpcode();
+  }
+  if (exception_pc != nullptr) {
+    *exception_pc = interpretor.lastExceptionPc();
+  }
+  if (exception_prefix != nullptr) {
+    *exception_prefix = interpretor.lastExceptionPrefix();
+  }
+  if (exception_operand != nullptr) {
+    *exception_operand = interpretor.lastExceptionOperand();
+  }
+  if (exception_stack_depth != nullptr) {
+    *exception_stack_depth = interpretor.lastExceptionStackDepth();
+  }
+  if (exception_opcode_history != nullptr) {
+    *exception_opcode_history = interpretor.lastExceptionOpcodeHistory();
+  }
+  if (exception_depth_history != nullptr) {
+    *exception_depth_history = interpretor.lastExceptionDepthHistory();
+  }
+  std::printf("CHOUPI:INSTALL_METHOD package=%u offset=%u sw=%04X\r\n",
+              static_cast<unsigned>(id_package),
+              static_cast<unsigned>(method_offset),
+              static_cast<unsigned>(status));
+  std::fflush(stdout);
+  return status;
 }
 
 #ifdef __cplusplus

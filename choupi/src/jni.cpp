@@ -328,15 +328,25 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getPreviousContextAID() {
 }
 
 jshort_t
-fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(jbyte_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(jbyte_t type) {
+  // The VM does not yet account for free heap or persistent-store capacity.
+  // Report zero rather than inventing a capacity estimate to Java Card code.
+  if (type < 0 || type > 2) {
+    throw Exceptions::SystemException;
+  }
+  return 0;
 }
 
 void fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
-    std::shared_ptr<JC_Array>, jshort_t, jshort_t, jbyte_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+    std::shared_ptr<JC_Array> output, jshort_t offset, jbyte_t type) {
+  if (output == nullptr || type < 0 || type > 2 || offset < 0 ||
+      static_cast<uint32_t>(offset) + 2 > output->size()) {
+    throw Exceptions::SystemException;
+  }
+  // The short[2] overload returns persistent and transient capacity. Neither
+  // capacity is measured by this port yet, so both are explicitly zero.
+  output->setShortEntry(static_cast<uint16_t>(offset), 0);
+  output->setShortEntry(static_cast<uint16_t>(offset + 1), 0);
 }
 
 jref_t

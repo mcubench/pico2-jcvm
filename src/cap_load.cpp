@@ -2,6 +2,7 @@
 #include "cap_store.hpp"
 #include "jc_handlers/flashmemory.hpp"
 
+#include <cstdio>
 #include <cstring>
 
 extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
@@ -9,6 +10,16 @@ extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
                                              uint32_t length);
 extern "C" uint8_t choupi_store_cap_instance(const uint8_t *aid,
                                               uint8_t aid_length);
+extern "C" uint16_t runtime_install_method(uint8_t package_id,
+                                            uint16_t method_offset,
+                                           uint8_t *exception_id,
+                                           uint8_t *exception_opcode,
+                                           uint32_t *exception_pc,
+                                           uint32_t *exception_prefix,
+                                           uint16_t *exception_operand,
+                                           uint8_t *exception_stack_depth,
+                                           uint32_t *exception_opcode_history,
+                                           uint32_t *exception_depth_history);
 
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
@@ -151,6 +162,16 @@ void CapLoadSession::reset() noexcept {
   loading_ = false;
   loaded_ = false;
   installed_ = false;
+  install_failure_stage_ = 0;
+  install_vm_status_ = 0;
+  install_vm_exception_id_ = 0;
+  install_vm_exception_opcode_ = 0;
+  install_vm_exception_pc_ = 0;
+  install_vm_exception_prefix_ = 0;
+  install_vm_exception_operand_ = 0;
+  install_vm_exception_stack_depth_ = 0;
+  install_vm_exception_opcode_history_ = 0;
+  install_vm_exception_depth_history_ = 0;
 }
 
 void CapLoadSession::abortTransfer() noexcept {
@@ -235,7 +256,18 @@ bool CapLoadSession::finishLoad() noexcept {
 
 bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
                                               size_t length) noexcept {
-  if (!loaded_ || installed_ || data == nullptr) return false;
+  std::printf("CHOUPI:INSTALL_ENTRY loaded=%u installed=%u data_len=%lu\r\n",
+              static_cast<unsigned>(loaded_),
+              static_cast<unsigned>(installed_),
+              static_cast<unsigned long>(length));
+  std::fflush(stdout);
+  install_failure_stage_ = 0;
+  install_vm_status_ = 0;
+  install_vm_exception_id_ = 0;
+  if (!loaded_ || installed_ || data == nullptr) {
+    install_failure_stage_ = 1;
+    return false;
+  }
   size_t offset = 0;
   uint8_t package_aid[16]{};
   uint8_t package_aid_length = 0;
@@ -249,6 +281,7 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
       !read_aid(data, length, offset, applet_aid, applet_aid_length) ||
       !aid_matches(applet_aid, applet_aid_length, applet_aid_,
                    applet_aid_length_)) {
+    install_failure_stage_ = 2;
     return false;
   }
   uint8_t instance_aid[16]{};
@@ -257,16 +290,54 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
       !read_lv(data, length, offset, value, value_length) ||
       !read_ber_length(data, length, offset, value_length) ||
       value_length > length - offset) {
+    install_failure_stage_ = 2;
     return false;
   }
   offset += value_length;
   if (offset < length &&
       (!read_lv(data, length, offset, value, value_length) ||
        value_length != 0)) {
+    install_failure_stage_ = 3;
     return false;
   }
-  if (offset != length) return false;
+  if (offset != length) {
+    install_failure_stage_ = 3;
+    return false;
+  }
+  std::printf("CHOUPI:INSTALL_PARSE_OK applet_aid_len=%u instance_aid_len=%u\r\n",
+              static_cast<unsigned>(applet_aid_length),
+              static_cast<unsigned>(instance_aid_length));
+  std::fflush(stdout);
+  uint8_t resolved_package_id = 0;
+  uint16_t install_method_offset = 0;
+  if (choupi_vm_find_applet(applet_aid, applet_aid_length,
+                            &resolved_package_id, &install_method_offset) != 0 ||
+      resolved_package_id != jcvm::FlashMemory_Handler::DYNAMIC_PACKAGE_ID ||
+      install_method_offset == 0) {
+    install_failure_stage_ = 4;
+    std::printf("CHOUPI:INSTALL_RESOLVE_FAIL package=%u offset=%u\r\n",
+                static_cast<unsigned>(resolved_package_id),
+                static_cast<unsigned>(install_method_offset));
+    std::fflush(stdout);
+    return false;
+  }
+  std::printf("CHOUPI:INSTALL_INVOKE package=%u offset=%u\r\n",
+              static_cast<unsigned>(resolved_package_id),
+              static_cast<unsigned>(install_method_offset));
+  std::fflush(stdout);
+  install_vm_status_ = runtime_install_method(
+      resolved_package_id, install_method_offset, &install_vm_exception_id_,
+      &install_vm_exception_opcode_, &install_vm_exception_pc_,
+      &install_vm_exception_prefix_,
+      &install_vm_exception_operand_, &install_vm_exception_stack_depth_,
+      &install_vm_exception_opcode_history_,
+      &install_vm_exception_depth_history_);
+  if (install_vm_status_ != 0x9000) {
+    install_failure_stage_ = 5;
+    return false;
+  }
   if (choupi_store_cap_instance(instance_aid, instance_aid_length) != 0) {
+    install_failure_stage_ = 6;
     return false;
   }
   std::memcpy(instance_aid_, instance_aid, instance_aid_length);

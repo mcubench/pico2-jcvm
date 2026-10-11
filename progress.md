@@ -1177,3 +1177,13 @@
 - Decision: Once the USB device is reattached or reset, collect the saved watchdog breadcrumb and continue isolating the blocking VM/native operation. Do not mark JCAlgTest installed: GP INSTALL has not returned `9000`.
 - Commit: `d86489e`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T145623Z.log` (SHA-256 `3d100ceb51d258af55cef828aca9c0cdeeec31ff20a3bd6ae209f5dd7bc910ab`); `artifacts/logs/gp-install-watchdog-scratch-20261011-apdu.txt` (SHA-256 `1dce95fd4a3a37238e9343ab6056a32e08436a8c2d261c64956afa2144b02198`); `artifacts/logs/gp-install-watchdog-scratch-20261011.txt` (SHA-256 `2db80438b43563cd14175a572822f6a631fcda0d0a8fb689a33bc7c572fcf838`)
+
+## 2026-10-11 — Invoke the JCAlgTest CAP INSTALL method
+
+- Step/experiment: `wp7-gp-install-method-execution`
+- Change: Connected authenticated GP INSTALL to bounded CAP parsing, persisted CAP resolution, and the CAP-declared `Applet.install(byte[], short, byte)` method entry. Added install instance metadata only after the method returns `9000`, reported failed INSTALL diagnostics over CCID, returned zero for unmeasured `JCSystem.getAvailableMemory` capacities, and corrected CAP method offsets for the exception-handler table. Fixed reversed public/package method visibility checks that blocked v1.8.2 constructor dispatch.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed, and the real-board cycle at `artifacts/logs/cycle-choupi-20261011T145623Z.log` passed `TEST:SUMMARY pass=1 fail=0`. GPPro loaded the supplied 26,743-byte v1.8.2 CAP successfully, but its authenticated INSTALL APDU did not return; attempts ended in `SCARD_E_READER_UNAVAILABLE` or `SCARD_F_COMM_ERROR`. No successful applet instance registration has been verified.
+- Result: CAP parsing, method-offset resolution, and the request path are connected. The runtime stalls during INSTALL before returning `9000`; applet installation is incomplete.
+- Decision: Resume after USB/PCSC recovery, capture callback/VM progress, and fix the operation that stalls before retrying INSTALL. Do not claim the JCAlgTest applet is installed.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T145623Z.log` (SHA-256 `3d100ceb51d258af55cef828aca9c0cdeeec31ff20a3bd6ae209f5dd7bc910ab`); `artifacts/logs/gp-install-watchdog-scratch-20261011-apdu.txt` (SHA-256 `1dce95fd4a3a37238e9343ab6056a32e08436a8c2d261c64956afa2144b02198`)

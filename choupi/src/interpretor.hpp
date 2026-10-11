@@ -56,6 +56,29 @@ public:
   /// Run the Java Card Interpretor and return its ISO 7816 status word.
   uint16_t run() noexcept; // All exceptions must be handling there.
 
+  uint8_t lastExceptionId() const noexcept {
+    return static_cast<uint8_t>(last_exception_id);
+  }
+  uint8_t lastExceptionOpcode() const noexcept {
+    return last_exception_opcode;
+  }
+  uint32_t lastExceptionPc() const noexcept { return last_exception_pc; }
+  uint32_t lastExceptionPrefix() const noexcept {
+    return last_exception_prefix;
+  }
+  uint32_t lastExceptionOpcodeHistory() const noexcept {
+    return last_exception_opcode_history;
+  }
+  uint32_t lastExceptionDepthHistory() const noexcept {
+    return last_exception_depth_history;
+  }
+  uint16_t lastExceptionOperand() const noexcept {
+    return last_exception_operand;
+  }
+  uint8_t lastExceptionStackDepth() const noexcept {
+    return last_exception_stack_depth;
+  }
+
   /// Get the current context
   Context &getCurrentContext() noexcept(
       noexcept(std::declval<List<Context> &>().at(std::declval<uint8_t &>())));
@@ -74,6 +97,16 @@ private:
   int8_t installLength = 0;
   bool startsAtMethodOffset = false;
   uint16_t status_word = 0x9000;
+  Exceptions last_exception_id = Exceptions::NotYetImplemented;
+  uint8_t last_exception_opcode = 0;
+  uint32_t last_exception_pc = 0;
+  uint32_t last_exception_prefix = 0;
+  uint32_t opcode_history = 0;
+  uint32_t depth_history = 0;
+  uint32_t last_exception_opcode_history = 0;
+  uint32_t last_exception_depth_history = 0;
+  uint16_t last_exception_operand = 0;
+  uint8_t last_exception_stack_depth = 0;
 };
 
 } // namespace jcvm

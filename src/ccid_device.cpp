@@ -152,6 +152,13 @@ void process_message(uint8_t rhport) {
     const bool authenticated = secure_channel.active() &&
                               secure_channel.verifyCommand(
                                   apdu, apdu_length, command_data_length);
+    if (apdu_length >= 4 && apdu[1] == 0xe6 && apdu[2] == 0x0c) {
+      printf("CHOUPI:CCID_INSTALL auth=%u apdu_len=%lu data_len=%lu\r\n",
+             static_cast<unsigned>(authenticated),
+             static_cast<unsigned long>(apdu_length),
+             static_cast<unsigned long>(command_data_length));
+      fflush(stdout);
+    }
     if (authenticated && apdu_length >= 4) {
       const uint8_t instruction = apdu[1];
       const uint8_t p1 = apdu[2];
@@ -166,11 +173,60 @@ void process_message(uint8_t rhport) {
                                                command_data_length)) {
         response[0] = 0x90;
         response[1] = 0x00;
-      } else if (instruction == 0xe6 && p1 == 0x0c && p2 == 0x00 &&
-                 cap_load_session.installAndMakeSelectable(
-                     apdu + 5, command_data_length)) {
-        response[0] = 0x90;
-        response[1] = 0x00;
+      } else if (instruction == 0xe6 && p1 == 0x0c && p2 == 0x00) {
+        if (cap_load_session.installAndMakeSelectable(
+                apdu + 5, command_data_length)) {
+          response[0] = 0x90;
+          response[1] = 0x00;
+        } else {
+          response[0] = cap_load_session.installFailureStage();
+          response[1] = static_cast<uint8_t>(
+              cap_load_session.installVmStatus() >> 8);
+          response[2] = static_cast<uint8_t>(
+              cap_load_session.installVmStatus());
+          response[3] = cap_load_session.installVmExceptionId();
+          response[4] = cap_load_session.installVmExceptionOpcode();
+          response[5] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionPc() >> 24);
+          response[6] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionPc() >> 16);
+          response[7] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionPc() >> 8);
+          response[8] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionPc());
+          response[9] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionPrefix() >> 24);
+          response[10] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionPrefix() >> 16);
+          response[11] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionPrefix() >> 8);
+          response[12] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionPrefix());
+          response[13] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionOperand() >> 8);
+          response[14] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionOperand());
+          response[15] = cap_load_session.installVmExceptionStackDepth();
+          response[16] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionOpcodeHistory() >> 24);
+          response[17] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionOpcodeHistory() >> 16);
+          response[18] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionOpcodeHistory() >> 8);
+          response[19] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionOpcodeHistory());
+          response[20] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionDepthHistory() >> 24);
+          response[21] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionDepthHistory() >> 16);
+          response[22] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionDepthHistory() >> 8);
+          response[23] = static_cast<uint8_t>(
+              cap_load_session.installVmExceptionDepthHistory());
+          response[24] = 0x6a;
+          response[25] = 0x80;
+          response_length = 26;
+        }
       } else if (instruction == 0xf2 && p1 == 0x80 &&
                  (p2 & 0xfe) == 0x02) {
         constexpr uint8_t isd_registry_entry[] = {

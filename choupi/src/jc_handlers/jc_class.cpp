@@ -232,7 +232,7 @@ std::pair<Package, const uint16_t> Class_Handler::getPublicMethodOffset(
 {
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 
-  if (virtual_method_ref_info.isPublicMethod()) {
+  if (!virtual_method_ref_info.isPublicMethod()) {
     throw Exceptions::SecurityException;
   }
 
@@ -326,7 +326,7 @@ std::pair<Package, const uint16_t> Class_Handler::getPackageMethodOffset(
 {
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 
-  if (!virtual_method_ref_info.isPublicMethod()) {
+  if (virtual_method_ref_info.isPublicMethod()) {
     throw Exceptions::SecurityException;
   }
 
