@@ -967,6 +967,16 @@
 - Commit: `e37ad51`
 - Artifacts/logs: `artifacts/logs/gp-list-probe-20261011.txt` (SHA-256 `fb8f6f2fe5db66583677148c20699d483a4381f686724f669b7afb3b1537e086`)
 
+## 2026-10-11 — Record CAP lookup commit metadata
+
+- Step/experiment: `wp5-cap-applet-aid-index-commit-metadata`
+- Change: Recorded the implementation and source-file-mode commits for the bounded applet AID lookup step.
+- Validation: `git ls-files -s choupi/src/jc_cap/jc_cap_applet.hpp` reports regular-file mode `100644`; both architecture builds passed for the implementation.
+- Result: The implementation is committed as `52c7c7d`; the regular-file mode correction is committed as `6f54e5e`.
+- Decision: Continue with firmware lifecycle integration.
+- Commit: pending
+- Artifacts/logs: none
+
 ## 2026-10-11 — Add bounded CAP applet AID lookup
 
 - Step/experiment: `wp5-cap-applet-aid-index`
@@ -974,5 +984,15 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed. `git diff --check` passed. Hardware/APDU validation was skipped because the current VM session reports no usable libusb context and no PC/SC service; no flash was attempted.
 - Result: The VM has a safe CAP metadata primitive for locating applet entries by AID and reading the matching install method offset. No applet is selected or executed yet.
 - Decision: Next wire the lookup into a persistent applet registry/lifecycle path; do not treat this parser primitive as SELECT or install support.
+- Commit: pending
+- Artifacts/logs: none
+
+## 2026-10-11 — Record CAP lookup commit metadata
+
+- Step/experiment: `wp5-cap-applet-aid-index-commit-metadata`
+- Change: Recorded the implementation and source-file-mode commits for the bounded applet AID lookup step.
+- Validation: `git ls-files -s choupi/src/jc_cap/jc_cap_applet.hpp` reports regular-file mode `100644`; both architecture builds passed for the implementation.
+- Result: The implementation is committed as `52c7c7d`; the regular-file mode correction is committed as `6f54e5e`.
+- Decision: Continue with firmware lifecycle integration.
 - Commit: pending
 - Artifacts/logs: none

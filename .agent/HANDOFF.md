@@ -1016,3 +1016,9 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - No applet registry, SELECT, install execution, or APDU processing exists yet.
   Next integrate this lookup into the card manager and then build persistent
   interpreter contexts/lifecycle calls.
+
+- The bounded CAP applet AID lookup implementation is committed as `52c7c7d`;
+  a follow-up correction tracked its header as a regular file in `6f54e5e`.
+  Both architecture builds passed for the implementation. The current session
+  cannot access a PC/SC service or libusb device, so it has not flashed this
+  source-only change.
