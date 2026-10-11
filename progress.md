@@ -744,5 +744,5 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V build gates. `picotool load -f -x` requested a BOOTSEL reboot but emitted no flash progress or application-reboot confirmation; the cycle's 18-second serial capture was empty and failed the CHOUPI runtime output gate. Subsequent `picotool info -a` reported no BOOTSEL device and only the CDC app at bus 1/address 120. Force-mode info likewise yielded no installed-image metadata.
 - Result: The candidate image is not confirmed flashed. The empty log is byte-identical to the prior silent capture, SHA-256 `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`.
 - Decision: Keep the corrected image ready and continue offline analysis; avoid further host bus resets.
-- Commit: pending
+- Commit: `2d7fead` (this record; metadata follow-up follows)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T054755Z.log`; candidate UF2 SHA-256 `274b8128c4259b167c52bc4f363e96d88348dd1f9540f655932232d4f4ed568f`
