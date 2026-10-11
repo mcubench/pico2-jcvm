@@ -1365,5 +1365,5 @@
   not yet runtime-verified.
 - Decision: Continue implementing the registered applet instance and lifecycle
   bridge, then verify it on the board when physical testing resumes.
-- Commit: pending
+- Commit: `36473c12e145b1b5f5e53c8fe53286f784c9f204`
 - Artifacts/logs: none (offline wrapper builds only)
