@@ -1179,6 +1179,7 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `84 E6 02 00` (INSTALL [for load]) with the package AID and ISD AID. The
   board returned `6D00`; no LOAD block followed and the CAP was not installed.
   Probe log: `artifacts/logs/gp-install-probe-20261011.txt`.
+- Probe and continuity record committed as `726d8e8`.
 - Next: add strict parsing and state for INSTALL [for load], capture the LOAD
   command framing, and implement persistent CAP staging only after its size
   and flash space requirements are known. Existing embedded static ROM-mask
