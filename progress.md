@@ -1046,3 +1046,13 @@
 - Decision: Keep the wrapper's generic delayed BOOTSEL polling for other failure classes; restore PC/SC service/access before the next APDU probe.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T111923Z.log` (SHA-256 `0eadba75a08908f07b30507e136d9546cdc5b1e5ad705de91898ed70857bc584`); UF2 SHA-256 `ec437a81244d1729c4d6713825d50c79daec6252cb22041b009819cbca8b8a45`
+
+## 2026-10-11 — Restart PC/SC after flash re-enumeration
+
+- Step/experiment: `wp5-pcsc-postflash-reader-recovery`
+- Change: Started the already-installed `pcscd.service` without sudo after the successful reflash and checked reader discovery.
+- Validation: `systemctl is-active pcscd.service` reports `active`; `lsusb -d 2e8a:0009` sees the Pico 2 CHOUPI CCID at bus 001/device 023; `timeout 8s pcsc_scan -r` reports `No reader found`. The current device node is `/dev/bus/usb/001/023`; the prior node ACL did not follow re-enumeration. No source/build/flash change in this step.
+- Result: USB device is present and firmware runtime passes, but pcscd cannot enumerate it under the current USB-node permissions. No GPPro/APDU probe was run.
+- Decision: Grant user `pcscd` read/write access to `/dev/bus/usb/001/023`, restart `pcscd.service`, and rerun `pcsc_scan -r`; then continue with GPPro/APDU validation.
+- Commit: pending
+- Artifacts/logs: none

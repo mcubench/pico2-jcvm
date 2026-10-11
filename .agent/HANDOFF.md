@@ -1077,3 +1077,12 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - The board still re-enumerates as CDC after flashing. PC/SC has no active
   daemon/reader, so APDU validation remains blocked; applet install/process and
   GlobalPlatform support are still not implemented.
+
+## PC/SC after the latest flash
+
+- Started `pcscd.service` without sudo; it is active. The Pico is present as
+  `2e8a:0009` at bus 001/device 023, but `pcsc_scan -r` reports no reader.
+  The previous per-node ACL did not follow re-enumeration. Current node:
+  `/dev/bus/usb/001/023`. Once `pcscd` is granted read/write access to that
+  node and restarted, rerun the PC/SC/GPPro probes. Do not use sudo from the
+  autonomous cycle; the user previously supplied and ran the ACL command.
