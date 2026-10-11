@@ -8,6 +8,16 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- Startup enumeration follow-up, commit `ca9bba37aeb458c848bcfd85b4e301a3351801e`:
+  disabling the SDK IRQ worker also removed the only TinyUSB polling during
+  the early `stdio_usb_connected()` wait. The CHOUPI startup now calls
+  `tud_task()` during that wait before testing CDC. ARM and RISC-V wrapper
+  builds pass. The candidate `build/arm/pico2_choupi.uf2` (SHA-256
+  `e6b0802c22f6a07fe1a908782429c22027ed047666c67d7a331a00d5ffc78f8c`) is not
+  yet flashed. The prior image is stuck in its pre-enumeration wait, so no USB
+  node is visible; an escalated `tools/flash` call is waiting for BOOTSEL
+  reattachment. Next flash this candidate, then capture CDC, confirm CCID stage
+  7/PCSC reader discovery, and retry GP INSTALL. No applet install is confirmed.
 - Newest fix, commit `a62514564543790ad4d0a5719c81b7d5638c1e1e`: CHOUPI now
   disables Pico SDK's TinyUSB IRQ worker and services `tud_task()` and deferred
   CCID commands serially in the main loop. ARM and RISC-V builds passed. The

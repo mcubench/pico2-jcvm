@@ -1237,3 +1237,13 @@
 - Decision: Attach the re-enumerated application device (`2e8a:0009`) in the VirtualBox USB menu while leaving the Pico running CHOUPI, then resume the serial and PC/SC checks.
 - Commit: `a62514564543790ad4d0a5719c81b7d5638c1e1e` (implementation; retry evidence appended in follow-up record commit)
 - Artifacts/logs: flashed `build/arm/pico2_choupi.uf2` (SHA-256 `5f33bf01f01f462eaf731623696aa8b2e36a475b036760ef47fd48e15a43674f`); no persistent serial artifact because the application USB device was not captured by the VM.
+
+## 2026-10-11 — Poll USB during early CHOUPI startup
+
+- Step/experiment: `wp7-tinyusb-startup-poll`
+- Change: Added explicit `tud_task()` polling to the pre-runtime CDC wait loop. With the IRQ worker disabled for single-context CCID processing, the earlier startup loop only checked `stdio_usb_connected()`; when disconnected, stdio output did not poll TinyUSB, so the application could remain unenumerated indefinitely.
+- Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. The current `./tools/env ./tools/flash build/arm/pico2_choupi.uf2` is waiting for RP-series USB re-enumeration because the prior image is not servicing USB during startup. Hardware flash and serial validation of this correction are pending BOOTSEL reattachment; not run yet.
+- Result: The enumeration deadlock is addressed in the candidate image; no runtime or CCID result is claimed. The JCAlgTest CAP is not confirmed installed.
+- Decision: Flash this candidate when BOOTSEL is visible, then run the finite monitor, refresh PC/SC permissions, verify the reader and CCID response completion, and repeat the JCAlgTest v1.8.2 INSTALL.
+- Commit: `ca9bba37aeb458c848bcfd85b4e301a3351801e`
+- Artifacts/logs: candidate `build/arm/pico2_choupi.uf2` (SHA-256 `e6b0802c22f6a07fe1a908782429c22027ed047666c67d7a331a00d5ffc78f8c`); build output not archived.
