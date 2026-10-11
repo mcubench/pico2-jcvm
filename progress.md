@@ -1444,7 +1444,7 @@
   current wait.
 - Decision: Keep the physical board in service. Extend serial-enumeration
   tolerance, then resume applet reconstruction and GP INSTALL/SELECT/APDU tests.
-- Commit: pending
+- Commit: `78a0c37`
 - Artifacts/logs: `artifacts/logs/monitor-choupi-class-index-20261011.txt`
   (SHA-256 `999f4652dea75934aa24ee1fa587049b982e30a2c63a8bc26701ca63d3b0a8ab`);
   failed full-cycle captures `artifacts/logs/cycle-choupi-20261011T194021Z.log`
@@ -1477,7 +1477,7 @@
 - Decision: Keep the device in runtime mode, restore PC/SC access without
   violating the no-sudo cycle constraint, then resume GPPro applet lifecycle
   verification.
-- Commit: pending
+- Commit: `dde096e`
 - Artifacts/logs: passing cycle
   `artifacts/logs/cycle-choupi-20261011T194451Z.log` (SHA-256
   `8e2efc766e495bffebfcc15722c8e5bfeaaab727ecdb91033df346d3c13c53b5`);
