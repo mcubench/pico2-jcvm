@@ -22,6 +22,13 @@ v1.8.2 and preserve the provided source trees.
   that path before attempting a real GPPro install; preserve the current static
   ROM-mask install as a working fallback.
 - CCID transport step committed as `ffa3ddf`.
+- APDU lifecycle audit is in `artifacts/logs/apdu-lifecycle-audit-20261011.txt`.
+  The current boot path runs a single static starter, the interpreter's
+  non-static entry is a TODO, `APDU.getBuffer()` returns null, and applet
+  registration/selection is absent. GlobalPlatformPro `--list` exits with
+  `SCARD_E_NO_SERVICE`; only libpcsclite is installed, not pcscd. Next work is
+  WP3: implement APDU buffer + applet lifecycle dispatch and identify a
+  non-root PC/SC daemon/driver route for host validation.
 
 - Improved `tools/flash` to wait up to 120 seconds for an RP-series USB device.
   VirtualBox had stale USB passthrough until the user toggled the device off and
