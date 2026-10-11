@@ -1109,3 +1109,16 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   the preflight path. `bash -n` and standalone sudoers parsing pass.
 - Next: user reruns `sudo ./tools/install-pcsc-sudoers`; then invoke the helper
   and confirm `pcsc_scan -r` discovers the reader. Fix committed as `5421889`.
+
+## GPPro after PC/SC recovery — 2026-10-11
+
+- The user ran the installed recovery helper successfully; `pcsc_scan -r`
+  finds `Pico 2 CHOUPI CCID`. An elevated GlobalPlatformPro 26.06.04 probe
+  connected at T=1 (ATR `3B800181`) and sent default SELECT `00A4040000`;
+  firmware replied `6D00`, and GPPro exited with invalid instruction. The
+  trace is `artifacts/logs/gp-list-probe-20261011-reader-ready.txt`, SHA-256
+  `14a11819fc90b44f3c4e3a9a9b3800e6904c9ca3472518718230a94dc2b54f21`.
+- Transport and PC/SC are working; APDU dispatch remains a placeholder. Next
+  implement default ISD SELECT (`9000`), build both targets, flash, and inspect
+  GPPro's next command to guide incremental card-manager support. Probe record
+  commit pending.
