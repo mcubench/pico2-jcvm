@@ -814,5 +814,5 @@
 - Validation: ARM and RISC-V builds passed. Picotool visibly flashed the ARM UF2 to 100% and rebooted the application. The 18-second serial capture showed all 15 persistent fields loaded, the field reference resolved to array type 17, and `setPersistentField_Reference()` returned. The cycle still exited 1 without `TEST:SUMMARY`.
 - Result: The suspected stall is after the class-121 field load and persistent write; `PUTFIELD_A phase=stored index=0` is the last runtime marker.
 - Decision: Instrument the interpreter instruction loop to locate the next bytecode that fails to complete.
-- Commit: `<pending metadata follow-up>`
+- Commit: `6baf0f9` (metadata follow-up)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T074012Z.log`, SHA-256 `997029462d5e282bd5726b40c2985070f093fa3ca07dd2aad40fb19bd08937eb`; flashed UF2 SHA-256 `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`
