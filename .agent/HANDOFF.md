@@ -22,11 +22,13 @@ v1.8.2 and preserve the provided source trees.
   `artifacts/logs/cycle-choupi-20261011T090019Z.log` (SHA-256
   `a093b8d548205e6a11dba34954509d6667fc9947cf14c18116f6f92a217f8cf7`); flashed
   UF2 SHA-256 `48f170eb971f3e9f33505eeb0d40934eced68ad8b46c6f80a31248ad8741e3cb`.
-- Next: determine a CAP installation path for the supplied JCAlgTest 1.8.2 CAP.
-  Current USB firmware exposes CDC debug and has no APDU/CCID transport or CAP
-  installer, so do not claim the CAP is installed. Check whether the existing
-  ROM-mask build can integrate the CAP, or add the required card transport and
-  installer before attempting GlobalPlatformPro.
+- The rebuilt JCAlgTest v1.8.2 CAP archive has a different outer ZIP hash, but
+  all 10 Java Card `.cap` component files match the supplied archive byte for
+  byte, including `Method.cap`. The current ARM UF2 embeds the ROM-mask image
+  generated from those JCA components, and the Pico's CDC output repeatedly
+  reports `TEST:PASS choupi_runtime`. This is a static ROM-mask installation,
+  not a GlobalPlatform APDU install. The firmware still has no APDU/CCID
+  transport or runtime CAP installer.
 
 ## Current state
 
@@ -57,10 +59,13 @@ v1.8.2 and preserve the provided source trees.
   Makefile's removed Maven assembly goal was corrected in nested commit
   `f2a3f0e8eb945e3fa027f359be78844cf1306f42`, and
   `./tools/env make -C choupi/javacard-sdk/rommask` now passes. The resulting
-  source-derived image is `build/choupi-rommask/flash-algtest.bin` (524,300
-  bytes, SHA-256 `93a6678b3288e4ee92de2fc8df4e40b9f0bef2b297f1ceae3b761ce3a71e35e6`).
-  The rebuilt CAP differs from the supplied CAP, and this pre-mask image has
-  not been integrated into firmware or flashed.
+  source-derived image is `build/choupi-rommask/flash-algtest.bin` (currently
+  524,300 bytes, SHA-256
+  `967a883ebf87955c74af84265218685414f82eaf584cab7e60651d719d11eda3`). The
+  rebuilt CAP archive hash differs from the supplied archive hash, but a
+  component-wise comparison confirms all 10 `.cap` entries match byte for
+  byte. ROMMask adapts the package for CHOUPI storage; the current UF2 includes
+  this ROM-mask image.
   Filtered CapDump output: `artifacts/logs/capdump-v182-20261010.txt`.
 - The root Pico build now has a `choupi_vm_core` object target that cross
   compiles all 34 platform-independent CHOUPI C++ translation units for both
@@ -214,16 +219,13 @@ v1.8.2 and preserve the provided source trees.
 
 ## Next action
 
-Continue the RP2350 port and CAP installation path. The restored parser and
-API source-derived ROM mask are ready, and the VM C++ sources now cross-compile
-for both Pico 2 ISA targets. Next link an ARM CHOUPI firmware image with a
-Pico-specific entry point and a documented single-context runtime/storage
-shim. Then add an install path for the exact supplied CAP, initially over a
-bounded CDC protocol if CCID is not ready. The supplied CAP differs from the
-source-rebuilt CAP, so target the exact supplied file when implementing the
-loader. The board currently runs the passing standalone smoke image; do not
-claim CHOUPI or JCAlgTest is running until a built image is flashed and its
-bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
+Continue the RP2350 port and determine whether runtime GlobalPlatform
+installation is required beyond the verified static ROM-mask deployment. The
+current ARM UF2 has been flashed and CHOUPI is running on the Pico 2. All CAP
+component payloads from the supplied v1.8.2 archive match the JCA-rebuilt
+package byte for byte; ROMMask adapts storage by relocating static fields. CDC
+is debug output only, so GPPro cannot install or select packages over this
+firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 `AlgTest_JavaCard/`, and the CHOUPI source tree.
 
 ## Latest validation
