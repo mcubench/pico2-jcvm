@@ -756,3 +756,13 @@
 - Decision: Preserve the built UF2 and continue offline analysis. The failed BOOTSEL transition now persists across both direct and cycle force requests and an application reboot.
 - Commit: `6a584c4` (this record; metadata follow-up follows)
 - Artifacts/logs: no monitor file was produced; latest cycle log remains `artifacts/logs/cycle-choupi-20261011T054755Z.log`
+
+## 2026-10-11 — Retry CHOUPI reflash with board left connected
+
+- Step/experiment: `wp1-choupi-force-load-retry`
+- Change: Re-ran the repository-gated CHOUPI cycle at the user's request, with the Pico left connected as-is.
+- Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V build gates. `picotool load -f -x` waited for BOOTSEL and emitted no flash progress; the 18-second capture was silent and failed the runtime gate. Follow-up `picotool info -a` exited 249 and still found only the CDC app at bus 1/address 120.
+- Result: Reflash is not confirmed. The new log's SHA-256 is `9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`, identical to the previous silent cycle capture.
+- Decision: Keep the current ARM candidate ready. The host's force-load route still cannot transition the running image into BOOTSEL; no JCAlgTest CAP installation occurred.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T060944Z.log`; ARM UF2 SHA-256 `274b8128c4259b167c52bc4f363e96d88348dd1f9540f655932232d4f4ed568f`

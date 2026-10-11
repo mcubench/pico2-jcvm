@@ -743,3 +743,10 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   `picotool reboot -f -u` then returned success without changing enumeration;
   `picotool info -a` still found CDC at bus 1/address 120 and no BOOTSEL.
   Therefore the application reboot did not recover a software BOOTSEL path.
+- The user clarified they had not physically changed the board and asked for a
+  reflash. Re-ran `./tools/env ./tools/cycle choupi`: both architecture build
+  gates passed, but force-load again waited for BOOTSEL and printed no flash
+  progress. The 18-second capture was silent; log SHA-256 again matched the
+  prior empty log (`9bbe51071dbc1639f08ec2cac872821a9c3aa6dbad96e05ec04360da9df34b3c`).
+  `picotool info -a` still sees only CDC at bus 1/address 120. The updated
+  image is not confirmed flashed.
