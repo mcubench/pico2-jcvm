@@ -826,3 +826,13 @@
 - Decision: Keep the host retry bounded. Add a hardware watchdog recovery path so a stalled VM can boot into BOOTSEL after the next successful flash.
 - Commit: `dfd27a5` (metadata follow-up)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T074828Z.log`, SHA-256 `bf11511b61eb8b41c6675c41ad9f8985945d20757fbab9bf2c7ea82f252bc05b`; current ARM image SHA-256 `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`
+
+## 2026-10-11 — Add watchdog-to-BOOTSEL recovery
+
+- Step/experiment: `wp1-choupi-watchdog-bootsel-recovery`
+- Change: Enabled a 15-second RP2350 watchdog before VM startup, refresh it once per interpreter instruction, and check `watchdog_enable_caused_reboot()` at startup. A watchdog timeout now enters ROM BOOTSEL directly on the next boot. The status loop refreshes the watchdog while reporting results.
+- Validation: An initial build failed because the shared VM target lacks Pico SDK hardware include paths; replaced the direct SDK call with a board-provided watchdog callback. `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` then passed. The full cycle also passed both build gates, but the already-installed pre-watchdog image remained CDC despite force-load, delayed polling, repeated picotool requests, and the CDC reset fallback. The candidate is not flashed or hardware-verified.
+- Result: Watchdog code compiles for both configured builds. Hardware watchdog recovery remains unproven until this candidate is installed once.
+- Decision: Use the watchdog candidate on the next successful BOOTSEL window; the current installed image has no watchdog recovery and stays unresponsive to software reset requests.
+- Commit: `<pending metadata follow-up>`
+- Artifacts/logs: candidate ARM UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`; failed gated cycle `artifacts/logs/cycle-choupi-20261011T075539Z.log`, SHA-256 `bf11511b61eb8b41c6675c41ad9f8985945d20757fbab9bf2c7ea82f252bc05b`

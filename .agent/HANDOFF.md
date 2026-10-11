@@ -854,3 +854,24 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   should enter ROM BOOTSEL directly so future hung runs are recoverable by the
   host wrapper without a manual power cycle. The watchdog cannot rescue the
   currently installed image; it first needs one successful upload.
+
+## Watchdog recovery candidate (2026-10-11)
+
+- Added a 15-second RP2350 watchdog before VM startup. The interpreter refreshes
+  it once per instruction via a Pico wrapper callback. If a handler blocks and
+  the timeout resets the chip, startup checks `watchdog_enable_caused_reboot()`
+  and calls `reset_usb_boot(0, 0)` before initializing USB CDC. This should make
+  a future stalled VM enter BOOTSEL without depending on its USB task.
+- ARM and RISC-V builds pass after routing the shared VM heartbeat through a
+  board callback. The first direct hardware-header include failed because the
+  shared object library lacks Pico SDK include paths; this was corrected.
+- Candidate UF2 SHA-256:
+  `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`.
+  It remains unflashed: the current pre-watchdog firmware is present as CDC but
+  does not service vendor reset or 1200-baud CDC reset requests. The robust
+  `tools/flash` wrapper rejected the request-only force-load and exhausted its
+  bounded recovery attempts. Latest log:
+  `artifacts/logs/cycle-choupi-20261011T075539Z.log`.
+- Next: flash this candidate once BOOTSEL is available. After a watchdog
+  timeout, confirm the board reappears in BOOTSEL and that the host wrapper can
+  flash it. Then resume the interpreter instruction trace.

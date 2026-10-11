@@ -35,6 +35,10 @@
 
 #include <cstdio>
 
+#ifndef PC_VERSION
+extern "C" void choupi_watchdog_update(void);
+#endif
+
 #ifdef DEBUG
 #include <string>
 #endif /* DEBUG */
@@ -110,6 +114,9 @@ uint16_t Interpretor::run() noexcept {
   //  the interpretor runs until the Java Card stack is empty
   uint32_t instruction_count = 0;
   while (stack.empty() == false) {
+#ifndef PC_VERSION
+    choupi_watchdog_update();
+#endif
     stack.getCurrentFrame().setInstructionPC(stack.getPC().getValue());
 
     // fetch: reading byte code value

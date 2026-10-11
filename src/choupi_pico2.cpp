@@ -8,11 +8,15 @@
 #include "ffi.h"
 #include "jni.hpp"
 #include "pico/stdlib.h"
+#include "hardware/watchdog.h"
+#include "pico/bootrom.h"
 
 extern "C" const uint8_t choupi_rommask_start[];
 extern "C" const uint8_t choupi_rommask_end[];
 extern "C" uint16_t runtime(uint8_t package_id, uint8_t class_id,
                              uint8_t method_id);
+
+extern "C" void choupi_watchdog_update(void) { watchdog_update(); }
 
 namespace {
 
@@ -597,6 +601,12 @@ extern "C" void path_applet_field(uint8_t applet, uint8_t package,
 }
 
 int main_arm(void) {
+  // A stalled VM can stop servicing USB reset requests. A watchdog timeout
+  // records this recovery path; on the next boot enter ROM BOOTSEL directly.
+  if (watchdog_enable_caused_reboot()) {
+    reset_usb_boot(0, 0);
+  }
+
   stdio_init_all();
   for (unsigned int attempt = 0; attempt < 120 && !stdio_usb_connected();
        ++attempt) {
@@ -617,6 +627,10 @@ int main_arm(void) {
   printf("CHOUPI:STAGE fs_init:done\r\n");
   fflush(stdout);
 
+  // Refresh once per VM instruction. If a native operation or handler wedges,
+  // the next boot enters BOOTSEL instead of returning to an unresponsive app.
+  watchdog_enable(15000, true);
+
   uint16_t status = 0x6F00;
   try {
     printf("CHOUPI:STAGE runtime:start\r\n");
@@ -636,6 +650,7 @@ int main_arm(void) {
     printf("TEST:SUMMARY pass=%u fail=%u\r\n", passed ? 1u : 0u,
            passed ? 0u : 1u);
     fflush(stdout);
+    watchdog_update();
     sleep_ms(1000);
     tight_loop_contents();
   }
