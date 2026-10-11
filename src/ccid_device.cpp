@@ -106,13 +106,23 @@ void process_message(uint8_t rhport) {
   case 0x6f: { // PC_to_RDR_XfrBlock
     const size_t apdu_length = rx_expected - 10;
     const uint8_t *apdu = rx_buffer + 10;
-    uint8_t response[] = {0x6d, 0x00};
-    // A transport-level probe is useful before the applet dispatcher exists.
-    // It does not claim to implement GlobalPlatform or Java Card APDUs.
-    if (apdu_length == 4 && apdu[0] == 0x00 && apdu[1] == 0x84) {
-      response[0] = 0x6d;
+    uint8_t response[14] = {0x6d, 0x00}; // instruction not supported
+    size_t response_length = 2;
+    // GlobalPlatformPro selects the default applet (the ISD) using a
+    // case-1-style SELECT with an empty AID before issuing card-manager APDUs.
+    // This acknowledges only that default selection; other APDUs still need
+    // the card-manager and Java Card dispatch paths.
+    if (apdu_length == 5 && apdu[0] == 0x00 && apdu[1] == 0xa4 &&
+        apdu[2] == 0x04 && apdu[3] == 0x00 && apdu[4] == 0x00) {
+      constexpr uint8_t isd_fci[] = {
+          0x6f, 0x0a, 0x84, 0x08, 0xa0, 0x00, 0x00,
+          0x01, 0x51, 0x00, 0x00, 0x00};
+      std::memcpy(response, isd_fci, sizeof(isd_fci));
+      response[sizeof(isd_fci)] = 0x90;
+      response[sizeof(isd_fci) + 1] = 0x00;
+      response_length = sizeof(isd_fci) + 2;
     }
-    send_response(rhport, 0x80, response, sizeof(response));
+    send_response(rhport, 0x80, response, response_length);
     break;
   }
   case 0x72: // PC_to_RDR_Abort

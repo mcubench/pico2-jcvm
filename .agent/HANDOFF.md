@@ -1122,3 +1122,22 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   implement default ISD SELECT (`9000`), build both targets, flash, and inspect
   GPPro's next command to guide incremental card-manager support. Probe record
   committed as `48a6656`.
+
+## Default ISD selection and FCI — 2026-10-11
+
+- The CCID driver now handles only `00 A4 04 00 00` as default ISD
+  selection, returning minimal FCI for AID `A000000151000000` and `9000`.
+  Other APDUs remain unsupported (`6D00`). Both architecture builds passed;
+  the actual Pico 2 cycle flashed successfully and emitted
+  `TEST:SUMMARY pass=1 fail=0` without `TEST:FAIL` or `FAULT`.
+- GPPro 26.06.04 parsed the corrected FCI, detected the ISD AID, then sent
+  SCP03 INITIALIZE UPDATE (`8050000008` + host challenge). That still returns
+  `6D00`, so `gp --list` has advanced but does not pass. The first FCI attempt
+  had an incorrect outer length (`6F0C`); corrected to `6F0A`.
+- Latest cycle log: `artifacts/logs/cycle-choupi-20261011T114816Z.log`, SHA-256
+  `b9afd73bf1c011b45c69944f3c0189d3f449cec2169823d1b8cd08555f9ad02d`.
+  GPPro trace: `artifacts/logs/gp-list-probe-20261011-isd-fci-fixed.txt`,
+  SHA-256 `da56ac7750d48a44cd75f5ce6949c7596bc26e98d4d38b6cccd9153fdc865cd7`.
+- Next: implement SCP03 INITIALIZE UPDATE / EXTERNAL AUTHENTICATE using the
+  default test keys, then implement GET STATUS and continue toward GP CAP load.
+  Commit pending.

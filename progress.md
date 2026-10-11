@@ -1086,3 +1086,13 @@
 - Decision: Implement explicit default-ISD SELECT handling, rebuild both architectures, flash CHOUPI, and use GPPro's next trace to drive the command handler.
 - Commit: `48a6656`
 - Artifacts/logs: `artifacts/logs/gp-list-probe-20261011-reader-ready.txt` (SHA-256 `14a11819fc90b44f3c4e3a9a9b3800e6904c9ca3472518718230a94dc2b54f21`)
+
+## 2026-10-11 — Return default ISD FCI for SELECT
+
+- Step/experiment: `wp6-default-isd-select-fci`
+- Change: The CCID APDU handler now recognizes the exact short SELECT-by-empty-AID command, identifies the default ISD as `A000000151000000`, and returns its minimal `6F/84` FCI plus `9000`. Other APDUs still return `6D00`; this does not yet implement a card manager or applet selection.
+- Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds, flashed the ARM image, and captured repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`. GPPro parsed the corrected FCI and identified the ISD. It then sent SCP03 `INITIALIZE UPDATE` (`8050000008` plus an 8-byte host challenge), which still receives `6D00`; `gp --list` therefore remains unsuccessful. An earlier FCI iteration exposed an outer TLV length error (`6F0C`); it was corrected to `6F0A` before the passing cycle and final probe.
+- Result: Default ISD selection now proceeds through FCI discovery over real PC/SC/CCID. The next blocker is secure-channel initialization and then GET STATUS/card-manager responses.
+- Decision: Implement and validate SCP03 `INITIALIZE UPDATE`/`EXTERNAL AUTHENTICATE` on the default test keys, then continue GPPro listing and CAP loading.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T114816Z.log` (SHA-256 `b9afd73bf1c011b45c69944f3c0189d3f449cec2169823d1b8cd08555f9ad02d`); `artifacts/logs/gp-list-probe-20261011-isd-fci-fixed.txt` (SHA-256 `da56ac7750d48a44cd75f5ce6949c7596bc26e98d4d38b6cccd9153fdc865cd7`); malformed-FCI trace `artifacts/logs/gp-list-probe-20261011-isd-fci.txt`
