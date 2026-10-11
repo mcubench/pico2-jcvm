@@ -694,5 +694,5 @@
 - Validation: Both ARM and RISC-V builds passed. The RP2350 entered BOOTSEL, the ARM UF2 visibly reached 100% flash progress, and the cycle captured 18 seconds. It failed the runtime gate: the trace passed `putfield_a` stores for package 20/class 57 fields 0 and 1, allocated 36,870 bytes at `0x2006C000..0x20075006`, then began loading package 20/class 121 field 0. No exception or `TEST:SUMMARY` followed. A separate 8-second monitor returned 0 with no serial bytes. `picotool reboot -F -u` did not reach BOOTSEL; the subsequent USB reset left the host with no Pico device.
 - Result: The original immediate IOException is no longer observed, but startup now stalls during persistent field loading for class 121. The default-field fix is not sufficient to pass runtime.
 - Decision: Add bounded field-load phase markers, build both architectures, and retain the trace candidate for the next BOOTSEL window. JCAlgTest v1.8.2 remains uninstalled.
-- Commit: pending
+- Commit: `d376210073bdcee34e63f352f6a08343a39197a9`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T053229Z.log`, SHA-256 `909b217b6fa27f343c27dcf7bb3ec4f5c2f2909ca36bf25c2a335ddfeedd2134`; prior flashed UF2 SHA-256 `2860767cb505cddcc6c6ec372eeceb4b7d5bd5d0e77026c909ae816294e3de03`
