@@ -738,3 +738,8 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
 - Next: keep the corrected UF2 ready and continue offline class/persistent
   field analysis. No additional USB bus reset; the current app does not
   successfully service the BOOTSEL transition.
+- A follow-up `picotool reboot -f -a` returned success, but an eight-second
+  monitor capture after the application reboot was silent. Retrying
+  `picotool reboot -f -u` then returned success without changing enumeration;
+  `picotool info -a` still found CDC at bus 1/address 120 and no BOOTSEL.
+  Therefore the application reboot did not recover a software BOOTSEL path.

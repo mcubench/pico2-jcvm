@@ -746,3 +746,13 @@
 - Decision: Keep the corrected image ready and continue offline analysis; avoid further host bus resets.
 - Commit: `2d7fead` (record commit; metadata follow-up `b27cc89`)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T054755Z.log`; candidate UF2 SHA-256 `274b8128c4259b167c52bc4f363e96d88348dd1f9540f655932232d4f4ed568f`
+
+## 2026-10-11 — Retry BOOTSEL after application reboot
+
+- Step/experiment: `wp1-pico-app-reboot-bootsel-recovery`
+- Change: Forced a normal application reboot, captured serial output for eight seconds, then retried the software BOOTSEL request. Updated the handoff with the recovery result.
+- Validation: `picotool reboot -f -a` returned success; `./tools/env ./tools/monitor --seconds 8` returned zero with no serial output. `picotool reboot -f -u` also returned success, but `picotool info -a` exited 249 and found only the CDC app at bus 1/address 120. No flash was attempted.
+- Result: Resetting the application does not restore software entry to BOOTSEL; the installed image remains unverified and the runtime emits no output.
+- Decision: Preserve the built UF2 and continue offline analysis. The failed BOOTSEL transition now persists across both direct and cycle force requests and an application reboot.
+- Commit: pending
+- Artifacts/logs: no monitor file was produced; latest cycle log remains `artifacts/logs/cycle-choupi-20261011T054755Z.log`
