@@ -17,7 +17,7 @@ v1.8.2 and preserve the provided source trees.
   class; the exact `new` operand/initial allocated class is still unknown.
   Logs: `artifacts/logs/gp-install-import-context-20261011.txt` and
   `artifacts/logs/cdc-import-context-20261011.txt`. Both builds pass and the
-  normal serial runtime self-check passes. Next add a watchdog origin field for
+  normal serial runtime self-check passes. Trace commit: `1731f4f3da58751d7ffbb2fe8bfecdfcf260c6c1`. Next add a watchdog origin field for
   the allocated class package/index and inspect the `new` operand/field walk.
 
 - Corrected imported exported-class offset byte order in
