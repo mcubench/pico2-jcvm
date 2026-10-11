@@ -249,7 +249,10 @@ void Bytecodes::bc_invokespecial() {
             remap_imported_class_token(
                 *package_aid,
                 method_ref.static_method_ref.external_ref.class_token),
-            method_ref.static_method_ref.external_ref.token);
+            remap_imported_static_method_token(
+                *package_aid,
+                method_ref.static_method_ref.external_ref.class_token,
+                method_ref.static_method_ref.external_ref.token));
         method_handler.setPackage(exported_package);
       }
     }
@@ -393,7 +396,10 @@ void Bytecodes::bc_invokestatic() {
         remap_imported_class_token(
             *package_aid,
             method_ref.static_method_ref.external_ref.class_token),
-        method_ref.static_method_ref.external_ref.token);
+        remap_imported_static_method_token(
+            *package_aid,
+            method_ref.static_method_ref.external_ref.class_token,
+            method_ref.static_method_ref.external_ref.token));
     TRACE_JCVM_DEBUG("INVOKESTATIC method offset=%u",
                      static_cast<unsigned>(method_offset));
 

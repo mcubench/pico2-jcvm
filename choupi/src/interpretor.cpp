@@ -29,6 +29,7 @@
 #include "debug.hpp"
 #include "jc_bytecodes/bytecode_values.hpp"
 #include "jc_bytecodes/bytecodes.hpp"
+#include "jc_types/jc_array.hpp"
 #include "jc_handlers/flashmemory.hpp"
 #include "jc_handlers/jc_export.hpp"
 #include "jc_handlers/jc_method.hpp"
@@ -87,17 +88,15 @@ Interpretor::Interpretor(
 Interpretor::Interpretor(const japplet_ID_t appletID,
                          const jpackage_ID_t selectedPackageID,
                          const uint16_t methodOffset,
-                         const uint16_t installArrayRef,
-                         const int16_t installOffset,
-                         const int8_t installLength) {
+                         const uint8_t *installData,
+                         const uint8_t installLength) {
   Context context(appletID, selectedPackageID);
   this->contexts.push_back(context);
   this->startingClass = 0;
   this->startingMethod = 0;
   this->isStaticStatingMethod = true;
   this->startingMethodOffset = methodOffset;
-  this->installArrayRef = installArrayRef;
-  this->installOffset = installOffset;
+  this->installData = installData;
   this->installLength = installLength;
   this->startsAtMethodOffset = true;
 }
@@ -122,11 +121,28 @@ uint16_t Interpretor::run() noexcept {
     Export_Handler exportHandler(package);
 
     if (this->startsAtMethodOffset) {
-      methodHandler.callStaticMethod(this->startingMethodOffset);
-      Stack &stack = context.getStack();
-      stack.writeLocal_Reference(0, jref_t(this->installArrayRef));
-      stack.writeLocal_Short(1, this->installOffset);
-      stack.writeLocal_Short(2, this->installLength);
+      try {
+        methodHandler.callStaticMethod(this->startingMethodOffset);
+        Stack &stack = context.getStack();
+        const jref_t install_array = context.getHeap().addArray(
+            this->installLength, JAVA_ARRAY_T_BYTE);
+        const auto install_bytes = context.getHeap().getArray(install_array);
+        for (uint16_t index = 0; index < this->installLength; ++index) {
+          install_bytes->setByteEntry(
+              index, static_cast<jbyte_t>(this->installData[index]));
+        }
+        stack.writeLocal_Reference(0, install_array);
+        stack.writeLocal_Short(1, 0);
+        stack.writeLocal_Short(2, static_cast<int8_t>(this->installLength));
+      } catch (Exceptions e) {
+        this->last_exception_id = e;
+        this->startJCVMException(e);
+        return this->status_word;
+      } catch (...) {
+        this->last_exception_id = Exceptions::SecurityException;
+        this->startJCVMException(Exceptions::SecurityException);
+        return this->status_word;
+      }
     } else {
       uint16_t methodOffset = exportHandler.getExportedStaticMethodOffset(
           this->startingClass, this->startingMethod);

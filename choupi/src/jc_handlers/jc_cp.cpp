@@ -88,6 +88,51 @@ uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
   return mapping[token];
 }
 
+uint8_t remap_imported_static_method_token(
+    const jc_cap_package_info &package_info, const uint8_t class_token,
+    const uint8_t method_token) noexcept {
+  static constexpr uint8_t framework_jcsystem_methods[] = {
+      11, 10, 12, 8,  19, 15, 16, 13, 14, 7,  1,  9,
+      2,  3,  5,  4,  17, 20, 21, 22, 23, 6,  18};
+  static constexpr uint8_t java_lang_object_methods[] = {0};
+
+  const uint8_t *mapping = nullptr;
+  size_t mapping_size = 0;
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+      class_token == 8) {
+    mapping = framework_jcsystem_methods;
+    mapping_size = sizeof(framework_jcsystem_methods);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x00\x01", 7) == 0 &&
+             class_token == 0) {
+    mapping = java_lang_object_methods;
+    mapping_size = sizeof(java_lang_object_methods);
+  }
+
+  if (mapping == nullptr || method_token >= mapping_size) {
+    return method_token;
+  }
+  return mapping[method_token];
+}
+
+uint8_t remap_imported_virtual_method_token(
+    const jc_cap_package_info &package_info, const uint8_t class_token,
+    const uint8_t method_token) noexcept {
+  static constexpr uint8_t framework_applet_methods[] = {
+      1, 2, 3, 4, 6, 7, 5, 8};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+      class_token == 3 &&
+      method_token < sizeof(framework_applet_methods)) {
+    return framework_applet_methods[method_token];
+  }
+  return method_token;
+}
+
 /**
  * Get a cp_entry
  *

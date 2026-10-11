@@ -18,9 +18,11 @@ out explicitly.
 
 ## Active: make v1.8.2 installation execute correctly
 
-- [ ] Preserve the INSTALL [for install and make selectable] installation
-  parameters and pass the correct byte array, offset, and length to
-  `Applet.install(byte[], short, byte)`.
+- [x] Parse the INSTALL [for install and make selectable] parameter field and
+  pass its exact bytes in a Java byte array with offset zero and the matching
+  byte length to `Applet.install(byte[], short, byte)`.
+- [ ] Verify the installation-parameter byte array and length in a valid VM
+  execution, including the supplied two-byte `C9 00` field.
 - [ ] Resolve JC 3.0.5 imported class and method tokens against the embedded
   CHOUPI exports. Validate each mapping against CAP/export metadata; do not
   treat a GP INSTALL status as proof that Java installation completed.

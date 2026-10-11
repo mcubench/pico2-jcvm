@@ -21,6 +21,10 @@
   established: the CAP begins with CP entry 1 tagged as an instance-field
   reference, but persisted watchdog scratch values are stale and the captured
   PC has not been mapped reliably to this CAP method stream.
+- The GP INSTALL parameter field is now retained and passed to the static
+  applet-install entry as a Java byte array, offset 0, and byte length. The last
+  APDU trace carries `C9 00`; ARM and RISC-V wrapper builds pass after the
+  change, but runtime behavior still needs physical validation.
 - Next: validate the token mappings and method/CP interpretation from local CAP
   and export metadata, fix the install execution path, build both targets, and
   make a focused commit with a progress entry. Physical flash validation is

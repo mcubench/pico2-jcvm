@@ -1325,3 +1325,26 @@
 - Decision: Continue with offline diagnosis of the JC305 install-method path.
 - Commit: `a21f7af8af70284240c49a1f030d4662620ef682`
 - Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`
+
+## 2026-10-11 — Resolve JC305 method references and seed INSTALL arguments
+
+- Step/experiment: `wp7-jc305-method-abi-and-install-args`
+- Change: Added AID-based static and virtual method-token translation for the
+  imported JC305 `JCSystem`, `Object`, and `Applet` references, preserving the
+  Applet access-flag behavior required by CHOUPI's exported method tables.
+  Captured the native-method index consumed by `impdep1`. Separately parsed GP
+  INSTALL parameters, passed their bytes into the install entry, allocated a
+  Java byte array, and seeded `install(byte[], short, byte)` locals. Setup
+  exceptions now return a status instead of escaping the `noexcept` entry.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed with no
+  compiler warnings or errors. The prior GPPro trace shows the supplied request
+  has install parameters `C9 00`; no board or PC/SC checks were run because the
+  user requested offline implementation.
+- Result: Both target variants compile with JC305 method-token translations,
+  native-call diagnostics, and the GP parameter field wired into Java install.
+  Runtime method resolution and successful applet registration remain
+  unverified.
+- Decision: Continue offline verification of JC305 tokens against API exports;
+  perform the install runtime check when the Pico is available again.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/gp-install-jc305-native-index-20261011.txt`

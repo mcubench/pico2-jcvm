@@ -56,6 +56,8 @@ int main
 extern "C" {
 #endif
 
+uint16_t choupi_vm_last_native_method_index();
+
 void choupi_ccid_task(void);
 
 uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
@@ -71,6 +73,8 @@ uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
 }
 
 uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
+                                const uint8_t *install_data,
+                                uint8_t install_length,
                                 uint8_t *exception_id,
                                 uint8_t *exception_opcode,
                                 uint32_t *exception_pc,
@@ -83,7 +87,7 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
                    static_cast<unsigned>(method_offset));
   jcvm::Interpretor interpretor(0,
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
-                                method_offset, 0, 0, 0);
+                                method_offset, install_data, install_length);
   const uint16_t status = interpretor.run();
   if (exception_id != nullptr) {
     *exception_id = interpretor.lastExceptionId();
@@ -99,6 +103,9 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
   }
   if (exception_operand != nullptr) {
     *exception_operand = interpretor.lastExceptionOperand();
+    if (interpretor.lastExceptionOpcode() == 0xFE) {
+      *exception_operand = choupi_vm_last_native_method_index();
+    }
   }
   if (exception_stack_depth != nullptr) {
     *exception_stack_depth = interpretor.lastExceptionStackDepth();
