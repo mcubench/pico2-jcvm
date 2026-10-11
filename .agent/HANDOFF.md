@@ -1150,4 +1150,4 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   default ISD and received its valid FCI and `9000`. No write command ran.
 - Trace: `artifacts/logs/gp-raw-readonly-probes-20261011.txt`, SHA-256
   `8795b672b2dd211d2ccc18ac4f5e05579671b6f22f49adaa2d7752fbefb4df5b`. Next implement SCP03; then add tag-form GET STATUS
-  and read-only GET DATA before any CAP loading.
+  and read-only GET DATA before any CAP loading. Probe record committed as `ab833a3`.

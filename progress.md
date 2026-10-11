@@ -1104,5 +1104,5 @@
 - Validation: All three commands reached the real board over PC/SC/T=1 and returned `6D00`; GPPro's automatic discovery then selected the default ISD and received the valid FCI with `9000`. No write APDU or CAP operation was sent.
 - Result: The CCID path correctly carries short APDUs, but GET STATUS, GET DATA, and secure-channel commands are all still unsupported. GPPro's normal `--list` cannot proceed until SCP03 works because that mode authenticates first.
 - Decision: Implement SCP03 first, then add tag-form GET STATUS and read-only GET DATA responses before attempting any LOAD or INSTALL command.
-- Commit: pending
+- Commit: `ab833a3`
 - Artifacts/logs: `artifacts/logs/gp-raw-readonly-probes-20261011.txt` (SHA-256 `8795b672b2dd211d2ccc18ac4f5e05579671b6f22f49adaa2d7752fbefb4df5b`)
