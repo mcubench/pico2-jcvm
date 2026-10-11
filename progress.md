@@ -836,3 +836,13 @@
 - Decision: Use the watchdog candidate on the next successful BOOTSEL window; the current installed image has no watchdog recovery and stays unresponsive to software reset requests.
 - Commit: `810f529` (metadata follow-up)
 - Artifacts/logs: candidate ARM UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`; failed gated cycle `artifacts/logs/cycle-choupi-20261011T075539Z.log`, SHA-256 `bf11511b61eb8b41c6675c41ad9f8985945d20757fbab9bf2c7ea82f252bc05b`
+
+## 2026-10-11 — Try rapid app reset followed by BOOTSEL
+
+- Step/experiment: `wp1-pico-rapid-reset-bootsel`
+- Change: Requested an application reset and then a BOOTSEL reset 200 ms later, targeting the currently attached Pico.
+- Validation: Both `picotool reboot -F -a` and `picotool reboot -F -u` returned success text, but the following `picotool info -a` still found only USB serial at bus 1/address 126 and no BOOTSEL device. No flash was attempted.
+- Result: Chaining software reset requests does not recover the currently stalled image.
+- Decision: The watchdog candidate remains the recovery route for subsequent hangs; one initial BOOTSEL entry is still needed to install it.
+- Commit: `<pending metadata follow-up>`
+- Artifacts/logs: no new cycle log; candidate UF2 remains `build/arm/pico2_choupi.uf2`, SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`

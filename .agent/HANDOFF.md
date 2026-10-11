@@ -875,3 +875,15 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
 - Next: flash this candidate once BOOTSEL is available. After a watchdog
   timeout, confirm the board reappears in BOOTSEL and that the host wrapper can
   flash it. Then resume the interpreter instruction trace.
+
+## Final software recovery check (2026-10-11)
+
+- Tried `picotool reboot -F -a`, waited 200 ms, then `picotool reboot -F -u`.
+  Both commands printed their requested-mode success message, but an immediate
+  `picotool info -a` still found the Pico in CDC mode at bus 1/address 126.
+  The installed pre-watchdog runtime is not servicing its reset requests.
+- The watchdog UF2 built for both architectures but remains unflashed. Its ARM
+  image hash is
+  `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`.
+- Next: enter BOOTSEL once, run `./tools/env ./tools/cycle choupi`, and let the
+  new watchdog provide autonomous BOOTSEL recovery if the VM stalls again.
