@@ -704,5 +704,5 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` both passed. Whitespace validation with `git -c core.whitespace=cr-at-eol diff --check -- choupi/src/jc_types/jc_instance.cpp` passed. No hardware flash was attempted because the host no longer enumerates the Pico after the USB reset.
 - Result: The trace candidate is ready to distinguish a filesystem syscall stall from type/value reconstruction; it is not hardware validated.
 - Decision: Preserve the candidate for the next BOOTSEL window. Continue toward a runtime pass before attempting the still-missing exact JCAlgTest CAP installation.
-- Commit: pending
+- Commit: `0f417104cb79f12f6c3f4c6ea157296373d3872f`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, SHA-256 `a2deabc677b6672431386a1b0aef3eb05cc6debf906b1f0bc478d19f2b86f543`; no board log for this unflashed build
