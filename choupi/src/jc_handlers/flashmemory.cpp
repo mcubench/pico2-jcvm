@@ -38,6 +38,8 @@
 #include <cstdio>
 #include <cstring>
 
+extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length);
+
 namespace jcvm {
 
 namespace {
@@ -1466,6 +1468,26 @@ bool FlashMemory_Handler::findAppletByAID(
     return false;
   }
 
+  // Check the single dynamically installed CAP first. The CCID caller runs
+  // in the USB servicing path, so avoid scanning every ROM package before
+  // resolving the common installed-AID case.
+  uint32_t dynamic_cap_length = 0;
+  const uint8_t *dynamic_cap_data =
+      choupi_cap_store_data(&dynamic_cap_length);
+  if (dynamic_cap_data != nullptr && dynamic_cap_length != 0 &&
+      dynamic_cap_length <= UINT16_MAX) {
+    const JC_Cap dynamic_cap(static_cast<uint16_t>(dynamic_cap_length),
+                             dynamic_cap_data);
+    const jc_cap_applet_component *applets = dynamic_cap.getApplet();
+    const jc_cap_app *entry =
+        applets == nullptr ? nullptr : applets->findByAID(aid, aid_length);
+    if (entry != nullptr) {
+      package_id = FlashMemory_Handler::DYNAMIC_PACKAGE_ID;
+      install_method_offset = entry->install_method_offset();
+      return true;
+    }
+  }
+
   const std::shared_ptr<const uint8_t> packages =
       FlashMemory_Handler::getPackagesArray();
   for (uint8_t id = 0; id < JCVM_MAX_PACKAGES; ++id) {
@@ -1486,6 +1508,7 @@ bool FlashMemory_Handler::findAppletByAID(
       return true;
     }
   }
+
   return false;
 }
 
@@ -1496,6 +1519,15 @@ bool FlashMemory_Handler::findAppletByAID(
  * @return the read CAP file.
  */
 JC_Cap FlashMemory_Handler::getCap(const jpackage_ID_t packageID) {
+  if (packageID == FlashMemory_Handler::DYNAMIC_PACKAGE_ID) {
+    uint32_t cap_length = 0;
+    const uint8_t *cap_data = choupi_cap_store_data(&cap_length);
+    if (cap_data == nullptr || cap_length == 0 || cap_length > UINT16_MAX) {
+      throw Exceptions::IOException;
+    }
+    return JC_Cap(static_cast<uint16_t>(cap_length), cap_data);
+  }
+
   auto &tag = FlashMemory_Handler::getCapTag(packageID);
   auto cap = getDataInPlaceFromTag(tag);
 

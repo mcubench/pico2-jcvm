@@ -8,6 +8,11 @@
 #include "scp03.hpp"
 #include "cap_load.hpp"
 
+extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
+                                           uint8_t aid_length,
+                                           uint8_t *package_id,
+                                           uint16_t *install_offset);
+
 namespace {
 constexpr uint8_t kCcidInterface = 2;
 constexpr uint8_t kEndpointOut = 0x03;
@@ -234,6 +239,15 @@ void process_message(uint8_t rhport) {
                  apdu[apdu_length - 1] == 0x00)) &&
                std::memcmp(apdu + 5, cap_load_session.instanceAid(),
                            cap_load_session.instanceAidLength()) == 0) {
+      uint8_t package_id = 0;
+      uint16_t install_method_offset = 0;
+      if (choupi_vm_find_applet(cap_load_session.instanceAid(),
+                                cap_load_session.instanceAidLength(),
+                                &package_id, &install_method_offset) != 0 ||
+          package_id != 63) {
+        send_response(rhport, 0x80, response, response_length);
+        break;
+      }
       const uint8_t aid_length = cap_load_session.instanceAidLength();
       response[0] = 0x6f;
       response[1] = static_cast<uint8_t>(aid_length + 2);

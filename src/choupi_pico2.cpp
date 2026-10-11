@@ -533,6 +533,10 @@ extern "C" uint8_t choupi_store_cap_instance(const uint8_t *aid,
   return cap_store_mark_installed(aid, aid_length) ? 0 : 1;
 }
 
+extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length) {
+  return cap_store_data(length);
+}
+
 extern "C" uint8_t fs_read_1b_at(const uint8_t *tag, uint8_t tag_length,
                                  uint32_t offset, uint8_t *value) {
   const uint8_t *data = nullptr;

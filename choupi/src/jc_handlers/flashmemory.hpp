@@ -76,6 +76,10 @@ private:
                          JC_Array &array, Heap &heap);
 
 public:
+  // Reserve the final package slot for the CAP accepted by the Pico card
+  // manager. The other package IDs continue to come from the ROM mask.
+  static constexpr jpackage_ID_t DYNAMIC_PACKAGE_ID = JCVM_MAX_PACKAGES - 1;
+
   ///  Compute tag to access to persistant data
   static fs::Tag computeTag(const fs::Tag &tag, const uint16_t index)
 #ifndef JCVM_SECURE_HEAP_ACCESS

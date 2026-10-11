@@ -1,5 +1,6 @@
 #include "cap_load.hpp"
 #include "cap_store.hpp"
+#include "jc_handlers/flashmemory.hpp"
 
 #include <cstring>
 
@@ -8,6 +9,27 @@ extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
                                              uint32_t length);
 extern "C" uint8_t choupi_store_cap_instance(const uint8_t *aid,
                                               uint8_t aid_length);
+
+extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
+                                           uint8_t aid_length,
+                                           uint8_t *package_id,
+                                           uint16_t *install_offset) {
+  if (package_id == nullptr || install_offset == nullptr) return 1;
+  try {
+    jcvm::jpackage_ID_t resolved_package = 0;
+    uint16_t resolved_offset = 0;
+    if (!jcvm::FlashMemory_Handler::findAppletByAID(
+            aid, aid_length, resolved_package, resolved_offset) ||
+        resolved_package != jcvm::FlashMemory_Handler::DYNAMIC_PACKAGE_ID) {
+      return 1;
+    }
+    *package_id = resolved_package;
+    *install_offset = resolved_offset;
+  } catch (...) {
+    return 1;
+  }
+  return 0;
+}
 
 namespace {
 constexpr uint8_t kPackageAid[] = {0x4a, 0x43, 0x41, 0x6c, 0x67,
