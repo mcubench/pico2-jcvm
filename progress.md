@@ -1535,7 +1535,7 @@
 - Decision: Retain the restored context across APDUs and implement Java Card
   lifecycle/APDU dispatch; retry GPPro install and SELECT once PC/SC can see
   the reader.
-- Commit: pending
+- Commit: `6370685`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195521Z.log` (SHA-256
   `06de173c6f70be838090a032ccf11ad92c43e2a89e1225d631087b161c1b79a0`); ARM
   UF2 SHA-256 `2211ce2bcab208aa8abfaa884ec71853f685a14934c508d2721a4d07691a7f53`.
