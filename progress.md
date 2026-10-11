@@ -1227,3 +1227,13 @@
 - Decision: Resume finite CDC capture and PC/SC/CCID validation when the Pico is visible in the VM, then retry GPPro INSTALL. Require INSTALL `9000` plus GET STATUS/SELECT confirmation before reporting success.
 - Commit: `a62514564543790ad4d0a5719c81b7d5638c1e1e`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T161525Z.log` (SHA-256 `caaa3246aa39d510563430e4c1a8c7fee6550dffa76205a2a338899fc8885ad4`); flashed `build/arm/pico2_choupi.uf2` (SHA-256 `5f33bf01f01f462eaf731623696aa8b2e36a475b036760ef47fd48e15a43674f`)
+
+## 2026-10-11 — Reflash after BOOTSEL reattachment
+
+- Step/experiment: `wp7-application-pid-passthrough`
+- Change: Retried the CHOUPI ARM image after the user reattached the board. `picotool info -a` identified the device as RP2350 BOOTSEL (`2e8a:000f`); the repository flash wrapper loaded the UF2 to 100% and reported `FLASH:PASS`.
+- Validation: `./tools/env ./tools/monitor --seconds 18` exited 1 with `ERROR: no USB serial device found` after the firmware reboot. Elevated `lsusb` then listed only the VM root hubs and VirtualBox tablet; no RP2350 USB device or serial node was available. `VBoxManage` is not installed in the guest, so application-mode USB passthrough cannot be attached from here.
+- Result: The application image is flashed, but runtime output, CCID, PC/SC, and JCAlgTest INSTALL remain unverified. No GP INSTALL command was sent.
+- Decision: Attach the re-enumerated application device (`2e8a:0009`) in the VirtualBox USB menu while leaving the Pico running CHOUPI, then resume the serial and PC/SC checks.
+- Commit: `a62514564543790ad4d0a5719c81b7d5638c1e1e` (implementation; retry evidence appended in follow-up record commit)
+- Artifacts/logs: flashed `build/arm/pico2_choupi.uf2` (SHA-256 `5f33bf01f01f462eaf731623696aa8b2e36a475b036760ef47fd48e15a43674f`); no persistent serial artifact because the application USB device was not captured by the VM.
