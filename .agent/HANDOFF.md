@@ -1121,4 +1121,4 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Transport and PC/SC are working; APDU dispatch remains a placeholder. Next
   implement default ISD SELECT (`9000`), build both targets, flash, and inspect
   GPPro's next command to guide incremental card-manager support. Probe record
-  commit pending.
+  committed as `48a6656`.

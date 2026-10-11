@@ -1084,5 +1084,5 @@
 - Validation: The elevated host-side read-only probe connected to `Pico 2 CHOUPI CCID`, negotiated T=1 with ATR `3B800181`, and sent `00A4040000`. The card returned `6D00`; GPPro exited with `Could not SELECT default selected: 0x6D00 (Invalid INStruction)`. `pcsc_scan -r` had already confirmed the reader. No CAP install or write APDU was sent.
 - Result: USB, CCID, PC/SC and APDU transport work. The remaining immediate failure is firmware's placeholder APDU response; the default-selected ISD path and GlobalPlatform commands are not implemented.
 - Decision: Implement explicit default-ISD SELECT handling, rebuild both architectures, flash CHOUPI, and use GPPro's next trace to drive the command handler.
-- Commit: pending
+- Commit: `48a6656`
 - Artifacts/logs: `artifacts/logs/gp-list-probe-20261011-reader-ready.txt` (SHA-256 `14a11819fc90b44f3c4e3a9a9b3800e6904c9ca3472518718230a94dc2b54f21`)
