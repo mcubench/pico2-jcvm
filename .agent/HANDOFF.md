@@ -1405,6 +1405,7 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `impdep1` PC `0x10047BF8`. The CAP is not installed.
 - Logs: `artifacts/logs/gp-install-jc305-token-remap-20261011.txt` and
   `artifacts/logs/gp-install-jc305-method-token-remap-20261011.txt`.
+- Implementation commit: `a71356d`.
 - Next: capture the native index consumed by `impdep1`, map it to the generated
   native handler, implement the required constructor operation, then rebuild,
   flash, and repeat GPPro INSTALL. Keep USB recovery via the bounded
