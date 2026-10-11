@@ -628,6 +628,16 @@
 - Commit: pending
 - Artifacts/logs: none
 
+## 2026-10-11 — Correct applet header file mode
+
+- Step/experiment: `wp5-cap-applet-aid-index-file-mode`
+- Change: Corrected the new C++ header's Git mode from executable to regular source-file mode; the imported CHOUPI checkout carried broad filesystem permissions.
+- Validation: Rechecked the file mode and ran `git diff --check`. The ARM and RISC-V builds from the immediately preceding code commit passed; source contents are unchanged.
+- Result: The applet metadata header is tracked as a regular source file.
+- Decision: Continue implementation from the committed parser primitive.
+- Commit: pending
+- Artifacts/logs: none
+
 ## 2026-10-10 — Boot CHOUPI after overlay SRAM reduction
 
 - Step/experiment: `wp1-choupi-overlay-32k-hardware`
