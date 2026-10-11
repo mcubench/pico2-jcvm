@@ -1512,3 +1512,30 @@
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195102Z.log` (SHA-256
   `420c05f8ea0ae1ae7689f31aa57a8e87ec4d611ca59a9cf5a00e20592d956595`); ARM
   UF2 SHA-256 `48c6a1a4871365ba6964e9b141c43eefda53abf61e2aa97507adfe66da17b9ac`.
+
+## 2026-10-11 — Restore the applet root during AID SELECT
+
+- Step/experiment: `wp7-restore-applet-on-select`
+- Change: Added a C bridge that creates a fresh applet `Context`, restores the
+  persistent root by package/class index, verifies the decoded field graph,
+  and returns a failure status on inconsistency. The CCID AID SELECT path now
+  invokes this bridge when version-2 CAP metadata contains the class index;
+  older version-1 headers retain their previous FCI behavior. Failed restore
+  returns `6F00`.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The real
+  `./tools/cycle choupi` passed both builds, flash, and 18-second serial
+  capture with repeated `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. The cycle does not send AID SELECT, so the new
+  restore-on-SELECT branch was not exercised. GlobalPlatformPro currently sees
+  no available readers: pcscd is active, but its service account has no access
+  to the Pico USB node. No applet APDU was sent.
+- Result: Version-2 applet AID SELECT now performs object reconstruction and
+  integrity checks before returning FCI. It still discards the temporary
+  context/reference and does not invoke `select()` or `process()`.
+- Decision: Retain the restored context across APDUs and implement Java Card
+  lifecycle/APDU dispatch; retry GPPro install and SELECT once PC/SC can see
+  the reader.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195521Z.log` (SHA-256
+  `06de173c6f70be838090a032ccf11ad92c43e2a89e1225d631087b161c1b79a0`); ARM
+  UF2 SHA-256 `2211ce2bcab208aa8abfaa884ec71853f685a14934c508d2721a4d07691a7f53`.

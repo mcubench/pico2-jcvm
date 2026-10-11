@@ -60,6 +60,21 @@ uint16_t choupi_vm_last_native_method_index();
 
 void choupi_ccid_task(void);
 
+uint8_t choupi_vm_restore_applet(uint8_t package_id,
+                                 uint16_t class_index) {
+  try {
+    jcvm::Context context(0, static_cast<jcvm::jpackage_ID_t>(package_id));
+    return context.restoreAppletInstance(
+               static_cast<jcvm::jpackage_ID_t>(package_id),
+               static_cast<jcvm::jclass_index_t>(class_index)) &&
+                   context.hasRestoredAppletInstance()
+               ? 0
+               : 1;
+  } catch (...) {
+    return 1;
+  }
+}
+
 uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
   TRACE_JCVM_DEBUG("Starting JCVM");
 

@@ -20,8 +20,9 @@ out explicitly.
 
 Current environment note: physical testing is active again. The repository
 cycle can flash the Pico and pass its finite serial checks. The PC/SC daemon is
-currently not running (`GlobalPlatformPro` returns `SCARD_E_NO_SERVICE`), so
-GPPro card operations need PC/SC restored before install testing can resume.
+running, but it has no reader because the service account cannot access the
+Pico USB node; GlobalPlatformPro reports no available readers. GPPro card
+operations need reader access restored before install testing can resume.
 The PC build wrapper is available; Cargo still cannot fetch the uncached
 `ipc-channel` dependency because crates.io DNS/network access is unavailable.
 
@@ -29,10 +30,10 @@ Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's
 fields under a reserved persistent applet root after a successful install
 method return. CAP metadata now also records the registered class index in a
-version-2 header while continuing to read version-1 headers. Reconstructing the
-instance after reboot and using the index for lifecycle/APDU dispatch is still
-incomplete; installation rollback and duplicate/invalid registration handling
-also remain unverified.
+version-2 header while continuing to read version-1 headers. The v2 SELECT path
+reconstructs and validates the object graph before returning FCI, but the
+reference is not yet used for Java lifecycle/APDU dispatch. Installation
+rollback and duplicate/invalid registration handling also remain unverified.
 
 - [x] Parse the INSTALL [for install and make selectable] parameter field and
   pass its exact bytes in a Java byte array with offset zero and the matching
@@ -60,7 +61,8 @@ also remain unverified.
 - [ ] Reconstruct the persisted applet object after reboot using its stored
   class index, then dispatch applet lifecycle methods. A `Context` restore
   helper now resolves the reserved root, verifies package/class identity, and
-  eagerly decodes fields; it is not yet wired into CCID SELECT or exercised
+  eagerly decodes fields. CCID SELECT invokes this helper when version-2
+  metadata supplies the class index; the branch has not yet been exercised
   against an installed applet.
 - [ ] Dispatch SELECT, `select()`, `deselect()`, and `process()` through the
   interpreter for the selected applet.

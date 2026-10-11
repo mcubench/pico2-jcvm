@@ -12,6 +12,8 @@ extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
                                            uint8_t *package_id,
                                            uint16_t *install_offset);
+extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
+                                             uint16_t class_index);
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;
@@ -301,6 +303,15 @@ void process_message(uint8_t rhport) {
                                 cap_load_session.instanceAidLength(),
                                 &package_id, &install_method_offset) != 0 ||
           package_id != 63) {
+        send_response(rhport, 0x80, response, response_length);
+        break;
+      }
+      uint16_t applet_class_index = 0xffff;
+      if (cap_load_session.appletClassIndex(applet_class_index) &&
+          choupi_vm_restore_applet(package_id, applet_class_index) != 0) {
+        response[0] = 0x6f;
+        response[1] = 0x00;
+        response_length = 2;
         send_response(rhport, 0x80, response, response_length);
         break;
       }

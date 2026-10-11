@@ -9,9 +9,9 @@
   runtime PASS/SUMMARY markers instead of requiring the one-time BOOT line.
   The full `./tools/cycle choupi` now passes on the real board: ARM and RISC-V
   builds pass, the Pico is flashed, and the 18-second capture reports repeated
-  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The reader still
-  needs a running PC/SC daemon for GPPro; current GPPro probe returns
-  `SCARD_E_NO_SERVICE`.
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. PC/SC is active,
+  but the daemon currently lists no readers because its service account lacks
+  access to the Pico's current USB node.
 - Root `TODO.md` is the current acceptance-criteria tracker. The installed CAP
   blob and synthetic registry/SELECT path are not evidence that the Java
   constructor, `Applet.register`, or applet `process()` executed.
@@ -34,10 +34,11 @@
   (applet owner 0), with no atomic cleanup if the card-manager AID write fails.
 - `Context::restoreAppletInstance(package, class)` now resolves the serialized
   root by tag, verifies the stored package and class, and eagerly decodes its
-  persisted fields. This helper builds on both architectures and the board
-  runtime self-check passes, but it is not yet wired into CCID SELECT, the
-  returned reference is not used for Java lifecycle calls, and restoration has
-  not been exercised on the board.
+  persisted fields. CCID AID SELECT calls this helper when v2 metadata supplies
+  the class index, returning `6F00` if restoration fails. Both architecture
+  builds and the board runtime self-check pass, but the v2 SELECT branch has
+  not been exercised on the board and its returned reference is not retained
+  for Java lifecycle calls.
 - The worktree contains preserved, uncommitted JC305 token-remapping and install
   diagnostics in `choupi/src/jc_bytecodes/bc_invoke.cpp`,
   `choupi/src/jc_handlers/jc_class.cpp`, `jc_cp.cpp`, `jc_cp.hpp`,
