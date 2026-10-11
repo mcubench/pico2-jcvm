@@ -854,5 +854,5 @@
 - Validation: `bash -n tools/flash` passed. `git diff --check -- tools/flash` passed. A 60-second host USB observation found no RP-series device; `./tools/doctor` confirmed host prerequisites but does not inspect the live USB connection. Hardware flashing was not attempted because the board is not enumerated.
 - Result: The flasher will resume automatically if the Pico reappears within 120 seconds of a cycle starting. Current watchdog UF2 remains unflashed; no hardware validation was possible in this step.
 - Decision: Keep the wait bounded and fail with a reconnect-specific message if USB does not return; rerun the gated CHOUPI cycle once the RP-series device enumerates.
-- Commit: `<recorded in immediate metadata follow-up>`
+- Commit: `5f6842b` (metadata follow-up records this SHA)
 - Artifacts/logs: no new log; watchdog UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `607a0804a414115eea58f912a2ad0dafafa20cc319ddfca0ed84189fed5dec6d`
