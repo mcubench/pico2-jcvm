@@ -8,6 +8,21 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- Newest fix, commit `a62514564543790ad4d0a5719c81b7d5638c1e1e`: CHOUPI now
+  disables Pico SDK's TinyUSB IRQ worker and services `tud_task()` and deferred
+  CCID commands serially in the main loop. ARM and RISC-V builds passed. The
+  cycle flashed the image, but the monitor could not find a CDC node after USB
+  re-enumeration. After the user reinserted the board in BOOTSEL, the repository
+  flash wrapper reported 100% and `FLASH:PASS`; the board then disappeared from
+  the VM USB bus again, so runtime and CCID behavior are not yet confirmed.
+  Last `lsusb` showed only the VirtualBox tablet and root hubs. The preceding
+  image showed CCID stage 6 after two requests, indicating responses were
+  queued but not completing; the new single-context loop is intended to fix
+  that endpoint race and the prior one-second servicing delay. Next: when Pico
+  USB is visible in the VM, capture the finite serial log, confirm stage 7 and
+  PC/SC reader discovery, then repeat the exact JCAlgTest v1.8.2 GP INSTALL.
+  Do not report installation unless GPPro returns `9000` and GET STATUS/SELECT
+  confirms the applet.
 - Latest install watchdog diagnostic build (`artifacts/logs/cycle-choupi-20261011T145623Z.log`) passed ARM/RISC-V builds, flashed to 100%, and passed the normal CHOUPI runtime test. It adds a five-second interpreter-loop deadline and watchdog scratch breadcrumbs for the last raw INSTALL opcode. GlobalPlatformPro v1.8.2 `--install` still fails after sending INSTALL: the host sees `SCARD_F_COMM_ERROR`, CDC output stops, and pcscd loses the reader although USB remains `2e8a:0009`. Scratch recovery did not print because the event may not have been a watchdog reboot or USB reattachment lost the logger. The cycle wrapper's three picotool attempts and CDC 1200-baud fallback also failed on the stalled image. Latest failed APDU trace is `artifacts/logs/gp-install-watchdog-scratch-20261011-apdu.txt`; latest captured CDC trace is `artifacts/logs/gp-install-watchdog-scratch-20261011.txt`.
 - Immediate next action: recover/re-attach the Pico USB device, then query pcscd and capture a fresh finite CDC log. If the breadcrumb is present, map its XIP PC to the CAP/VM handler. Otherwise instrument the CCID callback stages in persistent watchdog scratch and determine why the APDU callback stops servicing USB. Do not report the applet installed; no INSTALL `9000` has been observed.
 - The watchdog diagnostic implementation is recorded in `progress.md` under `wp7-install-watchdog-trace`; code commit is `d86489e` and the progress SHA follow-up is `6d708a8`.

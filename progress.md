@@ -1217,3 +1217,13 @@
 - Decision: Restore USB passthrough or power-cycle the board, flash this image, confirm the runtime self-test, then retry JCAlgTest v1.8.2 INSTALL. Keep the install status unconfirmed unless GPPro receives `9000` and GET STATUS/SELECT confirm it.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T153015Z.log` (SHA-256 `6c0412947bb6d39e26210f5ff214ca26bae5709bd3b9e7190978d244e56dde1f`); candidate UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `f34f79fce442792fb099e00977521c73e3d03f7892d7f9483cb34e4038016fab`)
+
+## 2026-10-11 — Serialize CCID endpoint operations with TinyUSB polling
+
+- Step/experiment: `wp7-ccid-single-context`
+- Change: Disabled Pico SDK's background TinyUSB IRQ task for the CHOUPI image. The main loop now polls `tud_task()` continuously and handles deferred CCID messages in the same context, and prints bounded status output once per second. This follows evidence that two CCID requests were processed and responses queued (debug stage 6), but no IN-completion callback ran while endpoint operations crossed the IRQ/main-loop contexts.
+- Validation: `./tools/env ./tools/cycle choupi` built ARM and RISC-V successfully and flashed the image to 100%, but exited 1 because its finite monitor found no USB serial node after re-enumeration. After the user reinserted BOOTSEL, `./tools/env ./tools/flash build/arm/pico2_choupi.uf2` detected BOOTSEL and completed with `FLASH:PASS`; a subsequent `./tools/env ./tools/monitor --seconds 18` also exited 1 because the Pico was no longer enumerated in the VM. `pcsc_scan -r` did not discover a reader before the reflash. No install APDU was attempted in this step.
+- Result: The dual-build and flash gates pass; runtime self-test and CCID endpoint completion are unverified because USB passthrough dropped after the BOOTSEL-to-application reboot. JCAlgTest installation remains unconfirmed.
+- Decision: Resume finite CDC capture and PC/SC/CCID validation when the Pico is visible in the VM, then retry GPPro INSTALL. Require INSTALL `9000` plus GET STATUS/SELECT confirmation before reporting success.
+- Commit: `a62514564543790ad4d0a5719c81b7d5638c1e1e`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T161525Z.log` (SHA-256 `caaa3246aa39d510563430e4c1a8c7fee6550dffa76205a2a338899fc8885ad4`); flashed `build/arm/pico2_choupi.uf2` (SHA-256 `5f33bf01f01f462eaf731623696aa8b2e36a475b036760ef47fd48e15a43674f`)
