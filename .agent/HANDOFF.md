@@ -970,3 +970,18 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   expected group, so trigger the current device's rule and restart pcscd. Then
   test a raw APDU through GPPro. The current XfrBlock result remains placeholder `6D00`;
   applet dispatch, CAP install, and GlobalPlatform support are not implemented.
+
+## PC/SC transport verified (2026-10-11)
+
+- The user restored pcscd access after the Pico re-enumerated. `pcsc_scan -r`
+  lists the Pico 2 CHOUPI reader. GlobalPlatformPro connected using T=1 with
+  ATR `3B800181`, began a transaction, and sent `00A4040000`; the board returned
+  `6D00` twice. The GPPro command exits 1 because this is the deliberately
+  unimplemented XfrBlock placeholder response, not because PC/SC failed.
+- This confirms USB CCID enumeration, activation, PC/SC transaction handling,
+  and APDU-level XfrBlock request/response transport on the real board.
+  Detailed output is in `artifacts/logs/pcsc-apdu-probe-20261011.txt` and the
+  corresponding `progress.md` entry.
+- Next: find a minimal route from XfrBlock into the statically embedded
+  JCAlgTest applet. Applet lifecycle and CAP loading remain unsupported; do not
+  report the placeholder `6D00` as an applet response.
