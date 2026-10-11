@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -eq 1 ]] || die "usage: ./tools/flash <image.uf2>"
+image="$1"
+[[ -f "$image" ]] || die "flash image not found: ${image}"
+require_command picotool
+require_command timeout
+require_command stty
+
+is_bootsel() {
+  local info
+  if ! info="$(timeout --signal=TERM --kill-after=2s 4s picotool info -a 2>&1)"; then
+    return 1
+  fi
+  grep -Eq 'boot type:[[:space:]]*bootsel' <<<"${info}"
+}
+
+wait_for_bootsel() {
+  local limit="$1"
+  local elapsed
+  for ((elapsed = 0; elapsed <= limit; elapsed++)); do
+    if is_bootsel; then
+      printf 'FLASH:BOOTSEL detected wait_seconds=%s\n' "${elapsed}"
+      return 0
+    fi
+    if ((elapsed < limit)); then
+      sleep 1
+    fi
+  done
+  printf 'FLASH:BOOTSEL wait timed out after %s seconds\n' "${limit}"
+  return 1
+}
+
+request_bootsel() {
+  local attempt="$1"
+  printf 'FLASH:BOOTSEL request attempt=%s method=picotool\n' "${attempt}"
+  if timeout --signal=TERM --kill-after=2s 8s picotool reboot -F -u; then
+    return 0
+  fi
+  printf 'FLASH:BOOTSEL picotool request did not complete cleanly\n'
+  return 0
+}
+
+request_cdc_bootsel() {
+  local ports=()
+  local port
+  shopt -s nullglob
+  ports=(/dev/serial/by-id/usb-Raspberry_Pi_Pico_*)
+  if ((${#ports[@]} != 1)); then
+    ports=(/dev/ttyACM*)
+  fi
+  shopt -u nullglob
+  if ((${#ports[@]} != 1)); then
+    printf 'FLASH:BOOTSEL CDC fallback skipped; found %s unambiguous Pico serial ports\n' "${#ports[@]}"
+    return 1
+  fi
+  port="${ports[0]}"
+  printf 'FLASH:BOOTSEL request method=cdc-1200 port=%s\n' "${port}"
+  if timeout --signal=TERM --kill-after=1s 3s stty -F "${port}" 1200 raw -echo; then
+    return 0
+  fi
+  printf 'FLASH:BOOTSEL CDC 1200-baud request did not complete cleanly\n'
+  return 1
+}
+
+run_load() {
+  local mode="$1"
+  local load_capture
+  local load_status
+  local normalized_load
+  local -a load_command=(picotool load)
+  load_capture="$(mktemp)"
+  if [[ "${mode}" == force ]]; then
+    load_command+=(-f)
+  fi
+  load_command+=(-x "${image}")
+  printf 'FLASH:LOAD mode=%s\n' "${mode}"
+  set +e
+  timeout --signal=TERM --kill-after=5s 60s "${load_command[@]}" 2>&1 | tee "${load_capture}"
+  load_status=${PIPESTATUS[0]}
+  set -e
+  normalized_load="$(tr '\r' '\n' < "${load_capture}")"
+  rm -f "${load_capture}"
+  if ((load_status != 0)); then
+    printf 'FLASH:LOAD failed status=%s\n' "${load_status}"
+    return 1
+  fi
+  if ! grep -Eq 'Loading into Flash:.*100%' <<<"${normalized_load}" || \
+      ! grep -q 'The device was rebooted to start the application' <<<"${normalized_load}"; then
+    printf 'FLASH:LOAD returned without a confirmed 100%% flash and application reboot\n'
+    return 1
+  fi
+  printf 'FLASH:PASS image=%s\n' "${image}"
+  return 0
+}
+
+recover_bootsel() {
+  local attempt
+  if wait_for_bootsel 45; then
+    return 0
+  fi
+  for attempt in 1 2 3; do
+    request_bootsel "${attempt}"
+    if wait_for_bootsel 20; then
+      return 0
+    fi
+    if ((attempt == 1)); then
+      request_cdc_bootsel || true
+      if wait_for_bootsel 20; then
+        return 0
+      fi
+    fi
+  done
+  die "Pico did not enter BOOTSEL after force-load, delayed polling, three reboot requests, and CDC reset fallback"
+}
+
+printf 'FLASH:IMAGE path=%s\n' "${image}"
+if is_bootsel; then
+  printf 'FLASH:BOOTSEL already available\n'
+  run_load normal || die "direct BOOTSEL flash failed"
+else
+  if run_load force; then
+    exit 0
+  fi
+  if recover_bootsel; then
+    run_load normal || die "retry from BOOTSEL failed"
+  fi
+fi

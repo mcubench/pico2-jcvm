@@ -832,3 +832,25 @@ bounded serial/APDU output is inspected. Preserve `.local-toolchain/`,
   where execution stalls after `PUTFIELD_A phase=stored index=0`. The flashed
   candidate hash is
   `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`.
+
+## Robust flashing wrapper (2026-10-11)
+
+- Added executable `tools/flash`; `tools/cycle` now calls it after both builds.
+  The wrapper runs force-load first, but requires picotool's explicit 100%
+  flash and application-reboot messages. If force-load only requests BOOTSEL,
+  it polls for BOOTSEL for up to 45 seconds, then retries reset requests with
+  bounded 20-second waits and one CDC 1200-baud fallback.
+- Script syntax validation passed. A full CHOUPI cycle passed ARM and RISC-V
+  builds but the connected firmware remained CDC. The helper correctly failed
+  instead of claiming that flash succeeded. Log:
+  `artifacts/logs/cycle-choupi-20261011T074828Z.log`, SHA-256
+  `bf11511b61eb8b41c6675c41ad9f8985945d20757fbab9bf2c7ea82f252bc05b`.
+- The ARM link map includes both `tud_cdc_line_coding_cb` and
+  `usb_reset_interface_control_xfer_cb`, but the current CHOUPI runtime is
+  stalled and does not service either reset route. The candidate diagnostic
+  UF2 is `build/arm/pico2_choupi.uf2`, SHA-256
+  `cf0c219a391e54c40dbc251591ae89f7a49adc0c515903adbcefa79b6d903ba5`.
+- Next: add an instruction-fed watchdog. On a watchdog timeout, the next startup
+  should enter ROM BOOTSEL directly so future hung runs are recoverable by the
+  host wrapper without a manual power cycle. The watchdog cannot rescue the
+  currently installed image; it first needs one successful upload.

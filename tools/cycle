@@ -16,9 +16,13 @@ log_dir="${repo_root}/artifacts/logs"
 mkdir -p "$log_dir"
 log_file="${log_dir}/cycle-${arch}-$(date -u +%Y%m%dT%H%M%SZ).log"
 printf 'CYCLE:FLASH arch=%s image=%s\n' "$arch" "${image#${repo_root}/}" | tee "$log_file"
-picotool load -f -x "$image" 2>&1 | tee -a "$log_file"
+"${repo_root}/tools/flash" "$image" 2>&1 | tee -a "$log_file"
+capture_seconds=8
+if [[ "${arch}" == choupi ]]; then
+  capture_seconds=18
+fi
 set +e
-"${repo_root}/tools/monitor" --seconds 8 2>&1 | tee -a "$log_file"
+"${repo_root}/tools/monitor" --seconds "${capture_seconds}" 2>&1 | tee -a "$log_file"
 monitor_status=${PIPESTATUS[0]}
 set -e
 (( monitor_status == 0 )) || die "serial monitor failed with status ${monitor_status}; log: ${log_file}"
