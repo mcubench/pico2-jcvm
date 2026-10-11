@@ -1257,3 +1257,13 @@
 - Decision: Recover BOOTSEL/application USB passthrough and inspect the persisted install watchdog breadcrumb or instrument the operation that stalls before retrying INSTALL. Do not report the applet installed without a successful INSTALL and GET STATUS/SELECT confirmation.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/gp-install-retry-20261011.txt` (SHA-256 `6287cb1c09e0855913307e521eddaa48a3cbe60baa2133c3033ef9ac28125f0b`); flashed UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `e6b0802c22f6a07fe1a908782429c22027ed047666c67d7a331a00d5ffc78f8c`)
+
+## 2026-10-11 — Pinpoint the first blocking INSTALL operation
+
+- Step/experiment: `wp7-install-new-substage-trace`
+- Change: Added watchdog-persistent stages around the Java Card `new` bytecode's constant-pool resolution and object allocation, and included the stage in the post-watchdog CDC report.
+- Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` passed. The repository flash wrapper entered BOOTSEL through its CDC 1200-baud recovery and flashed the ARM image to 100% (`FLASH:PASS`). `./tools/env ./tools/monitor --seconds 8` passed repeatedly with `TEST:SUMMARY pass=1 fail=0`. The authorized PC/SC helper restored access; GPPro authenticated and loaded every v1.8.2 CAP block (`9000`), but final INSTALL `84E60C00` caused `SCARD_E_READER_UNAVAILABLE` after about 17 seconds. CDC recovery reported `pc=101C4EFA opcode=8F count=1 stage=2`; stage 2 means constant-pool resolution completed and the stall occurred inside `Heap::addInstance` before returning to `bc_new`.
+- Result: The watchdog recovery and serial reconnect can now retain a specific VM substage across the reset. The first blocking bytecode is `new`; the object allocation path is the failing operation. No INSTALL status `9000` or applet registry confirmation was received.
+- Decision: Instrument `Heap::addInstance`, the `JC_Instance` constructor, and the superclass field-size walk to identify the exact blocking suboperation before another bounded install retry.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/gp-install-substage-20261011.txt` (SHA-256 `80e4a7b35042ecaa970834a9df197f32b568435398c8eb6b23f9312a6fc1ca53`); `artifacts/logs/cdc-install-stage2-recovery-20261011.txt` (SHA-256 `739eb43c42d4925539a55abdf620a5cbcd8c5798e6d3cca0bd0aeafb1fe859e6`); flashed UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `f38acbf07f0720ade74385d25f3f694e48596bd761e3aa150f2b925063c11cf3`)

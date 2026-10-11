@@ -8,6 +8,20 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- The latest diagnostic flash adds a persistent substage marker for `new`. Both
+  ARM/RISC-V builds passed, the `f38acbf...` ARM UF2 flashed, and the 8-second
+  CDC capture passed the normal runtime test. A bounded v1.8.2 GP INSTALL again
+  loaded all CAP blocks (`9000`) then caused the 15-second hardware watchdog to
+  reset the board. The reopened CDC capture reported
+  `WATCHDOG_RECOVERY ... pc=101C4EFA opcode=8F count=1 stage=2`: the first
+  `new` bytecode completed constant-pool class resolution and wedged inside
+  `Heap::addInstance`. The board recovered in application mode, but INSTALL
+  returned no status word and JCAlgTest remains uninstalled. Logs:
+  `artifacts/logs/gp-install-substage-20261011.txt` and
+  `artifacts/logs/cdc-install-stage2-recovery-20261011.txt`. Next instrument
+  the `JC_Instance` constructor and superclass field-size walk inside
+  `Heap::addInstance`; then rebuild both architectures, flash, and retry once
+  with CDC capture active.
 - Startup polling fix, commit `ca9bba37aeb458c848bcfd85b4e301a3351801e`, is
   now confirmed on hardware. The Pico appeared in RP2350 BOOTSEL (`2e8a:000f`);
   `./tools/env ./tools/flash build/arm/pico2_choupi.uf2` reached 100% and
