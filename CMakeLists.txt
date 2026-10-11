@@ -21,6 +21,12 @@ if(LOCAL_ARM_NEWLIB_LIBRARY_DIR)
   link_directories("${LOCAL_ARM_NEWLIB_LIBRARY_DIR}")
 endif()
 pico_sdk_init()
+if(TARGET pico_mbedtls_headers)
+  # This SDK checkout stores mbedtls_config.h inside include/mbedtls while its
+  # Pico wrapper includes the header without the mbedtls/ prefix.
+  target_include_directories(pico_mbedtls_headers SYSTEM INTERFACE
+    "${PICO_SDK_PATH}/lib/mbedtls/include/mbedtls")
+endif()
 
 add_executable(pico2_trng src/board_smoke.c)
 target_link_libraries(pico2_trng PRIVATE pico_stdlib pico_rand)
@@ -72,6 +78,8 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     choupi/src/main.cpp
     src/choupi_pico2.cpp
     src/ccid_device.cpp
+    src/scp03.cpp
+    "${PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
     $<TARGET_OBJECTS:choupi_vm_core>)
   target_include_directories(pico2_choupi PRIVATE
@@ -85,7 +93,8 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     -Wno-array-bounds
     -Wno-format)
   target_compile_definitions(pico2_choupi PRIVATE DEBUG)
-  target_link_libraries(pico2_choupi PRIVATE pico_stdlib)
+  target_link_libraries(pico2_choupi PRIVATE pico_stdlib pico_rand
+    pico_mbedtls_headers)
   pico_enable_stdio_usb(pico2_choupi 1)
   # Supply a composite CDC + CCID configuration descriptor from the app. Keep
   # the SDK's CDC stdio implementation but omit its CDC-only descriptor object.

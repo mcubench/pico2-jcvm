@@ -5,6 +5,7 @@
 #include "device/usbd_pvt.h"
 #include "pico/unique_id.h"
 #include "tusb.h"
+#include "scp03.hpp"
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;
@@ -47,6 +48,7 @@ size_t rx_expected = 0;
 uint8_t slot_state = 1; // present, inactive
 uint8_t ep_out = 0;
 uint8_t ep_in = 0;
+Scp03Session secure_channel;
 
 uint32_t read_le32(const uint8_t *p) {
   return static_cast<uint32_t>(p[0]) |
@@ -98,6 +100,7 @@ void process_message(uint8_t rhport) {
     break;
   case 0x63: // PC_to_RDR_IccPowerOff
     slot_state = 1;
+    secure_channel.reset();
     send_response(rhport, 0x81, nullptr, 0, slot_state);
     break;
   case 0x65: // PC_to_RDR_GetSlotStatus
@@ -106,12 +109,66 @@ void process_message(uint8_t rhport) {
   case 0x6f: { // PC_to_RDR_XfrBlock
     const size_t apdu_length = rx_expected - 10;
     const uint8_t *apdu = rx_buffer + 10;
-    uint8_t response[14] = {0x6d, 0x00}; // instruction not supported
+    uint8_t response[32] = {0x6d, 0x00}; // instruction not supported
     size_t response_length = 2;
+    if (apdu_length >= 2 && apdu[0] == 0x80 && apdu[1] == 0x50) {
+      size_t data_length = 0;
+      if (secure_channel.initializeUpdate(apdu, apdu_length, response,
+                                          sizeof(response) - 2, data_length)) {
+        response[data_length] = 0x90;
+        response[data_length + 1] = 0x00;
+        response_length = data_length + 2;
+      } else {
+        response[0] = apdu_length >= 5 && apdu[4] != 0x08 ? 0x67 : 0x6a;
+        response[1] = apdu_length >= 5 && apdu[4] != 0x08 ? 0x00 : 0x86;
+      }
+      send_response(rhport, 0x80, response, response_length);
+      break;
+    }
+    if (apdu_length >= 2 && apdu[0] == 0x84 && apdu[1] == 0x82) {
+      if (secure_channel.externalAuthenticate(apdu, apdu_length)) {
+        response[0] = 0x90;
+        response[1] = 0x00;
+      } else {
+        response[0] = 0x69;
+        response[1] = 0x82;
+      }
+      send_response(rhport, 0x80, response, response_length);
+      break;
+    }
+
+    size_t command_data_length = 0;
+    const bool authenticated = secure_channel.active() &&
+                              secure_channel.verifyCommand(
+                                  apdu, apdu_length, command_data_length);
+    if (authenticated && apdu_length >= 4) {
+      const uint8_t instruction = apdu[1];
+      const uint8_t p1 = apdu[2];
+      const uint8_t p2 = apdu[3];
+      if (instruction == 0xf2 && p1 == 0x80 && (p2 & 0xfe) == 0x02) {
+        constexpr uint8_t isd_registry_entry[] = {
+            0xe3, 0x11, 0x4f, 0x08, 0xa0, 0x00, 0x00, 0x01, 0x51, 0x00,
+            0x00, 0x00, 0x9f, 0x70, 0x01, 0x01, 0xc5, 0x01, 0x00};
+        std::memcpy(response, isd_registry_entry,
+                    sizeof(isd_registry_entry));
+        response[sizeof(isd_registry_entry)] = 0x90;
+        response[sizeof(isd_registry_entry) + 1] = 0x00;
+        response_length = sizeof(isd_registry_entry) + 2;
+      } else if (instruction == 0xf2 || instruction == 0xca) {
+        response[0] = 0x6a;
+        response[1] = 0x88;
+      } else {
+        response[0] = 0x6d;
+        response[1] = 0x00;
+      }
+    } else if (secure_channel.active()) {
+      response[0] = 0x69;
+      response[1] = 0x82;
+    }
     // GlobalPlatformPro selects the default applet (the ISD) using a
     // case-1-style SELECT with an empty AID before issuing card-manager APDUs.
-    // This acknowledges only that default selection; other APDUs still need
-    // the card-manager and Java Card dispatch paths.
+    // This minimal card-manager response supplies ISD discovery; applet install
+    // and Java Card selection/dispatch are separate unfinished paths.
     if (apdu_length == 5 && apdu[0] == 0x00 && apdu[1] == 0xa4 &&
         apdu[2] == 0x04 && apdu[3] == 0x00 && apdu[4] == 0x00) {
       constexpr uint8_t isd_fci[] = {

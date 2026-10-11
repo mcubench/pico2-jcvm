@@ -1151,3 +1151,21 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Trace: `artifacts/logs/gp-raw-readonly-probes-20261011.txt`, SHA-256
   `8795b672b2dd211d2ccc18ac4f5e05579671b6f22f49adaa2d7752fbefb4df5b`. Next implement SCP03; then add tag-form GET STATUS
   and read-only GET DATA before any CAP loading. Probe record committed as `ab833a3`.
+
+## SCP03 secure channel on hardware — 2026-10-11
+
+- `src/scp03.cpp` derives SCP03 session keys and 64-bit cryptograms with
+  AES-CMAC, validates EXTERNAL AUTHENTICATE, and authenticates subsequent
+  commands. EXTERNAL AUTHENTICATE carries a trailing Le, so the firmware
+  accepts both 21-byte case-3 and 22-byte case-4 forms.
+- `gp --debug --list` exits 0 on the Pico: SCP03 EXTERNAL AUTHENTICATE returns
+  `9000`; authenticated GET STATUS returns ISD `A000000151000000` in lifecycle
+  `OP_READY`. GPPro's further registry probes return `6A88` for absent
+  applets/domains.
+- ARM and RISC-V wrapper builds passed. The real-board CHOUPI cycle passed
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. Logs:
+  `artifacts/logs/cycle-choupi-20261011T120932Z.log` and
+  `artifacts/logs/gp-list-probe-20261011-scp03-external-auth.txt`.
+- CAP installation remains unsupported. Next run the authorized
+  GlobalPlatformPro install attempt for the supplied JCAlgTest v1.8.2 CAP to
+  identify the first GP LOAD/INSTALL APDU, then implement its sequence.
