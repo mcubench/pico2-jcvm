@@ -1323,5 +1323,5 @@
   simulator comparison, and final acceptance work are now visible in one root
   checklist.
 - Decision: Continue with offline diagnosis of the JC305 install-method path.
-- Commit: pending
+- Commit: `a21f7af8af70284240c49a1f030d4662620ef682`
 - Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`
