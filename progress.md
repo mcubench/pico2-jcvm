@@ -1197,3 +1197,13 @@
 - Decision: Reattach/reset the Pico USB device, flash this image, then retry JCAlgTest v1.8.2 INSTALL with bounded PC/SC/CDC logs. If it still stalls, use the structured INSTALL diagnostic response and watchdog scratch trace to isolate the VM/native operation.
 - Commit: `005271c`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T151333Z.log` (SHA-256 `eb2a3afb5acc37989db615a51dafa3ca610836c50ed8fe049611c52953e72d2b`); candidate UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `418c69e4e4c11f82e0866cf98479e9c1e61244e298044a7c1110ee9950900504`)
+
+## 2026-10-11 — Flash and retry callback-safe JCAlgTest INSTALL
+
+- Step/experiment: `wp7-callback-safe-install-hardware-retry`
+- Change: Flashed the previously unflashed callback-safe CHOUPI image and retried the exact supplied JCAlgTest v1.8.2 CAP installation after restoring PC/SC access with the user-approved helper.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed; `./tools/cycle choupi` entered BOOTSEL through its CDC 1200-baud fallback, flashed to 100%, and passed `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. GlobalPlatformPro authenticated, all CAP LOAD blocks returned `9000`, then the final authenticated `84E60C00` INSTALL did not return within 60 seconds (timeout status 124). The board continued enumerating as `2e8a:0009`, but the reader disappeared and serial capture returned no diagnostics. The PC/SC recovery helper, picotool reboot, CDC reset, and USB bus reset did not restore it.
+- Result: The no-serial-write change is now validated on hardware and does not resolve the INSTALL stall. No successful applet installation or registry confirmation occurred.
+- Decision: Continue after a board USB detach/reattach or power reset; add targeted persistent CCID/VM stage breadcrumbs to distinguish a blocked bytecode/native call from an in-callback storage or USB deadlock. Keep the applet status unconfirmed until INSTALL returns `9000` and GET STATUS/SELECT verify it.
+- Commit: `005271c` (firmware under test; hardware-validation record commit to follow)
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T152212Z.log` (SHA-256 `4ab97132130d7c775e40dcd5c1a54a79b93542aa215d7d6a88caf7cd22ee4db5`); `artifacts/logs/gp-install-callback-safe-20261011.txt` (SHA-256 `c3c4dbf12611b67c7f8bcfa4a531dececac7d35babe810d01ca188ccf8e13746`); candidate/flashed UF2 SHA-256 `418c69e4e4c11f82e0866cf98479e9c1e61244e298044a7c1110ee9950900504`
