@@ -12,6 +12,7 @@
 #include "hardware/watchdog.h"
 #include "hardware/structs/watchdog.h"
 #include "pico/bootrom.h"
+#include "tusb.h"
 #include "cap_store.hpp"
 
 extern "C" const uint8_t choupi_rommask_start[];
@@ -19,6 +20,9 @@ extern "C" const uint8_t choupi_rommask_end[];
 extern "C" uint16_t runtime(uint8_t package_id, uint8_t class_id,
                              uint8_t method_id);
 extern "C" void choupi_ccid_task(void);
+extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,
+                                         uint16_t *rx_events,
+                                         uint16_t *task_count);
 
 extern "C" void choupi_watchdog_update(void) { watchdog_update(); }
 extern "C" uint32_t choupi_time_us_32(void) { return time_us_32(); }
@@ -690,21 +694,39 @@ int main_arm(void) {
   }
   printf("CHOUPI:STATUS sw=%04X\r\n", status);
   const bool passed = status == 0x9000;
+  absolute_time_t next_report = make_timeout_time_ms(1000);
   for (;;) {
+    // Keep TinyUSB and the custom CCID callbacks on one thread. In particular,
+    // the main-loop CCID handler must queue responses from the same context
+    // that owns usbd endpoint state.
+    tud_task();
     choupi_ccid_task();
-    printf("CHOUPI:STATUS sw=%04X\r\n", status);
-    printf("TEST:%s choupi_runtime\r\n", passed ? "PASS" : "FAIL");
-    printf("TEST:SUMMARY pass=%u fail=%u\r\n", passed ? 1u : 0u,
-           passed ? 0u : 1u);
-    if (watchdog_recovery_pending) {
-      printf("CHOUPI:WATCHDOG_RECOVERY marker=494E5354 pc=%08lX opcode=%02lX count=%lu\r\n",
-             static_cast<unsigned long>(watchdog_recovery_pc),
-             static_cast<unsigned long>(watchdog_recovery_info >> 24),
-             static_cast<unsigned long>(watchdog_recovery_info & 0x00ffffffu));
-    }
-    fflush(stdout);
     watchdog_update();
-    sleep_ms(1000);
+    if (time_reached(next_report)) {
+      uint8_t ccid_stage = 0;
+      uint8_t ccid_endpoint = 0;
+      uint16_t ccid_rx_events = 0;
+      uint16_t ccid_task_count = 0;
+      choupi_ccid_debug_state(&ccid_stage, &ccid_endpoint, &ccid_rx_events,
+                              &ccid_task_count);
+      printf("CHOUPI:CCID stage=%u endpoint=%02X rx_events=%u tasks=%u\r\n",
+             static_cast<unsigned>(ccid_stage),
+             static_cast<unsigned>(ccid_endpoint),
+             static_cast<unsigned>(ccid_rx_events),
+             static_cast<unsigned>(ccid_task_count));
+      printf("CHOUPI:STATUS sw=%04X\r\n", status);
+      printf("TEST:%s choupi_runtime\r\n", passed ? "PASS" : "FAIL");
+      printf("TEST:SUMMARY pass=%u fail=%u\r\n", passed ? 1u : 0u,
+             passed ? 0u : 1u);
+      if (watchdog_recovery_pending) {
+        printf("CHOUPI:WATCHDOG_RECOVERY marker=494E5354 pc=%08lX opcode=%02lX count=%lu\r\n",
+               static_cast<unsigned long>(watchdog_recovery_pc),
+               static_cast<unsigned long>(watchdog_recovery_info >> 24),
+               static_cast<unsigned long>(watchdog_recovery_info & 0x00ffffffu));
+      }
+      fflush(stdout);
+      next_report = delayed_by_ms(next_report, 1000);
+    }
     tight_loop_contents();
   }
 }

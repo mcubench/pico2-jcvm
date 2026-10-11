@@ -58,6 +58,10 @@ uint8_t ep_out = 0;
 uint8_t ep_in = 0;
 volatile bool message_pending = false;
 uint8_t pending_rhport = 0;
+volatile uint8_t debug_stage = 0;
+volatile uint8_t debug_endpoint = 0;
+volatile uint16_t debug_rx_events = 0;
+volatile uint16_t debug_task_count = 0;
 Scp03Session secure_channel;
 CapLoadSession cap_load_session;
 
@@ -93,6 +97,7 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   tx_buffer[7] = status;
   tx_buffer[8] = error;
   tx_buffer[9] = specific;
+  debug_stage = 6;
   if (payload_length != 0) {
     std::memcpy(tx_buffer + 10, payload, payload_length);
   }
@@ -322,6 +327,7 @@ void process_message(uint8_t rhport) {
 }
 
 void driver_init() {
+  debug_stage = 1;
   rx_length = 0;
   rx_expected = 0;
   message_pending = false;
@@ -376,6 +382,7 @@ uint16_t driver_open(uint8_t rhport,
   if (ep_out == 0 || ep_in == 0) {
     return 0;
   }
+  debug_stage = 2;
   queue_out(rhport);
   return consumed;
 }
@@ -401,6 +408,7 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     return false;
   }
   if (endpoint == ep_in) {
+    debug_stage = 7;
     queue_out(rhport);
     return true;
   }
@@ -410,6 +418,9 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     queue_out(rhport);
     return false;
   }
+  debug_endpoint = endpoint;
+  ++debug_rx_events;
+  debug_stage = 3;
   rx_length += transferred;
   if (rx_expected == 0 && rx_length >= 10) {
     const uint32_t payload_length = read_le32(rx_buffer + 1);
@@ -426,6 +437,7 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     // loop so the IRQ never performs flash, allocation, or Java bytecode work.
     pending_rhport = rhport;
     message_pending = true;
+    debug_stage = 4;
   } else {
     queue_out(rhport);
   }
@@ -450,7 +462,18 @@ extern "C" void choupi_ccid_task(void) {
   }
   const uint8_t rhport = pending_rhport;
   message_pending = false;
+  ++debug_task_count;
+  debug_stage = 5;
   process_message(rhport);
+}
+
+extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,
+                                         uint16_t *rx_events,
+                                         uint16_t *task_count) {
+  if (stage != nullptr) *stage = debug_stage;
+  if (endpoint != nullptr) *endpoint = debug_endpoint;
+  if (rx_events != nullptr) *rx_events = debug_rx_events;
+  if (task_count != nullptr) *task_count = debug_task_count;
 }
 
 extern "C" usbd_class_driver_t const *usbd_app_driver_get_cb(

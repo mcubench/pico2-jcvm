@@ -98,6 +98,10 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   target_link_libraries(pico2_choupi PRIVATE pico_stdlib pico_rand pico_flash
     pico_mbedtls_headers)
   pico_enable_stdio_usb(pico2_choupi 1)
+  # This image owns TinyUSB's polling and CCID driver. Keep tud_task() and
+  # endpoint operations in the main loop instead of racing the SDK IRQ worker.
+  target_compile_definitions(pico2_choupi PRIVATE
+    PICO_STDIO_USB_ENABLE_IRQ_BACKGROUND_TASK=0)
   # Supply a composite CDC + CCID configuration descriptor from the app. Keep
   # the SDK's CDC stdio implementation but omit its CDC-only descriptor object.
   get_target_property(PICO_STDIO_USB_SOURCES pico_stdio_usb INTERFACE_SOURCES)
