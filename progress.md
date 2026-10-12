@@ -1740,6 +1740,6 @@
 - Decision: Resume exact v1.8.2 GP INSTALL once the installed ACL helper has
   been run for the current USB node; continue ARM/RISC-V validated work while
   crates.io is unavailable.
-- Commit: `pending`
+- Commit: `fbcb35f` (this record is completed by the follow-up metadata commit)
 - Artifacts/logs: `/tmp/pico2-build-pc.log` (not archived in the repository);
   prior firmware runtime log `artifacts/logs/cycle-choupi-20261012T061610Z.log`.
