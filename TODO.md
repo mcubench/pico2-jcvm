@@ -18,15 +18,14 @@ out explicitly.
 
 ## Active: make v1.8.2 installation execute correctly
 
-Current environment note: physical testing is active again. The Pico is visible
-as USB `2e8a:0009`, and the PC/SC daemon is active, but `pcsc_scan -r` reports
-no reader. The current USB-node ACL grants `claude` access but not `pcscd`;
-USB re-enumeration invalidated the earlier service-account ACL. GPPro therefore
-has no reader and cannot send card commands until the existing ACL helper is
-run again for the current node. The PC build wrapper is available; Java Card
-API conversion succeeds, but the host build stops because Cargo cannot fetch
-the uncached `ipc-channel` dependency while crates.io DNS/network access is
-unavailable.
+Current environment note: the Pico is visible as USB `2e8a:0009` (most recently
+`001:011`), and `pcscd` is active, but `pcsc_scan -r` reports no reader. The
+current USB-node ACL grants `claude` access but not `pcscd`; USB re-enumeration
+invalidated the earlier service-account ACL. GPPro cannot send card commands
+until the installed ACL helper is run again for the current node. The PC build
+wrapper is available; Java Card API conversion succeeds, but the host build
+stops because Cargo cannot fetch the uncached `ipc-channel` dependency while
+crates.io DNS/network access is unavailable.
 
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's
@@ -71,9 +70,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   receiver's concrete class and resolves its override through that class's CAP
   method table. The borrowed-context virtual method entry can seed receiver and
   argument locals; root short/reference/integer return values can now be
-  captured without a synthetic caller frame. CCID SELECT/process does not yet
-  resolve or invoke lifecycle methods; neither change has been exercised by an
-  installed applet.
+  captured without a synthetic caller frame. CCID SELECT now invokes
+  `Applet.select()` and rejects a false result with `6999`; selecting another
+  AID or powering off invokes `Applet.deselect()`. `Applet.process()` and its
+  APDU object/buffer are not wired yet. None of these lifecycle calls has been
+  exercised with an installed applet because PC/SC currently has no reader.
 - [ ] Implement Java Card APDU buffer and incoming/outgoing command methods used
   by JCAlgTest, including case-4 Le and `61xx` response handling.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the

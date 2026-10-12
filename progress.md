@@ -1775,6 +1775,31 @@
   `22437f072e2f01ca1480d9d05ac84fa695f2e732af29dff12731ded061a93acc`); ARM
   UF2 SHA-256 `7c180dd9eba1af4e40172c2a9df655b99de7a45f621e424986a3c9a75324bc57`.
 
+## 2026-10-12 — Dispatch applet SELECT and deselect lifecycle
+
+- Step/experiment: `wp7-applet-select-deselect-dispatch`
+- Change: Resolve lifecycle method offsets from the restored instance's concrete
+  class. Invoke `Applet.select()` before returning FCI and return `6999` if it
+  declines selection. Invoke `Applet.deselect()` before another SELECT and on
+  CCID power-off, then clear the selected context. Pass the resolved method
+  package into the borrowed-context interpreter entry.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The physical
+  `./tools/cycle choupi` passed both build gates, CDC BOOTSEL recovery, ARM flash
+  to 100%, and repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1
+  fail=0` markers during its 18-second capture. Elevated USB inspection found
+  the Pico at `001:011`; `pcsc_scan -r` reported no reader, so no applet SELECT
+  or deselect APDU was sent. `git -c core.whitespace=cr-at-eol diff --check`
+  passed.
+- Result: SELECT/deselect lifecycle entry points are now connected to the
+  interpreter, but runtime behavior on an installed applet remains unverified.
+  `process(APDU)` and APDU buffer/response handling remain incomplete.
+- Decision: Add APDU buffer delivery and process-method dispatch next; retry
+  hardware installation and lifecycle verification after reader access returns.
+- Commit: `<commit>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T073952Z.log` (SHA-256
+  `58fc542a20f41bb715ede6e522ef7acdddd44b1c7751c7909c612bac14090983`); ARM
+  UF2 SHA-256 `6c599c684698e868d80664585d38eaf0a26252acf2579907516d6d8b1ffbc07b`.
+
 ## 2026-10-12 — Recheck PC build and reader access
 
 - Step/experiment: `wp7-host-build-and-reader-recheck`

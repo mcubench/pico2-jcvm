@@ -15,6 +15,8 @@ extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
 extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                              uint16_t class_index);
 extern "C" void choupi_vm_clear_selected_applet(void);
+extern "C" uint16_t choupi_vm_select_applet(void);
+extern "C" uint16_t choupi_vm_deselect_applet(void);
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;
@@ -119,6 +121,7 @@ void process_message(uint8_t rhport) {
     send_response(rhport, 0x80, kAtr, sizeof(kAtr));
     break;
   case 0x63: // PC_to_RDR_IccPowerOff
+    (void)choupi_vm_deselect_applet();
     slot_state = 1;
     secure_channel.reset();
     cap_load_session.abortTransfer();
@@ -133,7 +136,7 @@ void process_message(uint8_t rhport) {
     uint8_t response[96] = {0x6d, 0x00}; // instruction not supported
     size_t response_length = 2;
     if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
-      choupi_vm_clear_selected_applet();
+      (void)choupi_vm_deselect_applet();
     }
     if (apdu_length >= 2 && apdu[0] == 0x80 && apdu[1] == 0x50) {
       size_t data_length = 0;
@@ -327,6 +330,16 @@ void process_message(uint8_t rhport) {
         response_length = 2;
         send_response(rhport, 0x80, response, response_length);
         break;
+      }
+      if (applet_class_index != 0xffff) {
+        const uint16_t select_status = choupi_vm_select_applet();
+        if (select_status != 0x9000) {
+          response[0] = static_cast<uint8_t>(select_status >> 8);
+          response[1] = static_cast<uint8_t>(select_status);
+          response_length = 2;
+          send_response(rhport, 0x80, response, response_length);
+          break;
+        }
       }
       const uint8_t aid_length = cap_load_session.instanceAidLength();
       response[0] = 0x6f;

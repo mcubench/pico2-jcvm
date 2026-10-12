@@ -56,6 +56,7 @@ public:
   /// Start a virtual method on the supplied receiver words using an existing
   /// context and heap. `initial_references[0]` is the `this` receiver.
   Interpretor(Context &context, const uint16_t methodOffset,
+              const jpackage_ID_t methodPackage,
               const jref_t *initial_references,
               uint8_t initial_reference_count);
 
@@ -101,6 +102,7 @@ private:
   uint8_t startingClass, startingMethod;
   bool isStaticStatingMethod;
   uint16_t startingMethodOffset = 0;
+  jpackage_ID_t startingMethodPackage = 0;
   const uint8_t *installData = nullptr;
   uint8_t installLength = 0;
   const jref_t *initialReferences = nullptr;

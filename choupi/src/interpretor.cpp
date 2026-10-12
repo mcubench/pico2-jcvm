@@ -103,10 +103,12 @@ Interpretor::Interpretor(const japplet_ID_t appletID,
 }
 
 Interpretor::Interpretor(Context &context, const uint16_t methodOffset,
+                         const jpackage_ID_t methodPackage,
                          const jref_t *initial_references,
                          const uint8_t initial_reference_count)
     : external_context(&context), startingClass(0), startingMethod(0),
       isStaticStatingMethod(false), startingMethodOffset(methodOffset),
+      startingMethodPackage(methodPackage),
       initialReferences(initial_references),
       initialReferenceCount(initial_reference_count),
       startsAtMethodOffset(true) {
@@ -167,6 +169,7 @@ uint16_t Interpretor::run() noexcept {
       this->startJCVMException(Exceptions::SecurityException);
       return this->status_word;
     }
+    methodHandler.setPackage(Package(this->startingMethodPackage));
     methodHandler.callVirtualMethod(this->startingMethodOffset);
     Stack &startup_stack = context.getStack();
     const Frame &startup_frame = startup_stack.getCurrentFrame();

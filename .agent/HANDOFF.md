@@ -74,6 +74,16 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- On 2026-10-12, CCID applet AID SELECT now resolves and runs `Applet.select()`
+  before returning applet FCI; a false result maps to `6999`. New AID SELECT and
+  CCID power-off run `Applet.deselect()` before clearing the selected context.
+  The concrete class resolver uses internal method token 7 for `select` and
+  token 5 for `deselect` (JC 3.0.5 imported tokens have their own remapping).
+  ARM/RISC-V builds and the physical cycle passed. The applet path itself was
+  not exercised because re-enumeration moved USB to `001:011` and `pcsc_scan
+  -r` still finds no reader. `Applet.process()` and APDU buffer delivery remain
+  the next implementation step. Commit: `<commit>`; hashes are in `progress.md`.
+
 - On 2026-10-12, added top-level interpreter return capture to `Stack` and the
   `areturn`, `sreturn`, and `ireturn` handlers. A root method now records its
   result instead of trying to push it onto a nonexistent caller frame; nested
