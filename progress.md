@@ -1723,6 +1723,32 @@
   ARM UF2 SHA-256
   `811504dc6897acca45cbc8b7ce4b6bcc3b847c1f55cc100e8304f978a7ce306e`.
 
+## 2026-10-12 — Resolve virtual calls through receiver class
+
+- Step/experiment: `wp7-virtual-dispatch-receiver-class`
+- Change: Resolve `invokevirtual` against the receiver instance's concrete
+  package and class after normalizing imported JC method tokens. Read the
+  declared method argument count before dispatch so the receiver can be found
+  safely on the operand stack; reject null receivers and insufficient operands
+  before changing frames.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The real
+  `./tools/cycle choupi` passed both build gates, reset through CDC into
+  BOOTSEL, flashed the ARM image to 100%, and captured repeated
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0` over 18 seconds.
+  `git -c core.whitespace=cr-at-eol diff --check` passed. The runtime test does
+  not execute the new virtual override resolution because no applet has been
+  installed and PC/SC still reports no reader.
+- Result: Subclass overrides can now be selected from the actual receiver's
+  CAP virtual-method table; applet lifecycle entry points are still not wired
+  to CCID APDU dispatch, and this path remains unverified on a Java applet.
+- Decision: Continue implementing the SELECT/process bridge and Java Card APDU
+  object/buffer behavior; retest this method-resolution path immediately after
+  PC/SC reader access is restored.
+- Commit: `<commit>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T072742Z.log` (SHA-256
+  `f8bdd6a2cb5d6326e1bdfe0343ea89157b122b07647e68d690b102295e28f088`); ARM
+  UF2 SHA-256 `7a34c0f0941dbc0818c9fa7984a1b6c63d58ee50cb89c73d4c7984b50a4ed04e`.
+
 ## 2026-10-12 — Recheck PC build and reader access
 
 - Step/experiment: `wp7-host-build-and-reader-recheck`

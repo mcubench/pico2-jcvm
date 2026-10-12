@@ -39,6 +39,32 @@ extern "C" void choupi_install_context(uint32_t context);
 
 namespace jcvm {
 
+namespace {
+jc_cap_virtual_method_ref_info remapVirtualMethodRef(
+    Package package, jc_cap_virtual_method_ref_info method_ref) {
+  if (!method_ref.class_ref.isExternalClassRef()) {
+    return method_ref;
+  }
+
+  const uint8_t package_token =
+      method_ref.class_ref.external_classref.package_token & 0x7F;
+  const auto *imported_package = Import_Handler(package).getPackageAID(package_token);
+  const uint8_t method_flags = method_ref.token & 0x80;
+  const uint8_t class_token =
+      method_ref.class_ref.external_classref.class_token;
+  const uint8_t remapped_method = remap_imported_virtual_method_token(
+      *imported_package, class_token, method_ref.token & 0x7F);
+  const bool applet_protected_entry =
+      imported_package->AID_length == 7 &&
+      std::memcmp(imported_package->AID,
+                  "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+      class_token == 3;
+  method_ref.token = static_cast<uint8_t>(
+      (applet_protected_entry ? 0 : method_flags) | remapped_method);
+  return method_ref;
+}
+} // namespace
+
 /*
  * The checkcast function check if a type in is compatible with the
  * type_out. The rule is the following one:
@@ -421,31 +447,36 @@ std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
     noexcept
 #endif
 {
-  auto method_ref = virtual_method_ref_info;
-  if (method_ref.class_ref.isExternalClassRef()) {
-    Import_Handler import_handler(this->package);
-    const uint8_t package_token =
-        method_ref.class_ref.external_classref.package_token & 0x7F;
-    const auto *imported_package = import_handler.getPackageAID(package_token);
-    const uint8_t method_flags = method_ref.token & 0x80;
-    const uint8_t class_token =
-        method_ref.class_ref.external_classref.class_token;
-    const uint8_t remapped_method = remap_imported_virtual_method_token(
-        *imported_package, class_token, method_ref.token & 0x7F);
-    const bool applet_protected_entry =
-        imported_package->AID_length == 7 &&
-        std::memcmp(imported_package->AID,
-                    "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
-        class_token == 3;
-    method_ref.token = static_cast<uint8_t>(
-        (applet_protected_entry ? 0 : method_flags) | remapped_method);
-  }
+  auto method_ref = remapVirtualMethodRef(this->package,
+                                          virtual_method_ref_info);
 
   if (method_ref.isPublicMethod()) {
     return this->getPublicMethodOffset(method_ref);
   } else { // it's a package method
     return this->getPackageMethodOffset(method_ref);
   }
+}
+
+std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
+    const jc_cap_virtual_method_ref_info virtual_method_ref_info,
+    const jpackage_ID_t receiver_package,
+    const jclass_index_t receiver_class)
+#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
+    noexcept
+#endif
+{
+  auto method_ref = remapVirtualMethodRef(this->package,
+                                          virtual_method_ref_info);
+  Package concrete_package(receiver_package);
+  ConstantPool_Handler cp_handler(concrete_package);
+  method_ref.class_ref =
+      cp_handler.getClassRefFromClassIndex(receiver_class);
+
+  Class_Handler concrete_class_handler(concrete_package);
+  if (method_ref.isPublicMethod()) {
+    return concrete_class_handler.getPublicMethodOffset(method_ref);
+  }
+  return concrete_class_handler.getPackageMethodOffset(method_ref);
 }
 
 /*

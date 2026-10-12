@@ -67,9 +67,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   supplies the class index and retains the resulting context for the card
   session. This has not yet been exercised against an installed applet.
 - [ ] Dispatch SELECT, `select()`, `deselect()`, and `process()` through the
-  interpreter for the selected applet. A borrowed-context virtual method entry
-  now seeds receiver/reference locals, but no lifecycle method is yet resolved
-  or dispatched through it.
+  interpreter for the selected applet. Ordinary `invokevirtual` now reads the
+  receiver's concrete class and resolves its override through that class's CAP
+  method table. The borrowed-context virtual method entry can seed receiver and
+  argument locals, but CCID SELECT/process does not yet resolve or invoke the
+  lifecycle methods; the board cycle did not exercise this dispatch change.
 - [ ] Implement Java Card APDU buffer and incoming/outgoing command methods used
   by JCAlgTest, including case-4 Le and `61xx` response handling.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the

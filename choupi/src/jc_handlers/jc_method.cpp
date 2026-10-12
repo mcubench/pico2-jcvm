@@ -153,6 +153,16 @@ void Method_Handler::callVirtualMethod(const uint16_t method_offset) {
   return;
 }
 
+uint8_t Method_Handler::getArgumentCount(const uint16_t method_offset) {
+  const uint8_t *method = this->getMethodFromOffset(method_offset);
+  if (IS_EXTENDED_METHOD(method)) {
+    return reinterpret_cast<const jc_cap_extended_method_info *>(method)
+        ->method_header.nargs;
+  }
+  return LOW_NIBBLE(
+      reinterpret_cast<const jc_cap_method_info *>(method)->method_header.nargs);
+}
+
 /**
  * Call a static method
  *

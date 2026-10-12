@@ -121,6 +121,7 @@ namespace jcvm {
  *
  */
 void Bytecodes::bc_invokevirtual() {
+  Context &context = this->context;
   Stack &stack = this->context.getStack();
   ConstantPool_Handler cp_handler(this->context.getCurrentPackage());
   Method_Handler method_handler(this->context);
@@ -149,7 +150,35 @@ void Bytecodes::bc_invokevirtual() {
             0 &&
         class_token == 3 && (method_token == 1 || method_token == 2);
   }
-  auto method_offset = class_handler.getMethodOffset(virtual_method_ref_info);
+  const auto declared_method =
+      class_handler.getMethodOffset(virtual_method_ref_info);
+  Method_Handler declared_method_handler(context);
+  declared_method_handler.setPackage(declared_method.first);
+  const uint8_t nargs =
+      declared_method_handler.getArgumentCount(declared_method.second);
+  if (nargs == 0) {
+    throw Exceptions::SecurityException;
+  }
+
+  const Frame &caller_frame = stack.getCurrentFrame();
+  if (static_cast<uint32_t>(nargs) >
+      static_cast<uint32_t>(caller_frame.getTOS() - caller_frame.getOP())) {
+    throw Exceptions::StackUnderflowException;
+  }
+  const jref_t receiver = stack.get_Pushed_Element(nargs);
+  if (receiver.isNullPointer()) {
+    throw Exceptions::NullPointerException;
+  }
+
+  const auto method_offset = [&]() {
+    if (receiver.isArray()) {
+      return declared_method;
+    }
+    const auto receiver_instance = context.getHeap().getInstance(receiver);
+    return class_handler.getMethodOffset(
+        virtual_method_ref_info, receiver_instance->getPackageID(),
+        receiver_instance->getClassIndex());
+  }();
 
   // Calling the method and updating PC value
   method_handler.setPackage(method_offset.first);
@@ -157,14 +186,8 @@ void Bytecodes::bc_invokevirtual() {
 
   // checking if the this reference is non NULL
   jref_t objectref = stack.readLocal_Reference((uint8_t)0);
-
-  if (objectref.isNullPointer()) {
-    throw Exceptions::NullPointerException;
-  }
-
-  auto instance = context.getHeap().getInstance(objectref);
   if (applet_register_call) {
-    this->context.markAppletRegistered(objectref);
+    context.markAppletRegistered(objectref);
   }
 
   return;

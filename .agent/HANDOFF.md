@@ -74,6 +74,19 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- On 2026-10-12, corrected ordinary `invokevirtual` dispatch to resolve through
+  the receiver instance's concrete package/class virtual-method table. The VM
+  now reads the declared method header to locate the receiver on the operand
+  stack, checks for underflow/null before dispatch, remaps imported method
+  tokens, then looks up the override from the runtime class. ARM and RISC-V
+  wrapper builds pass. `./tools/cycle choupi` passed both build gates, entered
+  BOOTSEL through CDC reset, flashed ARM, and passed the 18-second serial check
+  with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`.
+  This runtime check does not execute a loaded applet override; PC/SC still has
+  no reader, so no GP install or applet dispatch test was possible. The public
+  method resolver change is committed as `<commit>`; progress entry records the
+  source and UF2 hashes.
+
 - Latest check on 2026-10-12: the Pico enumerates as `2e8a:0009` at USB
   `001:003`; `pcscd.service` is active, but `pcsc_scan -r` reports no reader.
   The node ACL currently grants `claude` read/write access but has no `pcscd`
