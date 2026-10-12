@@ -229,9 +229,18 @@ void process_message(uint8_t rhport) {
               cap_load_session.installVmExceptionDepthHistory() >> 8);
           response[23] = static_cast<uint8_t>(
               cap_load_session.installVmExceptionDepthHistory());
-          response[24] = 0x6a;
-          response[25] = 0x80;
-          response_length = 26;
+          response[24] = cap_load_session.installVmDebugStage();
+          response[25] = static_cast<uint8_t>(
+              cap_load_session.installVmDebugContext() >> 24);
+          response[26] = static_cast<uint8_t>(
+              cap_load_session.installVmDebugContext() >> 16);
+          response[27] = static_cast<uint8_t>(
+              cap_load_session.installVmDebugContext() >> 8);
+          response[28] = static_cast<uint8_t>(
+              cap_load_session.installVmDebugContext());
+          response[29] = 0x6a;
+          response[30] = 0x80;
+          response_length = 31;
         }
       } else if (instruction == 0xf2 && p1 == 0x80 &&
                  (p2 & 0xfe) == 0x02) {

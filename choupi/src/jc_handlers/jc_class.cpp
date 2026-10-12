@@ -248,6 +248,14 @@ std::pair<Package, const uint16_t> Class_Handler::getPublicMethodOffset(
   ConstantPool_Handler cp_handler(this->package);
   uint8_t method_offset = virtual_method_ref_info.token;
   auto token = cp_handler.classref2class(virtual_method_ref_info.class_ref);
+#ifndef PC_VERSION
+  choupi_install_stage(27);
+  choupi_install_context(
+      (static_cast<uint32_t>(token.first.getPackageID()) << 24) |
+      (static_cast<uint32_t>(method_offset) << 16) |
+      (static_cast<uint32_t>(token.second->public_method_table_base) << 8) |
+      token.second->public_method_table_count);
+#endif
 
   // Where is the method offset located?
   while (!(token.second->isObjectClass()) &&
@@ -296,7 +304,19 @@ Class_Handler::doGetPublicMethodOffset(Package &package,
 
   do {
     uint16_t offset = public_method_offset - claz->public_method_table_base;
+#ifndef PC_VERSION
+    choupi_install_stage(28);
+    choupi_install_context(
+        (static_cast<uint32_t>(public_method_offset) << 24) |
+        (static_cast<uint32_t>(claz->public_method_table_base) << 16) |
+        (static_cast<uint32_t>(public_virtual_method_table.size()) << 8) |
+        static_cast<uint32_t>(offset));
+#endif
     method_offset = public_virtual_method_table.at(offset);
+#ifndef PC_VERSION
+    choupi_install_stage(29);
+    choupi_install_context(static_cast<uint32_t>(method_offset));
+#endif
 
     if (method_offset == (uint16_t)0xFFFF) {
 #ifdef JCVM_DYNAMIC_CHECKS_CAP

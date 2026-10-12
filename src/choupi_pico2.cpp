@@ -41,6 +41,12 @@ extern "C" void choupi_install_stage(uint8_t stage) {
 extern "C" void choupi_install_context(uint32_t context) {
   watchdog_hw->scratch[4] = context;
 }
+extern "C" uint8_t choupi_install_debug_stage(void) {
+  return static_cast<uint8_t>(watchdog_hw->scratch[3]);
+}
+extern "C" uint32_t choupi_install_debug_context(void) {
+  return watchdog_hw->scratch[4];
+}
 extern "C" void choupi_install_origin(uint32_t origin) {
   watchdog_hw->scratch[5] = origin;
 }

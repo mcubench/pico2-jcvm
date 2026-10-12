@@ -64,6 +64,12 @@ extern "C" {
 #endif
 
 uint16_t choupi_vm_last_native_method_index();
+#ifndef PC_VERSION
+void choupi_install_stage(uint8_t stage);
+void choupi_install_context(uint32_t context);
+uint8_t choupi_install_debug_stage(void);
+uint32_t choupi_install_debug_context(void);
+#endif
 
 void choupi_ccid_task(void);
 
@@ -128,9 +134,15 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
                                 uint16_t *exception_operand,
                                 uint8_t *exception_stack_depth,
                                 uint32_t *exception_opcode_history,
-                                uint32_t *exception_depth_history) {
+                                uint32_t *exception_depth_history,
+                                uint8_t *install_debug_stage,
+                                uint32_t *install_debug_context) {
   TRACE_JCVM_DEBUG("Starting CAP install method at offset %u",
                    static_cast<unsigned>(method_offset));
+#ifndef PC_VERSION
+  choupi_install_stage(0);
+  choupi_install_context(0);
+#endif
   jcvm::Interpretor interpretor(0,
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
                                 method_offset, install_data, install_length);
@@ -187,6 +199,17 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
   if (exception_depth_history != nullptr) {
     *exception_depth_history = interpretor.lastExceptionDepthHistory();
   }
+#ifndef PC_VERSION
+  if (install_debug_stage != nullptr) {
+    *install_debug_stage = choupi_install_debug_stage();
+  }
+  if (install_debug_context != nullptr) {
+    *install_debug_context = choupi_install_debug_context();
+  }
+#else
+  if (install_debug_stage != nullptr) *install_debug_stage = 0;
+  if (install_debug_context != nullptr) *install_debug_context = 0;
+#endif
   return applet_persisted || !interpretor.installAppletRegistered()
              ? status
              : 0x6f00;

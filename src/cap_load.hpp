@@ -43,6 +43,10 @@ public:
   uint32_t installVmExceptionDepthHistory() const noexcept {
     return install_vm_exception_depth_history_;
   }
+  uint8_t installVmDebugStage() const noexcept { return install_vm_debug_stage_; }
+  uint32_t installVmDebugContext() const noexcept {
+    return install_vm_debug_context_;
+  }
   const uint8_t *instanceAid() const noexcept { return instance_aid_; }
   uint8_t instanceAidLength() const noexcept { return instance_aid_length_; }
   bool appletClassIndex(uint16_t &class_index) const noexcept;
@@ -72,6 +76,8 @@ private:
   uint8_t install_vm_exception_stack_depth_ = 0;
   uint32_t install_vm_exception_opcode_history_ = 0;
   uint32_t install_vm_exception_depth_history_ = 0;
+  uint8_t install_vm_debug_stage_ = 0;
+  uint32_t install_vm_debug_context_ = 0;
 
   bool finishLoad() noexcept;
 };

@@ -23,7 +23,9 @@ extern "C" uint16_t runtime_install_method(uint8_t package_id,
                                            uint16_t *exception_operand,
                                            uint8_t *exception_stack_depth,
                                            uint32_t *exception_opcode_history,
-                                           uint32_t *exception_depth_history);
+                                           uint32_t *exception_depth_history,
+                                           uint8_t *install_debug_stage,
+                                           uint32_t *install_debug_context);
 
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
@@ -177,6 +179,8 @@ void CapLoadSession::reset() noexcept {
   install_vm_exception_stack_depth_ = 0;
   install_vm_exception_opcode_history_ = 0;
   install_vm_exception_depth_history_ = 0;
+  install_vm_debug_stage_ = 0;
+  install_vm_debug_context_ = 0;
 }
 
 void CapLoadSession::abortTransfer() noexcept {
@@ -329,7 +333,8 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
       &install_vm_exception_prefix_,
       &install_vm_exception_operand_, &install_vm_exception_stack_depth_,
       &install_vm_exception_opcode_history_,
-      &install_vm_exception_depth_history_);
+      &install_vm_exception_depth_history_, &install_vm_debug_stage_,
+      &install_vm_debug_context_);
   if (install_vm_status_ != 0x9000 || applet_registered == 0 ||
       applet_class_index == 0xffff) {
     install_failure_stage_ = 5;
