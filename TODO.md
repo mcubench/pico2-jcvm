@@ -18,13 +18,15 @@ out explicitly.
 
 ## Active: make v1.8.2 installation execute correctly
 
-Current environment note: physical testing is active again. The repository
-cycle can flash the Pico and pass its finite serial checks. The PC/SC daemon is
-running, but it has no reader because the service account cannot access the
-Pico USB node; GlobalPlatformPro reports no available readers. GPPro card
-operations need reader access restored before install testing can resume.
-The PC build wrapper is available; Cargo still cannot fetch the uncached
-`ipc-channel` dependency because crates.io DNS/network access is unavailable.
+Current environment note: physical testing is active again. The Pico is visible
+as USB `2e8a:0009`, and the PC/SC daemon is active, but `pcsc_scan -r` reports
+no reader. The current USB-node ACL grants `claude` access but not `pcscd`;
+USB re-enumeration invalidated the earlier service-account ACL. GPPro therefore
+has no reader and cannot send card commands until the existing ACL helper is
+run again for the current node. The PC build wrapper is available; Java Card
+API conversion succeeds, but the host build stops because Cargo cannot fetch
+the uncached `ipc-channel` dependency while crates.io DNS/network access is
+unavailable.
 
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's

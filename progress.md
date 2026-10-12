@@ -1722,3 +1722,24 @@
   `e0e35fcf78ea1567d58267929434ba922f1738974ec2bbae1cd5584b6b463c98`);
   ARM UF2 SHA-256
   `811504dc6897acca45cbc8b7ce4b6bcc3b847c1f55cc100e8304f978a7ce306e`.
+
+## 2026-10-12 — Recheck PC build and reader access
+
+- Step/experiment: `wp7-host-build-and-reader-recheck`
+- Change: Updated the project tracker and handoff with current PC build and
+  reader-access evidence so the next session can resume from the actual state.
+- Validation: `./tools/build-pc` completed Java Card API compilation and CAP
+  conversion with zero converter errors, then failed before CHOUPI C++ linking
+  because Cargo could not resolve `index.crates.io` to fetch `ipc-channel`
+  0.13.0. Elevated USB inspection found Pico `2e8a:0009` at `001:003`; the
+  PC/SC service is active, but `pcsc_scan -r` reports no reader. The node ACL
+  currently grants `claude` access and omits `pcscd`.
+- Result: The endianness-fix firmware remains on the physical board, but no
+  post-fix GP INSTALL APDU has been sent. The PC build's network dependency and
+  the refreshed `pcscd` ACL are the current external blockers.
+- Decision: Resume exact v1.8.2 GP INSTALL once the installed ACL helper has
+  been run for the current USB node; continue ARM/RISC-V validated work while
+  crates.io is unavailable.
+- Commit: `pending`
+- Artifacts/logs: `/tmp/pico2-build-pc.log` (not archived in the repository);
+  prior firmware runtime log `artifacts/logs/cycle-choupi-20261012T061610Z.log`.

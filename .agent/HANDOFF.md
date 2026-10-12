@@ -74,6 +74,26 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- Latest check on 2026-10-12: the Pico enumerates as `2e8a:0009` at USB
+  `001:003`; `pcscd.service` is active, but `pcsc_scan -r` reports no reader.
+  The node ACL currently grants `claude` read/write access but has no `pcscd`
+  entry, so the earlier ACL grant expired when USB re-enumerated. The
+  repository-installed ACL helper must be rerun for the current node before
+  GPPro can resume. Do not run it through sudo autonomously; the repository
+  AGENTS instruction forbids sudo in autonomous cycles.
+- Retried `./tools/build-pc` through the repository wrapper. Java Card API
+  compilation and CAP conversion completed successfully (converter reported
+  zero errors). The host build then stopped before the CHOUPI C++ target because
+  Cargo could not resolve `index.crates.io` to fetch uncached `ipc-channel`
+  0.13.0. The “34 native methods” ROM-mask summary is informational, not this
+  build failure. Full log: `/tmp/pico2-build-pc.log` (outside the repository;
+  not an archived project artifact).
+- Next: restore the `pcscd` ACL using the already-installed helper, then rerun
+  the exact JCAlgTest v1.8.2 INSTALL against the current firmware. In parallel,
+  continue implementation work that can be validated by ARM/RISC-V wrappers;
+  the PC/vpcd golden-test track remains network-blocked until `ipc-channel` is
+  available.
+
 - On 2026-10-12, implemented the JC 3.0.5 `NativeImplementation.arrayFindGeneric`
   byte-array search path with null, bounds, and array-type checks. ARM and
   RISC-V wrapper builds passed. The physical `./tools/cycle choupi` passed its
