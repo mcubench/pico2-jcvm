@@ -321,7 +321,7 @@ Class_Handler::doGetPublicMethodOffset(Package &package,
         (static_cast<uint32_t>(public_virtual_method_table.size()) << 8) |
         static_cast<uint32_t>(offset));
 #endif
-    method_offset = public_virtual_method_table.at(offset);
+    method_offset = NTOHS(public_virtual_method_table.at(offset));
 #ifndef PC_VERSION
     choupi_install_stage(29);
     choupi_install_context(static_cast<uint32_t>(method_offset));
@@ -387,7 +387,7 @@ std::pair<Package, const uint16_t> Class_Handler::getPackageMethodOffset(
 
   do {
     uint16_t offset = method_offset_class - claz->package_method_table_base;
-    method_offset = package_virtual_method_table.at(offset);
+    method_offset = NTOHS(package_virtual_method_table.at(offset));
 
     if (method_offset == (uint16_t)0xFFFF) {
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
