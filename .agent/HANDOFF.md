@@ -74,6 +74,16 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- On 2026-10-12, implemented the JC 3.0.5 `NativeImplementation.arrayFindGeneric`
+  byte-array search path with null, bounds, and array-type checks. ARM and
+  RISC-V wrapper builds passed. The physical `./tools/cycle choupi` passed its
+  two build gates, CDC BOOTSEL recovery, ARM flash, and 18-second serial check
+  with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`.
+  The current native implementation intentionally handles byte arrays only;
+  wider primitive-array semantics have not been implemented or runtime-tested.
+  Log `artifacts/logs/cycle-choupi-20261012T034427Z.log`, SHA-256
+  `4a3ba30db076432c0a0da7cb19f23b6726b248f57682defbc4fd278bf720bfa9`; ARM UF2
+  SHA-256 `8f3099f3779eddd46e8e84fa3ff20415ac2aad13b4709cc01c9d9c233155a1dd`.
 - On 2026-10-12, added a borrowed-`Context` `Interpretor` entry for a virtual
   method offset and initial receiver/reference locals, plus a C bridge for the
   retained selected-app context. Both `./tools/build arm` and

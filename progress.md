@@ -1590,3 +1590,27 @@
   `c6a964c2ddeef80cf2e7d790633feff3aafd1cf623bdbcf68cf5f9509c090ec7`); ARM
   UF2 SHA-256
   `e588e7c926aaf022e632c052a1a18129f6e9d6b572c4a12c65483cbd036073e8`.
+
+## 2026-10-12 — Implement byte-array search native
+
+- Step/experiment: `wp5-array-find-byte-native`
+- Change: Implemented the shipped JC 3.0.5 `arrayFindGeneric` native for byte
+  arrays. It validates null references, offsets, and array component types,
+  then returns the first matching absolute index at or after `offset`, or
+  `-1`. The API's other primitive-array variants are not implemented.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The
+  `./tools/cycle choupi` wrapper passed both build gates, recovered BOOTSEL
+  through CDC 1200-baud reset, flashed the ARM image, and captured 18 seconds
+  of serial output with repeated `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. The native was not invoked by the generic
+  runtime smoke check; no GP INSTALL APDU was sent.
+- Result: Byte-oriented native array search no longer throws
+  `NotYetImplemented`; non-byte primitive arrays remain unsupported.
+- Decision: Inspect the JCAlgTest 1.8.2 constructor/install call sequence and
+  continue implementing only the native/API behavior that blocks real install
+  and APDU lifecycle execution.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T034427Z.log` (SHA-256
+  `4a3ba30db076432c0a0da7cb19f23b6726b248f57682defbc4fd278bf720bfa9`); ARM
+  UF2 SHA-256
+  `8f3099f3779eddd46e8e84fa3ff20415ac2aad13b4709cc01c9d9c233155a1dd`.

@@ -228,9 +228,33 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
-    jref_t, jshort_t, std::shared_ptr<JC_Array>, jbyte_t, jshort_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+    const jref_t array_ref, const jshort_t offset,
+    std::shared_ptr<JC_Array> value_array, const jshort_t value_offset) {
+  if (array_ref.isNullPointer() || value_array == nullptr) {
+    throw Exceptions::NullPointerException;
+  }
+
+  Heap &heap = Context::getActiveContext().getHeap();
+  auto array = heap.getArray(array_ref);
+  if (offset < 0 || static_cast<uint32_t>(offset) > array->size() ||
+      value_offset < 0 ||
+      static_cast<uint32_t>(value_offset) >= value_array->size()) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (array->getType() != JAVA_ARRAY_T_BYTE ||
+      value_array->getType() != JAVA_ARRAY_T_BYTE) {
+    throw Exceptions::UtilException;
+  }
+
+  const jbyte_t value = value_array->getByteEntry(
+      static_cast<uint16_t>(value_offset));
+  for (uint16_t index = static_cast<uint16_t>(offset);
+       index < array->size(); ++index) {
+    if (array->getByteEntry(index) == value) {
+      return static_cast<jshort_t>(index);
+    }
+  }
+  return -1;
 }
 
 jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet() {
