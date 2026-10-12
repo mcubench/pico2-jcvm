@@ -1749,6 +1749,32 @@
   `f8bdd6a2cb5d6326e1bdfe0343ea89157b122b07647e68d690b102295e28f088`); ARM
   UF2 SHA-256 `7a34c0f0941dbc0818c9fa7984a1b6c63d58ee50cb89c73d4c7984b50a4ed04e`.
 
+## 2026-10-12 — Capture top-level Java method returns
+
+- Step/experiment: `wp7-root-method-return-capture`
+- Change: Record reference, short, and int return values when a Java method
+  returns from the root interpreter frame. Nested method returns still push
+  their values onto the caller frame. Reset the captured value when a new root
+  frame starts. This lets the borrowed-context applet bridge consume the
+  boolean result from `Applet.select()` without inventing a Java caller frame.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The real
+  `./tools/cycle choupi` passed both build gates, recovered BOOTSEL via CDC
+  reset, flashed the ARM image to 100%, and captured repeated
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0` over 18 seconds.
+  `git -c core.whitespace=cr-at-eol diff --check` passed. The runtime check
+  does not exercise a Java top-level return, so this behavior is not yet
+  directly validated.
+- Result: Root interpreter calls can expose their return value while preserving
+  nested return semantics; applet lifecycle calls remain unwired and PC/SC has
+  no reader.
+- Decision: Add the lifecycle method resolver/bridge and consume the captured
+  `select()` result, then validate it with the v1.8.2 applet once the reader is
+  restored.
+- Commit: `<commit>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T073435Z.log` (SHA-256
+  `22437f072e2f01ca1480d9d05ac84fa695f2e732af29dff12731ded061a93acc`); ARM
+  UF2 SHA-256 `7c180dd9eba1af4e40172c2a9df655b99de7a45f621e424986a3c9a75324bc57`.
+
 ## 2026-10-12 — Recheck PC build and reader access
 
 - Step/experiment: `wp7-host-build-and-reader-recheck`

@@ -70,8 +70,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   interpreter for the selected applet. Ordinary `invokevirtual` now reads the
   receiver's concrete class and resolves its override through that class's CAP
   method table. The borrowed-context virtual method entry can seed receiver and
-  argument locals, but CCID SELECT/process does not yet resolve or invoke the
-  lifecycle methods; the board cycle did not exercise this dispatch change.
+  argument locals; root short/reference/integer return values can now be
+  captured without a synthetic caller frame. CCID SELECT/process does not yet
+  resolve or invoke lifecycle methods; neither change has been exercised by an
+  installed applet.
 - [ ] Implement Java Card APDU buffer and incoming/outgoing command methods used
   by JCAlgTest, including case-4 Le and `61xx` response handling.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the

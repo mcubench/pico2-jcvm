@@ -74,6 +74,15 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- On 2026-10-12, added top-level interpreter return capture to `Stack` and the
+  `areturn`, `sreturn`, and `ireturn` handlers. A root method now records its
+  result instead of trying to push it onto a nonexistent caller frame; nested
+  calls retain their prior return behavior. This is groundwork for observing
+  `Applet.select()`'s boolean result. ARM and RISC-V wrapper builds pass, and
+  the physical cycle passed its finite CHOUPI runtime check. That self-check
+  does not execute a Java root return, so return capture still needs applet or
+  dedicated runtime evidence. Commit: `<commit>`; hashes are in `progress.md`.
+
 - On 2026-10-12, corrected ordinary `invokevirtual` dispatch to resolve through
   the receiver instance's concrete package/class virtual-method table. The VM
   now reads the declared method header to locate the receiver on the operand
