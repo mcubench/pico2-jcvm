@@ -1670,3 +1670,28 @@
   `e198912f9c31a8bead2e7b12c60797881a7e1ba63b9aea4918092b1952d367fd`); ARM
   UF2 SHA-256
   `902c5c1c6453d4f3b9ceedaa00cb2c5cb1067adda60b73c81dac5aae38a3196a`.
+
+## 2026-10-12 — Capture virtual-method flag resolution
+
+- Step/experiment: `wp7-install-virtual-method-flag-stage`
+- Change: Added stage 30 immediately before `getPublicMethodOffset` checks
+  whether the imported virtual-method token is public. Its context contains
+  the raw class reference and method token, so the next INSTALL failure can
+  show whether `Applet.register()` is rejected before class/method resolution.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed without
+  warnings. `./tools/cycle choupi` passed with elevated host USB access: CDC
+  reset entered BOOTSEL, the ARM image flashed to 100%, and the finite serial
+  capture repeatedly reported `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. A normal-context cycle could not initialize
+  libUSB. A bounded PC/SC restart/scan did not find a reader: `pcscd` could not
+  bind `/run/pcscd/pcscd.comm` (`Permission denied` / `Address already in use`),
+  and `pcsc_scan -r` reported `No reader found`.
+- Result: Firmware with stage 30 is on the Pico 2 and its runtime self-check
+  passes. The new marker and the JCAlgTest INSTALL path remain unexercised
+  because the PC/SC service is unavailable; no applet installation is claimed.
+- Decision: Restore the system PC/SC service/reader, then retry the exact
+  JCAlgTest v1.8.2 INSTALL and decode response bytes 24-28 (stage/context).
+- Commit: `1f41a70`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T055405Z.log` (SHA-256
+  `c497422821ef84fca6313e87e6719653b944fa0b0dd7e9d63adc24b9785265bb`); ARM
+  UF2 SHA-256 `7e82e6de6ac4211cdc431cf4f301220042a033e8ba980554e02963a8121be352`.

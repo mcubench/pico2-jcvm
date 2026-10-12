@@ -1535,3 +1535,27 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   mode and CDC serial works. Do not claim the JCAlgTest applet is installed.
 - Next: restore PC/SC reader visibility and retry JCAlgTest v1.8.2 INSTALL.
   Read the appended stage/context before changing method-token mappings.
+
+## Virtual-method flag diagnostic — 2026-10-12
+
+- Commit `1f41a70` adds stage 30 before `getPublicMethodOffset` checks the
+  virtual-method public/package flag. Context packs the raw class reference
+  into the high 16 bits and the method token into the low byte. Stages 27-29
+  still identify successful class resolution and public method-table access.
+- `./tools/build arm` and `./tools/build riscv` pass. Elevated
+  `./tools/cycle choupi` flashed the ARM image to 100%; the 18-second CDC
+  capture repeatedly reported `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. Current UF2 SHA-256:
+  `7e82e6de6ac4211cdc431cf4f301220042a033e8ba980554e02963a8121be352`.
+  Cycle log:
+  `artifacts/logs/cycle-choupi-20261012T055405Z.log`.
+- Physical JCAlgTest v1.8.2 INSTALL remains pending. PC/SC is inactive; a
+  temporary non-sudo `pcscd` attempt could not bind the existing
+  `/run/pcscd/pcscd.comm` socket, and `pcsc_scan -r` found no reader. The normal
+  sandbox also cannot initialize libUSB, while elevated USB access can flash
+  and monitor the board.
+- Next: recover/start the host PC/SC service using the already authorized
+  host-side setup, verify `pcsc_scan -r` shows `Pico 2 CHOUPI CCID`, then rerun
+  the exact JCAlgTest v1.8.2 GPPro INSTALL. Decode diagnostic bytes 24-28 and
+  follow the captured stage/context. Do not infer install success from the
+  runtime self-check.
