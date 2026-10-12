@@ -237,6 +237,15 @@ std::pair<Package, const uint16_t> Class_Handler::getPublicMethodOffset(
     noexcept
 #endif
 {
+#ifndef PC_VERSION
+  choupi_install_stage(30);
+  choupi_install_context(
+      (static_cast<uint32_t>(
+           NTOHS(virtual_method_ref_info.class_ref.internal_classref))
+       << 16) |
+      virtual_method_ref_info.token);
+#endif
+
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 
   if (!virtual_method_ref_info.isPublicMethod()) {
