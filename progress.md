@@ -1609,7 +1609,7 @@
 - Decision: Inspect the JCAlgTest 1.8.2 constructor/install call sequence and
   continue implementing only the native/API behavior that blocks real install
   and APDU lifecycle execution.
-- Commit: `pending`
+- Commit: `0223ba7`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T034427Z.log` (SHA-256
   `4a3ba30db076432c0a0da7cb19f23b6726b248f57682defbc4fd278bf720bfa9`); ARM
   UF2 SHA-256
