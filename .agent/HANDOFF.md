@@ -1519,3 +1519,19 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   capture around the external Applet class lookup and public method-table slot
   resolution; do not infer successful applet registration from the observer
   change or runtime smoke test.
+
+## INSTALL resolver diagnostics — 2026-10-12
+
+- The CCID INSTALL failure payload now appends the last resolver stage and a
+  32-bit context while retaining `6A80` as the final status word. Stages 27-29
+  mark successful imported-class resolution and public method-table lookup;
+  earlier classref stages remain 11-26. Code commit: `81ca2a5`.
+- Both builds and a real Pico ARM flash/runtime cycle passed. Latest firmware
+  UF2 SHA-256:
+  `902c5c1c6453d4f3b9ceedaa00cb2c5cb1067adda60b73c81dac5aae38a3196a`.
+  Log: `artifacts/logs/cycle-choupi-20261012T041446Z.log`.
+- No PC/SC daemon or reader is currently available in this container; the
+  diagnostic payload has not been exercised. The board is in CHOUPI application
+  mode and CDC serial works. Do not claim the JCAlgTest applet is installed.
+- Next: restore PC/SC reader visibility and retry JCAlgTest v1.8.2 INSTALL.
+  Read the appended stage/context before changing method-token mappings.

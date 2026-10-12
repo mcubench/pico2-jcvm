@@ -1643,3 +1643,30 @@
   `db0c06428e3c0061346ed543fea5e3c46c7aac03808432cc00170b152d067233`); ARM
   UF2 SHA-256
   `3236a6a98ba47b92ad25afa7d22ce308b37630e5a4437ce01e92f17613fc2d1f`.
+
+## 2026-10-12 — Return INSTALL resolver diagnostics
+
+- Step/experiment: `wp7-install-resolver-stage-response`
+- Change: INSTALL failure responses now include the last class-resolution stage
+  and packed context. Added checkpoints after imported class resolution and
+  before/after public method-table lookup. The stage/context is reset at each
+  install attempt and returned with the existing proprietary diagnostic bytes;
+  the final two bytes remain `6A80` on failure.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed without
+  warnings. The real Pico cycle passed both build gates, entered BOOTSEL via
+  CDC reset after picotool missed its reset interface, flashed the ARM image to
+  100%, and passed the 18-second finite runtime capture with repeated
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. PC/SC was
+  unavailable, so the new failure fields and GP INSTALL behavior were not
+  exercised.
+- Result: The next INSTALL response can distinguish a class resolution failure
+  from an invalid public method-table slot. Current installed firmware contains
+  this diagnostic build; it does not establish applet installation.
+- Decision: Restore PC/SC reader access and retry the exact JCAlgTest v1.8.2
+  INSTALL. Use the returned stage/context to correct the Applet register
+  dispatch path.
+- Commit: `81ca2a5`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T041446Z.log` (SHA-256
+  `e198912f9c31a8bead2e7b12c60797881a7e1ba63b9aea4918092b1952d367fd`); ARM
+  UF2 SHA-256
+  `902c5c1c6453d4f3b9ceedaa00cb2c5cb1067adda60b73c81dac5aae38a3196a`.
