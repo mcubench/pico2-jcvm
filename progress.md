@@ -1795,7 +1795,7 @@
   `process(APDU)` and APDU buffer/response handling remain incomplete.
 - Decision: Add APDU buffer delivery and process-method dispatch next; retry
   hardware installation and lifecycle verification after reader access returns.
-- Commit: `<commit>`
+- Commit: `256986e` (the progress reference is committed in the follow-up record)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T073952Z.log` (SHA-256
   `58fc542a20f41bb715ede6e522ef7acdddd44b1c7751c7909c612bac14090983`); ARM
   UF2 SHA-256 `6c599c684698e868d80664585d38eaf0a26252acf2579907516d6d8b1ffbc07b`.

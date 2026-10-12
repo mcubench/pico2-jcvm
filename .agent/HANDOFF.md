@@ -82,7 +82,7 @@ v1.8.2 and preserve the provided source trees.
   ARM/RISC-V builds and the physical cycle passed. The applet path itself was
   not exercised because re-enumeration moved USB to `001:011` and `pcsc_scan
   -r` still finds no reader. `Applet.process()` and APDU buffer delivery remain
-  the next implementation step. Commit: `<commit>`; hashes are in `progress.md`.
+  the next implementation step. Commit: `256986e`; hashes are in `progress.md`.
 
 - On 2026-10-12, added top-level interpreter return capture to `Stack` and the
   `areturn`, `sreturn`, and `ireturn` handlers. A root method now records its
