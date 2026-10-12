@@ -1614,3 +1614,32 @@
   `4a3ba30db076432c0a0da7cb19f23b6726b248f57682defbc4fd278bf720bfa9`); ARM
   UF2 SHA-256
   `8f3099f3779eddd46e8e84fa3ff20415ac2aad13b4709cc01c9d9c233155a1dd`.
+
+## 2026-10-12 — Recognize JC305 applet registration tokens
+
+- Step/experiment: `wp7-jc305-applet-register-token-detection`
+- Change: Corrected the install-time `Applet.register()` observer to recognize
+  imported JC305 virtual method tokens 1 and 2, matching the v1.8.2 CAP
+  ConstantPool entries and JC305u3 `framework.exp` (`register()` and
+  `register(byte[], short, byte)`).
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The real
+  Pico cycle passed both build gates, recovered BOOTSEL with CDC 1200-baud
+  reset after picotool could not locate the reset interface, flashed the ARM
+  image to 100%, and captured repeated `TEST:PASS choupi_runtime` /
+  `TEST:SUMMARY pass=1 fail=0` with no `TEST:FAIL` or `FAULT`. A bounded
+  elevated `pcsc_scan -r` timed out with exit 124 and no reader output, so the
+  GP INSTALL/APDU path could not be retried. No warnings were reported by the
+  wrapper builds.
+- Result: The observer now matches the actual JC305 register virtual tokens;
+  this does not establish that virtual method lookup succeeds or that
+  registration ran. The last captured INSTALL diagnostic is still a
+  `SecurityException` at `invokevirtual` PC `0x101C4EF4`, CP operand `0x0179`
+  (`Applet.register()`); that dispatch failure remains unresolved.
+- Decision: Restore PC/SC reader availability and retry INSTALL. If the same
+  exception remains, instrument external class/method resolution around this
+  exact Applet register reference and inspect the returned method-table slot.
+- Commit: `2c2728e`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T040413Z.log` (SHA-256
+  `db0c06428e3c0061346ed543fea5e3c46c7aac03808432cc00170b152d067233`); ARM
+  UF2 SHA-256
+  `3236a6a98ba47b92ad25afa7d22ce308b37630e5a4437ce01e92f17613fc2d1f`.

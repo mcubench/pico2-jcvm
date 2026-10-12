@@ -1499,3 +1499,23 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   native handler, implement the required constructor operation, then rebuild,
   flash, and repeat GPPro INSTALL. Keep USB recovery via the bounded
   `tools/flash` wrapper and user-authorized PC/SC helper.
+
+## Latest continuation — 2026-10-12
+
+- Corrected the JC305 applet registration observer to recognize imported
+  `Applet.register()` virtual tokens 1 and 2. The exact v1.8.2 CAP CP entry at
+  index `0x0179` is `03 82 03 01` (external `javacard.framework.Applet`,
+  virtual token 1); the overload uses token 2. Change commit: `2c2728e`.
+- Both wrapper builds passed. The physical ARM cycle entered BOOTSEL through
+  CDC 1200-baud recovery after picotool could not find the reset interface,
+  flashed successfully, and passed the finite runtime capture. Log:
+  `artifacts/logs/cycle-choupi-20261012T040413Z.log`.
+- A bounded elevated `pcsc_scan -r` timed out (124) without reader output. No
+  GP INSTALL was sent after this fix. The previous INSTALL response remains a
+  `SecurityException` at `invokevirtual` PC `0x101C4EF4`, operand `0x0179`, so
+  the method dispatch itself is still unverified.
+- Next: once the existing PC/SC service exposes the reader, retry the exact
+  JCAlgTest v1.8.2 INSTALL. On repeat failure, add temporary dispatch-stage
+  capture around the external Applet class lookup and public method-table slot
+  resolution; do not infer successful applet registration from the observer
+  change or runtime smoke test.
