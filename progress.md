@@ -1744,7 +1744,7 @@
 - Decision: Continue implementing the SELECT/process bridge and Java Card APDU
   object/buffer behavior; retest this method-resolution path immediately after
   PC/SC reader access is restored.
-- Commit: `<commit>`
+- Commit: `fa54b76` (the progress reference is committed in the follow-up record)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T072742Z.log` (SHA-256
   `f8bdd6a2cb5d6326e1bdfe0343ea89157b122b07647e68d690b102295e28f088`); ARM
   UF2 SHA-256 `7a34c0f0941dbc0818c9fa7984a1b6c63d58ee50cb89c73d4c7984b50a4ed04e`.

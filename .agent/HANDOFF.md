@@ -84,7 +84,7 @@ v1.8.2 and preserve the provided source trees.
   with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`.
   This runtime check does not execute a loaded applet override; PC/SC still has
   no reader, so no GP install or applet dispatch test was possible. The public
-  method resolver change is committed as `<commit>`; progress entry records the
+  method resolver change is committed as `fa54b76`; progress entry records the
   source and UF2 hashes.
 
 - Latest check on 2026-10-12: the Pico enumerates as `2e8a:0009` at USB
