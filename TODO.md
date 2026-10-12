@@ -65,7 +65,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   supplies the class index and retains the resulting context for the card
   session. This has not yet been exercised against an installed applet.
 - [ ] Dispatch SELECT, `select()`, `deselect()`, and `process()` through the
-  interpreter for the selected applet.
+  interpreter for the selected applet. A borrowed-context virtual method entry
+  now seeds receiver/reference locals, but no lifecycle method is yet resolved
+  or dispatched through it.
 - [ ] Implement Java Card APDU buffer and incoming/outgoing command methods used
   by JCAlgTest, including case-4 Le and `61xx` response handling.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the

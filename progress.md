@@ -1564,3 +1564,29 @@
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T195927Z.log` (SHA-256
   `dee9effae6d9a883e0837a526c74e693ef27c849814bb41ba69e85ea9f75b76e`); ARM
   UF2 SHA-256 `a5f9b3a301d1919a4f5ba15ffc2df54183d3a0f46dee092fdcc9bd0c286d5896`.
+
+## 2026-10-12 — Add borrowed-context virtual method entry
+
+- Step/experiment: `wp7-borrowed-context-virtual-entry`
+- Change: Added an interpreter constructor that borrows a retained `Context`,
+  starts a virtual method at a Method-component offset, and seeds checked
+  receiver/reference locals. Added a firmware bridge that invokes the entry on
+  the selected applet context. The borrowed context is not copied because its
+  stack frames refer to storage owned by that context.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The first
+  sandboxed `./tools/cycle choupi` stopped at picotool/libusb initialization
+  (`status=250`); retry with USB access passed both wrapper build gates, CDC
+  BOOTSEL recovery and flash, then captured 18 seconds of board output. The
+  board repeatedly reported `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`. No Java applet
+  lifecycle method or SELECT APDU was invoked; this is not lifecycle validation.
+- Result: The retained applet context can now be supplied to a virtual-method
+  interpreter entry with explicit initial reference locals. Method resolution,
+  APDU object/buffer initialization, and lifecycle dispatch remain incomplete.
+- Decision: Resolve the applet's exported lifecycle methods from its CAP and
+  wire SELECT/process dispatch with the APDU state needed by those methods.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T033945Z.log` (SHA-256
+  `c6a964c2ddeef80cf2e7d790633feff3aafd1cf623bdbcf68cf5f9509c090ec7`); ARM
+  UF2 SHA-256
+  `e588e7c926aaf022e632c052a1a18129f6e9d6b572c4a12c65483cbd036073e8`.

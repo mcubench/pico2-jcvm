@@ -53,6 +53,12 @@ public:
               const uint16_t methodOffset, const uint8_t *installData,
               const uint8_t installLength);
 
+  /// Start a virtual method on the supplied receiver words using an existing
+  /// context and heap. `initial_references[0]` is the `this` receiver.
+  Interpretor(Context &context, const uint16_t methodOffset,
+              const jref_t *initial_references,
+              uint8_t initial_reference_count);
+
   /// Run the Java Card Interpretor and return its ISO 7816 status word.
   uint16_t run() noexcept; // All exceptions must be handling there.
 
@@ -90,13 +96,17 @@ public:
 private:
   /// List of Java Card contexts.
   List<Context> contexts;
+  Context *external_context = nullptr;
   /// Class and method where the interpretor start.
   uint8_t startingClass, startingMethod;
   bool isStaticStatingMethod;
   uint16_t startingMethodOffset = 0;
   const uint8_t *installData = nullptr;
   uint8_t installLength = 0;
+  const jref_t *initialReferences = nullptr;
+  uint8_t initialReferenceCount = 0;
   bool startsAtMethodOffset = false;
+  bool installMethodEntry = false;
   uint16_t status_word = 0x9000;
   Exceptions last_exception_id = Exceptions::NotYetImplemented;
   uint8_t last_exception_opcode = 0;

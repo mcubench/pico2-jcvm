@@ -91,6 +91,19 @@ void choupi_vm_clear_selected_applet(void) {
   selected_applet_context.reset();
 }
 
+uint16_t choupi_vm_invoke_applet_method(uint16_t method_offset,
+                                       const jcvm::jref_t *initial_references,
+                                       uint8_t initial_reference_count) {
+  if (!selected_applet_context || initial_references == nullptr ||
+      initial_reference_count == 0) {
+    return 0x6f00;
+  }
+  jcvm::Interpretor interpretor(*selected_applet_context, method_offset,
+                                initial_references,
+                                initial_reference_count);
+  return interpretor.run();
+}
+
 uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
   TRACE_JCVM_DEBUG("Starting JCVM");
 

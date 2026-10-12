@@ -74,6 +74,19 @@ v1.8.2 and preserve the provided source trees.
 
 ## Latest continuation
 
+- On 2026-10-12, added a borrowed-`Context` `Interpretor` entry for a virtual
+  method offset and initial receiver/reference locals, plus a C bridge for the
+  retained selected-app context. Both `./tools/build arm` and
+  `./tools/build riscv` passed. `./tools/cycle choupi` passed after the
+  repository flash wrapper recovered via CDC 1200-baud BOOTSEL; the 18-second
+  board capture repeatedly reported `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. This primitive has not been called by SELECT or
+  `process()`; lifecycle method lookup, APDU object/buffer setup, and PC/SC
+  testing remain next. Log `artifacts/logs/cycle-choupi-20261012T033945Z.log`,
+  SHA-256 `c6a964c2ddeef80cf2e7d790633feff3aafd1cf623bdbcf68cf5f9509c090ec7`;
+  ARM UF2 SHA-256
+  `e588e7c926aaf022e632c052a1a18129f6e9d6b572c4a12c65483cbd036073e8`.
+
 - The imported class offset byte-order fix is on the board and passed both target
   builds, flash, and finite runtime checks. A bounded v1.8.2 GP INSTALL still
   resets the card after the final `84E60C00`. New watchdog instrumentation

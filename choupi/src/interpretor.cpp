@@ -99,6 +99,17 @@ Interpretor::Interpretor(const japplet_ID_t appletID,
   this->installData = installData;
   this->installLength = installLength;
   this->startsAtMethodOffset = true;
+  this->installMethodEntry = true;
+}
+
+Interpretor::Interpretor(Context &context, const uint16_t methodOffset,
+                         const jref_t *initial_references,
+                         const uint8_t initial_reference_count)
+    : external_context(&context), startingClass(0), startingMethod(0),
+      isStaticStatingMethod(false), startingMethodOffset(methodOffset),
+      initialReferences(initial_references),
+      initialReferenceCount(initial_reference_count),
+      startsAtMethodOffset(true) {
 }
 
 /**
@@ -149,8 +160,27 @@ uint16_t Interpretor::run() noexcept {
       methodHandler.callStaticMethod(methodOffset);
     }
 
-  } else { // TODO: Virtual method => this is requirequired.
-    // stack.push_Reference(THIS);
+  } else if (this->startsAtMethodOffset) {
+    if (this->initialReferences == nullptr ||
+        this->initialReferenceCount == 0) {
+      this->last_exception_id = Exceptions::SecurityException;
+      this->startJCVMException(Exceptions::SecurityException);
+      return this->status_word;
+    }
+    methodHandler.callVirtualMethod(this->startingMethodOffset);
+    Stack &startup_stack = context.getStack();
+    const Frame &startup_frame = startup_stack.getCurrentFrame();
+    if (this->initialReferenceCount >
+        startup_frame.getOP() - startup_frame.getFP()) {
+      this->last_exception_id = Exceptions::SecurityException;
+      this->startJCVMException(Exceptions::SecurityException);
+      return this->status_word;
+    }
+    for (uint8_t index = 0; index < this->initialReferenceCount; ++index) {
+      startup_stack.writeLocal_Reference(index,
+                                         this->initialReferences[index]);
+    }
+  } else { // TODO: exported virtual method entry by class/method token.
   }
 
   Stack &stack = context.getStack();
@@ -314,11 +344,14 @@ uint16_t Interpretor::run() noexcept {
  */
 Context &Interpretor::getCurrentContext() noexcept(
     noexcept(std::declval<List<Context> &>().at(std::declval<uint8_t &>()))) {
+  if (this->external_context != nullptr) {
+    return *this->external_context;
+  }
   return this->contexts.front();
 }
 
 bool Interpretor::installAppletRegistered() noexcept {
-  return this->startsAtMethodOffset &&
+  return this->installMethodEntry &&
          this->getCurrentContext().wasAppletRegistered();
 }
 
