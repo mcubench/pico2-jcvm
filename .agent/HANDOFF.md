@@ -81,7 +81,7 @@ v1.8.2 and preserve the provided source trees.
   `Applet.select()`'s boolean result. ARM and RISC-V wrapper builds pass, and
   the physical cycle passed its finite CHOUPI runtime check. That self-check
   does not execute a Java root return, so return capture still needs applet or
-  dedicated runtime evidence. Commit: `<commit>`; hashes are in `progress.md`.
+  dedicated runtime evidence. Commit: `0061646`; hashes are in `progress.md`.
 
 - On 2026-10-12, corrected ordinary `invokevirtual` dispatch to resolve through
   the receiver instance's concrete package/class virtual-method table. The VM

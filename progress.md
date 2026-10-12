@@ -1770,7 +1770,7 @@
 - Decision: Add the lifecycle method resolver/bridge and consume the captured
   `select()` result, then validate it with the v1.8.2 applet once the reader is
   restored.
-- Commit: `<commit>`
+- Commit: `0061646` (the progress reference is committed in the follow-up record)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T073435Z.log` (SHA-256
   `22437f072e2f01ca1480d9d05ac84fa695f2e732af29dff12731ded061a93acc`); ARM
   UF2 SHA-256 `7c180dd9eba1af4e40172c2a9df655b99de7a45f621e424986a3c9a75324bc57`.
