@@ -1585,7 +1585,7 @@
   APDU object/buffer initialization, and lifecycle dispatch remain incomplete.
 - Decision: Resolve the applet's exported lifecycle methods from its CAP and
   wire SELECT/process dispatch with the APDU state needed by those methods.
-- Commit: `pending`
+- Commit: `24febcf`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T033945Z.log` (SHA-256
   `c6a964c2ddeef80cf2e7d790633feff3aafd1cf623bdbcf68cf5f9509c090ec7`); ARM
   UF2 SHA-256
