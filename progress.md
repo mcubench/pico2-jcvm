@@ -1695,3 +1695,30 @@
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261012T055405Z.log` (SHA-256
   `c497422821ef84fca6313e87e6719653b944fa0b0dd7e9d63adc24b9785265bb`); ARM
   UF2 SHA-256 `7e82e6de6ac4211cdc431cf4f301220042a033e8ba980554e02963a8121be352`.
+
+## 2026-10-12 — Decode CAP method-table offsets
+
+- Step/experiment: `wp7-cap-method-table-endianness`
+- Change: Convert public and package virtual-method table entries from CAP
+  big-endian byte order with `NTOHS` before using the method-component offset.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed without
+  warnings. The real Pico cycle passed BOOTSEL recovery, ARM flashing to 100%,
+  and the finite serial check with repeated `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. Before this correction, GPPro v1.8.2 INSTALL
+  returned failure payload stage `0x1D` (29), context `0x00003302`; the table
+  bytes decode to offset `0x0233` on this little-endian target. After reflash,
+  the GPPro retry listed no readers, so it sent no INSTALL APDU; USB
+  re-enumeration changed the node after its ACL was granted.
+- Result: The byte-order defect is corrected and the firmware passes its board
+  runtime check. Applet installation after the correction is not yet verified.
+- Decision: Reapply the existing reader ACL helper after USB re-enumeration,
+  confirm `pcsc_scan -r` lists the reader, then retry the exact GPPro INSTALL.
+- Commit: `f8643e2`
+- Artifacts/logs: `artifacts/logs/gp-install-stage30-20261012.txt` (SHA-256
+  `a3fc895e031e90c70203933ef48467a5d6d82112651bc3a0fc9763f61c43c197`);
+  `artifacts/logs/gp-install-method-table-endian-20261012.txt` (SHA-256
+  `1a29a6772360ac5ba8a5a4d9e38b0f78cd6bfea4167b09d9c36d0618a17823ab`);
+  `artifacts/logs/cycle-choupi-20261012T061610Z.log` (SHA-256
+  `e0e35fcf78ea1567d58267929434ba922f1738974ec2bbae1cd5584b6b463c98`);
+  ARM UF2 SHA-256
+  `811504dc6897acca45cbc8b7ce4b6bcc3b847c1f55cc100e8304f978a7ce306e`.

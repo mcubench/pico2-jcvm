@@ -1559,3 +1559,26 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   the exact JCAlgTest v1.8.2 GPPro INSTALL. Decode diagnostic bytes 24-28 and
   follow the captured stage/context. Do not infer install success from the
   runtime self-check.
+
+## CAP virtual method-table byte order — 2026-10-12
+
+- Commit `f8643e2` converts both public and package virtual-method table
+  entries with `NTOHS` before treating them as Method-component offsets.
+- Evidence: the GPPro INSTALL failure after stage-30 firmware returned
+  diagnostic stage `0x1D` (29), context `0x00003302`. Stage 29 is written
+  after reading the public table slot. On the RP2350 little-endian target,
+  those bytes represent the CAP offset `0x0233`, which the prior code passed
+  as `0x3302` to `Method_Handler`.
+- Both wrapper builds and the real ARM Pico cycle passed; the updated image is
+  `811504dc6897acca45cbc8b7ce4b6bcc3b847c1f55cc100e8304f978a7ce306e`.
+  Cycle log: `artifacts/logs/cycle-choupi-20261012T061610Z.log`.
+- The post-fix GPPro attempt did not reach the card: the reader list was empty
+  after the cycle re-enumerated USB, so the previous ACL no longer covered the
+  current `/dev/bus/usb` node. The CCID device is visible, but PC/SC currently
+  has no reader.
+- Next: run `sudo -n /usr/local/sbin/pico2-pcsc-reader` to grant access to the
+  newly enumerated USB node and restart `pcscd.service`, confirm
+  `pcsc_scan -r` lists `Pico 2 CHOUPI CCID`, then retry
+  `./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar
+  --debug --install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`. Inspect the new
+  failure stage/context or confirm successful registration and selection.
