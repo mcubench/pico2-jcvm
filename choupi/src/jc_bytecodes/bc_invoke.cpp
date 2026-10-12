@@ -147,7 +147,7 @@ void Bytecodes::bc_invokevirtual() {
         package_aid->AID_length == 7 &&
         std::memcmp(package_aid->AID, "\xA0\x00\x00\x00\x62\x01\x01", 7) ==
             0 &&
-        class_token == 3 && (method_token == 4 || method_token == 5);
+        class_token == 3 && (method_token == 1 || method_token == 2);
   }
   auto method_offset = class_handler.getMethodOffset(virtual_method_ref_info);
 
