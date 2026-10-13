@@ -1820,3 +1820,13 @@
 - Commit: `fbcb35f` (this record is completed by the follow-up metadata commit)
 - Artifacts/logs: `/tmp/pico2-build-pc.log` (not archived in the repository);
   prior firmware runtime log `artifacts/logs/cycle-choupi-20261012T061610Z.log`.
+
+## 2026-10-13 — Review current applet and APDU integration
+
+- Step/experiment: `code-review-20261013`
+- Change: Recorded eight concrete implementation defects in the current lifecycle, APDU, generated JNI, and virtual-resolution paths; implementation source was not edited.
+- Validation: Static inspection of source, generated headers, and supplied v1.8.2 CAP; host-only `./tools/build arm` failed at link time with missing `setAPDUOutgoing(std::shared_ptr<JC_Array>, short, short)`.
+- Result: Current firmware cannot link; further defects would prevent correct selection and repeated APDU exchange after that link issue is fixed. No token access, flash, runtime measurement, or hardware validation was performed.
+- Decision: Resolve the review findings before resuming applet integration. The project implementation goal remains paused; this was a separately requested review.
+- Commit: `recorded in the following review commit reference`
+- Artifacts/logs: `artifacts/reviews/code-review-20261013.md`, `artifacts/logs/review-arm-build-20261013.log`
