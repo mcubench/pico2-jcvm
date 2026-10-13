@@ -1830,3 +1830,13 @@
 - Decision: Resolve the review findings before resuming applet integration. The project implementation goal remains paused; this was a separately requested review.
 - Commit: `recorded in the following review commit reference`
 - Artifacts/logs: `artifacts/reviews/code-review-20261013.md`, `artifacts/logs/review-arm-build-20261013.log`
+
+## 2026-10-13 — Review commit reference
+
+- Step/experiment: `code-review-20261013-reference`
+- Change: Recorded the immutable review commit reference.
+- Validation: Review report and host-only build log were committed successfully.
+- Result: Review commit is `d8afcd4`; implementation files retain their existing worktree state.
+- Decision: Review complete; implementation goal remains paused.
+- Commit: `d8afcd4`
+- Artifacts/logs: `artifacts/reviews/code-review-20261013.md`, `artifacts/logs/review-arm-build-20261013.log`
