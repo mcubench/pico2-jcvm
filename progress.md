@@ -1850,3 +1850,13 @@
 - Decision: Other agent should revalidate the worktree and implement the listed corrections in the documented order.
 - Commit: `recorded in the following documentation commit reference`
 - Artifacts/logs: `FIXES.md`, `artifacts/reviews/code-review-20261013.md`
+
+## 2026-10-14 — Fix checklist commit reference
+
+- Step/experiment: `review-fix-checklist-reference`
+- Change: Recorded the fix-checklist documentation commit.
+- Validation: Commit contains only FIXES.md and its progress record.
+- Result: Checklist commit is `df4edca`; proposed fixes remain unimplemented.
+- Decision: Hand off implementation to the other agent as requested.
+- Commit: `df4edca`
+- Artifacts/logs: `FIXES.md`
