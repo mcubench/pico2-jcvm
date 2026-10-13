@@ -1840,3 +1840,13 @@
 - Decision: Review complete; implementation goal remains paused.
 - Commit: `d8afcd4`
 - Artifacts/logs: `artifacts/reviews/code-review-20261013.md`, `artifacts/logs/review-arm-build-20261013.log`
+
+## 2026-10-14 — Prepare implementation fix checklist
+
+- Step/experiment: `review-fix-checklist`
+- Change: Added root FIXES.md with eight prioritized findings, affected files, proposed correction requirements, validation cases, and remaining project scope for another agent.
+- Validation: Checked the checklist against the committed 2026-10-13 review and its host-only link-failure evidence. No builds, tests, token operations, or implementation edits were performed.
+- Result: Documentation handoff is available; every proposed fix remains unchecked.
+- Decision: Other agent should revalidate the worktree and implement the listed corrections in the documented order.
+- Commit: `recorded in the following documentation commit reference`
+- Artifacts/logs: `FIXES.md`, `artifacts/reviews/code-review-20261013.md`

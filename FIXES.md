@@ -1,0 +1,86 @@
+# Fix checklist for the next implementation agent
+
+Prepared 2026-10-14 from the [2026-10-13 code review](artifacts/reviews/code-review-20261013.md), committed as `d8afcd4`. This file assigns no completed status to the proposed fixes. Recheck the current worktree before editing: it contains unfinished APDU changes and unrelated changes that must be preserved.
+
+The ARM link failure was reproduced with `./tools/build arm`; see [build log](artifacts/logs/review-arm-build-20261013.log). Other failures below are established by source/generated-output inspection and direct inspection of the supplied CAP, but their runtime consequences have not been tested. No physical token was used for the review or this checklist.
+
+## Recommended implementation order
+
+Resolve the generated artifact and ABI issues first (1–2), class and virtual-method resolution next (3–4 and 7), then APDU buffer/response behavior and selection state (5–6 and 8). Validate each coherent change and record it separately under the repository's commit discipline.
+
+## Blocking fixes
+
+### 1. Match the native APDU ABI — P1
+
+- [ ] Make the C++ `setAPDUOutgoing` definition agree with the generated declaration and call.
+- Files: [jni.cpp](choupi/src/jni.cpp), [NativeImplementation.java](choupi/javacard-sdk/javacard-api/src/fr/gouv/ssi/nativeimpl/NativeImplementation.java), generated `jni.hpp`.
+- Current defect: Java `byte[]` generates a `std::shared_ptr<JC_Array>` parameter, while the C++ implementation accepts `jref_t`. The linker cannot find the generated signature.
+- Preserve the identity of the actual Java response buffer when adapting the ABI. Do not merely change the signature and then read a different array.
+- Validation: regenerate declarations, build ARM and RISC-V through wrappers, and confirm native declarations, definitions, and argument conversion agree. Do not hand-edit generated headers as the permanent fix.
+
+### 2. Generate the ROM image and JNI header together — P1
+
+- [ ] Make the firmware consume an image/header pair from the same ROM-mask generation.
+- Files: [tools/build](tools/build), [tools/build-pc](tools/build-pc), [CMakeLists.txt](CMakeLists.txt).
+- Current defect: the build copies `build/choupi-pc/jni.hpp` but embeds `build/choupi-rommask/flash-algtest.bin`. New native indices and Java class layouts can disagree with the embedded bytecode.
+- Keep artifact provenance and hashes together; a stale but existing file must not silently satisfy the build requirement.
+- Validation: confirm both artifacts are generated from the current Java API sources and the firmware embeds that exact image. Verify reproducibility of generation and build dependencies. A PC build blocked by Cargo does not prove full host-build success, even if its ROM-mask stage completes.
+
+### 3. Correct lifecycle method tokens — P1
+
+- [ ] Resolve `select`, `deselect`, and `process` in the supplied applet's token domain.
+- Files: [main.cpp](choupi/src/main.cpp), [jc_class.cpp](choupi/src/jc_handlers/jc_class.cpp), [jc_cp.cpp](choupi/src/jc_handlers/jc_cp.cpp).
+- Evidence: v1.8.2 Applet subclass at Class-component offset 148 has public table base 4: `4=0x3db5` (deselect), `5=0xffff` (inherited), `6=0x3db1` (select), `7=0x3e63` (process).
+- Current bridge requests select 7, deselect 5, process 8. Its concrete internal class references bypass imported-reference remapping. SELECT can therefore enter process with a missing APDU argument.
+- Validate method signatures and argument counts as well as offsets. Define when tokens are translated across an imported superclass; do not apply ROM tokens indiscriminately to a loaded applet table.
+- Validation: exercise true/false select, deselect, and process with distinguishable method behavior in a host fixture using the same CAP/token conventions.
+
+### 4. Resolve the APDU class with the correct metadata and endianness — P1
+
+- [ ] Use imported framework metadata for class-token remapping.
+- [ ] Convert exported CAP class offsets to host byte order consistently before instance allocation.
+- Files: [main.cpp](choupi/src/main.cpp), [jc_cp.cpp](choupi/src/jc_handlers/jc_cp.cpp), [jc_export.cpp](choupi/src/jc_handlers/jc_export.cpp).
+- Current defect: allocation remaps framework token 10 using JCAlgTest's own package AID, so it stays 10 instead of becoming APDU token 7. It also omits the offset conversion performed by the existing constant-pool class-resolution path.
+- Prefer one shared resolution contract so direct allocation and bytecode allocation cannot diverge.
+- Validation: resolve the supplied framework import to APDU and verify package, class index, field layout, and bounds before allocation.
+
+### 5. Refresh the Java-visible buffer on every APDU — P1
+
+- [ ] Ensure the Java APDU object and native context observe the same current command buffer.
+- Files: [APDU.java](choupi/javacard-sdk/javacard-api/src/javacard/framework/APDU.java), [jni.cpp](choupi/src/jni.cpp), [main.cpp](choupi/src/main.cpp), [context.cpp](choupi/src/context.cpp), generated JNI array-return handling.
+- Current defect: JNI deep-copies the native array on its first return; Java caches the copy, while subsequent commands refresh only the original context array. The APDU object is reused.
+- Preserve buffer identity or refresh the cached Java array explicitly. Bound allocations across repeated commands and read response bytes from the array modified by Java.
+- Validation: send at least two different command headers/payloads through one selected applet context, overwrite the first buffer with response data, then verify the second command and response exactly. Include zero-data and maximum short-data cases.
+
+### 6. Always return APDU status bytes on errors — P1
+
+- [ ] Give the bridge and CCID caller a consistent response-data/status contract.
+- Files: [main.cpp](choupi/src/main.cpp), [ccid_device.cpp](src/ccid_device.cpp).
+- Current defect: early error returns leave the caller's response length at zero; the CCID caller adopts it and sends an empty APDU rather than the returned status word.
+- Define response length on every path, append status bytes exactly once, and avoid confusing 'no selected applet' with an applet-returned status.
+- Validation: malformed length, lookup/allocation failure, insufficient response capacity, interpreter failure, and successful zero-data commands all produce the expected status and bounded output.
+
+### 7. Fix superclass traversal in virtual-method lookup — P1
+
+- [ ] Refresh class, table, base, and package after each superclass transition.
+- [ ] Apply the same correction to public and package method resolution.
+- Files: [jc_class.cpp](choupi/src/jc_handlers/jc_class.cpp); inspect related table helpers in [jc_cap_class.hpp](choupi/src/jc_cap/jc_cap_class.hpp).
+- Current defect: a `0xffff` inherited slot advances the superclass reference while continuing to read the original class/table. The supplied applet contains such a slot at token 5.
+- Validate table bounds, token-domain transitions, missing methods, and termination at the root. Inspect package-table address arithmetic rather than assuming that path is correct.
+- Validation: direct override, inherited implementation, several superclass levels, imported superclass, missing method, and package method fixtures resolve or fail deterministically without looping.
+
+### 8. Clear selection state after failed SELECT — P2
+
+- [ ] Make false or throwing `select()` leave the applet unselected.
+- Files: [main.cpp](choupi/src/main.cpp), [ccid_device.cpp](src/ccid_device.cpp).
+- Current defect: a rejected SELECT retains `selected_applet_context`; ordinary commands can subsequently enter process merely because the context exists.
+- Track successful selection explicitly or clear the retained context on all failed paths. Ensure lifecycle cleanup is appropriate for failed selection and power-off.
+- Validation: false-select and throwing-select fixtures reject subsequent process commands; successful selection enables process; deselect clears it.
+
+## Remaining project work after these fixes
+
+These fixes are prerequisites, not completion of `plan.md`. Follow [TODO.md](TODO.md) for installation rollback/registration, Java exception/status behavior, the remaining API surface, host APDU transport, persistence, JCAlgTest client completion, simulator comparison, and AC1–AC5 verification. Continue using the exact supplied v1.8.2 CAP/client.
+
+## Working constraints
+
+Read `AGENTS.md`, `.agent/SESSION_CONTINUITY.md`, and `.agent/HANDOFF.md`. Preserve unrelated worktree changes. Use repository build wrappers, build both architectures after shared-source edits, and record validations and limitations in `progress.md` with separate commits. Physical-token validation requires a later authorized session; no token operations were performed for this checklist.
