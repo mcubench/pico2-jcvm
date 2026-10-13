@@ -1634,3 +1634,73 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar
   --debug --install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`. Inspect the new
   failure stage/context or confirm successful registration and selection.
+
+- Paused on 2026-10-12 at the user's request before unplugging the Pico. An
+  incomplete applet `process(APDU)` implementation is present in the worktree:
+  `Context` now tracks APDU buffer/response state, Java `APDU` delegates buffer
+  methods to added `NativeImplementation` natives, and CCID `XfrBlock` dispatches
+  ordinary commands into the selected applet. While reviewing array ownership,
+  the Java `APDU` was updated to cache the native-returned byte-array copy and
+  pass that exact array to `setAPDUOutgoing`; the latest Java/API change has NOT
+  yet been regenerated or built. Do not treat this implementation as validated.
+  `./tools/build arm` and `./tools/build riscv` passed before that last ownership
+  correction. A physical `./tools/cycle choupi` was attempted after both builds
+  passed but flash was blocked by `picotool` reporting `Failed to initialise
+  libUSB`; the board was not flashed by that attempt. The `./tools/build-pc`
+  rerun was interrupted at user request during Java API compilation. On resume,
+  regenerate the ROM-mask JNI header with `./tools/build-pc`, note the existing
+  crates.io DNS failure may still make its overall command exit nonzero after
+  ROM-mask generation, then run both architecture builds and inspect/fix all
+  compiler errors before any flash attempt. The working `tools/build` now reads
+  the fresh generated header from `build/choupi-pc/jni.hpp`. User is unplugging
+  the board, so physical validation must wait until it is reconnected and visible
+  to this VM. Preserve all unrelated dirty/untracked files and do not stage them.
+
+- Second pause checkpoint — 2026-10-12. The user resumed briefly, then asked to
+  stop and write a handoff. I rechecked the current worktree: the incomplete
+  APDU/process changes remain uncommitted in `choupi/src/context.{hpp,cpp}`,
+  `choupi/src/jni.cpp`, `choupi/src/main.cpp`, `src/ccid_device.cpp`, and
+  `tools/build`; the Java API sources on disk contain the cache/response-buffer
+  changes described above. No additional source edits or builds were made in
+  this resumed turn. `lsusb` still reports `unable to initialize libusb: -99`,
+  so the Pico is not available to this VM. No build/flash command is running.
+  Resume by regenerating the JNI header with `./tools/build-pc` after confirming
+  the Java source edits are in the intended project tree; then build ARM and
+  RISC-V, inspect/fix errors, and only attempt a hardware cycle when USB access
+  works and both build gates pass. Do not commit the incomplete step or stage
+  unrelated preserved work.
+
+- Review checkpoint — 2026-10-13. User requested a code review without using the
+  physical token. Review report committed as `d8afcd4` in
+  `artifacts/reviews/code-review-20261013.md`. Eight defects were identified:
+  native ABI mismatch, mismatched JNI/ROM artifacts, wrong lifecycle tokens,
+  APDU class mapping/endian errors, stale cached APDU input, missing error status
+  bytes, stale inherited virtual tables, and retained context after failed SELECT.
+  Host-only `./tools/build arm` reproduced the native ABI link failure; log
+  `artifacts/logs/review-arm-build-20261013.log`. No implementation fixes or token
+  operations were performed. Implementation goal remains paused; resolve these
+  findings before treating the current applet integration as runnable.
+
+- Documentation handoff — 2026-10-14. User requested a Markdown fix list for
+  another agent and explicitly prohibited implementation. Root `FIXES.md`,
+  committed as `df4edca`, lists all eight review defects, affected files,
+  correction requirements, recommended order, and host validation cases.
+  No implementation edits, builds, tests, or physical-token operations occurred.
+
+- Implementation checkpoint — 2026-10-14. The user resumed implementation and
+  authorized the eight fixes in `FIXES.md`. Updated the native APDU array ABI,
+  retained the Java-visible buffer across commands, paired the ROM image and JNI
+  header from one source-fingerprinted generation, corrected the JCAlgTest
+  lifecycle tokens and inherited method-table traversal, corrected APDU class
+  import remapping/endianness, added a distinct no-applet sentinel and status
+  bytes on bridge errors, and clear applet state after rejected SELECT. ARM and
+  RISC-V wrapper builds pass. `./tools/cycle choupi` rebuilt both targets, saw
+  USB device `2e8a:0009` in sysfs, then failed before writing firmware because
+  picotool could not initialize libUSB. No hardware runtime output was captured.
+  The current execution context also reports PC/SC `Service not available`; do
+  not claim applet behavior was verified. Next retry `./tools/cycle choupi` when
+  USB access is available, then install/select JCAlgTest v1.8.2 and verify
+  repeated APDUs. The generated ROM image/header hashes and bounded logs are in
+  the latest `progress.md` entry. Java API buffer changes are committed in the
+  nested checkout as `534c1b1`. The prior uncommitted source/API trees and
+  unrelated worktree files remain preserved.

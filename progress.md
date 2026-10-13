@@ -1860,3 +1860,13 @@
 - Decision: Hand off implementation to the other agent as requested.
 - Commit: `df4edca`
 - Artifacts/logs: `FIXES.md`
+
+## 2026-10-14 — Implement reviewed APDU and lifecycle fixes
+
+- Step/experiment: `implement-review-fixes-20261014`
+- Change: Corrected the generated JNI ABI and registered the Java-visible APDU array so subsequent commands refresh and use the same object. The Java API changes are committed in its nested checkout as `534c1b1`. The build now regenerates the ROM image and JNI header together, fingerprints API sources, and rejects stale/mismatched artifacts. Corrected JCAlgTest lifecycle tokens, framework APDU class resolution and endianness, public/package superclass table traversal, failed SELECT cleanup, and APDU status-byte response handling. Documented the implementation state in `FIXES.md`.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed after the changes. `./tools/cycle choupi` rebuilt both targets, detected the RP2350 in sysfs, then stopped before flashing because `picotool` reported `Failed to initialise libUSB`; no firmware write or serial capture occurred. `./tools/doctor` reports its host environment variables/tools missing because it uses the ambient PATH, while repository build wrappers pass. `git -c core.whitespace=cr-at-eol diff --check` passed before the final include-only cleanup; both builds are repeated after it.
+- Result: ARM CHOUPI firmware links with the regenerated native API. No physical runtime behavior was validated. USB access from this execution context remains blocked despite sysfs showing device `2e8a:0009`.
+- Decision: Source fixes are complete; retry the bounded CHOUPI flash/runtime capture when libUSB access works, then exercise SELECT and repeated APDU commands on an installed applet.
+- Commit: `recorded in the following implementation commit reference`
+- Artifacts/logs: `artifacts/logs/fixes-build-arm-20261014.log`, `artifacts/logs/fixes-build-riscv-20261014.log`, `artifacts/logs/fixes-cycle-choupi-20261014.log`; ROM image SHA-256 `7683c4a90d57702cf313e1048a5f0e7478f18f2a69ae99a4d078205aed57d9d9`, JNI header SHA-256 `dca8995ec8a8fadf16ce46e99cc869bf6e0748ad5dc90f7c841dd38701825586`, ARM CHOUPI UF2 SHA-256 `6bf2fbf36f860dd6952c02a1ea91c90a54c661ece40e5796a4310f00ef797844`.

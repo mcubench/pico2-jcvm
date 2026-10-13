@@ -28,6 +28,9 @@
 #include "context.hpp"
 #include "exceptions.hpp"
 #include "jc_handlers/flashmemory.hpp"
+#include "jc_types/jc_array.hpp"
+
+#include <utility>
 
 namespace jcvm {
 
@@ -120,6 +123,72 @@ bool Context::hasRestoredAppletInstance() const noexcept {
 
 jref_t Context::getRestoredAppletRef() const noexcept {
   return this->restored_applet_ref;
+}
+
+void Context::setAPDUBufferRef(const jref_t reference,
+                               const uint16_t incoming_length) noexcept {
+  this->apdu_buffer_ref = reference;
+  this->apdu_incoming_length = incoming_length;
+  this->apdu_outgoing_offset = 0;
+  this->apdu_outgoing_length = 0;
+  this->apdu_outgoing_buffer_ref = reference;
+}
+
+void Context::setAPDUJavaBuffer(std::shared_ptr<JC_Array> buffer) {
+  if (!buffer || buffer->getType() != JAVA_ARRAY_T_BYTE || buffer->size() < 5) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  this->apdu_java_buffer = std::move(buffer);
+}
+
+std::shared_ptr<JC_Array> Context::getAPDUJavaBuffer() const noexcept {
+  return this->apdu_java_buffer;
+}
+
+jref_t Context::getAPDUBufferRef() const noexcept {
+  return this->apdu_buffer_ref;
+}
+
+void Context::setAPDUObjectRef(const jref_t reference) noexcept {
+  this->apdu_object_ref = reference;
+}
+
+jref_t Context::getAPDUObjectRef() const noexcept {
+  return this->apdu_object_ref;
+}
+
+uint16_t Context::getAPDUIncomingLength() const noexcept {
+  return this->apdu_incoming_length;
+}
+
+void Context::setAPDUOutgoing(std::shared_ptr<JC_Array> buffer,
+                              const uint16_t offset,
+                              const uint16_t length) {
+  if (!buffer || buffer->getType() != JAVA_ARRAY_T_BYTE) {
+    throw Exceptions::NullPointerException;
+  }
+  if (static_cast<uint32_t>(offset) + length > buffer->size()) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  this->apdu_outgoing_buffer = std::move(buffer);
+  this->apdu_outgoing_offset = offset;
+  this->apdu_outgoing_length = length;
+}
+
+std::shared_ptr<JC_Array> Context::getAPDUOutgoingBuffer() const noexcept {
+  return this->apdu_outgoing_buffer;
+}
+
+jref_t Context::getAPDUOutgoingBufferRef() const noexcept {
+  return this->apdu_outgoing_buffer_ref;
+}
+
+uint16_t Context::getAPDUOutgoingOffset() const noexcept {
+  return this->apdu_outgoing_offset;
+}
+
+uint16_t Context::getAPDUOutgoingLength() const noexcept {
+  return this->apdu_outgoing_length;
 }
 
 /**

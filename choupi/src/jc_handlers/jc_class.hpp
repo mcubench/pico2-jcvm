@@ -43,28 +43,16 @@ class Class_Handler : public Component_Handler {
 private:
   /// Get a class package method offset from a class' package method token.
   std::pair<Package, const uint16_t> getPublicMethodOffset(
-      const jc_cap_virtual_method_ref_info virtual_method_ref_info)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+      const jc_cap_virtual_method_ref_info virtual_method_ref_info);
 
   /// Do get a class public method offset from a class' public method token.
   std::pair<Package, const uint16_t>
   doGetPublicMethodOffset(Package &package, const jc_cap_class_info *claz,
-                          uint8_t public_method_offset)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+                          uint8_t public_method_offset);
 
   /// Get a class package method offset from a class' package method token.
   std::pair<Package, const uint16_t> getPackageMethodOffset(
-      const jc_cap_virtual_method_ref_info virtual_method_ref_info)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+      const jc_cap_virtual_method_ref_info virtual_method_ref_info);
 
   /**
    * Check if two interfaces (interface_in and interface_out) have a hierarchy
@@ -101,31 +89,19 @@ public:
 
   /// Get public or package method offset  from a class' package method token.
   std::pair<Package, const uint16_t>
-  getMethodOffset(const jc_cap_virtual_method_ref_info virtual_method_ref_info)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+  getMethodOffset(const jc_cap_virtual_method_ref_info virtual_method_ref_info);
 
   /// Resolve a virtual method through the receiver's concrete class.
   std::pair<Package, const uint16_t> getMethodOffset(
       const jc_cap_virtual_method_ref_info virtual_method_ref_info,
-      jpackage_ID_t receiver_package, jclass_index_t receiver_class)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+      jpackage_ID_t receiver_package, jclass_index_t receiver_class);
 
   /// Get a class' implemented interface method offset from a class' package
   /// method token.
   std::pair<Package, const uint16_t> getImplementedInterfaceMethodOffset(
       const jc_cap_class_ref class_ref, const jc_cap_class_ref interface,
       const uint8_t implemented_interface_method_number,
-      const bool isArray = false)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-      noexcept
-#endif
-      ;
+      const bool isArray = false);
 
   /// Get the instance field size for an instantiated class.
   const uint16_t getInstanceFieldsSize(const jclass_index_t claz_index) const

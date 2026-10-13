@@ -68,12 +68,15 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
       PICO_DEBUG_MALLOC_LOW_WATER=0x20070000)
   endif()
   set(CHOUPI_ROMMASK_IMAGE
-    "${CMAKE_CURRENT_SOURCE_DIR}/build/choupi-rommask/flash-algtest.bin")
+    "${CMAKE_CURRENT_SOURCE_DIR}/build/choupi-pc/flash")
   if(NOT EXISTS "${CHOUPI_ROMMASK_IMAGE}")
     message(FATAL_ERROR "Missing CHOUPI ROM-mask image: ${CHOUPI_ROMMASK_IMAGE}")
   endif()
   configure_file(src/choupi_rommask.S.in
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S" @ONLY)
+  set_source_files_properties(
+    "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
+    PROPERTIES OBJECT_DEPENDS "${CHOUPI_ROMMASK_IMAGE}")
   add_executable(pico2_choupi
     choupi/src/main.cpp
     src/choupi_pico2.cpp

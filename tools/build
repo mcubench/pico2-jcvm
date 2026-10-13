@@ -13,6 +13,24 @@ require_sdk
 require_command cmake
 require_command ninja
 require_command picotool
+require_command sha256sum
+build_pc_dir="${repo_root}/build/choupi-pc"
+generation_manifest="${build_pc_dir}/generation.sha256"
+api_source_manifest="${build_pc_dir}/api-sources.sha256"
+generation_current=false
+if [[ -s "${generation_manifest}" && -s "${api_source_manifest}" && \
+      -s "${build_pc_dir}/flash" && -s "${build_pc_dir}/jni.hpp" ]] && \
+   (cd "${build_pc_dir}" && sha256sum --check generation.sha256 >/dev/null); then
+  current_api_hash="$(find "${repo_root}/choupi/javacard-sdk/javacard-api/src" \
+    -type f -name '*.java' -print0 | sort -z | xargs -0 sha256sum | \
+    sha256sum | cut -d ' ' -f 1)"
+  recorded_api_hash="$(awk '$2 == "javacard-api-sources" {print $1}' \
+    "${api_source_manifest}")"
+  [[ "${current_api_hash}" == "${recorded_api_hash}" ]] && generation_current=true
+fi
+if [[ "${generation_current}" != true ]]; then
+  "${repo_root}/tools/build-pc"
+fi
 build_dir="${repo_root}/build/${arch}"
 linker_flags=""
 arm_newlib_include=""
@@ -35,8 +53,13 @@ cmake -S "${repo_root}" -B "${build_dir}" -G Ninja \
   -DLOCAL_ARM_NEWLIB_INCLUDE="${arm_newlib_include}" \
   -DLOCAL_ARM_NEWLIB_LIBRARY_DIR="${arm_newlib_dir}" \
   -DCMAKE_EXE_LINKER_FLAGS="${linker_flags}"
-generated_header="${repo_root}/build/choupi-rommask/jni-algtest.hpp"
-[[ -s "${generated_header}" ]] || die "missing generated CHOUPI header ${generated_header}; generate the ROM mask first"
+generated_header="${repo_root}/build/choupi-pc/jni.hpp"
+rom_image="${repo_root}/build/choupi-pc/flash"
+generation_manifest="${repo_root}/build/choupi-pc/generation.sha256"
+[[ -s "${generated_header}" && -s "${rom_image}" && -s "${generation_manifest}" ]] || \
+  die "incomplete CHOUPI ROM-mask generation; run ./tools/build-pc"
+(cd "${repo_root}/build/choupi-pc" && sha256sum --check generation.sha256) || \
+  die "CHOUPI ROM-mask generation manifest does not match its artifacts"
 mkdir -p "${build_dir}/choupi-generated"
 cp "${generated_header}" "${build_dir}/choupi-generated/jni.hpp"
 targets=(pico2_trng choupi_vm_core)

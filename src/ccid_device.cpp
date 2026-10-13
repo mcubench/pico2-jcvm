@@ -17,6 +17,11 @@ extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
 extern "C" void choupi_vm_clear_selected_applet(void);
 extern "C" uint16_t choupi_vm_select_applet(void);
 extern "C" uint16_t choupi_vm_deselect_applet(void);
+extern "C" uint16_t choupi_vm_process_applet(const uint8_t *command,
+                                              uint16_t command_length,
+                                              uint8_t *response,
+                                              uint16_t response_capacity,
+                                              uint16_t *response_length);
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;
@@ -350,6 +355,14 @@ void process_message(uint8_t rhport) {
       response[4 + aid_length] = 0x90;
       response[5 + aid_length] = 0x00;
       response_length = 6 + aid_length;
+    } else if (apdu_length <= UINT16_MAX) {
+      uint16_t applet_response_length = 0;
+      const uint16_t status = choupi_vm_process_applet(
+          apdu, static_cast<uint16_t>(apdu_length), response,
+          static_cast<uint16_t>(sizeof(response)), &applet_response_length);
+      if (status != 0xffff) {
+        response_length = applet_response_length;
+      }
     }
     send_response(rhport, 0x80, response, response_length);
     break;

@@ -36,7 +36,11 @@
 #include "stack.hpp"
 #include "types.hpp"
 
+#include <memory>
+
 namespace jcvm {
+
+class JC_Array;
 
 class Context {
 private:
@@ -47,6 +51,14 @@ private:
   jref_t registered_applet_ref;
   bool applet_instance_restored = false;
   jref_t restored_applet_ref;
+  jref_t apdu_buffer_ref;
+  std::shared_ptr<JC_Array> apdu_java_buffer;
+  jref_t apdu_object_ref;
+  jref_t apdu_outgoing_buffer_ref;
+  std::shared_ptr<JC_Array> apdu_outgoing_buffer;
+  uint16_t apdu_incoming_length = 0;
+  uint16_t apdu_outgoing_offset = 0;
+  uint16_t apdu_outgoing_length = 0;
   /// Current Java Card stack.
   Stack stack;
   /// Linked-list where the executed Packages ID is stored. The Head of the
@@ -76,6 +88,20 @@ public:
                              jclass_index_t class_index) noexcept;
   bool hasRestoredAppletInstance() const noexcept;
   jref_t getRestoredAppletRef() const noexcept;
+  /// Set and query the APDU buffer and response window for the current command.
+  void setAPDUBufferRef(jref_t reference, uint16_t incoming_length) noexcept;
+  void setAPDUJavaBuffer(std::shared_ptr<JC_Array> buffer);
+  std::shared_ptr<JC_Array> getAPDUJavaBuffer() const noexcept;
+  jref_t getAPDUBufferRef() const noexcept;
+  void setAPDUObjectRef(jref_t reference) noexcept;
+  jref_t getAPDUObjectRef() const noexcept;
+  uint16_t getAPDUIncomingLength() const noexcept;
+  void setAPDUOutgoing(std::shared_ptr<JC_Array> buffer, uint16_t offset,
+                       uint16_t length);
+  std::shared_ptr<JC_Array> getAPDUOutgoingBuffer() const noexcept;
+  jref_t getAPDUOutgoingBufferRef() const noexcept;
+  uint16_t getAPDUOutgoingOffset() const noexcept;
+  uint16_t getAPDUOutgoingLength() const noexcept;
   /// Get context Java Card stack.
   Stack &getStack() noexcept;
   /// Get context heap.

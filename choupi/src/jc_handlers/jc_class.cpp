@@ -258,11 +258,7 @@ Class_Handler::getObjectClassFromAnObjectRef(const jc_cap_class_ref classref)
  * @return the public virtual method offset in the Method component.
  */
 std::pair<Package, const uint16_t> Class_Handler::getPublicMethodOffset(
-    const jc_cap_virtual_method_ref_info virtual_method_ref_info)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
-{
+    const jc_cap_virtual_method_ref_info virtual_method_ref_info) {
 #ifndef PC_VERSION
   choupi_install_stage(30);
   choupi_install_context(
@@ -272,166 +268,110 @@ std::pair<Package, const uint16_t> Class_Handler::getPublicMethodOffset(
       virtual_method_ref_info.token);
 #endif
 
-#ifdef JCVM_DYNAMIC_CHECKS_CAP
-
   if (!virtual_method_ref_info.isPublicMethod()) {
     throw Exceptions::SecurityException;
   }
 
-#endif /* JCVM_DYNAMIC_CHECKS_CAP */
-
   ConstantPool_Handler cp_handler(this->package);
-  uint8_t method_offset = virtual_method_ref_info.token;
+  const uint8_t method_token = virtual_method_ref_info.token;
   auto token = cp_handler.classref2class(virtual_method_ref_info.class_ref);
 #ifndef PC_VERSION
   choupi_install_stage(27);
   choupi_install_context(
       (static_cast<uint32_t>(token.first.getPackageID()) << 24) |
-      (static_cast<uint32_t>(method_offset) << 16) |
+      (static_cast<uint32_t>(method_token) << 16) |
       (static_cast<uint32_t>(token.second->public_method_table_base) << 8) |
       token.second->public_method_table_count);
 #endif
-
-  // Where is the method offset located?
-  while (!(token.second->isObjectClass()) &&
-         (method_offset < token.second->public_method_table_base)) {
-    // Jump to superclass
-    cp_handler.setPackage(token.first);
-    token = cp_handler.classref2class(token.second->super_class_ref);
-  }
-
-#ifdef JCVM_DYNAMIC_CHECKS_CAP
-
-  if (token.second->isObjectClass() &&
-      (method_offset < token.second->public_method_table_base)) {
-    throw Exceptions::SecurityException;
-  }
-
-#endif /* JCVM_DYNAMIC_CHECKS_CAP */
-
-  return this->doGetPublicMethodOffset(token.first, token.second,
-                                       method_offset);
+  return this->doGetPublicMethodOffset(token.first, token.second, method_token);
 }
 
 /**
- * Do get a class public method offset from a class' public method token.
- *
- * @param[package] where is located the method to resolve
- * @param[claz] a pointer to the class where is located the method to resolve
- * @param[public_method_token] public method token to resolve.
- *
- * @return the public virtual method offset in the Method component.
+ * Resolve a public method token against each superclass using that class's
+ * own table and package. Inherited entries retain the same public token.
  */
 std::pair<Package, const uint16_t>
 Class_Handler::doGetPublicMethodOffset(Package &package,
                                        const jc_cap_class_info *claz,
-                                       uint8_t public_method_offset)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
-{
+                                       uint8_t public_method_offset) {
   ConstantPool_Handler cp_handler(this->package);
-
-  uint16_t method_offset = 0xFFFF;
-  const JCVMArray<const uint16_t> public_virtual_method_table =
-      claz->public_virtual_method_table();
   auto token = std::make_pair(package, claz);
 
-  do {
-    uint16_t offset = public_method_offset - claz->public_method_table_base;
+  for (uint16_t depth = 0; depth < 256; ++depth) {
+    const uint8_t base = token.second->public_method_table_base;
+    const auto table = token.second->public_virtual_method_table();
+    if (public_method_offset < base) {
+      if (token.second->isObjectClass()) {
+        throw Exceptions::SecurityException;
+      }
+      cp_handler.setPackage(token.first);
+      token = cp_handler.classref2class(token.second->super_class_ref);
+      continue;
+    }
+    const uint16_t offset = public_method_offset - base;
+    if (offset >= table.size()) {
+      throw Exceptions::SecurityException;
+    }
 #ifndef PC_VERSION
     choupi_install_stage(28);
     choupi_install_context(
         (static_cast<uint32_t>(public_method_offset) << 24) |
-        (static_cast<uint32_t>(claz->public_method_table_base) << 16) |
-        (static_cast<uint32_t>(public_virtual_method_table.size()) << 8) |
-        static_cast<uint32_t>(offset));
+        (static_cast<uint32_t>(base) << 16) |
+        (static_cast<uint32_t>(table.size()) << 8) | offset);
 #endif
-    method_offset = NTOHS(public_virtual_method_table.at(offset));
+    const uint16_t method_offset = NTOHS(table.at(offset));
 #ifndef PC_VERSION
     choupi_install_stage(29);
     choupi_install_context(static_cast<uint32_t>(method_offset));
 #endif
-
-    if (method_offset == (uint16_t)0xFFFF) {
-#ifdef JCVM_DYNAMIC_CHECKS_CAP
-
-      if (claz->isObjectClass()) {
-        // Behaviour not expected
-        throw Exceptions::SecurityException;
-      }
-
-#endif /* JCVM_DYNAMIC_CHECKS_CAP */
-
-      // Jump to superclass
-      cp_handler.setPackage(token.first);
-      token = cp_handler.classref2class(token.second->super_class_ref);
+    if (method_offset != 0xFFFF) {
+      return std::make_pair(token.first, method_offset);
     }
-  } while (method_offset == (uint16_t)0xFFFF);
-
-  return std::make_pair(token.first, method_offset);
+    if (token.second->isObjectClass()) {
+      throw Exceptions::SecurityException;
+    }
+    cp_handler.setPackage(token.first);
+    token = cp_handler.classref2class(token.second->super_class_ref);
+  }
+  throw Exceptions::SecurityException;
 }
 
-/**
- * Get a class package method offset from a class' package method token.
- *
- * @param[package_method_token] package method token to resolve.
- *
- * @return the package virtual method offset in the Method component. The Cap
- * field is updated to executed the method to call.
- */
+/** Resolve a package method token through the class hierarchy. */
 std::pair<Package, const uint16_t> Class_Handler::getPackageMethodOffset(
-    const jc_cap_virtual_method_ref_info virtual_method_ref_info)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
-{
-#ifdef JCVM_DYNAMIC_CHECKS_CAP
-
+    const jc_cap_virtual_method_ref_info virtual_method_ref_info) {
   if (virtual_method_ref_info.isPublicMethod()) {
     throw Exceptions::SecurityException;
   }
 
-#endif /* JCVM_DYNAMIC_CHECKS_CAP */
-
   ConstantPool_Handler cp_handler(this->package);
-  uint8_t method_offset_class = virtual_method_ref_info.token;
+  const uint8_t method_token = virtual_method_ref_info.token;
   auto token = cp_handler.classref2class(virtual_method_ref_info.class_ref);
-
-  // Where is the method offset located?
-  while (!(token.second->isObjectClass()) &&
-         (method_offset_class < token.second->package_method_table_base)) {
-    // Jump to superclass
+  for (uint16_t depth = 0; depth < 256; ++depth) {
+    const uint8_t base = token.second->package_method_table_base;
+    const auto table = token.second->package_virtual_method_table();
+    if (method_token < base) {
+      if (token.second->isObjectClass()) {
+        throw Exceptions::SecurityException;
+      }
+      cp_handler.setPackage(token.first);
+      token = cp_handler.classref2class(token.second->super_class_ref);
+      continue;
+    }
+    const uint16_t offset = method_token - base;
+    if (offset >= table.size()) {
+      throw Exceptions::SecurityException;
+    }
+    const uint16_t method_offset = NTOHS(table.at(offset));
+    if (method_offset != 0xFFFF) {
+      return std::make_pair(token.first, method_offset);
+    }
+    if (token.second->isObjectClass()) {
+      throw Exceptions::SecurityException;
+    }
     cp_handler.setPackage(token.first);
     token = cp_handler.classref2class(token.second->super_class_ref);
   }
-
-  uint16_t method_offset = 0xFFFF;
-  const jc_cap_class_info *claz = token.second;
-  const JCVMArray<const uint16_t> package_virtual_method_table =
-      claz->package_virtual_method_table();
-
-  do {
-    uint16_t offset = method_offset_class - claz->package_method_table_base;
-    method_offset = NTOHS(package_virtual_method_table.at(offset));
-
-    if (method_offset == (uint16_t)0xFFFF) {
-#ifdef JCVM_DYNAMIC_CHECKS_CAP
-
-      if (claz->isObjectClass()) {
-        // Behavior not expected
-        throw Exceptions::SecurityException;
-      }
-
-#endif /* JCVM_DYNAMIC_CHECKS_CAP */
-
-      // Jump to superclass
-      cp_handler.setPackage(token.first);
-      token = cp_handler.classref2class(token.second->super_class_ref);
-    }
-  } while (method_offset == (uint16_t)0xFFFF);
-
-  return std::make_pair(token.first, method_offset);
+  throw Exceptions::SecurityException;
 }
 
 /**
@@ -442,11 +382,7 @@ std::pair<Package, const uint16_t> Class_Handler::getPackageMethodOffset(
  * @return the public or package virtual method offset in the Method component.
  */
 std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
-    const jc_cap_virtual_method_ref_info virtual_method_ref_info)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
-{
+    const jc_cap_virtual_method_ref_info virtual_method_ref_info) {
   auto method_ref = remapVirtualMethodRef(this->package,
                                           virtual_method_ref_info);
 
@@ -459,12 +395,7 @@ std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
 
 std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
     const jc_cap_virtual_method_ref_info virtual_method_ref_info,
-    const jpackage_ID_t receiver_package,
-    const jclass_index_t receiver_class)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
-{
+    const jpackage_ID_t receiver_package, const jclass_index_t receiver_class) {
   auto method_ref = remapVirtualMethodRef(this->package,
                                           virtual_method_ref_info);
   Package concrete_package(receiver_package);
@@ -492,11 +423,7 @@ std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
 std::pair<Package, const uint16_t>
 Class_Handler::getImplementedInterfaceMethodOffset(
     const jc_cap_class_ref class_ref, const jc_cap_class_ref interface,
-    const uint8_t implemented_interface_method_number, const bool isArray)
-#if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
-    noexcept
-#endif
-{
+    const uint8_t implemented_interface_method_number, const bool isArray) {
   ConstantPool_Handler cp_handler(this->package);
   auto claz = (isArray ? this->getObjectClassFromAnObjectRef(class_ref)
                        : cp_handler.classref2class(class_ref));

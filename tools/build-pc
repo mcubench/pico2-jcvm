@@ -16,4 +16,20 @@ java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
   -DCHOUPI_JCVM_DEBUG=ON \
   -DCHOUPI_JAVA8_HOME="${java8_home}"
 
-"${repo_root}/tools/env" cmake --build "${build_dir}" --target choupi -j2
+"${repo_root}/tools/env" cmake --build "${build_dir}" --target rommask -j2
+
+rom_image="${build_dir}/flash"
+generated_header="${build_dir}/jni.hpp"
+[[ -s "${rom_image}" ]] || die "ROM-mask generation did not produce ${rom_image}"
+[[ -s "${generated_header}" ]] || die "ROM-mask generation did not produce ${generated_header}"
+(
+  cd "${build_dir}"
+  sha256sum flash jni.hpp > generation.sha256
+  find "${repo_root}/choupi/javacard-sdk/javacard-api/src" \
+    -type f -name '*.java' -print0 | sort -z | xargs -0 sha256sum | \
+    sha256sum | awk '{print $1 "  javacard-api-sources"}' > api-sources.sha256
+  sha256sum api-sources.sha256 >> generation.sha256
+)
+printf 'ROMMASK:PASS image=%s header=%s manifest=%s\n' \
+  "${rom_image#${repo_root}/}" "${generated_header#${repo_root}/}" \
+  "${build_dir#${repo_root}/}/generation.sha256"

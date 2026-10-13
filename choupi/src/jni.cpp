@@ -262,6 +262,38 @@ jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet() {
   return FALSE;
 }
 
+std::shared_ptr<JC_Array>
+fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUBuffer() {
+  Context &context = Context::getActiveContext();
+  const jref_t reference = context.getAPDUBufferRef();
+  if (reference.isNullPointer() || !reference.isArray()) {
+    throw Exceptions::RuntimeException;
+  }
+  return context.getHeap().getArray(reference);
+}
+
+void fr_gouv_ssi_nativeimpl_NativeImplementation_setAPDUBuffer(
+    std::shared_ptr<JC_Array> buffer) {
+  Context::getActiveContext().setAPDUJavaBuffer(std::move(buffer));
+}
+
+jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUIncomingLength() {
+  return static_cast<jshort_t>(
+      Context::getActiveContext().getAPDUIncomingLength());
+}
+
+void fr_gouv_ssi_nativeimpl_NativeImplementation_setAPDUOutgoing(
+    std::shared_ptr<JC_Array> buffer, const jshort_t offset,
+    const jshort_t length) {
+  if (offset < 0 || length < 0) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  Context &context = Context::getActiveContext();
+  context.setAPDUJavaBuffer(buffer);
+  context.setAPDUOutgoing(std::move(buffer), static_cast<uint16_t>(offset),
+                          static_cast<uint16_t>(length));
+}
+
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(
     const jref_t objectref) {
   if (objectref.isNullPointer()) {

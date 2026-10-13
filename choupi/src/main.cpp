@@ -32,8 +32,13 @@
 
 #include "jc_handlers/jc_class.hpp"
 #include "jc_handlers/jc_cp.hpp"
+#include "jc_handlers/jc_export.hpp"
 #include "jc_handlers/flashmemory.hpp"
+#include "jc_handlers/jc_import.hpp"
+#include "jc_types/jc_array.hpp"
+#include "jc_types/jc_array_type.hpp"
 
+#include <cstring>
 #include <memory>
 #include <utility>
 
@@ -59,6 +64,7 @@ int main
 
 namespace {
 std::unique_ptr<jcvm::Context> selected_applet_context;
+bool selected_applet_is_active = false;
 }
 
 #ifdef __cplusplus
@@ -85,18 +91,22 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
             static_cast<jcvm::jclass_index_t>(class_index)) ||
         !context->hasRestoredAppletInstance()) {
       selected_applet_context.reset();
+      selected_applet_is_active = false;
       return 1;
     }
     selected_applet_context = std::move(context);
+    selected_applet_is_active = false;
     return 0;
   } catch (...) {
     selected_applet_context.reset();
+    selected_applet_is_active = false;
     return 1;
   }
 }
 
 void choupi_vm_clear_selected_applet(void) {
   selected_applet_context.reset();
+  selected_applet_is_active = false;
 }
 
 uint16_t choupi_vm_invoke_applet_method(uint16_t method_offset,
@@ -155,18 +165,195 @@ uint16_t invoke_selected_applet_method(const uint8_t method_token,
 
 uint16_t choupi_vm_select_applet(void) {
   uint32_t selected = 0;
-  const uint16_t status = invoke_selected_applet_method(7, &selected);
+  const uint16_t status = invoke_selected_applet_method(6, &selected);
   if (status != 0x9000) {
+    selected_applet_context.reset();
+    selected_applet_is_active = false;
     return status;
   }
-  return selected != 0 ? 0x9000 : 0x6999;
+  if (selected == 0) {
+    selected_applet_context.reset();
+    selected_applet_is_active = false;
+    return 0x6999;
+  }
+  selected_applet_is_active = true;
+  return 0x9000;
 }
 
 uint16_t choupi_vm_deselect_applet(void) {
-  // Applet's internal public-method token 5 is deselect(); imported JC 3.0.5
-  // tokens are remapped separately by Class_Handler for invokevirtual.
-  const uint16_t status = invoke_selected_applet_method(5, nullptr);
+  if (!selected_applet_context || !selected_applet_is_active) {
+    selected_applet_context.reset();
+    selected_applet_is_active = false;
+    return 0x9000;
+  }
+  const uint16_t status = invoke_selected_applet_method(4, nullptr);
   selected_applet_context.reset();
+  selected_applet_is_active = false;
+  return status;
+}
+
+uint16_t choupi_vm_process_applet(const uint8_t *command,
+                                 uint16_t command_length,
+                                 uint8_t *response,
+                                 uint16_t response_capacity,
+                                 uint16_t *response_length) {
+  if (response_length != nullptr) {
+    *response_length = 0;
+  }
+  if (response == nullptr || response_length == nullptr ||
+      response_capacity < 2) {
+    return 0x6f00;
+  }
+
+  uint16_t status = 0x6f00;
+  uint16_t data_length = 0;
+  try {
+    if (!selected_applet_context || !selected_applet_is_active) {
+      return 0xffff; // CCID maps the no-selection sentinel to its default SW.
+    }
+    if (command == nullptr || command_length < 4) {
+      status = 0x6700;
+      throw status;
+    }
+
+    jcvm::Context &context = *selected_applet_context;
+    jcvm::Heap &heap = context.getHeap();
+    uint16_t lc = 0;
+    if (command_length >= 6) {
+      lc = command[4];
+      if (command_length != static_cast<uint16_t>(5 + lc) &&
+          command_length != static_cast<uint16_t>(6 + lc)) {
+        status = 0x6700;
+        throw status;
+      }
+    } else if (command_length != 4 && command_length != 5) {
+      status = 0x6700;
+      throw status;
+    }
+
+    jcvm::jref_t buffer_ref = context.getAPDUBufferRef();
+    auto buffer = context.getAPDUJavaBuffer();
+    if (!buffer && buffer_ref.isNullPointer()) {
+      buffer_ref = heap.addArray(260, jcvm::JAVA_ARRAY_T_BYTE);
+    }
+    if (!buffer) {
+      buffer = heap.getArray(buffer_ref);
+    }
+    if (!buffer || buffer->getType() != jcvm::JAVA_ARRAY_T_BYTE ||
+        buffer->size() < static_cast<uint16_t>(5 + lc)) {
+      status = 0x6f00;
+      throw status;
+    }
+    for (uint16_t index = 0; index < buffer->size(); ++index) {
+      buffer->setByteEntry(index, 0);
+    }
+    for (uint16_t index = 0; index < 4; ++index) {
+      buffer->setByteEntry(index, static_cast<jcvm::jbyte_t>(command[index]));
+    }
+    buffer->setByteEntry(4, static_cast<jcvm::jbyte_t>(lc));
+    for (uint16_t index = 0; index < lc; ++index) {
+      buffer->setByteEntry(static_cast<uint16_t>(5 + index),
+                           static_cast<jcvm::jbyte_t>(command[5 + index]));
+    }
+    context.setAPDUBufferRef(buffer_ref, lc);
+
+    jcvm::jref_t apdu_ref = context.getAPDUObjectRef();
+    if (apdu_ref.isNullPointer()) {
+      const jcvm::jref_t applet_ref = context.getRestoredAppletRef();
+      if (applet_ref.isNullPointer() || applet_ref.isArray()) {
+        status = 0x6f00;
+        throw status;
+      }
+      const auto applet = heap.getInstance(applet_ref);
+      jcvm::Package applet_package(applet->getPackageID());
+      const auto applet_cap = applet_package.getCap();
+      const auto *applet_package_info =
+          applet_cap.getHeader()->package.AID_length
+              ? &applet_cap.getHeader()->package
+              : nullptr;
+      if (applet_package_info == nullptr) {
+        status = 0x6f00;
+        throw status;
+      }
+
+      constexpr uint8_t framework_aid[] = {0xa0, 0x00, 0x00, 0x00,
+                                           0x62, 0x01, 0x01};
+      jcvm::Import_Handler import_handler(applet_package);
+      const auto *imports = applet_package.getCap().getImport();
+      const jcvm::jc_cap_package_info *framework_info = nullptr;
+      for (uint8_t index = 0; index < imports->count; ++index) {
+        const auto *candidate = import_handler.getPackageAID(index);
+        if (candidate->AID_length == sizeof(framework_aid) &&
+            std::memcmp(candidate->AID, framework_aid,
+                        sizeof(framework_aid)) == 0) {
+          framework_info = candidate;
+          break;
+        }
+      }
+      if (framework_info == nullptr) {
+        status = 0x6f00;
+        throw status;
+      }
+      const auto framework_package_id =
+          import_handler.getPackageIndex(framework_info);
+      jcvm::Package framework_package(framework_package_id);
+      const uint8_t apdu_export_token =
+          jcvm::remap_imported_class_token(*framework_info, 10);
+      const uint16_t apdu_class_index = HTONS(
+          jcvm::Export_Handler(framework_package)
+              .getExportedClassOffset(apdu_export_token));
+      apdu_ref = heap.addInstance(framework_package_id, apdu_class_index);
+      context.setAPDUObjectRef(apdu_ref);
+    }
+
+    const jcvm::jref_t applet_ref = context.getRestoredAppletRef();
+    const auto applet = heap.getInstance(applet_ref);
+    jcvm::Package applet_package(applet->getPackageID());
+    jcvm::ConstantPool_Handler cp_handler(applet_package);
+    jcvm::jc_cap_virtual_method_ref_info method_ref;
+    method_ref.class_ref = cp_handler.getClassRefFromClassIndex(
+        applet->getClassIndex());
+    method_ref.token = 7; // Applet.process(APDU)
+    const auto method = jcvm::Class_Handler(applet_package).getMethodOffset(
+        method_ref, applet->getPackageID(), applet->getClassIndex());
+    const jcvm::jref_t initial_references[] = {applet_ref, apdu_ref};
+    jcvm::Interpretor interpretor(context, method.second,
+                                  method.first.getPackageID(),
+                                  initial_references, 2);
+    status = interpretor.run();
+    if (status == 0x9000) {
+      const uint16_t offset = context.getAPDUOutgoingOffset();
+      data_length = context.getAPDUOutgoingLength();
+      const auto outgoing_buffer = context.getAPDUOutgoingBuffer();
+      if (static_cast<uint32_t>(data_length) + 2 > response_capacity ||
+          (data_length != 0 &&
+           (!outgoing_buffer ||
+            static_cast<uint32_t>(offset) + data_length >
+                outgoing_buffer->size()))) {
+        status = 0x6f00;
+        data_length = 0;
+      } else {
+        for (uint16_t index = 0; index < data_length; ++index) {
+          response[index] = static_cast<uint8_t>(
+              outgoing_buffer->getByteEntry(static_cast<uint16_t>(offset + index)));
+        }
+      }
+    }
+  } catch (uint16_t caught_status) {
+    status = caught_status;
+    data_length = 0;
+  } catch (...) {
+    status = 0x6f00;
+    data_length = 0;
+  }
+
+  if (static_cast<uint32_t>(data_length) + 2 > response_capacity) {
+    status = 0x6f00;
+    data_length = 0;
+  }
+  response[data_length] = static_cast<uint8_t>(status >> 8);
+  response[data_length + 1] = static_cast<uint8_t>(status);
+  *response_length = static_cast<uint16_t>(data_length + 2);
   return status;
 }
 
