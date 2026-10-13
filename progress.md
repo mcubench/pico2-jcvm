@@ -1868,5 +1868,16 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed after the changes. `./tools/cycle choupi` rebuilt both targets, detected the RP2350 in sysfs, then stopped before flashing because `picotool` reported `Failed to initialise libUSB`; no firmware write or serial capture occurred. `./tools/doctor` reports its host environment variables/tools missing because it uses the ambient PATH, while repository build wrappers pass. `git -c core.whitespace=cr-at-eol diff --check` passed before the final include-only cleanup; both builds are repeated after it.
 - Result: ARM CHOUPI firmware links with the regenerated native API. No physical runtime behavior was validated. USB access from this execution context remains blocked despite sysfs showing device `2e8a:0009`.
 - Decision: Source fixes are complete; retry the bounded CHOUPI flash/runtime capture when libUSB access works, then exercise SELECT and repeated APDU commands on an installed applet.
-- Commit: `recorded in the following implementation commit reference`
+- Commit: `55c26ce` (implementation; this reference is recorded in the follow-up entry)
 - Artifacts/logs: `artifacts/logs/fixes-build-arm-20261014.log`, `artifacts/logs/fixes-build-riscv-20261014.log`, `artifacts/logs/fixes-cycle-choupi-20261014.log`; ROM image SHA-256 `7683c4a90d57702cf313e1048a5f0e7478f18f2a69ae99a4d078205aed57d9d9`, JNI header SHA-256 `dca8995ec8a8fadf16ce46e99cc869bf6e0748ad5dc90f7c841dd38701825586`, ARM CHOUPI UF2 SHA-256 `6bf2fbf36f860dd6952c02a1ea91c90a54c661ece40e5796a4310f00ef797844`.
+
+
+## 2026-10-14 — Implementation commit reference
+
+- Step/experiment: `implement-review-fixes-20261014-reference`
+- Change: Recorded the implementation commit SHA after committing the fixes and validation artifacts.
+- Validation: Confirmed the root implementation commit and nested Java Card API commit are present; unrelated pre-existing worktree changes remain unstaged.
+- Result: Root implementation commit is `55c26ce`; nested Java API buffer commit is `534c1b1`.
+- Decision: Resume with physical CHOUPI flashing and applet APDU validation when USB/libUSB access is available.
+- Commit: `55c26ce`
+- Artifacts/logs: `FIXES.md`, `artifacts/logs/fixes-build-arm-20261014.log`, `artifacts/logs/fixes-build-riscv-20261014.log`, `artifacts/logs/fixes-cycle-choupi-20261014.log`

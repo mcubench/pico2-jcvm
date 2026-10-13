@@ -1702,5 +1702,5 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   USB access is available, then install/select JCAlgTest v1.8.2 and verify
   repeated APDUs. The generated ROM image/header hashes and bounded logs are in
   the latest `progress.md` entry. Java API buffer changes are committed in the
-  nested checkout as `534c1b1`. The prior uncommitted source/API trees and
+  nested checkout as `534c1b1`; root fixes are committed as `55c26ce`. The prior uncommitted source/API trees and
   unrelated worktree files remain preserved.
