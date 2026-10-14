@@ -14,6 +14,9 @@ require_command cmake
 require_command ninja
 require_command picotool
 require_command sha256sum
+build_jobs="${PICO_BUILD_JOBS:-2}"
+[[ "${build_jobs}" =~ ^[1-9][0-9]*$ ]] || \
+  die "PICO_BUILD_JOBS must be a positive integer"
 build_pc_dir="${repo_root}/build/choupi-pc"
 generation_manifest="${build_pc_dir}/generation.sha256"
 api_source_manifest="${build_pc_dir}/api-sources.sha256"
@@ -66,7 +69,7 @@ targets=(pico2_trng choupi_vm_core)
 if [[ "${arch}" == arm ]]; then
   targets+=(pico2_choupi)
 fi
-cmake --build "${build_dir}" --target "${targets[@]}"
+cmake --build "${build_dir}" --target "${targets[@]}" --parallel "${build_jobs}"
 image="${build_dir}/pico2_trng.uf2"
 [[ -s "${image}" ]] || die "build did not produce ${image}"
 picotool info -a "${image}"

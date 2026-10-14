@@ -2171,3 +2171,13 @@
 - Decision: Flash the newly built ARM image and continue with JCAlgTest install validation.
 - Commit: `b03142b`
 - Artifacts/logs: `artifacts/logs/gp-list-current-20261014.log`.
+
+## 2026-10-14 — Bound ARM build CPU use and check PC/SC APDU access
+
+- Step/experiment: `arm-build-cpu-bound-smartcardio-probe-20261014`
+- Change: `tools/build` now defaults CMake/Ninja to two parallel jobs, with an explicit positive-integer override through `PICO_BUILD_JOBS`. Updated `TODO.md` to record current install/SELECT evidence, ARM-only scope, and the process-level validation blocker.
+- Validation: `./tools/build arm` passed and produced picotool metadata for both `pico2_trng.uf2` and `pico2_choupi.uf2`; the wrapper invoked `cmake --build ... --parallel 2`. Compiled a Java 8-compatible `javax.smartcardio` probe with `./tools/env javac`; execution found no readers because PC/SC is unavailable in this sandbox. The authorized sudo helper was blocked by the container's `no new privileges` setting. RISC-V was not built or tested.
+- Result: Host USB/BOOTSEL polling is bounded and sleeps between checks; the idle firmware loop is on the Pico and cannot explain VM host CPU saturation. Ninja previously defaulted to all available VM cores; this is now limited to two. An unbounded `pcsc_scan -r` while pcscd is unavailable produced repeated error output, so scans must be run under `timeout`.
+- Decision: Resume the applet `process()` APDU test when PC/SC becomes accessible to the execution environment; continue remaining plan work with ARM-only builds.
+- Commit: recorded in a following reference entry.
+- Artifacts/logs: `artifacts/logs/arm-build-limited-jobs-20261014.log` (SHA-256 `1d73bc85bc2b3dd9200eb452cb2b0b594508712dfb8696acde91191121a7260f`); `artifacts/logs/pico-apdu-probe-smartcardio-20261014.log` (SHA-256 `379f07f0162dd593fcc9f688b32aab69504ae37e87950d952caf2ca1d66a5f58`).

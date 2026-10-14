@@ -1906,3 +1906,19 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   inspect the bounded serial output, then retry installing the supplied
   JCAlgTest v1.8.2 CAP and follow fresh APDU traces if install fails. Windows
   reader enumeration and applet lifecycle/persistence remain unverified.
+
+- Continued on 2026-10-14. The current ARM-only scope is explicit; do not run
+  RISC-V builds/tests. `tools/build` now defaults to at most two CMake/Ninja
+  jobs (`PICO_BUILD_JOBS` can override), and `./tools/build arm` passed. This
+  reduces the all-core spikes caused by Ninja's default parallelism. Host USB
+  and BOOTSEL wait loops sleep one second between bounded checks; the firmware
+  idle loop only consumes Pico CPU. Beware that `pcsc_scan -r` can flood errors
+  when pcscd is unavailable; use a timeout. Java `javax.smartcardio` compiles
+  without an extra module. A bounded Java probe found no reader in this agent
+  container; the PC/SC service is unavailable and the authorized helper fails
+  because the container sets `no new privileges`. The previous hardware run
+  already installed JCAlgTest 1.8.2 and SELECT returned `9000`; next validate
+  GETVERSION (`B0 E1`) and the JCSystem info/test commands when PC/SC access is
+  restored, then continue AC3/AC4 and persistence. Logs:
+  `artifacts/logs/arm-build-limited-jobs-20261014.log` and
+  `artifacts/logs/pico-apdu-probe-smartcardio-20261014.log`.

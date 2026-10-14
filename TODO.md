@@ -17,19 +17,24 @@ out explicitly.
 - [x] Keep ARM and RISC-V wrapper builds passing for the current shared source.
 - [x] Correct `Util.arrayCompare()` so the first greater source byte returns
   `1` instead of incorrectly returning `-1`; nested API commit `6dceb7e`.
+- [x] Limit the default target build to two parallel jobs to avoid saturating
+  all VM cores; override with `PICO_BUILD_JOBS` when desired.
 
 ## Active: make v1.8.2 installation execute correctly
 
-Current environment note (2026-10-14): a bounded elevated PC/SC scan now sees
-`Pico 2 CHOUPI CCID [JCAlgTest CCID]`. GlobalPlatformPro `--debug --list`
-successfully selected and listed ISD `A000000151000000` (`OP_READY`) over T=1;
-its package/applet queries returned `6A88` because none are installed. This
-verifies the Linux reader/list path, but Windows enumeration and applet
-installation are still unverified. The latest ARM and RISC-V wrapper builds
-pass. The PC VM links after adding its explicit empty dynamic-CAP store backend;
-its `--help` smoke check passes. Host/API generation still emits legacy
-Java Card converter warnings. The current newly built ARM UF2 has not yet been
-flashed.
+Current environment note (2026-10-14): the corrected ARM firmware was flashed;
+GlobalPlatformPro CAP LOAD and INSTALL returned `9000`, the registry lists
+`JCAlgTest1` as `INITIALIZED`, and SELECT by AID returned `9000` with FCI. These
+steps validate install and selection, but `Applet.process()` has not yet been
+validated by a JCAlgTest command. A Java `javax.smartcardio` probe compiles
+without extra modules, but found no readers in the current agent container
+because the system PC/SC service is unavailable here. The authorized sudo
+helper cannot run in this container (`no new privileges`). A prior unbounded
+`pcsc_scan -r` under this missing-service condition emitted a large stream of
+PC/SC errors; always bound scans with `timeout`. The ARM wrapper build passes
+with the new default two-job limit. Follow the current run's ARM-only scope;
+do not build or test RISC-V. Windows reader enumeration and applet
+process/power-cycle persistence remain unverified.
 
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's
@@ -45,18 +50,27 @@ rollback and duplicate/invalid registration handling also remain unverified.
   byte length to `Applet.install(byte[], short, byte)`.
 - [ ] Verify the installation-parameter byte array and length in a valid VM
   execution, including the supplied two-byte `C9 00` field.
-- [ ] Resolve JC 3.0.5 imported class and method tokens against the embedded
+- [x] Resolve JC 3.0.5 imported class and method tokens against the embedded
   CHOUPI exports. Validate each mapping against CAP/export metadata; do not
-  treat a GP INSTALL status as proof that Java installation completed.
-- [ ] Find and fix the current install-method failure using trustworthy runtime
-  evidence. The last GPPro attempt that reached the card returned `6A80`; the
-  most recent attempt failed before card access with `SCARD_E_NO_SERVICE`. The
-  stale watchdog scratch marker is not reliable enough to identify its cause.
+  treat a GP INSTALL status as proof that Java installation completed. The
+  corrected mapping was validated by the successful applet INSTALL and
+  initialized registry record.
+- [x] Use fresh install diagnostics to identify the `6A80` cause: the v1.8.2
+  CAP calls JC 3.0.5 `Applet.register()` (external virtual method token 1), but
+  the remap changed it to token 2, resolving `register(byte[], short, byte)`.
+  The VM reported `StackUnderflowException` (id 1) at `invokevirtual` CP entry
+  `0x179`, with one operand word and resolved method offset `0x305`; that method
+  header has four arguments. The Applet token mapping now preserves token 1 and
+  maps the later changed JC 3.0.5 tokens to the embedded API table.
+- [x] Reflash and retry installation with the corrected Applet method mapping.
+  ARM firmware flash passed; CAP INSTALL returned `9000`, and GPPro reports
+  the applet as initialized. Current container cannot access PC/SC to continue
+  process-level APDU testing.
 - [x] Track calls to the imported JC305 `Applet.register` virtual methods during
   install and reject a successful VM return if no registration call occurred.
 - [x] Store the registered applet class index beside the persistent AID using a
   CRC-protected CAP metadata version, while retaining version-1 CAP readability.
-- [ ] Implement `Applet.register()` and `register(byte[], short, byte)` so a
+- [x] Implement `Applet.register()` and `register(byte[], short, byte)` so a
   successful Java install creates the persistent, selectable instance.
 - [ ] Make failed installation atomic: remove partial instances/package state
   and return a useful status word.
