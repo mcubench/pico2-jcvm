@@ -94,9 +94,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   verification remains outstanding.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
   transient array variants, `Util` helpers, `JCSystem` queries, `AID`, and
-  Java exception mapping for unsupported crypto factories. The native
-  `arrayFindGeneric` currently supports byte-array searches only; the API's
-  other primitive-array variants remain unsupported.
+  Java exception mapping for unsupported crypto factories. `ArrayLogic` native
+  copy/fill/compare/search now support the documented byte, short, and int
+  primitive types (including big-endian byte encodings for short/int search);
+  broader API coverage remains incomplete.
 - [ ] Verify that an installed applet instance and its persistent fields survive
   a power cycle, not only that its CAP blob survives.
 

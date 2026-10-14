@@ -2021,3 +2021,13 @@
 - Decision: Continue implementation with APDU output state and then the unresolved Java Card API/native surface.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T081438Z.log`.
+
+## 2026-10-14 — Implement generic primitive ArrayLogic operations
+
+- Step/experiment: `arraylogic-primitive-types-20261014`
+- Change: Extended `arrayFillGeneric` and its non-atomic variant to repeat one typed primitive value for byte, short, and int arrays; extended `arrayCompareGeneric` to those types with signed Java ordering; and extended `arrayFindGeneric` to decode byte, big-endian short, and big-endian int search values. Added regression cases to the existing ASan array-native harness.
+- Validation: `./tools/test-jcarray` exited 0 with `TEST:PASS jni_array_find`, `TEST:PASS jni_array_fill_primitive_types`, and all existing array/transient checks. `./tools/build arm` and `./tools/build riscv` both passed. A post-change `./tools/cycle choupi` rebuilt both architectures but the Pico did not appear in USB; the wrapper remained in its re-enumeration wait and was stopped before any flash write. No serial output was captured. The focused test emits pre-existing packed-member and ignored-qualifier warnings from upstream headers.
+- Result: Generic fill, compare, and search now cover the documented byte/short/int primitive array types in host regression coverage. Hardware behavior remains unverified.
+- Decision: Continue filling the JCAlgTest API/native gaps and host integration coverage; retry physical cycle after the VM can see the Pico.
+- Commit: recorded in the following reference entry
+- Artifacts/logs: `artifacts/logs/jcarray-generic-20261014.log` SHA-256 `499791e60622ccaeaa24d5423f426b3aee1f34779d48703ddabe40301316c6cf`; `artifacts/logs/cycle-choupi-20261014T082552Z.log` SHA-256 `94e0fb59a7ae1510e906299f616bac3ad500ccac68c42f405f477979f2d16caf`; ARM UF2 SHA-256 `652fa4b42ad9a83c589367d1385a3663d9fce4c36275032232827013613f4f01`.

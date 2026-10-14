@@ -13,6 +13,8 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
     jref_t, jshort_t, jshort_t, jref_t, jshort_t);
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
     jref_t, jshort_t, jref_t, jshort_t, jshort_t);
+jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
+    jref_t, jshort_t, std::shared_ptr<JC_Array>, jshort_t);
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(jref_t);
 jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet();
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAssignedChannel();
@@ -79,6 +81,7 @@ int main() {
 
   const jcvm::jref_t bytesRef = heap.addArray(bytes);
   const jcvm::jref_t shortsRef = heap.addArray(shorts);
+  auto storedShorts = heap.getArray(shortsRef);
   pattern.setByteEntry(0, 0x12);
   pattern.setByteEntry(1, 0x34);
   const jcvm::jref_t patternRef = heap.addArray(pattern);
@@ -194,17 +197,92 @@ int main() {
     std::cerr << "byte array comparison returned an incorrect ordering\n";
     return 1;
   }
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
+          bytesRef, 6, bytesRef, 0, 1) >= 0 ||
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
+          shortsRef, 0, shortsRef, 1, 1) >= 0) {
+    std::cerr << "signed primitive array comparison returned wrong ordering\n";
+    return 1;
+  }
+
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
+          bytesRef, 0, heap.getArray(patternRef), 0) != -1) {
+    std::cerr << "byte search matched a multi-byte pattern as a single byte\n";
+    return 1;
+  }
+  auto bytePattern = std::make_shared<jcvm::JC_Array>(
+      heap, 1, jcvm::JAVA_ARRAY_T_BYTE, true, jcvm::CLEAR_ON_RESET);
+  bytePattern->setByteEntry(0, static_cast<jcvm::jbyte_t>(0xFF));
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
+          bytesRef, 0, bytePattern, 0) != 6) {
+    std::cerr << "byte array search failed to find the requested byte\n";
+    return 1;
+  }
+
+  auto shortPattern = std::make_shared<jcvm::JC_Array>(
+      heap, 2, jcvm::JAVA_ARRAY_T_BYTE, true, jcvm::CLEAR_ON_RESET);
+  shortPattern->setByteEntry(0, 0);
+  shortPattern->setByteEntry(1, 3);
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
+          shortsRef, 0, shortPattern, 0) != 2) {
+    std::cerr << "short array search did not decode its big-endian value\n";
+    return 1;
+  }
+#ifdef JCVM_INT_SUPPORTED
+  jcvm::JC_Array ints(heap, 3, jcvm::JAVA_ARRAY_T_INT, true,
+                      jcvm::CLEAR_ON_RESET);
+  ints.setIntEntry(0, -1);
+  ints.setIntEntry(1, static_cast<jcvm::jint_t>(0x80000000u));
+  ints.setIntEntry(2, 0x7fffffff);
+  const jcvm::jref_t intsRef = heap.addArray(ints);
+  auto intPattern = std::make_shared<jcvm::JC_Array>(
+      heap, 4, jcvm::JAVA_ARRAY_T_BYTE, true, jcvm::CLEAR_ON_RESET);
+  intPattern->setByteEntry(0, static_cast<jcvm::jbyte_t>(0x80));
+  intPattern->setByteEntry(1, 0);
+  intPattern->setByteEntry(2, 0);
+  intPattern->setByteEntry(3, 0);
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
+          intsRef, 0, intPattern, 0) != 1 ||
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
+          intsRef, 1, intsRef, 0, 1) >= 0) {
+    std::cerr << "int array search or signed comparison failed\n";
+    return 1;
+  }
+  auto intFillValue = std::make_shared<jcvm::JC_Array>(
+      heap, 1, jcvm::JAVA_ARRAY_T_INT, true, jcvm::CLEAR_ON_RESET);
+  intFillValue->setIntEntry(0, 0x12345678);
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
+          intsRef, 0, 2, heap.addArray(*intFillValue), 0) != 2 ||
+      heap.getArray(intsRef)->getIntEntry(0) != 0x12345678 ||
+      heap.getArray(intsRef)->getIntEntry(1) != 0x12345678) {
+    std::cerr << "int fill did not repeat the selected primitive value\n";
+    return 1;
+  }
+#endif
+  std::cout << "TEST:PASS jni_array_find\n";
 
   const auto fillEnd =
       jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
           bytesRef, 4, 3, patternRef, 0);
   if (fillEnd != 7 || storedBytes->getByteEntry(4) != 0x12 ||
-      storedBytes->getByteEntry(5) != 0x34 ||
+      storedBytes->getByteEntry(5) != 0x12 ||
       storedBytes->getByteEntry(6) != 0x12) {
-    std::cerr << "pattern array fill did not repeat its pattern\n";
+    std::cerr << "byte fill did not repeat the selected primitive value\n";
     return 1;
   }
 
+  auto shortFillValue = std::make_shared<jcvm::JC_Array>(
+      heap, 1, jcvm::JAVA_ARRAY_T_SHORT, true, jcvm::CLEAR_ON_RESET);
+  shortFillValue->setShortEntry(0, 0x1234);
+  const auto shortFillEnd =
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
+          shortsRef, 1, 3, heap.addArray(*shortFillValue), 0);
+  if (shortFillEnd != 4 || storedShorts->getShortEntry(1) != 0x1234 ||
+      storedShorts->getShortEntry(3) != 0x1234) {
+    std::cerr << "short fill did not repeat the selected primitive value\n";
+    return 1;
+  }
+  std::cout << "TEST:PASS jni_array_fill_primitive_types\n";
   try {
     jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
         bytesRef, 0, 1, shortsRef, 0);
@@ -219,7 +297,6 @@ int main() {
 
   heap.clearTransientArrays(jcvm::CLEAR_ON_RESET);
 
-  auto storedShorts = heap.getArray(shortsRef);
   if (storedBytes->getByteEntry(0) != 1 ||
       storedShorts->getShortEntry(0) != 0) {
     std::cerr << "clear-on-reset event cleared the wrong arrays\n";
@@ -237,7 +314,6 @@ int main() {
   std::cout << "TEST:PASS jni_array_copy_overlap\n";
   std::cout << "TEST:PASS jni_array_copy_errors\n";
   std::cout << "TEST:PASS jni_array_compare\n";
-  std::cout << "TEST:PASS jni_array_fill_pattern\n";
   std::cout << "TEST:PASS jni_transient_factory\n";
   std::cout << "TEST:PASS jni_selecting_applet_fallback\n";
   std::cout << "TEST:PASS jni_basic_channel_fallback\n";

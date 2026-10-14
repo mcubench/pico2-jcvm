@@ -1800,3 +1800,17 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `setOutgoingAndSend()`; the remaining APDU stateful output methods, Le and
   `61xx` handling remain incomplete. Next inspect and implement the methods
   needed by the client, then retry board access when USB is visible to this VM.
+
+- Implemented generic `ArrayLogic` primitive operations on 2026-10-14. Native
+  array fill now repeats one typed byte/short/int value, compare handles those
+  types with signed Java ordering, and search decodes 1/2/4-byte big-endian
+  values for byte/short/int arrays. `./tools/test-jcarray` passes under ASan,
+  including the new type and ordering cases; ARM and RISC-V wrapper builds pass.
+  The post-change `./tools/cycle choupi` rebuilt both architectures but again
+  found no RP-series USB device and did not flash or capture serial output.
+  Test log `artifacts/logs/jcarray-generic-20261014.log` SHA-256
+  `499791e60622ccaeaa24d5423f426b3aee1f34779d48703ddabe40301316c6cf`; cycle
+  log `artifacts/logs/cycle-choupi-20261014T082552Z.log` SHA-256
+  `94e0fb59a7ae1510e906299f616bac3ad500ccac68c42f405f477979f2d16caf`.
+  Next continue the remaining JCAlgTest v1.8.2 native/API gaps and use host
+  fixtures; retry hardware integration after the USB device is passed through.

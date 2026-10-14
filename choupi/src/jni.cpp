@@ -88,6 +88,38 @@ uint32_t readArrayElement(JC_Array &array, const uint16_t index) {
   throw Exceptions::SecurityException;
 }
 
+bool isArrayLogicPrimitive(const jc_array_type type) {
+  switch (type) {
+  case JAVA_ARRAY_T_BYTE:
+  case JAVA_ARRAY_T_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+  case JAVA_ARRAY_T_INT:
+#endif
+    return true;
+  case JAVA_ARRAY_T_BOOLEAN:
+  case JAVA_ARRAY_T_REFERENCE:
+    return false;
+  }
+  return false;
+}
+
+int32_t readSignedArrayElement(JC_Array &array, const uint16_t index) {
+  switch (array.getType()) {
+  case JAVA_ARRAY_T_BYTE:
+    return array.getByteEntry(index);
+  case JAVA_ARRAY_T_SHORT:
+    return array.getShortEntry(index);
+#ifdef JCVM_INT_SUPPORTED
+  case JAVA_ARRAY_T_INT:
+    return array.getIntEntry(index);
+#endif
+  case JAVA_ARRAY_T_BOOLEAN:
+  case JAVA_ARRAY_T_REFERENCE:
+    break;
+  }
+  throw Exceptions::UtilException;
+}
+
 void writeArrayElement(JC_Array &array, const uint16_t index,
                        const uint32_t value) {
   switch (array.getType()) {
@@ -145,24 +177,23 @@ jshort_t fillArrayRange(const jref_t destinationRef,
   auto destination = heap.getArray(destinationRef);
   auto pattern = heap.getArray(patternRef);
   checkArrayRange(*destination, destinationOffset, length);
-  checkArrayRange(*pattern, patternOffset, length == 0 ? 0 : 1);
-  if (destination->getType() != JAVA_ARRAY_T_BYTE ||
-      pattern->getType() != JAVA_ARRAY_T_BYTE) {
-    throw Exceptions::SecurityException;
-  }
-
-  const uint16_t patternLength =
-      static_cast<uint16_t>(pattern->size() - patternOffset);
-  if (length > 0 && patternLength == 0) {
+  if (patternOffset < 0 ||
+      static_cast<uint32_t>(patternOffset) >= pattern->size()) {
     throw Exceptions::ArrayIndexOutOfBoundsException;
   }
+  if (!isArrayLogicPrimitive(destination->getType()) ||
+      !isArrayLogicPrimitive(pattern->getType())) {
+    throw Exceptions::UtilException;
+  }
+  if (destination->getType() != pattern->getType()) {
+    throw Exceptions::UtilException;
+  }
 
+  const uint32_t value =
+      readArrayElement(*pattern, static_cast<uint16_t>(patternOffset));
   for (jshort_t index = 0; index < length; ++index) {
-    const uint16_t patternIndex = static_cast<uint16_t>(
-        patternOffset + (static_cast<uint16_t>(index) % patternLength));
-    destination->setByteEntry(
-        static_cast<uint16_t>(destinationOffset + index),
-        pattern->getByteEntry(patternIndex));
+    writeArrayElement(*destination,
+                      static_cast<uint16_t>(destinationOffset + index), value);
   }
   return static_cast<jshort_t>(destinationOffset + length);
 }
@@ -207,20 +238,23 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
   auto second = heap.getArray(secondRef);
   checkArrayRange(*first, firstOffset, length);
   checkArrayRange(*second, secondOffset, length);
-  if (first->getType() != JAVA_ARRAY_T_BYTE ||
-      second->getType() != JAVA_ARRAY_T_BYTE) {
-    throw Exceptions::SecurityException;
+  if (!isArrayLogicPrimitive(first->getType()) ||
+      !isArrayLogicPrimitive(second->getType())) {
+    throw Exceptions::UtilException;
+  }
+  if (first->getType() != second->getType()) {
+    throw Exceptions::UtilException;
   }
 
   for (jshort_t index = 0; index < length; ++index) {
-    const jbyte_t firstByte =
-        first->getByteEntry(static_cast<uint16_t>(firstOffset + index));
-    const jbyte_t secondByte =
-        second->getByteEntry(static_cast<uint16_t>(secondOffset + index));
-    if (firstByte < secondByte) {
+    const int32_t firstValue = readSignedArrayElement(
+        *first, static_cast<uint16_t>(firstOffset + index));
+    const int32_t secondValue = readSignedArrayElement(
+        *second, static_cast<uint16_t>(secondOffset + index));
+    if (firstValue < secondValue) {
       return -1;
     }
-    if (firstByte > secondByte) {
+    if (firstValue > secondValue) {
       return 1;
     }
   }
@@ -237,20 +271,29 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
   Heap &heap = Context::getActiveContext().getHeap();
   auto array = heap.getArray(array_ref);
   if (offset < 0 || static_cast<uint32_t>(offset) > array->size() ||
-      value_offset < 0 ||
-      static_cast<uint32_t>(value_offset) >= value_array->size()) {
+      value_offset < 0) {
     throw Exceptions::ArrayIndexOutOfBoundsException;
   }
-  if (array->getType() != JAVA_ARRAY_T_BYTE ||
-      value_array->getType() != JAVA_ARRAY_T_BYTE) {
+  if (value_array->getType() != JAVA_ARRAY_T_BYTE) {
+    throw Exceptions::UtilException;
+  }
+  if (!isArrayLogicPrimitive(array->getType())) {
     throw Exceptions::UtilException;
   }
 
-  const jbyte_t value = value_array->getByteEntry(
-      static_cast<uint16_t>(value_offset));
+  const uint16_t element_bytes = array->getEntrySize();
+  if (static_cast<uint32_t>(value_offset) + element_bytes >
+      value_array->size()) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  uint32_t value = 0;
+  for (uint16_t byte_index = 0; byte_index < element_bytes; ++byte_index) {
+    value = (value << 8) | static_cast<uint8_t>(value_array->getByteEntry(
+                                static_cast<uint16_t>(value_offset + byte_index)));
+  }
   for (uint16_t index = static_cast<uint16_t>(offset);
        index < array->size(); ++index) {
-    if (array->getByteEntry(index) == value) {
+    if (readArrayElement(*array, index) == value) {
       return static_cast<jshort_t>(index);
     }
   }
