@@ -4,8 +4,8 @@
 
 - Documentation commits: `171d404`, reference `9cbeb4e`.
 - Latest `tools/task-time report`: five successful ARM builds at 3.120–9.152 s
-  (mean 5.127 s), eight focused host tests at 0.458–5.184 s (mean 2.300 s),
-  and 48.782 s total successful recorded work.
+  (mean 5.127 s), nine focused host tests at 0.458–5.184 s (mean 2.493 s),
+  and 52.821 s total successful recorded work.
 - Failed and interrupted attempts remain in the CSV and are excluded from
   successful averages. Upload time is unmeasured.
 - A bounded `./tools/probe-jc-algtest` run found no `Pico 2 CHOUPI CCID` reader
@@ -22,8 +22,9 @@
   overlay slots. Final host test passes 13 checks (`TEST:SUMMARY fail=0`,
   4.039 s; the earlier full compile/test pass took 5.184 s), and
   `./tools/build arm` passes (9.152 s).
-- No RISC-V build or board flash was performed. Next update `perf_tips.md` with
-  the expanded sample, then continue host-side lifecycle and JCAlgTest work.
+- No RISC-V build or board flash was performed. `perf_tips.md` and the raw
+  timer CSV now contain the expanded sample. Next continue host-side lifecycle
+  and JCAlgTest work.
 
 ## Latest ARM implementation — 2026-10-14
 

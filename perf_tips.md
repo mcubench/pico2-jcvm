@@ -10,28 +10,28 @@ From `artifacts/metrics/development-time.csv`:
 
 | Task | Successful elapsed time | Notes |
 |---|---:|---|
-| ARM build | 3.120–5.819 s; mean 4.120 s | Four successful `./tools/build arm` runs; two failed attempts are excluded. |
-| Focused host tests | 0.458–2.789 s; mean 1.656 s | Six successful runs across short APDU, install rollback, and status mapping. |
+| ARM build | 3.120–9.152 s; mean 5.127 s | Five successful `./tools/build arm` runs; two failed attempts are excluded. |
+| Focused host tests | 0.458–5.184 s; mean 2.493 s | Nine successful runs across short APDU, install rollback/status, and RP2350 filesystem behavior. |
 | Timer syntax check | 0.055 s | Two successful runs. |
 | Manual analysis interval | 4.641 s | Wall time, not CPU time. |
 | Upload | Not measured | No upload was attempted in this sample. |
 
-The timer report totals 31.169 seconds across successful compile, test,
+The timer report totals 52.821 seconds across successful compile, test,
 analysis, and tool-check intervals. Build and test durations vary with which
 objects the command recompiles, so compare like-for-like runs before drawing a
 performance conclusion.
 
 The full Maven CAP converter build completed in 3:29 before timing was enabled.
 That number was observed in the build output but is absent from the timer CSV.
-The CSV also contains two failed build attempts, two failed test attempts, and
-one interrupted monitor attempt; the report excludes non-OK runs from
+The CSV also contains two failed build attempts, four failed test attempts,
+and one interrupted monitor attempt; the report excludes non-OK runs from
 successful duration averages. A bounded JCAlgTest probe also found no PC/SC
 reader, so it sent no APDUs.
 
 ## Suggestions
 
-1. **Keep the fast loop incremental.** ARM builds currently take 3.120–5.819 s
-   in this sample, and focused host tests take 0.458–2.789 s. Run the narrow
+1. **Keep the fast loop incremental.** ARM builds currently take 3.120–9.152 s
+   in this sample, and focused host tests take 0.458–5.184 s. Run the narrow
    host test after a small change, then `./tools/build arm`. Preserve generated
    CAP and ROM-mask outputs so ordinary C++ edits do not trigger the Java/Maven
    pipeline. Use the repository wrappers so their manifests can detect stale

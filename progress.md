@@ -2520,3 +2520,13 @@
 - Decision: Continue with updated performance measurements and the remaining host-side JCAlgTest integration gaps.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `tools/test-rp2350-fs-overlay`; `build/arm/pico2_choupi.uf2`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Update performance tips with filesystem test timings
+
+- Step/experiment: `development-performance-tips-fs-test-20261014`
+- Change: Updated `perf_tips.md` and committed the accumulated raw timer rows. The report now covers five successful ARM builds and nine successful host tests.
+- Validation: `./tools/task-time report` reports 52.821 s successful total; ARM builds 3.120–9.152 s (mean 5.127 s), host tests 0.458–5.184 s (mean 2.493 s). `git diff --check` passed. Documentation only; no code tests were run in this step.
+- Result: The performance tips now reflect rollback, install-status, and actual RP2350 filesystem tests. Upload remains unmeasured.
+- Decision: Continue timing comparable runs and proceed with host-side lifecycle/client coverage.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
