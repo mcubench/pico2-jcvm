@@ -2641,6 +2641,16 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `tools/test-vpcd-protocol`; `build/choupi-pc/choupi`; `build/arm/pico2_choupi.uf2`.
 
+## 2026-10-14 — Record vpcd codec commit
+
+- Step/experiment: `vpcd-frame-codec-20261014-reference`
+- Change: Recorded the immutable commit for the PC vpcd frame codec and focused test.
+- Validation: Confirmed commit `f832200` contains the codec, test wrapper, and project tracking update; `git diff --check` passed.
+- Result: The vpcd frame codec is committed as `f832200`.
+- Decision: Continue with host connection/control handling and applet lifecycle dispatch.
+- Commit: `f832200`
+- Artifacts/logs: `tools/test-vpcd-protocol`; `build/choupi-pc/choupi`; `build/arm/pico2_choupi.uf2`.
+
 ## 2026-10-14 — Record APDU helper implementation commit
 
 - Step/experiment: `javacard-apdu-cla-helpers-20261014-reference`
