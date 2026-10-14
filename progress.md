@@ -1951,3 +1951,13 @@
 - Decision: Continue completing the Java Card APDU interface and retry applet installation when this execution context can enumerate the PC/SC reader.
 - Commit: root documentation/log commit recorded in the following reference entry; API source commit `5ef3f90356c437ab658fb79ced1abde59ba3df9a`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T073306Z.log` SHA-256 `914f437056f50088dd27f2b066aa051d97728d8fc76b241d8e4e2c7f3bd746ff`; `build/arm/pico2_choupi.uf2` SHA-256 `c3958f3c3e9e0a35dfd42be552d4fc1183958d763afb63266cbc6a3f691b5680`.
+
+## 2026-10-14 — Short APDU validation commit reference
+
+- Step/experiment: `short-apdu-receive-metadata-20261014-reference`
+- Change: Recorded the root commit that contains the short-APDU API validation, tracker/handoff updates, and bounded cycle log.
+- Validation: Confirmed root commit `49f54ba76d5f6a907b015dce616833e33b2fc7a8` contains only `progress.md`, `TODO.md`, `.agent/HANDOFF.md`, and the cycle log; Java Card API source is separately committed as `5ef3f90356c437ab658fb79ced1abde59ba3df9a`.
+- Result: Source and hardware evidence for this logical step are both committed.
+- Decision: Continue with remaining APDU behavior and retry PC/SC installation when reader enumeration is available to GPPro.
+- Commit: `recorded in the following reference commit`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T073306Z.log`.
