@@ -1889,5 +1889,15 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` passed both build gates, confirmed BOOTSEL, wrote the image to 100%, rebooted the card, and captured 18 seconds of serial output. Runtime reported repeated `CHOUPI:STATUS sw=9000`, `TEST:PASS choupi_runtime`, and `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` appeared. `pcsc_scan -r` could not establish a PC/SC context because the service is unavailable in this execution context.
 - Result: The fixed ARM firmware is physically flashed and the board's built-in CHOUPI runtime test passes. Applet install and SELECT/APDU behavior remain unverified.
 - Decision: Proceed with the exact JCAlgTest v1.8.2 installation when PC/SC access is available; do not infer applet installation from the firmware self-test.
-- Commit: `recorded in the following hardware-validation commit reference`
+- Commit: `eff90e5` (the following reference entry records this SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T070921Z.log` (SHA-256 `af02d162b8d631ac0a82da12f5e8e8cbbaa1a9a859d9bd3bdd727b7866ddb100`); UF2 SHA-256 `6bf2fbf36f860dd6952c02a1ea91c90a54c661ece40e5796a4310f00ef797844`.
+
+## 2026-10-14 — CHOUPI hardware-validation commit reference
+
+- Step/experiment: `physical-cycle-choupi-20261014-reference`
+- Change: Recorded the immutable commit for the successful hardware cycle and its handoff update.
+- Validation: Confirmed commit `eff90e5` contains only the cycle log, progress record, and session handoff.
+- Result: Successful Pico 2 CHOUPI runtime validation is committed as `eff90e5`.
+- Decision: Continue with JCAlgTest applet installation after PC/SC service access is restored.
+- Commit: `recorded in the following reference commit`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T070921Z.log`.
