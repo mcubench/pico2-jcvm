@@ -2812,3 +2812,13 @@
 - Decision: Capture exact command and per-phase timings on the next VPCD run before attributing the elapsed time or tuning a phase.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `/tmp/pico2-jcalgtest-handler-base-fix.log`; `perf_tips.md`.
+
+## 2026-10-14 — Record performance guidance commit
+
+- Step/experiment: `jcalgtest-handler-offset-timing-reference-20261014`
+- Change: Recorded the commit reference for the latest VPCD diagnostic timing note.
+- Validation: `git diff --check -- progress.md` passed; commit `6444d59` contains the timing note, handoff update, and implementation record.
+- Result: The measured failure and follow-up guidance are committed as `6444d59`.
+- Decision: Collect exact wrapper and VPCD phase timings on the next run.
+- Commit: recorded in the current commit.
+- Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-handler-base-fix.log`.
