@@ -2181,3 +2181,13 @@
 - Decision: Resume the applet `process()` APDU test when PC/SC becomes accessible to the execution environment; continue remaining plan work with ARM-only builds.
 - Commit: recorded in a following reference entry.
 - Artifacts/logs: `artifacts/logs/arm-build-limited-jobs-20261014.log` (SHA-256 `1d73bc85bc2b3dd9200eb452cb2b0b594508712dfb8696acde91191121a7260f`); `artifacts/logs/pico-apdu-probe-smartcardio-20261014.log` (SHA-256 `379f07f0162dd593fcc9f688b32aab69504ae37e87950d952caf2ca1d66a5f58`).
+
+## 2026-10-14 — ARM build CPU bound commit reference
+
+- Step/experiment: `arm-build-cpu-bound-smartcardio-probe-20261014-reference`
+- Change: Recorded the immutable root commit for the two-job default ARM build limit and its validation records.
+- Validation: Confirmed commit `678bd02` contains the `tools/build` limit, TODO/handoff updates, progress entry, ARM build log, and bounded Java Smart Card I/O probe log.
+- Result: The ARM-only build resource fix is committed; RISC-V was not built or tested in this step.
+- Decision: Continue with the remaining JCAlgTest applet `process()` and AC3/AC4 validation work.
+- Commit: `678bd02`
+- Artifacts/logs: `artifacts/logs/arm-build-limited-jobs-20261014.log`; `artifacts/logs/pico-apdu-probe-smartcardio-20261014.log`.
