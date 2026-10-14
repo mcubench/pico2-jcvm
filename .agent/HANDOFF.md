@@ -1,5 +1,13 @@
 # Handoff
 
+## Development task timer — 2026-10-14
+
+- Added executable `tools/task-time` with manual intervals, command timing, and a Markdown report. Its append-only data is in `artifacts/metrics/development-time.csv`.
+- Successful sample: ARM incremental build 3.903 s; `test-short-apdu` 0.458 s; manual analysis 4.641 s; two timer syntax checks at 0.055 s each. Report successful total is 9.112 s. A failed CLI invocation (11.839 s) and interrupted board monitor (82.460 s) remain in the raw CSV and are excluded from successful timing averages.
+- Host CAP converter build completed in 3:29 before timing started, so that duration was not recorded.
+- Current hardware visibility differs from the user's BOOTSEL report: guest sysfs sees `2e8a:0009` (CHOUPI CCID), while there is no `/dev/ttyACM*` or `/dev/serial/by-id/*` node. `pcsc_scan -r` reports service unavailable. No flash attempted: current work is ARM-only and RISC-V UF2 is older than the latest shared-source edit; root instructions require both target builds before flashing.
+- Next: gather multiple build/test samples with `tools/task-time`; once both-target build gate and BOOTSEL/device-node visibility are restored, time upload and bounded serial validation. Do not infer stable speedups from this small sample.
+
 ## Current session state — 2026-10-14
 
 - Latest physical cycle: `./tools/cycle choupi` rebuilt ARM, RISC-V, and the

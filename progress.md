@@ -2401,3 +2401,12 @@
 - Decision: Continue with applet-level APDUs when a PC/SC reader is visible.
 - Commit: `b8c3805`
 - Artifacts/logs: `artifacts/logs/arm-jcsystem-java-validation-20261014.log`; `artifacts/logs/cycle-choupi-20261014T135618Z.log`.
+## 2026-10-14 — Add development task timer
+
+- Step/experiment: `development-task-time-sample-20261014`
+- Change: Added `tools/task-time` to append wall-clock intervals to `artifacts/metrics/development-time.csv`. It supports manual `start`/`stop`, timed commands, and a Markdown report; failed and interrupted attempts are counted but excluded from successful duration averages.
+- Validation: Timer syntax check passed twice (0.055 s each). `./tools/task-time run compile --note 'ARM rebuild for current CHOUPI artifact' -- ./tools/build arm` passed in 3.903 s. `./tools/task-time run test --note 'short APDU host regression suite' -- ./tools/test-short-apdu` passed in 0.458 s. A manual analysis interval measured 4.641 s. Initial CLI parsing failed and is recorded as a failed attempt (11.839 s); parser was corrected. A requested finite board serial capture was interrupted after 82.460 s because this VM has no `/dev/ttyACM*` or `/dev/serial/by-id/*` node. Sysfs reports the Pico as `2e8a:0009` CHOUPI CCID, not BOOTSEL. No upload was attempted because the RISC-V artifact predates the latest shared-source edit and the root flash gate requires both targets to build; the active work is ARM-only.
+- Result: Successful sample totals 9.112 s across compilation (3.903 s), focused testing (0.458 s), manual analysis (4.641 s), and timer syntax validation (0.110 s). The 3:29 Maven CAP-converter build completed earlier but began before the timer was added, so it is not in the sample. Upload time is unmeasured.
+- Decision: Keep the timer append-only and use it across a longer development interval before drawing firm optimization conclusions. First improvements to measure are cached CAP conversion and earlier serial-node detection. Repeat compile/test measurements over several edits; record upload only after both-target build gate and BOOTSEL visibility are restored.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/metrics/development-time.csv`.

@@ -1,0 +1,188 @@
+#!/usr/bin/env python3
+"""Record wall-clock time spent on development tasks.
+
+Categories are free-form; common choices are compile, thinking, upload, and
+test. Use ``run`` for command-backed work and ``start``/``stop`` for manual
+intervals such as analysis or an external upload. Manual intervals record wall
+time, not CPU time. Only one interval can be active at a time.
+
+Examples:
+  tools/task-time run compile --note "ARM incremental build" -- ./tools/build arm
+  tools/task-time start thinking --note "review APDU failure"
+  tools/task-time stop
+  tools/task-time report
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import fcntl
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+from collections import defaultdict
+from datetime import datetime, timezone
+
+
+ROOT = Path(__file__).resolve().parent.parent
+METRICS = ROOT / "artifacts" / "metrics"
+CSV_PATH = METRICS / "development-time.csv"
+ACTIVE_PATH = METRICS / ".active-task.json"
+LOCK_PATH = METRICS / ".task-time.lock"
+FIELDS = ["started_utc", "finished_utc", "category", "seconds", "status", "note"]
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def locked():
+    METRICS.mkdir(parents=True, exist_ok=True)
+    stream = LOCK_PATH.open("a+")
+    fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+    return stream
+
+
+def begin(category: str, note: str) -> None:
+    with locked():
+        if ACTIVE_PATH.exists():
+            active = json.loads(ACTIVE_PATH.read_text(encoding="utf-8"))
+            raise RuntimeError(
+                f"task '{active['category']}' is already active; stop it first"
+            )
+        state = {
+            "started_utc": utc_now(),
+            "started_monotonic_ns": time.monotonic_ns(),
+            "category": category,
+            "note": note,
+        }
+        temporary = ACTIVE_PATH.with_suffix(f".tmp.{os.getpid()}")
+        temporary.write_text(json.dumps(state) + "\n", encoding="utf-8")
+        temporary.replace(ACTIVE_PATH)
+    print(f"TIME:START category={category} note={note or '-'}")
+
+
+def end(status: str) -> float:
+    with locked():
+        if not ACTIVE_PATH.exists():
+            raise RuntimeError("no task is active")
+        state = json.loads(ACTIVE_PATH.read_text(encoding="utf-8"))
+        finished = utc_now()
+        elapsed = max(
+            0.0,
+            (time.monotonic_ns() - int(state["started_monotonic_ns"])) / 1_000_000_000,
+        )
+        first_write = not CSV_PATH.exists()
+        with CSV_PATH.open("a", newline="", encoding="utf-8") as stream:
+            writer = csv.DictWriter(stream, fieldnames=FIELDS, lineterminator="\n")
+            if first_write:
+                writer.writeheader()
+            writer.writerow(
+                {
+                    "started_utc": state["started_utc"],
+                    "finished_utc": finished,
+                    "category": state["category"],
+                    "seconds": f"{elapsed:.3f}",
+                    "status": status,
+                    "note": state["note"],
+                }
+            )
+        ACTIVE_PATH.unlink()
+    print(f"TIME:STOP category={state['category']} seconds={elapsed:.3f} status={status}")
+    return elapsed
+
+
+def report() -> int:
+    if not CSV_PATH.exists():
+        print("No task timings recorded yet.")
+        return 0
+    totals: dict[str, list[float]] = defaultdict(list)
+    failures: dict[str, int] = defaultdict(int)
+    with CSV_PATH.open(newline="", encoding="utf-8") as stream:
+        for row in csv.DictReader(stream):
+            category = row["category"]
+            if row["status"] == "ok":
+                totals[category].append(float(row["seconds"]))
+            else:
+                failures[category] += 1
+    print("| Category | Runs | Total (s) | Mean (s) | Max (s) | Non-OK |")
+    print("|---|---:|---:|---:|---:|---:|")
+    for category in sorted(set(totals) | set(failures)):
+        values = totals[category]
+        if values:
+            total = f"{sum(values):.3f}"
+            mean = f"{sum(values) / len(values):.3f}"
+            maximum = f"{max(values):.3f}"
+        else:
+            total = mean = maximum = "-"
+        print(
+            f"| {category} | {len(values)} | {total} | {mean} | {maximum} | "
+            f"{failures[category]} |"
+        )
+    grand_total = sum(sum(values) for values in totals.values())
+    print(f"\nRecorded elapsed time: {grand_total:.3f} s")
+    if ACTIVE_PATH.exists():
+        active = json.loads(ACTIVE_PATH.read_text(encoding="utf-8"))
+        current = (time.monotonic_ns() - int(active["started_monotonic_ns"])) / 1e9
+        print(f"Active: {active['category']} ({current:.3f} s so far)")
+    print(f"CSV: {CSV_PATH.relative_to(ROOT)}")
+    return 0
+
+
+def main() -> int:
+    argv = sys.argv[1:]
+    command_override: list[str] | None = None
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="action", required=True)
+    start_parser = commands.add_parser("start", help="start a manual task interval")
+    start_parser.add_argument("category", help="for example thinking, compile, upload, test")
+    start_parser.add_argument("--note", default="")
+    stop_parser = commands.add_parser("stop", help="stop and record the active interval")
+    stop_parser.add_argument("--status", choices=("ok", "failed", "interrupted"), default="ok")
+    run_parser = commands.add_parser("run", help="time one command")
+    run_parser.add_argument("category")
+    run_parser.add_argument("--note", default="")
+    run_parser.add_argument("command", nargs="*")
+    commands.add_parser("report", help="summarize recorded intervals")
+    if argv and argv[0] == "run":
+        if "--" not in argv:
+            parser.error("run requires a command after --")
+        separator = argv.index("--")
+        command_override = argv[separator + 1 :]
+        argv = argv[:separator]
+    args = parser.parse_args(argv)
+
+    try:
+        if args.action == "start":
+            begin(args.category, args.note)
+            return 0
+        if args.action == "stop":
+            end(args.status)
+            return 0
+        if args.action == "report":
+            return report()
+        command = command_override if command_override is not None else args.command
+        if not command:
+            parser.error("run requires a command after --")
+        begin(args.category, args.note or " ".join(command))
+        try:
+            result = subprocess.run(command, cwd=ROOT, check=False)
+        except KeyboardInterrupt:
+            end("interrupted")
+            return 130
+        except OSError:
+            end("failed")
+            raise
+        end("ok" if result.returncode == 0 else "failed")
+        return result.returncode
+    except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as error:
+        print(f"task-time: {error}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
