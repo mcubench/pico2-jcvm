@@ -1,5 +1,21 @@
 # Handoff
 
+## Latest ARM implementation — 2026-10-14
+
+- Added synchronous persistent-write transactions around GP INSTALL. Snapshots
+  preserve previous filesystem values, erase records created during a failed
+  install, and cover indexed array/package-list updates.
+- Added `fs_erase` to the RP2350 overlay backend using a retained tombstone
+  entry. Deleted values are hidden from reads and the index slot can be reused.
+- `./tools/test-persistent-transaction` passes (`TEST:SUMMARY fail=0`, 2.789 s).
+  `./tools/build arm` passes (3.639 s). The preceding link failure was due to
+  missing RP2350 `fs_erase` and is resolved.
+- No RISC-V build or hardware flash was performed. Board failure-path behavior
+  remains untested. Rollback is not durable across power loss because CAP
+  metadata and filesystem entries do not share a journal.
+- Next: keep install atomicity open; validate failed-install cleanup and status
+  words on hardware only after the repository build gate allows flashing.
+
 ## Development task timer — 2026-10-14
 
 - Added executable `tools/task-time` with manual intervals, command timing, and a Markdown report. Its append-only data is in `artifacts/metrics/development-time.csv`.

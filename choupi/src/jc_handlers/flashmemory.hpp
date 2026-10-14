@@ -118,6 +118,12 @@ public:
                                           const JC_Instance &instance,
                                           Heap &heap);
 
+  /// Group persistent writes into an installation transaction. Rollback
+  /// restores overwritten values and erases records created by the transaction.
+  static bool beginPersistentWriteTransaction() noexcept;
+  static bool commitPersistentWriteTransaction() noexcept;
+  static bool rollbackPersistentWriteTransaction() noexcept;
+
   /// Get byte data store in flash memory.
   static const jbyte_t getPersistentField_Byte(const fs::Tag &tag);
   /// Set byte data store in flash memory.

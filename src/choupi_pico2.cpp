@@ -77,6 +77,8 @@ constexpr uint8_t kOverlayUsed = 1u << 0;
 constexpr uint8_t kOverlayHasRecord = 1u << 1;
 constexpr uint8_t kOverlayCompressedTag = 1u << 2;
 constexpr uint8_t kOverlayParentTag = 1u << 3;
+constexpr uint8_t kOverlaySerialized = 1u << 4;
+constexpr uint8_t kOverlayDeleted = 1u << 5;
 
 OverlayFile overlay[kMaxOverlayFiles];
 size_t overlay_file_count = 0;
@@ -162,7 +164,12 @@ bool overlay_is_used(const OverlayFile &file) {
 }
 
 bool overlay_has_record(const OverlayFile &file) {
-  return (file.flags & kOverlayHasRecord) != 0;
+  return (file.flags & kOverlayHasRecord) != 0 &&
+         (file.flags & kOverlayDeleted) == 0;
+}
+
+bool overlay_has_storage(const OverlayFile &file) {
+  return (file.flags & kOverlaySerialized) != 0;
 }
 
 bool overlay_compresses_tag(const OverlayFile &file) {
@@ -271,7 +278,7 @@ OverlayFile *find_overlay(const uint8_t *tag, uint8_t tag_length,
       return nullptr;
     }
     if (file.hash == hash && file.tag_length == tag_length &&
-        overlay_has_record(file) &&
+        overlay_has_storage(file) &&
         stored_tag_matches(file, tag, tag_length)) {
       if (found_slot != nullptr) {
         *found_slot = slot;
@@ -329,7 +336,7 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
   if (key_length > 0x7F) {
     return false;
   }
-  const size_t old_record_size = overlay_has_record(file)
+  const size_t old_record_size = overlay_has_storage(file)
                                      ? 1 + stored_tag_length(file) + file.size
                                      : 0;
   const size_t new_record_size = 1 + key_length + length;
@@ -343,7 +350,7 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
                  overlay_bytes + old_offset + old_record_size,
                  overlay_bytes_used - old_offset - old_record_size);
     for (size_t index = 0; index < overlay_file_count; ++index) {
-      if (&overlay[index] != &file && overlay_has_record(overlay[index]) &&
+      if (&overlay[index] != &file && overlay_has_storage(overlay[index]) &&
           overlay[index].offset > old_offset) {
         overlay[index].offset -= static_cast<uint32_t>(old_record_size);
       }
@@ -376,6 +383,8 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
   }
   file.size = length;
   file.flags |= kOverlayHasRecord;
+  file.flags |= kOverlaySerialized;
+  file.flags &= static_cast<uint8_t>(~kOverlayDeleted);
   overlay_bytes_used = new_used;
   return true;
 }
@@ -433,6 +442,9 @@ bool find_rom_file(const uint8_t *tag, uint8_t tag_length,
 bool find_file(const uint8_t *tag, uint8_t tag_length,
                const uint8_t **data, uint32_t *length) {
   if (auto *file = find_overlay(tag, tag_length)) {
+    if (!overlay_has_record(*file)) {
+      return false;
+    }
     *data = overlay_data(*file);
     *length = file->size;
     return true;
@@ -554,6 +566,30 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
     report_fs_write_failure("new", tag, tag_length, length);
     return 1;
   }
+  return 0;
+}
+
+extern "C" uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length) {
+  auto *file = find_overlay(tag, tag_length);
+  if (file == nullptr) {
+    const uint8_t *ignored_data = nullptr;
+    uint32_t ignored_length = 0;
+    if (!find_file(tag, tag_length, &ignored_data, &ignored_length)) {
+      return 1;
+    }
+    file = allocate_overlay(tag, tag_length);
+    if (file == nullptr) {
+      return 1;
+    }
+  } else if (!overlay_has_record(*file)) {
+    return 1;
+  }
+
+  if (!append_overlay(*file, tag, nullptr, 0)) {
+    return 1;
+  }
+  file->flags &= static_cast<uint8_t>(~kOverlayHasRecord);
+  file->flags |= kOverlayDeleted;
   return 0;
 }
 

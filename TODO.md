@@ -82,8 +82,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   CRC-protected CAP metadata version, while retaining version-1 CAP readability.
 - [x] Implement `Applet.register()` and `register(byte[], short, byte)` so a
   successful Java install creates the persistent, selectable instance.
-- [ ] Make failed installation atomic: remove partial instances/package state
-  and return a useful status word.
+- [ ] Complete failed-installation atomicity and return a useful status word.
+  Synchronous rollback now snapshots persistent object/field writes, including
+  indexed array and package-list updates, and the RP2350 overlay can erase
+  transaction-created records. Failure-path behavior still needs hardware
+  validation; CAP metadata and filesystem state do not yet share a durable
+  power-loss journal.
 
 ## Applet runtime and APDU lifecycle
 

@@ -37,6 +37,9 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <memory>
+#include <utility>
+#include <vector>
 
 extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length);
 
@@ -53,6 +56,80 @@ struct PersistentObjectFrame {
 
 PersistentObjectFrame persistent_object_stack[kMaxPersistentObjectDepth];
 size_t persistent_object_depth = 0;
+
+struct PersistentWriteSnapshot {
+  fs::Tag tag;
+  bool existed = false;
+  std::vector<uint8_t> data;
+};
+
+std::vector<PersistentWriteSnapshot> persistent_write_snapshots;
+bool persistent_write_transaction_active = false;
+
+bool tags_equal(const fs::Tag &left, const fs::Tag &right) noexcept {
+  return left.len == right.len &&
+         std::memcmp(left.value, right.value, left.len) == 0;
+}
+
+void snapshot_persistent_tag(const fs::Tag &tag) {
+  if (!persistent_write_transaction_active) {
+    return;
+  }
+  for (const auto &snapshot : persistent_write_snapshots) {
+    if (tags_equal(snapshot.tag, tag)) {
+      return;
+    }
+  }
+
+  PersistentWriteSnapshot snapshot;
+  snapshot.tag = tag;
+  snapshot.existed = fs_exists(tag.value, tag.len) != 0;
+  if (snapshot.existed) {
+    uint32_t length = 0;
+    if (fs_length(tag.value, tag.len, &length) != 0) {
+      throw Exceptions::IOException;
+    }
+    snapshot.data.resize(length);
+    if (length != 0 && fs_read(tag.value, tag.len, snapshot.data.data(), length) != 0) {
+      throw Exceptions::IOException;
+    }
+  }
+  persistent_write_snapshots.push_back(std::move(snapshot));
+}
+
+uint8_t write_persistent_tag(const fs::Tag &tag, const uint8_t *data,
+                             const uint32_t length) {
+  snapshot_persistent_tag(tag);
+  return fs_write(tag.value, tag.len, data, length);
+}
+
+bool rollback_persistent_writes() noexcept {
+  bool success = true;
+  // Erase transaction-created records first so a nearly full filesystem can
+  // reclaim their space before restoring snapshots of replaced records.
+  for (auto it = persistent_write_snapshots.rbegin();
+       it != persistent_write_snapshots.rend(); ++it) {
+    if (!it->existed && fs_exists(it->tag.value, it->tag.len) != 0 &&
+        fs_erase(it->tag.value, it->tag.len) != 0) {
+      success = false;
+    }
+  }
+  for (auto it = persistent_write_snapshots.rbegin();
+       it != persistent_write_snapshots.rend(); ++it) {
+    if (!it->existed) {
+      continue;
+    }
+    const uint8_t empty_data = 0;
+    const uint8_t *data = it->data.empty() ? &empty_data : it->data.data();
+    if (fs_write(it->tag.value, it->tag.len, data,
+                 static_cast<uint32_t>(it->data.size())) != 0) {
+      success = false;
+    }
+  }
+  persistent_write_snapshots.clear();
+  persistent_write_transaction_active = false;
+  return success;
+}
 
 class PersistentObjectFrameGuard {
 public:
@@ -90,12 +167,37 @@ void write_persistent_object_alias(const fs::Tag &tag,
                                    const fs::Tag &target_tag) {
   uint8_t data[2 + TAG_MAX_LENGTH] = {kPersistentObjectAlias, target_tag.len};
   std::memcpy(data + 2, target_tag.value, target_tag.len);
-  if (fs_write(tag.value, tag.len, data, 2 + target_tag.len)) {
+  if (write_persistent_tag(tag, data, 2 + target_tag.len)) {
     throw Exceptions::IOException;
   }
 }
 
 } // namespace
+
+bool FlashMemory_Handler::beginPersistentWriteTransaction() noexcept {
+  if (persistent_write_transaction_active) {
+    return false;
+  }
+  persistent_write_snapshots.clear();
+  persistent_write_transaction_active = true;
+  return true;
+}
+
+bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
+  if (!persistent_write_transaction_active) {
+    return false;
+  }
+  persistent_write_snapshots.clear();
+  persistent_write_transaction_active = false;
+  return true;
+}
+
+bool FlashMemory_Handler::rollbackPersistentWriteTransaction() noexcept {
+  if (!persistent_write_transaction_active) {
+    return false;
+  }
+  return rollback_persistent_writes();
+}
 
 /// Get packages array length
 static constexpr uint16_t getPackagesArrayLength() {
@@ -153,7 +255,8 @@ void FlashMemory_Handler::writeInstanceHeader(
   uint8_t data[] = {FieldType::FIELD_TYPE_OBJECT, package,
                     HIGH_BYTE_SHORT(class_index), LOW_BYTE_SHORT(class_index)};
 
-  if (fs_write(tag.value, tag.len, data, (sizeof(data) / sizeof(data[0])))) {
+  if (write_persistent_tag(
+          tag, data, static_cast<uint32_t>(sizeof(data) / sizeof(data[0])))) {
     throw Exceptions::IOException;
   }
 }
@@ -192,6 +295,7 @@ void FlashMemory_Handler::writeArray(const fs::Tag &tag, const FieldType type,
   }
 
   data = new uint8_t[array_size];
+  std::unique_ptr<uint8_t[]> data_owner(data);
 
   uint8_t pos = 0;
 
@@ -263,13 +367,10 @@ void FlashMemory_Handler::writeArray(const fs::Tag &tag, const FieldType type,
      */
   }
 
-  if (fs_write(tag.value, tag.len, data, array_size)) {
+  if (write_persistent_tag(tag, data, array_size)) {
     throw Exceptions::IOException;
   }
 
-  if (data != nullptr) {
-    delete[] data;
-  }
 }
 ///
 ///        Compute tag to access to persistant data
@@ -340,7 +441,7 @@ FlashMemory_Handler::getDataInPlaceFromTag(const fs::Tag &tag) {
 void FlashMemory_Handler::setDataFromTag(const fs::Tag &tag, uint32_t length,
                                          const uint8_t data[]) {
 
-  if (fs_write(&(tag.value[0]), tag.len, data, length)) {
+  if (write_persistent_tag(tag, data, length)) {
     throw Exceptions::IOException;
   }
 }
@@ -759,8 +860,8 @@ void FlashMemory_Handler::setPersistentField_Instance(
     case FieldType::FIELD_TYPE_BOOLEAN: {
       const uint8_t data[] = {field.type, static_cast<uint8_t>(field.value)};
 
-      if (fs_write(field_tag.value, field_tag.len, data,
-                   sizeof(jbyte_t) + sizeof(uint8_t))) {
+      if (write_persistent_tag(field_tag, data,
+                               sizeof(jbyte_t) + sizeof(uint8_t))) {
         throw Exceptions::IOException;
       }
 
@@ -772,8 +873,8 @@ void FlashMemory_Handler::setPersistentField_Instance(
           field.type, static_cast<uint8_t>(HIGH_BYTE_SHORT(field.value)),
           static_cast<uint8_t>(LOW_BYTE_SHORT(field.value))};
 
-      if (fs_write(field_tag.value, field_tag.len, data,
-                   sizeof(jshort_t) + sizeof(uint8_t))) {
+      if (write_persistent_tag(field_tag, data,
+                               sizeof(jshort_t) + sizeof(uint8_t))) {
         throw Exceptions::IOException;
       }
 
@@ -794,8 +895,8 @@ void FlashMemory_Handler::setPersistentField_Instance(
           static_cast<uint8_t>(LOW_BYTE_SHORT(INT_2_LSSHORTS(value))),
       };
 
-      if (fs_write(field_tag.value, field_tag.len, data,
-                   sizeof(jint_t) + sizeof(uint8_t))) {
+      if (write_persistent_tag(field_tag, data,
+                               sizeof(jint_t) + sizeof(uint8_t))) {
         throw Exceptions::IOException;
       }
 
@@ -1187,6 +1288,7 @@ void FlashMemory_Handler::setPersistentField_Array_Byte(const fs::Tag &tag,
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
+  snapshot_persistent_tag(tag);
   if (fs_write_1b_at(&(tag.value[0]), tag.len, index, value)) {
     throw Exceptions::IOException;
   }
@@ -1250,6 +1352,7 @@ void FlashMemory_Handler::setPersistentField_Array_Short(const fs::Tag &tag,
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
+  snapshot_persistent_tag(tag);
   if (fs_write_2b_at(&(tag.value[0]), tag.len, index, value)) {
     throw Exceptions::IOException;
   }
@@ -1315,6 +1418,7 @@ void FlashMemory_Handler::setPersistentField_Array_Int(const fs::Tag &tag,
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
+  snapshot_persistent_tag(tag);
   if (fs_write_4b_at(&(tag.value[0]), tag.len, index, value)) {
     throw Exceptions::IOException;
   }
@@ -1416,6 +1520,7 @@ void FlashMemory_Handler::enablePackage(const jpackage_ID_t id) {
   packages_byte |= (1 << (id % 8));
 
   // Writing the updated value
+  snapshot_persistent_tag(tag);
   if (fs_write_1b_at(tag.value, tag.len, (id / 8), packages_byte)) {
     throw Exceptions::IOException;
   }
@@ -1439,6 +1544,7 @@ void FlashMemory_Handler::disablePackage(const jpackage_ID_t id) {
   packages_byte &= ~(1 << (id % 8));
 
   // Writing the updated value
+  snapshot_persistent_tag(tag);
   if (fs_write_1b_at(tag.value, tag.len, (id / 8), packages_byte)) {
     throw Exceptions::IOException;
   }

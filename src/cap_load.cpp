@@ -321,28 +321,50 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     install_failure_stage_ = 4;
     return false;
   }
-  uint8_t applet_registered = 0;
-  uint16_t applet_class_index = 0xffff;
-  install_vm_status_ = runtime_install_method(
-      resolved_package_id, install_method_offset, install_parameters,
-      static_cast<uint8_t>(install_parameters_length),
-      &applet_registered,
-      &applet_class_index,
-      &install_vm_exception_id_,
-      &install_vm_exception_opcode_, &install_vm_exception_pc_,
-      &install_vm_exception_prefix_,
-      &install_vm_exception_operand_, &install_vm_exception_stack_depth_,
-      &install_vm_exception_opcode_history_,
-      &install_vm_exception_depth_history_, &install_vm_debug_stage_,
-      &install_vm_debug_context_);
-  if (install_vm_status_ != 0x9000 || applet_registered == 0 ||
-      applet_class_index == 0xffff) {
-    install_failure_stage_ = 5;
+
+  if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
+    install_failure_stage_ = 7;
     return false;
   }
-  if (choupi_store_cap_instance(instance_aid, instance_aid_length,
-                                applet_class_index) != 0) {
-    install_failure_stage_ = 6;
+  bool transaction_active = true;
+  const auto rollback = [&transaction_active]() noexcept {
+    if (!transaction_active) {
+      return true;
+    }
+    transaction_active = false;
+    return jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+  };
+
+  uint8_t applet_registered = 0;
+  uint16_t applet_class_index = 0xffff;
+  try {
+    install_vm_status_ = runtime_install_method(
+        resolved_package_id, install_method_offset, install_parameters,
+        static_cast<uint8_t>(install_parameters_length), &applet_registered,
+        &applet_class_index, &install_vm_exception_id_,
+        &install_vm_exception_opcode_, &install_vm_exception_pc_,
+        &install_vm_exception_prefix_, &install_vm_exception_operand_,
+        &install_vm_exception_stack_depth_, &install_vm_exception_opcode_history_,
+        &install_vm_exception_depth_history_, &install_vm_debug_stage_,
+        &install_vm_debug_context_);
+    if (install_vm_status_ != 0x9000 || applet_registered == 0 ||
+        applet_class_index == 0xffff) {
+      install_failure_stage_ = rollback() ? 5 : 8;
+      return false;
+    }
+    if (choupi_store_cap_instance(instance_aid, instance_aid_length,
+                                  applet_class_index) != 0) {
+      install_failure_stage_ = rollback() ? 6 : 8;
+      return false;
+    }
+    if (!jcvm::FlashMemory_Handler::commitPersistentWriteTransaction()) {
+      transaction_active = false;
+      install_failure_stage_ = 8;
+      return false;
+    }
+    transaction_active = false;
+  } catch (...) {
+    install_failure_stage_ = rollback() ? 9 : 8;
     return false;
   }
   std::memcpy(instance_aid_, instance_aid, instance_aid_length);

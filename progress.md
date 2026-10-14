@@ -2440,3 +2440,13 @@
 - Decision: Continue the remaining JCAlgTest runtime and integration work; measure any future optimization before claiming a speedup.
 - Commit: `6154378`
 - Artifacts/logs: `perf_tips.md`; source measurements in `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Add rollback support for RP2350 persistent install writes
+
+- Step/experiment: `persistent-install-rollback-rp2350-20261014`
+- Change: Added RP2350 filesystem erase tombstones so rollback can hide transaction-created overlay entries and safely reuse their index slots. Persistent write snapshots now also cover indexed array and package-list updates. The install transaction still rolls back records when Java install or instance metadata registration fails.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0` in 2.789 s. `./tools/build arm` passed in 3.639 s and linked `build/arm/pico2_choupi.uf2`. The earlier build attempt failed at link time because `fs_erase` was missing; the RP2350 implementation resolved it. No RISC-V build or hardware flash was performed.
+- Result: Synchronous rollback now covers full-record writes and indexed writes in the CHOUPI filesystem overlay. The deletion path is build-validated but was not exercised on hardware. Existing host-test warnings about upstream const-qualified returns and packed CAP members remain.
+- Decision: Keep installation atomicity open until failure-path hardware validation and useful status-word behavior are verified. CAP metadata and filesystem writes do not yet share a durable power-loss journal.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/metrics/development-time.csv`; ARM UF2 `build/arm/pico2_choupi.uf2`; no archived build log.
