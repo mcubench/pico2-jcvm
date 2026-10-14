@@ -2770,3 +2770,13 @@
 - Decision: Inspect the v1.8.2 descriptor/class metadata and installation field layout to derive the token-to-slot mapping, then re-run JCSystem info.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `/tmp/pico2-jcalgtest-vpcd-cleanup.log`; prior full trace `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.
+
+## 2026-10-14 — Record bounded VPCD cleanup commit
+
+- Step/experiment: `vpcd-test-process-group-cleanup-20261014-reference`
+- Change: Recorded the immutable commit for the finite VPCD process-group cleanup and its tracker updates.
+- Validation: `git diff --check -- progress.md` passed; commit `da33f39` contains the test harness, wrapper, TODO, handoff, and implementation record.
+- Result: Bounded emulator teardown is committed as `da33f39`.
+- Decision: Continue with field-token mapping and the still-failing JCSystem info APDU.
+- Commit: recorded in the current commit.
+- Artifacts/logs: `/tmp/pico2-jcalgtest-vpcd-cleanup.log`.
