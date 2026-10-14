@@ -2530,3 +2530,13 @@
 - Decision: Continue timing comparable runs and proceed with host-side lifecycle/client coverage.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Filesystem timing update commit reference
+
+- Step/experiment: `development-performance-tips-fs-test-20261014-reference`
+- Change: Recorded the immutable commit containing updated performance tips and accumulated task-time rows.
+- Validation: Confirmed commit `d27321d` includes the expanded timing summary, append-only CSV rows, and progress record; staged whitespace validation passed.
+- Result: The updated performance summary is committed as `d27321d`.
+- Decision: Continue with host-side applet lifecycle/client coverage; no PC/SC reader is currently visible.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.

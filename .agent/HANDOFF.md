@@ -2,7 +2,8 @@
 
 ## Updated development timing sample — 2026-10-14
 
-- Documentation commits: `171d404`, reference `9cbeb4e`.
+- Documentation commits: `171d404`, reference `9cbeb4e`; expanded sample
+  commit `d27321d`.
 - Latest `tools/task-time report`: five successful ARM builds at 3.120–9.152 s
   (mean 5.127 s), nine focused host tests at 0.458–5.184 s (mean 2.493 s),
   and 52.821 s total successful recorded work.
