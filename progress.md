@@ -2510,3 +2510,13 @@
 - Decision: Keep board failure-path verification open, then continue the next host-side JCAlgTest integration gap.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `tools/test-rp2350-fs-overlay`; ARM UF2 `build/arm/pico2_choupi.uf2`; timer data `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — RP2350 overlay regression commit reference
+
+- Step/experiment: `rp2350-fs-overlay-erase-regression-20261014-reference`
+- Change: Recorded the immutable commit for the RP2350 overlay erase test and collision-offset fix.
+- Validation: Confirmed commit `c8fc232` contains the filesystem fix, standalone host regression, and progress record. The 13-case host test and ARM build passed before commit; staged whitespace validation passed.
+- Result: The overlay erase regression step is committed as `c8fc232`; hardware validation remains outstanding.
+- Decision: Continue with updated performance measurements and the remaining host-side JCAlgTest integration gaps.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `tools/test-rp2350-fs-overlay`; `build/arm/pico2_choupi.uf2`; `artifacts/metrics/development-time.csv`.

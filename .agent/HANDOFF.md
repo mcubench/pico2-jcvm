@@ -14,6 +14,7 @@
 
 ## RP2350 filesystem erase regression — 2026-10-14
 
+- Implementation commit: `c8fc232`.
 - Added `tools/test-rp2350-fs-overlay`, which compiles the actual RP2350
   filesystem source against host hardware stubs. It covers erase visibility,
   same-tag reuse, collision-chain lookup, and compressed child-tag reuse.
