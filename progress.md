@@ -2161,3 +2161,13 @@
 - Decision: Flash and capture the current ARM image now that both architecture builds pass, then retry JCAlgTest installation and investigate any returned status word from fresh traces.
 - Commit: root documentation/evidence commit recorded in the following reference entry.
 - Artifacts/logs: ARM `artifacts/logs/arm-util-array-compare-20261014.log` SHA-256 `16ddb401d4ddb2511f957407fd03ab717547cae58bb42eab10c795546a57146a`; RISC-V `artifacts/logs/riscv-util-array-compare-20261014.log` SHA-256 `f09a02c4542f463837c5e1745834cfd3e3e780f159f73a335f69a2dfc854ea65`; GPPro list `artifacts/logs/gp-list-current-20261014.log` SHA-256 `da115a4a917ad1a00b819f69bfc96b39cac2288e033528d9db9ea1defb10d0fb`.
+
+## 2026-10-14 — Util comparison commit reference
+
+- Step/experiment: `util-array-compare-order-20261014-reference`
+- Change: Recorded the immutable root evidence commit for the Java Card `Util.arrayCompare()` ordering correction; the nested API source commit is `6dceb7e`.
+- Validation: Confirmed root commit `b03142b` contains the updated trackers and ARM, RISC-V, and successful PC/SC list logs.
+- Result: Root validation records and the source-level commit are linked for continuation.
+- Decision: Flash the newly built ARM image and continue with JCAlgTest install validation.
+- Commit: `b03142b`
+- Artifacts/logs: `artifacts/logs/gp-list-current-20261014.log`.
