@@ -173,12 +173,16 @@ rollback and duplicate/invalid registration handling also remain unverified.
   after adding CMake output stamps, the follow-up PC build skipped both stages.
 - [ ] Implement and verify GP DELETE and the remaining required GET STATUS / GET
   DATA behavior, including accurate package and applet lifecycle state.
-- [ ] Add a PC-build APDU transport through vpcd and golden applet coverage for
-  exceptions, transient arrays, statics, APDU exchange, install parameters, and
-  persistence. The vpcd 16-bit network-order frame codec now handles partial
-  socket I/O and rejects malformed/truncated frames; 14 codec checks pass.
-  Connection setup, control-message handling, and VM APDU dispatch are not yet
-  integrated.
+- [x] Integrate the PC-build vpcd frame transport with power controls, ATR,
+  applet SELECT/DESELECT, and APDU dispatch through the VM lifecycle bridge.
+  The PC target builds, the frame codec passes 14 checks, and a new session
+  state-machine test passes 14 checks. The current sandbox has no PC/SC reader,
+  and TCP socket calls are denied, so live vpcd/client transport is not yet
+  verified.
+- [ ] Add golden applet coverage for exceptions, transient arrays, statics,
+  APDU exchange, install parameters, and persistence. The current vpcd session
+  tests use fake VM callbacks; they do not prove that the installed JCAlgTest
+  applet executes.
 - [ ] Run the matching JCAlgTest v1.8.2 client in supported-algorithms mode and
   archive its CSV and logs with hashes.
 - [x] Generate a simulator reference using the official v1.8.2 client and its

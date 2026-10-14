@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+build_dir="$(mktemp -d)"
+trap 'rm -rf "${build_dir}"' EXIT
+
+"${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -pedantic \
+  -DPC_VERSION -I"${repo_root}/choupi/src" \
+  "${repo_root}/choupi/src/vpcd_session.cpp" \
+  "${repo_root}/tools/tests/vpcd_session_test.cpp" \
+  -o "${build_dir}/vpcd_session_test"
+"${build_dir}/vpcd_session_test"

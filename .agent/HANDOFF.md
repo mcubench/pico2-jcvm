@@ -1,5 +1,24 @@
 # Handoff
 
+## PC vpcd APDU session integration — 2026-10-14
+
+- Added a PC-only session state machine and routed VPCD power, reset, ATR,
+  applet SELECT/DESELECT, and applet APDUs through the existing VM lifecycle
+  functions in `main_pc.cpp`. The PC CMake source glob now uses
+  `CONFIGURE_DEPENDS`, so new `.cpp` files are picked up automatically.
+- `./tools/test-vpcd-session` passes 14 fake-card lifecycle/routing checks;
+  `./tools/test-vpcd-protocol` passes 14 frame codec checks. `./tools/build-pc`
+  and the PC `choupi` target build pass, as does `./tools/build arm`. The ARM
+  UF2 SHA-256 is `b98b999a8837858ef655453db0dab1ec9ffa9e30d8513901980a54295ae41625`.
+- `./tools/probe-jc-algtest` reports that `Pico 2 CHOUPI CCID` is absent, so it
+  sends no APDUs. No hardware flash was attempted; no RISC-V build/test was run.
+  Live VPCD TCP transport remains unverified in the sandbox, where socket
+  syscalls were previously denied.
+- Remaining: add golden applet tests that execute Java code, enable a real
+  PC/SC/VPCD endpoint, then run JCAlgTest v1.8.2 on CHOUPI and compare its CSV
+  with the archived jCardSim output. Do not treat the fake callback tests as
+  evidence that the installed JCAlgTest applet executed.
+
 ## vpcd frame codec — 2026-10-14
 
 - Added the PC-only vpcd frame codec in `choupi/src/vpcd_protocol.*` and a

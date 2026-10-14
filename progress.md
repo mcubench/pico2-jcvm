@@ -2661,6 +2661,16 @@
 - Commit: `c2935e7`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; nested API commit `4d996f4`; `tools/test-apdu-util`.
 
+## 2026-10-14 — Integrate PC vpcd session and APDU routing
+
+- Step/experiment: `pc-vpcd-session-apdu-routing-20261014`
+- Change: Added a unit-testable PC vpcd session state machine and wired VPCD connection messages, ATR, applet lifecycle, and APDUs into the VM bridge. Enabled CMake source glob reconfiguration for newly added PC C++ files. Updated TODO and handoff with the remaining applet execution and transport gaps.
+- Validation: `./tools/test-vpcd-protocol` passed 14 checks; `./tools/test-vpcd-session` passed 14 checks. `./tools/build-pc` and the PC `choupi` target passed; `build/choupi-pc/choupi --help` lists the new options. `./tools/build arm` passed. No RISC-V build/test or hardware flash was run. `./tools/probe-jc-algtest` found no PC/SC reader and sent no APDUs.
+- Result: ARM UF2 SHA-256 `b98b999a8837858ef655453db0dab1ec9ffa9e30d8513901980a54295ae41625`; PC executable SHA-256 `38559217a0eb1dd8750f8f6c3dc915d2c727551916d790f17b25eb4168e98ee4`. Session tests use fake VM callbacks; live vpcd/TCP and installed JCAlgTest process behavior remain unverified.
+- Decision: Continue with golden Java applet execution coverage and seek a host transport path that can exercise the PC emulator; use a bounded reader probe before hardware APDUs.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `tools/test-vpcd-protocol`, `tools/test-vpcd-session`, `build/arm/pico2_choupi.uf2`, `build/choupi-pc/choupi`; temporary build logs under `/tmp/pico2-vpcd-*.log`.
+
 ## 2026-10-14 — Add practical performance profiling workflow
 
 - Step/experiment: `performance-profiling-guidance-20261014`

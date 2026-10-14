@@ -1,0 +1,186 @@
+#include "vpcd_session.hpp"
+
+#include <array>
+#include <cstdint>
+#include <cstdio>
+#include <vector>
+
+namespace {
+
+constexpr std::array<uint8_t, 7> kAppletAid = {
+    0x4a, 0x43, 0x41, 0x6c, 0x67, 0x54, 0x31};
+
+struct FakeCard {
+  unsigned int clear_count = 0;
+  unsigned int restore_count = 0;
+  unsigned int select_count = 0;
+  unsigned int deselect_count = 0;
+  unsigned int process_count = 0;
+  uint8_t restore_result = 0;
+  uint16_t select_status = 0x9000;
+  uint16_t process_status = 0x9000;
+  std::vector<uint8_t> last_command;
+};
+
+void clear(void *opaque) {
+  ++static_cast<FakeCard *>(opaque)->clear_count;
+}
+
+uint8_t restore(void *opaque, const uint8_t *aid, uint8_t aid_length) {
+  auto &card = *static_cast<FakeCard *>(opaque);
+  ++card.restore_count;
+  if (aid_length != kAppletAid.size()) return 1;
+  for (size_t index = 0; index < aid_length; ++index) {
+    if (aid[index] != kAppletAid[index]) return 1;
+  }
+  return card.restore_result;
+}
+
+uint16_t select(void *opaque) {
+  auto &card = *static_cast<FakeCard *>(opaque);
+  ++card.select_count;
+  return card.select_status;
+}
+
+uint16_t deselect(void *opaque) {
+  ++static_cast<FakeCard *>(opaque)->deselect_count;
+  return 0x9000;
+}
+
+uint16_t process(void *opaque, const uint8_t *command,
+                 uint16_t command_length, uint8_t *response,
+                 uint16_t response_capacity, uint16_t *response_length) {
+  auto &card = *static_cast<FakeCard *>(opaque);
+  ++card.process_count;
+  card.last_command.assign(command, command + command_length);
+  if (response_capacity < 4) return 0x6f00;
+  response[0] = 0xde;
+  response[1] = 0xad;
+  response[2] = 0x90;
+  response[3] = 0x00;
+  *response_length = 4;
+  return card.process_status;
+}
+
+bool expect(bool condition, const char *name) {
+  if (!condition) std::fprintf(stderr, "FAIL: %s\n", name);
+  return condition;
+}
+
+std::vector<uint8_t> applet_select() {
+  std::vector<uint8_t> command{0x00, 0xa4, 0x04, 0x00,
+                               static_cast<uint8_t>(kAppletAid.size())};
+  command.insert(command.end(), kAppletAid.begin(), kAppletAid.end());
+  command.push_back(0x00);
+  return command;
+}
+
+std::vector<uint8_t> control(uint8_t value) { return {value}; }
+
+} // namespace
+
+int main() {
+  unsigned int passed = 0;
+  unsigned int failed = 0;
+  auto check = [&](bool value, const char *name) {
+    if (expect(value, name)) {
+      ++passed;
+    } else {
+      ++failed;
+    }
+  };
+
+  FakeCard card;
+  const choupi::vpcd::CardCallbacks callbacks{
+      &card, clear, restore, select, deselect, process};
+  choupi::vpcd::Session session(
+      std::vector<uint8_t>(kAppletAid.begin(), kAppletAid.end()), callbacks);
+  std::vector<uint8_t> response;
+
+  auto message = control(0x04);
+  auto result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::NoResponse && response.empty(),
+        "ATR request while off has no response");
+  message = control(0x01);
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::NoResponse && session.powered(),
+        "power on enables the card");
+  message = control(0x04);
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            response == std::vector<uint8_t>({0x3b, 0x80, 0x01, 0x81}),
+        "ATR request returns configured T=1 ATR");
+
+  message = applet_select();
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            session.applet_selected() && card.restore_count == 1 &&
+            card.select_count == 1 && response.size() == 13 &&
+            response[0] == 0x6f && response[11] == 0x90 &&
+            response[12] == 0x00,
+        "applet SELECT restores, selects, and returns FCI");
+
+  const std::vector<uint8_t> command{0x00, 0x10, 0x00, 0x00};
+  result = session.handle_message(command.data(), command.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            card.process_count == 1 && card.last_command == command &&
+            response == std::vector<uint8_t>({0xde, 0xad, 0x90, 0x00}),
+        "selected applet receives APDU and returns response");
+
+  message = control(0x00);
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::NoResponse &&
+            !session.powered() && !session.applet_selected() &&
+            card.deselect_count == 1,
+        "power off deselects and clears selected state");
+  result = session.handle_message(command.data(), command.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            response == std::vector<uint8_t>({0x69, 0x85}),
+        "APDU while off receives conditions-not-satisfied");
+
+  message = control(0x02);
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::NoResponse &&
+            session.powered() && card.clear_count >= 1,
+        "reset powers on and clears prior VM state");
+  message = applet_select();
+  (void)session.handle_message(message.data(), message.size(), response);
+  const std::vector<uint8_t> isd_select{0x00, 0xa4, 0x04, 0x00, 0x08,
+                                        0xa0, 0x00, 0x00, 0x01, 0x51,
+                                        0x00, 0x00, 0x00};
+  result = session.handle_message(isd_select.data(), isd_select.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            !session.applet_selected() && card.deselect_count == 2 &&
+            response.size() == 14 && response[12] == 0x90 &&
+            response[13] == 0x00,
+        "ISD SELECT deselects applet and returns FCI");
+
+  message = applet_select();
+  card.restore_result = 1;
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            !session.applet_selected() &&
+            response == std::vector<uint8_t>({0x6f, 0x00}),
+        "failed restore returns error status");
+  card.restore_result = 0;
+  card.select_status = 0x6999;
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            !session.applet_selected() &&
+            response == std::vector<uint8_t>({0x69, 0x99}),
+        "failed applet select preserves VM status");
+
+  const uint8_t bad_control = 0x03;
+  result = session.handle_message(&bad_control, 1, response);
+  check(result == choupi::vpcd::SessionResult::ProtocolError,
+        "unknown control byte is rejected");
+  result = session.handle_message(nullptr, 0, response);
+  check(result == choupi::vpcd::SessionResult::ProtocolError,
+        "empty message is rejected");
+  session.disconnect();
+  check(!session.powered() && !session.applet_selected(),
+        "disconnect clears card session state");
+
+  std::printf("TEST:SUMMARY pass=%u fail=%u\n", passed, failed);
+  return failed == 0 ? 0 : 1;
+}
