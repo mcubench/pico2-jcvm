@@ -2,6 +2,21 @@
 
 ## Current session state — 2026-10-14
 
+- Latest ARM-only code step: `JCSystem.getAvailableMemory(short[], short,
+  byte)` now raises distinct native `NullPointerException`,
+  `ArrayIndexOutOfBoundsException`, and `SystemException` values for null
+  buffers, invalid ranges, and invalid memory types. `./tools/test-jcarray`
+  passes the validation and write-bound cases; `./tools/build arm` passes.
+  Existing host test compiler warnings remain in CAP packed-member and
+  const-qualified return declarations. No RISC-V build/test was run and the
+  new image was not flashed because root AGENTS requires both target builds
+  before flash. ARM UF2 SHA-256
+  `c561daabc403eaa757dced3b2ecf662dbb9477568458edc61b3985704d5468d9`.
+  Logs: `artifacts/logs/host-jcarray-available-memory-20261014.log` and
+  `artifacts/logs/arm-available-memory-validation-20261014.log`. Native C++
+  exceptions still do not prove Java catch/throwable behavior; continue API
+  exception mapping or another JCAlgTest-used native gap.
+
 - Latest physical step: after both required wrapper build gates passed, flashed
   `build/arm/pico2_choupi.uf2` directly while the user had the Pico 2 in
   BOOTSEL. `tools/flash` reached 100% and confirmed application reboot. The

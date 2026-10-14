@@ -2342,6 +2342,16 @@
 - Commit: `3dbab14`
 - Artifacts/logs: `artifacts/logs/bootsel-choupi-runtime-20261014.log`.
 
+## 2026-10-14 — Validate JCSystem memory query arguments
+
+- Step/experiment: `jc-system-available-memory-validation-20261014`
+- Change: Corrected the buffer overload of `JCSystem.getAvailableMemory()` to distinguish null output (`NullPointerException`), negative/out-of-range offset (`ArrayIndexOutOfBoundsException`), and invalid memory type (`SystemException`). Added checks for all three valid memory types, output bounds, scalar and buffer invalid memory types, null, and invalid ranges.
+- Validation: `./tools/test-jcarray` passed, including `TEST:PASS jni_available_memory_validation`; its host compile emitted existing packed-member and ignored-qualifier warnings. `./tools/build arm` passed with `BUILD:PASS arch=arm` and `BUILD:PASS target=choupi`; no RISC-V build/test was run. The image was not flashed because root `AGENTS.md` requires both architecture builds before flashing, while this run is explicitly ARM-only. `git diff --check` passed.
+- Result: Native argument validation now reports the documented exception categories and only writes the two requested short words. This does not prove Java code can catch the native errors because C++ native-exception-to-Java-object mapping remains incomplete.
+- Decision: Keep this native-layer correction and continue the Java exception bridge / remaining JCAlgTest-used API work. Hardware validation remains pending under the ARM-only build constraint.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/logs/host-jcarray-available-memory-20261014.log` (SHA-256 `ec0d3d4879dfb1df265b73ea2f253a913898e469b68f0d890ffd1958b8fcbe53`); `artifacts/logs/arm-available-memory-validation-20261014.log` (SHA-256 `3b4ade2ece2d8f8b85082fb0f2b3ef1926d4e8689e5558cd92a058b3ea1f2599`); ARM UF2 SHA-256 `c561daabc403eaa757dced3b2ecf662dbb9477568458edc61b3985704d5468d9`.
+
 ## 2026-10-14 — No-chaining APDU implementation hash reference
 
 - Step/experiment: `apdu-no-chaining-le-bound-20261014-hash-reference`

@@ -132,7 +132,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   copy/fill/compare/search now support the documented byte, short, and int
   primitive types (including big-endian byte encodings for short/int search);
   `JCSystem.getPreviousContextAID()` returns null because cross-applet context
-  switching is unsupported. Broader API coverage remains incomplete.
+  switching is unsupported. The buffer overload of
+  `JCSystem.getAvailableMemory()` now distinguishes null, invalid-range, and
+  invalid-type arguments in the native implementation, with focused tests and
+  an ARM build passing. C++ native-exception to Java throwable dispatch is
+  still incomplete, so Java catch behavior for these errors is not yet proven.
+  Broader API coverage remains incomplete.
 - [x] Implement `JCSystem.makeTransientObjectArray()` with Java-null default
   entries and a wildcard component type that accepts any reference. ARM build
   and focused factory tests pass; installed-applet use remains unverified.

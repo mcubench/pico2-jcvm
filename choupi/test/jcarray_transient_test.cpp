@@ -22,6 +22,9 @@ jbool_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitiveArraysSupported();
 jbool_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitive(jref_t);
+jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(jbyte_t);
+void fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
+    std::shared_ptr<JC_Array>, jshort_t, jbyte_t);
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getPreviousContextAID();
 std::shared_ptr<JC_Array>
 fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(jshort_t,
@@ -338,5 +341,70 @@ int main() {
   std::cout << "TEST:PASS jni_previous_context_aid_fallback\n";
   std::cout << "TEST:PASS jni_integrity_arrays_capability\n";
   std::cout << "TEST:PASS jni_integrity_sensitive_query\n";
+
+  auto memoryInfo = std::make_shared<jcvm::JC_Array>(
+      heap, 4, jcvm::JAVA_ARRAY_T_SHORT, true, jcvm::CLEAR_ON_RESET);
+  for (jcvm::jbyte_t memoryType = 0; memoryType <= 2; ++memoryType) {
+    memoryInfo->setShortEntry(0, 0x1234);
+    memoryInfo->setShortEntry(1, 0x5678);
+    jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
+        memoryInfo, 1, memoryType);
+    if (memoryInfo->getShortEntry(0) != 0x1234 ||
+        memoryInfo->getShortEntry(1) != 0 ||
+        memoryInfo->getShortEntry(2) != 0 ||
+        memoryInfo->getShortEntry(3) != 0) {
+      std::cerr << "available-memory buffer wrote outside its two-word result\n";
+      return 1;
+    }
+  }
+  for (const jcvm::jbyte_t memoryType : {-1, 3}) {
+    try {
+      (void)jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
+          memoryType);
+      std::cerr << "scalar available-memory query accepted an invalid type\n";
+      return 1;
+    } catch (jcvm::Exceptions error) {
+      if (error != jcvm::Exceptions::SystemException) {
+        std::cerr << "invalid scalar memory type raised the wrong exception\n";
+        return 1;
+      }
+    }
+    try {
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
+          memoryInfo, 0, memoryType);
+      std::cerr << "buffer available-memory query accepted an invalid type\n";
+      return 1;
+    } catch (jcvm::Exceptions error) {
+      if (error != jcvm::Exceptions::SystemException) {
+        std::cerr << "invalid buffer memory type raised the wrong exception\n";
+        return 1;
+      }
+    }
+  }
+  try {
+    jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
+        nullptr, 0, 0);
+    std::cerr << "buffer available-memory query accepted null\n";
+    return 1;
+  } catch (jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::NullPointerException) {
+      std::cerr << "null memory-info buffer raised the wrong exception\n";
+      return 1;
+    }
+  }
+  for (const jcvm::jshort_t offset : {-1, 3}) {
+    try {
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
+          memoryInfo, offset, 0);
+      std::cerr << "buffer available-memory query accepted an invalid range\n";
+      return 1;
+    } catch (jcvm::Exceptions error) {
+      if (error != jcvm::Exceptions::ArrayIndexOutOfBoundsException) {
+        std::cerr << "invalid memory-info buffer range raised the wrong exception\n";
+        return 1;
+      }
+    }
+  }
+  std::cout << "TEST:PASS jni_available_memory_validation\n";
   return 0;
 }

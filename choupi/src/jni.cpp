@@ -479,8 +479,13 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(jbyte_t type) {
 
 void fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
     std::shared_ptr<JC_Array> output, jshort_t offset, jbyte_t type) {
-  if (output == nullptr || type < 0 || type > 2 || offset < 0 ||
-      static_cast<uint32_t>(offset) + 2 > output->size()) {
+  if (output == nullptr) {
+    throw Exceptions::NullPointerException;
+  }
+  if (offset < 0 || static_cast<uint32_t>(offset) + 2 > output->size()) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (type < 0 || type > 2) {
     throw Exceptions::SystemException;
   }
   // The short[2] overload returns persistent and transient capacity. Neither
