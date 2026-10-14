@@ -2119,5 +2119,15 @@
 - Validation: Confirmed root commit `c4fa546` contains Context/native state handling, host state tests, tracker updates, and PC/ARM/RISC-V/physical logs; nested API commit is `5aef71e`.
 - Result: The implementation and real-board runtime smoke evidence are committed. Applet APDU behavior remains unverified.
 - Decision: Continue with a host applet exchange fixture or available PC/SC path, then address more JCAlgTest API gaps.
+- Commit: `c4fa546` (root Context/native/tests; nested API commit `5aef71e`)
+- Artifacts/logs: `artifacts/logs/cycle-apdu-state-20261014.log`.
+
+## 2026-10-14 — APDU output-state validation commit reference
+
+- Step/experiment: `apdu-output-state-20261014-validation-reference`
+- Change: Recorded the APDU output-state source and validation commit identifiers.
+- Validation: Confirmed root commit `c4fa546` contains the native/context state implementation, unit tests, project trackers, and physical cycle logs; nested Java Card API implementation is commit `5aef71e`.
+- Result: APDU state code compiles and firmware runtime passes on hardware; applet command behavior still requires end-to-end verification.
+- Decision: Continue with host fixture/reader access and remaining runtime API work.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/cycle-apdu-state-20261014.log`.
