@@ -2211,3 +2211,13 @@
 - Decision: Run this probe after PC/SC and USB access return, then run the official v1.8.2 client on the board.
 - Commit: recorded in a following reference entry.
 - Artifacts/logs: `artifacts/logs/jc-algtest-apdu-probe-current-20261014.log` records the current no-reader condition.
+
+## 2026-10-14 — JCAlgTest simulator reference commit reference
+
+- Step/experiment: `jcalgtest-v182-jcardsim-reference-20261014-reference`
+- Change: Recorded the immutable root commit for the official v1.8.2 client/JCardSim reference run and CSV archive.
+- Validation: Confirmed commit `c33d1b6` contains the 4,595-line simulator CSV, focused extended-mode log, client help log, and updated tracker/handoff.
+- Result: Simulator comparison input is version-matched to the supplied v1.8.2 JC305 CAP; physical CHOUPI comparison remains pending.
+- Decision: Continue with process APDU validation and AC3/AC4.
+- Commit: `c33d1b6`
+- Artifacts/logs: `artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv`.
