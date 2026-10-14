@@ -2069,5 +2069,15 @@
 - Validation: `./tools/test-short-apdu` passed nine cases. The full PC VM build passed after regenerating Java API CAPs and the ROM mask. `./tools/build arm` and `./tools/build riscv` both passed. A bounded `./tools/cycle choupi` passed both build gates but the flash wrapper could not access USB (`libusb: -99`) and timed out; no firmware write or serial capture occurred.
 - Result: Short APDU Lc/Le parsing is covered by a host unit test and the Le value reaches Java. Response-length enforcement, stateful `sendBytes*`, extended APDUs, and `61xx` chaining remain incomplete; no installed-applet APDU test has run.
 - Decision: Continue with APDU outgoing state and response handling, then verify case-2/case-4 behavior through the PC fixture and physical board when USB and PC/SC are available.
-- Commit: `recorded in the following reference entry`
+- Commit: `d2dddd8` (root parser/native bridge; nested API source commit `86345d2`)
 - Artifacts/logs: `artifacts/logs/short-apdu-tests-20261014.log` SHA-256 `f8f3316b2b0db669eff0d4fb26295d90bec2cff240187ee0f03e121d8c3dfc8d`; PC build `artifacts/logs/host-apdu-le-build-20261014.log` SHA-256 `e41fb21e782fb2eacf3e7d0f54678d57ee88c4ff8d251c15f3b7a5538c4dcde0`; ARM `artifacts/logs/arm-apdu-le-build-20261014.log` SHA-256 `909e69655d3be456748ae12546204097995417a657edc2ccea436d082214612f`; RISC-V `artifacts/logs/riscv-apdu-le-build-20261014.log` SHA-256 `b56cbbb6bc31d8e7857259a6f8acb43d062c95f1df89980dc9dcbf9aa509319c`; cycle `artifacts/logs/cycle-apdu-le-20261014.log` SHA-256 `55e3bfbc574ad53d926c98b529359156e89b146cde8bc9d867f0aee1452cf448`.
+
+## 2026-10-14 — Short APDU parser commit reference
+
+- Step/experiment: `short-apdu-cases-and-le-20261014-reference`
+- Change: Recorded the immutable root commit for short APDU parsing and Le propagation; nested Java Card API commit is `86345d2`.
+- Validation: Confirmed root commit `d2dddd8` includes the parser, context/native bridge, focused test, trackers, and build/cycle evidence.
+- Result: Source and validation are committed. Physical flash remains blocked by USB passthrough visibility.
+- Decision: Continue with response state and chaining semantics.
+- Commit: `recorded in the following reference commit`
+- Artifacts/logs: `artifacts/logs/short-apdu-tests-20261014.log`.
