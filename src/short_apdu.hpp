@@ -1,7 +1,9 @@
 #ifndef PICO2_JCVM_SHORT_APDU_HPP
 #define PICO2_JCVM_SHORT_APDU_HPP
 
+#include <array>
 #include <cstdint>
+#include <cstring>
 
 namespace pico2_jcvm {
 
@@ -45,6 +47,59 @@ inline bool parse_short_apdu(const uint8_t *command, const uint16_t length,
   }
   return false;
 }
+
+class ShortApduResponseChain {
+public:
+  static constexpr uint16_t capacity = 1022;
+
+  bool queue(const uint8_t *data, const uint16_t length) noexcept {
+    this->length_ = 0;
+    this->offset_ = 0;
+    if ((data == nullptr && length != 0) || length > this->data_.size()) {
+      return false;
+    }
+    if (length != 0) {
+      std::memcpy(this->data_.data(), data, length);
+    }
+    this->length_ = length;
+    this->offset_ = 0;
+    return true;
+  }
+
+  bool has_pending() const noexcept { return this->offset_ < this->length_; }
+
+  uint16_t take(const uint16_t expected_length, uint8_t *output,
+                const uint16_t output_capacity,
+                uint16_t &status_word) noexcept {
+    if (!this->has_pending() || output == nullptr || expected_length == 0 ||
+        output_capacity == 0) {
+      return 0;
+    }
+    const uint16_t remaining = this->length_ - this->offset_;
+    const uint16_t count = remaining < expected_length
+                               ? remaining
+                               : expected_length < output_capacity
+                                     ? expected_length
+                                     : output_capacity;
+    std::memcpy(output, this->data_.data() + this->offset_, count);
+    this->offset_ = static_cast<uint16_t>(this->offset_ + count);
+    const uint16_t bytes_left = this->length_ - this->offset_;
+    if (bytes_left == 0) {
+      status_word = 0x9000;
+      this->length_ = 0;
+      this->offset_ = 0;
+    } else {
+      const uint16_t sw2 = bytes_left >= 256 ? 0 : bytes_left;
+      status_word = static_cast<uint16_t>(0x6100 | sw2);
+    }
+    return count;
+  }
+
+private:
+  std::array<uint8_t, capacity> data_{};
+  uint16_t length_ = 0;
+  uint16_t offset_ = 0;
+};
 
 } // namespace pico2_jcvm
 

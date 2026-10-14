@@ -66,6 +66,7 @@ int main
 namespace {
 std::unique_ptr<jcvm::Context> selected_applet_context;
 bool selected_applet_is_active = false;
+pico2_jcvm::ShortApduResponseChain pending_apdu_response;
 }
 
 #ifdef __cplusplus
@@ -84,6 +85,7 @@ void choupi_ccid_task(void);
 
 uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                  uint16_t class_index) {
+  pending_apdu_response.queue(nullptr, 0);
   try {
     auto context = std::make_unique<jcvm::Context>(
         0, static_cast<jcvm::jpackage_ID_t>(package_id));
@@ -106,6 +108,7 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
 }
 
 void choupi_vm_clear_selected_applet(void) {
+  pending_apdu_response.queue(nullptr, 0);
   selected_applet_context.reset();
   selected_applet_is_active = false;
 }
@@ -165,6 +168,7 @@ uint16_t invoke_selected_applet_method(const uint8_t method_token,
 } // namespace
 
 uint16_t choupi_vm_select_applet(void) {
+  pending_apdu_response.queue(nullptr, 0);
   uint32_t selected = 0;
   const uint16_t status = invoke_selected_applet_method(6, &selected);
   if (status != 0x9000) {
@@ -182,6 +186,7 @@ uint16_t choupi_vm_select_applet(void) {
 }
 
 uint16_t choupi_vm_deselect_applet(void) {
+  pending_apdu_response.queue(nullptr, 0);
   if (!selected_applet_context || !selected_applet_is_active) {
     selected_applet_context.reset();
     selected_applet_is_active = false;
@@ -222,9 +227,31 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     pico2_jcvm::ShortApduCommand parsed_command;
     if (!pico2_jcvm::parse_short_apdu(command, command_length,
                                       parsed_command)) {
+      pending_apdu_response.queue(nullptr, 0);
       status = 0x6700;
       throw status;
     }
+
+    const bool get_response = command[0] == 0x00 && command[1] == 0xc0;
+    if (get_response) {
+      if (command[2] != 0 || command[3] != 0) {
+        status = 0x6a86;
+      } else if (!parsed_command.has_expected_response_length) {
+        status = 0x6700;
+      } else if (!pending_apdu_response.has_pending()) {
+        status = 0x6a86;
+      } else {
+        data_length = pending_apdu_response.take(
+            parsed_command.expected_response_length, response,
+            static_cast<uint16_t>(response_capacity - 2), status);
+      }
+      response[data_length] = static_cast<uint8_t>(status >> 8);
+      response[data_length + 1] = static_cast<uint8_t>(status);
+      *response_length = static_cast<uint16_t>(data_length + 2);
+      return status;
+    }
+    pending_apdu_response.queue(nullptr, 0);
+
     const uint16_t lc = parsed_command.incoming_length;
 
     jcvm::jref_t buffer_ref = context.getAPDUBufferRef();
@@ -337,6 +364,20 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
           response[index] = static_cast<uint8_t>(
               outgoing_buffer->getByteEntry(static_cast<uint16_t>(offset + index)));
         }
+      }
+    }
+    if (status == 0x9000 && parsed_command.has_expected_response_length &&
+        data_length > parsed_command.expected_response_length) {
+      const uint16_t first_chunk = parsed_command.expected_response_length;
+      const uint16_t remaining =
+          static_cast<uint16_t>(data_length - first_chunk);
+      if (!pending_apdu_response.queue(response + first_chunk, remaining)) {
+        status = 0x6f00;
+        data_length = 0;
+      } else {
+        data_length = first_chunk;
+        const uint16_t sw2 = remaining >= 256 ? 0 : remaining;
+        status = static_cast<uint16_t>(0x6100 | sw2);
       }
     }
   } catch (uint16_t caught_status) {

@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 namespace {
 void expect(const bool condition, const char *name) {
@@ -63,5 +64,26 @@ int main() {
          "extended_rejected");
   expect(!parse_short_apdu(case2.data(), 3, parsed), "truncated_rejected");
   expect(!parse_short_apdu(case3.data(), 7, parsed), "bad_lc_rejected");
+
+  std::array<uint8_t, 600> response{};
+  for (uint16_t index = 0; index < response.size(); ++index) {
+    response[index] = static_cast<uint8_t>(index);
+  }
+  pico2_jcvm::ShortApduResponseChain chain;
+  expect(chain.queue(response.data(), response.size()), "chain_queue");
+  std::array<uint8_t, 256> chunk{};
+  uint16_t status_word = 0;
+  expect(chain.take(256, chunk.data(), chunk.size(), status_word) == 256 &&
+             std::memcmp(chunk.data(), response.data(), 256) == 0 &&
+             status_word == 0x6100,
+         "chain_first_chunk_6100");
+  expect(chain.take(256, chunk.data(), chunk.size(), status_word) == 256 &&
+             std::memcmp(chunk.data(), response.data() + 256, 256) == 0 &&
+             status_word == 0x6158,
+         "chain_second_chunk_remaining");
+  expect(chain.take(256, chunk.data(), chunk.size(), status_word) == 88 &&
+             std::memcmp(chunk.data(), response.data() + 512, 88) == 0 &&
+             status_word == 0x9000 && !chain.has_pending(),
+         "chain_final_chunk");
   return EXIT_SUCCESS;
 }

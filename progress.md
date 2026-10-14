@@ -2081,3 +2081,13 @@
 - Decision: Continue with response state and chaining semantics.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/short-apdu-tests-20261014.log`.
+
+## 2026-10-14 — Add T=1 short response chaining
+
+- Step/experiment: `short-apdu-response-chaining-20261014`
+- Change: Added a bounded response-chain buffer (1022 bytes). When an applet returns more data than short Le, the bridge sends the first Le bytes with `61xx`, stores the remaining bytes, and serves them through case-2 `GET RESPONSE`; a new command, SELECT, or deselect clears the pending chain. Invalid GET RESPONSE P1/P2 returns `6A86`.
+- Validation: `./tools/test-short-apdu` passed all 13 parser and response-chunk cases, including multi-chunk 600-byte data (`6100`, then `6158`, then `9000`). PC VM, ARM, and RISC-V builds passed. The bounded `./tools/cycle choupi` rebuilt both architectures but USB remained unavailable (`libusb: -99`); timeout occurred before flash or serial capture.
+- Result: The core response splitting and continuation counter are unit-tested. Integration with applet APDU processing remains unverified; stateful `setOutgoingLength()`/`sendBytes*` are still missing.
+- Decision: Continue with APDU send state and a host applet exchange fixture. Retry physical validation when USB passthrough is visible.
+- Commit: `recorded in the following reference entry`
+- Artifacts/logs: `artifacts/logs/short-apdu-chaining-20261014.log` SHA-256 `70c97607c39483d0edc941e44e4243c6ad24e57234eab5eefa21a6dd4cfa6d54`; PC build `artifacts/logs/host-apdu-chaining-20261014.log` SHA-256 `8b357f11a29f291f7ef03ec731cfa0b9975fe8aa1cb30413dfe208cbcecbb8c5`; ARM `artifacts/logs/arm-apdu-chaining-20261014.log` SHA-256 `5087f9b6529acca7dac2b4557e144b14de5a8836a4360a6e0bb65b1eaa816396`; RISC-V `artifacts/logs/riscv-apdu-chaining-20261014.log` SHA-256 `27d2453b9f281b7d4c8489bfd37cd71bab31c12d7c036f23ed6ec4c65f7e4a7d`; cycle `artifacts/logs/cycle-apdu-chaining-20261014.log` SHA-256 `2d2d62c15b5ade56f614436b61f786eb06441235b1e1089c54c48b776cd52b32`.

@@ -1851,3 +1851,18 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/cycle-apdu-le-20261014.log`. Remaining work: implement APDU
   outgoing state/length and response chaining, then verify through a host APDU
   fixture and on the Pico when USB/PCSC are visible.
+
+- Response chaining checkpoint — 2026-10-14. Added a fixed 1022-byte response
+  continuation buffer in `src/short_apdu.hpp` and wired it into
+  `choupi_vm_process_applet`: when applet output exceeds short Le, the bridge
+  emits the first Le bytes plus `61xx`, then serves case-2 `GET RESPONSE`
+  chunks. A new command, SELECT, and deselect clear pending output; nonzero
+  GET RESPONSE P1/P2 returns `6A86`. `./tools/test-short-apdu` passes 13 parser
+  and chunk cases; full PC, ARM, and RISC-V builds pass. Physical cycle again
+  stopped before flash because this VM reports `libusb: -99`. Logs:
+  `artifacts/logs/short-apdu-chaining-20261014.log`,
+  `artifacts/logs/host-apdu-chaining-20261014.log`,
+  `artifacts/logs/arm-apdu-chaining-20261014.log`,
+  `artifacts/logs/riscv-apdu-chaining-20261014.log`, and
+  `artifacts/logs/cycle-apdu-chaining-20261014.log`. Still needed: APDU Java
+  send-state methods and an applet APDU exchange test.

@@ -93,10 +93,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   before dispatch. `getBuffer()` binds the Java-visible array to the same native
   array used to collect response bytes. The API reports T=1, IFSC 32, IFSD 254,
   and NAD 0 from the advertised ATR and CCID descriptor. The supplied applet
-  predominantly calls `setIncomingAndReceive()` and `setOutgoingAndSend()`;
-  stateful `setOutgoingLength()`/`sendBytes*` methods and `61xx` chaining remain
-  unfinished. Parser tests and both architecture builds pass; applet-level
-  runtime verification remains outstanding.
+  predominantly calls `setIncomingAndReceive()` and `setOutgoingAndSend()`.
+  The bridge now fragments data responses at short Le and serves `GET RESPONSE`
+  using `61xx`; stateful `setOutgoingLength()`/`sendBytes*` methods remain
+  unfinished. Parser/chunk tests and all three builds pass, but no applet-level
+  APDU exchange has verified these paths yet.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
   transient array variants, `Util` helpers, `JCSystem` queries, `AID`, and
   Java exception mapping for unsupported crypto factories. `ArrayLogic` native
