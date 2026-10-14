@@ -17,6 +17,7 @@
   until pcscd availability is confirmed. Next restore PC/SC visibility, then
   run the v1.8.2 SELECT/GETVERSION/JCSystem probe and official supported-
   algorithms mode. Applet lifecycle/APDU behavior is still not validated.
+  Hardware record commit: `3dbab14`.
 
 - Latest ARM-only step: `Context::setAPDUOutgoingLength()` now rejects a
   `setOutgoingNoChaining()` length above either the command Le or the T=1

@@ -2329,8 +2329,18 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed as the repository flash gate. `./tools/flash build/arm/pico2_choupi.uf2` detected BOOTSEL, reached 100%, and confirmed application reboot. `./tools/monitor --seconds 18` passed with 18 repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0` pairs; no `TEST:FAIL` or `FAULT` appeared. PC/SC validation did not run: `tools/probe-jc-algtest` reported the named reader missing. `pcsc_scan -r` found no service and emitted a rapid stream of `Service not available` / invalid-handle errors, so it was interrupted. No RISC-V firmware was flashed or tested.
 - Result: The latest ARM firmware is running and its board self-check passes. This does not establish that an applet lifecycle method or APDU was executed.
 - Decision: Resume JCAlgTest applet verification when a reader is visible and pcscd is responding; do not rerun `pcsc_scan -r` until service availability is confirmed.
-- Commit: pending.
+- Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/logs/bootsel-choupi-runtime-20261014.log` (SHA-256 `724ba860bb056e2af06c72b77796d75bf88604b714398eaea9a046b345a02b30`); ARM UF2 SHA-256 `81fd209c5245c0c4f7977f561f0f3926575beb9168dff54113b380aad5163f03`.
+
+## 2026-10-14 — BOOTSEL validation commit reference
+
+- Step/experiment: `bootsel-choupi-runtime-20261014-reference`
+- Change: Recorded the immutable commit for the latest physical ARM flash and runtime capture.
+- Validation: Confirmed `3dbab14` contains the BOOTSEL flash record, handoff and TODO updates, and the 18-second serial artifact.
+- Result: Hardware validation is committed as `3dbab14`; applet-level APDU validation remains blocked by unavailable PC/SC in this execution context.
+- Decision: Continue with v1.8.2 applet APDU checks when the reader service is available.
+- Commit: `3dbab14`
+- Artifacts/logs: `artifacts/logs/bootsel-choupi-runtime-20261014.log`.
 
 ## 2026-10-14 — No-chaining APDU implementation hash reference
 
