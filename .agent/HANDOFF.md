@@ -2112,4 +2112,4 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   measuring upload/reboot/serial phases independently. Current sample remains
   5 successful ARM builds (mean 5.127 s), 9 host tests (mean 2.493 s), and
   52.821 s total; no upload or CPU-load comparison is measured. Documentation
-  progress is recorded in `progress.md`; commit reference follows separately.
+  progress is recorded in `progress.md`; documentation commit: `49f848d`.

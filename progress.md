@@ -2550,3 +2550,13 @@
 - Decision: Keep two build jobs as the interactive default until comparable CPU and wall-time samples support a change.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Record performance guidance commit reference
+
+- Step/experiment: development-performance-next-measurements-20261014-reference
+- Change: Recorded the immutable commit containing the updated performance suggestions and associated handoff/progress notes.
+- Validation: Confirmed commit `49f848d` contains `perf_tips.md`, `progress.md`, and `.agent/HANDOFF.md`; `git diff --check` passed for the follow-up reference.
+- Result: The requested performance guidance is committed as `49f848d`.
+- Decision: Collect comparable build and hardware timing samples before changing the two-job default or build dependencies.
+- Commit: `49f848d`
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
