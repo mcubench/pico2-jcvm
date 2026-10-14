@@ -2221,3 +2221,13 @@
 - Decision: Continue with process APDU validation and AC3/AC4.
 - Commit: `c33d1b6`
 - Artifacts/logs: `artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv`.
+
+## 2026-10-14 — Bounded APDU probe commit reference
+
+- Step/experiment: `jc-algtest-apdu-probe-20261014-reference`
+- Change: Recorded the immutable root commit for the PC/SC APDU probe and its no-reader environment result.
+- Validation: Confirmed commit `432eee3` contains the Java probe, executable wrapper, scoped TODO/handoff updates, and compile/runtime log.
+- Result: The probe is ready to validate GETVERSION and JCSystem info once PC/SC exposes the Pico; current no-reader result does not represent an applet failure.
+- Decision: Resume hardware APDU work when this execution environment can access the PC/SC reader.
+- Commit: `432eee3`
+- Artifacts/logs: `artifacts/logs/jc-algtest-apdu-probe-current-20261014.log` (SHA-256 `32f712cdd1346069e332db1ddaf71863947558414b34496b8e5e537f0716ffea`).
