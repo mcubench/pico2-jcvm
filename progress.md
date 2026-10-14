@@ -2001,3 +2001,13 @@
 - Decision: Continue implementing the remaining JCAlgTest v1.8.2 API surface while retaining bounded board capture and flash recovery.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/monitor-timeout-watchdog-20261014.txt`.
+
+## 2026-10-14 — Bind APDU Java buffer to native response buffer
+
+- Step/experiment: `apdu-java-buffer-identity-20261014`
+- Change: `APDU.getBuffer()` caches the array returned by `NativeImplementation.getAPDUBuffer()` and passes that same Java array to the native context. Nested Java Card API commit: `0278fc9730e8915469ff35933c12549c39807831`.
+- Validation: `./tools/build arm` and `./tools/build riscv` both passed. `./tools/cycle choupi` passed both build gates but saw no RP-series device in the flash wrapper's sysfs polling window; `lsusb -d 2e8a:0009` and `lsusb -d 2e8a:000f` reported `unable to initialize libusb: -99`. The cycle was interrupted after over five minutes without device visibility, before firmware write. No serial or applet runtime output was captured.
+- Result: The API and both firmware targets build. Applet response-buffer identity still needs an applet-level APDU test.
+- Decision: Continue with stateful APDU output methods and short case-4 Le/response handling; retry physical validation when USB passthrough is visible to this VM.
+- Commit: recorded in the following reference entry
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T081438Z.log` SHA-256 `94e0fb59a7ae1510e906299f616bac3ad500ccac68c42f405f477979f2d16caf`; `build/arm/pico2_choupi.uf2` SHA-256 `f59f4eec665d35ab678e652062ce6b4d8a135ea94a7aa643c52bdc21b0490b9c`.

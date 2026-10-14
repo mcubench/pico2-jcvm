@@ -1783,3 +1783,20 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   a full cycle. The most recent GPPro install retry after flashing timed out
   after 15 seconds without reader enumeration or APDU output; no INSTALL APDU
   reached the card.
+
+- Continued on 2026-10-14. Nested Java Card API commit
+  `0278fc9730e8915469ff35933c12549c39807831` makes `APDU.getBuffer()` retain and
+  register the Java-visible array returned by the native bridge, so response
+  extraction observes the same array modified by the applet. `./tools/build arm`
+  and `./tools/build riscv` both pass. A fresh `./tools/cycle choupi` passed both
+  build gates but could not see an RP-series USB device (`lsusb` reports
+  `libusb: -99`; the flash wrapper waited for re-enumeration). It was stopped
+  after more than five minutes without USB visibility, before any firmware
+  write; no hardware runtime was captured. Log:
+  `artifacts/logs/cycle-choupi-20261014T081438Z.log` (SHA-256
+  `94e0fb59a7ae1510e906299f616bac3ad500ccac68c42f405f477979f2d16caf`); ARM
+  UF2 SHA-256 `f59f4eec665d35ab678e652062ce6b4d8a135ea94a7aa643c52bdc21b0490b9c`.
+  The supplied AlgTest code predominantly calls `setIncomingAndReceive()` and
+  `setOutgoingAndSend()`; the remaining APDU stateful output methods, Le and
+  `61xx` handling remain incomplete. Next inspect and implement the methods
+  needed by the client, then retry board access when USB is visible to this VM.
