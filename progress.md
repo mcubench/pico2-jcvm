@@ -2011,3 +2011,13 @@
 - Decision: Continue with stateful APDU output methods and short case-4 Le/response handling; retry physical validation when USB passthrough is visible to this VM.
 - Commit: recorded in the following reference entry
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T081438Z.log` SHA-256 `94e0fb59a7ae1510e906299f616bac3ad500ccac68c42f405f477979f2d16caf`; `build/arm/pico2_choupi.uf2` SHA-256 `f59f4eec665d35ab678e652062ce6b4d8a135ea94a7aa643c52bdc21b0490b9c`.
+
+## 2026-10-14 — APDU buffer validation record commit reference
+
+- Step/experiment: `apdu-java-buffer-identity-20261014-reference`
+- Change: Recorded the root documentation/evidence commit for the Java-visible APDU buffer identity change.
+- Validation: Confirmed root commit `281aa75` contains the TODO and handoff updates, this validation record, and the bounded cycle log. Nested API source is committed separately as `0278fc9730e8915469ff35933c12549c39807831`.
+- Result: Source and root build/USB evidence are tied to immutable commits.
+- Decision: Continue implementation with APDU output state and then the unresolved Java Card API/native surface.
+- Commit: `recorded in the following reference commit`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T081438Z.log`.
