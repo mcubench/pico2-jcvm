@@ -2321,3 +2321,13 @@
 - Decision: Continue with remaining APDU and JCAlgTest runtime work.
 - Commit: `7448bec`
 - Artifacts/logs: `/tmp/pico2-apdu-nochaining.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-14 — No-chaining APDU implementation hash reference
+
+- Step/experiment: `apdu-no-chaining-le-bound-20261014-hash-reference`
+- Change: Recorded the immutable commit containing the Le and T=1 no-chaining response bounds.
+- Validation: Confirmed commit `7448bec` contains the `Context` bound, expanded APDU context tests, and TODO/handoff updates; the test wrapper and ARM build passed.
+- Result: The APDU no-chaining fix is linked to commit `7448bec`; board-level APDU behavior remains pending.
+- Decision: Continue implementing and validating the remaining applet transport behavior.
+- Commit: `7448bec`
+- Artifacts/logs: `/tmp/pico2-apdu-nochaining.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
