@@ -2780,3 +2780,13 @@
 - Decision: Continue with field-token mapping and the still-failing JCSystem info APDU.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `/tmp/pico2-jcalgtest-vpcd-cleanup.log`.
+
+## 2026-10-14 — Clarify VPCD performance measurement guidance
+
+- Step/experiment: `vpcd-performance-timing-guidance-20261014`
+- Change: Added the later roughly 20-second cleanup-run observation to `perf_tips.md`, explicitly marked it as informal and incomparable with the earlier smoke timing, and specified wall/user/system plus phase capture for the next run.
+- Validation: `git diff --check -- perf_tips.md` passed. Documentation-only; no build, test, or hardware operation was run.
+- Result: The note distinguishes an observed duration from a measured performance result and points to the next useful timing data.
+- Decision: Capture comparable command and per-phase timings before recommending further VPCD optimization.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-vpcd-cleanup.log`.

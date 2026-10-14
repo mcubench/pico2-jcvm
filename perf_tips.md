@@ -191,6 +191,14 @@ info request still fails with `6F00` during field access. The test has also
 taken longer than its nominal bounded run while exiting the error path. Treat
 these as diagnostic costs, not as applet throughput measurements.
 
+A later run with bounded process-group cleanup took roughly 20 seconds by
+observation and left no emulator process behind. This was not captured by the
+task timer or `/usr/bin/time`, so it is not comparable with the earlier
+34.837-second smoke attempt and does not establish a speedup. On the next run,
+time the exact wrapper command and record wall/user/system time alongside the
+last completed VPCD phase; this will show whether the remaining delay is APDU
+execution or setup/teardown.
+
 - **Time each APDU boundary.** Print elapsed time for VPCD connect, ATR, SELECT,
   each command send, and response receive. Include the failing APDU and last
   completed phase in the timeout message; this distinguishes VM execution from
