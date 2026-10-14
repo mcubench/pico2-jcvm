@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""Exercise a persisted JCAlgTest applet through the PC VPCD bridge."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import signal
+import shutil
+import socket
+import subprocess
+import sys
+from pathlib import Path
+
+
+APPLET_AID = bytes.fromhex("4A43416C675465737431")
+
+
+def receive_exact(connection: socket.socket, length: int) -> bytes:
+    data = bytearray()
+    while len(data) < length:
+        chunk = connection.recv(length - len(data))
+        if not chunk:
+            raise RuntimeError("VPCD connection closed during a frame")
+        data.extend(chunk)
+    return bytes(data)
+
+
+def receive_message(connection: socket.socket) -> bytes:
+    length = int.from_bytes(receive_exact(connection, 2), "big")
+    if length == 0:
+        raise RuntimeError("VPCD peer returned an empty frame")
+    return receive_exact(connection, length)
+
+
+def send_message(connection: socket.socket, message: bytes) -> None:
+    if not message or len(message) > 0xFFFF:
+        raise ValueError("VPCD messages must contain 1..65535 bytes")
+    connection.sendall(len(message).to_bytes(2, "big") + message)
+
+
+def exchange(connection: socket.socket, command: bytes, label: str) -> bytes:
+    send_message(connection, command)
+    response = receive_message(connection)
+    if len(response) < 2 or response[-2:] != b"\x90\x00":
+        raise RuntimeError(f"{label} failed: {response.hex().upper()}")
+    print(f"TEST:PASS {label} response={response.hex().upper()}")
+    return response
+
+
+def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(1)
+        listener.settimeout(15)
+        host, port = listener.getsockname()
+
+        command = [
+            str(args.emulator),
+            "-m",
+            str(memory),
+            "-s",
+            "--vpcd",
+            f"{host}:{port}",
+            "--applet-aid",
+            APPLET_AID.hex(),
+            "--package-id",
+            "63",
+            "--class-index",
+            str(args.class_index),
+            "--cap-code",
+            str(args.cap_code),
+            "--rom-mask",
+            str(args.rom_mask),
+        ]
+        print(f"VPCD:START pass={pass_number}")
+        with args.log.open("ab") as log:
+            log.write(f"\n--- VPCD pass {pass_number} ---\n".encode())
+            process = subprocess.Popen(
+                command,
+                cwd=args.repo,
+                stdout=log,
+                stderr=log,
+                start_new_session=True,
+            )
+            connection = None
+            try:
+                connection, _ = listener.accept()
+                connection.settimeout(8)
+
+                send_message(connection, b"\x01")  # power on
+                send_message(connection, b"\x04")  # ATR request
+                atr = receive_message(connection)
+                if atr != bytes.fromhex("3B800181"):
+                    raise RuntimeError(f"unexpected ATR: {atr.hex().upper()}")
+                print(f"TEST:PASS atr response={atr.hex().upper()}")
+
+                select = bytes((0x00, 0xA4, 0x04, 0x00, len(APPLET_AID)))
+                select += APPLET_AID + b"\x00"
+                exchange(connection, select, "JCAlgTest applet SELECT")
+
+                exchange(
+                    connection,
+                    bytes.fromhex("B073000000"),
+                    "JCAlgTest JCSystem info APDU",
+                )
+                exchange(
+                    connection,
+                    bytes.fromhex("B07515000304000000"),
+                    "JCAlgTest supported-algorithm APDU",
+                )
+            finally:
+                if connection is not None:
+                    connection.close()
+                return_code = stop_emulator(process)
+            if return_code not in (0, -signal.SIGINT, 128 + signal.SIGINT):
+                raise RuntimeError(
+                    f"PC emulator exited with status {return_code}; inspect {args.log}"
+                )
+        print(f"TEST:PASS persisted applet emulator pass={pass_number}")
+
+
+def stop_emulator(process: subprocess.Popen[bytes]) -> int:
+    """Stop the long-running emulator and reap its whole process group."""
+    if process.poll() is None:
+        try:
+            os.killpg(process.pid, signal.SIGINT)
+        except ProcessLookupError:
+            return process.wait(timeout=2)
+        try:
+            return process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                return process.wait(timeout=2)
+            try:
+                return process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    return process.wait(timeout=2)
+                return process.wait(timeout=2)
+    return process.wait(timeout=2)
+
+
+def parse_args() -> argparse.Namespace:
+    repo = Path(__file__).resolve().parents[2]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", type=Path, default=repo)
+    parser.add_argument(
+        "--emulator", type=Path, default=repo / "build/choupi-pc/choupi"
+    )
+    parser.add_argument(
+        "--memory", type=Path, default=repo / "build/algtest-v182-empty-flash.bin"
+    )
+    parser.add_argument(
+        "--cap-code", type=Path, default=repo / "build/algtest-v182-load-code.bin"
+    )
+    parser.add_argument(
+        "--rom-mask", type=Path, default=repo / "build/choupi-pc/flash"
+    )
+    parser.add_argument("--class-index", type=int, default=148)
+    parser.add_argument(
+        "--flash-copy",
+        type=Path,
+        default=repo / "build/algtest-v182-vpcd-flash.bin",
+    )
+    parser.add_argument(
+        "--log",
+        type=Path,
+        default=repo / "artifacts/logs/host-vpcd-jcalgtest-20261014.log",
+    )
+    args = parser.parse_args()
+    args.repo = args.repo.resolve()
+    for name in ("emulator", "memory", "cap_code", "rom_mask"):
+        setattr(args, name, getattr(args, name).resolve())
+        if not getattr(args, name).is_file():
+            parser.error(f"--{name.replace('_', '-')} not found: {getattr(args, name)}")
+    if not 0 <= args.class_index <= 0xFFFE:
+        parser.error("--class-index must be between 0 and 65534")
+    args.flash_copy = args.flash_copy.resolve()
+    args.log = args.log.resolve()
+    args.flash_copy.parent.mkdir(parents=True, exist_ok=True)
+    args.log.parent.mkdir(parents=True, exist_ok=True)
+    return args
+
+
+def main() -> int:
+    args = parse_args()
+    shutil.copyfile(args.memory, args.flash_copy)
+    try:
+        run_emulator(args, args.flash_copy, 1)
+        run_emulator(args, args.flash_copy, 2)
+    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+        print(f"TEST:FAIL {error}", file=sys.stderr)
+        return 1
+    print("TEST:SUMMARY pass=7 fail=0")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

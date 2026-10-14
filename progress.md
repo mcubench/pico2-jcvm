@@ -2760,3 +2760,13 @@
 - Decision: Use per-phase timing and bounded process cleanup on the next VPCD integration attempt.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.
+
+## 2026-10-14 — Bound VPCD integration-test emulator cleanup
+
+- Step/experiment: `vpcd-test-process-group-cleanup-20261014`
+- Change: Updated the PC VPCD integration harness to start the emulator in a separate process group and stop/reap it with bounded SIGINT, SIGTERM, and SIGKILL escalation. Updated TODO and handoff with the latest field-layout evidence and remaining APDU failure.
+- Validation: `./tools/env cmake --build build/choupi-pc --target choupi -j2` passed; Python AST syntax inspection passed. The bounded `./tools/test-pc-vpcd-applet` reached ATR and SELECT, then failed as expected because JCSystem info still returned `6F00`; teardown completed and no emulator process remained. No ARM build, RISC-V build, or hardware flash was run because this step changes only the PC test harness and documentation.
+- Result: A failed APDU no longer leaves the long-running PC JCRE process behind. Class metadata for package 63/class 148 reports 13 declared instance words, `first_reference_token=0`, and `reference_count=9`; field token 11 resolves to the failing byte read while persisted slot 11 currently has short type. No field mapping fix is claimed.
+- Decision: Inspect the v1.8.2 descriptor/class metadata and installation field layout to derive the token-to-slot mapping, then re-run JCSystem info.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `/tmp/pico2-jcalgtest-vpcd-cleanup.log`; prior full trace `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.

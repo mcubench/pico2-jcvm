@@ -34,6 +34,10 @@ validated on the physical card. A PC VPCD integration test now restores the
 persisted applet and confirms ATR and SELECT, then sends the JCSystem info
 command. That APDU currently returns `6F00`: the applet enters
 `process(APDU)` but a field read at CP entry 174 throws `SecurityException`.
+The finite VPCD test now launches the emulator in its own process group and
+uses bounded SIGINT/TERM/KILL teardown, so a failed APDU does not leave the
+long-running JCRE behind. ATR and SELECT pass; the JCSystem info APDU still
+returns `6F00`.
 This is host-emulator evidence only, not a board result. The official JCAlgTest
 v1.8.2 host JAR has
 been downloaded to `build/algtest-client-1.8.2/`; its bundled JC305 CAP has the

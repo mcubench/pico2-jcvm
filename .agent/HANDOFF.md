@@ -8,16 +8,22 @@
   The former bad pointer read produced offset `0xFF00`; with both fixes the
   JCAlgTest call resolves to offset `15960` and starts executing.
 - `./tools/env cmake --build build/choupi-pc --target choupi -j2` passed and
-  `./tools/build arm` passed. The bounded `./tools/test-pc-vpcd-applet` still
-  fails: ATR and SELECT pass, while the JCSystem info APDU returns `6F00`. The
-  log shows `process(APDU)` reaches `GETFIELD_B_THIS` for constant-pool entry
-  174, then throws `SecurityException`. A previous uncaught VM entry exception
-  also caused a host termination; interpreter entry now maps setup exceptions
-  to `6F00` instead.
-- No physical device or RISC-V build was used. Next inspect CAP entry 174 and
-  its resolved instance-field token/type, fix the first process-path field
-  failure, then continue with JCSystem info and the supported-algorithm APDU.
-  Current VPCD log: `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.
+  `./tools/build arm` passed in the implementation step. The bounded
+  `./tools/test-pc-vpcd-applet` still fails: ATR and SELECT pass, while the
+  JCSystem info APDU returns `6F00`. The log shows `process(APDU)` reaches
+  `GETFIELD_B_THIS` for CP entry 174 (field token 11 on class 148), then throws
+  `SecurityException`. Class metadata for package 63/class 148 reports 13
+  declared instance words, first reference token 0, and 9 reference fields;
+  persisted field slot 11 is currently stored as a short. Java Card 3.0.5
+  permits field tokens to resolve to implementation-specific offsets, so
+  inspect the v1.8.2 CAP field metadata and installation layout before choosing
+  a mapping. The VPCD harness now reaps the emulator process group with bounded
+  SIGINT/TERM/KILL escalation; the last run left no emulator process behind.
+- No physical device or RISC-V build was used. Next derive and validate the
+  field-token-to-slot mapping from the CAP metadata and persisted instance
+  layout, then continue with JCSystem info and the supported-algorithm APDU.
+  Latest bounded trace: `/tmp/pico2-jcalgtest-vpcd-cleanup.log`; previous full
+  trace: `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.
 
 ## Performance tips refresh — 2026-10-14
 
