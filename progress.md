@@ -2500,3 +2500,13 @@
 - Decision: Add future timer samples after comparable clean and incremental runs; upload remains unmeasured.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Test RP2350 overlay erase and collision handling
+
+- Step/experiment: `rp2350-fs-overlay-erase-regression-20261014`
+- Change: Added a host test that compiles the actual RP2350 filesystem backend with hardware stubs and covers erase visibility, same-tag reuse, collision-chain lookups, and compressed child-tag reuse. The regression exposed stale data offsets after deleting a colliding entry; compaction now adjusts every occupied hash slot rather than only the first `overlay_file_count` slots.
+- Validation: The initial host build needed additional Pico time API stubs. The first behavioral run failed `collision_probe_survives_erase`, which led to the offset fix. Final standalone `./tools/test-rp2350-fs-overlay` passed 13 checks with `TEST:SUMMARY fail=0` in 4.039 s; an earlier full compile/test pass took 5.184 s. `./tools/build arm` passed in 9.152 s. No RISC-V build or hardware flash was performed.
+- Result: Erase, reuse, probing, and compressed-tag behavior pass against the target backend code. Existing upstream const-return and packed-member warnings are suppressed in the host test target; the ARM build passed without new warnings.
+- Decision: Keep board failure-path verification open, then continue the next host-side JCAlgTest integration gap.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `tools/test-rp2350-fs-overlay`; ARM UF2 `build/arm/pico2_choupi.uf2`; timer data `artifacts/metrics/development-time.csv`.

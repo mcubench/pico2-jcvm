@@ -88,8 +88,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   indexed array and package-list updates, and the RP2350 overlay can erase
   transaction-created records. Failure stages now map to distinct status words
   (`6A80`, `6A82`, `6581`, `6985`, or `6F00`), with a focused host test passing.
-  Failure-path behavior still needs hardware validation; CAP metadata and
-  filesystem state do not yet share a durable power-loss journal.
+  A host test now exercises the RP2350 overlay erase path, including collision
+  probes and compressed child tags. Failure-path behavior still needs hardware
+  validation; CAP metadata and filesystem state do not yet share a durable
+  power-loss journal.
 
 ## Applet runtime and APDU lifecycle
 

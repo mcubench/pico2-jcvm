@@ -2,15 +2,27 @@
 
 ## Updated development timing sample — 2026-10-14
 
-- Documentation commit: `171d404`.
-- `perf_tips.md` now summarizes the expanded task-time sample: four successful
-  ARM builds at 3.120–5.819 s (mean 4.120 s), six focused host tests at
-  0.458–2.789 s (mean 1.656 s), and 31.169 s total successful recorded work.
+- Documentation commits: `171d404`, reference `9cbeb4e`.
+- Latest `tools/task-time report`: five successful ARM builds at 3.120–9.152 s
+  (mean 5.127 s), eight focused host tests at 0.458–5.184 s (mean 2.300 s),
+  and 48.782 s total successful recorded work.
 - Failed and interrupted attempts remain in the CSV and are excluded from
   successful averages. Upload time is unmeasured.
 - A bounded `./tools/probe-jc-algtest` run found no `Pico 2 CHOUPI CCID` reader
   and sent no APDUs. Continue with host-side work until reader visibility is
   restored; no firmware flash has been attempted for the latest changes.
+
+## RP2350 filesystem erase regression — 2026-10-14
+
+- Added `tools/test-rp2350-fs-overlay`, which compiles the actual RP2350
+  filesystem source against host hardware stubs. It covers erase visibility,
+  same-tag reuse, collision-chain lookup, and compressed child-tag reuse.
+- The collision test found stale offsets after erase; compaction now scans all
+  overlay slots. Final host test passes 13 checks (`TEST:SUMMARY fail=0`,
+  4.039 s; the earlier full compile/test pass took 5.184 s), and
+  `./tools/build arm` passes (9.152 s).
+- No RISC-V build or board flash was performed. Next update `perf_tips.md` with
+  the expanded sample, then continue host-side lifecycle and JCAlgTest work.
 
 ## Latest ARM implementation — 2026-10-14
 

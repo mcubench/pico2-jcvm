@@ -349,7 +349,7 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
     std::memmove(overlay_bytes + old_offset,
                  overlay_bytes + old_offset + old_record_size,
                  overlay_bytes_used - old_offset - old_record_size);
-    for (size_t index = 0; index < overlay_file_count; ++index) {
+    for (size_t index = 0; index < kMaxOverlayFiles; ++index) {
       if (&overlay[index] != &file && overlay_has_storage(overlay[index]) &&
           overlay[index].offset > old_offset) {
         overlay[index].offset -= static_cast<uint32_t>(old_record_size);
