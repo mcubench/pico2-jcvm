@@ -2201,3 +2201,13 @@
 - Decision: Compare future CHOUPI `ALG_SUPPORT_EXTENDED` output to this reference and the VM's declared factory support; process-level CHOUPI output still awaits PC/SC access.
 - Commit: recorded in a following reference entry.
 - Artifacts/logs: `artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv` (SHA-256 `67d9feebf9756da69db034bab05cddd9acb38d31aa980888fa7b5db22ef1757b`); `artifacts/logs/jcalgtest-jcardsim-extended-20261014.log` (SHA-256 `9aef8813e7d4eb4430dff6eae28d349a8a47fd20d44b4771cb560985db6c830c`); client JAR SHA-256 `43d1d9c1cf92b8f5720c87ec0815e89ae5c713ec254713dcb24ffa431f4e6e90`.
+
+## 2026-10-14 — Add bounded JCAlgTest applet APDU probe
+
+- Step/experiment: `jc-algtest-apdu-probe-20261014`
+- Change: Added `tools/probe-jc-algtest` and its Java Smart Card I/O source. The repository tool compiles the dependency-free probe with `tools/env`, has a configurable 30-second default timeout, selects `JCAlgTest1`, checks its exact `1.8.2_jc305` version response, and sends JCSystem info.
+- Validation: `./tools/probe-jc-algtest` compiled successfully. The bounded runtime probe exited with `PC/SC reader Pico 2 CHOUPI CCID not found`; no card APDU was transmitted. `bash -n tools/probe-jc-algtest` and scoped `git diff --check` passed. No architecture build was needed for this host-only step; no RISC-V build/test was run.
+- Result: No Python PySCard package or separate Java smartcard module needs installation; the host JDK supplies `javax.smartcardio`. A live, accessible PC/SC daemon/reader is required to continue hardware APDU validation.
+- Decision: Run this probe after PC/SC and USB access return, then run the official v1.8.2 client on the board.
+- Commit: recorded in a following reference entry.
+- Artifacts/logs: `artifacts/logs/jc-algtest-apdu-probe-current-20261014.log` records the current no-reader condition.

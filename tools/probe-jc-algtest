@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_command timeout
+timeout_seconds="${PICO2_APDU_TIMEOUT_SECONDS:-30}"
+[[ "${timeout_seconds}" =~ ^[1-9][0-9]*$ ]] || \
+  die "PICO2_APDU_TIMEOUT_SECONDS must be a positive integer"
+
+build_dir="${repo_root}/build/jc-algtest-apdu-probe"
+mkdir -p "${build_dir}"
+"${repo_root}/tools/env" javac -d "${build_dir}" \
+  "${repo_root}/tools/JCAlgTestApduProbe.java"
+timeout --signal=TERM --kill-after=2s "${timeout_seconds}s" \
+  "${repo_root}/tools/env" java -cp "${build_dir}" JCAlgTestApduProbe

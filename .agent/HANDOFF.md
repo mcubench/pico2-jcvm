@@ -1939,3 +1939,14 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   Next compare a CHOUPI result against this simulator reference once the host
   PC/SC service is accessible; continue ARM-only and don't run the RISC-V
   build/test.
+
+- Added the bounded `tools/probe-jc-algtest` host utility and
+  `tools/JCAlgTestApduProbe.java`. It uses the JDK's built-in
+  `javax.smartcardio`, selects AID `4A43416C675465737431`, requires the response
+  version `1.8.2_jc305`, and sends JCSystem info. Compilation passed, but its
+  30-second-bounded runtime probe found no exposed reader and sent no APDUs.
+  This container's `/run/pcscd/pcscd.comm` is a socket without a live pcscd
+  process; `lsusb` reports libusb `-99`, and sudo is blocked by `no new
+  privileges`. When those host access constraints are restored, run
+  `./tools/probe-jc-algtest`, then run the official host client. The module
+  does not need to be separately installed.

@@ -39,9 +39,12 @@ because the system PC/SC service is unavailable here. The authorized sudo
 helper cannot run in this container (`no new privileges`). A prior unbounded
 `pcsc_scan -r` under this missing-service condition emitted a large stream of
 PC/SC errors; always bound scans with `timeout`. The ARM wrapper build passes
-with the new default two-job limit. Follow the current run's ARM-only scope;
-do not build or test RISC-V. Windows reader enumeration and applet
-process/power-cycle persistence remain unverified.
+with the new default two-job limit. `tools/probe-jc-algtest` now provides a
+finite-timeout, dependency-free SELECT/GETVERSION/JCSystem APDU probe; it
+compiles here, but runtime correctly fails because no PC/SC reader is exposed.
+Follow the current run's ARM-only scope; do not build or test RISC-V. Windows
+reader enumeration and applet process/power-cycle persistence remain
+unverified.
 
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's
