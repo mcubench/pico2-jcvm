@@ -2710,3 +2710,13 @@
 - Decision: Add emulator/VPCD/APDU phase timestamps on a future smoke run before optimizing it.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/logs/host-install-rommask-20261014.log`; `artifacts/metrics/development-time.csv`; `perf_tips.md`.
+
+## 2026-10-14 — Record performance recommendations commit
+
+- Step/experiment: `performance-tips-latest-host-sample-20261014-reference`
+- Change: Recorded the immutable documentation commit for the latest performance measurements and recommendations.
+- Validation: `git diff --check -- progress.md` passed; commit `b5b6307` contains the documentation update.
+- Result: The performance guidance update is committed as `b5b6307`.
+- Decision: Add phase timing to the next PC smoke run before attempting targeted performance changes.
+- Commit: recorded in the current commit.
+- Artifacts/logs: `perf_tips.md`; `artifacts/logs/host-install-rommask-20261014.log`; `artifacts/metrics/development-time.csv`.
