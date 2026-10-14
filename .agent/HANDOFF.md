@@ -2104,3 +2104,12 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   privileges`. When those host access constraints are restored, run
   `./tools/probe-jc-algtest`, then run the official host client. The module
   does not need to be separately installed.
+
+- Performance guidance update — 2026-10-14. `perf_tips.md` now records the
+  two-job build default after VM CPU saturation reports and proposes controlled
+  clean/incremental build comparisons at 1/2/4 jobs, with CPU usage and wall
+  time measured separately. It also prioritizes bounded USB/PCSC preflight and
+  measuring upload/reboot/serial phases independently. Current sample remains
+  5 successful ARM builds (mean 5.127 s), 9 host tests (mean 2.493 s), and
+  52.821 s total; no upload or CPU-load comparison is measured. Documentation
+  progress is recorded in `progress.md`; commit reference follows separately.

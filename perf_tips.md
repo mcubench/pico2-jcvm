@@ -57,3 +57,23 @@ reader, so it sent no APDUs.
    `start`/`stop` for manual work, then compare successful totals and non-OK
    counts with `./tools/task-time report`. Record whether each run was clean or
    incremental so those costs are not mixed in the same average.
+
+## Next speedup measurements
+
+- Keep the build wrapper's two-job default while the VM is used interactively;
+  it was added after reports of all eight cores becoming saturated. The current
+  timing sample does not compare CPU load or responsiveness at different job
+  counts, so it does not establish whether a higher setting would save time.
+- For a controlled comparison, collect at least three clean and three
+  incremental ARM build samples at `PICO_BUILD_JOBS=1`, `2`, and `4`. Record
+  wall time and peak CPU usage separately, and stop increasing jobs if VM
+  responsiveness degrades. Keep generated artifacts and the source revision
+  constant within each comparison.
+- Time hardware preflight, upload, reboot/enumeration, PC/SC discovery, and
+  serial capture as separate bounded steps. Upload is still unmeasured, and a
+  missing USB node or PC/SC reader should be reported as a precondition failure
+  instead of consuming a long test timeout.
+- Add a per-stage build breakdown only if repeated samples show the same stage
+  dominates. The known 3:29 CAP converter build predates the timer and is a
+  single observation, so first measure it through the current wrapper before
+  changing build caching or dependency rules.

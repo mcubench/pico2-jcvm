@@ -2540,3 +2540,13 @@
 - Decision: Continue with host-side applet lifecycle/client coverage; no PC/SC reader is currently visible.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Add next performance measurement suggestions
+
+- Step/experiment: development-performance-next-measurements-20261014
+- Change: Extended `perf_tips.md` with the current two-job build default rationale and a controlled plan for comparing clean/incremental builds, CPU use, hardware preflight, and CAP conversion.
+- Validation: `./tools/task-time report` still reports 5 successful ARM builds (3.120–9.152 s, mean 5.127 s), 9 successful host tests (0.458–5.184 s, mean 2.493 s), and 52.821 s total. `git diff --check` passed. Documentation only; no tests or builds were run.
+- Result: Suggestions distinguish measured timing from open experiments; upload and CPU-load comparisons remain unmeasured.
+- Decision: Keep two build jobs as the interactive default until comparable CPU and wall-time samples support a change.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
