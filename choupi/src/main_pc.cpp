@@ -52,6 +52,16 @@ uint8_t *flash = nullptr;
 uint32_t flash_length = 0;
 std::string flash_filename;
 
+// Dynamically installed CAP files are stored in the Pico's reserved flash
+// region by the RP2350 platform layer. The PC emulator has no equivalent
+// dynamic CAP store, so its Java Card package lookup must see an empty store.
+extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length) {
+  if (length != nullptr) {
+    *length = 0;
+  }
+  return nullptr;
+}
+
 int main_pc(int argc, char *argv[]) {
   bool memory_path_present = false;
   bool save_requested = false;

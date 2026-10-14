@@ -25,10 +25,12 @@ reader is visible. GPPro in this execution context first returned
 `SCARD_E_NO_SERVICE`; a bounded elevated retry reported no available readers,
 and the latest retry after reflashing timed out after 15 seconds without reader
 or APDU output. No INSTALL APDU reached the card, so applet installation remains
-unverified. The host VM
-target builds Java API classes and CAPs, but Cargo offline mode confirms the
-local registry lacks `ipc-channel`; the online build cannot resolve
-`index.crates.io`.
+unverified. The complete PC VM now links after fetching its missing Cargo
+dependencies and adding the PC target's explicit empty dynamic-CAP store
+backend. Its `--help` smoke check passes. The host build still reports legacy
+Rust, Maven, and packed CAP metadata warnings. A new `./tools/cycle choupi`
+passed both architecture builds but could not access USB (`libusb: -99`), so
+that attempt did not flash or capture serial output.
 
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's

@@ -2041,3 +2041,13 @@
 - Decision: Continue with the remaining JCAlgTest runtime and API gaps.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/jcarray-generic-20261014.log`.
+
+## 2026-10-14 — Restore stable host VM build
+
+- Step/experiment: `host-vm-stable-rust-and-cap-store-20261014`
+- Change: Modernized the CHOUPI host Rust crate's obsolete feature gates, naked-function syntax, and inline assembly for the current stable compiler (nested `choupi/os` commit `dd074eb`). Added the PC build's explicit empty dynamic-CAP store bridge; only RP2350 hardware provides the reserved-flash CAP store.
+- Validation: `CARGO_NET_OFFLINE=true MAVEN_ARGS=-o ./tools/env cmake --build build/choupi-pc --target choupi -j2` passed and linked the complete host VM. `build/choupi-pc/choupi --help` exited 0. `./tools/build arm` and `./tools/build riscv` both passed. `./tools/cycle choupi` passed both build gates but could not access USB (`libusb: -99`); no flash write or serial capture occurred.
+- Result: The host VM can now be built and launched with the repository's current stable Rust toolchain. The build still emits legacy Rust/Maven warnings and two packed CAP metadata warnings. The PC target reports an empty dynamic CAP store; applet installation remains an RP2350-only path.
+- Decision: Use the host VM as a build/runtime fixture for further API and APDU work. Retry physical installation after this VM can access the board and PC/SC reader.
+- Commit: `recorded in the following reference entry`
+- Artifacts/logs: `artifacts/logs/host-build-after-capstore-bridge-20261014.log` SHA-256 `8631f51c835eea768b45b24c25744ce0c78784946e569bc0dc243ac05e759754`; ARM `artifacts/logs/arm-after-host-modernize-20261014.log` SHA-256 `deda16985d8ee0d23130e58ca46f100cbce0206bffa4328d9e5130072f6ec22e`; RISC-V `artifacts/logs/riscv-after-host-modernize-20261014.log` SHA-256 `3d71f0ea9ef4d6a17afdf2417f315f26ff5d802750163a165a583f3f63a8eb4f`; cycle `artifacts/logs/cycle-host-bridge-20261014.log` SHA-256 `72fea9335f221c1c430c1936e74fc597634f2e7f733e434ee9c38a808dae4416`; CLI smoke `artifacts/logs/host-vm-help-20261014.log`.

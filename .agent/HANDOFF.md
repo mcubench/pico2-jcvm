@@ -1,17 +1,17 @@
 # Handoff
 
-## Current session state — 2026-10-11
+## Current session state — 2026-10-14
 
 - The user has returned physical testing to scope and asked to continue the
   complete project autonomously. This session regained USB passthrough through
   an approved elevated host-device invocation. `tools/monitor` now waits up to
   30 seconds for USB CDC enumeration, and `tools/cycle` uses the repeated
   runtime PASS/SUMMARY markers instead of requiring the one-time BOOT line.
-  The full `./tools/cycle choupi` now passes on the real board: ARM and RISC-V
-  builds pass, the Pico is flashed, and the 18-second capture reports repeated
-  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. PC/SC is active,
-  but the daemon currently lists no readers because its service account lacks
-  access to the Pico's current USB node.
+  An earlier `./tools/cycle choupi` passed on the real board, with repeated
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The latest cycle
+  rebuilt both architectures but this VM could not access USB (`libusb: -99`),
+  so it did not flash or capture serial output. Applet behavior has not been
+  validated in this execution context.
 - Root `TODO.md` is the current acceptance-criteria tracker. The installed CAP
   blob and synthetic registry/SELECT path are not evidence that the Java
   constructor, `Applet.register`, or applet `process()` executed.
@@ -19,8 +19,10 @@
   Boost command-line dependency is removed; current Cargo no longer accepts the
   legacy `--out-dir` argument; and the JavaCard API build can select a Java 8
   compiler while Maven runs on the system JDK. Java API CAP conversion and the
-  ROM-mask generation passed. The complete PC build remains blocked because
-  crates.io is unreachable and Cargo cannot download `ipc-channel`.
+  ROM-mask generation pass. Cargo dependencies were fetched into the local tool
+  cache, and the complete PC VM now builds. The host target supplies an explicit
+  empty dynamic-CAP store because the RP2350 reserved-flash backend is not part
+  of the PC executable.
 - The PC `main_pc.cpp` translation unit compiles using the generated ROM-mask
   JNI header. Existing packed-member warnings remain in upstream CAP headers.
 - `Applet.register` receiver capture now flows through `Context` and
@@ -1814,3 +1816,20 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `94e0fb59a7ae1510e906299f616bac3ad500ccac68c42f405f477979f2d16caf`.
   Next continue the remaining JCAlgTest v1.8.2 native/API gaps and use host
   fixtures; retry hardware integration after the USB device is passed through.
+
+- Host VM build checkpoint — 2026-10-14. Modernized the host Rust crate's
+  obsolete feature gates, naked-function syntax, and inline assembly for the
+  current stable compiler; nested `choupi/os` commit is `dd074eb`. Added an
+  explicit empty `choupi_cap_store_data` implementation for PC because the
+  RP2350 reserved-flash CAP backend is hardware-specific. The full offline host
+  build now links, `build/choupi-pc/choupi --help` exits 0, and both
+  `./tools/build arm` and `./tools/build riscv` pass. Logs are archived in
+  `artifacts/logs/host-build-after-capstore-bridge-20261014.log`,
+  `artifacts/logs/arm-after-host-modernize-20261014.log`, and
+  `artifacts/logs/riscv-after-host-modernize-20261014.log`. Host build warnings
+  remain in legacy Rust/Maven code and packed CAP metadata. The subsequent
+  `./tools/cycle choupi` passed both build gates but USB access failed with
+  `libusb: -99`; the device was not flashed and no serial output was captured.
+  Cycle log: `artifacts/logs/cycle-host-bridge-20261014.log`. Next continue the
+  JCAlgTest API/APDU work and use the working PC build for host fixtures; retry
+  the board cycle when USB passthrough is visible to this VM.
