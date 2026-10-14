@@ -2410,3 +2410,13 @@
 - Decision: Keep the timer append-only and use it across a longer development interval before drawing firm optimization conclusions. First improvements to measure are cached CAP conversion and earlier serial-node detection. Repeat compile/test measurements over several edits; record upload only after both-target build gate and BOOTSEL visibility are restored.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Development timer commit reference
+
+- Step/experiment: `development-task-time-sample-20261014-reference`
+- Change: Recorded the immutable commit for the task timer, usage documentation, and initial measurement sample.
+- Validation: `tools/task-time` syntax validation passed twice; the ARM build and short APDU host test completed successfully. `git diff --cached --check` passed before commit.
+- Result: The timer step is committed as `eb36cbd`; its report contains 9.112 seconds of successful recorded work. Upload remains unmeasured.
+- Decision: Continue timing compile, analysis, upload, and test intervals across future implementation steps; hardware access remains unavailable from this VM device-node view.
+- Commit: `eb36cbd`
+- Artifacts/logs: `artifacts/metrics/development-time.csv` (SHA-256 `84a5be49f87005eaab8d03321c10bd9bd491bf910405d8e9aabff2b60fa9c243`).
