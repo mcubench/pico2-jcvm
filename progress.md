@@ -2291,3 +2291,13 @@
 - Decision: Continue with the remaining platform API and lifecycle work.
 - Commit: `ca0520a`
 - Artifacts/logs: `/tmp/pico2-previous-context-aid.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-14 — Previous-context AID commit hash reference
+
+- Step/experiment: `jc-system-previous-context-aid-fallback-20261014-hash-reference`
+- Change: Recorded the immutable reference for the `getPreviousContextAID()` fallback implementation.
+- Validation: Confirmed commit `ca0520a` contains the native null result, focused test, ARM build record, and TODO/handoff update.
+- Result: The API fallback and its evidence are linked to commit `ca0520a`.
+- Decision: Continue the remaining API and applet lifecycle work.
+- Commit: `ca0520a`
+- Artifacts/logs: `/tmp/pico2-previous-context-aid.log`.
