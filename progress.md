@@ -2301,3 +2301,13 @@
 - Decision: Continue the remaining API and applet lifecycle work.
 - Commit: `ca0520a`
 - Artifacts/logs: `/tmp/pico2-previous-context-aid.log`.
+
+## 2026-10-14 — Enforce Le for no-chaining APDU responses
+
+- Step/experiment: `apdu-no-chaining-le-bound-20261014`
+- Change: Tightened `Context::setAPDUOutgoingLength()` so `setOutgoingNoChaining()` rejects a response length above either the command's Le or the T=1 maximum payload of IFSD minus two status bytes (252 bytes). Expanded the APDU context tests for both limits.
+- Validation: `./tools/test-short-apdu` passed parser, GET RESPONSE chaining, and APDU context cases, including `no_chaining_respects_le` and `no_chaining_t1_frame_bound`. `./tools/build arm` passed and generated the RP2350 ARM CHOUPI UF2. No flash or physical APDU test was run; no RISC-V compile or test was run.
+- Result: No-chaining output can no longer be accepted above Le and later incorrectly converted into a `61xx` response chain.
+- Decision: Keep the validation and continue remaining applet/runtime integration work; installed-applet behavior still awaits PC/SC access.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `/tmp/pico2-apdu-nochaining.log` (SHA-256 `5df9fc50c8120e1abbef839dea5d0f5fbeef393c06b6773af97154159d6a645a`); ARM UF2 SHA-256 `81fd209c5245c0c4f7977f561f0f3926575beb9168dff54113b380aad5163f03`.

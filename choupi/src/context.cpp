@@ -195,7 +195,8 @@ void Context::setAPDUOutgoingLength(const uint16_t length) {
     throw Exceptions::APDUException;
   }
   if (length > this->apdu_response_data.size() ||
-      (this->apdu_outgoing_no_chaining && length > 252)) {
+      (this->apdu_outgoing_no_chaining &&
+       (length > 252 || length > this->apdu_expected_response_length))) {
     throw Exceptions::APDUException;
   }
   this->apdu_response_declared_length = length;

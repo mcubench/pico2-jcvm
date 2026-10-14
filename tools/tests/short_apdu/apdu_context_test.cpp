@@ -68,10 +68,19 @@ int main() {
   expect(context.getAPDUState() == 2, "full_incoming");
   expect(context.beginAPDUOutgoing(true) == 16, "begin_no_chaining");
   expect(throws_apdu_exception(
-             [&context] { context.setAPDUOutgoingLength(253); }),
-         "no_chaining_bound");
-  context.setAPDUOutgoingLength(252);
+             [&context] { context.setAPDUOutgoingLength(17); }),
+         "no_chaining_respects_le");
+  context.setAPDUOutgoingLength(16);
   expect(context.getAPDUState() == 4, "no_chaining_valid_length");
+
+  context.setAPDUBufferRef(jcvm::jref_t{}, 0, 256, true);
+  expect(context.beginAPDUOutgoing(true) == 256,
+         "no_chaining_maximum_le");
+  expect(throws_apdu_exception(
+             [&context] { context.setAPDUOutgoingLength(253); }),
+         "no_chaining_t1_frame_bound");
+  context.setAPDUOutgoingLength(252);
+  expect(context.getAPDUState() == 4, "no_chaining_frame_valid_length");
 
   context.setAPDUBufferRef(jcvm::jref_t{}, 0, 0, false);
   expect(throws_apdu_exception(

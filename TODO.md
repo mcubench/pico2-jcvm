@@ -122,7 +122,8 @@ rollback and duplicate/invalid registration handling also remain unverified.
   Stateful `setOutgoing()`/`setOutgoingNoChaining()`, `setOutgoingLength()`,
   `sendBytes()`, `sendBytesLong()`, `setOutgoingAndSend()`, and
   `getCurrentState()` now use per-command state, append outgoing chunks, and
-  enforce the no-chaining size bound. The bridge fragments data responses at
+  enforce both the command Le and T=1 frame bound for no-chaining responses.
+  The bridge fragments data responses at
   short Le and serves `GET RESPONSE` using `61xx`. Parser, response-chain, and
   Context state tests pass; the Pico cycle also passed after flashing this
   implementation. An applet-level APDU exchange and PC/SC verification remain
