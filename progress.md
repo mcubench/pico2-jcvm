@@ -2610,3 +2610,13 @@
 - Decision: Collect process/thread CPU time during a reproducible freeze before tuning concurrency or attributing the load to a wait loop.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; no new timing data collected.
+
+## 2026-10-14 — Record performance suggestions commit
+
+- Step/experiment: `performance-guidance-vm-responsiveness-20261014-reference`
+- Change: Recorded the immutable commit containing the expanded performance suggestions and handoff update.
+- Validation: Confirmed commit `cd88f95` contains `perf_tips.md`, `.agent/HANDOFF.md`, and the original progress entry; whitespace validation passed.
+- Result: Performance guidance is committed as `cd88f95`.
+- Decision: Continue with host applet lifecycle/APDU coverage; measure CPU use if VM saturation recurs.
+- Commit: `cd88f95`
+- Artifacts/logs: `perf_tips.md`; no new timing data collected.
