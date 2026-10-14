@@ -126,11 +126,15 @@ rollback and duplicate/invalid registration handling also remain unverified.
   implementation. An applet-level APDU exchange and PC/SC verification remain
   outstanding; extended APDUs are rejected.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
-  transient array variants, `Util` helpers, `JCSystem` queries, `AID`, and
+  remaining transient array variants, `Util` helpers, `JCSystem` queries,
+  `AID`, and
   Java exception mapping for unsupported crypto factories. `ArrayLogic` native
   copy/fill/compare/search now support the documented byte, short, and int
   primitive types (including big-endian byte encodings for short/int search);
   broader API coverage remains incomplete.
+- [x] Implement `JCSystem.makeTransientObjectArray()` with Java-null default
+  entries and a wildcard component type that accepts any reference. ARM build
+  and focused factory tests pass; installed-applet use remains unverified.
 - [ ] Verify that an installed applet instance and its persistent fields survive
   a power cycle, not only that its CAP blob survives.
 

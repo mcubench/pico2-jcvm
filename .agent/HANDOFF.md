@@ -2,6 +2,19 @@
 
 ## Current session state — 2026-10-14
 
+- Latest ARM-only step: implemented `JCSystem.makeTransientObjectArray()` as a
+  zero-initialized transient reference array. Native-created `Object[]` uses a
+  wildcard component marker so firewall checks accept any reference. The
+  focused `./tools/test-jcarray` suite and `./tools/build arm` pass. The test
+  checks factory type, length, clear event, and zero initialization through
+  the factory path; assignment under the live Java firewall and use by an
+  installed applet still need board evidence. The ARM image was built but not
+  flashed. No RISC-V compile or test was run. Commit is recorded in the next
+  reference entry.
+- Current execution environment still cannot reach PC/SC (`pcscd` service is
+  unavailable here). User was given the authorized helper command
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader rerun` to restore access in the VM;
+  wait for its output before claiming reader access has returned.
 - The user has returned physical testing to scope and asked to continue the
   complete project autonomously. This session regained USB passthrough through
   an approved elevated host-device invocation. `tools/monitor` now waits up to

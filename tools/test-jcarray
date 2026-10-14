@@ -48,6 +48,8 @@ const jint_t FlashMemory_Handler::getPersistentField_Array_Int(
     const fs::Tag &, const uint16_t, Heap &) { return 0; }
 void FlashMemory_Handler::setPersistentField_Array_Int(
     const fs::Tag &, const uint16_t, const jint_t, Heap &) {}
+const jref_t FlashMemory_Handler::getPersistentField_Array_Reference(
+    const fs::Tag &, const uint16_t, Heap &) { return jref_t{}; }
 #pragma GCC diagnostic pop
 }
 EOF

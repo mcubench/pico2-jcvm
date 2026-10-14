@@ -404,10 +404,20 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientShortArray(
 }
 
 std::shared_ptr<JC_Array>
-fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(jshort_t,
-                                                                     jbyte_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
+    const jshort_t length, const jbyte_t event) {
+  if (length < 0) {
+    throw Exceptions::NegativeArraySizeException;
+  }
+
+  Heap &heap = Context::getActiveContext().getHeap();
+  // Object[] has no applet-specific component class. The all-ones class
+  // reference is the wildcard used for an array that accepts any reference.
+  constexpr jc_cp_offset_t any_reference_type = 0xffff;
+  return std::make_shared<JC_Array>(heap, static_cast<uint16_t>(length),
+                                    JAVA_ARRAY_T_REFERENCE,
+                                    any_reference_type, true,
+                                    getTransientClearEvent(event));
 }
 
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeGlobalArray(jbyte_t,

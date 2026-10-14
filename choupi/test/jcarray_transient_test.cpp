@@ -34,6 +34,9 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientShortArray(jshort_t,
 std::shared_ptr<JC_Array>
 fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientIntArray(jshort_t,
                                                                   jbyte_t);
+std::shared_ptr<JC_Array>
+fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
+    jshort_t, jbyte_t);
 }
 
 int main() {
@@ -114,6 +117,9 @@ int main() {
   const auto nativeInt =
       jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientIntArray(
           5, static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_DESELECT));
+  const auto nativeObject =
+      jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
+          3, static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_DESELECT));
   if (nativeTransient->size() != 3 || !nativeTransient->isTransientArray() ||
       nativeTransient->getClearEvent() != jcvm::CLEAR_ON_RESET ||
       nativeBoolean->size() != 2 ||
@@ -122,6 +128,11 @@ int main() {
       nativeShort->getType() != jcvm::JAVA_ARRAY_T_SHORT ||
       nativeInt->size() != 5 ||
       nativeInt->getType() != jcvm::JAVA_ARRAY_T_INT ||
+      nativeObject->size() != 3 ||
+      nativeObject->getType() != jcvm::JAVA_ARRAY_T_REFERENCE ||
+      !nativeObject->isTransientArray() ||
+      nativeObject->getClearEvent() != jcvm::CLEAR_ON_DESELECT ||
+      !nativeObject->getReferenceEntry(0).isNullPointer() ||
       jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(bytesRef) !=
           static_cast<jcvm::jbyte_t>(jcvm::CLEAR_ON_DESELECT)) {
     std::cerr << "transient native factory or query returned wrong metadata\n";
@@ -315,6 +326,7 @@ int main() {
   std::cout << "TEST:PASS jni_array_copy_errors\n";
   std::cout << "TEST:PASS jni_array_compare\n";
   std::cout << "TEST:PASS jni_transient_factory\n";
+  std::cout << "TEST:PASS jni_transient_object_array\n";
   std::cout << "TEST:PASS jni_selecting_applet_fallback\n";
   std::cout << "TEST:PASS jni_basic_channel_fallback\n";
   std::cout << "TEST:PASS jni_integrity_arrays_capability\n";

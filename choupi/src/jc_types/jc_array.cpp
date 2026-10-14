@@ -573,8 +573,10 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value
   ConstantPool_Handler cp_handler(current_package);
   Class_Handler class_handler(current_package);
 
-  if (value.isNullPointer()) {
-    // NULL pointer: nothing to do.
+  // Native-created Object[] arrays use 0xFFFF as a wildcard component type;
+  // unlike CAP-backed arrays, they have no component class in a CAP pool.
+  if (this->reference_type == 0xFFFF || value.isNullPointer()) {
+    // Wildcard arrays accept any reference; null is valid for all arrays.
     ;
   } else if (value.isInstance()) {
     auto instanceref_to_add = heap.getInstance(value);

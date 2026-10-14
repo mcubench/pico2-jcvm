@@ -2231,3 +2231,13 @@
 - Decision: Resume hardware APDU work when this execution environment can access the PC/SC reader.
 - Commit: `432eee3`
 - Artifacts/logs: `artifacts/logs/jc-algtest-apdu-probe-current-20261014.log` (SHA-256 `32f712cdd1346069e332db1ddaf71863947558414b34496b8e5e537f0716ffea`).
+
+## 2026-10-14 — Implement transient Object[] factory
+
+- Step/experiment: `jc-system-transient-object-array-20261014`
+- Change: Implemented `JCSystem.makeTransientObjectArray()` with negative-length and clear-event validation, transient reference storage, zero-initialized Java-null entries, and a wildcard component marker. Updated firewall checks so the native-created `Object[]` accepts any reference without attempting to resolve a nonexistent CAP constant-pool component class. Added the factory to the focused native array test.
+- Validation: `./tools/test-jcarray` passed with `TEST:PASS jni_transient_object_array` and all existing array/transient checks. `./tools/build arm` passed and generated the RP2350 ARM CHOUPI UF2. The focused host test emitted existing packed-member and ignored-qualifier warnings. No flash or physical APDU test was run; the updated image's applet behavior remains unverified. No RISC-V compile or test was run.
+- Result: The previously unimplemented JCSystem Object[] transient factory now returns an array with the requested length and clear event. Applet-level assignment under the Java firewall still needs runtime validation.
+- Decision: Keep this API implementation and continue the remaining JCAlgTest native methods; resume APDU validation when PC/SC is accessible to this execution environment.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `/tmp/pico2-jcarray-object-array.log` (SHA-256 `8f6b160efeb6bc7aa4ab962af6a7b2efb696d08f400a673e0f5375f103f51db3`); ARM UF2 SHA-256 `6a50c2ad5630a06951ecfcfca0491d57a9e161334b2eefd443a78932a1429b5e`.
