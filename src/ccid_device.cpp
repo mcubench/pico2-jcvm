@@ -13,7 +13,9 @@ extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t *package_id,
                                            uint16_t *install_offset);
 extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
-                                             uint16_t class_index);
+                                            uint16_t class_index,
+                                            const uint8_t *aid,
+                                            uint8_t aid_length);
 extern "C" void choupi_vm_clear_selected_applet(void);
 extern "C" uint16_t choupi_vm_select_applet(void);
 extern "C" uint16_t choupi_vm_deselect_applet(void);
@@ -331,7 +333,9 @@ void process_message(uint8_t rhport) {
       }
       uint16_t applet_class_index = 0xffff;
       if (cap_load_session.appletClassIndex(applet_class_index) &&
-          choupi_vm_restore_applet(package_id, applet_class_index) != 0) {
+          choupi_vm_restore_applet(package_id, applet_class_index,
+                                   cap_load_session.instanceAid(),
+                                   cap_load_session.instanceAidLength()) != 0) {
         response[0] = 0x6f;
         response[1] = 0x00;
         response_length = 2;

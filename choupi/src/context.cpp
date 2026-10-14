@@ -30,6 +30,7 @@
 #include "jc_handlers/flashmemory.hpp"
 #include "jc_types/jc_array.hpp"
 
+#include <algorithm>
 #include <utility>
 
 namespace jcvm {
@@ -58,7 +59,8 @@ Context &Context::getActiveContext() {
  */
 Context::Context(const japplet_ID_t appletID,
                  const jpackage_ID_t packageID) noexcept
-    : applet_ID(appletID), stack(), packagesID(), heap(appletID) {
+    : applet_ID(appletID), applet_package_ID(packageID), stack(), packagesID(),
+      heap(appletID) {
   this->packagesID.push_front(packageID);
 }
 
@@ -77,6 +79,42 @@ jpackage_ID_t Context::getCurrentPackageID() noexcept {
  * @return current applet class ID
  */
 jpackage_ID_t Context::getAppletID() noexcept { return this->applet_ID; }
+
+jpackage_ID_t Context::getAppletPackageID() const noexcept {
+  return this->applet_package_ID;
+}
+
+bool Context::setAppletAID(const uint8_t *aid,
+                           const uint8_t aid_length) noexcept {
+  this->applet_aid.fill(0);
+  this->applet_aid_length = 0;
+  this->applet_aid_object_ref = jref_t();
+  if (aid == nullptr || aid_length < 5 || aid_length > this->applet_aid.size()) {
+    return false;
+  }
+  std::copy(aid, aid + aid_length, this->applet_aid.begin());
+  this->applet_aid_length = aid_length;
+  return true;
+}
+
+bool Context::copyAppletAID(uint8_t aid[16],
+                            uint8_t &aid_length) const noexcept {
+  aid_length = this->applet_aid_length;
+  if (aid == nullptr || aid_length < 5 || aid_length > this->applet_aid.size()) {
+    aid_length = 0;
+    return false;
+  }
+  std::copy_n(this->applet_aid.begin(), aid_length, aid);
+  return true;
+}
+
+jref_t Context::getAppletAIDObjectRef() const noexcept {
+  return this->applet_aid_object_ref;
+}
+
+void Context::setAppletAIDObjectRef(const jref_t reference) noexcept {
+  this->applet_aid_object_ref = reference;
+}
 
 void Context::markAppletRegistered(const jref_t applet_ref) noexcept {
   this->registered_applet_ref = applet_ref;

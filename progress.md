@@ -2560,3 +2560,13 @@
 - Decision: Collect comparable build and hardware timing samples before changing the two-job default or build dependencies.
 - Commit: `49f848d`
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Implement applet identity for JCSystem.getAID
+
+- Step/experiment: jcsystem-get-aid-context-20261014
+- Change: VM contexts now retain the applet instance package and AID. INSTALL initializes that identity before Java execution; applet restore initializes it from the registered instance AID. The native `JCSystem.getAID()` resolves the JC 3.0.5 framework AID class through the applet CAP import metadata, builds its `theAID` byte array, and caches the Java object for the context.
+- Validation: `./tools/test-jcarray` passed, including new valid/invalid AID length and context retention checks. `./tools/build arm` passed and linked the RP2350 ARM CHOUPI image. `git -c core.whitespace=cr-at-eol diff --check` passed. No RISC-V build/test or board flash was performed; Java-level getAID execution remains unverified.
+- Result: ARM build contains the native implementation and both install/restore paths provide instance identity. Existing host test emits upstream CAP packed-member and ignored-qualifier warnings.
+- Decision: Continue with the next JCAlgTest API/runtime gap; retain applet-level identity verification as open until a permitted integration path is available.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; `tools/test-jcarray`.

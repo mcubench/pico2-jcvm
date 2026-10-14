@@ -150,7 +150,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   those paths use ordinary Java exception dispatch. The ARM build regenerates
   the API CAP and ROM mask successfully; applet-level catch behavior remains
   physically unverified. Native C++ exception mapping for other methods is
-  still incomplete. Broader API coverage remains incomplete.
+  still incomplete. `JCSystem.getAID()` now creates a cached framework `AID`
+  object from the installed/selected instance AID; installation and restored
+  contexts receive that AID from the card manager. Context byte retention is
+  covered by the focused native test and ARM build. Java-level `getAID()` use
+  and broader API coverage remain unverified/incomplete.
 - [x] Implement `JCSystem.makeTransientObjectArray()` with Java-null default
   entries and a wildcard component type that accepts any reference. ARM build
   and focused factory tests pass; installed-applet use remains unverified.

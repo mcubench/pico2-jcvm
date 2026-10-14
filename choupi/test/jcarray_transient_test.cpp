@@ -3,6 +3,7 @@
 #include "../src/jc_types/jc_array.hpp"
 
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <memory>
 
@@ -47,6 +48,27 @@ int main() {
   jcvm::Context context(0, 0);
   jcvm::Context::setActiveContext(&context);
   jcvm::Heap &heap = context.getHeap();
+  constexpr uint8_t test_aid[] = {0x4a, 0x43, 0x41, 0x6c, 0x67,
+                                  0x54, 0x65, 0x73, 0x74, 0x31};
+  uint8_t copied_aid[16]{};
+  uint8_t copied_aid_length = 0;
+  if (context.getAppletPackageID() != 0 ||
+      !context.setAppletAID(test_aid, sizeof(test_aid)) ||
+      !context.copyAppletAID(copied_aid, copied_aid_length) ||
+      copied_aid_length != sizeof(test_aid) ||
+      std::memcmp(copied_aid, test_aid, sizeof(test_aid)) != 0) {
+    std::cerr << "applet instance AID was not retained by the VM context\n";
+    return 1;
+  }
+  if (context.setAppletAID(test_aid, 4) ||
+      context.copyAppletAID(copied_aid, copied_aid_length)) {
+    std::cerr << "invalid applet instance AID was accepted\n";
+    return 1;
+  }
+  if (!context.setAppletAID(test_aid, sizeof(test_aid))) {
+    std::cerr << "valid applet instance AID could not be restored\n";
+    return 1;
+  }
   if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet() !=
       jcvm::FALSE) {
     std::cerr << "selectingApplet reported a pending selection without a JCRE\n";

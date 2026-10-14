@@ -47,6 +47,12 @@ class Context {
 private:
   /// Applet ID.
   japplet_ID_t applet_ID;
+  /// Package containing the active applet instance.
+  jpackage_ID_t applet_package_ID;
+  /// Selected/installed applet instance AID, shared with Java Card APIs.
+  std::array<uint8_t, 16> applet_aid{};
+  uint8_t applet_aid_length = 0;
+  jref_t applet_aid_object_ref;
   /// Set when the active install method invokes Applet.register().
   bool applet_registered = false;
   jref_t registered_applet_ref;
@@ -87,6 +93,11 @@ public:
   jpackage_ID_t getCurrentPackageID() noexcept;
   /// Get applet ID
   japplet_ID_t getAppletID() noexcept;
+  jpackage_ID_t getAppletPackageID() const noexcept;
+  bool setAppletAID(const uint8_t *aid, uint8_t aid_length) noexcept;
+  bool copyAppletAID(uint8_t aid[16], uint8_t &aid_length) const noexcept;
+  jref_t getAppletAIDObjectRef() const noexcept;
+  void setAppletAIDObjectRef(jref_t reference) noexcept;
   /// Record and query Applet.register() calls during installation.
   void markAppletRegistered(jref_t applet_ref) noexcept;
   bool wasAppletRegistered() const noexcept;

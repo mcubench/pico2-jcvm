@@ -84,12 +84,14 @@ uint32_t choupi_install_debug_context(void);
 void choupi_ccid_task(void);
 
 uint8_t choupi_vm_restore_applet(uint8_t package_id,
-                                 uint16_t class_index) {
+                                 uint16_t class_index, const uint8_t *aid,
+                                 uint8_t aid_length) {
   pending_apdu_response.queue(nullptr, 0);
   try {
     auto context = std::make_unique<jcvm::Context>(
         0, static_cast<jcvm::jpackage_ID_t>(package_id));
-    if (!context->restoreAppletInstance(
+    if (!context->setAppletAID(aid, aid_length) ||
+        !context->restoreAppletInstance(
             static_cast<jcvm::jpackage_ID_t>(package_id),
             static_cast<jcvm::jclass_index_t>(class_index)) ||
         !context->hasRestoredAppletInstance()) {
@@ -408,6 +410,8 @@ uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
 uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
                                 const uint8_t *install_data,
                                 uint8_t install_length,
+                                const uint8_t *instance_aid,
+                                uint8_t instance_aid_length,
                                 uint8_t *applet_registered,
                                 uint16_t *applet_class_index,
                                 uint8_t *exception_id,
@@ -429,6 +433,10 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
   jcvm::Interpretor interpretor(0,
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
                                 method_offset, install_data, install_length);
+  if (!interpretor.getCurrentContext().setAppletAID(instance_aid,
+                                                    instance_aid_length)) {
+    return 0x6a80;
+  }
   const uint16_t status = interpretor.run();
   bool applet_persisted = false;
   uint16_t registered_class_index = 0xffff;

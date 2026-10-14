@@ -2113,3 +2113,14 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   5 successful ARM builds (mean 5.127 s), 9 host tests (mean 2.493 s), and
   52.821 s total; no upload or CPU-load comparison is measured. Documentation
   progress is recorded in `progress.md`; documentation commit: `49f848d`.
+
+- JCSystem AID checkpoint — 2026-10-14. VM contexts now retain the applet
+  instance package and AID; INSTALL initializes it before Java execution and
+  restored selection passes the registered instance AID. Native
+  `JCSystem.getAID()` builds and caches a framework `AID` object with its
+  `theAID` byte array, resolving class token 6 through the JC305 import-token
+  remapper. `./tools/test-jcarray` and `./tools/build arm` pass. Java-level
+  `getAID()` behavior is not directly exercised yet. No RISC-V build/test or
+  flash was performed; the root flash gate requires both architectures, while
+  the active project scope excludes RISC-V. Next continue the API gaps, then
+  add a permitted host applet fixture for direct Java/native result checks.
