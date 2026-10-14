@@ -83,17 +83,20 @@ rollback and duplicate/invalid registration handling also remain unverified.
   of these lifecycle calls has been exercised with an installed applet because
   PC/SC is unavailable in the current execution context.
 - [ ] Implement the remaining Java Card APDU buffer and incoming/outgoing
-  command methods used by JCAlgTest, including case-4 Le and `61xx` response
-  handling. `getIncomingLength()` now reads the current command's Lc through
+  command methods used by JCAlgTest, including response-length enforcement and
+  `61xx` handling. Short cases 1, 2S, 3S, and 4S are parsed; case 2S/4S Le is
+  exposed through `setOutgoing()` and `setOutgoingNoChaining()`, with zero Le
+  interpreted as 256. Extended-length APDUs are rejected with `6700`.
+  `getIncomingLength()` reads the current command's Lc through
   the native bridge, `getOffsetCdata()` returns the short-APDU data offset 5,
   and `receiveBytes()` returns 0 because CCID buffers the complete short APDU
   before dispatch. `getBuffer()` binds the Java-visible array to the same native
   array used to collect response bytes. The API reports T=1, IFSC 32, IFSD 254,
   and NAD 0 from the advertised ATR and CCID descriptor. The supplied applet
   predominantly calls `setIncomingAndReceive()` and `setOutgoingAndSend()`;
-  stateful `setOutgoing*`/`sendBytes*` methods, Le handling, and `61xx` chaining
-  remain unfinished. Both architecture builds pass; applet-level runtime
-  verification remains outstanding.
+  stateful `setOutgoingLength()`/`sendBytes*` methods and `61xx` chaining remain
+  unfinished. Parser tests and both architecture builds pass; applet-level
+  runtime verification remains outstanding.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
   transient array variants, `Util` helpers, `JCSystem` queries, `AID`, and
   Java exception mapping for unsupported crypto factories. `ArrayLogic` native

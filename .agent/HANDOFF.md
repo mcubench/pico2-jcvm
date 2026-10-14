@@ -1833,3 +1833,21 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   Cycle log: `artifacts/logs/cycle-host-bridge-20261014.log`. Next continue the
   JCAlgTest API/APDU work and use the working PC build for host fixtures; retry
   the board cycle when USB passthrough is visible to this VM.
+
+- Short APDU/Le checkpoint — 2026-10-14. Added `src/short_apdu.hpp` with
+  coverage for short APDU cases 1/2S/3S/4S. The CCID applet path now separates
+  case-2 Le from case-3/4 Lc, preserves P3, rejects malformed and extended APDUs
+  with `6700`, and stores expected response length in `Context`. Added
+  `NativeImplementation.getAPDUExpectedResponseLength()`; Java
+  `APDU.setOutgoing()` and `setOutgoingNoChaining()` now return Le, with zero
+  mapped to 256. Nested API commit: `86345d2`. `./tools/test-short-apdu`, the
+  full PC VM build, and ARM/RISC-V wrapper builds pass. The cycle rebuilt both
+  architectures but could not flash because USB was absent to this VM
+  (`libusb: -99`); no board output was captured. Logs:
+  `artifacts/logs/short-apdu-tests-20261014.log`,
+  `artifacts/logs/host-apdu-le-build-20261014.log`,
+  `artifacts/logs/arm-apdu-le-build-20261014.log`,
+  `artifacts/logs/riscv-apdu-le-build-20261014.log`, and
+  `artifacts/logs/cycle-apdu-le-20261014.log`. Remaining work: implement APDU
+  outgoing state/length and response chaining, then verify through a host APDU
+  fixture and on the Pico when USB/PCSC are visible.

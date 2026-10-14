@@ -126,9 +126,13 @@ jref_t Context::getRestoredAppletRef() const noexcept {
 }
 
 void Context::setAPDUBufferRef(const jref_t reference,
-                               const uint16_t incoming_length) noexcept {
+                               const uint16_t incoming_length,
+                               const uint16_t expected_response_length,
+                               const bool has_expected_response_length) noexcept {
   this->apdu_buffer_ref = reference;
   this->apdu_incoming_length = incoming_length;
+  this->apdu_expected_response_length = expected_response_length;
+  this->apdu_has_expected_response_length = has_expected_response_length;
   this->apdu_outgoing_offset = 0;
   this->apdu_outgoing_length = 0;
   this->apdu_outgoing_buffer_ref = reference;
@@ -159,6 +163,12 @@ jref_t Context::getAPDUObjectRef() const noexcept {
 
 uint16_t Context::getAPDUIncomingLength() const noexcept {
   return this->apdu_incoming_length;
+}
+
+uint16_t Context::getAPDUExpectedResponseLength() const noexcept {
+  return this->apdu_has_expected_response_length
+             ? this->apdu_expected_response_length
+             : 0;
 }
 
 void Context::setAPDUOutgoing(std::shared_ptr<JC_Array> buffer,

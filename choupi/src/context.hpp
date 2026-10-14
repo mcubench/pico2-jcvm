@@ -57,6 +57,8 @@ private:
   jref_t apdu_outgoing_buffer_ref;
   std::shared_ptr<JC_Array> apdu_outgoing_buffer;
   uint16_t apdu_incoming_length = 0;
+  uint16_t apdu_expected_response_length = 0;
+  bool apdu_has_expected_response_length = false;
   uint16_t apdu_outgoing_offset = 0;
   uint16_t apdu_outgoing_length = 0;
   /// Current Java Card stack.
@@ -89,13 +91,16 @@ public:
   bool hasRestoredAppletInstance() const noexcept;
   jref_t getRestoredAppletRef() const noexcept;
   /// Set and query the APDU buffer and response window for the current command.
-  void setAPDUBufferRef(jref_t reference, uint16_t incoming_length) noexcept;
+  void setAPDUBufferRef(jref_t reference, uint16_t incoming_length,
+                        uint16_t expected_response_length,
+                        bool has_expected_response_length) noexcept;
   void setAPDUJavaBuffer(std::shared_ptr<JC_Array> buffer);
   std::shared_ptr<JC_Array> getAPDUJavaBuffer() const noexcept;
   jref_t getAPDUBufferRef() const noexcept;
   void setAPDUObjectRef(jref_t reference) noexcept;
   jref_t getAPDUObjectRef() const noexcept;
   uint16_t getAPDUIncomingLength() const noexcept;
+  uint16_t getAPDUExpectedResponseLength() const noexcept;
   void setAPDUOutgoing(std::shared_ptr<JC_Array> buffer, uint16_t offset,
                        uint16_t length);
   std::shared_ptr<JC_Array> getAPDUOutgoingBuffer() const noexcept;

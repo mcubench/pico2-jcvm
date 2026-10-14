@@ -37,6 +37,7 @@
 #include "jc_handlers/jc_import.hpp"
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_array_type.hpp"
+#include "../../src/short_apdu.hpp"
 
 #include <cstring>
 #include <memory>
@@ -218,18 +219,13 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
 
     jcvm::Context &context = *selected_applet_context;
     jcvm::Heap &heap = context.getHeap();
-    uint16_t lc = 0;
-    if (command_length >= 6) {
-      lc = command[4];
-      if (command_length != static_cast<uint16_t>(5 + lc) &&
-          command_length != static_cast<uint16_t>(6 + lc)) {
-        status = 0x6700;
-        throw status;
-      }
-    } else if (command_length != 4 && command_length != 5) {
+    pico2_jcvm::ShortApduCommand parsed_command;
+    if (!pico2_jcvm::parse_short_apdu(command, command_length,
+                                      parsed_command)) {
       status = 0x6700;
       throw status;
     }
+    const uint16_t lc = parsed_command.incoming_length;
 
     jcvm::jref_t buffer_ref = context.getAPDUBufferRef();
     auto buffer = context.getAPDUJavaBuffer();
@@ -250,12 +246,16 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     for (uint16_t index = 0; index < 4; ++index) {
       buffer->setByteEntry(index, static_cast<jcvm::jbyte_t>(command[index]));
     }
-    buffer->setByteEntry(4, static_cast<jcvm::jbyte_t>(lc));
+    // For case 2S P3 is Le; for case 3S/4S it is Lc.
+    buffer->setByteEntry(
+        4, static_cast<jcvm::jbyte_t>(command_length > 4 ? command[4] : 0));
     for (uint16_t index = 0; index < lc; ++index) {
       buffer->setByteEntry(static_cast<uint16_t>(5 + index),
                            static_cast<jcvm::jbyte_t>(command[5 + index]));
     }
-    context.setAPDUBufferRef(buffer_ref, lc);
+    context.setAPDUBufferRef(buffer_ref, lc,
+                             parsed_command.expected_response_length,
+                             parsed_command.has_expected_response_length);
 
     jcvm::jref_t apdu_ref = context.getAPDUObjectRef();
     if (apdu_ref.isNullPointer()) {

@@ -325,6 +325,12 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUIncomingLength() {
       Context::getActiveContext().getAPDUIncomingLength());
 }
 
+jshort_t
+fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUExpectedResponseLength() {
+  return static_cast<jshort_t>(
+      Context::getActiveContext().getAPDUExpectedResponseLength());
+}
+
 void fr_gouv_ssi_nativeimpl_NativeImplementation_setAPDUOutgoing(
     std::shared_ptr<JC_Array> buffer, const jshort_t offset,
     const jshort_t length) {
