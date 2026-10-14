@@ -2750,3 +2750,13 @@
 - Decision: Instrument the next VPCD run by phase and process CPU time before tuning the emulator or APDU path.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.
+
+## 2026-10-14 — Record VPCD performance-tips commit
+
+- Step/experiment: `performance-tips-vpcd-applet-debug-20261014-reference`
+- Change: Recorded the commit reference for the VPCD applet-debug performance suggestions.
+- Validation: `git diff --check -- perf_tips.md progress.md` passed; commit `447c88f` contains the recommendations and their progress record.
+- Result: The targeted performance guidance is committed as `447c88f`.
+- Decision: Use per-phase timing and bounded process cleanup on the next VPCD integration attempt.
+- Commit: recorded in the current commit.
+- Artifacts/logs: `perf_tips.md`; `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.
