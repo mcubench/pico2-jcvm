@@ -118,3 +118,38 @@ single observed stage times, not timer-CSV averages.
   through the current wrappers; only optimize the remaining stage if it is
   consistently a large share of end-to-end time. Keep generated artifacts and
   source revision fixed for comparisons.
+
+## Practical profiling workflow
+
+- **Identify the process behind a freeze.** In a second terminal, capture the
+  busiest processes and then their threads while the slowdown is happening:
+
+  ```sh
+  ps -eo pid,ppid,pcpu,stat,comm --sort=-pcpu | head -15
+  ps -L -p <pid> -o pid,tid,pcpu,stat,comm --sort=-pcpu | head -20
+  ```
+
+  Compare this with the command being timed. A compiler process points to build
+  parallelism; a long-lived probe or bridge points to its wait/retry path. Save
+  the process snapshot with the timing record so the cause can be checked later.
+- **Separate wall time from CPU time.** For a repeatable command, record both
+  with `/usr/bin/time -f 'wall=%e user=%U sys=%S cpu=%P maxrss_kb=%M'` while
+  retaining the normal repository wrapper. High CPU time close to wall time
+  indicates active computation; low CPU time with high wall time indicates a
+  wait, I/O delay, or retry. These are diagnostic clues, not a root-cause proof.
+- **Prevent competing builds from distorting results.** Run one build per
+  configured build directory at a time. Concurrent build processes can
+  duplicate work, contend for memory, and make a small job-count comparison
+  meaningless. Keep the source revision and generated-file state fixed across
+  samples.
+- **Use bounded backoff for device discovery.** Make one readiness check, then
+  retry at increasing short intervals up to a fixed deadline. Report which
+  resource is missing (USB device mode, serial node, PC/SC service, or reader)
+  and stop at the deadline. Do not let a preflight loop consume the applet
+  response timeout, and do not use a continuously printing scan as a wait loop.
+- **Choose optimizations from a profile.** If the same conversion stage
+  dominates multiple clean builds, inspect its dependency inputs and cache
+  behavior. If incremental C++ builds dominate, check whether unrelated source
+  files are being rebuilt. If device waits dominate, improve the bounded
+  readiness path first. Record the before/after samples using the same clean or
+  incremental state; do not infer a speedup from unlike runs.

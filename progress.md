@@ -2660,3 +2660,13 @@
 - Decision: Resume the remaining host vpcd transport and applet lifecycle validation.
 - Commit: `c2935e7`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; nested API commit `4d996f4`; `tools/test-apdu-util`.
+
+## 2026-10-14 — Add practical performance profiling workflow
+
+- Step/experiment: `performance-profiling-guidance-20261014`
+- Change: Added concrete process/thread inspection commands and recommendations to compare wall and CPU time, avoid competing builds, bound device discovery retries, and choose optimizations from repeatable profiles.
+- Validation: `git diff --check -- perf_tips.md progress.md` passed. Documentation-only change; no builds, tests, or hardware operations were run.
+- Result: The suggestions provide a way to identify the source of VM saturation without attributing it to an unmeasured cause.
+- Decision: Capture process and timing data during any repeatable slowdown before changing concurrency or wait behavior.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; no new timing data collected.
