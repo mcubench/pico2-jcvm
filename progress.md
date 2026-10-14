@@ -2822,3 +2822,13 @@
 - Decision: Collect exact wrapper and VPCD phase timings on the next run.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-handler-base-fix.log`.
+
+## 2026-10-14 — Rank performance experiments from recorded timings
+
+- Step/experiment: `rank-performance-experiments-20261014`
+- Change: Added a ranked experiment table to `perf_tips.md` covering Maven stage timing/offline-mode evaluation, VPCD phase and child-process timing, comparable ARM build classes, focused versus full host tests, and separate hardware phase timing. Updated the VPCD note to reflect the current exception/method lookup failure rather than the superseded CP field 174 failure.
+- Validation: `git diff --check -- perf_tips.md progress.md .agent/HANDOFF.md` passed. Documentation-only; no build, test, or hardware operation was run.
+- Result: Recommendations now include the observed Maven 5:13 stage, VPCD 7.39 s failure timing, ARM build range 3.120–9.152 s, and explicit repeatable comparison criteria. These are single or variable samples, not claimed speedups.
+- Decision: Collect per-stage VPCD timing and comparable build samples before tuning.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`; `/tmp/pico2-jcalgtest-handler-base-fix.log`.

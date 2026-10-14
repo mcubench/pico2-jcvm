@@ -184,12 +184,27 @@ single observed stage times, not timer-CSV averages.
    relevant wrapper build. Hardware upload and physical reader discovery still
    have no comparable timing sample, so measure them separately when available.
 
+## Ranked experiments
+
+| Priority | Experiment | Evidence and expected value | How to judge it |
+|---|---|---|---|
+| 1 | Split PC generation, ROM-mask generation, and C++ build timings; check whether Maven's long metadata resolution repeats when inputs are unchanged. If dependencies are cached, compare a documented offline build mode while keeping the normal wrapper as the correctness baseline. | One regeneration took 5:13 in the Maven reactor after DNS failures, versus 1:01 for Java API generation. This is the largest observed build stage, but it is only one run. | Capture three clean and three no-op runs per stage. Confirm identical outputs and successful wrapper builds before adopting any offline setting. |
+| 2 | Add monotonic phase timestamps and child-process accounting to the VPCD applet harness: launch, connect, ATR, SELECT, each APDU, and teardown. | The latest handler diagnostic took 7.39 s wall, 0.27 s user, 1.98 s system (30% CPU), then failed with `6F00`. Those totals do not identify the slow phase; comparatively low CPU also gives no evidence for a CPU-bound spin loop. | Repeat the exact command three times; report phase durations, parent/child CPU, exit status, and the last completed APDU. Optimize only a phase that repeatedly dominates. |
+| 3 | Separate incremental, clean, and generation-invalidating ARM builds in the timer report. | Successful ARM builds span 3.120–9.152 s (mean 5.127 s); the spread may reflect different rebuild work, so it is not a reliable single baseline. | Keep source revision and output state fixed; record job count and wall/user/system time for at least three runs per build class. |
+| 4 | Compare focused tests with the full host applet test after fixing the current APDU failure. | Focused host tests take 0.458–5.184 s, while the prior complete smoke attempt took 34.837 s and failed. Fast tests can shorten each fix/validate loop. | Confirm the focused test covers the changed behavior, then run the full bounded VPCD test before accepting the change. |
+| 5 | Measure hardware preflight, upload, re-enumeration, reader discovery, and serial capture independently when physical testing resumes. | Upload has no comparable timing sample; past missing-node and PC/SC cases consumed time before applet execution. | Record each bounded phase and its readiness result. Treat missing hardware/reader as precondition failure, not target runtime. |
+
+These are experiments, not claimed speedups. In particular, the 5:13 Maven
+duration and 7.39-second VPCD failure are single observations; repeat them under
+the same conditions before changing build or runtime behavior.
+
 ## VPCD applet-debug loop
 
-The current host integration reaches applet `process(APDU)`, but its JCSystem
-info request still fails with `6F00` during field access. The test has also
-taken longer than its nominal bounded run while exiting the error path. Treat
-these as diagnostic costs, not as applet throughput measurements.
+The current host integration reaches applet `process(APDU)`, but the latest
+diagnostic has moved beyond the earlier field-access failure and still returns
+`6F00` during exception handling and virtual method resolution. The test has
+also taken longer than its nominal bounded run while exiting the error path.
+Treat these as diagnostic costs, not as applet throughput measurements.
 
 A later run with bounded process-group cleanup took roughly 20 seconds by
 observation and left no emulator process behind. This was not captured by the
@@ -224,6 +239,7 @@ time.
   and cap output to the first relevant lookup and exception. Large repeated
   logs slow runs and hide the transition that identifies the failing field.
 - **Use the smallest reproducer first.** Keep ATR/SELECT coverage, then run one
-  failing APDU with a short deadline while resolving CP entry 174. Add later
+  failing APDU with a short deadline while resolving the current exception or
+  method lookup failure. Add later
   applet commands only after that request returns the expected response; this
   avoids paying for unrelated test phases on every fix attempt.

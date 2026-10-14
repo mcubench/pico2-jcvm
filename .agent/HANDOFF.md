@@ -1,5 +1,19 @@
 # Handoff
 
+## Ranked performance experiments — 2026-10-14
+
+- Added a priority table to `perf_tips.md` grounded in recorded measurements:
+  Maven ROM-mask generation took 5:13 in one run; the latest failed VPCD test
+  took 7.39 s wall with 0.27 s user and 1.98 s system CPU; successful ARM
+  builds span 3.120–9.152 s. The table separates observations from proposed
+  experiments and defines how to compare results.
+- Updated the VPCD performance note to reflect the current exception/method
+  lookup failure instead of the stale CP field entry 174 diagnosis. No build,
+  test, hardware operation, or new timing sample was run for this docs-only
+  update.
+- Next: add phase timings to the VPCD harness and collect comparable Maven
+  stage/build samples before changing runtime or build behavior.
+
 ## Performance guidance update — 2026-10-14
 
 - Added the latest VPCD handler-offset run to `perf_tips.md`: 7.39 s wall,
