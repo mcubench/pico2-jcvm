@@ -2430,3 +2430,13 @@
 - Decision: Gather more task-time samples during subsequent implementation before making performance changes.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; measurement source `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Performance tips commit reference
+
+- Step/experiment: `development-performance-tips-20261014-reference`
+- Change: Recorded the immutable commit containing the performance recommendations and their progress entry.
+- Validation: Confirmed commit `6154378` contains only `perf_tips.md`, this progress reference, and the corresponding handoff update; staged whitespace check passed.
+- Result: Performance guidance is committed as `6154378`.
+- Decision: Continue the remaining JCAlgTest runtime and integration work; measure any future optimization before claiming a speedup.
+- Commit: `6154378`
+- Artifacts/logs: `perf_tips.md`; source measurements in `artifacts/metrics/development-time.csv`.

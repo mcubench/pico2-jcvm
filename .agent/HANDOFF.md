@@ -4,6 +4,7 @@
 
 - Added executable `tools/task-time` with manual intervals, command timing, and a Markdown report. Its append-only data is in `artifacts/metrics/development-time.csv`.
 - Added `perf_tips.md` with evidence-based suggestions: preserve incremental CAP/ROM-mask outputs, measure Maven conversion separately, keep parallel jobs bounded, and fail fast when USB/serial nodes are absent. The sample remains too small for stable averages.
+- Performance guidance committed as `6154378`.
 - Timer implementation and sample committed as `eb36cbd`.
 - Successful sample: ARM incremental build 3.903 s; `test-short-apdu` 0.458 s; manual analysis 4.641 s; two timer syntax checks at 0.055 s each. Report successful total is 9.112 s. A failed CLI invocation (11.839 s) and interrupted board monitor (82.460 s) remain in the raw CSV and are excluded from successful timing averages.
 - Host CAP converter build completed in 3:29 before timing started, so that duration was not recorded.
