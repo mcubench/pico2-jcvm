@@ -2630,3 +2630,13 @@
 - Decision: Continue with the host vpcd APDU path and lifecycle validation; do not rerun `pcsc_scan` unless the daemon is confirmed ready.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; nested API commit `4d996f4`; `tools/test-apdu-util`.
+
+## 2026-10-14 — Record APDU helper implementation commit
+
+- Step/experiment: `javacard-apdu-cla-helpers-20261014-reference`
+- Change: Recorded the root commit for the APDU CLA API, test harness, regeneration fix, and handoff updates.
+- Validation: Confirmed commit `c2935e7` contains the root implementation/test/docs files; nested Java API source commit is `4d996f4`. `git diff --check` and the CRLF-aware nested API check passed.
+- Result: APDU CLA helper implementation is recorded in root commit `c2935e7`.
+- Decision: Resume the remaining host vpcd transport and applet lifecycle validation.
+- Commit: `c2935e7`
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; nested API commit `4d996f4`; `tools/test-apdu-util`.
