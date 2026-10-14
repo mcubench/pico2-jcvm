@@ -1971,3 +1971,13 @@
 - Decision: Continue the v1.8.2 API coverage and retry the real GPPro install when the host reader is visible here.
 - Commit: root documentation/log commit recorded in the following reference entry; API source commit `6713938e9d7941aff9edb33a2ceecad72d355835`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T075042Z.log` SHA-256 `9ecb112077c3df2eab59df9b53471d93699880cb882fc996c4a5354eea05853e`; `build/arm/pico2_choupi.uf2` SHA-256 `8900ed53725f5a69a5001138fa9f6f04a90fcdcffbef474a42960b70fdf315de`.
+
+## 2026-10-14 — APDU transport validation commit reference
+
+- Step/experiment: `apdu-transport-parameters-20261014-reference`
+- Change: Recorded the root documentation/evidence commit for the APDU transport metadata change.
+- Validation: Confirmed root commit `880153f79d9cb2cc2081b90a19defff18ae093f5` contains `progress.md`, `TODO.md`, `.agent/HANDOFF.md`, and the physical cycle log. The Java Card API source is committed separately as `6713938e9d7941aff9edb33a2ceecad72d355835`.
+- Result: APDU source and physical validation evidence are committed.
+- Decision: Proceed to the bounded monitor timeout hardening discovered during this cycle.
+- Commit: `recorded in the following reference commit`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T075042Z.log`.
