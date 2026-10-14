@@ -2451,6 +2451,16 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/metrics/development-time.csv`; ARM UF2 `build/arm/pico2_choupi.uf2`; no archived build log.
 
+## 2026-10-14 — Install failure status-word commit reference
+
+- Step/experiment: `install-failure-status-map-20261014-reference`
+- Change: Recorded the immutable commit for GP INSTALL failure-stage status mapping and its focused host test.
+- Validation: Confirmed commit `7c71176` contains the status mapping, all ten host mapping cases, and the progress record. The focused test and ARM build passed before commit; staged whitespace validation passed.
+- Result: The status mapping step is committed as `7c71176`. Hardware INSTALL response behavior remains unverified.
+- Decision: Continue with host-side applet execution coverage while retaining hardware acceptance as open.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/metrics/development-time.csv`; ARM UF2 `build/arm/pico2_choupi.uf2`.
+
 ## 2026-10-14 — Install rollback commit reference
 
 - Step/experiment: `persistent-install-rollback-rp2350-20261014-reference`

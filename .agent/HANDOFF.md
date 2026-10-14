@@ -19,6 +19,7 @@
 
 ## Install status words — 2026-10-14
 
+- Implementation commit: `7c71176`.
 - GP INSTALL failure stages now append a status word that distinguishes bad
   install data (`6A80`), missing package (`6A82`), storage/rollback failure
   (`6581`), unavailable transaction (`6985`), and unexpected exception
