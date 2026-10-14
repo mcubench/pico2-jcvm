@@ -2249,5 +2249,15 @@
 - Validation: Confirmed commit `9942d57` contains the native factory, Object[] wildcard handling, the focused test, and the TODO/handoff updates. The ARM build and `./tools/test-jcarray` passed before commit.
 - Result: The transient Object[] implementation is committed as `9942d57`; physical applet behavior remains unverified.
 - Decision: Continue with the remaining JCAlgTest native API surface and retry PC/SC integration when this execution environment can reach the host service.
-- Commit: recorded in this entry's commit.
+- Commit: `cc13ec4`
 - Artifacts/logs: `/tmp/pico2-jcarray-object-array.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-14 — Retry PC/SC access after VM helper run
+
+- Step/experiment: `pcsc-access-retry-20261014`
+- Change: Retried the bounded JCAlgTest APDU probe after the user reported the VM PC/SC helper ran successfully.
+- Validation: Normal `./tools/probe-jc-algtest` exited 1 because reader `Pico 2 CHOUPI CCID` was not found. Retrying with elevated device access reached Java Smart Card I/O but returned `SCARD_E_NO_READERS_AVAILABLE`. `systemctl is-active pcscd.service` could not connect to the system bus; `lsusb -d 2e8a:0009` returned `libusb: -99`. No APDU was sent. No RISC-V build or test was run.
+- Result: Host PC/SC setup may be active in the user's VM, but the isolated agent process cannot see its system bus, USB device, or reader.
+- Decision: Continue implementation and ARM-only validation locally; retry APDU testing when the reader is exposed to this execution environment.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: no repository log; probe and access errors were captured in the tool output for this turn.

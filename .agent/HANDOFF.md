@@ -9,12 +9,13 @@
   checks factory type, length, clear event, and zero initialization through
   the factory path; assignment under the live Java firewall and use by an
   installed applet still need board evidence. The ARM image was built but not
-  flashed. No RISC-V compile or test was run. Commit is recorded in the next
-  reference entry.
-- Current execution environment still cannot reach PC/SC (`pcscd` service is
-  unavailable here). User was given the authorized helper command
-  `sudo -n /usr/local/sbin/pico2-pcsc-reader rerun` to restore access in the VM;
-  wait for its output before claiming reader access has returned.
+  flashed. No RISC-V compile or test was run. Implementation commit: `9942d57`.
+- The user reports the VM PC/SC helper ran successfully. The bounded probe
+  still finds no readers in this execution environment: normal Java access
+  reports the named reader missing, and elevated Java access returns
+  `SCARD_E_NO_READERS_AVAILABLE`. `systemctl` cannot connect to the VM system
+  bus and `lsusb` returns `libusb: -99`; no APDU was sent. The probe was not
+  retried with unbounded `pcsc_scan`.
 - The user has returned physical testing to scope and asked to continue the
   complete project autonomously. This session regained USB passthrough through
   an approved elevated host-device invocation. `tools/monitor` now waits up to

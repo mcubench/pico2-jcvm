@@ -35,8 +35,10 @@ lines). Treat this only as a reference: jCardSim itself raises
 `NotImplementedException` on some algorithms and the client records those
 errors. A Java `javax.smartcardio` probe compiles
 without extra modules, but found no readers in the current agent container
-because the system PC/SC service is unavailable here. The authorized sudo
-helper cannot run in this container (`no new privileges`). A prior unbounded
+because the system PC/SC service is unavailable here. The user reports that
+the authorized VM helper ran successfully, but both normal and elevated APDU
+probes in this execution environment still report no PC/SC readers; the VM
+system bus and USB device are not exposed here. A prior unbounded
 `pcsc_scan -r` under this missing-service condition emitted a large stream of
 PC/SC errors; always bound scans with `timeout`. The ARM wrapper build passes
 with the new default two-job limit. `tools/probe-jc-algtest` now provides a
