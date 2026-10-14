@@ -2031,3 +2031,13 @@
 - Decision: Continue filling the JCAlgTest API/native gaps and host integration coverage; retry physical cycle after the VM can see the Pico.
 - Commit: recorded in the following reference entry
 - Artifacts/logs: `artifacts/logs/jcarray-generic-20261014.log` SHA-256 `499791e60622ccaeaa24d5423f426b3aee1f34779d48703ddabe40301316c6cf`; `artifacts/logs/cycle-choupi-20261014T082552Z.log` SHA-256 `94e0fb59a7ae1510e906299f616bac3ad500ccac68c42f405f477979f2d16caf`; ARM UF2 SHA-256 `652fa4b42ad9a83c589367d1385a3663d9fce4c36275032232827013613f4f01`.
+
+## 2026-10-14 — Generic ArrayLogic implementation commit reference
+
+- Step/experiment: `arraylogic-primitive-types-20261014-reference`
+- Change: Recorded the root source/test/evidence commit for generic byte/short/int array operations.
+- Validation: Confirmed root commit `b64ff65` includes `choupi/src/jni.cpp`, the expanded ASan test, both logs, and tracker updates.
+- Result: Implementation and evidence are committed together.
+- Decision: Continue with the remaining JCAlgTest runtime and API gaps.
+- Commit: `recorded in the following reference commit`
+- Artifacts/logs: `artifacts/logs/jcarray-generic-20261014.log`.
