@@ -8,8 +8,15 @@ missing=0
 report_command() {
   local name="$1"
   local required="$2"
-  if command -v "${name}" >/dev/null 2>&1; then
-    printf 'OK      %-20s %s\n' "${name}" "$(command -v "${name}")"
+  local command_path=""
+  if [[ -x "${repo_root}/tools/env" ]]; then
+    command_path="$(${repo_root}/tools/env bash -c 'command -v -- "$1"' _ "${name}" 2>/dev/null || true)"
+  fi
+  if [[ -z "${command_path}" ]]; then
+    command_path="$(command -v "${name}" 2>/dev/null || true)"
+  fi
+  if [[ -n "${command_path}" ]]; then
+    printf 'OK      %-20s %s\n' "${name}" "${command_path}"
   else
     printf '%-7s %-20s %s\n' "$([[ "${required}" == yes ]] && printf MISSING || printf OPTIONAL)" "${name}" 'not found on PATH'
     [[ "${required}" == yes ]] && missing=1
@@ -47,9 +54,13 @@ report_command mvn yes
 report_command picotool no
 
 printf '\nPico SDK\n'
-if [[ -n "${PICO_SDK_PATH:-}" ]]; then
-  report_path PICO_SDK_PATH "${PICO_SDK_PATH}" yes
-  report_path sdk_import "${PICO_SDK_PATH}/external/pico_sdk_import.cmake" yes
+sdk_path="${PICO_SDK_PATH:-}"
+if [[ -z "${sdk_path}" && -x "${repo_root}/tools/env" ]]; then
+  sdk_path="$(${repo_root}/tools/env bash -c 'printf %s "${PICO_SDK_PATH:-}"' 2>/dev/null || true)"
+fi
+if [[ -n "${sdk_path}" ]]; then
+  report_path PICO_SDK_PATH "${sdk_path}" yes
+  report_path sdk_import "${sdk_path}/external/pico_sdk_import.cmake" yes
 else
   printf 'MISSING PICO_SDK_PATH       environment variable is unset\n'
   missing=1

@@ -2131,3 +2131,13 @@
 - Decision: Continue with host fixture/reader access and remaining runtime API work.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/cycle-apdu-state-20261014.log`.
+
+## 2026-10-14 — Make doctor use the repository toolchain
+
+- Step/experiment: `doctor-wrapper-toolchain-20261014`
+- Change: Updated `tools/doctor` to resolve compiler/build commands and `PICO_SDK_PATH` through `tools/env`, while retaining PATH fallbacks for host tools.
+- Validation: `./tools/doctor` exits 0 and reports all required local tools, the SDK import file, and CHOUPI sources present. It now reports `cmake`, Cargo, Rust, Maven, and picotool from `.local-toolchain` instead of incorrectly marking them missing.
+- Result: The diagnostic agrees with the repository wrappers that were already building both architectures and the PC VM.
+- Decision: Use the doctor output to distinguish missing local prerequisites from USB/PCSC availability.
+- Commit: `recorded in the following reference entry`
+- Artifacts/logs: `artifacts/logs/doctor-wrapper-env-20261014.log` SHA-256 `daa8356548514a6469b72ab53611b48dac1ff510877b338ad534ce951d5ba91b`.

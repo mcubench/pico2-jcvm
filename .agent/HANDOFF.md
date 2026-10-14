@@ -1882,3 +1882,11 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   APDU was sent. Logs are in `artifacts/logs/*-apdu-state-20261014.log`. Next
   exercise case-2/case-4 output and GET RESPONSE using a host applet fixture or
   PC/SC when available; then continue JCAlgTest API gaps.
+
+- Diagnostic checkpoint — 2026-10-14. `tools/doctor` now resolves host tools
+  and `PICO_SDK_PATH` through `tools/env`, with normal PATH fallbacks. The
+  bounded diagnostic exits 0 and reports the local CMake, Cargo/Rust, Maven,
+  picotool, SDK, and required CHOUPI source files present. Log:
+  `artifacts/logs/doctor-wrapper-env-20261014.log` (SHA-256
+  `daa8356548514a6469b72ab53611b48dac1ff510877b338ad534ce951d5ba91b`). The
+  diagnostic does not establish USB or PC/SC availability.
