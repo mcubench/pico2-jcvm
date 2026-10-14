@@ -1991,3 +1991,13 @@
 - Decision: Keep this bounded capture behavior for future board cycles. GPPro's latest install retry after reflashing timed out after 15 seconds with no reader or APDU output; installation remains unverified.
 - Commit: root implementation/evidence commit recorded in the following reference entry.
 - Artifacts/logs: `artifacts/logs/monitor-timeout-watchdog-20261014.txt` SHA-256 `f76159c0af3797b520f45557a25d929575b6b9de280486006f3d711a18932c07`.
+
+## 2026-10-14 — Serial monitor hardening commit reference
+
+- Step/experiment: `serial-monitor-timeout-watchdog-20261014-reference`
+- Change: Recorded the root implementation/evidence commit for bounded serial-monitor shutdown.
+- Validation: Confirmed root commit `dc73b1a5bd8575e1a9ebf718ab34d1012e84f0ad` contains `tools/monitor`, the 2-second capture log, `progress.md`, `TODO.md`, and `.agent/HANDOFF.md`.
+- Result: Monitor timeout hardening and its physical serial evidence are committed.
+- Decision: Continue implementing the remaining JCAlgTest v1.8.2 API surface while retaining bounded board capture and flash recovery.
+- Commit: `recorded in the following reference commit`
+- Artifacts/logs: `artifacts/logs/monitor-timeout-watchdog-20261014.txt`.
