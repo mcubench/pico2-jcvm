@@ -10,6 +10,11 @@
   the factory path; assignment under the live Java firewall and use by an
   installed applet still need board evidence. The ARM image was built but not
   flashed. No RISC-V compile or test was run. Implementation commit: `9942d57`.
+- Next ARM-only API step: `JCSystem.getPreviousContextAID()` now returns Java
+  null because this runtime does not support cross-applet/shareable-interface
+  context switches. `./tools/test-jcarray` and `./tools/build arm` pass; the
+  new UF2 was not flashed. No RISC-V build or test was run. Commit is recorded
+  in the next progress reference entry.
 - The user reports the VM PC/SC helper ran successfully. The bounded probe
   still finds no readers in this execution environment: normal Java access
   reports the named reader missing, and elevated Java access returns

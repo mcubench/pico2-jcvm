@@ -22,6 +22,7 @@ jbool_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitiveArraysSupported();
 jbool_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitive(jref_t);
+jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getPreviousContextAID();
 std::shared_ptr<JC_Array>
 fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientByteArray(jshort_t,
                                                                    jbyte_t);
@@ -51,6 +52,11 @@ int main() {
   if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_getAssignedChannel() !=
       0) {
     std::cerr << "default transport did not select the basic channel\n";
+    return 1;
+  }
+  if (!jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_getPreviousContextAID()
+           .isNullPointer()) {
+    std::cerr << "previous applet context should be null without sharing\n";
     return 1;
   }
   const auto integrityArraysSupported =
@@ -329,6 +335,7 @@ int main() {
   std::cout << "TEST:PASS jni_transient_object_array\n";
   std::cout << "TEST:PASS jni_selecting_applet_fallback\n";
   std::cout << "TEST:PASS jni_basic_channel_fallback\n";
+  std::cout << "TEST:PASS jni_previous_context_aid_fallback\n";
   std::cout << "TEST:PASS jni_integrity_arrays_capability\n";
   std::cout << "TEST:PASS jni_integrity_sensitive_query\n";
   return 0;

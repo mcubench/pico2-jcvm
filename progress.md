@@ -2261,3 +2261,23 @@
 - Decision: Continue implementation and ARM-only validation locally; retry APDU testing when the reader is exposed to this execution environment.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: no repository log; probe and access errors were captured in the tool output for this turn.
+
+## 2026-10-14 — PC/SC access retry commit reference
+
+- Step/experiment: `pcsc-access-retry-20261014-reference`
+- Change: Recorded the immutable commit for the PC/SC visibility retry and updated execution-environment handoff.
+- Validation: Confirmed commit `99b0eaf` contains the bounded probe result, TODO update, and handoff evidence. The elevated probe returned `SCARD_E_NO_READERS_AVAILABLE`; no APDU was sent.
+- Result: The reader access limitation is recorded without treating a successful VM helper run as proof of agent-container access.
+- Decision: Continue with implementation that can be built and tested locally.
+- Commit: `99b0eaf`
+- Artifacts/logs: no repository log; exact output is summarized in `progress.md` above.
+
+## 2026-10-14 — Define previous-context AID fallback
+
+- Step/experiment: `jc-system-previous-context-aid-fallback-20261014`
+- Change: Implemented `JCSystem.getPreviousContextAID()` as Java null because the current runtime has no cross-applet/shareable-interface context switch from which to obtain a previous applet AID. Added a focused native assertion.
+- Validation: `./tools/test-jcarray` passed with `TEST:PASS jni_previous_context_aid_fallback` and all existing checks. `./tools/build arm` passed and generated the RP2350 ARM CHOUPI UF2. No flash or physical APDU test was run; no RISC-V build or test was run.
+- Result: The unsupported cross-applet query now returns the documented null fallback instead of throwing `NotYetImplemented`.
+- Decision: Retain this limited behavior and continue the remaining JCAlgTest Java Card APIs; applet-level runtime validation remains pending.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `/tmp/pico2-previous-context-aid.log` (SHA-256 `4a68dfe0966deaee6ba12de8a08a83bef4730f3c01d7b9f53f7b0d82c7610e02`); ARM UF2 SHA-256 `1b5231c74e3b7c3a38ce63a20b696aa0a6e16749ffadd4862ecb7f38fb3d5738`.

@@ -462,8 +462,9 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getMaxCommitCapacity() {
 }
 
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getPreviousContextAID() {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+  // This runtime has no cross-applet shareable-interface context switches.
+  // Consequently there is no previous applet context to report.
+  return jref_t{};
 }
 
 jshort_t

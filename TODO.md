@@ -133,7 +133,8 @@ rollback and duplicate/invalid registration handling also remain unverified.
   Java exception mapping for unsupported crypto factories. `ArrayLogic` native
   copy/fill/compare/search now support the documented byte, short, and int
   primitive types (including big-endian byte encodings for short/int search);
-  broader API coverage remains incomplete.
+  `JCSystem.getPreviousContextAID()` returns null because cross-applet context
+  switching is unsupported. Broader API coverage remains incomplete.
 - [x] Implement `JCSystem.makeTransientObjectArray()` with Java-null default
   entries and a wildcard component type that accepts any reference. ARM build
   and focused factory tests pass; installed-applet use remains unverified.
