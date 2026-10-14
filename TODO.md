@@ -15,22 +15,21 @@ out explicitly.
   applet AID/FCI on SELECT. This confirms registry/transport behavior only; it
   does not confirm that the applet constructor or `process()` has run.
 - [x] Keep ARM and RISC-V wrapper builds passing for the current shared source.
+- [x] Correct `Util.arrayCompare()` so the first greater source byte returns
+  `1` instead of incorrectly returning `-1`; nested API commit `6dceb7e`.
 
 ## Active: make v1.8.2 installation execute correctly
 
-Current environment note (2026-10-14): the rebuilt ARM CHOUPI firmware was
-flashed to the Pico 2 and passed its 18-second serial check with repeated
-`TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The user reports the
-reader is visible. GPPro in this execution context first returned
-`SCARD_E_NO_SERVICE`; a bounded elevated retry reported no available readers,
-and the latest retry after reflashing timed out after 15 seconds without reader
-or APDU output. No INSTALL APDU reached the card, so applet installation remains
-unverified. The complete PC VM now links after fetching its missing Cargo
-dependencies and adding the PC target's explicit empty dynamic-CAP store
-backend. Its `--help` smoke check passes. The host build still reports legacy
-Rust, Maven, and packed CAP metadata warnings. A new `./tools/cycle choupi`
-passed both architecture builds but could not access USB (`libusb: -99`), so
-that attempt did not flash or capture serial output.
+Current environment note (2026-10-14): a bounded elevated PC/SC scan now sees
+`Pico 2 CHOUPI CCID [JCAlgTest CCID]`. GlobalPlatformPro `--debug --list`
+successfully selected and listed ISD `A000000151000000` (`OP_READY`) over T=1;
+its package/applet queries returned `6A88` because none are installed. This
+verifies the Linux reader/list path, but Windows enumeration and applet
+installation are still unverified. The latest ARM and RISC-V wrapper builds
+pass. The PC VM links after adding its explicit empty dynamic-CAP store backend;
+its `--help` smoke check passes. Host/API generation still emits legacy
+Java Card converter warnings. The current newly built ARM UF2 has not yet been
+flashed.
 
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's
@@ -122,11 +121,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   archive its CSV and logs with hashes.
 - [ ] Run the same client through jCardSim and compare the CSV against the
   simulator and CHOUPI's declared supported-algorithm list.
-- [ ] Complete hardware integration: the current ARM firmware was flashed and
-  passed its finite serial runtime test, but GPPro list/install/select/process/
-  delete and power-cycle persistence remain unverified. The latest bounded
-  elevated GPPro run found no readers in this execution context, despite the
-  user's report that the reader is visible.
+- [ ] Complete hardware integration: the earlier ARM firmware passed its finite
+  serial runtime test, and GPPro `--debug --list` now succeeds over PC/SC on
+  Linux with ISD `A000000151000000` in `OP_READY`. Windows enumeration,
+  install/select/process/delete, and power-cycle persistence remain unverified.
 - [ ] Pass AC1–AC5 and the plan's clean-flash integration sequence three times.
 
 ## Later / optional

@@ -2151,3 +2151,13 @@
 - Decision: Continue toward the golden applet APDU fixture and remaining JCAlgTest support.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/doctor-wrapper-env-20261014.log`.
+
+## 2026-10-14 — Fix Java Card Util array comparison ordering
+
+- Step/experiment: `util-array-compare-order-20261014`
+- Change: Fixed `Util.arrayCompare()` so the first source byte greater than the corresponding destination byte returns `1`; the old final comparison repeated `<` and incorrectly returned `-1`. Nested Java Card API commit: `6dceb7e`.
+- Validation: `./tools/build arm` and `./tools/build riscv` both passed after regenerating the ROM mask. GlobalPlatformPro `--debug --list` connected to the now-visible Pico 2 over T=1 and listed ISD `A000000151000000` as `OP_READY`; package/applet list queries returned `6A88` because no package or applet is installed. The build logs contain pre-existing Java Card converter/source-level warnings; neither architecture build failed.
+- Result: The Java API comparison now has the documented greater-than result. PC/SC and basic ISD listing work on this Linux host. Applet installation, runtime APDU dispatch, Windows enumeration, and the newly built firmware's hardware behavior remain unverified.
+- Decision: Flash and capture the current ARM image now that both architecture builds pass, then retry JCAlgTest installation and investigate any returned status word from fresh traces.
+- Commit: root documentation/evidence commit recorded in the following reference entry.
+- Artifacts/logs: ARM `artifacts/logs/arm-util-array-compare-20261014.log` SHA-256 `16ddb401d4ddb2511f957407fd03ab717547cae58bb42eab10c795546a57146a`; RISC-V `artifacts/logs/riscv-util-array-compare-20261014.log` SHA-256 `f09a02c4542f463837c5e1745834cfd3e3e780f159f73a335f69a2dfc854ea65`; GPPro list `artifacts/logs/gp-list-current-20261014.log` SHA-256 `da115a4a917ad1a00b819f69bfc96b39cac2288e033528d9db9ea1defb10d0fb`.

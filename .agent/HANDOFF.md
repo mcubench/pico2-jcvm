@@ -1890,3 +1890,19 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/doctor-wrapper-env-20261014.log` (SHA-256
   `daa8356548514a6469b72ab53611b48dac1ff510877b338ad534ce951d5ba91b`). The
   diagnostic does not establish USB or PC/SC availability.
+
+- Continued on 2026-10-14. Corrected `Util.arrayCompare()` in the nested Java
+  Card API source so its greater-than branch returns `1` (commit `6dceb7e`).
+  ARM and RISC-V wrapper builds both pass after ROM-mask regeneration; the
+  converter still prints existing Java Card source/export warnings. The user
+  enabled PC/SC and the bounded reader scan now sees `Pico 2 CHOUPI CCID
+  [JCAlgTest CCID]`. GlobalPlatformPro `--debug --list` succeeds over T=1 and
+  lists ISD `A000000151000000` in `OP_READY`; no packages/applets are installed
+  (`6A88` for package/applet queries). Log:
+  `artifacts/logs/gp-list-current-20261014.log` (SHA-256
+  `da115a4a917ad1a00b819f69bfc96b39cac2288e033528d9db9ea1defb10d0fb`). The
+  current ARM UF2 built after the API fix has not yet been flashed. Next run
+  `./tools/cycle arm` (both architectures have passed their current build gates),
+  inspect the bounded serial output, then retry installing the supplied
+  JCAlgTest v1.8.2 CAP and follow fresh APDU traces if install fails. Windows
+  reader enumeration and applet lifecycle/persistence remain unverified.
