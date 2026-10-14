@@ -36,6 +36,7 @@
 #include "stack.hpp"
 #include "types.hpp"
 
+#include <array>
 #include <memory>
 
 namespace jcvm {
@@ -59,6 +60,11 @@ private:
   uint16_t apdu_incoming_length = 0;
   uint16_t apdu_expected_response_length = 0;
   bool apdu_has_expected_response_length = false;
+  uint16_t apdu_response_declared_length = 0;
+  uint16_t apdu_response_sent_length = 0;
+  uint8_t apdu_state = 0;
+  bool apdu_outgoing_no_chaining = false;
+  std::array<uint8_t, 1022> apdu_response_data{};
   uint16_t apdu_outgoing_offset = 0;
   uint16_t apdu_outgoing_length = 0;
   /// Current Java Card stack.
@@ -101,8 +107,13 @@ public:
   jref_t getAPDUObjectRef() const noexcept;
   uint16_t getAPDUIncomingLength() const noexcept;
   uint16_t getAPDUExpectedResponseLength() const noexcept;
+  uint16_t beginAPDUOutgoing(bool no_chaining);
+  void setAPDUOutgoingLength(uint16_t length);
+  uint8_t getAPDUState() const noexcept;
+  void markAPDUIncomingReceived();
   void setAPDUOutgoing(std::shared_ptr<JC_Array> buffer, uint16_t offset,
                        uint16_t length);
+  uint8_t getAPDUOutgoingByte(uint16_t index) const;
   std::shared_ptr<JC_Array> getAPDUOutgoingBuffer() const noexcept;
   jref_t getAPDUOutgoingBufferRef() const noexcept;
   uint16_t getAPDUOutgoingOffset() const noexcept;

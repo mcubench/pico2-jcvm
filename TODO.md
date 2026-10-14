@@ -94,10 +94,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   array used to collect response bytes. The API reports T=1, IFSC 32, IFSD 254,
   and NAD 0 from the advertised ATR and CCID descriptor. The supplied applet
   predominantly calls `setIncomingAndReceive()` and `setOutgoingAndSend()`.
-  The bridge now fragments data responses at short Le and serves `GET RESPONSE`
-  using `61xx`; stateful `setOutgoingLength()`/`sendBytes*` methods remain
-  unfinished. Parser/chunk tests and all three builds pass, but no applet-level
-  APDU exchange has verified these paths yet.
+  Stateful `setOutgoing()`/`setOutgoingNoChaining()`, `setOutgoingLength()`,
+  `sendBytes()`, `sendBytesLong()`, `setOutgoingAndSend()`, and
+  `getCurrentState()` now use per-command state, append outgoing chunks, and
+  enforce the no-chaining size bound. The bridge fragments data responses at
+  short Le and serves `GET RESPONSE` using `61xx`. Parser, response-chain, and
+  Context state tests pass; the Pico cycle also passed after flashing this
+  implementation. An applet-level APDU exchange and PC/SC verification remain
+  outstanding; extended APDUs are rejected.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
   transient array variants, `Util` helpers, `JCSystem` queries, `AID`, and
   Java exception mapping for unsupported crypto factories. `ArrayLogic` native

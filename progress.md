@@ -2101,3 +2101,13 @@
 - Decision: Continue with Java APDU outgoing state and host applet exchange fixtures.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/short-apdu-chaining-20261014.log`.
+
+## 2026-10-14 — Implement APDU output state and chunk accumulation
+
+- Step/experiment: `apdu-output-state-20261014`
+- Change: Added per-command APDU transfer state to `Context`, including expected Le, declared output length, outgoing mode, and an accumulated 1022-byte response buffer. The Java APDU API now implements `setOutgoing()`, `setOutgoingNoChaining()`, `setOutgoingLength()`, `sendBytes()`, `sendBytesLong()`, `setOutgoingAndSend()`, `setIncomingAndReceive()`, and `getCurrentState()` using the native state bridge. Nested API commit: `5aef71e`.
+- Validation: `./tools/test-short-apdu` passes parser, multi-chunk response, and Context-state cases (including illegal transitions, output accumulation, missing Le, and the 252-byte no-chaining bound). PC VM, ARM, and RISC-V builds passed. Elevated `./tools/cycle choupi` recovered BOOTSEL via CDC after picotool lacked a reset interface, flashed the ARM image, and captured repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` appeared. The firmware runtime smoke check does not execute an installed applet. `pcsc_scan -r` reported `SCardEstablishContext: Service not available`, so no applet APDU was sent.
+- Result: The APDU output state machine and response chunk storage compile and pass unit-level tests; real-board firmware boots successfully. Applet-level case-2/case-4 commands, response chaining, and Java exception mapping remain unverified. Extended APDUs remain unsupported.
+- Decision: Next build a host applet exchange fixture or regain PC/SC, then exercise GET RESPONSE and continue the remaining JCAlgTest API gaps.
+- Commit: `recorded in the following reference entry`
+- Artifacts/logs: unit tests `artifacts/logs/short-apdu-state-20261014.log` SHA-256 `a721816d1700d2e6c48c41cf50cc776e2417c32453bf469261a6a2d922336286`; PC build `artifacts/logs/host-apdu-state-20261014.log` SHA-256 `49b2cc55cada2d22f71ec79c20fa3947aa094f888fe01a7b8e75db8e682bfddf`; ARM `artifacts/logs/arm-apdu-state-20261014.log` SHA-256 `421ed022d97c52db4a5320d10f4fd3893d4819765c8f4fa078a80f8ed4ec7e96`; RISC-V `artifacts/logs/riscv-apdu-state-20261014.log` SHA-256 `95c7b2401f65fc5a28161892dd176d232b5bdd96db638842c86142dcdbcbe466`; physical cycle `artifacts/logs/cycle-apdu-state-20261014.log` SHA-256 `383330020642e57906a34b28115163f04a1a3c40de31ecaeb5fa209611a3088d`; UF2 SHA-256 `033ed8c9e1868434a0c801c47a0b6d1e03f652b62656f243521d8626118d97e1`.

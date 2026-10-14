@@ -331,6 +331,31 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUExpectedResponseLength() {
       Context::getActiveContext().getAPDUExpectedResponseLength());
 }
 
+jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_beginAPDUOutgoing(
+    const jbool_t no_chaining) {
+  return static_cast<jshort_t>(
+      Context::getActiveContext().beginAPDUOutgoing(no_chaining != FALSE));
+}
+
+void fr_gouv_ssi_nativeimpl_NativeImplementation_setAPDUOutgoingLength(
+    const jshort_t length) {
+  if (length < 0) {
+    throw Exceptions::APDUException;
+  }
+  Context::getActiveContext().setAPDUOutgoingLength(
+      static_cast<uint16_t>(length));
+}
+
+jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUState() {
+  return static_cast<jbyte_t>(Context::getActiveContext().getAPDUState());
+}
+
+jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_receiveAPDUIncoming() {
+  Context &context = Context::getActiveContext();
+  context.markAPDUIncomingReceived();
+  return static_cast<jshort_t>(context.getAPDUIncomingLength());
+}
+
 void fr_gouv_ssi_nativeimpl_NativeImplementation_setAPDUOutgoing(
     std::shared_ptr<JC_Array> buffer, const jshort_t offset,
     const jshort_t length) {
@@ -338,7 +363,6 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_setAPDUOutgoing(
     throw Exceptions::ArrayIndexOutOfBoundsException;
   }
   Context &context = Context::getActiveContext();
-  context.setAPDUJavaBuffer(buffer);
   context.setAPDUOutgoing(std::move(buffer), static_cast<uint16_t>(offset),
                           static_cast<uint16_t>(length));
 }

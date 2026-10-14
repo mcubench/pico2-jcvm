@@ -1866,3 +1866,19 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/riscv-apdu-chaining-20261014.log`, and
   `artifacts/logs/cycle-apdu-chaining-20261014.log`. Still needed: APDU Java
   send-state methods and an applet APDU exchange test.
+
+- APDU output-state checkpoint — 2026-10-14. `Context` now resets state for
+  each command, tracks Le and declared response length, enforces the 252-byte
+  no-chaining limit, accumulates `sendBytes`/`sendBytesLong` output, and exposes
+  the Java state constants. The API implements outgoing methods and
+  `setIncomingAndReceive()` through new native calls; nested API commit:
+  `5aef71e`. `./tools/test-short-apdu` covers parser, chunking, state transitions,
+  buffer accumulation, invalid transitions, missing Le, and no-chaining bounds.
+  Host, ARM, and RISC-V builds pass. Elevated `./tools/cycle choupi` successfully
+  recovered BOOTSEL through CDC, flashed ARM, and captured repeated runtime
+  PASS/SUMMARY markers with no FAIL/FAULT. UF2 SHA-256:
+  `033ed8c9e1868434a0c801c47a0b6d1e03f652b62656f243521d8626118d97e1`. PC/SC
+  is unavailable (`SCardEstablishContext: Service not available`), so no applet
+  APDU was sent. Logs are in `artifacts/logs/*-apdu-state-20261014.log`. Next
+  exercise case-2/case-4 output and GET RESPONSE using a host applet fixture or
+  PC/SC when available; then continue JCAlgTest API gaps.

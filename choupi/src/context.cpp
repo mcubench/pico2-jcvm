@@ -133,9 +133,15 @@ void Context::setAPDUBufferRef(const jref_t reference,
   this->apdu_incoming_length = incoming_length;
   this->apdu_expected_response_length = expected_response_length;
   this->apdu_has_expected_response_length = has_expected_response_length;
+  this->apdu_response_declared_length = 0;
+  this->apdu_response_sent_length = 0;
+  this->apdu_state = 0;
+  this->apdu_outgoing_no_chaining = false;
+  this->apdu_response_data.fill(0);
   this->apdu_outgoing_offset = 0;
   this->apdu_outgoing_length = 0;
   this->apdu_outgoing_buffer_ref = reference;
+  this->apdu_outgoing_buffer.reset();
 }
 
 void Context::setAPDUJavaBuffer(std::shared_ptr<JC_Array> buffer) {
@@ -171,6 +177,43 @@ uint16_t Context::getAPDUExpectedResponseLength() const noexcept {
              : 0;
 }
 
+uint16_t Context::beginAPDUOutgoing(const bool no_chaining) {
+  if (this->apdu_state != 0 && this->apdu_state != 1 &&
+      this->apdu_state != 2) {
+    throw Exceptions::APDUException;
+  }
+  if (!this->apdu_has_expected_response_length) {
+    throw Exceptions::APDUException;
+  }
+  this->apdu_outgoing_no_chaining = no_chaining;
+  this->apdu_state = 3;
+  return this->apdu_expected_response_length;
+}
+
+void Context::setAPDUOutgoingLength(const uint16_t length) {
+  if (this->apdu_state != 3) {
+    throw Exceptions::APDUException;
+  }
+  if (length > this->apdu_response_data.size() ||
+      (this->apdu_outgoing_no_chaining && length > 252)) {
+    throw Exceptions::APDUException;
+  }
+  this->apdu_response_declared_length = length;
+  this->apdu_response_sent_length = 0;
+  this->apdu_outgoing_length = 0;
+  this->apdu_outgoing_offset = 0;
+  this->apdu_state = 4;
+}
+
+uint8_t Context::getAPDUState() const noexcept { return this->apdu_state; }
+
+void Context::markAPDUIncomingReceived() {
+  if (this->apdu_state != 0) {
+    throw Exceptions::APDUException;
+  }
+  this->apdu_state = 2;
+}
+
 void Context::setAPDUOutgoing(std::shared_ptr<JC_Array> buffer,
                               const uint16_t offset,
                               const uint16_t length) {
@@ -180,9 +223,31 @@ void Context::setAPDUOutgoing(std::shared_ptr<JC_Array> buffer,
   if (static_cast<uint32_t>(offset) + length > buffer->size()) {
     throw Exceptions::ArrayIndexOutOfBoundsException;
   }
+  if ((this->apdu_state != 4 && this->apdu_state != 5) ||
+      static_cast<uint32_t>(this->apdu_response_sent_length) + length >
+          this->apdu_response_declared_length) {
+    throw Exceptions::APDUException;
+  }
+  for (uint16_t index = 0; index < length; ++index) {
+    this->apdu_response_data[this->apdu_response_sent_length + index] =
+        static_cast<uint8_t>(buffer->getByteEntry(offset + index));
+  }
+  this->apdu_response_sent_length = static_cast<uint16_t>(
+      this->apdu_response_sent_length + length);
+  this->apdu_state = this->apdu_response_sent_length ==
+                             this->apdu_response_declared_length
+                         ? 6
+                         : 5;
   this->apdu_outgoing_buffer = std::move(buffer);
   this->apdu_outgoing_offset = offset;
-  this->apdu_outgoing_length = length;
+  this->apdu_outgoing_length = this->apdu_response_sent_length;
+}
+
+uint8_t Context::getAPDUOutgoingByte(const uint16_t index) const {
+  if (index >= this->apdu_response_sent_length) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  return this->apdu_response_data[index];
 }
 
 std::shared_ptr<JC_Array> Context::getAPDUOutgoingBuffer() const noexcept {

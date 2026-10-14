@@ -349,20 +349,15 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
                                   initial_references, 2);
     status = interpretor.run();
     if (status == 0x9000) {
-      const uint16_t offset = context.getAPDUOutgoingOffset();
       data_length = context.getAPDUOutgoingLength();
-      const auto outgoing_buffer = context.getAPDUOutgoingBuffer();
       if (static_cast<uint32_t>(data_length) + 2 > response_capacity ||
-          (data_length != 0 &&
-           (!outgoing_buffer ||
-            static_cast<uint32_t>(offset) + data_length >
-                outgoing_buffer->size()))) {
+          context.getAPDUState() == 3 || context.getAPDUState() == 4 ||
+          context.getAPDUState() == 5) {
         status = 0x6f00;
         data_length = 0;
       } else {
         for (uint16_t index = 0; index < data_length; ++index) {
-          response[index] = static_cast<uint8_t>(
-              outgoing_buffer->getByteEntry(static_cast<uint16_t>(offset + index)));
+          response[index] = context.getAPDUOutgoingByte(index);
         }
       }
     }
