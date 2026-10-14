@@ -33,20 +33,17 @@ bundled jCardSim and produced
 `artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv` (4,595
 lines). Treat this only as a reference: jCardSim itself raises
 `NotImplementedException` on some algorithms and the client records those
-errors. A Java `javax.smartcardio` probe compiles
-without extra modules, but found no readers in the current agent container
-because the system PC/SC service is unavailable here. The user reports that
-the authorized VM helper ran successfully, but both normal and elevated APDU
-probes in this execution environment still report no PC/SC readers; the VM
-system bus and USB device are not exposed here. A prior unbounded
-`pcsc_scan -r` under this missing-service condition emitted a large stream of
-PC/SC errors; always bound scans with `timeout`. The ARM wrapper build passes
-with the new default two-job limit. `tools/probe-jc-algtest` now provides a
-finite-timeout, dependency-free SELECT/GETVERSION/JCSystem APDU probe; it
-compiles here, but runtime correctly fails because no PC/SC reader is exposed.
-Follow the current run's ARM-only scope; do not build or test RISC-V. Windows
-reader enumeration and applet process/power-cycle persistence remain
-unverified.
+errors. A Java `javax.smartcardio` probe compiles without extra modules, but
+this execution environment still has no usable PC/SC service. The user reports
+that the authorized VM helper ran successfully. After flashing the board, a
+bounded Java probe still reported `Pico 2 CHOUPI CCID` missing; `pcsc_scan -r`
+then produced a rapid stream of `Service not available` / invalid-handle
+errors and was stopped immediately. Do not retry that scanner unless pcscd
+availability is first confirmed, and always cap any scan.
+`tools/probe-jc-algtest` provides a finite-timeout SELECT/GETVERSION/JCSystem
+APDU probe, but no APDU reached the board in this run. The ARM and RISC-V build
+wrappers pass; only ARM firmware was flashed and tested. Windows reader
+enumeration and applet process/power-cycle persistence remain unverified.
 
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's

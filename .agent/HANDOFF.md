@@ -2,6 +2,22 @@
 
 ## Current session state — 2026-10-14
 
+- Latest physical step: after both required wrapper build gates passed, flashed
+  `build/arm/pico2_choupi.uf2` directly while the user had the Pico 2 in
+  BOOTSEL. `tools/flash` reached 100% and confirmed application reboot. The
+  finite 18-second capture passed 18 repeated `TEST:PASS choupi_runtime` /
+  `TEST:SUMMARY pass=1 fail=0` checks with no `FAULT` or `TEST:FAIL`. UF2 SHA-256
+  `81fd209c5245c0c4f7977f561f0f3926575beb9168dff54113b380aad5163f03`; log
+  `artifacts/logs/bootsel-choupi-runtime-20261014.log`, SHA-256
+  `724ba860bb056e2af06c72b77796d75bf88604b714398eaea9a046b345a02b30`.
+  Only the ARM image was flashed; no RISC-V hardware test was run. PC/SC is
+  still unavailable in this execution context: the finite Java probe cannot
+  find `Pico 2 CHOUPI CCID`; `pcsc_scan -r` emitted a rapid stream of service
+  unavailable/invalid-handle errors and was stopped. Do not rerun that scan
+  until pcscd availability is confirmed. Next restore PC/SC visibility, then
+  run the v1.8.2 SELECT/GETVERSION/JCSystem probe and official supported-
+  algorithms mode. Applet lifecycle/APDU behavior is still not validated.
+
 - Latest ARM-only step: `Context::setAPDUOutgoingLength()` now rejects a
   `setOutgoingNoChaining()` length above either the command Le or the T=1
   maximum payload of 252 bytes. `./tools/test-short-apdu` passes the Le and

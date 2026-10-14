@@ -2322,6 +2322,16 @@
 - Commit: `7448bec`
 - Artifacts/logs: `/tmp/pico2-apdu-nochaining.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
 
+## 2026-10-14 — Flash latest CHOUPI firmware from BOOTSEL
+
+- Step/experiment: `bootsel-choupi-runtime-20261014`
+- Change: Flashed the current ARM CHOUPI image to the physical RP2350 while it was already in BOOTSEL. No source changes were made.
+- Validation: `./tools/build arm` and `./tools/build riscv` both passed as the repository flash gate. `./tools/flash build/arm/pico2_choupi.uf2` detected BOOTSEL, reached 100%, and confirmed application reboot. `./tools/monitor --seconds 18` passed with 18 repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0` pairs; no `TEST:FAIL` or `FAULT` appeared. PC/SC validation did not run: `tools/probe-jc-algtest` reported the named reader missing. `pcsc_scan -r` found no service and emitted a rapid stream of `Service not available` / invalid-handle errors, so it was interrupted. No RISC-V firmware was flashed or tested.
+- Result: The latest ARM firmware is running and its board self-check passes. This does not establish that an applet lifecycle method or APDU was executed.
+- Decision: Resume JCAlgTest applet verification when a reader is visible and pcscd is responding; do not rerun `pcsc_scan -r` until service availability is confirmed.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/bootsel-choupi-runtime-20261014.log` (SHA-256 `724ba860bb056e2af06c72b77796d75bf88604b714398eaea9a046b345a02b30`); ARM UF2 SHA-256 `81fd209c5245c0c4f7977f561f0f3926575beb9168dff54113b380aad5163f03`.
+
 ## 2026-10-14 — No-chaining APDU implementation hash reference
 
 - Step/experiment: `apdu-no-chaining-le-bound-20261014-hash-reference`
