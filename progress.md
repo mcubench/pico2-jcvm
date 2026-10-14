@@ -2671,6 +2671,16 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `tools/test-vpcd-protocol`, `tools/test-vpcd-session`, `build/arm/pico2_choupi.uf2`, `build/choupi-pc/choupi`; temporary build logs under `/tmp/pico2-vpcd-*.log`.
 
+## 2026-10-14 — Record PC vpcd session integration commit
+
+- Step/experiment: `pc-vpcd-session-apdu-routing-20261014-reference`
+- Change: Recorded the immutable implementation commit for the PC vpcd session, lifecycle routing, focused test, and project tracking updates.
+- Validation: Confirmed commit `ef1102d` contains the session implementation, integration, tests, TODO, and handoff changes; `git diff --check` passed.
+- Result: The vpcd session integration is committed as `ef1102d`.
+- Decision: Continue toward real applet execution evidence; fake callback tests do not satisfy JCAlgTest acceptance criteria.
+- Commit: recorded in the current commit.
+- Artifacts/logs: `tools/test-vpcd-protocol`, `tools/test-vpcd-session`, ARM UF2 and PC executable hashes in the preceding progress entry.
+
 ## 2026-10-14 — Add practical performance profiling workflow
 
 - Step/experiment: `performance-profiling-guidance-20261014`
