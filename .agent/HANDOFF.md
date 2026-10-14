@@ -1,5 +1,14 @@
 # Handoff
 
+## Performance guidance update — 2026-10-14
+
+- Added the latest VPCD handler-offset run to `perf_tips.md`: 7.39 s wall,
+  0.27 s user, 1.98 s system, 30% CPU, 17,264 KiB peak RSS; it still failed
+  with `6F00`. This is a failure diagnostic and is not comparable as a speedup
+  with earlier runs.
+- Next, time the exact VPCD wrapper and record phase timestamps before drawing
+  conclusions about where the elapsed time goes.
+
 ## JCAlgTest applet method lookup — 2026-10-14
 
 - Fixed two CAP package-method lookup defects: package method references now

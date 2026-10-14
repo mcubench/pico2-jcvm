@@ -2800,3 +2800,15 @@
 - Decision: Use bounded phase and CPU-time measurements on the next VPCD run.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-vpcd-cleanup.log`.
+
+## 2026-10-14 — Record handler-offset diagnostic timing
+
+- Step/experiment: `jcalgtest-handler-offset-timing-20261014`
+- Change: Added the latest bounded VPCD run's wall time, CPU time, exit result,
+  and limitation to `perf_tips.md`; clarified that this failed run is not
+  comparable as a speedup against earlier smoke runs.
+- Validation: `git diff --check -- perf_tips.md progress.md` passed. Documentation-only; no build, test, or hardware operation was run.
+- Result: The run took 7.39 s wall, 0.27 s user, 1.98 s system, 30% CPU, and 17,264 KiB peak RSS, then failed with `6F00`.
+- Decision: Capture exact command and per-phase timings on the next VPCD run before attributing the elapsed time or tuning a phase.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `/tmp/pico2-jcalgtest-handler-base-fix.log`; `perf_tips.md`.

@@ -199,6 +199,14 @@ time the exact wrapper command and record wall/user/system time alongside the
 last completed VPCD phase; this will show whether the remaining delay is APDU
 execution or setup/teardown.
 
+The handler-offset diagnostic run took 7.39 s wall time (0.27 s user, 1.98 s
+system, 30% CPU, 17,264 KiB peak RSS) and still failed with `6F00`. This is a
+third, distinct failure path, so it should not be compared as a speedup against
+the earlier smoke timings. Keep using `/usr/bin/time` on the exact wrapper and
+add per-phase timestamps before tuning VM execution or cleanup; the current
+measurement alone does not identify which phase consumed the remaining wall
+time.
+
 - **Time each APDU boundary.** Print elapsed time for VPCD connect, ATR, SELECT,
   each command send, and response receive. Include the failing APDU and last
   completed phase in the timeout message; this distinguishes VM execution from
