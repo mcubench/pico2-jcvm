@@ -344,7 +344,9 @@ std::pair<Package, const uint16_t> Class_Handler::getPackageMethodOffset(
   }
 
   ConstantPool_Handler cp_handler(this->package);
-  const uint8_t method_token = virtual_method_ref_info.token;
+  // The high bit identifies a package method. The remaining seven bits are
+  // the method token used by the class' package virtual-method table.
+  const uint8_t method_token = virtual_method_ref_info.token & 0x7F;
   auto token = cp_handler.classref2class(virtual_method_ref_info.class_ref);
   for (uint16_t depth = 0; depth < 256; ++depth) {
     const uint8_t base = token.second->package_method_table_base;

@@ -1,5 +1,24 @@
 # Handoff
 
+## JCAlgTest applet method lookup — 2026-10-14
+
+- Fixed two CAP package-method lookup defects: package method references now
+  mask off the high-bit method-kind flag before indexing the table, and the
+  package virtual-method table pointer advances by a `uint16_t` element count.
+  The former bad pointer read produced offset `0xFF00`; with both fixes the
+  JCAlgTest call resolves to offset `15960` and starts executing.
+- `./tools/env cmake --build build/choupi-pc --target choupi -j2` passed and
+  `./tools/build arm` passed. The bounded `./tools/test-pc-vpcd-applet` still
+  fails: ATR and SELECT pass, while the JCSystem info APDU returns `6F00`. The
+  log shows `process(APDU)` reaches `GETFIELD_B_THIS` for constant-pool entry
+  174, then throws `SecurityException`. A previous uncaught VM entry exception
+  also caused a host termination; interpreter entry now maps setup exceptions
+  to `6F00` instead.
+- No physical device or RISC-V build was used. Next inspect CAP entry 174 and
+  its resolved instance-field token/type, fix the first process-path field
+  failure, then continue with JCSystem info and the supported-algorithm APDU.
+  Current VPCD log: `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.
+
 ## Performance tips refresh — 2026-10-14
 
 - Updated `perf_tips.md` with the latest bounded measurements: host applet

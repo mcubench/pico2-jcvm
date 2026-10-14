@@ -30,7 +30,12 @@ record is `artifacts/logs/cycle-choupi-20261014T135618Z.log`. The corrected ARM 
 GlobalPlatformPro CAP LOAD and INSTALL returned `9000`, the registry lists
 `JCAlgTest1` as `INITIALIZED`, and SELECT by AID returned `9000` with FCI. These
 steps validate install and selection, but `Applet.process()` has not yet been
-validated by a JCAlgTest command. The official JCAlgTest v1.8.2 host JAR has
+validated on the physical card. A PC VPCD integration test now restores the
+persisted applet and confirms ATR and SELECT, then sends the JCSystem info
+command. That APDU currently returns `6F00`: the applet enters
+`process(APDU)` but a field read at CP entry 174 throws `SecurityException`.
+This is host-emulator evidence only, not a board result. The official JCAlgTest
+v1.8.2 host JAR has
 been downloaded to `build/algtest-client-1.8.2/`; its bundled JC305 CAP has the
 same SHA-256 as the supplied CAP. `ALG_SUPPORT_EXTENDED` completed against the
 bundled jCardSim and produced
@@ -50,9 +55,10 @@ Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's
 fields under a reserved persistent applet root after a successful install
 method return. CAP metadata now also records the registered class index in a
-version-2 header while continuing to read version-1 headers. The v2 SELECT path
-reconstructs and validates the object graph before returning FCI, but the
-reference is not yet used for Java lifecycle/APDU dispatch. Installation
+version-2 header while continuing to read version-1 headers. The PC VPCD SELECT
+path reconstructs the stored applet and runs its `select()` method; this
+returned success in the latest host integration. Its APDU `process()` path is
+now entered but stops on an applet field read. Installation
 rollback and duplicate/invalid registration handling also remain unverified.
 
 - [x] Parse the INSTALL [for install and make selectable] parameter field and
@@ -101,7 +107,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   helper now resolves the reserved root, verifies package/class identity, and
   eagerly decodes fields. CCID SELECT invokes it when version-2 metadata
   supplies the class index and retains the resulting context for the card
-  session. This has not yet been exercised against an installed applet.
+  session. The PC VPCD integration restores the installed applet and returns a
+  successful SELECT response; its first process APDU still fails at an applet
+  field read. Power-cycle restoration on hardware remains unverified.
 - [ ] Dispatch SELECT, `select()`, `deselect()`, and `process()` through the
   interpreter for the selected applet. Ordinary `invokevirtual` now reads the
   receiver's concrete class and resolves its override through that class's CAP
@@ -110,9 +118,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   captured without a synthetic caller frame. CCID SELECT now invokes
   `Applet.select()` and rejects a false result with `6999`; selecting another
   AID or powering off invokes `Applet.deselect()`. The APDU object/buffer is
-  wired into `Applet.process()` dispatch and refreshed for each command. None
-  of these lifecycle calls has been exercised with an installed applet because
-  PC/SC is unavailable in the current execution context.
+  wired into `Applet.process()` dispatch and refreshed for each command. Host
+  VPCD now restores the installed applet, and its `select()` returns true. The
+  first JCSystem info APDU reaches `process(APDU)` but returns `6F00` after a
+  `SecurityException` at CP field entry 174. `deselect()` and successful applet
+  APDU behavior remain unverified; no physical PC/SC APDU was sent in this run.
 - [ ] Implement the remaining Java Card APDU buffer and incoming/outgoing
   command methods used by JCAlgTest, including response-length enforcement and
   `61xx` handling. Short cases 1, 2S, 3S, and 4S are parsed; case 2S/4S Le is
@@ -133,7 +143,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   report command chaining, secure messaging, interindustry encoding, and CLA
   validity; the corresponding `APDU` methods read the current command's CLA.
   A standalone test passes 17 cases, and API CAP conversion plus the ARM build
-  pass. Applet-level invocation of these helpers remains unverified.
+  pass. The VPCD applet reaches its APDU entry and invokes the APDU path, but
+  its first applet field access fails before a result can validate these
+  helpers.
   The bridge fragments data responses at
   short Le and serves `GET RESPONSE` using `61xx`. Parser, response-chain, and
   Context state tests pass; the Pico cycle also passed after flashing this
@@ -176,9 +188,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
 - [x] Integrate the PC-build vpcd frame transport with power controls, ATR,
   applet SELECT/DESELECT, and APDU dispatch through the VM lifecycle bridge.
   The PC target builds, the frame codec passes 14 checks, and a new session
-  state-machine test passes 14 checks. The current sandbox has no PC/SC reader,
-  and TCP socket calls are denied, so live vpcd/client transport is not yet
-  verified.
+  state-machine test passes 14 checks. A bounded local VPCD applet test passes
+  ATR and SELECT against the restored JCAlgTest applet, but its JCSystem info
+  APDU returns `6F00` at the unresolved field access. The full official client
+  is not yet validated against this transport.
 - [ ] Add golden applet coverage for exceptions, transient arrays, statics,
   APDU exchange, install parameters, and persistence. The current vpcd session
   tests use fake VM callbacks; they do not prove that the installed JCAlgTest

@@ -169,19 +169,36 @@ uint16_t Interpretor::run() noexcept {
       this->startJCVMException(Exceptions::SecurityException);
       return this->status_word;
     }
-    methodHandler.setPackage(Package(this->startingMethodPackage));
-    methodHandler.callVirtualMethod(this->startingMethodOffset);
-    Stack &startup_stack = context.getStack();
-    const Frame &startup_frame = startup_stack.getCurrentFrame();
-    if (this->initialReferenceCount >
-        startup_frame.getOP() - startup_frame.getFP()) {
+    try {
+      methodHandler.setPackage(Package(this->startingMethodPackage));
+      methodHandler.callVirtualMethod(this->startingMethodOffset);
+      Stack &startup_stack = context.getStack();
+      const Frame &startup_frame = startup_stack.getCurrentFrame();
+      if (this->initialReferenceCount >
+          startup_frame.getOP() - startup_frame.getFP()) {
+        this->last_exception_id = Exceptions::SecurityException;
+        this->startJCVMException(Exceptions::SecurityException);
+        return this->status_word;
+      }
+      for (uint8_t index = 0; index < this->initialReferenceCount; ++index) {
+        startup_stack.writeLocal_Reference(index,
+                                           this->initialReferences[index]);
+      }
+    } catch (Exceptions e) {
+      this->last_exception_id = e;
+      std::fprintf(stderr,
+                   "CHOUPI:VM_ENTRY_EXCEPTION id=%u package=%u offset=%u\n",
+                   static_cast<unsigned>(e),
+                   static_cast<unsigned>(this->startingMethodPackage),
+                   static_cast<unsigned>(this->startingMethodOffset));
+      return 0x6f00;
+    } catch (...) {
       this->last_exception_id = Exceptions::SecurityException;
-      this->startJCVMException(Exceptions::SecurityException);
-      return this->status_word;
-    }
-    for (uint8_t index = 0; index < this->initialReferenceCount; ++index) {
-      startup_stack.writeLocal_Reference(index,
-                                         this->initialReferences[index]);
+      std::fprintf(stderr,
+                   "CHOUPI:VM_ENTRY_EXCEPTION id=unknown package=%u offset=%u\n",
+                   static_cast<unsigned>(this->startingMethodPackage),
+                   static_cast<unsigned>(this->startingMethodOffset));
+      return 0x6f00;
     }
   } else { // TODO: exported virtual method entry by class/method token.
   }

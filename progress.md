@@ -2720,3 +2720,13 @@
 - Decision: Add phase timing to the next PC smoke run before attempting targeted performance changes.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; `artifacts/logs/host-install-rommask-20261014.log`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Correct CAP package-method resolution
+
+- Step/experiment: `cap-package-method-lookup-20261014`
+- Change: Masked the package-method flag from the package table token, fixed the `uint16_t` element offset used to locate the package virtual-method table, and made interpreter entry setup convert caught exceptions to `6F00` rather than terminating the host process. Updated TODO and handoff with live VPCD evidence.
+- Validation: `./tools/env cmake --build build/choupi-pc --target choupi -j2` passed; `./tools/build arm` passed. `timeout 45s ./tools/test-pc-vpcd-applet` remains failing at the next runtime issue: ATR and SELECT pass, JCSystem info returns `6F00` after applet `process(APDU)` reaches CP field reference 174 and throws `SecurityException`. No RISC-V build or hardware flash was run.
+- Result: The bad package method offset (`0xFF00`) is resolved; CAP token `0x81` now resolves to method offset `15960` and executes. Applet APDU processing is still incomplete.
+- Decision: Inspect CP field reference 174 and the receiver field token/type, then continue the process APDU path.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log`; `build/choupi-pc/choupi`; `build/arm/pico2_choupi.uf2`.
