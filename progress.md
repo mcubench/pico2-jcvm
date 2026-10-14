@@ -2490,3 +2490,13 @@
 - Decision: Continue collecting comparable clean/incremental and hardware timing samples before recommending build-system changes.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-14 — Performance sample update commit reference
+
+- Step/experiment: `development-performance-tips-sample-expansion-20261014-reference`
+- Change: Recorded the immutable commit containing updated `perf_tips.md`, measurements, and handoff notes.
+- Validation: Confirmed commit `171d404` contains the expanded timing table and suggestions; documentation whitespace validation passed.
+- Result: The performance guidance update is committed as `171d404`.
+- Decision: Add future timer samples after comparable clean and incremental runs; upload remains unmeasured.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
