@@ -1909,5 +1909,15 @@
 - Validation: Ran `timeout --signal=TERM --kill-after=2s 20s ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar --debug --install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`. GlobalPlatformPro reported CAP SHA-256 `38b464deabb20f48ba4fa1379354e41e913f635a537c9ea5cd2b1e919e0f908c` and exited with `SCARD_E_NO_SERVICE` (`SCardEstablishContext` response `0x8010001d`).
 - Result: No INSTALL APDU reached the card; applet behavior remains unverified. This is a host PC/SC service failure, not an applet status-word result.
 - Decision: Restore `pcscd.service` and rerun the Pico reader ACL helper for the current USB node before retrying the exact CAP install.
-- Commit: `recorded in the following commit reference`
+- Commit: `30f57f8` (the following reference entry records this SHA)
 - Artifacts/logs: none; bounded command output is preserved in the session transcript.
+
+## 2026-10-14 — PC/SC blocker commit reference
+
+- Step/experiment: `gp-install-transport-recheck-20261014-reference`
+- Change: Recorded the immutable commit containing the applet-install transport result and handoff update.
+- Validation: Confirmed commit `30f57f8` contains only progress and handoff records.
+- Result: The PC/SC service blocker is recorded as `30f57f8`.
+- Decision: Continue with independent host-side build work while PC/SC is restored.
+- Commit: `recorded in the following reference commit`
+- Artifacts/logs: none.
