@@ -1773,3 +1773,13 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/cycle-choupi-20261014T075042Z.log`, SHA-256
   `9ecb112077c3df2eab59df9b53471d93699880cb882fc996c4a5354eea05853e`.
   The 18-second capture includes repeated runtime PASS/SUMMARY markers.
+
+- Hardened finite serial capture on 2026-10-14: `tools/monitor` now sends TERM
+  at the requested deadline and escalates to KILL after two seconds. A 2-second
+  capture exited 0 and saved repeated CHOUPI runtime PASS/SUMMARY records to
+  `artifacts/logs/monitor-timeout-watchdog-20261014.txt` (SHA-256
+  `f76159c0af3797b520f45557a25d929575b6b9de280486006f3d711a18932c07`). This
+  was tooling-only; the preceding firmware source step passed both builds and
+  a full cycle. The most recent GPPro install retry after flashing timed out
+  after 15 seconds without reader enumeration or APDU output; no INSTALL APDU
+  reached the card.

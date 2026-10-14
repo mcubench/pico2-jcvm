@@ -1981,3 +1981,13 @@
 - Decision: Proceed to the bounded monitor timeout hardening discovered during this cycle.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T075042Z.log`.
+
+## 2026-10-14 — Bound serial monitor shutdown
+
+- Step/experiment: `serial-monitor-timeout-watchdog-20261014`
+- Change: Changed `tools/monitor` to send TERM to the serial `cat` process at the requested capture deadline and escalate to KILL after 2 seconds. Only timeout status 124 is treated as a successful finite capture; other command failures still propagate.
+- Validation: `./tools/monitor --seconds 2` exited with status 0 on the flashed Pico 2 and captured repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. This is a tooling-only change; the immediately preceding APDU source step already passed both architecture builds and `./tools/cycle choupi`, so firmware builds/flash were not repeated for the monitor change.
+- Result: The finite monitor now has a hard shutdown fallback and preserves non-timeout errors.
+- Decision: Keep this bounded capture behavior for future board cycles. GPPro's latest install retry after reflashing timed out after 15 seconds with no reader or APDU output; installation remains unverified.
+- Commit: root implementation/evidence commit recorded in the following reference entry.
+- Artifacts/logs: `artifacts/logs/monitor-timeout-watchdog-20261014.txt` SHA-256 `f76159c0af3797b520f45557a25d929575b6b9de280486006f3d711a18932c07`.

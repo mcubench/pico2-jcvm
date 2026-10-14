@@ -39,10 +39,10 @@ done
 (( ready == 1 )) || die "cannot configure serial device ${device}"
 printf 'MONITOR:START device=%s seconds=%s\n' "$device" "$seconds"
 set +e
-timeout --signal=INT "${seconds}s" cat "$device"
+timeout --signal=TERM --kill-after=2s "${seconds}s" cat "$device"
 status=$?
 set -e
-if (( status == 124 || status == 130 )); then
+if (( status == 124 )); then
   exit 0
 fi
 exit "$status"

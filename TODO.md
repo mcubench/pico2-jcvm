@@ -22,8 +22,10 @@ Current environment note (2026-10-14): the rebuilt ARM CHOUPI firmware was
 flashed to the Pico 2 and passed its 18-second serial check with repeated
 `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The user reports the
 reader is visible. GPPro in this execution context first returned
-`SCARD_E_NO_SERVICE`; a bounded elevated retry instead reported no available
-readers and sent no APDUs. Applet installation remains unverified. The host VM
+`SCARD_E_NO_SERVICE`; a bounded elevated retry reported no available readers,
+and the latest retry after reflashing timed out after 15 seconds without reader
+or APDU output. No INSTALL APDU reached the card, so applet installation remains
+unverified. The host VM
 target builds Java API classes and CAPs, but Cargo offline mode confirms the
 local registry lacks `ipc-channel`; the online build cannot resolve
 `index.crates.io`.
