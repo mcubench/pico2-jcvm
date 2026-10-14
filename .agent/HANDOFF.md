@@ -2125,3 +2125,15 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   the active project scope excludes RISC-V. Next continue the API gaps, then
   add a permitted host applet fixture for direct Java/native result checks.
   Implementation commit: `cd58def`.
+
+- PC build timing/incremental generation checkpoint — 2026-10-14. A full PC
+  build passed but its Java API conversion took 1:01 and the Maven capmap
+  reactor took 5:13; DNS failures while reading optional repository metadata
+  caused most of the long wait. CMake now uses source-dependent stamp outputs
+  for API and ROM-mask generation. After verifying generated output hashes and
+  the current API source digest, the stamps were initialized from the successful
+  build. Follow-up `./tools/build-pc` returned `ROMMASK:PASS` without invoking
+  Java/Maven, and `./tools/env cmake --build build/choupi-pc -j2` passed with
+  `Built target choupi`. PC build remains a development validation path only;
+  vpcd/APDU support is still missing. No RISC-V compile/test or hardware flash
+  was performed. Implementation commit reference follows separately.

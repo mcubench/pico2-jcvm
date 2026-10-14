@@ -163,6 +163,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
 
 ## Card manager and host integration
 
+- [x] Make PC Java API and ROM-mask generation incremental, keyed to their
+  inputs. A full regeneration took 1:01 for the Java API and 5:13 for Maven;
+  after adding CMake output stamps, the follow-up PC build skipped both stages.
 - [ ] Implement and verify GP DELETE and the remaining required GET STATUS / GET
   DATA behavior, including accurate package and applet lifecycle state.
 - [ ] Add a PC-build APDU transport through vpcd and golden applet coverage for

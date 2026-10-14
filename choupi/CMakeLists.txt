@@ -229,53 +229,86 @@ elseif(CHOUPI_TARGET_STM32)
   set(CHOUPI_JAVACARDOS_LIB "${CMAKE_BINARY_DIR}")
 endif(CHOUPI_TARGET_PC)
 
-add_custom_target(
-  javacard-sdk
+set(CHOUPI_JAVACARD_API_ROOT
+    "${CMAKE_SOURCE_DIR}/javacard-sdk/javacard-api")
+file(GLOB_RECURSE CHOUPI_JAVACARD_API_INPUTS CONFIGURE_DEPENDS
+  "${CHOUPI_JAVACARD_API_ROOT}/src/*.java"
+  "${CHOUPI_JAVACARD_API_ROOT}/sdks/*")
+list(APPEND CHOUPI_JAVACARD_API_INPUTS
+  "${CHOUPI_JAVACARD_API_ROOT}/build.xml")
+set(CHOUPI_JAVACARD_API_STAMP
+    "${CMAKE_BINARY_DIR}/javacard-api/.api-built")
+add_custom_command(
+  OUTPUT "${CHOUPI_JAVACARD_API_STAMP}"
   COMMENT "Building Java Card API"
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/javacard-api/
-    COMMAND ${CMAKE_COMMAND} -E env
-            JAVA_HOME=${CHOUPI_JAVA8_HOME}
-            PATH=${CHOUPI_JAVA8_HOME}/bin:$ENV{PATH}
-            ant -f ${CMAKE_SOURCE_DIR}/javacard-sdk/javacard-api/build.xml
-          -Dbuild.dir=${CMAKE_BINARY_DIR}/javacard-api/ clean build
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/javacard-api/"
+  COMMAND ${CMAKE_COMMAND} -E env
+          "JAVA_HOME=${CHOUPI_JAVA8_HOME}"
+          "PATH=${CHOUPI_JAVA8_HOME}/bin:$ENV{PATH}"
+          ant -f "${CHOUPI_JAVACARD_API_ROOT}/build.xml"
+          -Dbuild.dir="${CMAKE_BINARY_DIR}/javacard-api/" clean build
+  COMMAND ${CMAKE_COMMAND} -E touch "${CHOUPI_JAVACARD_API_STAMP}"
+  DEPENDS ${CHOUPI_JAVACARD_API_INPUTS}
   VERBATIM)
+add_custom_target(javacard-sdk DEPENDS "${CHOUPI_JAVACARD_API_STAMP}")
+
+set(CHOUPI_ROMMASK_ROOT "${CMAKE_SOURCE_DIR}/javacard-sdk/rommask")
+file(GLOB_RECURSE CHOUPI_ROMMASK_INPUTS CONFIGURE_DEPENDS
+  "${CHOUPI_ROMMASK_ROOT}/src/*"
+  "${CHOUPI_ROMMASK_ROOT}/capmap-free/*")
+list(FILTER CHOUPI_ROMMASK_INPUTS EXCLUDE REGEX "/(target|build|\\.git)/")
+list(APPEND CHOUPI_ROMMASK_INPUTS "${CHOUPI_ROMMASK_ROOT}/Makefile")
 
 if(CHOUPI_TARGET_PC)
-  add_custom_target(
-    rommask
-    DEPENDS javacard-sdk
+  set(CHOUPI_ROMMASK_STAMP "${CMAKE_BINARY_DIR}/rommask/.rommask-built")
+  add_custom_command(
+    OUTPUT "${CHOUPI_ROMMASK_STAMP}"
     COMMENT "Generating Java Card ROM mask"
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/javacard-sdk/rommask"
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/rommask/
+    WORKING_DIRECTORY "${CHOUPI_ROMMASK_ROOT}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/rommask/"
     COMMAND make
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/rommask/
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/rommask/"
+    COMMAND ${CMAKE_COMMAND} -E copy
+      "${CHOUPI_ROMMASK_ROOT}/target/rommask-1.0-jar-with-dependencies.jar"
+      "${CMAKE_BINARY_DIR}/rommask/rommask.jar"
     COMMAND
-      ${CMAKE_COMMAND} -E copy
-      ${CMAKE_SOURCE_DIR}/javacard-sdk/rommask/target/rommask-1.0-jar-with-dependencies.jar
-      ${CMAKE_BINARY_DIR}/rommask/rommask.jar
-    COMMAND
-      java -jar ${CMAKE_BINARY_DIR}/rommask/rommask.jar
-      ${CMAKE_BINARY_DIR}/javacard-api ${CMAKE_BINARY_DIR}/flash
-      ${CMAKE_BINARY_DIR}/jni.hpp fr.gouv.ssi.starter.Starter.run
+      java -jar "${CMAKE_BINARY_DIR}/rommask/rommask.jar"
+      "${CMAKE_BINARY_DIR}/javacard-api" "${CMAKE_BINARY_DIR}/flash"
+      "${CMAKE_BINARY_DIR}/jni.hpp" fr.gouv.ssi.starter.Starter.run
+    COMMAND ${CMAKE_COMMAND} -E touch "${CHOUPI_ROMMASK_STAMP}"
+    DEPENDS "${CHOUPI_JAVACARD_API_STAMP}" ${CHOUPI_ROMMASK_INPUTS}
+    BYPRODUCTS "${CMAKE_BINARY_DIR}/rommask/rommask.jar"
+                "${CMAKE_BINARY_DIR}/flash"
+                "${CMAKE_BINARY_DIR}/jni.hpp"
     VERBATIM)
+  add_custom_target(rommask
+    DEPENDS "${CHOUPI_ROMMASK_STAMP}" "${CMAKE_BINARY_DIR}/flash"
+            "${CMAKE_BINARY_DIR}/jni.hpp")
 elseif(CHOUPI_TARGET_STM32)
-  add_custom_target(
-    rommask
-    DEPENDS javacard-sdk
+  set(CHOUPI_ROMMASK_STAMP "${CMAKE_BINARY_DIR}/rommask/.rommask-built")
+  add_custom_command(
+    OUTPUT "${CHOUPI_ROMMASK_STAMP}"
     COMMENT "Generating Java Card ROM mask"
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/javacard-sdk/rommask"
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/rommask/
+    WORKING_DIRECTORY "${CHOUPI_ROMMASK_ROOT}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/rommask/"
     COMMAND make
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/rommask/
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/rommask/"
+    COMMAND ${CMAKE_COMMAND} -E copy
+      "${CHOUPI_ROMMASK_ROOT}/target/rommask-1.0-jar-with-dependencies.jar"
+      "${CMAKE_BINARY_DIR}/rommask/rommask.jar"
     COMMAND
-      ${CMAKE_COMMAND} -E copy
-      ${CMAKE_SOURCE_DIR}/javacard-sdk/rommask/target/rommask-1.0-jar-with-dependencies.jar
-      ${CMAKE_BINARY_DIR}/rommask/rommask.jar
-    COMMAND
-      java -jar ${CMAKE_BINARY_DIR}/rommask/rommask.jar --compactHex 08020000
-      ${CMAKE_BINARY_DIR}/javacard-api ${CMAKE_BINARY_DIR}/flash.hex
-      ${CMAKE_BINARY_DIR}/jni.hpp fr.gouv.ssi.starter.Starter.run
+      java -jar "${CMAKE_BINARY_DIR}/rommask/rommask.jar" --compactHex 08020000
+      "${CMAKE_BINARY_DIR}/javacard-api" "${CMAKE_BINARY_DIR}/flash.hex"
+      "${CMAKE_BINARY_DIR}/jni.hpp" fr.gouv.ssi.starter.Starter.run
+    COMMAND ${CMAKE_COMMAND} -E touch "${CHOUPI_ROMMASK_STAMP}"
+    DEPENDS "${CHOUPI_JAVACARD_API_STAMP}" ${CHOUPI_ROMMASK_INPUTS}
+    BYPRODUCTS "${CMAKE_BINARY_DIR}/rommask/rommask.jar"
+                "${CMAKE_BINARY_DIR}/flash.hex"
+                "${CMAKE_BINARY_DIR}/jni.hpp"
     VERBATIM)
+  add_custom_target(rommask
+    DEPENDS "${CHOUPI_ROMMASK_STAMP}" "${CMAKE_BINARY_DIR}/flash.hex"
+            "${CMAKE_BINARY_DIR}/jni.hpp")
 endif(CHOUPI_TARGET_PC)
 
 # JCVM source files

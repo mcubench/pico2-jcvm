@@ -14,6 +14,7 @@ From `artifacts/metrics/development-time.csv`:
 | Focused host tests | 0.458–5.184 s; mean 2.493 s | Nine successful runs across short APDU, install rollback/status, and RP2350 filesystem behavior. |
 | Timer syntax check | 0.055 s | Two successful runs. |
 | Manual analysis interval | 4.641 s | Wall time, not CPU time. |
+| PC API + ROM-mask generation | 1:01 + 5:13 | One full regeneration; the Maven reactor spent 5:13 resolving metadata before finishing from its local cache. |
 | Upload | Not measured | No upload was attempted in this sample. |
 
 The timer report totals 52.821 seconds across successful compile, test,
@@ -28,13 +29,20 @@ and one interrupted monitor attempt; the report excludes non-OK runs from
 successful duration averages. A bounded JCAlgTest probe also found no PC/SC
 reader, so it sent no APDUs.
 
+A later full PC build regenerated the Java API in 1:01 and the ROM-mask Maven
+reactor in 5:13. Maven reported DNS failures while checking optional repository
+metadata, then completed successfully from cached dependencies. These are
+single observed stage times, not timer-CSV averages.
+
 ## Suggestions
 
 1. **Keep the fast loop incremental.** ARM builds currently take 3.120–9.152 s
    in this sample, and focused host tests take 0.458–5.184 s. Run the narrow
    host test after a small change, then `./tools/build arm`. Preserve generated
    CAP and ROM-mask outputs so ordinary C++ edits do not trigger the Java/Maven
-   pipeline. Use the repository wrappers so their manifests can detect stale
+   pipeline. PC CMake now models API and ROM-mask generation as file-output
+   steps keyed to their source inputs, so repeat host builds reuse generated
+   outputs. Use the repository wrappers so their manifests can detect stale
    generated files.
 2. **Profile CAP conversion separately.** The observed 3:29 converter build is
    the largest known compile cost. Time `./tools/build-pc` and ARM builds over

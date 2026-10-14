@@ -2580,3 +2580,13 @@
 - Decision: Continue with the remaining JCAlgTest API surface and host APDU fixtures.
 - Commit: `cd58def`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `tools/test-jcarray`.
+
+## 2026-10-14 — Avoid repeated PC API and ROM-mask regeneration
+
+- Step/experiment: pc-build-incremental-generation-20261014
+- Change: Replaced always-run CMake Java Card API and ROM-mask targets with output-stamp commands depending on their source inputs. Updated `perf_tips.md` and `TODO.md` with measured build costs and the optimization.
+- Validation: Before the change, a full PC build passed but spent 1:01 regenerating the API and 5:13 in the Maven capmap reactor (including blocked-DNS metadata retries). After verifying `generation.sha256` and the current API source digest, bootstrapped stamps from those completed artifacts. `./tools/build-pc` then reported `ROMMASK:PASS` without rerunning Java/Maven, and `./tools/env cmake --build build/choupi-pc -j2` passed with `Built target choupi` while skipping generation. `git diff --check` passed. No ARM/RISC-V target build or hardware test was run in this CMake-only step.
+- Result: Repeated PC CMake builds no longer clean/reconvert the Java API or invoke the Maven ROM-mask reactor when tracked inputs are unchanged. Full clean regeneration still takes several minutes and remains unoptimized.
+- Decision: Keep source globs as invalidation inputs; next resume APDU host transport and applet lifecycle verification.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `build/choupi-pc/generation.sha256`; `build/choupi-pc/flash`; `build/choupi-pc/jni.hpp`.
