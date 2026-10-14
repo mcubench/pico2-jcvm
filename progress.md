@@ -2790,3 +2790,13 @@
 - Decision: Capture comparable command and per-phase timings before recommending further VPCD optimization.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-vpcd-cleanup.log`.
+
+## 2026-10-14 — Record VPCD performance-guidance commit
+
+- Step/experiment: `vpcd-performance-timing-guidance-20261014-reference`
+- Change: Recorded the commit reference for the VPCD timing guidance.
+- Validation: `git diff --check -- progress.md` passed; commit `d249261` contains the suggestions and implementation record.
+- Result: The performance note is committed as `d249261`.
+- Decision: Use bounded phase and CPU-time measurements on the next VPCD run.
+- Commit: recorded in the current commit.
+- Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-vpcd-cleanup.log`.
