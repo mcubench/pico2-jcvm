@@ -2241,3 +2241,13 @@
 - Decision: Keep this API implementation and continue the remaining JCAlgTest native methods; resume APDU validation when PC/SC is accessible to this execution environment.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `/tmp/pico2-jcarray-object-array.log` (SHA-256 `8f6b160efeb6bc7aa4ab962af6a7b2efb696d08f400a673e0f5375f103f51db3`); ARM UF2 SHA-256 `6a50c2ad5630a06951ecfcfca0491d57a9e161334b2eefd443a78932a1429b5e`.
+
+## 2026-10-14 — Transient Object[] commit reference
+
+- Step/experiment: `jc-system-transient-object-array-20261014-reference`
+- Change: Recorded the immutable implementation commit for the `JCSystem.makeTransientObjectArray()` support and its focused validation.
+- Validation: Confirmed commit `9942d57` contains the native factory, Object[] wildcard handling, the focused test, and the TODO/handoff updates. The ARM build and `./tools/test-jcarray` passed before commit.
+- Result: The transient Object[] implementation is committed as `9942d57`; physical applet behavior remains unverified.
+- Decision: Continue with the remaining JCAlgTest native API surface and retry PC/SC integration when this execution environment can reach the host service.
+- Commit: recorded in this entry's commit.
+- Artifacts/logs: `/tmp/pico2-jcarray-object-array.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
