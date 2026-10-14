@@ -246,7 +246,7 @@ add_custom_command(
           "JAVA_HOME=${CHOUPI_JAVA8_HOME}"
           "PATH=${CHOUPI_JAVA8_HOME}/bin:$ENV{PATH}"
           ant -f "${CHOUPI_JAVACARD_API_ROOT}/build.xml"
-          -Dbuild.dir="${CMAKE_BINARY_DIR}/javacard-api/" clean build
+          "-Dbuild.dir=${CMAKE_BINARY_DIR}/javacard-api/" clean build
   COMMAND ${CMAKE_COMMAND} -E touch "${CHOUPI_JAVACARD_API_STAMP}"
   DEPENDS ${CHOUPI_JAVACARD_API_INPUTS}
   VERBATIM)

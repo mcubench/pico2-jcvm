@@ -129,6 +129,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `sendBytes()`, `sendBytesLong()`, `setOutgoingAndSend()`, and
   `getCurrentState()` now use per-command state, append outgoing chunks, and
   enforce both the command Le and T=1 frame bound for no-chaining responses.
+  The Java Card 3.0.5 `APDUUtil` CLA helpers now decode channels 0–19 and
+  report command chaining, secure messaging, interindustry encoding, and CLA
+  validity; the corresponding `APDU` methods read the current command's CLA.
+  A standalone test passes 17 cases, and API CAP conversion plus the ARM build
+  pass. Applet-level invocation of these helpers remains unverified.
   The bridge fragments data responses at
   short Le and serves `GET RESPONSE` using `61xx`. Parser, response-chain, and
   Context state tests pass; the Pico cycle also passed after flashing this

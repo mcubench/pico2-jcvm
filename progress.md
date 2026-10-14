@@ -2620,3 +2620,13 @@
 - Decision: Continue with host applet lifecycle/APDU coverage; measure CPU use if VM saturation recurs.
 - Commit: `cd88f95`
 - Artifacts/logs: `perf_tips.md`; no new timing data collected.
+
+## 2026-10-14 — Implement Java Card CLA helpers
+
+- Step/experiment: `javacard-apdu-cla-helpers-20261014`
+- Change: Implemented CLA channel, chaining, secure-messaging, interindustry, and validity helpers in `APDUUtil`; wired current-command methods in `APDU`. Fixed Ant's `-Dbuild.dir` argument quoting so changed API sources regenerate successfully. Updated the TODO, performance note, and handoff.
+- Validation: `./tools/test-apdu-util` passed 17 checks. Initial `./tools/build arm` failed because Ant received literal quotes in the output path; after the CMake fix, `./tools/build arm` passed API compilation/CAP conversion, ROM-mask generation, and ARM firmware build. Existing converter/Maven warnings remain. CRLF-aware whitespace checks passed. No RISC-V build, flash, or physical applet invocation was performed.
+- Result: ARM UF2 SHA-256 `e6770c1145b65b9ff2fa4d5aadf32dfeda1aac5e236209158e02453b06dedbce`. Applet-level behavior is not yet verified. A `pcsc_scan -r` attempt with pcscd unavailable emitted over 237 MB of repeated service-unavailable output; it was stopped and documented as unsafe before pcscd readiness.
+- Decision: Continue with the host vpcd APDU path and lifecycle validation; do not rerun `pcsc_scan` unless the daemon is confirmed ready.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; nested API commit `4d996f4`; `tools/test-apdu-util`.

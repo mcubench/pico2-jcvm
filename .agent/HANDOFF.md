@@ -1,5 +1,21 @@
 # Handoff
 
+## APDU CLA helpers — 2026-10-14
+
+- Implemented Java Card 3.0.5 `APDUUtil` CLA parsing and wired the matching
+  current-command helpers in `APDU`. `./tools/test-apdu-util` passes 17 cases.
+- The first `./tools/build arm` uncovered a pre-existing CMake argument quoting
+  bug in Java API regeneration. Fixed the `-Dbuild.dir` argument; the complete
+  wrapper then passed Java API compilation/CAP conversion, ROM-mask generation,
+  and ARM CHOUPI firmware build. No RISC-V build or flash was run.
+- Nested Java API commit and root commit references are in the latest
+  `progress.md` entries. Actual applet invocation remains unverified. Continue
+  toward the host vpcd APDU path and lifecycle tests.
+- A bounded `pcsc_scan -r` attempt with pcscd unavailable produced more than
+  237 MB of repeated service-unavailable output before terminating. Do not run
+  `pcsc_scan` in this environment until pcscd readiness is confirmed; use the
+  bounded Java probe instead.
+
 ## Additional performance suggestions — 2026-10-14
 
 - Expanded `perf_tips.md` with recommendations to diagnose the previously

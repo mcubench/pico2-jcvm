@@ -102,6 +102,10 @@ single observed stage times, not timer-CSV averages.
   probe. Retry with a short bounded backoff and print which precondition is
   missing. Keep the APDU timeout separate from reader discovery so a missing
   reader cannot consume the full test duration or appear as slow card code.
+  Avoid `pcsc_scan -r` while pcscd is unavailable: one bounded attempt in this
+  environment emitted a rapid, repeated `SCardEstablishContext: Service not
+  available` stream (over 237 MB captured by the command tool before it
+  terminated). Check daemon readiness first and prefer the finite Java probe.
 - **Extend timing records with comparable-run metadata.** For each build sample,
   record target, clean or incremental state, source revision, job count, wall
   time, and CPU time; optionally record peak resident memory. For hardware
