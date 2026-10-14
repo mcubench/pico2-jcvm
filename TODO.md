@@ -18,14 +18,13 @@ out explicitly.
 
 ## Active: make v1.8.2 installation execute correctly
 
-Current environment note: the Pico 2 was flashed with the current ARM CHOUPI
-image, and its finite serial test passed. After USB re-enumeration, the most
-recent GPPro install attempt failed before sending an APDU with
-`SCARD_E_NO_SERVICE` (`SCardEstablishContext`, `0x8010001d`). System service
-management is not available from this execution context, so the `pcscd.service`
-state and current USB-node ACL could not be refreshed here. Restart PC/SC and
-rerun the installed reader ACL helper before the next install attempt. The host
-VM target builds Java API classes and CAPs, but Cargo offline mode confirms the
+Current environment note (2026-10-14): the rebuilt ARM CHOUPI firmware was
+flashed to the Pico 2 and passed its 18-second serial check with repeated
+`TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The user reports the
+reader is visible. GPPro in this execution context first returned
+`SCARD_E_NO_SERVICE`; a bounded elevated retry instead reported no available
+readers and sent no APDUs. Applet installation remains unverified. The host VM
+target builds Java API classes and CAPs, but Cargo offline mode confirms the
 local registry lacks `ipc-channel`; the online build cannot resolve
 `index.crates.io`.
 
@@ -79,8 +78,13 @@ rollback and duplicate/invalid registration handling also remain unverified.
   wired into `Applet.process()` dispatch and refreshed for each command. None
   of these lifecycle calls has been exercised with an installed applet because
   PC/SC is unavailable in the current execution context.
-- [ ] Implement Java Card APDU buffer and incoming/outgoing command methods used
-  by JCAlgTest, including case-4 Le and `61xx` response handling.
+- [ ] Implement the remaining Java Card APDU buffer and incoming/outgoing
+  command methods used by JCAlgTest, including case-4 Le and `61xx` response
+  handling. `getIncomingLength()` now reads the current command's Lc through
+  the native bridge, `getOffsetCdata()` returns the short-APDU data offset 5,
+  and `receiveBytes()` returns 0 because CCID buffers the complete short APDU
+  before dispatch. Both architectures and a physical firmware cycle passed;
+  these methods still need applet-level runtime verification.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
   transient array variants, `Util` helpers, `JCSystem` queries, `AID`, and
   Java exception mapping for unsupported crypto factories. The native
@@ -102,8 +106,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   simulator and CHOUPI's declared supported-algorithm list.
 - [ ] Complete hardware integration: the current ARM firmware was flashed and
   passed its finite serial runtime test, but GPPro list/install/select/process/
-  delete and power-cycle persistence remain unverified because the latest PC/SC
-  context could not be established.
+  delete and power-cycle persistence remain unverified. The latest bounded
+  elevated GPPro run found no readers in this execution context, despite the
+  user's report that the reader is visible.
 - [ ] Pass AC1–AC5 and the plan's clean-flash integration sequence three times.
 
 ## Later / optional

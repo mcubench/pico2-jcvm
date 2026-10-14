@@ -1941,3 +1941,13 @@
 - Decision: Resume host VM linking after `ipc-channel` becomes available; resume applet installation after PC/SC is active.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: none.
+
+## 2026-10-14 — Implement short APDU receive metadata
+
+- Step/experiment: `short-apdu-receive-metadata-20261014`
+- Change: Implemented `APDU.getIncomingLength()` through the native command-length bridge, returned `ISO7816.OFFSET_CDATA` for short APDUs, and documented `receiveBytes()` returning zero because the CCID path buffers the complete command before applet dispatch. Nested Java Card API commit: `5ef3f90356c437ab658fb79ced1abde59ba3df9a`.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` passed both build gates, recovered BOOTSEL through CDC 1200-baud reset, flashed the ARM image, and captured 18 seconds of serial output with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` appeared. Bounded GPPro install was attempted both in the normal context and elevated context. The first reported `SCARD_E_NO_SERVICE`; the elevated attempt reported no available readers and was stopped at the 25-second bound. No INSTALL APDU reached the token.
+- Result: Short-APDU receive metadata now matches the current fully buffered CCID path. Java-level behavior remains unverified because GPPro cannot see a reader in this execution context, despite the user's report that it is visible.
+- Decision: Continue completing the Java Card APDU interface and retry applet installation when this execution context can enumerate the PC/SC reader.
+- Commit: root documentation/log commit recorded in the following reference entry; API source commit `5ef3f90356c437ab658fb79ced1abde59ba3df9a`.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T073306Z.log` SHA-256 `914f437056f50088dd27f2b066aa051d97728d8fc76b241d8e4e2c7f3bd746ff`; `build/arm/pico2_choupi.uf2` SHA-256 `c3958f3c3e9e0a35dfd42be552d4fc1183958d763afb63266cbc6a3f691b5680`.

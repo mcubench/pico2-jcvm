@@ -1734,3 +1734,33 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   the latest `progress.md` entry. Java API buffer changes are committed in the
   nested checkout as `534c1b1`; root fixes are committed as `55c26ce`. The prior uncommitted source/API trees and
   unrelated worktree files remain preserved.
+
+## Latest continuation — 2026-10-14
+
+- Implemented short-APDU receive metadata in
+  `choupi/javacard-sdk/javacard-api/src/javacard/framework/APDU.java` and
+  committed only that file in the nested API repository as
+  `5ef3f90356c437ab658fb79ced1abde59ba3df9a`. `getIncomingLength()` calls the
+  current APDU native length accessor; `getOffsetCdata()` returns 5 for the
+  supported short-APDU format; `receiveBytes()` returns 0 because CCID buffers
+  the complete short command before dispatch. Applet-level behavior is not yet
+  verified.
+- `./tools/build arm` and `./tools/build riscv` both passed after the change.
+  The subsequent `./tools/cycle choupi` flashed the ARM UF2 and passed the
+  18-second finite serial check with repeated `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. Log:
+  `artifacts/logs/cycle-choupi-20261014T073306Z.log` (SHA-256
+  `914f437056f50088dd27f2b066aa051d97728d8fc76b241d8e4e2c7f3bd746ff`); UF2
+  SHA-256 `c3958f3c3e9e0a35dfd42be552d4fc1183958d763afb63266cbc6a3f691b5680`.
+- The user reports the PC/SC reader is visible. Agent-side GlobalPlatformPro
+  first returned `SCARD_E_NO_SERVICE`; a bounded elevated run instead reported
+  no available readers and was terminated at 25 seconds. Neither attempt sent
+  an INSTALL APDU. Do not misreport this as an applet status-word failure. Do
+  not use sudo; next continue with source work that can be independently built,
+  and retry GPPro once reader enumeration works in this execution context.
+- Current API source tree also has pre-existing modifications in
+  `src/org/globalplatform/PlateformeGlobale.java` and
+  `src/org/globalplatform/entity_file.java`; these were not included in the API
+  commit. Root `CMakeLists.txt`, `SKILL.md`, the extensive diagnostic artifacts,
+  and other source trees contain unrelated pre-existing work and must remain
+  unstaged unless a step requires specific files.
