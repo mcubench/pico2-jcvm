@@ -85,3 +85,32 @@ single observed stage times, not timer-CSV averages.
   dominates. The known 3:29 CAP converter build predates the timer and is a
   single observation, so first measure it through the current wrapper before
   changing build caching or dependency rules.
+
+## Additional high-value suggestions
+
+- **Find the source of VM CPU saturation before changing the build.** The VM
+  has previously become unresponsive with all eight cores busy. During a
+  repeatable reproduction, record the top CPU-consuming process and its
+  threads, plus wall time and CPU time for the command. If the load comes from
+  a device or PC/SC wait loop, replace tight polling with blocking I/O or a
+  sleep between bounded retries; if it comes from compilation, compare the
+  existing two-job setting with one job before raising the limit. The cause
+  has not yet been measured, so avoid attributing those freezes to a specific
+  tool.
+- **Make hardware readiness waits cheap and explicit.** Check USB mode, device
+  nodes, pcscd health, and reader enumeration once before starting an APDU
+  probe. Retry with a short bounded backoff and print which precondition is
+  missing. Keep the APDU timeout separate from reader discovery so a missing
+  reader cannot consume the full test duration or appear as slow card code.
+- **Extend timing records with comparable-run metadata.** For each build sample,
+  record target, clean or incremental state, source revision, job count, wall
+  time, and CPU time; optionally record peak resident memory. For hardware
+  runs, record preflight, BOOTSEL recovery, upload, reboot, reader discovery,
+  and test time independently. This makes the next bottleneck visible without
+  conflating host work with device waits.
+- **Prioritize repeated costs over speculative tuning.** The incremental PC
+  generation fix removes repeated Java/Maven work when its inputs are
+  unchanged. Measure a clean regeneration and several no-op/incremental builds
+  through the current wrappers; only optimize the remaining stage if it is
+  consistently a large share of end-to-end time. Keep generated artifacts and
+  source revision fixed for comparisons.

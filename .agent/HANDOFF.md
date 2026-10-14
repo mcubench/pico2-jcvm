@@ -1,5 +1,17 @@
 # Handoff
 
+## Additional performance suggestions — 2026-10-14
+
+- Expanded `perf_tips.md` with recommendations to diagnose the previously
+  reported eight-core VM saturation, avoid tight polling in USB/PCSC readiness
+  paths, and capture CPU/resource metadata alongside comparable wall times.
+- No performance cause was measured in this documentation step; suggestions
+  distinguish observed symptoms from unverified causes. The existing
+  incremental PC-generation optimization remains in place.
+- Commit reference is recorded in the latest `progress.md` entry. Next,
+  continue host applet lifecycle/APDU coverage; the physical reader is not
+  currently available in this execution context.
+
 ## Updated development timing sample — 2026-10-14
 
 - Documentation commits: `171d404`, reference `9cbeb4e`; expanded sample

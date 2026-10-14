@@ -2600,3 +2600,13 @@
 - Decision: Resume the remaining APDU transport and applet lifecycle work.
 - Commit: `0da5b1d`
 - Artifacts/logs: `build/choupi-pc/generation.sha256`; `build/choupi-pc/flash`; `build/choupi-pc/jni.hpp`.
+
+## 2026-10-14 — Add VM responsiveness and measurement suggestions
+
+- Step/experiment: `performance-guidance-vm-responsiveness-20261014`
+- Change: Added recommendations to diagnose the reported eight-core VM saturation, use bounded USB/PCSC readiness checks, and record CPU/resource metadata with comparable build and hardware timing stages. Updated the handoff with the documentation outcome.
+- Validation: `git diff --check -- perf_tips.md .agent/HANDOFF.md progress.md` passed. Documentation-only change; no builds or tests were run.
+- Result: Performance guidance separates the observed VM freeze symptom from its unmeasured cause and gives concrete next measurements.
+- Decision: Collect process/thread CPU time during a reproducible freeze before tuning concurrency or attributing the load to a wait loop.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; no new timing data collected.
