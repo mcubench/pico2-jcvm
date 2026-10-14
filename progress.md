@@ -2730,3 +2730,13 @@
 - Decision: Inspect CP field reference 174 and the receiver field token/type, then continue the process APDU path.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log`; `build/choupi-pc/choupi`; `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-14 — Record CAP package-method resolution commit
+
+- Step/experiment: `cap-package-method-lookup-20261014-reference`
+- Change: Recorded the immutable implementation commit for the package-method token, table-pointer, and VM-entry exception fixes.
+- Validation: `git -c core.whitespace=cr-at-eol diff --check -- progress.md` passed; commit `daf56ab` contains the implementation and step record.
+- Result: The resolver correction is committed as `daf56ab`.
+- Decision: Continue with the still-failing applet field access at CP entry 174.
+- Commit: recorded in the current commit.
+- Artifacts/logs: VPCD integration log `artifacts/logs/host-vpcd-jcalgtest-20261014.log`; ARM and PC build outputs.
