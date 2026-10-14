@@ -1922,3 +1922,20 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   restored, then continue AC3/AC4 and persistence. Logs:
   `artifacts/logs/arm-build-limited-jobs-20261014.log` and
   `artifacts/logs/pico-apdu-probe-smartcardio-20261014.log`.
+
+- Continued on 2026-10-14. Retrieved the official JCAlgTest v1.8.2 release ZIP
+  to `build/downloads/AlgTest_dist_1.8.2.zip` (SHA-256
+  `d1fea7c06b1a9687d310f19dfbcb3341208c97edf60e3b4b9d0cea12ffd0ef45`) and
+  extracted the fat client to `build/algtest-client-1.8.2/`. Its JC305 CAP
+  hash exactly matches the supplied CAP. Client `--help` works. The focused
+  `-simulator -op ALG_SUPPORT_EXTENDED` run completed with exit 0 and produced
+  a 4,595-line reference CSV at
+  `artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv`;
+  stdout log is `artifacts/logs/jcalgtest-jcardsim-extended-20261014.log`.
+  jCardSim itself throws `NotImplementedException` for some algorithms, which
+  the client records as errors; do not treat those rows as CHOUPI failures.
+  The release's all-mode `-selftest` advanced into performance tests and was
+  stopped by its 180-second timeout (partial outputs only), to limit CPU load.
+  Next compare a CHOUPI result against this simulator reference once the host
+  PC/SC service is accessible; continue ARM-only and don't run the RISC-V
+  build/test.

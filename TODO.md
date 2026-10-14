@@ -20,13 +20,20 @@ out explicitly.
 - [x] Limit the default target build to two parallel jobs to avoid saturating
   all VM cores; override with `PICO_BUILD_JOBS` when desired.
 
-## Active: make v1.8.2 installation execute correctly
+## Active: validate the applet process APDUs and client results
 
 Current environment note (2026-10-14): the corrected ARM firmware was flashed;
 GlobalPlatformPro CAP LOAD and INSTALL returned `9000`, the registry lists
 `JCAlgTest1` as `INITIALIZED`, and SELECT by AID returned `9000` with FCI. These
 steps validate install and selection, but `Applet.process()` has not yet been
-validated by a JCAlgTest command. A Java `javax.smartcardio` probe compiles
+validated by a JCAlgTest command. The official JCAlgTest v1.8.2 host JAR has
+been downloaded to `build/algtest-client-1.8.2/`; its bundled JC305 CAP has the
+same SHA-256 as the supplied CAP. `ALG_SUPPORT_EXTENDED` completed against the
+bundled jCardSim and produced
+`artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv` (4,595
+lines). Treat this only as a reference: jCardSim itself raises
+`NotImplementedException` on some algorithms and the client records those
+errors. A Java `javax.smartcardio` probe compiles
 without extra modules, but found no readers in the current agent container
 because the system PC/SC service is unavailable here. The authorized sudo
 helper cannot run in this container (`no new privileges`). A prior unbounded
@@ -133,8 +140,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   persistence.
 - [ ] Run the matching JCAlgTest v1.8.2 client in supported-algorithms mode and
   archive its CSV and logs with hashes.
-- [ ] Run the same client through jCardSim and compare the CSV against the
-  simulator and CHOUPI's declared supported-algorithm list.
+- [x] Generate a simulator reference using the official v1.8.2 client and its
+  bundled jCardSim; the complete `ALG_SUPPORT_EXTENDED` CSV and run log are
+  archived. Cross-comparison against a CHOUPI card result is still pending.
+- [ ] Compare the CHOUPI supported-algorithms CSV against the jCardSim
+  reference and CHOUPI's declared supported-algorithm list.
 - [ ] Complete hardware integration: the earlier ARM firmware passed its finite
   serial runtime test, and GPPro `--debug --list` now succeeds over PC/SC on
   Linux with ISD `A000000151000000` in `OP_READY`. Windows enumeration,

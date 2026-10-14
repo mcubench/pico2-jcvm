@@ -2191,3 +2191,13 @@
 - Decision: Continue with the remaining JCAlgTest applet `process()` and AC3/AC4 validation work.
 - Commit: `678bd02`
 - Artifacts/logs: `artifacts/logs/arm-build-limited-jobs-20261014.log`; `artifacts/logs/pico-apdu-probe-smartcardio-20261014.log`.
+
+## 2026-10-14 — Produce JCAlgTest v1.8.2 jCardSim reference
+
+- Step/experiment: `jcalgtest-v182-jcardsim-reference-20261014`
+- Change: Retrieved the official v1.8.2 distribution into `build/downloads/`, extracted its fat host client under `build/algtest-client-1.8.2/`, and archived the completed extended supported-algorithms simulator CSV.
+- Validation: Client `--help` exits 0 and exposes `-simulator`, `-op ALG_SUPPORT_EXTENDED`, and `-selftest`. `-simulator -op ALG_SUPPORT_BASIC ... -fresh` and `-simulator -op ALG_SUPPORT_EXTENDED ... -fresh` both completed with exit 0; the extended CSV has 4,595 lines. The distribution's JC305 CAP SHA-256 matches the supplied CAP exactly (`b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`). RISC-V and the physical board were not tested in this step.
+- Result: The official client/JCardSim can provide a reference report. jCardSim logs `NotImplementedException` for some algorithms; the client records these as algorithm errors, so the simulator is a comparison input rather than a perfect oracle. The all-mode `-selftest` also starts CPU-heavy performance operations and hit its 180-second timeout after producing partial outputs; it is not counted as passed.
+- Decision: Compare future CHOUPI `ALG_SUPPORT_EXTENDED` output to this reference and the VM's declared factory support; process-level CHOUPI output still awaits PC/SC access.
+- Commit: recorded in a following reference entry.
+- Artifacts/logs: `artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv` (SHA-256 `67d9feebf9756da69db034bab05cddd9acb38d31aa980888fa7b5db22ef1757b`); `artifacts/logs/jcalgtest-jcardsim-extended-20261014.log` (SHA-256 `9aef8813e7d4eb4430dff6eae28d349a8a47fd20d44b4771cb560985db6c830c`); client JAR SHA-256 `43d1d9c1cf92b8f5720c87ec0815e89ae5c713ec254713dcb24ffa431f4e6e90`.
