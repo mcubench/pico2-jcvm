@@ -2420,3 +2420,13 @@
 - Decision: Continue timing compile, analysis, upload, and test intervals across future implementation steps; hardware access remains unavailable from this VM device-node view.
 - Commit: `eb36cbd`
 - Artifacts/logs: `artifacts/metrics/development-time.csv` (SHA-256 `84a5be49f87005eaab8d03321c10bd9bd491bf910405d8e9aabff2b60fa9c243`).
+
+## 2026-10-14 — Document development performance tips
+
+- Step/experiment: `development-performance-tips-20261014`
+- Change: Added `perf_tips.md` with the timer's current successful task timings, the unmeasured Maven observation, and practical suggestions for incremental builds, bounded parallelism, and faster USB/serial diagnosis.
+- Validation: Reviewed the document against `artifacts/metrics/development-time.csv`, the recorded ARM build/test output, and the current USB/serial visibility inspection. `git diff --check` passed. No code tests were run because this step changes documentation only.
+- Result: The recommendations distinguish measured values from the small sample's limitations and identify upload time as not measured.
+- Decision: Gather more task-time samples during subsequent implementation before making performance changes.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; measurement source `artifacts/metrics/development-time.csv`.
