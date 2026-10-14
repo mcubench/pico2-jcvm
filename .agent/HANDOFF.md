@@ -17,6 +17,18 @@
 - Next: keep install atomicity open; validate failed-install cleanup and status
   words on hardware only after the repository build gate allows flashing.
 
+## Install status words — 2026-10-14
+
+- GP INSTALL failure stages now append a status word that distinguishes bad
+  install data (`6A80`), missing package (`6A82`), storage/rollback failure
+  (`6581`), unavailable transaction (`6985`), and unexpected exception
+  (`6F00`). The diagnostic payload remains before the status word.
+- `./tools/test-install-status` passes all ten mappings (`TEST:SUMMARY fail=0`,
+  1.551 s); `./tools/build arm` passes (3.120 s). No RISC-V build or
+  board flash was performed, so card-manager behavior remains unverified.
+- Next: retain the board validation gap, then continue with a host execution
+  path for applet lifecycle/APDU tests while honoring the ARM-only scope.
+
 ## Development task timer — 2026-10-14
 
 - Added executable `tools/task-time` with manual intervals, command timing, and a Markdown report. Its append-only data is in `artifacts/metrics/development-time.csv`.

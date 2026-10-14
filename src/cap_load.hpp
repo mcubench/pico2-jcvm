@@ -18,6 +18,29 @@ public:
 
   bool installed() const noexcept { return installed_; }
   uint8_t installFailureStage() const noexcept { return install_failure_stage_; }
+  static constexpr uint16_t failureStatusWordForStage(uint8_t stage) noexcept {
+    switch (stage) {
+    case 1:
+    case 2:
+    case 3:
+    case 5:
+      return 0x6a80; // incorrect data / applet installation failed
+    case 4:
+      return 0x6a82; // applet package not found
+    case 6:
+    case 8:
+      return 0x6581; // nonvolatile memory failure
+    case 7:
+      return 0x6985; // install transaction unavailable
+    case 9:
+      return 0x6f00; // unexpected internal error
+    default:
+      return 0x6a80;
+    }
+  }
+  uint16_t installFailureStatusWord() const noexcept {
+    return failureStatusWordForStage(install_failure_stage_);
+  }
   uint16_t installVmStatus() const noexcept { return install_vm_status_; }
   uint8_t installVmExceptionId() const noexcept {
     return install_vm_exception_id_;

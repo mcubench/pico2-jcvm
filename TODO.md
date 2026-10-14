@@ -82,12 +82,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   CRC-protected CAP metadata version, while retaining version-1 CAP readability.
 - [x] Implement `Applet.register()` and `register(byte[], short, byte)` so a
   successful Java install creates the persistent, selectable instance.
-- [ ] Complete failed-installation atomicity and return a useful status word.
+- [ ] Validate failed-install rollback and status words on hardware, then close
+  power-loss atomicity.
   Synchronous rollback now snapshots persistent object/field writes, including
   indexed array and package-list updates, and the RP2350 overlay can erase
-  transaction-created records. Failure-path behavior still needs hardware
-  validation; CAP metadata and filesystem state do not yet share a durable
-  power-loss journal.
+  transaction-created records. Failure stages now map to distinct status words
+  (`6A80`, `6A82`, `6581`, `6985`, or `6F00`), with a focused host test passing.
+  Failure-path behavior still needs hardware validation; CAP metadata and
+  filesystem state do not yet share a durable power-loss journal.
 
 ## Applet runtime and APDU lifecycle
 

@@ -2460,3 +2460,13 @@
 - Decision: Continue with the remaining JCAlgTest gaps, retaining the power-loss atomicity and useful status-word work as open.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/metrics/development-time.csv`; ARM UF2 `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-14 — Map install failures to actionable status words
+
+- Step/experiment: `install-failure-status-map-20261014`
+- Change: Mapped GP INSTALL failure stages to distinct status words: malformed data/applet errors `6A80`, missing package `6A82`, storage/rollback failure `6581`, transaction unavailable `6985`, and unexpected exception `6F00`. Existing diagnostic response bytes remain available before the final status word.
+- Validation: `./tools/test-install-status` passed all ten mapping cases with `TEST:SUMMARY fail=0` in 1.551 s. `./tools/build arm` passed in 3.120 s. No RISC-V build or hardware flash was performed.
+- Result: Host code and the ARM image agree on useful INSTALL status words. The actual card-manager APDU response has not been tested on hardware.
+- Decision: Keep rollback/status validation open until an authorized board cycle is available; continue toward process APDU coverage while preserving the no-flash gate.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/metrics/development-time.csv`; ARM UF2 `build/arm/pico2_choupi.uf2`; no archived build log.

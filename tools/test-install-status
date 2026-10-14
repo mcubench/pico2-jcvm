@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+build_dir="${repo_root}/build/tests/install-status"
+
+"${repo_root}/tools/env" cmake -S "${repo_root}/tools/tests/install_status" \
+  -B "${build_dir}"
+"${repo_root}/tools/env" cmake --build "${build_dir}" \
+  --target install_status_test
+"${build_dir}/install_status_test"

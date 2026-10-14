@@ -246,8 +246,10 @@ void process_message(uint8_t rhport) {
               cap_load_session.installVmDebugContext() >> 8);
           response[28] = static_cast<uint8_t>(
               cap_load_session.installVmDebugContext());
-          response[29] = 0x6a;
-          response[30] = 0x80;
+          const uint16_t install_status =
+              cap_load_session.installFailureStatusWord();
+          response[29] = static_cast<uint8_t>(install_status >> 8);
+          response[30] = static_cast<uint8_t>(install_status);
           response_length = 31;
         }
       } else if (instruction == 0xf2 && p1 == 0x80 &&
