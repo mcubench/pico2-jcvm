@@ -2832,3 +2832,13 @@
 - Decision: Collect per-stage VPCD timing and comparable build samples before tuning.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`; `/tmp/pico2-jcalgtest-handler-base-fix.log`.
+
+## 2026-10-14 — Record performance-guidance commit
+
+- Step/experiment: `rank-performance-experiments-reference-20261014`
+- Change: Recorded the immutable commit for the ranked performance suggestions.
+- Validation: `git diff --check -- progress.md` passed; commit `5b9ed64` contains the documentation update, handoff, and implementation record.
+- Result: The new guidance is committed as `5b9ed64`.
+- Decision: Add VPCD phase timings and collect comparable build samples before making performance changes.
+- Commit: recorded in the current commit.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
