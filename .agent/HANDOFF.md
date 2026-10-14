@@ -1654,6 +1654,16 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   Start `pcscd.service`, rerun the installed
   `/usr/local/sbin/pico2-pcsc-reader` ACL helper for the new USB node, confirm
   `pcsc_scan -r`, then retry the same GPPro command.
+- Host-build check — 2026-10-14. `./tools/env cmake --build
+  build/choupi-pc --target choupi -j2` completed Java Card API compilation and
+  CAP conversion and built the capmap-free Maven modules, but Cargo could not
+  resolve crates.io. An explicit offline retry failed immediately because
+  `ipc-channel` is absent from the local Cargo registry, before C++ linking.
+  The API conversions had zero errors; no host VM binary was produced. One
+  attempt also reported the pre-existing GNU make jobserver FIFO
+  `/tmp/GMfifo5`; no files outside the repository were changed. Resume by
+  restoring PC/SC for the exact CAP install, then retry the host build when the
+  crate is available offline or crates.io DNS works.
 
 - Paused on 2026-10-12 at the user's request before unplugging the Pico. An
   incomplete applet `process(APDU)` implementation is present in the worktree:

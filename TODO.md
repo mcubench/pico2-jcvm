@@ -18,14 +18,16 @@ out explicitly.
 
 ## Active: make v1.8.2 installation execute correctly
 
-Current environment note: the Pico is visible as USB `2e8a:0009` (most recently
-`001:011`), and `pcscd` is active, but `pcsc_scan -r` reports no reader. The
-current USB-node ACL grants `claude` access but not `pcscd`; USB re-enumeration
-invalidated the earlier service-account ACL. GPPro cannot send card commands
-until the installed ACL helper is run again for the current node. The PC build
-wrapper is available; Java Card API conversion succeeds, but the host build
-stops because Cargo cannot fetch the uncached `ipc-channel` dependency while
-crates.io DNS/network access is unavailable.
+Current environment note: the Pico 2 was flashed with the current ARM CHOUPI
+image, and its finite serial test passed. After USB re-enumeration, the most
+recent GPPro install attempt failed before sending an APDU with
+`SCARD_E_NO_SERVICE` (`SCardEstablishContext`, `0x8010001d`). System service
+management is not available from this execution context, so the `pcscd.service`
+state and current USB-node ACL could not be refreshed here. Restart PC/SC and
+rerun the installed reader ACL helper before the next install attempt. The host
+VM target builds Java API classes and CAPs, but Cargo offline mode confirms the
+local registry lacks `ipc-channel`; the online build cannot resolve
+`index.crates.io`.
 
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's
@@ -45,8 +47,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   CHOUPI exports. Validate each mapping against CAP/export metadata; do not
   treat a GP INSTALL status as proof that Java installation completed.
 - [ ] Find and fix the current install-method failure using trustworthy runtime
-  evidence. The last recorded GPPro attempt returned `6A80`; the stale watchdog
-  scratch marker is not reliable enough to identify its cause.
+  evidence. The last GPPro attempt that reached the card returned `6A80`; the
+  most recent attempt failed before card access with `SCARD_E_NO_SERVICE`. The
+  stale watchdog scratch marker is not reliable enough to identify its cause.
 - [x] Track calls to the imported JC305 `Applet.register` virtual methods during
   install and reject a successful VM return if no registration call occurred.
 - [x] Store the registered applet class index beside the persistent AID using a
@@ -72,9 +75,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   argument locals; root short/reference/integer return values can now be
   captured without a synthetic caller frame. CCID SELECT now invokes
   `Applet.select()` and rejects a false result with `6999`; selecting another
-  AID or powering off invokes `Applet.deselect()`. `Applet.process()` and its
-  APDU object/buffer are not wired yet. None of these lifecycle calls has been
-  exercised with an installed applet because PC/SC currently has no reader.
+  AID or powering off invokes `Applet.deselect()`. The APDU object/buffer is
+  wired into `Applet.process()` dispatch and refreshed for each command. None
+  of these lifecycle calls has been exercised with an installed applet because
+  PC/SC is unavailable in the current execution context.
 - [ ] Implement Java Card APDU buffer and incoming/outgoing command methods used
   by JCAlgTest, including case-4 Le and `61xx` response handling.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
@@ -96,9 +100,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   archive its CSV and logs with hashes.
 - [ ] Run the same client through jCardSim and compare the CSV against the
   simulator and CHOUPI's declared supported-algorithm list.
-- [ ] Re-run hardware integration when the user provides the Pico 2 for physical
-  testing: GPPro list/install/select/process/delete, finite serial monitor, and
-  power-cycle persistence.
+- [ ] Complete hardware integration: the current ARM firmware was flashed and
+  passed its finite serial runtime test, but GPPro list/install/select/process/
+  delete and power-cycle persistence remain unverified because the latest PC/SC
+  context could not be established.
 - [ ] Pass AC1–AC5 and the plan's clean-flash integration sequence three times.
 
 ## Later / optional

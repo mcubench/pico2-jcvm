@@ -1921,3 +1921,13 @@
 - Decision: Continue with independent host-side build work while PC/SC is restored.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: none.
+
+## 2026-10-14 — Verify offline CHOUPI host-build dependencies
+
+- Step/experiment: `host-vm-offline-dependency-check-20261014`
+- Change: Checked whether the host VM executable can be compiled from local dependencies while PC/SC is unavailable.
+- Validation: `./tools/env cmake --build build/choupi-pc --target choupi -j2` completed the Java Card API compile and CAP conversions (zero converter errors) and built the capmap-free Maven modules, but Cargo retried crates.io because `index.crates.io` did not resolve. The explicit offline retry `CARGO_NET_OFFLINE=true MAVEN_ARGS=-o ./tools/env cmake --build build/choupi-pc --target choupi -j2` failed because `ipc-channel` is absent from the local Cargo registry. Both host build attempts exited nonzero before C++ linking.
+- Result: Java source/CAP generation is available; host VM linking cannot proceed without the uncached Rust crate. The same offline build also reported an existing GNU make jobserver FIFO at `/tmp/GMfifo5`; no files outside the repository were changed.
+- Decision: Keep hardware firmware builds and applet transport validation separate from the host VM build; retry host linking when the crate is available locally or Cargo network resolution is restored.
+- Commit: `recorded in the following dependency-check commit reference`
+- Artifacts/logs: none; command output is preserved in the session transcript. Existing generated outputs are under `build/choupi-pc/`.
