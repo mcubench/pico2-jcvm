@@ -2362,6 +2362,16 @@
 - Commit: `fe2f25b`
 - Artifacts/logs: `artifacts/logs/host-jcarray-available-memory-20261014.log`; `artifacts/logs/arm-available-memory-validation-20261014.log`.
 
+## 2026-10-14 — Validate JCSystem memory arguments in Java
+
+- Step/experiment: `jc-system-available-memory-java-guards-20261014`
+- Change: Added Java-level null, offset/range, and memory-type checks to `JCSystem.getAvailableMemory(short[], short, byte)`. The wrapper now throws Java `NullPointerException` and `ArrayIndexOutOfBoundsException`, and calls `SystemException.throwIt(ILLEGAL_VALUE)` before reaching JNI. The nested Java Card API commit is `7caa650`.
+- Validation: `./tools/build arm` passed API compilation, CAP conversion, ROM-mask generation, ARM image build, and CHOUPI image build. The modified framework CAP converter reported zero errors; existing warnings remain in other API packages for `int` support and missing previous-minor export files. No RISC-V build/test or flash was run. `git diff --check` passed.
+- Result: This API's invalid-argument paths now raise Java throwables in bytecode, allowing existing `athrow` and CAP exception-handler dispatch to handle them. Hardware applet catch behavior remains unverified because PC/SC is unavailable and the image was not flashed.
+- Decision: Keep the Java guards and continue implementing the remaining JCAlgTest API/runtime behavior; native C++ exception conversion for unrelated native calls remains an open gap.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/logs/arm-jcsystem-java-validation-20261014.log` (SHA-256 `969b7e02fb89bf4c4a9d09355cce52b78e16d146b68ae038e15aa2ef9f904e32`); ARM UF2 SHA-256 `509d663da55b8d1becf53771f5ec3293e713a7fb9f1ee1cec31b96cff048cfb3`.
+
 ## 2026-10-14 — No-chaining APDU implementation hash reference
 
 - Step/experiment: `apdu-no-chaining-le-bound-20261014-hash-reference`
@@ -2371,3 +2381,13 @@
 - Decision: Continue implementing and validating the remaining applet transport behavior.
 - Commit: `7448bec`
 - Artifacts/logs: `/tmp/pico2-apdu-nochaining.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-14 — Reflash CHOUPI and verify runtime on Pico 2
+
+- Step/experiment: `bootsel-choupi-reflash-cycle-20261014`
+- Change: Rebuilt both RP2350 architecture targets and the CHOUPI target, then flashed the ARM CHOUPI UF2 to the connected Pico 2. The board initially appeared as running CHOUPI firmware with no picotool reset interface; the bounded CDC recovery entered BOOTSEL and the retry completed.
+- Validation: `./tools/cycle choupi` passed both ARM and RISC-V build gates, flashed at 100%, and captured 18 seconds of serial output. The capture contains 18 `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` pairs and no `TEST:FAIL` or `FAULT`. Bounded `timeout 5s pcsc_scan -r` reports `No reader found`.
+- Result: The refreshed ARM firmware passes its board runtime check. Applet-level APDU validation remains blocked because the PC/SC reader is not visible after reboot.
+- Decision: Continue with finite v1.8.2 APDU probing once PC/SC visibility is restored; no APDU was sent in this step.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T135618Z.log` (SHA-256 `f7fe9aaa9f77203d9a62053d96cf750ed4cd50d333215374919ea4336950939a`); ARM UF2 SHA-256 `509d663da55b8d1becf53771f5ec3293e713a7fb9f1ee1cec31b96cff048cfb3`.

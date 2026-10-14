@@ -22,7 +22,11 @@ out explicitly.
 
 ## Active: validate the applet process APDUs and client results
 
-Current environment note (2026-10-14): the corrected ARM firmware was flashed;
+Current environment note (2026-10-14): the latest `./tools/cycle choupi`
+rebuilt ARM, RISC-V, and CHOUPI successfully, flashed the ARM firmware, and
+passed the finite 18-second runtime capture with 18 repeated
+`TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` pairs. The detailed
+record is `artifacts/logs/cycle-choupi-20261014T135618Z.log`. The corrected ARM firmware was flashed;
 GlobalPlatformPro CAP LOAD and INSTALL returned `9000`, the registry lists
 `JCAlgTest1` as `INITIALIZED`, and SELECT by AID returned `9000` with FCI. These
 steps validate install and selection, but `Applet.process()` has not yet been
@@ -34,12 +38,9 @@ bundled jCardSim and produced
 lines). Treat this only as a reference: jCardSim itself raises
 `NotImplementedException` on some algorithms and the client records those
 errors. A Java `javax.smartcardio` probe compiles without extra modules, but
-this execution environment still has no usable PC/SC service. The user reports
-that the authorized VM helper ran successfully. After flashing the board, a
-bounded Java probe still reported `Pico 2 CHOUPI CCID` missing; `pcsc_scan -r`
-then produced a rapid stream of `Service not available` / invalid-handle
-errors and was stopped immediately. Do not retry that scanner unless pcscd
-availability is first confirmed, and always cap any scan.
+`pcsc_scan -r` still reports no reader after the latest flash; the user reports
+that the authorized VM helper ran successfully. No APDU reached the board.
+Always cap any PC/SC scan.
 `tools/probe-jc-algtest` provides a finite-timeout SELECT/GETVERSION/JCSystem
 APDU probe, but no APDU reached the board in this run. The ARM and RISC-V build
 wrappers pass; only ARM firmware was flashed and tested. Windows reader
@@ -135,9 +136,13 @@ rollback and duplicate/invalid registration handling also remain unverified.
   switching is unsupported. The buffer overload of
   `JCSystem.getAvailableMemory()` now distinguishes null, invalid-range, and
   invalid-type arguments in the native implementation, with focused tests and
-  an ARM build passing. C++ native-exception to Java throwable dispatch is
-  still incomplete, so Java catch behavior for these errors is not yet proven.
-  Broader API coverage remains incomplete.
+  an ARM build passing. The Java Card wrapper now validates those arguments
+  before the native call and throws Java `NullPointerException`,
+  `ArrayIndexOutOfBoundsException`, or `SystemException.ILLEGAL_VALUE`, so
+  those paths use ordinary Java exception dispatch. The ARM build regenerates
+  the API CAP and ROM mask successfully; applet-level catch behavior remains
+  physically unverified. Native C++ exception mapping for other methods is
+  still incomplete. Broader API coverage remains incomplete.
 - [x] Implement `JCSystem.makeTransientObjectArray()` with Java-null default
   entries and a wildcard component type that accepts any reference. ARM build
   and focused factory tests pass; installed-applet use remains unverified.

@@ -2,6 +2,35 @@
 
 ## Current session state — 2026-10-14
 
+- Latest physical cycle: `./tools/cycle choupi` rebuilt ARM, RISC-V, and the
+  CHOUPI target successfully, then flashed the ARM CHOUPI UF2. Initial picotool
+  discovery saw the running CHOUPI CCID firmware rather than BOOTSEL; its
+  reset interface was unavailable, but the bounded CDC recovery eventually
+  entered BOOTSEL and the retry loaded the image at 100%. The 18-second serial
+  capture passed 18 repeated `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0` checks, with no `FAULT` or `TEST:FAIL`. UF2
+  SHA-256 `509d663da55b8d1becf53771f5ec3293e713a7fb9f1ee1cec31b96cff048cfb3`;
+  log `artifacts/logs/cycle-choupi-20261014T135618Z.log`, SHA-256
+  `f7fe9aaa9f77203d9a62053d96cf750ed4cd50d333215374919ea4336950939a`.
+  After flashing, bounded `pcsc_scan -r` still reports no reader, so no applet
+  APDU has been sent. Next restore PC/SC reader visibility and run the finite
+  v1.8.2 APDU probe before attempting the full client.
+
+- Latest ARM-only API step: `JCSystem.getAvailableMemory(short[], short, byte)`
+  now checks arguments in Java before invoking the native method. Null buffers
+  throw `NullPointerException`, invalid offsets throw
+  `ArrayIndexOutOfBoundsException`, and invalid memory types use
+  `SystemException.throwIt(ILLEGAL_VALUE)`. The native implementation retains
+  equivalent validation as a backstop. Java API CAP conversion, ROM-mask
+  generation, and `./tools/build arm` all passed. Existing converter warnings
+  are from other API packages (`int` support / older export files). No RISC-V
+  build/test or flash was performed. The nested API source commit is `7caa650`;
+  ARM UF2 SHA-256 `509d663da55b8d1becf53771f5ec3293e713a7fb9f1ee1cec31b96cff048cfb3`.
+  Build log `artifacts/logs/arm-jcsystem-java-validation-20261014.log`, SHA-256
+  `969b7e02fb89bf4c4a9d09355cce52b78e16d146b68ae038e15aa2ef9f904e32`.
+  Applet-level catches are still untested; continue Java runtime/API work and
+  preserve the unrelated edits in the nested API repository.
+
 - Latest ARM-only code step: `JCSystem.getAvailableMemory(short[], short,
   byte)` now raises distinct native `NullPointerException`,
   `ArrayIndexOutOfBoundsException`, and `SystemException` values for null
