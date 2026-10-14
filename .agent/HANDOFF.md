@@ -1647,6 +1647,13 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   so the next action is restore PC/SC access for the newly enumerated CCID
   device, then retry the authorized GlobalPlatformPro install of
   `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` and verify SELECT/APDU behavior.
+  A bounded GPPro retry confirmed the transport failure precisely:
+  `SCARD_E_NO_SERVICE` (`SCardEstablishContext`, `0x8010001d`), so no INSTALL
+  APDU reached the card. The CAP hash reported by GPPro was
+  `38b464deabb20f48ba4fa1379354e41e913f635a537c9ea5cd2b1e919e0f908c`.
+  Start `pcscd.service`, rerun the installed
+  `/usr/local/sbin/pico2-pcsc-reader` ACL helper for the new USB node, confirm
+  `pcsc_scan -r`, then retry the same GPPro command.
 
 - Paused on 2026-10-12 at the user's request before unplugging the Pico. An
   incomplete applet `process(APDU)` implementation is present in the worktree:

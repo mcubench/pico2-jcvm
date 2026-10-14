@@ -1901,3 +1901,13 @@
 - Decision: Continue with JCAlgTest applet installation after PC/SC service access is restored.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T070921Z.log`.
+
+## 2026-10-14 — Recheck JCAlgTest install transport after flash
+
+- Step/experiment: `gp-install-transport-recheck-20261014`
+- Change: Retried the authorized GlobalPlatformPro installation of the supplied JCAlgTest v1.8.2 CAP after the successful firmware cycle.
+- Validation: Ran `timeout --signal=TERM --kill-after=2s 20s ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar --debug --install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`. GlobalPlatformPro reported CAP SHA-256 `38b464deabb20f48ba4fa1379354e41e913f635a537c9ea5cd2b1e919e0f908c` and exited with `SCARD_E_NO_SERVICE` (`SCardEstablishContext` response `0x8010001d`).
+- Result: No INSTALL APDU reached the card; applet behavior remains unverified. This is a host PC/SC service failure, not an applet status-word result.
+- Decision: Restore `pcscd.service` and rerun the Pico reader ACL helper for the current USB node before retrying the exact CAP install.
+- Commit: `recorded in the following commit reference`
+- Artifacts/logs: none; bounded command output is preserved in the session transcript.
