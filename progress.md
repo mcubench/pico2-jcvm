@@ -2311,3 +2311,13 @@
 - Decision: Keep the validation and continue remaining applet/runtime integration work; installed-applet behavior still awaits PC/SC access.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `/tmp/pico2-apdu-nochaining.log` (SHA-256 `5df9fc50c8120e1abbef839dea5d0f5fbeef393c06b6773af97154159d6a645a`); ARM UF2 SHA-256 `81fd209c5245c0c4f7977f561f0f3926575beb9168dff54113b380aad5163f03`.
+
+## 2026-10-14 — No-chaining APDU commit reference
+
+- Step/experiment: `apdu-no-chaining-le-bound-20261014-reference`
+- Change: Recorded the implementation commit for no-chaining response limits.
+- Validation: Confirmed commit `7448bec` contains the Le/frame bounds, focused APDU tests, and project tracker updates. `./tools/test-short-apdu` and `./tools/build arm` passed.
+- Result: No-chaining response validation is committed as `7448bec`; physical applet behavior remains unverified.
+- Decision: Continue with remaining APDU and JCAlgTest runtime work.
+- Commit: `7448bec`
+- Artifacts/logs: `/tmp/pico2-apdu-nochaining.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.

@@ -6,8 +6,7 @@
   `setOutgoingNoChaining()` length above either the command Le or the T=1
   maximum payload of 252 bytes. `./tools/test-short-apdu` passes the Le and
   frame-bound cases, and `./tools/build arm` passes. The updated firmware was
-  not flashed; no RISC-V compile or test was run. Commit is recorded in the
-  next progress reference entry.
+  not flashed; no RISC-V compile or test was run. Commit: `7448bec`.
 - Previous ARM-only API step: implemented `JCSystem.makeTransientObjectArray()` as a
   zero-initialized transient reference array. Native-created `Object[]` uses a
   wildcard component marker so firewall checks accept any reference. The
