@@ -2670,3 +2670,13 @@
 - Decision: Capture process and timing data during any repeatable slowdown before changing concurrency or wait behavior.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; no new timing data collected.
+
+## 2026-10-14 — Record performance profiling guidance commit
+
+- Step/experiment: `performance-profiling-guidance-20261014-reference`
+- Change: Recorded the immutable commit for the performance profiling recommendations.
+- Validation: Confirmed commit `774b698` contains `perf_tips.md` and the original progress record; `git diff --check` passed.
+- Result: The profiling workflow is committed as `774b698`.
+- Decision: Use the listed CPU, wall-time, and resource measurements on the next reproducible slowdown.
+- Commit: recorded in the current commit.
+- Artifacts/logs: `perf_tips.md`; no new timing data collected.
