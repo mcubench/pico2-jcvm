@@ -2700,3 +2700,13 @@
 - Decision: Use the listed CPU, wall-time, and resource measurements on the next reproducible slowdown.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; no new timing data collected.
+
+## 2026-10-14 — Refresh performance recommendations with latest timings
+
+- Step/experiment: `performance-tips-latest-host-sample-20261014`
+- Change: Added the measured host applet installation cost (0.45 s wall, 0.40 s user CPU, 6,120 KiB peak RSS) and the 34.837-second failed PC smoke run to `perf_tips.md`. Clarified that the install sample is too small for optimization decisions and prioritized phase timing for the failed smoke path.
+- Validation: `git diff --check -- perf_tips.md progress.md .agent/HANDOFF.md` passed. Documentation-only update; no build, test, or hardware operation was run.
+- Result: The recommendations now separate a measured fast install phase from an unexplained long failed smoke run; its time is not attributed to applet runtime without phase evidence.
+- Decision: Add emulator/VPCD/APDU phase timestamps on a future smoke run before optimizing it.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/logs/host-install-rommask-20261014.log`; `artifacts/metrics/development-time.csv`; `perf_tips.md`.

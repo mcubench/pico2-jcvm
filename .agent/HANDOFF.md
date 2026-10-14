@@ -1,5 +1,18 @@
 # Handoff
 
+## Performance tips refresh — 2026-10-14
+
+- Updated `perf_tips.md` with the latest bounded measurements: host applet
+  installation took 0.45 s (0.40 s user CPU, 6,120 KiB max RSS) in one sample;
+  a PC CHOUPI JCRE smoke run failed after 34.837 s. The install sample is too
+  small to justify optimization, and the failed smoke timing has no phase trace.
+- Recommendations now prioritize adding timestamps to emulator launch, VPCD
+  connection, ATR, SELECT, and APDU phases before optimizing the failed smoke
+  path. Upload remains unmeasured. No builds, tests, or hardware operations
+  were run for this documentation update.
+- Next: capture phase timings on the next passing/failing PC smoke run and
+  compare wall and CPU time to identify active compute versus waiting.
+
 ## PC vpcd APDU session integration — 2026-10-14
 
 - Added a PC-only session state machine and routed VPCD power, reset, ATR,

@@ -6,7 +6,7 @@ tests, but it is still too small to estimate stable long-term averages.
 
 ## Current measurements
 
-From `artifacts/metrics/development-time.csv`:
+From `artifacts/metrics/development-time.csv` and the host install log below:
 
 | Task | Successful elapsed time | Notes |
 |---|---:|---|
@@ -15,6 +15,8 @@ From `artifacts/metrics/development-time.csv`:
 | Timer syntax check | 0.055 s | Two successful runs. |
 | Manual analysis interval | 4.641 s | Wall time, not CPU time. |
 | PC API + ROM-mask generation | 1:01 + 5:13 | One full regeneration; the Maven reactor spent 5:13 resolving metadata before finishing from its local cache. |
+| Host applet installation | 0.45 s wall; 0.40 s user; 0.00 s system; 6,120 KiB max RSS | One successful install with the supplied ROM mask; this is a single `/usr/bin/time` sample, not a stable average. |
+| PC CHOUPI JCRE boot smoke | 34.837 s | One failed run; treat this as time to a failure, not successful runtime performance. The timer does not record its internal phase breakdown. |
 | Upload | Not measured | No upload was attempted in this sample. |
 
 The timer report totals 52.821 seconds across successful compile, test,
@@ -28,6 +30,13 @@ The CSV also contains two failed build attempts, four failed test attempts,
 and one interrupted monitor attempt; the report excludes non-OK runs from
 successful duration averages. A bounded JCAlgTest probe also found no PC/SC
 reader, so it sent no APDUs.
+
+The successful host installation completed quickly in its one recorded sample
+and used 90% CPU over 0.45 seconds. There is no evidence that this phase needs
+optimization yet. The 34.837-second failed PC smoke run deserves a phase-level
+trace before optimization: the timer only says where the command started and
+that it failed, so it cannot establish whether the time was spent in startup,
+VM execution, or a wait for the emulator client.
 
 A later full PC build regenerated the Java API in 1:01 and the ROM-mask Maven
 reactor in 5:13. Maven reported DNS failures while checking optional repository
@@ -153,3 +162,24 @@ single observed stage times, not timer-CSV averages.
   files are being rebuilt. If device waits dominate, improve the bounded
   readiness path first. Record the before/after samples using the same clean or
   incremental state; do not infer a speedup from unlike runs.
+
+## Immediate speedup priorities from the latest run
+
+1. **Keep host applet install as a baseline, not an optimization target.** Its
+   single measured run took 0.45 s wall time (0.40 s user CPU, 6,120 KiB peak
+   RSS). Repeat it a few times with the same image and warm caches before
+   deciding whether install work matters to the development loop.
+2. **Instrument the 34.837-second failed PC smoke path by phase.** Add or use
+   timestamps around emulator launch, VPCD connection, ATR, SELECT, and each
+   APDU. Preserve a fixed overall timeout and print the phase that timed out or
+   failed. Compare wall and CPU time with `/usr/bin/time`; avoid attributing the
+   delay to Java execution until the phase trace shows that is where it occurs.
+3. **Reduce repeat work only where the profile confirms it.** Existing
+   incremental PC generation already skips unchanged Java API and ROM-mask
+   outputs. For a clean build, time those generation stages separately from
+   C++ compilation; for an incremental build, confirm they remain skipped.
+4. **Use the existing host smoke path for fast iteration once it is passing.**
+   Focused unit tests are 0.458–5.184 s in the current sample, much cheaper
+   than board setup. Keep the focused test near the change, then run the
+   relevant wrapper build. Hardware upload and physical reader discovery still
+   have no comparable timing sample, so measure them separately when available.
