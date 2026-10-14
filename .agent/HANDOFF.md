@@ -10,6 +10,7 @@
 - `./tools/test-persistent-transaction` passes (`TEST:SUMMARY fail=0`, 2.789 s).
   `./tools/build arm` passes (3.639 s). The preceding link failure was due to
   missing RP2350 `fs_erase` and is resolved.
+- Implementation commit: `4e2d1a9`.
 - No RISC-V build or hardware flash was performed. Board failure-path behavior
   remains untested. Rollback is not durable across power loss because CAP
   metadata and filesystem entries do not share a journal.

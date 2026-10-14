@@ -2450,3 +2450,13 @@
 - Decision: Keep installation atomicity open until failure-path hardware validation and useful status-word behavior are verified. CAP metadata and filesystem writes do not yet share a durable power-loss journal.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/metrics/development-time.csv`; ARM UF2 `build/arm/pico2_choupi.uf2`; no archived build log.
+
+## 2026-10-14 — Install rollback commit reference
+
+- Step/experiment: `persistent-install-rollback-rp2350-20261014-reference`
+- Change: Recorded the immutable implementation commit for synchronous failed-install rollback and RP2350 overlay erase support.
+- Validation: Confirmed commit `4e2d1a9` includes the transaction test, ARM filesystem implementation, GP INSTALL wrapper, and progress record. The focused test and ARM build passed before commit; staged whitespace validation passed.
+- Result: The implementation step is committed as `4e2d1a9`. Hardware failure-path behavior remains untested.
+- Decision: Continue with the remaining JCAlgTest gaps, retaining the power-loss atomicity and useful status-word work as open.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/metrics/development-time.csv`; ARM UF2 `build/arm/pico2_choupi.uf2`.
