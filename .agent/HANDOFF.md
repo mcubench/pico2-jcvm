@@ -14,7 +14,7 @@
   null because this runtime does not support cross-applet/shareable-interface
   context switches. `./tools/test-jcarray` and `./tools/build arm` pass; the
   new UF2 was not flashed. No RISC-V build or test was run. Commit is recorded
-  in the next progress reference entry.
+  as `ca0520a`.
 - The user reports the VM PC/SC helper ran successfully. The bounded probe
   still finds no readers in this execution environment: normal Java access
   reports the named reader missing, and elevated Java access returns

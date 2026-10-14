@@ -2281,3 +2281,13 @@
 - Decision: Retain this limited behavior and continue the remaining JCAlgTest Java Card APIs; applet-level runtime validation remains pending.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `/tmp/pico2-previous-context-aid.log` (SHA-256 `4a68dfe0966deaee6ba12de8a08a83bef4730f3c01d7b9f53f7b0d82c7610e02`); ARM UF2 SHA-256 `1b5231c74e3b7c3a38ce63a20b696aa0a6e16749ffadd4862ecb7f38fb3d5738`.
+
+## 2026-10-14 — Previous-context AID commit reference
+
+- Step/experiment: `jc-system-previous-context-aid-fallback-20261014-reference`
+- Change: Recorded the implementation commit for the no-shareable-context AID fallback.
+- Validation: Confirmed commit `ca0520a` contains the native behavior, focused assertion, ARM build evidence, and TODO/handoff updates.
+- Result: The fallback is committed as `ca0520a`; Java lifecycle behavior on an installed applet remains unverified.
+- Decision: Continue with the remaining platform API and lifecycle work.
+- Commit: `ca0520a`
+- Artifacts/logs: `/tmp/pico2-previous-context-aid.log`; ARM UF2 `build/arm/pico2_choupi.uf2`.
