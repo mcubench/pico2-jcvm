@@ -2391,3 +2391,13 @@
 - Decision: Continue with finite v1.8.2 APDU probing once PC/SC visibility is restored; no APDU was sent in this step.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T135618Z.log` (SHA-256 `f7fe9aaa9f77203d9a62053d96cf750ed4cd50d333215374919ea4336950939a`); ARM UF2 SHA-256 `509d663da55b8d1becf53771f5ec3293e713a7fb9f1ee1cec31b96cff048cfb3`.
+
+## 2026-10-14 — Validation evidence commit reference
+
+- Step/experiment: `arm-api-and-bootsel-cycle-evidence-reference-20261014`
+- Change: Recorded the root documentation and validation artifacts for the preceding Java wrapper and Pico 2 runtime validation steps.
+- Validation: Confirmed commit `b8c3805` contains the updated handoff/TODO, append-only records, ARM Java API build log, and successful CHOUPI cycle log.
+- Result: Root evidence is committed as `b8c3805`; the physical ARM runtime check passes, while applet APDU validation remains pending because PC/SC reports no reader.
+- Decision: Continue with applet-level APDUs when a PC/SC reader is visible.
+- Commit: `b8c3805`
+- Artifacts/logs: `artifacts/logs/arm-jcsystem-java-validation-20261014.log`; `artifacts/logs/cycle-choupi-20261014T135618Z.log`.
