@@ -1,5 +1,19 @@
 # Handoff
 
+## vpcd frame codec — 2026-10-14
+
+- Added the PC-only vpcd frame codec in `choupi/src/vpcd_protocol.*` and a
+  focused test wrapper. It handles partial blocking socket reads/writes,
+  16-bit network-order lengths, and reports clean close, malformed empty frame,
+  truncation, and I/O errors distinctly.
+- `./tools/test-vpcd-protocol` passes 14 checks; the full PC `choupi` target
+  builds, and `./tools/build arm` passes. No RISC-V build or flash was run.
+- The sandbox denies `send()` (`EPERM`), so socket syscalls were compile-checked
+  but not exercised. The codec itself is tested. Next integrate VPCD control
+  messages and route APDUs through `choupi_vm_select_applet()`/
+  `choupi_vm_process_applet()`; host applet installation/restore setup remains
+  an open prerequisite.
+
 ## APDU CLA helpers — 2026-10-14
 
 - Implemented Java Card 3.0.5 `APDUUtil` CLA parsing and wired the matching

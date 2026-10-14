@@ -2631,6 +2631,16 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; nested API commit `4d996f4`; `tools/test-apdu-util`.
 
+## 2026-10-14 — Add vpcd frame codec
+
+- Step/experiment: `vpcd-frame-codec-20261014`
+- Change: Added a PC-only vpcd frame reader/writer using blocking socket I/O, partial-transfer loops, 16-bit network-order length framing, and explicit close, malformed-frame, and I/O outcomes. Added a standalone codec test and updated the PC-vpcd TODO/handoff.
+- Validation: `./tools/test-vpcd-protocol` passed 14 checks. `./tools/env cmake --build build/choupi-pc --target choupi -j2` passed and compiled the PC socket implementation. `./tools/build arm` passed. Socket send/receive could not be exercised because this sandbox denies `send()` with `EPERM`; no RISC-V build or flash was run.
+- Result: Protocol encoding/decoding covers control and APDU frames, malformed lengths, truncation, trailing bytes, and invalid payload inputs. Host connection and VM APDU dispatch remain to be integrated.
+- Decision: Continue by wiring the codec into the PC emulator and determine a reproducible way to install/restore a test applet in its persistent filesystem.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `tools/test-vpcd-protocol`; `build/choupi-pc/choupi`; `build/arm/pico2_choupi.uf2`.
+
 ## 2026-10-14 — Record APDU helper implementation commit
 
 - Step/experiment: `javacard-apdu-cla-helpers-20261014-reference`
