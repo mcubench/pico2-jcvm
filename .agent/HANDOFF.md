@@ -2124,3 +2124,4 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   flash was performed; the root flash gate requires both architectures, while
   the active project scope excludes RISC-V. Next continue the API gaps, then
   add a permitted host applet fixture for direct Java/native result checks.
+  Implementation commit: `cd58def`.

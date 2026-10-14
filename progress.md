@@ -2570,3 +2570,13 @@
 - Decision: Continue with the next JCAlgTest API/runtime gap; retain applet-level identity verification as open until a permitted integration path is available.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; `tools/test-jcarray`.
+
+## 2026-10-14 — Record JCSystem AID implementation commit
+
+- Step/experiment: jcsystem-get-aid-context-20261014-reference
+- Change: Recorded the implementation commit for `JCSystem.getAID()` instance identity and native object construction.
+- Validation: Confirmed commit `cd58def` contains the context, install/restore plumbing, JNI implementation, focused test, TODO update, and original progress entry.
+- Result: The implementation is committed as `cd58def`; direct Java-level execution remains open.
+- Decision: Continue with the remaining JCAlgTest API surface and host APDU fixtures.
+- Commit: `cd58def`
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; `tools/test-jcarray`.
