@@ -1881,3 +1881,13 @@
 - Decision: Resume with physical CHOUPI flashing and applet APDU validation when USB/libUSB access is available.
 - Commit: `55c26ce`
 - Artifacts/logs: `FIXES.md`, `artifacts/logs/fixes-build-arm-20261014.log`, `artifacts/logs/fixes-build-riscv-20261014.log`, `artifacts/logs/fixes-cycle-choupi-20261014.log`
+
+## 2026-10-14 — Flash CHOUPI and verify runtime on Pico 2
+
+- Step/experiment: `physical-cycle-choupi-20261014`
+- Change: Flashed the current ARM CHOUPI UF2 to the attached RP2350 while it was in BOOTSEL and captured the bounded serial runtime log.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` passed both build gates, confirmed BOOTSEL, wrote the image to 100%, rebooted the card, and captured 18 seconds of serial output. Runtime reported repeated `CHOUPI:STATUS sw=9000`, `TEST:PASS choupi_runtime`, and `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` appeared. `pcsc_scan -r` could not establish a PC/SC context because the service is unavailable in this execution context.
+- Result: The fixed ARM firmware is physically flashed and the board's built-in CHOUPI runtime test passes. Applet install and SELECT/APDU behavior remain unverified.
+- Decision: Proceed with the exact JCAlgTest v1.8.2 installation when PC/SC access is available; do not infer applet installation from the firmware self-test.
+- Commit: `recorded in the following hardware-validation commit reference`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T070921Z.log` (SHA-256 `af02d162b8d631ac0a82da12f5e8e8cbbaa1a9a859d9bd3bdd727b7866ddb100`); UF2 SHA-256 `6bf2fbf36f860dd6952c02a1ea91c90a54c661ece40e5796a4310f00ef797844`.

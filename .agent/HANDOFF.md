@@ -1635,6 +1635,19 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   --debug --install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`. Inspect the new
   failure stage/context or confirm successful registration and selection.
 
+- Physical validation checkpoint — 2026-10-14. The user placed the Pico 2 in
+  BOOTSEL; `./tools/build arm` and `./tools/build riscv` passed, then
+  `./tools/cycle choupi` flashed `build/arm/pico2_choupi.uf2` successfully and
+  captured an 18-second serial log. Repeated output was
+  `CHOUPI:STATUS sw=9000`, `TEST:PASS choupi_runtime`, and
+  `TEST:SUMMARY pass=1 fail=0`, with no `FAULT` or failure lines. Log:
+  `artifacts/logs/cycle-choupi-20261014T070921Z.log`; UF2 SHA-256 is
+  `6bf2fbf36f860dd6952c02a1ea91c90a54c661ece40e5796a4310f00ef797844`.
+  `pcsc_scan -r` still reports `SCardEstablishContext: Service not available`,
+  so the next action is restore PC/SC access for the newly enumerated CCID
+  device, then retry the authorized GlobalPlatformPro install of
+  `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` and verify SELECT/APDU behavior.
+
 - Paused on 2026-10-12 at the user's request before unplugging the Pico. An
   incomplete applet `process(APDU)` implementation is present in the worktree:
   `Context` now tracks APDU buffer/response state, Java `APDU` delegates buffer
