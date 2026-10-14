@@ -15,7 +15,8 @@
   Logs: `artifacts/logs/host-jcarray-available-memory-20261014.log` and
   `artifacts/logs/arm-available-memory-validation-20261014.log`. Native C++
   exceptions still do not prove Java catch/throwable behavior; continue API
-  exception mapping or another JCAlgTest-used native gap.
+  exception mapping or another JCAlgTest-used native gap. Code commit:
+  `fe2f25b`.
 
 - Latest physical step: after both required wrapper build gates passed, flashed
   `build/arm/pico2_choupi.uf2` directly while the user had the Pico 2 in

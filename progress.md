@@ -2352,6 +2352,16 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/logs/host-jcarray-available-memory-20261014.log` (SHA-256 `ec0d3d4879dfb1df265b73ea2f253a913898e469b68f0d890ffd1958b8fcbe53`); `artifacts/logs/arm-available-memory-validation-20261014.log` (SHA-256 `3b4ade2ece2d8f8b85082fb0f2b3ef1926d4e8689e5558cd92a058b3ea1f2599`); ARM UF2 SHA-256 `c561daabc403eaa757dced3b2ecf662dbb9477568458edc61b3985704d5468d9`.
 
+## 2026-10-14 — JCSystem memory validation commit reference
+
+- Step/experiment: `jc-system-available-memory-validation-20261014-reference`
+- Change: Recorded the immutable commit for the native memory-query validation correction and its ARM-only evidence.
+- Validation: Confirmed `fe2f25b` contains the native fix, focused cases, build/test logs, and tracker/handoff updates.
+- Result: The validation correction is committed as `fe2f25b`; Java throwable dispatch and physical applet behavior remain unverified.
+- Decision: Continue with Java exception mapping and other JCAlgTest-used runtime gaps.
+- Commit: `fe2f25b`
+- Artifacts/logs: `artifacts/logs/host-jcarray-available-memory-20261014.log`; `artifacts/logs/arm-available-memory-validation-20261014.log`.
+
 ## 2026-10-14 — No-chaining APDU implementation hash reference
 
 - Step/experiment: `apdu-no-chaining-le-bound-20261014-hash-reference`
