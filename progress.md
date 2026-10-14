@@ -2590,3 +2590,13 @@
 - Decision: Keep source globs as invalidation inputs; next resume APDU host transport and applet lifecycle verification.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `build/choupi-pc/generation.sha256`; `build/choupi-pc/flash`; `build/choupi-pc/jni.hpp`.
+
+## 2026-10-14 — Record PC incremental-generation commit
+
+- Step/experiment: pc-build-incremental-generation-20261014-reference
+- Change: Recorded the CMake generation-stamp commit and the associated current handoff reference.
+- Validation: Confirmed commit `0da5b1d` contains the CMake stamp targets, performance measurements, TODO update, and original progress record.
+- Result: The incremental PC build change is committed as `0da5b1d`.
+- Decision: Resume the remaining APDU transport and applet lifecycle work.
+- Commit: `0da5b1d`
+- Artifacts/logs: `build/choupi-pc/generation.sha256`; `build/choupi-pc/flash`; `build/choupi-pc/jni.hpp`.

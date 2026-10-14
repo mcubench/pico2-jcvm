@@ -2136,4 +2136,4 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   Java/Maven, and `./tools/env cmake --build build/choupi-pc -j2` passed with
   `Built target choupi`. PC build remains a development validation path only;
   vpcd/APDU support is still missing. No RISC-V compile/test or hardware flash
-  was performed. Implementation commit reference follows separately.
+  was performed. Implementation commit: `0da5b1d`.
