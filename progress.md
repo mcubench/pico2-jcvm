@@ -2740,3 +2740,13 @@
 - Decision: Continue with the still-failing applet field access at CP entry 174.
 - Commit: recorded in the current commit.
 - Artifacts/logs: VPCD integration log `artifacts/logs/host-vpcd-jcalgtest-20261014.log`; ARM and PC build outputs.
+
+## 2026-10-14 — Add VPCD applet-debug performance suggestions
+
+- Step/experiment: `performance-tips-vpcd-applet-debug-20261014`
+- Change: Added targeted guidance to `perf_tips.md` for timing VPCD/APDU phases, bounding response/test/cleanup deadlines, checking CPU versus wait time, limiting verbose traces, and keeping a one-APDU reproducer while resolving CP entry 174.
+- Validation: `git diff --check -- perf_tips.md progress.md` passed. Documentation-only change; no build, test, or hardware operation was run.
+- Result: Suggestions apply to the observed `6F00` applet field-access failure and the integration run that exceeded its expected bounded duration; no performance cause is claimed as measured.
+- Decision: Instrument the next VPCD run by phase and process CPU time before tuning the emulator or APDU path.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `artifacts/logs/host-vpcd-jcalgtest-20261014.log`.

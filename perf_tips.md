@@ -183,3 +183,31 @@ single observed stage times, not timer-CSV averages.
    than board setup. Keep the focused test near the change, then run the
    relevant wrapper build. Hardware upload and physical reader discovery still
    have no comparable timing sample, so measure them separately when available.
+
+## VPCD applet-debug loop
+
+The current host integration reaches applet `process(APDU)`, but its JCSystem
+info request still fails with `6F00` during field access. The test has also
+taken longer than its nominal bounded run while exiting the error path. Treat
+these as diagnostic costs, not as applet throughput measurements.
+
+- **Time each APDU boundary.** Print elapsed time for VPCD connect, ATR, SELECT,
+  each command send, and response receive. Include the failing APDU and last
+  completed phase in the timeout message; this distinguishes VM execution from
+  transport or cleanup delay.
+- **Keep timeout layers consistent.** Give one APDU a short response deadline,
+  cap the whole test independently, and reserve a small fixed cleanup window.
+  On timeout, terminate and reap the emulator process group so a lingering
+  child cannot consume CPU or distort the next run.
+- **Compare wall and CPU time on failures.** Record `/usr/bin/time` wall, user,
+  and system time for the integration command. High CPU close to wall time
+  points toward active VM work or a spin loop; low CPU with high wall time
+  points toward blocked transport, retries, or shutdown. Inspect the busiest
+  process and its threads before changing polling behavior.
+- **Keep diagnostics selective.** Gate CP/field traces behind a debug option
+  and cap output to the first relevant lookup and exception. Large repeated
+  logs slow runs and hide the transition that identifies the failing field.
+- **Use the smallest reproducer first.** Keep ATR/SELECT coverage, then run one
+  failing APDU with a short deadline while resolving CP entry 174. Add later
+  applet commands only after that request returns the expected response; this
+  avoids paying for unrelated test phases on every fix attempt.
