@@ -2480,3 +2480,13 @@
 - Decision: Keep rollback/status validation open until an authorized board cycle is available; continue toward process APDU coverage while preserving the no-flash gate.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/metrics/development-time.csv`; ARM UF2 `build/arm/pico2_choupi.uf2`; no archived build log.
+
+## 2026-10-14 — Expand development performance measurements
+
+- Step/experiment: `development-performance-tips-sample-expansion-20261014`
+- Change: Updated `perf_tips.md` with four ARM build samples and six focused host-test samples, including means, ranges, non-OK counts, and guidance to separate clean and incremental runs.
+- Validation: Cross-checked the table and the 31.169-second successful total against `./tools/task-time report` and the append-only CSV. `git diff --check` passed. Documentation only; no code tests were run.
+- Result: ARM builds measured 3.120–5.819 s (mean 4.120 s); host tests measured 0.458–2.789 s (mean 1.656 s). Upload remains unmeasured, and the bounded card probe found no PC/SC reader.
+- Decision: Continue collecting comparable clean/incremental and hardware timing samples before recommending build-system changes.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.

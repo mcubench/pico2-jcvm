@@ -1,5 +1,16 @@
 # Handoff
 
+## Updated development timing sample — 2026-10-14
+
+- `perf_tips.md` now summarizes the expanded task-time sample: four successful
+  ARM builds at 3.120–5.819 s (mean 4.120 s), six focused host tests at
+  0.458–2.789 s (mean 1.656 s), and 31.169 s total successful recorded work.
+- Failed and interrupted attempts remain in the CSV and are excluded from
+  successful averages. Upload time is unmeasured.
+- A bounded `./tools/probe-jc-algtest` run found no `Pico 2 CHOUPI CCID` reader
+  and sent no APDUs. Continue with host-side work until reader visibility is
+  restored; no firmware flash has been attempted for the latest changes.
+
 ## Latest ARM implementation — 2026-10-14
 
 - Added synchronous persistent-write transactions around GP INSTALL. Snapshots

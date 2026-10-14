@@ -1,8 +1,8 @@
 # Development performance tips
 
 These are measured observations and low-risk experiments for keeping the Pico 2
-development loop responsive. The initial task-time sample is small; repeat each
-measurement before treating a change as a lasting improvement.
+development loop responsive. The sample now covers several builds and host
+tests, but it is still too small to estimate stable long-term averages.
 
 ## Current measurements
 
@@ -10,23 +10,32 @@ From `artifacts/metrics/development-time.csv`:
 
 | Task | Successful elapsed time | Notes |
 |---|---:|---|
-| Incremental ARM CHOUPI build | 3.903 s | `./tools/build arm`; rebuilt and linked the changed ARM target. |
-| Short APDU host tests | 0.458 s | `./tools/test-short-apdu`; all cases passed. |
+| ARM build | 3.120–5.819 s; mean 4.120 s | Four successful `./tools/build arm` runs; two failed attempts are excluded. |
+| Focused host tests | 0.458–2.789 s; mean 1.656 s | Six successful runs across short APDU, install rollback, and status mapping. |
 | Timer syntax check | 0.055 s | Two successful runs. |
 | Manual analysis interval | 4.641 s | Wall time, not CPU time. |
 | Upload | Not measured | No upload was attempted in this sample. |
 
+The timer report totals 31.169 seconds across successful compile, test,
+analysis, and tool-check intervals. Build and test durations vary with which
+objects the command recompiles, so compare like-for-like runs before drawing a
+performance conclusion.
+
 The full Maven CAP converter build completed in 3:29 before timing was enabled.
 That number was observed in the build output but is absent from the timer CSV.
-The sample also contains a failed timer invocation and an interrupted monitor
-attempt; the report excludes both from successful duration averages.
+The CSV also contains two failed build attempts, two failed test attempts, and
+one interrupted monitor attempt; the report excludes non-OK runs from
+successful duration averages. A bounded JCAlgTest probe also found no PC/SC
+reader, so it sent no APDUs.
 
 ## Suggestions
 
-1. **Keep the fast loop incremental.** Run the focused host test after a small
-   change, then `./tools/build arm`. Preserve generated CAP and ROM-mask outputs
-   so ordinary C++ edits do not trigger the Java/Maven pipeline. Use the
-   repository wrappers so their manifests can detect stale generated files.
+1. **Keep the fast loop incremental.** ARM builds currently take 3.120–5.819 s
+   in this sample, and focused host tests take 0.458–2.789 s. Run the narrow
+   host test after a small change, then `./tools/build arm`. Preserve generated
+   CAP and ROM-mask outputs so ordinary C++ edits do not trigger the Java/Maven
+   pipeline. Use the repository wrappers so their manifests can detect stale
+   generated files.
 2. **Profile CAP conversion separately.** The observed 3:29 converter build is
    the largest known compile cost. Time `./tools/build-pc` and ARM builds over
    several edits; identify which Java, Maven, and ROM-mask inputs invalidate the
@@ -46,5 +55,5 @@ attempt; the report excludes both from successful duration averages.
    look like slow firmware behavior.
 6. **Build evidence over time.** Use `./tools/task-time run` for commands and
    `start`/`stop` for manual work, then compare successful totals and non-OK
-   counts with `./tools/task-time report`. The current sample is too small to
-   establish stable averages.
+   counts with `./tools/task-time report`. Record whether each run was clean or
+   incremental so those costs are not mixed in the same average.
