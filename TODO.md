@@ -83,8 +83,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   handling. `getIncomingLength()` now reads the current command's Lc through
   the native bridge, `getOffsetCdata()` returns the short-APDU data offset 5,
   and `receiveBytes()` returns 0 because CCID buffers the complete short APDU
-  before dispatch. Both architectures and a physical firmware cycle passed;
-  these methods still need applet-level runtime verification.
+  before dispatch. The API now reports T=1, IFSC 32, IFSD 254, and NAD 0 from
+  the advertised ATR and CCID descriptor. Both architectures and a physical
+  firmware cycle passed; applet-level runtime verification remains outstanding.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
   transient array variants, `Util` helpers, `JCSystem` queries, `AID`, and
   Java exception mapping for unsupported crypto factories. The native

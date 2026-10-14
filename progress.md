@@ -1961,3 +1961,13 @@
 - Decision: Continue with remaining APDU behavior and retry PC/SC installation when reader enumeration is available to GPPro.
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T073306Z.log`.
+
+## 2026-10-14 — Report APDU transport parameters
+
+- Step/experiment: `apdu-transport-parameters-20261014`
+- Change: Implemented `APDU.getInBlockSize()`, `getOutBlockSize()`, `getProtocol()`, and `getNAD()` for the current CCID configuration. They report T=1 default IFSC 32, descriptor maximum IFSD 254, protocol T=1, and unused NAD 0. Nested Java Card API commit: `6713938e9d7941aff9edb33a2ceecad72d355835`.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` rebuilt both, flashed ARM through CDC BOOTSEL recovery, and completed with `CYCLE:PASS`; its serial capture contains repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`.
+- Result: APDU transport metadata now matches the T=1 ATR and CCID descriptor; it has not yet been observed from the Java applet because GPPro cannot enumerate the reader in this execution context.
+- Decision: Continue the v1.8.2 API coverage and retry the real GPPro install when the host reader is visible here.
+- Commit: root documentation/log commit recorded in the following reference entry; API source commit `6713938e9d7941aff9edb33a2ceecad72d355835`.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261014T075042Z.log` SHA-256 `9ecb112077c3df2eab59df9b53471d93699880cb882fc996c4a5354eea05853e`; `build/arm/pico2_choupi.uf2` SHA-256 `8900ed53725f5a69a5001138fa9f6f04a90fcdcffbef474a42960b70fdf315de`.

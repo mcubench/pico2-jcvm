@@ -1764,3 +1764,12 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   commit. Root `CMakeLists.txt`, `SKILL.md`, the extensive diagnostic artifacts,
   and other source trees contain unrelated pre-existing work and must remain
   unstaged unless a step requires specific files.
+
+- Continued APDU work on 2026-10-14: the four transport-info methods now report
+  the supported T=1 protocol, default incoming IFSC 32, CCID descriptor
+  `dwMaxIFSD` 254, and NAD 0. This is committed only as nested API change
+  `6713938e9d7941aff9edb33a2ceecad72d355835`. ARM and RISC-V builds pass and
+  the real-board cycle completed with `CYCLE:PASS`; log
+  `artifacts/logs/cycle-choupi-20261014T075042Z.log`, SHA-256
+  `9ecb112077c3df2eab59df9b53471d93699880cb882fc996c4a5354eea05853e`.
+  The 18-second capture includes repeated runtime PASS/SUMMARY markers.
