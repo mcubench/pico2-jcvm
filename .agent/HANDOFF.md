@@ -24,9 +24,8 @@
 - Next: restore VM USB passthrough and PC/SC service, then flash the built ARM
   UF2, power-cycle, check startup serial, SELECT the installed JCAlgTest applet,
   and rerun JCSystem plus SHA-256 `doFinal` probes.
-- Source and test changes are ready, but the repository Git index is read-only in
-  this environment. No commit was created; request repository write access to
-  stage only this step while preserving the existing CCID diagnostics.
+- Source and test changes are committed as `56e625d`. Pre-existing CCID and
+  diagnostic edits remain unstaged and untouched.
 
 ## Physical JCAlgTest SHA-256 doFinal pass — 2026-10-15
 

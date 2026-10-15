@@ -3471,5 +3471,5 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `./tools/build arm` and `./tools/build riscv` passed. ARM image end is `0x100b46fc`, below the filesystem slot at `0x10100000`. Physical validation was not run: `pcsc_scan -r` reported `SCardEstablishContext: Service not available` and flooded repeated release errors; `lsusb -d 2e8a:0009` reported libusb `-99`, and systemctl could not connect to the system bus.
 - Result: Host tests establish crash-recoverable snapshots and corruption fallback. No flash latency, erase wear, or physical restart behavior has been measured; each dirty APDU currently writes a fixed 128 KiB payload.
 - Decision: Keep the implementation for hardware validation. Once USB/PCSC access is restored, flash the ARM image and verify applet restore, JCSystem, SHA-256 `doFinal`, and bounded serial output across a power cycle.
-- Commit: pending repository write access.
+- Commit: `56e625d`.
 - Artifacts/logs: host test output in this session; no physical log.
