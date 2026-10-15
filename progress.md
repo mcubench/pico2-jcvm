@@ -3119,3 +3119,19 @@
 - Artifacts/logs: `artifacts/logs/jcalgtest-vpcd-release-after-log-gate-20261015.log`,
   `artifacts/logs/jcalgtest-vpcd-release-repeat-20261015.log`,
   `artifacts/metrics/development-time.csv`.
+
+## 2026-10-15 — Record release logging commits
+
+- Step/experiment: `host-release-syscall-log-gate-reference-20261015`
+- Change: Record the nested CHOUPI OS commit `ac1df19` and root documentation
+  commit `3044579`; also record the preceding performance guidance commit
+  `97139d2`.
+- Validation: Confirmed the nested commit contains only the two release
+  diagnostic gates and the root commit contains only `perf_tips.md`,
+  `.agent/HANDOFF.md`, and this step's progress record.
+- Result: The quiet-release change and its measurement notes are independently
+  committed without staging other existing working-tree changes.
+- Decision: Continue with the official JCAlgTest supported-algorithms client
+  against the PC VPCD path.
+- Commit: recorded in this reference entry.
+- Artifacts/logs: `artifacts/logs/jcalgtest-vpcd-release-repeat-20261015.log`.
