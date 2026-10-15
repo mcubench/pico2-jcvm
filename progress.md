@@ -3277,7 +3277,7 @@
   remaining blocker is the applet's metadata `NullPointerException`, not
   physical-token access. Investigate the version-field initialization before
   attempting a longer suite run.
-- Commit: `<pending>`.
+- Commit: `e75f5ad`.
 - Artifacts/logs:
   `artifacts/results/jcalgtest-vpcd-pcsc-probe-20261015/ALGTEST_log_1792052906094.log`
   (SHA-256 `f7854659886cbbd341f6e03bfe4798bccce947ab07202572a90aa9d8709e6ee2`)
