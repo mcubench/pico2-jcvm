@@ -2931,3 +2931,14 @@
 - Artifacts/logs: `artifacts/metrics/development-time.csv`;
   `artifacts/logs/jcalgtest-putfield-callsite-20261015.log`;
   `perf_tips.md`.
+
+## 2026-10-15 — Record performance follow-up commit
+
+- Step/experiment: `development-performance-followup-reference-20261015`
+- Change: Recorded commit `7fc1775` for the performance guidance, timing
+  sample, TODO update, and handoff checkpoint.
+- Validation: `git diff --check -- progress.md .agent/HANDOFF.md` passed.
+- Result: The performance follow-up is committed as `7fc1775`.
+- Decision: Continue with the applet operand-stack failure documented above.
+- Commit: this reference commit.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.

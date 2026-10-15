@@ -20,6 +20,7 @@
   when the call/return stack defect is fixed.
 - No real board was used. Flashing remains gated on a passing VPCD process
   path and both architecture builds for the current shared source.
+- Performance documentation and timing sample commit: `7fc1775`.
 - Next: trace the static factory/native return path around the offset-39 store,
   fix the operand loss, add AES and 3DES CBC known-answer coverage, rerun the
   bounded VPCD applet test, then repeat both firmware builds before considering
