@@ -17,6 +17,10 @@
   (`Operation not permitted`). The repository helper
   `/usr/local/sbin/pico2-pcsc-reader` must be run by the user to refresh the
   ACL and restart pcscd; the current AGENTS.md prohibits autonomous `sudo`.
+- Archived startup capture:
+  `artifacts/logs/compact-fs-flash-boot-20261015.log` (SHA-256
+  `6c1a434a856af3f142c22452f8df5791275f6b5bb4f2aeab52a71129796c6a59`). It
+  repeats the `6F00` boot failure eight times during the bounded 8-second run.
 - The requested JCAlgTest 1.8.2 `OP_ALG_PERFORMANCE_STATIC` run has not happened.
   After the Pico reader appears, reinstall `AlgTest_v1.8.2_jc305.cap` if the
   applet SELECT returns `6F00`, then run the static performance operation and

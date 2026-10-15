@@ -3483,3 +3483,13 @@
 - Decision: Refresh PC/SC access for the newly enumerated CCID device, reinstall JCAlgTest 1.8.2 if needed, then run `OP_ALG_PERFORMANCE_STATIC`; inspect SHA-256 timing/results and fix any firmware failures. Investigate the boot-time `6F00` separately.
 - Commit: pending
 - Artifacts/logs: Host test output and flash/monitor output were captured in this session but not archived.
+
+## 2026-10-15 — Archive compact-snapshot boot log
+
+- Step/experiment: `rp2350-fs-compact-boot-log-20261015`
+- Change: Archived a second bounded serial capture from the flashed Pico to make its repeated startup failure available for diagnosis.
+- Validation: `./tools/monitor --seconds 8` completed with status 0 and captured eight repetitions of `CHOUPI:STATUS sw=6F00` / `TEST:FAIL choupi_runtime`; the monitor status only indicates the capture ended on schedule, not a passing runtime.
+- Result: Boot smoke remains failing after the compact snapshot firmware was flashed. Physical APDU validation is still blocked because the current PC/SC list has no Pico reader.
+- Decision: Use this log to diagnose the boot-time SELECT failure. Continue the requested JCAlgTest run after PC/SC access is restored.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/compact-fs-flash-boot-20261015.log` (SHA-256 `6c1a434a856af3f142c22452f8df5791275f6b5bb4f2aeab52a71129796c6a59`).
