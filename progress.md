@@ -3253,5 +3253,5 @@
 - Validation: Attempted `systemctl start pcscd.service` without sudo using the host-access command path. It timed out connecting to the system bus. A subsequent process/socket check showed no pcscd process and no VPCD TCP listeners; the existing `/run/pcscd/pcscd.comm` is a stale socket. No test or hardware operation was run.
 - Result: The local VPCD harness works with host-socket permission, but this execution environment cannot control the system pcscd service through system D-Bus. No test processes remain running.
 - Decision: User must run `sudo systemctl restart pcscd.service` and confirm `pcsc_scan -r` lists the virtual readers before the official Java client can be replayed here.
-- Commit: recorded in the following reference entry.
+- Commit: `09977e5`.
 - Artifacts/logs: systemctl reported `Failed to start pcscd.service: Connection timed out`; follow-up system bus query reported `Operation not permitted`.
