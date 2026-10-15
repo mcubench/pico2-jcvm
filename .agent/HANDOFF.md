@@ -28,9 +28,14 @@
   CPU, and 17,128 KiB peak RSS. No stable throughput conclusion follows from
   these single samples.
 - `./tools/build arm` passes after the Rust logging change. No RISC-V build or
-  physical flash was performed. Next run the official supported-algorithms
-  client against VPCD and compare its CSV with the archived jCardSim reference;
-  add CBC known-answer coverage before physical-card testing.
+  physical flash was performed. The official client is currently blocked in
+  this environment: the finite Java PC/SC probe sees no readers, `pcsc_scan`
+  reports that the service is unavailable, and `vsmartcard-vpcd` is not
+  installed. Do not use `pcsc_scan -r` as a wait loop; it floods errors when
+  pcscd is down. Once the VPCD PC/SC driver and daemon are available, run the
+  official supported-algorithms client against the host emulator and compare
+  its CSV with the archived jCardSim reference; add CBC known-answer coverage
+  before physical-card testing.
 
 ## Current performance measurement checkpoint — 2026-10-15
 
@@ -38,13 +43,15 @@
   plus 41 non-OK intervals. Compile: 29 successful, 422.524 s total, 14.570 s
   mean, 58.213 s max. Test: 13 successful, 137.689 s total, 10.591 s mean,
   47.575 s max. Upload has no measurements.
-- Two bounded release VPCD passes succeeded in 47.575 s. One pass took 23.525 s
-  and reported 0.48 s user, 6.61 s system, 30% CPU, and 17,128 KiB max RSS.
-  This indicates a wall-time-heavy host path in one sample; phase timings are
-  still needed to distinguish emulator execution, ptrace/syscall handling, and
-  waiting. Release syscall diagnostic output was gated, reducing a comparable
-  failed run's log from 291,641 to 47,015 bytes on a passing run; this is not
-  evidence of a runtime speedup.
+- Two bounded release VPCD passes succeeded in 47.575 s. A later pass measured
+  connect 2.554 s, ATR 0.001 s, SELECT 0.231 s, JCSystem info 16.437 s,
+  supported-algorithm APDU 4.561 s, and shutdown 0.031 s. A separate
+  `/usr/bin/time` sample reported 0.48 s user, 6.61 s system, 30% CPU, and
+  17,128 KiB max RSS. This one sample suggests focusing phase/resource
+  measurements on JCSystem info and the host OS bridge; it does not prove a
+  spin loop. Release syscall diagnostics were gated, reducing the log from
+  291,641 bytes in a timed-out run to 47,015 bytes in a passing run, without a
+  demonstrated runtime speedup.
 - Performance suggestions and metric interpretation are in `perf_tips.md`.
 
 ## Development performance suggestions — 2026-10-15

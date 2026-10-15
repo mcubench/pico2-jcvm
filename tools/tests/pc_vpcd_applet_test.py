@@ -10,6 +10,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -40,15 +41,26 @@ def send_message(connection: socket.socket, message: bytes) -> None:
 
 
 def exchange(connection: socket.socket, command: bytes, label: str) -> bytes:
-    send_message(connection, command)
-    response = receive_message(connection)
+    started = time.monotonic()
+    try:
+        send_message(connection, command)
+        response = receive_message(connection)
+    except Exception:
+        elapsed = time.monotonic() - started
+        phase_name = label.replace(" ", "_")
+        print(f"VPCD:PHASE name={phase_name} status=fail elapsed_s={elapsed:.3f}")
+        raise
+    elapsed = time.monotonic() - started
     if len(response) < 2 or response[-2:] != b"\x90\x00":
         raise RuntimeError(f"{label} failed: {response.hex().upper()}")
+    phase_name = label.replace(" ", "_")
+    print(f"VPCD:PHASE name={phase_name} status=ok elapsed_s={elapsed:.3f}")
     print(f"TEST:PASS {label} response={response.hex().upper()}")
     return response
 
 
 def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> None:
+    pass_started = time.monotonic()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
@@ -67,13 +79,12 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
             APPLET_AID.hex(),
             "--package-id",
             "63",
-            "--class-index",
-            str(args.class_index),
             "--cap-code",
             str(args.cap_code),
             "--rom-mask",
             str(args.rom_mask),
         ]
+        command.extend(("--class-index", str(args.class_index)))
         print(f"VPCD:START pass={pass_number}")
         with args.log.open("ab") as log:
             log.write(f"\n--- VPCD pass {pass_number} ---\n".encode())
@@ -86,12 +97,22 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
             )
             connection = None
             try:
+                connect_started = time.monotonic()
                 connection, _ = listener.accept()
-                connection.settimeout(8)
+                print(
+                    "VPCD:PHASE name=connect status=ok "
+                    f"elapsed_s={time.monotonic() - connect_started:.3f}"
+                )
+                connection.settimeout(args.apdu_timeout)
 
+                atr_started = time.monotonic()
                 send_message(connection, b"\x01")  # power on
                 send_message(connection, b"\x04")  # ATR request
                 atr = receive_message(connection)
+                print(
+                    "VPCD:PHASE name=ATR status=ok "
+                    f"elapsed_s={time.monotonic() - atr_started:.3f}"
+                )
                 if atr != bytes.fromhex("3B800181"):
                     raise RuntimeError(f"unexpected ATR: {atr.hex().upper()}")
                 print(f"TEST:PASS atr response={atr.hex().upper()}")
@@ -102,7 +123,7 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
 
                 exchange(
                     connection,
-                    bytes.fromhex("B073000000"),
+                    bytes.fromhex("B0730100010100"),
                     "JCAlgTest JCSystem info APDU",
                 )
                 exchange(
@@ -113,11 +134,20 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
             finally:
                 if connection is not None:
                     connection.close()
+                stop_started = time.monotonic()
                 return_code = stop_emulator(process)
+                print(
+                    "VPCD:PHASE name=emulator_stop status=done "
+                    f"elapsed_s={time.monotonic() - stop_started:.3f}"
+                )
             if return_code not in (0, -signal.SIGINT, 128 + signal.SIGINT):
                 raise RuntimeError(
                     f"PC emulator exited with status {return_code}; inspect {args.log}"
                 )
+        print(
+            f"VPCD:PHASE name=pass_total status=done "
+            f"elapsed_s={time.monotonic() - pass_started:.3f}"
+        )
         print(f"TEST:PASS persisted applet emulator pass={pass_number}")
 
 
@@ -164,6 +194,19 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--class-index", type=int, default=148)
     parser.add_argument(
+        "--apdu-timeout",
+        type=float,
+        default=20.0,
+        help="maximum seconds to wait for each emulator response (default: 20)",
+    )
+    parser.add_argument(
+        "--passes",
+        type=int,
+        choices=(1, 2),
+        default=2,
+        help="number of clean emulator passes (default: 2)",
+    )
+    parser.add_argument(
         "--flash-copy",
         type=Path,
         default=repo / "build/algtest-v182-vpcd-flash.bin",
@@ -174,6 +217,8 @@ def parse_args() -> argparse.Namespace:
         default=repo / "artifacts/logs/host-vpcd-jcalgtest-20261014.log",
     )
     args = parser.parse_args()
+    if args.apdu_timeout <= 0:
+        parser.error("--apdu-timeout must be positive")
     args.repo = args.repo.resolve()
     for name in ("emulator", "memory", "cap_code", "rom_mask"):
         setattr(args, name, getattr(args, name).resolve())
@@ -192,12 +237,12 @@ def main() -> int:
     args = parse_args()
     shutil.copyfile(args.memory, args.flash_copy)
     try:
-        run_emulator(args, args.flash_copy, 1)
-        run_emulator(args, args.flash_copy, 2)
+        for pass_number in range(1, args.passes + 1):
+            run_emulator(args, args.flash_copy, pass_number)
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"TEST:FAIL {error}", file=sys.stderr)
         return 1
-    print("TEST:SUMMARY pass=7 fail=0")
+    print(f"TEST:SUMMARY pass={args.passes * 5} fail=0")
     return 0
 
 

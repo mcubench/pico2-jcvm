@@ -60,6 +60,14 @@ APDU probe, but no APDU reached the board in this run. The ARM and RISC-V build
 wrappers pass; only ARM firmware was flashed and tested. Windows reader
 enumeration and applet process/power-cycle persistence remain unverified.
 
+Current host update (2026-10-15): the release PC VPCD path now passes two fresh
+JCAlgTest applet runs (`TEST:SUMMARY pass=10 fail=0`). The phase-instrumented
+run measured 2.554 s connect, 0.001 s ATR, 0.231 s SELECT, 16.437 s for JCSystem
+info, and 4.561 s for the supported-algorithm APDU. No physical token was used.
+The official host client remains blocked here because the PC/SC service is
+unavailable and the `vsmartcard-vpcd` driver is not installed. The next test
+requires those host prerequisites; do not substitute the physical token.
+
 Registration implementation status: the VM captures the receiver passed to
 either imported JC305 `Applet.register` method and serializes that instance's
 fields under a reserved persistent applet root after a successful install
@@ -197,10 +205,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
 - [x] Integrate the PC-build vpcd frame transport with power controls, ATR,
   applet SELECT/DESELECT, and APDU dispatch through the VM lifecycle bridge.
   The PC target builds, the frame codec passes 14 checks, and a new session
-  state-machine test passes 14 checks. A bounded local VPCD applet test passes
-  ATR and SELECT against the restored JCAlgTest applet, but its JCSystem info
-  APDU returns `6F00` at the unresolved field access. The full official client
-  is not yet validated against this transport.
+  state-machine test passes 14 checks. The bounded release VPCD applet path
+  passes ATR, SELECT, JCSystem info, and supported-algorithm APDUs across two
+  fresh emulator runs (`TEST:SUMMARY pass=10 fail=0`). The full official client
+  is not yet validated against this transport; the current PC/SC service is
+  unavailable and the VPCD reader driver is not installed.
 - [ ] Add golden applet coverage for exceptions, transient arrays, statics,
   APDU exchange, install parameters, and persistence. The current vpcd session
   tests use fake VM callbacks; they do not prove that the installed JCAlgTest

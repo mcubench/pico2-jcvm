@@ -3135,3 +3135,27 @@
   against the PC VPCD path.
 - Commit: recorded in this reference entry.
 - Artifacts/logs: `artifacts/logs/jcalgtest-vpcd-release-repeat-20261015.log`.
+
+## 2026-10-15 — Add VPCD phase timings and refresh measurements
+
+- Step/experiment: `vpcd-phase-timing-20261015`
+- Change: The bounded VPCD harness now reports monotonic durations for connect,
+  ATR, SELECT, each tested APDU, emulator shutdown, and total pass time. Updated
+  `perf_tips.md`, `TODO.md`, and `.agent/HANDOFF.md` with the phase results and
+  the current PC/SC/VPCD prerequisite blocker.
+- Validation: `python3 -m py_compile tools/tests/pc_vpcd_applet_test.py` passed;
+  one bounded release VPCD pass passed with `TEST:SUMMARY pass=5 fail=0` in
+  23.835 s. Measured phases: connect 2.554 s, ATR 0.001 s, SELECT 0.231 s,
+  JCSystem info 16.437 s, supported-algorithm APDU 4.561 s, emulator stop
+  0.031 s. `./tools/task-time report` now shows 46 successful intervals
+  totaling 589.081 s and 41 non-OK intervals. No physical card was used.
+- Result: The JCSystem info APDU dominates this one host timing sample. More
+  repetitions and per-phase CPU counters are needed before assigning a root
+  cause. The official client cannot run in this environment because PC/SC
+  reports service unavailable and `vsmartcard-vpcd` is not installed.
+- Decision: Keep phase output bounded and machine-readable. Once the host VPCD
+  PC/SC driver and service are available, run JCAlgTest v1.8.2 supported
+  algorithms mode and compare the output with the jCardSim reference.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/logs/jcalgtest-vpcd-phase-timing-20261015.log`,
+  `artifacts/metrics/development-time.csv`.
