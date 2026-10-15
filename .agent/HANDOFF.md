@@ -1,5 +1,30 @@
 # Handoff
 
+## Physical SHA-256 flash and boot check — 2026-10-15
+
+- After the user reattached BOOTSEL, ordinary sandboxed USB commands still
+  failed with libusb `-99`, but a bounded elevated read-only check identified
+  `2e8a:000f`; picotool confirmed RP2350 `boot type: bootsel` and the existing
+  ARM CHOUPI image. Both required builds passed again.
+- `./tools/flash build/arm/pico2_choupi.uf2` completed with
+  `FLASH:PASS`; picotool reached 100% and rebooted the board. An 18-second
+  finite serial capture then repeatedly reported `CHOUPI:STATUS sw=6F00`,
+  `TEST:FAIL choupi_runtime`, and `TEST:SUMMARY pass=0 fail=1`; CCID remained
+  at stage 2, endpoint 00.
+- Post-flash `lsusb -d 2e8a:0009` sees `Pico 2 CHOUPI CCID`, but bounded
+  `pcsc_scan -r` lists only the two Virtual PCD readers. The physical USB node
+  re-enumerated as bus 001/device 033, so pcscd access needs its ACL refreshed.
+  Do not use sudo in the autonomous cycle; ask the user to run
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader`, then verify with
+  `timeout 5s pcsc_scan -r`.
+- Physical SHA-256 `doFinal` APDU remains untested. After PC/SC lists the Pico,
+  reinstall the supplied JCAlgTest 1.8.2 CAP if needed, then run the bounded
+  physical APDU probe and inspect its status plus serial output. The boot-time
+  `6F00` smoke failure also remains unresolved.
+- Serial artifact: `artifacts/logs/physical-sha256-dofinal-serial-20261015.log`
+  (SHA-256 `069f486067d58198cd15a90ced6fc11eb4c6f5a11e62f75c488d5dfeee705255`).
+
+
 ## Physical SHA-256 retry — 2026-10-15
 
 - Both target builds passed: `./tools/build arm` and `./tools/build riscv`.

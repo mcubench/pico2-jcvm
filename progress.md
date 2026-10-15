@@ -3441,3 +3441,14 @@
 - Decision: Stop hardware retries until VirtualBox USB passthrough exposes the BOOTSEL block device read/write. Then flash the ARM UF2 and inspect a finite serial log plus the SHA-256 `doFinal` APDU.
 - Commit: `31d6ab4` (API fix) and `1bb209c` (hardware-test regression APDU under test; no source changes in this retry).
 - Artifacts/logs: `artifacts/logs/physical-sha256-dofinal-retry-20261015.log` (SHA-256 `e9a7531e1dea9de35eab44b6e34a0f160aa8eb371c413bb5ddb870ef2da40608`).
+
+
+## 2026-10-15 — Flash SHA-256 fix and inspect Pico 2 boot
+
+- Step/experiment: `physical-sha256-dofinal-flash-boot-20261015`
+- Change: No source code changed. Rechecked both builds, flashed the ARM CHOUPI UF2 through `./tools/flash`, then captured 18 seconds of serial output.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Elevated `lsusb -d 2e8a:000f` and picotool confirmed RP2350 BOOTSEL; flash wrapper reported `Loading into Flash: 100%`, device reboot, and `FLASH:PASS`. After reboot, elevated `lsusb -d 2e8a:0009` found Pico 2 CHOUPI CCID. `./tools/monitor --seconds 18` completed but emitted repeated `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`, `TEST:SUMMARY pass=0 fail=1`; CCID stayed at stage 2/endpoint 00. Bounded PC/SC scan listed only Virtual PCD readers.
+- Result: Firmware was flashed and the board re-enumerated in application mode. Boot smoke is failing, and the physical SHA-256 APDU could not be sent because pcscd does not list the physical reader after USB re-enumeration.
+- Decision: Have the user run `sudo -n /usr/local/sbin/pico2-pcsc-reader` to refresh pcscd access for current device 001:033. Once the physical reader appears, reinstall JCAlgTest 1.8.2 if needed and probe SHA-256 `doFinal`; separately investigate the boot-time applet restore `6F00`.
+- Commit: `31d6ab4` (API fix) and `1bb209c` (regression APDU under hardware validation; no source changes in this flash step).
+- Artifacts/logs: `artifacts/logs/physical-sha256-dofinal-serial-20261015.log` (SHA-256 `069f486067d58198cd15a90ced6fc11eb4c6f5a11e62f75c488d5dfeee705255`); flashed UF2 SHA-256 `241eaa1592459b8fc1f7d38e0576437c9797202606c7a720ce3e43f964d8ad06`.
