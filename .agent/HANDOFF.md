@@ -1,5 +1,28 @@
 # Handoff
 
+## Physical JCAlgTest restore failure — 2026-10-15
+
+- The user enabled PC/SC access; `pcsc_scan -r` shows `Pico 2 CHOUPI CCID`
+  alongside two virtual readers. GlobalPlatformPro `--list` connects and lists
+  ISD `A000000151000000` and applet instance `4A43416C675465737431` in lifecycle
+  `INITIALIZED`.
+- A bounded `./tools/probe-jc-algtest` connected with ATR `3B800181`, then
+  SELECT returned `6F00`. Serial log
+  `artifacts/logs/jcalgtest-physical-restore-recheck-20261015.log` shows the
+  expected AID/package/class lookup, followed by
+  `RESTORE_STORAGE status=1 length=0` and
+  `RESTORE_READ_FAIL id=5 tag=03003F94FF`.
+- Status 1 means missing record in the RP2350 C ABI shim. `src/choupi_pico2.cpp`
+  clears the in-memory overlay in `fs_init()` on every boot. `cap_store.cpp`
+  persists CAP bytes and registry metadata in the reserved `0x1c0000` slot,
+  but does not persist Java Card applet instance fields. The applet is listed
+  as installed after reset, while its root object is gone. Do not claim
+  physical SELECT or JCSystem verification until this is addressed.
+- Next: inspect the RP2350 flash image/layout and design a separate durable
+  filesystem area that cannot overlap the firmware or CAP slot. Preserve the
+  existing CAP slot and avoid flashing while investigating. Both architecture
+  builds remain required before any later flash.
+
 ## Physical diagnostic firmware flash — 2026-10-15
 
 - Rebuilt ARM and RISC-V successfully, then flashed the ARM CHOUPI image while

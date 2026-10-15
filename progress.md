@@ -3382,3 +3382,12 @@
 - Decision: Continue physical SELECT verification once PC/SC access is restored. The repository's `AGENTS.md` forbids invoking sudo from this autonomous cycle; ask the user to run `sudo -n /usr/local/sbin/pico2-pcsc-reader`, then confirm `pcsc_scan -r` lists the physical reader before probing.
 - Commit: `c290cd1` (diagnostic implementation under physical validation; no source change in this step).
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261015T112920Z.log` (SHA-256 `369ae5865b5645067ab74e22811b18510c1cd290945ac1b510579bd8cbcb48de`); flashed ARM UF2 SHA-256 `5c8cab86d6eff1bed98decefaf0dc89005f611a15203857f293b95f144f2b8a8`.
+## 2026-10-15 — Confirm physical restore failure is volatile filesystem state
+
+- Step/experiment: `physical-jcalgtest-restore-after-pcsc-enable-20261015`
+- Change: No firmware source changed. Used the enabled physical PC/SC reader to inspect the GlobalPlatform registry and issue a bounded JCAlgTest SELECT while capturing 45 seconds of serial output.
+- Validation: GlobalPlatformPro `--list` connected to the Pico and listed ISD `A000000151000000` plus applet instance `4A43416C675465737431` (lifecycle `INITIALIZED`). `./tools/probe-jc-algtest` connected with ATR `3B800181`, then SELECT returned `6F00`; command exited 1. The serial trace matched the SELECT AID and package 63/class `0094`, then reported `RESTORE_STORAGE status=1 length=0`, `RESTORE_READ_FAIL id=5 tag=03003F94FF`, and `SELECT restore=1`.
+- Result: The C ABI filesystem shim maps status 1 to a missing record. Its `fs_init()` clears the in-memory overlay at every startup; `cap_store` restores CAP bytes and registry metadata but not the applet instance root. This explains why the registered applet cannot be restored after firmware restart. Physical applet execution and JCSystem APDUs remain unverified on this boot.
+- Decision: Fix or replace the RP2350 RAM-only overlay persistence path before claiming successful restart/SELECT behavior. Keep the reserved CAP slot intact and validate flash layout before writing any persistent records.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcalgtest-physical-restore-recheck-20261015.log` (SHA-256 `ba9e4a602c03667c8327109d94c56983d2ff3f67077362990926b1f210239376`); read-only GP listing returned the registered applet instance.
