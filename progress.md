@@ -3501,5 +3501,5 @@
 - Validation: JCAlgTest `AlgPerformanceTest.perftest_class_MessageDigest` repeatedly invokes `doFinal()` on 256-byte buffers and returns only a success marker; the Java client measures elapsed time externally, so this run alone cannot establish digest correctness. Elevated `./tools/test-pc-vpcd-applet --passes 1 --connect-timeout 20 --apdu-timeout 10` failed with `TEST:FAIL timed out` before any APDU. `pcsc_scan -r` listed only two Virtual PCD readers; `pcscd -H` was denied (`Operation not permitted`), and direct `systemctl restart pcscd.service` timed out.
 - Result: The requested `OP_ALG_PERFORMANCE_STATIC` run did not execute and produced no SHA-256 measurement. No new SHA-256 code defect was established; the physical JCAlgTest applet is currently inaccessible through PC/SC.
 - Decision: Refresh the new physical USB node with the installed `/usr/local/sbin/pico2-pcsc-reader` helper, reinstall JCAlgTest 1.8.2 if needed, run the requested static benchmark, then check digest bytes separately with a known-answer probe.
-- Commit: pending
+- Commit: `d212af2`
 - Artifacts/logs: `artifacts/logs/jcalgtest-sha256-vpcd-pending-physical-retry-20261015.log` (SHA-256 `6b04936b84bc17e27894a9aa19cd0ac72963312f473dd193533b2527d7c8ca7e`).
