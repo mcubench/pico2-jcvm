@@ -24,6 +24,34 @@ analysis, and tool-check intervals. Build and test durations vary with which
 objects the command recompiles, so compare like-for-like runs before drawing a
 performance conclusion.
 
+## Development-loop timing sample
+
+The first recorded sample contains 17 successful intervals and 8 non-OK
+intervals. The non-OK count includes failed and interrupted work; it measures
+iteration friction, not runtime performance.
+
+| Category | Successful runs | Mean | Longest | Non-OK runs | What to do next |
+|---|---:|---:|---:|---:|---|
+| Compile | 5 | 5.127 s | 9.152 s | 2 | Keep using the ARM wrapper and compare clean versus incremental builds separately. |
+| Test | 9 | 2.493 s | 5.184 s | 6 | Run the smallest relevant host regression first; retain the bounded integration run for end-to-end checks. |
+| Thinking | 1 | 4.641 s | 4.641 s | 0 | Too few samples to compare; manual intervals are wall time, not CPU time. |
+| Tool check | 2 | 0.055 s | 0.055 s | 0 | Negligible in this sample. |
+| Upload | 0 | Not measured | Not measured | — | Time BOOTSEL recovery, transfer, re-enumeration, and validation independently when hardware work resumes. |
+
+These are short, mixed-purpose intervals collected over one development
+session, not a controlled benchmark. The 82.460-second interrupted serial
+capture and 34.837-second failed PC smoke test are useful examples of waits
+that need phase timing, but should not be included in successful task averages.
+For future records, include target, clean/incremental state, source revision,
+job count, and wall/user/system time so a slowdown can be tied to a stage.
+
+The most useful immediate speedup is to reduce failed iteration time: check
+device and reader preconditions before a long integration timeout, and run a
+focused test before rebuilding firmware. Do not raise parallelism based on
+these timings; they contain no CPU-load or responsiveness comparison. Likewise,
+the single long Maven observation should first be repeated through the current
+wrapper before changing dependency caching.
+
 The full Maven CAP converter build completed in 3:29 before timing was enabled.
 That number was observed in the build output but is absent from the timer CSV.
 The CSV also contains two failed build attempts, four failed test attempts,

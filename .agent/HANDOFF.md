@@ -1,5 +1,21 @@
 # Handoff
 
+## Development performance suggestions — 2026-10-15
+
+- Added a category summary to `perf_tips.md` from the existing task timer: 17
+  successful intervals (5 compile, 9 test, 1 thinking, 2 tool-check) totaling
+  52.821 seconds, plus 8 non-OK intervals. The note treats failures as iteration
+  friction and does not infer performance from them.
+- Recommendations: run focused host tests before firmware builds, check USB and
+  PC/SC preconditions before long integration waits, collect comparable
+  clean/incremental and CPU-time samples before tuning build parallelism, and
+  separately time upload phases when hardware work resumes. Upload remains
+  unmeasured.
+- Validation: `git diff --check` passed; documentation-only, no build, test, or
+  hardware operation. Next: continue the active JCAlgTest correctness work and
+  add more timing samples only when they can be collected without interrupting
+  that work.
+
 ## VPCD performance guidance refresh — 2026-10-15
 
 - Updated `perf_tips.md` to reflect the newest diagnostic: inherited

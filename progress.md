@@ -2875,3 +2875,20 @@
 - Decision: Add VPCD phase timings and collect comparable build samples before making performance changes.
 - Commit: recorded in the current commit.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+## 2026-10-15 — Summarize development performance suggestions
+
+- Step/experiment: `development-performance-suggestions-20261015`
+- Change: Added a concise category table and follow-up recommendations to
+  `perf_tips.md`, based on the existing task timer sample. Distinguished failed
+  or interrupted attempts from successful timing averages and marked upload as
+  unmeasured. Updated the handoff with the current conclusions.
+- Validation: `git diff --check -- perf_tips.md progress.md .agent/HANDOFF.md`
+  passed. Documentation-only; no build, test, or hardware operation was run.
+- Result: The sample records 17 successful intervals totaling 52.821 seconds
+  (compile 25.633 s, tests 22.437 s, thinking 4.641 s, tool checks 0.110 s)
+  and 8 non-OK intervals. The sample is observational, not a controlled
+  benchmark.
+- Decision: Use focused tests before firmware builds; collect like-for-like
+  build samples and separate upload-phase timings before pursuing tuning.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
