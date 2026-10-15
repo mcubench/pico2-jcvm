@@ -19,10 +19,9 @@ From `artifacts/metrics/development-time.csv` and the host install log below:
 | PC CHOUPI JCRE boot smoke | 34.837 s | One failed run; treat this as time to a failure, not successful runtime performance. The timer does not record its internal phase breakdown. |
 | Upload | Not measured | No upload was attempted in this sample. |
 
-The timer report totals 52.821 seconds across successful compile, test,
-analysis, and tool-check intervals. Build and test durations vary with which
-objects the command recompiles, so compare like-for-like runs before drawing a
-performance conclusion.
+The initial timer sample totaled 52.821 seconds. The latest report below
+includes later compile and test work; keep build classes separate because
+durations vary with regenerated Java outputs and the objects rebuilt.
 
 ## Follow-up samples — 2026-10-15
 
@@ -49,26 +48,28 @@ empty operand stack; fix that correctness issue before using APDU timings to
 judge throughput. These timings came from one session and are not controlled
 benchmarks.
 
-## Development-loop timing sample
+## Development-loop timing sample — refreshed 2026-10-15
 
-The first recorded sample contains 17 successful intervals and 8 non-OK
-intervals. The non-OK count includes failed and interrupted work; it measures
-iteration friction, not runtime performance.
+The latest task-time report contains 26 successful intervals totaling 183.503
+seconds and 17 non-OK intervals. Successful durations exclude failed and
+interrupted work; the non-OK count measures iteration friction, not runtime
+performance.
 
 | Category | Successful runs | Mean | Longest | Non-OK runs | What to do next |
 |---|---:|---:|---:|---:|---|
-| Compile | 5 | 5.127 s | 9.152 s | 2 | Keep using the ARM wrapper and compare clean versus incremental builds separately. |
-| Test | 9 | 2.493 s | 5.184 s | 6 | Run the smallest relevant host regression first; retain the bounded integration run for end-to-end checks. |
+| Compile | 14 | 11.165 s | 35.131 s | 4 | Keep using the wrappers and compare clean, generated-output, and incremental builds separately. |
+| Test | 9 | 2.493 s | 5.184 s | 13 | Run the smallest relevant host regression first; retain the bounded integration run for end-to-end checks. |
 | Thinking | 1 | 4.641 s | 4.641 s | 0 | Too few samples to compare; manual intervals are wall time, not CPU time. |
 | Tool check | 2 | 0.055 s | 0.055 s | 0 | Negligible in this sample. |
 | Upload | 0 | Not measured | Not measured | — | Time BOOTSEL recovery, transfer, re-enumeration, and validation independently when hardware work resumes. |
 
-These are short, mixed-purpose intervals collected over one development
-session, not a controlled benchmark. The 82.460-second interrupted serial
-capture and 34.837-second failed PC smoke test are useful examples of waits
-that need phase timing, but should not be included in successful task averages.
-For future records, include target, clean/incremental state, source revision,
-job count, and wall/user/system time so a slowdown can be tied to a stage.
+These are short, mixed-purpose intervals, not a controlled benchmark. The
+82.460-second interrupted serial capture and 34.837-second failed PC smoke
+test remain useful examples of waits that need phase timing, but should not be
+included in successful task averages. The newer 5–7 second VPCD failures are
+also failure-to-diagnosis times, not applet throughput. For future records,
+include target, clean/incremental state, source revision, job count, and
+wall/user/system time so a slowdown can be tied to a stage.
 
 The most useful immediate speedup is to reduce failed iteration time: check
 device and reader preconditions before a long integration timeout, and run a
@@ -79,10 +80,10 @@ wrapper before changing dependency caching.
 
 The full Maven CAP converter build completed in 3:29 before timing was enabled.
 That number was observed in the build output but is absent from the timer CSV.
-The CSV also contains two failed build attempts, four failed test attempts,
-and one interrupted monitor attempt; the report excludes non-OK runs from
-successful duration averages. A bounded JCAlgTest probe also found no PC/SC
-reader, so it sent no APDUs.
+The CSV contains four failed compile attempts, twelve failed test attempts,
+and one interrupted test attempt; the report excludes non-OK runs from
+successful duration averages. The most recent bounded VPCD attempts reached
+ATR and SELECT before returning `6F00` for the JCSystem information APDU.
 
 The successful host installation completed quickly in its one recorded sample
 and used 90% CPU over 0.45 seconds. There is no evidence that this phase needs
@@ -253,35 +254,19 @@ the same conditions before changing build or runtime behavior.
 
 ## VPCD applet-debug loop
 
-The host integration reaches applet `process(APDU)`. The latest trace resolves
-the inherited `getReason()` method to package 0, offset 370, then ends with an
-uncaught `SecurityException` at PC `0x3D98` in opcode `0x93`
-(`GETFIELD_S_THIS`); the APDU returns `6F00`. This is a correctness failure,
-not an applet-throughput result. Do not spend time tuning the class/method
-lookup path that the trace now shows succeeding.
+The latest trace passes ATR and applet SELECT, then the JCSystem information
+APDU fails with `6F00`. It throws `StackUnderflowException` at `PUTFIELD_A`
+in package 63, Method component offset 39 (CP field index 5), with operand
+depth zero. The three recent bounded runs took 5.341–5.974 seconds. This is a
+correctness failure and failure-to-diagnosis time, not applet throughput. It
+supersedes older `SecurityException` and `GETFIELD_S_THIS` diagnoses.
 
-The latest captured trace is 215,263 bytes and contains many repeated
-`FsRead1b` diagnostics. It also walks 51 exception-handler entries while
-reporting the uncaught exception. These are concrete profiling targets, but
-the log alone does not show how much CPU or elapsed time either operation
-consumes. Avoid interpreting log volume as proof that filesystem reads or
-exception dispatch are the runtime bottleneck.
-
-A later run with bounded process-group cleanup took roughly 20 seconds by
-observation and left no emulator process behind. This was not captured by the
-task timer or `/usr/bin/time`, so it is not comparable with the earlier
-34.837-second smoke attempt and does not establish a speedup. On the next run,
-time the exact wrapper command and record wall/user/system time alongside the
-last completed VPCD phase; this will show whether the remaining delay is APDU
-execution or setup/teardown.
-
-The handler-offset diagnostic run took 7.39 s wall time (0.27 s user, 1.98 s
-system, 30% CPU, 17,264 KiB peak RSS) and still failed with `6F00`. This is a
-third, distinct failure path, so it should not be compared as a speedup against
-the earlier smoke timings. Keep using `/usr/bin/time` on the exact wrapper and
-add per-phase timestamps before tuning VM execution or cleanup; the current
-measurement alone does not identify which phase consumed the remaining wall
-time.
+The 34.837-second PC smoke attempt and older 7.39-second diagnostic are
+historical timings from different failure paths. Do not compare them as a
+speedup against the recent runs. A prior trace was 215,263 bytes, with repeated
+`FsRead1b` diagnostics and 51 exception-handler entries; neither log volume nor
+the number of scanned entries proves a performance bottleneck. Measure before
+optimizing filesystem reads, dispatch, or lookup.
 
 - **Time each APDU boundary.** Print elapsed time for VPCD connect, ATR, SELECT,
   each command send, and response receive. Include the failing APDU and last
@@ -306,8 +291,8 @@ time.
   metadata or indexing handler ranges if repeated samples show either phase is
   material to elapsed time; preserve the unoptimized path as the correctness
   baseline.
-- **Use the smallest reproducer first.** Keep ATR/SELECT coverage, then run one
-  failing APDU with a short deadline while resolving the current exception or
-  `GETFIELD_S_THIS` receiver/field access. Add later applet commands only after
-  that request returns the expected response; this
-  avoids paying for unrelated test phases on every fix attempt.
+- **Use the smallest reproducer first.** Keep ATR/SELECT coverage, then run the
+  JCSystem information APDU with a short deadline while tracing the
+  `PUTFIELD_A` call/return stack around package 63, offset 39. Add later applet
+  commands only after that request returns the expected response; this avoids
+  paying for unrelated test phases on every fix attempt.

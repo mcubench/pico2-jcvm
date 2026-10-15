@@ -2942,3 +2942,13 @@
 - Decision: Continue with the applet operand-stack failure documented above.
 - Commit: this reference commit.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-15 — Refresh measured performance suggestions
+
+- Step/experiment: `refresh-performance-guidance-20261015`
+- Change: Refreshed `perf_tips.md` with the current task-time totals, latest bounded VPCD failure, and distinctions between successful timings and failure-to-diagnosis durations. Updated recommendations to reflect current measurements while retaining unmeasured upload and hardware phases as open items.
+- Validation: `./tools/task-time report` returned 26 successful intervals totaling 183.503 s and 17 non-OK intervals; `git diff --check -- perf_tips.md` passed. Documentation-only; no build, test, or hardware operation was run.
+- Result: Compile intervals total 156.315 s (14 successful, mean 11.165 s, max 35.131 s); test intervals total 22.437 s (9 successful, 13 non-OK). Recent VPCD attempts took 5.341–5.974 s and failed at `PUTFIELD_A`, so they are not performance results.
+- Decision: Use the refreshed suggestions to guide controlled, like-for-like measurements; avoid optimization claims from unlike build classes or failed APDU runs.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`; `artifacts/logs/jcalgtest-putfield-callsite-20261015.log`.
