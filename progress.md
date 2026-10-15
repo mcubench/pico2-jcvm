@@ -3290,5 +3290,5 @@
 - Validation: `./tools/env cmake --build build/choupi-pc --target choupi -j2` passed; `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20 --log artifacts/logs/jcalgtest-jcsystem-size-fix-20261015.log` passed with `TEST:SUMMARY pass=5 fail=0`; `./tools/build arm` passed. No RISC-V build or physical flash was performed.
 - Result: ATR `3B800181`; GETVERSION returned exact `1.8.2_jc305`; JCSystem info returned `0305000000000000000000002000FE01000000000000000000000000009000`; supported-algorithm response ended in `9000`. VPCD pass took 27.851 s. The JCSystem failure was caused by dividing a serialized short-array element count by two.
 - Decision: Continue JCAlgTest coverage through the local emulator. Physical-token validation remains a separate hardware step; this change was validated on VPCD only.
-- Commit: `<recorded after commit>`.
+- Commit: `33af96f`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-jcsystem-size-fix-20261015.log`; ARM image `build/arm/pico2_choupi.uf2`.

@@ -2430,8 +2430,7 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   ATR, install, SELECT, exact GETVERSION (`1.8.2_jc305`), JCSystem info, and
   supported-algorithm smoke APDUs (`TEST:SUMMARY pass=5 fail=0`, 27.851 s).
   `./tools/build arm` also passes. No RISC-V build, PC/SC service operation,
-  physical token, or flash was used. The current development target remains
-  the VPCD emulator; the next action is to review and commit only this step's
-  CAP loader, array handling, and test-harness changes, then expand the bounded
-  algorithm support coverage. Latest log:
+  physical token, or flash was used. The implementation and test changes are
+  committed as `33af96f`; the current development target remains the VPCD
+  emulator. Next expand the bounded algorithm support coverage. Latest log:
   `artifacts/logs/jcalgtest-jcsystem-size-fix-20261015.log`.
