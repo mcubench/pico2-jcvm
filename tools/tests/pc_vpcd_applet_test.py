@@ -148,6 +148,32 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
                         "MessageDigest ALG_SHA_256 was not reported supported: "
                         f"{sha256_digest.hex().upper()}"
                     )
+
+                # Exercise the algorithm after the support probe. The prepared
+                # settings select MessageDigest.doFinal with one input byte.
+                digest_settings = bytes.fromhex(
+                    "0015 0004 FFFF FFFF FFFF 0006 0001 FFFF FFFF 0001 0001"
+                )
+                exchange(
+                    connection,
+                    bytes((0xB0, 0x34, 0x00, 0x00, len(digest_settings)))
+                    + digest_settings
+                    + b"\x00",
+                    "JCAlgTest SHA-256 prepare APDU",
+                )
+                sha256_dofinal = exchange(
+                    connection,
+                    bytes((0xB0, 0x41, 0x00, 0x00, len(digest_settings)))
+                    + digest_settings
+                    + b"\x00",
+                    "JCAlgTest SHA-256 doFinal APDU",
+                )
+                if sha256_dofinal[0] != 0xAA:
+                    raise RuntimeError(
+                        "MessageDigest.doFinal did not report success: "
+                        f"{sha256_dofinal.hex().upper()}"
+                    )
+
                 aes_cipher = exchange(
                     connection,
                     bytes.fromhex("B0751100030D000000"),
