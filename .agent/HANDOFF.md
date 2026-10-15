@@ -1,34 +1,42 @@
 # Handoff
 
-## VPCD PC/SC presence-probe checkpoint — 2026-10-15
+## Official JCAlgTest PC/SC diagnosis — 2026-10-15
 
-- The official JCAlgTest 1.8.2 client now enumerates two `Virtual PCD` readers
-  and accepts selection of reader 1. It still listed both as `NO CARD`; after
-  the card-name prompt it threw a `NullPointerException` writing the CSV
-  header. In bytecode, the failing write uses the `FileOutputStream` returned
-  by `CardMngr.establishConnection`, so this is downstream of failure to
-  connect to a card, rather than a CSV path failure.
-- Root cause: the VPCD reader probes presence by requesting the ATR before it
-  powers the card. `Session` previously returned no response to an ATR probe
-  while powered off. It now returns the ATR in either power state. Focused
-  session test passes 14/14; `./tools/build-pc` and the PC `choupi` target
-  build pass. Implementation commit: `ceb5101`. The PCSC official-client
-  rerun is pending.
-- Next: restart the emulator using `build/choupi-pc/choupi` rebuilt after this
-  change, choose `Virtual PCD 00 00`, and check whether the reader changes from
-  `NO CARD` and the client gets past connection setup. Do not use the old
-  emulator process/binary for this check. No physical token was used.
-- Follow-up validation: the rebuilt `build/choupi-pc/choupi` passed one bounded
-  internal VPCD harness pass: connect 1.789 s, ATR 0.001 s, SELECT 0.161 s,
-  JCSystem info 13.934 s, supported-algorithm APDU 2.945 s;
-  `TEST:SUMMARY pass=5 fail=0`. Its mtime is 2026-10-15 09:19:42. This confirms
-  the current binary is not stale and its emulator/APDU path works. The
-  official PC/SC listener at localhost:35963 remains inaccessible from the
-  agent execution namespace (a direct probe returned `Connection refused`,
-  including with escalation), while the user VM's separate `ss` command showed
-  LISTEN on ports 35963 and 35964. Run the CHOUPI process in the same VM
-  network namespace as the `pcscd` VPCD listener to complete the official
-  client check.
+- The user ran JCAlgTest 1.8.2 through `Virtual PCD 00 00`; it collected about
+  72 rows, then the 300-second timeout expired while sending signature
+  algorithm 24 (HMAC-SHA1), APDU `B0 75 12 00 01 18 00`. The emulator was
+  stopped cleanly after the timeout. Log and partial CSV:
+  `artifacts/results/jcalgtest-vpcd/ALGTEST_log_1792050525367.log` and
+  `artifacts/results/jcalgtest-vpcd/CHOUPI_VPCD_ALGSUPPORT__3b_80_01_81.csv`.
+- Correction to the earlier namespace diagnosis: the agent is running on the
+  same VM. The default command sandbox denies local socket operations
+  (`EPERM`), but an approved host-socket command ran the emulator locally. A
+  bounded replay of signature algorithms 1–24, with the same `B0 E2` object
+  deletion request before each probe, passed all APDUs. Algorithm 24 returned
+  `9000` in 3.026 s; total replay time was 97.284 s. This means the APDU and
+  accumulated algorithm sequence do not reproduce the hang in the internal
+  VPCD transport. Replay log SHA-256:
+  `d3fecd2f656c27a2cd3d6b38b176dd526ef81ca47774e0cd94a0447df27f5f64`.
+- The single HMAC APDU also passed after a reset in 3.323 s. No repository
+  source was changed for these experiments. The last official-client attempt
+  reached 300 seconds without a response; the current pcscd/VPCD listener is
+  stopped, and no JCAlgTest or CHOUPI test process remains running.
+- Next: restart the PC/SC VPCD service and replay the official client locally
+  with a per-APDU watchdog and CHOUPI log capture. Compare its exact sequence
+  and timing with the passing internal replay before changing runtime code. No
+  physical token was used.
+
+## VPCD ATR presence-probe implementation — 2026-10-15
+
+- The VPCD reader probes presence by requesting the ATR before it powers the
+  card. `Session` previously returned no response to an ATR probe while
+  powered off. It now returns the ATR in either power state. Focused session
+  test passes 14/14; `./tools/build-pc` and the PC `choupi` target build pass.
+  Implementation commit: `ceb5101`.
+- The rebuilt `build/choupi-pc/choupi` passed one bounded internal VPCD
+  harness pass: connect 1.789 s, ATR 0.001 s, SELECT 0.161 s, JCSystem info
+  13.934 s, supported-algorithm APDU 2.945 s; `TEST:SUMMARY pass=5 fail=0`.
+  No physical token was used.
 
 ## Current JCAlgTest development checkpoint — 2026-10-15
 

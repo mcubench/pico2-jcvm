@@ -3235,3 +3235,13 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs:
   `artifacts/logs/jcalgtest-vpcd-internal-after-atr-fix-20261015.log`.
+
+## 2026-10-15 — Isolate JCAlgTest HMAC-SHA1 timeout
+
+- Step/experiment: `vpcd-signature-sequence-hmac-sha1-20261015`
+- Change: Updated `.agent/HANDOFF.md` with the official PC/SC timeout evidence and corrected the earlier assumption that Codex was in a separate VM/network namespace. No source code changed.
+- Validation: Replayed signature algorithms 1–24 against the rebuilt PC emulator through the bounded internal VPCD harness, sending `B0 E2 00 00 00` before each `B0 75 12 00 01 <algorithm> 00` APDU. The full run passed with `TEST:SUMMARY pass=5 fail=0`. A 12-second watchdog attempt ended during the normal JCSystem info preamble, so the successful rerun used a 25-second APDU deadline and 180-second overall cap. Separately confirmed a 20-second-bounded local socket attempt is denied by the default sandbox (`EPERM`); the replay succeeded with host socket permission. The official Java PC/SC run had previously reached its 300-second timeout at algorithm 24.
+- Result: All 24 ordered signature APDUs returned `9000`; HMAC-SHA1 took 3.026 s, and the full replay took 97.284 s. This does not reproduce the PC/SC-only stall. No hardware was used.
+- Decision: Restart the PC/SC VPCD service and capture an official-client rerun with per-APDU deadlines and emulator logs before changing VM runtime code.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `/tmp/algtest-v182-signature-sequence.log` (SHA-256 `d3fecd2f656c27a2cd3d6b38b176dd526ef81ca47774e0cd94a0447df27f5f64`); official partial output `artifacts/results/jcalgtest-vpcd/ALGTEST_log_1792050525367.log`.
