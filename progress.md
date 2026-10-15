@@ -2952,3 +2952,13 @@
 - Decision: Use the refreshed suggestions to guide controlled, like-for-like measurements; avoid optimization claims from unlike build classes or failed APDU runs.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`; `artifacts/logs/jcalgtest-putfield-callsite-20261015.log`.
+
+## 2026-10-15 — Record performance guidance commit
+
+- Step/experiment: `refresh-performance-guidance-reference-20261015`
+- Change: Recorded commit `8e5efa7` for the updated performance suggestions and current timer summary.
+- Validation: `git diff --check -- progress.md` passed.
+- Result: The refreshed performance guidance is committed as `8e5efa7`.
+- Decision: Continue using comparable, phase-specific measurements before proposing further speedups.
+- Commit: recorded in this reference commit.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
