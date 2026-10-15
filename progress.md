@@ -3056,3 +3056,17 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/logs/jcalgtest-internal-virtual-table-token-fix-20261015.log`;
   `build/choupi-pc/flash`; `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-15 — Record virtual-token fix commit
+
+- Step/experiment: `jca-rommask-internal-virtual-method-table-tokens-reference-20261015`
+- Change: Recorded root commit `1104520` for the JCAlgTest VPCD milestone,
+  TODO/handoff refresh, and progress entry. The ROM-mask implementation itself
+  is committed in its nested repository as `fa470e5`.
+- Validation: `git diff --check` passed before commit; root commit contains only
+  `TODO.md`, `.agent/HANDOFF.md`, and `progress.md`.
+- Result: Current one-pass VPCD and ARM build evidence is linked from the
+  handoff. This does not establish physical-board acceptance criteria.
+- Decision: Continue temporary-trace cleanup and repeated VPCD/client checks.
+- Commit: recorded in this reference commit.
+- Artifacts/logs: `artifacts/logs/jcalgtest-internal-virtual-table-token-fix-20261015.log`.
