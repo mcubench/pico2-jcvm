@@ -3091,3 +3091,31 @@
 - Artifacts/logs: `perf_tips.md`,
   `artifacts/logs/jcalgtest-internal-virtual-table-token-fix-20261015.log`,
   `artifacts/metrics/development-time.csv`.
+
+## 2026-10-15 — Gate release host syscall diagnostics
+
+- Step/experiment: `host-release-syscall-log-gate-20261015`
+- Change: Compile the host OS syscall detail prints only with Rust debug
+  assertions enabled, preventing per-syscall `println!` output in the release
+  emulator. Refreshed `perf_tips.md` and `.agent/HANDOFF.md` with the current
+  timing and repeatability results. The previous performance-doc commit is
+  `97139d2`.
+- Validation: `./tools/build-pc` passed; the PC `choupi` target built with the
+  existing packed-member warnings; `./tools/build arm` passed. The bounded
+  release VPCD test passed twice: `TEST:SUMMARY pass=10 fail=0` in 47.575 s.
+  A one-pass `/usr/bin/time` sample reported 23.48 s wall, 0.48 s user, 6.61 s
+  system, 30% CPU, and 17,128 KiB max RSS. `git diff --check` passed for the
+  documentation files. No RISC-V build or physical flash was run.
+- Result: The release emulator log is 47,015 bytes for one pass, down from
+  291,641 bytes in the preceding timed-out release attempt. The run passed,
+  but these single samples do not establish a runtime speedup or pinpoint the
+  wall-time cost.
+- Decision: Keep release diagnostics quiet. Next run the official JCAlgTest
+  supported-algorithms client against VPCD and compare its CSV with the
+  simulator reference; continue measuring transport and emulator phases before
+  changing execution or wait logic.
+- Commit: nested OS source commit and root documentation commit are recorded in
+  the following reference entry.
+- Artifacts/logs: `artifacts/logs/jcalgtest-vpcd-release-after-log-gate-20261015.log`,
+  `artifacts/logs/jcalgtest-vpcd-release-repeat-20261015.log`,
+  `artifacts/metrics/development-time.csv`.

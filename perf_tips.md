@@ -6,39 +6,48 @@ tests, but it is still too small to estimate stable long-term averages.
 
 ## Current checkpoint — 2026-10-15 (refreshed)
 
-The latest `./tools/task-time report` contains 38 successful intervals totaling
-439.623 seconds, plus 37 non-OK intervals. The breakdown is:
+The latest `./tools/task-time report` contains 45 successful intervals totaling
+564.964 seconds, plus 41 non-OK intervals. The breakdown is:
 
 | Category | Successful runs | Total | Mean | Max | Non-OK |
 |---|---:|---:|---:|---:|---:|
-| Compile | 25 | 394.220 s | 15.769 s | 58.213 s | 7 |
-| Test | 10 | 40.652 s | 4.065 s | 18.215 s | 30 |
+| Compile | 29 | 422.524 s | 14.570 s | 58.213 s | 7 |
+| Test | 13 | 137.689 s | 10.591 s | 47.575 s | 34 |
 | Thinking | 1 | 4.641 s | 4.641 s | 4.641 s | 0 |
 | Tool check | 2 | 0.110 s | 0.055 s | 0.055 s | 0 |
 | Upload | 0 | — | — | — | — |
-| **Total** | **38** | **439.623 s** | — | — | **37** |
+| **Total** | **45** | **564.964 s** | — | — | **41** |
 
 Non-OK intervals measure failed or interrupted workflow attempts, not target
 runtime performance. Upload time remains unmeasured.
 
-The latest bounded JCAlgTest VPCD run took 18.215 s and passed ATR, applet
-SELECT, JCSystem information, and supported-algorithm APDUs (`TEST:SUMMARY
-pass=5 fail=0`). This is an end-to-end host-emulator smoke result, not a
-throughput benchmark or physical-card result. See
-[`jcalgtest-internal-virtual-table-token-fix-20261015.log`](artifacts/logs/jcalgtest-internal-virtual-table-token-fix-20261015.log).
+The latest bounded JCAlgTest VPCD repeat test took 47.575 s for two fresh
+emulator passes and passed all ten checks (`TEST:SUMMARY pass=10 fail=0`). A
+single pass took 23.525 s; `/usr/bin/time` reported 0.48 s user, 6.61 s
+system, 30% CPU, and 17,128 KiB peak RSS. The timer and resource sample are
+from one run each, so use them as diagnostic evidence rather than stable
+throughput. This is host-emulator coverage, not a physical-card result. See
+[`jcalgtest-vpcd-release-repeat-20261015.log`](artifacts/logs/jcalgtest-vpcd-release-repeat-20261015.log).
+
+The OS release build previously printed every host syscall. Gating those lines
+on Rust `debug_assertions` reduced the one-pass log from 291,641 bytes on a
+timed-out attempt to 47,015 bytes on a passing attempt. Since the results differ
+and the sample is small, this shows log-volume reduction, not a proven runtime
+speedup. The same passing one-pass result took 23.5 s and reported 30% CPU, so
+there is no evidence here of a full-core busy loop in the measured command.
 
 ### Current recommendations
 
 1. **Keep the short feedback loop.** Successful test intervals average 4.065 s
-   and successful compile intervals average 15.769 s, but both include mixed
+   and successful compile intervals average 14.570 s, but both include mixed
    command types. Run the narrow host regression for each runtime change before
    the broader build or VPCD path. Keep PC generation, PC C++ rebuilds, ARM
    builds, clean builds, and incremental builds as separate baselines.
 2. **Measure the passing APDU path by phase.** Add elapsed-time boundaries for
    VPCD connect, ATR, SELECT, each APDU send/response, and teardown. Keep the
    overall deadline fixed and save a compact summary instead of verbose
-   per-opcode traces. The 18.215 s end-to-end run gives no per-phase timing, so
-   it cannot identify VM lookup or crypto as a bottleneck.
+   per-opcode traces. The 23.525 s passing run gives no per-phase timing, so it
+   cannot identify VM lookup or crypto as a bottleneck.
 3. **Reduce failed iteration cost.** There have been 37 non-OK intervals. Check
    the host emulator and VPCD endpoint once before the APDU run, use bounded
    retries with backoff, and keep diagnostic output selective. Treat the count

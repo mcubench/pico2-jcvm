@@ -19,22 +19,32 @@
 - The official JCAlgTest v1.8.2 host client has not yet been run against VPCD;
   CBC known-answer tests and physical-board process/power-cycle validation also
   remain outstanding. Do not mark AC1–AC5 complete.
-- Next: review and remove/gate temporary VM traces, rerun the bounded VPCD test
-  twice to check repeatability, then run the official supported-algorithms
-  client against VPCD and compare its CSV with the archived jCardSim reference.
-  Add CBC known-answer coverage before proceeding to the physical card. Do not
-  run RISC-V builds or tests.
+- Release-only Rust host syscall prints are now gated by `debug_assertions`;
+  nested OS source commit is recorded in the following progress reference.
+  `./tools/build-pc` and the PC `choupi` target build pass. A fresh one-pass
+  VPCD run passes in 23.525 s, and two fresh passes succeed (`TEST:SUMMARY
+  pass=10 fail=0`) in 47.575 s. The release emulator log shrank to 47,015 bytes;
+  its resource sample reported wall 23.48 s, user 0.48 s, system 6.61 s, 30%
+  CPU, and 17,128 KiB peak RSS. No stable throughput conclusion follows from
+  these single samples.
+- `./tools/build arm` passes after the Rust logging change. No RISC-V build or
+  physical flash was performed. Next run the official supported-algorithms
+  client against VPCD and compare its CSV with the archived jCardSim reference;
+  add CBC known-answer coverage before physical-card testing.
 
 ## Current performance measurement checkpoint — 2026-10-15
 
-- `./tools/task-time report`: 34 successful intervals totaling 286.750 s, plus
-  28 non-OK intervals. Compile: 22 successful, 259.562 s total, 11.798 s mean,
-  35.131 s max. Test: 9 successful, 22.437 s total, 2.493 s mean. Upload has
-  no measurements.
-- Latest VPCD attempt took 15.897 s and failed at `INVOKEVIRTUAL` with
-  `StackUnderflowException`; this is failure-to-diagnosis time, not APDU
-  throughput. Focus the next timing on APDU phases and the current stack/method
-  lookup path. Avoid speedup claims until CPU and phase timings are collected.
+- `./tools/task-time report`: 45 successful intervals totaling 564.964 s,
+  plus 41 non-OK intervals. Compile: 29 successful, 422.524 s total, 14.570 s
+  mean, 58.213 s max. Test: 13 successful, 137.689 s total, 10.591 s mean,
+  47.575 s max. Upload has no measurements.
+- Two bounded release VPCD passes succeeded in 47.575 s. One pass took 23.525 s
+  and reported 0.48 s user, 6.61 s system, 30% CPU, and 17,128 KiB max RSS.
+  This indicates a wall-time-heavy host path in one sample; phase timings are
+  still needed to distinguish emulator execution, ptrace/syscall handling, and
+  waiting. Release syscall diagnostic output was gated, reducing a comparable
+  failed run's log from 291,641 to 47,015 bytes on a passing run; this is not
+  evidence of a runtime speedup.
 - Performance suggestions and metric interpretation are in `perf_tips.md`.
 
 ## Development performance suggestions — 2026-10-15
