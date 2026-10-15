@@ -252,6 +252,60 @@ These are experiments, not claimed speedups. In particular, the 5:13 Maven
 duration and 7.39-second VPCD failure are single observations; repeat them under
 the same conditions before changing build or runtime behavior.
 
+## Latest task-time sample and practical suggestions — 2026-10-15
+
+`./tools/task-time report` currently summarizes 26 successful intervals
+(183.503 s total) and 18 non-OK intervals. The successful work is dominated by
+compile (14 runs, 156.315 s total, 11.165 s mean, 35.131 s max) and test (9
+runs, 22.437 s total, 2.493 s mean). One 4.641-second manual thinking interval
+and two 0.055-second tool checks are too few to characterize those categories.
+There are no upload intervals, so upload time remains unmeasured.
+
+The newest recorded JCAlgTest VPCD attempt took 13.116 s and failed with
+`6F00`; current debugging moved from the earlier `PUTFIELD_A` report to a
+`CHECKCAST` `SecurityException` after correcting JC305 class-token mapping.
+This is failure-to-diagnosis time, not successful APDU performance. Older
+`PUTFIELD_A` and `GETFIELD` measurements remain historical evidence from
+different code states and should not be compared as runtime speedups.
+
+### Suggestions
+
+1. **Time each useful work unit.** Use `./tools/task-time run compile --note
+   "ARM incremental" -- ./tools/build arm` for command-backed work and
+   `start`/`stop` around a bounded analysis or manual upload. Keep notes precise
+   enough to distinguish clean from incremental builds, focused from full
+   tests, and upload from device re-enumeration. The timer records elapsed wall
+   time, not CPU time.
+2. **Make upload a measurable sequence.** When physical testing resumes, time
+   BOOTSEL entry/preflight, firmware transfer, USB re-enumeration, PC/SC reader
+   discovery, and serial validation separately. This will show whether delays
+   come from transfer or recovery; do not roll a missing-reader wait into test
+   execution time.
+3. **Prioritize repeated work and failed iteration time.** Compile accounts
+   for most recorded successful time, while 18 non-OK attempts show substantial
+   iteration friction. Keep the existing incremental generated-output path,
+   run focused checks before full integration, and retain a bounded timeout for
+   failing VPCD cases. Do not interpret the failure count as a runtime speed
+   metric.
+4. **Add resource measurements before tuning.** For repeated long commands,
+   capture wall, user, system, peak memory, source revision, and build state
+   alongside the task-time entry. Use comparable samples to decide whether a
+   build is CPU-bound, blocked on I/O/network access, or rebuilding excess
+   inputs. The current timer alone cannot explain the 35.131-second longest
+   compile interval.
+5. **Avoid concurrent heavy builds in this VM.** The user has observed all
+   eight VM cores saturating during prior work, but this timing sample does not
+   include per-process CPU or contention data. Run one build at a time and
+   compare bounded job counts under the same source and generated-file state
+   before changing parallelism. For USB/PCSC discovery, use bounded retries
+   with backoff and a deadline instead of busy polling.
+
+These recommendations describe measurement steps and low-risk experiments;
+they do not claim a speedup or identify the cause of CPU saturation. The next
+useful dataset is several comparable ARM incremental builds, one controlled
+VPCD phase trace after the current `CHECKCAST` defect is resolved, and separate
+physical upload/preflight timings when the board test is safe to run.
+
 ## VPCD applet-debug loop
 
 The latest trace passes ATR and applet SELECT, then the JCSystem information

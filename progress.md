@@ -2962,3 +2962,23 @@
 - Decision: Continue using comparable, phase-specific measurements before proposing further speedups.
 - Commit: recorded in this reference commit.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-15 — Add current performance suggestions
+
+- Step/experiment: `task-time-performance-suggestions-20261015`
+- Change: Added current category totals and suggestions to `perf_tips.md`,
+  including separate upload-phase timing, resource measurements for long
+  commands, bounded device retries, and serial build experiments for the
+  eight-core VM. Clarified that recent VPCD timing is a failed diagnostic, not
+  successful applet performance. Updated `.agent/HANDOFF.md` with the same
+  measurement checkpoint.
+- Validation: `./tools/task-time report` showed 26 successful intervals,
+  183.503 s total, and 18 non-OK intervals; `git diff --check` passed.
+  Documentation-only; no build, test, or hardware operation was run.
+- Result: Upload remains unmeasured. Latest VPCD failure timing is 13.116 s and
+  ends in `6F00` at the `CHECKCAST` / `SecurityException` path.
+- Decision: Use comparable, phase-specific measurements after the runtime
+  failure is fixed; do not infer CPU bottlenecks or speedups from this sample.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`;
+  `artifacts/logs/jcalgtest-class-resolution-fix-20261015.log`.

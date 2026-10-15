@@ -43,6 +43,25 @@
   that work.
 - Commit: `be0a0e9`.
 
+## Task-time summary and current performance suggestions — 2026-10-15
+
+- Updated `perf_tips.md` from `./tools/task-time report`: 26 successful
+  intervals, 183.503 s total; 18 non-OK intervals. Compile: 14 runs,
+  156.315 s total, 11.165 s mean, 35.131 s max. Test: 9 runs, 22.437 s
+  total, 2.493 s mean. Upload has no measurements.
+- The latest VPCD attempt took 13.116 s, reached the JCAlgTest info APDU, and
+  failed with `6F00`; the latest trace identifies `CHECKCAST` with
+  `SecurityException` after the JC305 token-map fix. Treat it as failed
+  diagnosis time, not applet throughput. This supersedes earlier
+  `PUTFIELD_A`/`GETFIELD` diagnostics for current debugging.
+- Suggestions now prioritize timing upload subphases, adding CPU/memory data to
+  long commands, reducing failed iteration time, serializing heavy builds in
+  the eight-core VM, and bounded USB/PCSC retries. No performance cause or
+  speedup is claimed.
+- Validation: `./tools/task-time report` and `git diff --check`.
+- Next: continue JCAlgTest correctness work; after the APDU succeeds, record
+  phase timings and gather comparable build and upload samples.
+
 ## VPCD performance guidance refresh — 2026-10-15
 
 - Updated `perf_tips.md` to reflect the newest diagnostic: inherited
