@@ -3159,3 +3159,19 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `artifacts/logs/jcalgtest-vpcd-phase-timing-20261015.log`,
   `artifacts/metrics/development-time.csv`.
+
+## 2026-10-15 — Record VPCD phase timing commit
+
+- Step/experiment: `vpcd-phase-timing-reference-20261015`
+- Change: Recorded root commit `6d633f3`, which contains the phase-timing
+  harness, refreshed performance suggestions, TODO checkpoint, and handoff.
+- Validation: Confirmed the implementation commit contains only
+  `tools/tests/pc_vpcd_applet_test.py`, `perf_tips.md`, `TODO.md`,
+  `.agent/HANDOFF.md`, and its progress record.
+- Result: Phase timing and the current official-client prerequisite blocker are
+  recorded for the next session.
+- Decision: Continue after enabling the virtual PC/SC reader; the repository
+  build and test work that does not depend on that host service remains
+  available.
+- Commit: recorded in this reference entry.
+- Artifacts/logs: `artifacts/logs/jcalgtest-vpcd-phase-timing-20261015.log`.
