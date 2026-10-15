@@ -578,7 +578,7 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
   }
 #endif
 
-  uint16_t size = BYTES_TO_SHORT(data[2], data[1]);
+  uint16_t size = BYTES_TO_SHORT(data[1], data[2]);
 
   switch (type) {
   case FieldType::FIELD_TYPE_ARRAY_BYTE: {
@@ -1251,13 +1251,13 @@ FlashMemory_Handler::getPersistentField_Array_Byte(const fs::Tag &tag,
   auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);
 
   if (array->isTransientArray() ||
-      array->getType() != JAVA_ARRAY_T_REFERENCE || array->size() <= index) {
+      array->getType() != JAVA_ARRAY_T_BYTE || array->size() <= index) {
     throw Exceptions::SecurityException;
   }
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
-  if (fs_read_1b_at(&(tag.value[0]), tag.len, index, &value)) {
+  if (fs_read_1b_at(&(tag.value[0]), tag.len, 3u + index, &value)) {
     throw Exceptions::IOException;
   }
 
@@ -1289,7 +1289,7 @@ void FlashMemory_Handler::setPersistentField_Array_Byte(const fs::Tag &tag,
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
   snapshot_persistent_tag(tag);
-  if (fs_write_1b_at(&(tag.value[0]), tag.len, index, value)) {
+  if (fs_write_1b_at(&(tag.value[0]), tag.len, 3u + index, value)) {
     throw Exceptions::IOException;
   }
 }
@@ -1310,7 +1310,8 @@ FlashMemory_Handler::getPersistentField_Array_Short(const fs::Tag &tag,
                                                     Heap &heap
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 ) {
-  uint16_t value;
+  uint8_t value_high = 0;
+  uint8_t value_low = 0;
 
 #ifdef JCVM_SECURE_HEAP_ACCESS
   auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);
@@ -1321,11 +1322,13 @@ FlashMemory_Handler::getPersistentField_Array_Short(const fs::Tag &tag,
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
-  if (fs_read_2b_at(&(tag.value[0]), tag.len, index, &value)) {
+  const uint32_t byte_offset = 3u + 2u * index;
+  if (fs_read_1b_at(&(tag.value[0]), tag.len, byte_offset, &value_high) ||
+      fs_read_1b_at(&(tag.value[0]), tag.len, byte_offset + 1, &value_low)) {
     throw Exceptions::IOException;
   }
 
-  return static_cast<const jshort_t>(value);
+  return static_cast<const jshort_t>(BYTES_TO_SHORT(value_high, value_low));
 }
 
 /*
@@ -1353,7 +1356,12 @@ void FlashMemory_Handler::setPersistentField_Array_Short(const fs::Tag &tag,
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
   snapshot_persistent_tag(tag);
-  if (fs_write_2b_at(&(tag.value[0]), tag.len, index, value)) {
+  const uint16_t encoded = static_cast<uint16_t>(value);
+  const uint32_t byte_offset = 3u + 2u * index;
+  if (fs_write_1b_at(&(tag.value[0]), tag.len, byte_offset,
+                     static_cast<uint8_t>(encoded >> 8)) ||
+      fs_write_1b_at(&(tag.value[0]), tag.len, byte_offset + 1,
+                     static_cast<uint8_t>(encoded))) {
     throw Exceptions::IOException;
   }
 }
@@ -1376,7 +1384,7 @@ FlashMemory_Handler::getPersistentField_Array_Int(const fs::Tag &tag,
                                                   Heap &heap
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 ) {
-  uint32_t value;
+  uint8_t value_bytes[4]{};
 
 #ifdef JCVM_SECURE_HEAP_ACCESS
   auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);
@@ -1387,10 +1395,18 @@ FlashMemory_Handler::getPersistentField_Array_Int(const fs::Tag &tag,
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
-  if (fs_read_4b_at(&(tag.value[0]), tag.len, index, &value)) {
-    throw Exceptions::IOException;
+  const uint32_t byte_offset = 3u + 4u * index;
+  for (uint32_t byte_index = 0; byte_index < sizeof(value_bytes); ++byte_index) {
+    if (fs_read_1b_at(&(tag.value[0]), tag.len, byte_offset + byte_index,
+                      &value_bytes[byte_index])) {
+      throw Exceptions::IOException;
+    }
   }
 
+  const uint32_t value = (static_cast<uint32_t>(value_bytes[0]) << 24) |
+                         (static_cast<uint32_t>(value_bytes[1]) << 16) |
+                         (static_cast<uint32_t>(value_bytes[2]) << 8) |
+                         value_bytes[3];
   return static_cast<const jint_t>(value);
 }
 
@@ -1419,8 +1435,15 @@ void FlashMemory_Handler::setPersistentField_Array_Int(const fs::Tag &tag,
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
   snapshot_persistent_tag(tag);
-  if (fs_write_4b_at(&(tag.value[0]), tag.len, index, value)) {
-    throw Exceptions::IOException;
+  const uint32_t encoded = static_cast<uint32_t>(value);
+  const uint32_t byte_offset = 3u + 4u * index;
+  for (uint32_t byte_index = 0; byte_index < sizeof(encoded); ++byte_index) {
+    const uint8_t byte = static_cast<uint8_t>(
+        encoded >> (24u - 8u * byte_index));
+    if (fs_write_1b_at(&(tag.value[0]), tag.len, byte_offset + byte_index,
+                       byte)) {
+      throw Exceptions::IOException;
+    }
   }
 }
 #endif /* JCVM_INT_SUPPORTED */

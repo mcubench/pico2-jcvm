@@ -2421,3 +2421,17 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   client runs to prevent prolonged VM load. The emulator process was stopped.
   Logs and CSV are in
   `artifacts/results/jcalgtest-vpcd-pcsc-probe-20261015/`.
+- 2026-10-15 JCAlgTest emulator checkpoint: CAP installation now seeds static
+  arrays from the CAP StaticField component inside the install transaction.
+  Persistent primitive-array storage uses the serialized element count and
+  skips the 3-byte header for byte/short/int element access. The earlier
+  JCSystem short-array bounds failure came from dividing the stored element
+  count by the short width. `./tools/test-pc-vpcd-applet --passes 1` now passes
+  ATR, install, SELECT, exact GETVERSION (`1.8.2_jc305`), JCSystem info, and
+  supported-algorithm smoke APDUs (`TEST:SUMMARY pass=5 fail=0`, 27.851 s).
+  `./tools/build arm` also passes. No RISC-V build, PC/SC service operation,
+  physical token, or flash was used. The current development target remains
+  the VPCD emulator; the next action is to review and commit only this step's
+  CAP loader, array handling, and test-harness changes, then expand the bounded
+  algorithm support coverage. Latest log:
+  `artifacts/logs/jcalgtest-jcsystem-size-fix-20261015.log`.

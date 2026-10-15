@@ -206,15 +206,21 @@ uint16_t JC_Array::size() const {
     length = this->array.size();
   } else if (this->isPersistent()) {
     fs::Tag tag = this->computeTag();
-
-    if (fs_length(tag.value, tag.len, &length)) {
+    uint8_t size_high = 0;
+    uint8_t size_low = 0;
+    if (fs_read_1b_at(tag.value, tag.len, 1, &size_high) ||
+        fs_read_1b_at(tag.value, tag.len, 2, &size_low)) {
       throw Exceptions::IOException;
     }
+    length = BYTES_TO_SHORT(size_high, size_low);
   } else {
     length = this->array.size();
   }
 
-  return (uint16_t)(length / JC_Array::getEntrySize(this->type));
+  // Persistent array headers store the number of elements, just like
+  // JCVMArray::size(). The serialized record length also contains a header
+  // and element bytes, so it cannot be used as the logical element count.
+  return static_cast<uint16_t>(length);
 }
 
 /**

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise a persisted JCAlgTest applet through the PC VPCD bridge."""
+"""Install JCAlgTest and exercise it through the PC VPCD bridge."""
 
 from __future__ import annotations
 
@@ -83,8 +83,9 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
             str(args.cap_code),
             "--rom-mask",
             str(args.rom_mask),
+            "--install",
+            "-s",
         ]
-        command.extend(("--class-index", str(args.class_index)))
         print(f"VPCD:START pass={pass_number}")
         with args.log.open("ab") as log:
             log.write(f"\n--- VPCD pass {pass_number} ---\n".encode())
@@ -120,6 +121,17 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
                 select = bytes((0x00, 0xA4, 0x04, 0x00, len(APPLET_AID)))
                 select += APPLET_AID + b"\x00"
                 exchange(connection, select, "JCAlgTest applet SELECT")
+
+                version = exchange(
+                    connection,
+                    bytes.fromhex("B0E1000000"),
+                    "JCAlgTest GETVERSION APDU",
+                )
+                if version[:-2] != b"1.8.2_jc305":
+                    raise RuntimeError(
+                        "GETVERSION response is not exactly 1.8.2_jc305: "
+                        f"{version.hex().upper()}"
+                    )
 
                 exchange(
                     connection,
@@ -192,7 +204,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--rom-mask", type=Path, default=repo / "build/choupi-pc/flash"
     )
-    parser.add_argument("--class-index", type=int, default=148)
     parser.add_argument(
         "--apdu-timeout",
         type=float,
@@ -224,8 +235,6 @@ def parse_args() -> argparse.Namespace:
         setattr(args, name, getattr(args, name).resolve())
         if not getattr(args, name).is_file():
             parser.error(f"--{name.replace('_', '-')} not found: {getattr(args, name)}")
-    if not 0 <= args.class_index <= 0xFFFE:
-        parser.error("--class-index must be between 0 and 65534")
     args.flash_copy = args.flash_copy.resolve()
     args.log = args.log.resolve()
     args.flash_copy.parent.mkdir(parents=True, exist_ok=True)
