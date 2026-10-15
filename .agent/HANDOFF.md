@@ -2446,6 +2446,6 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   support APDU (`B0 75 11 00 03 0D 00 00 00`) and an assertion that the
   response prefix is `11 00`. A fresh install passed six checks
   (`TEST:SUMMARY pass=6 fail=0`); the APDU took 3.165 s and the emulator pass
-  took 30.396 s. This test code change is being committed; log:
+  took 30.396 s. This test code change is committed as `16fe4b7`; log:
   `artifacts/logs/jcalgtest-aes-cbc-support-verified-20261015.log` (SHA-256
   `4061b2ef91a2e35f19211a77d1c7d3c7f8641a35391926c54da06cc97d70d438`).

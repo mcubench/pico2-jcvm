@@ -3310,5 +3310,5 @@
 - Validation: `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20 --log artifacts/logs/jcalgtest-aes-cbc-support-verified-20261015.log` passed with `TEST:SUMMARY pass=6 fail=0`.
 - Result: AES-CBC-NOPAD returned data prefix `1100` and status `9000`, confirming the client-visible supported result. Total emulator pass time was 30.396 s. No PC/SC or physical token was used.
 - Decision: Retain this as the first direct cryptographic capability probe; next add a bounded sweep across JCAlgTest algorithm families while keeping each APDU time-limited.
-- Commit: `<recorded after commit>`.
+- Commit: `16fe4b7`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-aes-cbc-support-verified-20261015.log` (SHA-256 `4061b2ef91a2e35f19211a77d1c7d3c7f8641a35391926c54da06cc97d70d438`).
