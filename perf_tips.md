@@ -4,44 +4,42 @@ These are measured observations and low-risk experiments for keeping the Pico 2
 development loop responsive. The sample now covers several builds and host
 tests, but it is still too small to estimate stable long-term averages.
 
-## Current checkpoint — 2026-10-15
+## Current checkpoint — 2026-10-15 (refreshed)
 
-The latest `./tools/task-time report` contains 34 successful intervals totaling
-286.750 seconds, plus 28 non-OK intervals. The breakdown is:
+The latest `./tools/task-time report` contains 38 successful intervals totaling
+439.623 seconds, plus 37 non-OK intervals. The breakdown is:
 
 | Category | Successful runs | Total | Mean | Max | Non-OK |
 |---|---:|---:|---:|---:|---:|
-| Compile | 22 | 259.562 s | 11.798 s | 35.131 s | 5 |
-| Test | 9 | 22.437 s | 2.493 s | 5.184 s | 23 |
+| Compile | 25 | 394.220 s | 15.769 s | 58.213 s | 7 |
+| Test | 10 | 40.652 s | 4.065 s | 18.215 s | 30 |
 | Thinking | 1 | 4.641 s | 4.641 s | 4.641 s | 0 |
 | Tool check | 2 | 0.110 s | 0.055 s | 0.055 s | 0 |
 | Upload | 0 | — | — | — | — |
-| **Total** | **34** | **286.750 s** | — | — | **28** |
+| **Total** | **38** | **439.623 s** | — | — | **37** |
 
 Non-OK intervals measure failed or interrupted workflow attempts, not target
 runtime performance. Upload time remains unmeasured.
 
-The newest bounded JCAlgTest VPCD attempt took 15.897 s and reached ATR and
-applet SELECT, then returned `6F00`. The trace now shows
-`StackUnderflowException` at `INVOKEVIRTUAL` (opcode `0x8B`), package 63,
-method PC 15643, CP entry 401. This supersedes the earlier `CHECKCAST` and
-`PUTFIELD_A` diagnoses. It is failure-to-diagnosis time, not successful APDU
-throughput. See
-[`jcalgtest-interface-hierarchy-fix-20261015.log`](artifacts/logs/jcalgtest-interface-hierarchy-fix-20261015.log).
+The latest bounded JCAlgTest VPCD run took 18.215 s and passed ATR, applet
+SELECT, JCSystem information, and supported-algorithm APDUs (`TEST:SUMMARY
+pass=5 fail=0`). This is an end-to-end host-emulator smoke result, not a
+throughput benchmark or physical-card result. See
+[`jcalgtest-internal-virtual-table-token-fix-20261015.log`](artifacts/logs/jcalgtest-internal-virtual-table-token-fix-20261015.log).
 
 ### Current recommendations
 
-1. **Keep the short feedback loop.** The latest successful test intervals average
-   2.493 s, while successful compile work averages 11.798 s across mixed build
-   types. Run the narrow host regression for each runtime change before the
-   broader build or VPCD path. Do not combine PC, ARM, RISC-V, clean, and
-   incremental build durations into one baseline.
-2. **Profile the failing APDU by phase.** Add elapsed-time boundaries for VPCD
-   connect, ATR, SELECT, APDU send/response, and teardown. For the failing
-   `INVOKEVIRTUAL`, record stack depth, argument count, and time spent in lookup
-   separately. Keep the overall deadline fixed; do not optimize VM lookup until
-   timings show it is material.
-3. **Reduce failed iteration cost.** There have been 28 non-OK intervals. Check
+1. **Keep the short feedback loop.** Successful test intervals average 4.065 s
+   and successful compile intervals average 15.769 s, but both include mixed
+   command types. Run the narrow host regression for each runtime change before
+   the broader build or VPCD path. Keep PC generation, PC C++ rebuilds, ARM
+   builds, clean builds, and incremental builds as separate baselines.
+2. **Measure the passing APDU path by phase.** Add elapsed-time boundaries for
+   VPCD connect, ATR, SELECT, each APDU send/response, and teardown. Keep the
+   overall deadline fixed and save a compact summary instead of verbose
+   per-opcode traces. The 18.215 s end-to-end run gives no per-phase timing, so
+   it cannot identify VM lookup or crypto as a bottleneck.
+3. **Reduce failed iteration cost.** There have been 37 non-OK intervals. Check
    the host emulator and VPCD endpoint once before the APDU run, use bounded
    retries with backoff, and keep diagnostic output selective. Treat the count
    as a workflow signal only; it does not establish a performance bottleneck.
@@ -59,8 +57,9 @@ throughput. See
    mixed with firmware execution.
 
 These are measurement-led suggestions, not claims of a speedup or a diagnosed
-CPU bottleneck. Older measurements and failure locations below describe prior
-code states; the checkpoint above is the current status.
+CPU bottleneck. The task timer reports wall time only. Upload remains
+unmeasured. Older measurements and failure locations below describe prior code
+states; the checkpoint above is the current status.
 
 ## Current measurements
 

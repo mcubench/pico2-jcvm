@@ -3070,3 +3070,24 @@
 - Decision: Continue temporary-trace cleanup and repeated VPCD/client checks.
 - Commit: recorded in this reference commit.
 - Artifacts/logs: `artifacts/logs/jcalgtest-internal-virtual-table-token-fix-20261015.log`.
+
+## 2026-10-15 — Refresh measured performance suggestions
+
+- Step/experiment: `performance-guidance-refresh-20261015`
+- Change: Updated `perf_tips.md` with the current task-time report totals and
+  the passing JCAlgTest VPCD checkpoint. Refined recommendations to measure
+  APDU phases, CPU/RSS, bounded retry cost, comparable build classes, and
+  upload/re-enumeration separately.
+- Validation: `./tools/task-time report` produced 38 successful intervals
+  totaling 439.623 s and 37 non-OK intervals; `git diff --check -- perf_tips.md`
+  passed. No build, test, or hardware operation was needed for this
+  documentation-only step.
+- Result: The current documentation no longer presents the pre-fix VPCD failure
+  as the latest result. It clearly marks 18.215 s as end-to-end host smoke time,
+  not card throughput; upload remains unmeasured.
+- Decision: Use per-phase and resource measurements for the next performance
+  decisions; do not tune concurrency or VM lookup from these mixed samples.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`,
+  `artifacts/logs/jcalgtest-internal-virtual-table-token-fix-20261015.log`,
+  `artifacts/metrics/development-time.csv`.
