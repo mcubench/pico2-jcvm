@@ -532,10 +532,28 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
     length = length_tmp;
     data = data_tmp;
   } catch (Exceptions e) {
+    std::printf("CHOUPI:RESTORE_READ_FAIL id=%u exists=%u tag=",
+                static_cast<unsigned>(e),
+                fs_exists(tag.value, tag.len) ? 1u : 0u);
+    for (uint8_t index = 0; index < tag.len; ++index) {
+      std::printf("%02X", tag.value[index]);
+    }
+    std::printf("\r\n");
+    std::fflush(stdout);
     jref_t out;
     out.setAsArray(false);
     out.setOffset(0);
     return out;
+  }
+
+  if (tag.len == 5 && tag.value[0] == 0x03 && tag.value[4] == 0xff) {
+    std::printf("CHOUPI:RESTORE_READ_OK len=%lu type=%02X tag=",
+                static_cast<unsigned long>(length), data[0]);
+    for (uint8_t index = 0; index < tag.len; ++index) {
+      std::printf("%02X", tag.value[index]);
+    }
+    std::printf("\r\n");
+    std::fflush(stdout);
   }
 
   FieldType type = static_cast<FieldType>(data[0]);
