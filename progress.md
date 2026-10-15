@@ -2801,6 +2801,19 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-getreason-fieldtrace.log`.
 
+## 2026-10-15 — Record performance-guidance commit
+
+- Step/experiment: `vpcd-performance-suggestions-reference-20261015`
+- Change: Recorded the immutable commit for the performance guidance refresh.
+- Validation: `git diff --check -- progress.md` passed; commit `203d233`
+  contains `perf_tips.md`, this step's progress record, and `.agent/HANDOFF.md`.
+- Result: Current VPCD bottleneck suggestions and measurement caveats are
+  committed as `203d233`.
+- Decision: Address the `GETFIELD_S_THIS` correctness failure before collecting
+  runtime performance samples.
+- Commit: recorded in the current commit.
+- Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-getreason-fieldtrace.log`.
+
 ## 2026-10-14 — Clarify VPCD performance measurement guidance
 
 - Step/experiment: `vpcd-performance-timing-guidance-20261014`
