@@ -27,6 +27,14 @@
   inspect SHA-256 results. The test runner is
   `build/algtest-client-1.8.2/AlgTestJClient.jar`; its CLI flags are recorded in
   `artifacts/logs/jcalgtest-client-1.8.2-help-20261014.log`.
+- Source inspection confirms its static `MessageDigest` performance loop calls
+  `doFinal()` on 256-byte buffers but only checks the `0xAA` success marker;
+  it does not validate the digest bytes. A separate SHA-256 known-answer APDU
+  check is required to establish output correctness.
+- The one-pass PC-emulator VPCD fallback also failed before sending APDUs:
+  `artifacts/logs/jcalgtest-sha256-vpcd-pending-physical-retry-20261015.log`
+  records a bounded connection timeout. The sandbox denied loopback bind in
+  the first attempt; the elevated retry still could not connect.
 - Source commit: `2ba182e`; progress record added for this step.
 
 ## Persistent RP2350 filesystem implementation — 2026-10-15
