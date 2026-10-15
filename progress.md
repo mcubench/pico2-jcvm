@@ -3430,3 +3430,14 @@
 - Decision: Keep the fix. Complete the requested physical check after the Pico's post-boot USB interfaces are attached to this VM; inspect both the SHA APDU result and finite serial output.
 - Commit: Java Card API `31d6ab4`; root regression test `1bb209c`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-sha256-dofinal-final-vpcd-20261015.log` (SHA-256 `8a2670a7a510d5240afaaefb0317cc8b2e6ebdacc093568ca9ece205349076a0`); no physical serial log was captured.
+
+
+## 2026-10-15 — Retry physical SHA-256 validation in BOOTSEL
+
+- Step/experiment: `physical-sha256-dofinal-retry-20261015`
+- Change: No source code changed. Rebuilt both architectures and attempted to flash the ARM CHOUPI UF2 to the reported BOOTSEL Pico 2.
+- Validation: `./tools/build arm` passed and produced `build/arm/pico2_choupi.uf2` (SHA-256 `241eaa1592459b8fc1f7d38e0576437c9797202606c7a720ce3e43f964d8ad06`); `./tools/build riscv` passed. `INFO_UF2.TXT` identified RP2350 BOOTSEL. `lsusb` reported libusb `-99`; picotool exited 250 with `ERROR: Failed to initialise libUSB`. The volume was mounted `ro`; the UF2 copy failed with `Read-only file system`. A bounded `timeout 5s pcsc_scan -r` timed out with PC/SC service unavailable.
+- Result: The board was visible as a mounted RP2350 mass-storage volume, but not writable through this VM; `/dev/sdb` and `/dev/sdb1` were absent despite `lsblk` showing the device. No firmware transfer occurred and no physical SHA APDU or serial validation was performed.
+- Decision: Stop hardware retries until VirtualBox USB passthrough exposes the BOOTSEL block device read/write. Then flash the ARM UF2 and inspect a finite serial log plus the SHA-256 `doFinal` APDU.
+- Commit: `31d6ab4` (API fix) and `1bb209c` (hardware-test regression APDU under test; no source changes in this retry).
+- Artifacts/logs: `artifacts/logs/physical-sha256-dofinal-retry-20261015.log` (SHA-256 `e9a7531e1dea9de35eab44b6e34a0f160aa8eb371c413bb5ddb870ef2da40608`).

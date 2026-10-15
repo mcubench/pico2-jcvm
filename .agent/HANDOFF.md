@@ -1,5 +1,27 @@
 # Handoff
 
+## Physical SHA-256 retry — 2026-10-15
+
+- Both target builds passed: `./tools/build arm` and `./tools/build riscv`.
+  ARM UF2: `build/arm/pico2_choupi.uf2`, SHA-256
+  `241eaa1592459b8fc1f7d38e0576437c9797202606c7a720ce3e43f964d8ad06`.
+- The mounted `RP2350` volume's `INFO_UF2.TXT` identified UF2 Bootloader
+  v1.1 / RP2350. However, `lsusb` could not initialize libusb (`-99`),
+  picotool failed to initialize libusb (status 250), and the volume was mounted
+  read-only. The copy failed with `Read-only file system`; firmware was not
+  transferred. `lsblk` showed the volume while `/dev/sdb` and `/dev/sdb1` were
+  absent from the guest.
+- Bounded `timeout 5s pcsc_scan -r` ended with status 124 and
+  `SCardEstablishContext: Service not available`; no CCID test can run in
+  BOOTSEL. No physical runtime or serial result was observed.
+- Stop here until the VM USB passthrough exposes a writable BOOTSEL volume with
+  its device nodes. Recheck `lsusb -d 2e8a:000f`, `findmnt` (must be `rw`),
+  and `/dev/sdb1`, then transfer the ARM UF2 and inspect the post-boot serial
+  output and physical SHA-256 APDU.
+- Detailed attempt record: `artifacts/logs/physical-sha256-dofinal-retry-20261015.log`
+  (SHA-256 `e9a7531e1dea9de35eab44b6e34a0f160aa8eb371c413bb5ddb870ef2da40608`).
+
+
 ## SHA-256 doFinal repair — 2026-10-15
 
 - Fixed the first `MessageDigest.OneShot.doFinal()` failure. CHOUPI's persistent
