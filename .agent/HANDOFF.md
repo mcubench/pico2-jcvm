@@ -2457,3 +2457,21 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   physical token was used. Log:
   `artifacts/logs/jcalgtest-family-probes-20261015.log` (SHA-256
   `245aa44a2cec1482a8ddd2b740a6f26c100fd76c55b5eb190ad9438bbb675c9b`).
+
+- User scope correction: `NO_SUCH_ALGORITHM` from JCAlgTest is expected for
+  unsupported algorithms; do not add algorithms just to clear those rows.
+  Focus on complete applet command execution and correct `JCSystem` calls.
+- Renamed the leftover root project and generic board smoke artifact from
+  `pico2_trng` to `pico2_jcvm` / `pico2_jcvm_smoke` in commit `ccb7605`.
+  Both `./tools/build arm` and `./tools/build riscv` pass with the new names.
+- Physical check 2026-10-15: `./tools/cycle choupi` flashed
+  `build/arm/pico2_choupi.uf2` successfully after the CDC 1200-baud BOOTSEL
+  fallback. Serial showed `CHOUPI:STATUS sw=6F00`, repeated
+  `TEST:FAIL choupi_runtime`, and CCID `rx_events=0 tasks=0`; no APDU reached
+  the applet. `pcsc_scan -r` listed only `Virtual PCD 00 00/01`, while USB
+  enumerated Pico 2 CHOUPI CCID at `2e8a:0009`. Inspect the generated startup
+  entry and restore the physical PC/SC mapping, then install the 1.8.2 CAP and
+  verify the client-visible JCSystem APDU. Do not interpret absent algorithms
+  as defects. Cycle log:
+  `artifacts/logs/cycle-choupi-20261015T094100Z.log` (SHA-256
+  `cac6eedfa0a1147323ed0e224444d99cfc8234fcc6e1bf8b8be8207a526f1422`).

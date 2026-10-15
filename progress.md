@@ -3322,3 +3322,23 @@
 - Decision: Keep the broader harness as a smoke test and treat the three `03` results as known unsupported algorithms, not transport/runtime faults. Next choose one unsupported family and implement the smallest missing Java Card API path.
 - Commit: `3bf05dd`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-family-probes-20261015.log` (SHA-256 `245aa44a2cec1482a8ddd2b740a6f26c100fd76c55b5eb190ad9438bbb675c9b`).
+
+## 2026-10-15 — Rename leftover smoke target to JCVM
+
+- Step/experiment: `rename-pico2-trng-target-20261015`
+- Change: Renamed the root CMake project from `pico2_trng` to `pico2_jcvm` and the bare-board smoke executable/artifact to `pico2_jcvm_smoke`; updated the build and cycle wrappers and the compilation reference. Kept actual TRNG and random-number API terminology intact.
+- Validation: `./tools/build arm` and `./tools/build riscv` both passed, producing `build/arm/pico2_jcvm_smoke.uf2` and `build/riscv/pico2_jcvm_smoke.uf2`; picotool recognized the RP2350 ARM Secure and RISC-V images. No smoke image was flashed after the rename.
+- Result: Build outputs now use project names instead of the Pico SDK TRNG template name. The separate CHOUPI hardware cycle performed during this turn is recorded below.
+- Decision: Use the renamed smoke artifacts for subsequent build checks; continue validating JCAlgTest applet behavior separately.
+- Commit: `ccb7605`.
+- Artifacts/logs: ARM UF2 SHA-256 `ac8c3c596188862120b6484c0ef60b3dfc632f2c3d7b392efdffa45d22d4007b`; RISC-V UF2 SHA-256 `dbd9ff748a05b72c6554a1af964215c2720f0c6cf738b9282d07bbe610415b87`.
+
+## 2026-10-15 — Flash CHOUPI to real Pico 2
+
+- Step/experiment: `physical-choupi-jcsystem-smoke-20261015`
+- Change: Flashed the current ARM CHOUPI UF2 to the attached Pico 2 using `./tools/cycle choupi`; no source change was made for this hardware experiment.
+- Validation: ARM and RISC-V builds passed before flashing. Picotool reported 100% loaded and rebooted the board. The 18-second finite serial capture failed the cycle health check: repeated `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`, and `TEST:SUMMARY pass=0 fail=1`; CCID remained at `stage=2 endpoint=00 rx_events=0 tasks=0`. `pcsc_scan -r` showed only the two Virtual PCD readers, not the physical Pico reader. No applet APDUs could be sent to the board.
+- Result: Physical firmware download and CDC serial capture work. Full applet/JCSystem behavior is not yet verified on hardware; the boot entry currently returns `6F00`, and the physical CCID reader is unavailable through PC/SC in the current session.
+- Decision: Inspect why the generated startup entry returns `6F00`, then restore physical PC/SC access and install JCAlgTest 1.8.2 before judging applet or JCSystem behavior. Treat `NO_SUCH_ALGORITHM` responses as expected, per user scope.
+- Commit: `ccb7605` (rename checkpoint; this hardware result is documentation only).
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261015T094100Z.log` (SHA-256 `cac6eedfa0a1147323ed0e224444d99cfc8234fcc6e1bf8b8be8207a526f1422`); flashed UF2 SHA-256 `d0dcb43abdae352027064def9495140cc1785557121f289537aed1c1d35a8e9e`.
