@@ -2982,3 +2982,16 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`;
   `artifacts/logs/jcalgtest-class-resolution-fix-20261015.log`.
+
+## 2026-10-15 — Record performance suggestions commit
+
+- Step/experiment: `task-time-performance-suggestions-reference-20261015`
+- Change: Recorded commit `536445f` for the current performance suggestions,
+  task-time summary, and handoff update.
+- Validation: `git diff --check -- progress.md` passed.
+- Result: The documentation step is committed; no code or hardware behavior
+  changed.
+- Decision: Continue with the JCAlgTest `CHECKCAST` failure; gather new
+  performance samples only from comparable work units.
+- Commit: recorded in this reference commit.
+- Artifacts/logs: `perf_tips.md`; `.agent/HANDOFF.md`.
