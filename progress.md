@@ -3312,3 +3312,13 @@
 - Decision: Retain this as the first direct cryptographic capability probe; next add a bounded sweep across JCAlgTest algorithm families while keeping each APDU time-limited.
 - Commit: `16fe4b7`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-aes-cbc-support-verified-20261015.log` (SHA-256 `4061b2ef91a2e35f19211a77d1c7d3c7f8641a35391926c54da06cc97d70d438`).
+
+## 2026-10-15 — Probe JCAlgTest algorithm families over VPCD
+
+- Step/experiment: `jcalgtest-vpcd-family-probes-20261015`
+- Change: Added bounded single-mode probes for RSA-SHA1 Signature, pseudo-random RandomData, and CRC16 Checksum alongside the existing AES-CBC-NOPAD probe; each probe requires a complete response and `9000` status.
+- Validation: `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20 --log artifacts/logs/jcalgtest-family-probes-20261015.log` passed with `TEST:SUMMARY pass=9 fail=0`.
+- Result: Cipher AES-CBC-NOPAD reported supported (`1100`); RSA-SHA1 Signature, pseudo-random RandomData, and CRC16 Checksum each reported `03` (`NO_SUCH_ALGORITHM`) while returning status `9000`. Full emulator pass took 42.627 s. No PC/SC or physical token was used.
+- Decision: Keep the broader harness as a smoke test and treat the three `03` results as known unsupported algorithms, not transport/runtime faults. Next choose one unsupported family and implement the smallest missing Java Card API path.
+- Commit: `<recorded after commit>`.
+- Artifacts/logs: `artifacts/logs/jcalgtest-family-probes-20261015.log` (SHA-256 `245aa44a2cec1482a8ddd2b740a6f26c100fd76c55b5eb190ad9438bbb675c9b`).

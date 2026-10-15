@@ -2449,3 +2449,11 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   took 30.396 s. This test code change is committed as `16fe4b7`; log:
   `artifacts/logs/jcalgtest-aes-cbc-support-verified-20261015.log` (SHA-256
   `4061b2ef91a2e35f19211a77d1c7d3c7f8641a35391926c54da06cc97d70d438`).
+- Extended the smoke harness with bounded RSA-SHA1 Signature, pseudo-random
+  RandomData, and CRC16 Checksum APDUs. A fresh install passed all nine checks
+  in 42.627 s. AES-CBC-NOPAD reported supported (`1100`); the other three
+  reported `03` (`NO_SUCH_ALGORITHM`) with response status `9000`. The harness
+  change is ready for commit. Direct VPCD only; PC/SC is unavailable and no
+  physical token was used. Log:
+  `artifacts/logs/jcalgtest-family-probes-20261015.log` (SHA-256
+  `245aa44a2cec1482a8ddd2b740a6f26c100fd76c55b5eb190ad9438bbb675c9b`).

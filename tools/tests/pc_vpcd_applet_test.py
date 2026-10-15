@@ -153,6 +153,32 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
                         "AES-CBC-NOPAD was not reported supported: "
                         f"{aes_cipher.hex().upper()}"
                     )
+
+                for label, class_id, command in (
+                    (
+                        "JCAlgTest RSA-SHA1 signature support APDU",
+                        0x12,
+                        "B0751200030A000000",
+                    ),
+                    (
+                        "JCAlgTest pseudo-random support APDU",
+                        0x16,
+                        "B07516000301000000",
+                    ),
+                    (
+                        "JCAlgTest CRC16 checksum support APDU",
+                        0x17,
+                        "B07517000301000000",
+                    ),
+                ):
+                    result = exchange(
+                        connection, bytes.fromhex(command), label
+                    )
+                    if result[0] != class_id or result[1] == 0xF0:
+                        raise RuntimeError(
+                            f"{label} returned an incomplete result: "
+                            f"{result.hex().upper()}"
+                        )
             finally:
                 if connection is not None:
                     connection.close()
@@ -261,7 +287,7 @@ def main() -> int:
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"TEST:FAIL {error}", file=sys.stderr)
         return 1
-    print(f"TEST:SUMMARY pass={args.passes * 6} fail=0")
+    print(f"TEST:SUMMARY pass={args.passes * 9} fail=0")
     return 0
 
 
