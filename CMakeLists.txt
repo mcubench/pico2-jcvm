@@ -9,7 +9,7 @@ endif()
 
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
-project(pico2_trng C CXX ASM)
+project(pico2_jcvm C CXX ASM)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1 CACHE BOOL "Enable C++ exceptions for CHOUPI")
 add_compile_options(-Wall -Wextra -Werror)
 if(LOCAL_ARM_NEWLIB_INCLUDE)
@@ -28,13 +28,13 @@ if(TARGET pico_mbedtls_headers)
     "${PICO_SDK_PATH}/lib/mbedtls/include/mbedtls")
 endif()
 
-add_executable(pico2_trng src/board_smoke.c)
-target_link_libraries(pico2_trng PRIVATE pico_stdlib pico_rand)
-pico_enable_stdio_usb(pico2_trng 1)
-target_sources(pico2_trng PRIVATE
+add_executable(pico2_jcvm_smoke src/board_smoke.c)
+target_link_libraries(pico2_jcvm_smoke PRIVATE pico_stdlib pico_rand)
+pico_enable_stdio_usb(pico2_jcvm_smoke 1)
+target_sources(pico2_jcvm_smoke PRIVATE
   "${PICO_SDK_PATH}/src/rp2_common/pico_stdio_usb/stdio_usb_descriptors.c")
-pico_enable_stdio_uart(pico2_trng 0)
-pico_add_extra_outputs(pico2_trng)
+pico_enable_stdio_uart(pico2_jcvm_smoke 0)
+pico_add_extra_outputs(pico2_jcvm_smoke)
 
 # Compile CHOUPI's platform-independent C++ VM against each RP2350 toolchain.
 # Platform startup and the Rust OS are integrated in a later bring-up step.

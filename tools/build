@@ -65,12 +65,12 @@ generation_manifest="${repo_root}/build/choupi-pc/generation.sha256"
   die "CHOUPI ROM-mask generation manifest does not match its artifacts"
 mkdir -p "${build_dir}/choupi-generated"
 cp "${generated_header}" "${build_dir}/choupi-generated/jni.hpp"
-targets=(pico2_trng choupi_vm_core)
+targets=(pico2_jcvm_smoke choupi_vm_core)
 if [[ "${arch}" == arm ]]; then
   targets+=(pico2_choupi)
 fi
 cmake --build "${build_dir}" --target "${targets[@]}" --parallel "${build_jobs}"
-image="${build_dir}/pico2_trng.uf2"
+image="${build_dir}/pico2_jcvm_smoke.uf2"
 [[ -s "${image}" ]] || die "build did not produce ${image}"
 picotool info -a "${image}"
 printf 'BUILD:PASS arch=%s image=%s\n' "${arch}" "${image#${repo_root}/}"

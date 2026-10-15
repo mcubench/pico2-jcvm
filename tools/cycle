@@ -10,7 +10,7 @@ arch="$1"
 if [[ "${arch}" == choupi ]]; then
   image="${repo_root}/build/arm/pico2_choupi.uf2"
 else
-  image="${repo_root}/build/${arch}/pico2_trng.uf2"
+  image="${repo_root}/build/${arch}/pico2_jcvm_smoke.uf2"
 fi
 log_dir="${repo_root}/artifacts/logs"
 mkdir -p "$log_dir"
