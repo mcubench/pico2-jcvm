@@ -2491,6 +2491,20 @@
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
 
+## 2026-10-15 — Record performance-guidance commit
+
+- Step/experiment: `development-performance-suggestions-reference-20261015`
+- Change: Recorded the immutable performance-guidance commit in the progress
+  log and session handoff.
+- Validation: `git diff --check -- progress.md .agent/HANDOFF.md` passed;
+  documentation commit `be0a0e9` contains the timing summary and suggestions.
+- Result: `perf_tips.md` now reflects the current timer report and clearly marks
+  sample limitations and upload as unmeasured.
+- Decision: Collect more comparable timing data during later build and hardware
+  work; do not tune from this small observational sample.
+- Commit: recorded in the current commit.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+
 ## 2026-10-14 — Performance sample update commit reference
 
 - Step/experiment: `development-performance-tips-sample-expansion-20261014-reference`

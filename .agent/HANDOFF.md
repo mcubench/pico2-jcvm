@@ -15,6 +15,7 @@
   hardware operation. Next: continue the active JCAlgTest correctness work and
   add more timing samples only when they can be collected without interrupting
   that work.
+- Commit: `be0a0e9`.
 
 ## VPCD performance guidance refresh — 2026-10-15
 
