@@ -3362,3 +3362,13 @@
 - Decision: Keep this safe trace and use it on the board once USB passthrough is accessible to the session.
 - Commit: `c290cd1`.
 - Artifacts/logs: ARM UF2 SHA-256 `5c8cab86d6eff1bed98decefaf0dc89005f611a15203857f293b95f144f2b8a8`; the prior blocked flash attempt is recorded in `artifacts/logs/cycle-choupi-20261015T101749Z.log`.
+
+## 2026-10-15 — Compare applet restore through VPCD
+
+- Step/experiment: `jcalgtest-vpcd-restore-compare-20261015`
+- Change: Ran the existing bounded JCAlgTest 1.8.2 applet smoke test against the PC VPCD emulator; no source code changed.
+- Validation: The sandbox first denied local socket use (`EPERM`); rerunning the same bounded test with approved host-socket access passed with `TEST:SUMMARY pass=9 fail=0`.
+- Result: VPCD installation wrote root tag `03003F94FF` with a four-byte object header. SELECT returned `9000`; GETVERSION returned `1.8.2_jc305`; JCSystem info returned `0305000000000000000000002000FE01000000000000000000000000009000`. Unsupported RSA-SHA1 and CRC16 probes returned `NO_SUCH_ALGORITHM` with `9000`, as expected. Total emulator pass time was 58.436 s.
+- Decision: The host emulator's install, persisted applet restore, APDU handling, and JCSystem info path pass. Physical restore remains unverified; compare the new root-read status on hardware once USB access is restored.
+- Commit: `c290cd1` (diagnostic implementation under comparison; this step changes no source).
+- Artifacts/logs: `artifacts/logs/jcalgtest-restore-after-safe-diagnostic-20261015.log` (SHA-256 `6f7c41916df69e2a4d443588f5ce914d18a3ac1acb01c5dd5a4e82a40506d629`).

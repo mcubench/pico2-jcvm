@@ -1,5 +1,29 @@
 # Handoff
 
+## VPCD applet restore comparison — 2026-10-15
+
+- The bounded `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20`
+  comparison passed `TEST:SUMMARY pass=9 fail=0` in 58.436 s after an approved
+  localhost-socket retry (the default sandbox attempt failed `EPERM`). No source
+  code changed for this validation.
+- Host install wrote root record tag `03 00 3F 94 FF` with a four-byte object
+  header. SELECT returned `9000`, GETVERSION returned `1.8.2_jc305`, and JCSystem
+  info returned
+  `0305000000000000000000002000FE01000000000000000000000000009000`. RSA-SHA1
+  and CRC16 reported `NO_SUCH_ALGORITHM` with `9000`, which is expected.
+- This confirms the emulator's install/persist/restore path but does not resolve
+  the physical-card failure. USB remains inaccessible here: `lsusb` reports
+  libusb `-99`, picotool cannot initialize libusb, and the PC/SC helper cannot
+  run because `no_new_privileges` blocks sudo in this execution context.
+- Next: when USB access is restored, flash the ARM CHOUPI image and issue the
+  physical SELECT. The diagnostic now reports root `fs_read_inplace` status and
+  tag; compare it with the successful host root tag before changing persistence
+  or access-control behavior. Do not add algorithms for expected
+  `NO_SUCH_ALGORITHM` rows.
+- Full VPCD log:
+  `artifacts/logs/jcalgtest-restore-after-safe-diagnostic-20261015.log`
+  (SHA-256 `6f7c41916df69e2a4d443588f5ce914d18a3ac1acb01c5dd5a4e82a40506d629`).
+
 ## Physical applet restore read diagnostic — 2026-10-15
 
 - Current focused issue: a physical JCAlgTest SELECT reaches the card and
