@@ -1,5 +1,30 @@
 # Handoff
 
+## Compact persistent filesystem snapshots and current physical state — 2026-10-15
+
+- Updated snapshot serialization to version 2: only occupied overlay entries
+  and used overlay bytes are stored, with a CRC and generation header committed
+  last. `./tools/test-rp2350-fs-overlay` passes all 19 checks; both
+  `./tools/build arm` and `./tools/build riscv` pass. ARM UF2 SHA-256 is
+  `5955047a9d5016c93a8a6bc5d1054b822bdee90167e64ae40552e76c0c40188d`.
+- `./tools/flash build/arm/pico2_choupi.uf2` successfully flashed BOOTSEL and
+  rebooted the Pico. `./tools/monitor --seconds 8` then showed repeated
+  `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`, and
+  `TEST:SUMMARY pass=0 fail=1`. The image is running, but startup is unhealthy.
+- The USB device re-enumerated as CHOUPI CCID. A bounded `pcsc_scan -r` lists
+  only `Virtual PCD 00 00` and `Virtual PCD 00 01`; the physical reader is not
+  available to Java Card tools. The daemon refused `pcscd -H` from this user
+  (`Operation not permitted`). The repository helper
+  `/usr/local/sbin/pico2-pcsc-reader` must be run by the user to refresh the
+  ACL and restart pcscd; the current AGENTS.md prohibits autonomous `sudo`.
+- The requested JCAlgTest 1.8.2 `OP_ALG_PERFORMANCE_STATIC` run has not happened.
+  After the Pico reader appears, reinstall `AlgTest_v1.8.2_jc305.cap` if the
+  applet SELECT returns `6F00`, then run the static performance operation and
+  inspect SHA-256 results. The test runner is
+  `build/algtest-client-1.8.2/AlgTestJClient.jar`; its CLI flags are recorded in
+  `artifacts/logs/jcalgtest-client-1.8.2-help-20261014.log`.
+- Source commit: pending; progress record added for this step.
+
 ## Persistent RP2350 filesystem implementation — 2026-10-15
 
 - Added two 256 KiB CRC-checked snapshot slots at flash offsets `0x100000`

@@ -3473,3 +3473,13 @@
 - Decision: Keep the implementation for hardware validation. Once USB/PCSC access is restored, flash the ARM image and verify applet restore, JCSystem, SHA-256 `doFinal`, and bounded serial output across a power cycle.
 - Commit: `56e625d`.
 - Artifacts/logs: host test output in this session; no physical log.
+
+## 2026-10-15 — Compact RP2350 filesystem snapshots and flash the board
+
+- Step/experiment: `rp2350-fs-compact-snapshot-20261015`
+- Change: Changed snapshot format to version 2, storing only occupied overlay records plus used overlay bytes. Each snapshot erases only the sectors needed for its payload, programs the payload first, and commits its CRC-checked header last. This reduces normal writes from the fixed 128 KiB overlay payload and 256 KiB slot erase.
+- Validation: `./tools/test-rp2350-fs-overlay` passed all 19 checks. `./tools/build arm` and `./tools/build riscv` passed. `./tools/flash build/arm/pico2_choupi.uf2` passed through the repository wrapper after elevated host USB access was required; picotool reported 100% and reboot. `./tools/monitor --seconds 8` completed but repeatedly reported `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`, and `TEST:SUMMARY pass=0 fail=1`. A bounded `pcsc_scan -r` listed only the two Virtual PCD readers, so JCAlgTest could not be sent to the physical board.
+- Result: The compact snapshot format passes host restart, generation selection, corruption fallback, and tombstone tests and is flashed. Physical boot health and snapshot restore remain unverified because the boot smoke test fails; static JCAlgTest measurements and SHA-256 results were not measured. UF2 SHA-256: `5955047a9d5016c93a8a6bc5d1054b822bdee90167e64ae40552e76c0c40188d`.
+- Decision: Refresh PC/SC access for the newly enumerated CCID device, reinstall JCAlgTest 1.8.2 if needed, then run `OP_ALG_PERFORMANCE_STATIC`; inspect SHA-256 timing/results and fix any firmware failures. Investigate the boot-time `6F00` separately.
+- Commit: pending
+- Artifacts/logs: Host test output and flash/monitor output were captured in this session but not archived.
