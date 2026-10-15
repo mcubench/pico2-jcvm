@@ -3160,6 +3160,27 @@
 - Artifacts/logs: `artifacts/logs/jcalgtest-vpcd-phase-timing-20261015.log`,
   `artifacts/metrics/development-time.csv`.
 
+## 2026-10-15 — Answer VPCD ATR presence probes before power-on
+
+- Step/experiment: `vpcd-atr-presence-probe-20261015`
+- Change: VPCD now returns its ATR when the reader probes card presence even
+  before power-on. The previous powered-state guard made PC/SC report
+  `NO CARD`; JCAlgTest then received a null output stream and crashed while
+  writing the CSV header.
+- Validation: `./tools/test-vpcd-session` passed (`TEST:SUMMARY pass=14
+  fail=0`). `./tools/build-pc` and the PC `choupi` target build passed. Cargo
+  emitted existing warnings in the host OS dependency; the changed C++ target
+  compiled and linked without warnings. No live PC/SC retry or hardware test
+  was run after the fix.
+- Result: The pre-power ATR probe is covered by the focused session test. The
+  official client still needs a rerun with the rebuilt emulator to confirm
+  PC/SC sees the virtual card and proceeds to APDUs.
+- Decision: Keep the ATR independent of powered state for presence checks;
+  validate with official JCAlgTest once the user restarts the emulator.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: no new log; user-provided JCAlgTest output shows the
+  `NO CARD` reader state and null-stream exception.
+
 ## 2026-10-15 — Record VPCD phase timing commit
 
 - Step/experiment: `vpcd-phase-timing-reference-20261015`

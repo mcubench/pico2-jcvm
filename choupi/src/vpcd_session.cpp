@@ -87,11 +87,11 @@ SessionResult Session::handle_message(const uint8_t *message,
       powered_ = true;
       return SessionResult::NoResponse;
     case kControlAtr:
-      if (powered_) {
-        response.assign(std::begin(kAtr), std::end(kAtr));
-        return SessionResult::Response;
-      }
-      return SessionResult::NoResponse;
+      // VPCD readers probe card presence by requesting the ATR before they
+      // send POWER_ON. Return it in either state so PC/SC can mark the slot
+      // as containing a card and allow clients to connect.
+      response.assign(std::begin(kAtr), std::end(kAtr));
+      return SessionResult::Response;
     default:
       return SessionResult::ProtocolError;
     }

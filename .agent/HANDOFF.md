@@ -1,5 +1,23 @@
 # Handoff
 
+## VPCD PC/SC presence-probe checkpoint — 2026-10-15
+
+- The official JCAlgTest 1.8.2 client now enumerates two `Virtual PCD` readers
+  and accepts selection of reader 1. It still listed both as `NO CARD`; after
+  the card-name prompt it threw a `NullPointerException` writing the CSV
+  header. In bytecode, the failing write uses the `FileOutputStream` returned
+  by `CardMngr.establishConnection`, so this is downstream of failure to
+  connect to a card, rather than a CSV path failure.
+- Root cause: the VPCD reader probes presence by requesting the ATR before it
+  powers the card. `Session` previously returned no response to an ATR probe
+  while powered off. It now returns the ATR in either power state. Focused
+  session test passes 14/14; `./tools/build-pc` and the PC `choupi` target
+  build pass. The PCSC official-client rerun is pending.
+- Next: restart the emulator using `build/choupi-pc/choupi` rebuilt after this
+  change, choose `Virtual PCD 00 00`, and check whether the reader changes from
+  `NO CARD` and the client gets past connection setup. Do not use the old
+  emulator process/binary for this check. No physical token was used.
+
 ## Current JCAlgTest development checkpoint — 2026-10-15
 
 - The bounded PC VPCD applet test now passes ATR, SELECT, JCSystem info, and

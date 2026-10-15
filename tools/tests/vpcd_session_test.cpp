@@ -99,8 +99,10 @@ int main() {
 
   auto message = control(0x04);
   auto result = session.handle_message(message.data(), message.size(), response);
-  check(result == choupi::vpcd::SessionResult::NoResponse && response.empty(),
-        "ATR request while off has no response");
+  check(result == choupi::vpcd::SessionResult::Response &&
+            response == std::vector<uint8_t>({0x3b, 0x80, 0x01, 0x81}) &&
+            !session.powered(),
+        "ATR probe reports card present before power on");
   message = control(0x01);
   result = session.handle_message(message.data(), message.size(), response);
   check(result == choupi::vpcd::SessionResult::NoResponse && session.powered(),
