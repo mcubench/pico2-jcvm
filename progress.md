@@ -3320,5 +3320,5 @@
 - Validation: `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20 --log artifacts/logs/jcalgtest-family-probes-20261015.log` passed with `TEST:SUMMARY pass=9 fail=0`.
 - Result: Cipher AES-CBC-NOPAD reported supported (`1100`); RSA-SHA1 Signature, pseudo-random RandomData, and CRC16 Checksum each reported `03` (`NO_SUCH_ALGORITHM`) while returning status `9000`. Full emulator pass took 42.627 s. No PC/SC or physical token was used.
 - Decision: Keep the broader harness as a smoke test and treat the three `03` results as known unsupported algorithms, not transport/runtime faults. Next choose one unsupported family and implement the smallest missing Java Card API path.
-- Commit: `<recorded after commit>`.
+- Commit: `3bf05dd`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-family-probes-20261015.log` (SHA-256 `245aa44a2cec1482a8ddd2b740a6f26c100fd76c55b5eb190ad9438bbb675c9b`).
