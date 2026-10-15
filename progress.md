@@ -2781,6 +2781,26 @@
 - Commit: recorded in the current commit.
 - Artifacts/logs: `/tmp/pico2-jcalgtest-vpcd-cleanup.log`.
 
+## 2026-10-15 — Refresh VPCD performance suggestions
+
+- Step/experiment: `vpcd-performance-suggestions-refresh-20261015`
+- Change: Updated `perf_tips.md` for the current VPCD trace, whose inherited
+  `getReason()` lookup succeeds before an uncaught `SecurityException` at
+  `GETFIELD_S_THIS` returns `6F00`. Added a profiling suggestion to aggregate
+  filesystem-read and exception-handler timing before considering caching or
+  indexing. Updated `.agent/HANDOFF.md` with the next diagnostic action.
+- Validation: `./tools/task-time report` completed and matched the documented
+  sample (52.821 seconds successful total). Inspected
+  `/tmp/pico2-jcalgtest-getreason-fieldtrace.log` (215,263 bytes); no build,
+  test, or hardware operation was run for this documentation-only step.
+- Result: The note distinguishes observed trace volume (repeated `FsRead1b`
+  diagnostics and a 51-entry exception-handler scan) from measured runtime
+  cost; no speedup is claimed.
+- Decision: Fix the current field-access failure, then collect bounded phase
+  timing and aggregated counters on the same one-APDU reproducer.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `perf_tips.md`; `/tmp/pico2-jcalgtest-getreason-fieldtrace.log`.
+
 ## 2026-10-14 — Clarify VPCD performance measurement guidance
 
 - Step/experiment: `vpcd-performance-timing-guidance-20261014`

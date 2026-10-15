@@ -1,5 +1,18 @@
 # Handoff
 
+## VPCD performance guidance refresh — 2026-10-15
+
+- Updated `perf_tips.md` to reflect the newest diagnostic: inherited
+  `getReason()` resolves to package 0/offset 370, then an uncaught
+  `SecurityException` occurs at `GETFIELD_S_THIS` (PC `0x3D98`) and the APDU
+  returns `6F00`. The 215,263-byte trace contains repeated `FsRead1b` lines and
+  scans 51 exception-handler entries, but no phase timing was collected, so
+  these are profiling candidates rather than confirmed bottlenecks.
+- Next: fix the field-access correctness issue, then capture a bounded one-APDU
+  timing with aggregated filesystem-read and exception-dispatch counts. Keep
+  the existing VPCD command deadline and compare wall/user/system time; no
+  build, test, or hardware operation was run for this documentation update.
+
 ## Ranked performance experiments — 2026-10-14
 
 - Added a priority table to `perf_tips.md` grounded in recorded measurements:

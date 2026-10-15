@@ -200,11 +200,19 @@ the same conditions before changing build or runtime behavior.
 
 ## VPCD applet-debug loop
 
-The current host integration reaches applet `process(APDU)`, but the latest
-diagnostic has moved beyond the earlier field-access failure and still returns
-`6F00` during exception handling and virtual method resolution. The test has
-also taken longer than its nominal bounded run while exiting the error path.
-Treat these as diagnostic costs, not as applet throughput measurements.
+The host integration reaches applet `process(APDU)`. The latest trace resolves
+the inherited `getReason()` method to package 0, offset 370, then ends with an
+uncaught `SecurityException` at PC `0x3D98` in opcode `0x93`
+(`GETFIELD_S_THIS`); the APDU returns `6F00`. This is a correctness failure,
+not an applet-throughput result. Do not spend time tuning the class/method
+lookup path that the trace now shows succeeding.
+
+The latest captured trace is 215,263 bytes and contains many repeated
+`FsRead1b` diagnostics. It also walks 51 exception-handler entries while
+reporting the uncaught exception. These are concrete profiling targets, but
+the log alone does not show how much CPU or elapsed time either operation
+consumes. Avoid interpreting log volume as proof that filesystem reads or
+exception dispatch are the runtime bottleneck.
 
 A later run with bounded process-group cleanup took roughly 20 seconds by
 observation and left no emulator process behind. This was not captured by the
@@ -238,8 +246,15 @@ time.
 - **Keep diagnostics selective.** Gate CP/field traces behind a debug option
   and cap output to the first relevant lookup and exception. Large repeated
   logs slow runs and hide the transition that identifies the failing field.
+- **Aggregate filesystem and exception diagnostics.** For one fixed failing
+  APDU, count filesystem reads by operation and record total/max elapsed time;
+  report exception-handler entries scanned and total dispatch time. Suppress
+  repeated per-read logging in normal runs. Only consider caching filesystem
+  metadata or indexing handler ranges if repeated samples show either phase is
+  material to elapsed time; preserve the unoptimized path as the correctness
+  baseline.
 - **Use the smallest reproducer first.** Keep ATR/SELECT coverage, then run one
   failing APDU with a short deadline while resolving the current exception or
-  method lookup failure. Add later
-  applet commands only after that request returns the expected response; this
+  `GETFIELD_S_THIS` receiver/field access. Add later applet commands only after
+  that request returns the expected response; this
   avoids paying for unrelated test phases on every fix attempt.
