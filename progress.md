@@ -665,7 +665,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. The Pico is running the previous image in USB serial mode, and `picotool info -a` confirms it is not in BOOTSEL; the new image has not been flashed.
 - Result: Candidate ARM CHOUPI UF2 SHA-256 is `18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`. Persistence failure phase is not yet measured.
 - Decision: Physically enter BOOTSEL, flash this candidate, and capture whether the failure occurs at load or store and any filesystem rejection reason.
-- Commit: pending
+- Commit: `6e1e2e6`.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `18357f33503a36635d24b8d3185a40aa35052dd898cde3597eab0344b1f8801d`
 
 ## 2026-10-10 — Attempt software-only BOOTSEL recovery
@@ -3342,3 +3342,13 @@
 - Decision: Inspect why the generated startup entry returns `6F00`, then restore physical PC/SC access and install JCAlgTest 1.8.2 before judging applet or JCSystem behavior. Treat `NO_SUCH_ALGORITHM` responses as expected, per user scope.
 - Commit: `ccb7605` (rename checkpoint; this hardware result is documentation only).
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261015T094100Z.log` (SHA-256 `cac6eedfa0a1147323ed0e224444d99cfc8234fcc6e1bf8b8be8207a526f1422`); flashed UF2 SHA-256 `d0dcb43abdae352027064def9495140cc1785557121f289537aed1c1d35a8e9e`.
+
+## 2026-10-15 — Diagnose physical applet restore read
+
+- Step/experiment: `physical-applet-restore-read-diagnostic-20261015`
+- Change: Added a narrowly scoped serial trace at persistent-reference reads to report the exception, root tag, existence flag, and decoded record type. This distinguishes an absent instance root from a filesystem read failure without changing restore behavior.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` rebuilt both architectures but flashing failed before upload because picotool could not initialize libusb (`status=250`); therefore no hardware validation was performed. `sudo -n /usr/local/sbin/pico2-pcsc-reader` was also blocked by this execution context's `no_new_privileges` setting.
+- Result: The prior hardware trace still establishes that SELECT matches package 63/class `0x0094` and restore returns null. The new diagnostic is compiled but not yet run on the board. Current USB access is unavailable to this session (`lsusb`: libusb `-99`).
+- Decision: Preserve the new trace and rerun the physical SELECT probe when USB access is restored; do not claim applet/JCSystem hardware verification yet.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261015T101749Z.log` (SHA-256 `3f6e644789143bebc2394f7b756f452d417d52bc7d23132a9428f042297f5cb3`); ARM UF2 SHA-256 `653622ffd0cbb12e1e3435b9a00926572d5cffa8b87a72a4d6edb7da6c74eee9`.

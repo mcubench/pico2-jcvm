@@ -1,5 +1,27 @@
 # Handoff
 
+## Physical applet restore read diagnostic — 2026-10-15
+
+- Current focused issue: a physical JCAlgTest SELECT reaches the card and
+  resolves package 63/class `0x0094`, but `Context::restoreAppletInstance`
+  returns a null reference before applet `select()` runs. The registered
+  instance root tag should be `03 00 3F 94 FF` (applet owner 0, package 63,
+  class 0x0094, root field 0xFF).
+- Added a diagnostic in `getPersistentField_Reference` to report read exception,
+  root-tag existence, tag bytes, and root record type. It does not change
+  runtime behavior. ARM and RISC-V builds pass. Source commit: `6e1e2e6`.
+- The latest `./tools/cycle choupi` rebuilt both targets but did not flash:
+  picotool failed to initialize libusb (status 250), and `lsusb` also reports
+  libusb `-99`. The previously authorized `sudo -n
+  /usr/local/sbin/pico2-pcsc-reader` helper is blocked in this execution context
+  by `no_new_privileges`. No hardware validation occurred in this session.
+- Next: restore USB passthrough/access, flash `build/arm/pico2_choupi.uf2`, then
+  capture a bounded SELECT trace. `RESTORE_READ_FAIL` means filesystem read
+  failed or was denied; `RESTORE_READ_OK` includes record type and tag. Compare
+  the exact root key against what install persisted before changing storage
+  ownership or access rules. Continue focusing on applet execution and
+  `JCSystem`; `NO_SUCH_ALGORITHM` is an expected unsupported-algorithm result.
+
 ## Official JCAlgTest PC/SC diagnosis — 2026-10-15
 
 - The user ran JCAlgTest 1.8.2 through `Virtual PCD 00 00`; it collected about
