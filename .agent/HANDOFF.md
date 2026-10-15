@@ -23,7 +23,7 @@
   inspect SHA-256 results. The test runner is
   `build/algtest-client-1.8.2/AlgTestJClient.jar`; its CLI flags are recorded in
   `artifacts/logs/jcalgtest-client-1.8.2-help-20261014.log`.
-- Source commit: pending; progress record added for this step.
+- Source commit: `2ba182e`; progress record added for this step.
 
 ## Persistent RP2350 filesystem implementation — 2026-10-15
 
