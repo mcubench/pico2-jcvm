@@ -143,6 +143,16 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
                     bytes.fromhex("B07515000304000000"),
                     "JCAlgTest supported-algorithm APDU",
                 )
+                aes_cipher = exchange(
+                    connection,
+                    bytes.fromhex("B0751100030D000000"),
+                    "JCAlgTest AES-CBC-NOPAD support APDU",
+                )
+                if aes_cipher[:2] != b"\x11\x00":
+                    raise RuntimeError(
+                        "AES-CBC-NOPAD was not reported supported: "
+                        f"{aes_cipher.hex().upper()}"
+                    )
             finally:
                 if connection is not None:
                     connection.close()
@@ -251,7 +261,7 @@ def main() -> int:
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"TEST:FAIL {error}", file=sys.stderr)
         return 1
-    print(f"TEST:SUMMARY pass={args.passes * 5} fail=0")
+    print(f"TEST:SUMMARY pass={args.passes * 6} fail=0")
     return 0
 
 

@@ -3302,3 +3302,13 @@
 - Decision: Treat the VPCD smoke result as repeatable and continue with bounded cipher algorithm coverage. Hardware validation is still not established.
 - Commit: `33af96f` (implementation under repeated validation).
 - Artifacts/logs: `artifacts/logs/jcalgtest-jcsystem-repeat-20261015.log` (SHA-256 `def236f08168911e5873b54084c11a108307dd9e55e6252697156e2d4afb0866`).
+
+## 2026-10-15 — Probe AES-CBC-NOPAD through JCAlgTest
+
+- Step/experiment: `jcalgtest-vpcd-aes-cbc-nopad-20261015`
+- Change: Extended the VPCD smoke harness to probe `Cipher.ALG_AES_BLOCK_128_CBC_NOPAD` and require JCAlgTest to report it supported; updated the summary counter to include the additional assertion.
+- Validation: `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20 --log artifacts/logs/jcalgtest-aes-cbc-support-verified-20261015.log` passed with `TEST:SUMMARY pass=6 fail=0`.
+- Result: AES-CBC-NOPAD returned data prefix `1100` and status `9000`, confirming the client-visible supported result. Total emulator pass time was 30.396 s. No PC/SC or physical token was used.
+- Decision: Retain this as the first direct cryptographic capability probe; next add a bounded sweep across JCAlgTest algorithm families while keeping each APDU time-limited.
+- Commit: `<recorded after commit>`.
+- Artifacts/logs: `artifacts/logs/jcalgtest-aes-cbc-support-verified-20261015.log` (SHA-256 `4061b2ef91a2e35f19211a77d1c7d3c7f8641a35391926c54da06cc97d70d438`).
