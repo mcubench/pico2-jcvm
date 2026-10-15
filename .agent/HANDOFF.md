@@ -2434,3 +2434,11 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   committed as `33af96f`; the current development target remains the VPCD
   emulator. Next expand the bounded algorithm support coverage. Latest log:
   `artifacts/logs/jcalgtest-jcsystem-size-fix-20261015.log`.
+- Repeat check on 2026-10-15: `./tools/test-pc-vpcd-applet --passes 2` passed
+  both clean emulator installs with `TEST:SUMMARY pass=10 fail=0`; total
+  per-pass times were 27.789 s and 29.546 s. GETVERSION, JCSystem info, and
+  the supported-algorithm smoke APDU all returned `9000` on each pass. This
+  uses direct VPCD. `pcsc_scan -r` currently reports that the PC/SC service is
+  unavailable, and no physical token was used. Repeat log:
+  `artifacts/logs/jcalgtest-jcsystem-repeat-20261015.log` (SHA-256
+  `def236f08168911e5873b54084c11a108307dd9e55e6252697156e2d4afb0866`).

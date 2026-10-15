@@ -3292,3 +3292,13 @@
 - Decision: Continue JCAlgTest coverage through the local emulator. Physical-token validation remains a separate hardware step; this change was validated on VPCD only.
 - Commit: `33af96f`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-jcsystem-size-fix-20261015.log`; ARM image `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-15 — Repeat JCAlgTest emulator smoke test
+
+- Step/experiment: `jcalgtest-vpcd-jcsystem-repeat-20261015`
+- Change: Repeated the fresh-install smoke path twice to check install-time static arrays and JCSystem handling across clean emulator runs; no source code changed.
+- Validation: `./tools/test-pc-vpcd-applet --passes 2 --apdu-timeout 20 --log artifacts/logs/jcalgtest-jcsystem-repeat-20261015.log` passed with `TEST:SUMMARY pass=10 fail=0`.
+- Result: Both clean passes returned ATR `3B800181`, exact version `1.8.2_jc305`, JCSystem info ending `9000`, and the supported-algorithm response ending `9000`. Pass times were 27.789 s and 29.546 s. PC/SC was unavailable during this check; direct VPCD was used. No token was used.
+- Decision: Treat the VPCD smoke result as repeatable and continue with bounded cipher algorithm coverage. Hardware validation is still not established.
+- Commit: `33af96f` (implementation under repeated validation).
+- Artifacts/logs: `artifacts/logs/jcalgtest-jcsystem-repeat-20261015.log` (SHA-256 `def236f08168911e5873b54084c11a108307dd9e55e6252697156e2d4afb0866`).
