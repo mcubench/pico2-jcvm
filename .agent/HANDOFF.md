@@ -1,5 +1,27 @@
 # Handoff
 
+## Physical diagnostic firmware flash — 2026-10-15
+
+- Rebuilt ARM and RISC-V successfully, then flashed the ARM CHOUPI image while
+  the Pico 2 was in BOOTSEL. Picotool loaded the image to 100% and rebooted it.
+  The 18-second health check still reported `CHOUPI:STATUS sw=6F00` and
+  `TEST:FAIL choupi_runtime`; CCID state was stage 2, endpoint 0, with no APDU
+  traffic. This is a boot smoke failure and does not yet say what physical
+  applet SELECT does.
+- USB enumerates `2e8a:0009`, but `pcsc_scan -r` lists only the two VPCD
+  readers. `./tools/probe-jc-algtest` confirms the physical reader is absent
+  from PC/SC and sent no APDU. `/dev/bus/usb/001/023` grants access to `claude`
+  but not `pcscd`; pcscd is auto-exited.
+- Next, the user must run the existing helper command
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` and confirm `pcsc_scan -r` shows
+  `Pico 2 CHOUPI CCID`. The repository instructions prohibit this agent from
+  using sudo in the autonomous cycle. Then run the bounded physical probe and
+  inspect `RESTORE_STORAGE` / `RESTORE_READ_FAIL` / `RESTORE_READ_OK` serial
+  output.
+- Flash log:
+  `artifacts/logs/cycle-choupi-20261015T112920Z.log` (SHA-256
+  `369ae5865b5645067ab74e22811b18510c1cd290945ac1b510579bd8cbcb48de`).
+
 ## VPCD applet restore comparison — 2026-10-15
 
 - The bounded `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20`

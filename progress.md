@@ -3372,3 +3372,13 @@
 - Decision: The host emulator's install, persisted applet restore, APDU handling, and JCSystem info path pass. Physical restore remains unverified; compare the new root-read status on hardware once USB access is restored.
 - Commit: `c290cd1` (diagnostic implementation under comparison; this step changes no source).
 - Artifacts/logs: `artifacts/logs/jcalgtest-restore-after-safe-diagnostic-20261015.log` (SHA-256 `6f7c41916df69e2a4d443588f5ce914d18a3ac1acb01c5dd5a4e82a40506d629`).
+
+## 2026-10-15 — Reflash physical Pico 2 for restore tracing
+
+- Step/experiment: `physical-choupi-restore-diagnostic-flash-20261015`
+- Change: Rebuilt both targets and flashed the ARM CHOUPI image to the Pico 2 in BOOTSEL; no source change was made in this hardware step.
+- Validation: `./tools/cycle choupi` rebuilt ARM and RISC-V; picotool loaded the image to 100% and rebooted the board. The finite 18-second serial health check failed: repeated `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`; CCID debug remained at stage 2/endpoint 0 with no APDU traffic. USB enumerated `2e8a:0009`, but `pcsc_scan -r` listed only the two virtual readers. The bounded probe reported physical `Pico 2 CHOUPI CCID` not found by PC/SC; no APDU was sent.
+- Result: The board accepted the diagnostic firmware. The physical root-read diagnostic has not run because PC/SC is unavailable to this execution context. Device node `/dev/bus/usb/001/023` grants ACL to `claude`, but not to service account `pcscd`; restarting the system service requires the already-installed privileged helper.
+- Decision: Continue physical SELECT verification once PC/SC access is restored. The repository's `AGENTS.md` forbids invoking sudo from this autonomous cycle; ask the user to run `sudo -n /usr/local/sbin/pico2-pcsc-reader`, then confirm `pcsc_scan -r` lists the physical reader before probing.
+- Commit: `c290cd1` (diagnostic implementation under physical validation; no source change in this step).
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261015T112920Z.log` (SHA-256 `369ae5865b5645067ab74e22811b18510c1cd290945ac1b510579bd8cbcb48de`); flashed ARM UF2 SHA-256 `5c8cab86d6eff1bed98decefaf0dc89005f611a15203857f293b95f144f2b8a8`.
