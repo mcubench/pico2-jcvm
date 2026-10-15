@@ -1,5 +1,30 @@
 # Handoff
 
+## Current JCAlgTest development checkpoint — 2026-10-15
+
+- Added a narrow Java Card crypto subset to let the supplied JCAlgTest 1.8.2
+  constructor request AES-CBC-NOPAD and DES-CBC-NOPAD: AES/DES key objects,
+  factories, and a native CBC bridge using the Pico SDK's Mbed TLS.
+- The PC target needed its own Mbed TLS config wrapper to disable the SDK's
+  AES-NI option, plus `platform_util.c` for zeroization. PC ROM-mask generation
+  and the PC `choupi` target build pass. ARM and RISC-V wrapper builds also
+  pass; no firmware was flashed. CBC known-answer tests have not yet been run.
+- Bounded PC VPCD runs pass ATR and applet SELECT, then fail the JCSystem info
+  APDU with `6F00`. Latest diagnostic: `StackUnderflowException` at
+  `PUTFIELD_A`, package 63, Method component offset 39, CP field index 5,
+  operand depth 0, locals 0/1=`0x0008`, bytes `87 05 7A`.
+  Trace: `artifacts/logs/jcalgtest-putfield-callsite-20261015.log`. This
+  supersedes the earlier CP field 174 `SecurityException` finding.
+- The temporary package-specific interpreter traces are removed. A temporary
+  PC-only underflow trace remains in `bc_object_field.cpp`; remove or gate it
+  when the call/return stack defect is fixed.
+- No real board was used. Flashing remains gated on a passing VPCD process
+  path and both architecture builds for the current shared source.
+- Next: trace the static factory/native return path around the offset-39 store,
+  fix the operand loss, add AES and 3DES CBC known-answer coverage, rerun the
+  bounded VPCD applet test, then repeat both firmware builds before considering
+  hardware validation.
+
 ## Development performance suggestions — 2026-10-15
 
 - Added a category summary to `perf_tips.md` from the existing task timer: 17

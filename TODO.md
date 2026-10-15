@@ -32,8 +32,12 @@ GlobalPlatformPro CAP LOAD and INSTALL returned `9000`, the registry lists
 steps validate install and selection, but `Applet.process()` has not yet been
 validated on the physical card. A PC VPCD integration test now restores the
 persisted applet and confirms ATR and SELECT, then sends the JCSystem info
-command. That APDU currently returns `6F00`: the applet enters
-`process(APDU)` but a field read at CP entry 174 throws `SecurityException`.
+command. The latest PC VPCD run returns `6F00`: the interpreter throws
+`StackUnderflowException` at `PUTFIELD_A` (package 63, Method component offset
+39, CP field index 5) with an empty operand stack. The instruction bytes are
+`87 05 7A`; locals 0 and 1 both contain `0x0008`. This supersedes the earlier
+CP entry 174 `SecurityException` diagnosis. The bounded trace is
+`artifacts/logs/jcalgtest-putfield-callsite-20261015.log`.
 The finite VPCD test now launches the emulator in its own process group and
 uses bounded SIGINT/TERM/KILL teardown, so a failed APDU does not leave the
 long-running JCRE behind. ATR and SELECT pass; the JCSystem info APDU still

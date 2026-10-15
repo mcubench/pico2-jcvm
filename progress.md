@@ -2906,3 +2906,28 @@
   build samples and separate upload-phase timings before pursuing tuning.
 - Commit: recorded in the following reference entry.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`.
+
+## 2026-10-15 — Add current build and VPCD performance samples
+
+- Step/experiment: `development-performance-followup-20261015`
+- Change: Added this session's comparable build classes and bounded failed
+  VPCD timing to `perf_tips.md`, and refreshed the active applet failure in
+  `TODO.md` and `.agent/HANDOFF.md`.
+- Validation: `./tools/build-pc` passed in 5.120 s; the PC `choupi` target
+  passed in 30.790 s for a full build and three incremental rebuilds passed in
+  9.916–10.778 s. `./tools/build arm` passed in 7.952 s and
+  `./tools/build riscv` passed in 35.131 s. Three bounded VPCD attempts reached
+  ATR and SELECT but failed the JCSystem info APDU with `6F00` in 5.341–5.974
+  s. `git diff --check -- perf_tips.md TODO.md .agent/HANDOFF.md progress.md
+  artifacts/metrics/development-time.csv` passed. No board flash.
+- Result: The latest failure is `StackUnderflowException` at `PUTFIELD_A`
+  (package 63, Method component offset 39, CP field index 5, depth 0); this is
+  a correctness diagnostic, not an APDU performance result. Upload remains
+  unmeasured.
+- Decision: Continue tracing the static factory/native return path, validate
+  CBC against known-answer vectors, and repeat the bounded VPCD test before
+  flashing.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/metrics/development-time.csv`;
+  `artifacts/logs/jcalgtest-putfield-callsite-20261015.log`;
+  `perf_tips.md`.

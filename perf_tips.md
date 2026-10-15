@@ -24,6 +24,31 @@ analysis, and tool-check intervals. Build and test durations vary with which
 objects the command recompiles, so compare like-for-like runs before drawing a
 performance conclusion.
 
+## Follow-up samples — 2026-10-15
+
+The timer now includes one focused PC generation run, one full PC VM build,
+three incremental PC VM builds, and both firmware architectures. These are
+different build classes and should not be combined into one average.
+
+| Task | Successful elapsed time | Result and limits |
+|---|---:|---|
+| PC Java API + ROM-mask generation | 5.120 s | Incremental wrapper run; generation passed. |
+| PC VM build | 30.790 s | Full target build passed and included Java OS build work. |
+| PC VM incremental rebuild | 9.916–10.778 s | Three C++ rebuilds passed; one earlier compile attempt failed before correction at 2.453 s. |
+| ARM firmware build | 7.952 s | Passed; UF2 generated. No flash was performed. |
+| RISC-V firmware build | 35.131 s | Passed after rebuilding shared VM sources. |
+| VPCD JCAlgTest APDU attempt | 5.341–5.974 s | Three bounded runs reached ATR and SELECT, then failed at the JCSystem info APDU with `6F00`; these are failure-to-diagnosis times, not successful runtime measurements. |
+| Upload and board test | Not measured | No upload or physical test was performed. |
+
+Use the already configured PC CMake target for a C++-only iteration after the
+Java API and ROM-mask inputs are unchanged; this measured about 10 seconds per
+rebuild, compared with 30.790 seconds for the full PC target build. Keep the
+normal wrapper as the generation and correctness check. The VPCD failure now
+identifies `PUTFIELD_A` at Method component offset 39 (CP index 5), with an
+empty operand stack; fix that correctness issue before using APDU timings to
+judge throughput. These timings came from one session and are not controlled
+benchmarks.
+
 ## Development-loop timing sample
 
 The first recorded sample contains 17 successful intervals and 8 non-OK
