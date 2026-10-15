@@ -20,11 +20,15 @@
 - The single HMAC APDU also passed after a reset in 3.323 s. No repository
   source was changed for these experiments. The last official-client attempt
   reached 300 seconds without a response; the current pcscd/VPCD listener is
-  stopped, and no JCAlgTest or CHOUPI test process remains running.
-- Next: restart the PC/SC VPCD service and replay the official client locally
-  with a per-APDU watchdog and CHOUPI log capture. Compare its exact sequence
-  and timing with the passing internal replay before changing runtime code. No
-  physical token was used.
+  stopped, and no JCAlgTest or CHOUPI test process remains running. A non-sudo
+  `systemctl start pcscd.service` attempt timed out, and a follow-up status
+  query was denied access to the system D-Bus. No service state change was
+  observed.
+- Next: have the user restart the PC/SC service with the already established
+  privileged command, confirm `pcsc_scan -r` sees the virtual readers, then
+  replay the official client locally with a per-APDU watchdog and CHOUPI log
+  capture. Compare its exact sequence and timing with the passing internal
+  replay before changing runtime code. No physical token was used.
 
 ## VPCD ATR presence-probe implementation — 2026-10-15
 
