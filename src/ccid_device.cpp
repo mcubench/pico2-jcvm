@@ -25,6 +25,7 @@ extern "C" uint16_t choupi_vm_process_applet(const uint8_t *command,
                                               uint16_t response_capacity,
                                               uint16_t *response_length);
 
+extern "C" uint8_t fs_sync(void);
 namespace {
 constexpr uint8_t kCcidInterface = 2;
 constexpr uint8_t kEndpointOut = 0x03;
@@ -433,6 +434,11 @@ uint16_t driver_open(uint8_t rhport,
       return 0;
     }
     consumed = static_cast<uint16_t>(consumed + descriptor[0]);
+        if (fs_sync() != 0) {
+          response[0] = 0x6f;
+          response[1] = 0x00;
+          response_length = 2;
+        }
     descriptor += descriptor[0];
   }
   if (ep_out == 0 || ep_in == 0) {

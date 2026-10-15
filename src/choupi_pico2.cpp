@@ -11,12 +11,19 @@
 #include "hardware/timer.h"
 #include "hardware/watchdog.h"
 #include "hardware/structs/watchdog.h"
+#include "hardware/flash.h"
 #include "pico/bootrom.h"
+#include "pico/flash.h"
+#include "pico/platform.h"
 #include "tusb.h"
 #include "cap_store.hpp"
 
 extern "C" const uint8_t choupi_rommask_start[];
 extern "C" const uint8_t choupi_rommask_end[];
+extern "C" const uint8_t __flash_binary_end[];
+#ifdef RP2350_FS_OVERLAY_TEST
+extern "C" const uint8_t *rp2350_fs_test_flash_base(void);
+#endif
 extern "C" uint16_t runtime(uint8_t package_id, uint8_t class_id,
                              uint8_t method_id);
 extern "C" void choupi_ccid_task(void);
@@ -68,6 +75,16 @@ struct OverlayFile {
   uint16_t hash = 0;
   uint8_t tag_length = 0;
   uint8_t flags = 0;
+constexpr uint32_t kFilesystemSlot0 = 0x100000;
+constexpr uint32_t kFilesystemSlotSize = 0x40000;
+constexpr uint32_t kFilesystemSlot1 = kFilesystemSlot0 + kFilesystemSlotSize;
+constexpr uint32_t kFilesystemHeaderSize = FLASH_SECTOR_SIZE;
+constexpr uint32_t kFilesystemPayloadSize =
+    kMaxOverlayFiles * sizeof(uint64_t) + kMaxOverlayBytes;
+constexpr uint32_t kFilesystemPayloadOffset = kFilesystemHeaderSize;
+constexpr uint32_t kFilesystemXipBase = 0x10000000;
+constexpr uint32_t kFilesystemMagic = 0x3253464a; // "JFS2"
+constexpr uint16_t kFilesystemVersion = 1;
   uint16_t offset = 0;
   uint16_t size = 0;
 };
@@ -77,18 +94,209 @@ constexpr uint8_t kOverlayUsed = 1u << 0;
 constexpr uint8_t kOverlayHasRecord = 1u << 1;
 constexpr uint8_t kOverlayCompressedTag = 1u << 2;
 constexpr uint8_t kOverlayParentTag = 1u << 3;
+static_assert(kFilesystemPayloadSize == 128 * 1024,
+              "filesystem snapshot payload size changed");
+static_assert(kFilesystemPayloadOffset + kFilesystemPayloadSize <=
+                  kFilesystemSlotSize,
+              "filesystem snapshot exceeds its slot");
+static_assert(kFilesystemSlot1 + kFilesystemSlotSize <=
+                  PICO_FLASH_SIZE_BYTES,
+              "filesystem slots exceed RP2350 flash");
+static_assert(kFilesystemSlot1 + kFilesystemSlotSize <= 0x1c0000,
+              "filesystem slots overlap the CAP store");
+
+struct __attribute__((packed)) FilesystemHeader {
+  uint32_t magic;
+  uint16_t version;
+  uint16_t reserved;
+  uint32_t generation;
+  uint32_t file_count;
+  uint32_t bytes_used;
+  uint32_t payload_crc32;
+  uint32_t header_crc32;
+};
+
+static_assert(sizeof(FilesystemHeader) <= FLASH_PAGE_SIZE,
+              "filesystem header must fit in one flash page");
 constexpr uint8_t kOverlaySerialized = 1u << 4;
 constexpr uint8_t kOverlayDeleted = 1u << 5;
 
-OverlayFile overlay[kMaxOverlayFiles];
+alignas(FLASH_PAGE_SIZE) OverlayFile overlay[kMaxOverlayFiles];
 size_t overlay_file_count = 0;
-uint8_t overlay_bytes[kMaxOverlayBytes];
+alignas(FLASH_PAGE_SIZE) uint8_t overlay_bytes[kMaxOverlayBytes];
 size_t overlay_bytes_used = 0;
 
 void report_fs_write_failure(const char *operation, const uint8_t *tag,
                              uint8_t tag_length, uint32_t length) {
   std::printf("CHOUPI:FS_WRITE_FAIL op=%s tag_len=%u size=%lu files=%u bytes=%lu/%lu tag=",
               operation, static_cast<unsigned>(tag_length),
+bool overlay_dirty = false;
+bool filesystem_layout_available = false;
+uint8_t filesystem_active_slot = 0xff;
+uint32_t filesystem_generation = 0;
+
+uint32_t __not_in_flash_func(filesystem_crc32)(const uint8_t *data,
+                                               size_t length) {
+  uint32_t crc = 0xffffffffu;
+  for (size_t index = 0; index < length; ++index) {
+    crc ^= data[index];
+    for (unsigned int bit = 0; bit < 8; ++bit) {
+      const uint32_t mask = 0u - (crc & 1u);
+      crc = (crc >> 1) ^ (0xedb88320u & mask);
+    }
+  }
+  return ~crc;
+}
+
+uint32_t filesystem_payload_crc32(const uint8_t *index, size_t index_size,
+                                  const uint8_t *bytes, size_t bytes_size) {
+  uint32_t crc = 0xffffffffu;
+  const uint8_t *segments[] = {index, bytes};
+  const size_t lengths[] = {index_size, bytes_size};
+  for (size_t segment = 0; segment < 2; ++segment) {
+    for (size_t index = 0; index < lengths[segment]; ++index) {
+      crc ^= segments[segment][index];
+      for (unsigned int bit = 0; bit < 8; ++bit) {
+        const uint32_t mask = 0u - (crc & 1u);
+        crc = (crc >> 1) ^ (0xedb88320u & mask);
+      }
+    }
+  }
+  return ~crc;
+}
+
+const uint8_t *filesystem_slot_data(uint8_t slot) {
+  const uint32_t offset = slot == 0 ? kFilesystemSlot0 : kFilesystemSlot1;
+#ifdef RP2350_FS_OVERLAY_TEST
+  return rp2350_fs_test_flash_base() + offset;
+#else
+  return reinterpret_cast<const uint8_t *>(kFilesystemXipBase + offset);
+#endif
+}
+
+const FilesystemHeader *filesystem_slot_header(uint8_t slot) {
+  return reinterpret_cast<const FilesystemHeader *>(filesystem_slot_data(slot));
+}
+
+bool filesystem_header_valid(const FilesystemHeader &header) {
+  return header.magic == kFilesystemMagic &&
+         header.version == kFilesystemVersion &&
+         header.file_count <= kMaxOverlayFiles &&
+         header.bytes_used <= kMaxOverlayBytes &&
+         header.header_crc32 == filesystem_crc32(
+             reinterpret_cast<const uint8_t *>(&header),
+             offsetof(FilesystemHeader, header_crc32));
+}
+
+bool filesystem_slot_valid(uint8_t slot) {
+  const auto *header = filesystem_slot_header(slot);
+  if (!filesystem_header_valid(*header)) return false;
+  const uint8_t *payload = filesystem_slot_data(slot) + kFilesystemPayloadOffset;
+  return filesystem_crc32(payload, kFilesystemPayloadSize) ==
+         header->payload_crc32;
+}
+
+struct FilesystemWriteContext {
+  const uint8_t *index;
+  const uint8_t *bytes;
+  uint32_t generation;
+  uint32_t slot_offset;
+  uint32_t file_count;
+  uint32_t bytes_used;
+  uint32_t payload_crc32;
+  bool success = false;
+};
+
+void __not_in_flash_func(write_filesystem_snapshot)(void *opaque) {
+  auto *context = static_cast<FilesystemWriteContext *>(opaque);
+  flash_range_erase(context->slot_offset, kFilesystemSlotSize);
+  uint32_t offset = 0;
+  while (offset < kMaxOverlayFiles * sizeof(OverlayFile)) {
+    flash_range_program(context->slot_offset + kFilesystemPayloadOffset + offset,
+                        context->index + offset, FLASH_PAGE_SIZE);
+    offset += FLASH_PAGE_SIZE;
+  }
+  offset = 0;
+  while (offset < kMaxOverlayBytes) {
+    flash_range_program(context->slot_offset + kFilesystemPayloadOffset +
+                            kMaxOverlayFiles * sizeof(OverlayFile) + offset,
+                        context->bytes + offset, FLASH_PAGE_SIZE);
+    offset += FLASH_PAGE_SIZE;
+  }
+
+  FilesystemHeader header{};
+  header.magic = kFilesystemMagic;
+  header.version = kFilesystemVersion;
+  header.generation = context->generation;
+  header.file_count = context->file_count;
+  header.bytes_used = context->bytes_used;
+  header.payload_crc32 = context->payload_crc32;
+  header.header_crc32 = filesystem_crc32(
+      reinterpret_cast<const uint8_t *>(&header),
+      offsetof(FilesystemHeader, header_crc32));
+  alignas(FLASH_PAGE_SIZE) uint8_t page[FLASH_PAGE_SIZE];
+  for (size_t index = 0; index < sizeof(page); ++index) page[index] = 0xff;
+  const auto *header_bytes = reinterpret_cast<const uint8_t *>(&header);
+  for (size_t index = 0; index < sizeof(header); ++index) {
+    page[index] = header_bytes[index];
+  }
+  flash_range_program(context->slot_offset, page, FLASH_PAGE_SIZE);
+  context->success = true;
+}
+
+bool persist_overlay() {
+  if (!overlay_dirty) return true;
+  if (!filesystem_layout_available) return false;
+  const uint8_t next_slot = filesystem_active_slot == 0 ? 1 : 0;
+  const uint32_t slot_offset =
+      next_slot == 0 ? kFilesystemSlot0 : kFilesystemSlot1;
+  const uint32_t next_generation = filesystem_generation + 1;
+  const uint8_t *index = reinterpret_cast<const uint8_t *>(overlay);
+  const uint32_t index_size = kMaxOverlayFiles * sizeof(OverlayFile);
+  const uint32_t payload_crc = filesystem_payload_crc32(
+      index, index_size, overlay_bytes, kMaxOverlayBytes);
+  FilesystemWriteContext context{index, overlay_bytes, next_generation,
+                                 slot_offset,
+                                 static_cast<uint32_t>(overlay_file_count),
+                                 static_cast<uint32_t>(overlay_bytes_used),
+                                 payload_crc, false};
+  const int status = flash_safe_execute(write_filesystem_snapshot, &context,
+                                        5000);
+  if (status != PICO_OK || !context.success ||
+      !filesystem_slot_valid(next_slot)) {
+    std::printf("CHOUPI:FS_SYNC_FAIL status=%d slot=%u\r\n", status,
+                static_cast<unsigned>(next_slot));
+    std::fflush(stdout);
+    return false;
+  }
+  filesystem_active_slot = next_slot;
+  filesystem_generation = next_generation;
+  overlay_dirty = false;
+  return true;
+}
+
+void restore_overlay_snapshot() {
+  const bool valid0 = filesystem_slot_valid(0);
+  const bool valid1 = filesystem_slot_valid(1);
+  if (!valid0 && !valid1) return;
+  uint8_t slot = valid0 ? 0 : 1;
+  if (valid0 && valid1) {
+    const uint32_t generation0 = filesystem_slot_header(0)->generation;
+    const uint32_t generation1 = filesystem_slot_header(1)->generation;
+    if (static_cast<int32_t>(generation1 - generation0) > 0) slot = 1;
+  }
+  const auto *header = filesystem_slot_header(slot);
+  const uint8_t *payload = filesystem_slot_data(slot) + kFilesystemPayloadOffset;
+  std::memcpy(overlay, payload, kMaxOverlayFiles * sizeof(OverlayFile));
+  std::memcpy(overlay_bytes,
+              payload + kMaxOverlayFiles * sizeof(OverlayFile),
+              kMaxOverlayBytes);
+  overlay_file_count = header->file_count;
+  overlay_bytes_used = header->bytes_used;
+  overlay_dirty = false;
+  filesystem_active_slot = slot;
+  filesystem_generation = header->generation;
+}
               static_cast<unsigned long>(length),
               static_cast<unsigned>(overlay_file_count),
               static_cast<unsigned long>(overlay_bytes_used),
@@ -478,6 +686,7 @@ bool write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
 
   const size_t record_key_length = encoded_tag_length(tag, tag_length);
   if (overlay_bytes_used + 1 + record_key_length + existing_length >
+    overlay_dirty = true;
       kMaxOverlayBytes) {
     report_fs_write_failure("update", tag, tag_length, existing_length);
     return false;
@@ -500,6 +709,7 @@ bool write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
 
 void set_path(uint8_t (*tag)[128], uint8_t *length,
               std::initializer_list<uint8_t> bytes) {
+  overlay_dirty = true;
   *length = static_cast<uint8_t>(bytes.size());
   std::copy(bytes.begin(), bytes.end(), (*tag));
 }
@@ -517,10 +727,31 @@ extern "C" uint8_t fs_init(void) {
 }
 
 extern "C" uint8_t fs_exists(const uint8_t *tag, uint8_t tag_length) {
+  overlay_dirty = false;
+  filesystem_layout_available = false;
+  filesystem_active_slot = 0xff;
+  filesystem_generation = 0;
+#ifdef RP2350_FS_OVERLAY_TEST
+  filesystem_layout_available = true;
+  restore_overlay_snapshot();
+#else
+  const uintptr_t image_end = reinterpret_cast<uintptr_t>(__flash_binary_end);
+  filesystem_layout_available =
+      image_end < kFilesystemXipBase + kFilesystemSlot0;
+  if (filesystem_layout_available) {
+    restore_overlay_snapshot();
+  }
+#endif
   const uint8_t *data = nullptr;
   uint32_t length = 0;
   return find_file(tag, tag_length, &data, &length) ? 1 : 0;
 }
+extern "C" uint8_t fs_sync(void) {
+  return persist_overlay() ? 0 : 1;
+}
+
+extern "C" void fs_drop(void) { (void)fs_sync(); }
+
 
 extern "C" uint8_t fs_length(const uint8_t *tag, uint8_t tag_length,
                               uint32_t *length) {
@@ -571,6 +802,7 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
 
 extern "C" uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length) {
   auto *file = find_overlay(tag, tag_length);
+  overlay_dirty = true;
   if (file == nullptr) {
     const uint8_t *ignored_data = nullptr;
     uint32_t ignored_length = 0;
@@ -595,6 +827,7 @@ extern "C" uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length) {
 
 extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
                                             const uint8_t *data,
+  overlay_dirty = true;
                                             uint32_t length) {
   if (package_id != 20 || data == nullptr || length == 0 ||
       length > 28 * 1024) {

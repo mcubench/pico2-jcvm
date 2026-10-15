@@ -3463,3 +3463,13 @@
 - Decision: Physical live-session `doFinal` verification passes. Continue separately with persistent applet restoration and startup health-check failure; add digest-output checking if correctness beyond call completion is needed.
 - Commit: `33ad415` (physical APDU probe; implementation remains in API commit `31d6ab4`).
 - Artifacts/logs: `artifacts/logs/physical-sha256-dofinal-apdu-20261015.log` (SHA-256 `de5fbf9ff643efe139f0378c077fa28a69a1b3f1057868d82c9dd1844351f41e`); `artifacts/logs/physical-sha256-dofinal-post-apdu-serial-20261015.log` (SHA-256 `88ad5f1a1f077c5ae499682728dafabe45f36aabdd170cf3145aaa4137d024ee`).
+
+## 2026-10-15 — Persist the RP2350 Java Card filesystem
+
+- Step/experiment: `rp2350-persistent-fs-snapshot-20261015`
+- Change: Added two CRC-checked, generation-numbered 256 KiB flash snapshot slots at offsets `0x100000` and `0x140000`, below the existing CAP slot. Startup restores the newest valid overlay; filesystem writes are flushed after applet APDUs and install-state writes. A failed APDU snapshot returns `6F00`. Added host fake-flash coverage for restart restore, newest-generation choice, CRC fallback, and deletion persistence.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `./tools/build arm` and `./tools/build riscv` passed. ARM image end is `0x100b46fc`, below the filesystem slot at `0x10100000`. Physical validation was not run: `pcsc_scan -r` reported `SCardEstablishContext: Service not available` and flooded repeated release errors; `lsusb -d 2e8a:0009` reported libusb `-99`, and systemctl could not connect to the system bus.
+- Result: Host tests establish crash-recoverable snapshots and corruption fallback. No flash latency, erase wear, or physical restart behavior has been measured; each dirty APDU currently writes a fixed 128 KiB payload.
+- Decision: Keep the implementation for hardware validation. Once USB/PCSC access is restored, flash the ARM image and verify applet restore, JCSystem, SHA-256 `doFinal`, and bounded serial output across a power cycle.
+- Commit: pending repository write access.
+- Artifacts/logs: host test output in this session; no physical log.

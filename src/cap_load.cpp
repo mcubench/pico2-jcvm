@@ -1,5 +1,7 @@
 #include "cap_load.hpp"
 #include "cap_store.hpp"
+
+extern "C" uint8_t fs_sync(void);
 #include "heap.hpp"
 #include "jc_cap/jc_cap_static_field.hpp"
 #include "jc_handlers/flashmemory.hpp"
@@ -449,7 +451,9 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
       return true;
     }
     transaction_active = false;
-    return jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    const bool rolled_back =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    return fs_sync() == 0 && rolled_back;
   };
 
   uint8_t applet_registered = 0;
@@ -472,6 +476,10 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     if (install_vm_status_ != 0x9000 || applet_registered == 0 ||
         applet_class_index == 0xffff) {
       install_failure_stage_ = rollback() ? 5 : 8;
+      return false;
+    }
+    if (fs_sync() != 0) {
+      install_failure_stage_ = rollback() ? 6 : 8;
       return false;
     }
     if (choupi_store_cap_instance(instance_aid, instance_aid_length,

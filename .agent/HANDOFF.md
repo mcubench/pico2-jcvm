@@ -1,5 +1,33 @@
 # Handoff
 
+## Persistent RP2350 filesystem implementation — 2026-10-15
+
+- Added two 256 KiB CRC-checked snapshot slots at flash offsets `0x100000`
+  and `0x140000`. They end at `0x180000`, below the existing CAP slot at
+  `0x1c0000`; the latest ARM image ends at `0x100b46fc`, before the first
+  snapshot bank. `fs_init()` restores the newest valid generation, and `fs_sync()`
+  writes a new slot without erasing the currently valid one. Applet APDU handling
+  flushes dirty state; successful CAP installation flushes the registered root
+  before marking CAP metadata installed.
+- `./tools/test-rp2350-fs-overlay` passes all checks, including restore after
+  restart, latest-generation selection, fallback after payload corruption, and
+  tombstone persistence. `./tools/build arm` and `./tools/build riscv` pass.
+- Physical validation is blocked by host access: the requested `pcsc_scan -r`
+  returned `SCardEstablishContext: Service not available` and emitted repeated
+  `SCardReleaseContext: Invalid handle` output until `pcsc_scan` was stopped.
+  `lsusb -d 2e8a:0009` fails libusb initialization (`-99`), and `systemctl`
+  cannot connect to the system bus. No flash or physical APDU was attempted.
+- Limitation to measure on hardware: every dirty APDU currently writes the fixed
+  128 KiB RAM snapshot and erases the alternate 256 KiB slot. Latency and flash
+  wear are unmeasured; consider a compact/log-structured format after proving
+  startup restore works.
+- Next: restore VM USB passthrough and PC/SC service, then flash the built ARM
+  UF2, power-cycle, check startup serial, SELECT the installed JCAlgTest applet,
+  and rerun JCSystem plus SHA-256 `doFinal` probes.
+- Source and test changes are ready, but the repository Git index is read-only in
+  this environment. No commit was created; request repository write access to
+  stage only this step while preserving the existing CCID diagnostics.
+
 ## Physical JCAlgTest SHA-256 doFinal pass — 2026-10-15
 
 - The user-authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper
