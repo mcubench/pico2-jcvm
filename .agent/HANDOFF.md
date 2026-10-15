@@ -8,8 +8,11 @@
   instance root tag should be `03 00 3F 94 FF` (applet owner 0, package 63,
   class 0x0094, root field 0xFF).
 - Added a diagnostic in `getPersistentField_Reference` to report read exception,
-  root-tag existence, tag bytes, and root record type. It does not change
-  runtime behavior. ARM and RISC-V builds pass. Source commit: `6e1e2e6`.
+  tag bytes, and root record type. The lower read path now logs its original
+  status; there is deliberately no second filesystem existence probe after a
+  failure, since that could trigger the same context access assertion. Runtime
+  restore behavior is unchanged. ARM and RISC-V builds pass. Commits:
+  `6e1e2e6`, `c290cd1`.
 - The latest `./tools/cycle choupi` rebuilt both targets but did not flash:
   picotool failed to initialize libusb (status 250), and `lsusb` also reports
   libusb `-99`. The previously authorized `sudo -n

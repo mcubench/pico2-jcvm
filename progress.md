@@ -3352,3 +3352,13 @@
 - Decision: Preserve the new trace and rerun the physical SELECT probe when USB access is restored; do not claim applet/JCSystem hardware verification yet.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261015T101749Z.log` (SHA-256 `3f6e644789143bebc2394f7b756f452d417d52bc7d23132a9428f042297f5cb3`); ARM UF2 SHA-256 `653622ffd0cbb12e1e3435b9a00926572d5cffa8b87a72a4d6edb7da6c74eee9`.
+
+## 2026-10-15 — Make restore diagnostics safe on denied reads
+
+- Step/experiment: `physical-applet-restore-diagnostic-safety-20261015`
+- Change: Removed the diagnostic's secondary `fs_exists()` call, which could repeat the filesystem access check after a failed read. The restore root now logs the original `fs_read_inplace` status and initializes its output length before the call.
+- Validation: `./tools/build arm` and `./tools/build riscv` both passed. No test was added or run. Hardware validation was skipped because picotool cannot initialize libusb in this execution context.
+- Result: The diagnostic reports the primary read status without issuing another filesystem syscall; runtime restore behavior is unchanged.
+- Decision: Keep this safe trace and use it on the board once USB passthrough is accessible to the session.
+- Commit: `c290cd1`.
+- Artifacts/logs: ARM UF2 SHA-256 `5c8cab86d6eff1bed98decefaf0dc89005f611a15203857f293b95f144f2b8a8`; the prior blocked flash attempt is recorded in `artifacts/logs/cycle-choupi-20261015T101749Z.log`.
