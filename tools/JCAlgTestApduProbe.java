@@ -16,6 +16,18 @@ public final class JCAlgTestApduProbe {
     return text.toString();
   }
 
+  private static byte[] fromHex(String text) {
+    String compact = text.replaceAll("\\s", "");
+    if ((compact.length() & 1) != 0) {
+      throw new IllegalArgumentException("hex data must contain whole bytes");
+    }
+    byte[] bytes = new byte[compact.length() / 2];
+    for (int i = 0; i < bytes.length; i++) {
+      bytes[i] = (byte) Integer.parseInt(compact.substring(2 * i, 2 * i + 2), 16);
+    }
+    return bytes;
+  }
+
   private static ResponseAPDU transmit(CardChannel channel, String name,
                                        CommandAPDU command) throws Exception {
     ResponseAPDU response = channel.transmit(command);
@@ -67,6 +79,17 @@ public final class JCAlgTestApduProbe {
       transmit(channel, "JCSYSTEM_INFO",
           new CommandAPDU(0xB0, 0x73, 0x01, 0x00,
               new byte[] {0x01}, 256));
+
+      byte[] sha256Settings = fromHex(
+          "0015 0004 FFFF FFFF FFFF 0006 0001 FFFF FFFF 0001 0001");
+      transmit(channel, "SHA256_DOFINAL_PREPARE",
+          new CommandAPDU(0xB0, 0x34, 0x00, 0x00, sha256Settings, 256));
+      ResponseAPDU sha256DoFinal = transmit(channel, "SHA256_DOFINAL",
+          new CommandAPDU(0xB0, 0x41, 0x00, 0x00, sha256Settings, 256));
+      byte[] sha256Result = sha256DoFinal.getData();
+      if (sha256Result.length < 1 || sha256Result[0] != (byte) 0xAA) {
+        throw new IllegalStateException("SHA-256 doFinal did not report success");
+      }
 
       ResponseAPDU unsupportedSignature = transmit(channel,
           "UNSUPPORTED_RSA_SHA1_SIGNATURE",
