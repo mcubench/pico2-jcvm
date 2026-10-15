@@ -3181,6 +3181,22 @@
 - Artifacts/logs: no new log; user-provided JCAlgTest output shows the
   `NO CARD` reader state and null-stream exception.
 
+## 2026-10-15 — Record VPCD ATR probe fix commit
+
+- Step/experiment: `vpcd-atr-presence-probe-reference-20261015`
+- Change: Recorded implementation commit `ceb5101`, containing the unpowered
+  ATR response, focused session expectation, handoff update, and validation
+  record.
+- Validation: Confirmed commit `ceb5101` contains only
+  `choupi/src/vpcd_session.cpp`, `tools/tests/vpcd_session_test.cpp`,
+  `.agent/HANDOFF.md`, and its progress record.
+- Result: The implementation fix and its validation are isolated from unrelated
+  pre-existing worktree changes.
+- Decision: Wait for the official client rerun against the rebuilt emulator to
+  confirm the PC/SC reader now reports a present card.
+- Commit: recorded in this reference entry.
+- Artifacts/logs: none.
+
 ## 2026-10-15 — Record VPCD phase timing commit
 
 - Step/experiment: `vpcd-phase-timing-reference-20261015`

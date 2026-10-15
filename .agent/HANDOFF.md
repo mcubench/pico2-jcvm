@@ -12,7 +12,8 @@
   powers the card. `Session` previously returned no response to an ATR probe
   while powered off. It now returns the ATR in either power state. Focused
   session test passes 14/14; `./tools/build-pc` and the PC `choupi` target
-  build pass. The PCSC official-client rerun is pending.
+  build pass. Implementation commit: `ceb5101`. The PCSC official-client
+  rerun is pending.
 - Next: restart the emulator using `build/choupi-pc/choupi` rebuilt after this
   change, choose `Virtual PCD 00 00`, and check whether the reader changes from
   `NO CARD` and the client gets past connection setup. Do not use the old
