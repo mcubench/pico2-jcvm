@@ -1,5 +1,30 @@
 # Handoff
 
+## Physical JCAlgTest and JCSystem live-session pass — 2026-10-15
+
+- Reinstalled `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` on the running Pico
+  with GlobalPlatformPro; LOAD blocks and INSTALL returned `9000`.
+- Extended `tools/JCAlgTestApduProbe.java` to assert the expected unsupported
+  RSA-SHA1 result. `./tools/probe-jc-algtest` passed on the physical reader:
+  SELECT `9000`, GETVERSION exactly `1.8.2_jc305`, JCSystem info `9000`, and
+  RSA-SHA1 Signature result `12 03` (`NO_SUCH_ALGORITHM`) with `9000`.
+  The JCSystem info handler exercises version, deletion-support, scalar and
+  array memory queries, and maximum commit capacity.
+- Both `./tools/build arm` and `./tools/build riscv` passed after the probe
+  change. No firmware flash was performed; the change is host-side and the
+  live applet instance is currently only in the RAM overlay.
+- Limitations: the finite serial log still emits `CHOUPI:STATUS sw=6F00` and
+  `TEST:FAIL choupi_runtime` from the boot-time runtime check. After reset,
+  `fs_init()` clears the overlay, leaving registry metadata but no applet root;
+  the physical SELECT had failed until the CAP was reinstalled in this live
+  session. Do not claim power-cycle persistence or a clean boot health test.
+- Next: implement and validate a durable RP2350 filesystem store that preserves
+  the `0x1c0000` CAP slot, fix the boot smoke check, then power-cycle and repeat
+  the same bounded APDUs.
+- Logs: `artifacts/logs/gp-install-physical-live-recovery-20261015.log`,
+  `artifacts/logs/jcalgtest-physical-jcsystem-unsupported-20261015-apdu.log`,
+  and `artifacts/logs/jcalgtest-physical-jcsystem-unsupported-20261015-serial.log`.
+
 ## Physical JCAlgTest restore failure — 2026-10-15
 
 - The user enabled PC/SC access; `pcsc_scan -r` shows `Pico 2 CHOUPI CCID`

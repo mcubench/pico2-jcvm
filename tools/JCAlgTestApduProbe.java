@@ -67,6 +67,17 @@ public final class JCAlgTestApduProbe {
       transmit(channel, "JCSYSTEM_INFO",
           new CommandAPDU(0xB0, 0x73, 0x01, 0x00,
               new byte[] {0x01}, 256));
+
+      ResponseAPDU unsupportedSignature = transmit(channel,
+          "UNSUPPORTED_RSA_SHA1_SIGNATURE",
+          new CommandAPDU(0xB0, 0x75, 0x12, 0x00,
+              new byte[] {0x03, 0x0A, 0x00, 0x00, 0x00}, 256));
+      byte[] unsupportedData = unsupportedSignature.getData();
+      if (unsupportedData.length < 2 || unsupportedData[0] != 0x12 ||
+          unsupportedData[1] != 0x03) {
+        throw new IllegalStateException(
+            "RSA-SHA1 should report class 0x12 / NO_SUCH_ALGORITHM (0x03)");
+      }
       System.out.println("TEST:PASS jc_algtest_process_apdus version=" + versionText);
     } finally {
       card.disconnect(false);
