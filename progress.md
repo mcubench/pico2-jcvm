@@ -3255,3 +3255,31 @@
 - Decision: User must run `sudo systemctl restart pcscd.service` and confirm `pcsc_scan -r` lists the virtual readers before the official Java client can be replayed here.
 - Commit: `09977e5`.
 - Artifacts/logs: systemctl reported `Failed to start pcscd.service: Connection timed out`; follow-up system bus query reported `Operation not permitted`.
+
+## 2026-10-15 — Run JCAlgTest through the virtual PC/SC reader
+
+- Step/experiment: `official-jcalgtest-vpcd-pcsc-20261015`
+- Change: Verified the user's restarted PC/SC service from the local session and
+  ran the official JCAlgTest v1.8.2 client against the CHOUPI PC emulator. No
+  source code changed.
+- Validation: `timeout 5s pcsc_scan -r` listed two virtual readers. With the
+  emulator connected to `127.0.0.1:35963`, `pcsc_scan` reported card inserted
+  on `Virtual PCD 00 00`, ATR `3B 80 01 81`. The official Java client selected
+  the applet successfully and sent algorithm APDUs through SunPCSC. It ran at
+  low priority with a 90-second timeout and was intentionally stopped at the
+  cap; no test/build/flash of the physical Pico was performed.
+- Result: CSV contains 14 algorithm rows. Observed probes took 3.8–5.7 s each;
+  the first AES CBC NOPAD probe was reported supported. The client also
+  receives `6F00` for GETVERSION and JCSystem info, as seen in the prior full
+  run. Early client attempts returned `NO CARD` until the emulator's inserted
+  card state appeared in PC/SC.
+- Decision: Use the PC emulator for continued JCAlgTest debugging; the
+  remaining blocker is the applet's metadata `NullPointerException`, not
+  physical-token access. Investigate the version-field initialization before
+  attempting a longer suite run.
+- Commit: `<pending>`.
+- Artifacts/logs:
+  `artifacts/results/jcalgtest-vpcd-pcsc-probe-20261015/ALGTEST_log_1792052906094.log`
+  (SHA-256 `f7854659886cbbd341f6e03bfe4798bccce947ab07202572a90aa9d8709e6ee2`)
+  and `CHOUPI_VPCD_ALGSUPPORT__3b_80_01_81.csv` (SHA-256
+  `b38c55958995a6c5328b262ca526f6fc92cb4149c15b874a7e0a07f2df7da069`).

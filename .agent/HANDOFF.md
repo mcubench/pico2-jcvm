@@ -2404,3 +2404,20 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `Built target choupi`. PC build remains a development validation path only;
   vpcd/APDU support is still missing. No RISC-V compile/test or hardware flash
   was performed. Implementation commit: `0da5b1d`.
+
+- Continued on 2026-10-15. The user restarted PC/SC and `pcsc_scan -r`
+  listed `Virtual PCD 00 00` and `Virtual PCD 00 01`. With host socket access,
+  `pcsc_scan` confirmed reader 0 inserted with ATR `3B 80 01 81` while the PC
+  emulator was connected to port 35963. The first two official-client attempts
+  raced emulator startup and reported `NO CARD`; waiting until PC/SC reported
+  the inserted ATR resolved that race. JCAlgTest v1.8.2 then selected the
+  applet (`9000`) and started recording algorithm probes through SunPCSC.
+  A 90-second, low-priority run was intentionally capped after 14 CSV data
+  rows; observed cipher probe times were about 3.8–5.7 seconds each. The
+  earlier GETVERSION (`B0 E1`) and JCSystem info (`B0 73`) APDUs still return
+  `6F00`; the applet reports its version as an error. This is an emulator test,
+  not a physical-token or Pico firmware test. Next investigate the JCAlgTest
+  constructor/version-field `NullPointerException`, and bound future official
+  client runs to prevent prolonged VM load. The emulator process was stopped.
+  Logs and CSV are in
+  `artifacts/results/jcalgtest-vpcd-pcsc-probe-20261015/`.
