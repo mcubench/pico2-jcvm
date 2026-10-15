@@ -3011,6 +3011,19 @@
   `6F00` at `INVOKEVIRTUAL` after ATR and SELECT.
 - Decision: Use phase timing and CPU/resource samples before proposing runtime
   or build changes; continue the current operand-stack diagnosis.
-- Commit: pending.
+- Commit: `6057c7d`.
 - Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`;
   `artifacts/logs/jcalgtest-interface-hierarchy-fix-20261015.log`.
+
+## 2026-10-15 — Record performance guidance commit
+
+- Step/experiment: `performance-suggestions-refresh-reference-20261015`
+- Change: Recorded commit `6057c7d` for the current performance suggestions,
+  task-time summary, and continuity updates.
+- Validation: `git diff --check -- progress.md` passed.
+- Result: The performance guidance update is committed; no build, test, or
+  hardware behavior changed.
+- Decision: Continue with the JCAlgTest operand-stack diagnosis and collect
+  comparable phase/resource measurements when they can guide an optimization.
+- Commit: recorded in this reference commit.
+- Artifacts/logs: `perf_tips.md`; `.agent/HANDOFF.md`; `TODO.md`.
