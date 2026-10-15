@@ -1,5 +1,30 @@
 # Handoff
 
+## SHA-256 doFinal repair — 2026-10-15
+
+- Fixed the first `MessageDigest.OneShot.doFinal()` failure. CHOUPI's persistent
+  object-field storage did not materialize Java's implicit default zero for
+  `inputLength`; the first read raised `SecurityException`. The private
+  `OneShot` constructor now explicitly stores `inputLength = 0`.
+- Java Card API commit: `31d6ab4`. Root regression-test commit: `1bb209c`.
+  The test prepares JCAlgTest's SHA-256 `doFinal` operation, sends one input
+  byte, and requires its success marker (`AA`).
+- Previously validated after the fix: `./tools/build arm`,
+  `./tools/build riscv`, `./tools/build-pc`, and one VPCD applet pass with
+  `TEST:SUMMARY pass=9 fail=0`; SHA-256 `doFinal` returned `AA 9000`.
+- Physical verification remains incomplete. A BOOTSEL UF2 copy was attempted
+  in the prior session, after which the mass-storage volume disappeared. In
+  this session `./tools/monitor --seconds 8` waited its 30-second USB discovery
+  window and failed with `ERROR: no USB serial device found`. No Pico USB
+  device or serial port is currently passed through to the VM, so no physical
+  SHA APDU or finite runtime log could be captured.
+- Next: attach the Pico's post-boot CHOUPI USB interfaces to this VM, then run
+  the bounded monitor and physical JCAlgTest SHA-256 `doFinal` probe. Do not
+  claim the real-hardware check passed until its APDU and finite serial output
+  are inspected.
+- VPCD artifact: `artifacts/logs/jcalgtest-sha256-dofinal-final-vpcd-20261015.log`
+  (SHA-256 `8a2670a7a510d5240afaaefb0317cc8b2e6ebdacc093568ca9ece205349076a0`).
+
 ## RP2350 SHA-256 implementation — 2026-10-15
 
 - Implementation commit: `80855c3` (API subrepository commit: `79fd1f7`).

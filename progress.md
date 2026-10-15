@@ -3420,3 +3420,13 @@
 - Decision: Continue by fixing the JCAlgTest `doFinal` applet-path SecurityException, then validate a known-answer digest and flash when the device is exposed in BOOTSEL.
 - Commit: `80855c3` (implementation commit)
 - Artifacts/logs: See the preceding SHA-256 record.
+
+## 2026-10-15 — Repair SHA-256 MessageDigest.doFinal initialization
+
+- Step/experiment: `alg-sha256-dofinal-init-20261015`
+- Change: Explicitly initialize `MessageDigest.OneShot.inputLength` to zero in its constructor. CHOUPI persists object fields separately and had not materialized Java's implicit zero value, so the first `doFinal()` path failed while reading the field. Added a JCAlgTest regression APDU that prepares SHA-256 `doFinal`, sends one input byte, and requires the `AA` success marker.
+- Validation: `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc` passed after the source fix. The bounded VPCD run passed `TEST:SUMMARY pass=9 fail=0`; the SHA-256 `doFinal` APDU returned `AA 9000`. The bounded hardware monitor `./tools/monitor --seconds 8` waited for USB discovery then failed with `ERROR: no USB serial device found`; physical APDU and serial validation were therefore not possible in this VM session.
+- Result: The first-call SHA-256 `doFinal()` regression is fixed and covered in VPCD. Real-board behavior remains unverified. The VPCD run did not compare digest bytes against a known-answer vector; this step establishes successful execution only.
+- Decision: Keep the fix. Complete the requested physical check after the Pico's post-boot USB interfaces are attached to this VM; inspect both the SHA APDU result and finite serial output.
+- Commit: Java Card API `31d6ab4`; root regression test `1bb209c`.
+- Artifacts/logs: `artifacts/logs/jcalgtest-sha256-dofinal-final-vpcd-20261015.log` (SHA-256 `8a2670a7a510d5240afaaefb0317cc8b2e6ebdacc093568ca9ece205349076a0`); no physical serial log was captured.
