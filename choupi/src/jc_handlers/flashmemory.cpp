@@ -414,9 +414,17 @@ fs::Tag FlashMemory_Handler::computeTag(const fs::Tag &tag,
 std::pair<uint32_t, const uint8_t *>
 FlashMemory_Handler::getDataInPlaceFromTag(const fs::Tag &tag) {
   const uint8_t *data = nullptr;
-  uint32_t data_length;
+  uint32_t data_length = 0;
 
-  if (fs_read_inplace(&(tag.value[0]), tag.len, &data, &data_length)) {
+  const uint8_t read_status =
+      fs_read_inplace(&(tag.value[0]), tag.len, &data, &data_length);
+  if (read_status) {
+    if (tag.len == 5 && tag.value[0] == 0x03 && tag.value[4] == 0xff) {
+      std::printf("CHOUPI:RESTORE_STORAGE status=%u length=%lu\r\n",
+                  static_cast<unsigned>(read_status),
+                  static_cast<unsigned long>(data_length));
+      std::fflush(stdout);
+    }
     throw Exceptions::IOException;
   }
 
@@ -532,9 +540,8 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
     length = length_tmp;
     data = data_tmp;
   } catch (Exceptions e) {
-    std::printf("CHOUPI:RESTORE_READ_FAIL id=%u exists=%u tag=",
-                static_cast<unsigned>(e),
-                fs_exists(tag.value, tag.len) ? 1u : 0u);
+    std::printf("CHOUPI:RESTORE_READ_FAIL id=%u tag=",
+                static_cast<unsigned>(e));
     for (uint8_t index = 0; index < tag.len; ++index) {
       std::printf("%02X", tag.value[index]);
     }
