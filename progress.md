@@ -3452,3 +3452,14 @@
 - Decision: Have the user run `sudo -n /usr/local/sbin/pico2-pcsc-reader` to refresh pcscd access for current device 001:033. Once the physical reader appears, reinstall JCAlgTest 1.8.2 if needed and probe SHA-256 `doFinal`; separately investigate the boot-time applet restore `6F00`.
 - Commit: `31d6ab4` (API fix) and `1bb209c` (regression APDU under hardware validation; no source changes in this flash step).
 - Artifacts/logs: `artifacts/logs/physical-sha256-dofinal-serial-20261015.log` (SHA-256 `069f486067d58198cd15a90ced6fc11eb4c6f5a11e62f75c488d5dfeee705255`); flashed UF2 SHA-256 `241eaa1592459b8fc1f7d38e0576437c9797202606c7a720ce3e43f964d8ad06`.
+
+
+## 2026-10-15 — Verify SHA-256 doFinal on physical JCAlgTest
+
+- Step/experiment: `physical-sha256-dofinal-20261015`
+- Change: Extended the PC/SC probe to prepare and invoke JCAlgTest 1.8.2 SHA-256 `MessageDigest.doFinal`, asserting its `AA` success marker. Reinstalled the supplied CAP after firmware reboot because the registered instance selected with `6F00`.
+- Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported `PCSC:ACCESS_GRANTED node=/dev/bus/usb/001/033 service=pcscd.service`; plain `pcsc_scan -r` listed `Pico 2 CHOUPI CCID`. GlobalPlatformPro reloaded the CAP and LOAD/INSTALL returned `9000`. `./tools/probe-jc-algtest` passed physical SELECT (`9000`), GETVERSION `1.8.2_jc305`, JCSystem info (`9000`), SHA-256 prepare (`AA 9000`), SHA-256 `doFinal` (`AA 9000`), and expected unsupported RSA-SHA1 (`12 03`, `9000`). A finite post-APDU serial capture completed.
+- Result: SHA-256 `doFinal` executes successfully on the real RP2350 with JCAlgTest 1.8.2; JCSystem APDU also passes in the same live card session. No digest known-answer comparison was performed. The boot-time serial check still fails repeatedly with `CHOUPI:STATUS sw=6F00` / `TEST:FAIL choupi_runtime`, despite the external APDU probe passing after CAP reinstall.
+- Decision: Physical live-session `doFinal` verification passes. Continue separately with persistent applet restoration and startup health-check failure; add digest-output checking if correctness beyond call completion is needed.
+- Commit: `33ad415` (physical APDU probe; implementation remains in API commit `31d6ab4`).
+- Artifacts/logs: `artifacts/logs/physical-sha256-dofinal-apdu-20261015.log` (SHA-256 `de5fbf9ff643efe139f0378c077fa28a69a1b3f1057868d82c9dd1844351f41e`); `artifacts/logs/physical-sha256-dofinal-post-apdu-serial-20261015.log` (SHA-256 `88ad5f1a1f077c5ae499682728dafabe45f36aabdd170cf3145aaa4137d024ee`).

@@ -1,5 +1,32 @@
 # Handoff
 
+## Physical JCAlgTest SHA-256 doFinal pass — 2026-10-15
+
+- The user-authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper
+  granted pcscd access to `/dev/bus/usb/001/033`. `pcsc_scan -r` listed the
+  Pico alongside both virtual readers. GlobalPlatformPro 26.06.04 listed the
+  existing JCAlgTest instance but its SELECT returned `6F00` after firmware
+  reboot, so the supplied `AlgTest_v1.8.2_jc305.cap` was reinstalled; LOAD and
+  INSTALL APDUs returned `9000`.
+- Extended `tools/JCAlgTestApduProbe.java` to prepare and invoke SHA-256
+  `doFinal`. Physical probe passed: SELECT `9000`, version `1.8.2_jc305`,
+  JCSystem info `9000`, SHA prepare `AA 9000`, SHA `doFinal` `AA 9000`, and
+  unsupported RSA-SHA1 `NO_SUCH_ALGORITHM` (`12 03`, status `9000`). Probe
+  source commit: `33ad415`.
+- The JCAlgTest marker establishes successful `doFinal` execution, not a
+  digest known-answer comparison. Post-APDU serial still reports boot-time
+  `CHOUPI:STATUS sw=6F00` / `TEST:FAIL choupi_runtime`; CCID had advanced to
+  stage 7 and reported the latest host APDU. Keep the applet restore/boot smoke
+  failure separate from the passing live-session SHA and JCSystem APDUs.
+- Next: if digest correctness is required, add a physical known-answer test that
+  can inspect output bytes. Separately fix startup persistent applet restore,
+  then power-cycle and repeat the APDU probe.
+- APDU log: `artifacts/logs/physical-sha256-dofinal-apdu-20261015.log`
+  (SHA-256 `de5fbf9ff643efe139f0378c077fa28a69a1b3f1057868d82c9dd1844351f41e`).
+  Post-APDU serial log: `artifacts/logs/physical-sha256-dofinal-post-apdu-serial-20261015.log`
+  (SHA-256 `88ad5f1a1f077c5ae499682728dafabe45f36aabdd170cf3145aaa4137d024ee`).
+
+
 ## Physical SHA-256 flash and boot check — 2026-10-15
 
 - After the user reattached BOOTSEL, ordinary sandboxed USB commands still
