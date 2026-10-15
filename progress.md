@@ -3410,3 +3410,13 @@
 - Decision: Keep the support implementation; debug the separate JCAlgTest performance-call failure and rerun a bounded SHA known-answer test after USB passthrough is restored.
 - Commit: pending
 - Artifacts/logs: VPCD log `artifacts/logs/jcalgtest-sha256-support-vpcd-20261015.log` (SHA-256 `57466b2d9e41a369d1be4ab0199942e6cc480c4fcc5d7ed1daa7a95280eb6238`); physical flash attempt `artifacts/logs/cycle-choupi-20261015T132103Z.log` (SHA-256 `fe2431031ef112a6a2d8c0294c29c9bcf8b380b2e50976af86beccde606d204f`).
+
+## 2026-10-15 — Record SHA-256 implementation commit
+
+- Step/experiment: `alg-sha256-rp2350-20261015-commit-record`
+- Change: Recorded the completed implementation commit in the session handoff; the SHA-256 implementation and validation record are in the preceding step.
+- Validation: Documentation-only continuity update; no code validation rerun.
+- Result: Implementation commit is `80855c3`; Java Card API subrepository commit is `79fd1f7`.
+- Decision: Continue by fixing the JCAlgTest `doFinal` applet-path SecurityException, then validate a known-answer digest and flash when the device is exposed in BOOTSEL.
+- Commit: `80855c3` (implementation commit)
+- Artifacts/logs: See the preceding SHA-256 record.

@@ -2,6 +2,8 @@
 
 ## RP2350 SHA-256 implementation — 2026-10-15
 
+- Implementation commit: `80855c3` (API subrepository commit: `79fd1f7`).
+
 - Added `MessageDigest.ALG_SHA_256` via the existing exported
   `MessageDigest.OneShot` class to keep Java Card export class tokens stable.
   The implementation buffers up to 2048 input bytes in `CLEAR_ON_RESET`
