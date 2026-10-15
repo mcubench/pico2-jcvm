@@ -2,29 +2,28 @@
 
 ## Current JCAlgTest development checkpoint — 2026-10-15
 
-- Added a narrow Java Card crypto subset to let the supplied JCAlgTest 1.8.2
-  constructor request AES-CBC-NOPAD and DES-CBC-NOPAD: AES/DES key objects,
-  factories, and a native CBC bridge using the Pico SDK's Mbed TLS.
-- The PC target needed its own Mbed TLS config wrapper to disable the SDK's
-  AES-NI option, plus `platform_util.c` for zeroization. PC ROM-mask generation
-  and the PC `choupi` target build pass. ARM and RISC-V wrapper builds also
-  pass; no firmware was flashed. CBC known-answer tests have not yet been run.
-- Bounded PC VPCD runs pass ATR and applet SELECT, then fail the JCSystem info
-  APDU with `6F00`. After fixing CAP interface counting and direct interface
-  casts, the current diagnostic is `StackUnderflowException` at
-  `INVOKEVIRTUAL` (opcode `0x8B`), package 63, method PC 15643, CP entry 401.
-  Trace: `artifacts/logs/jcalgtest-interface-hierarchy-fix-20261015.log`.
-  This supersedes prior `PUTFIELD_A` and `CHECKCAST` failures.
-- The temporary package-specific interpreter traces are removed. A temporary
-  PC-only underflow trace remains in `bc_object_field.cpp`; remove or gate it
-  when the call/return stack defect is fixed.
-- No real board was used. Flashing remains gated on a passing VPCD process
-  path and both architecture builds for the current shared source.
-- Performance documentation and timing sample commit: `7fc1775`.
-- Next: inspect the caller stack and argument count at `INVOKEVIRTUAL`, fix the
-  operand loss, add AES and 3DES CBC known-answer coverage, rerun the
-  bounded VPCD applet test, then repeat both firmware builds before considering
-  hardware validation.
+- The bounded PC VPCD applet test now passes ATR, SELECT, JCSystem info, and
+  supported-algorithm APDU in one emulator pass. Log:
+  `artifacts/logs/jcalgtest-internal-virtual-table-token-fix-20261015.log`.
+- Root cause: ROM-mask generation encoded internal virtual method references
+  with a declaration index, not the public/package virtual-table token. It
+  emitted token zero for APDU methods, causing `setOutgoing()` to resolve to
+  `Object.equals()` and underflow. The generator now resolves each internal
+  signature in the class method tables. Nested ROM-mask commit: `fa470e5`.
+- PC ROM-mask generation, PC emulator build, and `./tools/build arm` pass. The
+  ARM build needed `[[maybe_unused]]` on a diagnostic stage variable in
+  `bc_object.cpp`; that broader file still contains pre-existing uncommitted
+  CHECKCAST changes. No RISC-V build or flash was performed, matching the
+  ARM-only scope. The current tree contains extensive pre-existing dirty files;
+  stage only work belonging to each next step.
+- The official JCAlgTest v1.8.2 host client has not yet been run against VPCD;
+  CBC known-answer tests and physical-board process/power-cycle validation also
+  remain outstanding. Do not mark AC1–AC5 complete.
+- Next: review and remove/gate temporary VM traces, rerun the bounded VPCD test
+  twice to check repeatability, then run the official supported-algorithms
+  client against VPCD and compare its CSV with the archived jCardSim reference.
+  Add CBC known-answer coverage before proceeding to the physical card. Do not
+  run RISC-V builds or tests.
 
 ## Current performance measurement checkpoint — 2026-10-15
 

@@ -3027,3 +3027,32 @@
   comparable phase/resource measurements when they can guide an optimization.
 - Commit: recorded in this reference commit.
 - Artifacts/logs: `perf_tips.md`; `.agent/HANDOFF.md`; `TODO.md`.
+
+## 2026-10-15 — Fix ROM-mask internal virtual method tokens
+
+- Step/experiment: `jca-rommask-internal-virtual-method-table-tokens-20261015`
+- Change: ROM-mask generation now resolves an internal virtual-method signature
+  to its class public/package method-table token instead of using the method
+  declaration index. This corrected APDU virtual calls that previously encoded
+  token zero. Nested ROM-mask source commit: `fa470e5`. Updated the current
+  JCAlgTest checkpoint in `TODO.md` and `.agent/HANDOFF.md`.
+- Validation: `./tools/build-pc` passed; generated framework APDU CP tokens are
+  `1, 3, 5, 8` for `getBuffer`, `setOutgoing`, `setOutgoingLength`, and
+  `sendBytes`. The PC emulator build passed. A bounded one-pass
+  `./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 20` passed ATR,
+  SELECT, JCSystem info, and supported-algorithm APDUs (`TEST:SUMMARY pass=5
+  fail=0`). `./tools/build arm` passed after marking the PC-only diagnostic
+  stage variable `[[maybe_unused]]` in `bc_object.cpp`; the ARM build initially
+  failed because `-Werror` treated it as unused. No RISC-V build/test or flash
+  was run.
+- Result: The former `INVOKEVIRTUAL` underflow is cleared on the PC VPCD path.
+  This proves one host-emulator pass only; physical applet execution, the full
+  official host client, repeated clean runs, and power-cycle persistence remain
+  unverified. The `bc_object.cpp` warning annotation is in a file with broader
+  pre-existing uncommitted changes and was not included in this step's commit.
+- Decision: Remove or gate temporary diagnostics, verify repeatability, run the
+  official supported-algorithms client against VPCD, and add CBC KAT coverage.
+  Continue ARM-only and defer flashing until repository build gates permit it.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs: `artifacts/logs/jcalgtest-internal-virtual-table-token-fix-20261015.log`;
+  `build/choupi-pc/flash`; `build/arm/pico2_choupi.uf2`.

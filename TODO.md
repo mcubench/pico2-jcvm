@@ -22,7 +22,7 @@ out explicitly.
 
 ## Active: validate the applet process APDUs and client results
 
-Current environment note (2026-10-14): the latest `./tools/cycle choupi`
+Current environment note (2026-10-15): the latest `./tools/cycle choupi`
 rebuilt ARM, RISC-V, and CHOUPI successfully, flashed the ARM firmware, and
 passed the finite 18-second runtime capture with 18 repeated
 `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` pairs. The detailed
@@ -30,18 +30,19 @@ record is `artifacts/logs/cycle-choupi-20261014T135618Z.log`. The corrected ARM 
 GlobalPlatformPro CAP LOAD and INSTALL returned `9000`, the registry lists
 `JCAlgTest1` as `INITIALIZED`, and SELECT by AID returned `9000` with FCI. These
 steps validate install and selection, but `Applet.process()` has not yet been
-validated on the physical card. A PC VPCD integration test now restores the
-persisted applet and confirms ATR and SELECT, then sends the JCSystem info
-command. The latest PC VPCD run returns `6F00`: after the CAP interface
-hierarchy fix, the interpreter reaches `INVOKEVIRTUAL` (opcode `0x8B`) at
-package 63, method PC 15643, CP entry 401, then throws
-`StackUnderflowException`. This supersedes the earlier `PUTFIELD_A` finding at
-Method component offset 39 and CP entry 174 `SecurityException`. The latest
-bounded trace is `artifacts/logs/jcalgtest-interface-hierarchy-fix-20261015.log`.
-The finite VPCD test now launches the emulator in its own process group and
-uses bounded SIGINT/TERM/KILL teardown, so a failed APDU does not leave the
-long-running JCRE behind. ATR and SELECT pass; the JCSystem info APDU still
-returns `6F00`.
+validated on the physical card. The PC VPCD integration now restores the
+persisted applet and passes ATR, SELECT, JCSystem info, and the
+supported-algorithm APDU in one bounded pass. The prior
+`INVOKEVIRTUAL`/`StackUnderflowException` was caused by ROM-mask generation
+encoding internal virtual method references with the declaration index rather
+than the class virtual-table token. The updated generator resolves the
+signature against the public/package method table; its emitted APDU tokens are
+`1`, `3`, `5`, and `8` for `getBuffer`, `setOutgoing`, `setOutgoingLength`, and
+`sendBytes`. The pass log is
+`artifacts/logs/jcalgtest-internal-virtual-table-token-fix-20261015.log`.
+This is host-emulator evidence only, not a board result. The ARM wrapper build
+passes with the regenerated ROM mask. No RISC-V build was run, per the current
+ARM-only scope, and no flash was attempted.
 This is host-emulator evidence only, not a board result. The official JCAlgTest
 v1.8.2 host JAR has
 been downloaded to `build/algtest-client-1.8.2/`; its bundled JC305 CAP has the
