@@ -95,6 +95,7 @@ uint8_t remap_imported_static_method_token(
       11, 10, 12, 8,  19, 15, 16, 13, 14, 7,  1,  9,
       2,  3,  5,  4,  17, 20, 21, 22, 23, 6,  18};
   static constexpr uint8_t java_lang_object_methods[] = {0};
+  static constexpr uint8_t security_digest_methods[] = {0, 1, 1};
 
   const uint8_t *mapping = nullptr;
   size_t mapping_size = 0;
@@ -110,6 +111,12 @@ uint8_t remap_imported_static_method_token(
              class_token == 0) {
     mapping = java_lang_object_methods;
     mapping_size = sizeof(java_lang_object_methods);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+             class_token == 11) {
+    mapping = security_digest_methods;
+    mapping_size = sizeof(security_digest_methods);
   }
 
   if (mapping == nullptr || method_token >= mapping_size) {
@@ -121,6 +128,15 @@ uint8_t remap_imported_static_method_token(
 uint8_t remap_imported_virtual_method_token(
     const jc_cap_package_info &package_info, const uint8_t class_token,
     const uint8_t method_token) noexcept {
+  static constexpr uint8_t security_digest_virtual_methods[] = {
+      0, 3, 1, 2, 5, 4};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 11 &&
+      method_token < sizeof(security_digest_virtual_methods)) {
+    return security_digest_virtual_methods[method_token];
+  }
   static constexpr uint8_t framework_applet_methods[] = {
       1, 2, 3, 4, 6, 7, 5, 8};
   if (package_info.AID_length == 7 &&

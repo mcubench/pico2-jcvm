@@ -16,7 +16,7 @@ java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
   -DCHOUPI_JCVM_DEBUG=ON \
   -DCHOUPI_JAVA8_HOME="${java8_home}"
 
-"${repo_root}/tools/env" cmake --build "${build_dir}" --target rommask -j2
+"${repo_root}/tools/env" cmake --build "${build_dir}" --target rommask choupi -j2
 
 rom_image="${build_dir}/flash"
 generated_header="${build_dir}/jni.hpp"

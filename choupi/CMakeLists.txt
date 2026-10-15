@@ -318,11 +318,16 @@ file(GLOB_RECURSE JCVM_CORE_SOURCES_FILES
 
 if(CHOUPI_TARGET_PC)
 
-  add_executable(choupi "${JCVM_CORE_SOURCES_FILES}")
+  add_executable(choupi "${JCVM_CORE_SOURCES_FILES}"
+                        "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha256.c"
+                        "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
 
   target_include_directories(
     choupi PUBLIC ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/src"
-                  "${CMAKE_SOURCE_DIR}/os/src")
+                  "${CMAKE_SOURCE_DIR}/os/src"
+                  "$ENV{PICO_SDK_PATH}/lib/mbedtls/include")
+  target_compile_definitions(choupi PRIVATE
+    MBEDTLS_CONFIG_FILE=\"mbedtls_config_pc.h\")
 
 endif(CHOUPI_TARGET_PC)
 

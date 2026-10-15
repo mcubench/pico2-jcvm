@@ -43,6 +43,7 @@ file(GLOB_RECURSE CHOUPI_VM_SOURCES CONFIGURE_DEPENDS
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX "/main(_arm|_pc)?\\.cpp$")
 if(CHOUPI_VM_SOURCES)
   add_library(choupi_vm_core OBJECT ${CHOUPI_VM_SOURCES})
+  target_link_libraries(choupi_vm_core PRIVATE pico_sha256_headers)
   target_include_directories(choupi_vm_core PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/os/src"
@@ -100,6 +101,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   target_compile_definitions(pico2_choupi PRIVATE DEBUG)
   target_link_libraries(pico2_choupi PRIVATE pico_stdlib pico_rand pico_flash
     pico_mbedtls_headers)
+  target_link_libraries(pico2_choupi PRIVATE pico_sha256)
   pico_enable_stdio_usb(pico2_choupi 1)
   # This image owns TinyUSB's polling and CCID driver. Keep tud_task() and
   # endpoint operations in the main loop instead of racing the SDK IRQ worker.

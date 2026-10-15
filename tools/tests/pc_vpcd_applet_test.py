@@ -138,11 +138,16 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
                     bytes.fromhex("B0730100010100"),
                     "JCAlgTest JCSystem info APDU",
                 )
-                exchange(
+                sha256_digest = exchange(
                     connection,
                     bytes.fromhex("B07515000304000000"),
                     "JCAlgTest supported-algorithm APDU",
                 )
+                if sha256_digest[:2] != bytes.fromhex("1500"):
+                    raise RuntimeError(
+                        "MessageDigest ALG_SHA_256 was not reported supported: "
+                        f"{sha256_digest.hex().upper()}"
+                    )
                 aes_cipher = exchange(
                     connection,
                     bytes.fromhex("B0751100030D000000"),

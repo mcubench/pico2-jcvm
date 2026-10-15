@@ -1,5 +1,28 @@
 # Handoff
 
+## RP2350 SHA-256 implementation — 2026-10-15
+
+- Added `MessageDigest.ALG_SHA_256` via the existing exported
+  `MessageDigest.OneShot` class to keep Java Card export class tokens stable.
+  The implementation buffers up to 2048 input bytes in `CLEAR_ON_RESET`
+  transient storage, then calls a native bridge. RP2350 ARM uses the Pico SDK
+  SHA-256 hardware accelerator; the PC emulator uses Mbed TLS.
+- `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc` passed.
+  The VPCD JCAlgTest 1.8.2 run passed all 9 checks, including supported result
+  `15 00` for SHA-256:
+  `artifacts/logs/jcalgtest-sha256-support-vpcd-20261015.log`.
+- Limitation: an exploratory JCAlgTest MessageDigest performance `doFinal`
+  APDU returned `6F00` with a `SecurityException` at `GETFIELD_S_THIS` in the
+  dynamic applet path. The native digest result was not independently checked.
+  Do not claim digest known-answer or hardware validation yet.
+- The physical `cycle choupi` rebuilt both architectures but did not flash:
+  the USB wait timed out after 120 seconds because this VM could not see any
+  RP-series device (`lsusb` reported libusb `-99`). Log:
+  `artifacts/logs/cycle-choupi-20261015T132103Z.log`.
+- Next: debug the JCAlgTest performance APDU state failure, add/run a bounded
+  SHA-256 known-answer check, then flash and inspect serial output once USB
+  passthrough is available to this VM.
+
 ## Physical JCAlgTest and JCSystem live-session pass — 2026-10-15
 
 - Reinstalled `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` on the running Pico
