@@ -18,6 +18,17 @@
   change, choose `Virtual PCD 00 00`, and check whether the reader changes from
   `NO CARD` and the client gets past connection setup. Do not use the old
   emulator process/binary for this check. No physical token was used.
+- Follow-up validation: the rebuilt `build/choupi-pc/choupi` passed one bounded
+  internal VPCD harness pass: connect 1.789 s, ATR 0.001 s, SELECT 0.161 s,
+  JCSystem info 13.934 s, supported-algorithm APDU 2.945 s;
+  `TEST:SUMMARY pass=5 fail=0`. Its mtime is 2026-10-15 09:19:42. This confirms
+  the current binary is not stale and its emulator/APDU path works. The
+  official PC/SC listener at localhost:35963 remains inaccessible from the
+  agent execution namespace (a direct probe returned `Connection refused`,
+  including with escalation), while the user VM's separate `ss` command showed
+  LISTEN on ports 35963 and 35964. Run the CHOUPI process in the same VM
+  network namespace as the `pcscd` VPCD listener to complete the official
+  client check.
 
 ## Current JCAlgTest development checkpoint — 2026-10-15
 

@@ -3212,3 +3212,26 @@
   available.
 - Commit: recorded in this reference entry.
 - Artifacts/logs: `artifacts/logs/jcalgtest-vpcd-phase-timing-20261015.log`.
+
+## 2026-10-15 — Revalidate VPCD emulator after PC/SC connection refusal
+
+- Step/experiment: `vpcd-internal-revalidation-20261015`
+- Change: Re-ran the repository's bounded host VPCD applet harness against the
+  current rebuilt emulator and checked reachability of the user's PC/SC VPCD
+  port from the agent execution environment.
+- Validation: `./tools/test-pc-vpcd-applet --passes 1 --log
+  artifacts/logs/jcalgtest-vpcd-internal-after-atr-fix-20261015.log
+  --flash-copy build/algtest-v182-vpcd-flash-after-atr-fix.bin` passed with
+  `TEST:SUMMARY pass=5 fail=0`. Phases: connect 1.789 s, ATR 0.001 s, SELECT
+  0.161 s, JCSystem info 13.934 s, supported-algorithm APDU 2.945 s. A direct
+  TCP probe from the agent namespace returned `Connection refused`, even with
+  escalation; the user separately observed LISTEN on ports 35963/35964.
+- Result: The current binary is fresh and its internal VPCD/APDU path passes.
+  The official PC/SC integration remains unverified because the listener shown
+  in the user's VM is not reachable from this command execution namespace.
+- Decision: For the official client check, run the emulator in the same VM
+  network namespace as the active `pcscd` VPCD listener; compare `ss -ltnp`
+  from that namespace at the time of connection.
+- Commit: recorded in the following reference entry.
+- Artifacts/logs:
+  `artifacts/logs/jcalgtest-vpcd-internal-after-atr-fix-20261015.log`.
