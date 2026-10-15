@@ -2995,3 +2995,22 @@
   performance samples only from comparable work units.
 - Commit: recorded in this reference commit.
 - Artifacts/logs: `perf_tips.md`; `.agent/HANDOFF.md`.
+
+## 2026-10-15 — Refresh development performance suggestions
+
+- Step/experiment: `performance-suggestions-refresh-20261015`
+- Change: Updated `perf_tips.md` with the current timer summary table, current
+  VPCD `INVOKEVIRTUAL` stack-underflow location, and measurement priorities.
+  Marked prior timing and failure diagnoses as historical. Updated `TODO.md`
+  and `.agent/HANDOFF.md` to match the current failing opcode and trace.
+- Validation: `./tools/task-time report` showed 34 successful intervals
+  totaling 286.750 s plus 28 non-OK intervals; `git diff --check` passed.
+  Documentation-only; no build, test, or hardware operation was run.
+- Result: Compile accounts for 259.562 s across 22 successful intervals;
+  upload remains unmeasured. Latest VPCD failure took 15.897 s and returned
+  `6F00` at `INVOKEVIRTUAL` after ATR and SELECT.
+- Decision: Use phase timing and CPU/resource samples before proposing runtime
+  or build changes; continue the current operand-stack diagnosis.
+- Commit: pending.
+- Artifacts/logs: `perf_tips.md`; `artifacts/metrics/development-time.csv`;
+  `artifacts/logs/jcalgtest-interface-hierarchy-fix-20261015.log`.

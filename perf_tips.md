@@ -4,6 +4,64 @@ These are measured observations and low-risk experiments for keeping the Pico 2
 development loop responsive. The sample now covers several builds and host
 tests, but it is still too small to estimate stable long-term averages.
 
+## Current checkpoint — 2026-10-15
+
+The latest `./tools/task-time report` contains 34 successful intervals totaling
+286.750 seconds, plus 28 non-OK intervals. The breakdown is:
+
+| Category | Successful runs | Total | Mean | Max | Non-OK |
+|---|---:|---:|---:|---:|---:|
+| Compile | 22 | 259.562 s | 11.798 s | 35.131 s | 5 |
+| Test | 9 | 22.437 s | 2.493 s | 5.184 s | 23 |
+| Thinking | 1 | 4.641 s | 4.641 s | 4.641 s | 0 |
+| Tool check | 2 | 0.110 s | 0.055 s | 0.055 s | 0 |
+| Upload | 0 | — | — | — | — |
+| **Total** | **34** | **286.750 s** | — | — | **28** |
+
+Non-OK intervals measure failed or interrupted workflow attempts, not target
+runtime performance. Upload time remains unmeasured.
+
+The newest bounded JCAlgTest VPCD attempt took 15.897 s and reached ATR and
+applet SELECT, then returned `6F00`. The trace now shows
+`StackUnderflowException` at `INVOKEVIRTUAL` (opcode `0x8B`), package 63,
+method PC 15643, CP entry 401. This supersedes the earlier `CHECKCAST` and
+`PUTFIELD_A` diagnoses. It is failure-to-diagnosis time, not successful APDU
+throughput. See
+[`jcalgtest-interface-hierarchy-fix-20261015.log`](artifacts/logs/jcalgtest-interface-hierarchy-fix-20261015.log).
+
+### Current recommendations
+
+1. **Keep the short feedback loop.** The latest successful test intervals average
+   2.493 s, while successful compile work averages 11.798 s across mixed build
+   types. Run the narrow host regression for each runtime change before the
+   broader build or VPCD path. Do not combine PC, ARM, RISC-V, clean, and
+   incremental build durations into one baseline.
+2. **Profile the failing APDU by phase.** Add elapsed-time boundaries for VPCD
+   connect, ATR, SELECT, APDU send/response, and teardown. For the failing
+   `INVOKEVIRTUAL`, record stack depth, argument count, and time spent in lookup
+   separately. Keep the overall deadline fixed; do not optimize VM lookup until
+   timings show it is material.
+3. **Reduce failed iteration cost.** There have been 28 non-OK intervals. Check
+   the host emulator and VPCD endpoint once before the APDU run, use bounded
+   retries with backoff, and keep diagnostic output selective. Treat the count
+   as a workflow signal only; it does not establish a performance bottleneck.
+4. **Measure CPU and memory on long work.** The task timer records wall time
+   only. For repeated builds and VPCD runs, record wall/user/system time, peak
+   RSS, source revision, target, clean/incremental state, and job count. This is
+   needed to distinguish active CPU work from I/O waits and competing builds.
+5. **Keep build concurrency conservative until compared.** The earlier report
+   of all eight VM cores being occupied has not been tied to a process or
+   measured job-count comparison. Run one build at a time and compare bounded
+   job counts on the same inputs before changing the existing two-job default.
+6. **Measure upload as independent steps.** BOOTSEL entry, transfer,
+   re-enumeration, PC/SC discovery, and serial validation are still unmeasured.
+   Time them separately when flashing resumes so device recovery does not get
+   mixed with firmware execution.
+
+These are measurement-led suggestions, not claims of a speedup or a diagnosed
+CPU bottleneck. Older measurements and failure locations below describe prior
+code states; the checkpoint above is the current status.
+
 ## Current measurements
 
 From `artifacts/metrics/development-time.csv` and the host install log below:
@@ -252,7 +310,7 @@ These are experiments, not claimed speedups. In particular, the 5:13 Maven
 duration and 7.39-second VPCD failure are single observations; repeat them under
 the same conditions before changing build or runtime behavior.
 
-## Latest task-time sample and practical suggestions — 2026-10-15
+## Previous task-time sample — 2026-10-15 (historical)
 
 `./tools/task-time report` currently summarizes 26 successful intervals
 (183.503 s total) and 18 non-OK intervals. The successful work is dominated by
@@ -306,14 +364,14 @@ useful dataset is several comparable ARM incremental builds, one controlled
 VPCD phase trace after the current `CHECKCAST` defect is resolved, and separate
 physical upload/preflight timings when the board test is safe to run.
 
-## VPCD applet-debug loop
+## VPCD applet-debug loop — prior failure locations are historical
 
-The latest trace passes ATR and applet SELECT, then the JCSystem information
-APDU fails with `6F00`. It throws `StackUnderflowException` at `PUTFIELD_A`
-in package 63, Method component offset 39 (CP field index 5), with operand
-depth zero. The three recent bounded runs took 5.341–5.974 seconds. This is a
-correctness failure and failure-to-diagnosis time, not applet throughput. It
-supersedes older `SecurityException` and `GETFIELD_S_THIS` diagnoses.
+At the time of the trace cited below, the JCSystem information APDU failed
+with `6F00` and `StackUnderflowException` at `PUTFIELD_A` in package 63,
+Method component offset 39 (CP field index 5), with operand depth zero. That
+finding is superseded by the current `INVOKEVIRTUAL` failure in the checkpoint
+at the top of this file. The old 5.341–5.974-second durations are failure-to-
+diagnosis times, not applet throughput.
 
 The 34.837-second PC smoke attempt and older 7.39-second diagnostic are
 historical timings from different failure paths. Do not compare them as a
@@ -346,7 +404,7 @@ optimizing filesystem reads, dispatch, or lookup.
   material to elapsed time; preserve the unoptimized path as the correctness
   baseline.
 - **Use the smallest reproducer first.** Keep ATR/SELECT coverage, then run the
-  JCSystem information APDU with a short deadline while tracing the
-  `PUTFIELD_A` call/return stack around package 63, offset 39. Add later applet
-  commands only after that request returns the expected response; this avoids
-  paying for unrelated test phases on every fix attempt.
+  JCSystem information APDU with a short deadline while tracing the current
+  `INVOKEVIRTUAL` receiver and argument stack. Add later applet commands only
+  after that request returns the expected response; this avoids paying for
+  unrelated test phases on every fix attempt.

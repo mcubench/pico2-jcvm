@@ -10,21 +10,33 @@
   and the PC `choupi` target build pass. ARM and RISC-V wrapper builds also
   pass; no firmware was flashed. CBC known-answer tests have not yet been run.
 - Bounded PC VPCD runs pass ATR and applet SELECT, then fail the JCSystem info
-  APDU with `6F00`. Latest diagnostic: `StackUnderflowException` at
-  `PUTFIELD_A`, package 63, Method component offset 39, CP field index 5,
-  operand depth 0, locals 0/1=`0x0008`, bytes `87 05 7A`.
-  Trace: `artifacts/logs/jcalgtest-putfield-callsite-20261015.log`. This
-  supersedes the earlier CP field 174 `SecurityException` finding.
+  APDU with `6F00`. After fixing CAP interface counting and direct interface
+  casts, the current diagnostic is `StackUnderflowException` at
+  `INVOKEVIRTUAL` (opcode `0x8B`), package 63, method PC 15643, CP entry 401.
+  Trace: `artifacts/logs/jcalgtest-interface-hierarchy-fix-20261015.log`.
+  This supersedes prior `PUTFIELD_A` and `CHECKCAST` failures.
 - The temporary package-specific interpreter traces are removed. A temporary
   PC-only underflow trace remains in `bc_object_field.cpp`; remove or gate it
   when the call/return stack defect is fixed.
 - No real board was used. Flashing remains gated on a passing VPCD process
   path and both architecture builds for the current shared source.
 - Performance documentation and timing sample commit: `7fc1775`.
-- Next: trace the static factory/native return path around the offset-39 store,
-  fix the operand loss, add AES and 3DES CBC known-answer coverage, rerun the
+- Next: inspect the caller stack and argument count at `INVOKEVIRTUAL`, fix the
+  operand loss, add AES and 3DES CBC known-answer coverage, rerun the
   bounded VPCD applet test, then repeat both firmware builds before considering
   hardware validation.
+
+## Current performance measurement checkpoint — 2026-10-15
+
+- `./tools/task-time report`: 34 successful intervals totaling 286.750 s, plus
+  28 non-OK intervals. Compile: 22 successful, 259.562 s total, 11.798 s mean,
+  35.131 s max. Test: 9 successful, 22.437 s total, 2.493 s mean. Upload has
+  no measurements.
+- Latest VPCD attempt took 15.897 s and failed at `INVOKEVIRTUAL` with
+  `StackUnderflowException`; this is failure-to-diagnosis time, not APDU
+  throughput. Focus the next timing on APDU phases and the current stack/method
+  lookup path. Avoid speedup claims until CPU and phase timings are collected.
+- Performance suggestions and metric interpretation are in `perf_tips.md`.
 
 ## Development performance suggestions — 2026-10-15
 
