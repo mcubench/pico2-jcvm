@@ -207,6 +207,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   after adding CMake output stamps, the follow-up PC build skipped both stages.
 - [ ] Implement and verify GP DELETE and the remaining required GET STATUS / GET
   DATA behavior, including accurate package and applet lifecycle state.
+  The installed-applet GET STATUS E3 encoder is now a bounds-checked helper;
+  its test verifies the complete 32-byte JCAlgTest registry entry and exact BER
+  lengths. DELETE, GET DATA, and end-to-end card-manager state verification
+  remain open.
 - [x] Integrate the PC-build vpcd frame transport with power controls, ATR,
   applet SELECT/DESELECT, and APDU dispatch through the VM lifecycle bridge.
   The PC target builds, the frame codec passes 14 checks, and a new session

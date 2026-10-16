@@ -3553,3 +3553,13 @@
 - Decision: Do not change SHA based on simulator timing noise. Retry static mode against the exact physical Pico reader after Java SmartcardIO sees it; do not classify expected unsupported algorithms as bugs.
 - Commit: `8dd50ebdb0c08d7e30a553f1e0e8866ea6cf607e`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-reader-selector-static-simulator-20261016.log` (SHA-256 `9e20a5e357b29b258d1d192ddb3f6cecb25bf9a60ca235f203ef09692eca31a0`); `artifacts/results/jcalgtest-reader-selector-static-simulator-20261016/`.
+
+## 2026-10-16 — Verify GlobalPlatform GET STATUS applet entry encoding
+
+- Step/experiment: `gp-get-status-registry-tlv-20261016`
+- Change: Factored the installed-applet E3 registry entry used by CCID GET STATUS into a bounds-checked encoder. The byte layout is unchanged; the supplied JCAlgTest applet AID produces a 32-byte entry with a matching 30-byte outer value. Added exact-byte and invalid-input coverage. Preserved unrelated existing changes in `src/ccid_device.cpp` and staged only the include and GET STATUS encoder hunk.
+- Validation: `./tools/test-gp-registry` passed 7 checks (`TEST:SUMMARY pass=7 fail=0`). `./tools/build arm` passed both `BUILD:PASS arch=arm` and `BUILD:PASS target=choupi`; no warnings were emitted in the captured build output. No RISC-V build or hardware APDU/flash was run. Hardware validation was skipped because Java SmartcardIO has no visible reader here and the required dual-architecture flash gate cannot be satisfied while following the ARM-only scope.
+- Result: The installed applet registry response helper emits the exact nested TLV bytes and rejects short output capacity and invalid instance AID length. This validates the encoding helper, not the embedded PC/SC transaction; GET STATUS lifecycle accuracy, DELETE, and GET DATA remain incomplete.
+- Decision: Keep the response wire representation unchanged. Continue card-manager lifecycle behavior and host-accessible APDU coverage; do not flash this build until the repository gate is met.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/gp-registry-tlv-test-20261016.log` (SHA-256 `d1b2057bb43770a76617c72a943d1eac449a3ec8ee020e6e58c4572e7184d0a4`); `artifacts/logs/build-arm-gp-registry-tlv-20261016.log` (SHA-256 `ef6de0d8ed9bca880d446b9353e396063980920f08e1cef65100b8ec9e714b4d`).

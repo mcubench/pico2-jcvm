@@ -1,5 +1,23 @@
 # Handoff
 
+## GET STATUS registry-entry encoding coverage — 2026-10-16
+
+- Extracted the installed-applet E3 entry encoder used by the CCID GET STATUS
+  response into `src/gp_registry.hpp`. The encoded entry is unchanged; for the
+  supplied JCAlgTest AID it is 32 bytes with a 30-byte E3 value. The helper
+  checks AID lengths and destination capacity before writing.
+- `./tools/test-gp-registry` passed seven exact-byte, outer-length, capacity,
+  and invalid-AID checks. `./tools/build arm` passed both the ARM smoke image
+  and CHOUPI firmware image. No RISC-V build or flash was performed. No
+  hardware GET STATUS APDU was sent because PC/SC is not available to this
+  execution context; the other architecture is also intentionally out of
+  scope, so the AGENTS.md flash gate was not met.
+- Existing unrelated dirty hunks in `src/ccid_device.cpp` were preserved and
+  excluded from the staged implementation.
+- Next: continue GP DELETE / GET DATA and accurate package/applet lifecycle
+  behavior, with physical verification only after host reader visibility and
+  the required build gate are available.
+
 ## Official JCAlgTest reader selection launcher — 2026-10-16
 
 - Added `tools/run-jcalgtest` for JCAlgTest 1.8.2. Use

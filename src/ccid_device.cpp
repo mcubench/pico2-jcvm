@@ -7,6 +7,7 @@
 #include "tusb.h"
 #include "scp03.hpp"
 #include "cap_load.hpp"
+#include "gp_registry.hpp"
 
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
@@ -264,27 +265,19 @@ void process_message(uint8_t rhport) {
                     sizeof(isd_registry_entry));
         size_t registry_length = sizeof(isd_registry_entry);
         if (cap_load_session.installed()) {
-          const uint8_t aid_length = cap_load_session.instanceAidLength();
-          uint8_t *entry = response + registry_length;
-          const size_t entry_length = 22 + aid_length;
-          entry[0] = 0xe3;
-          entry[1] = static_cast<uint8_t>(entry_length - 2);
-          entry[2] = 0x4f;
-          entry[3] = aid_length;
-          std::memcpy(entry + 4, cap_load_session.instanceAid(), aid_length);
-          size_t pos = 4 + aid_length;
-          entry[pos++] = 0xcc;
-          entry[pos++] = sizeof(kAlgTestPackageAid);
-          std::memcpy(entry + pos, kAlgTestPackageAid,
-                      sizeof(kAlgTestPackageAid));
-          pos += sizeof(kAlgTestPackageAid);
-          entry[pos++] = 0x9f;
-          entry[pos++] = 0x70;
-          entry[pos++] = 0x01;
-          entry[pos++] = 0x07; // selectable
-          entry[pos++] = 0xc5;
-          entry[pos++] = 0x01;
-          entry[pos++] = 0x00; // no privileges
+          size_t entry_length = 0;
+          if (!gp::append_registry_entry(
+                  response + registry_length,
+                  sizeof(response) - registry_length, entry_length,
+                  cap_load_session.instanceAid(),
+                  cap_load_session.instanceAidLength(), kAlgTestPackageAid,
+                  sizeof(kAlgTestPackageAid), 0x07)) {
+            response[0] = 0x6f;
+            response[1] = 0x00;
+            response_length = 2;
+            send_response(rhport, 0x80, response, response_length);
+            break;
+          }
           registry_length += entry_length;
         }
         response[registry_length++] = 0x90;
