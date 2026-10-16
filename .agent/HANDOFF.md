@@ -1,5 +1,34 @@
 # Handoff
 
+## Latest continuation — 2026-10-17
+
+- The replugged Pico enumerated as `2e8a:0009` in the host-access context.
+  `./tools/build arm` passed, then `./tools/flash build/arm/pico2_choupi.uf2`
+  passed after its CDC fallback entered BOOTSEL. This flash was part of the
+  explicitly requested ARM hardware investigation; no RISC-V build was run.
+- Before flashing, raw CCID SELECT returned `9000`, but GETVERSION returned
+  `F503`. The serial trace identified `VPCD:APPLET_PROCESS status=F503` at
+  opcode `0x93`. After flashing the rebuilt ARM image, direct CCID probes
+  passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem info, SHA-256 support,
+  SHA-256 prepare/doFinal, and the JCAlgTest 256-byte / 50-call static SHA
+  workload (`AA9000`, 0.718038 s). Transcript:
+  `artifacts/logs/jcalgtest-physical-resume-20261016.log`.
+- Bounded post-test serial output includes `TEST:PASS choupi_runtime` and no
+  `FAULT`, but repeatedly prints `WATCHDOG_RECOVERY cause=other` with a retained
+  marker. Determine whether this is stale diagnostic state; do not infer a
+  runtime reset from the marker alone. Capture:
+  `artifacts/logs/monitor-arm-physical-jcalgtest-20261017.log`.
+- `pcscd.service` is inactive. Bounded `pcsc_scan -r` sees only Virtual PCD
+  readers, so the official Java client could not target the physical reader.
+  The static APDU test reproduces its workload over raw CCID but is not an
+  official client run. Do not use sudo; continue using direct CCID until PC/SC
+  is available.
+- Next: investigate the repeated diagnostic marker, then continue JCSystem
+  gaps. In particular, available-memory and commit-capacity natives still
+  return zero because this port does not expose capacity accounting. Later,
+  rerun official v1.8.2 `ALG_PERFORMANCE_STATIC` through the named physical
+  PC/SC reader when the service is active.
+
 ## Latest continuation — 2026-10-16
 
 - User replugged the Pico, but this process still cannot access USB: both

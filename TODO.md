@@ -23,7 +23,7 @@ out explicitly.
 
 ## Active: validate the applet process APDUs and client results
 
-Current verified status (2026-10-16):
+Current verified status (2026-10-17):
 
 - `JC_Instance::getFields()` now follows the OS FFI contract: `fs_exists()` is
   nonzero when the record exists. A fresh JCAlgTest applet SELECT now succeeds;
@@ -42,30 +42,39 @@ Current verified status (2026-10-16):
   checks. `tools/test-jcarray` now uses `tools/env cmake` rather than invoking
   the compiler directly; its PC mbedTLS include setup and filesystem test stub
   are maintained under `tools/tests/jcarray/`.
-- Physical status remains unverified on the latest source: this process cannot
-  initialize libusb (`-99`) for either `2e8a:0009` or `2e8a:000f`, and bounded
-  `pcsc_scan -r` reports that the PC/SC service is unavailable. No flash or
-  physical APDU test was run during this continuation.
+- The replugged Pico enumerated as `2e8a:0009`. `./tools/build arm` passed,
+  and the ARM image was flashed through `./tools/flash` while investigating
+  this ARM hardware failure. Direct CCID APDUs then passed SELECT, GETVERSION
+  (`1.8.2_jc305`), JCSystem info, SHA-256 support, SHA-256 `doFinal`, and the
+  JCAlgTest 256-byte / 50-call static SHA workload (`AA9000`, 0.718038 s).
+  The exact APDU transcript is saved in
+  `artifacts/logs/jcalgtest-physical-resume-20261016.log`.
+- A finite post-test serial capture reports `TEST:PASS choupi_runtime` and no
+  `FAULT`; it also repeats `WATCHDOG_RECOVERY cause=other` with a retained
+  marker. Investigate whether this is stale diagnostic state. Physical APDUs
+  returned success after the flash.
+- `pcscd.service` is inactive and PC/SC lists only Virtual PCD readers, so the
+  official Java client could not target the physical reader. The static APDU
+  reproduces JCAlgTest's workload directly over raw CCID; it is not an official
+  client run. No RISC-V build was run.
 
 Next actions:
 
-1. Restore guest USB/libusb and PC/SC access. Build ARM, flash through
-   `./tools/flash`, capture finite serial output, then run physical SELECT,
-   GETVERSION, JCSystem, SHA known-answer, and named-reader
-   `ALG_PERFORMANCE_STATIC` checks. Do not treat the prior firmware smoke test
-   as applet validation.
-2. Run the official v1.8.2 supported-algorithms client through a working
-   PC/SC/VPCD reader and archive its CHOUPI CSV/log. Compare it with the
-   archived jCardSim result and CHOUPI's actual implementation. Unsupported
-   algorithms are expected and must not be implemented just to make the report
-   green.
-3. Finish the unchecked golden applet, GP DELETE/GET DATA, transaction failure,
+1. Restore PC/SC service access and run official JCAlgTest v1.8.2
+   `ALG_PERFORMANCE_STATIC` against the named physical reader. The direct raw
+   CCID test passed, but the official client run remains outstanding.
+2. Investigate the repeated serial `WATCHDOG_RECOVERY cause=other` marker and
+   confirm whether it represents retained diagnostic state or a runtime fault.
+3. Continue closing JCSystem behavior gaps; current memory and commit-capacity
+   queries still report zero because the port does not yet expose accounting.
+4. Finish the unchecked golden applet, GP DELETE/GET DATA, transaction failure,
    and persistence tests below; keep AC1–AC5 marked incomplete until the clean
    flash sequence has passed three times.
 
 Earlier startup-timeout and physical `F503` observations below are historical
-checkpoints. The current host VPCD path now completes; the physical behavior
-after the latest source fix remains unverified. RISC-V remains out of scope.
+checkpoints. The current physical behavior passed direct CCID applet probes
+after flashing the current ARM image; the official PC/SC Java client remains
+unverified. RISC-V remains out of scope.
 
 The two-process VPCD transcript is
 `artifacts/logs/vpcd-persistence-corrected-transcript-20261016.log`, with
