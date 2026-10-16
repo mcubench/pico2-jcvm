@@ -1,5 +1,19 @@
 # Handoff
 
+## Correct GET STATUS package AID tag — 2026-10-16
+
+- Corrected the applet registry E3 encoder to return the Executable Load File
+  (package) AID under `C4`. The previous `CC` tag denotes the associated
+  Security Domain AID, so it misrepresented the JCAlgTest package as an SD.
+- The GP Card Specification 2.2.1 registry data table identifies `C4` as the
+  application's Executable Load File AID and `CC` as the associated Security
+  Domain AID. The exact-byte regression now expects `C4`.
+- `./tools/test-gp-registry` passed 7 checks; `./tools/build arm` passed both
+  ARM images. No hardware test was run. Broader GET STATUS semantics and GP
+  DELETE/GET DATA are still outstanding.
+- Next: complete GET STATUS matching/next-occurrence behavior, then assess
+  truthful Card Data GET DATA support without inventing device or CPLC values.
+
 ## GET STATUS registry-entry encoding coverage — 2026-10-16
 
 - Extracted the installed-applet E3 entry encoder used by the CCID GET STATUS

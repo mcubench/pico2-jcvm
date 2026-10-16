@@ -8,8 +8,8 @@
 namespace gp {
 
 // Append one applet registry template (E3) in GET STATUS response format 1.
-// It contains the instance AID (4F), package AID (CC), life-cycle state
-// (9F70), and privileges (C5).
+// It contains the instance AID (4F), Executable Load File AID (C4), life-cycle
+// state (9F70), and privileges (C5).
 inline bool append_registry_entry(uint8_t *output, size_t capacity,
                                   size_t &output_length,
                                   const uint8_t *instance_aid,
@@ -36,7 +36,7 @@ inline bool append_registry_entry(uint8_t *output, size_t capacity,
   output[cursor++] = instance_aid_length;
   std::memcpy(output + cursor, instance_aid, instance_aid_length);
   cursor += instance_aid_length;
-  output[cursor++] = 0xcc;
+  output[cursor++] = 0xc4;
   output[cursor++] = package_aid_length;
   std::memcpy(output + cursor, package_aid, package_aid_length);
   cursor += package_aid_length;

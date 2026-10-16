@@ -3563,3 +3563,13 @@
 - Decision: Keep the response wire representation unchanged. Continue card-manager lifecycle behavior and host-accessible APDU coverage; do not flash this build until the repository gate is met.
 - Commit: `7335e217e092fda324d44657c60817eabecadbbd`.
 - Artifacts/logs: `artifacts/logs/gp-registry-tlv-test-20261016.log` (SHA-256 `d1b2057bb43770a76617c72a943d1eac449a3ec8ee020e6e58c4572e7184d0a4`); `artifacts/logs/build-arm-gp-registry-tlv-20261016.log` (SHA-256 `ef6de0d8ed9bca880d446b9353e396063980920f08e1cef65100b8ec9e714b4d`).
+
+## 2026-10-16 — Report package AID with GP GET STATUS tag C4
+
+- Step/experiment: `gp-get-status-load-file-aid-tag-20261016`
+- Change: Corrected the applet registry entry to encode its package/Executable Load File AID as `C4`. `CC` is the distinct associated Security Domain AID tag. Updated the exact response-byte regression accordingly.
+- Validation: `./tools/test-gp-registry` passed all 7 checks. `./tools/build arm` passed both ARM smoke and CHOUPI firmware images. No RISC-V build, flash, or hardware APDU was performed.
+- Result: GET STATUS no longer labels the JCAlgTest package AID as an associated Security Domain. The official GlobalPlatform Card Specification 2.2.1 registry data table defines `C4` as the application's Executable Load File AID and `CC` as the associated Security Domain AID. End-to-end GPPro/physical verification is still unavailable; GET STATUS search/session semantics and DELETE/GET DATA remain incomplete.
+- Decision: Keep C4 and continue with GET STATUS query/continuation behavior before implementing more card data.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/gp-registry-load-file-aid-test-20261016.log` (SHA-256 `554c2ec5e9d8b1ce795036b9a84a69a1178b3ad7fa8795dd920d0b59c4807a41`); `artifacts/logs/build-arm-gp-registry-load-file-aid-20261016.log` (SHA-256 `3f4a64b2a7335709e930163ad83167889a2425e8c41afc97b1887d2bb2ed63db`).
