@@ -24,6 +24,7 @@
   `artifacts/logs/build-pc-fs-exists-status-fix-20261016.log`,
   `artifacts/logs/jcsystem-transaction-fs-exists-status-fix-20261016.log`,
   `artifacts/logs/jcsystem-transaction-restored-startup-20261016.log`.
+- Evidence commit: `cb6f8aa`.
 - Next: make the host VPCD JCRE startup reliably complete without a busy wait;
   keep time bounds to avoid VM saturation. Once guest USB enumerates the Pico,
   build ARM, flash through the wrapper, capture finite serial output, then run

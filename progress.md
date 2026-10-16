@@ -4122,3 +4122,8 @@
   `artifacts/logs/jcsystem-transaction-fs-exists-status-fix-20261016.log`
   (SHA-256 `18c03f329b3f87c3eb0c898c7a8744607a29210efa7d365dd97a3cbc98b90fe4`),
   `artifacts/logs/jcsystem-transaction-restored-startup-20261016.log`.
+
+## Validation commit metadata
+
+- Step: `physical-replug-host-vpcd-startup`
+- Commit: `cb6f8aa` (`Fix persistent field existence check`).
