@@ -13,14 +13,14 @@
   a missing field.
 - `./tools/build arm` and `./tools/build-pc` passed. The focused JCSystem/SHA
   VPCD test passed `TEST:SUMMARY pass=12 fail=0 elapsed_s=44.119`.
-- A fresh VPCD JCAlgTest pass completed `TEST:SUMMARY pass=11 fail=0`. It
-  passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem, SHA-256 support and
-  doFinal, plus the static SHA workload. The static APDU used the JCAlgTest
-  256-byte / 50-call settings and returned `AA9000` in `36.643 s`. This is a
-  host emulator measurement, not a Pico result. RSA-SHA1 reported unsupported
-  reason `03`, as expected.
-- Full transcript: `artifacts/logs/vpcd-fs-exists-corrected-final-transcript-20261016.log`;
-  emulator log: `artifacts/logs/vpcd-fs-exists-corrected-final-20261016.log`.
+- Two fresh VPCD emulator processes sharing one flash image completed
+  `TEST:SUMMARY pass=22 fail=0`. Both passed SELECT, GETVERSION `1.8.2_jc305`,
+  JCSystem, SHA-256 support and doFinal, and static SHA. The static APDU used
+  JCAlgTest's 256-byte / 50-call settings and returned `AA9000` in `36.939 s`
+  and `37.244 s`. These are host emulator measurements, not Pico results.
+  RSA-SHA1 reported unsupported reason `03`, as expected.
+- Full transcript: `artifacts/logs/vpcd-persistence-corrected-transcript-20261016.log`;
+  emulator log: `artifacts/logs/vpcd-persistence-corrected-20261016.log`.
 - Next: restore guest USB/libusb and PC/SC visibility, then use the ARM build,
   flash through the wrapper, capture finite serial output, and run the named
   physical reader through JCAlgTest 1.8.2. Keep unsupported algorithms as

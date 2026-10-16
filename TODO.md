@@ -23,38 +23,48 @@ out explicitly.
 
 ## Active: validate the applet process APDUs and client results
 
-Current hardware result (2026-10-16): raw CCID sees the running Pico and SELECT
-of JCAlgTest returns `9000`, but GETVERSION (`B0E1`), JCSystem info (`B073`),
-and SHA support (`B075`) each return `F503` before command dispatch. A bounded
-serial trace shows delayed allocation succeeds through the three short
-transient arrays, then raises `CryptoException` reason 3. Source order puts
-`AlgKeyHarvest` next; its constructor requests `RandomData.ALG_SECURE_RANDOM`
-(value 2). Class-name comparison against JC305U3 and generated CHOUPI exports
-found a bad working-tree map: JC305 `RandomData` token `0x0E` pointed to
-`MessageDigest$OneShot` (`0x1E`) instead of `RandomData` (`0x1C`). Restoring the
-correct mapping passes all 34 export correspondence checks. ARM and RISC-V
-builds passed during that fix, but the corrected image was not flashed. The
-diagnostic image flash succeeded; the board then disappeared from guest USB.
-The latest bounded check still returns `libusb: -99`, and PC/SC service access
-is unavailable. Follow `reference/physical-token-access/SKILL.md`: do not retry
-USB until guest enumeration works. RISC-V is out of scope; perform ARM-only
-target build/flash work.
+Current verified status (2026-10-16):
 
-Next: when the board is visible, build ARM, flash `build/arm/pico2_choupi.uf2`,
-capture finite serial output, and run bounded raw SELECT/GETVERSION/JCSystem
-probes. If GETVERSION and JCSystem pass, run SHA known-answer and named-reader
-`ALG_PERFORMANCE_STATIC`; unsupported algorithms remain expected results.
-Never infer applet APDU success from `TEST:PASS choupi_runtime` alone. The last
-physical SHA or static performance measurements remain unavailable.
+- `JC_Instance::getFields()` now follows the OS FFI contract: `fs_exists()` is
+  nonzero when the record exists. A fresh JCAlgTest applet SELECT now succeeds;
+  the earlier `== 0` interpretation was incorrect and caused a missing-field
+  read.
+- `./tools/build arm` and `./tools/build-pc` pass. The focused JCSystem/SHA
+  VPCD probe passed 12/12 checks. Two full-VM JCAlgTest processes using one
+  shared flash image passed 22/22 checks, including applet selection and SHA
+  operations after the second process restored the saved applet.
+- The static workload uses the JCAlgTest 256-byte, 50-call settings and returns
+  `AA9000` in 36.939 s and 37.244 s on the PC emulator. These are not Pico
+  performance measurements. Unsupported RSA-SHA1 reports reason `03`, as
+  expected.
+- Physical status remains unverified on the latest source: this process cannot
+  initialize libusb (`-99`) for either `2e8a:0009` or `2e8a:000f`, and bounded
+  `pcsc_scan -r` reports that the PC/SC service is unavailable. No flash or
+  physical APDU test was run during this continuation.
 
-Latest continuation (2026-10-16): `./tools/build arm` and `./tools/build-pc`
-pass after correcting the persistent-field existence check (`fs_exists() == 0`
-means the record exists). Fresh JCSystem VPCD validation still times out before
-the VPCD socket connects: the normal Java `Starter` path remains in a slow
-bytecode loop. Skipping JCRE startup was tested and reverted because native
-storage initialization requires installer context and the shortcut crashes
-during CAP installation. Do not retry physical access until guest USB/libusb
-enumeration works. Do not treat the prior host VPCD pass as current validation.
+Next actions:
+
+1. Restore guest USB/libusb and PC/SC access. Build ARM, flash through
+   `./tools/flash`, capture finite serial output, then run physical SELECT,
+   GETVERSION, JCSystem, SHA known-answer, and named-reader
+   `ALG_PERFORMANCE_STATIC` checks. Do not treat the prior firmware smoke test
+   as applet validation.
+2. Run the official v1.8.2 supported-algorithms client through a working
+   PC/SC/VPCD reader and archive its CHOUPI CSV/log. Compare it with the
+   archived jCardSim result and CHOUPI's actual implementation. Unsupported
+   algorithms are expected and must not be implemented just to make the report
+   green.
+3. Finish the unchecked golden applet, GP DELETE/GET DATA, transaction failure,
+   and persistence tests below; keep AC1–AC5 marked incomplete until the clean
+   flash sequence has passed three times.
+
+Earlier startup-timeout and physical `F503` observations below are historical
+checkpoints. The current host VPCD path now completes; the physical behavior
+after the latest source fix remains unverified. RISC-V remains out of scope.
+
+The two-process VPCD transcript is
+`artifacts/logs/vpcd-persistence-corrected-transcript-20261016.log`, with
+emulator output in `artifacts/logs/vpcd-persistence-corrected-20261016.log`.
 
 Prior ARM runtime result: `JC_Array::size()` was fixed to return logical
 element counts by dividing transient/nonpersistent backing bytes by element

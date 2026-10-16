@@ -4155,3 +4155,23 @@
   `artifacts/logs/jcsystem-transaction-security-class-map-fix-20261016.log`,
   `artifacts/logs/vpcd-fs-exists-corrected-final-transcript-20261016.log`,
   `artifacts/logs/vpcd-fs-exists-corrected-final-20261016.log`.
+
+## 2026-10-16 — Verify applet restore across emulator processes
+
+- Step/experiment: `jcalgtest-two-process-persistence`
+- Change: Reused one flash image across two separate PC emulator processes to
+  verify restoration of the installed JCAlgTest applet after process restart.
+- Validation: `./tools/test-pc-vpcd-applet --passes 2 --connect-timeout 60
+  --apdu-timeout 60` completed `TEST:SUMMARY pass=22 fail=0`. Both processes
+  passed ATR, SELECT, GETVERSION, JCSystem info, SHA-256 support and doFinal,
+  static SHA-256, and selected support probes. Static SHA took `36.939 s` and
+  `37.244 s`; both returned `AA9000`. This is host VPCD only; Pico power-cycle
+  persistence remains unverified.
+- Result: Persistent applet state restores across emulator processes. RSA-SHA1
+  reason `03` remains an expected unsupported result.
+- Decision: Continue with official-client/report coverage and remaining
+  GlobalPlatform/API work; retry hardware when USB access is restored.
+- Commit: `<pending>`
+- Artifacts/logs:
+  `artifacts/logs/vpcd-persistence-corrected-transcript-20261016.log`,
+  `artifacts/logs/vpcd-persistence-corrected-20261016.log`.
