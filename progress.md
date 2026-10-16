@@ -4229,3 +4229,13 @@
 - Decision: Keep the marker-consumption fix. Continue with the remaining JCSystem capacity accounting and rerun the official named-reader client when PC/SC access is restored. No RISC-V build/test.
 - Commit: `0f5091a`
 - Artifacts/logs: `artifacts/logs/build-arm-watchdog-marker-20261017.log` (SHA-256 `e9f46e2033d4fea9fbb37b7ac4bb651dac5d9426e18cca8bb8b643fa13d0bc03`); `artifacts/logs/flash-arm-watchdog-marker-20261017.log` (SHA-256 `805ffb3c7c8aaecd78677c938284a57381fe6dbe2b1c08041e810c4f58d36fb1`); `artifacts/logs/monitor-arm-watchdog-marker-20261017.log` (SHA-256 `bca3af91d35e403fba9552edb1d9085cec066c9466457cc83dd3ac3fee157d47`); `artifacts/logs/jcalgtest-physical-watchdog-fix-20261017.log` (SHA-256 `16532eb6e72dbe3c705c8908aa02a919c22196d7c6c2f07c57233dc94a6b239c`)
+
+## 2026-10-17 — Trace JCSystem memory accounting boundary
+
+- Step/experiment: `jcsystem-memory-accounting-link-boundary`
+- Change: Investigated returning free bytes from the Rust OS linked-list allocator to `JCSystem`. The experiment added a tiny exported free-byte getter, but the active RP2350 link does not include `choupi-os`; its symbol was undefined. Reverted only the experiment's C++ and nested allocator changes, preserving all prior dirty work.
+- Validation: The first `./tools/build arm` failed at the final link with `undefined reference to jcvm_current_heap_free_bytes` from `jni.cpp`. After reverting the attempted changes, `./tools/build arm` passed. No flash or hardware test was performed for this experiment.
+- Result: Root `CMakeLists.txt` confirms that platform startup and Rust OS integration are future work for this target. The Rust allocator cannot provide the active Pico VM's available-memory figure. `getAvailableMemory` and commit-capacity queries remain zero until accounting is exposed by the allocator/filesystem actually linked into the Pico image.
+- Decision: Keep the conservative zero return; next inspect Pico's linked allocator and persistent-store accounting separately. No RISC-V build/test.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/build-arm-jcsystem-memory-20261017.log` (expected link failure, SHA-256 `041726320551474891e78d708df5f0739ce6c82f1cafeea4cca53ddc9b06cf4d`); `artifacts/logs/build-arm-jcsystem-memory-reverted-20261017.log` (pass, SHA-256 `4b880a88cc4a4fcfac6885e30fbb63c3abc221460a743a28bb889b7597073cd2`)

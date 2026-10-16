@@ -52,6 +52,28 @@
 - Next: run the official JCAlgTest client when PC/SC exposes the physical
   reader, then continue JCSystem capacity accounting. No RISC-V build/test.
 
+## JCSystem memory accounting investigation — 2026-10-17
+
+- Tried to expose `linked_list_allocator::Heap::free()` from
+  `choupi/os/src/allocator/lib.rs` and use it in the JNI natives. The ARM link
+  failed with `undefined reference to jcvm_current_heap_free_bytes` because
+  the active RP2350 target compiles the platform-independent C++ VM but does
+  not link `choupi-os` yet; root `CMakeLists.txt` explicitly documents Rust OS
+  integration as later work.
+- Reverted only this experiment's changes. The nested allocator file is back
+  to its prior state, and `./tools/build arm` passes again. No flash occurred
+  for this experiment. Keep the current zero returns until the active Pico
+  allocator and filesystem expose measurable capacities; do not use the
+  unrelated Rust heap or guess a number.
+- Evidence logs:
+  `artifacts/logs/build-arm-jcsystem-memory-20261017.log` (expected link
+  failure) and `artifacts/logs/build-arm-jcsystem-memory-reverted-20261017.log`
+  (pass).
+- Next: inspect the allocator actually linked by the Pico target and determine
+  a correct bounded transient-memory query; persistent capacity and transaction
+  commit capacity still need separate accounting. PC/SC remains inactive, so
+  the official JCAlgTest client is still unavailable.
+
 ## Latest continuation — 2026-10-16
 
 - User replugged the Pico, but this process still cannot access USB: both

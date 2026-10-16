@@ -59,6 +59,10 @@ Current verified status (2026-10-17):
   official Java client could not target the physical reader. The static APDU
   reproduces JCAlgTest's workload directly over raw CCID; it is not an official
   client run. No RISC-V build was run.
+- `JCSystem.getAvailableMemory()` and commit-capacity methods still return
+  zero. An attempt to read the Rust OS allocator's free bytes failed at link:
+  the active RP2350 target does not link `choupi-os` yet. That experiment was
+  fully reverted; do not treat Rust OS heap capacity as the Pico VM's heap.
 
 Next actions:
 
@@ -66,7 +70,8 @@ Next actions:
    `ALG_PERFORMANCE_STATIC` against the named physical reader. The direct raw
    CCID test passed, but the official client run remains outstanding.
 2. Continue closing JCSystem behavior gaps; current memory and commit-capacity
-   queries still report zero because the port does not yet expose accounting.
+   queries still report zero. First expose accounting from the allocator and
+   persistent store actually linked into the Pico target; do not guess values.
 3. Finish the unchecked golden applet, GP DELETE/GET DATA, transaction failure,
    and persistence tests below; keep AC1–AC5 marked incomplete until the clean
    flash sequence has passed three times.
