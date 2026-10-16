@@ -3867,3 +3867,33 @@
 ## Physical CHOUPI cycle commit metadata
 
 - The physical cycle logs, failure record, and continuity update above were committed as `1585413`.
+
+## 2026-10-16 — Fix Java Card array logical size and recover RP2350 startup
+
+- Step/experiment: `jc-array-logical-size-hardware-runtime`
+- Change: `JC_Array::size()` now converts transient and ordinary backing byte
+  lengths to logical element counts using the element width. Persistent arrays
+  continue to use the logical size in their record header. The mismatch caused
+  applet field serialization to walk beyond an `Object[]` backing store.
+- Validation: `./tools/build-pc` and `./tools/build arm` passed. The host VPCD
+  JCAlgTest applet regression passed 11/11. The ARM image was flashed to the
+  RP2350; the bounded serial capture repeatedly emitted
+  `CHOUPI:STATUS sw=9000`, `TEST:PASS choupi_runtime`, and
+  `TEST:SUMMARY pass=1 fail=0`. A bounded PC/SC check exposed only virtual
+  readers when USB was accessible. A later recheck found guest libusb
+  unavailable (`-99`) and PC/SC inactive. RISC-V build was intentionally
+  skipped under the current ARM-only task scope.
+- Result: The previous startup `6F00` was caused by interpreting backing bytes
+  as array element count; hardware startup now passes. Host static SHA-256
+  APDU time was 17.667 s on the PC interpreter and is not a Pico performance
+  measurement. Physical JCAlgTest APDU/performance validation remains pending.
+- Decision: Keep the fix. Restore USB passthrough and PC/SC reader registration,
+  then run official JCAlgTest v1.8.2 `ALG_PERFORMANCE_STATIC` against the exact
+  Pico reader name.
+- Commit: `7817bd1` (implementation and logs).
+- Artifacts/logs: `artifacts/logs/build-arm-jc-array-logical-size-20261016.log`,
+  `artifacts/logs/build-arm-jc-array-startup-trace-cleanup-20261016.log`,
+  `artifacts/logs/build-pc-jc-array-logical-size-20261016.log`,
+  `artifacts/logs/host-vpcd-jc-array-logical-size-console-20261016.log`,
+  `artifacts/logs/monitor-arm-jc-array-runtime-followup-20261016.log`, and
+  `artifacts/logs/pcsc-arm-array-size-fix-20261016.log`.

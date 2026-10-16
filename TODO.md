@@ -22,6 +22,19 @@ out explicitly.
 
 ## Active: validate the applet process APDUs and client results
 
+Latest ARM hardware result (2026-10-16): fixed `JC_Array::size()` to return
+logical element counts by dividing transient/nonpersistent backing bytes by
+the element width. This stopped applet startup from walking past a persistent
+`Object[]` while serializing its fields. The host JCAlgTest VPCD regression
+passes 11/11; ARM firmware was flashed and the finite serial capture repeatedly
+reported `sw=9000` and `TEST:PASS choupi_runtime`. The static SHA-256 APDU took
+17.667 s on the PC interpreter, not on the Pico. The official physical
+`ALG_PERFORMANCE_STATIC` run remains pending: USB passthrough is currently
+unavailable (`libusb -99`) and PC/SC has no active service. Resume by restoring
+USB passthrough, confirming the `2e8a:0009` reader, then running the official
+client with the exact Pico reader name. Do not infer physical applet APDU or
+performance success from the startup PASS.
+
 JCSystem transaction calls now use the existing persistent-write snapshot
 backend: begin/commit/abort update transaction depth, and the Java wrappers
 throw `TransactionException` for nested begin, commit/abort outside a
