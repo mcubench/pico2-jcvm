@@ -3991,3 +3991,79 @@
   flash was used because the card-manager path is not exposed through PC/SC.
 - Commit: `74fcf20` (physical capture); documentation update follows.
 - Artifacts/logs: `artifacts/logs/physical-ccid-restore-diagnostic-20261016.log`.
+
+## 2026-10-16 — Replugged Pico applet probe
+
+- Step/experiment: `physical-applet-delayed-init-recheck`
+- Change: No firmware or CAP change. Rechecked the replugged board with direct
+  CCID and captured serial during SELECT, GETVERSION, JCSystem, and SHA support
+  APDUs.
+- Validation: Host-access `lsusb` found `2e8a:0009` at bus 001 device 029;
+  `picotool info -a` confirmed running mode. Direct CCID power-on returned ATR
+  `3B800181`; SELECT returned `9000`. GETVERSION (`B0E1`), JCSystem info
+  (`B073`), and SHA support (`B075`) each returned `F503`. The bounded serial
+  trace shows persistent root restore succeeds, then delayed allocation throws
+  before command dispatch. `pcsc_scan -r` lists only the two Virtual PCD
+  readers. No build or flash was run.
+- Result: Physical link is available, but the JCAlgTest applet is not yet
+  operational. Startup `TEST:PASS choupi_runtime` does not validate applet
+  behavior. SHA digest or static timing has not been measured.
+- Decision: Trace the exception during delayed initialization and preserve
+  unsupported-algorithm behavior; rerun hardware JCSystem, SHA known-answer,
+  and static performance only after GETVERSION succeeds.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/monitor-arm-current-apdu-f503-20261016.log`.
+
+## 2026-10-16 — Trace JC305 security static calls
+
+- Step/experiment: `physical-jcalgtest-security-call-trace-20261016`
+- Change: Added a bounded firmware diagnostic for imported `javacard.security`
+  static calls, recording the JC305 class/method tokens, remapped class and
+  method tokens, and resolved offsets. This is to identify the source of the
+  delayed-init `CryptoException.NO_SUCH_ALGORITHM`.
+- Validation: `./tools/build arm` and `./tools/build riscv` both passed. The
+  ARM image flashed with `FLASH:PASS image=build/arm/pico2_choupi.uf2`. A
+  bounded pre-flash raw CCID probe again returned SELECT `9000` and `F503` for
+  GETVERSION, JCSystem, and SHA support. After flash, the USB device
+  disconnected/re-enumerated; a single bounded `lsusb`/picotool check found no
+  accessible Pico, so no post-flash APDU or invocation trace was captured.
+- Result: Source inspection narrows the previous trace to construction of
+  `AlgKeyHarvest` after `AlgSupportTest` is stored; its constructor creates
+  `TestSettings`, then calls `RandomData.getInstance(ALG_SECURE_RANDOM)` with
+  algorithm value 2. The diagnostic build is now on the board; its exact
+  resolved static call and post-flash applet behavior are unverified.
+- Decision: Resume with a bounded USB visibility check. When the Pico
+  reappears, capture finite serial output and repeat SELECT/GETVERSION/JCSystem
+  first; inspect the security-call tokens before changing any remap table.
+  Keep the real applet’s unsupported algorithms as expected behavior.
+- Commit: pending; the workspace `.git` index is currently read-only.
+- Artifacts/logs: `artifacts/logs/physical-jcalgtest-readonly-probe-20261016.log`,
+  `artifacts/logs/physical-jcalgtest-security-call-trace-probe-20261016.log`,
+  `artifacts/logs/monitor-arm-after-replug-apdu-20261016.log`,
+  `artifacts/logs/build-arm-jc305-remap-fix-20261016.log`,
+  `artifacts/logs/build-riscv-jc305-remap-fix-20261016.log`.
+
+## 2026-10-16 — Correct JC305 security class remap
+
+- Step/experiment: `jc305-security-class-remap-export-compare`
+- Change: Restored the `javacard_security` remap entries to the class-name
+  correspondence between the JC305U3 export and the generated CHOUPI security
+  export. The worktree table had mapped JC305 `RandomData` token `0x0E` to
+  token 30 (`MessageDigest$OneShot`) instead of token 28 (`RandomData`); other
+  entries after the digest class were also mismatched. No algorithms were
+  added or reclassified.
+- Validation: The pinned exp-reader compared class names/tokens across both
+  export files; all 34 JC305U3 classes have matching CHOUPI export tokens.
+  `./tools/build arm` and `./tools/build riscv` both passed with no warnings.
+  Physical access had failed its bounded post-flash visibility check, so this
+  corrected mapping was not flashed or hardware-tested.
+- Result: The map now matches the exports. The traced delayed-init exception
+  is consistent with the incorrect RandomData class translation, but a
+  successful GETVERSION/JCSystem run is still needed to confirm the fix.
+- Decision: Keep the fix and the bounded static-call trace; when the board
+  becomes visible again, rebuild both if source changed, flash ARM, and check
+  GETVERSION then JCSystem before SHA/performance tests.
+- Commit: pending; the workspace `.git` index is read-only in this session.
+- Artifacts/logs: `artifacts/logs/build-arm-jc305-remap-fix-20261016.log`,
+  `artifacts/logs/build-riscv-jc305-remap-fix-20261016.log` and the export
+  comparison output captured during this session.

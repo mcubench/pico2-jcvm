@@ -1,5 +1,57 @@
 # Handoff
 
+## JC305 delayed-init security call trace — 2026-10-16
+
+- The previous physical trace shows `AlgSupportTest` is stored after its three
+  short transient arrays are allocated, then `CryptoException` reason 3
+  (`NO_SUCH_ALGORITHM`) is thrown before delayed initialization completes.
+  Source order identifies the next object as `AlgKeyHarvest`; its constructor
+  calls `RandomData.getInstance(RandomData.ALG_SECURE_RANDOM)`, where the
+  requested algorithm is 2. This is a hypothesis for the throw site until the
+  firmware trace confirms it.
+- Added bounded `CHOUPI:JC305_SECURITY_CALL` diagnostics in
+  `choupi/src/jc_bytecodes/bc_invoke.cpp` for imported security static calls.
+  Both `./tools/build arm` and `./tools/build riscv` pass. The ARM diagnostic
+  image flashed successfully (`FLASH:PASS`). The physical device disappeared
+  during re-enumeration immediately afterward; a single bounded visibility
+  check found no device. Do not repeat USB probes until the Pico reappears.
+- The pre-flash raw CCID probe still reproduced SELECT `9000`, with GETVERSION,
+  JCSystem, and SHA support returning `F503`. The post-flash APDU probe did not
+  run because the device was not visible. No digest or static performance
+  measurement was made.
+- Next: when USB is available, capture finite serial output, run bounded raw
+  SELECT/GETVERSION/JCSystem probes, and inspect the resolved class/method
+  tokens before modifying compatibility mappings. Keep unsupported algorithms
+  as expected results.
+- Evidence: `artifacts/logs/physical-jcalgtest-readonly-probe-20261016.log`,
+  `artifacts/logs/physical-jcalgtest-security-call-trace-probe-20261016.log`,
+  `artifacts/logs/monitor-arm-after-replug-apdu-20261016.log`.
+
+## Physical applet delayed-initialization failure — 2026-10-16
+
+- After replug, escalated host-access checks enumerate the Pico 2 CHOUPI reader
+  at bus 001 device 029 (`2e8a:0009`) and `picotool info -a` identifies running
+  mode. Direct raw CCID interface access works; bounded PC/SC still lists only
+  Virtual PCD 00 00/01. No sudo, build, or flash was used.
+- The current applet instance is selected successfully (`9000`), and serial
+  confirms its persistent applet root restores (`RESTORE_READ_OK`,
+  `SELECT restore=0`). Every first process command returns `F503`: GETVERSION
+  (`B0E1`), JCSystem info (`B073`), and SHA-256 support (`B075`). The finite
+  serial trace shows failure during `performDelayedAllocations()` after the
+  applet fields for its large transient buffers are stored; it occurs before
+  command dispatch. `TEST:PASS choupi_runtime` remains only the firmware smoke
+  test.
+- Exact evidence: `artifacts/logs/monitor-arm-current-apdu-f503-20261016.log`
+  and raw APDU output in the active session. The corrected helper now includes
+  the three-byte GP privilege field, matching historical INSTALL data, but
+  reinstalling a fresh JCAlgTest instance still yielded `F503`.
+- Next: identify the exception thrown in delayed allocations, focusing first
+  on transient-array/helper-object construction and Java Card exception
+  dispatch. Keep unsupported algorithms as expected results; do not add
+  algorithms to suppress this initialization failure. Once GETVERSION and
+  JCSystem pass on Pico, run SHA known-answer and named-reader static
+  performance checks.
+
 ## Physical applet restore failure — 2026-10-16
 
 - After the user replugged the Pico, the host-access context can see running
