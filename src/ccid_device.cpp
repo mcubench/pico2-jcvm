@@ -276,24 +276,11 @@ void process_message(uint8_t rhport) {
           response[0] = 0x6a;
           response[1] = 0x86;
         } else if (p1 == 0x80) {
-          constexpr uint8_t isd_aid[] = {0xa0, 0x00, 0x00, 0x01,
-                                          0x51, 0x00, 0x00, 0x00};
-          gp::AidSearch search;
-          if (!gp::parse_aid_search(apdu + 5, command_data_length, search)) {
-            response[0] = 0x6a;
-            response[1] = 0x80;
+          if (!gp::append_isd_registry_entry(response, sizeof(response),
+                                             response_length)) {
+            response[0] = 0x6f;
+            response[1] = 0x00;
             response_length = 2;
-            send_response(rhport, 0x80, response, response_length);
-            break;
-          }
-          if (gp::aid_matches_search(search, isd_aid, sizeof(isd_aid))) {
-            constexpr uint8_t isd_registry_entry[] = {
-                0xe3, 0x11, 0x4f, 0x08, 0xa0, 0x00, 0x00, 0x01,
-                0x51, 0x00, 0x00, 0x00, 0x9f, 0x70, 0x01, 0x01,
-                0xc5, 0x01, 0x00};
-            std::memcpy(response, isd_registry_entry,
-                        sizeof(isd_registry_entry));
-            response_length = sizeof(isd_registry_entry);
           }
           response[response_length++] = 0x90;
           response[response_length++] = 0x00;

@@ -128,6 +128,20 @@ inline bool append_registry_entry(uint8_t *output, size_t capacity,
   return true;
 }
 
+// The ISD is selected explicitly by GET STATUS P1=80, so its AID search
+// qualifier is ignored as required by GlobalPlatform Card Specification 2.2.1.
+inline bool append_isd_registry_entry(uint8_t *output, size_t capacity,
+                                      size_t &output_length) noexcept {
+  output_length = 0;
+  constexpr uint8_t entry[] = {
+      0xe3, 0x11, 0x4f, 0x08, 0xa0, 0x00, 0x00, 0x01, 0x51, 0x00,
+      0x00, 0x00, 0x9f, 0x70, 0x01, 0x01, 0xc5, 0x01, 0x00};
+  if (output == nullptr || capacity < sizeof(entry)) return false;
+  std::memcpy(output, entry, sizeof(entry));
+  output_length = sizeof(entry);
+  return true;
+}
+
 // Append an Executable Load File E3 entry. When include_modules is true, the
 // provided module AID is emitted as tag 84.
 inline bool append_load_file_entry(uint8_t *output, size_t capacity,

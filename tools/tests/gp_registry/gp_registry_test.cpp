@@ -53,6 +53,22 @@ int main() {
                                     sizeof(package_aid), 0x07),
          "reject_short_instance_aid");
 
+  constexpr std::array<uint8_t, 19> isd_entry = {
+      0xe3, 0x11, 0x4f, 0x08, 0xa0, 0x00, 0x00, 0x01, 0x51, 0x00,
+      0x00, 0x00, 0x9f, 0x70, 0x01, 0x01, 0xc5, 0x01, 0x00};
+  output_length = 0;
+  expect(gp::append_isd_registry_entry(output.data(), output.size(),
+                                       output_length),
+         "build_isd_entry");
+  expect(output_length == isd_entry.size(), "isd_exact_length");
+  expect(std::memcmp(output.data(), isd_entry.data(), isd_entry.size()) == 0,
+         "isd_exact_bytes");
+  output_length = 99;
+  expect(!gp::append_isd_registry_entry(output.data(), isd_entry.size() - 1,
+                                        output_length),
+         "reject_short_isd_capacity");
+  expect(output_length == 0, "clear_isd_length_on_failure");
+
   const uint8_t wildcard_search[] = {0x4f, 0x00};
   gp::AidSearch search;
   expect(gp::parse_aid_search(wildcard_search, sizeof(wildcard_search), search),
