@@ -118,6 +118,14 @@ def main() -> int:
                     (7, b"\x11", "aborted value survives next APDU"),
                     (6, b"\x33", "commit preserves persistent applet field"),
                     (7, b"\x33", "committed value survives next APDU"),
+                    (
+                        8,
+                        bytes.fromhex(
+                            "BA7816BF8F01CFEA414140DE5DAE2223"
+                            "B00361A396177A9CB410FF61F20015AD"
+                        ),
+                        "SHA-256 known-answer for abc",
+                    ),
                 )
                 for p1, expected, label in cases:
                     data = exchange(

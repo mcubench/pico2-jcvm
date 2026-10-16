@@ -6,9 +6,14 @@ import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
 import javacard.framework.TransactionException;
+import javacard.security.MessageDigest;
 
 public final class JCTransactionProbe extends Applet {
   private byte value = 0x11;
+  private final MessageDigest sha256 =
+      MessageDigest.getInstance(MessageDigest.ALG_SHA_256, false);
+  private final byte[] shaInput = {0x61, 0x62, 0x63};
+  private final byte[] shaDigest = new byte[32];
 
   private JCTransactionProbe() {
     register();
@@ -67,6 +72,14 @@ public final class JCTransactionProbe extends Applet {
         break;
       case 7:
         buffer[0] = value;
+        break;
+      case 8:
+        sha256.doFinal(shaInput, (short)0, (short)3,
+                       shaDigest, (short)0);
+        for (short i = 0; i < (short)shaDigest.length; i++) {
+          buffer[i] = shaDigest[i];
+        }
+        length = (short)shaDigest.length;
         break;
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);

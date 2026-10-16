@@ -430,3 +430,17 @@ optimizing filesystem reads, dispatch, or lookup.
 The official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` simulator run measured the SHA-256 256-byte `doFinal` case at 0.05 ms/op, with a minimum of -0.02 ms/op. That result is below the client/simulator timer resolution and is not a useful performance number. The CHOUPI PC VPCD focused test returned `AA9000` for 50 SHA-256 calls in one APDU in 15.578 s (about 312 ms/call including VM dispatch and transport). Treat this as an execution-path check, not as RP2350 throughput or an algorithm known-answer test.
 
 The prior official client VPCD run disconnected at the SHA-256 `doFinal` case; its emulator log included 665 `PC_FS:WRITE` lines. These release-only traces are now gated behind `DEBUG`; the latest bounded VPCD pass had none and completed 11/11 checks. The official named-reader run still needs PC/SC restored: the current service returns `SCARD_E_NO_SERVICE`, and Java SmartcardIO lists no readers. Do not compare simulator timing with VPCD or Pico numbers, and do not infer SHA digest correctness from the `AA9000` status alone.
+
+### Corrected SHA-256 doFinal check — 2026-10-16
+
+A Java Card probe found that `MessageDigest.OneShot.doFinal()` hashed the empty
+string because its virtual self-call to `update()` used a different transient
+state array from the finalizer. The method now keeps one state reference and
+passes the input directly to the native update bridge. A VPCD known-answer APDU
+returns the standard SHA-256 of `abc` (`BA7816...15AD`). The JCAlgTest 1.8.2
+static configuration with 256-byte input and 50 calls also returns `AA9000`;
+the host VPCD APDU took 16.853 s. This is interpreter/emulator wall time, not
+RP2350 throughput. A separate `update()` call followed by empty `doFinal()`
+still loses the buffered state, so this fix verifies direct `doFinal(input)`
+and the static test path only. Streaming state and named-reader/hardware
+measurements remain open.
