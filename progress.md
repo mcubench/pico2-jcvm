@@ -904,7 +904,7 @@
 - Validation: `./tools/env ./tools/build arm` and `./tools/env ./tools/build riscv` passed before flash. `./tools/env ./tools/cycle choupi` flashed the ARM UF2 to 100%; the finite serial capture emitted `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`, with no `FAULT` or timeout. Elevated `lsusb -v -d 2e8a:0009` showed CDC interfaces 0-1 and CCID interface 2 with bulk endpoints 0x03/0x83. A direct libusb hardware exchange passed IccPowerOn (ATR `3b800181`), XfrBlock (response `6d00`), and IccPowerOff. The host has `libpcsclite1` but no `pcscd`/`pcsc_scan`; GlobalPlatformPro JAR artifacts are present.
 - Result: The board now exposes a working, USB-visible CCID transport alongside CDC diagnostics. The transport is hardware-verified, but it does not yet provide Java Card or GlobalPlatform behavior, and no CAP install was attempted through CCID.
 - Decision: Next implement an APDU dispatch route from CCID XfrBlock into CHOUPI and identify the VM's supported applet command lifecycle; then use an available PC/SC daemon or the direct USB probe for GPPro validation.
-- Commit: pending
+- Commit: `48af2f1`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T093403Z.log` (SHA-256 `23c41afe5f954df2edf1b01eb26a5b90482a1288437d4f9dc30a1ffeb72702c9`); `artifacts/logs/ccid-probe-20261011.txt`; ARM UF2 SHA-256 `4f675fadf4913cf33d430494236c8853a6978a177873f9c5abe09b4a074eb995`
 
 ## 2026-10-11 — Audit APDU and applet lifecycle entry points
@@ -3673,3 +3673,13 @@
 - Decision: Leave SHA implementation unchanged on these data. Retry with the exact Pico reader name when Java SmartcardIO exposes the reader, and use an independent digest known-answer check.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-pico2-reader-20261016.log` (SHA-256 `37ed79c092933ee6c76b01cd5fda7858cb9cb854129e0994c7188399ea205ebc`); `artifacts/logs/jcalgtest-static-simulator-20261016.log` (SHA-256 `749bb1ffc17077898c7efb234e80a12df3400eb4627f4eba8fcf1340fd63f137`); partial CSV SHA-256 `0c0b38ccf8a87acb874d1584b5b2b589447b24930d5df7d19f6986c357ffcbbc`.
+
+## 2026-10-16 — Add strict GP DELETE request parser
+
+- Step/experiment: `gp-delete-request-parser-20261016`
+- Change: Added a platform-independent parser for one GlobalPlatform DELETE AID qualifier (`4F`), supported P1/P2 values, and the related-object flag. Added a focused C++ test wrapper covering valid AIDs, flags, malformed/truncated TLVs, reserved bits, and non-minimal lengths.
+- Validation: `./tools/test-gp-delete` passed 11 checks with `-Wall -Wextra -Werror`; `./tools/build arm` passed the smoke and CHOUPI ARM images without warnings. The parser is not yet connected to the authenticated card-manager dispatch, so no APDU or persistent deletion was exercised.
+- Result: Malformed and unsupported command encodings are rejected before any state mutation; parsed AID remains a bounded view into caller data.
+- Decision: Keep GP DELETE open. Next integrate the parser with secure-channel dispatch and implement deletion semantics that remain consistent across restart and GET STATUS.
+- Commit: pending
+- Artifacts/logs: Focused test output `TEST:SUMMARY pass=11 fail=0`; ARM image outputs `build/arm/pico2_jcvm_smoke.uf2` and `build/arm/pico2_choupi.uf2`.

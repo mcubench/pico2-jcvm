@@ -218,6 +218,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   images build. This is not yet exercised through GPPro or on hardware. DELETE,
   GET DATA, complete continuation behavior, and end-to-end card-manager state
   verification remain open.
+  A strict standalone DELETE command parser now passes 11 malformed-input and
+  AID/flag checks; authenticated dispatch and persistent deletion are still
+  unimplemented.
 - [x] Integrate the PC-build vpcd frame transport with power controls, ATR,
   applet SELECT/DESELECT, and APDU dispatch through the VM lifecycle bridge.
   The PC target builds, the frame codec passes 14 checks, and a new session

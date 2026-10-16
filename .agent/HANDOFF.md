@@ -1,5 +1,17 @@
 # Handoff
 
+## GP DELETE command parser — 2026-10-16
+
+- Added `src/gp_delete.hpp` for the supported single AID-qualified DELETE
+  command (`P1=00`, `P2=00` or `80`, exact `4F` AID TLV) and
+  `tools/test-gp-delete` with 11 strict parser checks.
+- `./tools/test-gp-delete` passed under `-Wall -Wextra -Werror`; `./tools/build
+  arm` passed both ARM images. The helper is not yet called by the secure
+  card-manager path. No APDU, deletion, restart, or hardware check occurred.
+- Next: inspect flash metadata and object-store transaction semantics, integrate
+  DELETE only when instance/package state remains accurate after restart and
+  GET STATUS, then add an authenticated host APDU regression.
+
 ## Named JCAlgTest static performance selection — 2026-10-16
 
 - The official launcher accepts either `--reader-name '<exact PC/SC name>'`
