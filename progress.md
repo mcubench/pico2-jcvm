@@ -4196,7 +4196,7 @@
   complies with the repository compiler-wrapper rule.
 - Decision: Continue with the remaining API/GP integration items and retry the
   official client once PC/SC is usable. Physical validation remains open.
-- Commit: `<pending>`
+- Commit: `a322223`.
 - Artifacts/logs: `artifacts/logs/test-apdu-util-continuation-20261016.log`,
   `artifacts/logs/test-short-apdu-fixed-20261016.log`,
   `artifacts/logs/test-vpcd-protocol-continuation-20261016.log`,
