@@ -26,6 +26,7 @@ extern "C" const uint8_t *rp2350_fs_test_flash_base(void);
 #endif
 extern "C" uint16_t runtime(uint8_t package_id, uint8_t class_id,
                              uint8_t method_id);
+extern "C" uint8_t choupi_persistent_write_transaction_active(void);
 extern "C" void choupi_ccid_task(void);
 extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,
                                          uint16_t *rx_events,
@@ -832,6 +833,7 @@ extern "C" uint8_t fs_init(void) {
   return 0;
 }
 extern "C" uint8_t fs_sync(void) {
+  if (choupi_persistent_write_transaction_active() != 0) return 0;
   return persist_overlay() ? 0 : 1;
 }
 

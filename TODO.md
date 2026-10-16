@@ -29,13 +29,14 @@ transaction, or rollback failure. `Util.arrayCopy`, `arrayFill`, and `setShort`
 now start and commit only when needed, and validate inputs before opening a
 transaction. The snapshot rollback test passes 24 checks; the ARM build and two
 fresh host VPCD applet runs pass. Remaining transaction gaps: commit-capacity
-queries still report zero, snapshots are volatile RAM state rather than a
-power-loss journal, and Java-level exception status paths need a dedicated
-applet regression. The host filesystem now has word-program failure injection
-and a replacement-write recovery test. It passes across all injected write
-cut-points and recovers a complete old or new value. This covers a single
-filesystem record only; the planned multi-record transaction meta-block and
-the 1,000-cut acceptance test remain incomplete.
+queries still report zero, and Java-level exception status paths need a
+dedicated applet regression. On RP2350, `fs_sync` now defers persistence while
+a JCSystem write transaction is active; commit flushes the two-slot,
+CRC-protected snapshot, and abort flushes the restored state. The host overlay
+test passes 1,000 randomized mutation cut-points across a two-record snapshot
+and recovers the complete old state. The Rust OS filesystem's separate
+single-record path has its own interrupted-write test; its multi-record
+meta-block is not implemented.
 
 Latest repeatable host validation (2026-10-16): `./tools/build arm` passed
 both ARM images. The two-pass PC VPCD applet test passed 22/22 checks across

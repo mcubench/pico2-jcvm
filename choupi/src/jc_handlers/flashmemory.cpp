@@ -42,6 +42,7 @@
 #include <vector>
 
 extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length);
+extern "C" uint8_t fs_sync(void);
 
 namespace jcvm {
 
@@ -126,8 +127,11 @@ bool rollback_persistent_writes() noexcept {
       success = false;
     }
   }
-  persistent_write_snapshots.clear();
   persistent_write_transaction_active = false;
+  if (fs_sync() != 0) {
+    success = false;
+  }
+  persistent_write_snapshots.clear();
   return success;
 }
 
@@ -174,6 +178,10 @@ void write_persistent_object_alias(const fs::Tag &tag,
 
 } // namespace
 
+extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
+  return persistent_write_transaction_active ? 1u : 0u;
+}
+
 bool FlashMemory_Handler::beginPersistentWriteTransaction() noexcept {
   if (persistent_write_transaction_active) {
     return false;
@@ -187,8 +195,13 @@ bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
   if (!persistent_write_transaction_active) {
     return false;
   }
-  persistent_write_snapshots.clear();
   persistent_write_transaction_active = false;
+  if (fs_sync() != 0) {
+    persistent_write_transaction_active = true;
+    (void)rollback_persistent_writes();
+    return false;
+  }
+  persistent_write_snapshots.clear();
   return true;
 }
 

@@ -1,5 +1,27 @@
 # Handoff
 
+## JCSystem transaction flush and RP2350 snapshot recovery — 2026-10-16
+
+- The ARM filesystem overlay now defers `fs_sync()` while a Java Card
+  persistent-write transaction is active. `commitTransaction()` disables the
+  deferral and flushes the new overlay snapshot before clearing rollback data;
+  `abortTransaction()` restores the saved values, disables deferral, and
+  flushes the restored snapshot. A failed commit attempts the same rollback and
+  reports failure.
+- `./tools/test-rp2350-fs-overlay` passes, including 1,000 deterministic
+  pseudo-random byte mutation cut-points while committing two records. Each
+  simulated reboot restored the entire old pair, with no mixed pair. The
+  focused transaction test passes 30 checks, including commit/abort flush and
+  failed-flush rollback. `./tools/build arm` passes both images, and a fresh
+  PC VPCD applet pass is `TEST:SUMMARY pass=11 fail=0`.
+- This is host fault-injection evidence, not a physical power-cut test. The
+  storage snapshot backend is now transaction-aware on RP2350, but the Rust OS
+  filesystem path still lacks its designed multi-record meta-block. Commit
+  capacity and Java-level `TransactionException` APDU coverage also remain.
+- Next: test Java transaction reason codes through an applet APDU, then
+  inspect transaction capacity and determine how the OS meta-block requirement
+  relates to the RP2350 snapshot backend. Do not claim physical verification.
+
 ## Host filesystem interrupted-write recovery — 2026-10-16
 
 - Added test-only host flash failure injection at each programmed 32-bit word

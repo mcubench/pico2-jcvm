@@ -8,6 +8,8 @@
 namespace {
 std::map<std::string, std::vector<uint8_t>> files;
 bool fail_next_write = false;
+bool fail_next_sync = false;
+unsigned int sync_count = 0;
 
 std::string key_for(const uint8_t *tag, const uint8_t length) {
   return std::string(reinterpret_cast<const char *>(tag), length);
@@ -51,6 +53,15 @@ extern "C" uint8_t fs_erase(const uint8_t *tag, const uint8_t tag_length) {
   return files.erase(key_for(tag, tag_length)) == 1 ? 0 : 2;
 }
 
+extern "C" uint8_t fs_sync(void) {
+  ++sync_count;
+  if (fail_next_sync) {
+    fail_next_sync = false;
+    return 1;
+  }
+  return 0;
+}
+
 namespace persistent_transaction_test {
 std::vector<uint8_t> read(const uint8_t *tag, const uint8_t length) {
   const auto found = files.find(key_for(tag, length));
@@ -63,4 +74,6 @@ void seed(const uint8_t *tag, const uint8_t tag_length,
 }
 
 void fail_one_write() { fail_next_write = true; }
+void fail_one_sync() { fail_next_sync = true; }
+unsigned int sync_count_value() { return sync_count; }
 } // namespace persistent_transaction_test

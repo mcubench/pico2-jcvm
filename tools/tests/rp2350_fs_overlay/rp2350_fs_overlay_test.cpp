@@ -17,10 +17,32 @@ extern "C" uint8_t fs_sync(void);
 
 namespace {
 std::array<uint8_t, 2 * 1024 * 1024> fake_flash;
+std::array<uint8_t, 2 * 1024 * 1024> committed_flash;
+size_t flash_mutation_count = 0;
+size_t fail_after_mutations = static_cast<size_t>(-1);
+bool persistent_transaction_active = false;
+
+struct SimulatedPowerCut {};
+
+void reset_flash_failure(size_t fail_after = static_cast<size_t>(-1)) {
+  flash_mutation_count = 0;
+  fail_after_mutations = fail_after;
+}
+
+void before_flash_mutation() {
+  if (flash_mutation_count == fail_after_mutations) {
+    throw SimulatedPowerCut{};
+  }
+  ++flash_mutation_count;
+}
 }
 
 extern "C" const uint8_t *rp2350_fs_test_flash_base(void) {
   return fake_flash.data();
+}
+
+extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
+  return persistent_transaction_active ? 1u : 0u;
 }
 
 void flash_range_erase(uint32_t offset, size_t count) {
@@ -28,7 +50,10 @@ void flash_range_erase(uint32_t offset, size_t count) {
       offset % 4096 != 0 || count % 4096 != 0) {
     std::abort();
   }
-  std::memset(fake_flash.data() + offset, 0xff, count);
+  for (size_t index = 0; index < count; ++index) {
+    before_flash_mutation();
+    fake_flash[offset + index] = 0xff;
+  }
 }
 
 void flash_range_program(uint32_t offset, const uint8_t *data, size_t count) {
@@ -38,6 +63,7 @@ void flash_range_program(uint32_t offset, const uint8_t *data, size_t count) {
     std::abort();
   }
   for (size_t index = 0; index < count; ++index) {
+    before_flash_mutation();
     if ((fake_flash[offset + index] & data[index]) != data[index]) {
       std::abort();
     }
@@ -174,6 +200,120 @@ int main() {
              std::memcmp(persisted_actual, persisted_first,
                          sizeof(persisted_actual)) == 0,
          "filesystem_snapshot_falls_back_after_crc_failure");
+
+  constexpr uint8_t transaction_tag_a[] = {0xa2, 0x10, 0x01};
+  constexpr uint8_t transaction_tag_b[] = {0xa2, 0x10, 0x02};
+  constexpr uint8_t transaction_old_a[] = {0x10, 0x11};
+  constexpr uint8_t transaction_old_b[] = {0x20, 0x21};
+  constexpr uint8_t transaction_new_a[] = {0xa0, 0xa1};
+  constexpr uint8_t transaction_new_b[] = {0xb0, 0xb1};
+  expect(fs_init() == 0 &&
+             fs_write(transaction_tag_a, sizeof(transaction_tag_a),
+                      transaction_old_a, sizeof(transaction_old_a)) == 0 &&
+             fs_write(transaction_tag_b, sizeof(transaction_tag_b),
+                      transaction_old_b, sizeof(transaction_old_b)) == 0 &&
+             fs_sync() == 0,
+         "multi_record_baseline_commits");
+  committed_flash = fake_flash;
+
+  persistent_transaction_active = true;
+  expect(fs_write(transaction_tag_a, sizeof(transaction_tag_a),
+                  transaction_new_a, sizeof(transaction_new_a)) == 0 &&
+             fs_write(transaction_tag_b, sizeof(transaction_tag_b),
+                      transaction_new_b, sizeof(transaction_new_b)) == 0,
+         "multi_record_update_stages");
+  reset_flash_failure();
+  expect(fs_sync() == 0 && flash_mutation_count == 0,
+         "active_transaction_sync_defers_snapshot");
+  persistent_transaction_active = false;
+  reset_flash_failure();
+  expect(fs_sync() == 0, "multi_record_update_snapshot_commits");
+  const size_t snapshot_mutations = flash_mutation_count;
+  expect(snapshot_mutations > 0, "snapshot_has_flash_mutations");
+
+  fake_flash = committed_flash;
+  persistent_transaction_active = true;
+  expect(fs_init() == 0 &&
+             fs_write(transaction_tag_a, sizeof(transaction_tag_a),
+                      transaction_new_a, sizeof(transaction_new_a)) == 0 &&
+             fs_sync() == 0,
+         "uncommitted_transaction_stages_without_flash_error");
+  persistent_transaction_active = false;
+  expect(fs_init() == 0,
+         "reset_discards_volatile_transaction_state");
+  uint8_t reset_actual_a[sizeof(transaction_old_a)]{};
+  uint8_t reset_actual_b[sizeof(transaction_old_b)]{};
+  expect(fs_read(transaction_tag_a, sizeof(transaction_tag_a), reset_actual_a,
+                 sizeof(reset_actual_a)) == 0 &&
+             fs_read(transaction_tag_b, sizeof(transaction_tag_b), reset_actual_b,
+                     sizeof(reset_actual_b)) == 0 &&
+             std::memcmp(reset_actual_a, transaction_old_a,
+                         sizeof(reset_actual_a)) == 0 &&
+             std::memcmp(reset_actual_b, transaction_old_b,
+                         sizeof(reset_actual_b)) == 0,
+         "reset_restores_last_committed_transaction_state");
+
+  bool every_cut_recovers_atomically = snapshot_mutations > 0;
+  uint32_t random_state = 0x2350cafe;
+  for (size_t trial = 0; trial < 1000 && snapshot_mutations != 0; ++trial) {
+    fake_flash = committed_flash;
+    persistent_transaction_active = true;
+    if (fs_init() != 0 ||
+        fs_write(transaction_tag_a, sizeof(transaction_tag_a),
+                 transaction_new_a, sizeof(transaction_new_a)) != 0 ||
+        fs_write(transaction_tag_b, sizeof(transaction_tag_b),
+                 transaction_new_b, sizeof(transaction_new_b)) != 0) {
+      every_cut_recovers_atomically = false;
+      persistent_transaction_active = false;
+      break;
+    }
+    reset_flash_failure();
+    if (fs_sync() != 0 || flash_mutation_count != 0) {
+      every_cut_recovers_atomically = false;
+      persistent_transaction_active = false;
+      break;
+    }
+    persistent_transaction_active = false;
+    random_state ^= random_state << 13;
+    random_state ^= random_state >> 17;
+    random_state ^= random_state << 5;
+    reset_flash_failure(random_state % snapshot_mutations);
+    try {
+      (void)fs_sync();
+      every_cut_recovers_atomically = false;
+      break;
+    } catch (const SimulatedPowerCut &) {
+    }
+    reset_flash_failure();
+
+    if (fs_init() != 0) {
+      every_cut_recovers_atomically = false;
+      break;
+    }
+    uint8_t actual_a[sizeof(transaction_new_a)]{};
+    uint8_t actual_b[sizeof(transaction_new_b)]{};
+    const bool old_state =
+        fs_read(transaction_tag_a, sizeof(transaction_tag_a), actual_a,
+                sizeof(actual_a)) == 0 &&
+        fs_read(transaction_tag_b, sizeof(transaction_tag_b), actual_b,
+                sizeof(actual_b)) == 0 &&
+        std::memcmp(actual_a, transaction_old_a, sizeof(actual_a)) == 0 &&
+        std::memcmp(actual_b, transaction_old_b, sizeof(actual_b)) == 0;
+    const bool new_state =
+        fs_read(transaction_tag_a, sizeof(transaction_tag_a), actual_a,
+                sizeof(actual_a)) == 0 &&
+        fs_read(transaction_tag_b, sizeof(transaction_tag_b), actual_b,
+                sizeof(actual_b)) == 0 &&
+        std::memcmp(actual_a, transaction_new_a, sizeof(actual_a)) == 0 &&
+        std::memcmp(actual_b, transaction_new_b, sizeof(actual_b)) == 0;
+    if (!old_state && !new_state) {
+      every_cut_recovers_atomically = false;
+      break;
+    }
+  }
+  expect(every_cut_recovers_atomically,
+         "filesystem_1000_randomized_multi_record_power_cuts_are_atomic");
+
   expect(fs_erase(persistent_tag, sizeof(persistent_tag)) == 0 &&
              fs_sync() == 0 && fs_init() == 0 &&
              fs_exists(persistent_tag, sizeof(persistent_tag)) == 0,

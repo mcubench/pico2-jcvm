@@ -9,6 +9,8 @@ namespace persistent_transaction_test {
 std::vector<uint8_t> read(const uint8_t *tag, uint8_t length);
 void seed(const uint8_t *tag, uint8_t tag_length, std::vector<uint8_t> value);
 void fail_one_write();
+void fail_one_sync();
+unsigned int sync_count_value();
 } // namespace persistent_transaction_test
 
 namespace {
@@ -52,6 +54,8 @@ int main() {
   const auto existing = make_tag(1);
   const std::vector<uint8_t> original{0xaa, 0x55, 0x00};
   seed(existing.value, existing.len, original);
+  const unsigned int syncs_before_abort =
+      persistent_transaction_test::sync_count_value();
   expect(FlashMemory_Handler::beginPersistentWriteTransaction(),
          "begin_existing");
   expect(FlashMemory_Handler::persistentWriteTransactionActive(),
@@ -66,6 +70,8 @@ int main() {
          "depth_zero_after_abort");
   expect(read(existing.value, existing.len) == original,
          "rollback_restores_original_value_once");
+  expect(persistent_transaction_test::sync_count_value() == syncs_before_abort + 1,
+         "abort_persists_restored_snapshot");
 
   const auto created = make_tag(2);
   expect(FlashMemory_Handler::beginPersistentWriteTransaction(),
@@ -77,8 +83,12 @@ int main() {
 
   expect(FlashMemory_Handler::beginPersistentWriteTransaction(), "begin_commit");
   FlashMemory_Handler::setPersistentField_Byte(existing, 0x77);
+  const unsigned int syncs_before_commit =
+      persistent_transaction_test::sync_count_value();
   expect(FlashMemory_Handler::commitPersistentWriteTransaction(),
          "commit_succeeds");
+  expect(persistent_transaction_test::sync_count_value() == syncs_before_commit + 1,
+         "commit_flushes_snapshot_before_return");
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
          "depth_zero_after_commit");
   expect(read(existing.value, existing.len) == byte_record(0x77),
@@ -117,6 +127,20 @@ int main() {
          "rollback_failed_new_write_succeeds");
   expect(read(failed_new_write.value, failed_new_write.len).empty(),
          "rollback_failed_new_write_leaves_no_record");
+
+  const auto failed_commit = make_tag(5);
+  const std::vector<uint8_t> before_failed_commit{0x21, 0x43};
+  seed(failed_commit.value, failed_commit.len, before_failed_commit);
+  expect(FlashMemory_Handler::beginPersistentWriteTransaction(),
+         "begin_failed_commit");
+  FlashMemory_Handler::setPersistentField_Byte(failed_commit, 0x65);
+  persistent_transaction_test::fail_one_sync();
+  expect(!FlashMemory_Handler::commitPersistentWriteTransaction(),
+         "failed_snapshot_commit_is_reported");
+  expect(read(failed_commit.value, failed_commit.len) == before_failed_commit,
+         "failed_snapshot_commit_rolls_back_values");
+  expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
+         "failed_snapshot_commit_closes_transaction");
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
