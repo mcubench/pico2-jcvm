@@ -3787,3 +3787,13 @@
 ## JCSystem transaction APDU implementation commit metadata
 
 - The transaction applet fixture, handler fix, 10-assertion VPCD probe, ARM/RISC-V/PC builds, and progress/TODO/handoff records above were committed as `cb6d21d`.
+
+## 2026-10-16 — Recheck physical reader availability for static SHA validation
+
+- Step/experiment: `physical-reader-access-recheck`
+- Change: Rechecked USB, PC/SC, and libusb visibility before attempting the named-reader JCAlgTest static run or a board flash.
+- Validation: `lsusb -d 2e8a:0009` and `lsusb -d 2e8a:000f` returned no device. `timeout 5s pcsc_scan -r` reported `SCardEstablishContext: Service not available`; its repeated invalid-handle output was captured only to a bounded file. `./tools/doctor` confirms build tools are present. No flash or hardware command was attempted.
+- Result: This execution context has no visible physical Pico and no active PC/SC service. `picotool`/libusb initialization reports `-99`. The official named-reader static performance test cannot reach either a physical CHOUPI reader or Virtual PCD here. The archived simulator result for SHA-256 doFinal (256-byte input) is 0.05 ms/op average with -0.02 ms/op minimum, which is timer-resolution noise; no firmware change is justified from it. The available CHOUPI VPCD official log returned `AA 9000` for initial SHA-256 measurement APDUs but then lost the virtual card before writing a SHA-256 measurement row.
+- Decision: Keep static performance and digest known-answer verification open until PC/SC and the intended reader are available. Use the direct target selection supported by `tools/run-jcalgtest`: `--reader-name 'Pico 2 CHOUPI CCID [JCAlgTest CCID]'` for hardware or `--reader-name 'Virtual PCD 00 00'` for VPCD; use `--simulator` only for jCardSim reference data. Do not flash while guest USB enumeration is absent.
+- Commit: recorded in the following commit-metadata entry.
+- Artifacts/logs: `artifacts/logs/pcsc-physical-access-check-20261016.log` (SHA-256 `b699fc4311fac1971545d8b9f21155d49e5a2f5b39f8b8a23ea735e3cf91763a`); `artifacts/results/jcalgtest-reader-selector-static-simulator-20261016/CHOUPI_JCARDSIM____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_1792139077271__3B_FA_18_00_00_81_31_FE_45_4A_43_4F_50_33_31_56_32_33_32_98_(provided_by_Licel_jCardSim).csv` (SHA-256 `08dc50e8db26d30298f53743fbe883441174097b1a943eef562af5216fac7d86`); `artifacts/results/jcalgtest-static-vpcd-20261016/ALGTEST_log_1792133041312.log`.

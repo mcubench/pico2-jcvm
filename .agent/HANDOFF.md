@@ -25,6 +25,12 @@
   then rerun the official named-reader static operation once PC/SC is
   available. Physical test still requires both architectures to pass and a
   finite serial capture after flashing.
+- Physical access was rechecked: `lsusb -d 2e8a:0009` and `lsusb -d
+  2e8a:000f` return no device; bounded `pcsc_scan -r` reports
+  `SCardEstablishContext: Service not available`, and libusb initialization
+  reports `-99`. No flash attempt was made. Log:
+  `artifacts/logs/pcsc-physical-access-check-20261016.log` (SHA-256
+  `b699fc4311fac1971545d8b9f21155d49e5a2f5b39f8b8a23ea735e3cf91763a`).
 
 ## JCAlgTest static SHA-256 host timing — 2026-10-16
 
