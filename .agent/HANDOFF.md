@@ -1,5 +1,28 @@
 # Handoff
 
+## JCAlgTest static SHA-256 follow-up — 2026-10-16
+
+- The current SHA-256 implementation passes the focused PC VPCD regression,
+  including the complete 50-call static performance APDU: `AA 9000` in
+  17.389 s wall time. This is host-emulator timing, not Pico throughput. The
+  official client’s earlier PC/SC run got through setup and five measurement
+  samples, but the virtual card was then removed and the run did not complete.
+- The JCAlgTest 1.8.2 CLI has no reader-name option. `-cardname` sets report
+  metadata; `-simulator` chooses the bundled jCardSim simulator. For a PC/SC
+  reader, the client lists readers and accepts a numeric index. Select by
+  matching the requested reader name in that list, then feed its index.
+- Current access is unavailable: `pcsc_scan -r` reports
+  `SCardEstablishContext: Service not available`, while `lsusb` cannot
+  initialize libusb (`-99`). No real board run or fresh official-client run
+  was possible. Do not try to flash until USB/PCSC access returns.
+- `./tools/build arm` passes on the current source. Digest bytes still need a
+  known-answer check; JCAlgTest only reports the `AA` operation marker.
+- Next: restore PC/SC, choose the physical reader by its listed name/index,
+  rerun `ALG_PERFORMANCE_STATIC`, and add a digest known-answer probe.
+- Evidence: `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`,
+  `artifacts/results/jcalgtest-static-vpcd-20261016/ALGTEST_log_1792133041312.log`,
+  and `artifacts/logs/build-arm-jcalgtest-static-reader-20261016.log`.
+
 ## Current JCAlgTest static SHA-256 checkpoint — 2026-10-16
 
 - Implemented native transient-buffer update/final/reset operations for SHA-256. The buffered length occupies the last two bytes of a 2048-byte CLEAR_ON_RESET array; the maximum input per digest is 2046 bytes. This avoids persistent scalar counter writes and makes each `doFinal()` reset state for the next call.

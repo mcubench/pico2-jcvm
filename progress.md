@@ -3513,3 +3513,13 @@
 - Decision: Keep the transient native state implementation. Enable a VPCD socket listener before rerunning the official Java client, then verify a digest known-answer and measure on the physical Pico when its reader is available.
 - Commit: `fa8c05b` (root implementation and test); `c6c4da6` (Java Card API bridge).
 - Artifacts/logs: `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`, `artifacts/logs/jcalgtest-sha-bridge-class-emulator-20261016.log`, `artifacts/logs/build-pc-sha-bridge-class-20261016.log`, `artifacts/logs/build-arm-sha-bridge-20261016.log`, `artifacts/logs/build-riscv-sha-bridge-20261016.log`, and `artifacts/logs/jcalgtest-official-vpcd-client-20261016.log`.
+
+## 2026-10-16 — Record static benchmark reader selection and current access
+
+- Step/experiment: `jcalgtest-static-reader-followup-20261016`
+- Change: Updated the handoff with the actual JCAlgTest 1.8.2 selection behavior: `-simulator` chooses bundled jCardSim, `-cardname` is report metadata, and PC/SC devices are selected from a numbered list. Record the prior official-client disconnect and current PC/SC/USB state so the next run can target the reader by its listed name and index.
+- Validation: `./tools/build arm` passed (`BUILD:PASS target=choupi`). A bounded `timeout --signal=TERM --kill-after=1s 3s pcsc_scan -r` ended with status 124 and `SCardEstablishContext: Service not available`; `lsusb -d 2e8a:0009` could not initialize libusb (`-99`). No fresh official-client or hardware test could run. The prior official static attempt logged setup and five SHA-256 measurement responses (`AA 9000`) before `SCARD_W_REMOVED_CARD`; its 50-call APDU did not complete. The focused PC VPCD test had already passed all 11 checks, including the complete 50-call static APDU (`AA 9000`, 17.389 s host wall time).
+- Result: The implementation passes its focused complete static SHA-256 APDU, while the official-client end-to-end run and real-board measurement remain incomplete. The whole-APDU host timing is not a hardware throughput result; digest bytes have not been checked against a known answer.
+- Decision: Once PC/SC and USB access are restored, select the real Pico by its displayed reader name/index and rerun `ALG_PERFORMANCE_STATIC`; add a digest known-answer probe separately.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/build-arm-jcalgtest-static-reader-20261016.log`, `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`, `artifacts/results/jcalgtest-static-vpcd-20261016/ALGTEST_log_1792133041312.log`.
