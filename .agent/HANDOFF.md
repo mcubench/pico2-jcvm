@@ -1,5 +1,15 @@
 # Handoff
 
+## Current JCAlgTest static SHA-256 checkpoint — 2026-10-16
+
+- Implemented native transient-buffer update/final/reset operations for SHA-256. The buffered length occupies the last two bytes of a 2048-byte CLEAR_ON_RESET array; the maximum input per digest is 2046 bytes. This avoids persistent scalar counter writes and makes each `doFinal()` reset state for the next call.
+- The focused one-pass VPCD applet regression passes 11 checks. Its JCAlgTest 1.8.2 static SHA-256 configuration uses 256-byte input and 50 `doFinal()` calls; the operation returned `AA 9000` in 17.389 s wall time on the PC emulator. Both `./tools/build arm` and `./tools/build riscv` pass. This host timing does not measure Pico hardware throughput.
+- The official Java client selected `Virtual PCD 00 00`, but PC/SC marked it `NO CARD`; the emulator could not connect to `127.0.0.1:35963` (`Connection refused`). `vsmartcard-vpcd` is not installed, and the current PC/SC list has only two virtual readers, with no physical Pico reader. The official static client therefore did not produce a result CSV. No real board flash or static hardware run occurred.
+- JCAlgTest checks only the `AA` success marker for this operation. Digest output has not been compared to a known answer.
+- Next: enable the VPCD socket endpoint and rerun `AlgTestJClient.jar -op ALG_PERFORMANCE_STATIC` selecting `Virtual PCD 00 00`; add a digest known-answer APDU; then run on hardware only after the physical Pico reader is exposed through PC/SC.
+- Source commits: API `c6c4da6`; root implementation/test `fa8c05b`.
+- Evidence: `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`, `artifacts/logs/jcalgtest-sha-bridge-class-emulator-20261016.log`, `artifacts/logs/jcalgtest-official-vpcd-client-20261016.log`, `artifacts/logs/build-arm-sha-bridge-20261016.log`, and `artifacts/logs/build-riscv-sha-bridge-20261016.log`.
+
 ## Compact persistent filesystem snapshots and current physical state — 2026-10-15
 
 - Updated snapshot serialization to version 2: only occupied overlay entries

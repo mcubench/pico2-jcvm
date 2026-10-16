@@ -3503,3 +3503,13 @@
 - Decision: Refresh the new physical USB node with the installed `/usr/local/sbin/pico2-pcsc-reader` helper, reinstall JCAlgTest 1.8.2 if needed, run the requested static benchmark, then check digest bytes separately with a known-answer probe.
 - Commit: `d212af2`
 - Artifacts/logs: `artifacts/logs/jcalgtest-sha256-vpcd-pending-physical-retry-20261015.log` (SHA-256 `6b04936b84bc17e27894a9aa19cd0ac72963312f473dd193533b2527d7c8ca7e`).
+
+## 2026-10-16 — Fix repeated SHA-256 static performance calls
+
+- Step/experiment: `jcalgtest-static-sha256-state-20261016`
+- Change: Moved SHA-256 update, finalization, and reset state handling into a native bridge over the existing CLEAR_ON_RESET input array. The bridge stores the buffered length in the array tail, removes persistent scalar counter writes, and clears consumed input. Added the JCAlgTest 1.8.2 256-byte, 50-call `ALG_PERFORMANCE_STATIC` APDU to the focused VPCD regression.
+- Validation: `./tools/build-pc` passed (`ROMMASK:PASS`); `./tools/build arm` passed (`BUILD:PASS target=choupi`); `./tools/build riscv` passed (`BUILD:PASS arch=riscv`). `timeout --signal=TERM 180s ./tools/env python3 tools/tests/pc_vpcd_applet_test.py --passes 1 --apdu-timeout 180 --connect-timeout 60 ...` passed all 11 checks. The static SHA-256 APDU returned `AA 9000` in 17.389 s; 50 × 256 = 12,800 input bytes, or about 736 bytes/s by whole-APDU host wall time. The official Java client selected `Virtual PCD 00 00`, but PC/SC reported `NO CARD`; CHOUPI logged `Connection refused` for `127.0.0.1:35963`, and `vsmartcard-vpcd` is absent. The static run therefore used the same JCAlgTest settings through the direct VPCD regression instead of the official PC/SC client. No physical flash or hardware benchmark was run.
+- Result: Repeated static SHA-256 operations now complete without `F105` or `6F00`. The 17.389 s value is PC-emulator wall time, not an RP2350 measurement. JCAlgTest checks its success marker only; digest bytes were not known-answer checked.
+- Decision: Keep the transient native state implementation. Enable a VPCD socket listener before rerunning the official Java client, then verify a digest known-answer and measure on the physical Pico when its reader is available.
+- Commit: `fa8c05b` (root implementation and test); `c6c4da6` (Java Card API bridge).
+- Artifacts/logs: `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`, `artifacts/logs/jcalgtest-sha-bridge-class-emulator-20261016.log`, `artifacts/logs/build-pc-sha-bridge-class-20261016.log`, `artifacts/logs/build-arm-sha-bridge-20261016.log`, `artifacts/logs/build-riscv-sha-bridge-20261016.log`, and `artifacts/logs/jcalgtest-official-vpcd-client-20261016.log`.
