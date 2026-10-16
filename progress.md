@@ -4171,7 +4171,7 @@
   reason `03` remains an expected unsupported result.
 - Decision: Continue with official-client/report coverage and remaining
   GlobalPlatform/API work; retry hardware when USB access is restored.
-- Commit: `<pending>`
+- Commit: `fe72ee0`.
 - Artifacts/logs:
   `artifacts/logs/vpcd-persistence-corrected-transcript-20261016.log`,
   `artifacts/logs/vpcd-persistence-corrected-20261016.log`.
