@@ -3735,3 +3735,7 @@
 - Commit: Java API submodule `b757a0a`; root implementation commit recorded in the following metadata entry.
 - Artifacts/logs: `artifacts/logs/build-arm-jcsystem-transaction-20261016.log` (SHA-256 `2db89bbbc9bf216f876dada393af6acf2317a111df6ce67ed9b1c67de020871b`); `artifacts/logs/persistent-transaction-jcsystem-20261016.log` (SHA-256 `733a7c09076c4891f673dbdee18924cbfed03360be452c1a7b93a1d19b60500f`); `artifacts/logs/host-vpcd-jcsystem-transaction-final-console-20261016.log` (SHA-256 `16b188c22ae97c371e0153531b13630773b07ce4e44d502dbcf1666a4424be13`); `artifacts/logs/host-vpcd-jcsystem-transaction-final-20261016.log` (SHA-256 `1513da10cebf0f7bda56abd759f042e40a3291b92b78e741bd8ba044940a8824`).
 
+## JCSystem transaction implementation commit metadata
+
+- The root implementation, 24-check rollback test, ARM build, two-pass host applet regression, and progress/handoff records above were committed as `e39dfdd`. The Java Card API source changes are separately committed in its nested repository as `b757a0a`.
+
