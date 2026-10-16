@@ -17,11 +17,27 @@
   name. Java SmartcardIO listed no readers in this execution context, so named
   PC/SC selection was not exercised against a real or virtual reader. No token
   access, APDU, or flash occurred.
+- Re-ran the official `ALG_PERFORMANCE_STATIC` client via `--simulator`. It
+  completed the SHA-256 section but the four-minute wrapper timeout interrupted
+  the later RSA sweep (exit 124). Simulator SHA-256 reported 0.05 ms/op average
+  over 250 × 256-byte operations, with raw samples yielding -0.02 ms/op minimum;
+  this is timer-resolution noise, not useful throughput. Earlier direct
+  CHOUPI PC VPCD coverage returned `AA 9000` for its 50-call SHA-256 static
+  APDU in 15.676 s host-emulator time. Neither result measures Pico hardware.
+- The prior official PC/SC static attempt on VPCD reached SHA-256 and received
+  `AA 9000` for baseline samples, then the PC/SC card was removed before the
+  measured samples completed. SHA digest bytes have not been known-answer
+  checked. Do not treat expected unsupported algorithms as failures.
 - Evidence: `artifacts/logs/jcalgtest-reader-selector-simulator-20261016.log`
   (SHA-256 `c68e2bc083e95af186c7032c958969ab6ba9e034af6d439fdbbb279b51aafd25`)
   and `artifacts/results/jcalgtest-reader-selector-simulator-20261016/`.
+- Static run evidence: `artifacts/logs/jcalgtest-reader-selector-static-simulator-20261016.log`
+  (SHA-256 `9e20a5e357b29b258d1d192ddb3f6cecb25bf9a60ca235f203ef09692eca31a0`)
+  and `artifacts/results/jcalgtest-reader-selector-static-simulator-20261016/`.
 - Next: once Java SmartcardIO can see `Virtual PCD 00 00` or the Pico CCID
-  reader, run the launcher with that exact name and the required operation.
+  reader, run the launcher with that exact name and `-op ALG_PERFORMANCE_STATIC`.
+  On the Pico, compare SHA-256 latency after the PC/SC run completes; known-answer
+  digest validation remains separate.
 
 ## Parameterized JCAlgTest install regression — 2026-10-16
 

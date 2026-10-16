@@ -3543,3 +3543,13 @@
 - Decision: Use `tools/run-jcalgtest --reader-name '<exact pcsc_scan reader name>' -op ALG_PERFORMANCE_STATIC -fresh -outpath <directory>` for a real/virtual card, or `tools/run-jcalgtest --simulator ...` for bundled jCardSim. Retry once Java SmartcardIO sees the target reader.
 - Commit: `9ff15ec17ab3e552d1bfda66da4bf75922bd3638`.
 - Artifacts/logs: `artifacts/logs/jcalgtest-reader-selector-simulator-20261016.log` (SHA-256 `c68e2bc083e95af186c7032c958969ab6ba9e034af6d439fdbbb279b51aafd25`); `artifacts/results/jcalgtest-reader-selector-simulator-20261016/`.
+
+## 2026-10-16 — Run JCAlgTest static mode through the selector
+
+- Step/experiment: `jcalgtest-static-selector-simulator-20261016`
+- Change: Exercised the new official-client launcher in `ALG_PERFORMANCE_STATIC` mode through bundled jCardSim and archived the complete output up to timeout. Updated the handoff with measured limits and the prior VPCD interruption state.
+- Validation: `timeout 240s tools/run-jcalgtest --simulator -op ALG_PERFORMANCE_STATIC -fresh -outpath artifacts/results/jcalgtest-reader-selector-static-simulator-20261016` reached and completed SHA-256’s 250 × 256-byte sample section, then exited 124 during the later RSA sweep. Simulator SHA-256 reported 0.05 ms/op average, -0.02 ms/op minimum, with raw sample deltas 14.20, 0.20, -0.80, 0.20, -0.80 ms. The earlier official PC/SC VPCD run received `AA 9000` in SHA-256 baseline samples but lost its card before measured samples. No reader was visible to Java SmartcardIO in this session, so no hardware benchmark was run.
+- Result: SHA-256 calls execute and report success. Simulator timing includes sub-resolution/negative deltas and is not a sensible throughput estimate. The focused CHOUPI host VPCD 50-call APDU previously returned `AA 9000` in 15.676 s, also host-emulator timing, not Pico throughput. No firmware defect is established by these timings; digest bytes still need a known-answer test.
+- Decision: Do not change SHA based on simulator timing noise. Retry static mode against the exact physical Pico reader after Java SmartcardIO sees it; do not classify expected unsupported algorithms as bugs.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/jcalgtest-reader-selector-static-simulator-20261016.log` (SHA-256 `9e20a5e357b29b258d1d192ddb3f6cecb25bf9a60ca235f203ef09692eca31a0`); `artifacts/results/jcalgtest-reader-selector-static-simulator-20261016/`.
