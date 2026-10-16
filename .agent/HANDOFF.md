@@ -25,6 +25,7 @@
 - Next: create an authenticated card-manager regression for instance DELETE,
   package DELETE, wrong AID, and package dependency status; verify GET STATUS
   before and after a fresh restart. Then proceed to truthful GET DATA support.
+- Implementation commit: `4f66267`.
 
 ## GP DELETE command parser — 2026-10-16
 

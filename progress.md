@@ -3707,3 +3707,7 @@
 - Decision: Keep DELETE and card-manager criteria open until authenticated instance/package DELETE, failure statuses, and GET STATUS after restart are tested. Java SmartcardIO reports no readers, so physical validation remains unavailable here.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/build-arm-gp-delete-20261016.log` (SHA-256 `17a6cb5bdc47a2b83cce2c6c52058fc0750c1c4743a87a7d7f04ec8ad5e6b78e`); `artifacts/logs/build-pc-gp-delete-final-20261016.log` (SHA-256 `031952a9caed256cb031f1ca2be1f531567faf6c6867df7134f652082771679a`); `artifacts/logs/pc-vpcd-gp-delete-run-20261016.log` (SHA-256 `f59a665bd0d3bf318f9a87a55df8ff7ce7231dd9965a3b7eb903848b7969a8f7`); emulator log `artifacts/logs/pc-vpcd-gp-delete-20261016.log` (SHA-256 `32960ddd67f8ec20d5e065871560883458c7827e5697a46040bfe8c549d4d0f9`).
+
+## GP DELETE lifecycle commit metadata
+
+- The authenticated dispatcher, persistent state updates, strict parser integration, and ARM/PC/VPCD evidence recorded above are committed as `4f66267`.
