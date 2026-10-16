@@ -4114,7 +4114,7 @@
   without busy waiting; retry hardware only after guest USB enumeration works.
   Then run SELECT/GETVERSION/JCSystem, SHA-256, and named-reader static
   performance validation in that order.
-- Commit: `<pending>`
+- Commit: `cb6f8aa`.
 - Artifacts/logs: `artifacts/logs/build-arm-fs-exists-status-fix-20261016.log`
   (SHA-256 `6926164d04d39df5cb0416d2dbdca20ce2fe2ae939def951572b226db75efcf4`),
   `artifacts/logs/build-pc-fs-exists-status-fix-20261016.log` (SHA-256
@@ -4149,7 +4149,7 @@
   physical testing only after guest USB enumeration and PC/SC work. The official
   Java client still needs a working PC/SC reader; current static validation
   used its exact applet configuration through the bounded VPCD harness.
-- Commit: `<pending>`
+- Commit: `d6794e9` (validation record and logs), `925a92f` (source fix).
 - Artifacts/logs: `artifacts/logs/build-arm-fs-exists-corrected-20261016.log`,
   `artifacts/logs/build-pc-fs-exists-corrected-20261016.log`,
   `artifacts/logs/jcsystem-transaction-security-class-map-fix-20261016.log`,
