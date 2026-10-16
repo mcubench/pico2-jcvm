@@ -15,6 +15,13 @@
   image flashed successfully (`FLASH:PASS`). The physical device disappeared
   during re-enumeration immediately afterward; a single bounded visibility
   check found no device. Do not repeat USB probes until the Pico reappears.
+- Compared all 34 JC305U3 security export classes by name against the generated
+  CHOUPI security export. Restored the working-tree remap to the exact
+  class-token correspondence: JC305 `RandomData` token `0x0E` maps to CHOUPI
+  token `0x1C`; the prior worktree value `0x1E` pointed at
+  `MessageDigest$OneShot`. Both architecture builds pass with the restored map.
+  Evidence commit: `2ff11eb` (documentation and captures); source tracing is
+  still mixed with earlier uncommitted changes in the worktree.
 - The pre-flash raw CCID probe still reproduced SELECT `9000`, with GETVERSION,
   JCSystem, and SHA support returning `F503`. The post-flash APDU probe did not
   run because the device was not visible. No digest or static performance

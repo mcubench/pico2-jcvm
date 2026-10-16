@@ -4063,7 +4063,8 @@
 - Decision: Keep the fix and the bounded static-call trace; when the board
   becomes visible again, rebuild both if source changed, flash ARM, and check
   GETVERSION then JCSystem before SHA/performance tests.
-- Commit: pending; the workspace `.git` index is read-only in this session.
+- Commit: `2ff11eb` (progress and evidence; the diagnostic source instrumentation
+  remains uncommitted alongside pre-existing source changes).
 - Artifacts/logs: `artifacts/logs/build-arm-jc305-remap-fix-20261016.log`,
   `artifacts/logs/build-riscv-jc305-remap-fix-20261016.log` and the export
   comparison output captured during this session.
