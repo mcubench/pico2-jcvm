@@ -77,7 +77,6 @@ volatile uint16_t debug_task_count = 0;
 Scp03Session secure_channel;
 CapLoadSession cap_load_session;
 bool get_status_first_seen = false;
-uint8_t get_status_first_p1 = 0;
 
 uint32_t read_le32(const uint8_t *p) {
   return static_cast<uint32_t>(p[0]) |
@@ -127,7 +126,6 @@ void process_message(uint8_t rhport) {
   case 0x62: // PC_to_RDR_IccPowerOn
     slot_state = 0;
     get_status_first_seen = false;
-    get_status_first_p1 = 0;
     cap_load_session.restoreInstalled();
     send_response(rhport, 0x80, kAtr, sizeof(kAtr));
     break;
@@ -136,7 +134,6 @@ void process_message(uint8_t rhport) {
     slot_state = 1;
     secure_channel.reset();
     get_status_first_seen = false;
-    get_status_first_p1 = 0;
     cap_load_session.abortTransfer();
     send_response(rhport, 0x81, nullptr, 0, slot_state);
     break;
@@ -150,7 +147,6 @@ void process_message(uint8_t rhport) {
     size_t response_length = 2;
     if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
       get_status_first_seen = false;
-      get_status_first_p1 = 0;
       (void)choupi_vm_deselect_applet();
     }
     if (apdu_length >= 2 && apdu[0] == 0x80 && apdu[1] == 0x50) {
@@ -264,14 +260,10 @@ void process_message(uint8_t rhport) {
         }
       } else if (instruction == 0xf2 && apdu_length >= 5) {
         if (p2 == 0x03) {
-          if (!get_status_first_seen || get_status_first_p1 == 0x80 ||
-              p1 != get_status_first_p1) {
-            response[0] = 0x69;
-            response[1] = 0x85;
-          } else {
-            response[0] = 0x90;
-            response[1] = 0x00;
-          }
+          const uint16_t status = gp::validate_get_status_next(
+              get_status_first_seen, p1, apdu + 5, command_data_length);
+          response[0] = static_cast<uint8_t>(status >> 8);
+          response[1] = static_cast<uint8_t>(status);
         } else if (p2 != 0x02) {
           response[0] = 0x6a;
           response[1] = 0x86;
@@ -295,7 +287,6 @@ void process_message(uint8_t rhport) {
             response[response_length++] = 0x90;
             response[response_length++] = 0x00;
             get_status_first_seen = true;
-            get_status_first_p1 = p1;
           } else {
             response[0] = static_cast<uint8_t>(status >> 8);
             response[1] = static_cast<uint8_t>(status);

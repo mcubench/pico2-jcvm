@@ -194,6 +194,21 @@ int main() {
              output.data(), output.size() - 2, output_length) == 0x9000 &&
              output_length == 0,
          "empty_application_registry_is_successful");
+
+  expect(gp::validate_get_status_next(false, 0x40, wildcard_search,
+                                      sizeof(wildcard_search)) == 0x6985,
+         "reject_next_without_first_query");
+  expect(gp::validate_get_status_next(true, 0x80, malformed_isd_search,
+                                      sizeof(malformed_isd_search)) == 0x6985,
+         "reject_next_after_isd_only_query_and_ignore_search");
+  expect(gp::validate_get_status_next(true, 0x40, wildcard_search,
+                                      sizeof(wildcard_search)) == 0x9000,
+         "allow_next_after_application_query");
+  expect(gp::validate_get_status_next(true, 0x20, nullptr, 0) == 0x6a80,
+         "next_query_requires_aid_search");
+  expect(gp::validate_get_status_next(true, 0x08, wildcard_search,
+                                      sizeof(wildcard_search)) == 0x6a86,
+         "reject_next_with_unsupported_category");
   std::printf("TEST:SUMMARY pass=%d fail=0\n", checks);
   return EXIT_SUCCESS;
 }

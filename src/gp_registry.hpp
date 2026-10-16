@@ -199,6 +199,24 @@ struct RegistryView {
   uint8_t module_aid_length = 0;
 };
 
+inline bool get_status_next_allowed(bool first_query_seen,
+                                    uint8_t next_query_p1) noexcept {
+  return first_query_seen && next_query_p1 != 0x80;
+}
+
+inline uint16_t validate_get_status_next(bool first_query_seen, uint8_t p1,
+                                         const uint8_t *search_data,
+                                         size_t search_data_length) noexcept {
+  if (p1 != 0x80 && p1 != 0x40 && p1 != 0x20 && p1 != 0x10) return 0x6a86;
+  if (p1 != 0x80) {
+    AidSearch search;
+    if (!parse_aid_search(search_data, search_data_length, search)) {
+      return 0x6a80;
+    }
+  }
+  return get_status_next_allowed(first_query_seen, p1) ? 0x9000 : 0x6985;
+}
+
 // Construct the data field for a GET STATUS first/all occurrence query. The
 // caller appends the returned status word to the APDU response.
 inline uint16_t build_get_status_first_response(
