@@ -21,6 +21,17 @@
   RSA-SHA1 reported unsupported reason `03`, as expected.
 - Full transcript: `artifacts/logs/vpcd-persistence-corrected-transcript-20261016.log`;
   emulator log: `artifacts/logs/vpcd-persistence-corrected-20261016.log`.
+- Twelve additional repository regression wrappers passed (APDU utilities and
+  parsing, VPCD protocol/session, GP DELETE/registry, install status,
+  persistent transactions, RP2350 filesystem overlay, JCArray, JCVMArray, and
+  ROM mask). `tools/test-jcarray` previously invoked `c++` directly and its
+  handwritten stub missed the new `fs_read_1b_at` dependency; it now builds
+  through `tools/env cmake`, with test-owned CMake/stub files. Short APDU tests
+  now link the same correctly typed filesystem read ABI.
+- `pcscd` and the vsmartcard VPCD driver packages are installed, but this shell
+  cannot write the read-only `/run/pcscd` socket. A user/mount namespace was
+  denied by the host. The official Java client still cannot run through PC/SC;
+  keep using direct bounded VPCD APDU tests until the service is available.
 - Next: restore guest USB/libusb and PC/SC visibility, then use the ARM build,
   flash through the wrapper, capture finite serial output, and run the named
   physical reader through JCAlgTest 1.8.2. Keep unsupported algorithms as

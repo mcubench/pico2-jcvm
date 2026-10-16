@@ -4175,3 +4175,37 @@
 - Artifacts/logs:
   `artifacts/logs/vpcd-persistence-corrected-transcript-20261016.log`,
   `artifacts/logs/vpcd-persistence-corrected-20261016.log`.
+
+## 2026-10-16 — Restore wrapper-based VM regression tests
+
+- Step/experiment: `host-regression-wrappers`
+- Change: Converted `tools/test-jcarray` from direct `CXX` invocation to the
+  repository `tools/env cmake` wrapper. Added a maintained host CMake target
+  with the PC mbedTLS configuration and a focused filesystem stub. Corrected
+  the short-APDU test's `fs_read_1b_at` declaration and supplied a failing stub
+  for persistent-array reads not exercised by that test.
+- Validation: 12 repository wrappers passed: `test-apdu-util` (17),
+  `test-short-apdu` (27), `test-vpcd-protocol` (14), `test-vpcd-session` (14),
+  `test-gp-delete` (11), `test-gp-registry` (44), `test-install-status` (10,
+  summary `fail=0`), `test-persistent-transaction` (30, `fail=0`),
+  `test-rp2350-fs-overlay` (27, `fail=0`), `test-jcarray` (15),
+  `test-jcvmarray` (2), and `test-pc-rommask` (7). `git diff --check` passed
+  for the changed harness files. No implementation source changed in this
+  step; ARM was not rebuilt.
+- Result: All selected host regression checks pass, and the JCArray test now
+  complies with the repository compiler-wrapper rule.
+- Decision: Continue with the remaining API/GP integration items and retry the
+  official client once PC/SC is usable. Physical validation remains open.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/test-apdu-util-continuation-20261016.log`,
+  `artifacts/logs/test-short-apdu-fixed-20261016.log`,
+  `artifacts/logs/test-vpcd-protocol-continuation-20261016.log`,
+  `artifacts/logs/test-vpcd-session-continuation-20261016.log`,
+  `artifacts/logs/test-gp-delete-continuation-20261016.log`,
+  `artifacts/logs/test-gp-registry-continuation-20261016.log`,
+  `artifacts/logs/test-install-status-continuation-20261016.log`,
+  `artifacts/logs/test-persistent-transaction-continuation-20261016.log`,
+  `artifacts/logs/test-rp2350-fs-overlay-continuation-20261016.log`,
+  `artifacts/logs/test-jcarray-wrapper-fix-20261016.log`,
+  `artifacts/logs/test-jcvmarray-continuation-20261016.log`,
+  `artifacts/logs/test-pc-rommask-continuation-20261016.log`.

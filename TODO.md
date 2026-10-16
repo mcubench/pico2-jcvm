@@ -37,6 +37,11 @@ Current verified status (2026-10-16):
   `AA9000` in 36.939 s and 37.244 s on the PC emulator. These are not Pico
   performance measurements. Unsupported RSA-SHA1 reports reason `03`, as
   expected.
+- The ARM-independent regression wrappers passed APDU, VPCD, GP registry /
+  DELETE, install-status, transaction, RP2350 filesystem, array, and ROM-mask
+  checks. `tools/test-jcarray` now uses `tools/env cmake` rather than invoking
+  the compiler directly; its PC mbedTLS include setup and filesystem test stub
+  are maintained under `tools/tests/jcarray/`.
 - Physical status remains unverified on the latest source: this process cannot
   initialize libusb (`-99`) for either `2e8a:0009` or `2e8a:000f`, and bounded
   `pcsc_scan -r` reports that the PC/SC service is unavailable. No flash or
