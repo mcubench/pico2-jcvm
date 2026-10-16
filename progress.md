@@ -3663,3 +3663,13 @@
 - Decision: Use the new diagnostic in a bounded serial capture after the build-gated hardware path is available; fix the reported runtime failure before claiming physical integration.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/build-arm-runtime-diagnostic-20261016.log` (SHA-256 `56f72483fc1a6cbfa919cd46089e40d67f290762c2002c938385de3613057cbb`); previous failing serial evidence `artifacts/logs/arm-resume-boot-20261016.log`.
+
+## 2026-10-16 — Select named reader for JCAlgTest static performance
+
+- Step/experiment: `jcalgtest-static-target-selection-20261016`
+- Change: Used the official-client launcher’s exact `--reader-name` selector for the Pico and `--simulator` mode for bundled jCardSim. No runtime implementation changed.
+- Validation: `tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI CCID [JCAlgTest CCID]' -op ALG_PERFORMANCE_STATIC -fresh ...` exited 4 before APDUs because Java SmartcardIO listed zero readers. The bundled simulator ran the official static mode through SHA-256 doFinal/update/reset and into SHA-384, then was interrupted during the later sweep (exit 130). All observed SHA APDUs returned `AA 9000`.
+- Result: Simulator SHA-256 doFinal measured 0.02 ms/op average with -0.11 ms/op minimum; update measured 0.18 ms/op and reset 0.03 ms/op. Negative baseline-subtracted timing confirms the simulator timer is too coarse for useful throughput conclusions. The applet returns status only, so no digest known-answer check occurred. Physical throughput remains unmeasured.
+- Decision: Leave SHA implementation unchanged on these data. Retry with the exact Pico reader name when Java SmartcardIO exposes the reader, and use an independent digest known-answer check.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcalgtest-static-pico2-reader-20261016.log` (SHA-256 `37ed79c092933ee6c76b01cd5fda7858cb9cb854129e0994c7188399ea205ebc`); `artifacts/logs/jcalgtest-static-simulator-20261016.log` (SHA-256 `749bb1ffc17077898c7efb234e80a12df3400eb4627f4eba8fcf1340fd63f137`); partial CSV SHA-256 `0c0b38ccf8a87acb874d1584b5b2b589447b24930d5df7d19f6986c357ffcbbc`.

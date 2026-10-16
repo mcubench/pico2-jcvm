@@ -1,5 +1,27 @@
 # Handoff
 
+## Named JCAlgTest static performance selection — 2026-10-16
+
+- The official launcher accepts either `--reader-name '<exact PC/SC name>'`
+  or `--simulator`. A direct run against
+  `Pico 2 CHOUPI CCID [JCAlgTest CCID]` exited 4 before launching JCAlgTest:
+  Java SmartcardIO reported no visible readers, and no APDU was sent.
+- The bundled jCardSim `ALG_PERFORMANCE_STATIC` run reached the SHA-256
+  `doFinal`, `update`, and `reset` sections, then continued into SHA-384 and
+  later algorithms. It was interrupted during the later sweep (exit 130), so
+  the full static test did not complete. SHA APDUs returned `AA 9000`; timing
+  deltas were not useful: SHA-256 `doFinal` reported 0.02 ms/op average and
+  -0.11 ms/op minimum, while `update` reported 0.18 ms/op and `reset` 0.03
+  ms/op. The negative sample confirms timer/baseline noise in the simulator.
+  JCAlgTest exposes no digest bytes in this mode, so it does not verify SHA-256
+  correctness.
+- No SHA firmware change is justified by simulator timings. Retry the named
+  physical command only after Java lists a PC/SC reader; use a separate
+  digest known-answer check to validate SHA-256 correctness.
+- Evidence: `artifacts/logs/jcalgtest-static-pico2-reader-20261016.log`,
+  `artifacts/logs/jcalgtest-static-simulator-20261016.log`, and the partial
+  report in `artifacts/results/jcalgtest-static-simulator-20261016/`.
+
 ## Diagnose RP2350 startup `6F00` — 2026-10-16
 
 - The latest archived serial log (`artifacts/logs/arm-resume-boot-20261016.log`)
