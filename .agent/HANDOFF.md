@@ -48,6 +48,7 @@
   `artifacts/logs/flash-arm-watchdog-marker-20261017.log`,
   `artifacts/logs/monitor-arm-watchdog-marker-20261017.log`, and
   `artifacts/logs/jcalgtest-physical-watchdog-fix-20261017.log`.
+- Implementation/evidence commit: `0f5091a`.
 - Next: run the official JCAlgTest client when PC/SC exposes the physical
   reader, then continue JCSystem capacity accounting. No RISC-V build/test.
 
