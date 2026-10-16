@@ -69,6 +69,7 @@
   `artifacts/logs/build-arm-jcsystem-memory-20261017.log` (expected link
   failure) and `artifacts/logs/build-arm-jcsystem-memory-reverted-20261017.log`
   (pass).
+- Investigation/evidence commit: `52d12fa`.
 - Next: inspect the allocator actually linked by the Pico target and determine
   a correct bounded transient-memory query; persistent capacity and transaction
   commit capacity still need separate accounting. PC/SC remains inactive, so

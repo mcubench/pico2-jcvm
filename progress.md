@@ -4237,5 +4237,5 @@
 - Validation: The first `./tools/build arm` failed at the final link with `undefined reference to jcvm_current_heap_free_bytes` from `jni.cpp`. After reverting the attempted changes, `./tools/build arm` passed. No flash or hardware test was performed for this experiment.
 - Result: Root `CMakeLists.txt` confirms that platform startup and Rust OS integration are future work for this target. The Rust allocator cannot provide the active Pico VM's available-memory figure. `getAvailableMemory` and commit-capacity queries remain zero until accounting is exposed by the allocator/filesystem actually linked into the Pico image.
 - Decision: Keep the conservative zero return; next inspect Pico's linked allocator and persistent-store accounting separately. No RISC-V build/test.
-- Commit: `pending`
+- Commit: `52d12fa`
 - Artifacts/logs: `artifacts/logs/build-arm-jcsystem-memory-20261017.log` (expected link failure, SHA-256 `041726320551474891e78d708df5f0739ce6c82f1cafeea4cca53ddc9b06cf4d`); `artifacts/logs/build-arm-jcsystem-memory-reverted-20261017.log` (pass, SHA-256 `4b880a88cc4a4fcfac6885e30fbb63c3abc221460a743a28bb889b7597073cd2`)
