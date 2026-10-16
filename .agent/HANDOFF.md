@@ -1,5 +1,20 @@
 # Handoff
 
+## Real-hardware availability recheck — 2026-10-16
+
+- User asked for a real-hardware test. The guest could not access Pico USB: both
+  `lsusb -d 2e8a:0009` and `lsusb -d 2e8a:000f` failed with
+  `unable to initialize libusb: -99`; `timeout 5s ./tools/env picotool info -a`
+  failed with `ERROR: Failed to initialise libUSB` (exit 250).
+- `./tools/doctor` passed host prerequisites but explicitly reported that
+  hardware status was not checked. A bounded `timeout 5s pcsc_scan -r` timed
+  out while repeating `SCardEstablishContext: Service not available`; do not
+  repeat until PC/SC is available.
+- No build or flash was attempted: direct USB access is unavailable, and the
+  build gate requires both architectures to pass before flashing. No physical
+  validation is claimed. Resume with guest USB passthrough and verify a Pico
+  USB ID plus `picotool info -a`, then build ARM and RISC-V before cycling.
+
 ## SHA-256 streaming probe and named-reader client check — 2026-10-16
 
 - The focused VPCD applet probe now passes 12/12 assertions. It verifies

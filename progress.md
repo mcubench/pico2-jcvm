@@ -3839,3 +3839,13 @@
 ## SHA-256 streaming probe commit metadata
 
 - The method-local streaming probe, corrected status, continuity update, and validation record above were committed as root `12e1d71`. No Java Card API implementation change was retained in this step.
+
+## 2026-10-16 — Recheck physical Pico availability
+
+- Step/experiment: `physical-usb-access-recheck`
+- Change: No source changes; checked guest USB, host diagnostics, PC/SC, and picotool access before a requested real-board test.
+- Validation: `./tools/doctor` passed host prerequisites. `lsusb -d 2e8a:0009` and `lsusb -d 2e8a:000f` failed because libusb could not initialize (`-99`); `timeout 5s ./tools/env picotool info -a` failed with `Failed to initialise libUSB` (exit 250). `timeout 5s pcsc_scan -r` timed out with PC/SC service unavailable.
+- Result: The current VM execution context cannot access the physical Pico. No builds or flash were attempted; no hardware result is claimed. Existing uncommitted worktree changes were preserved.
+- Decision: Retry when guest USB passthrough is available; require both ARM and RISC-V builds to pass before flashing, then inspect the bounded cycle serial log.
+- Commit: pending.
+- Artifacts/logs: none; bounded diagnostic output is recorded here and in `.agent/HANDOFF.md`.
