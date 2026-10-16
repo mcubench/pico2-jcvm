@@ -1,5 +1,20 @@
 # Handoff
 
+## Diagnose RP2350 startup `6F00` — 2026-10-16
+
+- The latest archived serial log (`artifacts/logs/arm-resume-boot-20261016.log`)
+  shows repeated `CHOUPI:STATUS sw=6F00` and `TEST:FAIL choupi_runtime` after
+  snapshot persistence was added. It contains no VM fault detail.
+- Added `CHOUPI:VM_RUNTIME_FAILURE` output on ARM when the initial JCRE runtime
+  returns a non-`9000` status. It reports status, exception ID, opcode, PC,
+  stack depth, and opcode/depth history from the interpreter. `./tools/build arm`
+  passed both images; no flash or physical test was run. RISC-V remains excluded
+  by the user's target instruction, and the repository flash gate therefore
+  remains unmet.
+- Next: capture a finite serial log from an authorized current-image run and
+  use the failure record to fix the boot-time exception. Do not treat a
+  successful build as hardware validation.
+
 ## Current host JCAlgTest applet execution — 2026-10-16
 
 - Rebuilt the current ARM target with `./tools/build arm`; both the smoke and

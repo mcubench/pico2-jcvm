@@ -3653,3 +3653,13 @@
 - Decision: Keep the host persistence result as integration evidence and continue with a SHA-256 known-answer route plus board persistence once device access is restored.
 - Commit: pending metadata commit.
 - Artifacts/logs: `artifacts/logs/pc-vpcd-persistence-run-20261016.log` (SHA-256 `9c1640df4653f9ebfbee683cd546a3b512d447d4c4b54ccfbf9cdaff44196188`); `artifacts/logs/pc-vpcd-persistence-pass-20261016.log` (SHA-256 `18aff547718ebe03b4760a8bef346151ab4470eae1e73b671b2fda49284dac5c`).
+
+## 2026-10-16 — Expose ARM JCRE startup failure details
+
+- Step/experiment: `arm-jcre-startup-failure-diagnostic-20261016`
+- Change: When the initial firmware JCRE runtime returns a non-`9000` status, print the interpreter's exception ID, opcode, PC, stack depth, and rolling opcode/depth history as `CHOUPI:VM_RUNTIME_FAILURE`. This makes the existing boot-time `6F00` failure actionable in the next serial capture. Updated TODO and handoff to state that the latest flashed snapshot image fails boot smoke and that this diagnostic still needs a hardware run.
+- Validation: `./tools/build arm` passed `pico2_jcvm_smoke.uf2` and `pico2_choupi.uf2` with no warnings (`BUILD:PASS arch=arm`, `BUILD:PASS target=choupi`). The CHOUPI image ends at `0x100b5818`, below the persistent-store region. No RISC-V build, flash, or hardware serial check was run; the user's ARM-only instruction excludes RISC-V and the repository dual-build flash gate is therefore unmet.
+- Result: The next authorized ARM startup run will distinguish interpreter exceptions from generic `6F00` and retain the fault location/history. Firmware behavior is otherwise unchanged; the boot failure is not fixed or verified.
+- Decision: Use the new diagnostic in a bounded serial capture after the build-gated hardware path is available; fix the reported runtime failure before claiming physical integration.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/build-arm-runtime-diagnostic-20261016.log` (SHA-256 `56f72483fc1a6cbfa919cd46089e40d67f290762c2002c938385de3613057cbb`); previous failing serial evidence `artifacts/logs/arm-resume-boot-20261016.log`.

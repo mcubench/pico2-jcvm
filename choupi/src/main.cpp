@@ -39,6 +39,7 @@
 #include "jc_types/jc_array_type.hpp"
 #include "../../src/short_apdu.hpp"
 
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <utility>
@@ -404,7 +405,23 @@ uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
   jcvm::Interpretor interpretor(id_applet,
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
                                 id_class, id_method, true);
-  return interpretor.run();
+  const uint16_t status = interpretor.run();
+#ifndef PC_VERSION
+  if (status != 0x9000) {
+    std::printf(
+        "CHOUPI:VM_RUNTIME_FAILURE sw=%04X exception=%u opcode=%02X "
+        "pc=%08lX stack=%u op_history=%08lX depth_history=%08lX\r\n",
+        static_cast<unsigned>(status),
+        static_cast<unsigned>(interpretor.lastExceptionId()),
+        static_cast<unsigned>(interpretor.lastExceptionOpcode()),
+        static_cast<unsigned long>(interpretor.lastExceptionPc()),
+        static_cast<unsigned>(interpretor.lastExceptionStackDepth()),
+        static_cast<unsigned long>(interpretor.lastExceptionOpcodeHistory()),
+        static_cast<unsigned long>(interpretor.lastExceptionDepthHistory()));
+    std::fflush(stdout);
+  }
+#endif
+  return status;
 }
 
 uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,

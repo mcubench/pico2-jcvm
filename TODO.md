@@ -239,10 +239,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   archived. Cross-comparison against a CHOUPI card result is still pending.
 - [ ] Compare the CHOUPI supported-algorithms CSV against the jCardSim
   reference and CHOUPI's declared supported-algorithm list.
-- [ ] Complete hardware integration: the earlier ARM firmware passed its finite
-  serial runtime test, and GPPro `--debug --list` now succeeds over PC/SC on
-  Linux with ISD `A000000151000000` in `OP_READY`. Windows enumeration,
-  install/select/process/delete, and power-cycle persistence remain unverified.
+- [ ] Complete hardware integration: an earlier ARM image passed its finite
+  runtime check, and GPPro `--debug --list` previously listed ISD
+  `A000000151000000` in `OP_READY`. The later snapshot image currently emits
+  repeated boot `6F00` failures; runtime exception diagnostics are now built
+  into ARM but need a permitted flash/serial run to identify the cause. Current
+  PC/SC access is unavailable. Windows enumeration, current-image
+  install/select/process/delete, and physical power-cycle persistence remain
+  unverified.
 - [ ] Pass AC1–AC5 and the plan's clean-flash integration sequence three times.
 
 ## Later / optional
