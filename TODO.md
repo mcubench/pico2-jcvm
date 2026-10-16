@@ -48,6 +48,13 @@ Investigate the startup path, especially `Starter.run()` and
 `PlateformeGlobale.getInstance()`, then rerun the JCSystem and JCAlgTest host
 regressions.
 
+Host emulator guard (2026-10-16): `choupi/os` previously ignored a failed
+`PTRACE_ATTACH` and blocked forever in `waitpid`. This can occur when the host
+emulator is itself run under a tracer. It now kills/reaps the child and exits
+with an explicit ptrace error. `./tools/build-pc` passed, and a bounded nested
+`strace` check verified `EPERM` is reported and the child reaped. This does not
+resolve the separate direct host VPCD startup timeout; that remains open.
+
 JCSystem transaction calls now use the existing persistent-write snapshot
 backend: begin/commit/abort update transaction depth, and the Java wrappers
 throw `TransactionException` for nested begin, commit/abort outside a

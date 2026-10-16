@@ -1,5 +1,27 @@
 # Handoff
 
+## Host MPU ptrace denial no longer hangs — 2026-10-16
+
+- The host VPCD regression's fresh-build timeout remains unresolved: the
+  untraced `./tools/test-jcsystem-transaction-applet --timeout 120` did not
+  reach VPCD. A separate diagnostic experiment showed that running the host
+  emulator under `strace` makes its nested `PTRACE_ATTACH` fail with `EPERM`.
+  The OS ignored that error and blocked in `waitpid`, which could hang the VM.
+- Updated `choupi/os/src/arch/host/emulator.rs` to check `PTRACE_ATTACH`,
+  `PTRACE_SETOPTIONS`, and `PTRACE_CONT`; on setup error it kills/reaps the
+  child and exits with a clear message. Nested trace now exits promptly with
+  `ERROR: host MPU emulator PTRACE_ATTACH failed: Operation not permitted`;
+  `waitpid` confirms the SIGKILLed child was reaped. The PC build passes.
+- Nested OS commit: `f419dde`; root evidence commit: `d4ab895`. Logs:
+  `artifacts/logs/build-pc-ptrace-failfast-20261016.log` and
+  `artifacts/logs/host-jcre-ptrace-after-fix-20261016.15050` through `.15053`.
+- This fixes the ptrace-denial hang only. The direct host VPCD timeout did not
+  show ptrace denial and remains an open issue; do not use the nested-strace
+  error as an explanation for that separate timeout.
+- Next: diagnose why an untraced host emulator stays in its initial JCRE
+  runtime, then rerun JCSystem and broad applet tests. Physical PC/SC remains
+  blocked by the missing `pcscd` ACL; no sudo was run.
+
 ## Fresh PC build VPCD startup timeout — 2026-10-16
 
 - `./tools/build-pc` passed against the current source, linking the PC emulator

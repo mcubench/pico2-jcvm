@@ -3945,3 +3945,26 @@
 - Artifacts/logs:
   `artifacts/logs/build-pc-after-jcsystem-diagnostics-cleanup-20261016.log`;
   `artifacts/logs/jcsystem-continuation-regression-fresh-20261016.log`.
+
+## 2026-10-16 — Fail fast when host MPU ptrace setup is denied
+
+- Step/experiment: `host-mpu-ptrace-fail-fast`
+- Change: The host MPU emulator now checks `PTRACE_ATTACH`,
+  `PTRACE_SETOPTIONS`, and `PTRACE_CONT`. On failure it kills/reaps the forked
+  child and exits with the operation and OS error rather than blocking forever
+  while waiting for a ptrace stop.
+- Validation: `./tools/build-pc` passed (the existing Rust OS warnings remain).
+  Under a bounded nested `strace` run, `PTRACE_ATTACH` returned `EPERM`; the
+  emulator reported `Operation not permitted`, exited 1 in under one second,
+  and `waitpid` confirmed the child was reaped. No ARM firmware change or
+  RISC-V build was involved. The untraced host VPCD startup timeout remains
+  separate and unresolved.
+- Result: Host test/debug runs that cannot use ptrace fail clearly instead of
+  consuming CPU in an indefinite wait. Normal host VPCD execution is not yet
+  verified on the freshly built binary.
+- Decision: Keep this host-only reliability guard. Continue diagnosing the
+  direct JCRE runtime timeout and reattempt host applet regression after that
+  path progresses; physical PC/SC requires the authorized helper.
+- Commit: nested CHOUPI OS `f419dde`; root logs `d4ab895`.
+- Artifacts/logs: `artifacts/logs/build-pc-ptrace-failfast-20261016.log`;
+  `artifacts/logs/host-jcre-ptrace-after-fix-20261016.15050` through `.15053`.
