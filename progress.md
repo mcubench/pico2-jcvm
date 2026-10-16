@@ -3721,3 +3721,7 @@
 - Commit: recorded in the following commit-metadata entry.
 - Artifacts/logs: `artifacts/logs/build-arm-validation-20261016.log` (SHA-256 `0b8cfc50e821a2a925e2c7dcb722257e8f30db826058079987a598df1655dd5e`); `artifacts/logs/host-vpcd-validation-20261016-console.log` (SHA-256 `6842877564d40fd7341a35af0dd86c58b1ce8feb6e64c246f80a1b61e4233a8a`); `artifacts/logs/host-vpcd-validation-20261016.log` (SHA-256 `7619bf6bb9290afb673518ef3c9aabebace219714db4a92fa7d56182af50acbf`).
 
+## Current ARM validation commit metadata
+
+- The ARM rebuild and two-pass host applet regression record above was committed as `b33c1eb`.
+
