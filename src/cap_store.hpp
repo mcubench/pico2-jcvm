@@ -6,6 +6,7 @@
 
 bool cap_store_initialize() noexcept;
 bool cap_store_write(const uint8_t *data, size_t length) noexcept;
+bool cap_store_delete() noexcept;
 bool cap_store_mark_installed(const uint8_t *instance_aid,
                               uint8_t instance_aid_length,
                               uint16_t applet_class_index) noexcept;

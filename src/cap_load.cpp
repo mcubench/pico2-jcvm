@@ -71,6 +71,64 @@ constexpr uint8_t kIsdAid[] = {0xa0, 0x00, 0x00, 0x01,
                                0x51, 0x00, 0x00, 0x00};
 constexpr uint8_t kPackageId = 20;
 constexpr size_t kMaxLoadTlvLength = 28 * 1024;
+// File type 0x02 is the OS-approved static-field namespace. Package 0xff is
+// outside the VM package range and reserved here for card-manager metadata.
+constexpr uint8_t kLifecycleTagType = 0x02;
+constexpr uint8_t kLifecyclePackageId = 0xff;
+constexpr uint8_t kAppletDeletedState = 1;
+constexpr uint8_t kPackageDeletedState = 2;
+
+jcvm::fs::Tag lifecycle_tag(uint8_t kind) noexcept {
+  jcvm::fs::Tag tag;
+  tag.len = 3;
+  tag.value[0] = kLifecycleTagType;
+  tag.value[1] = kLifecyclePackageId;
+  tag.value[2] = kind;
+  return tag;
+}
+
+bool read_lifecycle_state(const jcvm::fs::Tag &tag,
+                          uint8_t &state) noexcept {
+  state = 0;
+  if (fs_exists(tag.value, tag.len) == 0) return true;
+  try {
+    state = static_cast<uint8_t>(
+        jcvm::FlashMemory_Handler::getPersistentField_Byte(tag));
+    return true;
+  } catch (...) {
+    return false;
+  }
+}
+
+bool clear_applet_persistent_state(uint16_t class_index) noexcept {
+  if (class_index > UINT8_MAX) return false;
+  // Root object and instance fields use the same five-byte tag namespace. Any
+  // child array/object records become unreachable when these owning fields are
+  // erased and are overwritten if the applet is installed again.
+  for (uint16_t field = 0; field <= 0xff; ++field) {
+    const auto tag = jcvm::FlashMemory_Handler::getPersistentFieldTag(
+        0, jcvm::FlashMemory_Handler::DYNAMIC_PACKAGE_ID, class_index,
+        static_cast<uint8_t>(field));
+    if (!jcvm::FlashMemory_Handler::erasePersistentTag(tag)) return false;
+  }
+  return true;
+}
+
+bool clear_package_static_state() noexcept {
+  for (uint16_t field = 0; field <= 0xff; ++field) {
+    const auto tag = jcvm::FlashMemory_Handler::getStaticFieldTag(
+        jcvm::FlashMemory_Handler::DYNAMIC_PACKAGE_ID,
+        static_cast<uint8_t>(field));
+    if (!jcvm::FlashMemory_Handler::erasePersistentTag(tag)) return false;
+  }
+  return true;
+}
+
+bool clear_lifecycle_markers() {
+  jcvm::FlashMemory_Handler::setPersistentField_Byte(lifecycle_tag(1), 0);
+  jcvm::FlashMemory_Handler::setPersistentField_Byte(lifecycle_tag(2), 0);
+  return true;
+}
 
 bool read_aid(const uint8_t *data, size_t length, size_t &offset,
               uint8_t aid[16], uint8_t &aid_length) noexcept {
@@ -383,6 +441,27 @@ bool CapLoadSession::finishLoad() noexcept {
                                static_cast<uint32_t>(code_length)) != 0) {
     return false;
   }
+  if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
+    return false;
+  }
+  bool transaction_active = true;
+  try {
+    clear_lifecycle_markers();
+    if (fs_sync() != 0 ||
+        !jcvm::FlashMemory_Handler::commitPersistentWriteTransaction()) {
+      (void)jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+      transaction_active = false;
+      (void)fs_sync();
+      return false;
+    }
+    transaction_active = false;
+  } catch (...) {
+    if (transaction_active) {
+      (void)jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+      (void)fs_sync();
+    }
+    return false;
+  }
   loaded_ = true;
   load_data_length_ = 0;
   return true;
@@ -465,6 +544,7 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
   uint8_t applet_registered = 0;
   uint16_t applet_class_index = 0xffff;
   try {
+    clear_lifecycle_markers();
     if (!initialize_cap_static_arrays(resolved_package_id)) {
       install_failure_stage_ = rollback() ? 5 : 8;
       return false;
@@ -510,17 +590,110 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
   return true;
 }
 
+uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
+                                     bool delete_related_objects) noexcept {
+  if (!loaded_ || aid == nullptr || aid_length < 5 || aid_length > 16) {
+    return 0x6a88;
+  }
+  const bool delete_package =
+      aid_matches(aid, aid_length, load_package_aid_, load_package_aid_length_);
+  const bool delete_applet =
+      installed_ &&
+      aid_matches(aid, aid_length, instance_aid_, instance_aid_length_);
+  if (!delete_package && !delete_applet) return 0x6a88;
+  if (delete_package && installed_ && !delete_related_objects) return 0x6985;
+
+  if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
+    return 0x6581;
+  }
+  bool transaction_active = true;
+  const auto rollback = [&transaction_active]() noexcept {
+    if (!transaction_active) return true;
+    transaction_active = false;
+    const bool restored =
+        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    return fs_sync() == 0 && restored;
+  };
+
+  try {
+    if (delete_package) {
+      if (installed_ && !clear_applet_persistent_state(applet_class_index_)) {
+        (void)rollback();
+        return 0x6581;
+      }
+      if (!clear_package_static_state()) {
+        (void)rollback();
+        return 0x6581;
+      }
+      jcvm::FlashMemory_Handler::setPersistentField_Byte(
+          lifecycle_tag(2), kPackageDeletedState);
+    } else {
+      if (!clear_applet_persistent_state(applet_class_index_)) {
+        (void)rollback();
+        return 0x6581;
+      }
+      jcvm::FlashMemory_Handler::setPersistentField_Byte(
+          lifecycle_tag(1), kAppletDeletedState);
+    }
+    if (fs_sync() != 0) {
+      (void)rollback();
+      return 0x6581;
+    }
+    if (!jcvm::FlashMemory_Handler::commitPersistentWriteTransaction()) {
+      transaction_active = false;
+      return 0x6581;
+    }
+    transaction_active = false;
+  } catch (...) {
+    (void)rollback();
+    return 0x6581;
+  }
+
+  if (delete_package) {
+    reset();
+    return cap_store_delete() ? 0x9000 : 0x6581;
+  } else {
+    installed_ = false;
+    instance_aid_length_ = 0;
+    applet_class_index_ = 0xffff;
+  }
+  return 0x9000;
+}
+
 void CapLoadSession::restoreInstalled() noexcept {
   reset();
   uint32_t code_length = 0;
   const uint8_t *code = cap_store_data(&code_length);
-  uint8_t instance_aid[16]{};
-  uint8_t instance_aid_length = 0;
   if (code == nullptr ||
-      !cap_store_instance_aid(instance_aid, instance_aid_length) ||
       !validate_cap_code(code, code_length, load_package_aid_,
                          load_package_aid_length_, applet_aid_,
-                         applet_aid_length_) ||
+                         applet_aid_length_)) {
+    reset();
+    return;
+  }
+  uint8_t package_state = 0;
+  uint8_t applet_state = 0;
+  if (!read_lifecycle_state(lifecycle_tag(2), package_state) ||
+      !read_lifecycle_state(lifecycle_tag(1), applet_state)) {
+    reset();
+    return;
+  }
+  if ((package_state != 0 && package_state != kPackageDeletedState) ||
+      (applet_state != 0 && applet_state != kAppletDeletedState)) {
+    reset();
+    return;
+  }
+  if (package_state == kPackageDeletedState) {
+    reset();
+    return;
+  }
+  loaded_ = true;
+  if (applet_state == kAppletDeletedState) return;
+
+  uint8_t instance_aid[16]{};
+  uint8_t instance_aid_length = 0;
+  if (!cap_store_instance_aid(instance_aid, instance_aid_length)) return;
+  if (
       !aid_matches(instance_aid, instance_aid_length, applet_aid_,
                    applet_aid_length_)) {
     reset();
@@ -529,7 +702,6 @@ void CapLoadSession::restoreInstalled() noexcept {
   std::memcpy(instance_aid_, instance_aid, instance_aid_length);
   instance_aid_length_ = instance_aid_length;
   (void)cap_store_applet_class_index(applet_class_index_);
-  loaded_ = true;
   installed_ = true;
 }
 

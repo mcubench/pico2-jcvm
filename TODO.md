@@ -215,12 +215,13 @@ rollback and duplicate/invalid registration handling also remain unverified.
   The ISD-only query correctly ignores its AID qualifier. Its bounded TLV
   encoders, search/response builder, and next-occurrence validation pass 44
   checks, and the ARM
-  images build. This is not yet exercised through GPPro or on hardware. DELETE,
-  GET DATA, complete continuation behavior, and end-to-end card-manager state
-  verification remain open.
-  A strict standalone DELETE command parser now passes 11 malformed-input and
-  AID/flag checks; authenticated dispatch and persistent deletion are still
-  unimplemented.
+  images build. GP DELETE now has authenticated `E4` dispatch, strict AID TLV
+  parsing, persistent applet/package tombstones, instance/static record cleanup,
+  and reserved CAP-slot erase for package deletion. The parser passes 11 checks;
+  ARM and PC builds pass, and the rebuilt host VPCD applet regression passes
+  11/11. The DELETE APDU itself, restart/GET STATUS after deletion, and physical
+  hardware behavior remain unverified. GET DATA and complete continuation
+  behavior also remain open.
 - [x] Integrate the PC-build vpcd frame transport with power controls, ATR,
   applet SELECT/DESELECT, and APDU dispatch through the VM lifecycle bridge.
   The PC target builds, the frame codec passes 14 checks, and a new session

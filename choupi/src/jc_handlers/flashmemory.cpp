@@ -199,6 +199,21 @@ bool FlashMemory_Handler::rollbackPersistentWriteTransaction() noexcept {
   return rollback_persistent_writes();
 }
 
+bool FlashMemory_Handler::erasePersistentTag(const fs::Tag &tag) noexcept {
+  if (tag.len == 0 || tag.len > TAG_MAX_LENGTH) {
+    return false;
+  }
+  try {
+    if (fs_exists(tag.value, tag.len) == 0) {
+      return true;
+    }
+    snapshot_persistent_tag(tag);
+    return fs_erase(tag.value, tag.len) == 0;
+  } catch (...) {
+    return false;
+  }
+}
+
 /// Get packages array length
 static constexpr uint16_t getPackagesArrayLength() {
   static_assert((JCVM_MAX_PACKAGES % 8) == 0,

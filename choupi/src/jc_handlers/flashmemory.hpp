@@ -123,6 +123,8 @@ public:
   static bool beginPersistentWriteTransaction() noexcept;
   static bool commitPersistentWriteTransaction() noexcept;
   static bool rollbackPersistentWriteTransaction() noexcept;
+  /// Erase a persistent record while preserving transaction rollback data.
+  static bool erasePersistentTag(const fs::Tag &tag) noexcept;
 
   /// Get byte data store in flash memory.
   static const jbyte_t getPersistentField_Byte(const fs::Tag &tag);

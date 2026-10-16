@@ -1,5 +1,31 @@
 # Handoff
 
+## GP DELETE dispatch and lifecycle state — 2026-10-16
+
+- Added authenticated GlobalPlatform `INS=E4` dispatch using the strict
+  single-AID parser. Malformed/unsupported encodings return `6A80`; unknown
+  objects return `6A88`; deleting an installed package without P2's related
+  objects bit returns `6985`; persistence failures return `6581`.
+- Applet deletion erases its root and field records under a persistent write
+  transaction and stores a restart-safe marker. Package deletion also clears
+  package static roots, stores a package tombstone, commits the FS snapshot, and
+  erases the reserved CAP slot. Marker reads use static tag type `02` and
+  reserved package id `FF`, which the Java Card OS filesystem permits.
+  Successful CAP LOAD/INSTALL clears stale deletion markers. GET STATUS consumes
+  the restored loaded/installed state.
+- `./tools/test-gp-delete` passed 11 parser checks; `./tools/build arm` passed
+  both images; `./tools/build-pc` passed (the Rust OS emits 49 existing
+  warnings). A clean rebuilt host VPCD pass completed 11/11 checks in 66.365 s,
+  including SELECT, GETVERSION, JCSystem, support probes, SHA-256 doFinal, and
+  the static SHA performance APDU. This verifies the normal host applet path,
+  not the DELETE APDU.
+- No SCP03-authenticated `E4` APDU, post-delete restart/GET STATUS, or physical
+  hardware test has been run. Java SmartcardIO still exposes no PC/SC readers;
+  no APDU reached the Pico and no flash was attempted.
+- Next: create an authenticated card-manager regression for instance DELETE,
+  package DELETE, wrong AID, and package dependency status; verify GET STATUS
+  before and after a fresh restart. Then proceed to truthful GET DATA support.
+
 ## GP DELETE command parser — 2026-10-16
 
 - Added `src/gp_delete.hpp` for the supported single AID-qualified DELETE

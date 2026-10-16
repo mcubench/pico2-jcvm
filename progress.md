@@ -3697,3 +3697,13 @@
 ## GP DELETE parser commit metadata
 
 - The strict request parser and 11-check test step recorded above was committed as `36ebf1e`.
+
+## 2026-10-16 — Integrate authenticated GP DELETE lifecycle handling
+
+- Step/experiment: `gp-delete-lifecycle-20261016`
+- Change: Connected `INS=E4` to the authenticated card-manager dispatcher. Implemented instance and package deletion status handling, a reserved filesystem lifecycle marker for restart restoration, transaction-aware persistent-tag erasure, package static-state cleanup, and erase of the reserved CAP slot after package deletion. Successful CAP LOAD/INSTALL clears stale markers.
+- Validation: `./tools/test-gp-delete` passed 11 checks; `./tools/build arm` passed both ARM images; `./tools/build-pc` passed and ROMMASK generation completed. The PC-only VPCD applet test passed `TEST:SUMMARY pass=11 fail=0` in 66.365 s after a clean host rebuild. It exercised the normal applet path, not GP DELETE. The PC OS build emits 49 existing Rust warnings. No RISC-V build or flash was run.
+- Result: Normal CAP load, restore, SELECT, JCSystem, support probes, SHA-256 prepare/doFinal, and static SHA APDU continue to pass on the host emulator. No SCP03-authenticated DELETE APDU or post-delete restart test has exercised the new path.
+- Decision: Keep DELETE and card-manager criteria open until authenticated instance/package DELETE, failure statuses, and GET STATUS after restart are tested. Java SmartcardIO reports no readers, so physical validation remains unavailable here.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/build-arm-gp-delete-20261016.log` (SHA-256 `17a6cb5bdc47a2b83cce2c6c52058fc0750c1c4743a87a7d7f04ec8ad5e6b78e`); `artifacts/logs/build-pc-gp-delete-final-20261016.log` (SHA-256 `031952a9caed256cb031f1ca2be1f531567faf6c6867df7134f652082771679a`); `artifacts/logs/pc-vpcd-gp-delete-run-20261016.log` (SHA-256 `f59a665bd0d3bf318f9a87a55df8ff7ce7231dd9965a3b7eb903848b7969a8f7`); emulator log `artifacts/logs/pc-vpcd-gp-delete-20261016.log` (SHA-256 `32960ddd67f8ec20d5e065871560883458c7827e5697a46040bfe8c549d4d0f9`).

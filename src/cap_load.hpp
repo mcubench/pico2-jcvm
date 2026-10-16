@@ -14,6 +14,8 @@ public:
                     size_t length) noexcept;
   bool installAndMakeSelectable(const uint8_t *data,
                                 size_t length) noexcept;
+  uint16_t deleteObject(const uint8_t *aid, uint8_t aid_length,
+                        bool delete_related_objects) noexcept;
   void restoreInstalled() noexcept;
 
   bool installed() const noexcept { return installed_; }

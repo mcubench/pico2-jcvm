@@ -8,6 +8,7 @@
 #include "scp03.hpp"
 #include "cap_load.hpp"
 #include "gp_registry.hpp"
+#include "gp_delete.hpp"
 
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
@@ -183,7 +184,24 @@ void process_message(uint8_t rhport) {
       const uint8_t instruction = apdu[1];
       const uint8_t p1 = apdu[2];
       const uint8_t p2 = apdu[3];
-      if (instruction == 0xe6 && p1 == 0x02 && p2 == 0x00 &&
+      if (instruction == 0xe4) {
+        gp::DeleteRequest request;
+        const bool valid_request =
+            apdu_length >= 5 &&
+            command_data_length <= apdu_length - 5 &&
+            gp::parse_delete_request(p1, p2, apdu + 5,
+                                     command_data_length, request);
+        uint16_t status = 0x6a80;
+        if (valid_request) {
+          (void)choupi_vm_deselect_applet();
+          get_status_first_seen = false;
+          status = cap_load_session.deleteObject(
+              request.aid, request.aid_length,
+              request.delete_related_objects);
+        }
+        response[0] = static_cast<uint8_t>(status >> 8);
+        response[1] = static_cast<uint8_t>(status);
+      } else if (instruction == 0xe6 && p1 == 0x02 && p2 == 0x00 &&
           cap_load_session.beginInstallForLoad(apdu + 5,
                                                command_data_length)) {
         response[0] = 0x90;

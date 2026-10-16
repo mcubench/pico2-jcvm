@@ -156,10 +156,20 @@ struct MetadataContext {
   bool success = false;
 };
 
+struct DeleteContext {
+  bool success = false;
+};
+
 void __not_in_flash_func(write_metadata_callback)(void *opaque) {
   auto *context = static_cast<MetadataContext *>(opaque);
   flash_range_erase(kSlotOffset, kHeaderSectorSize);
   flash_range_program(kSlotOffset, context->page, FLASH_PAGE_SIZE);
+  context->success = true;
+}
+
+void __not_in_flash_func(delete_slot_callback)(void *opaque) {
+  auto *context = static_cast<DeleteContext *>(opaque);
+  flash_range_erase(kSlotOffset, kSlotSize);
   context->success = true;
 }
 
@@ -194,6 +204,17 @@ bool cap_store_write(const uint8_t *data, size_t length) noexcept {
     return false;
   }
   return std::memcmp(cached_code, data, length) == 0;
+}
+
+bool cap_store_delete() noexcept {
+  if (!slot_is_inside_reserved_flash()) return false;
+  DeleteContext context{};
+  const int status = flash_safe_execute(delete_slot_callback, &context, 5000);
+  if (status != PICO_OK || !context.success) return false;
+  cached_header = nullptr;
+  cached_code = nullptr;
+  cached_code_length = 0;
+  return true;
 }
 
 bool cap_store_mark_installed(const uint8_t *instance_aid,
