@@ -4068,3 +4068,26 @@
 - Artifacts/logs: `artifacts/logs/build-arm-jc305-remap-fix-20261016.log`,
   `artifacts/logs/build-riscv-jc305-remap-fix-20261016.log` and the export
   comparison output captured during this session.
+
+## 2026-10-16 — Refresh active project tracker
+
+- Step/experiment: `arm-only-active-stage-tracker`
+- Change: Updated `TODO.md` to replace the stale PC/SC next step with the
+  current physical `F503` delayed-init failure, the verified 34-class
+  JC305U3 export-map comparison, and the required next ARM-only hardware
+  checks. Updated the handoff to honor the user's ARM Cortex-M33-only scope.
+- Validation: Reviewed the current `plan.md`, TODO, physical-access skill,
+  latest direct CCID probe, finite serial trace, export comparison, and ARM
+  build log. The latest ARM build passed; no RISC-V build was run for this
+  tracker update. No target test was run because no firmware source changed.
+- Result: Active acceptance work is accurately recorded. Physical applet
+  process APDUs still fail before dispatch, and the corrected map has not yet
+  been flashed or verified on hardware.
+- Decision: Resume physical testing only after USB visibility returns. Then
+  build ARM, flash, and require GETVERSION and JCSystem success before SHA-256
+  and static-performance validation. Continue host-side work independently.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/physical-jcalgtest-readonly-probe-20261016.log`,
+  `artifacts/logs/monitor-arm-exception-trace-apdu-20261016.log`,
+  `artifacts/logs/jc305-security-remap-export-compare-20261016.log`,
+  `artifacts/logs/build-arm-jc305-remap-fix-20261016.log`.

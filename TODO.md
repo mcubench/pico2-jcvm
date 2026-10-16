@@ -14,7 +14,8 @@ out explicitly.
 - [x] Resolve the persisted CAP through CHOUPI package lookup and return the
   applet AID/FCI on SELECT. This confirms registry/transport behavior only; it
   does not confirm that the applet constructor or `process()` has run.
-- [x] Keep ARM and RISC-V wrapper builds passing for the current shared source.
+- [x] Build the RP2350 ARM M33 target through the repository wrapper. RISC-V is
+  out of scope for the current work and must not be built or tested.
 - [x] Correct `Util.arrayCompare()` so the first greater source byte returns
   `1` instead of incorrectly returning `-1`; nested API commit `6dceb7e`.
 - [x] Limit the default target build to two parallel jobs to avoid saturating
@@ -22,21 +23,36 @@ out explicitly.
 
 ## Active: validate the applet process APDUs and client results
 
-Latest ARM hardware result (2026-10-16): fixed `JC_Array::size()` to return
-logical element counts by dividing transient/nonpersistent backing bytes by
-the element width. This stopped applet startup from walking past a persistent
-`Object[]` while serializing its fields. The host JCAlgTest VPCD regression
-passes 11/11; ARM firmware was flashed and the finite serial capture repeatedly
-reported `sw=9000` and `TEST:PASS choupi_runtime`. The static SHA-256 APDU took
-17.667 s on the PC interpreter, not on the Pico. A current escalated USB check
-sees `2e8a:0009`, and the system PC/SC daemon is active, but `pcsc_scan -r`
-lists only virtual readers. The Pico USB node grants access to `claude`, not
-`pcscd`, so official physical `ALG_PERFORMANCE_STATIC` remains pending. After
-the already-installed authorized helper
-`sudo -n /usr/local/sbin/pico2-pcsc-reader` runs, verify the physical reader and
-then run the official client with its exact name. Repository instructions
-prohibit autonomous sudo, so this cycle did not run the helper. Do not infer
-physical applet APDU or performance success from the startup PASS.
+Current hardware result (2026-10-16): raw CCID sees the running Pico and SELECT
+of JCAlgTest returns `9000`, but GETVERSION (`B0E1`), JCSystem info (`B073`),
+and SHA support (`B075`) each return `F503` before command dispatch. A bounded
+serial trace shows delayed allocation succeeds through the three short
+transient arrays, then raises `CryptoException` reason 3. Source order puts
+`AlgKeyHarvest` next; its constructor requests `RandomData.ALG_SECURE_RANDOM`
+(value 2). Class-name comparison against JC305U3 and generated CHOUPI exports
+found a bad working-tree map: JC305 `RandomData` token `0x0E` pointed to
+`MessageDigest$OneShot` (`0x1E`) instead of `RandomData` (`0x1C`). Restoring the
+correct mapping passes all 34 export correspondence checks. ARM and RISC-V
+builds passed during that fix, but the corrected image was not flashed. The
+diagnostic image flash succeeded; the board then disappeared from guest USB,
+and one bounded visibility check failed. Follow
+`reference/physical-token-access/SKILL.md`: do not retry USB until the Pico
+reappears. RISC-V is out of scope; perform ARM-only target build/flash work.
+
+Next: when the board is visible, build ARM, flash `build/arm/pico2_choupi.uf2`,
+capture finite serial output, and run bounded raw SELECT/GETVERSION/JCSystem
+probes. If GETVERSION and JCSystem pass, run SHA known-answer and named-reader
+`ALG_PERFORMANCE_STATIC`; unsupported algorithms remain expected results.
+Never infer applet APDU success from `TEST:PASS choupi_runtime` alone. The last
+physical SHA or static performance measurements remain unavailable.
+
+Prior ARM runtime result: `JC_Array::size()` was fixed to return logical
+element counts by dividing transient/nonpersistent backing bytes by element
+width. It stopped applet startup from reading past a persistent `Object[]`.
+The earlier host JCAlgTest VPCD regression passed 11/11 and the ARM runtime
+smoke reported `TEST:PASS choupi_runtime`; the static SHA APDU's 17.667 s was
+measured on the PC interpreter, not the Pico. Those results do not verify the
+current physical applet process path.
 
 Host regression status update (2026-10-16): the archived 11/11 VPCD pass was
 made by a PC emulator binary older than the latest source edits. After a fresh

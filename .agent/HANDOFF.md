@@ -22,6 +22,10 @@
   `MessageDigest$OneShot`. Both architecture builds pass with the restored map.
   Evidence commit: `2ff11eb` (documentation and captures); source tracing is
   still mixed with earlier uncommitted changes in the worktree.
+- Current user scope is ARM Cortex-M33 only. Do not build or test RISC-V even
+  though repository AGENTS.md lists both architectures; build ARM before any
+  new flash. `TODO.md` now reflects this scope and the latest physical APDU
+  blocker.
 - The pre-flash raw CCID probe still reproduced SELECT `9000`, with GETVERSION,
   JCSystem, and SHA support returning `F503`. The post-flash APDU probe did not
   run because the device was not visible. No digest or static performance
