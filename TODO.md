@@ -38,6 +38,16 @@ then run the official client with its exact name. Repository instructions
 prohibit autonomous sudo, so this cycle did not run the helper. Do not infer
 physical applet APDU or performance success from the startup PASS.
 
+Host regression status update (2026-10-16): the archived 11/11 VPCD pass was
+made by a PC emulator binary older than the latest source edits. After a fresh
+`./tools/build-pc` pass, the bounded JCSystem applet runner timed out after 120
+seconds before its VPCD socket connected. Stage markers locate the stall in
+the initial host JCRE runtime, before CAP installation; no APDU was run. Treat
+the old VPCD pass as historical until the freshly built host path is repeatable.
+Investigate the startup path, especially `Starter.run()` and
+`PlateformeGlobale.getInstance()`, then rerun the JCSystem and JCAlgTest host
+regressions.
+
 JCSystem transaction calls now use the existing persistent-write snapshot
 backend: begin/commit/abort update transaction depth, and the Java wrappers
 throw `TransactionException` for nested begin, commit/abort outside a

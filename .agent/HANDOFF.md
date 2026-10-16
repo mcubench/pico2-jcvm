@@ -1,5 +1,29 @@
 # Handoff
 
+## Fresh PC build VPCD startup timeout — 2026-10-16
+
+- `./tools/build-pc` passed against the current source, linking the PC emulator
+  and regenerating the ROM mask. A fresh bounded run of
+  `./tools/test-jcsystem-transaction-applet --timeout 120` failed with
+  `timed out waiting for emulator VPCD connect`; the client sent no APDUs.
+- Stage markers locate the stall in `starting_jcre()` while running the initial
+  `runtime(STARTING_JAVACARD_PACKAGE=0x12, class=0, method=1)`. The callback
+  did not return to install the probe CAP or start VPCD transport within 120
+  seconds. The log includes `CHOUPI:RESTORE_READ_FAIL id=5 tag=021302`. Further
+  bounded diagnostics made no progress marker at 5,000 interpreted bytecodes;
+  temporary diagnostic source edits were removed and the PC target rebuilt.
+- The archived prior 11/11 host VPCD run used a binary built before the latest
+  source edits and is therefore not current-source proof. Do not treat host
+  applet execution as currently verified. The RP2350 startup pass is separate
+  evidence and remains valid.
+- Evidence commit: `e5e9efd`; logs:
+  `artifacts/logs/build-pc-after-jcsystem-diagnostics-cleanup-20261016.log` and
+  `artifacts/logs/jcsystem-continuation-regression-fresh-20261016.log`.
+- Next: inspect and bound the initial host JCRE/GlobalPlatform singleton
+  initialization, then rerun the JCSystem probe before the broad JCAlgTest
+  regression. Avoid another long run until it reports stage/instruction
+  progress.
+
 ## Array logical-size fix and latest RP2350 result — 2026-10-16
 
 - Fixed `JC_Array::size()` so transient and ordinary Java Card arrays report

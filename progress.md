@@ -3920,3 +3920,28 @@
 - Commit: recorded in the following commit-metadata entry.
 - Artifacts/logs: none; bounded outputs and ACL are recorded above and in
   `.agent/HANDOFF.md`.
+
+## 2026-10-16 — Rebuild host emulator and locate VPCD startup timeout
+
+- Step/experiment: `fresh-pc-vpcd-startup-diagnostic`
+- Change: No lasting source change; rebuilt the PC emulator from the current
+  worktree and traced the bounded JCSystem VPCD test's startup stages. Removed
+  temporary diagnostic prints after the run.
+- Validation: `./tools/build-pc` passed; the build emitted existing Rust and
+  packed-member warnings. `./tools/test-jcsystem-transaction-applet --timeout
+  120` failed with `timed out waiting for emulator VPCD connect`. Stage output
+  shows the emulator enters the initial JCRE runtime but does not reach CAP
+  installation or VPCD transport; no APDU was sent. A subsequent 20-second
+  progress probe also failed to reach transport. No ARM flash or RISC-V build
+  was attempted.
+- Result: The previously archived 11/11 host VPCD pass used a PC binary built
+  before later source edits; current-source host applet execution is not
+  verified. The physical RP2350 startup pass remains a separate successful
+  result.
+- Decision: Keep the host startup timeout open. Trace the initial
+  `Starter.run()` / `PlateformeGlobale.getInstance()` path with bounded
+  instruction progress, then rerun the JCSystem and broad applet regressions.
+- Commit: `e5e9efd` (build and failure logs).
+- Artifacts/logs:
+  `artifacts/logs/build-pc-after-jcsystem-diagnostics-cleanup-20261016.log`;
+  `artifacts/logs/jcsystem-continuation-regression-fresh-20261016.log`.
