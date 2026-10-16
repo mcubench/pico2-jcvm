@@ -211,7 +211,8 @@ rollback and duplicate/invalid registration handling also remain unverified.
   files (`20`), and load files with modules (`10`), with mandatory leading AID
   search criteria, wildcard/RID matching, and basic first/next request state.
   The ISD-only query correctly ignores its AID qualifier. Its bounded TLV
-  encoders and search parser/response builder pass 39 checks, and the ARM
+  encoders, search/response builder, and next-occurrence validation pass 44
+  checks, and the ARM
   images build. This is not yet exercised through GPPro or on hardware. DELETE,
   GET DATA, complete continuation behavior, and end-to-end card-manager state
   verification remain open.

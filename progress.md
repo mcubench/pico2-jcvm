@@ -3613,3 +3613,13 @@
 - Decision: Continue with explicit session/continuation tests, then evaluate truthful GET DATA behavior and GP DELETE.
 - Commit: `5efa359`.
 - Artifacts/logs: `artifacts/logs/gp-status-query-test-20261016.log` (SHA-256 `845e03907fe4d605567c3ff8154a2555663715f5f4a5f4bf2444fd77d394ca40`); `artifacts/logs/build-arm-gp-status-query-20261016.log` (SHA-256 `70a48020d952ff42ecdb1a06b4baf920f07761391947c0f6814183ecd66afa6c`).
+
+## 2026-10-16 — Validate GET STATUS next-occurrence requests
+
+- Step/experiment: `gp-get-status-next-validation-20261016`
+- Change: Replaced remembered-P1 equality checking with explicit GET NEXT validation: a prior first/all query must exist in the same card session; ISD-only P1 `80` cannot continue; supported non-ISD categories require a valid leading `4F` AID search. Added focused policy checks and retained the existing power/SELECT session resets.
+- Validation: `./tools/test-gp-registry` passed 44 checks (`TEST:SUMMARY pass=44 fail=0`); `./tools/build arm` passed both ARM images. `git diff --cached --check` passed before commit. No physical APDU, flash, or RISC-V build was run; RISC-V remains out of scope and the dual-architecture flash gate is unmet.
+- Result: GET NEXT returns the policy status from a portable validator and no longer incorrectly requires the next P1 to match the previous first/all P1. The single-package registry still has no additional record to return. Hardware behavior remains unverified.
+- Decision: Keep this session validation and continue host APDU coverage, then truthful GET DATA and transactional GP DELETE.
+- Commit: `b9810e7`.
+- Artifacts/logs: `artifacts/logs/gp-status-session-test-20261016.log` (SHA-256 `32b6f462fe2bb2326002c121bee12e23861c3f7d504ab118c06efa91cd5e72ab`); `artifacts/logs/build-arm-gp-status-session-20261016.log` (SHA-256 `827b202dade3226dd02f80824a128a57638cdbc2f36fcce39a38f53d9f8bfc41`).

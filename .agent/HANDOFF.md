@@ -11,12 +11,16 @@
   qualifiers for P1 `40`, `20`, and `10`. Per GlobalPlatform 2.2.1, P1 `80`
   returns only the ISD and ignores the search qualifier; it no longer attempts
   to parse or filter that data. P2 first/next requests have per-session
-  validation; the current single-package registry returns no further record
-  after its first response.
+  validation: GET NEXT requires a prior first/all request in the same session;
+  P1 `80` cannot be continued, while other supported P1 values require their
+  leading `4F` AID search on the next request. The current single-package
+  registry returns no further record after its first response.
 - The platform-independent first/all response builder now exercises all four
   P1 categories, exact response bytes, wildcard search, malformed search,
-  empty results, and unsupported categories. `./tools/test-gp-registry` passed
-  39 checks and `./tools/build arm` passed
+  empty results, and unsupported categories. Continuation validation is also
+  covered for no prior query, ISD-only queries, valid AID search, missing AID,
+  and unsupported P1. `./tools/test-gp-registry` passed 44 checks and
+  `./tools/build arm` passed
   both ARM images. No hardware/APDU test was run; RISC-V remains intentionally
   out of scope, so the flash gate is not satisfied.
 - Exact ISD E3 bytes and capacity errors are covered in the focused test. The
@@ -31,6 +35,11 @@
   restored. No card command or flash was sent.
 - Next: add host-level APDU coverage for GET STATUS query/error paths, then
   investigate truthful GET DATA responses and transactional GP DELETE.
+- Continuation validation source commit: `b9810e7`.
+- Validation logs: `artifacts/logs/gp-status-session-test-20261016.log` (SHA-256
+  `32b6f462fe2bb2326002c121bee12e23861c3f7d504ab118c06efa91cd5e72ab`) and
+  `artifacts/logs/build-arm-gp-status-session-20261016.log` (SHA-256
+  `827b202dade3226dd02f80824a128a57638cdbc2f36fcce39a38f53d9f8bfc41`).
 
 ## Correct GET STATUS package AID tag — 2026-10-16
 
