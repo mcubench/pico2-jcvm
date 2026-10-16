@@ -3797,3 +3797,13 @@
 - Decision: Keep static performance and digest known-answer verification open until PC/SC and the intended reader are available. Use the direct target selection supported by `tools/run-jcalgtest`: `--reader-name 'Pico 2 CHOUPI CCID [JCAlgTest CCID]'` for hardware or `--reader-name 'Virtual PCD 00 00'` for VPCD; use `--simulator` only for jCardSim reference data. Do not flash while guest USB enumeration is absent.
 - Commit: recorded in the following commit-metadata entry.
 - Artifacts/logs: `artifacts/logs/pcsc-physical-access-check-20261016.log` (SHA-256 `b699fc4311fac1971545d8b9f21155d49e5a2f5b39f8b8a23ea735e3cf91763a`); `artifacts/results/jcalgtest-reader-selector-static-simulator-20261016/CHOUPI_JCARDSIM____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_1792139077271__3B_FA_18_00_00_81_31_FE_45_4A_43_4F_50_33_31_56_32_33_32_98_(provided_by_Licel_jCardSim).csv` (SHA-256 `08dc50e8db26d30298f53743fbe883441174097b1a943eef562af5216fac7d86`); `artifacts/results/jcalgtest-static-vpcd-20261016/ALGTEST_log_1792133041312.log`.
+
+## 2026-10-16 — Replace flooded PC/SC capture with bounded summary
+
+- Step/experiment: `physical-reader-log-size-correction`
+- Change: Replaced the 260,631,857-byte `pcsc_scan` stderr flood in the access-check artifact with a 478-byte diagnostic summary. The original bounded 5-second command produced 7,044,104 repetitive invalid-handle lines; no diagnostic information was removed beyond duplicate lines.
+- Validation: Confirmed the compact artifact records the command, `SCardEstablishContext: Service not available`, the repeated invalid-handle condition, missing USB IDs, `-99` libusb result, and original byte/line count. New artifact SHA-256 is `82111d1919e6e1d523fae3c5ffe5bd7709d3532dd9e9051381f623e1f69ba7af`.
+- Result: The working-tree artifact is bounded and readable. The preceding commit contains the original large blob in Git history; it has not been rewritten.
+- Decision: Keep the concise artifact in the current tree and do not repeat `pcsc_scan` until the service can be started; its failure mode emits an unbounded error loop.
+- Commit: recorded in the following commit-metadata entry.
+- Artifacts/logs: `artifacts/logs/pcsc-physical-access-check-20261016.log` (478 bytes; SHA-256 `82111d1919e6e1d523fae3c5ffe5bd7709d3532dd9e9051381f623e1f69ba7af`).

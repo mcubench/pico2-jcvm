@@ -30,7 +30,9 @@
   `SCardEstablishContext: Service not available`, and libusb initialization
   reports `-99`. No flash attempt was made. Log:
   `artifacts/logs/pcsc-physical-access-check-20261016.log` (SHA-256
-  `b699fc4311fac1971545d8b9f21155d49e5a2f5b39f8b8a23ea735e3cf91763a`).
+  `82111d1919e6e1d523fae3c5ffe5bd7709d3532dd9e9051381f623e1f69ba7af`). The
+  raw bounded stderr flood was 260,631,857 bytes / 7,044,104 lines; the checked
+  in artifact keeps the diagnostic summary and byte/line count.
 
 ## JCAlgTest static SHA-256 host timing — 2026-10-16
 
