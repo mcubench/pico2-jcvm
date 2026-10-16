@@ -65,7 +65,7 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
         listener.listen(1)
-        listener.settimeout(15)
+        listener.settimeout(args.connect_timeout)
         host, port = listener.getsockname()
 
         command = [
@@ -174,6 +174,33 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
                         f"{sha256_dofinal.hex().upper()}"
                     )
 
+                # Match the official ALG_PERFORMANCE_STATIC SHA-256 config:
+                # 256 input bytes and 50 doFinal calls in one measured APDU.
+                sha256_static_settings = bytes.fromhex(
+                    "0015 0004 FFFF FFFF FFFF 0006 0100 FFFF FFFF 0032 0001"
+                )
+                exchange(
+                    connection,
+                    bytes((0xB0, 0x34, 0x00, 0x00,
+                           len(sha256_static_settings)))
+                    + sha256_static_settings
+                    + b"\x00",
+                    "JCAlgTest SHA-256 static performance prepare APDU",
+                )
+                sha256_static = exchange(
+                    connection,
+                    bytes((0xB0, 0x41, 0x00, 0x00,
+                           len(sha256_static_settings)))
+                    + sha256_static_settings
+                    + b"\x00",
+                    "JCAlgTest SHA-256 static performance APDU",
+                )
+                if sha256_static[0] != 0xAA:
+                    raise RuntimeError(
+                        "SHA-256 static doFinal loop did not report success: "
+                        f"{sha256_static.hex().upper()}"
+                    )
+
                 aes_cipher = exchange(
                     connection,
                     bytes.fromhex("B0751100030D000000"),
@@ -278,6 +305,12 @@ def parse_args() -> argparse.Namespace:
         help="maximum seconds to wait for each emulator response (default: 20)",
     )
     parser.add_argument(
+        "--connect-timeout",
+        type=float,
+        default=60.0,
+        help="maximum seconds to wait for emulator VPCD connection (default: 60)",
+    )
+    parser.add_argument(
         "--passes",
         type=int,
         choices=(1, 2),
@@ -318,7 +351,7 @@ def main() -> int:
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"TEST:FAIL {error}", file=sys.stderr)
         return 1
-    print(f"TEST:SUMMARY pass={args.passes * 9} fail=0")
+    print(f"TEST:SUMMARY pass={args.passes * 11} fail=0")
     return 0
 
 

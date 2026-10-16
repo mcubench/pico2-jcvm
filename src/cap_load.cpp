@@ -1,7 +1,13 @@
 #include "cap_load.hpp"
 #include "cap_store.hpp"
 
+#ifdef PC_VERSION
+// The host filesystem backend writes each record synchronously, so it has no
+// separate snapshot flush phase.
+extern "C" uint8_t fs_sync(void) { return 0; }
+#else
 extern "C" uint8_t fs_sync(void);
+#endif
 #include "heap.hpp"
 #include "jc_cap/jc_cap_static_field.hpp"
 #include "jc_handlers/flashmemory.hpp"
