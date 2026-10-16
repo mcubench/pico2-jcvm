@@ -3833,5 +3833,9 @@
 - Validation: `./tools/build-pc` passed. `./tools/test-jcsystem-transaction-applet --timeout 90 --log artifacts/logs/jcsystem-sha256-stream-method-local-vpcd-20261016.log` passed 12/12; both SHA-256 paths returned `BA7816BF01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD`. `./tools/run-jcalgtest --reader-name 'Virtual PCD 00 00' -op ALG_PERFORMANCE_STATIC -fresh -outpath artifacts/results/jcalgtest-static-vpcd-readername-20261016` exited 4 because Java SmartcardIO found no reader. `pcsc_scan -r` reported `SCardEstablishContext: Service not available`. ARM/RISC-V builds and hardware flashing were intentionally skipped: this step retained no firmware/API source changes, and no PC/SC or physical reader was available.
 - Result: SHA-256 known-answer and method-local streaming calls pass in host VPCD. The named-reader official client run and physical performance measurement remain unavailable. The prior 256-byte/50-call static VPCD result (`AA9000`, 16.853 s) is emulator wall time, not Pico throughput.
 - Decision: Keep the passing method-local probe. Resolve the retainable `MessageDigest` implementation separately before claiming applet-field lifetime support; retry official `ALG_PERFORMANCE_STATIC` with `--reader-name` when Java can enumerate the target reader.
-- Commit: recorded in the following commit-metadata entry.
+- Commit: recorded as root `12e1d71`; the SHA reference is added in the following commit-metadata entry.
 - Artifacts/logs: `artifacts/logs/build-pc-sha256-stream-probe-clean-20261016.log`; `artifacts/logs/jcsystem-sha256-stream-method-local-vpcd-20261016.log`; `artifacts/logs/jcsystem-sha256-stream-method-local-console-20261016.log`; `artifacts/logs/jcalgtest-static-vpcd-readername-20261016.log`.
+
+## SHA-256 streaming probe commit metadata
+
+- The method-local streaming probe, corrected status, continuity update, and validation record above were committed as root `12e1d71`. No Java Card API implementation change was retained in this step.
