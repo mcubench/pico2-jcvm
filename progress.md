@@ -3863,3 +3863,7 @@
 - Decision: Treat this hardware check as failed. Diagnose startup `6F00` and physical PC/SC registration before repeating the JCAlgTest performance operation.
 - Commit: recorded in the following commit-metadata entry.
 - Artifacts/logs: `artifacts/logs/physical-retry-build-arm-20261016.log`; `artifacts/logs/physical-retry-build-riscv-20261016.log`; `artifacts/logs/cycle-choupi-20261016T154057Z.log`.
+
+## Physical CHOUPI cycle commit metadata
+
+- The physical cycle logs, failure record, and continuity update above were committed as `1585413`.
