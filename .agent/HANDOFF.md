@@ -1,5 +1,30 @@
 # Handoff
 
+## Current host JCAlgTest applet execution — 2026-10-16
+
+- Rebuilt the current ARM target with `./tools/build arm`; both the smoke and
+  CHOUPI UF2 images passed. The image build is not a flash or runtime check.
+- Ran one clean JCAlgTest 1.8.2 host VPCD applet pass. It passed 11 checks:
+  ATR, applet SELECT, GETVERSION (`1.8.2_jc305`), JCSystem info, supported
+  algorithm probes, SHA-256 prepare/doFinal, the 50-call static SHA-256 APDU,
+  and AES, RSA, random, and CRC16 support probes. Total emulator pass time was
+  72.597 s; the static SHA APDU took 15.455 s on the PC emulator. All timing is
+  host-emulator timing, not Pico throughput. No digest known-answer check was
+  performed.
+- This closes the earlier host VPCD `process(APDU)` failure for these specific
+  applet calls. It does not establish physical power-cycle restoration,
+  complete lifecycle callback coverage, or the official full supported-
+  algorithms CSV on CHOUPI.
+- Evidence: `artifacts/logs/pc-vpcd-continuation-audit-run-20261016.log`
+  (SHA-256 `c25786b3fffccb050e5c71e2366d1971779656f077b418ca7fc7bf73be001c25`),
+  `artifacts/logs/pc-vpcd-continuation-audit-20261016.log` (SHA-256
+  `2fb37f0f9daf3ac3952ce635e2db9856fc4df6b30f8bf37527e0256c1cc391a7`), and
+  `artifacts/logs/build-arm-continuation-audit-20261016.log` (SHA-256
+  `56a55b6c1a15d4b1442d1ca4a734d69ebc4b66fdb3a3de3acd9b51305e825fe7`).
+- Next: add a digest known-answer route and keep pursuing RP2350 lifecycle
+  persistence. Do not flash while the RISC-V build gate is unsatisfied under
+  repository instructions and the user’s ARM-only scope.
+
 ## JCAlgTest static SHA-256 target access — 2026-10-16
 
 - `tools/run-jcalgtest` already supports direct target selection for JCAlgTest

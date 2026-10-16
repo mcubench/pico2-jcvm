@@ -129,9 +129,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   helper now resolves the reserved root, verifies package/class identity, and
   eagerly decodes fields. CCID SELECT invokes it when version-2 metadata
   supplies the class index and retains the resulting context for the card
-  session. The PC VPCD integration restores the installed applet and returns a
-  successful SELECT response; its first process APDU still fails at an applet
-  field read. Power-cycle restoration on hardware remains unverified.
+  session. A fresh host VPCD applet integration pass now restores the applet
+  and completes SELECT, GETVERSION, JCSystem info, supported-algorithm probes,
+  SHA-256 doFinal, and repeated static SHA-256 calls. Power-cycle restoration
+  on the RP2350 remains unverified.
 - [ ] Dispatch SELECT, `select()`, `deselect()`, and `process()` through the
   interpreter for the selected applet. Ordinary `invokevirtual` now reads the
   receiver's concrete class and resolves its override through that class's CAP
@@ -142,9 +143,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   AID or powering off invokes `Applet.deselect()`. The APDU object/buffer is
   wired into `Applet.process()` dispatch and refreshed for each command. Host
   VPCD now restores the installed applet, and its `select()` returns true. The
-  first JCSystem info APDU reaches `process(APDU)` but returns `6F00` after a
-  `SecurityException` at CP field entry 174. `deselect()` and successful applet
-  APDU behavior remain unverified; no physical PC/SC APDU was sent in this run.
+  fresh applet integration pass confirms successful `process(APDU)` execution
+  for JCSystem info, support probes, and SHA-256 operations. Separate callback
+  tests for `deselect()`, rejected SELECT, and physical applet APDUs remain
+  outstanding.
 - [ ] Implement the remaining Java Card APDU buffer and incoming/outgoing
   command methods used by JCAlgTest, including response-length enforcement and
   `61xx` handling. Short cases 1, 2S, 3S, and 4S are parsed; case 2S/4S Le is
@@ -225,9 +227,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   is not yet validated against this transport; the current PC/SC service is
   unavailable and the VPCD reader driver is not installed.
 - [ ] Add golden applet coverage for exceptions, transient arrays, statics,
-  APDU exchange, install parameters, and persistence. The current vpcd session
-  tests use fake VM callbacks; they do not prove that the installed JCAlgTest
-  applet executes.
+  APDU exchange, install parameters, and persistence. In addition to VPCD
+  session tests with fake VM callbacks, the installed JCAlgTest 1.8.2 applet
+  now completes a focused real-VM host integration pass. Broader bytecode and
+  persistent-state assertions still need dedicated golden tests.
 - [ ] Run the matching JCAlgTest v1.8.2 client in supported-algorithms mode and
   archive its CSV and logs with hashes.
 - [x] Generate a simulator reference using the official v1.8.2 client and its
