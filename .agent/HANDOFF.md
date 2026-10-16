@@ -1,5 +1,21 @@
 # Handoff
 
+## GET STATUS category and AID-search behavior — 2026-10-16
+
+- Implemented the four supported GET STATUS categories: ISD (`P1=80`),
+  applications (`40`), executable load files (`20`), and load files with
+  executable modules (`10`). Responses use installed/loaded `CapLoadSession`
+  metadata; application entries identify the load-file AID with `C4`.
+- Search parsing requires a leading `4F` AID qualifier, supports wildcard
+  `4F00`, exact AIDs, RID-prefix matching, and skips later well-formed
+  qualifiers. P2 first/next requests have per-session validation; the current
+  single-package registry returns no further record after its first response.
+- `./tools/test-gp-registry` passed 21 checks and `./tools/build arm` passed
+  both ARM images. No hardware/APDU test was run; RISC-V remains intentionally
+  out of scope, so the flash gate is not satisfied.
+- Next: add host-level APDU coverage for GET STATUS query/error paths, then
+  investigate truthful GET DATA responses and transactional GP DELETE.
+
 ## Correct GET STATUS package AID tag — 2026-10-16
 
 - Corrected the applet registry E3 encoder to return the Executable Load File
@@ -9,10 +25,10 @@
   application's Executable Load File AID and `CC` as the associated Security
   Domain AID. The exact-byte regression now expects `C4`.
 - `./tools/test-gp-registry` passed 7 checks; `./tools/build arm` passed both
-  ARM images. No hardware test was run. Broader GET STATUS semantics and GP
-  DELETE/GET DATA are still outstanding.
-- Next: complete GET STATUS matching/next-occurrence behavior, then assess
-  truthful Card Data GET DATA support without inventing device or CPLC values.
+  ARM images. No hardware test was run. DELETE/GET DATA and end-to-end
+  card-manager validation remain outstanding.
+- Next: add host-level APDU coverage, then assess truthful Card Data GET DATA
+  support without inventing device or CPLC values.
 
 ## GET STATUS registry-entry encoding coverage — 2026-10-16
 

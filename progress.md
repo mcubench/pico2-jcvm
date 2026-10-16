@@ -3573,3 +3573,13 @@
 - Decision: Keep C4 and continue with GET STATUS query/continuation behavior before implementing more card data.
 - Commit: `afb6c5ed5833110ca7d6e1145b96d8cbdc6083c5`.
 - Artifacts/logs: `artifacts/logs/gp-registry-load-file-aid-test-20261016.log` (SHA-256 `554c2ec5e9d8b1ce795036b9a84a69a1178b3ad7fa8795dd920d0b59c4807a41`); `artifacts/logs/build-arm-gp-registry-load-file-aid-20261016.log` (SHA-256 `3f4a64b2a7335709e930163ad83167889a2425e8c41afc97b1887d2bb2ed63db`).
+
+## 2026-10-16 — Implement GET STATUS categories and AID search
+
+- Step/experiment: `gp-get-status-categories-search-20261016`
+- Change: Added GET STATUS handling for ISD, applications, executable load files, and load files with modules. Queries require a leading `4F` AID qualifier and support wildcard, exact, and RID-prefix matching; well-formed trailing qualifiers are ignored. Query records are built from loaded CAP metadata, including the actual package AID. Added first/next request validation and reset its state on card power and SELECT.
+- Validation: `./tools/test-gp-registry` passed 21 checks (`TEST:SUMMARY pass=21 fail=0`). `./tools/build arm` passed both `BUILD:PASS arch=arm` and `BUILD:PASS target=choupi` without warnings. No RISC-V build, physical APDU, or flash was performed; RISC-V is out of scope and the dual-build flash gate therefore remains unmet.
+- Result: GET STATUS encoders and search parser pass focused host checks; the ARM images compile. Dispatcher behavior has not yet been exercised end to end through GPPro or on hardware. No hardware metric was measured.
+- Decision: Keep this implementation and add host-level APDU coverage before treating card-manager query behavior as verified. Continue with truthful GET DATA behavior and transaction-safe DELETE.
+- Commit: `7b55114`.
+- Artifacts/logs: `artifacts/logs/gp-status-search-test-20261016.log` (SHA-256 `eeb0993016685ca0564b2bbfeb9ddf1587f47c71a4595aa1e608126870a341ab`); `artifacts/logs/build-arm-gp-status-search-20261016.log` (SHA-256 `9334763cc20ce770d8a29a75435dfca4da870bb3c3153068afec2617b55b08e7`).
