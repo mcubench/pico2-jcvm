@@ -203,7 +203,7 @@ uint16_t JC_Array::size() const {
   uint32_t length = 0;
 
   if (this->isTransientArray()) {
-    length = this->array.size();
+    length = this->array.size() / this->getEntrySize();
   } else if (this->isPersistent()) {
     fs::Tag tag = this->computeTag();
     uint8_t size_high = 0;
@@ -214,12 +214,12 @@ uint16_t JC_Array::size() const {
     }
     length = BYTES_TO_SHORT(size_high, size_low);
   } else {
-    length = this->array.size();
+    length = this->array.size() / this->getEntrySize();
   }
 
-  // Persistent array headers store the number of elements, just like
-  // JCVMArray::size(). The serialized record length also contains a header
-  // and element bytes, so it cannot be used as the logical element count.
+  // JCVMArray stores the backing data as bytes, while Java Card's array size
+  // is the number of elements. Persistent headers already store that logical
+  // count; divide transient and ordinary backing lengths by the element width.
   return static_cast<uint16_t>(length);
 }
 
