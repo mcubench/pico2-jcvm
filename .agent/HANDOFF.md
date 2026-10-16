@@ -2,6 +2,32 @@
 
 ## Latest continuation — 2026-10-16
 
+- User replugged the Pico, but this process still cannot access USB: both
+  `lsusb -d 2e8a:0009` and `lsusb -d 2e8a:000f` report libusb `-99`; bounded
+  `pcsc_scan -r` reports that the PC/SC service is unavailable. No flash or
+  physical test was attempted.
+- Corrected the earlier persistent-field status change. The OS FFI documents
+  `fs_exists()` as returning 1 when a tag exists, so `JC_Instance::getFields()`
+  must use `!= 0`. The prior `== 0` interpretation was wrong. With the fix,
+  fresh JCAlgTest SELECT succeeds instead of returning `6F00` while restoring
+  a missing field.
+- `./tools/build arm` and `./tools/build-pc` passed. The focused JCSystem/SHA
+  VPCD test passed `TEST:SUMMARY pass=12 fail=0 elapsed_s=44.119`.
+- A fresh VPCD JCAlgTest pass completed `TEST:SUMMARY pass=11 fail=0`. It
+  passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem, SHA-256 support and
+  doFinal, plus the static SHA workload. The static APDU used the JCAlgTest
+  256-byte / 50-call settings and returned `AA9000` in `36.643 s`. This is a
+  host emulator measurement, not a Pico result. RSA-SHA1 reported unsupported
+  reason `03`, as expected.
+- Full transcript: `artifacts/logs/vpcd-fs-exists-corrected-final-transcript-20261016.log`;
+  emulator log: `artifacts/logs/vpcd-fs-exists-corrected-final-20261016.log`.
+- Next: restore guest USB/libusb and PC/SC visibility, then use the ARM build,
+  flash through the wrapper, capture finite serial output, and run the named
+  physical reader through JCAlgTest 1.8.2. Keep unsupported algorithms as
+  expected; compare physical SHA static timing with the host result.
+
+## Latest continuation — 2026-10-16
+
 - User replugged the Pico, so the bounded physical-access checks were rerun.
   `./tools/doctor` completed successfully for host prerequisites, but both RP2350
   `lsusb` checks reported `unable to initialize libusb: -99`. PC/SC reported

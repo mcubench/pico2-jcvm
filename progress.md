@@ -4127,3 +4127,31 @@
 
 - Step: `physical-replug-host-vpcd-startup`
 - Commit: `cb6f8aa` (`Fix persistent field existence check`).
+
+## 2026-10-16 — Restore persistent JCAlgTest applet correctly
+
+- Step/experiment: `fs-exists-semantics-and-static-sha-vpcd`
+- Change: Corrected `JC_Instance::getFields()` to match the documented OS ABI:
+  `fs_exists()` returns nonzero when a tag exists. The earlier `== 0` change
+  caused a fresh JCAlgTest instance to read a missing field and fail SELECT.
+- Validation: `./tools/build arm` and `./tools/build-pc` passed. The focused
+  JCSystem/SHA probe passed 12/12 APDUs in 44.119 s. The fresh VPCD JCAlgTest
+  flow passed 11/11 checks: ATR, SELECT, GETVERSION, JCSystem, SHA-256 support,
+  doFinal, static SHA-256, and the selected support probes. Static workload
+  used the official 256-byte / 50-call settings and returned `AA9000` in
+  36.643 s. Physical checks still fail at libusb initialization (`-99`) and
+  PC/SC service unavailable, so no hardware flash or test was performed.
+- Result: Applet install/restore, JCSystem calls, and the static SHA-256
+  workload complete in the PC VPCD emulator. The static operation is slow
+  (36.643 s in this host emulator); this is not a Pico measurement. Unsupported
+  RSA-SHA1 returned reason `03` and remains an expected unsupported result.
+- Decision: Use this corrected existence check; retain ARM-only scope. Retry
+  physical testing only after guest USB enumeration and PC/SC work. The official
+  Java client still needs a working PC/SC reader; current static validation
+  used its exact applet configuration through the bounded VPCD harness.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/build-arm-fs-exists-corrected-20261016.log`,
+  `artifacts/logs/build-pc-fs-exists-corrected-20261016.log`,
+  `artifacts/logs/jcsystem-transaction-security-class-map-fix-20261016.log`,
+  `artifacts/logs/vpcd-fs-exists-corrected-final-transcript-20261016.log`,
+  `artifacts/logs/vpcd-fs-exists-corrected-final-20261016.log`.
