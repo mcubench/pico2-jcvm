@@ -3531,5 +3531,5 @@
 - Validation: `python3 -m py_compile tools/tests/pc_vpcd_applet_test.py` passed; the runner help lists the new option. `./tools/build-pc` passed (49 existing Rust warnings and two packed-member C++ warnings); `./tools/build arm` passed with `BUILD:PASS target=choupi`. With localhost socket access enabled, the C900 integration run logged `VPCD:INSTALL_VM_ARGS status=PASS offset=0 length=2` and passed all 11 checks. GETVERSION returned `1.8.2_jc305`; JCSystem and SHA-256 checks returned `9000`; the 50-call static SHA-256 APDU returned `AA 9000` in 15.676 s.
 - Result: The Java install-entry frame directly matches offset 0, `bLength` 2, and bytes `C9 00`; applet installation and subsequent process APDUs succeed. The static SHA timing is PC emulator wall time, not hardware throughput. No physical reader was available; no flash was attempted.
 - Decision: Keep this VM-entry assertion in the PC regression. Continue lifecycle golden coverage, GP card-manager behavior, and remaining AC checks.
-- Commit: pending.
+- Commit: `822b67e`.
 - Artifacts/logs: `artifacts/logs/build-pc-install-args-assert-20261016.log`, `artifacts/logs/build-arm-install-args-assert-20261016.log`, `artifacts/logs/vpcd-install-params-vmcheck-test-20261016.log`, and `artifacts/logs/vpcd-install-params-vmcheck-20261016.log`.
