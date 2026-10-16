@@ -78,6 +78,8 @@ volatile uint16_t debug_rx_events = 0;
 volatile uint16_t debug_task_count = 0;
 Scp03Session secure_channel;
 CapLoadSession cap_load_session;
+bool get_status_first_seen = false;
+uint8_t get_status_first_p1 = 0;
 
 uint32_t read_le32(const uint8_t *p) {
   return static_cast<uint32_t>(p[0]) |
@@ -126,6 +128,8 @@ void process_message(uint8_t rhport) {
   switch (command) {
   case 0x62: // PC_to_RDR_IccPowerOn
     slot_state = 0;
+    get_status_first_seen = false;
+    get_status_first_p1 = 0;
     cap_load_session.restoreInstalled();
     send_response(rhport, 0x80, kAtr, sizeof(kAtr));
     break;
@@ -133,6 +137,8 @@ void process_message(uint8_t rhport) {
     (void)choupi_vm_deselect_applet();
     slot_state = 1;
     secure_channel.reset();
+    get_status_first_seen = false;
+    get_status_first_p1 = 0;
     cap_load_session.abortTransfer();
     send_response(rhport, 0x81, nullptr, 0, slot_state);
     break;
@@ -145,6 +151,8 @@ void process_message(uint8_t rhport) {
     uint8_t response[96] = {0x6d, 0x00}; // instruction not supported
     size_t response_length = 2;
     if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
+      get_status_first_seen = false;
+      get_status_first_p1 = 0;
       (void)choupi_vm_deselect_applet();
     }
     if (apdu_length >= 2 && apdu[0] == 0x80 && apdu[1] == 0x50) {
@@ -256,34 +264,90 @@ void process_message(uint8_t rhport) {
           response[30] = static_cast<uint8_t>(install_status);
           response_length = 31;
         }
-      } else if (instruction == 0xf2 && p1 == 0x80 &&
-                 (p2 & 0xfe) == 0x02) {
-        constexpr uint8_t isd_registry_entry[] = {
-            0xe3, 0x11, 0x4f, 0x08, 0xa0, 0x00, 0x00, 0x01, 0x51, 0x00,
-            0x00, 0x00, 0x9f, 0x70, 0x01, 0x01, 0xc5, 0x01, 0x00};
-        std::memcpy(response, isd_registry_entry,
-                    sizeof(isd_registry_entry));
-        size_t registry_length = sizeof(isd_registry_entry);
-        if (cap_load_session.installed()) {
-          size_t entry_length = 0;
-          if (!gp::append_registry_entry(
-                  response + registry_length,
-                  sizeof(response) - registry_length, entry_length,
-                  cap_load_session.instanceAid(),
-                  cap_load_session.instanceAidLength(), kAlgTestPackageAid,
-                  sizeof(kAlgTestPackageAid), 0x07)) {
-            response[0] = 0x6f;
+      } else if (instruction == 0xf2 && apdu_length >= 5) {
+        if (p2 == 0x03) {
+          if (!get_status_first_seen || get_status_first_p1 == 0x80 ||
+              p1 != get_status_first_p1) {
+            response[0] = 0x69;
+            response[1] = 0x85;
+          } else {
+            response[0] = 0x90;
             response[1] = 0x00;
+          }
+        } else if (p2 != 0x02) {
+          response[0] = 0x6a;
+          response[1] = 0x86;
+        } else if (p1 == 0x80) {
+          constexpr uint8_t isd_aid[] = {0xa0, 0x00, 0x00, 0x01,
+                                          0x51, 0x00, 0x00, 0x00};
+          gp::AidSearch search;
+          if (!gp::parse_aid_search(apdu + 5, command_data_length, search)) {
+            response[0] = 0x6a;
+            response[1] = 0x80;
             response_length = 2;
             send_response(rhport, 0x80, response, response_length);
             break;
           }
-          registry_length += entry_length;
+          if (gp::aid_matches_search(search, isd_aid, sizeof(isd_aid))) {
+            constexpr uint8_t isd_registry_entry[] = {
+                0xe3, 0x11, 0x4f, 0x08, 0xa0, 0x00, 0x00, 0x01,
+                0x51, 0x00, 0x00, 0x00, 0x9f, 0x70, 0x01, 0x01,
+                0xc5, 0x01, 0x00};
+            std::memcpy(response, isd_registry_entry,
+                        sizeof(isd_registry_entry));
+            response_length = sizeof(isd_registry_entry);
+          }
+          response[response_length++] = 0x90;
+          response[response_length++] = 0x00;
+          get_status_first_seen = true;
+          get_status_first_p1 = p1;
+        } else if (p1 == 0x40 || p1 == 0x20 || p1 == 0x10) {
+          gp::AidSearch search;
+          if (!gp::parse_aid_search(apdu + 5, command_data_length, search)) {
+            response[0] = 0x6a;
+            response[1] = 0x80;
+          } else {
+            size_t entry_length = 0;
+            bool append_ok = true;
+            if (p1 == 0x40 && cap_load_session.installed() &&
+                gp::aid_matches_search(
+                    search, cap_load_session.instanceAid(),
+                    cap_load_session.instanceAidLength())) {
+              append_ok = gp::append_registry_entry(
+                  response, sizeof(response), entry_length,
+                  cap_load_session.instanceAid(),
+                  cap_load_session.instanceAidLength(),
+                  cap_load_session.packageAid(),
+                  cap_load_session.packageAidLength(), 0x07);
+            } else if ((p1 == 0x20 || p1 == 0x10) &&
+                       cap_load_session.loaded() &&
+                       gp::aid_matches_search(
+                           search, cap_load_session.packageAid(),
+                           cap_load_session.packageAidLength())) {
+              append_ok = gp::append_load_file_entry(
+                  response, sizeof(response), entry_length,
+                  cap_load_session.packageAid(),
+                  cap_load_session.packageAidLength(),
+                  cap_load_session.appletAid(),
+                  cap_load_session.appletAidLength(), p1 == 0x10);
+            }
+            if (!append_ok) {
+              response[0] = 0x6f;
+              response[1] = 0x00;
+              response_length = 2;
+            } else {
+              response_length = entry_length;
+              response[response_length++] = 0x90;
+              response[response_length++] = 0x00;
+              get_status_first_seen = true;
+              get_status_first_p1 = p1;
+            }
+          }
+        } else {
+          response[0] = 0x6a;
+          response[1] = 0x86;
         }
-        response[registry_length++] = 0x90;
-        response[registry_length++] = 0x00;
-        response_length = registry_length;
-      } else if (instruction == 0xf2 || instruction == 0xca) {
+      } else if (instruction == 0xca) {
         response[0] = 0x6a;
         response[1] = 0x88;
       } else {

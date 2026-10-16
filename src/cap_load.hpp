@@ -17,6 +17,7 @@ public:
   void restoreInstalled() noexcept;
 
   bool installed() const noexcept { return installed_; }
+  bool loaded() const noexcept { return loaded_; }
   uint8_t installFailureStage() const noexcept { return install_failure_stage_; }
   static constexpr uint16_t failureStatusWordForStage(uint8_t stage) noexcept {
     switch (stage) {
@@ -72,6 +73,12 @@ public:
   }
   const uint8_t *instanceAid() const noexcept { return instance_aid_; }
   uint8_t instanceAidLength() const noexcept { return instance_aid_length_; }
+  const uint8_t *packageAid() const noexcept { return load_package_aid_; }
+  uint8_t packageAidLength() const noexcept {
+    return load_package_aid_length_;
+  }
+  const uint8_t *appletAid() const noexcept { return applet_aid_; }
+  uint8_t appletAidLength() const noexcept { return applet_aid_length_; }
   bool appletClassIndex(uint16_t &class_index) const noexcept;
 
 private:
