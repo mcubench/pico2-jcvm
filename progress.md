@@ -3749,3 +3749,7 @@
 - Commit: OS nested repository `9a2a25f`; root documentation commit recorded below.
 - Artifacts/logs: `artifacts/logs/os-fs-powercut-host-test-20261016.log` (SHA-256 `0919809b7db96de712db8462d52815fd5227b7e8932ed36b314d4d059a4af3a3`); `artifacts/logs/build-arm-fs-unwind-20261016.log` (SHA-256 `44ea7a4731608e04d7ecf495bc15302ec8808db076e848c8e78264ce4d58d41f`).
 
+## Filesystem interrupted-write validation commit metadata
+
+- The progress, TODO, handoff, and validation artifacts for the single-record interrupted-write recovery step were committed as `9ca80ef`; its OS implementation and focused regression are in nested commit `9a2a25f`.
+
