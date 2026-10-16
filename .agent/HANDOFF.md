@@ -1,5 +1,27 @@
 # Handoff
 
+## Host filesystem interrupted-write recovery — 2026-10-16
+
+- Added test-only host flash failure injection at each programmed 32-bit word
+  and an FS regression that interrupts every word of a replacement record,
+  reconstructs the filesystem, and checks that the complete old or new value
+  survives. Added RAII guards so flash and sector locks are restored if an
+  operation unwinds. OS subrepository commit: `9a2a25f`.
+- Targeted host FS tests pass: 19 passed, 0 failed, 2 ignored. The test wrapper
+  now compiles with the installed Rust 1.99 toolchain after removing obsolete
+  plugin usage, replacing legacy inline asm fences, and allowing bindgen's
+  null-based generated layout assertions. The full OS suite still stalls on
+  MPU emulator tests that require ptrace in this sandbox; it was interrupted
+  before completion. `./tools/build arm` passes both images.
+- No flash, RISC-V build, PC/SC, or physical hardware test was run. This proves
+  only single-record replacement recovery between host-mode word writes. It
+  does not meet WP3's multi-record transaction/anti-tearing requirement or its
+  1,000 randomized power-cut criterion.
+- Next: design and implement a persistent filesystem transaction meta-block
+  for atomic multi-record updates, then extend injected power-cut coverage to
+  transaction activation and repair before assessing the hardware power-cut
+  rig.
+
 ## JCSystem transaction implementation — 2026-10-16
 
 - The native begin/commit/abort methods now use the persistent-write snapshot

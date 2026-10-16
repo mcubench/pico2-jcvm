@@ -3739,3 +3739,13 @@
 
 - The root implementation, 24-check rollback test, ARM build, two-pass host applet regression, and progress/handoff records above were committed as `e39dfdd`. The Java Card API source changes are separately committed in its nested repository as `b757a0a`.
 
+## 2026-10-16 — Add host filesystem interrupted-write recovery coverage
+
+- Step/experiment: `fs-single-record-power-cut-test`
+- Change: Added test-only host flash failure injection after a selected count of programmed 32-bit words. Added RAII cleanup for flash unlock and sector-range locks after unwinding, modernized the OS host test entry points for Rust 1.99, and added a filesystem replacement test that simulates a cut at every programmed-word boundary and reconstructs the filesystem.
+- Validation: `./tools/env cargo test --manifest-path choupi/os/Cargo.toml --no-default-features --features host fs::` passed 19 tests, with 2 ignored and 94 filtered out. `./tools/build arm` passed the smoke and CHOUPI firmware images. `./tools/env make -C choupi/os test` compiled but stalled at the first MPU ptrace-based emulator test; it was interrupted, so the full OS suite is not validated in this sandbox. No RISC-V build or flash was run.
+- Result: Every injected interruption during a single-record replacement recovered either the complete previous value or complete replacement value; no torn value was read. This does not cover multi-record transactions, partial erase behavior, real power loss, or the planned 1,000 randomized cuts.
+- Decision: Keep WP3 transaction meta-block and anti-tearing criteria open. Next design the persistent transaction journal and recovery path, then use the host cut injector to validate each commit/repair state.
+- Commit: OS nested repository `9a2a25f`; root documentation commit recorded below.
+- Artifacts/logs: `artifacts/logs/os-fs-powercut-host-test-20261016.log` (SHA-256 `0919809b7db96de712db8462d52815fd5227b7e8932ed36b314d4d059a4af3a3`); `artifacts/logs/build-arm-fs-unwind-20261016.log` (SHA-256 `44ea7a4731608e04d7ecf495bc15302ec8808db076e848c8e78264ce4d58d41f`).
+

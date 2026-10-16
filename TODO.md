@@ -31,7 +31,11 @@ transaction. The snapshot rollback test passes 24 checks; the ARM build and two
 fresh host VPCD applet runs pass. Remaining transaction gaps: commit-capacity
 queries still report zero, snapshots are volatile RAM state rather than a
 power-loss journal, and Java-level exception status paths need a dedicated
-applet regression.
+applet regression. The host filesystem now has word-program failure injection
+and a replacement-write recovery test. It passes across all injected write
+cut-points and recovers a complete old or new value. This covers a single
+filesystem record only; the planned multi-record transaction meta-block and
+the 1,000-cut acceptance test remain incomplete.
 
 Latest repeatable host validation (2026-10-16): `./tools/build arm` passed
 both ARM images. The two-pass PC VPCD applet test passed 22/22 checks across
