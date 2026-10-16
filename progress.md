@@ -3807,3 +3807,7 @@
 - Decision: Keep the concise artifact in the current tree and do not repeat `pcsc_scan` until the service can be started; its failure mode emits an unbounded error loop.
 - Commit: recorded in the following commit-metadata entry.
 - Artifacts/logs: `artifacts/logs/pcsc-physical-access-check-20261016.log` (478 bytes; SHA-256 `82111d1919e6e1d523fae3c5ffe5bd7709d3532dd9e9051381f623e1f69ba7af`).
+
+## Bounded physical-access artifact commit metadata
+
+- The compacted diagnostic artifact and append-only correction record above were committed as `4337e94`.
