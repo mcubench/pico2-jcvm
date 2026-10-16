@@ -3683,3 +3683,17 @@
 - Decision: Keep GP DELETE open. Next integrate the parser with secure-channel dispatch and implement deletion semantics that remain consistent across restart and GET STATUS.
 - Commit: pending
 - Artifacts/logs: Focused test output `TEST:SUMMARY pass=11 fail=0`; ARM image outputs `build/arm/pico2_jcvm_smoke.uf2` and `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-16 — Confirm JCAlgTest static simulator run completion
+
+- Step/experiment: `jcalgtest-static-simulator-completion-20261016`
+- Change: Followed up the named-reader attempt after the Java child continued beyond the interrupted tool session. The final client log footer and CSV confirm the official `ALG_PERFORMANCE_STATIC` run completed; the test was not rerun.
+- Validation: Pico exact-name selection still exits 4 with an empty Java SmartcardIO reader list. The jCardSim report contains 1,900 lines and 132 measured-operation sections. It records 290 `NO_SUCH_ALGORITHM`, 204 `CANT_BE_MEASURED`, and 66 `ILLEGAL_VALUE` outcomes. SHA-256 doFinal/update/reset APDUs returned `AA 9000`.
+- Result: jCardSim SHA-256 doFinal is reported as 0.02 ms/op average, -0.11 ms/op minimum, 0.51 ms/op maximum; update is 0.18 ms/op average; reset is 0.03 ms/op average. Negative baseline-subtracted time is timer noise. The client does not return digest bytes, and no hardware throughput or SHA known-answer was measured.
+- Decision: Do not change the SHA implementation from this simulator output. The real Pico static benchmark remains outstanding until Java can see its PC/SC reader. Algorithm absence in this report is not by itself a firmware defect.
+- Commit: pending
+- Artifacts/logs: Final console log SHA-256 `0581e4756cb6de6ff34b783a37735b41031c1af6e5ce8b0196a13a35db9909ab`; client log SHA-256 `ac5590b26b7e2f2c6a8a27adc78b0e6d187be4a5e8354b4712634308b124482a`; CSV SHA-256 `24a4a417dc8d74779c2444b71d565ec67a33fc48bb0e9a6dcb3ddbbe6fd5cca0`.
+
+## GP DELETE parser commit metadata
+
+- The strict request parser and 11-check test step recorded above was committed as `36ebf1e`.
