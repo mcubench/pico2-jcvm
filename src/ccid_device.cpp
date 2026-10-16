@@ -34,8 +34,6 @@ constexpr uint8_t kEndpointIn = 0x83;
 constexpr uint16_t kEndpointSize = 64;
 constexpr size_t kMaxMessage = 320;
 constexpr size_t kMaxCcidMessage = 300;
-constexpr uint8_t kAlgTestPackageAid[] = {0x4a, 0x43, 0x41, 0x6c, 0x67,
-                                          0x54, 0x65, 0x73, 0x74};
 constexpr uint8_t kAtr[] = {0x3b, 0x80, 0x01, 0x81};
 
 // The standard CDC interface remains available for diagnostics. CCID is the
