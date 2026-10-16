@@ -27,10 +27,11 @@ backend: begin/commit/abort update transaction depth, and the Java wrappers
 throw `TransactionException` for nested begin, commit/abort outside a
 transaction, or rollback failure. `Util.arrayCopy`, `arrayFill`, and `setShort`
 now start and commit only when needed, and validate inputs before opening a
-transaction. The snapshot rollback test passes 24 checks; the ARM build and two
-fresh host VPCD applet runs pass. Remaining transaction gaps: commit-capacity
-queries still report zero, and Java-level exception status paths need a
-dedicated applet regression. On RP2350, `fs_sync` now defers persistence while
+transaction. The snapshot rollback test passes 30 checks; ARM and RISC-V builds
+pass. A Java Card transaction probe applet now verifies nested begin, commit
+and abort reason codes, persistent rollback, and post-commit state over host
+VPCD (10/10 assertions). Remaining transaction gaps: commit-capacity queries
+still report zero, and physical transaction behavior remains unverified. On RP2350, `fs_sync` now defers persistence while
 a JCSystem write transaction is active; commit flushes the two-slot,
 CRC-protected snapshot, and abort flushes the restored state. The host overlay
 test passes 1,000 randomized mutation cut-points across a two-record snapshot
@@ -38,8 +39,9 @@ and recovers the complete old state. The Rust OS filesystem's separate
 single-record path has its own interrupted-write test; its multi-record
 meta-block is not implemented.
 
-Latest repeatable host validation (2026-10-16): `./tools/build arm` passed
-both ARM images. The two-pass PC VPCD applet test passed 22/22 checks across
+Latest repeatable host validation (2026-10-16): `./tools/build arm` and
+`./tools/build riscv` passed. The focused Java transaction probe passed 10/10
+assertions. The two-pass PC VPCD applet test passed 22/22 checks across
 two fresh emulator processes, including the JCSystem info APDU and SHA-256
 prepare, `doFinal`, and 50-call static operation. Static operation time was
 13.985 s and 13.487 s per APDU on the PC emulator; these values do not measure

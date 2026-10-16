@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_dir="${repo_root}/tools/tests/jcsystem_transaction_applet"
+build_dir="${repo_root}/build/jcsystem-transaction-probe"
+java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
+
+[[ -x "${java8_home}/bin/java" ]] || {
+  printf 'ERROR: Java 8 runtime not found: %s\n' "${java8_home}" >&2
+  exit 1
+}
+mkdir -p "${build_dir}/classes" "${build_dir}/output"
+
+"${repo_root}/tools/env" "${java8_home}/bin/javac" \
+  -source 1.7 -target 1.7 -Xlint:-options \
+  -classpath "${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit/lib/api_classic.jar" \
+  -d "${build_dir}/classes" "${source_dir}/JCTransactionProbe.java" \
+  > "${build_dir}/compile.log" 2>&1
+
+cat > "${build_dir}/build.xml" <<EOF_ANT
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="build" name="JCTransactionProbe">
+  <property name="repo" location="${repo_root}"/>
+  <taskdef name="javacard" classname="pro.javacard.ant.JavaCard"
+           classpath="\${repo}/AlgTest_JavaCard/ext/ant-javacard.jar"/>
+  <target name="build">
+    <javacard jckit="\${repo}/AlgTest_JavaCard/ext/jc305u3_kit">
+      <cap output="\${basedir}/output/JCTransactionProbe.cap"
+           classes="\${basedir}/classes" aid="4a43416c6754657374">
+        <applet class="algtest.JCTransactionProbe"
+                aid="4a43416c675465737431"/>
+      </cap>
+    </javacard>
+  </target>
+</project>
+EOF_ANT
+
+mkdir -p "${build_dir}/home"
+cat > "${build_dir}/logging.properties" <<'EOF_LOGGING'
+handlers=java.util.logging.ConsoleHandler
+.level=OFF
+java.util.logging.ConsoleHandler.level=OFF
+EOF_LOGGING
+JAVA_HOME="${java8_home}" \
+JAVA_TOOL_OPTIONS="-Duser.home=${build_dir}/home -Djava.util.logging.config.file=${build_dir}/logging.properties" \
+  "${repo_root}/tools/env" ant -f "${build_dir}/build.xml" \
+  > "${build_dir}/build.log" 2>&1
+python3 - "${build_dir}/output/JCTransactionProbe.cap" \
+  "${build_dir}/load-code.bin" <<'PY'
+import sys
+from zipfile import ZipFile
+
+source, target = sys.argv[1:]
+component_order = (
+    "Header", "Directory", "Applet", "Import", "ConstantPool", "Class",
+    "Method", "StaticField", "RefLocation",
+)
+with ZipFile(source) as cap:
+    chunks = []
+    for component in component_order:
+        name = f"algtest/javacard/{component}.cap"
+        try:
+            chunks.append(cap.read(name))
+        except KeyError as error:
+            raise SystemExit(f"CAP is missing required component {name}") from error
+with open(target, "wb") as output:
+    for chunk in chunks:
+        output.write(chunk)
+PY
+
+printf 'CAP:PASS file=%s load_code=%s\n' \
+  "${build_dir}/output/JCTransactionProbe.cap" \
+  "${build_dir}/load-code.bin"

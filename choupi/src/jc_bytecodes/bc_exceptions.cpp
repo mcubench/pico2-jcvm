@@ -28,9 +28,11 @@
 #include "../debug.hpp"
 #include "../jc_handlers/jc_class.hpp"
 #include "../jc_handlers/jc_cp.hpp"
+#include "../jc_handlers/jc_export.hpp"
 #include "../jc_types/jc_instance.hpp"
 #include "../stack.hpp"
 #include "bytecodes.hpp"
+#include <cstring>
 
 namespace jcvm {
 
@@ -110,6 +112,7 @@ void Bytecodes::doThrow(jref_t objectref) {
   ConstantPool_Handler exception_cp(exception_package);
   auto exception_class = exception_cp.resolveClassref(
       exception_cp.getClassRefFromClassIndex(exception->getClassIndex()));
+  bool checking_caller_frame = false;
 
   while (!stack.empty()) {
     Package package = this->context.getCurrentPackage();
@@ -127,17 +130,33 @@ void Bytecodes::doThrow(jref_t objectref) {
     const uint32_t opcode_offset =
         static_cast<uint32_t>(throw_pc - method_offset);
     const auto handlers = method_component->exception_handlers();
+    const uint32_t handler_table_bytes = static_cast<uint32_t>(
+        handlers.size() * sizeof(jc_cap_exception_handler_info));
 
     for (uint16_t index = 0; index < handlers.size(); ++index) {
       const auto *record = reinterpret_cast<const uint8_t *>(&handlers[index]);
       const uint16_t start = BYTES_TO_SHORT(record[0], record[1]);
       const uint16_t range_flags = BYTES_TO_SHORT(record[2], record[3]);
       const uint16_t active_length = range_flags & 0x7FFF;
-      const uint16_t handler_offset = BYTES_TO_SHORT(record[4], record[5]);
+      const uint16_t handler_component_offset =
+          BYTES_TO_SHORT(record[4], record[5]);
       const uint16_t catch_type_index = BYTES_TO_SHORT(record[6], record[7]);
-
-      if (opcode_offset < start ||
-          opcode_offset >= static_cast<uint32_t>(start) + active_length) {
+      if (start < handler_table_bytes ||
+          handler_component_offset <= handler_table_bytes) {
+        throw Exceptions::SecurityException;
+      }
+      const uint32_t start_method_offset = start - handler_table_bytes;
+      const uint32_t handler_method_offset =
+          handler_component_offset - handler_table_bytes - 1;
+      // The current frame stores the address of its throwing instruction.
+      // An unwound caller stores the invoke opcode, while the CAP handler
+      // range begins at the caller's next bytecode boundary.
+      const uint32_t exception_range_pc =
+          opcode_offset + (checking_caller_frame ? 1u : 0u);
+      const bool handler_active =
+          exception_range_pc >= start_method_offset &&
+          exception_range_pc < start_method_offset + active_length;
+      if (!handler_active) {
         continue;
       }
 
@@ -150,21 +169,51 @@ void Bytecodes::doThrow(jref_t objectref) {
       }
 
       if (matches) {
+        if (handler_method_offset >= methods.size()) {
+          throw Exceptions::SecurityException;
+        }
         stack.getCurrentFrame().clearOperands();
         stack.push_Reference(objectref);
-        stack.getPC().setValue(methods.data() + handler_offset);
+        stack.getPC().setValue(methods.data() + handler_method_offset);
         return;
       }
     }
 
     stack.pop_Frame();
     if (!stack.empty()) {
+      checking_caller_frame = true;
       this->context.backToPreviousPackageID();
     }
   }
 
   // An exception with no matching handler must not look like normal method
   // completion to the interpreter.
+  if (exception_package.getPackageID() == 0) {
+    const auto *package_info = exception_package.getCap().getHeader();
+    static constexpr uint8_t framework_aid[] = {
+        0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01};
+    if (package_info->package.AID_length == sizeof(framework_aid) &&
+        std::memcmp(package_info->package.AID, framework_aid,
+                    sizeof(framework_aid)) == 0) {
+      // JC305's ISOException import token 7 maps to ROM-mask export token 18.
+      static constexpr uint8_t iso_exception_export_token = 18;
+      const uint16_t iso_exception_index = HTONS(
+          Export_Handler(exception_package)
+              .getExportedClassOffset(iso_exception_export_token));
+      const auto iso_exception_class = exception_cp.resolveClassref(
+          exception_cp.getClassRefFromClassIndex(iso_exception_index));
+      const bool is_iso_exception =
+          Class_Handler::docheckcast(exception_class, iso_exception_class);
+      if (is_iso_exception) {
+        // ISOException inherits CardRuntimeException.reason, a short stored
+        // as the first instance field in the embedded Java Card API layout.
+        const uint16_t status_word = static_cast<uint16_t>(
+            exception->getField_Short(0));
+        throw ISOExceptionStatusWord{status_word};
+      }
+    }
+  }
+
   throw Exceptions::SecurityException;
 }
 

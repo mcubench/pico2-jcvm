@@ -1,5 +1,31 @@
 # Handoff
 
+## Java-level JCSystem transaction exception APDUs — 2026-10-16
+
+- Added a small Java Card probe applet and repeatable host VPCD runner. It
+  exercises begin/depth/commit, `TransactionException` reasons for nested
+  begin and commit/abort outside a transaction, persistent value rollback on
+  abort, and persistence after a later APDU. The current run passes 10/10
+  assertions.
+- Fixed the exception dispatcher’s handler range check for unwound caller
+  frames: the saved caller PC points at the invoke opcode, and the CAP range
+  applies from the following bytecode boundary. The focused Java APDU probe
+  now catches the expected Java exception reasons rather than returning
+  `6F00`.
+- `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` pass. The
+  broader JCAlgTest VPCD regression passes 11/11. No Pico was flashed and no
+  physical result is claimed. The official `ALG_PERFORMANCE_STATIC` command
+  with `--reader-name 'Virtual PCD 00 00'` cannot find a Java SmartcardIO
+  reader in this execution context; retry when that reader is exposed.
+- Current performance limits: the 50-call SHA-256 APDU takes 19.679 s on the
+  PC interpreter/VPCD in the post-fix run. This is not Pico throughput. The
+  static simulator's sub-millisecond SHA numbers are timer-resolution noise.
+- Next: inspect and implement truthful `getMaxCommitCapacity()` and
+  `getUnusedCommitCapacity()` behavior, keeping RAM/flash limits explicit;
+  then rerun the official named-reader static operation once PC/SC is
+  available. Physical test still requires both architectures to pass and a
+  finite serial capture after flashing.
+
 ## JCAlgTest static SHA-256 host timing — 2026-10-16
 
 - Gated the noisy `PC_FS:WRITE` diagnostic behind `DEBUG` for PC builds. The
