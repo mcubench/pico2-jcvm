@@ -4086,7 +4086,7 @@
 - Decision: Resume physical testing only after USB visibility returns. Then
   build ARM, flash, and require GETVERSION and JCSystem success before SHA-256
   and static-performance validation. Continue host-side work independently.
-- Commit: pending.
+- Commit: `cd62665`.
 - Artifacts/logs: `artifacts/logs/physical-jcalgtest-readonly-probe-20261016.log`,
   `artifacts/logs/monitor-arm-exception-trace-apdu-20261016.log`,
   `artifacts/logs/jc305-security-remap-export-compare-20261016.log`,
