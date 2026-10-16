@@ -101,6 +101,13 @@ void snapshot_persistent_tag(const fs::Tag &tag) {
 uint8_t write_persistent_tag(const fs::Tag &tag, const uint8_t *data,
                              const uint32_t length) {
   snapshot_persistent_tag(tag);
+#if defined(PC_VERSION) && defined(DEBUG)
+  std::fprintf(stderr, "PC_FS:WRITE tag=");
+  for (uint8_t index = 0; index < tag.len; ++index) {
+    std::fprintf(stderr, "%02X", tag.value[index]);
+  }
+  std::fprintf(stderr, " length=%u\n", length);
+#endif
   return fs_write(tag.value, tag.len, data, length);
 }
 

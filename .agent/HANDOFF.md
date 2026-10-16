@@ -1,5 +1,25 @@
 # Handoff
 
+## JCAlgTest static SHA-256 host timing — 2026-10-16
+
+- Gated the noisy `PC_FS:WRITE` diagnostic behind `DEBUG` for PC builds. The
+  previous release VPCD run emitted 665 per-write lines. `./tools/build-pc`,
+  `./tools/build arm`, and `./tools/build riscv` pass.
+- The fresh bounded VPCD applet regression passes 11/11. Its 50-call SHA-256
+  static APDU returns `AA9000` in 15.578 s; this is host emulator time, not
+  Pico throughput or a digest known-answer check. The release log has no
+  `PC_FS:WRITE` entries.
+- Official jCardSim `ALG_PERFORMANCE_STATIC` reports 0.05 ms/op for SHA-256
+  `doFinal`, with a negative minimum, so its timer resolution cannot support
+  that sub-millisecond claim. A prior official VPCD client run lost the card
+  during SHA-256 measurement. The current PC/SC service is unavailable,
+  SmartcardIO has no readers, and libusb access fails; no hardware was used.
+- Next: once PC/SC is restored, rerun the official v1.8.2 static operation
+  using the exact `--reader-name` for the intended CHOUPI reader. Analyze the
+  SHA-256 row separately and check a known-answer digest; do not call the host
+  VPCD result a physical performance measurement. Then resume the JCSystem
+  transaction Java-exception APDU test and commit-capacity design.
+
 ## JCSystem transaction flush and RP2350 snapshot recovery — 2026-10-16
 
 - The ARM filesystem overlay now defers `fs_sync()` while a Java Card

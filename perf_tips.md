@@ -423,3 +423,10 @@ optimizing filesystem reads, dispatch, or lookup.
   `INVOKEVIRTUAL` receiver and argument stack. Add later applet commands only
   after that request returns the expected response; this avoids paying for
   unrelated test phases on every fix attempt.
+
+
+## JCAlgTest static SHA-256 timing check — 2026-10-16
+
+The official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` simulator run measured the SHA-256 256-byte `doFinal` case at 0.05 ms/op, with a minimum of -0.02 ms/op. That result is below the client/simulator timer resolution and is not a useful performance number. The CHOUPI PC VPCD focused test returned `AA9000` for 50 SHA-256 calls in one APDU in 15.578 s (about 312 ms/call including VM dispatch and transport). Treat this as an execution-path check, not as RP2350 throughput or an algorithm known-answer test.
+
+The prior official client VPCD run disconnected at the SHA-256 `doFinal` case; its emulator log included 665 `PC_FS:WRITE` lines. These release-only traces are now gated behind `DEBUG`; the latest bounded VPCD pass had none and completed 11/11 checks. The official named-reader run still needs PC/SC restored: the current service returns `SCARD_E_NO_SERVICE`, and Java SmartcardIO lists no readers. Do not compare simulator timing with VPCD or Pico numbers, and do not infer SHA digest correctness from the `AA9000` status alone.

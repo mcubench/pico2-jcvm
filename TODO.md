@@ -255,7 +255,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `doFinal` and the 50-call static APDU (`TEST:SUMMARY pass=22 fail=0`). The
   full official client is not yet validated against this transport; the
   current PC/SC service is unavailable and the VPCD reader driver is not
-  installed.
+  installed. A later official `ALG_PERFORMANCE_STATIC` attempt disconnected at
+  SHA-256 `doFinal`; after gating release filesystem trace output, the focused
+  50-call SHA-256 VPCD APDU passed in 15.578 s. Simulator sub-millisecond SHA
+  timings are below its timer resolution. Repeat the official test by exact
+  reader name when PC/SC is available; physical throughput and digest KAT remain
+  unverified.
 - [ ] Add golden applet coverage for exceptions, transient arrays, statics,
   APDU exchange, install parameters, and persistence. In addition to VPCD
   session tests with fake VM callbacks, the installed JCAlgTest 1.8.2 applet
