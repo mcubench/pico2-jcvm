@@ -14,15 +14,16 @@
   serial capture `artifacts/logs/monitor-arm-jc-array-runtime-followup-20261016.log`
   repeatedly reports `CHOUPI:STATUS sw=9000` and `TEST:PASS choupi_runtime`.
   This verifies startup only; no physical JCAlgTest APDU was run.
-- Latest attempt to access the reader failed: `lsusb` reports
-  `unable to initialize libusb: -99`; `pcscd` service access is restricted and
-  `pcsc_scan` emits a repeated inactive-service error. No sudo command was
-  used. USB passthrough/PCSC must be restored before invoking the official
-  v1.8.2 `ALG_PERFORMANCE_STATIC` client against the Pico reader. The prior
-  accessible-device check had no `pcscd` ACL on the USB node.
+- Latest escalated check sees `Bus 001 Device 013: ID 2e8a:0009` and confirms
+  `pcscd.service` is active. `pcsc_scan -r` lists only `Virtual PCD 00 00/01`.
+  The USB node ACL grants `claude` read/write but not the `pcscd` service
+  account; therefore Java/PCSC cannot select the Pico. This cycle did not run
+  sudo, per repository instructions. The already installed access helper can
+  restore the daemon ACL: `sudo -n /usr/local/sbin/pico2-pcsc-reader`.
 - Implementation/evidence commit: `7817bd1`.
-- Next: when USB is visible, run a bounded `pcsc_scan -r`, select the exact Pico
-  reader name with `./tools/run-jcalgtest --reader-name ... -op
+- Next: after the authorized PC/SC helper grants the daemon access, run a
+  bounded `pcsc_scan -r`, select the exact Pico reader name with
+  `./tools/run-jcalgtest --reader-name ... -op
   ALG_PERFORMANCE_STATIC`, and inspect both APDU status and SHA-256 results.
   If it is not available, continue host-side review; do not claim physical
   performance validation.

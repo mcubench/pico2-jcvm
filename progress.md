@@ -3897,3 +3897,26 @@
   `artifacts/logs/host-vpcd-jc-array-logical-size-console-20261016.log`,
   `artifacts/logs/monitor-arm-jc-array-runtime-followup-20261016.log`, and
   `artifacts/logs/pcsc-arm-array-size-fix-20261016.log`.
+
+## 2026-10-16 — Recheck physical PC/SC access after replug
+
+- Step/experiment: `physical-reader-pcsc-acl-recheck`
+- Change: No source change; checked the replugged Pico USB enumeration, USB
+  node ACL, PC/SC daemon, and reader list using bounded diagnostics.
+- Validation: Escalated `lsusb -d 2e8a:0009` found
+  `Bus 001 Device 013: ID 2e8a:0009 Raspberry Pi Pico 2 CHOUPI CCID`;
+  `pcscd.service` is active. `pcsc_scan -r` completed with only
+  `Virtual PCD 00 00/01`. The USB node ACL grants `claude:rw-` but has no
+  `pcscd:rw-` entry. Picotool reports no BOOTSEL device and says this RP2350
+  currently has a USB serial connection.
+- Result: Board is connected in normal CHOUPI firmware mode, but official
+  Java SmartcardIO cannot reach it through PC/SC until the daemon receives USB
+  access. Repository instructions prohibit autonomous sudo, so the already
+  installed `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper was not run.
+  No physical JCAlgTest operation was run.
+- Decision: After the helper runs, confirm the exact Pico reader name and
+  execute official JCAlgTest v1.8.2 `ALG_PERFORMANCE_STATIC`; inspect status
+  words and SHA-256 measurement separately from the existing host timing.
+- Commit: recorded in the following commit-metadata entry.
+- Artifacts/logs: none; bounded outputs and ACL are recorded above and in
+  `.agent/HANDOFF.md`.
