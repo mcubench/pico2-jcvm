@@ -3603,3 +3603,13 @@
 - Decision: Continue with host-level dispatcher coverage, then truthful GET DATA and GP DELETE behavior.
 - Commit: `9c81875`.
 - Artifacts/logs: `artifacts/logs/gp-status-isd-test-20261016.log` (SHA-256 `a50088a03fd5229f7db8c495c1bb43f5f1809e36a1814e2a2f38336737e47e2b`); `artifacts/logs/build-arm-gp-status-isd-20261016.log` (SHA-256 `2f5b1775618ac41348bd3b76240afb0f4dd8b192db8a468983bdaebccca3b6dc`).
+
+## 2026-10-16 — Test GET STATUS response categories
+
+- Step/experiment: `gp-get-status-response-builder-20261016`
+- Change: Extracted first/all GET STATUS response construction into a platform-independent registry helper used by the CCID dispatcher. Added behavior checks for ISD qualifier ignoring, applet/package/module results, exact response bytes, malformed/missing AID search, empty registries, and unsupported P1 values.
+- Validation: `./tools/test-gp-registry` passed 39 checks (`TEST:SUMMARY pass=39 fail=0`). `./tools/build arm` passed both ARM smoke and CHOUPI firmware images without warnings. No RISC-V build, physical APDU, or flash was performed.
+- Result: All four first/all response categories now have focused helper-level tests, but there is still no end-to-end CCID dispatcher or GPPro APDU run. No hardware result was measured.
+- Decision: Continue with explicit session/continuation tests, then evaluate truthful GET DATA behavior and GP DELETE.
+- Commit: `5efa359`.
+- Artifacts/logs: `artifacts/logs/gp-status-query-test-20261016.log` (SHA-256 `845e03907fe4d605567c3ff8154a2555663715f5f4a5f4bf2444fd77d394ca40`); `artifacts/logs/build-arm-gp-status-query-20261016.log` (SHA-256 `70a48020d952ff42ecdb1a06b4baf920f07761391947c0f6814183ecd66afa6c`).

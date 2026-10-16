@@ -13,14 +13,18 @@
   to parse or filter that data. P2 first/next requests have per-session
   validation; the current single-package registry returns no further record
   after its first response.
-- `./tools/test-gp-registry` passed 26 checks and `./tools/build arm` passed
+- The platform-independent first/all response builder now exercises all four
+  P1 categories, exact response bytes, wildcard search, malformed search,
+  empty results, and unsupported categories. `./tools/test-gp-registry` passed
+  39 checks and `./tools/build arm` passed
   both ARM images. No hardware/APDU test was run; RISC-V remains intentionally
   out of scope, so the flash gate is not satisfied.
 - Exact ISD E3 bytes and capacity errors are covered in the focused test. The
   P1 `80` rule follows GP Card Specification 2.2.1 section 11.4.2.1.
-- Commits: `9c81875` (ISD correction), `7b55114` (implementation), `7970700` (remove stale hardcoded
-  package AID), and `3e0c753` (TODO/progress/handoff). The package AID is read
-  from the loaded CAP metadata.
+- Commits: `5efa359` (response behavior tests), `9c81875` (ISD correction),
+  `7b55114` (implementation), `7970700` (remove stale hardcoded package AID),
+  and `3e0c753` (TODO/progress/handoff). The package AID is read from the
+  loaded CAP metadata.
 - A bounded `timeout 6s pcsc_scan -r` attempt found
   `SCardEstablishContext: Service not available` and flooded stderr with
   `SCardReleaseContext: Invalid handle`; do not repeat until pcscd access is
