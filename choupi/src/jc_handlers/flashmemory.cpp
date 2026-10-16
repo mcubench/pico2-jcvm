@@ -199,6 +199,10 @@ bool FlashMemory_Handler::rollbackPersistentWriteTransaction() noexcept {
   return rollback_persistent_writes();
 }
 
+bool FlashMemory_Handler::persistentWriteTransactionActive() noexcept {
+  return persistent_write_transaction_active;
+}
+
 bool FlashMemory_Handler::erasePersistentTag(const fs::Tag &tag) noexcept {
   if (tag.len == 0 || tag.len > TAG_MAX_LENGTH) {
     return false;

@@ -123,6 +123,7 @@ public:
   static bool beginPersistentWriteTransaction() noexcept;
   static bool commitPersistentWriteTransaction() noexcept;
   static bool rollbackPersistentWriteTransaction() noexcept;
+  static bool persistentWriteTransactionActive() noexcept;
   /// Erase a persistent record while preserving transaction rollback data.
   static bool erasePersistentTag(const fs::Tag &tag) noexcept;
 

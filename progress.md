@@ -3725,3 +3725,13 @@
 
 - The ARM rebuild and two-pass host applet regression record above was committed as `b33c1eb`.
 
+## 2026-10-16 — Implement JCSystem transaction lifecycle
+
+- Step/experiment: `jcsystem-persistent-transaction-api`
+- Change: Connected `JCSystem.beginTransaction`, `commitTransaction`, `abortTransaction`, and `getTransactionDepth` to the persistent-write snapshot backend. Java wrappers map duplicate begin, commit/abort without an active transaction, and rollback failure to `TransactionException` reason codes. Fixed `Util.arrayCopy`, `arrayFill`, and `setShort` transaction ownership logic and validate arguments before opening a transaction.
+- Validation: `./tools/test-persistent-transaction` passed 24 checks, including inactive/active depth, nested begin rejection, commit, rollback, created-record removal, and write-failure recovery. `./tools/build arm` passed ROM-mask/API generation and both ARM images. Two fresh host VPCD emulator passes completed `TEST:SUMMARY pass=22 fail=0`, including JCSystem info, SHA-256, and support APDUs. No RISC-V build or hardware flash was performed.
+- Result: Host applet operations continue through the revised Java utility wrappers. Static 50-call SHA APDUs took 14.566 s and 13.442 s in the host emulator. No Java APDU directly exercised transaction exception reasons. Commit-capacity queries remain zero, and the snapshot journal is volatile RAM state, so power-loss transaction atomicity is not established.
+- Decision: Keep transaction capacity, Java exception-path coverage, and crash-safe persistent transactions open. Continue with a JCSystem transaction applet test and then implement capacity/recovery work; do not claim power-cycle or physical behavior from host results.
+- Commit: Java API submodule `b757a0a`; root implementation commit recorded in the following metadata entry.
+- Artifacts/logs: `artifacts/logs/build-arm-jcsystem-transaction-20261016.log` (SHA-256 `2db89bbbc9bf216f876dada393af6acf2317a111df6ce67ed9b1c67de020871b`); `artifacts/logs/persistent-transaction-jcsystem-20261016.log` (SHA-256 `733a7c09076c4891f673dbdee18924cbfed03360be452c1a7b93a1d19b60500f`); `artifacts/logs/host-vpcd-jcsystem-transaction-final-console-20261016.log` (SHA-256 `16b188c22ae97c371e0153531b13630773b07ce4e44d502dbcf1666a4424be13`); `artifacts/logs/host-vpcd-jcsystem-transaction-final-20261016.log` (SHA-256 `1513da10cebf0f7bda56abd759f042e40a3291b92b78e741bd8ba044940a8824`).
+

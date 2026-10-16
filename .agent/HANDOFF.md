@@ -1,22 +1,32 @@
 # Handoff
 
-## Repeat ARM and applet host validation — 2026-10-16
+## JCSystem transaction implementation — 2026-10-16
 
-- `./tools/build arm` passed the ARM smoke image and CHOUPI firmware image.
-- `./tools/test-pc-vpcd-applet --passes 2` passed 22 checks across two clean
-  emulator processes. Both JCSystem info and SHA-256 prepare, `doFinal`, and
-  static 50-call APDUs returned `9000`; the static APDU took 13.985 s and
-  13.487 s on the PC emulator, not Pico hardware.
-- A named Java SmartcardIO lookup for `Pico 2 CHOUPI CCID [JCAlgTest CCID]`
-  found no reader. `pcsc_scan -r` reported `SCardEstablishContext: Service
-  not available`; no APDU was sent. The wrapper already supports `--reader-name`
-  for direct selection and `--simulator` for jCardSim.
-- Evidence: `artifacts/logs/build-arm-validation-20261016.log`,
-  `artifacts/logs/host-vpcd-validation-20261016-console.log`, and
-  `artifacts/logs/host-vpcd-validation-20261016.log`.
-- Next: continue the unimplemented JCSystem transaction methods. Persistent
-  write snapshots already exist for install/delete, but Java Card transaction
-  lifecycle and catchable `TransactionException` mapping are not implemented.
+- The native begin/commit/abort methods now use the persistent-write snapshot
+  backend. `getTransactionDepth()` reflects the active state, and the Java API
+  wrappers turn native status codes into `TransactionException` reasons.
+  `Util.arrayCopy`, `arrayFill`, and `setShort` were corrected to begin/commit
+  when they own the transaction and validate arguments before beginning.
+- The Java Card API submodule change is committed as `b757a0a`.
+- `./tools/test-persistent-transaction` passed 24 checks for initial/inactive
+  state, nested begin, commit, abort, rollback, and filesystem failures.
+  `./tools/build arm` passed both images and generated the API CAP/ROM mask;
+  `./tools/test-pc-vpcd-applet --passes 2` passed 22/22 checks on fresh host
+  emulator processes. Its static SHA APDUs took 14.566 s and 13.442 s on the
+  PC emulator; these are not Pico throughput.
+- Transaction `getMaxCommitCapacity()` and `getUnusedCommitCapacity()` still
+  report zero. Snapshot rollback is in-memory and not power-loss safe; Java
+  exception reason behavior has not been exercised by an applet APDU.
+- The ARM build log includes 49 existing Rust OS warnings and two existing
+  packed-member C++ warnings; no new build errors occurred.
+- Logs: `artifacts/logs/build-arm-jcsystem-transaction-20261016.log`,
+  `artifacts/logs/persistent-transaction-jcsystem-20261016.log`,
+  `artifacts/logs/host-vpcd-jcsystem-transaction-final-console-20261016.log`,
+  and `artifacts/logs/host-vpcd-jcsystem-transaction-final-20261016.log`.
+- Next: add an applet-level transaction test that catches the Java reason
+  codes, then implement truthful commit-capacity accounting and power-loss
+  recovery. Physical hardware verification remains outstanding; PC/SC is
+  unavailable to Java SmartcardIO in this execution context.
 
 ## GP DELETE dispatch and lifecycle state — 2026-10-16
 

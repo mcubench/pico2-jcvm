@@ -22,6 +22,17 @@ out explicitly.
 
 ## Active: validate the applet process APDUs and client results
 
+JCSystem transaction calls now use the existing persistent-write snapshot
+backend: begin/commit/abort update transaction depth, and the Java wrappers
+throw `TransactionException` for nested begin, commit/abort outside a
+transaction, or rollback failure. `Util.arrayCopy`, `arrayFill`, and `setShort`
+now start and commit only when needed, and validate inputs before opening a
+transaction. The snapshot rollback test passes 24 checks; the ARM build and two
+fresh host VPCD applet runs pass. Remaining transaction gaps: commit-capacity
+queries still report zero, snapshots are volatile RAM state rather than a
+power-loss journal, and Java-level exception status paths need a dedicated
+applet regression.
+
 Latest repeatable host validation (2026-10-16): `./tools/build arm` passed
 both ARM images. The two-pass PC VPCD applet test passed 22/22 checks across
 two fresh emulator processes, including the JCSystem info APDU and SHA-256

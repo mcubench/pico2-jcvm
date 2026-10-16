@@ -42,17 +42,28 @@ int main() {
   using persistent_transaction_test::read;
   using persistent_transaction_test::seed;
 
+  expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
+         "depth_zero_initially");
+  expect(!FlashMemory_Handler::commitPersistentWriteTransaction(),
+         "commit_without_transaction_rejected");
+  expect(!FlashMemory_Handler::rollbackPersistentWriteTransaction(),
+         "abort_without_transaction_rejected");
+
   const auto existing = make_tag(1);
   const std::vector<uint8_t> original{0xaa, 0x55, 0x00};
   seed(existing.value, existing.len, original);
   expect(FlashMemory_Handler::beginPersistentWriteTransaction(),
          "begin_existing");
+  expect(FlashMemory_Handler::persistentWriteTransactionActive(),
+         "depth_active_after_begin");
   expect(!FlashMemory_Handler::beginPersistentWriteTransaction(),
          "reject_nested_transaction");
   FlashMemory_Handler::setPersistentField_Byte(existing, 0x42);
   FlashMemory_Handler::setPersistentField_Byte(existing, 0x43);
   expect(FlashMemory_Handler::rollbackPersistentWriteTransaction(),
          "rollback_existing_succeeds");
+  expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
+         "depth_zero_after_abort");
   expect(read(existing.value, existing.len) == original,
          "rollback_restores_original_value_once");
 
@@ -68,6 +79,8 @@ int main() {
   FlashMemory_Handler::setPersistentField_Byte(existing, 0x77);
   expect(FlashMemory_Handler::commitPersistentWriteTransaction(),
          "commit_succeeds");
+  expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
+         "depth_zero_after_commit");
   expect(read(existing.value, existing.len) == byte_record(0x77),
          "commit_keeps_new_value");
 

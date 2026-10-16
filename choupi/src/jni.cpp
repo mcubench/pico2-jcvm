@@ -669,24 +669,22 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAID() {
   return aid_object_ref;
 }
 
-void fr_gouv_ssi_nativeimpl_NativeImplementation_beginTransaction() {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_beginTransaction() {
+  return FlashMemory_Handler::beginPersistentWriteTransaction() ? 0 : 1;
 }
 
-void fr_gouv_ssi_nativeimpl_NativeImplementation_abortTransaction() {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_abortTransaction() {
+  if (!FlashMemory_Handler::persistentWriteTransactionActive()) return 1;
+  return FlashMemory_Handler::rollbackPersistentWriteTransaction() ? 0 : 2;
 }
 
-void fr_gouv_ssi_nativeimpl_NativeImplementation_commitTransaction() {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_commitTransaction() {
+  if (!FlashMemory_Handler::persistentWriteTransactionActive()) return 1;
+  return FlashMemory_Handler::commitPersistentWriteTransaction() ? 0 : 2;
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getTransactionDepth() {
-  // Transactions are not implemented, so a transaction is never active.
-  return 0;
+  return FlashMemory_Handler::persistentWriteTransactionActive() ? 1 : 0;
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getUnusedCommitCapacity() {
