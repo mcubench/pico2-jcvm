@@ -3853,3 +3853,13 @@
 ## Physical Pico availability recheck commit metadata
 
 - The physical-access diagnostic and continuity note above were committed as `79c1568`.
+
+## 2026-10-16 — Flash CHOUPI and check RP2350 runtime
+
+- Step/experiment: `physical-choupi-cycle-after-replug`
+- Change: No source change. Rechecked the replugged board, built both architectures, and flashed the ARM CHOUPI firmware through the repository cycle wrapper.
+- Validation: `./tools/build arm` passed and emitted `build/arm/pico2_choupi.uf2`; `./tools/build riscv` passed and emitted `build/riscv/pico2_jcvm_smoke.uf2`. `./tools/cycle choupi` flashed successfully (`FLASH:PASS`) and captured 18 seconds of hardware serial output. RP2350 BOOTSEL was confirmed before the cycle. A five-second output-capped PC/SC scan found only `Virtual PCD 00 00/01`.
+- Result: Physical runtime failed: repeated `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`, `TEST:SUMMARY pass=0 fail=1`; CCID state was `stage=2 rx_events=0 tasks=0`. The official physical `ALG_PERFORMANCE_STATIC` run was not possible because PC/SC did not expose the Pico reader. Hashes: ARM build `432c99587fbc2438704fea7d04af0cc2a6c3ef13bd3e35067ea333b467d58fc9`; RISC-V build `a5ccfe21a879f14e2f90b7e7211b06ab6d3abac7890d0a7f5c19fc1ebb43a5d2`; cycle `75a8e07f5e03db9aaf0d22192d097f2fb8bde72e6d33419b9735221abf5d50e1`.
+- Decision: Treat this hardware check as failed. Diagnose startup `6F00` and physical PC/SC registration before repeating the JCAlgTest performance operation.
+- Commit: recorded in the following commit-metadata entry.
+- Artifacts/logs: `artifacts/logs/physical-retry-build-arm-20261016.log`; `artifacts/logs/physical-retry-build-riscv-20261016.log`; `artifacts/logs/cycle-choupi-20261016T154057Z.log`.

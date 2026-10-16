@@ -1,5 +1,26 @@
 # Handoff
 
+## RP2350 physical CHOUPI retry — 2026-10-16
+
+- After replug, sysfs identified `/sys/bus/usb/devices/1-2` as RP2350
+  BOOTSEL (`2e8a:000f`). Picotool required device access outside the restricted
+  shell and confirmed RP2350, ARM, `boot type: bootsel`.
+- `./tools/build arm` and `./tools/build riscv` both passed. `./tools/cycle
+  choupi` rebuilt both, flashed `build/arm/pico2_choupi.uf2` successfully, and
+  captured the board's serial output.
+- Hardware runtime failed throughout the 18-second capture:
+  `CHOUPI:STATUS sw=6F00`, `TEST:FAIL choupi_runtime`,
+  `TEST:SUMMARY pass=0 fail=1`; CCID reported `stage=2`,
+  `rx_events=0`, `tasks=0`. The USB device returned to running mode
+  (`2e8a:0009`), but a bounded PC/SC scan exposed only `Virtual PCD 00 00/01`.
+- The official `ALG_PERFORMANCE_STATIC` client could not be run on the physical
+  card because PC/SC does not expose the Pico reader. No algorithm performance
+  result is available. Investigate the startup `6F00` and PC/SC registration
+  before claiming a hardware applet or JCAlgTest pass.
+- Evidence: `artifacts/logs/physical-retry-build-arm-20261016.log`,
+  `artifacts/logs/physical-retry-build-riscv-20261016.log`, and
+  `artifacts/logs/cycle-choupi-20261016T154057Z.log`.
+
 ## Real-hardware availability recheck — 2026-10-16
 
 - User asked for a real-hardware test. The guest could not access Pico USB: both
