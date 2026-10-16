@@ -1,5 +1,32 @@
 # Handoff
 
+## Physical applet restore failure — 2026-10-16
+
+- After the user replugged the Pico, the host-access context can see running
+  CHOUPI (`2e8a:0009`, bus 001 device 013). The restricted shell still has no
+  usbfs. `pcscd` is active but `pcsc_scan -r` lists only Virtual PCD 00 00/01;
+  the device node is `root:plugdev` mode 0660 while pcscd runs as `pcscd`. No
+  sudo command was run.
+- Direct, sequence-checked libusb CCID access is available as user `claude`.
+  Power on returned ATR `3B800181`. SELECT of JCAlgTest AID returned `6F00`;
+  GETVERSION returned `6D00` because SELECT failed.
+- Serial proves the AID/CAP metadata resolves (installed=1, package 63,
+  class 0x0094), then instance restore fails: `RESTORE_STORAGE status=1
+  length=0`, `RESTORE_READ_FAIL id=5 tag=03003F94FF`, and `SELECT restore=1`.
+  This is a missing persistent applet root record. The periodic
+  `TEST:PASS choupi_runtime` is only the firmware startup smoke test.
+- No static benchmark, applet APDU test, source change, build, flash, or sudo
+  operation was made. Full capture: `artifacts/logs/physical-ccid-restore-diagnostic-20261016.log`.
+- Evidence commit: `74fcf20`.
+- Next: because replugging changed the USB node, the user must rerun the already
+  installed permission helper with `sudo -n
+  /usr/local/sbin/pico2-pcsc-reader`; root `AGENTS.md` prohibits autonomous
+  sudo. Then confirm `pcsc_scan -r` lists the Pico, repair its stale CAP/applet
+  persistent state through the supported install/delete flow, and require
+  SELECT plus GETVERSION to pass before rerunning JCSystem and SHA-256 probes.
+  Afterward run the official v1.8.2 `ALG_PERFORMANCE_STATIC` client on the
+  named Pico reader; report unsupported algorithms as expected.
+
 ## Host MPU ptrace denial no longer hangs — 2026-10-16
 
 - The host VPCD regression's fresh-build timeout remains unresolved: the

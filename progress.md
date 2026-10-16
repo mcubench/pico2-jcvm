@@ -3968,3 +3968,26 @@
 - Commit: nested CHOUPI OS `f419dde`; root logs `d4ab895`.
 - Artifacts/logs: `artifacts/logs/build-pc-ptrace-failfast-20261016.log`;
   `artifacts/logs/host-jcre-ptrace-after-fix-20261016.15050` through `.15053`.
+## 2026-10-16 — Diagnose physical applet restore failure
+
+- Step/experiment: `physical-ccid-restore-diagnostic-20261016`
+- Change: No firmware change. Used direct, sequence-checked libusb CCID access
+  to distinguish USB, PC/SC, and Java Card applet availability after replug.
+- Validation: Host-access `lsusb` saw Pico 2 CHOUPI at bus 001 device 013;
+  `picotool info -a` confirmed running mode. `pcsc_scan -r` listed only
+  Virtual PCD 00 00/01 because pcscd lacks access to the `root:plugdev` USB
+  node. Direct interface 2 claim/release and CCID power on succeeded with ATR
+  `3B800181`. SELECT returned `6F00`; GETVERSION returned `6D00`.
+- Result: Serial shows the JCAlgTest AID and CAP metadata resolve
+  (`installed=1`, package 63, class `0094`), but instance restoration fails:
+  `RESTORE_STORAGE status=1 length=0`, `RESTORE_READ_FAIL id=5
+  tag=03003F94FF`, `SELECT restore=1`. The firmware startup smoke still reports
+  `TEST:PASS choupi_runtime`; this is not an applet pass. Static performance
+  results remain uncollected. Unsupported algorithms were not tested or
+  changed.
+- Decision: Fix/reinstall the broken physical applet persistent state through
+  the supported card-manager flow, then rerun SELECT, GETVERSION, JCSystem,
+  SHA-256, and official v1.8.2 `ALG_PERFORMANCE_STATIC`. No sudo, build, or
+  flash was used because the card-manager path is not exposed through PC/SC.
+- Commit: `74fcf20` (physical capture); documentation update follows.
+- Artifacts/logs: `artifacts/logs/physical-ccid-restore-diagnostic-20261016.log`.
