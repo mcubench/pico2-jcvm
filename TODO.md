@@ -34,10 +34,11 @@ found a bad working-tree map: JC305 `RandomData` token `0x0E` pointed to
 `MessageDigest$OneShot` (`0x1E`) instead of `RandomData` (`0x1C`). Restoring the
 correct mapping passes all 34 export correspondence checks. ARM and RISC-V
 builds passed during that fix, but the corrected image was not flashed. The
-diagnostic image flash succeeded; the board then disappeared from guest USB,
-and one bounded visibility check failed. Follow
-`reference/physical-token-access/SKILL.md`: do not retry USB until the Pico
-reappears. RISC-V is out of scope; perform ARM-only target build/flash work.
+diagnostic image flash succeeded; the board then disappeared from guest USB.
+The latest bounded check still returns `libusb: -99`, and PC/SC service access
+is unavailable. Follow `reference/physical-token-access/SKILL.md`: do not retry
+USB until guest enumeration works. RISC-V is out of scope; perform ARM-only
+target build/flash work.
 
 Next: when the board is visible, build ARM, flash `build/arm/pico2_choupi.uf2`,
 capture finite serial output, and run bounded raw SELECT/GETVERSION/JCSystem
@@ -45,6 +46,15 @@ probes. If GETVERSION and JCSystem pass, run SHA known-answer and named-reader
 `ALG_PERFORMANCE_STATIC`; unsupported algorithms remain expected results.
 Never infer applet APDU success from `TEST:PASS choupi_runtime` alone. The last
 physical SHA or static performance measurements remain unavailable.
+
+Latest continuation (2026-10-16): `./tools/build arm` and `./tools/build-pc`
+pass after correcting the persistent-field existence check (`fs_exists() == 0`
+means the record exists). Fresh JCSystem VPCD validation still times out before
+the VPCD socket connects: the normal Java `Starter` path remains in a slow
+bytecode loop. Skipping JCRE startup was tested and reverted because native
+storage initialization requires installer context and the shortcut crashes
+during CAP installation. Do not retry physical access until guest USB/libusb
+enumeration works. Do not treat the prior host VPCD pass as current validation.
 
 Prior ARM runtime result: `JC_Array::size()` was fixed to return logical
 element counts by dividing transient/nonpersistent backing bytes by element

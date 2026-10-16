@@ -4091,3 +4091,34 @@
   `artifacts/logs/monitor-arm-exception-trace-apdu-20261016.log`,
   `artifacts/logs/jc305-security-remap-export-compare-20261016.log`,
   `artifacts/logs/build-arm-jc305-remap-fix-20261016.log`.
+
+## 2026-10-16 — Continue ARM-only host and physical validation
+
+- Step/experiment: `physical-replug-host-vpcd-startup`
+- Change: Corrected the persistent-field existence check to match `fs_exists()`
+  semantics (`0` means the record exists). Refreshed TODO and handoff with the
+  latest hardware and host-test state. A VPCD startup shortcut was explored and
+  reverted after it bypassed installer context and failed during CAP install.
+- Validation: `./tools/build arm` and `./tools/build-pc` passed. The fresh
+  `./tools/test-jcsystem-transaction-applet --timeout 60` run failed before the
+  VPCD socket connected; the preceding runtime log shows the slow Java JCRE
+  startup loop (trace count 25,961). A 30-second attempt also timed out.
+  `./tools/doctor` passed host prerequisites, while `lsusb -d 2e8a:0009` and
+  `-000f` both failed to initialize libusb (`-99`); PC/SC reported an
+  unavailable service and its scan was interrupted. Physical flash and APDU
+  tests were intentionally skipped; RISC-V builds/tests were skipped per scope.
+- Result: ARM and PC builds are good, but current host applet VPCD validation is
+  blocked by slow JCRE startup and physical validation by VM USB/libusb access.
+  The status correction did not make the VPCD endpoint connect within 60 s.
+- Decision: Keep the normal JCRE path. Continue by diagnosing the startup loop
+  without busy waiting; retry hardware only after guest USB enumeration works.
+  Then run SELECT/GETVERSION/JCSystem, SHA-256, and named-reader static
+  performance validation in that order.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/build-arm-fs-exists-status-fix-20261016.log`
+  (SHA-256 `6926164d04d39df5cb0416d2dbdca20ce2fe2ae939def951572b226db75efcf4`),
+  `artifacts/logs/build-pc-fs-exists-status-fix-20261016.log` (SHA-256
+  `889020cbcb25d04f252149bc463f80ebfbc6d1e6c4c287db5c31752a1858f354`),
+  `artifacts/logs/jcsystem-transaction-fs-exists-status-fix-20261016.log`
+  (SHA-256 `18c03f329b3f87c3eb0c898c7a8744607a29210efa7d365dd97a3cbc98b90fe4`),
+  `artifacts/logs/jcsystem-transaction-restored-startup-20261016.log`.

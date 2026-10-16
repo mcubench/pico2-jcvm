@@ -1,5 +1,35 @@
 # Handoff
 
+## Latest continuation — 2026-10-16
+
+- User replugged the Pico, so the bounded physical-access checks were rerun.
+  `./tools/doctor` completed successfully for host prerequisites, but both RP2350
+  `lsusb` checks reported `unable to initialize libusb: -99`. PC/SC reported
+  that its service was unavailable and emitted repeated invalid-context errors;
+  the scan was interrupted immediately. No physical reader, BOOTSEL, or flash
+  result was obtained. Do not repeat USB checks until guest USB passthrough and
+  libusb work.
+- `./tools/build arm` passed (`build/arm/pico2_choupi.uf2`), and
+  `./tools/build-pc` passed. RISC-V remains out of scope.
+- A fresh JCSystem VPCD attempt with a 60-second connection bound failed before
+  the socket connected. The emulator log reaches the normal Java JCRE startup;
+  its last recorded interpreter trace is a repeated bytecode loop around count
+  25,961. Corrected the working-tree `fs_exists()` status check for persistent
+  fields (`0` means present), but that does not resolve the JCRE startup delay.
+- Tested skipping Java JCRE startup in VPCD mode, then reverted it: direct
+  native storage initialization runs under the wrong context, and native CAP
+  installation then throws. Preserve the normal JCRE startup path until a
+  supported faster initialization is designed.
+- Fresh evidence: `artifacts/logs/build-arm-fs-exists-status-fix-20261016.log`,
+  `artifacts/logs/build-pc-fs-exists-status-fix-20261016.log`,
+  `artifacts/logs/jcsystem-transaction-fs-exists-status-fix-20261016.log`,
+  `artifacts/logs/jcsystem-transaction-restored-startup-20261016.log`.
+- Next: make the host VPCD JCRE startup reliably complete without a busy wait;
+  keep time bounds to avoid VM saturation. Once guest USB enumerates the Pico,
+  build ARM, flash through the wrapper, capture finite serial output, then run
+  SELECT/GETVERSION/JCSystem before SHA-256 and named-reader
+  `ALG_PERFORMANCE_STATIC`. Do not run RISC-V builds/tests.
+
 ## JC305 delayed-init security call trace — 2026-10-16
 
 - The previous physical trace shows `AlgSupportTest` is stored after its three
