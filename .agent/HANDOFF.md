@@ -1,5 +1,28 @@
 # Handoff
 
+## Official JCAlgTest reader selection launcher — 2026-10-16
+
+- Added `tools/run-jcalgtest` for JCAlgTest 1.8.2. Use
+  `tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI CCID [JCAlgTest CCID]'`
+  (plus normal client options) to resolve an exact Java SmartcardIO PC/SC
+  reader name and feed its current index to the official client. The selected
+  name becomes report `-cardname` unless overridden. Use `--simulator` to
+  select bundled jCardSim explicitly.
+- The simulator route ran the official client with
+  `-op ALG_SUPPORT_EXTENDED -fresh` and returned 0, producing a 4,595-line CSV.
+  Its log contains jCardSim `NotImplementedException`/operation failures for
+  algorithms that simulator does not implement; this validates launcher mode
+  selection, not a clean CHOUPI algorithm comparison.
+- The exact-name helper compiled and failed closed with exit 4 for an unknown
+  name. Java SmartcardIO listed no readers in this execution context, so named
+  PC/SC selection was not exercised against a real or virtual reader. No token
+  access, APDU, or flash occurred.
+- Evidence: `artifacts/logs/jcalgtest-reader-selector-simulator-20261016.log`
+  (SHA-256 `c68e2bc083e95af186c7032c958969ab6ba9e034af6d439fdbbb279b51aafd25`)
+  and `artifacts/results/jcalgtest-reader-selector-simulator-20261016/`.
+- Next: once Java SmartcardIO can see `Virtual PCD 00 00` or the Pico CCID
+  reader, run the launcher with that exact name and the required operation.
+
 ## Parameterized JCAlgTest install regression — 2026-10-16
 
 - Extended `tools/tests/pc_vpcd_applet_test.py` with `--install-params`. When

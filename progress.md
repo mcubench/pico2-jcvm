@@ -3533,3 +3533,13 @@
 - Decision: Keep this VM-entry assertion in the PC regression. Continue lifecycle golden coverage, GP card-manager behavior, and remaining AC checks.
 - Commit: `822b67e`.
 - Artifacts/logs: `artifacts/logs/build-pc-install-args-assert-20261016.log`, `artifacts/logs/build-arm-install-args-assert-20261016.log`, `artifacts/logs/vpcd-install-params-vmcheck-test-20261016.log`, and `artifacts/logs/vpcd-install-params-vmcheck-20261016.log`.
+
+## 2026-10-16 — Select JCAlgTest target by PC/SC reader name
+
+- Step/experiment: `jcalgtest-reader-selector-20261016`
+- Change: Added `tools/run-jcalgtest` with explicit `--reader-name NAME` and `--simulator` modes. A Java SmartcardIO helper resolves exact PC/SC names to the same one-based list index used by JCAlgTest 1.8.2. In reader mode the chosen name fills `-cardname` unless overridden; simulator mode invokes the official `-simulator` option. The wrapper creates a supplied `-outpath` directory and uses a finite timeout.
+- Validation: `bash -n tools/run-jcalgtest`, wrapper help, and Java compilation passed. An unknown exact reader name failed closed with exit 4 and listed the Java-visible readers (none). The official `ALG_SUPPORT_EXTENDED` client completed in simulator mode with exit 0, generated a 4,595-line CSV, and logged the expected jCardSim `NotImplementedException`/algorithm failures. Named PC/SC selection was not exercised because Java SmartcardIO currently sees no readers; no token, APDU, or firmware was accessed.
+- Result: Both official-client target modes are now directly selectable from the launcher. Simulator execution is confirmed; the real/virtual PC/SC path remains pending host reader visibility. This run validates selection and launch only, not full algorithm correctness.
+- Decision: Use `tools/run-jcalgtest --reader-name '<exact pcsc_scan reader name>' -op ALG_PERFORMANCE_STATIC -fresh -outpath <directory>` for a real/virtual card, or `tools/run-jcalgtest --simulator ...` for bundled jCardSim. Retry once Java SmartcardIO sees the target reader.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/jcalgtest-reader-selector-simulator-20261016.log` (SHA-256 `c68e2bc083e95af186c7032c958969ab6ba9e034af6d439fdbbb279b51aafd25`); `artifacts/results/jcalgtest-reader-selector-simulator-20261016/`.

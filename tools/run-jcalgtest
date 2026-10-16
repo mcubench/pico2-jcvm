@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  tools/run-jcalgtest --reader-name NAME [JCAlgTest 1.8.2 options...]
+  tools/run-jcalgtest --simulator [JCAlgTest 1.8.2 options...]
+
+--reader-name selects an exact PC/SC reader name and supplies its current
+one-based index to JCAlgTest. The selected name is also used as -cardname
+unless -cardname is supplied explicitly.
+--simulator uses the client's bundled jCardSim simulator (-simulator).
+
+Pass options such as -op, -fresh and -outpath after the mode selector.
+EOF
+}
+
+mode=""
+reader_name=""
+client_args=()
+while (($#)); do
+  case "$1" in
+    --reader-name)
+      [[ -z "$mode" && $# -ge 2 ]] || die "--reader-name requires one name and cannot be combined with another mode"
+      mode=reader
+      reader_name="$2"
+      shift 2
+      ;;
+    --simulator)
+      [[ -z "$mode" ]] || die "choose either --reader-name or --simulator"
+      mode=simulator
+      shift
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      client_args+=("$@")
+      break
+      ;;
+    *)
+      client_args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+[[ -n "$mode" ]] || { usage >&2; die "choose --reader-name or --simulator"; }
+require_command timeout
+jar="${repo_root}/build/algtest-client-1.8.2/AlgTestJClient.jar"
+[[ -f "$jar" ]] || die "JCAlgTest client is missing: $jar"
+timeout_seconds="${JCALGTEST_TIMEOUT_SECONDS:-900}"
+[[ "$timeout_seconds" =~ ^[1-9][0-9]*$ ]] || die "JCALGTEST_TIMEOUT_SECONDS must be a positive integer"
+
+has_cardname=false
+output_path=""
+for ((i = 0; i < ${#client_args[@]}; i++)); do
+  if [[ "${client_args[$i]}" == "-cardname" ]]; then
+    has_cardname=true
+  elif [[ "${client_args[$i]}" == "-outpath" && $((i + 1)) -lt ${#client_args[@]} ]]; then
+    output_path="${client_args[$((i + 1))]}"
+  fi
+done
+if [[ -n "$output_path" ]]; then
+  mkdir -p -- "$output_path"
+fi
+
+if [[ "$mode" == simulator ]]; then
+  if [[ "$has_cardname" == false ]]; then
+    client_args+=("-cardname" "CHOUPI_JCARDSIM")
+  fi
+  exec timeout --signal=TERM --kill-after=5s "${timeout_seconds}s" \
+    "${repo_root}/tools/env" java -jar "$jar" -simulator "${client_args[@]}"
+fi
+
+index_build="${repo_root}/build/jcalgtest-reader-index"
+mkdir -p "$index_build"
+"${repo_root}/tools/env" javac -d "$index_build" \
+  "${repo_root}/tools/JCAlgTestReaderIndex.java"
+reader_index="$("${repo_root}/tools/env" java -cp "$index_build" JCAlgTestReaderIndex "$reader_name")"
+if [[ "$has_cardname" == false ]]; then
+  client_args+=("-cardname" "$reader_name")
+fi
+
+printf 'JCAlgTest target reader: %s (index %s)\n' "$reader_name" "$reader_index" >&2
+printf '%s\n%s\n' "$reader_index" "${reader_name}" | \
+  timeout --signal=TERM --kill-after=5s "${timeout_seconds}s" \
+    "${repo_root}/tools/env" java -jar "$jar" "${client_args[@]}"
