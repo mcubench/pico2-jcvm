@@ -640,7 +640,7 @@ auto JC_Instance::getFields() const -> decltype(fields) {
     // Persistent fields with no record have never been assigned. Match the
     // reference getter's missing-tag behavior instead of asking the type
     // reader to turn the expected absence into an IOException.
-    const bool field_exists = fs_exists(field_tag.value, field_tag.len) == 0;
+    const bool field_exists = fs_exists(field_tag.value, field_tag.len) != 0;
     if (trace) {
       std::printf("CHOUPI:FIELD_LOAD exists:done package=%u class=%u index=%u exists=%u\r\n",
                   static_cast<unsigned>(this->packageID),
