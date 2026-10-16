@@ -3583,3 +3583,13 @@
 - Decision: Keep this implementation and add host-level APDU coverage before treating card-manager query behavior as verified. Continue with truthful GET DATA behavior and transaction-safe DELETE.
 - Commit: `7b55114`.
 - Artifacts/logs: `artifacts/logs/gp-status-search-test-20261016.log` (SHA-256 `eeb0993016685ca0564b2bbfeb9ddf1587f47c71a4595aa1e608126870a341ab`); `artifacts/logs/build-arm-gp-status-search-20261016.log` (SHA-256 `9334763cc20ce770d8a29a75435dfca4da870bb3c3153068afec2617b55b08e7`).
+
+## 2026-10-16 — Remove stale hardcoded package AID
+
+- Step/experiment: `gp-get-status-package-aid-cleanup-20261016`
+- Change: Removed the old compile-time JCAlgTest package AID constant. GET STATUS now reports the package AID from the loaded CAP metadata.
+- Validation: The preceding `./tools/build arm` passed both ARM images after this source change; `git diff --cached --check` passed for the scoped cleanup. No hardware check was performed.
+- Result: No remaining GET STATUS package-AID constant can disagree with the currently loaded CAP metadata.
+- Decision: Keep metadata-driven package reporting; continue with APDU-level coverage.
+- Commit: `7970700`.
+- Artifacts/logs: Same ARM build log as the preceding step: `artifacts/logs/build-arm-gp-status-search-20261016.log` (SHA-256 `9334763cc20ce770d8a29a75435dfca4da870bb3c3153068afec2617b55b08e7`).

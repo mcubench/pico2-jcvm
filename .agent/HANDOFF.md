@@ -13,6 +13,13 @@
 - `./tools/test-gp-registry` passed 21 checks and `./tools/build arm` passed
   both ARM images. No hardware/APDU test was run; RISC-V remains intentionally
   out of scope, so the flash gate is not satisfied.
+- Commits: `7b55114` (implementation), `7970700` (remove stale hardcoded
+  package AID), and `3e0c753` (TODO/progress/handoff). The package AID is read
+  from the loaded CAP metadata.
+- A bounded `timeout 6s pcsc_scan -r` attempt found
+  `SCardEstablishContext: Service not available` and flooded stderr with
+  `SCardReleaseContext: Invalid handle`; do not repeat until pcscd access is
+  restored. No card command or flash was sent.
 - Next: add host-level APDU coverage for GET STATUS query/error paths, then
   investigate truthful GET DATA responses and transactional GP DELETE.
 
