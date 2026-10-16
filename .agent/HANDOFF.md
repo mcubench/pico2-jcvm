@@ -8,12 +8,17 @@
   metadata; application entries identify the load-file AID with `C4`.
 - Search parsing requires a leading `4F` AID qualifier, supports wildcard
   `4F00`, exact AIDs, RID-prefix matching, and skips later well-formed
-  qualifiers. P2 first/next requests have per-session validation; the current
-  single-package registry returns no further record after its first response.
-- `./tools/test-gp-registry` passed 21 checks and `./tools/build arm` passed
+  qualifiers for P1 `40`, `20`, and `10`. Per GlobalPlatform 2.2.1, P1 `80`
+  returns only the ISD and ignores the search qualifier; it no longer attempts
+  to parse or filter that data. P2 first/next requests have per-session
+  validation; the current single-package registry returns no further record
+  after its first response.
+- `./tools/test-gp-registry` passed 26 checks and `./tools/build arm` passed
   both ARM images. No hardware/APDU test was run; RISC-V remains intentionally
   out of scope, so the flash gate is not satisfied.
-- Commits: `7b55114` (implementation), `7970700` (remove stale hardcoded
+- Exact ISD E3 bytes and capacity errors are covered in the focused test. The
+  P1 `80` rule follows GP Card Specification 2.2.1 section 11.4.2.1.
+- Commits: `9c81875` (ISD correction), `7b55114` (implementation), `7970700` (remove stale hardcoded
   package AID), and `3e0c753` (TODO/progress/handoff). The package AID is read
   from the loaded CAP metadata.
 - A bounded `timeout 6s pcsc_scan -r` attempt found

@@ -3593,3 +3593,13 @@
 - Decision: Keep metadata-driven package reporting; continue with APDU-level coverage.
 - Commit: `7970700`.
 - Artifacts/logs: Same ARM build log as the preceding step: `artifacts/logs/build-arm-gp-status-search-20261016.log` (SHA-256 `9334763cc20ce770d8a29a75435dfca4da870bb3c3153068afec2617b55b08e7`).
+
+## 2026-10-16 — Honor ISD GET STATUS search semantics
+
+- Step/experiment: `gp-get-status-isd-search-20261016`
+- Change: Corrected GET STATUS `P1=80` to return only the ISD and ignore the AID search data, as required by GlobalPlatform Card Specification 2.2.1 section 11.4.2.1. Extracted the bounded ISD E3 encoder and added exact-byte and capacity checks.
+- Validation: `./tools/test-gp-registry` passed 26 checks (`TEST:SUMMARY pass=26 fail=0`). `./tools/build arm` passed both ARM images with no warnings. No RISC-V build, physical APDU, or flash was performed.
+- Result: ISD GET STATUS no longer rejects malformed or nonmatching AID qualifiers; the P1=80 behavior is now distinct from application/package search. No end-to-end card-manager measurement was made.
+- Decision: Continue with host-level dispatcher coverage, then truthful GET DATA and GP DELETE behavior.
+- Commit: `9c81875`.
+- Artifacts/logs: `artifacts/logs/gp-status-isd-test-20261016.log` (SHA-256 `a50088a03fd5229f7db8c495c1bb43f5f1809e36a1814e2a2f38336737e47e2b`); `artifacts/logs/build-arm-gp-status-isd-20261016.log` (SHA-256 `2f5b1775618ac41348bd3b76240afb0f4dd8b192db8a468983bdaebccca3b6dc`).
