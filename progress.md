@@ -3521,5 +3521,5 @@
 - Validation: `./tools/build arm` passed (`BUILD:PASS target=choupi`). A bounded `timeout --signal=TERM --kill-after=1s 3s pcsc_scan -r` ended with status 124 and `SCardEstablishContext: Service not available`; `lsusb -d 2e8a:0009` could not initialize libusb (`-99`). No fresh official-client or hardware test could run. The prior official static attempt logged setup and five SHA-256 measurement responses (`AA 9000`) before `SCARD_W_REMOVED_CARD`; its 50-call APDU did not complete. The focused PC VPCD test had already passed all 11 checks, including the complete 50-call static APDU (`AA 9000`, 17.389 s host wall time).
 - Result: The implementation passes its focused complete static SHA-256 APDU, while the official-client end-to-end run and real-board measurement remain incomplete. The whole-APDU host timing is not a hardware throughput result; digest bytes have not been checked against a known answer.
 - Decision: Once PC/SC and USB access are restored, select the real Pico by its displayed reader name/index and rerun `ALG_PERFORMANCE_STATIC`; add a digest known-answer probe separately.
-- Commit: pending.
+- Commit: `836be14`.
 - Artifacts/logs: `artifacts/logs/build-arm-jcalgtest-static-reader-20261016.log`, `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`, `artifacts/results/jcalgtest-static-vpcd-20261016/ALGTEST_log_1792133041312.log`.
