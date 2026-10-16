@@ -1,5 +1,23 @@
 # Handoff
 
+## Repeat ARM and applet host validation — 2026-10-16
+
+- `./tools/build arm` passed the ARM smoke image and CHOUPI firmware image.
+- `./tools/test-pc-vpcd-applet --passes 2` passed 22 checks across two clean
+  emulator processes. Both JCSystem info and SHA-256 prepare, `doFinal`, and
+  static 50-call APDUs returned `9000`; the static APDU took 13.985 s and
+  13.487 s on the PC emulator, not Pico hardware.
+- A named Java SmartcardIO lookup for `Pico 2 CHOUPI CCID [JCAlgTest CCID]`
+  found no reader. `pcsc_scan -r` reported `SCardEstablishContext: Service
+  not available`; no APDU was sent. The wrapper already supports `--reader-name`
+  for direct selection and `--simulator` for jCardSim.
+- Evidence: `artifacts/logs/build-arm-validation-20261016.log`,
+  `artifacts/logs/host-vpcd-validation-20261016-console.log`, and
+  `artifacts/logs/host-vpcd-validation-20261016.log`.
+- Next: continue the unimplemented JCSystem transaction methods. Persistent
+  write snapshots already exist for install/delete, but Java Card transaction
+  lifecycle and catchable `TransactionException` mapping are not implemented.
+
 ## GP DELETE dispatch and lifecycle state — 2026-10-16
 
 - Added authenticated GlobalPlatform `INS=E4` dispatch using the strict

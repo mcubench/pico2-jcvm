@@ -22,6 +22,15 @@ out explicitly.
 
 ## Active: validate the applet process APDUs and client results
 
+Latest repeatable host validation (2026-10-16): `./tools/build arm` passed
+both ARM images. The two-pass PC VPCD applet test passed 22/22 checks across
+two fresh emulator processes, including the JCSystem info APDU and SHA-256
+prepare, `doFinal`, and 50-call static operation. Static operation time was
+13.985 s and 13.487 s per APDU on the PC emulator; these values do not measure
+Pico throughput. The physical reader selector still cannot run because
+Java SmartcardIO sees no PC/SC readers in this environment. See the matching
+2026-10-16 validation records in `progress.md`.
+
 Current environment note (2026-10-15): the latest `./tools/cycle choupi`
 rebuilt ARM, RISC-V, and CHOUPI successfully, flashed the ARM firmware, and
 passed the finite 18-second runtime capture with 18 repeated

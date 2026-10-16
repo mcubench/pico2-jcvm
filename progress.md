@@ -3711,3 +3711,13 @@
 ## GP DELETE lifecycle commit metadata
 
 - The authenticated dispatcher, persistent state updates, strict parser integration, and ARM/PC/VPCD evidence recorded above are committed as `4f66267`.
+## 2026-10-16 — Repeat ARM and applet host validation
+
+- Step/experiment: `arm-vpcd-regression-repeat`
+- Change: No firmware source changed; reran the ARM wrapper build and the current JCAlgTest 1.8.2 host VPCD integration to establish the checkout's current baseline. Updated TODO and session handoff with this evidence and its limits.
+- Validation: `./tools/build arm` passed for `pico2_jcvm_smoke.uf2` and `pico2_choupi.uf2`. `./tools/test-pc-vpcd-applet --passes 2` passed `TEST:SUMMARY pass=22 fail=0`; SELECT, GETVERSION, JCSystem info, SHA-256 prepare/doFinal/static calls and AES/RSA/random/CRC support probes passed across two fresh emulator processes.
+- Result: The 50-call static SHA APDU took 13.985 s and 13.487 s in the host emulator. This is not physical Pico performance or a digest known-answer check. The named PC/SC reader remains unavailable to Java SmartcardIO; no APDU was sent to hardware.
+- Decision: Treat the ARM build and host applet path as passing, while keeping physical verification, digest correctness, and JCSystem transaction behavior open. Continue with transaction lifecycle and Java exception mapping.
+- Commit: recorded in the following commit-metadata entry.
+- Artifacts/logs: `artifacts/logs/build-arm-validation-20261016.log` (SHA-256 `0b8cfc50e821a2a925e2c7dcb722257e8f30db826058079987a598df1655dd5e`); `artifacts/logs/host-vpcd-validation-20261016-console.log` (SHA-256 `6842877564d40fd7341a35af0dd86c58b1ce8feb6e64c246f80a1b61e4233a8a`); `artifacts/logs/host-vpcd-validation-20261016.log` (SHA-256 `7619bf6bb9290afb673518ef3c9aabebace219714db4a92fa7d56182af50acbf`).
+
