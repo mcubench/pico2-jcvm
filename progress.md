@@ -3571,5 +3571,5 @@
 - Validation: `./tools/test-gp-registry` passed all 7 checks. `./tools/build arm` passed both ARM smoke and CHOUPI firmware images. No RISC-V build, flash, or hardware APDU was performed.
 - Result: GET STATUS no longer labels the JCAlgTest package AID as an associated Security Domain. The official GlobalPlatform Card Specification 2.2.1 registry data table defines `C4` as the application's Executable Load File AID and `CC` as the associated Security Domain AID. End-to-end GPPro/physical verification is still unavailable; GET STATUS search/session semantics and DELETE/GET DATA remain incomplete.
 - Decision: Keep C4 and continue with GET STATUS query/continuation behavior before implementing more card data.
-- Commit: pending.
+- Commit: `afb6c5ed5833110ca7d6e1145b96d8cbdc6083c5`.
 - Artifacts/logs: `artifacts/logs/gp-registry-load-file-aid-test-20261016.log` (SHA-256 `554c2ec5e9d8b1ce795036b9a84a69a1178b3ad7fa8795dd920d0b59c4807a41`); `artifacts/logs/build-arm-gp-registry-load-file-aid-20261016.log` (SHA-256 `3f4a64b2a7335709e930163ad83167889a2425e8c41afc97b1887d2bb2ed63db`).
