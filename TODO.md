@@ -129,10 +129,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   helper now resolves the reserved root, verifies package/class identity, and
   eagerly decodes fields. CCID SELECT invokes it when version-2 metadata
   supplies the class index and retains the resulting context for the card
-  session. A fresh host VPCD applet integration pass now restores the applet
-  and completes SELECT, GETVERSION, JCSystem info, supported-algorithm probes,
-  SHA-256 doFinal, and repeated static SHA-256 calls. Power-cycle restoration
-  on the RP2350 remains unverified.
+  session. Two fresh host VPCD emulator processes now restore the same saved
+  applet and complete SELECT, GETVERSION, JCSystem info, supported-algorithm
+  probes, SHA-256 doFinal, and repeated static SHA-256 calls. Power-cycle
+  restoration on the RP2350 remains unverified.
 - [ ] Dispatch SELECT, `select()`, `deselect()`, and `process()` through the
   interpreter for the selected applet. Ordinary `invokevirtual` now reads the
   receiver's concrete class and resolves its override through that class's CAP
@@ -222,10 +222,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   applet SELECT/DESELECT, and APDU dispatch through the VM lifecycle bridge.
   The PC target builds, the frame codec passes 14 checks, and a new session
   state-machine test passes 14 checks. The bounded release VPCD applet path
-  passes ATR, SELECT, JCSystem info, and supported-algorithm APDUs across two
-  fresh emulator runs (`TEST:SUMMARY pass=10 fail=0`). The full official client
-  is not yet validated against this transport; the current PC/SC service is
-  unavailable and the VPCD reader driver is not installed.
+  passes 11 checks on each of two fresh emulator processes, including SHA-256
+  `doFinal` and the 50-call static APDU (`TEST:SUMMARY pass=22 fail=0`). The
+  full official client is not yet validated against this transport; the
+  current PC/SC service is unavailable and the VPCD reader driver is not
+  installed.
 - [ ] Add golden applet coverage for exceptions, transient arrays, statics,
   APDU exchange, install parameters, and persistence. In addition to VPCD
   session tests with fake VM callbacks, the installed JCAlgTest 1.8.2 applet

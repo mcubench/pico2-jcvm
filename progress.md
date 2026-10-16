@@ -3643,3 +3643,13 @@
 - Decision: Keep the applet runtime changes and extend correctness coverage with a digest known-answer route; separately resolve physical PC/SC visibility and verify RP2350 persistence after power cycle. Do not flash while the repository’s two-architecture gate is unmet under the ARM-only target scope.
 - Commit: pending metadata commit.
 - Artifacts/logs: `artifacts/logs/pc-vpcd-continuation-audit-run-20261016.log` (SHA-256 `c25786b3fffccb050e5c71e2366d1971779656f077b418ca7fc7bf73be001c25`); `artifacts/logs/pc-vpcd-continuation-audit-20261016.log` (SHA-256 `2fb37f0f9daf3ac3952ce635e2db9856fc4df6b30f8bf37527e0256c1cc391a7`); `artifacts/logs/build-arm-continuation-audit-20261016.log` (SHA-256 `56a55b6c1a15d4b1442d1ca4a734d69ebc4b66fdb3a3de3acd9b51305e825fe7`).
+
+## 2026-10-16 — Verify applet restoration across fresh host VPCD processes
+
+- Step/experiment: `jcalgtest-host-vpcd-persistence-two-pass-20261016`
+- Change: Repeated the JCAlgTest host VPCD applet regression for two fresh emulator processes using the same persisted applet image. Updated TODO and handoff to distinguish this host restart evidence from the still-unverified RP2350 power cycle.
+- Validation: `timeout --signal=TERM --kill-after=5s 300s ./tools/test-pc-vpcd-applet --passes 2 --connect-timeout 30 --apdu-timeout 60 --log artifacts/logs/pc-vpcd-persistence-pass-20261016.log` passed (`TEST:SUMMARY pass=22 fail=0`). Both processes completed ATR, SELECT, GETVERSION `1.8.2_jc305`, JCSystem info, support probes, SHA-256 prepare/doFinal, the 50-call static APDU, and AES/RSA/random/CRC16 probes. Per-pass total times were 66.980 s and 68.283 s; static SHA APDU times were 15.510 s and 15.599 s. Loopback socket access was required. No RISC-V build, physical power cycle, physical APDU, or flash was performed.
+- Result: Host VM restart and applet restore are reproducible for these applet interactions. The same test does not prove the Pico flash snapshot or applet state survives a real board power cycle. Timings are PC-emulator measurements and digest bytes were not checked.
+- Decision: Keep the host persistence result as integration evidence and continue with a SHA-256 known-answer route plus board persistence once device access is restored.
+- Commit: pending metadata commit.
+- Artifacts/logs: `artifacts/logs/pc-vpcd-persistence-run-20261016.log` (SHA-256 `9c1640df4653f9ebfbee683cd546a3b512d447d4c4b54ccfbf9cdaff44196188`); `artifacts/logs/pc-vpcd-persistence-pass-20261016.log` (SHA-256 `18aff547718ebe03b4760a8bef346151ab4470eae1e73b671b2fda49284dac5c`).
