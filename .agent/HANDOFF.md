@@ -1,5 +1,27 @@
 # Handoff
 
+## JCAlgTest static SHA-256 target access — 2026-10-16
+
+- `tools/run-jcalgtest` already supports direct target selection for JCAlgTest
+  1.8.2: use `--reader-name 'Pico 2 CHOUPI CCID [JCAlgTest CCID]'` for the
+  named physical reader, or `--simulator` for bundled jCardSim. The reader
+  helper matches the exact Java SmartcardIO name and passes its current
+  one-based index to the official client.
+- Retried the physical command with `-op ALG_PERFORMANCE_STATIC`; it exited 4
+  because Java SmartcardIO listed no PC/SC readers. A bounded `pcsc_scan -r`
+  showed `SCardEstablishContext: Service not available` and emitted an
+  invalid-handle flood. Do not retry until PC/SC is restored; no APDU was sent.
+- The archived jCardSim static run completed its SHA-256 section (250
+  iterations of 256-byte input) but reported 0.05 ms/op average and -0.02
+  ms/op minimum from raw samples of 14.20, 0.20, -0.80, 0.20, and -0.80 ms.
+  This is timer-resolution noise. A separate CHOUPI PC-emulator test returned
+  `AA 9000` for its 50-call SHA-256 APDU in 17.389 s, which is not Pico
+  throughput. The official applet only reports operation status, not digest
+  bytes; no independent digest known-answer result is available here.
+- No firmware change is justified by these measurements. After Java sees the
+  real reader, rerun static mode with the command above and verify digest bytes
+  independently before evaluating SHA-256 correctness/performance.
+
 ## GET STATUS category and AID-search behavior — 2026-10-16
 
 - Implemented the four supported GET STATUS categories: ISD (`P1=80`),

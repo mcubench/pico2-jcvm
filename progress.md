@@ -3623,3 +3623,13 @@
 - Decision: Keep this session validation and continue host APDU coverage, then truthful GET DATA and transactional GP DELETE.
 - Commit: `b9810e7`.
 - Artifacts/logs: `artifacts/logs/gp-status-session-test-20261016.log` (SHA-256 `32b6f462fe2bb2326002c121bee12e23861c3f7d504ab118c06efa91cd5e72ab`); `artifacts/logs/build-arm-gp-status-session-20261016.log` (SHA-256 `827b202dade3226dd02f80824a128a57638cdbc2f36fcce39a38f53d9f8bfc41`).
+
+## 2026-10-16 — Evaluate static SHA-256 benchmark target availability
+
+- Step/experiment: `jcalgtest-static-target-evaluation-20261016`
+- Change: Retried JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` against the exact Pico CCID reader name through `tools/run-jcalgtest`; confirmed the launcher fails closed when Java SmartcardIO cannot see the target. Reviewed the completed simulator output and prior CHOUPI PC-emulator APDU run.
+- Validation: `JCALGTEST_TIMEOUT_SECONDS=15 tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI CCID [JCAlgTest CCID]' -op ALG_PERFORMANCE_STATIC -fresh -outpath /tmp/jcalgtest-static-physical` exited 4 with `PC/SC reader not found`; Java SmartcardIO listed no readers. A bounded `pcsc_scan -r` also showed `SCardEstablishContext: Service not available` and began an invalid-handle flood; output was redirected and removed. No APDU or hardware access occurred. Archived simulator run completed SHA-256's 250 × 256-byte sample section; raw sample times were 14.20, 0.20, -0.80, 0.20, and -0.80 ms, yielding 0.05 ms/op average and -0.02 ms/op minimum. The prior CHOUPI PC-emulator 50-call SHA-256 APDU returned `AA 9000` in 17.389 s, which is not device performance.
+- Result: The simulator timer is below its useful resolution and the host-emulator latency cannot establish Pico throughput. JCAlgTest reports only `AA 9000`, not digest bytes, so these results do not validate SHA-256 correctness or justify a firmware change. Physical timing remains unavailable until Java sees the Pico reader.
+- Decision: Keep the current SHA-256 implementation unchanged pending a real-board benchmark and independent known-answer digest check. Use `tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI CCID [JCAlgTest CCID]' -op ALG_PERFORMANCE_STATIC -fresh -outpath <directory>` for the physical target, or `tools/run-jcalgtest --simulator ...` for jCardSim. Do not retry PC/SC while the service is unavailable.
+- Commit: pending metadata commit.
+- Artifacts/logs: Existing simulator log `artifacts/logs/jcalgtest-reader-selector-static-simulator-20261016.log` (SHA-256 `9e20a5e357b29b258d1d192ddb3f6cecb25bf9a60ca235f203ef09692eca31a0`); earlier CHOUPI host-emulator log `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`; physical-selector failure was temporary and removed after capture.
