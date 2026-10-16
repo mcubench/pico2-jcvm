@@ -1035,6 +1035,9 @@ int main_arm(void) {
     watchdog_recovery_stage = watchdog_hw->scratch[3];
     watchdog_recovery_context = watchdog_hw->scratch[4];
     watchdog_recovery_origin = watchdog_hw->scratch[5];
+    // Consume the retained marker after copying it to RAM. A later reset
+    // should report a new VM trace, not repeat this diagnostic indefinitely.
+    watchdog_hw->scratch[0] = 0;
   }
 
   stdio_init_all();
@@ -1119,6 +1122,7 @@ int main_arm(void) {
                static_cast<unsigned long>(watchdog_recovery_stage),
                static_cast<unsigned long>(watchdog_recovery_context),
                static_cast<unsigned long>(watchdog_recovery_origin));
+        watchdog_recovery_pending = false;
       }
       fflush(stdout);
       next_report = delayed_by_ms(next_report, 1000);

@@ -49,10 +49,12 @@ Current verified status (2026-10-17):
   JCAlgTest 256-byte / 50-call static SHA workload (`AA9000`, 0.718038 s).
   The exact APDU transcript is saved in
   `artifacts/logs/jcalgtest-physical-resume-20261016.log`.
-- A finite post-test serial capture reports `TEST:PASS choupi_runtime` and no
-  `FAULT`; it also repeats `WATCHDOG_RECOVERY cause=other` with a retained
-  marker. Investigate whether this is stale diagnostic state. Physical APDUs
-  returned success after the flash.
+- The post-test serial capture reports `TEST:PASS choupi_runtime` and no
+  `FAULT`. A follow-up change consumes the RP2350 scratch marker after copying
+  it and prints `WATCHDOG_RECOVERY cause=other` once. An eight-second capture
+  confirmed one marker, eight runtime passes, and no failure. Physical SELECT,
+  GETVERSION, JCSystem, SHA support, and static SHA still pass; the post-fix
+  static loop took 0.725005 s.
 - `pcscd.service` is inactive and PC/SC lists only Virtual PCD readers, so the
   official Java client could not target the physical reader. The static APDU
   reproduces JCAlgTest's workload directly over raw CCID; it is not an official
@@ -63,11 +65,9 @@ Next actions:
 1. Restore PC/SC service access and run official JCAlgTest v1.8.2
    `ALG_PERFORMANCE_STATIC` against the named physical reader. The direct raw
    CCID test passed, but the official client run remains outstanding.
-2. Investigate the repeated serial `WATCHDOG_RECOVERY cause=other` marker and
-   confirm whether it represents retained diagnostic state or a runtime fault.
-3. Continue closing JCSystem behavior gaps; current memory and commit-capacity
+2. Continue closing JCSystem behavior gaps; current memory and commit-capacity
    queries still report zero because the port does not yet expose accounting.
-4. Finish the unchecked golden applet, GP DELETE/GET DATA, transaction failure,
+3. Finish the unchecked golden applet, GP DELETE/GET DATA, transaction failure,
    and persistence tests below; keep AC1–AC5 marked incomplete until the clean
    flash sequence has passed three times.
 

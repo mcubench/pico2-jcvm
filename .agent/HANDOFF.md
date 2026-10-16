@@ -29,6 +29,28 @@
   rerun official v1.8.2 `ALG_PERFORMANCE_STATIC` through the named physical
   PC/SC reader when the service is active.
 
+## Watchdog marker follow-up — 2026-10-17
+
+- The repeat was caused by diagnostic state handling, not an observed runtime
+  fault: `main_arm()` retained the RP2350 scratch marker after copying it and
+  printed `watchdog_recovery_pending` on every one-second status interval.
+  `cause=other` reflected the ordinary reboot path, not a confirmed watchdog
+  reset.
+- Updated `main_arm()` to consume the scratch marker after copying it to RAM
+  and clear the pending flag after its one-time report. `./tools/build arm`
+  and `./tools/flash build/arm/pico2_choupi.uf2` passed.
+- An eight-second serial capture printed exactly one
+  `WATCHDOG_RECOVERY cause=other`, eight `TEST:PASS choupi_runtime` reports,
+  and no `TEST:FAIL` or `FAULT`. A post-flash physical CCID run again passed
+  SELECT, GETVERSION, JCSystem info, SHA-256 support, and static SHA
+  (`AA9000`, 0.725005 s).
+- Evidence: `artifacts/logs/build-arm-watchdog-marker-20261017.log`,
+  `artifacts/logs/flash-arm-watchdog-marker-20261017.log`,
+  `artifacts/logs/monitor-arm-watchdog-marker-20261017.log`, and
+  `artifacts/logs/jcalgtest-physical-watchdog-fix-20261017.log`.
+- Next: run the official JCAlgTest client when PC/SC exposes the physical
+  reader, then continue JCSystem capacity accounting. No RISC-V build/test.
+
 ## Latest continuation — 2026-10-16
 
 - User replugged the Pico, but this process still cannot access USB: both

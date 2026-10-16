@@ -4219,3 +4219,13 @@
 - Decision: The freshly flashed ARM image passes the physical applet and SHA static APDU path. Keep official PC/SC client execution outstanding until the service exposes the Pico reader; do not treat raw CCID as the official client run.
 - Commit: `06e1438`
 - Artifacts/logs: `artifacts/logs/jcalgtest-physical-resume-20261016.log` (SHA-256 `d40efe0e3f4baaf829b30376958bdab5606c1f61ef8b280a3dc389bd9cd8da13`); pre-flash failure trace `artifacts/logs/monitor-arm-current-apdu-f503-20261016.log`; `artifacts/logs/monitor-arm-physical-jcalgtest-20261017.log` (SHA-256 `aef7ff988e34e5631d94743425df311f82d773df7d5c37c3dd6f196ed22fd8ff`); UF2 SHA-256 `11254d99c6439f5313086c6164de9fc7f1dbe81a9fb56654ae29f6c2ca96f747`
+
+## 2026-10-17 — Consume watchdog recovery markers once
+
+- Step/experiment: `arm-watchdog-marker-consumption`
+- Change: `main_arm()` now consumes the retained RP2350 scratch marker after copying it into RAM and clears the pending diagnostic flag after its first report. This prevents a stale trace from repeating every second and appearing to indicate repeated recoveries.
+- Validation: `./tools/build arm` passed. `./tools/flash build/arm/pico2_choupi.uf2` passed through the bounded CDC-to-BOOTSEL fallback. `./tools/monitor --seconds 8` recorded exactly one `WATCHDOG_RECOVERY cause=other`, eight `TEST:PASS choupi_runtime` reports, and no `TEST:FAIL` or `FAULT`. Direct physical CCID checks passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem info, SHA-256 support, and JCAlgTest static SHA after the flash.
+- Result: The one-time diagnostic behavior is confirmed on the Pico. Physical static SHA returned `AA9000` in 0.725005 s. The marker reported `cause=other`; this did not indicate a watchdog-caused reset. The official Java client remains unrun because `pcscd.service` is inactive and the physical reader is not exposed through PC/SC.
+- Decision: Keep the marker-consumption fix. Continue with the remaining JCSystem capacity accounting and rerun the official named-reader client when PC/SC access is restored. No RISC-V build/test.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/build-arm-watchdog-marker-20261017.log` (SHA-256 `e9f46e2033d4fea9fbb37b7ac4bb651dac5d9426e18cca8bb8b643fa13d0bc03`); `artifacts/logs/flash-arm-watchdog-marker-20261017.log` (SHA-256 `805ffb3c7c8aaecd78677c938284a57381fe6dbe2b1c08041e810c4f58d36fb1`); `artifacts/logs/monitor-arm-watchdog-marker-20261017.log` (SHA-256 `bca3af91d35e403fba9552edb1d9085cec066c9466457cc83dd3ac3fee157d47`); `artifacts/logs/jcalgtest-physical-watchdog-fix-20261017.log` (SHA-256 `16532eb6e72dbe3c705c8908aa02a919c22196d7c6c2f07c57233dc94a6b239c`)
