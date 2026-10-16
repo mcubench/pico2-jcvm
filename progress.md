@@ -3561,5 +3561,5 @@
 - Validation: `./tools/test-gp-registry` passed 7 checks (`TEST:SUMMARY pass=7 fail=0`). `./tools/build arm` passed both `BUILD:PASS arch=arm` and `BUILD:PASS target=choupi`; no warnings were emitted in the captured build output. No RISC-V build or hardware APDU/flash was run. Hardware validation was skipped because Java SmartcardIO has no visible reader here and the required dual-architecture flash gate cannot be satisfied while following the ARM-only scope.
 - Result: The installed applet registry response helper emits the exact nested TLV bytes and rejects short output capacity and invalid instance AID length. This validates the encoding helper, not the embedded PC/SC transaction; GET STATUS lifecycle accuracy, DELETE, and GET DATA remain incomplete.
 - Decision: Keep the response wire representation unchanged. Continue card-manager lifecycle behavior and host-accessible APDU coverage; do not flash this build until the repository gate is met.
-- Commit: pending.
+- Commit: `7335e217e092fda324d44657c60817eabecadbbd`.
 - Artifacts/logs: `artifacts/logs/gp-registry-tlv-test-20261016.log` (SHA-256 `d1b2057bb43770a76617c72a943d1eac449a3ec8ee020e6e58c4572e7184d0a4`); `artifacts/logs/build-arm-gp-registry-tlv-20261016.log` (SHA-256 `ef6de0d8ed9bca880d446b9353e396063980920f08e1cef65100b8ec9e714b4d`).
