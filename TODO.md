@@ -42,9 +42,13 @@ meta-block is not implemented.
 SHA-256 `MessageDigest.doFinal("abc")` now returns the known-answer digest
 `BA7816BF...15AD` in the host VPCD probe. The matching 256-byte/50-call static
 doFinal APDU returns `AA9000` and takes 16.853 s on the PC interpreter. This
-does not measure Pico throughput. A separate `update("abc")` followed by
-empty `doFinal()` still returns SHA-256 of the empty string; cross-call digest
-state must be fixed before claiming general streaming SHA-256 correctness.
+does not measure Pico throughput. A method-local `MessageDigest` streaming
+probe (`update("abc")`, then empty `doFinal()`) returns the expected digest.
+An earlier probe stored the implementation's `OneShot` object in an applet
+field and returned the empty digest; that violates the `OneShot` class's
+documented temporary-object lifetime. The factory currently returns that
+implementation, so support for a retainable digest object remains unresolved;
+do not treat the invalid field-retention probe as a general streaming failure.
 
 Latest repeatable host validation (2026-10-16): `./tools/build arm` and
 `./tools/build riscv` passed. The focused Java transaction probe passed 10/10

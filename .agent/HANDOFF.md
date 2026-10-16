@@ -1,5 +1,33 @@
 # Handoff
 
+## SHA-256 streaming probe and named-reader client check — 2026-10-16
+
+- The focused VPCD applet probe now passes 12/12 assertions. It verifies
+  SHA-256(`abc`) through `doFinal()` and through a method-local sequence of
+  `update("abc")` followed by empty `doFinal()`; both return
+  `BA7816BF01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD`.
+- A field-retained probe returned the empty digest. Trace evidence showed the
+  native bridge received a different state-array reference from the array
+  field read by the Java implementation. That probe stored the returned
+  `OneShot` implementation in an applet field, contrary to the class's
+  documented temporary-object lifetime. It does not establish a general
+  streaming failure. The current `getInstance()` factory returns `OneShot`,
+  so a retainable digest implementation remains a design gap to resolve.
+- `./tools/run-jcalgtest --reader-name 'Virtual PCD 00 00' -op
+  ALG_PERFORMANCE_STATIC -fresh ...` exited 4: Java SmartcardIO saw no reader.
+  `pcsc_scan -r` reported `SCardEstablishContext: Service not available` (and
+  emitted a large repetitive error stream). The official client therefore
+  could not run through PC/SC this session. Earlier official jCardSim timings
+  remain below timer resolution; the host VPCD 50-call static SHA APDU returned
+  `AA9000` in 16.853 s, which is emulator time, not Pico throughput.
+- The PC build and local-lifetime VPCD probe pass. No firmware source change
+  was retained, and no physical device was accessible; ARM/RISC-V builds and
+  hardware flashing were not repeated in this diagnostic step.
+- Evidence: `artifacts/logs/jcsystem-sha256-stream-method-local-vpcd-20261016.log`,
+  `artifacts/logs/jcsystem-sha256-stream-method-local-console-20261016.log`,
+  `artifacts/logs/jcalgtest-static-vpcd-readername-20261016.log`, and
+  `artifacts/logs/jcsystem-sha256-native-stack-trace-vpcd-20261016.log`.
+
 ## SHA-256 doFinal known-answer and JCAlgTest static APDU — 2026-10-16
 
 - The official simulator's SHA-256 timing remains unusable (0.05 ms/op average
@@ -10,9 +38,9 @@
   the subsequent native finalizer. `doFinal()` now retains one state reference
   and appends its input directly before finalizing. Java Card API nested commit:
   `be4fade`.
-- A Java Card APDU probe now checks SHA-256(`abc`) against
-  `BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD`; the
-  VPCD run passes 11/11 assertions. The broader JCAlgTest VPCD regression also
+- A Java Card APDU probe checks SHA-256(`abc`) against
+  `BA7816BF01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD`; the VPCD
+  run passes 11/11 assertions. The broader JCAlgTest VPCD regression also
   passes 11/11. Its exact 256-byte/50-call static doFinal APDU returned
   `AA9000` in 16.853 s. This is PC interpreter/VPCD wall time, not Pico
   throughput; `AA` is the official applet's status marker, not digest data.
@@ -20,12 +48,6 @@
   board flash or serial result was possible: neither Pico USB ID is visible,
   PC/SC is inactive, and libusb reports `-99` (see the physical-access record
   below).
-- Remaining SHA gap: a separate `update("abc")` call followed by empty
-  `doFinal()` still produces the empty-string digest. The Java API instance
-  exposes different native state arrays across those calls in the current VM;
-  fix the cross-call state/receiver behavior before claiming streaming SHA-256
-  support. Then repeat the known-answer and static regression, and run a full
-  named-reader client test once PC/SC can see the desired reader.
 
 ## Java-level JCSystem transaction exception APDUs — 2026-10-16
 

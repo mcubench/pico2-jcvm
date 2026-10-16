@@ -126,6 +126,14 @@ def main() -> int:
                         ),
                         "SHA-256 known-answer for abc",
                     ),
+                    (
+                        9,
+                        bytes.fromhex(
+                            "BA7816BF8F01CFEA414140DE5DAE2223"
+                            "B00361A396177A9CB410FF61F20015AD"
+                        ),
+                        "SHA-256 update then doFinal state retention",
+                    ),
                 )
                 for p1, expected, label in cases:
                     data = exchange(

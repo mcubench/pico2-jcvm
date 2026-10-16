@@ -3825,3 +3825,13 @@
 ## SHA-256 doFinal validation commit metadata
 
 - The known-answer probe, Java API `doFinal()` correction record, 50-call static VPCD regression, ARM/RISC-V/PC builds, and updated documentation above were committed as root `621e03c`; the API implementation is nested commit `be4fade`.
+
+## 2026-10-16 — Validate method-local SHA-256 streaming use
+
+- Step/experiment: `sha256-method-local-streaming-probe`
+- Change: Added a Java Card probe command for a method-local `MessageDigest` that calls `update("abc")` and then empty `doFinal()`. Corrected the earlier status note: the failing probe retained the implementation's `OneShot` object in an applet field, despite its documented temporary-object lifetime. The factory currently returns this implementation, so retained digest support remains an API design gap; the failed field-retention test is not evidence of a general streaming failure. Removed temporary VM trace instrumentation.
+- Validation: `./tools/build-pc` passed. `./tools/test-jcsystem-transaction-applet --timeout 90 --log artifacts/logs/jcsystem-sha256-stream-method-local-vpcd-20261016.log` passed 12/12; both SHA-256 paths returned `BA7816BF01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD`. `./tools/run-jcalgtest --reader-name 'Virtual PCD 00 00' -op ALG_PERFORMANCE_STATIC -fresh -outpath artifacts/results/jcalgtest-static-vpcd-readername-20261016` exited 4 because Java SmartcardIO found no reader. `pcsc_scan -r` reported `SCardEstablishContext: Service not available`. ARM/RISC-V builds and hardware flashing were intentionally skipped: this step retained no firmware/API source changes, and no PC/SC or physical reader was available.
+- Result: SHA-256 known-answer and method-local streaming calls pass in host VPCD. The named-reader official client run and physical performance measurement remain unavailable. The prior 256-byte/50-call static VPCD result (`AA9000`, 16.853 s) is emulator wall time, not Pico throughput.
+- Decision: Keep the passing method-local probe. Resolve the retainable `MessageDigest` implementation separately before claiming applet-field lifetime support; retry official `ALG_PERFORMANCE_STATIC` with `--reader-name` when Java can enumerate the target reader.
+- Commit: recorded in the following commit-metadata entry.
+- Artifacts/logs: `artifacts/logs/build-pc-sha256-stream-probe-clean-20261016.log`; `artifacts/logs/jcsystem-sha256-stream-method-local-vpcd-20261016.log`; `artifacts/logs/jcsystem-sha256-stream-method-local-console-20261016.log`; `artifacts/logs/jcalgtest-static-vpcd-readername-20261016.log`.
