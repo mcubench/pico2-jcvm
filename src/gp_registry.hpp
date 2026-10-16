@@ -188,6 +188,57 @@ inline bool append_load_file_entry(uint8_t *output, size_t capacity,
   return true;
 }
 
+struct RegistryView {
+  bool applet_installed = false;
+  const uint8_t *instance_aid = nullptr;
+  uint8_t instance_aid_length = 0;
+  bool package_loaded = false;
+  const uint8_t *package_aid = nullptr;
+  uint8_t package_aid_length = 0;
+  const uint8_t *module_aid = nullptr;
+  uint8_t module_aid_length = 0;
+};
+
+// Construct the data field for a GET STATUS first/all occurrence query. The
+// caller appends the returned status word to the APDU response.
+inline uint16_t build_get_status_first_response(
+    uint8_t p1, const uint8_t *search_data, size_t search_data_length,
+    const RegistryView &registry, uint8_t *output, size_t capacity,
+    size_t &output_length) noexcept {
+  output_length = 0;
+  if (output == nullptr) return 0x6f00;
+  if (p1 == 0x80) {
+    // The specification requires ISD-only queries to ignore search criteria.
+    return append_isd_registry_entry(output, capacity, output_length)
+               ? 0x9000
+               : 0x6f00;
+  }
+  if (p1 != 0x40 && p1 != 0x20 && p1 != 0x10) return 0x6a86;
+
+  AidSearch search;
+  if (!parse_aid_search(search_data, search_data_length, search)) {
+    return 0x6a80;
+  }
+
+  bool append_ok = true;
+  if (p1 == 0x40 && registry.applet_installed &&
+      aid_matches_search(search, registry.instance_aid,
+                         registry.instance_aid_length)) {
+    append_ok = append_registry_entry(
+        output, capacity, output_length, registry.instance_aid,
+        registry.instance_aid_length, registry.package_aid,
+        registry.package_aid_length, 0x07);
+  } else if ((p1 == 0x20 || p1 == 0x10) && registry.package_loaded &&
+             aid_matches_search(search, registry.package_aid,
+                                registry.package_aid_length)) {
+    append_ok = append_load_file_entry(
+        output, capacity, output_length, registry.package_aid,
+        registry.package_aid_length, registry.module_aid,
+        registry.module_aid_length, p1 == 0x10);
+  }
+  return append_ok ? 0x9000 : 0x6f00;
+}
+
 } // namespace gp
 
 #endif

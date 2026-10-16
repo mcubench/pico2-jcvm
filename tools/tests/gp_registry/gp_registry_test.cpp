@@ -122,6 +122,78 @@ int main() {
   expect(output_length == 29 && output[1] == output_length - 2 &&
              output[output_length - sizeof(instance_aid) - 2] == 0x84,
          "load_file_module_tlv");
+
+  gp::RegistryView registry{};
+  registry.applet_installed = true;
+  registry.instance_aid = instance_aid;
+  registry.instance_aid_length = sizeof(instance_aid);
+  registry.package_loaded = true;
+  registry.package_aid = package_aid;
+  registry.package_aid_length = sizeof(package_aid);
+  registry.module_aid = instance_aid;
+  registry.module_aid_length = sizeof(instance_aid);
+
+  const uint8_t malformed_isd_search[] = {0x4f, 0x03, 0x01};
+  output_length = 0;
+  expect(gp::build_get_status_first_response(
+             0x80, malformed_isd_search, sizeof(malformed_isd_search),
+             registry, output.data(), output.size() - 2, output_length) ==
+             0x9000,
+         "isd_query_ignores_search_qualifier");
+  expect(output_length == isd_entry.size() &&
+             std::memcmp(output.data(), isd_entry.data(), isd_entry.size()) ==
+                 0,
+         "isd_query_returns_only_isd_entry");
+
+  output_length = 0;
+  expect(gp::build_get_status_first_response(
+             0x40, wildcard_search, sizeof(wildcard_search), registry,
+             output.data(), output.size() - 2, output_length) == 0x9000,
+         "application_status_query");
+  expect(output_length == expected.size() &&
+             std::memcmp(output.data(), expected.data(), expected.size()) ==
+                 0,
+         "application_status_entry_exact_bytes");
+
+  output_length = 0;
+  expect(gp::build_get_status_first_response(
+             0x20, wildcard_search, sizeof(wildcard_search), registry,
+             output.data(), output.size() - 2, output_length) == 0x9000,
+         "load_file_status_query");
+  expect(output_length == load_file_entry.size() &&
+             std::memcmp(output.data(), load_file_entry.data(),
+                         load_file_entry.size()) == 0,
+         "load_file_status_exact_bytes");
+
+  output_length = 0;
+  expect(gp::build_get_status_first_response(
+             0x10, wildcard_search, sizeof(wildcard_search), registry,
+             output.data(), output.size() - 2, output_length) == 0x9000,
+         "module_status_query");
+  expect(output_length == 29 && output[1] == output_length - 2 &&
+             output[output_length - sizeof(instance_aid) - 2] == 0x84,
+         "module_status_entry_contains_module_aid");
+
+  output_length = 99;
+  expect(gp::build_get_status_first_response(
+             0x40, nullptr, 0, registry, output.data(), output.size() - 2,
+             output_length) == 0x6a80,
+         "application_query_requires_aid_search");
+  expect(output_length == 0, "application_query_error_has_empty_data");
+  output_length = 99;
+  expect(gp::build_get_status_first_response(
+             0x08, wildcard_search, sizeof(wildcard_search), registry,
+             output.data(), output.size() - 2, output_length) == 0x6a86,
+         "reject_unsupported_status_category");
+  expect(output_length == 0, "unsupported_category_has_empty_data");
+
+  registry.applet_installed = false;
+  output_length = 99;
+  expect(gp::build_get_status_first_response(
+             0x40, wildcard_search, sizeof(wildcard_search), registry,
+             output.data(), output.size() - 2, output_length) == 0x9000 &&
+             output_length == 0,
+         "empty_application_registry_is_successful");
   std::printf("TEST:SUMMARY pass=%d fail=0\n", checks);
   return EXIT_SUCCESS;
 }

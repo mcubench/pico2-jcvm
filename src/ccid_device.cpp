@@ -275,62 +275,32 @@ void process_message(uint8_t rhport) {
         } else if (p2 != 0x02) {
           response[0] = 0x6a;
           response[1] = 0x86;
-        } else if (p1 == 0x80) {
-          if (!gp::append_isd_registry_entry(response, sizeof(response),
-                                             response_length)) {
-            response[0] = 0x6f;
-            response[1] = 0x00;
+        } else {
+          gp::RegistryView registry{};
+          registry.applet_installed = cap_load_session.installed();
+          registry.instance_aid = cap_load_session.instanceAid();
+          registry.instance_aid_length = cap_load_session.instanceAidLength();
+          registry.package_loaded = cap_load_session.loaded();
+          registry.package_aid = cap_load_session.packageAid();
+          registry.package_aid_length = cap_load_session.packageAidLength();
+          registry.module_aid = cap_load_session.appletAid();
+          registry.module_aid_length = cap_load_session.appletAidLength();
+
+          get_status_first_seen = false;
+          response_length = 0;
+          const uint16_t status = gp::build_get_status_first_response(
+              p1, apdu + 5, command_data_length, registry, response,
+              sizeof(response) - 2, response_length);
+          if (status == 0x9000) {
+            response[response_length++] = 0x90;
+            response[response_length++] = 0x00;
+            get_status_first_seen = true;
+            get_status_first_p1 = p1;
+          } else {
+            response[0] = static_cast<uint8_t>(status >> 8);
+            response[1] = static_cast<uint8_t>(status);
             response_length = 2;
           }
-          response[response_length++] = 0x90;
-          response[response_length++] = 0x00;
-          get_status_first_seen = true;
-          get_status_first_p1 = p1;
-        } else if (p1 == 0x40 || p1 == 0x20 || p1 == 0x10) {
-          gp::AidSearch search;
-          if (!gp::parse_aid_search(apdu + 5, command_data_length, search)) {
-            response[0] = 0x6a;
-            response[1] = 0x80;
-          } else {
-            size_t entry_length = 0;
-            bool append_ok = true;
-            if (p1 == 0x40 && cap_load_session.installed() &&
-                gp::aid_matches_search(
-                    search, cap_load_session.instanceAid(),
-                    cap_load_session.instanceAidLength())) {
-              append_ok = gp::append_registry_entry(
-                  response, sizeof(response), entry_length,
-                  cap_load_session.instanceAid(),
-                  cap_load_session.instanceAidLength(),
-                  cap_load_session.packageAid(),
-                  cap_load_session.packageAidLength(), 0x07);
-            } else if ((p1 == 0x20 || p1 == 0x10) &&
-                       cap_load_session.loaded() &&
-                       gp::aid_matches_search(
-                           search, cap_load_session.packageAid(),
-                           cap_load_session.packageAidLength())) {
-              append_ok = gp::append_load_file_entry(
-                  response, sizeof(response), entry_length,
-                  cap_load_session.packageAid(),
-                  cap_load_session.packageAidLength(),
-                  cap_load_session.appletAid(),
-                  cap_load_session.appletAidLength(), p1 == 0x10);
-            }
-            if (!append_ok) {
-              response[0] = 0x6f;
-              response[1] = 0x00;
-              response_length = 2;
-            } else {
-              response_length = entry_length;
-              response[response_length++] = 0x90;
-              response[response_length++] = 0x00;
-              get_status_first_seen = true;
-              get_status_first_p1 = p1;
-            }
-          }
-        } else {
-          response[0] = 0x6a;
-          response[1] = 0x86;
         }
       } else if (instruction == 0xca) {
         response[0] = 0x6a;
