@@ -1,5 +1,31 @@
 # Handoff
 
+## Parameterized JCAlgTest install regression — 2026-10-16
+
+- Extended `tools/tests/pc_vpcd_applet_test.py` with `--install-params`. When
+  set, it asks the PC emulator to assert the actual Java install-entry locals:
+  local 0 references a two-byte array containing `C9 00`, local 1 is offset 0,
+  and local 2 is signed `bLength` 2. Mismatch returns `6F00` and fails the test.
+- The VM logged `VPCD:INSTALL_VM_ARGS status=PASS offset=0 length=2`, then
+  installed the applet and completed a fresh VM install using `C9 00`.
+- The complete one-pass regression passed 11 checks, including JCAlgTest
+  `1.8.2_jc305` GETVERSION, JCSystem info, SHA-256 `doFinal`, and the static
+  SHA-256 APDU with 256-byte input × 50 calls (`AA 9000`, 15.676 s). This is PC
+  emulator time, not device throughput.
+- This directly verifies the Java method-entry array contents and argument
+  values before applet execution. JCAlgTest ignores the field at this length;
+  the assertion therefore checks the VM entry frame rather than applet-side
+  reads.
+- `./tools/build-pc` and `./tools/build arm` passed. The host build emitted 49
+  existing Rust warnings and two packed-member C++ warnings. No RISC-V build or
+  hardware test was run.
+- Evidence: `artifacts/logs/build-pc-install-args-assert-20261016.log`,
+  `artifacts/logs/build-arm-install-args-assert-20261016.log`,
+  `artifacts/logs/vpcd-install-params-vmcheck-test-20261016.log`, and
+  `artifacts/logs/vpcd-install-params-vmcheck-20261016.log`.
+- Next: continue the JCVM lifecycle golden tests and remaining card-manager
+  acceptance criteria.
+
 ## JCAlgTest static SHA-256 follow-up — 2026-10-16
 
 - The current SHA-256 implementation passes the focused PC VPCD regression,

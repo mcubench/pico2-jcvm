@@ -3523,3 +3523,13 @@
 - Decision: Once PC/SC and USB access are restored, select the real Pico by its displayed reader name/index and rerun `ALG_PERFORMANCE_STATIC`; add a digest known-answer probe separately.
 - Commit: `836be14`.
 - Artifacts/logs: `artifacts/logs/build-arm-jcalgtest-static-reader-20261016.log`, `artifacts/logs/jcalgtest-sha-bridge-class-test-20261016.log`, `artifacts/results/jcalgtest-static-vpcd-20261016/ALGTEST_log_1792133041312.log`.
+
+## 2026-10-16 — Exercise JCAlgTest install parameters through the PC VM
+
+- Step/experiment: `jcalgtest-install-params-c900-20261016`
+- Change: Added `--install-params` to the focused VPCD regression runner. When a parameter is supplied, the emulator compares it with the actual Java install-entry frame: local 0 array reference/content, local 1 offset, local 2 signed byte length, and array size. A mismatch returns `6F00`. Updated TODO and handoff with the verified result.
+- Validation: `python3 -m py_compile tools/tests/pc_vpcd_applet_test.py` passed; the runner help lists the new option. `./tools/build-pc` passed (49 existing Rust warnings and two packed-member C++ warnings); `./tools/build arm` passed with `BUILD:PASS target=choupi`. With localhost socket access enabled, the C900 integration run logged `VPCD:INSTALL_VM_ARGS status=PASS offset=0 length=2` and passed all 11 checks. GETVERSION returned `1.8.2_jc305`; JCSystem and SHA-256 checks returned `9000`; the 50-call static SHA-256 APDU returned `AA 9000` in 15.676 s.
+- Result: The Java install-entry frame directly matches offset 0, `bLength` 2, and bytes `C9 00`; applet installation and subsequent process APDUs succeed. The static SHA timing is PC emulator wall time, not hardware throughput. No physical reader was available; no flash was attempted.
+- Decision: Keep this VM-entry assertion in the PC regression. Continue lifecycle golden coverage, GP card-manager behavior, and remaining AC checks.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/build-pc-install-args-assert-20261016.log`, `artifacts/logs/build-arm-install-args-assert-20261016.log`, `artifacts/logs/vpcd-install-params-vmcheck-test-20261016.log`, and `artifacts/logs/vpcd-install-params-vmcheck-20261016.log`.

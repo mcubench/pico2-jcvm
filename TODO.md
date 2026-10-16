@@ -81,8 +81,13 @@ rollback and duplicate/invalid registration handling also remain unverified.
 - [x] Parse the INSTALL [for install and make selectable] parameter field and
   pass its exact bytes in a Java byte array with offset zero and the matching
   byte length to `Applet.install(byte[], short, byte)`.
-- [ ] Verify the installation-parameter byte array and length in a valid VM
-  execution, including the supplied two-byte `C9 00` field.
+- [x] Verify the installation-parameter byte array and length in a valid VM
+  execution, including the supplied two-byte `C9 00` field. The VPCD runner
+  accepts `--install-params`; a PC-only VM-entry assertion verifies the Java
+  local array reference, offset 0, signed `bLength` 2, array size, and both
+  bytes before executing the method. A fresh JCAlgTest run then passed SELECT,
+  GETVERSION, JCSystem, support, SHA-256 `doFinal`, and static SHA-256
+  performance APDUs (`TEST:SUMMARY pass=11 fail=0`).
 - [x] Resolve JC 3.0.5 imported class and method tokens against the embedded
   CHOUPI exports. Validate each mapping against CAP/export metadata; do not
   treat a GP INSTALL status as proof that Java installation completed. The

@@ -35,6 +35,8 @@
 #include "jc_handlers/jc_method.hpp"
 
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #ifndef PC_VERSION
 extern "C" void choupi_watchdog_update(void);
@@ -147,6 +149,61 @@ uint16_t Interpretor::run() noexcept {
         stack.writeLocal_Reference(0, install_array);
         stack.writeLocal_Short(1, 0);
         stack.writeLocal_Short(2, static_cast<int8_t>(this->installLength));
+#ifdef PC_VERSION
+        const char *expected_install_hex =
+            std::getenv("CHOUPI_EXPECT_INSTALL_PARAMS");
+        if (expected_install_hex != nullptr) {
+          const auto hex_value = [](const char digit, uint8_t &value) {
+            if (digit >= '0' && digit <= '9') {
+              value = static_cast<uint8_t>(digit - '0');
+              return true;
+            }
+            if (digit >= 'A' && digit <= 'F') {
+              value = static_cast<uint8_t>(digit - 'A' + 10);
+              return true;
+            }
+            if (digit >= 'a' && digit <= 'f') {
+              value = static_cast<uint8_t>(digit - 'a' + 10);
+              return true;
+            }
+            return false;
+          };
+          const size_t expected_hex_length =
+              std::strlen(expected_install_hex);
+          bool arguments_match =
+              expected_hex_length ==
+                  static_cast<size_t>(this->installLength) * 2 &&
+              stack.readLocal_Reference(0) == install_array &&
+              stack.readLocal_Short(1) == 0 &&
+              stack.readLocal_Short(2) ==
+                  static_cast<int8_t>(this->installLength) &&
+              install_bytes->size() == this->installLength;
+          for (uint16_t index = 0;
+               arguments_match && index < this->installLength; ++index) {
+            uint8_t high = 0;
+            uint8_t low = 0;
+            const size_t hex_index = static_cast<size_t>(index) * 2;
+            if (!hex_value(expected_install_hex[hex_index], high) ||
+                !hex_value(expected_install_hex[hex_index + 1], low)) {
+              arguments_match = false;
+              break;
+            }
+            const uint8_t expected_byte =
+                static_cast<uint8_t>((high << 4) | low);
+            const uint8_t actual_byte = static_cast<uint8_t>(
+                install_bytes->getByteEntry(index));
+            arguments_match = actual_byte == expected_byte;
+          }
+          std::fprintf(stderr,
+                       "VPCD:INSTALL_VM_ARGS status=%s offset=%d length=%u\n",
+                       arguments_match ? "PASS" : "FAIL",
+                       static_cast<int>(stack.readLocal_Short(1)),
+                       static_cast<unsigned>(this->installLength));
+          if (!arguments_match) {
+            return 0x6f00;
+          }
+        }
+#endif
       } catch (Exceptions e) {
         this->last_exception_id = e;
         this->startJCVMException(e);

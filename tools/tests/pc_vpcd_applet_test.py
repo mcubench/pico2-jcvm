@@ -86,7 +86,18 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
             "--install",
             "-s",
         ]
+        if args.install_params is not None:
+            command.extend(("--install-params", args.install_params))
+            print(
+                "VPCD:INSTALL_PARAMETERS "
+                f"length={len(bytes.fromhex(args.install_params))} "
+                f"hex={args.install_params}"
+            )
         print(f"VPCD:START pass={pass_number}")
+        log_start = args.log.stat().st_size if args.log.exists() else 0
+        child_env = os.environ.copy()
+        if args.install_params is not None:
+            child_env["CHOUPI_EXPECT_INSTALL_PARAMS"] = args.install_params
         with args.log.open("ab") as log:
             log.write(f"\n--- VPCD pass {pass_number} ---\n".encode())
             process = subprocess.Popen(
@@ -95,6 +106,7 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
                 stdout=log,
                 stderr=log,
                 start_new_session=True,
+                env=child_env,
             )
             connection = None
             try:
@@ -250,6 +262,25 @@ def run_emulator(args: argparse.Namespace, memory: Path, pass_number: int) -> No
                 raise RuntimeError(
                     f"PC emulator exited with status {return_code}; inspect {args.log}"
                 )
+            if args.install_params is not None:
+                with args.log.open("rb") as captured_log:
+                    captured_log.seek(log_start)
+                    run_log = captured_log.read().decode(
+                        "utf-8", errors="replace"
+                    )
+                expected_line = (
+                    "VPCD:INSTALL_VM_ARGS status=PASS offset=0 "
+                    f"length={len(bytes.fromhex(args.install_params))}"
+                )
+                if expected_line not in run_log:
+                    raise RuntimeError(
+                        "VM did not confirm the expected install argument array; "
+                        f"inspect {args.log}"
+                    )
+                print(
+                    "TEST:PASS vm_install_parameters "
+                    f"offset=0 length={len(bytes.fromhex(args.install_params))}"
+                )
         print(
             f"VPCD:PHASE name=pass_total status=done "
             f"elapsed_s={time.monotonic() - pass_started:.3f}"
@@ -318,6 +349,10 @@ def parse_args() -> argparse.Namespace:
         help="number of clean emulator passes (default: 2)",
     )
     parser.add_argument(
+        "--install-params",
+        help="hex-encoded applet installation parameters passed to the VM",
+    )
+    parser.add_argument(
         "--flash-copy",
         type=Path,
         default=repo / "build/algtest-v182-vpcd-flash.bin",
@@ -330,6 +365,16 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if args.apdu_timeout <= 0:
         parser.error("--apdu-timeout must be positive")
+    if args.install_params is not None:
+        try:
+            install_params = bytes.fromhex(args.install_params)
+        except ValueError:
+            parser.error(
+                "--install-params must contain an even number of hex digits"
+            )
+        if len(install_params) > 0xff:
+            parser.error("--install-params must be at most 255 bytes")
+        args.install_params = install_params.hex().upper()
     args.repo = args.repo.resolve()
     for name in ("emulator", "memory", "cap_code", "rom_mask"):
         setattr(args, name, getattr(args, name).resolve())
