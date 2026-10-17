@@ -2,13 +2,15 @@
 
 ## Latest continuation — prevent restricted-context USB probes — 2026-10-17
 
-- Hardened both shell and Python USB/PCSC guards to fail closed unless
-  `/proc/self/status` can be read and explicitly reports `NoNewPrivs: 0`.
-  Previously, an unreadable or incomplete status file bypassed the guard.
-- Added an explicit operating rule to `AGENTS.md` and the physical-token
-  reference: run USB/PCSC commands through host access from the first attempt.
-  Repository wrappers cannot elevate direct commands such as `lsusb`; if host
-  access is unavailable, stop hardware operations and continue offline.
+- Hardened shell and Python USB/PCSC guards to fail closed unless the caller
+  explicitly sets `PICO2_HOST_USB_ACCESS=1` and `/proc/self/status` reports
+  `NoNewPrivs: 0`. The marker is required because `NoNewPrivs` alone does not
+  prove that execution used the host-access path.
+- `AGENTS.md` and the physical-token reference now require each wrapper command
+  to carry that marker and `sandbox_permissions: "require_escalated"` from its
+  first attempt. Direct commands such as `lsusb` must use host access on the
+  command itself. If host access is unavailable, stop hardware operations and
+  continue offline.
 - Validation in the current `NoNewPrivs: 1` context: shell syntax and Python
   compilation passed; all eight USB/PCSC wrapper entry points rejected in
   under one second; a simulated unreadable `/proc/self/status` rejected with
