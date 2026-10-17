@@ -4608,3 +4608,13 @@
   `artifacts/logs/flash-arm-supported-disconnect-recovery-20261017.log`,
   `artifacts/logs/monitor-arm-supported-disconnect-recovery-20261017.log`,
   and `artifacts/logs/jcalgtest-physical-after-disconnect-reflash-20261017.log`.
+
+## 2026-10-17 — Fail closed before restricted USB probes
+
+- Step/experiment: `host-usb-guard-fail-closed`
+- Change: Shell and Python USB/PCSC guards now require a readable `/proc/self/status` explicitly reporting `NoNewPrivs: 0`; missing or malformed context data blocks access. Added a first-attempt host-access rule to `AGENTS.md` and clarified the physical-token procedure. Direct commands cannot be elevated by repository wrappers, so hardware operations must start in host access.
+- Validation: `bash -n` passed for all shell wrappers; Python compilation passed. All eight USB/PCSC entry points rejected in the current restricted context in 0–1 seconds with the guard diagnostic. A simulated unreadable proc-status file also rejected before USB access. No libusb or PC/SC operation ran.
+- Result: The recurring restricted-context delay is prevented for wrapper-based commands; direct commands are covered by explicit operating instructions. No 32-second probe was repeated or measured during this validation.
+- Decision: Use host-access execution from the first hardware command. Continue the supported-sweep failure investigation offline until that context is selected.
+- Commit: `13808f4`
+- Artifacts/logs: No new logs; validation output was inspected directly.

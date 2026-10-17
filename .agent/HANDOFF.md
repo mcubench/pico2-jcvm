@@ -16,7 +16,7 @@
 - Next: resume the supported-sweep OOM investigation from the existing
   instrumented logs; ARM M33 only. Use host access from the outset for any
   physical validation.
-- Implementation commit: pending.
+- Implementation commit: `13808f4`.
 
 ## Latest continuation — reproduce and recover supported-sweep reader loss — 2026-10-17
 
