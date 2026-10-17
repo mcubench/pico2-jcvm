@@ -4347,5 +4347,5 @@
 - Validation: `PICO2_APDU_TIMEOUT_SECONDS=5 ./tools/probe-jc-algtest --des-cipher-prepare` compiled the probe, then exited 1 before transmission because Java SmartcardIO could not find the Pico reader. The permitted ACL helper could not run because this container sets no-new-privileges. Physical validation was skipped.
 - Result: The DES prepare failure is narrowed to key build/set, Cipher factory/init, or random input fill; its root cause remains unknown because the available serial capture ends before the DES APDU.
 - Decision: Replay this single APDU with bounded serial capture in host-access context; classify the exception before changing behavior.
-- Commit: `pending`
+- Commit: `6b04f1d21512bb80dab6716bedf574f6395a668a`
 - Artifacts/logs: Existing official APDU `artifacts/logs/jcalgtest-static-randomdata-token-map-20261017.log`; existing finite serial capture `artifacts/logs/monitor-jcalgtest-static-randomdata-token-map-20261017.log`; no new hardware log.
