@@ -4367,5 +4367,5 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. Flashed the final ARM image to the physical Pico. Bounded boot and APDU captures reported `TEST:PASS choupi_runtime`, no `TEST:FAIL` or `FAULT`; `./tools/probe-jc-algtest --des-cipher-prepare` returned `AA9000` after cleanup.
 - Result: The fix passes on the final firmware without per-dispatch diagnostic output. The official full static suite was run successfully on the preceding diagnostic image with the same functional mappings; the remaining first 3-key DES ISO9797 M1 `6F00` remains open.
 - Decision: Keep the production virtual/interface dispatch path free of this investigation's high-volume trace output; next isolate the later prepare failure only if continuing suite triage.
-- Commit: `<pending>`
+- Commit: `2743bfb` (metadata recorded in a follow-up commit)
 - Artifacts/logs: `artifacts/logs/build-arm-des-cipher-cleanup-20261017.log`; `artifacts/logs/build-riscv-des-cipher-cleanup-20261017.log`; `artifacts/logs/flash-arm-des-cipher-cleanup-20261017.log`; `artifacts/logs/monitor-arm-des-cipher-cleanup-boot-20261017.log`; `artifacts/logs/monitor-arm-des-cipher-cleanup-apdu-20261017.log`; `artifacts/logs/jcalgtest-des-cipher-cleanup-20261017.log`.
