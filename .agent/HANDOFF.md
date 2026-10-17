@@ -20,6 +20,26 @@
   from the outset for any physical validation.
 - Implementation commit: `13808f4`.
 
+## Heap reclamation architecture review — 2026-10-17
+
+- Reviewed the tracked static SHA fix and the current `Heap`, `Stack`,
+  `Context`, `JC_Instance`, `JC_Array`, and static-field handlers. The SHA
+  repeated-array allocation was fixed by caching persistent instance fields;
+  this does not add general object reclamation.
+- A collector cannot erase or compact `Heap` lists because `jref_t` stores
+  their 1-based offsets. The stack contains untyped words, so collection while
+  bytecode/native calls run would miss roots. An empty-frame APDU boundary is a
+  viable first safepoint, but not enough on its own: `GETSTATIC_A` reconstructs
+  references from flash on demand, and persistent fields/reference arrays can
+  keep transient objects reachable.
+- Recorded stable-slot, safepoint, and root-enumeration requirements in
+  `.agent/QKB.md`. No allocator code changed and no build or hardware check was
+  run in this documentation/architecture step.
+- Next: design a canonical VM root table for static references, then expose
+  context/heap roots and typed graph traversal. Only after root enumeration is
+  complete should stable-slot reuse be implemented. Preserve the independent
+  PC/SC reader-loss investigation; do not repeat the long static suite yet.
+
 ## Supported-sweep allocation failure diagnosis — 2026-10-17
 
 - The concurrent sweep monitor did record `malloc 12 failed to allocate

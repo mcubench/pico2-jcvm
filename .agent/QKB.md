@@ -822,3 +822,35 @@ fix.
 - **Limit:** The marker is a caller-side latch, not an escalation mechanism.
   It cannot make direct commands safe or elevate a wrapper. No USB command was
   run while validating this change.
+
+## Heap reclamation design constraints — 2026-10-17
+
+- **Handle stability:** `jref_t` stores a 1-based 15-bit offset into either the
+  `Heap::arrays` or `Heap::instances` list. Erasing or compacting list entries
+  changes the meaning of every later live reference. Any collector must leave
+  stable slots (for example, null tombstones plus a free list) and may reuse a
+  slot only after proving that no live reference can reach it.
+- **Collection boundary:** `Stack` stores untyped raw words for locals and
+  operands. During interpretation, popped references can also be held only in
+  native C++ locals. Collection inside bytecode/native calls cannot safely
+  discover all roots. The interpreter returns with an empty frame list after a
+  completed APDU, which is the earliest practical initial safepoint.
+- **Roots still missing from a simple APDU-boundary sweep:** `Context` owns
+  applet registration/restoration, AID, and APDU references, while `Heap` owns
+  the VM CryptoException roots. Java static reference fields are serialized
+  under flash tags and `GETSTATIC_A` restores an object/array into the heap on
+  demand; they are not represented by a persistent in-RAM root table that a
+  collector can enumerate. Persistent object fields are cached after first
+  access and can contain transient-array references; reference arrays also
+  need element tracing.
+- **Safe next design step:** first add canonical VM roots for loaded static
+  references (keyed by package and static token), and explicit root enumeration
+  for `Context`/`Heap`. Then add mark traversal through typed instance fields
+  and reference-array elements, treating live persistent objects as roots or
+  enumerating their serialized roots. Only after that should stable-slot sweep
+  reuse be implemented and stress-tested across APDU boundaries. Do not clear
+  the heap per APDU, compact lists, or pool arrays solely by size.
+- **Validation status:** This is a source-architecture review only. No code,
+  build, hardware, or performance validation was changed or run for this design
+  note. Existing physical SHA measurements establish the one-time cached field
+  fix, but do not validate a future garbage collector.

@@ -4658,3 +4658,13 @@
 - Decision: Use the marker only on individual host-access tool calls; if escalation is unavailable, continue offline.
 - Commit: `102764f` (implementation/instructions); progress record committed separately.
 - Artifacts/logs: No new logs; validation output was inspected directly.
+
+## 2026-10-17 — Record safe heap-reclamation constraints
+
+- Step/experiment: `heap-reclamation-root-architecture-review`
+- Change: Documented why list erasure/compaction invalidates 1-based `jref_t` handles, why collection during interpreter/native execution cannot see all references, and why an empty APDU stack still needs static, context, persistent-field, and reference-array roots. Recorded stable-slot reuse and root-enumeration as prerequisites in `.agent/QKB.md` and `.agent/HANDOFF.md`.
+- Validation: Source inspection of `Heap`, `Stack`, `Context`, `JC_Instance`, `JC_Array`, and static-field handlers. No source code changed; no build, runtime test, or hardware action was run.
+- Result: A per-APDU heap clear or list compaction is unsafe. The static SHA cache fix resolves its measured heap growth but does not implement general collection.
+- Decision: Next add canonical VM roots for static references and explicit root enumeration; defer sweep/reuse until typed object-graph tracing covers all persistent roots.
+- Commit: pending.
+- Artifacts/logs: none.
