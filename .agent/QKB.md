@@ -398,3 +398,44 @@ fix.
   official transcript `artifacts/logs/jcalgtest-static-des-cipher-token-map-fix-20261017.log`;
   raw log and CSV under `artifacts/results/jcalgtest-static-des-cipher-token-map-fix-20261017/`;
   bounded serial trace `artifacts/logs/monitor-arm-jcalgtest-static-des-cipher-token-map-fix-20261017.log`.
+
+## JSR saved-PC storage and remaining static-suite OOM — 2026-10-17
+
+- **Confirmed JSR correctness defect:** `Frame::old_pc_t` stored `pc_t&`, so
+  saved return addresses aliased the live program counter. `Frame::savePC()`
+  also appended a new list node on every `jsr` in a frame and never reused a
+  slot after `ret`; its return index is only one byte. The fix stores `pc_t` by
+  value, records the JSR fall-through address (`instruction_pc + 3`), reuses a
+  slot after `ret`, and throws `StackOverflowException` if more than 256 slots
+  are simultaneously required. `Frame::savePC()` and `Stack::savePC()` are no
+  longer `noexcept` so this overflow is reported through VM exception handling.
+- **Do not treat this as the complete ALG_PERFORMANCE_STATIC OOM fix:** after
+  the JSR correction, the final physical run still panicked during the first
+  50-call AES-128 CBC no-padding `Cipher_doFinal` measurement. Five baseline
+  APDUs returned `AA9000` (average `654.6` ms); the measurement APDU then lost
+  the reader. Serial ended with `malloc 44 failed to allocate memory` and
+  `*** PANIC *** Out of memory`. Thus JSR saved-PC storage was a real VM defect,
+  but it is not sufficient to explain the remaining memory exhaustion. The
+  exact owner of the final 44-byte allocation has not been identified.
+- **Temporary cipher-buffer experiment:** replacing the CBC vectors with
+  fixed-size stack blocks removed the 256-byte allocation records, but an
+  earlier image still exhausted memory at a 12-byte allocation. That
+  experiment was reverted; do not infer that the vectors were the sole leak.
+- **Validation:** ARM and RISC-V wrapper builds passed. The JSR-corrected ARM
+  image flashed, bounded serial boot reported `TEST:PASS choupi_runtime`, and
+  the focused physical DES prepare returned `AA9000`. The full official
+  JCAlgTest 1.8.2 static suite did not complete; it reached the AES static
+  measurement and panicked as described. `NO_SUCH_ALGORITHM` rows remain
+  expected and were not treated as defects.
+- **Next diagnosis:** instrument `Stack::push_Frame/pop_Frame` depth and
+  `Heap::addInstance/addArray` counts around the repeated AES APDU to identify
+  whether the 44-byte growth is a retained call frame, a Java object, or another
+  allocation. Keep captures bounded; do not retry a run that panics without a
+  newly flashed or reset image.
+- Evidence: `artifacts/logs/build-arm-jsr-pc-slot-reuse-final-20261017.log`,
+  `artifacts/logs/build-riscv-jsr-pc-slot-reuse-final-20261017.log`,
+  `artifacts/logs/flash-arm-jsr-pc-slot-reuse-final-20261017.log`,
+  `artifacts/logs/monitor-arm-jsr-pc-slot-reuse-final-20261017.log`,
+  `artifacts/logs/jcalgtest-jsr-final-reader-probe-20261017.log`,
+  `artifacts/logs/jcalgtest-static-jsr-pc-slot-reuse-final-20261017.log`, and
+  `artifacts/logs/monitor-arm-jsr-pc-slot-reuse-static-final-20261017.log`.

@@ -4369,3 +4369,33 @@
 - Decision: Keep the production virtual/interface dispatch path free of this investigation's high-volume trace output; next isolate the later prepare failure only if continuing suite triage.
 - Commit: `2743bfb` (metadata recorded in a follow-up commit)
 - Artifacts/logs: `artifacts/logs/build-arm-des-cipher-cleanup-20261017.log`; `artifacts/logs/build-riscv-des-cipher-cleanup-20261017.log`; `artifacts/logs/flash-arm-des-cipher-cleanup-20261017.log`; `artifacts/logs/monitor-arm-des-cipher-cleanup-boot-20261017.log`; `artifacts/logs/monitor-arm-des-cipher-cleanup-apdu-20261017.log`; `artifacts/logs/jcalgtest-des-cipher-cleanup-20261017.log`.
+
+## 2026-10-17 — Correct JSR saved-PC storage
+
+- Step/experiment: `physical-jcalgtest-jsr-frame-pc-reuse`
+- Change: Changed saved JSR PCs from references to value copies, recorded the
+  fall-through address, reused a saved slot after `ret`, and report overflow
+  beyond 256 active return slots as `StackOverflowException`.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Flashed the
+  final ARM image; bounded serial boot reported `TEST:PASS choupi_runtime`.
+  Physical focused probe passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem info,
+  and DES prepare (`AA9000`). The official full static suite reached the first
+  AES-128 CBC no-padding `Cipher_doFinal` measurement after five successful
+  baselines (`654.6 ms` average), then failed: serial reported
+  `malloc 44 failed to allocate memory` and `*** PANIC *** Out of memory`;
+  JCAlgTest returned `SCARD_E_READER_UNAVAILABLE`.
+- Result: JSR saved-PC reference aliasing and unbounded per-frame slot growth
+  are corrected, but this is not the complete static-suite OOM cause. The
+  final 44-byte allocation owner remains unknown. A fixed-stack CBC experiment
+  was reverted because it did not resolve exhaustion.
+- Decision: Instrument VM frame depth and heap object counts around the exact
+  repeated AES APDU before another full static run. Keep unsupported
+  `NO_SUCH_ALGORITHM` results classified as expected.
+- Commit: `f689286`
+- Artifacts/logs: `artifacts/logs/build-arm-jsr-pc-slot-reuse-final-20261017.log`;
+  `artifacts/logs/build-riscv-jsr-pc-slot-reuse-final-20261017.log`;
+  `artifacts/logs/flash-arm-jsr-pc-slot-reuse-final-20261017.log`;
+  `artifacts/logs/monitor-arm-jsr-pc-slot-reuse-final-20261017.log`;
+  `artifacts/logs/jcalgtest-jsr-final-reader-probe-20261017.log`;
+  `artifacts/logs/jcalgtest-static-jsr-pc-slot-reuse-final-20261017.log`;
+  `artifacts/logs/monitor-arm-jsr-pc-slot-reuse-static-final-20261017.log`.

@@ -3836,3 +3836,36 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   reran `--des-cipher-prepare`; it still returned `AA9000`. The committed
   diagnostic-build suite result remains valid; the final clean image has the
   exact focused prepare and runtime self-test retested.
+
+## Latest continuation — 2026-10-17
+
+- Fixed a real JSR return-address bug: `old_pc_t` held a reference to the live
+  PC, and each `jsr` appended a list node without recycling it after `ret`.
+  Saved return PCs now have value semantics, capture `instruction_pc + 3`, and
+  reuse returned slots. More than 256 simultaneously active slots raises
+  `StackOverflowException`. Implementation commit: `f689286`.
+- Both `./tools/build arm` and `./tools/build riscv` passed. The final source
+  image flashed successfully; bounded serial boot showed
+  `TEST:PASS choupi_runtime`. The named physical PC/SC probe passed SELECT,
+  GETVERSION `1.8.2_jc305`, JCSystem info, and DES prepare (`AA9000`).
+- The full physical official `ALG_PERFORMANCE_STATIC` still fails at the first
+  50-call AES-128 CBC no-padding `Cipher_doFinal` measurement. Its five
+  baselines returned `AA9000`, averaging `654.6 ms`. During the measurement,
+  serial ended with `malloc 44 failed to allocate memory` and
+  `*** PANIC *** Out of memory`; JCAlgTest then reported
+  `SCARD_E_READER_UNAVAILABLE`. The JSR defect is fixed, but the benchmark OOM
+  remains unresolved. The exact 44-byte allocation owner needs instrumentation
+  of VM frame depth and heap object counts.
+- A fixed-stack CBC experiment was reverted because it did not prevent OOM and
+  was not sufficiently validated. Existing cipher implementation is retained.
+  Unsupported algorithms reporting `NO_SUCH_ALGORITHM` remain expected.
+- Current board was running the final JSR-corrected image and panicked during
+  the last AES measurement. The physical reader had reappeared at USB node
+  `001/119` with ACL refreshed. After any re-enumeration, run the permitted
+  `/usr/local/sbin/pico2-pcsc-reader` helper. Do not run `pcsc_scan`.
+- Next: instrument per-APDU `Stack::push_Frame/pop_Frame` high-water depth and
+  `Heap::addArray/addInstance` counts, rebuild both architectures, then repeat
+  the exact AES static APDU on a freshly reset physical image with bounded
+  serial capture. Preserve unrelated worktree changes.
+- Evidence logs: final builds, flash, boot, focused reader probe, full official
+  run and serial panic are listed in `.agent/QKB.md`.
