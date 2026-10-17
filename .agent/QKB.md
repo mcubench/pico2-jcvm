@@ -288,3 +288,42 @@ fix.
   order. Later prepare or measurement statuses may be consequences of a prior
   supported-path failure and must not be classified independently.
 - Evidence: `artifacts/results/jcalgtest-static-cache-fix-physical-20261017/ALGTEST_log_1792223036058.log`, first failing sequence around lines 1030–1130; SDK implementation `choupi/javacard-sdk/javacard-api/src/javacard/security/RandomData.java`.
+
+## Fix supported RandomData.setSeed static failure — 2026-10-17
+
+- **Root cause:** The uploaded JCAlgTest CAP uses JC305 `RandomData` virtual
+  method token `2` for `setSeed([BSS)V`; the embedded API's public method table
+  puts `nextBytes([BSS)S` at token `2` and `setSeed([BSS)V` at token `3`. There
+  was no RandomData token translation. The void setSeed call therefore resolved
+  to short-returning nextBytes. Its `sreturn` left one word on the caller's
+  operand stack; the next loop iteration eventually overflowed at
+  `GETFIELD_A_THIS` (`6F00`, exception id 2). The same order difference exists
+  for `RandomData.OneShot`.
+- **Fix:** For the JC305 security package, remap virtual method tokens for
+  RandomData class tokens 14 and 32 using `{0, 1, 3, 2, 4, 5}`. This maps
+  JC305 `setSeed` to the embedded void method and JC305 `nextBytes` to the
+  embedded short-returning method. The mapping is in
+  `choupi/src/jc_handlers/jc_cp.cpp`.
+- **Hardware validation:** Both `./tools/build arm` and `./tools/build riscv`
+  passed. The clean ARM firmware was flashed to the physical Pico 2. The
+  focused secure-random probe passed the exact 50-repeat workload (`AA9000`),
+  and official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` exited 0. Its
+  setSeed measurement passed all 250 invocations at `0.36 ms/op` average.
+  Official output recorded 40 `NO_SUCH_ALGORITHM` results, which are expected.
+- **Remaining static-run triage:** The completed run recorded 1,855
+  `CANT_BE_MEASURED` rows, including 95 measurement/preparation APDUs with
+  `6F00`. The first `6F00` after the setSeed fix occurs at DES
+  `Cipher_doFinal()` prepare (`B031`, `ALG_DES_CBC_NOPAD`, key length 64), not
+  in RandomData. This is a separate unresolved failure; inspect its prepare
+  and method-dispatch path before changing any cipher support. Do not infer
+  that every `CANT_BE_MEASURED` row is a VM defect.
+- **General lesson:** Cross-version CAP compatibility includes virtual method
+  token order as well as class-token order. A return-type mismatch can leave a
+  seemingly unrelated stack word and only fail on a later iteration. Verify
+  imported and embedded method descriptors/order for both void and value
+  returns when porting SDK APIs.
+- Evidence: `artifacts/logs/jcalgtest-secure-random-setseed-clean-50-20261017.log`
+  (SHA-256 `2d73aab519f2050881bcb7d80ce82fbea3cf0937cdccf121654d27c17a090b69`),
+  `artifacts/logs/jcalgtest-static-randomdata-token-map-20261017.log` (SHA-256
+  `266df057ddd8df658cd339ea1b61ae5916a6b2396ad9ba8cb592a71b5d9fda20`), and
+  `artifacts/results/jcalgtest-static-randomdata-token-map-20261017/ALGTEST_log_1792234644321.log`.

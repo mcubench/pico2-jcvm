@@ -130,12 +130,25 @@ uint8_t remap_imported_virtual_method_token(
     const uint8_t method_token) noexcept {
   static constexpr uint8_t security_digest_virtual_methods[] = {
       0, 3, 1, 2, 5, 4};
+  // JC305 places RandomData.setSeed before nextBytes, while the embedded API
+  // export places nextBytes before setSeed. Translate both RandomData and its
+  // OneShot subclass so a void setSeed call cannot dispatch to short-returning
+  // nextBytes and leave an operand on the caller's stack.
+  static constexpr uint8_t security_random_data_virtual_methods[] = {
+      0, 1, 3, 2, 4, 5};
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
       class_token == 11 &&
       method_token < sizeof(security_digest_virtual_methods)) {
     return security_digest_virtual_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      (class_token == 14 || class_token == 32) &&
+      method_token < sizeof(security_random_data_virtual_methods)) {
+    return security_random_data_virtual_methods[method_token];
   }
   static constexpr uint8_t framework_applet_methods[] = {
       1, 2, 3, 4, 6, 7, 5, 8};

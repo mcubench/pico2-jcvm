@@ -3752,3 +3752,33 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   capturing bounded serial output. Identify the VM exception/status before
   changing code. Then check whether the subsequent TRNG rows still fail after
   isolating that first error.
+
+## Latest continuation — RandomData token-order fix — 2026-10-17
+
+- Reproduced the supported `RandomData.ALG_SECURE_RANDOM.setSeed()` failure
+  on the real Pico with repeat counts 2, 5, and 50. One repeat passed; two or
+  more failed at `GETFIELD_A_THIS` with stack overflow.
+- The VM traces showed JCAlgTest's external RandomData token 2 resolving to
+  method offset 1168, whose short return left one stack word. Comparing JC305
+  `javacard/security/security.jca` to the embedded generated API export showed
+  JC305 order `setSeed=2, nextBytes=3`, while the embedded API order is
+  `nextBytes=2, setSeed=3`. Added a security RandomData virtual-method map for
+  class tokens 14 and 32. QKB records the cause and descriptor-order lesson.
+- Both `./tools/build arm` and `./tools/build riscv` passed. The clean,
+  non-instrumented ARM firmware flashed successfully. The physical focused
+  50-repeat probe returned `AA9000`; official JCAlgTest 1.8.2
+  `ALG_PERFORMANCE_STATIC` completed with exit 0. Secure-random setSeed passed
+  all 250 invocations and averaged `0.36 ms/op`.
+- Official run totals: 40 expected `NO_SUCH_ALGORITHM`, 1,855
+  `CANT_BE_MEASURED`; 95 operation APDUs returned `6F00`. The first remaining
+  `6F00` is DES `Cipher_doFinal()` prepare (`B031`, `ALG_DES_CBC_NOPAD`, key
+  length 64), after the RandomData tests completed. This is unclassified and
+  is the next targeted investigation. Do not treat all missing algorithms or
+  `CANT_BE_MEASURED` rows as VM bugs.
+- Build, flash, serial, probe, official log, CSV, and raw result artifacts are
+  under `artifacts/logs/` and
+  `artifacts/results/jcalgtest-static-randomdata-token-map-20261017/`.
+- Next: isolate the single DES Cipher prepare APDU and serial exception trace;
+  verify whether the failure is a cross-version virtual/static method mapping
+  issue before changing cipher behavior. Keep the Pico test bounded and never
+  use `pcsc_scan`.
