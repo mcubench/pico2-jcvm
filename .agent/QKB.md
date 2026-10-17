@@ -181,3 +181,13 @@ fix.
   (SHA-256 `dd713bfab8772a15d04661b9ebd244c8972cd3a2085d0b4f7d11ff08a0043ede`)
   and `artifacts/logs/monitor-alg-static-state-repro-20261017.log` (SHA-256
   `0c11622d7844e92db567de647d8b686321c2af87af92baa83e2041d8dedc6fa1`).
+- A follow-up diagnostic sent `B034` again after `F105`, which allocated a
+  new 2,048-byte transient array and stored the new digest reference, but the
+  next measured APDU still returned `F105`. Reprepare alone does not recover
+  the current failure. This shifts the next investigation toward how the VM
+  reads/writes the digest object's array field and transient-array contents;
+  it is not evidence that `reset()` alone is the only faulty path. Trace:
+  `artifacts/logs/jcalgtest-static-reset-diagnostic-20261017.log` (SHA-256
+  `462ac435d379a4615aa7b9ab719c9f9cdddc9aa78484977b750db0a205bd54dd`) and
+  `artifacts/logs/monitor-alg-static-reset-diagnostic-20261017.log` (SHA-256
+  `418169398bd3ccff8a300edb3d92021cb1614992d864142e2c33def19208d72d`).

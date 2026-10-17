@@ -3687,3 +3687,11 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: inspect reset/finalization and native exception cleanup across APDUs;
   add bounded state-length diagnostics if needed, then repeat the exact
   physical probe. The current probe intentionally stops at non-`AA9000`.
+- Follow-up diagnostic: after the replay returned `F105`, the probe sent
+  `B034` again; serial confirmed a fresh 2,048-byte transient array allocation
+  and `PUTFIELD_A` of the digest reference, yet the next static APDU again
+  returned `F105`. Log files:
+  `artifacts/logs/jcalgtest-static-reset-diagnostic-20261017.log` and
+  `artifacts/logs/monitor-alg-static-reset-diagnostic-20261017.log`. This
+  weakens the theory that only one old digest object's state is stale. Inspect
+  VM object/array reference behavior and the actual native array length next.

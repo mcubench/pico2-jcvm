@@ -96,15 +96,29 @@ public final class JCAlgTestApduProbe {
                 officialBaselineSettings, 256));
       }
       for (int measurement = 1; measurement <= 2; measurement++) {
-        ResponseAPDU measured = transmit(channel,
-            "OFFICIAL_SHA256_STATIC_MEASUREMENT_" + measurement,
-            new CommandAPDU(0xB0, 0x41, 0x00, 0x00,
-                officialStaticSettings, 256));
-        if (measured.getData().length < 1 ||
-            measured.getData()[0] != (byte) 0xAA) {
-          throw new IllegalStateException(
-              "official static SHA-256 workload failed at measurement " +
-              measurement);
+        try {
+          transmit(channel, "OFFICIAL_SHA256_STATIC_MEASUREMENT_" + measurement,
+              new CommandAPDU(0xB0, 0x41, 0x00, 0x00,
+                  officialStaticSettings, 256));
+        } catch (IllegalStateException failure) {
+          if (!failure.getMessage().contains("SW=F105")) {
+            throw failure;
+          }
+          System.out.println(
+              "DIAGNOSTIC: reprepare after F105, then compare baseline reset");
+          transmit(channel, "OFFICIAL_SHA256_REPREPARE_AFTER_F105",
+              new CommandAPDU(0xB0, 0x34, 0x00, 0x00,
+                  officialStaticSettings, 256));
+          transmit(channel, "OFFICIAL_SHA256_AFTER_REPREPARE",
+              new CommandAPDU(0xB0, 0x41, 0x00, 0x00,
+                  officialStaticSettings, 256));
+          transmit(channel, "OFFICIAL_SHA256_BASELINE_AFTER_REPREPARE",
+              new CommandAPDU(0xB0, 0x41, 0x00, 0x00,
+                  officialBaselineSettings, 256));
+          transmit(channel, "OFFICIAL_SHA256_AFTER_BASELINE_RESET",
+              new CommandAPDU(0xB0, 0x41, 0x00, 0x00,
+                  officialStaticSettings, 256));
+          break;
         }
       }
 

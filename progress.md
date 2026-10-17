@@ -4289,3 +4289,13 @@
 - Decision: Keep `ALG_PERFORMANCE_STATIC` open. Trace digest state cleanup on success and failure before treating the issue as fixed; apply the same multi-APDU/state-lifecycle checks to future stateful algorithms.
 - Commit: `274aaea3af60a7e7ae979c2c4d899f91e032e9aa`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-state-repro-20261017.log` (SHA-256 `dd713bfab8772a15d04661b9ebd244c8972cd3a2085d0b4f7d11ff08a0043ede`); `artifacts/logs/monitor-alg-static-state-repro-20261017.log` (SHA-256 `0c11622d7844e92db567de647d8b686321c2af87af92baa83e2041d8dedc6fa1`)
+
+## 2026-10-17 — Check digest reprepare recovery
+
+- Step/experiment: `physical-jcalgtest-digest-reprepare-recovery`
+- Change: Extended the focused probe so a reproduced `F105` triggers one digest reprepare and compares a static measurement immediately afterward. Updated QKB and handoff with the recovery result and refined next-step diagnosis.
+- Validation: The physical probe again returned `F105` after five successful zero-repeat baselines. Reprepare returned `AA9000`; the next 50-call APDU still returned `F105`. Concurrent bounded serial output confirmed allocation of a new 2,048-byte transient array, reference store, second `F105`, and continued `TEST:PASS choupi_runtime`/CCID processing. The probe exited nonzero as expected. No firmware build or flash was performed.
+- Result: The current error is repeatable after a fresh digest prepare, so retaining only the old digest instance does not explain it. The VM's digest-array field access/transient array contents remain suspects; native length was not directly instrumented, so the exact internal state is not yet proven.
+- Decision: Continue tracing object/array field identity and the SHA bridge's observed length before changing behavior. Keep the static SHA issue open; the independent single-call SHA tests passed previously.
+- Commit: `<recorded in metadata follow-up>`
+- Artifacts/logs: `artifacts/logs/jcalgtest-static-reset-diagnostic-20261017.log` (SHA-256 `462ac435d379a4615aa7b9ab719c9f9cdddc9aa78484977b750db0a205bd54dd`); `artifacts/logs/monitor-alg-static-reset-diagnostic-20261017.log` (SHA-256 `418169398bd3ccff8a300edb3d92021cb1614992d864142e2c33def19208d72d`)
