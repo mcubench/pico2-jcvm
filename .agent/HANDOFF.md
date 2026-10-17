@@ -3782,3 +3782,21 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   verify whether the failure is a cross-version virtual/static method mapping
   issue before changing cipher behavior. Keep the Pico test bounded and never
   use `pcsc_scan`.
+
+## DES prepare probe continuation — 2026-10-17
+
+- Added `--des-cipher-prepare` to `tools/JCAlgTestApduProbe.java`; it sends the
+  exact first failing official `B031` payload for DES CBC no padding with a
+  64-bit key and `Cipher_doFinal`.
+- The probe compiled with `./tools/probe-jc-algtest`, then stopped before APDU
+  transmission because this session sees no Pico PC/SC reader. The permitted
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` command is blocked by the
+  container's no-new-privileges flag. Do not use `pcsc_scan` or other sudo
+  commands to work around it.
+- Code review narrows `prepare_class_Cipher()` to key build/set, Cipher factory,
+  Cipher init, and secure-random input fill. The previous serial capture ended
+  before DES, so it cannot identify the failing stage. QKB records the exact
+  APDU and distinction from the separate unsupported TRNG request.
+- Next: in a host-access session with Pico PC/SC, run the focused probe with a
+  bounded serial capture and classify the exception frame before changing
+  crypto support. No new hardware validation has occurred in this session.

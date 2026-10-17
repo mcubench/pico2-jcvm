@@ -4339,3 +4339,13 @@
 - Decision: Keep unsupported algorithms as expected. Next isolate the supported-looking DES Cipher prepare APDU and inspect its exception/method map before changing cipher behavior.
 - Commit: `daed80981836259686bb31ef27f056b27946e2af`
 - Artifacts/logs: ARM build SHA-256 `dc10263786a33058c187db7d9105a4f84f8585d4960af4d6d5b9c3d28376a8f1`; RISC-V build `1a49f6dfe1fda8cf7517d15d7eea430122e89e1fe03731b0c35a0f35ede88be2`; flash `351869e7b877f1161b50e716cc7d9651f8eaba632082071a92940814c046bb90`; focused probe `artifacts/logs/jcalgtest-secure-random-setseed-clean-50-20261017.log` (SHA-256 `2d73aab519f2050881bcb7d80ce82fbea3cf0937cdccf121654d27c17a090b69`); full official run `artifacts/logs/jcalgtest-static-randomdata-token-map-20261017.log` (SHA-256 `266df057ddd8df658cd339ea1b61ae5916a6b2396ad9ba8cb592a71b5d9fda20`); finite serial `artifacts/logs/monitor-arm-randomdata-clean-20261017.log`; raw result and CSV under `artifacts/results/jcalgtest-static-randomdata-token-map-20261017/`.
+
+## 2026-10-17 — Isolate DES static prepare failure
+
+- Step/experiment: `physical-jcalgtest-des-prepare-probe`
+- Change: Added `--des-cipher-prepare` to the focused JCAlgTest APDU probe using the exact first failing DES `B031` payload. Recorded the preparation call chain and current hardware-access blocker in `.agent/QKB.md` and `.agent/HANDOFF.md`.
+- Validation: `PICO2_APDU_TIMEOUT_SECONDS=5 ./tools/probe-jc-algtest --des-cipher-prepare` compiled the probe, then exited 1 before transmission because Java SmartcardIO could not find the Pico reader. The permitted ACL helper could not run because this container sets no-new-privileges. Physical validation was skipped.
+- Result: The DES prepare failure is narrowed to key build/set, Cipher factory/init, or random input fill; its root cause remains unknown because the available serial capture ends before the DES APDU.
+- Decision: Replay this single APDU with bounded serial capture in host-access context; classify the exception before changing behavior.
+- Commit: `pending`
+- Artifacts/logs: Existing official APDU `artifacts/logs/jcalgtest-static-randomdata-token-map-20261017.log`; existing finite serial capture `artifacts/logs/monitor-jcalgtest-static-randomdata-token-map-20261017.log`; no new hardware log.

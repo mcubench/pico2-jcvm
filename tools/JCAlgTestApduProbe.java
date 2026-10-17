@@ -80,6 +80,20 @@ public final class JCAlgTestApduProbe {
           new CommandAPDU(0xB0, 0x73, 0x01, 0x00,
               new byte[] {0x01}, 256));
 
+      if (args.length == 1 && "--des-cipher-prepare".equals(args[0])) {
+        // Isolate the first supported-looking Cipher prepare that returned
+        // 6F00 in ALG_PERFORMANCE_STATIC. These are the exact JC305 settings
+        // from the archived official-client APDU for DES CBC no padding,
+        // 64-bit key, and doFinal. A failing SW is reported by transmit().
+        byte[] desCipherSettings = fromHex(
+            "0011 0001 FFFF 0003 0040 0007 0100 FFFF 0002 0032 0001");
+        transmit(channel, "DES_CIPHER_PREPARE",
+            new CommandAPDU(0xB0, 0x31, 0x00, 0x00,
+                desCipherSettings, 256));
+        System.out.println("TEST:PASS des_cipher_prepare");
+        return;
+      }
+
       // Reproduce the official ALG_PERFORMANCE_STATIC SHA-256 prelude:
       // prepare once with the measured settings, collect five zero-repeat
       // baseline samples, then submit the 50-call measurement twice.

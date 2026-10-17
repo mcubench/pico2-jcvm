@@ -327,3 +327,33 @@ fix.
   `artifacts/logs/jcalgtest-static-randomdata-token-map-20261017.log` (SHA-256
   `266df057ddd8df658cd339ea1b61ae5916a6b2396ad9ba8cb592a71b5d9fda20`), and
   `artifacts/results/jcalgtest-static-randomdata-token-map-20261017/ALGTEST_log_1792234644321.log`.
+
+## Isolate first DES static prepare failure — 2026-10-17
+
+- The first DES `ALG_PERFORMANCE_STATIC` failure is specifically the prepare
+  APDU `B0 31` for `ALG_DES_CBC_NOPAD`, 64-bit DES key, `Cipher_doFinal`; its
+  payload is `00 11 00 01 FF FF 00 03 00 40 00 07 01 00 FF FF 00 02 00 32 00 01`.
+  It returns `6F00` after 550 ms. The immediately preceding secure-random
+  `setSeed` measurement completed successfully. Later DES prepare variants
+  also return `6F00`.
+- JCAlgTest's `prepare_class_Cipher()` sequence is `prepare_Key()` (build two
+  DES keys and set their values), `Cipher.getInstance(ALG_DES_CBC_NOPAD)`,
+  `Cipher.init()`, then secure-random input fill. The applet's `m_trng` field
+  is initialized once as `RandomData.ALG_SECURE_RANDOM`; the prior TRNG
+  unsupported result concerns a separate RandomData test and does not itself
+  explain this prepare failure. The archived serial capture ends before the
+  DES APDU, so it contains no exception frame for this failure.
+- Added `--des-cipher-prepare` to `tools/JCAlgTestApduProbe.java` to replay
+  only this exact prepare request. The repository wrapper compiled the probe,
+  but the run could not transmit: Java SmartcardIO reported that the Pico
+  reader was absent. The approved ACL helper also exited because this
+  container has the no-new-privileges flag. No new physical result was
+  obtained; root cause remains unclassified.
+- Next: in the host-access context, run the focused probe while capturing a
+  bounded serial trace. Use the exception frame to distinguish key creation,
+  DES `setKey/getKey`, Cipher construction/init, and random input fill before
+  changing behavior. Do not infer a DES algorithm bug solely from `6F00`.
+- Evidence: official transcript
+  `artifacts/logs/jcalgtest-static-randomdata-token-map-20261017.log`, raw
+  result `artifacts/results/jcalgtest-static-randomdata-token-map-20261017/ALGTEST_log_1792234644321.log`,
+  serial capture `artifacts/logs/monitor-jcalgtest-static-randomdata-token-map-20261017.log`.
