@@ -4666,7 +4666,7 @@
 - Validation: Source inspection of `Heap`, `Stack`, `Context`, `JC_Instance`, `JC_Array`, and static-field handlers. No source code changed; no build, runtime test, or hardware action was run.
 - Result: A per-APDU heap clear or list compaction is unsafe. The static SHA cache fix resolves its measured heap growth but does not implement general collection.
 - Decision: Next add canonical VM roots for static references and explicit root enumeration; defer sweep/reuse until typed object-graph tracing covers all persistent roots.
-- Commit: pending.
+- Commit: `76f4a71`.
 - Artifacts/logs: none.
 
 ## 2026-10-17 — Identify repeated static-reference reconstruction
@@ -4676,7 +4676,7 @@
 - Validation: Read-only source inspection of static get/put bytecodes, `Static_Handler`, and persistent-reference deserialization. No source code changed; no build, runtime test, or hardware action was run.
 - Result: A static root cache is necessary both for Java reference identity and future safe heap collection. The cache must be keyed by resolved package/static field and invalidated with lifecycle deletion/context teardown.
 - Decision: Next trace install/delete/context lifecycle ownership, then implement canonical static reference roots with focused identity coverage before starting a collector.
-- Commit: pending.
+- Commit: `c6bec06`.
 - Artifacts/logs: none.
 
 ## 2026-10-17 — Finalize heap review commit records
@@ -4686,5 +4686,5 @@
 - Validation: `git diff --check` passed for `.agent/QKB.md`, `.agent/HANDOFF.md`, and `progress.md`; both commits contain only the review notes and progress records.
 - Result: The review trail now points to its committed documentation changes.
 - Decision: Continue next with package/app deletion and context lifecycle tracing before implementing static-reference caching.
-- Commit: pending.
+- Commit: `af36522` (this SHA was filled in by the follow-up progress-record commit).
 - Artifacts/logs: none.
