@@ -84,6 +84,17 @@ plan's unsupported capability. The failure mechanism is documented in
 `.agent/QKB.md`; do not implement unsafe offset-list clearing. This run does
 not prove AC3's supported-algorithms mode, which remains outstanding.
 
+Latest supported-algorithm update (2026-10-17): the previous `6F00` was caused
+by `InitializedMessageDigest.OneShot.open()` returning null for an unsupported
+factory; it now throws `CryptoException.NO_SUCH_ALGORITHM`. The focused VPCD
+golden test passes this exception reason, and the physical official CSV records
+the OneShot SHA-256 row as unsupported without `6F00`. The full physical
+`ALG_SUPPORT_EXTENDED` sweep advanced through 1,637 CSV rows, then the reader
+became unavailable during `SIG_CIPHER_DSA PAD_PKCS5 ALG_SHA_384`. The Pico
+re-enumerated and the bounded physical JCAlgTest probe passed afterward. This
+run is incomplete, not an AC3 pass; most `no` rows are expected unsupported
+capabilities. See `.agent/QKB.md` for evidence and the remaining disconnect.
+
 Next actions:
 
 1. [x] Add golden applet assertions for both `getAvailableMemory` forms and
@@ -96,8 +107,11 @@ Next actions:
    failure, and persistent restore tests. The official physical static suite
    has been run but fails from the documented heap retention; preserve that
    result and do not misreport it as passing.
-3. Run the matching JCAlgTest v1.8.2 supported-algorithms mode on Pico and
-   compare its CSV against the jCardSim reference and declared support list.
+3. Diagnose the later PC/SC disconnect in the physical supported-algorithm
+   sweep, then finish the matching JCAlgTest v1.8.2 mode and compare its CSV
+   against the jCardSim reference and declared support list. Treat absent
+   algorithms and `NO_SUCH_ALGORITHM` as expected unless the declared support
+   list says otherwise.
 4. Complete AC1–AC5 and the clean-flash integration sequence three times.
 
 Earlier startup-timeout and physical `F503` observations below are historical

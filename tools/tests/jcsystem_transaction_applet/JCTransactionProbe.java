@@ -7,6 +7,8 @@ import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
 import javacard.framework.TransactionException;
 import javacard.security.MessageDigest;
+import javacard.security.InitializedMessageDigest;
+import javacard.security.CryptoException;
 
 public final class JCTransactionProbe extends Applet {
   private byte value = 0x11;
@@ -118,6 +120,14 @@ public final class JCTransactionProbe extends Applet {
         length = offset;
         break;
       }
+      case 11:
+        try {
+          InitializedMessageDigest.OneShot.open(MessageDigest.ALG_SHA);
+          buffer[0] = 0;
+        } catch (CryptoException e) {
+          buffer[0] = (byte)e.getReason();
+        }
+        break;
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
     }

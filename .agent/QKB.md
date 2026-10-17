@@ -560,3 +560,32 @@ fix.
   `ALGTEST_log_1792239359688.log` (`bf13f1222f87ead5262db72c58ddbd58b9dc79dd5329269af0395270499c8022`) and
   `Pico_2_CHOUPI_CCID_[JCAlgTest_CCID]_(D92E743D5F640C0F)_00_00____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_1792239359688__3b_80_01_81.csv`
   (`9180b734a6f04cd5fa3118089d90eb08ec9717d15c1133cf9171f277f9e26cd6`).
+
+## InitializedMessageDigest.OneShot unsupported factory — 2026-10-17
+
+- **Symptom:** The official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` sweep
+  returned `6F00` at `javacard.security.InitializedMessageDigest.OneShot`.
+  The VM diagnostic identified `NullPointerException` at `INVOKEVIRTUAL`;
+  JCAlgTest calls `OneShot.open(...)` and then `close()` inside a `try` that
+  catches only `CryptoException`.
+- **Cause:** `InitializedMessageDigest.OneShot.open(byte)` was a TODO stub
+  returning `null`. This turns an unsupported algorithm into a later NPE and
+  corrupts the rest of the sweep's result stream.
+- **Viable fix:** Unsupported factories must throw their documented
+  `CryptoException.NO_SUCH_ALGORITHM`; never return `null` for a Java Card
+  object factory. The stub now throws reason 3. A focused applet call verifies
+  the returned reason, and the physical official CSV records
+  `InitializedMessageDigest.OneShot / ALG_SHA_256;no` without `6F00`.
+- **Remaining limit:** The full physical supported-algorithm sweep advanced
+  through that row but later ended with `SCARD_E_READER_UNAVAILABLE` during
+  `SIG_CIPHER_DSA PAD_PKCS5 ALG_SHA_384`. It completed 1,637 CSV rows, with no
+  `6F00` in the captured transcript. The Pico re-enumerated and the bounded
+  physical APDU probe passed afterward. This later disconnect is not yet
+  explained; do not conflate it with the OneShot NPE or claim the full sweep
+  passed. The separately confirmed lack of heap reclamation during repeated
+  cipher workloads remains a plausible related risk, but this run did not log
+  an allocation failure.
+- **Evidence:**
+  `artifacts/logs/jcalgtest-supported-arm-oneshot-fix-20261017.log`,
+  `artifacts/logs/monitor-arm-oneshot-unsupported-after-official-20261017.log`,
+  and `artifacts/logs/jcalgtest-physical-after-supported-20261017.log`.

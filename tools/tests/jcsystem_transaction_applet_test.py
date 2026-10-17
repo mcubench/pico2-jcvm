@@ -40,7 +40,7 @@ def exchange(connection: socket.socket, apdu: bytes, label: str) -> bytes:
     response = receive_message(connection)
     if response[-2:] != b"\x90\x00":
         raise RuntimeError(f"{label}: SW={response[-2:].hex().upper()} data={response.hex().upper()}")
-    print(f"TEST:PASS {label} response={response.hex().upper()}")
+    print(f"TEST:APDU {label} response={response.hex().upper()}")
     return response[:-2]
 
 
@@ -139,6 +139,7 @@ def main() -> int:
                         bytes(22),
                         "JCSystem scalar/extended memory overloads and commit capacity",
                     ),
+                    (11, b"\x03", "unsupported initialized digest reports NO_SUCH_ALGORITHM"),
                 )
                 for p1, expected, label in cases:
                     data = exchange(
@@ -150,6 +151,7 @@ def main() -> int:
                         raise RuntimeError(
                             f"{label}: expected {expected.hex().upper()}, got {data.hex().upper()}"
                         )
+                    print(f"TEST:PASS {label}")
                 print(f"TEST:SUMMARY pass={len(cases) + 2} fail=0 elapsed_s={time.monotonic() - started:.3f}")
             finally:
                 if connection is not None:

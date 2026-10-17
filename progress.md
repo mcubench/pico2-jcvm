@@ -914,7 +914,8 @@
 - Validation: Source inspection confirms firmware invokes one fixed static method at boot; non-static interpreter entry, `Applet.register()`, and `APDU.getBuffer()` are explicit TODOs, and no selected-applet registry exists. `./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar --list` exits with `SCARD_E_NO_SERVICE (0x8010001d)` because `pcscd` is absent. Inspection-only step; no build or flash was needed.
 - Result: The existing static AlgTest ROM-mask runner cannot receive host APDUs, and GlobalPlatformPro cannot yet access a PC/SC resource manager. A CCID USB interface alone is insufficient for either GP package management or applet execution.
 - Decision: Start WP3 by adding an APDU buffer and explicit applet selection/dispatch path, then provide a user-space PC/SC service/driver route before validating GPPro.
-- Commit: pending
+- Commit: nested API `f6776a8`; root record SHA to be recorded in a follow-up
+  metadata commit.
 - Artifacts/logs: `artifacts/logs/apdu-lifecycle-audit-20261011.txt`
 
 ## 2026-10-11 — Check for a user-local PC/SC service
@@ -4540,3 +4541,41 @@
   acceptance.
 - Commit: `7734d9c`
 - Artifacts/logs: `artifacts/logs/jcsystem-memory-overloads-vpcd-20261017.log`.
+
+## 2026-10-17 — Return documented exception for unsupported OneShot digests
+
+- Step/experiment: `initialized-digest-oneshot-unsupported-factory`
+- Change: Changed `InitializedMessageDigest.OneShot.open(byte)` from a null
+  TODO result to `CryptoException.NO_SUCH_ALGORITHM`; added a golden applet
+  call and corrected the test harness to print PASS only after expected bytes
+  match. Documented the official-suite failure and distinction from expected
+  unsupported algorithms in `.agent/QKB.md` and `TODO.md`.
+- Validation: `./tools/build arm` and `./tools/build-pc` passed. Rebuilt the
+  PC ROM mask before the host-access VPCD test; it passed
+  `TEST:SUMMARY pass=14 fail=0 elapsed_s=23.936`. ARM firmware flashed and an
+  8-second physical serial capture reported `TEST:PASS choupi_runtime` with no
+  `TEST:FAIL` or `FAULT`. The bounded physical JCAlgTest probe passed SELECT,
+  GETVERSION `1.8.2_jc305`, JCSystem info, repeated SHA-256 including 50 calls,
+  and expected unsupported RSA-SHA1. No RISC-V build/test was run.
+- Result: The official physical `ALG_SUPPORT_EXTENDED` sweep passed the
+  previous OneShot failure; its CSV records
+  `InitializedMessageDigest.OneShot / ALG_SHA_256;no`. It then stopped after
+  1,637 CSV rows with `SCARD_E_READER_UNAVAILABLE` during
+  `SIG_CIPHER_DSA PAD_PKCS5 ALG_SHA_384`. After the Pico re-enumerated, the
+  bounded physical probe passed again. The full sweep remains incomplete and
+  is not reported as a pass. Unsupported algorithms remain expected.
+- Decision: Preserve the factory exception fix. Diagnose the later physical
+  reader disconnect separately; do not infer allocation failure from this
+  run because no allocation error was captured. Keep physical calls in
+  host-access context; the prior USB guard commit covers accidental restricted
+  invocations.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/build-arm-oneshot-unsupported-fix-20261017.log`,
+  `artifacts/logs/build-pc-oneshot-unsupported-fix-20261017.log`,
+  `artifacts/logs/jcsystem-oneshot-unsupported-vpcd-final-20261017.log`,
+  `artifacts/logs/flash-arm-oneshot-unsupported-fix-20261017.log`,
+  `artifacts/logs/monitor-arm-oneshot-unsupported-fix-20261017.log`,
+  `artifacts/logs/jcalgtest-physical-oneshot-unsupported-fix-20261017.log`,
+  `artifacts/logs/jcalgtest-supported-arm-oneshot-fix-20261017.log`,
+  `artifacts/logs/monitor-arm-oneshot-unsupported-after-official-20261017.log`,
+  `artifacts/logs/jcalgtest-physical-after-supported-20261017.log`.

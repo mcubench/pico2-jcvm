@@ -1,5 +1,45 @@
 # Handoff
 
+## Latest continuation — report unsupported OneShot algorithms correctly — 2026-10-17
+
+- Fixed `InitializedMessageDigest.OneShot.open(byte)` to throw its documented
+  `CryptoException.NO_SUCH_ALGORITHM` instead of returning null. JCAlgTest
+  called `close()` after `open()` and only caught `CryptoException`, so the old
+  stub escaped as an NPE/`6F00` and poisoned later rows.
+- Added a JCSystem transaction-probe APDU that verifies the returned reason.
+  `./tools/build arm`, `./tools/build-pc`, and the host-access VPCD regression
+  passed; final result was `TEST:SUMMARY pass=14 fail=0 elapsed_s=23.936`.
+  The PC ROM mask must be rebuilt after API changes, or the emulator test runs
+  stale bytecode.
+- Flashed the rebuilt ARM image through `./tools/flash`; CDC reset fallback
+  entered BOOTSEL and reported `FLASH:PASS`. The finite 8-second serial capture
+  reported runtime PASS and no FAIL/FAULT. The physical JCAlgTest probe passed
+  SELECT, version `1.8.2_jc305`, JCSystem info, repeated SHA-256 including a
+  50-call workload, and expected unsupported RSA-SHA1 handling.
+- The official physical `ALG_SUPPORT_EXTENDED` sweep passed the prior
+  OneShot area and CSV records `InitializedMessageDigest.OneShot / ALG_SHA_256`
+  as unsupported. It later stopped after 1,637 CSV rows with
+  `SCARD_E_READER_UNAVAILABLE` at `SIG_CIPHER_DSA PAD_PKCS5 ALG_SHA_384`; it
+  did not produce `6F00` before disconnect. The Pico re-enumerated and a
+  bounded physical probe passed afterward. Full sweep remains incomplete; no
+  unsupported algorithm was treated as a defect. QKB records this separately
+  from the known heap-retention OOM.
+- Physical USB actions used host-access execution from the outset. After board
+  re-enumeration, the authorized helper granted node `/dev/bus/usb/001/009`.
+  Do not use `pcsc_scan`.
+- Logs: `artifacts/logs/build-arm-oneshot-unsupported-fix-20261017.log`,
+  `artifacts/logs/build-pc-oneshot-unsupported-fix-20261017.log`,
+  `artifacts/logs/jcsystem-oneshot-unsupported-vpcd-final-20261017.log`,
+  `artifacts/logs/flash-arm-oneshot-unsupported-fix-20261017.log`,
+  `artifacts/logs/monitor-arm-oneshot-unsupported-fix-20261017.log`,
+  `artifacts/logs/jcalgtest-physical-oneshot-unsupported-fix-20261017.log`,
+  `artifacts/logs/jcalgtest-supported-arm-oneshot-fix-20261017.log`, and
+  `artifacts/logs/jcalgtest-physical-after-supported-20261017.log`.
+- Nested API implementation commit: `f6776a8`. The root project record commit
+  will be recorded in a follow-up metadata commit. Next diagnose the later
+  supported-sweep disconnect and compare completed results with jCardSim and
+  declared support. ARM M33 only; do not build or test RISC-V.
+
 ## Latest continuation — JCSystem memory overload golden coverage — 2026-10-17
 
 - Extended the Java Card transaction probe with one APDU that calls scalar
