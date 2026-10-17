@@ -1,5 +1,28 @@
 # Handoff
 
+## Latest continuation — heap-root inventory — 2026-10-17
+
+- Read-only source review after commit `425602b` mapped the remaining roots and
+  edges. `Context` owns AID, registered/restored applet, and APDU references;
+  `Heap` owns runtime CryptoException roots and the static-reference cache.
+  The cache currently has no enumeration accessor.
+- Instance fields carry `FieldType` metadata and compact references;
+  reference arrays carry compact references too. Persistent instance fields
+  and persistent array children deserialize lazily, so a marking traversal
+  must tolerate heap growth and avoid invalidated iterators.
+- Safepoint constraint: reference locals/operands in Java frames are untyped,
+  and native C++ locals can hold handles. A first collector must run only after
+  the interpreter and native APDU caller return, with no active frames or
+  native handles. Context-held APDU refs and the stack's root return value
+  still need explicit treatment.
+- Heap offsets are 1-based list positions and `jref_t` has no generation
+  counter. Erasure/compaction is unsafe; future tombstones must be validated by
+  a mark-only visitor before slot reuse.
+- No code, build, runtime test, or hardware operation was performed in this
+  architecture step. Details and next step are in `.agent/QKB.md`.
+- Next: add explicit `Context`/`Heap` root and typed-edge visitors; first run
+  mark-only validation, then consider slot reclamation separately.
+
 ## Latest continuation — canonical static reference roots — 2026-10-17
 
 - `GETSTATIC_A` previously deserialized object/array references from flash on

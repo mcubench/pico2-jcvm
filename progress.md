@@ -924,7 +924,7 @@
 - Validation: The daemon exited immediately with `cannot create /run/pcscd: Permission denied`. No daemon remains running, no system package was installed, and the Pico was not flashed during this experiment.
 - Result: Direct libusb CCID probing works, but this account cannot start the system PC/SC daemon because its runtime socket directory is root-owned/absent. The repository rule forbids using sudo in an autonomous cycle.
 - Decision: Keep the hardware transport verified via libusb; resume PC/SC/GPPro after the host exposes its normal PC/SC service or an unprivileged socket path is available. Continue firmware work on applet lifecycle and APDU dispatch.
-- Commit: `425602b`
+- Commit: pending
 - Artifacts/logs: `artifacts/logs/pcsc-user-local-20261011.txt`; downloaded/extracted packages remain only under `/tmp/pico2-pcsc-root`.
 
 ## 2026-10-11 — Diagnose empty PC/SC scan after driver match
@@ -4695,5 +4695,15 @@
 - Validation: `./tools/build-pc` passed; `./tools/build-jcsystem-transaction-probe` passed; focused VPCD case 14 passed with `019000` (`TEST:SUMMARY pass=3 fail=0 elapsed_s=6.819`); full VPCD regression passed (`TEST:SUMMARY pass=17 fail=0 elapsed_s=109.117`); `./tools/build arm` passed. No hardware or RISC-V validation was run.
 - Result: Repeated static reference reads return one canonical heap handle and no longer allocate duplicate restored wrappers. This is not heap reclamation.
 - Decision: Commit the static-reference cache and regression independently. Any future transactional static-field rollback must reconcile this cache on abort.
-- Commit: pending
+- Commit: `425602b`
 - Artifacts/logs: `artifacts/logs/build-pc-static-reference-cache-20261017.log`, `artifacts/logs/build-jcsystem-static-reference-cache-20261017.log`, `artifacts/logs/jcsystem-static-reference-cache-full-vpcd-20261017.log`, `artifacts/logs/build-arm-static-reference-cache-20261017.log`.
+
+## 2026-10-17 — Inventory roots for safe heap reclamation
+
+- Step/experiment: `heap-root-inventory-after-static-cache`
+- Change: Traced context-held references, heap-owned references, typed instance fields, reference-array entries, lazy persistent deserialization, interpreter/native stack lifetimes, and offset-based handle storage. Updated `.agent/QKB.md` and `.agent/HANDOFF.md` to supersede the earlier pre-cache root assessment and record the safe mark-only sequence.
+- Validation: Read-only source inspection of `Context`, `Heap`, `Stack`, `Frame`, `JC_Instance`, `JC_Array`, `FlashMemory_Handler`, and APDU dispatch. No source code changed; no build, runtime test, or hardware check was run.
+- Result: Static roots are cached but not enumerable. Context refs and lazy typed graph edges also need visitor support. Heap slots cannot be erased or compacted; run a complete mark-only traversal before enabling tombstone reuse.
+- Decision: Add explicit root/edge visitors and validate marking across APDU boundaries before implementing reclamation.
+- Commit: pending
+- Artifacts/logs: none.

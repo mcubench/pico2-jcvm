@@ -837,12 +837,10 @@ fix.
   completed APDU, which is the earliest practical initial safepoint.
 - **Roots still missing from a simple APDU-boundary sweep:** `Context` owns
   applet registration/restoration, AID, and APDU references, while `Heap` owns
-  the VM CryptoException roots. Java static reference fields are serialized
-  under flash tags and `GETSTATIC_A` restores an object/array into the heap on
-  demand; they are not represented by a persistent in-RAM root table that a
-  collector can enumerate. Persistent object fields are cached after first
-  access and can contain transient-array references; reference arrays also
-  need element tracing.
+  the VM CryptoException roots. Static references are now cached in the heap,
+  but the cache has no enumeration API for a collector. Persistent object
+  fields are cached after first access and can contain transient-array
+  references; reference arrays also need element tracing.
 - **Safe next design step:** first add canonical VM roots for loaded static
   references (keyed by package and static token), and explicit root enumeration
   for `Context`/`Heap`. Then add mark traversal through typed instance fields
@@ -854,15 +852,48 @@ fix.
   build, hardware, or performance validation was changed or run for this design
   note. Existing physical SHA measurements establish the one-time cached field
   fix, but do not validate a future garbage collector.
-- **Additional confirmed retention/identity path:** `bc_getstatic_a()` currently
-  calls `FlashMemory_Handler::getPersistentField_Reference()` directly for
-  every access. For a serialized object or array this reconstructs and appends
-  another heap object, unlike persistent instance `GETFIELD_A`, which now uses
-  its loaded field cache. Thus repeated static reference reads can both lose
-  Java reference identity and retain duplicate heap wrappers. A future static
-  root cache should key on the resolved package ID and static-field number,
-  update only after successful `PUTSTATIC_A`, and define invalidation for
-  package/app deletion or context teardown before it becomes a collector root.
+- **Resolved additional retention/identity path:** Before commit `425602b`,
+  `bc_getstatic_a()` called `FlashMemory_Handler::getPersistentField_Reference()`
+  on every access, reconstructing duplicate heap wrappers and breaking
+  reference identity. It now uses a per-heap static root cache keyed by package
+  and field; the cache is scoped to context lifetime. Its remaining collector
+  gap is that roots cannot yet be enumerated (see the inventory below).
+
+## Heap-root inventory after static-cache implementation — 2026-10-17
+
+- **Direct context roots:** `Context` holds the AID object, registered and
+  restored applet references, APDU buffer and APDU object references, and an
+  outgoing buffer reference. These must be surfaced to a collector while the
+  context is live. Some have `shared_ptr` mirrors; those C++ owners must not
+  outlive reclamation of their corresponding heap slot.
+- **Direct heap roots:** runtime CryptoException references and cached static
+  reference entries. The static cache currently has only keyed get/set methods,
+  so add read-only enumeration before using it as a collector root set.
+- **Graph edges:** Instance fields store a compact `jref_t` plus a
+  `FieldType`; the `FIELD_TYPE_OBJECT` and array variants identify references.
+  Reference arrays store compact `jref_t` entries. Primitive fields and arrays
+  must not be interpreted as references. Persistent instance fields load
+  lazily, and persistent reference-array reads deserialize children on demand;
+  traversal must account for heap growth while loading them and must not walk
+  the containers with invalidated iterators.
+- **Safepoint requirement:** `jref_t` has no generation counter. Stack locals
+  and operands are untyped words, and bytecode/native routines keep references
+  in C++ locals. Collect only after the APDU interpreter call and its native
+  caller frames have returned, with no Java frames and no outstanding native
+  references. At that point the root return-value cache must also be empty or
+  explicitly included. Context-held APDU references remain roots if retained.
+- **Slot requirement:** Heap references encode a 1-based offset into separate
+  array and instance lists. Never erase list nodes or compact either list.
+  A tombstone/free-list scheme can preserve offsets, but a slot may be reused
+  only after every Java, context, cached-field, array-element, and native root
+  has been accounted for. `getArray`/`getInstance` must reject tombstones before
+  reuse is enabled.
+- **Decision:** The next safe implementation step is an explicit root visitor
+  for `Context` and `Heap`, followed by typed object/array edge enumeration.
+  First run marking without reclaiming slots and compare the marked live set
+  against heap contents across APDU boundaries. Add tombstones and reuse only
+  after that trace is complete. No collector or runtime test was run in this
+  source-inspection step.
 
 ## Canonical roots for serialized static references — 2026-10-17
 
