@@ -4626,5 +4626,5 @@
 - Validation: Rechecked the physical-run log at line 62,594. The lazy-static experiment regenerated the PC ROM mask and ARM build with no converter errors; its 50-throw VPCD probe returned a distinct instance at throw 12 (`02010C00`) and failed the intended identity assertion. All pre-existing VPCD transaction, SHA-256, JCSystem, and unsupported-digest cases before that new assertion passed. No source change from this experiment remains.
 - Result: The sweep's allocation failure is explained by cumulative retained instances, likely including repeated `CryptoException` allocations. Exact allocation-to-exception counts were not measured. Persistent Java statics are not a valid cache for JCRE-owned exception objects.
 - Decision: Implement a VM-managed per-context runtime exception root or correct object reclamation, then pass a repeated-throw test before another physical supported sweep. Continue treating unsupported algorithms as expected.
-- Commit: pending.
+- Commit: `413828b`.
 - Artifacts/logs: `artifacts/logs/monitor-arm-ccid-sweep-repro-20261017.log`, `artifacts/logs/build-pc-exception-reuse-v2-20261017.log`, `artifacts/logs/build-arm-exception-reuse-v2-20261017.log`, and `artifacts/logs/jcsystem-exception-reuse-vpcd-v2-20261017.log`.
