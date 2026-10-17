@@ -4518,5 +4518,5 @@
 - Decision: Keep host-access invocation as the default and treat these checks
   as protection from accidental restricted invocations. Continue focused
   JCSystem/lifecycle golden coverage next.
-- Commit: pending
+- Commit: `68c3aa3`
 - Artifacts/logs: none; timings captured from bounded command results.

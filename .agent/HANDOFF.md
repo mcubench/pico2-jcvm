@@ -13,7 +13,7 @@
 - Future hardware operations: invoke the wrapper through host-access execution
   from the outset. The in-tool guard only prevents wasted attempts when a
   restricted execution is accidentally used.
-- Commit: pending.
+- Commit: `68c3aa3` (`Guard all Pico USB tools in restricted context`).
 - Next: continue golden JCSystem/lifecycle coverage from TODO after this
   fail-fast change is committed.
 
