@@ -3730,7 +3730,6 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/monitor-arm-persistent-reference-cache-20261017.log`.
 
 ## Static client residual `6F00` triage — 2026-10-17
-## Static client residual `6F00` triage — 2026-10-17
 
 - **Correction to the initial triage:** The first `6F00` is not the TRNG row.
   It is `RandomData.ALG_SECURE_RANDOM.setSeed()` (specification 2), whose

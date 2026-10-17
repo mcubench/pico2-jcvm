@@ -4327,5 +4327,5 @@
 - Validation: Re-parsed the raw official-client result in chronological APDU order and inspected the SDK `RandomData.setSeed()` implementation. The current container cannot access USB (`lsusb` and picotool report libusb initialization errors); the authorized helper is blocked by `no new privileges`. No new hardware test or build was run.
 - Result: The first non-SHA `6F00` is a supported-path failure. The cause of repeated `setSeed()` failure is not yet established. Prior note attributing the earliest failure to unsupported TRNG is superseded.
 - Decision: Reproduce only the secure-random prepare, zero-repeat baseline, and 50-repeat `setSeed` APDU in host-access context with bounded serial capture before changing code. Preserve later unsupported-algorithm interpretation until isolated evidence exists.
-- Commit: `<recorded in metadata follow-up>`
+- Commit: `0b56df098fd7a8f65d2bdd67f0dad19a4873267f`
 - Artifacts/logs: `artifacts/results/jcalgtest-static-cache-fix-physical-20261017/ALGTEST_log_1792223036058.log`; client transcript `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log` (SHA-256 `295243b8897c6eb59e1dd06a8dc8fc499bc602995088a38a07f9af263911765e`).
