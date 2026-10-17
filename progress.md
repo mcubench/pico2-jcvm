@@ -4317,5 +4317,5 @@
 - Validation: Read-only inspection of the captured official physical client and raw result logs confirmed the APDU order, specifications, statuses, and method labels. No build, flash, hardware command, or code test was run; this was log triage only.
 - Result: The first residual `6F00` follows an explicitly unsupported algorithm and is not evidence of failure in a supported operation. This does not classify all 1,866 `CANT_BE_MEASURED` rows; their prepare statuses need individual inspection.
 - Decision: Do not implement TRNG to eliminate this row. For remaining triage, investigate only a measurement whose prepare APDU returned `AA9000`.
-- Commit: `<recorded in metadata follow-up>`
+- Commit: `ea7cc5ca38153758d01f91ba90dc216d386b1ebf`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log` (SHA-256 `295243b8897c6eb59e1dd06a8dc8fc499bc602995088a38a07f9af263911765e`); `artifacts/results/jcalgtest-static-cache-fix-physical-20261017/ALGTEST_log_1792223036058.log`.
