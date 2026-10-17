@@ -4448,3 +4448,19 @@
 - Commit: `c59114e`
 - Artifacts/logs: Hashes recorded in the `Physical ALG_PERFORMANCE_STATIC
   heap retention` section of `.agent/QKB.md`.
+
+## 2026-10-17 — Refresh project tracker from physical static run
+
+- Step/experiment: `update-todo-static-oom-status`
+- Change: Replaced the stale “official client outstanding” status with the
+  actual physical AES static failure and added memory accounting, supported
+  mode comparison, golden tests, and AC1–AC5 as next work.
+- Validation: Inspected the archived official client transcript and serial
+  counters against the updated status. No firmware behavior changed.
+- Result: TODO now distinguishes the failed optional static benchmark from the
+  still-unverified supported-algorithms acceptance mode.
+- Decision: Next implement measured JCSystem memory accounting for the Pico's
+  linked allocator and persistent store; ARM M33 only.
+- Commit: `d872f1d`
+- Artifacts/logs: `artifacts/logs/jcalgtest-static-memory-counters-20261017.log`;
+  `artifacts/logs/monitor-arm-jsr-memory-counters-static-20261017.log`.
