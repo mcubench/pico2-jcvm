@@ -3661,7 +3661,7 @@
 - Validation: `./tools/build arm` passed `pico2_jcvm_smoke.uf2` and `pico2_choupi.uf2` with no warnings (`BUILD:PASS arch=arm`, `BUILD:PASS target=choupi`). The CHOUPI image ends at `0x100b5818`, below the persistent-store region. No RISC-V build, flash, or hardware serial check was run; the user's ARM-only instruction excludes RISC-V and the repository dual-build flash gate is therefore unmet.
 - Result: The next authorized ARM startup run will distinguish interpreter exceptions from generic `6F00` and retain the fault location/history. Firmware behavior is otherwise unchanged; the boot failure is not fixed or verified.
 - Decision: Use the new diagnostic in a bounded serial capture after the build-gated hardware path is available; fix the reported runtime failure before claiming physical integration.
-- Commit: pending.
+- Commit: `11f8379` (confirmed in follow-up metadata commit)
 - Artifacts/logs: `artifacts/logs/build-arm-runtime-diagnostic-20261016.log` (SHA-256 `56f72483fc1a6cbfa919cd46089e40d67f290762c2002c938385de3613057cbb`); previous failing serial evidence `artifacts/logs/arm-resume-boot-20261016.log`.
 
 ## 2026-10-16 — Select named reader for JCAlgTest static performance
