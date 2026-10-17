@@ -4011,7 +4011,7 @@
 - Decision: Trace the exception during delayed initialization and preserve
   unsupported-algorithm behavior; rerun hardware JCSystem, SHA known-answer,
   and static performance only after GETVERSION succeeds.
-- Commit: pending.
+- Commit: `76f4a71`.
 - Artifacts/logs: `artifacts/logs/monitor-arm-current-apdu-f503-20261016.log`.
 
 ## 2026-10-16 — Trace JC305 security static calls
@@ -4601,7 +4601,7 @@
 - Decision: Keep USB calls in host-access context. Do not retry the long sweep
   without new diagnostics or a code-level hypothesis; continue with CCID/PCSC
   state investigation and declared-support/reference comparison. ARM M33 only.
-- Commit: pending.
+- Commit: `c6bec06`.
 - Artifacts/logs:
   `artifacts/logs/jcalgtest-supported-arm-disconnect-repro-20261017.log`,
   `artifacts/logs/monitor-arm-supported-disconnect-repro-20261017.log`,
@@ -4676,5 +4676,15 @@
 - Validation: Read-only source inspection of static get/put bytecodes, `Static_Handler`, and persistent-reference deserialization. No source code changed; no build, runtime test, or hardware action was run.
 - Result: A static root cache is necessary both for Java reference identity and future safe heap collection. The cache must be keyed by resolved package/static field and invalidated with lifecycle deletion/context teardown.
 - Decision: Next trace install/delete/context lifecycle ownership, then implement canonical static reference roots with focused identity coverage before starting a collector.
+- Commit: pending.
+- Artifacts/logs: none.
+
+## 2026-10-17 — Finalize heap review commit records
+
+- Step/experiment: `heap-review-progress-finalization`
+- Change: Replaced pending commit markers with `76f4a71` and `c6bec06` for the two completed architecture/source-review steps.
+- Validation: `git diff --check` passed for `.agent/QKB.md`, `.agent/HANDOFF.md`, and `progress.md`; both commits contain only the review notes and progress records.
+- Result: The review trail now points to its committed documentation changes.
+- Decision: Continue next with package/app deletion and context lifecycle tracing before implementing static-reference caching.
 - Commit: pending.
 - Artifacts/logs: none.
