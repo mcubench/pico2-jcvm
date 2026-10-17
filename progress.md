@@ -4668,3 +4668,13 @@
 - Decision: Next add canonical VM roots for static references and explicit root enumeration; defer sweep/reuse until typed object-graph tracing covers all persistent roots.
 - Commit: pending.
 - Artifacts/logs: none.
+
+## 2026-10-17 — Identify repeated static-reference reconstruction
+
+- Step/experiment: `static-reference-root-source-review`
+- Change: Traced `GETSTATIC_A` through `bc_getstatic_a()` and confirmed it bypasses `Static_Handler::getPersistentRef()` and calls `getPersistentField_Reference()` on every access. Recorded that serialized object/array references are reconstructed as new heap entries, losing canonical reference identity and retaining duplicates; added cache-key and invalidation constraints to `.agent/QKB.md` and `.agent/HANDOFF.md`.
+- Validation: Read-only source inspection of static get/put bytecodes, `Static_Handler`, and persistent-reference deserialization. No source code changed; no build, runtime test, or hardware action was run.
+- Result: A static root cache is necessary both for Java reference identity and future safe heap collection. The cache must be keyed by resolved package/static field and invalidated with lifecycle deletion/context teardown.
+- Decision: Next trace install/delete/context lifecycle ownership, then implement canonical static reference roots with focused identity coverage before starting a collector.
+- Commit: pending.
+- Artifacts/logs: none.

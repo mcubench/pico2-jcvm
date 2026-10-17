@@ -35,6 +35,11 @@
 - Recorded stable-slot, safepoint, and root-enumeration requirements in
   `.agent/QKB.md`. No allocator code changed and no build or hardware check was
   run in this documentation/architecture step.
+- The same review found a second concrete source path: `bc_getstatic_a()` calls
+  `getPersistentField_Reference()` directly on every access, so static object
+  and array references are reconstructed as duplicate heap entries rather
+  than returned from a canonical root cache. QKB now records the exact finding
+  and the need to handle cache invalidation on deletion/context teardown.
 - Next: design a canonical VM root table for static references, then expose
   context/heap roots and typed graph traversal. Only after root enumeration is
   complete should stable-slot reuse be implemented. Preserve the independent

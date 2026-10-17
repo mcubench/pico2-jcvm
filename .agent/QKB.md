@@ -854,3 +854,12 @@ fix.
   build, hardware, or performance validation was changed or run for this design
   note. Existing physical SHA measurements establish the one-time cached field
   fix, but do not validate a future garbage collector.
+- **Additional confirmed retention/identity path:** `bc_getstatic_a()` currently
+  calls `FlashMemory_Handler::getPersistentField_Reference()` directly for
+  every access. For a serialized object or array this reconstructs and appends
+  another heap object, unlike persistent instance `GETFIELD_A`, which now uses
+  its loaded field cache. Thus repeated static reference reads can both lose
+  Java reference identity and retain duplicate heap wrappers. A future static
+  root cache should key on the resolved package ID and static-field number,
+  update only after successful `PUTSTATIC_A`, and define invalidation for
+  package/app deletion or context teardown before it becomes a collector root.
