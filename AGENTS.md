@@ -29,11 +29,15 @@ Runtime output uses `TEST:PASS`, `TEST:FAIL`, and `TEST:SUMMARY` for known-answe
 Safety constraints:
 
 - Never run `picotool otp`, `picotool erase`, or commands that alter boot security, OTP, flash partition tables, or machine configuration.
-- Run every USB/PCSC operation (`lsusb`, attached-device `picotool`, serial monitor, raw CCID, or physical SmartcardIO) through the host-access execution path from its first attempt. Never probe one of these commands in the default restricted context or retry there after a failure. Request host access on the command itself; if unavailable, stop hardware work and continue with offline tasks. Repository guards are a backstop only and cannot elevate a command.
-- Do not use `sudo` from an autonomous coding cycle.
+- Run every USB/PCSC operation (`lsusb`, attached-device `picotool`, serial monitor, raw CCID, or physical SmartcardIO) through the host-access execution path from its first attempt. For repository wrappers, pass `PICO2_HOST_USB_ACCESS=1` on that single command and invoke it with `sandbox_permissions: "require_escalated"`; both are required, and the wrapper refuses to reach libusb/PCSC without them. For direct system commands, use `sandbox_permissions: "require_escalated"` on the command itself. Never probe one of these commands in the default restricted context or retry there after a failure. If host access is unavailable, stop hardware work and continue offline.
+- Do not use `sudo` from an autonomous coding cycle except exceptions listed in section 'sudo exception'.
 - Do not modify files outside this repository.
 - Do not flash unless both architectures currently build, unless explicitly investigating an architecture-specific failure.
 
+## sudo exceptions
+```
+sudo -n /usr/local/sbin/pico2-pcsc-reader
+```
 ## Incremental commits and progress log
 
 Work in small, logical steps. A logical step is one coherent change that can be
@@ -79,3 +83,7 @@ session can safely continue interrupted work.
 
 Never discard existing uncommitted changes merely because they were
 created by another session.
+
+## Issues knowledge base
+
+Maintain `.agent/QKB.md` file containing issues encountered (e.g., inaccessible token, failures to run lsusb, sudo related issues...). When robust fix for the issue is found, mark it as viable solution and try to use it later when issue is encountered again. 

@@ -20,10 +20,13 @@ require_command() {
 
 require_host_usb_access() {
   local no_new_privileges
+  if [[ "${PICO2_HOST_USB_ACCESS:-}" != 1 ]]; then
+    die "USB/PCSC commands require the explicit host-access marker; rerun this command with sandbox_permissions=require_escalated and PICO2_HOST_USB_ACCESS=1"
+  fi
   no_new_privileges="$(awk '/^NoNewPrivs:/ { print $2; found=1 } END { if (!found) exit 1 }' /proc/self/status 2>/dev/null)" || \
-    die "cannot verify USB/PCSC execution context; rerun via the host-access execution path"
+    die "cannot verify USB/PCSC execution context; rerun with sandbox_permissions=require_escalated"
   if [[ "${no_new_privileges}" != 0 ]]; then
-    die "USB/PCSC access is unavailable in this restricted context; rerun via the host-access execution path"
+    die "USB/PCSC access is unavailable in this restricted context; rerun with sandbox_permissions=require_escalated"
   fi
 }
 
