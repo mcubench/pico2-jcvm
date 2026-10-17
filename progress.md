@@ -4399,3 +4399,35 @@
   `artifacts/logs/jcalgtest-jsr-final-reader-probe-20261017.log`;
   `artifacts/logs/jcalgtest-static-jsr-pc-slot-reuse-final-20261017.log`;
   `artifacts/logs/monitor-arm-jsr-pc-slot-reuse-static-final-20261017.log`.
+
+## 2026-10-17 — Identify physical static-suite heap retention
+
+- Step/experiment: `physical-jcalgtest-static-heap-retention`
+- Change: Added temporary per-APDU VM array/instance and frame high-water
+  counters to diagnose the remaining AES static-suite OOM, then removed that
+  instrumentation after capturing evidence. Updated `.agent/QKB.md` and
+  `.agent/HANDOFF.md` with the root cause and safe collector design constraint.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed with
+  counters; the diagnostic ARM image flashed, bounded boot passed, and the
+  named Pico reader probe passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem
+  info, and DES prepare. Official JCAlgTest 1.8.2 static testing passed five
+  AES-128 CBC no-padding `Cipher_doFinal` baselines (average `566.4 ms`), then
+  lost the reader on the first 50-call measurement. Cleanup ARM/RISC-V builds
+  passed, the non-instrumented ARM image flashed, and bounded serial boot
+  reported `TEST:PASS choupi_runtime` with no `TEST:FAIL`/`FAULT`.
+- Result: Completed APDUs ended with frame count 0 and a maximum frame
+  high-water of 11. Cipher measurements accumulated about two arrays per
+  repeat; before the failing APDU the counters showed `arrays=594`,
+  `instances=192`. `Heap` has no reclamation path and
+  `JCSystem.requestObjectDeletion()` is a no-op, confirming uncollected Java
+  heap objects as the remaining OOM cause. SHA digest `B041` calls kept array
+  counts flat. Official suite remains failed; `NO_SUCH_ALGORITHM` remains
+  expected.
+- Decision: Do not clear offset-indexed heap entries or pool objects without
+  tracing all live roots. Next implement a GC/root-lifetime design that keeps
+  `jref_t` references valid, then rerun static JCAlgTest on hardware.
+- Commit: `c59114e`
+- Artifacts/logs: official transcript, per-APDU serial capture, post-failure
+  watchdog/boot capture, reader probe, both architecture builds, flash and
+  clean boot logs are committed under `artifacts/logs/*jsr-memory-counters*`
+  (hashes and paths in `.agent/QKB.md`).
