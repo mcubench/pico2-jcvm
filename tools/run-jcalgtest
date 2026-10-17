@@ -50,6 +50,9 @@ while (($#)); do
 done
 
 [[ -n "$mode" ]] || { usage >&2; die "choose --reader-name or --simulator"; }
+if [[ "$mode" == reader ]]; then
+  require_host_usb_access
+fi
 require_command timeout
 jar="${repo_root}/build/algtest-client-1.8.2/AlgTestJClient.jar"
 [[ -f "$jar" ]] || die "JCAlgTest client is missing: $jar"

@@ -4464,3 +4464,39 @@
 - Commit: `d872f1d`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-memory-counters-20261017.log`;
   `artifacts/logs/monitor-arm-jsr-memory-counters-static-20261017.log`.
+
+## 2026-10-17 — Measure JCSystem memory and guard physical USB tools
+
+- Step/experiment: `physical-jcsystem-memory-and-access-context-guard`
+- Change: Added Pico-backed transient and persistent `getAvailableMemory`
+  providers; scalar results saturate at `0x7fff`, and the jc304 array form
+  returns high/low words. Added a live-memory JCAlgTest probe and a
+  `NoNewPrivs` preflight to flash, serial, and physical PC/SC wrappers. Updated
+  the QKB, handoff, and TODO with the measured capacities and safe invocation
+  procedure.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Shell
+  syntax checks passed. Flashing ARM firmware through host access passed;
+  eight-second monitor output reported `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. Physical JCAlgTest 1.8.2 probe passed, including
+  repeated SHA-256 calls. Live JCSystem probe passed: persistent `47,777`
+  bytes; transient reset/deselect `325,352` bytes. Five physical wrappers
+  invoked in the restricted context exited with the host-access diagnostic in
+  under one second. One pre-guard restricted flash/monitor attempt failed due
+  unavailable libusb/serial; subsequent hardware operations used host access.
+- Result: Both short and jc304 extended memory forms are active on Pico. The
+  persistent and deselect scalar values agree with their saturated extended
+  values. The applet's reset-RAM field includes its own benchmark-array sizes;
+  it is not the raw scalar value. Commit-capacity methods remain zero while
+  transactions are unsupported.
+- Decision: Always invoke flash, monitor, and physical PC/SC commands through
+  host access; wrappers now fail immediately in the restricted context. Next
+  add focused golden tests for JCSystem memory and applet lifecycle behavior,
+  then continue the remaining acceptance criteria. The static-suite heap
+  retention issue remains open as documented in `.agent/QKB.md`.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/build-arm-jcsystem-memory-accounting-continue-20261017.log`,
+  `artifacts/logs/build-riscv-jcsystem-memory-accounting-continue-20261017.log`,
+  `artifacts/logs/flash-arm-jcsystem-memory-accounting-continue-20261017.log`,
+  `artifacts/logs/monitor-arm-jcsystem-memory-accounting-continue-20261017.log`,
+  `artifacts/logs/jcalgtest-physical-jcsystem-memory-accounting-continue-20261017.log`,
+  and `artifacts/logs/jcalgtest-physical-jcsystem-live-memory-continue-20261017.log`.

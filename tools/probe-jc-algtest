@@ -6,6 +6,7 @@ require_command timeout
 timeout_seconds="${PICO2_APDU_TIMEOUT_SECONDS:-30}"
 [[ "${timeout_seconds}" =~ ^[1-9][0-9]*$ ]] || \
   die "PICO2_APDU_TIMEOUT_SECONDS must be a positive integer"
+require_host_usb_access
 
 build_dir="${repo_root}/build/jc-algtest-apdu-probe"
 mkdir -p "${build_dir}"

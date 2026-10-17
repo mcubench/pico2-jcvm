@@ -18,6 +18,14 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
 }
 
+require_host_usb_access() {
+  local no_new_privileges
+  no_new_privileges="$(awk '/^NoNewPrivs:/ { print $2 }' /proc/self/status 2>/dev/null || true)"
+  if [[ "${no_new_privileges}" == 1 ]]; then
+    die "USB/PCSC access is unavailable in this restricted context; rerun via the host-access execution path"
+  fi
+}
+
 require_sdk() {
   [[ -f "${PICO_SDK_PATH}/external/pico_sdk_import.cmake" ]] || \
     die "Pico SDK not found at ${PICO_SDK_PATH} (set PICO_SDK_PATH or PICO_HOME)"

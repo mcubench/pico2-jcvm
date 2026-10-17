@@ -14,8 +14,10 @@ out explicitly.
 - [x] Resolve the persisted CAP through CHOUPI package lookup and return the
   applet AID/FCI on SELECT. This confirms registry/transport behavior only; it
   does not confirm that the applet constructor or `process()` has run.
-- [x] Build the RP2350 ARM M33 target through the repository wrapper. RISC-V is
-  out of scope for the current work and must not be built or tested.
+- [x] Build the RP2350 ARM M33 target through the repository wrapper. ARM is
+  the hardware target; the current root development instructions also require
+  a wrapper RISC-V build for shared-source changes, but RISC-V hardware/runtime
+  testing remains out of scope.
 - [x] Correct `Util.arrayCompare()` so the first greater source byte returns
   `1` instead of incorrectly returning `-1`; nested API commit `6dceb7e`.
 - [x] Limit the default target build to two parallel jobs to avoid saturating
@@ -55,14 +57,20 @@ Current verified status (2026-10-17):
   confirmed one marker, eight runtime passes, and no failure. Physical SELECT,
   GETVERSION, JCSystem, SHA support, and static SHA still pass; the post-fix
   static loop took 0.725005 s.
-- `pcscd.service` is inactive and PC/SC lists only Virtual PCD readers, so the
-  official Java client could not target the physical reader. The static APDU
-  reproduces JCAlgTest's workload directly over raw CCID; it is not an official
-  client run. No RISC-V build was run.
-- `JCSystem.getAvailableMemory()` and commit-capacity methods still return
-  zero. An attempt to read the Rust OS allocator's free bytes failed at link:
-  the active RP2350 target does not link `choupi-os` yet. That experiment was
-  fully reverted; do not treat Rust OS heap capacity as the Pico VM's heap.
+- An earlier session could not use the official Java client while PC/SC listed
+  only Virtual PCD readers; the static APDU then reproduced the workload over
+  raw CCID. Host-access PC/SC is now available, the physical probe passes, and
+  the official static-suite result is recorded below.
+- Pico `JCSystem.getAvailableMemory()` short and jc304 array forms now report
+  linked Newlib and writable-overlay capacity. ARM and RISC-V builds passed;
+  the ARM firmware flashed and the live physical JCSystem probe passed. It
+  reported 47,777 persistent bytes and 325,352 transient bytes. Commit capacity
+  remains zero while transactions are unsupported. The earlier Rust allocator
+  link experiment was reverted; do not treat the unlinked Rust heap as the Pico
+  VM heap.
+- Physical USB tools now fail immediately in the restricted `NoNewPrivs: 1`
+  context and print the required host-access instruction. Invoke flashing,
+  serial, and PC/SC tools through host access from the outset.
 
 Latest physical static-suite update (2026-10-17): the official v1.8.2 client
 was run through the named Pico PC/SC reader. Five AES-128 CBC no-padding
@@ -78,10 +86,9 @@ not prove AC3's supported-algorithms mode, which remains outstanding.
 
 Next actions:
 
-1. Implement and validate a complete memory-accounting design for the linked
-   Pico allocator and persistent store so `JCSystem.getAvailableMemory()` and
-   commit-capacity calls report measured values rather than zero. Do not read
-   the unlinked Rust allocator or invent fixed numbers.
+1. Add golden applet assertions for both `getAvailableMemory` forms and the
+   JCSystem methods used by the applet lifecycle; commit-capacity methods must
+   remain zero until transactional persistence exists.
 2. Finish golden applet, applet callback, GP DELETE/GET DATA, transaction
    failure, and persistent restore tests. The official physical static suite
    has been run but fails from the documented heap retention; preserve that

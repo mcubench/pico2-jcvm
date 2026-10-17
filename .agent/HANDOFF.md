@@ -1,5 +1,50 @@
 # Handoff
 
+## Latest continuation — JCSystem memory accounting and hardware access guard — 2026-10-17
+
+- Implemented Pico `JCSystem.getAvailableMemory` short and jc304 array forms.
+  Transient capacity comes from linked Newlib free blocks plus unused `_sbrk`
+  heap range; persistent capacity comes from remaining bytes in the writable
+  64 KiB overlay. Short values saturate at `0x7fff`; array form returns the
+  32-bit capacity as high and low words. `getMaxCommitCapacity` and
+  `getUnusedCommitCapacity` remain zero while commit transactions are not
+  implemented. The desktop target returns zero for allocator/overlay values.
+- Both `./tools/build arm` and `./tools/build riscv` passed. The ARM firmware
+  flashed after the standard path failed to initialize libusb; the host-access
+  execution path succeeded, using the device's CDC reset fallback into BOOTSEL.
+  An eight-second serial capture reported `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`.
+- Physical JCAlgTest 1.8.2 probe passed on the exact reader. The live memory
+  APDU returned persistent `47,777` bytes and transient reset/deselect
+  `325,352` bytes in the 32-bit forms. The scalar persistent and deselect
+  reports matched their saturated extended values. JCSystem install-time
+  fields are stale across firmware updates; use the live P1=0 query. The
+  applet's reset-RAM display adds its own benchmark arrays and is not directly
+  comparable to JCSystem scalar memory.
+- Systematic USB fix: `tools/common.sh` now detects `NoNewPrivs: 1`; flash,
+  monitor, physical probe, and physical JCAlgTest wrappers fail immediately
+  with the host-access instruction instead of starting libusb/PCSC attempts.
+  The simulator mode remains available in the restricted context. Five
+  fail-fast checks returned in under one second. From now on, invoke every
+  flash, serial, USB, and physical PC/SC command through host access from the
+  outset; do not probe the restricted context first. After USB re-enumeration,
+  refresh ACL with the authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader`
+  helper in host access. Never use `pcsc_scan`.
+- The session digests were reviewed as operational context only and not
+  promoted into the topic wiki. The repository `.agent/QKB.md` remains the
+  canonical project issue record.
+- The physical static benchmark's heap-retention OOM remains unresolved and
+  documented in `.agent/QKB.md`; do not clear offset-indexed heap entries.
+- Evidence logs: `artifacts/logs/build-arm-jcsystem-memory-accounting-continue-20261017.log`,
+  `artifacts/logs/build-riscv-jcsystem-memory-accounting-continue-20261017.log`,
+  `artifacts/logs/flash-arm-jcsystem-memory-accounting-continue-20261017.log`,
+  `artifacts/logs/monitor-arm-jcsystem-memory-accounting-continue-20261017.log`,
+  `artifacts/logs/jcalgtest-physical-jcsystem-memory-accounting-continue-20261017.log`,
+  and `artifacts/logs/jcalgtest-physical-jcsystem-live-memory-continue-20261017.log`.
+- Next: stage and commit only this logical step, preserving unrelated shared
+  worktree edits. Then continue golden JCSystem/applet lifecycle coverage and
+  remaining acceptance criteria. Keep all physical commands on host access.
+
 ## Knowledge base checkpoint — 2026-10-17
 
 - Read the updated root `AGENTS.md` and created `.agent/QKB.md` as required.

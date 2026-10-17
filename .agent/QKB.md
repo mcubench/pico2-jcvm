@@ -87,6 +87,52 @@ fix.
   `picotool reboot --application` returned to the current image without
   flashing.
 
+## Fail fast before hardware commands in the restricted context — 2026-10-17
+
+- **Cause:** This VM exposes two command contexts. In the default restricted
+  context `/proc/self/status` reports `NoNewPrivs: 1`; USB/libusb and the
+  physical PC/SC reader are inaccessible there. Repeating `picotool` or serial
+  probes from that context only wastes time and returns misleading visibility
+  errors. The host-access execution path reports `NoNewPrivs: 0` and reaches
+  the same USB devices.
+- **Viable prevention:** `tools/common.sh` now provides
+  `require_host_usb_access`; the flash, serial monitor, physical APDU probe,
+  and named-reader JCAlgTest wrappers call it before hardware access. A
+  restricted-context invocation exits immediately with an instruction to use
+  host access. The simulator mode remains allowed in the restricted context.
+- **Validation:** The five restricted-context wrapper checks all exited in
+  under one second with the expected message. The escalated path refreshed
+  the ACL, flashed the ARM image, captured serial output, and ran the physical
+  probes successfully. Always call hardware wrappers through the host-access
+  execution path; do not first try the default context.
+
+## JCSystem available-memory reporting — 2026-10-17
+
+- **Implementation:** The Pico transient-memory provider reports Newlib
+  `mallinfo().fordblks` plus the unused `_sbrk` range up to the linker heap
+  limit. The RP2350 map places the main stack in Scratch Y, so this heap range
+  does not overlap the main RAM heap. The persistent provider reports unused
+  bytes in the 64 KiB writable overlay, returning zero if its layout or file
+  index cannot accept more records. Scalar `getAvailableMemory` saturates at
+  `0x7fff`; the jc304 two-short form returns the 32-bit byte count, high word
+  first. The PC target keeps returning zero because it does not own the Pico
+  persistent overlay or allocator.
+- **Physical validation:** JCAlgTest 1.8.2 reports `getAvailableMemory` values
+  through its JCSystem info APDU. The live JC305/JC304 probe passed on the Pico:
+  persistent available `47,777` bytes and both transient types `325,352`
+  bytes at the time of the query. The short persistent and deselect reports
+  matched the saturated extended values. The applet's reset-RAM field adds
+  benchmark-array sizes and is therefore not a raw scalar-memory result.
+  `getMaxCommitCapacity()` and `getUnusedCommitCapacity()` remain zero while
+  commit transactions are unsupported.
+- **Build/runtime:** ARM and RISC-V wrappers passed. The ARM firmware flashed;
+  an eight-second serial capture reported `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. The physical probe also passed SELECT,
+  GETVERSION `1.8.2_jc305`, JCSystem info, repeated SHA-256, and expected
+  unsupported RSA-SHA1 (`1203`). Artifacts are under `artifacts/logs/` with the
+  `jcsystem-memory-accounting-continue-20261017` and
+  `jcsystem-live-memory-continue-20261017` stems.
+
 ## Physical SHA-256 static repeat failure — 2026-10-17 update
 
 - The official JCAlgTest 1.8.2 static client ran in the host-access context

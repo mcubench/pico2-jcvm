@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <cstring>
 #include <initializer_list>
+#include <malloc.h>
+#include <unistd.h>
 
 #include "ffi.h"
 #include "jni.hpp"
@@ -17,6 +19,8 @@
 #include "pico/platform.h"
 #include "tusb.h"
 #include "cap_store.hpp"
+
+extern "C" char __StackLimit;
 
 extern "C" const uint8_t choupi_rommask_start[];
 extern "C" const uint8_t choupi_rommask_end[];
@@ -807,6 +811,25 @@ void set_path(uint8_t (*tag)[128], uint8_t *length,
 }
 
 } // namespace
+
+extern "C" uint32_t choupi_available_transient_memory_bytes(void) {
+  const struct mallinfo allocator = mallinfo();
+  const uintptr_t heap_end = reinterpret_cast<uintptr_t>(sbrk(0));
+  const uintptr_t heap_limit = reinterpret_cast<uintptr_t>(&__StackLimit);
+  const size_t uncommitted = heap_end < heap_limit ? heap_limit - heap_end : 0;
+  const uint64_t available =
+      static_cast<uint64_t>(allocator.fordblks) + uncommitted;
+  return available > UINT32_MAX ? UINT32_MAX
+                                : static_cast<uint32_t>(available);
+}
+
+extern "C" uint32_t choupi_available_persistent_memory_bytes(void) {
+  if (!filesystem_layout_available || overlay_file_count >= kMaxOverlayFiles ||
+      overlay_bytes_used >= kMaxOverlayBytes) {
+    return 0;
+  }
+  return static_cast<uint32_t>(kMaxOverlayBytes - overlay_bytes_used);
+}
 
 extern "C" uint8_t fs_init(void) {
   for (auto &file : overlay) {

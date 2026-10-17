@@ -47,6 +47,11 @@
 
 namespace jcvm {
 
+#ifndef PC_VERSION
+extern "C" uint32_t choupi_available_transient_memory_bytes(void);
+extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
+#endif
+
 namespace {
 ClearEvent getTransientClearEvent(const jbyte_t event) {
   switch (event) {
@@ -705,12 +710,18 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getPreviousContextAID() {
 
 jshort_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(jbyte_t type) {
-  // The VM does not yet account for free heap or persistent-store capacity.
-  // Report zero rather than inventing a capacity estimate to Java Card code.
   if (type < 0 || type > 2) {
     throw Exceptions::SystemException;
   }
-  return 0;
+#ifdef PC_VERSION
+  const uint32_t available = 0;
+#else
+  const uint32_t available =
+      type == 0 ? choupi_available_persistent_memory_bytes()
+                : choupi_available_transient_memory_bytes();
+#endif
+  return static_cast<jshort_t>(
+      std::min<uint32_t>(available, 0x7fffu));
 }
 
 void fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
@@ -724,10 +735,17 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
   if (type < 0 || type > 2) {
     throw Exceptions::SystemException;
   }
-  // The short[2] overload returns persistent and transient capacity. Neither
-  // capacity is measured by this port yet, so both are explicitly zero.
-  output->setShortEntry(static_cast<uint16_t>(offset), 0);
-  output->setShortEntry(static_cast<uint16_t>(offset + 1), 0);
+#ifdef PC_VERSION
+  const uint32_t available = 0;
+#else
+  const uint32_t available =
+      type == 0 ? choupi_available_persistent_memory_bytes()
+                : choupi_available_transient_memory_bytes();
+#endif
+  output->setShortEntry(static_cast<uint16_t>(offset),
+                        static_cast<jshort_t>(available >> 16));
+  output->setShortEntry(static_cast<uint16_t>(offset + 1),
+                        static_cast<jshort_t>(available & 0xffffu));
 }
 
 jref_t

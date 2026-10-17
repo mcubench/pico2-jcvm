@@ -7,6 +7,7 @@ last_load_failure=unknown
 [[ $# -eq 1 ]] || die "usage: ./tools/flash <image.uf2>"
 image="$1"
 [[ -f "$image" ]] || die "flash image not found: ${image}"
+require_host_usb_access
 require_command picotool
 require_command timeout
 require_command stty
