@@ -4705,5 +4705,5 @@
 - Validation: Read-only source inspection of `Context`, `Heap`, `Stack`, `Frame`, `JC_Instance`, `JC_Array`, `FlashMemory_Handler`, and APDU dispatch. No source code changed; no build, runtime test, or hardware check was run.
 - Result: Static roots are cached but not enumerable. Context refs and lazy typed graph edges also need visitor support. Heap slots cannot be erased or compacted; run a complete mark-only traversal before enabling tombstone reuse.
 - Decision: Add explicit root/edge visitors and validate marking across APDU boundaries before implementing reclamation.
-- Commit: pending
+- Commit: `6d130ae`
 - Artifacts/logs: none.
