@@ -4628,3 +4628,13 @@
 - Decision: Implement a VM-managed per-context runtime exception root or correct object reclamation, then pass a repeated-throw test before another physical supported sweep. Continue treating unsupported algorithms as expected.
 - Commit: `413828b`.
 - Artifacts/logs: `artifacts/logs/monitor-arm-ccid-sweep-repro-20261017.log`, `artifacts/logs/build-pc-exception-reuse-v2-20261017.log`, `artifacts/logs/build-arm-exception-reuse-v2-20261017.log`, and `artifacts/logs/jcsystem-exception-reuse-vpcd-v2-20261017.log`.
+
+## 2026-10-17 — Require an explicit host-access latch for USB commands
+
+- Step/experiment: `host-usb-explicit-context-latch`
+- Change: Added a required per-command `PICO2_HOST_USB_ACCESS=1` marker to shell and Python USB/PCSC guards, while retaining fail-closed `NoNewPrivs: 0` checks. Clarified in `AGENTS.md` and the physical-token reference that wrappers require both the marker and `sandbox_permissions: "require_escalated"`; direct USB commands must be escalated from the first invocation. Updated QKB and handoff notes.
+- Validation: Shell syntax checks and Python compilation passed. With the marker absent, shell and Python guards rejected in 72 ms and 96 ms. With the marker set but current `NoNewPrivs: 1`, the shell wrapper rejected in 90 ms. No libusb, PC/SC, or physical-device command was run.
+- Result: A forgotten escalation request can no longer flow from a repository wrapper into a delayed USB call, even if `NoNewPrivs` alone is misleading. Direct system commands still rely on the explicit tool-level escalation rule.
+- Decision: Use the marker only on individual host-access tool calls; if escalation is unavailable, continue offline.
+- Commit: `102764f` (implementation/instructions); progress record committed separately.
+- Artifacts/logs: No new logs; validation output was inspected directly.
