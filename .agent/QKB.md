@@ -651,3 +651,20 @@ fix.
   `artifacts/logs/flash-arm-supported-disconnect-recovery-20261017.log`,
   `artifacts/logs/monitor-arm-supported-disconnect-recovery-20261017.log`,
   and `artifacts/logs/jcalgtest-physical-after-disconnect-reflash-20261017.log`.
+
+
+## Host-access invocation latch — 2026-10-17
+
+- **Recurrence:** `NoNewPrivs: 0` is not sufficient evidence that a tool was
+  launched in the host-access execution context. A command can otherwise reach
+  libusb from a restricted execution and spend tens of seconds failing.
+- **Viable prevention:** Every repository USB/PCSC wrapper now also requires
+  `PICO2_HOST_USB_ACCESS=1`, in addition to a readable `/proc/self/status`
+  reporting `NoNewPrivs: 0`. Invoke that single command with
+  `sandbox_permissions: "require_escalated"` and the marker. If the marker is
+  forgotten, the wrapper exits before calling libusb, PC/SC, or starting a
+  build. Direct commands such as `lsusb` must themselves be issued with
+  `require_escalated`; never probe them in the default context.
+- **Limit:** The marker is a caller-side latch, not an escalation mechanism.
+  It cannot make direct commands safe or elevate a wrapper. No USB command was
+  run while validating this change.
