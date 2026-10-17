@@ -4538,5 +4538,5 @@
 - Decision: Both overloads are now covered by a golden applet call path and a
   physical-value probe. Continue lifecycle callbacks and remaining JCSystem
   acceptance.
-- Commit: pending
+- Commit: `7734d9c`
 - Artifacts/logs: `artifacts/logs/jcsystem-memory-overloads-vpcd-20261017.log`.

@@ -12,7 +12,7 @@
 - `./tools/build-pc` passed and regenerated the ROM mask. The first restricted
   VPCD attempt failed to bind its local socket; rerun via host access passed
   `TEST:SUMMARY pass=13 fail=0 elapsed_s=25.154`. CAP conversion passed.
-- Progress record: `jcsystem-memory-overloads-vpcd-golden`; commit pending.
+- Progress record: `jcsystem-memory-overloads-vpcd-golden`; commit `7734d9c`.
 - Next: continue callback/GP lifecycle golden tests and transaction failure
   acceptance; do not treat the optional static suite as passing.
 
