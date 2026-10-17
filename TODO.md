@@ -64,17 +64,31 @@ Current verified status (2026-10-17):
   the active RP2350 target does not link `choupi-os` yet. That experiment was
   fully reverted; do not treat Rust OS heap capacity as the Pico VM's heap.
 
+Latest physical static-suite update (2026-10-17): the official v1.8.2 client
+was run through the named Pico PC/SC reader. Five AES-128 CBC no-padding
+`Cipher_doFinal` baselines passed (average 566.4 ms); the first 50-call measured
+APDU caused reader loss and a board recovery. Temporary counters showed
+`arrays=594`, `instances=192`, and no remaining interpreter frames before that
+APDU. Cipher measurement APDUs accumulated about two array objects per repeat.
+`Heap` has no reclamation path; `requestObjectDeletion()` is intentionally a
+no-op while `isObjectDeletionSupported()` returns false, consistent with the
+plan's unsupported capability. The failure mechanism is documented in
+`.agent/QKB.md`; do not implement unsafe offset-list clearing. This run does
+not prove AC3's supported-algorithms mode, which remains outstanding.
+
 Next actions:
 
-1. Restore PC/SC service access and run official JCAlgTest v1.8.2
-   `ALG_PERFORMANCE_STATIC` against the named physical reader. The direct raw
-   CCID test passed, but the official client run remains outstanding.
-2. Continue closing JCSystem behavior gaps; current memory and commit-capacity
-   queries still report zero. First expose accounting from the allocator and
-   persistent store actually linked into the Pico target; do not guess values.
-3. Finish the unchecked golden applet, GP DELETE/GET DATA, transaction failure,
-   and persistence tests below; keep AC1–AC5 marked incomplete until the clean
-   flash sequence has passed three times.
+1. Implement and validate a complete memory-accounting design for the linked
+   Pico allocator and persistent store so `JCSystem.getAvailableMemory()` and
+   commit-capacity calls report measured values rather than zero. Do not read
+   the unlinked Rust allocator or invent fixed numbers.
+2. Finish golden applet, applet callback, GP DELETE/GET DATA, transaction
+   failure, and persistent restore tests. The official physical static suite
+   has been run but fails from the documented heap retention; preserve that
+   result and do not misreport it as passing.
+3. Run the matching JCAlgTest v1.8.2 supported-algorithms mode on Pico and
+   compare its CSV against the jCardSim reference and declared support list.
+4. Complete AC1–AC5 and the clean-flash integration sequence three times.
 
 Earlier startup-timeout and physical `F503` observations below are historical
 checkpoints. The current physical behavior passed direct CCID applet probes
