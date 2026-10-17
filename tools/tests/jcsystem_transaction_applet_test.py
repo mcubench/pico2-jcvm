@@ -49,6 +49,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
+    parser.add_argument(
+        "--case", type=int, action="append", choices=range(1, 14),
+        help="run only this numbered APDU case; may be repeated",
+    )
     args = parser.parse_args()
     build = repo / "build/jcsystem-transaction-probe"
     emulator = repo / "build/choupi-pc/choupi"
@@ -140,8 +144,20 @@ def main() -> int:
                         "JCSystem scalar/extended memory overloads and commit capacity",
                     ),
                     (11, b"\x03", "unsupported initialized digest reports NO_SUCH_ALGORITHM"),
+                    (12, b"\x32", "50 CryptoException throws reuse one instance and update reason"),
+                    (
+                        13,
+                        bytes((3, 3, 2, 0, 1, 0, 0,
+                               2, 2, 0, 2, 1, 3, 1, 3, 0)),
+                        "OwnerPINx try limit and predecrement behavior",
+                    ),
                 )
-                for p1, expected, label in cases:
+                selected_cases = (
+                    [case for case in cases if case[0] in args.case]
+                    if args.case
+                    else cases
+                )
+                for p1, expected, label in selected_cases:
                     data = exchange(
                         connection,
                         bytes((0x80, 0x00, p1, 0x00, 0x00)),
@@ -152,7 +168,7 @@ def main() -> int:
                             f"{label}: expected {expected.hex().upper()}, got {data.hex().upper()}"
                         )
                     print(f"TEST:PASS {label}")
-                print(f"TEST:SUMMARY pass={len(cases) + 2} fail=0 elapsed_s={time.monotonic() - started:.3f}")
+                print(f"TEST:SUMMARY pass={len(selected_cases) + 2} fail=0 elapsed_s={time.monotonic() - started:.3f}")
             finally:
                 if connection is not None:
                     connection.close()

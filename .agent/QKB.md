@@ -652,6 +652,134 @@ fix.
   `artifacts/logs/monitor-arm-supported-disconnect-recovery-20261017.log`,
   and `artifacts/logs/jcalgtest-physical-after-disconnect-reflash-20261017.log`.
 
+## Runtime CryptoException roots and physical follow-up — 2026-10-17
+
+- **Supported-sweep cause:** The runtime cache initially recognized only ROM
+  class offset 234. `CryptoException` also resolves in the imported
+  `javacard.security` package as class offset 233 under AID
+  `A0000000620102`. That allocation bypassed the cache, so each throw created
+  an instance retained by the append-only `Heap`. A 50-throw VPCD probe caught
+  different refs (14 then 16) and failed its identity assertion even though
+  the ROM view repeatedly returned ref 6. A dynamic export-token lookup was
+  also unsafe because unrelated framework export tables can share AID
+  `A0000000620101` and lack that token.
+- **Viable fix:** Identify the pinned ROM and imported views by their
+  package-AID/class-offset pairs, then maintain one VM-owned root per view in
+  each applet `Heap`. Repeated throws within a view reuse the same object and
+  run the constructor again to update the reason. The 50-throw VPCD test now
+  passes, including reason checks and identity. All preceding transaction,
+  SHA-256, JCSystem-memory, and expected-unsupported cases also pass.
+- **Physical validation:** ARM and RISC-V builds passed. The ARM CHOUPI image
+  flashed and its bounded cycle reported `TEST:PASS choupi_runtime`. The named
+  physical JCAlgTest reader completed `ALG_SUPPORT_EXTENDED` with 4,520 result
+  rows: 15 `yes`, 4,505 `no` (unsupported rows are expected). The run exited
+  successfully. A concurrent four-minute serial capture had no `malloc ...
+  failed`, `PANIC`, `FAULT`, or `TEST:FAIL`. This supersedes the earlier
+  supported-sweep claim that the physical run remained incomplete.
+- **Separate static-suite status:** A new physical `ALG_PERFORMANCE_STATIC`
+  run reached a 250-call DES CBC `Cipher_doFinal` measurement (average
+  `28.64 ms/op`) and then failed on the next
+  `TYPE_DES LENGTH_DES3_2KEY ALG_DES_CBC_NOPAD Cipher_init()` request with
+  `SCARD_E_READER_UNAVAILABLE`. Its bounded serial capture ended without
+  `malloc <n> failed`, `PANIC`, `FAULT`, or `TEST:FAIL`; after the authorized
+  ACL refresh, `pcsc_scan -r` again listed the Pico reader. This run does not
+  establish that the prior static-suite heap issue is fixed: earlier evidence
+  directly attributed its OOM to append-only cipher arrays (594 arrays and
+  192 instances before failure). It adds a distinct reader-unavailable event
+  without a confirmed firmware allocation failure. Static mode remains open.
+- **Evidence:** `artifacts/logs/jcsystem-runtime-crypto-class-view-roots-20261017.log`,
+  `artifacts/logs/build-pc-runtime-crypto-class-view-roots-20261017.log`,
+  `artifacts/logs/build-arm-runtime-crypto-class-view-roots-20261017.log`,
+  `artifacts/logs/build-riscv-runtime-crypto-class-view-roots-20261017.log`,
+  `artifacts/logs/cycle-choupi-runtime-crypto-class-view-roots-20261017.log`,
+  `artifacts/logs/jcalgtest-supported-arm-crypto-class-view-roots-20261017.log`,
+  `artifacts/logs/monitor-arm-crypto-class-view-roots-20261017.log`,
+  `artifacts/logs/jcalgtest-static-arm-crypto-class-view-roots-20261017.log`,
+  and `artifacts/logs/monitor-arm-static-crypto-class-view-roots-20261017.log`.
+- **Artifacts:** Supported CSV SHA-256
+  `f90520551b76e8f90725d7df61fc46bf21a6c7e006b4a86949cc9911e5a5b951`;
+  official transcript SHA-256
+  `f17f7a8ce908a78a1919907859b493fdde5127d603781336d7506d5069513f59`;
+  four-minute serial SHA-256
+  `da8e6000bc3b27bdc341625beb673b05d4945f69e8db0e9a8ad1c62310e6123a`.
+
+## RandomData.OneShot unsupported result and support-matrix audit — 2026-10-17
+
+- **Cause:** `RandomData.OneShot.open()` was a TODO stub that threw
+  `CryptoException.ILLEGAL_USE`. JCAlgTest's 1.8.2 support probe catches
+  `CryptoException` and records its reason, so all six unsupported OneShot
+  algorithm rows became `error(ILLEGAL_USE)` instead of `no`.
+- **Viable fix:** An unimplemented factory must throw its documented
+  `CryptoException.NO_SUCH_ALGORITHM`. The source now throws reason 3. A
+  focused physical JCAlgTest VPCD APDU asserted response type `2B`, reason
+  `03`, and `9000`; VPCD passed 11/11. ARM and PC builds passed. The official
+  physical `ALG_SUPPORT_EXTENDED` sweep then completed all 4,525 rows with
+  counts `15 yes / 4,510 no / 0 other`; all six OneShot rows are now `no`.
+- **Physical health:** The named Pico reader remained available through the
+  full run. Two bounded serial captures contained recurring
+  `TEST:PASS choupi_runtime` and no `TEST:FAIL`, `FAULT`, `PANIC`, failed
+  allocation, or `CHOUPI:CCID_ERRORS` record. ARM image flash and boot capture
+  also passed. No RISC-V build or test was run.
+- **AC4 audit finding:** The 15 physical `yes` rows all appear as `yes` in the
+  jCardSim reference, but two are API false positives: `OwnerPINBuilder`
+  returns `null` for `OWNER_PIN_X` and `OWNER_PIN_X_WITH_PREDECREMENT`, while
+  JCAlgTest reports a factory as supported whenever it does not throw. These
+  documented types need real implementations or a way to report absence
+  without breaking the sweep; until resolved, do not mark the full
+  source/results consistency check complete. Full matrix comparison and hashes
+  are in `artifacts/results/jcalgtest-support-comparison-20261017.md`.
+- **Separate limit:** `ALG_PERFORMANCE_STATIC` remains unresolved due the
+  append-only heap and separate PC/SC loss from earlier runs. Do not infer that
+  the supported-sweep fix resolves static-mode array retention.
+- **Evidence:** `artifacts/logs/build-arm-randomdata-oneshot-unsupported-20261017.log`,
+  `artifacts/logs/build-pc-randomdata-oneshot-unsupported-v2-20261017.log`,
+  `artifacts/logs/flash-arm-randomdata-oneshot-unsupported-20261017.log`,
+  `artifacts/logs/monitor-arm-randomdata-oneshot-unsupported-20261017.log`,
+  `artifacts/logs/pc-vpcd-randomdata-oneshot-unsupported-20261017.log`,
+  `artifacts/logs/jcalgtest-supported-arm-randomdata-oneshot-fix-20261017.log`,
+  and two 240-second physical serial captures.
+- **Hashes:** Physical CSV
+  `f9c74aaa7d5b3a3e7fc30897a4fa167bd7cb70cb8c79c5ad1e948d9e0aa401bf`;
+  transcript
+  `0cb527b6fbd0886febc71e008b4a0f408f9af01f1ce54e3671d00409c563aa57`;
+  jCardSim CSV
+  `67d9feebf9756da69db034bab05cddd9acb38d31aa980888fa7b5db22ef1757b`.
+
+## OwnerPINx dispatch and inherited-field resolution — 2026-10-17
+
+- **Cause 1 — internal `invokespecial`:** The rommask encoded a
+  `SuperMethodRef` with the method-local ordinal (`OwnerPINxWithPredecrementImpl.update`
+  appeared as token 0), while the VM resolves a class virtual/package method
+  token. Token 0 selected `Object.equals` and interpreted the call with the
+  wrong argument count. Internal super refs must use the declaring class's
+  public or package method table token; package tokens carry the package bit.
+  The VM resolves the ref through the immediate superclass, then checks the
+  receiver in the caller's operand stack before entering the callee.
+- **Cause 2 — inherited instance fields:** `InstanceFieldRef` tokens are local
+  to their declaring class, but object storage is one flat field vector. The
+  VM previously used the token directly, so subclass field token 0 aliased a
+  base-class field. Add each superclass's declared instance-field count while
+  resolving the declaration chain. The regression exposed this when OwnerPIN
+  treated the subclass's transient predecrement marker as its PIN array.
+- **Cause 3 — virtual reset after a successful PIN check:** `OwnerPIN.check()`
+  set the validated flag and then called overridable `reset()`. The predecrement
+  subclass override called `super.reset()`, clearing validation immediately.
+  Successful checks now restore the try counter directly without virtual
+  dispatch.
+- **Viable validation:** The full VPCD JCSystem/crypto/OwnerPINx regression
+  passed all 16 checks (`TEST:SUMMARY pass=16 fail=0 elapsed_s=59.295`). After
+  removing temporary diagnostics, focused case 13 passed again with response
+  `030302000100000202000201030103009000` and summary `pass=3 fail=0`.
+  `./tools/build-pc` and the ARM M33 build both passed. The PC build emitted 49
+  existing Rust javacard-os warnings and two packed-member alignment warnings;
+  ARM emitted no warnings. No physical board was used.
+- **Boundary:** This dispatch/layout fix does not resolve the separate
+  `ALG_PERFORMANCE_STATIC` append-only heap retention issue documented above.
+- **Evidence:** `artifacts/logs/jcsystem-ownerpinx-full-vpcd-20261017.log`,
+  `artifacts/logs/jcsystem-ownerpinx-cleanup-vpcd-20261017.log`,
+  `artifacts/logs/build-pc-ownerpinx-cleanup-20261017.log`, and
+  `artifacts/logs/build-arm-ownerpinx-cleanup-20261017.log`.
+
 
 ## Host-access invocation latch — 2026-10-17
 

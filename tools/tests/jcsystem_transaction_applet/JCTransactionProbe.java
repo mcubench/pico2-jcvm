@@ -5,6 +5,10 @@ import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
+import javacard.framework.OwnerPINBuilder;
+import javacard.framework.OwnerPINx;
+import javacard.framework.OwnerPINxWithPredecrement;
+import javacard.framework.PINException;
 import javacard.framework.TransactionException;
 import javacard.security.MessageDigest;
 import javacard.security.InitializedMessageDigest;
@@ -128,6 +132,83 @@ public final class JCTransactionProbe extends Applet {
           buffer[0] = (byte)e.getReason();
         }
         break;
+      case 12: {
+        CryptoException previous = null;
+        byte failure = 0;
+        byte thrown = 0;
+        byte returned = 0;
+        for (short i = 0; i < (short)50; i++) {
+          short reason = (short)((i % 5) + 1);
+          try {
+            CryptoException.throwIt(reason);
+            returned++;
+          } catch (CryptoException e) {
+            thrown++;
+            if (e.getReason() != reason) {
+              failure = 1;
+              buffer[1] = (byte)e.getReason();
+              buffer[2] = (byte)reason;
+              buffer[3] = (byte)i;
+              break;
+            }
+            if (previous != null && previous != e) {
+              failure = 2;
+              buffer[1] = (byte)i;
+              buffer[2] = thrown;
+              buffer[3] = returned;
+              break;
+            }
+            previous = e;
+          }
+        }
+        buffer[0] = failure == 0 ? (byte)50 : failure;
+        length = (short)(failure == 0 ? 1 : 4);
+        break;
+      }
+      case 13: {
+        byte[] correct = {(byte)'1', (byte)'2', (byte)'3', (byte)'4'};
+        byte[] wrong = {(byte)'1', (byte)'2', (byte)'3', (byte)'5'};
+        OwnerPINx adjustable = (OwnerPINx)OwnerPINBuilder.buildOwnerPIN(
+            (byte)3, (byte)4, OwnerPINBuilder.OWNER_PIN_X);
+        buffer[0] = adjustable.getTryLimit();
+        buffer[1] = adjustable.getTriesRemaining();
+        adjustable.update(correct, (short)0, (byte)correct.length);
+        adjustable.setTryLimit((byte)2);
+        buffer[2] = adjustable.getTriesRemaining();
+        buffer[3] = (byte)(adjustable.check(wrong, (short)0,
+                                             (byte)wrong.length) ? 1 : 0);
+        buffer[4] = adjustable.getTriesRemaining();
+        adjustable.setTriesRemaining((byte)0);
+        buffer[5] = (byte)(adjustable.check(correct, (short)0,
+                                             (byte)correct.length) ? 1 : 0);
+        buffer[6] = adjustable.getTriesRemaining();
+
+        OwnerPINxWithPredecrement predecrement =
+            (OwnerPINxWithPredecrement)OwnerPINBuilder.buildOwnerPIN(
+                (byte)3, (byte)4,
+                OwnerPINBuilder.OWNER_PIN_X_WITH_PREDECREMENT);
+        predecrement.update(correct, (short)0, (byte)correct.length);
+        try {
+          predecrement.check(correct, (short)0, (byte)correct.length);
+          buffer[7] = 0;
+        } catch (PINException e) {
+          buffer[7] = (byte)e.getReason();
+        }
+        buffer[8] = predecrement.decrementTriesRemaining();
+        buffer[9] = (byte)(predecrement.check(wrong, (short)0,
+                                               (byte)wrong.length) ? 1 : 0);
+        buffer[10] = predecrement.getTriesRemaining();
+        predecrement.decrementTriesRemaining();
+        buffer[11] = (byte)(predecrement.check(correct, (short)0,
+                                                (byte)correct.length) ? 1 : 0);
+        buffer[12] = predecrement.getTriesRemaining();
+        buffer[13] = (byte)(predecrement.isValidated() ? 1 : 0);
+        predecrement.reset();
+        buffer[14] = predecrement.getTriesRemaining();
+        buffer[15] = (byte)(predecrement.isValidated() ? 1 : 0);
+        length = 16;
+        break;
+      }
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
     }

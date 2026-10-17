@@ -274,8 +274,6 @@ void Bytecodes::bc_invokespecial() {
   Stack &stack = context.getStack();
   ConstantPool_Handler cp_handler(context.getCurrentPackage());
   Method_Handler method_handler(context);
-  Class_Handler class_handler(context.getCurrentPackage());
-
   uint16_t method_offset = 0;
   pc_t &pc = stack.getPC();
 
@@ -341,7 +339,9 @@ void Bytecodes::bc_invokespecial() {
     /*
      * The invoked method is a superclass method.
      */
-    auto virtual_method_ref_info = cp_handler.getVirtualMethodRef(index);
+    auto super_method_ref = cp_handler.getSuperMethodRef(index);
+    jc_cap_virtual_method_ref_info virtual_method_ref_info{
+        super_method_ref.class_ref, super_method_ref.token};
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 
@@ -358,7 +358,16 @@ void Bytecodes::bc_invokespecial() {
 
 #endif /* JCVM_DYNAMIC_CHECKS_CAP */
 
-    auto method = class_handler.getMethodOffset(virtual_method_ref_info);
+    // A SuperMethodref names the class that contains the invokespecial
+    // instruction. Resolve against that class's immediate superclass so the
+    // call reaches the inherited implementation instead of virtual dispatch
+    // back into the overriding method.
+    auto declaring_class =
+        cp_handler.classref2class(virtual_method_ref_info.class_ref);
+    virtual_method_ref_info.class_ref =
+        declaring_class.second->super_class_ref;
+    Class_Handler superclass_handler(declaring_class.first);
+    auto method = superclass_handler.getMethodOffset(virtual_method_ref_info);
     method_handler.setPackage(method.first);
     method_offset = method.second;
   } break;
@@ -369,16 +378,26 @@ void Bytecodes::bc_invokespecial() {
     break;
   }
 
-  //  Calling the method
-  method_handler.callVirtualMethod(method_offset);
+  const uint8_t nargs = method_handler.getArgumentCount(method_offset);
+  if (nargs == 0) {
+    throw Exceptions::SecurityException;
+  }
+  const Frame &caller_frame = stack.getCurrentFrame();
+  if (static_cast<uint32_t>(nargs) >
+      static_cast<uint32_t>(caller_frame.getTOS() - caller_frame.getOP())) {
+    throw Exceptions::StackUnderflowException;
+  }
 
-  // checking if the this reference is non NULL
-  jref_t objectref = stack.readLocal_Reference((uint8_t)0);
-
-  if (objectref.isNullPointer()) {
-    // NOTE: Manipulated objectref is null
+  // The receiver is the nargs-th word from the top, before the call consumes
+  // the receiver and arguments. Checking local 0 after the call is incorrect:
+  // the current frame is then the caller, whose local 0 need not be a reference.
+  const jref_t receiver = stack.get_Pushed_Element(nargs);
+  if (receiver.isNullPointer()) {
     throw Exceptions::NullPointerException;
   }
+
+  // Calling the method after validating its receiver.
+  method_handler.callVirtualMethod(method_offset);
 
   } catch (Exceptions) {
     throw;

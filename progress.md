@@ -4619,6 +4619,16 @@
 - Commit: `13808f4`
 - Artifacts/logs: No new logs; validation output was inspected directly.
 
+## 2026-10-17 — Implement OwnerPINx behavior and fix inherited dispatch
+
+- Step/experiment: `ownerpinx-dispatch-fields-regression`
+- Change: Implemented both OwnerPINx variants and the builder results; corrected internal superclass method tokens and `invokespecial` resolution; mapped declaring-class field tokens into flattened inherited instance storage; preserved successful OwnerPIN validation when subclasses override `reset()`. Removed temporary field-bytecode instrumentation. Added VPCD cases 12–13 and wrote the reusable causes to `.agent/QKB.md`.
+- Validation: Full VPCD regression passed `TEST:SUMMARY pass=16 fail=0 elapsed_s=59.295`. After diagnostic cleanup, focused case 13 passed with response `030302000100000202000201030103009000` and `TEST:SUMMARY pass=3 fail=0`. PC and ARM builds passed. The PC build emitted 49 existing Rust javacard-os warnings and two packed-member alignment warnings; ARM build had no warnings. No hardware was accessed.
+- Result: OwnerPINx try-limit, blocked-PIN, predecrement, successful validation, reset, superclass dispatch, and inherited-field behavior pass through the applet. This does not resolve static benchmark heap retention.
+- Decision: Continue from the separate unresolved static benchmark and PC/SC reader-path findings. Keep physical access out of this step.
+- Commit: `pending` (root changes); nested API `0199d51`; nested rommask `051b389` and `f3c309a`.
+- Artifacts/logs: `artifacts/logs/jcsystem-ownerpinx-full-vpcd-20261017.log`, `artifacts/logs/jcsystem-ownerpinx-cleanup-vpcd-20261017.log`, `artifacts/logs/build-pc-ownerpinx-cleanup-20261017.log`, `artifacts/logs/build-arm-ownerpinx-cleanup-20261017.log`.
+
 ## 2026-10-17 — Diagnose supported-sweep heap exhaustion
 
 - Step/experiment: `supported-sweep-retained-exceptions`

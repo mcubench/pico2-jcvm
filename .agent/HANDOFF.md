@@ -4084,3 +4084,83 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   unresolved; unsupported `NO_SUCH_ALGORITHM` rows remain expected.
 - Evidence files and hashes are recorded in the latest `Physical
   ALG_PERFORMANCE_STATIC heap retention` section of `.agent/QKB.md`.
+
+## Runtime CryptoException reuse — 2026-10-17
+
+- Fixed retained exception allocations by recognizing the pinned ROM
+  `CryptoException` view (AID `A0000000620101`, class offset 234) and imported
+  `javacard.security` view (AID `A0000000620102`, class offset 233), with a
+  separate VM-owned root for each view in the applet heap. An earlier fixed
+  ROM-only matcher missed imported allocations; the dynamic export-token
+  attempt was rejected because framework CAPs share an AID but expose different
+  export tables.
+- VPCD transaction/SHA/JCSystem regression passed, including 50 throws with
+  stable identity per view and changing exception reasons. `./tools/build arm`
+  and `./tools/build riscv` passed. Physical ARM CHOUPI was flashed with
+  `./tools/cycle choupi`; bounded serial output reported
+  `TEST:PASS choupi_runtime`.
+- Physical official `ALG_SUPPORT_EXTENDED` completed 4,520 rows (15 yes,
+  4,505 no) and exited successfully. Four-minute serial capture had no
+  allocation failure, `PANIC`, `FAULT`, or `TEST:FAIL`. The earlier 1,637-row
+  supported-sweep stop is resolved for this build.
+- Static mode remains open and is separate. The latest physical run completed
+  a 250-call DES CBC `Cipher_doFinal` measurement at 28.64 ms/op, then lost its
+  PC/SC reader on the next DES `Cipher_init` request. The bounded serial capture
+  did not contain an allocation failure; after ACL refresh, PC/SC listed the
+  Pico again. Earlier static evidence still directly shows append-only array
+  OOM (594 arrays, 192 instances). Do not report `ALG_PERFORMANCE_STATIC` as
+  passed; pursue safe array lifetime and reader recovery separately.
+- Current board is running CHOUPI firmware. The authorized PC/SC ACL helper
+  restored reader publication after the static attempt. Do not run
+  restricted-context USB probes; invoke physical commands with host access
+  from the first call.
+- Evidence and SHA-256 digests are in the latest `.agent/QKB.md` section.
+- Next: isolate the static DES init reader loss without repeating the full
+  benchmark yet; then develop a safe heap/array lifetime strategy before
+  another static run. Preserve the passing supported-sweep artifacts.
+
+## RandomData.OneShot result correction — 2026-10-17
+
+- Changed the unsupported `RandomData.OneShot.open()` factory from
+  `CryptoException.ILLEGAL_USE` to its documented
+  `CryptoException.NO_SUCH_ALGORITHM`. Added an assertion to the official
+  JCAlgTest VPCD integration for APDU `B0752B00010200`; its response is
+  `2B03FF...9000`. PC build and VPCD integration passed (`TEST:SUMMARY
+  pass=11 fail=0`). ARM M33 build passed; no RISC-V build or test was run.
+- Flashed the ARM image through host access and captured runtime PASS. The
+  exact named physical reader then completed official v1.8.2
+  `ALG_SUPPORT_EXTENDED`: 4,525 rows, 15 `yes`, 4,510 `no`, zero other
+  statuses. The six RandomData.OneShot results are all `no`. Two bounded
+  serial captures had no failure, fault, panic, allocation-failure, or CCID
+  transfer-error marker.
+- Cross-check found two false-positive `yes` rows in the physical results:
+  `OWNER_PIN_X` and `OWNER_PIN_X_WITH_PREDECREMENT` factories return null.
+  AC3 now has a complete physical run, but AC4 remains open until these rows
+  are made accurate. Details and hashes are in the new support-comparison
+  report and QKB section.
+- Next: implement the two documented OwnerPINX types (or otherwise make the
+  support report accurate without breaking the applet sweep), then rerun the
+  focused support checks. Keep static-suite heap retention as a separate open
+  issue. Current physical ARM image is running CHOUPI.
+
+## OwnerPINx support and dispatch regression — 2026-10-17
+
+- Implemented both OwnerPINx builder variants, correct predecrement behavior,
+  and try-limit state handling. Fixed internal `SuperMethodRef` token creation,
+  superclass method resolution and null-receiver checking, and inherited
+  instance-field offsets. Successful `OwnerPIN.check()` no longer dispatches
+  through an override that clears its validated flag.
+- Full VPCD regression passed 16/16 in 59.295 s. After removing diagnostic-only
+  hooks from field bytecodes, focused OwnerPINx case 13 passed again with
+  response `030302000100000202000201030103009000`. PC and ARM builds passed.
+  The PC build still reports pre-existing Rust and packed-member warnings;
+  ARM build reports none. No physical token was used.
+- Generic lessons are recorded in `.agent/QKB.md`. These changes are separate
+  from the unresolved static benchmark heap-retention issue.
+- Evidence logs: `artifacts/logs/jcsystem-ownerpinx-full-vpcd-20261017.log`,
+  `artifacts/logs/jcsystem-ownerpinx-cleanup-vpcd-20261017.log`,
+  `artifacts/logs/build-pc-ownerpinx-cleanup-20261017.log`, and
+  `artifacts/logs/build-arm-ownerpinx-cleanup-20261017.log`.
+- Next: commit this logical step in the root and nested rommask/API repositories;
+  then continue from the open static benchmark and reader-path issues. Do not
+  access USB or flash hardware without a specific request.

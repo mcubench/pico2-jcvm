@@ -152,7 +152,7 @@ Class_Handler::docheckcast(const std::pair<Package, const uint8_t *> jtype_in,
         ConstantPool_Handler cp(jclass_in.first);
 
         if (Class_Handler::checkInterfaceCast(
-                cp.resolveClassref(implemented_interface.interface),
+                cp.resolveClassref(implemented_interface.interface, true),
                 jtype_out) == TRUE) {
           return TRUE;
         }
@@ -220,7 +220,7 @@ jbool_t Class_Handler::checkInterfaceCast(
 
     auto super_interface_ptr =
         ConstantPool_Handler(interface_in.first)
-            .resolveClassref(super_interface_in);
+            .resolveClassref(super_interface_in, true);
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 
