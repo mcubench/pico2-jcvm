@@ -556,7 +556,7 @@ pc_t &Stack::getPC() {
  *
  * @return the saved pc index.
  */
-uint8_t Stack::savePC() noexcept {
+uint8_t Stack::savePC() {
   Frame &current_frame = this->getCurrentFrame();
   return current_frame.savePC();
 }

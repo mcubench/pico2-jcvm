@@ -40,7 +40,7 @@ class Frame {
 private:
   struct old_pc_t {
     bool isUsed;
-    pc_t &pc;
+    pc_t pc;
   };
 
   jword_t *fp;  // frame base pointer
@@ -86,7 +86,7 @@ public:
   /// Discard all operands in this frame.
   void clearOperands() noexcept;
   /// Save PC value for jsr instruction
-  uint8_t savePC() noexcept;
+  uint8_t savePC();
   /// Restore PC value for ret instruction
   pc_t &restorePC(const uint8_t index)
 #if !defined(JCVM_FIREWALL_CHECKS) && !defined(JCVM_ARRAY_SIZE_CHECK)

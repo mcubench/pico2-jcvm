@@ -157,7 +157,7 @@ public:
   ///  Get the current PC value
   pc_t &getPC();
   /// Save PC value for jsr instruction
-  uint8_t savePC() noexcept;
+  uint8_t savePC();
   /// Restore PC value for ret instruction
   pc_t &restorePC(const uint8_t index);
   /// Get the current frame

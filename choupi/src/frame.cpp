@@ -211,8 +211,21 @@ void Frame::clearOperands() noexcept { this->tos = this->op; }
  *
  * @return the pc index.
  */
-uint8_t Frame::savePC() noexcept {
-  old_pc_t old_pc = {.isUsed = false, .pc = this->pc};
+uint8_t Frame::savePC() {
+  for (uint16_t index = 0; index < this->old_pcs.size(); ++index) {
+    old_pc_t &saved = this->old_pcs.at(index);
+    if (saved.isUsed) {
+      saved.pc.setValue(this->instruction_pc + 3);
+      saved.isUsed = false;
+      return static_cast<uint8_t>(index);
+    }
+  }
+
+  if (this->old_pcs.size() >= 256) {
+    throw Exceptions::StackOverflowException;
+  }
+  old_pc_t old_pc = {
+      .isUsed = false, .pc = pc_t(this->instruction_pc + 3)};
   this->old_pcs.push_back(old_pc);
   return (this->old_pcs.size() - 1);
 }
