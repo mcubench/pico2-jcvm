@@ -62,27 +62,85 @@ fix.
   `artifacts/logs/monitor-jcalgtest-static-reset-20261017.log`, and
   `artifacts/results/jcalgtest-static-physical-20261017/`.
 
-## Current access snapshot — 2026-10-17
+## Host/sandbox PC/SC context split — 2026-10-17
 
-- Escalated read-only enumeration sees the running Pico as
-  `Bus 001 Device 057: ID 2e8a:0009 Raspberry Pi Pico 2 CHOUPI CCID`. The
-  authorized helper reports
-  `PCSC:ACCESS_GRANTED node=/dev/bus/usb/001/057 service=pcscd.service`, and
-  `systemctl is-active pcscd.service` reports `active` after running it.
-- **New unresolved symptom:** Java SmartcardIO lists no readers even after the
-  helper succeeds. `./tools/probe-jc-algtest` reports
-  `PC/SC reader Pico 2 CHOUPI CCID not found`; the exact-name resolver likewise
-  shows an empty reader list. The device node ACL includes `user:pcscd:rw-`
-  and `user:claude:rw-`. PC/SC journal query returned no entries. USB
-  visibility and node permissions are restored, but a CCID reader has not
-  been published to clients; do not retry the static client until reader
-  discovery works.
-- Further bounded inspection confirms USB interface 2 advertises class
-  `Chip/SmartCard` and CCID endpoints `03`/`83`. The installed libccid
-  `Info.plist` maps VID/PID `0x2E8A`/`0x0009` to `Pico 2 CHOUPI CCID`. The
-  service is socket activated; `pcscd.service` exited successfully after idle
-  auto-exit while `pcscd.socket` remained listening. This normal idle exit does
-  not explain the empty reader list observed while Java was querying it.
-- No unbounded `pcsc_scan` process or active JCAlgTest client was found in the
-  latest process inspection. Continue to avoid `pcsc_scan` because of the
+- **Symptom:** Default sandbox commands report libusb `-99` and Java
+  SmartcardIO sees no physical reader, while USB and the reader are visible
+  through the host-access execution context.
+- **Viable resolution:** Run USB/PCSC commands through the host-access path
+  (`require_escalated` in this agent interface); this is an execution context
+  change, not another `sudo` command. In that context,
+  `./tools/probe-jc-algtest` found Virtual PCD 00/01 plus the physical Pico and
+  passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem info, SHA-256 prepare and
+  doFinal (`AA9000`), and expected unsupported RSA-SHA1 (`1203`). After every
+  device re-enumeration, first run the specifically authorized
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper to refresh the node ACL.
+- **Confirmed setup:** The Pico appears as `2e8a:0009`; USB interface 2
+  advertises class `Chip/SmartCard`, endpoints `03`/`83`, and the installed
+  libccid table maps VID/PID `0x2E8A`/`0x0009` to `Pico 2 CHOUPI CCID`.
+  pcscd is socket activated and its idle auto-exit is normal. Do not infer that
+  PC/SC is broken from a sandbox-only empty reader list.
+- **Limit:** A host-context `usbreset 001/057` succeeded but did not prevent
+  the subsequent static test failure. `picotool reboot -F -u` reports no reset
+  interface on this composite device; the bounded CDC 1200-baud fallback
+  entered BOOTSEL, `picotool info -a` confirmed it, and
+  `picotool reboot --application` returned to the current image without
+  flashing.
+
+## Physical SHA-256 static repeat failure — 2026-10-17 update
+
+- The official JCAlgTest 1.8.2 static client ran in the host-access context
+  against exact reader `Pico 2 CHOUPI CCID [JCAlgTest CCID]
+  (D92E743D5F640C0F) 00 00` (reader index 3). It passed applet SELECT,
+  GETVERSION, and JCSystem info. Five zero-repeat baseline calls averaged
+  `529.0`; the first measured 256-byte / 50-call SHA-256 doFinal APDU returned
+  `AA9000` in `761 ms` (reported sample `260.00`). The next identical APDU
+  failed with `SCARD_E_READER_UNAVAILABLE` and the official client exited 1.
+- After refreshing the reader ACL, the isolated SHA probe returned
+  `F105` (`CryptoException.ILLEGAL_USE`) following that static run. A full
+  MCU reset through CDC-to-BOOTSEL and `picotool reboot --application`, with
+  no flash write, restored the isolated probe (`AA9000`). This shows the
+  failure depends on accumulated/runtime SHA state, but its precise cause is
+  not yet known. Treat the reader error and subsequent `F105` as failures;
+  `NO_SUCH_ALGORITHM` for other algorithms remains expected.
+- A focused probe after a clean MCU reboot passed ten separate one-call SHA
+  APDUs, one exact 256-byte/50-call static SHA APDU, and one more one-call SHA
+  APDU (`AA9000` for all). This narrows the problem: one 50-call APDU followed
+  by one call is healthy, while the official client fails during a further
+  repeated measured call after its baseline sequence. The runtime/CCID path
+  needs a closer comparison with the client's exact APDU order and repeat
+  count. Probe evidence:
+  `artifacts/logs/jcalgtest-sha-50call-followup-physical-20261017.log`
+  (SHA-256 `afd4b7dab4483670cc5e44d39ac431047b6f15487e733c835f5296b71a2b183d`).
+- Eight-second serial capture after the failed run showed seven
+  `TEST:PASS choupi_runtime` samples and no `TEST:FAIL`/`FAULT`; CCID diagnostics
+  showed repeated `GetSlotStatus` (`msg=65`) and no XfrBlock count. The capture
+  contained one `WATCHDOG_RECOVERY cause=other` marker; it does not establish a
+  watchdog reset. Evidence: `artifacts/logs/jcalgtest-static-physical-hostctx-20261017.log`
+  (SHA-256 `f423bcbca20ebaf211c02fc393171938afaef65b632f00ccff44d9e1cf738b90`)
+  and `artifacts/logs/monitor-jcalgtest-static-hostctx-20261017.log` (SHA-256
+  `7fd345669b97c9ac62745f8d60e4ed5a8d4d8637eade79431cc2cd5bd2f69357`).
+- No unbounded `pcsc_scan` process or active JCAlgTest process was found during
+  the host-context checks. Continue to avoid `pcsc_scan` because of the
   previously observed runaway case.
+
+## Intermittent reader recovery after MCU reboot — 2026-10-17
+
+- After a second clean CDC/BOOTSEL/application reboot, the Pico enumerated as
+  `2e8a:0009` at node `001/062` and the authorized ACL helper succeeded, but a
+  host-context Java probe listed only the two virtual readers. The first
+  helper call after this reboot was not sufficient; repeating it did not
+  restore physical reader discovery.
+- An attempted raw CCID endpoint transfer timed out (`libusb -7`) before an
+  APDU was sent. The bounded serial monitor remained healthy
+  (`TEST:PASS choupi_runtime`, no `FAULT`) and showed only CCID
+  `GetSlotStatus` processing (`msg=65`, `xfr=0`). `pcscd --hotplug` could not
+  signal the root-owned daemon (`Operation not permitted`).
+- **Current status:** intermittent PC/SC/CCID availability after reset remains
+  an open host/device interaction. A prior host-context probe did enumerate
+  the physical reader and complete APDUs, so preserve the host-access context
+  and helper workflow; use a VM USB detach/reattach if the physical reader
+  remains absent. Do not run `pcsc_scan`.
+- Evidence: `artifacts/logs/jcalgtest-sha-repeated-50-apdus-physical-20261017.log`,
+  `artifacts/logs/jcalgtest-sha-rawccid-repeat-physical-20261017.log`, and
+  `artifacts/logs/monitor-jcalgtest-ccid-timeout-20261017.log`.

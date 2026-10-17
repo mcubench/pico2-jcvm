@@ -9,9 +9,11 @@
   behind. It also records the still-open physical static SHA repeat failure.
 - Later checks through the permitted host-access path saw the running Pico as
   `2e8a:0009` at `/dev/bus/usb/001/057`. The exact helper granted node ACLs and
-  `pcscd.service` is active, but Java SmartcardIO still lists no readers;
-  `./tools/probe-jc-algtest` failed before sending APDUs. The node ACL includes
-  `pcscd` and `claude`. No unbounded scanner was started.
+  host-context Java SmartcardIO enumerated the physical reader alongside both
+  VPCD readers. Default sandbox commands cannot see the physical USB/PCSC
+  context (`libusb -99`/empty reader list); run all hardware tools through the
+  host-access execution path. Refresh ACL after every re-enumeration with the
+  authorized helper.
 - Read-only USB descriptor inspection confirms the CCID interface and
   endpoints `03`/`83`; the installed libccid table contains the exact
   `2e8a:0009` mapping. pcscd is socket activated and exits normally when idle,
@@ -21,11 +23,22 @@
   this VM, and no wiki MCP tools are exposed in this session. The repository
   QKB is therefore the maintained canonical issue record; session digests are
   not treated as topic knowledge.
-- Next: diagnose why pcscd does not publish the enumerated CCID device,
-  using bounded diagnostics and considering a VM USB detach/reattach because
-  that recovered guest visibility previously. Once Java sees the reader, run the APDU probe
-  before the official named-reader static test. Do not use `pcsc_scan`;
-  preserve new logs and update QKB with confirmed results.
+- The official physical `ALG_PERFORMANCE_STATIC` run now reproduces the SHA
+  failure in the proper host context: baseline average `529.0`; first measured
+  256-byte/50-call APDU `AA9000` in 761 ms; next identical call ends in
+  `SCARD_E_READER_UNAVAILABLE`. Following it, a fresh isolated SHA probe
+  returned `F105`. A full CDC-to-BOOTSEL/application reboot restores the
+  isolated probe without flashing.
+- A focused APDU probe passed ten one-call SHA requests, the exact 50-call
+  static request, and one further SHA request. That single-workload sequence
+  does not reproduce the official client's failure. A later reboot left USB
+  enumerated at node `001/062`, but the host-context reader list showed only
+  VPCD. Direct CCID timed out before APDU; finite serial capture remained
+  `TEST:PASS` with `GetSlotStatus` only. Latest details are in `.agent/QKB.md`.
+- Next: restore physical PC/SC discovery (VM USB detach/reattach is the known
+  recovery when guest reader ownership goes stale), then reproduce the exact
+  sequence of baseline and repeated SHA measurements. Do not use
+  `pcsc_scan`; it previously left an orphan at 99.2% CPU.
 
 ## Latest continuation — 2026-10-17
 

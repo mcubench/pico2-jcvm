@@ -90,6 +90,39 @@ public final class JCAlgTestApduProbe {
       if (sha256Result.length < 1 || sha256Result[0] != (byte) 0xAA) {
         throw new IllegalStateException("SHA-256 doFinal did not report success");
       }
+      for (int iteration = 1; iteration <= 10; iteration++) {
+        ResponseAPDU repeatedDoFinal = transmit(channel,
+            "SHA256_DOFINAL_REPEAT_" + iteration,
+            new CommandAPDU(0xB0, 0x41, 0x00, 0x00, sha256Settings, 256));
+        byte[] repeatedResult = repeatedDoFinal.getData();
+        if (repeatedResult.length < 1 || repeatedResult[0] != (byte) 0xAA) {
+          throw new IllegalStateException(
+              "repeated SHA-256 doFinal did not report success at iteration " +
+              iteration);
+        }
+      }
+
+      byte[] staticSha256Settings = fromHex(
+          "0015 0004 FFFF FFFF FFFF 0006 0100 FFFF FFFF 0032 0001");
+      transmit(channel, "SHA256_STATIC_PREPARE",
+          new CommandAPDU(0xB0, 0x34, 0x00, 0x00,
+              staticSha256Settings, 256));
+      ResponseAPDU staticResult = transmit(channel, "SHA256_STATIC_50_DOFINALS",
+          new CommandAPDU(0xB0, 0x41, 0x00, 0x00,
+              staticSha256Settings, 256));
+      if (staticResult.getData().length < 1 ||
+          staticResult.getData()[0] != (byte) 0xAA) {
+        throw new IllegalStateException(
+            "50-call static SHA-256 doFinal did not report success");
+      }
+      ResponseAPDU postStaticResult = transmit(channel,
+          "SHA256_DOFINAL_AFTER_STATIC",
+          new CommandAPDU(0xB0, 0x41, 0x00, 0x00, sha256Settings, 256));
+      if (postStaticResult.getData().length < 1 ||
+          postStaticResult.getData()[0] != (byte) 0xAA) {
+        throw new IllegalStateException(
+            "SHA-256 doFinal after the 50-call workload did not report success");
+      }
 
       ResponseAPDU unsupportedSignature = transmit(channel,
           "UNSUPPORTED_RSA_SHA1_SIGNATURE",
