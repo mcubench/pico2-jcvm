@@ -4309,3 +4309,13 @@
 - Decision: Treat the repeated-state SHA failure as fixed on the tested physical board. Preserve the reference-identity/multi-APDU checks for future algorithms; investigate non-SHA `6F00` operations separately without implementing expected unsupported algorithms.
 - Commit: `4debbf4e441c5687fb7b94c4e34b56b089cb70f6`
 - Artifacts/logs: ARM build SHA-256 `6cc788ae0fc6ddff05a1d7ec37d99c7a8b95bea608c8933aed85388a883816a4`; RISC-V build `881208e73a2928a758eaea3326cdbbbb35e542c634fa9fff05f811ef6fe134b0`; flash `351869e7b877f1161b50e716cc7d9651f8eaba632082071a92940814c046bb90`; diagnostic serial trace `901c029c8f7430f5ab50a8b695c13b4157009746dd87b9c1f1cbbf600f92c2f7`; focused physical probe `9fb9185ceb587a261cf3755e053dd1a81ce59df51f18c3f115f6b0cf881a21f8`; official client `295243b8897c6eb59e1dd06a8dc8fc499bc602995088a38a07f9af263911765e`; post-fix serial `4584bb17cc0217f5639b9350b3b7bbb8fe584da437410a30bc0d81ff4949a4ba`. Full paths are listed in `.agent/QKB.md`.
+
+## 2026-10-17 — Classify unsupported-algorithm static `6F00`
+
+- Step/experiment: `jcalgtest-static-unsupported-prepare-triage`
+- Change: Recorded the source of the first non-SHA `6F00` in `.agent/QKB.md` and `.agent/HANDOFF.md`: JCAlgTest v1.8.2 prepared `RandomData.ALG_TRNG`, received `03 9000` (`NO_SUCH_ALGORITHM`), then still sent the measurement APDU which returned `6F00`. The supported `ALG_SECURE_RANDOM` preparation and 50-call measurement returned `AA9000`.
+- Validation: Read-only inspection of the captured official physical client and raw result logs confirmed the APDU order, specifications, statuses, and method labels. No build, flash, hardware command, or code test was run; this was log triage only.
+- Result: The first residual `6F00` follows an explicitly unsupported algorithm and is not evidence of failure in a supported operation. This does not classify all 1,866 `CANT_BE_MEASURED` rows; their prepare statuses need individual inspection.
+- Decision: Do not implement TRNG to eliminate this row. For remaining triage, investigate only a measurement whose prepare APDU returned `AA9000`.
+- Commit: `<recorded in metadata follow-up>`
+- Artifacts/logs: `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log` (SHA-256 `295243b8897c6eb59e1dd06a8dc8fc499bc602995088a38a07f9af263911765e`); `artifacts/results/jcalgtest-static-cache-fix-physical-20261017/ALGTEST_log_1792223036058.log`.

@@ -3728,3 +3728,22 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/jcalgtest-static-cache-fix-physical-20261017.log`,
   `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log`, and
   `artifacts/logs/monitor-arm-persistent-reference-cache-20261017.log`.
+
+## Static client residual `6F00` triage — 2026-10-17
+
+- The first non-SHA `6F00` in the official physical `ALG_PERFORMANCE_STATIC`
+  run is the follow-on measurement for `RandomData.ALG_TRNG`. Its prepare
+  (`B033`, spec 3) returned `03 9000` (`NO_SUCH_ALGORITHM`), but the v1.8.2
+  client still sent `B042` and logged `6F00`/`CANT_BE_MEASURED`. Do not chase
+  this as a supported algorithm failure or add TRNG support to suppress it.
+- In contrast, `RandomData.ALG_SECURE_RANDOM` (spec 2) prepared successfully
+  and its 50-call measurement returned `AA9000`. The first residual `6F00` is
+  therefore explained by unsupported setup; other `CANT_BE_MEASURED` rows
+  must be classified by their individual prepare statuses before further VM
+  changes.
+- Evidence is in the official client output and raw result log linked from
+  `.agent/QKB.md`. No code, build, flash, or hardware action was needed for
+  this log-only triage.
+- Next: keep SHA fix as validated. If continuing broad static-result triage,
+  select a row whose prepare returned `AA9000` and then failed; do not spend
+  effort on follow-on measurements after `NO_SUCH_ALGORITHM`.

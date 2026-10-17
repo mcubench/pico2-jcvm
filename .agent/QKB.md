@@ -240,3 +240,25 @@ fix.
   pass `artifacts/logs/jcalgtest-static-cache-fix-physical-20261017.log`,
   official client `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log`,
   and post-fix serial `artifacts/logs/monitor-arm-persistent-reference-cache-20261017.log`.
+
+## Interpret JCAlgTest follow-on `6F00` after unsupported prepare — 2026-10-17
+
+- In the physical JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` output, the first
+  non-SHA `6F00` appears for `RandomData.ALG_TRNG`. The immediately preceding
+  prepare APDU (`B033`, specification `3`) returned data byte `03` with
+  `9000`, meaning `CryptoException.NO_SUCH_ALGORITHM`. The client nevertheless
+  sent a measurement APDU (`B042`, 50 repeats), which returned `6F00` and was
+  labeled `CANT_BE_MEASURED`.
+- `RandomData.ALG_SECURE_RANDOM` (specification `2`) immediately before it
+  prepared with `AA9000` and its 50-call measurement completed `AA9000`.
+  This supports the implementation path for the supported algorithm. The
+  `ALG_TRNG` follow-on `6F00` is not evidence of a supported-operation bug;
+  the explicit prepare status already identifies the requested algorithm as
+  unsupported. Do not implement TRNG merely to eliminate this follow-on row.
+- General rule for future JCAlgTest triage: inspect the prepare status before
+  treating a later measurement `6F00` as a VM failure. If prepare reports
+  `NO_SUCH_ALGORITHM`, classify the measurement as a consequence of unsupported
+  setup. Investigate only operations whose prepare returned success, while
+  continuing to treat unsupported algorithms as expected.
+- Evidence: `artifacts/results/jcalgtest-static-cache-fix-physical-20261017/ALGTEST_log_1792223036058.log`, lines around 900–1130; run transcript
+  `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log`.
