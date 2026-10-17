@@ -262,3 +262,29 @@ fix.
   continuing to treat unsupported algorithms as expected.
 - Evidence: `artifacts/results/jcalgtest-static-cache-fix-physical-20261017/ALGTEST_log_1792223036058.log`, lines around 900–1130; run transcript
   `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log`.
+
+
+## Correction: first residual static `6F00` is supported `setSeed` — 2026-10-17
+
+- A second pass through the raw result log corrected the previous
+  `ALG_TRNG`-first interpretation. The **first** failed measurement is
+  `RandomData.ALG_SECURE_RANDOM.setSeed()` (specification 2, method 2): prepare
+  returned `AA9000`; five zero-repeat `B042` baselines returned `AA9000`; the
+  first 50-repeat `B042` measurement returned `6F00`. The next `ALG_TRNG`
+  prepare (`B033`) also returned `6F00`, after the supported-path failure.
+  Therefore the following TRNG rows in this run are not valid evidence that
+  TRNG alone returns `NO_SUCH_ALGORITHM`.
+- The SDK implementation of `RandomData.setSeed()` validates the buffer range
+  then performs no state change for `ALG_SECURE_RANDOM`. The cause of its
+  failure under 50 repeats is not established. The earlier section
+  “Interpret JCAlgTest follow-on `6F00` after unsupported prepare” is
+  superseded for this run.
+- No new hardware test was possible in the current execution context: `lsusb`
+  returned `unable to initialize libusb: -99`; `picotool` failed libusb
+  initialization; and the permitted helper exited because the container has
+  `no new privileges`. The captured client result is still available for
+  diagnosis.
+- General lesson: determine the first failing operation in chronological
+  order. Later prepare or measurement statuses may be consequences of a prior
+  supported-path failure and must not be classified independently.
+- Evidence: `artifacts/results/jcalgtest-static-cache-fix-physical-20261017/ALGTEST_log_1792223036058.log`, first failing sequence around lines 1030–1130; SDK implementation `choupi/javacard-sdk/javacard-api/src/javacard/security/RandomData.java`.

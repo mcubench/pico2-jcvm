@@ -3730,20 +3730,26 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/monitor-arm-persistent-reference-cache-20261017.log`.
 
 ## Static client residual `6F00` triage — 2026-10-17
+## Static client residual `6F00` triage — 2026-10-17
 
-- The first non-SHA `6F00` in the official physical `ALG_PERFORMANCE_STATIC`
-  run is the follow-on measurement for `RandomData.ALG_TRNG`. Its prepare
-  (`B033`, spec 3) returned `03 9000` (`NO_SUCH_ALGORITHM`), but the v1.8.2
-  client still sent `B042` and logged `6F00`/`CANT_BE_MEASURED`. Do not chase
-  this as a supported algorithm failure or add TRNG support to suppress it.
-- In contrast, `RandomData.ALG_SECURE_RANDOM` (spec 2) prepared successfully
-  and its 50-call measurement returned `AA9000`. The first residual `6F00` is
-  therefore explained by unsupported setup; other `CANT_BE_MEASURED` rows
-  must be classified by their individual prepare statuses before further VM
-  changes.
-- Evidence is in the official client output and raw result log linked from
-  `.agent/QKB.md`. No code, build, flash, or hardware action was needed for
-  this log-only triage.
-- Next: keep SHA fix as validated. If continuing broad static-result triage,
-  select a row whose prepare returned `AA9000` and then failed; do not spend
-  effort on follow-on measurements after `NO_SUCH_ALGORITHM`.
+- **Correction to the initial triage:** The first `6F00` is not the TRNG row.
+  It is `RandomData.ALG_SECURE_RANDOM.setSeed()` (specification 2), whose
+  prepare returned `AA9000`, five zero-repeat baselines returned `AA9000`, and
+  first 50-repeat measurement returned `6F00`. The subsequent `ALG_TRNG`
+  prepare and measurement also return `6F00`, so they cannot be classified as
+  independent `NO_SUCH_ALGORITHM` follow-ons based on this run.
+- The captured log confirms this is a supported-path failure before the later
+  cascading errors. `RandomData.setSeed()` in the SDK checks the buffer range
+  and otherwise intentionally does nothing for `ALG_SECURE_RANDOM`. The reason
+  it fails during repeated invocation remains unresolved; do not implement
+  TRNG or attribute the error to unsupported setup.
+- This execution context currently cannot reach the physical device: `lsusb`
+  reports `unable to initialize libusb: -99`, the authorized sudo helper is
+  blocked by the container's `no new privileges` flag, and picotool cannot
+  initialize libusb. The previous physical client log remains the evidence;
+  no new hardware test was attempted.
+- Next: in the host-access context, replay only the successful secure-random
+  prepare, zero-repeat baseline, and one 50-repeat `setSeed` measurement while
+  capturing bounded serial output. Identify the VM exception/status before
+  changing code. Then check whether the subsequent TRNG rows still fail after
+  isolating that first error.
