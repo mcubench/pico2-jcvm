@@ -4500,3 +4500,23 @@
   `artifacts/logs/monitor-arm-jcsystem-memory-accounting-continue-20261017.log`,
   `artifacts/logs/jcalgtest-physical-jcsystem-memory-accounting-continue-20261017.log`,
   and `artifacts/logs/jcalgtest-physical-jcsystem-live-memory-continue-20261017.log`.
+
+## 2026-10-17 — Close restricted-context USB entry points
+
+- Step/experiment: `usb-restricted-context-fail-fast-coverage`
+- Change: Added a shared Python `NoNewPrivs` guard to direct-libUSB bridge and
+  repair tools, and moved the `cycle` guard ahead of its builds. This closes
+  entry points that bypassed the existing shell-wrapper checks and prevents
+  two unnecessary builds before a restricted flash failure.
+- Validation: Shell syntax and Python compilation checks passed. In the
+  restricted context, cycle, bridge, repair, flash, monitor, APDU probe, live
+  JCSystem probe, and named physical JCAlgTest exited with the host-access
+  diagnostic in 0.75–1.52 seconds. No USB/PCSC attempt occurred; cycle started
+  no builds.
+- Result: All known USB/PCSC entry points fail immediately in this restricted
+  context; normal USB work must be invoked via host-access execution.
+- Decision: Keep host-access invocation as the default and treat these checks
+  as protection from accidental restricted invocations. Continue focused
+  JCSystem/lifecycle golden coverage next.
+- Commit: pending
+- Artifacts/logs: none; timings captured from bounded command results.

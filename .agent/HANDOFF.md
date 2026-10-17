@@ -1,5 +1,22 @@
 # Handoff
 
+## Latest continuation — close remaining restricted USB paths — 2026-10-17
+
+- Found two direct-libUSB tools that bypassed the existing restricted-context
+  guard: `tools/bridge-pico-ccid-vpcd` and
+  `tools/repair-jcalgtest-raw-ccid`. Also found `tools/cycle` started both
+  architecture builds before the nested flash guard rejected hardware access.
+- Added a shared Python `NoNewPrivs` check for the two direct USB tools and an
+  early check in `tools/cycle`. In the restricted context, all eight USB/PCSC
+  entry paths tested exited with the host-access diagnostic in 0.75–1.52 s;
+  no libusb/PCSC access or builds started. Syntax checks passed.
+- Future hardware operations: invoke the wrapper through host-access execution
+  from the outset. The in-tool guard only prevents wasted attempts when a
+  restricted execution is accidentally used.
+- Commit: pending.
+- Next: continue golden JCSystem/lifecycle coverage from TODO after this
+  fail-fast change is committed.
+
 ## Latest continuation — JCSystem memory accounting and hardware access guard — 2026-10-17
 
 - Implemented Pico `JCSystem.getAvailableMemory` short and jc304 array forms.
@@ -41,9 +58,10 @@
   `artifacts/logs/monitor-arm-jcsystem-memory-accounting-continue-20261017.log`,
   `artifacts/logs/jcalgtest-physical-jcsystem-memory-accounting-continue-20261017.log`,
   and `artifacts/logs/jcalgtest-physical-jcsystem-live-memory-continue-20261017.log`.
-- Next: stage and commit only this logical step, preserving unrelated shared
-  worktree edits. Then continue golden JCSystem/applet lifecycle coverage and
-  remaining acceptance criteria. Keep all physical commands on host access.
+- Commit: `a9a2091` (`Implement Pico JCSystem memory reporting and USB guard`).
+- Next: continue golden JCSystem/applet lifecycle coverage and remaining
+  acceptance criteria. Keep all physical commands on host access and preserve
+  the unrelated pre-existing worktree edits.
 
 ## Knowledge base checkpoint — 2026-10-17
 

@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""Bridge a PC/SC Virtual PCD TCP endpoint to the physical Pico CCID USB card."""
+
+import argparse
+import ctypes
+import ctypes.util
+import socket
+import struct
+import sys
+
+from host_usb_access import require_host_usb_access
+
+
+VID = 0x2E8A
+PID = 0x0009
+CCID_INTERFACE = 2
+ENDPOINT_OUT = 0x03
+ENDPOINT_IN = 0x83
+
+
+class UsbCcid:
+    def __init__(self):
+        library = ctypes.util.find_library("usb-1.0")
+        if library is None:
+            raise RuntimeError("libusb-1.0 is not installed")
+        self.lib = ctypes.CDLL(library)
+        self.context = ctypes.c_void_p()
+        self.lib.libusb_init.argtypes = [ctypes.POINTER(ctypes.c_void_p)]
+        self.lib.libusb_init.restype = ctypes.c_int
+        self.check(self.lib.libusb_init(ctypes.byref(self.context)), "init")
+        self.lib.libusb_open_device_with_vid_pid.argtypes = [
+            ctypes.c_void_p, ctypes.c_uint16, ctypes.c_uint16
+        ]
+        self.lib.libusb_open_device_with_vid_pid.restype = ctypes.c_void_p
+        self.handle = self.lib.libusb_open_device_with_vid_pid(
+            self.context, VID, PID
+        )
+        if not self.handle:
+            self.close()
+            raise RuntimeError("Pico 2 CHOUPI CCID (2E8A:0009) not found")
+        self.lib.libusb_claim_interface.argtypes = [ctypes.c_void_p, ctypes.c_int]
+        self.lib.libusb_claim_interface.restype = ctypes.c_int
+        self.check(
+            self.lib.libusb_claim_interface(self.handle, CCID_INTERFACE),
+            "claim interface 2",
+        )
+        self.lib.libusb_bulk_transfer.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_ubyte,
+            ctypes.POINTER(ctypes.c_ubyte),
+            ctypes.c_int,
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.c_uint,
+        ]
+        self.lib.libusb_bulk_transfer.restype = ctypes.c_int
+        self.lib.libusb_release_interface.argtypes = [
+            ctypes.c_void_p, ctypes.c_int
+        ]
+        self.lib.libusb_close.argtypes = [ctypes.c_void_p]
+        self.lib.libusb_exit.argtypes = [ctypes.c_void_p]
+        self.sequence = 0
+        self.powered = False
+
+    @staticmethod
+    def check(status, operation):
+        if status != 0:
+            raise RuntimeError(f"libusb {operation} failed: {status}")
+
+    def bulk(self, endpoint, data, length, timeout_ms):
+        buffer = (ctypes.c_ubyte * max(1, length))()
+        if data is not None:
+            for index, value in enumerate(data):
+                buffer[index] = value
+        transferred = ctypes.c_int()
+        status = self.lib.libusb_bulk_transfer(
+            self.handle,
+            endpoint,
+            buffer,
+            length,
+            ctypes.byref(transferred),
+            timeout_ms,
+        )
+        self.check(status, f"bulk transfer endpoint 0x{endpoint:02X}")
+        return bytes(buffer[: transferred.value])
+
+    def command(self, kind, payload=b"", timeout_ms=120000):
+        sequence = self.sequence
+        header = (
+            bytes((kind,))
+            + struct.pack("<I", len(payload))
+            + bytes((0, sequence, 0, 0, 0))
+        )
+        self.bulk(ENDPOINT_OUT, header + payload, len(header) + len(payload), 5000)
+        response = self.bulk(ENDPOINT_IN, None, 512, timeout_ms)
+        if len(response) < 10:
+            raise RuntimeError("short CCID response: " + response.hex())
+        payload_length = int.from_bytes(response[1:5], "little")
+        if (
+            len(response) != 10 + payload_length
+            or response[6] != sequence
+        ):
+            raise RuntimeError("CCID sequence/length mismatch: " + response.hex())
+        self.sequence = (sequence + 1) & 0xFF
+        return response[0], response[7], response[8], response[10:]
+
+    def power_on(self):
+        kind, status, error, atr = self.command(0x62)
+        if kind != 0x80 or status != 0 or error != 0:
+            raise RuntimeError("CCID power on failed")
+        self.powered = True
+        print("BRIDGE:POWER_ON atr=" + atr.hex().upper(), flush=True)
+        return atr
+
+    def power_off(self):
+        if not self.powered:
+            return
+        kind, status, error, _ = self.command(0x63)
+        if kind != 0x81 or status != 1 or error != 0:
+            raise RuntimeError("CCID power off failed")
+        self.powered = False
+        print("BRIDGE:POWER_OFF", flush=True)
+
+    def reset(self):
+        self.power_off()
+        return self.power_on()
+
+    def transmit(self, apdu):
+        kind, status, error, response = self.command(0x6F, apdu)
+        if kind != 0x80 or status != 0 or error != 0 or len(response) < 2:
+            raise RuntimeError(
+                f"CCID transfer failed: type={kind:02X} status={status:02X} "
+                f"error={error:02X} response={response.hex().upper()}"
+            )
+        print(
+            "BRIDGE:APDU ins=%02X len=%u sw=%s"
+            % (apdu[1] if len(apdu) > 1 else 0, len(apdu), response[-2:].hex().upper()),
+            flush=True,
+        )
+        return response
+
+    def close(self):
+        handle = getattr(self, "handle", None)
+        if handle:
+            if hasattr(self.lib, "libusb_release_interface"):
+                self.lib.libusb_release_interface(handle, CCID_INTERFACE)
+            self.lib.libusb_close(handle)
+            self.handle = None
+        context = getattr(self, "context", None)
+        if context:
+            self.lib.libusb_exit(context)
+            self.context = None
+
+
+def receive_exact(sock, length):
+    data = bytearray()
+    while len(data) < length:
+        chunk = sock.recv(length - len(data))
+        if not chunk:
+            raise EOFError("VPCD socket closed")
+        data.extend(chunk)
+    return bytes(data)
+
+
+def read_frame(sock):
+    length = int.from_bytes(receive_exact(sock, 2), "big")
+    if not length:
+        raise RuntimeError("VPCD sent an empty frame")
+    return receive_exact(sock, length)
+
+
+def write_frame(sock, message):
+    if not message or len(message) > 0xFFFF:
+        raise RuntimeError("invalid VPCD response size")
+    sock.sendall(len(message).to_bytes(2, "big") + message)
+
+
+def main():
+    require_host_usb_access()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=35963)
+    parser.add_argument("--idle-timeout", type=int, default=300)
+    args = parser.parse_args()
+    if not 1 <= args.port <= 65535 or args.idle_timeout <= 0:
+        parser.error("port and idle timeout must be positive")
+
+    card = UsbCcid()
+    connection = None
+    try:
+        print(
+            f"BRIDGE:CONNECTING vpcd={args.host}:{args.port} "
+            f"usb={VID:04X}:{PID:04X}",
+            flush=True,
+        )
+        connection = socket.create_connection((args.host, args.port), timeout=5)
+        connection.settimeout(args.idle_timeout)
+        print("BRIDGE:CONNECTED", flush=True)
+        while True:
+            message = read_frame(connection)
+            if len(message) == 1:
+                control = message[0]
+                if control == 0x00:
+                    card.power_off()
+                elif control == 0x01:
+                    if not card.powered:
+                        card.power_on()
+                    else:
+                        print("BRIDGE:POWER_ALREADY_ON", flush=True)
+                elif control == 0x02:
+                    atr = card.reset()
+                    print("BRIDGE:RESET atr=" + atr.hex().upper(), flush=True)
+                elif control == 0x04:
+                    atr = card.power_on() if not card.powered else bytes.fromhex("3B800181")
+                    write_frame(connection, atr)
+                    print("BRIDGE:ATR_SENT", flush=True)
+                else:
+                    raise RuntimeError(f"unsupported VPCD control 0x{control:02X}")
+                continue
+
+            if not card.powered:
+                card.power_on()
+            write_frame(connection, card.transmit(message))
+    except (EOFError, ConnectionError) as error:
+        print(f"BRIDGE:DISCONNECTED {error}", flush=True)
+    finally:
+        if connection is not None:
+            connection.close()
+        try:
+            card.power_off()
+        finally:
+            card.close()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as error:
+        print(f"ERROR: {error}", file=sys.stderr, flush=True)
+        raise SystemExit(1)

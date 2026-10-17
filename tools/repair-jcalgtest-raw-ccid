@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+"""Repair a stale JCAlgTest instance through raw CCID when PC/SC is unavailable.
+
+This deletes only the registered JCAlgTest applet instance, leaves its loaded
+CAP package in place, installs a fresh instance with the known JCAlgTest
+installation parameters, power-cycles the card slot, and checks applet APDUs.
+It intentionally aborts unless SELECT currently returns 6F00.
+"""
+
+import ctypes
+import ctypes.util
+import secrets
+import struct
+import sys
+
+from host_usb_access import require_host_usb_access
+
+from cryptography.hazmat.primitives import cmac
+from cryptography.hazmat.primitives.ciphers import algorithms
+
+
+VID = 0x2E8A
+PID = 0x0009
+CCID_INTERFACE = 2
+ENDPOINT_OUT = 0x03
+ENDPOINT_IN = 0x83
+STATIC_KEY = bytes.fromhex("404142434445464748494A4B4C4D4E4F")
+PACKAGE_AID = bytes.fromhex("4A43416C6754657374")
+APPLET_AID = bytes.fromhex("4A43416C675465737431")
+
+
+class LibUSB:
+    def __init__(self):
+        library = ctypes.util.find_library("usb-1.0")
+        if library is None:
+            raise RuntimeError("libusb-1.0 is not installed")
+        self.lib = ctypes.CDLL(library)
+        self.context = ctypes.c_void_p()
+        self.lib.libusb_init.argtypes = [ctypes.POINTER(ctypes.c_void_p)]
+        self.lib.libusb_init.restype = ctypes.c_int
+        self._check(self.lib.libusb_init(ctypes.byref(self.context)), "init")
+        self.lib.libusb_open_device_with_vid_pid.argtypes = [
+            ctypes.c_void_p, ctypes.c_uint16, ctypes.c_uint16
+        ]
+        self.lib.libusb_open_device_with_vid_pid.restype = ctypes.c_void_p
+        self.handle = self.lib.libusb_open_device_with_vid_pid(
+            self.context, VID, PID
+        )
+        if not self.handle:
+            self.close()
+            raise RuntimeError("Pico 2 CHOUPI CCID (2E8A:0009) not found")
+        self.lib.libusb_claim_interface.argtypes = [ctypes.c_void_p, ctypes.c_int]
+        self.lib.libusb_claim_interface.restype = ctypes.c_int
+        self._check(
+            self.lib.libusb_claim_interface(self.handle, CCID_INTERFACE),
+            "claim CCID interface",
+        )
+        self.lib.libusb_bulk_transfer.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_ubyte,
+            ctypes.POINTER(ctypes.c_ubyte),
+            ctypes.c_int,
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.c_uint,
+        ]
+        self.lib.libusb_bulk_transfer.restype = ctypes.c_int
+        self.lib.libusb_release_interface.argtypes = [
+            ctypes.c_void_p, ctypes.c_int
+        ]
+        self.lib.libusb_close.argtypes = [ctypes.c_void_p]
+        self.lib.libusb_exit.argtypes = [ctypes.c_void_p]
+        self.sequence = 1
+
+    @staticmethod
+    def _check(status, operation):
+        if status != 0:
+            raise RuntimeError(f"libusb {operation} failed: {status}")
+
+    def _bulk(self, endpoint, payload, length, timeout_ms):
+        buffer = (ctypes.c_ubyte * max(1, length))()
+        if payload is not None:
+            for index, value in enumerate(payload):
+                buffer[index] = value
+        transferred = ctypes.c_int()
+        status = self.lib.libusb_bulk_transfer(
+            self.handle,
+            endpoint,
+            buffer,
+            length,
+            ctypes.byref(transferred),
+            timeout_ms,
+        )
+        self._check(status, f"bulk transfer endpoint 0x{endpoint:02X}")
+        return bytes(buffer[: transferred.value])
+
+    def ccid(self, message_type, payload=b"", timeout_ms=30000):
+        sequence = self.sequence
+        header = (
+            bytes((message_type,))
+            + struct.pack("<I", len(payload))
+            + bytes((0, sequence, 0, 0, 0))
+        )
+        self._bulk(ENDPOINT_OUT, header + payload, len(header) + len(payload), 5000)
+        response = self._bulk(ENDPOINT_IN, None, 512, timeout_ms)
+        if len(response) < 10:
+            raise RuntimeError(f"short CCID response: {response.hex()}")
+        payload_length = int.from_bytes(response[1:5], "little")
+        if len(response) != 10 + payload_length or response[6] != sequence:
+            raise RuntimeError(
+                "CCID response length/sequence mismatch: " + response.hex()
+            )
+        self.sequence = (sequence + 1) & 0xFF
+        return response[0], response[7], response[8], response[10:]
+
+    def command(self, apdu, secure=False, timeout_ms=30000):
+        if secure:
+            apdu = secure.wrap(apdu)
+        kind, status, error, response = self.ccid(
+            0x6F, apdu, timeout_ms=timeout_ms
+        )
+        if kind != 0x80 or status != 0 or error != 0 or len(response) < 2:
+            raise RuntimeError(
+                f"CCID APDU transport failed: type={kind:02X} "
+                f"status={status:02X} error={error:02X} "
+                f"response={response.hex().upper()}"
+            )
+        print(f"APDU:{apdu[1]:02X} response={response.hex().upper()}")
+        return response
+
+    def power_off(self):
+        kind, status, error, _ = self.ccid(0x63)
+        if kind != 0x81 or status != 1 or error != 0:
+            raise RuntimeError("CCID power-off failed")
+
+    def power_on(self):
+        kind, status, error, atr = self.ccid(0x62)
+        if kind != 0x80 or status != 0 or error != 0:
+            raise RuntimeError("CCID power-on failed")
+        print("CCID:ATR " + atr.hex().upper())
+
+    def close(self):
+        handle = getattr(self, "handle", None)
+        if handle:
+            release = getattr(self.lib, "libusb_release_interface", None)
+            if release is not None:
+                release.argtypes = [ctypes.c_void_p, ctypes.c_int]
+                release(handle, CCID_INTERFACE)
+            self.lib.libusb_close(handle)
+            self.handle = None
+        context = getattr(self, "context", None)
+        if context:
+            self.lib.libusb_exit(context)
+            self.context = None
+
+
+def aes_cmac(key, data):
+    mac = cmac.CMAC(algorithms.AES(key))
+    mac.update(data)
+    return mac.finalize()
+
+
+def kdf(key, label, context, output_bits):
+    block = bytearray(32)
+    block[11] = label
+    block[13:15] = output_bits.to_bytes(2, "big")
+    block[15] = 1
+    block[16:] = context
+    return aes_cmac(key, bytes(block))
+
+
+class SecureChannel:
+    def __init__(self, transport):
+        self.transport = transport
+        self.mac_key = None
+        self.chaining_value = bytes(16)
+
+    def establish(self):
+        host_challenge = secrets.token_bytes(8)
+        response = self.transport.command(
+            bytes.fromhex("8050000008") + host_challenge + b"\x00"
+        )
+        if response[-2:] != b"\x90\x00" or len(response) != 31:
+            raise RuntimeError("SCP03 INITIALIZE UPDATE response invalid")
+        data = response[:-2]
+        if data[11] != 0x03:
+            raise RuntimeError(f"card reports SCP {data[11]:02X}, expected SCP03")
+        context = host_challenge + data[13:21]
+        self.mac_key = kdf(STATIC_KEY, 0x06, context, 128)
+        card_cryptogram = kdf(self.mac_key, 0x00, context, 64)[:8]
+        if card_cryptogram != data[21:29]:
+            raise RuntimeError("SCP03 card cryptogram verification failed")
+        host_cryptogram = kdf(self.mac_key, 0x01, context, 64)[:8]
+        header = bytes.fromhex("8482010010")
+        mac_input = bytes(16) + header[:4] + bytes((16,)) + host_cryptogram
+        full_mac = aes_cmac(self.mac_key, mac_input)
+        response = self.transport.command(header + host_cryptogram + full_mac[:8] + b"\x00")
+        if response[-2:] != b"\x90\x00":
+            raise RuntimeError(
+                "SCP03 EXTERNAL AUTHENTICATE failed: " + response.hex().upper()
+            )
+        self.chaining_value = full_mac
+        print("SCP03:AUTHENTICATED level=C-MAC")
+
+    def wrap(self, apdu):
+        if self.mac_key is None or len(apdu) < 5:
+            raise RuntimeError("invalid SCP03 command")
+        cla, ins, p1, p2, lc = apdu[:5]
+        if len(apdu) not in (5 + lc, 6 + lc):
+            raise RuntimeError("unsupported SCP03 command APDU form")
+        data = apdu[5 : 5 + lc]
+        header = bytes((cla, ins, p1, p2, lc + 8))
+        mac_input = (
+            self.chaining_value
+            + header
+            + data
+        )
+        full_mac = aes_cmac(self.mac_key, mac_input)
+        self.chaining_value = full_mac
+        le = apdu[5 + lc :] if len(apdu) == 6 + lc else b""
+        return header + data + full_mac[:8] + le
+
+
+def require_sw(response, expected, name):
+    actual = response[-2:]
+    if actual != expected:
+        raise RuntimeError(
+            f"{name} returned {actual.hex().upper()}, expected {expected.hex().upper()}"
+        )
+    print(f"TEST:PASS {name} sw={actual.hex().upper()}")
+
+
+def main():
+    require_host_usb_access()
+    transport = LibUSB()
+    try:
+        transport.power_off()
+        transport.power_on()
+        select_applet = bytes.fromhex("00A404000A") + APPLET_AID + b"\x00"
+        current = transport.command(select_applet)
+        if current[-2:] != b"\x6f\x00":
+            raise RuntimeError(
+                "refusing to change the card unless the registered applet "
+                f"SELECT returns 6F00; got {current[-2:].hex().upper()}"
+            )
+        print("REPAIR:CONFIRMED stale JCAlgTest instance (SELECT 6F00)")
+
+        isd = transport.command(bytes.fromhex("00A4040000"))
+        require_sw(isd, b"\x90\x00", "SELECT_ISD")
+        secure = SecureChannel(transport)
+        secure.establish()
+
+        delete_data = bytes((0x4F, len(APPLET_AID))) + APPLET_AID
+        delete_apdu = bytes((0x84, 0xE4, 0x00, 0x80, len(delete_data))) + delete_data + b"\x00"
+        deleted = transport.command(delete_apdu, secure=secure)
+        require_sw(deleted, b"\x90\x00", "DELETE_STALE_APPLET_INSTANCE")
+
+        install_data = (
+            bytes((len(PACKAGE_AID),))
+            + PACKAGE_AID
+            + bytes((len(APPLET_AID),))
+            + APPLET_AID
+            + bytes((len(APPLET_AID),))
+            + APPLET_AID
+            + bytes((3, 0, 0, 0, 2, 0xC9, 0x00, 0))
+        )
+        install_apdu = bytes((0x84, 0xE6, 0x0C, 0x00, len(install_data))) + install_data + b"\x00"
+        installed = transport.command(install_apdu, secure=secure)
+        require_sw(installed, b"\x90\x00", "REINSTALL_JCALGTEST_INSTANCE")
+
+        transport.power_off()
+        transport.power_on()
+        selected = transport.command(select_applet)
+        require_sw(selected, b"\x90\x00", "SELECT_JCALGTEST_AFTER_POWER_CYCLE")
+        version = transport.command(bytes.fromhex("B0E1000000"))
+        require_sw(version, b"\x90\x00", "GETVERSION")
+        if version[:-2] != b"1.8.2_jc305":
+            raise RuntimeError("unexpected JCAlgTest version: " + version[:-2].decode("ascii", "replace"))
+        print("TEST:PASS JCALGTEST_VERSION " + version[:-2].decode("ascii"))
+
+        info = transport.command(bytes.fromhex("B0730100010100"))
+        require_sw(info, b"\x90\x00", "JCSYSTEM_INFO")
+
+        settings = bytes.fromhex(
+            "00150004FFFFFFFFFFFF00060001FFFFFFFF00010001"
+        )
+        prepare = bytes((0xB0, 0x34, 0, 0, len(settings))) + settings + b"\x00"
+        prepared = transport.command(prepare)
+        require_sw(prepared, b"\x90\x00", "SHA256_DOFINAL_PREPARE")
+        digest = bytes((0xB0, 0x41, 0, 0, len(settings))) + settings + b"\x00"
+        result = transport.command(digest)
+        require_sw(result, b"\x90\x00", "SHA256_DOFINAL")
+        if not result.startswith(b"\xAA"):
+            raise RuntimeError("SHA-256 doFinal did not report success")
+        print("TEST:PASS SHA256_DOFINAL_RESULT " + result[:-2].hex().upper())
+    finally:
+        transport.close()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        raise SystemExit(1)

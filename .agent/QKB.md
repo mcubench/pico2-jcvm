@@ -5,6 +5,24 @@ the reliable recovery, and any limits. Promote only reproducible fixes to the
 viable-solution status; a single successful probe is evidence, not a universal
 fix.
 
+## Restricted-context USB access — complete fail-fast coverage — 2026-10-17
+
+- The first guard covered the usual `flash`, `monitor`, and physical JCAlgTest
+  commands, but missed direct-libUSB `bridge-pico-ccid-vpcd` and
+  `repair-jcalgtest-raw-ccid` entry points. `tools/cycle` also started both
+  target builds before its nested `flash` wrapper rejected the restricted
+  context, wasting build time before failing.
+- Added one Python `NoNewPrivs` guard shared by both direct-libUSB tools and
+  moved the existing shell guard to the start of `tools/cycle`, before builds.
+  All known USB/PCSC entry points now have a fail-fast check: flash, monitor,
+  cycle, physical APDU and memory probes, physical named-reader JCAlgTest,
+  raw CCID bridge, and raw CCID repair.
+- Validation in `NoNewPrivs: 1` context: all eight entry points exited with
+  the explicit host-access diagnostic in 0.75–1.52 seconds; none reached
+  libusb/PCSC, and `cycle` did not build. Shell syntax and Python compilation
+  checks passed. Use host-access execution for USB work from the outset; these
+  guards are a fail-fast backstop, not a retry mechanism.
+
 ## USB passthrough and Pico visibility
 
 - **Symptom:** VirtualBox/host UI says the Pico is attached, but guest `lsusb`

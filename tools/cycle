@@ -5,6 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 [[ $# -eq 1 ]] || die "usage: ./tools/cycle arm|riscv|choupi"
 arch="$1"
 [[ "$arch" == arm || "$arch" == riscv || "$arch" == choupi ]] || die "choose arm, riscv, or choupi"
+require_host_usb_access
 "${repo_root}/tools/build" arm
 "${repo_root}/tools/build" riscv
 if [[ "${arch}" == choupi ]]; then
