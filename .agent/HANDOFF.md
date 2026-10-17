@@ -27,7 +27,7 @@
 - Next: investigate why long CCID/PCSC sessions lose reader publication and
   finish the supported CSV/reference comparison. Keep USB calls in host-access
   context. ARM M33 only; no RISC-V build or test.
-- This investigation record commit: pending.
+- Investigation record commit: `437365d`.
 
 ## Latest continuation — report unsupported OneShot algorithms correctly — 2026-10-17
 
