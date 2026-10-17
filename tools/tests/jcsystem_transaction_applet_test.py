@@ -134,6 +134,11 @@ def main() -> int:
                         ),
                         "SHA-256 update then doFinal state retention",
                     ),
+                    (
+                        10,
+                        bytes(22),
+                        "JCSystem scalar/extended memory overloads and commit capacity",
+                    ),
                 )
                 for p1, expected, label in cases:
                     data = exchange(

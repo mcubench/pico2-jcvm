@@ -27,6 +27,19 @@ public final class JCTransactionProbe extends Applet {
 
   public void deselect() {}
 
+  private static short appendMemory(byte[] output, short offset, byte type) {
+    short scalar = JCSystem.getAvailableMemory(type);
+    short[] extended = new short[2];
+    JCSystem.getAvailableMemory(extended, (short)0, type);
+    output[offset++] = (byte)(scalar >> 8);
+    output[offset++] = (byte)scalar;
+    output[offset++] = (byte)(extended[0] >> 8);
+    output[offset++] = (byte)extended[0];
+    output[offset++] = (byte)(extended[1] >> 8);
+    output[offset++] = (byte)extended[1];
+    return offset;
+  }
+
   public void process(APDU apdu) throws ISOException {
     if (selectingApplet()) return;
     byte[] buffer = apdu.getBuffer();
@@ -89,6 +102,20 @@ public final class JCTransactionProbe extends Applet {
           buffer[i] = shaDigest[i];
         }
         length = (short)shaDigest.length;
+        break;
+      }
+      case 10: {
+        short offset = 0;
+        offset = appendMemory(buffer, offset, JCSystem.MEMORY_TYPE_PERSISTENT);
+        offset = appendMemory(buffer, offset, JCSystem.MEMORY_TYPE_TRANSIENT_RESET);
+        offset = appendMemory(buffer, offset, JCSystem.MEMORY_TYPE_TRANSIENT_DESELECT);
+        short maxCommit = JCSystem.getMaxCommitCapacity();
+        short unusedCommit = JCSystem.getUnusedCommitCapacity();
+        buffer[offset++] = (byte)(maxCommit >> 8);
+        buffer[offset++] = (byte)maxCommit;
+        buffer[offset++] = (byte)(unusedCommit >> 8);
+        buffer[offset++] = (byte)unusedCommit;
+        length = offset;
         break;
       }
       default:

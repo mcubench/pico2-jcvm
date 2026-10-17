@@ -4520,3 +4520,23 @@
   JCSystem/lifecycle golden coverage next.
 - Commit: `68c3aa3`
 - Artifacts/logs: none; timings captured from bounded command results.
+## 2026-10-17 — Add JCSystem memory overload golden coverage
+
+- Step/experiment: `jcsystem-memory-overloads-vpcd-golden`
+- Change: Extended the focused Java Card transaction probe to exercise scalar
+  and 32-bit `getAvailableMemory` calls for persistent, reset, and deselect
+  memory, plus maximum and unused commit capacity. Added expected desktop
+  output and marked the focused memory golden coverage complete in TODO.
+- Validation: `./tools/build-pc` passed and regenerated the ROM mask; Java Card
+  CAP conversion passed. The first restricted VPCD run could not bind its
+  loopback socket; rerunning the bounded test via host access passed
+  `TEST:SUMMARY pass=13 fail=0 elapsed_s=25.154`.
+- Result: Desktop scalar and extended memory calls agree at zero for all three
+  types; commit capacity queries remain zero. Prior physical Pico probe
+  measured persistent `47,777` bytes and transient reset/deselect `325,352`
+  bytes and confirmed scalar saturation/extended consistency.
+- Decision: Both overloads are now covered by a golden applet call path and a
+  physical-value probe. Continue lifecycle callbacks and remaining JCSystem
+  acceptance.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcsystem-memory-overloads-vpcd-20261017.log`.

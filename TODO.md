@@ -86,9 +86,12 @@ not prove AC3's supported-algorithms mode, which remains outstanding.
 
 Next actions:
 
-1. Add golden applet assertions for both `getAvailableMemory` forms and the
-   JCSystem methods used by the applet lifecycle; commit-capacity methods must
-   remain zero until transactional persistence exists.
+1. [x] Add golden applet assertions for both `getAvailableMemory` forms and
+   commit-capacity queries. The JCSystem transaction VPCD probe now exercises
+   both overloads for persistent, reset, and deselect memory and checks that
+   commit capacities remain zero; it passed 13/13 on the desktop backend. The
+   separate physical live-memory probe confirms Pico scalar/extended
+   consistency and nonzero persistent/transient values.
 2. Finish golden applet, applet callback, GP DELETE/GET DATA, transaction
    failure, and persistent restore tests. The official physical static suite
    has been run but fails from the documented heap retention; preserve that

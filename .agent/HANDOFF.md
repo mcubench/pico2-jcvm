@@ -1,5 +1,21 @@
 # Handoff
 
+## Latest continuation — JCSystem memory overload golden coverage — 2026-10-17
+
+- Extended the Java Card transaction probe with one APDU that calls scalar
+  `JCSystem.getAvailableMemory(byte)` and the jc304
+  `getAvailableMemory(short[], short, byte)` overload for persistent,
+  clear-on-reset, and clear-on-deselect memory, then checks maximum and unused
+  commit capacity. The golden desktop result is 22 zero bytes because the PC
+  provider does not measure Pico heap/storage; physical nonzero values remain
+  covered by the live Pico probe.
+- `./tools/build-pc` passed and regenerated the ROM mask. The first restricted
+  VPCD attempt failed to bind its local socket; rerun via host access passed
+  `TEST:SUMMARY pass=13 fail=0 elapsed_s=25.154`. CAP conversion passed.
+- Progress record: `jcsystem-memory-overloads-vpcd-golden`; commit pending.
+- Next: continue callback/GP lifecycle golden tests and transaction failure
+  acceptance; do not treat the optional static suite as passing.
+
 ## Latest continuation — close remaining restricted USB paths — 2026-10-17
 
 - Found two direct-libUSB tools that bypassed the existing restricted-context
