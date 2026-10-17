@@ -4430,7 +4430,9 @@
 - Artifacts/logs: official transcript, per-APDU serial capture, post-failure
   watchdog/boot capture, reader probe, both architecture builds, flash and
   clean boot logs are committed under `artifacts/logs/*jsr-memory-counters*`
-  (hashes and paths in `.agent/QKB.md`).
+  (hashes and paths in `.agent/QKB.md`). The official raw client log and
+  partial CSV are committed under
+  `artifacts/results/jcalgtest-static-memory-counters-20261017/`.
 
 ## 2026-10-17 — Record static-suite evidence digests
 
