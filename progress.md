@@ -4297,5 +4297,5 @@
 - Validation: The physical probe again returned `F105` after five successful zero-repeat baselines. Reprepare returned `AA9000`; the next 50-call APDU still returned `F105`. Concurrent bounded serial output confirmed allocation of a new 2,048-byte transient array, reference store, second `F105`, and continued `TEST:PASS choupi_runtime`/CCID processing. The probe exited nonzero as expected. No firmware build or flash was performed.
 - Result: The current error is repeatable after a fresh digest prepare, so retaining only the old digest instance does not explain it. The VM's digest-array field access/transient array contents remain suspects; native length was not directly instrumented, so the exact internal state is not yet proven.
 - Decision: Continue tracing object/array field identity and the SHA bridge's observed length before changing behavior. Keep the static SHA issue open; the independent single-call SHA tests passed previously.
-- Commit: `<recorded in metadata follow-up>`
+- Commit: `aebbcff5b81573e417a9bf5384c68714e9cc831c`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-reset-diagnostic-20261017.log` (SHA-256 `462ac435d379a4615aa7b9ab719c9f9cdddc9aa78484977b750db0a205bd54dd`); `artifacts/logs/monitor-alg-static-reset-diagnostic-20261017.log` (SHA-256 `418169398bd3ccff8a300edb3d92021cb1614992d864142e2c33def19208d72d`)
