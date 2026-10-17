@@ -3598,3 +3598,24 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   as defects. Cycle log:
   `artifacts/logs/cycle-choupi-20261015T094100Z.log` (SHA-256
   `cac6eedfa0a1147323ed0e224444d99cfc8234fcc6e1bf8b8be8207a526f1422`).
+
+## Latest continuation — 2026-10-17
+
+- Investigated transient-memory figures on the Pico. Newlib `mallinfo()` and
+  `sbrk(0)` experiments produced implausible values around 35 MB; a temporary
+  pointer probe also returned values outside RP2350 SRAM. Reverted the
+  estimate and restored the existing conservative-zero `JCSystem` behavior.
+- `./tools/build arm` and `./tools/build riscv` both pass. The restored ARM
+  image flashed successfully through CDC BOOTSEL recovery. A final raw CCID
+  and SHA-256 static run could not start: guest USB lists the running Pico,
+  but its node is `root:plugdev` mode `0660` and the current process lacks the
+  `plugdev` group; PC/SC lists only Virtual PCD readers. The five-second
+  `picotool info -a` reports no BOOTSEL device, as expected for running mode.
+- Next: after access to the current USB node is restored, capture finite serial
+  output and rerun JCSystem info plus the JCAlgTest SHA-256 static workload.
+  To refresh the configured PC/SC ACL after USB re-enumeration, the user can
+  run `sudo -n /usr/local/sbin/pico2-pcsc-reader`, then verify with
+  `timeout 5s pcsc_scan -r`. Do not run sudo autonomously.
+- Details: `artifacts/logs/jcalgtest-physical-jcsystem-memory-zero-20261017.log`,
+  `artifacts/logs/jcalgtest-physical-break-probe-20261017.log`,
+  `artifacts/logs/physical-access-blocked-20261017.log`.
