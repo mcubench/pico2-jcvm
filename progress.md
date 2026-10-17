@@ -924,7 +924,7 @@
 - Validation: The daemon exited immediately with `cannot create /run/pcscd: Permission denied`. No daemon remains running, no system package was installed, and the Pico was not flashed during this experiment.
 - Result: Direct libusb CCID probing works, but this account cannot start the system PC/SC daemon because its runtime socket directory is root-owned/absent. The repository rule forbids using sudo in an autonomous cycle.
 - Decision: Keep the hardware transport verified via libusb; resume PC/SC/GPPro after the host exposes its normal PC/SC service or an unprivileged socket path is available. Continue firmware work on applet lifecycle and APDU dispatch.
-- Commit: pending
+- Commit: `425602b`
 - Artifacts/logs: `artifacts/logs/pcsc-user-local-20261011.txt`; downloaded/extracted packages remain only under `/tmp/pico2-pcsc-root`.
 
 ## 2026-10-11 — Diagnose empty PC/SC scan after driver match

@@ -17,8 +17,11 @@
 - This is root canonicalization only, not garbage collection or heap-slot
   reuse. If persistent transaction rollback is implemented for static fields,
   ensure abort also reconciles cached roots.
-- Next: stage and commit only this feature, its regression, records, and its
-  validation logs; keep unrelated worktree modifications out of the commit.
+- Implementation commit: `425602b`.
+- Next: design root enumeration and safe stable-slot reclamation for the static
+  benchmark heap-retention problem; the canonical static-root cache is now in
+  place, but it is not a collector. Keep unrelated worktree modifications
+  intact.
 
 ## Latest continuation — prevent restricted-context USB probes — 2026-10-17
 
