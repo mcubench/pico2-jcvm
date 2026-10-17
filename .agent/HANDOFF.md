@@ -1,5 +1,26 @@
 # Handoff
 
+## Knowledge base checkpoint — 2026-10-17
+
+- Read the updated root `AGENTS.md` and created `.agent/QKB.md` as required.
+  It records reproducible recovery for VM USB detach/reattach, applying the
+  explicitly permitted PC/SC ACL helper after re-enumeration, and avoiding
+  `pcsc_scan` because timed invocations previously left a 99.2%-CPU scanner
+  behind. It also records the still-open physical static SHA repeat failure.
+- Later checks through the permitted host-access path saw the running Pico as
+  `2e8a:0009` at `/dev/bus/usb/001/057`. The exact helper granted node ACLs and
+  `pcscd.service` is active, but Java SmartcardIO still lists no readers;
+  `./tools/probe-jc-algtest` failed before sending APDUs. The node ACL includes
+  `pcscd` and `claude`. No unbounded scanner was started.
+- The wiki skill file path advertised by the tool catalog was not present in
+  this VM, and no wiki MCP tools are exposed in this session. The repository
+  QKB is therefore the maintained canonical issue record; session digests are
+  not treated as topic knowledge.
+- Next: diagnose why active pcscd does not publish the enumerated CCID device,
+  using bounded diagnostics. Once Java sees the reader, run the APDU probe
+  before the official named-reader static test. Do not use `pcsc_scan`;
+  preserve new logs and update QKB with confirmed results.
+
 ## Latest continuation — 2026-10-17
 
 - The replugged Pico enumerated as `2e8a:0009` in the host-access context.

@@ -4249,3 +4249,13 @@
 - Decision: Keep `JCSystem.getAvailableMemory` conservative at zero; after the user refreshes the configured PC/SC ACL with `sudo -n /usr/local/sbin/pico2-pcsc-reader`, rerun finite serial capture, JCSystem info, and the bounded JCAlgTest SHA-256 static workload. Do not invoke sudo from the autonomous cycle.
 - Commit: `27456b6` (metadata confirmed in follow-up commit)
 - Artifacts/logs: `artifacts/logs/build-arm-jcsystem-memory-zero-20261017.log`; `artifacts/logs/build-riscv-jcsystem-memory-zero-20261017.log`; `artifacts/logs/flash-arm-jcsystem-memory-zero-20261017.log`; `artifacts/logs/jcalgtest-physical-jcsystem-memory-zero-20261017.log`; `artifacts/logs/jcalgtest-physical-break-probe-20261017.log`; `artifacts/logs/physical-access-blocked-20261017.log`; earlier SHA pass `artifacts/logs/jcalgtest-physical-watchdog-fix-20261017.log`.
+
+## 2026-10-17 — Add issue knowledge base and update physical-access findings
+
+- Step/experiment: `issue-knowledge-base-pcsc-discovery`
+- Change: Added `.agent/QKB.md` per the updated `AGENTS.md`, documenting confirmed USB detach/reattach recovery, the specifically permitted PC/SC ACL helper, the runaway `pcsc_scan` failure, the open repeated SHA static failure, and current PC/SC discovery state. Updated `.agent/HANDOFF.md` with this session's latest checks.
+- Validation: Inspected the knowledge-base and handoff text. The authorized helper returned `PCSC:ACCESS_GRANTED node=/dev/bus/usb/001/057 service=pcscd.service`; escalated `lsusb` saw `2e8a:0009`; `systemctl is-active pcscd.service` reported `active`. `./tools/probe-jc-algtest` and the exact Java SmartcardIO name resolver both found no readers and sent no APDUs. The USB ACL includes `pcscd` and `claude`. PC/SC journal query returned no entries. No build, flash, or firmware test was run.
+- Result: Guest USB enumeration and device-node permissions work, but active pcscd does not expose a reader to Java SmartcardIO. The static hardware test cannot safely start until reader discovery succeeds. The prior runaway `pcsc_scan` result makes it unsuitable for further diagnosis.
+- Decision: Keep the issue open in `.agent/QKB.md`; diagnose bounded PC/SC reader publication, then rerun the APDU probe and official named-reader static test.
+- Commit: pending; repository `.git` is read-only in this execution profile.
+- Artifacts/logs: none created; checks were bounded and their output is summarized above.
