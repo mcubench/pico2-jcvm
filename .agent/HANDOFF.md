@@ -35,8 +35,8 @@
   `artifacts/logs/jcalgtest-physical-oneshot-unsupported-fix-20261017.log`,
   `artifacts/logs/jcalgtest-supported-arm-oneshot-fix-20261017.log`, and
   `artifacts/logs/jcalgtest-physical-after-supported-20261017.log`.
-- Nested API implementation commit: `f6776a8`. The root project record commit
-  will be recorded in a follow-up metadata commit. Next diagnose the later
+- Nested API implementation commit: `f6776a8`; root regression/docs commit:
+  `3b16eae`. Next diagnose the later
   supported-sweep disconnect and compare completed results with jCardSim and
   declared support. ARM M33 only; do not build or test RISC-V.
 

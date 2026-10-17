@@ -914,8 +914,7 @@
 - Validation: Source inspection confirms firmware invokes one fixed static method at boot; non-static interpreter entry, `Applet.register()`, and `APDU.getBuffer()` are explicit TODOs, and no selected-applet registry exists. `./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar --list` exits with `SCARD_E_NO_SERVICE (0x8010001d)` because `pcscd` is absent. Inspection-only step; no build or flash was needed.
 - Result: The existing static AlgTest ROM-mask runner cannot receive host APDUs, and GlobalPlatformPro cannot yet access a PC/SC resource manager. A CCID USB interface alone is insufficient for either GP package management or applet execution.
 - Decision: Start WP3 by adding an APDU buffer and explicit applet selection/dispatch path, then provide a user-space PC/SC service/driver route before validating GPPro.
-- Commit: nested API `f6776a8`; root record SHA to be recorded in a follow-up
-  metadata commit.
+- Commit: nested API `f6776a8`; root regression/docs `3b16eae`.
 - Artifacts/logs: `artifacts/logs/apdu-lifecycle-audit-20261011.txt`
 
 ## 2026-10-11 — Check for a user-local PC/SC service
