@@ -144,3 +144,40 @@ fix.
 - Evidence: `artifacts/logs/jcalgtest-sha-repeated-50-apdus-physical-20261017.log`,
   `artifacts/logs/jcalgtest-sha-rawccid-repeat-physical-20261017.log`, and
   `artifacts/logs/monitor-jcalgtest-ccid-timeout-20261017.log`.
+
+## Static SHA repeat failure mechanism — 2026-10-17
+
+- **Confirmed applet failure mechanism:** With the official v1.8.2 settings
+  (256-byte input, 50 `doFinal()` calls), a repeated run can return `F105`
+  while the MCU and CCID endpoint remain alive. The trace shows
+  `CryptoException` reason `0005`; in this API that is
+  `CryptoException.ILLEGAL_USE`. `Sha256Digest.doFinal()` throws that reason
+  when `Sha256NativeBridge.update()` rejects appending input. The native
+  bridge rejects it when the retained input length plus the new input exceeds
+  its 2,046-byte limit; for a 256-byte input, the retained length was therefore
+  above 1,790 bytes. This is an applet digest-state/overflow path, not a
+  missing-algorithm result or a confirmed MCU reset.
+- A focused physical probe now replays the official sequence: prepare the
+  50-call settings once, send five zero-repeat baseline APDUs, then measure.
+  In one run the first 50-call APDU returned `AA9000` and the next transmit
+  failed with `SCARD_E_READER_UNAVAILABLE`. In a later run, all five baseline
+  APDUs returned `AA9000`, then the first measured APDU returned `F105`. The
+  concurrent serial capture records the exception and `xfr=20`, followed by
+  successful `GetSlotStatus` handling and `TEST:PASS choupi_runtime`; thus the
+  latest `F105` was delivered by the applet while the device remained alive.
+- **Still open:** The evidence identifies stale/over-limit digest state as the
+  direct cause of `F105`, but does not yet identify which reset/finalization
+  path leaves that state uncleared. The earlier `SCARD_E_READER_UNAVAILABLE`
+  may be a transport/client symptom of the same path, but that relationship is
+  not proven. Keep the issue open until state cleanup is traced and both
+  repeated APDUs complete successfully.
+- **General lesson for future algorithms:** Test reusable crypto objects over
+  multiple APDUs, after zero-repeat baseline calls, and after both successful
+  and failed operations. Verify that native and Java state is reset/cleared on
+  every completion and exception path. Distinguish applet status words from
+  PC/SC reader errors; do not attribute either automatically to USB or the
+  algorithm backend.
+- Evidence: `artifacts/logs/jcalgtest-static-state-repro-20261017.log`
+  (SHA-256 `dd713bfab8772a15d04661b9ebd244c8972cd3a2085d0b4f7d11ff08a0043ede`)
+  and `artifacts/logs/monitor-alg-static-state-repro-20261017.log` (SHA-256
+  `0c11622d7844e92db567de647d8b686321c2af87af92baa83e2041d8dedc6fa1`).

@@ -80,6 +80,34 @@ public final class JCAlgTestApduProbe {
           new CommandAPDU(0xB0, 0x73, 0x01, 0x00,
               new byte[] {0x01}, 256));
 
+      // Reproduce the official ALG_PERFORMANCE_STATIC SHA-256 prelude:
+      // prepare once with the measured settings, collect five zero-repeat
+      // baseline samples, then submit the 50-call measurement twice.
+      byte[] officialStaticSettings = fromHex(
+          "0015 0004 FFFF FFFF FFFF 0006 0100 FFFF FFFF 0032 0001");
+      transmit(channel, "OFFICIAL_SHA256_STATIC_PREPARE",
+          new CommandAPDU(0xB0, 0x34, 0x00, 0x00,
+              officialStaticSettings, 256));
+      byte[] officialBaselineSettings = fromHex(
+          "0015 0004 FFFF FFFF FFFF 0006 0100 FFFF FFFF 0000 0001");
+      for (int sample = 1; sample <= 5; sample++) {
+        transmit(channel, "OFFICIAL_SHA256_BASELINE_" + sample,
+            new CommandAPDU(0xB0, 0x41, 0x00, 0x00,
+                officialBaselineSettings, 256));
+      }
+      for (int measurement = 1; measurement <= 2; measurement++) {
+        ResponseAPDU measured = transmit(channel,
+            "OFFICIAL_SHA256_STATIC_MEASUREMENT_" + measurement,
+            new CommandAPDU(0xB0, 0x41, 0x00, 0x00,
+                officialStaticSettings, 256));
+        if (measured.getData().length < 1 ||
+            measured.getData()[0] != (byte) 0xAA) {
+          throw new IllegalStateException(
+              "official static SHA-256 workload failed at measurement " +
+              measurement);
+        }
+      }
+
       byte[] sha256Settings = fromHex(
           "0015 0004 FFFF FFFF FFFF 0006 0001 FFFF FFFF 0001 0001");
       transmit(channel, "SHA256_DOFINAL_PREPARE",

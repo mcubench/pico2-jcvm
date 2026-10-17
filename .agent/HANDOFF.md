@@ -3660,3 +3660,30 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/jcalgtest-physical-break-probe-20261017.log`,
   `artifacts/logs/physical-access-blocked-20261017.log`.
 - Documentation commit: `27456b6`.
+
+## Static SHA state reproduction — 2026-10-17
+
+- Read the three supplied session digests as operational checkpoints only;
+  they add no canonical technical finding. The llm-wiki skill path advertised
+  by the catalog is absent in this VM. Keep `.agent/QKB.md` canonical for this
+  repository, as its instructions require.
+- Extended `tools/JCAlgTestApduProbe.java` to replay the official SHA static
+  prelude exactly: prepare 256-byte/50-repeat settings, five baseline
+  `B041` APDUs with repeat count zero, then two identical measured `B041`
+  APDUs. Probe output is saved in
+  `artifacts/logs/jcalgtest-static-state-repro-20261017.log`; simultaneous
+  bounded UART capture is in
+  `artifacts/logs/monitor-alg-static-state-repro-20261017.log`.
+- Confirmed `F105` is `CryptoException.ILLEGAL_USE` raised on SHA input-state
+  append when current buffered bytes plus the 256-byte input exceed the
+  2,046-byte native buffer. The latest serial trace shows the APDU completed
+  with `F105`, `xfr=20`, healthy runtime reports, and later CCID status
+  requests. A prior exact replay passed measurement one and then got
+  `SCARD_E_READER_UNAVAILABLE`. See the new QKB section for details/limits.
+- Root cause below that immediate overflow is not yet known: determine why
+  state cleanup/reset does not keep the buffer length in range, and whether
+  the reader error is the PC/SC manifestation of the applet failure. Do not
+  report the original static failure fixed.
+- Next: inspect reset/finalization and native exception cleanup across APDUs;
+  add bounded state-length diagnostics if needed, then repeat the exact
+  physical probe. The current probe intentionally stops at non-`AA9000`.
