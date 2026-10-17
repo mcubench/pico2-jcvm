@@ -4636,7 +4636,7 @@
 - Validation: Confirmed the focused OwnerPINx case 13 still passes from the preceding cleanup run. Official JCAlgTest VPCD reached SELECT, then GETVERSION timed out after 20 seconds and again after 90 seconds; a debug run timed out after 30 seconds and traced the VM in JavaCardAES S-box generation. No OwnerPINX support APDU was reached. Rebuilt PC VM with `CHOUPI_JCVM_DEBUG=OFF`; build passed. No hardware was accessed.
 - Result: The applet's behavior is covered by the focused VPCD case, while official capability-row comparison remains unverified after implementation. The expensive delayed applet setup is a separate desktop VPCD limitation.
 - Decision: Do not claim the physical support comparison complete. Continue the separate static benchmark/reader-path investigation; keep the board untouched.
-- Commit: `pending`.
+- Commit: `1ed8d0f` (this SHA was filled by the follow-up progress-record commit).
 - Artifacts/logs: `artifacts/logs/pc-vpcd-ownerpinx-support-20261017.log`, `artifacts/logs/pc-vpcd-ownerpinx-support-retry-20261017.log`, `artifacts/logs/pc-vpcd-ownerpinx-debug-20261017.log`, `artifacts/logs/build-pc-ownerpinx-support-debug-20261017.log`, `artifacts/logs/build-pc-ownerpinx-support-release-20261017.log`.
 
 ## 2026-10-17 — Diagnose supported-sweep heap exhaustion
