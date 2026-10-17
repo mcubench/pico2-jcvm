@@ -4493,7 +4493,7 @@
   add focused golden tests for JCSystem memory and applet lifecycle behavior,
   then continue the remaining acceptance criteria. The static-suite heap
   retention issue remains open as documented in `.agent/QKB.md`.
-- Commit: pending
+- Commit: `a9a2091`
 - Artifacts/logs: `artifacts/logs/build-arm-jcsystem-memory-accounting-continue-20261017.log`,
   `artifacts/logs/build-riscv-jcsystem-memory-accounting-continue-20261017.log`,
   `artifacts/logs/flash-arm-jcsystem-memory-accounting-continue-20261017.log`,
