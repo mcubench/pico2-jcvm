@@ -4161,6 +4161,6 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/jcsystem-ownerpinx-cleanup-vpcd-20261017.log`,
   `artifacts/logs/build-pc-ownerpinx-cleanup-20261017.log`, and
   `artifacts/logs/build-arm-ownerpinx-cleanup-20261017.log`.
-- Next: commit this logical step in the root and nested rommask/API repositories;
-  then continue from the open static benchmark and reader-path issues. Do not
-  access USB or flash hardware without a specific request.
+- Commits: root `63a13eb`; API `0199d51`; rommask `051b389` and `f3c309a`.
+- Next: continue from the open static benchmark heap-lifetime and reader-path
+  issues. Do not access USB or flash hardware without a specific request.
