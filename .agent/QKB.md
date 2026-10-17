@@ -23,6 +23,21 @@ fix.
   checks passed. Use host-access execution for USB work from the outset; these
   guards are a fail-fast backstop, not a retry mechanism.
 
+### Recurrence prevention update
+
+- The wrapper guards originally failed open if `/proc/self/status` could not
+  be read or did not contain `NoNewPrivs`. Both shell and Python guards now
+  fail closed unless they can verify `NoNewPrivs: 0` before USB/PCSC access.
+- These checks cannot intercept direct commands that bypass repository
+  wrappers. The operating rule is therefore to select the host-access execution
+  path on the first USB/PCSC command; never issue a restricted-context probe
+  first. In the current restricted context, all eight wrapper entry paths
+  reject in under one second, and a simulated unreadable proc status also
+  rejects before any USB call.
+- **Viable prevention:** Use host access from the outset, with fail-closed
+  wrapper guards as a second layer. If host access is unavailable, leave
+  hardware untouched and continue offline work.
+
 ## USB passthrough and Pico visibility
 
 - **Symptom:** VirtualBox/host UI says the Pico is attached, but guest `lsusb`

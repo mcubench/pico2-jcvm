@@ -11,15 +11,24 @@ MESSAGE = (
 
 
 def require_host_usb_access():
-    """Exit before libusb/PCSC calls when running under the restricted sandbox."""
+    """Exit before USB/PCSC calls unless the execution context is verified."""
     try:
         status = Path("/proc/self/status").read_text(encoding="ascii")
     except OSError:
-        return
+        status = ""
 
     for line in status.splitlines():
         if line.startswith("NoNewPrivs:"):
-            if line.split()[1] == "1":
+            fields = line.split()
+            if len(fields) == 2 and fields[1] == "0":
+                return
+            else:
                 print(f"ERROR: {MESSAGE}", file=sys.stderr, flush=True)
                 raise SystemExit(1)
-            return
+
+    print(
+        f"ERROR: cannot verify USB/PCSC execution context; {MESSAGE}",
+        file=sys.stderr,
+        flush=True,
+    )
+    raise SystemExit(1)

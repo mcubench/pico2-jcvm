@@ -29,6 +29,7 @@ Runtime output uses `TEST:PASS`, `TEST:FAIL`, and `TEST:SUMMARY` for known-answe
 Safety constraints:
 
 - Never run `picotool otp`, `picotool erase`, or commands that alter boot security, OTP, flash partition tables, or machine configuration.
+- Run every USB/PCSC operation (`lsusb`, attached-device `picotool`, serial monitor, raw CCID, or physical SmartcardIO) through the host-access execution path from its first attempt. Never probe one of these commands in the default restricted context or retry there after a failure. Request host access on the command itself; if unavailable, stop hardware work and continue with offline tasks. Repository guards are a backstop only and cannot elevate a command.
 - Do not use `sudo` from an autonomous coding cycle.
 - Do not modify files outside this repository.
 - Do not flash unless both architectures currently build, unless explicitly investigating an architecture-specific failure.

@@ -1,5 +1,23 @@
 # Handoff
 
+## Latest continuation — prevent restricted-context USB probes — 2026-10-17
+
+- Hardened both shell and Python USB/PCSC guards to fail closed unless
+  `/proc/self/status` can be read and explicitly reports `NoNewPrivs: 0`.
+  Previously, an unreadable or incomplete status file bypassed the guard.
+- Added an explicit operating rule to `AGENTS.md` and the physical-token
+  reference: run USB/PCSC commands through host access from the first attempt.
+  Repository wrappers cannot elevate direct commands such as `lsusb`; if host
+  access is unavailable, stop hardware operations and continue offline.
+- Validation in the current `NoNewPrivs: 1` context: shell syntax and Python
+  compilation passed; all eight USB/PCSC wrapper entry points rejected in
+  under one second; a simulated unreadable `/proc/self/status` rejected with
+  the fail-closed diagnostic. No libusb/PCSC command was reached.
+- Next: resume the supported-sweep OOM investigation from the existing
+  instrumented logs; ARM M33 only. Use host access from the outset for any
+  physical validation.
+- Implementation commit: pending.
+
 ## Latest continuation — reproduce and recover supported-sweep reader loss — 2026-10-17
 
 - Repeated the physical official `ALG_SUPPORT_EXTENDED` sweep with a bounded

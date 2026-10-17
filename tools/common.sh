@@ -20,8 +20,9 @@ require_command() {
 
 require_host_usb_access() {
   local no_new_privileges
-  no_new_privileges="$(awk '/^NoNewPrivs:/ { print $2 }' /proc/self/status 2>/dev/null || true)"
-  if [[ "${no_new_privileges}" == 1 ]]; then
+  no_new_privileges="$(awk '/^NoNewPrivs:/ { print $2; found=1 } END { if (!found) exit 1 }' /proc/self/status 2>/dev/null)" || \
+    die "cannot verify USB/PCSC execution context; rerun via the host-access execution path"
+  if [[ "${no_new_privileges}" != 0 ]]; then
     die "USB/PCSC access is unavailable in this restricted context; rerun via the host-access execution path"
   fi
 }
