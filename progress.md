@@ -4618,3 +4618,13 @@
 - Decision: Use host-access execution from the first hardware command. Continue the supported-sweep failure investigation offline until that context is selected.
 - Commit: `13808f4`
 - Artifacts/logs: No new logs; validation output was inspected directly.
+
+## 2026-10-17 — Diagnose supported-sweep heap exhaustion
+
+- Step/experiment: `supported-sweep-retained-exceptions`
+- Change: Corrected `.agent/QKB.md`, `TODO.md`, and `.agent/HANDOFF.md`: the supported-sweep monitor tail does contain `malloc 12 failed to allocate memory`. Source inspection found that `CryptoException.throwIt()` allocates per call and `Heap::addInstance()` retains instances without object reclamation. Tested, then reverted, a Java static exception cache because VM static references persist through flash serialization and did not preserve object identity.
+- Validation: Rechecked the physical-run log at line 62,594. The lazy-static experiment regenerated the PC ROM mask and ARM build with no converter errors; its 50-throw VPCD probe returned a distinct instance at throw 12 (`02010C00`) and failed the intended identity assertion. All pre-existing VPCD transaction, SHA-256, JCSystem, and unsupported-digest cases before that new assertion passed. No source change from this experiment remains.
+- Result: The sweep's allocation failure is explained by cumulative retained instances, likely including repeated `CryptoException` allocations. Exact allocation-to-exception counts were not measured. Persistent Java statics are not a valid cache for JCRE-owned exception objects.
+- Decision: Implement a VM-managed per-context runtime exception root or correct object reclamation, then pass a repeated-throw test before another physical supported sweep. Continue treating unsupported algorithms as expected.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/monitor-arm-ccid-sweep-repro-20261017.log`, `artifacts/logs/build-pc-exception-reuse-v2-20261017.log`, `artifacts/logs/build-arm-exception-reuse-v2-20261017.log`, and `artifacts/logs/jcsystem-exception-reuse-vpcd-v2-20261017.log`.

@@ -576,6 +576,42 @@ fix.
   `Pico_2_CHOUPI_CCID_[JCAlgTest_CCID]_(D92E743D5F640C0F)_00_00____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_1792239359688__3b_80_01_81.csv`
   (`9180b734a6f04cd5fa3118089d90eb08ec9717d15c1133cf9171f277f9e26cd6`).
 
+## Supported sweep heap exhaustion — 2026-10-17
+
+- **Observed:** The physical `ALG_SUPPORT_EXTENDED` sweep again stopped at
+  `SIG_CIPHER_DSA PAD_PKCS5 ALG_SHA_384` after 1,636 completed CSV rows. The
+  concurrent serial log contains `malloc 12 failed to allocate memory` at
+  `artifacts/logs/monitor-arm-ccid-sweep-repro-20261017.log:62594`; the client
+  then reported `SCARD_E_READER_UNAVAILABLE`. This corrects the earlier
+  interpretation that this capture had no allocation failure. No CCID transfer
+  error counter or firmware fault was logged before the allocation failure.
+- **Cause:** `CryptoException.throwIt()` constructs a new Java exception for
+  every unsupported/error result. `Heap::addInstance()` appends every instance
+  to the heap's owning list, and the current heap lifecycle has no object
+  reclamation path; `clearTransientArrays()` only clears arrays. The increasing
+  Java exception allocations therefore remain retained across the sweep and
+  explain the finite-heap failure. The 12-byte failed allocation and the exact
+  allocation count were not independently instrumented, so do not claim each
+  failed 12-byte block maps one-to-one to a `CryptoException`.
+- **Rejected workaround:** A Java static cached exception does not provide a
+  runtime-owned live object in this VM. Static reference reads/writes route
+  through persistent flash serialization; a 50-throw VPCD probe observed a
+  different object identity at throw 12. The source change and failing probe
+  were reverted. Do not cache JCRE entry-point exceptions in ordinary Java
+  static fields.
+- **Status:** Root cause is identified; repair remains open. Implement a
+  VM-managed per-context runtime exception object or a correct object
+  reclamation mechanism, then run the 50-throw VPCD regression and repeat the
+  physical supported sweep. Keep unsupported algorithms as expected results.
+- **Evidence:** Partial official client output is in
+  `artifacts/logs/jcalgtest-supported-arm-ccid-recovery-counters-20261017.log`
+  and its results directory; serial allocation failure is in
+  `artifacts/logs/monitor-arm-ccid-sweep-repro-20261017.log`. The rejected
+  Java-static experiment's converter and VPCD logs are
+  `artifacts/logs/build-pc-exception-reuse-v2-20261017.log`,
+  `artifacts/logs/build-arm-exception-reuse-v2-20261017.log`, and
+  `artifacts/logs/jcsystem-exception-reuse-vpcd-v2-20261017.log`.
+
 ## InitializedMessageDigest.OneShot unsupported factory — 2026-10-17
 
 - **Symptom:** The official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` sweep
@@ -596,16 +632,16 @@ fix.
   rows. The first ended with `SCARD_E_READER_UNAVAILABLE`; the second did too.
   A 240-second concurrent serial capture during the second run recorded normal
   CCID traffic through 3,556 RX events / 2,909 transfers and recurring
-  `TEST:PASS choupi_runtime`, with no applet `6F00`, firmware fault, allocation
-  failure, or reset. Afterward USB still enumerated as `2e8a:0009`, but PC/SC
+  `TEST:PASS choupi_runtime`, with no applet `6F00`, CCID transfer error, or
+  reset. A later analysis of the serial tail found `malloc 12 failed to
+  allocate memory`, so this run did contain an allocation failure. Afterward
+  USB still enumerated as `2e8a:0009`, but PC/SC
   listed only VPCD readers even after the authorized ACL helper. Reflashing the
   same ARM image restored PC/SC publication; the bounded physical applet probe
   then passed. This narrows the failure to CCID/PCSC recovery after the long
-  sweep, but does not establish whether the firmware transport, host driver,
-  or cumulative applet state triggers it. Do not claim the full sweep passed.
-  The separately confirmed lack of heap reclamation during repeated cipher
-  workloads remains a risk, but these captures did not log an allocation
-  failure.
+  sweep. The later malloc failure and unbounded Java instance retention explain
+  the applet's finite-heap failure; PC/SC reader publication still also fails
+  after the APDU error. Do not claim the full sweep passed.
 - **Evidence:**
   `artifacts/logs/jcalgtest-supported-arm-oneshot-fix-20261017.log`,
   `artifacts/logs/monitor-arm-oneshot-unsupported-after-official-20261017.log`,

@@ -13,10 +13,32 @@
   compilation passed; all eight USB/PCSC wrapper entry points rejected in
   under one second; a simulated unreadable `/proc/self/status` rejected with
   the fail-closed diagnostic. No libusb/PCSC command was reached.
-- Next: resume the supported-sweep OOM investigation from the existing
-  instrumented logs; ARM M33 only. Use host access from the outset for any
-  physical validation.
+- Next: implement VM-managed exception reuse or correct object reclamation;
+  the API-level static-field cache is not viable. ARM M33 only. Use host access
+  from the outset for any physical validation.
 - Implementation commit: `13808f4`.
+
+## Supported-sweep allocation failure diagnosis — 2026-10-17
+
+- The concurrent sweep monitor did record `malloc 12 failed to allocate
+  memory` at line 62,594, correcting the earlier conclusion that there was no
+  allocation failure. The official client failed at DSA/SHA-384 after 1,636
+  rows, then lost PC/SC reader publication.
+- Source inspection shows `CryptoException.throwIt()` allocates for every
+  throw and `Heap::addInstance()` retains every object; no object collector or
+  reclamation path exists. This explains cumulative heap exhaustion. Keep
+  unsupported algorithms expected; do not implement them to avoid exceptions.
+- A 50-throw VPCD experiment attempted to cache the exception in a Java static
+  field. This is unsuitable because static references serialize through flash;
+  the VM returned different object identity by throw 12. The experimental
+  source and test were reverted. Do not repeat this approach.
+- No source fix is currently retained. The next implementation should give
+  Java Card runtime-owned exceptions a VM-managed per-context root or implement
+  correct object reclamation, with a focused repeated-throw regression before
+  retrying the physical supported sweep.
+- Evidence: `artifacts/logs/monitor-arm-ccid-sweep-repro-20261017.log`,
+  `artifacts/logs/jcsystem-exception-reuse-vpcd-v2-20261017.log`, and
+  `artifacts/logs/build-pc-exception-reuse-v2-20261017.log`.
 
 ## Latest continuation — reproduce and recover supported-sweep reader loss — 2026-10-17
 

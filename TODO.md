@@ -91,13 +91,13 @@ golden test passes this exception reason, and the physical official CSV records
 the OneShot SHA-256 row as unsupported without `6F00`. Two full physical
 `ALG_SUPPORT_EXTENDED` runs stopped at the same DSA/SHA-384 row after 1,637
 CSV rows. A 240-second serial capture during the second showed normal runtime
-and CCID traffic, with no firmware fault, allocation failure, or reset. After
-the failure USB remained enumerated but PC/SC listed only VPCD; reflashing the
-same ARM image restored the physical reader and the bounded probe passed. This
-narrows the disconnect to CCID/PCSC recovery after the long sweep but does not
-establish its cause. The runs are incomplete, not an AC3 pass; most `no` rows
-are expected unsupported capabilities. See `.agent/QKB.md` for evidence and
-recovery details.
+and CCID traffic, then recorded `malloc 12 failed to allocate memory` at the
+failure point. `CryptoException.throwIt()` allocates a new exception each time,
+while `Heap::addInstance()` retains all instances and has no reclamation path;
+this explains the cumulative heap exhaustion. The client then lost PC/SC
+reader publication, which returned after reflash. The runs are incomplete, not
+an AC3 pass; most `no` rows are expected unsupported capabilities. See
+`.agent/QKB.md` for evidence and the rejected persistent-static cache approach.
 
 Next actions:
 
