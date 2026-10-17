@@ -77,6 +77,12 @@ fix.
   visibility and node permissions are restored, but a CCID reader has not
   been published to clients; do not retry the static client until reader
   discovery works.
+- Further bounded inspection confirms USB interface 2 advertises class
+  `Chip/SmartCard` and CCID endpoints `03`/`83`. The installed libccid
+  `Info.plist` maps VID/PID `0x2E8A`/`0x0009` to `Pico 2 CHOUPI CCID`. The
+  service is socket activated; `pcscd.service` exited successfully after idle
+  auto-exit while `pcscd.socket` remained listening. This normal idle exit does
+  not explain the empty reader list observed while Java was querying it.
 - No unbounded `pcsc_scan` process or active JCAlgTest client was found in the
   latest process inspection. Continue to avoid `pcsc_scan` because of the
   previously observed runaway case.

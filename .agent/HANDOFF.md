@@ -12,12 +12,18 @@
   `pcscd.service` is active, but Java SmartcardIO still lists no readers;
   `./tools/probe-jc-algtest` failed before sending APDUs. The node ACL includes
   `pcscd` and `claude`. No unbounded scanner was started.
+- Read-only USB descriptor inspection confirms the CCID interface and
+  endpoints `03`/`83`; the installed libccid table contains the exact
+  `2e8a:0009` mapping. pcscd is socket activated and exits normally when idle,
+  but Java queried an empty reader list while the client was active. The
+  reader-publication cause remains unresolved.
 - The wiki skill file path advertised by the tool catalog was not present in
   this VM, and no wiki MCP tools are exposed in this session. The repository
   QKB is therefore the maintained canonical issue record; session digests are
   not treated as topic knowledge.
-- Next: diagnose why active pcscd does not publish the enumerated CCID device,
-  using bounded diagnostics. Once Java sees the reader, run the APDU probe
+- Next: diagnose why pcscd does not publish the enumerated CCID device,
+  using bounded diagnostics and considering a VM USB detach/reattach because
+  that recovered guest visibility previously. Once Java sees the reader, run the APDU probe
   before the official named-reader static test. Do not use `pcsc_scan`;
   preserve new logs and update QKB with confirmed results.
 

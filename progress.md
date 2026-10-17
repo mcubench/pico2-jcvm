@@ -4259,3 +4259,13 @@
 - Decision: Keep the issue open in `.agent/QKB.md`; diagnose bounded PC/SC reader publication, then rerun the APDU probe and official named-reader static test.
 - Commit: pending; repository `.git` is read-only in this execution profile.
 - Artifacts/logs: none created; checks were bounded and their output is summarized above.
+
+## 2026-10-17 — Trace PC/SC reader discovery after USB ACL recovery
+
+- Step/experiment: `pcsc-reader-publication-diagnostics`
+- Change: Extended `.agent/QKB.md` and `.agent/HANDOFF.md` with CCID descriptor, libccid mapping, and pcscd socket-activation findings.
+- Validation: Read-only `lsusb -v -d 2e8a:0009` confirmed interface 2 is class `Chip/SmartCard`, with CCID bulk endpoints `03` and `83`. Parsed `/etc/libccid_Info.plist`; VID/PID `0x2E8A`/`0x0009` maps to `Pico 2 CHOUPI CCID`. `systemctl status` showed pcscd had exited successfully via auto-exit after about one minute while `pcscd.socket` remained listening. Java reader enumeration had returned an empty list while querying. No service restart, scanner, build, flash, or APDU was run during this diagnostic step.
+- Result: The USB descriptor and installed driver mapping are present. The remaining issue is why pcscd fails to publish the reader to active clients; idle auto-exit is expected socket-activation behavior and is not itself evidence of a failure.
+- Decision: Keep reader discovery open. Continue with bounded diagnostics; consider VM USB detach/reattach because it previously restored guest visibility. Run applet tests only after SmartcardIO lists the physical reader.
+- Commit: pending.
+- Artifacts/logs: none; descriptor, driver mapping, daemon state, and reader enumeration were inspected directly.
