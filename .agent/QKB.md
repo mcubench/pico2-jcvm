@@ -486,4 +486,8 @@ fix.
   `artifacts/logs/monitor-arm-jsr-memory-counters-static-20261017.log`;
   `artifacts/logs/monitor-arm-jsr-memory-counters-post-failure-20261017.log`;
   `artifacts/logs/monitor-arm-jsr-memory-counters-cleanup-20261017.log`;
-  and build/flash records with the `jsr-memory-counters` stem.
+  and build/flash records with the `jsr-memory-counters` stem. Key SHA-256
+  digests: official transcript `53d3175ab15d4ee0ea141486714863653d48b312f95f93384b65c3b47e39ab83`;
+  in-run serial `af644823a7965a6ed3b4eead17f56450de516a3357f5dd12892ad07fd443ab1f`;
+  post-failure boot `cda099b9774a3a6858b98489aab67a3b7c6f612d2073a53dcfb289e63dbaf21a`;
+  clean firmware boot `8d87aaf5bf04667a739e3acd8c307777f2b262380d8151a3a820027af0c12236`.

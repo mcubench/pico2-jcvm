@@ -4431,3 +4431,18 @@
   watchdog/boot capture, reader probe, both architecture builds, flash and
   clean boot logs are committed under `artifacts/logs/*jsr-memory-counters*`
   (hashes and paths in `.agent/QKB.md`).
+
+## 2026-10-17 — Record static-suite evidence digests
+
+- Step/experiment: `physical-jcalgtest-static-heap-retention-evidence`
+- Change: Added SHA-256 digests for the official client transcript, serial
+  trace, post-failure boot, and clean firmware boot to `.agent/QKB.md` so later
+  sessions can verify the captured root-cause evidence.
+- Validation: Verified each digest with `sha256sum`; no source behavior
+  changed and no additional board test was needed.
+- Result: Evidence now has stable content identifiers in the QKB.
+- Decision: Use the archived client and serial logs as the baseline when
+  designing and validating heap reclamation.
+- Commit: `c59114e`
+- Artifacts/logs: Hashes recorded in the `Physical ALG_PERFORMANCE_STATIC
+  heap retention` section of `.agent/QKB.md`.
