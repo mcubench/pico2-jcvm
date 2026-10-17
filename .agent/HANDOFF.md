@@ -3619,3 +3619,4 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Details: `artifacts/logs/jcalgtest-physical-jcsystem-memory-zero-20261017.log`,
   `artifacts/logs/jcalgtest-physical-break-probe-20261017.log`,
   `artifacts/logs/physical-access-blocked-20261017.log`.
+- Documentation commit: `27456b6`.
