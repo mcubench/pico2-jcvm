@@ -1,5 +1,34 @@
 # Handoff
 
+## Latest continuation — reproduce and recover supported-sweep reader loss — 2026-10-17
+
+- Repeated the physical official `ALG_SUPPORT_EXTENDED` sweep with a bounded
+  240-second serial capture running concurrently. It stopped again on
+  `SIG_CIPHER_DSA PAD_PKCS5 ALG_SHA_384`, at 1,636 completed CSV rows (the CSV
+  contains its header plus those rows). The serial trace recorded normal CCID
+  traffic through RX event 3,556 / transfer 2,909 and repeated runtime PASS;
+  it contained no firmware fault, allocation failure, `6F00`, or reset.
+- After the sweep, the Pico remained USB-enumerated as `2e8a:0009`, but Java
+  PC/SC listed only the two VPCD readers. The authorized ACL helper granted
+  `/dev/bus/usb/001/010`, but the physical reader remained absent. Reflashing
+  the same ARM image through BOOTSEL restored the physical PC/SC reader; the
+  bounded physical probe then passed SELECT, GETVERSION, JCSystem info, static
+  and repeated SHA-256 (including 50 calls), and expected unsupported
+  RSA-SHA1.
+- The failure is narrowed to the CCID/PCSC path after the long sweep; its cause
+  is still unresolved. The older heap-retention OOM remains a distinct known
+  risk and was not observed in this run. QKB and TODO include this evidence and
+  recovery. Do not claim the full supported sweep passes.
+- Logs: `artifacts/logs/jcalgtest-supported-arm-disconnect-repro-20261017.log`,
+  `artifacts/logs/monitor-arm-supported-disconnect-repro-20261017.log`,
+  `artifacts/logs/flash-arm-supported-disconnect-recovery-20261017.log`,
+  `artifacts/logs/monitor-arm-supported-disconnect-recovery-20261017.log`,
+  and `artifacts/logs/jcalgtest-physical-after-disconnect-reflash-20261017.log`.
+- Next: investigate why long CCID/PCSC sessions lose reader publication and
+  finish the supported CSV/reference comparison. Keep USB calls in host-access
+  context. ARM M33 only; no RISC-V build or test.
+- This investigation record commit: pending.
+
 ## Latest continuation — report unsupported OneShot algorithms correctly — 2026-10-17
 
 - Fixed `InitializedMessageDigest.OneShot.open(byte)` to throw its documented

@@ -576,16 +576,27 @@ fix.
   object factory. The stub now throws reason 3. A focused applet call verifies
   the returned reason, and the physical official CSV records
   `InitializedMessageDigest.OneShot / ALG_SHA_256;no` without `6F00`.
-- **Remaining limit:** The full physical supported-algorithm sweep advanced
-  through that row but later ended with `SCARD_E_READER_UNAVAILABLE` during
-  `SIG_CIPHER_DSA PAD_PKCS5 ALG_SHA_384`. It completed 1,637 CSV rows, with no
-  `6F00` in the captured transcript. The Pico re-enumerated and the bounded
-  physical APDU probe passed afterward. This later disconnect is not yet
-  explained; do not conflate it with the OneShot NPE or claim the full sweep
-  passed. The separately confirmed lack of heap reclamation during repeated
-  cipher workloads remains a plausible related risk, but this run did not log
-  an allocation failure.
+- **Remaining limit:** Two full physical supported-algorithm sweeps stopped at
+  the same request, `SIG_CIPHER_DSA PAD_PKCS5 ALG_SHA_384`, after 1,637 CSV
+  rows. The first ended with `SCARD_E_READER_UNAVAILABLE`; the second did too.
+  A 240-second concurrent serial capture during the second run recorded normal
+  CCID traffic through 3,556 RX events / 2,909 transfers and recurring
+  `TEST:PASS choupi_runtime`, with no applet `6F00`, firmware fault, allocation
+  failure, or reset. Afterward USB still enumerated as `2e8a:0009`, but PC/SC
+  listed only VPCD readers even after the authorized ACL helper. Reflashing the
+  same ARM image restored PC/SC publication; the bounded physical applet probe
+  then passed. This narrows the failure to CCID/PCSC recovery after the long
+  sweep, but does not establish whether the firmware transport, host driver,
+  or cumulative applet state triggers it. Do not claim the full sweep passed.
+  The separately confirmed lack of heap reclamation during repeated cipher
+  workloads remains a risk, but these captures did not log an allocation
+  failure.
 - **Evidence:**
   `artifacts/logs/jcalgtest-supported-arm-oneshot-fix-20261017.log`,
   `artifacts/logs/monitor-arm-oneshot-unsupported-after-official-20261017.log`,
-  and `artifacts/logs/jcalgtest-physical-after-supported-20261017.log`.
+  `artifacts/logs/jcalgtest-physical-after-supported-20261017.log`,
+  `artifacts/logs/jcalgtest-supported-arm-disconnect-repro-20261017.log`,
+  `artifacts/logs/monitor-arm-supported-disconnect-repro-20261017.log`,
+  `artifacts/logs/flash-arm-supported-disconnect-recovery-20261017.log`,
+  `artifacts/logs/monitor-arm-supported-disconnect-recovery-20261017.log`,
+  and `artifacts/logs/jcalgtest-physical-after-disconnect-reflash-20261017.log`.

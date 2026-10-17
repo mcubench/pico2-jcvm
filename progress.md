@@ -4578,3 +4578,33 @@
   `artifacts/logs/jcalgtest-supported-arm-oneshot-fix-20261017.log`,
   `artifacts/logs/monitor-arm-oneshot-unsupported-after-official-20261017.log`,
   `artifacts/logs/jcalgtest-physical-after-supported-20261017.log`.
+
+## 2026-10-17 — Capture and recover supported-sweep PC/SC loss
+
+- Step/experiment: `supported-sweep-ccid-pcsc-disconnect-reproduction`
+- Change: Reproduced the named-reader disconnect while capturing serial
+  concurrently; recorded the failure layer, controlled reflash recovery, and
+  remaining uncertainty in `.agent/QKB.md`, `TODO.md`, and `.agent/HANDOFF.md`.
+- Validation: Ran the official physical `ALG_SUPPORT_EXTENDED` mode again
+  with a bounded 240-second monitor. It stopped at
+  `SIG_CIPHER_DSA PAD_PKCS5 ALG_SHA_384` after 1,636 CSV data rows with
+  `SCARD_E_READER_UNAVAILABLE`. Serial showed RX event 3,556 / transfer 2,909
+  and normal runtime PASS, with no firmware fault, allocation failure, `6F00`,
+  or reset. USB still enumerated as `2e8a:0009`, but PC/SC exposed only VPCD
+  after ACL refresh. Reflashed the already-built ARM image; `FLASH:PASS`,
+  bounded runtime monitor passed, PC/SC republished Pico, and physical probe
+  passed including the SHA 50-call workload and expected unsupported result.
+- Result: Reader publication and APDU service returned after firmware
+  re-enumeration. This points to a CCID/PCSC path issue after long sessions;
+  exact root cause is unresolved. The full supported sweep remains failed and
+  the independent heap-retention OOM was not observed in this reproduction.
+- Decision: Keep USB calls in host-access context. Do not retry the long sweep
+  without new diagnostics or a code-level hypothesis; continue with CCID/PCSC
+  state investigation and declared-support/reference comparison. ARM M33 only.
+- Commit: pending.
+- Artifacts/logs:
+  `artifacts/logs/jcalgtest-supported-arm-disconnect-repro-20261017.log`,
+  `artifacts/logs/monitor-arm-supported-disconnect-repro-20261017.log`,
+  `artifacts/logs/flash-arm-supported-disconnect-recovery-20261017.log`,
+  `artifacts/logs/monitor-arm-supported-disconnect-recovery-20261017.log`,
+  and `artifacts/logs/jcalgtest-physical-after-disconnect-reflash-20261017.log`.
