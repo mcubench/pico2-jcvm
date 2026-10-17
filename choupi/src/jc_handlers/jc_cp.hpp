@@ -50,6 +50,9 @@ uint8_t remap_imported_static_method_token(
 uint8_t remap_imported_virtual_method_token(
     const jc_cap_package_info &package_info, uint8_t class_token,
     uint8_t method_token) noexcept;
+uint8_t remap_imported_interface_method_token(
+    const jc_cap_package_info &package_info, uint8_t class_token,
+    uint8_t method_token) noexcept;
 
 class ConstantPool_Handler : public Component_Handler {
 public:

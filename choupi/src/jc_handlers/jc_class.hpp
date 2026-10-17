@@ -101,7 +101,7 @@ public:
   std::pair<Package, const uint16_t> getImplementedInterfaceMethodOffset(
       const jc_cap_class_ref class_ref, const jc_cap_class_ref interface,
       const uint8_t implemented_interface_method_number,
-      const bool isArray = false);
+      const bool isArray, const Package &interface_package);
 
   /// Get the instance field size for an instantiated class.
   const uint16_t getInstanceFieldsSize(const jclass_index_t claz_index) const

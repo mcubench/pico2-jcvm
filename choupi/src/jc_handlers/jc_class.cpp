@@ -28,9 +28,10 @@
 #include "jc_class.hpp"
 #include "jc_cp.hpp"
 #include "jc_import.hpp"
+#include "flashmemory.hpp"
 
-#include <cstdio>
 #include <cstring>
+#include <cstdio>
 
 #ifndef PC_VERSION
 extern "C" void choupi_install_stage(uint8_t stage);
@@ -52,8 +53,12 @@ jc_cap_virtual_method_ref_info remapVirtualMethodRef(
   const uint8_t method_flags = method_ref.token & 0x80;
   const uint8_t class_token =
       method_ref.class_ref.external_classref.class_token;
-  const uint8_t remapped_method = remap_imported_virtual_method_token(
-      *imported_package, class_token, method_ref.token & 0x7F);
+  const uint8_t method_token = method_ref.token & 0x7F;
+  const uint8_t remapped_method =
+      package.getPackageID() == FlashMemory_Handler::DYNAMIC_PACKAGE_ID
+          ? remap_imported_virtual_method_token(*imported_package, class_token,
+                                                method_token)
+          : method_token;
   const bool applet_protected_entry =
       imported_package->AID_length == 7 &&
       std::memcmp(imported_package->AID,
@@ -200,6 +205,12 @@ jbool_t Class_Handler::checkInterfaceCast(
 
 #endif /* JCVM_DYNAMIC_CHECKS_CAP */
 
+  // An interface is assignable to itself as well as to its superinterfaces.
+  if (interface_in.first == interface_out.first &&
+      interface_in.second == interface_out.second) {
+    return TRUE;
+  }
+
   auto superinterfaces =
       reinterpret_cast<const jc_cap_interface_info *>(interface_in.second)
           ->super_interfaces();
@@ -207,8 +218,9 @@ jbool_t Class_Handler::checkInterfaceCast(
   for (uint8_t j = 0; j < superinterfaces.size(); ++j) {
     const jc_cap_class_ref super_interface_in = superinterfaces.at(j);
 
-    auto super_interface_ptr = ConstantPool_Handler(interface_in.first)
-                                   .resolveClassref(super_interface_in);
+    auto super_interface_ptr =
+        ConstantPool_Handler(interface_in.first)
+            .resolveClassref(super_interface_in);
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 
@@ -300,7 +312,9 @@ Class_Handler::doGetPublicMethodOffset(Package &package,
   for (uint16_t depth = 0; depth < 256; ++depth) {
     const uint8_t base = token.second->public_method_table_base;
     const auto table = token.second->public_virtual_method_table();
-    if (public_method_offset < base) {
+    // An empty table contributes no public methods; continue through the
+    // superclass chain so inherited methods can still be resolved.
+    if (table.size() == 0 || public_method_offset < base) {
       if (token.second->isObjectClass()) {
         throw Exceptions::SecurityException;
       }
@@ -425,19 +439,59 @@ std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
 std::pair<Package, const uint16_t>
 Class_Handler::getImplementedInterfaceMethodOffset(
     const jc_cap_class_ref class_ref, const jc_cap_class_ref interface,
-    const uint8_t implemented_interface_method_number, const bool isArray) {
+    const uint8_t implemented_interface_method_number, const bool isArray,
+    const Package &interface_package) {
   ConstantPool_Handler cp_handler(this->package);
+  ConstantPool_Handler interface_cp(interface_package);
+  const auto requested_interface = interface_cp.classref2interface(interface);
+  std::printf(
+      "CHOUPI:INTERFACE_RESOLVE_BEGIN caller_package=%u receiver_class=%u "
+      "interface_class=%u method=%u array=%u\r\n",
+      static_cast<unsigned>(this->package.getPackageID()),
+      static_cast<unsigned>(class_ref.internal_classref),
+      static_cast<unsigned>(interface.internal_classref),
+      static_cast<unsigned>(implemented_interface_method_number),
+      static_cast<unsigned>(isArray));
   auto claz = (isArray ? this->getObjectClassFromAnObjectRef(class_ref)
                        : cp_handler.classref2class(class_ref));
+  std::printf(
+      "CHOUPI:INTERFACE_RESOLVE_CLASS package=%u class=%u count=%u\r\n",
+      static_cast<unsigned>(claz.first.getPackageID()),
+      static_cast<unsigned>(class_ref.internal_classref),
+      static_cast<unsigned>(claz.second->interface_count));
 
   for (uint16_t index = 0; index < claz.second->interface_count; ++index) {
     const auto &interfaces = claz.second->interfaces(index);
 
-    if (HTONS(interfaces.interface.internal_classref) ==
-        interface.internal_classref) {
+    const auto implemented_interface =
+        cp_handler.classref2interface(interfaces.interface);
+    if (implemented_interface.first == requested_interface.first &&
+        implemented_interface.second == requested_interface.second) {
+
+      if (this->package.getPackageID() ==
+          FlashMemory_Handler::DYNAMIC_PACKAGE_ID) {
+        const auto method_indexes = interfaces.indexes();
+        std::printf(
+            "CHOUPI:INTERFACE_DISPATCH receiver_package=%u receiver_class=%u "
+            "interface_class=%u token=%u count=%u\r\n",
+            static_cast<unsigned>(claz.first.getPackageID()),
+            static_cast<unsigned>(class_ref.internal_classref),
+            static_cast<unsigned>(interface.internal_classref),
+            static_cast<unsigned>(implemented_interface_method_number),
+            static_cast<unsigned>(method_indexes.size()));
+      }
 
       uint8_t public_method_offset =
           interfaces.indexes().at(implemented_interface_method_number);
+      std::printf(
+          "CHOUPI:INTERFACE_MATCH caller_package=%u receiver_package=%u "
+          "class_ref=%u method=%u table_count=%u public_token=%u\r\n",
+          static_cast<unsigned>(interface_package.getPackageID()),
+          static_cast<unsigned>(claz.first.getPackageID()),
+          static_cast<unsigned>(class_ref.internal_classref),
+          static_cast<unsigned>(implemented_interface_method_number),
+          static_cast<unsigned>(interfaces.indexes().size()),
+          static_cast<unsigned>(public_method_offset));
 
       if (isArray) {
         return this->doGetPublicMethodOffset(claz.first, claz.second,
@@ -474,28 +528,10 @@ Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
   auto claz = ConstantPool_Handler(package).getClassFromClassIndex(claz_index);
 
   uint16_t instance_size = 0;
-  uint16_t depth = 0;
-  const bool trace = this->package.getPackageID() == 20 && claz_index == 121;
-  if (trace) {
-    std::printf("CHOUPI:CLASS_FIELDS start package=%u class=%u\r\n",
-                static_cast<unsigned>(this->package.getPackageID()),
-                static_cast<unsigned>(claz_index));
-    std::fflush(stdout);
-  }
 
   do {
     ConstantPool_Handler cp_handler(package);
     instance_size += (claz->declared_instance_size & 0x00FF);
-    if (trace && depth < 64) {
-      std::printf("CHOUPI:CLASS_FIELDS step=%u package=%u declared=%u super_raw=%04X object=%u total=%u\r\n",
-                  static_cast<unsigned>(depth),
-                  static_cast<unsigned>(package.getPackageID()),
-                  static_cast<unsigned>(claz->declared_instance_size),
-                  static_cast<unsigned>(claz->super_class_ref.internal_classref),
-                  claz->isObjectClass() ? 1u : 0u,
-                  static_cast<unsigned>(instance_size));
-      std::fflush(stdout);
-    }
 #ifndef PC_VERSION
     choupi_install_stage(6);
     choupi_install_context(NTOHS(claz->super_class_ref.internal_classref));
@@ -506,15 +542,7 @@ Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
 #endif
     package = pair.first;
     claz = pair.second;
-    ++depth;
   } while (!(claz->isObjectClass()));
-
-  if (trace) {
-    std::printf("CHOUPI:CLASS_FIELDS done depth=%u total=%u\r\n",
-                static_cast<unsigned>(depth),
-                static_cast<unsigned>(instance_size));
-    std::fflush(stdout);
-  }
 
   return instance_size;
 }

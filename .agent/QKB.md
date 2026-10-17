@@ -357,3 +357,44 @@ fix.
   `artifacts/logs/jcalgtest-static-randomdata-token-map-20261017.log`, raw
   result `artifacts/results/jcalgtest-static-randomdata-token-map-20261017/ALGTEST_log_1792234644321.log`,
   serial capture `artifacts/logs/monitor-jcalgtest-static-randomdata-token-map-20261017.log`.
+
+## Fix JC305 Cipher virtual-token mismatch in static workload — 2026-10-17
+
+- **Root cause:** The first DES CBC no-padding `Cipher_doFinal` prepare failed
+  because JCAlgTest 1.8.2 was compiled against the JC305
+  `javacardx.crypto.Cipher` export, whose virtual tokens differ from the
+  embedded CHOUPI export. JC305 uses token 3 for `init(Key, byte)`; embedded
+  CHOUPI uses token 1. The unmodified token dispatched to `getAlgorithm()`
+  (token 3 in CHOUPI), returning a byte where the caller expected `void`.
+  This left an operand on the caller stack and led to a later invalid field
+  access and `6F00`. The mismatch was visible in serial dispatch traces and
+  confirmed by comparing both `.jca` public method tables.
+- **Related receiver/interface resolution:** DES key setup also exposed that
+  `invokeinterface` must resolve a receiver class with its owning package's
+  import table and compare resolved interface identities across packages.
+  JC305 `DESKey` interface tokens 4/5 (`getKey`/`setKey`) also reverse the
+  embedded export order. Both mappings are scoped to the uploaded JC305 CAP.
+- **Fix:** Added the `javacardx.crypto.Cipher` class-token-1 virtual map
+  `{0,6,3,1,2,7,4,5}` (token 0 preserves inherited `Object.equals`). The
+  physical trace now shows `method_raw=3 method_mapped=1`; the exact failing
+  prepare APDU returns `AA9000`.
+- **Validation:** ARM and RISC-V wrapper builds passed. ARM firmware flashed
+  to the Pico 2; bounded serial output reported `TEST:PASS choupi_runtime`
+  without `TEST:FAIL` or `FAULT`. The focused `--des-cipher-prepare` probe
+  passed. Official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` exited 0 and
+  completed. DES CBC no-padding `Cipher_doFinal` and `Cipher_init` measurements
+  returned `AA9000`. Totals were 68 `NO_SUCH_ALGORITHM` and 1,824
+  `CANT_BE_MEASURED`; these totals include unsupported or otherwise
+  unmeasurable rows and do not imply 1,824 VM defects. The first later `6F00`
+  is a distinct 3-key DES CBC ISO9797 M1 prepare; it remains unclassified and
+  must be triaged by prepare status before changing support.
+- **Reusable lesson:** Cross-version compatibility must compare each imported
+  class's full virtual method table, including inherited tokens and return
+  descriptors, against the embedded export. A `void`/value-return mismatch
+  can corrupt caller stack state and surface as a later unrelated field error.
+  For `invokeinterface`, resolve the receiver using its package context and
+  compare canonical interface identity, not raw class-reference numbers.
+- Evidence: exact probe `artifacts/logs/jcalgtest-des-cipher-token-map-fix-20261017.log`;
+  official transcript `artifacts/logs/jcalgtest-static-des-cipher-token-map-fix-20261017.log`;
+  raw log and CSV under `artifacts/results/jcalgtest-static-des-cipher-token-map-fix-20261017/`;
+  bounded serial trace `artifacts/logs/monitor-arm-jcalgtest-static-des-cipher-token-map-fix-20261017.log`.

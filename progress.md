@@ -4349,3 +4349,13 @@
 - Decision: Replay this single APDU with bounded serial capture in host-access context; classify the exception before changing behavior.
 - Commit: `6b04f1d21512bb80dab6716bedf574f6395a668a`
 - Artifacts/logs: Existing official APDU `artifacts/logs/jcalgtest-static-randomdata-token-map-20261017.log`; existing finite serial capture `artifacts/logs/monitor-jcalgtest-static-randomdata-token-map-20261017.log`; no new hardware log.
+
+## 2026-10-17 — Fix JC305 Cipher dispatch in physical static test
+
+- Step/experiment: `physical-jcalgtest-static-cipher-token-order`
+- Change: Corrected JC305-to-embedded virtual method token translation for `javacardx.crypto.Cipher` and aligned the related DESKey interface lookup with the receiver package and canonical interface identity. Documented the root cause and future token-table checks in `.agent/QKB.md`; updated `.agent/HANDOFF.md`.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Flashed ARM firmware to the Pico 2; bounded serial boot capture reported `TEST:PASS choupi_runtime` with no `TEST:FAIL` or `FAULT`. `./tools/probe-jc-algtest --des-cipher-prepare` returned `AA9000`. Official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` completed with exit 0; the previously failing DES CBC no-padding doFinal/init rows returned `AA9000`. The full client reported 68 `NO_SUCH_ALGORITHM` and 1,824 `CANT_BE_MEASURED`; first later `6F00` was a separate 3-key DES CBC ISO9797 M1 prepare. No attempt was made to implement unsupported algorithms.
+- Result: Confirmed that a JC305/embedded virtual token-order mismatch dispatched void `Cipher.init()` to a byte-returning method and corrupted the caller stack. The exact first DES prepare now passes on hardware; later 3-key DES failure remains open.
+- Decision: Preserve import/export method-order comparisons as a compatibility check. Triage the first remaining failure at its prepare APDU before changing algorithm support.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/jcalgtest-des-cipher-token-map-fix-20261017.log` (SHA-256 `6e0997e4d9de771fdb7d69d664986bbdfdd48512a98fe914beccfe773e6ee3f9`); `artifacts/logs/jcalgtest-static-des-cipher-token-map-fix-20261017.log` (SHA-256 `0bd56cada46732f5eb399b3a9c59808ddf7466de67fde87ed11fe6aee4795980`); raw result `artifacts/results/jcalgtest-static-des-cipher-token-map-fix-20261017/ALGTEST_log_1792236553761.log`; CSV and bounded serial capture are in the same result/log directories. Build and flash logs are under `artifacts/logs/`.

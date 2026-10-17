@@ -44,6 +44,7 @@
 #include "bytecodes.hpp"
 
 #include <cstring>
+#include <cstdio>
 
 namespace jcvm {
 
@@ -133,6 +134,20 @@ void Bytecodes::bc_invokevirtual() {
   TRACE_JCVM_DEBUG("INVOKEVIRTUAL 0x%04X", index);
 
   auto virtual_method_ref_info = cp_handler.getVirtualMethodRef(index);
+  if (virtual_method_ref_info.class_ref.isExternalClassRef()) {
+    TRACE_JCVM_DEBUG(
+        "INVOKEVIRTUAL_REF index=%u package_token=%u class_token=%u method_token=%u",
+        static_cast<unsigned>(index),
+        static_cast<unsigned>(virtual_method_ref_info.class_ref.external_classref.package_token),
+        static_cast<unsigned>(virtual_method_ref_info.class_ref.external_classref.class_token),
+        static_cast<unsigned>(virtual_method_ref_info.token));
+  } else {
+    TRACE_JCVM_DEBUG(
+        "INVOKEVIRTUAL_REF index=%u class_index=%u method_token=%u",
+        static_cast<unsigned>(index),
+        static_cast<unsigned>(NTOHS(virtual_method_ref_info.class_ref.internal_classref)),
+        static_cast<unsigned>(virtual_method_ref_info.token));
+  }
   bool applet_register_call = false;
   if (virtual_method_ref_info.class_ref.isExternalClassRef()) {
     const uint8_t package_token =
@@ -149,6 +164,7 @@ void Bytecodes::bc_invokevirtual() {
         std::memcmp(package_aid->AID, "\xA0\x00\x00\x00\x62\x01\x01", 7) ==
             0 &&
         class_token == 3 && (method_token == 1 || method_token == 2);
+
   }
   const auto declared_method =
       class_handler.getMethodOffset(virtual_method_ref_info);
@@ -179,7 +195,48 @@ void Bytecodes::bc_invokevirtual() {
         virtual_method_ref_info, receiver_instance->getPackageID(),
         receiver_instance->getClassIndex());
   }();
-
+  if (context.getCurrentPackage().getPackageID() ==
+      FlashMemory_Handler::DYNAMIC_PACKAGE_ID) {
+    const auto receiver_instance =
+        receiver.isArray() ? nullptr : context.getHeap().getInstance(receiver);
+    uint8_t mapped_method_token = virtual_method_ref_info.token;
+    if (virtual_method_ref_info.class_ref.isExternalClassRef()) {
+      const uint8_t package_token =
+          virtual_method_ref_info.class_ref.external_classref.package_token &
+          0x7F;
+      const uint8_t class_token =
+          virtual_method_ref_info.class_ref.external_classref.class_token;
+      const auto *package_info =
+          Import_Handler(context.getCurrentPackage())
+              .getPackageAID(package_token);
+      mapped_method_token = remap_imported_virtual_method_token(
+          *package_info, class_token, virtual_method_ref_info.token);
+    }
+    std::printf(
+        "CHOUPI:VIRTUAL_DISPATCH package=%u import=%u class_token=%u "
+        "method_raw=%u method_mapped=%u declared=%u:%u receiver=%u:%u "
+        "target=%u:%u nargs=%u\r\n",
+        static_cast<unsigned>(context.getCurrentPackage().getPackageID()),
+        static_cast<unsigned>(virtual_method_ref_info.class_ref.isExternalClassRef()
+                                  ? virtual_method_ref_info.class_ref.external_classref.package_token & 0x7F
+                                  : 0xFF),
+        static_cast<unsigned>(virtual_method_ref_info.class_ref.isExternalClassRef()
+                                  ? virtual_method_ref_info.class_ref.external_classref.class_token
+                                  : 0xFF),
+        static_cast<unsigned>(virtual_method_ref_info.token),
+        static_cast<unsigned>(mapped_method_token),
+        static_cast<unsigned>(declared_method.first.getPackageID()),
+        static_cast<unsigned>(declared_method.second),
+        receiver_instance
+            ? static_cast<unsigned>(receiver_instance->getPackageID())
+            : 0xFFu,
+        receiver_instance
+            ? static_cast<unsigned>(receiver_instance->getClassIndex())
+            : 0xFFFFu,
+        static_cast<unsigned>(method_offset.first.getPackageID()),
+        static_cast<unsigned>(method_offset.second),
+        static_cast<unsigned>(nargs));
+  }
   // Calling the method and updating PC value
   method_handler.setPackage(method_offset.first);
   method_handler.callVirtualMethod(method_offset.second);
@@ -261,7 +318,7 @@ void Bytecodes::bc_invokespecial() {
   Method_Handler method_handler(context);
   Class_Handler class_handler(context.getCurrentPackage());
 
-  uint16_t method_offset;
+  uint16_t method_offset = 0;
   pc_t &pc = stack.getPC();
 
   uint16_t index = pc.getNextShort();
@@ -269,7 +326,9 @@ void Bytecodes::bc_invokespecial() {
   TRACE_JCVM_DEBUG("INVOKESPECIAL 0x%04X", index);
 
   auto cp_entry = cp_handler.getCPEntry(index);
+  TRACE_JCVM_DEBUG("INVOKESPECIAL CP tag=%u", cp_entry.tag);
 
+  try {
   switch (cp_entry.tag) {
   case JC_CP_TAG_CONSTANT_STATICMETHODREF:
     /*
@@ -283,6 +342,11 @@ void Bytecodes::bc_invokespecial() {
       if (IS_CP_INTERNAL_REF(method_ref.static_method_ref)) {
         method_offset = HTONS(method_ref.static_method_ref.internal_ref.offset);
       } else { // Is external static method ref
+        TRACE_JCVM_DEBUG(
+            "INVOKESPECIAL external package=%u class=%u method=%u",
+            method_ref.static_method_ref.external_ref.package_token,
+            method_ref.static_method_ref.external_ref.class_token,
+            method_ref.static_method_ref.external_ref.token);
         Import_Handler imported(context.getCurrentPackage());
         const jc_cap_package_info *package_aid = imported.getPackageAID(
             method_ref.static_method_ref.external_ref.package_token & 0x7F);
@@ -290,14 +354,26 @@ void Bytecodes::bc_invokespecial() {
         Package exported_package(imported.getPackageIndex(package_aid));
         Export_Handler export_handler(exported_package);
 
+        const uint8_t imported_class_token =
+            method_ref.static_method_ref.external_ref.class_token;
+        const uint8_t class_token =
+            context.getCurrentPackageID() ==
+                    FlashMemory_Handler::DYNAMIC_PACKAGE_ID
+                ? remap_imported_class_token(*package_aid,
+                                             imported_class_token)
+                : imported_class_token;
+        // INVOKESPECIAL resolves constructors and private instance methods.
+        // Keep their imported token: the static API token remap applies only
+        // to INVOKESTATIC and can otherwise turn a constructor into a static
+        // method with no receiver.
+        const uint8_t method_token =
+            method_ref.static_method_ref.external_ref.token;
+        TRACE_JCVM_DEBUG("INVOKESPECIAL mapped package=%u class=%u method=%u",
+                         static_cast<unsigned>(imported.getPackageIndex(package_aid)),
+                         class_token, method_token);
         method_offset = export_handler.getExportedStaticMethodOffset(
-            remap_imported_class_token(
-                *package_aid,
-                method_ref.static_method_ref.external_ref.class_token),
-            remap_imported_static_method_token(
-                *package_aid,
-                method_ref.static_method_ref.external_ref.class_token,
-                method_ref.static_method_ref.external_ref.token));
+            class_token, method_token);
+        TRACE_JCVM_DEBUG("INVOKESPECIAL resolved offset=%u", method_offset);
         method_handler.setPackage(exported_package);
       }
     }
@@ -344,6 +420,10 @@ void Bytecodes::bc_invokespecial() {
   if (objectref.isNullPointer()) {
     // NOTE: Manipulated objectref is null
     throw Exceptions::NullPointerException;
+  }
+
+  } catch (Exceptions) {
+    throw;
   }
 
   // auto instance = context.getHeap().getInstance(objectref);
@@ -402,7 +482,7 @@ void Bytecodes::bc_invokestatic() {
   Method_Handler method_handler(context);
   Class_Handler class_handler(context.getCurrentPackage());
 
-  uint16_t method_offset;
+  uint16_t method_offset = 0;
   pc_t &pc = stack.getPC();
 
   uint16_t index = pc.getNextShort();
@@ -411,6 +491,7 @@ void Bytecodes::bc_invokestatic() {
 
   auto cp_entry = cp_handler.getCPEntry(index);
 
+  try {
   if (cp_entry.tag != JC_CP_TAG_CONSTANT_STATICMETHODREF) {
     throw Exceptions::SecurityException;
   }
@@ -437,14 +518,54 @@ void Bytecodes::bc_invokestatic() {
                      static_cast<unsigned>(exported_package.getPackageID()));
     Export_Handler export_handler(exported_package);
 
+    const uint8_t imported_class_token =
+        method_ref.static_method_ref.external_ref.class_token;
+    const bool use_jc305_compatibility_tokens =
+        context.getCurrentPackageID() ==
+        FlashMemory_Handler::DYNAMIC_PACKAGE_ID;
+    const uint8_t class_token =
+        use_jc305_compatibility_tokens
+            ? remap_imported_class_token(*package_aid, imported_class_token)
+            : imported_class_token;
+    const uint8_t method_token =
+        use_jc305_compatibility_tokens
+            ? remap_imported_static_method_token(
+                  *package_aid, imported_class_token,
+                  method_ref.static_method_ref.external_ref.token)
+            : method_ref.static_method_ref.external_ref.token;
+    bool trace_security_call = false;
+#ifndef PC_VERSION
+    trace_security_call =
+        use_jc305_compatibility_tokens && package_aid->AID_length == 7 &&
+        std::memcmp(package_aid->AID,
+                    "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0;
+#endif
+    if (trace_security_call) {
+      static uint8_t security_call_trace_budget = 0;
+      if (security_call_trace_budget < 24) {
+        const uint16_t exported_class_offset =
+            export_handler.getExportedClassOffset(class_token);
+        method_offset = export_handler.getExportedStaticMethodOffset(
+            class_token, method_token);
+        std::printf(
+            "CHOUPI:JC305_SECURITY_CALL raw_class=%u mapped_class=%u "
+            "class_offset=%u raw_method=%u mapped_method=%u offset=%u\r\n",
+            static_cast<unsigned>(imported_class_token),
+            static_cast<unsigned>(class_token),
+            static_cast<unsigned>(exported_class_offset),
+            static_cast<unsigned>(method_ref.static_method_ref.external_ref.token),
+            static_cast<unsigned>(method_token),
+            static_cast<unsigned>(method_offset));
+        std::fflush(stdout);
+        ++security_call_trace_budget;
+      } else {
+        method_offset = export_handler.getExportedStaticMethodOffset(
+            class_token, method_token);
+      }
+    } else {
     method_offset = export_handler.getExportedStaticMethodOffset(
-        remap_imported_class_token(
-            *package_aid,
-            method_ref.static_method_ref.external_ref.class_token),
-        remap_imported_static_method_token(
-            *package_aid,
-            method_ref.static_method_ref.external_ref.class_token,
-            method_ref.static_method_ref.external_ref.token));
+        class_token, method_token);
+    }
     TRACE_JCVM_DEBUG("INVOKESTATIC method offset=%u",
                      static_cast<unsigned>(method_offset));
 
@@ -453,6 +574,10 @@ void Bytecodes::bc_invokestatic() {
 
   // Calling the method
   method_handler.callStaticMethod(method_offset);
+
+  } catch (Exceptions) {
+    throw;
+  }
 
   return;
 }
@@ -549,14 +674,44 @@ void Bytecodes::bc_invokeinterface() {
   uint16_t index = pc.getNextShort();
   uint8_t method = pc.getNextByte();
 
+  std::printf(
+      "CHOUPI:INVOKEINTERFACE package=%u nargs=%u cp_index=%u method=%u\r\n",
+      static_cast<unsigned>(context.getCurrentPackage().getPackageID()),
+      static_cast<unsigned>(nargs), static_cast<unsigned>(index),
+      static_cast<unsigned>(method));
+
   if (nargs == 0) {
     throw Exceptions::SecurityException;
   }
 
   auto interface_ref = cp_handler.getClassRef(index);
+  uint8_t interface_method = method;
+  if (interface_ref.isExternalClassRef()) {
+    Import_Handler import_handler(context.getCurrentPackage());
+    const auto *package_info = import_handler.getPackageAID(
+        interface_ref.external_classref.package_token & 0x7F);
+    interface_method = remap_imported_interface_method_token(
+        *package_info, interface_ref.external_classref.class_token, method);
+    std::printf(
+        "CHOUPI:INTERFACE_TOKEN_MAP package_token=%u class_token=%u "
+        "aid=%02X%02X%02X%02X%02X%02X%02X raw=%u mapped=%u\r\n",
+        static_cast<unsigned>(
+            interface_ref.external_classref.package_token & 0x7F),
+        static_cast<unsigned>(interface_ref.external_classref.class_token),
+        package_info->AID[0], package_info->AID[1], package_info->AID[2],
+        package_info->AID[3], package_info->AID[4], package_info->AID[5],
+        package_info->AID[6], static_cast<unsigned>(method),
+        static_cast<unsigned>(interface_method));
+  }
+  std::printf("CHOUPI:INVOKEINTERFACE_RESOLVED class=%u\r\n",
+              static_cast<unsigned>(interface_ref.internal_classref));
 
   // nargs-th arguments should be popped to access the objectref.
   jref_t objectref = stack.get_Pushed_Element(nargs);
+  std::printf("CHOUPI:INVOKEINTERFACE_RECEIVER ref=%04X array=%u null=%u\r\n",
+              static_cast<unsigned>(objectref.compact()),
+              static_cast<unsigned>(objectref.isArray()),
+              static_cast<unsigned>(objectref.isNullPointer()));
 
   if (objectref.isNullPointer()) {
     throw Exceptions::NullPointerException;
@@ -569,7 +724,8 @@ void Bytecodes::bc_invokeinterface() {
     auto classref = ConstantPool_Handler(instance->getPackageID())
                         .getClassRefFromClassIndex(instance->getClassIndex());
     auto method_offset = class_handler.getImplementedInterfaceMethodOffset(
-        classref, interface_ref, method, true);
+        classref, interface_ref, interface_method, true,
+        context.getCurrentPackage());
     // Calling the method
     method_handler.setPackage(method_offset.first);
     method_handler.callVirtualMethod(method_offset.second);
@@ -580,8 +736,14 @@ void Bytecodes::bc_invokeinterface() {
     auto classref = ConstantPool_Handler(instance->getPackageID())
                         .getClassRefFromClassIndex(instance->getClassIndex());
 
-    auto method_offset = class_handler.getImplementedInterfaceMethodOffset(
-        classref, interface_ref, method);
+    // classref is encoded in the receiver object's package, not the current
+    // caller's package. Resolve its imported superclass/interface references
+    // with that package's import table before dispatching the interface call.
+    Class_Handler receiver_class_handler(Package(instance->getPackageID()));
+    auto method_offset = receiver_class_handler
+                             .getImplementedInterfaceMethodOffset(
+                                 classref, interface_ref, interface_method,
+                                 false, context.getCurrentPackage());
     // Calling the method
     method_handler.setPackage(method_offset.first);
     method_handler.callVirtualMethod(method_offset.second);

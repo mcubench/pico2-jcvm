@@ -3800,3 +3800,33 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: in a host-access session with Pico PC/SC, run the focused probe with a
   bounded serial capture and classify the exception frame before changing
   crypto support. No new hardware validation has occurred in this session.
+
+## 2026-10-17 — JC305 Cipher token-order failure fixed on Pico
+
+- Reproduced the exact first DES `Cipher_doFinal` prepare (`B031`) on the
+  physical Pico. Compared JCAlgTest's JC305 crypto export to the embedded
+  CHOUPI crypto export: JC305 token 3 is `init(Key, byte)`, while embedded
+  token 3 is `getAlgorithm()` and `init` is token 1. Dispatching the latter
+  returned a value for a void method, corrupted the operand stack, and caused
+  a later `GETFIELD_A_THIS`/`6F00`.
+- Added the JC305 Cipher map `{0,6,3,1,2,7,4,5}`. Kept the supporting
+  cross-package interface resolution and DESKey interface mapping needed for
+  key setup. See `.agent/QKB.md` for the paired token tables and broader
+  lesson.
+- `./tools/build arm` and `./tools/build riscv` passed. Flash succeeded after
+  the wrapper recovered via CDC-to-BOOTSEL; a bounded boot capture reported
+  `TEST:PASS choupi_runtime`. Focused `--des-cipher-prepare` returned
+  `AA9000`. The official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` completed
+  with exit 0; the DES CBC no-padding `Cipher_doFinal` and `Cipher_init`
+  measurements passed. Totals: 68 `NO_SUCH_ALGORITHM`, 1,824
+  `CANT_BE_MEASURED`. The first later `6F00` is a 3-key DES CBC ISO9797 M1
+  prepare and is a separate open triage item.
+- Artifacts: builds `build-*-des-cipher-token-map-fix-20261017.log`; flash
+  `flash-arm-des-cipher-token-map-fix-20261017.log`; focused probe and suite
+  logs under `artifacts/logs/`; result log and CSV under
+  `artifacts/results/jcalgtest-static-des-cipher-token-map-fix-20261017/`.
+- Next: preserve the source changes from this shared worktree. If continuing
+  static triage, isolate the first remaining 3-key DES prepare `B031` and
+  inspect whether its prepare status is unsupported or a runtime error. Avoid
+  expanding implementation to algorithms JCAlgTest explicitly reports as
+  `NO_SUCH_ALGORITHM`.

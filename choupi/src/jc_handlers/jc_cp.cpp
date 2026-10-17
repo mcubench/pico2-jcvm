@@ -30,6 +30,7 @@
 #include "jc_class.hpp"
 #include "jc_export.hpp"
 #include "jc_import.hpp"
+#include "flashmemory.hpp"
 
 #include <cstring>
 
@@ -39,6 +40,15 @@ extern "C" void choupi_install_context(uint32_t context);
 #endif
 
 namespace jcvm {
+
+namespace {
+bool usesJC305CompatibilityTokens(const Package &source_package) noexcept {
+  // These translations describe imports in the uploaded JCAlgTest CAP. ROM
+  // mask API CAPs use their own export tokens and must resolve them unchanged.
+  return source_package.getPackageID() ==
+         FlashMemory_Handler::DYNAMIC_PACKAGE_ID;
+}
+} // namespace
 
 // JCAlgTest 1.8.2 was converted with the JC 3.0.5 API export files. The
 // embedded CHOUPI ROM-mask API uses the same package AIDs and versions but
@@ -53,8 +63,10 @@ uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
       1,  3,  6,  13, 15, 8,  14, 18, 9,  11, 7,  16,
       10, 19, 20, 21, 22, 2,  0,  4,  5,  12, 17};
   static constexpr uint8_t javacard_security[] = {
-      0,  5,  3,  4,  1,  6,  7,  16, 17, 18, 12, 21, 25, 27, 28, 31, 30,
-      8,  9,  10, 19, 33, 26, 11, 13, 20, 23, 2,  14, 15, 22, 24, 29, 32};
+      0x00, 0x05, 0x03, 0x04, 0x01, 0x06, 0x07, 0x10, 0x11, 0x12, 0x0c,
+      0x18, 0x1d, 0x15, 0x1f, 0x21, 0x16, 0x08, 0x09, 0x0a, 0x13, 0x17,
+      0x1e, 0x0b, 0x0d, 0x14, 0x1b, 0x02, 0x0e, 0x0f, 0x1a, 0x1c, 0x20,
+      0x22};
   static constexpr uint8_t javacardx_crypto[] = {0, 1, 2, 3};
 
   const uint8_t *mapping = nullptr;
@@ -95,7 +107,11 @@ uint8_t remap_imported_static_method_token(
       11, 10, 12, 8,  19, 15, 16, 13, 14, 7,  1,  9,
       2,  3,  5,  4,  17, 20, 21, 22, 23, 6,  18};
   static constexpr uint8_t java_lang_object_methods[] = {0};
+  static constexpr uint8_t framework_apdu_methods[] = {1, 2, 3, 7, 4, 5, 6};
+  static constexpr uint8_t framework_util_methods[] = {4, 0, 1, 3, 6, 5, 7, 2};
   static constexpr uint8_t security_digest_methods[] = {0, 1, 1};
+  static constexpr uint8_t security_signature_methods[] = {0, 1, 1};
+  static constexpr uint8_t crypto_cipher_methods[] = {0, 1, 1};
 
   const uint8_t *mapping = nullptr;
   size_t mapping_size = 0;
@@ -113,10 +129,34 @@ uint8_t remap_imported_static_method_token(
     mapping_size = sizeof(java_lang_object_methods);
   } else if (package_info.AID_length == 7 &&
              std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+             class_token == 10) {
+    mapping = framework_apdu_methods;
+    mapping_size = sizeof(framework_apdu_methods);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+             class_token == 16) {
+    mapping = framework_util_methods;
+    mapping_size = sizeof(framework_util_methods);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
                          "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
              class_token == 11) {
     mapping = security_digest_methods;
     mapping_size = sizeof(security_digest_methods);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+             class_token == 15) {
+    mapping = security_signature_methods;
+    mapping_size = sizeof(security_signature_methods);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x02\x01", 7) == 0 &&
+             class_token == 1) {
+    mapping = crypto_cipher_methods;
+    mapping_size = sizeof(crypto_cipher_methods);
   }
 
   if (mapping == nullptr || method_token >= mapping_size) {
@@ -128,6 +168,15 @@ uint8_t remap_imported_static_method_token(
 uint8_t remap_imported_virtual_method_token(
     const jc_cap_package_info &package_info, const uint8_t class_token,
     const uint8_t method_token) noexcept {
+  static constexpr uint8_t framework_applet_methods[] = {
+      0, 1, 2, 3, 5, 6, 4, 7};
+  // The JC305 APDU export uses a different virtual-method order from the
+  // embedded CHOUPI framework API. Tokens below are from the JC305 APDU
+  // export; values are the corresponding CHOUPI framework APDU tokens.
+  static constexpr uint8_t framework_apdu_virtual_methods[] = {
+      0, 1, 2, 6, 8, 9, 7, 3, 10, 5, 4, 11, 12, 13, 14, 15, 16, 17};
+  // JC 3.0.5 assigns MessageDigest's virtual methods a different order from
+  // the embedded API. Translate the imported method token before dispatch.
   static constexpr uint8_t security_digest_virtual_methods[] = {
       0, 3, 1, 2, 5, 4};
   // JC305 places RandomData.setSeed before nextBytes, while the embedded API
@@ -136,6 +185,12 @@ uint8_t remap_imported_virtual_method_token(
   // nextBytes and leave an operand on the caller's stack.
   static constexpr uint8_t security_random_data_virtual_methods[] = {
       0, 1, 3, 2, 4, 5};
+  // The JC305 javacardx.crypto.Cipher export orders doFinal/getAlgorithm/
+  // init/init/update/getCipherAlgorithm/getPaddingAlgorithm differently from
+  // the embedded CHOUPI export. Keep the inherited Object.equals token zero;
+  // translate the remaining JC305 tokens to their embedded method tokens.
+  static constexpr uint8_t crypto_cipher_virtual_methods[] = {
+      0, 6, 3, 1, 2, 7, 4, 5};
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
@@ -150,14 +205,43 @@ uint8_t remap_imported_virtual_method_token(
       method_token < sizeof(security_random_data_virtual_methods)) {
     return security_random_data_virtual_methods[method_token];
   }
-  static constexpr uint8_t framework_applet_methods[] = {
-      1, 2, 3, 4, 6, 7, 5, 8};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x02\x01", 7) == 0 &&
+      class_token == 1 &&
+      method_token < sizeof(crypto_cipher_virtual_methods)) {
+    return crypto_cipher_virtual_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+      class_token == 10 &&
+      method_token < sizeof(framework_apdu_virtual_methods)) {
+    return framework_apdu_virtual_methods[method_token];
+  }
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
       class_token == 3 &&
       method_token < sizeof(framework_applet_methods)) {
     return framework_applet_methods[method_token];
+  }
+  return method_token;
+}
+
+uint8_t remap_imported_interface_method_token(
+    const jc_cap_package_info &package_info, const uint8_t class_token,
+    const uint8_t method_token) noexcept {
+  // JC305's DESKey interface assigns getKey=4 and setKey=5. The embedded API
+  // export declares setKey before getKey, so swap those two interface tokens.
+  static constexpr uint8_t security_des_key_interface_methods[] = {
+      0, 1, 2, 3, 5, 4};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 10 &&
+      method_token < sizeof(security_des_key_interface_methods)) {
+    return security_des_key_interface_methods[method_token];
   }
   return method_token;
 }
@@ -224,8 +308,13 @@ ConstantPool_Handler::getClassInformation(const jc_cp_offset_t offset)
 
     Package importedPackage(package);
     Export_Handler exportHandler(importedPackage);
-    const uint8_t class_token = remap_imported_class_token(
-        *imported_package, classref.external_classref.class_token);
+    const uint8_t imported_class_token =
+        classref.external_classref.class_token;
+    const uint8_t class_token =
+        usesJC305CompatibilityTokens(this->package)
+            ? remap_imported_class_token(*imported_package,
+                                         imported_class_token)
+            : imported_class_token;
     claz = exportHandler.getExportedClassOffset(class_token);
   } else // is internal classref
   {
@@ -474,6 +563,8 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
 #ifndef PC_VERSION
   choupi_install_stage(11);
 #endif
+  const bool use_jc305_compatibility_tokens =
+      usesJC305CompatibilityTokens(this->package);
   Package &package = this->package;
   auto cap = this->package.getCap();
 
@@ -512,9 +603,12 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
     package = Package(package_index);
     cap = package.getCap();
 
-    class_token = remap_imported_class_token(
-        *imported_package_ID,
-        BYTE_TO_SHORT(classref.external_classref.class_token));
+    const uint8_t imported_class_token =
+        BYTE_TO_SHORT(classref.external_classref.class_token);
+    class_token = use_jc305_compatibility_tokens
+                      ? remap_imported_class_token(*imported_package_ID,
+                                                   imported_class_token)
+                      : imported_class_token;
 #ifndef PC_VERSION
     choupi_install_stage(18);
     choupi_install_context(
