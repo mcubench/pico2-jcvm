@@ -3695,3 +3695,36 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/monitor-alg-static-reset-diagnostic-20261017.log`. This
   weakens the theory that only one old digest object's state is stale. Inspect
   VM object/array reference behavior and the actual native array length next.
+
+## Static SHA heap-exhaustion fix — 2026-10-17
+
+- Temporary native tracing established that SHA state was cleared correctly:
+  all 76 observed 256-byte appends entered with `current=0`. The actual failure
+  was repeated transient-array deserialization. `JC_Instance::getField_Reference()`
+  reloaded persistent references from flash instead of using `getFields()`;
+  `Sha256Digest.input` was reconstructed on every digest call and its 2,048-byte
+  backing allocation stayed in the applet heap until `malloc` failed and the
+  second static APDU panicked. The earlier stale-buffer inference is
+  superseded; see `.agent/QKB.md`.
+- Fixed persistent reference reads to use the one-time loaded field cache.
+  Removed temporary `jni.cpp` state-length instrumentation before the final
+  image was built.
+- `./tools/build arm` and `./tools/build riscv` passed. The fixed, non-traced
+  ARM firmware was flashed. The physical focused probe passed five baselines,
+  two consecutive 50-call static SHA APDUs, ten single-call SHA APDUs, another
+  static SHA APDU, and a post-static call (`AA9000` throughout). The official
+  v1.8.2 `ALG_PERFORMANCE_STATIC` client exited 0; SHA-256 doFinal averaged
+  `2.01 ms/op` over 250 calls. No SHA `F105` or reader-unavailable error.
+- Separate official-client result: 34 `NO_SUCH_ALGORITHM` rows are expected;
+  1,866 other operations were marked `CANT_BE_MEASURED`, mostly with `6F00`.
+  They are outside this stateful-array heap fix and remain separate diagnostics.
+- Next: retain multi-APDU object identity coverage in future algorithm work;
+  if continuing this client-wide pass, investigate the first reproducible
+  `6F00` only as an applet/dispatch issue, not as a request to add unsupported
+  algorithms.
+- Logs: `artifacts/logs/build-arm-persistent-reference-cache-20261017.log`,
+  `artifacts/logs/build-riscv-persistent-reference-cache-20261017.log`,
+  `artifacts/logs/flash-arm-persistent-reference-cache-20261017.log`,
+  `artifacts/logs/jcalgtest-static-cache-fix-physical-20261017.log`,
+  `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log`, and
+  `artifacts/logs/monitor-arm-persistent-reference-cache-20261017.log`.

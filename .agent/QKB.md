@@ -147,6 +147,11 @@ fix.
 
 ## Static SHA repeat failure mechanism — 2026-10-17
 
+- **Superseded by the resolution below:** At first, `F105` was attributed to a
+  retained SHA input length. The native trace later showed `current=0` on all
+  76 observed 256-byte appends, so this was not the root cause of the official
+  reader loss. Earlier `F105` runs occurred after heap exhaustion/panic and
+  are not evidence that normal SHA state cleanup overflowed.
 - **Confirmed applet failure mechanism:** With the official v1.8.2 settings
   (256-byte input, 50 `doFinal()` calls), a repeated run can return `F105`
   while the MCU and CCID endpoint remain alive. The trace shows
@@ -191,3 +196,47 @@ fix.
   `462ac435d379a4615aa7b9ab719c9f9cdddc9aa78484977b750db0a205bd54dd`) and
   `artifacts/logs/monitor-alg-static-reset-diagnostic-20261017.log` (SHA-256
   `418169398bd3ccff8a300edb3d92021cb1614992d864142e2c33def19208d72d`).
+
+## Resolution: static SHA repeat heap exhaustion — 2026-10-17
+
+- **Root cause:** `JC_Instance::getField_Reference()` bypassed the persistent
+  instance's already available `getFields()` cache and deserialized a new
+  reference from flash on every `GETFIELD_A`. For the digest object's
+  `input` field, each read rebuilt a 2,048-byte transient `JC_Array` wrapper;
+  `Heap::addArray()` then copied and retained another wrapper in the applet
+  heap. Repeated `doFinal()` calls therefore consumed heap in roughly 2,060-
+  byte allocations until `malloc` failed. The second static APDU panicked
+  partway through its 50 calls, and PC/SC reported the reader unavailable.
+- **Diagnostic evidence:** Temporary native tracing showed `current=0` on all
+  76 observed 256-byte appends. Measurement one completed; measurement two
+  stopped after 26 further appends at `malloc 2060 failed to allocate memory`
+  and `*** PANIC ***`. This disproves the earlier stale-length hypothesis.
+  The instrumentation was removed before the final build/flash.
+- **Fix:** Persistent reference reads now use `JC_Instance::getFields()`, which
+  restores references once and returns the cached heap handle thereafter.
+  This preserves reference identity and avoids per-call deserialization and
+  heap growth.
+- **Hardware validation:** ARM and RISC-V wrappers both built successfully;
+  the non-instrumented ARM image was flashed. The physical focused probe
+  passed five baseline calls, two consecutive official 256-byte/50-call SHA
+  measurements, ten single-call repeats, another 50-call measurement, and a
+  following single call (`AA9000` throughout). The official JCAlgTest 1.8.2
+  `ALG_PERFORMANCE_STATIC` client also completed with exit 0. SHA-256
+  `doFinal()` measured 250 invocations at `2.01 ms/op` average; SHA-256 update
+  measured `2.50 ms/op`, and reset measured `3.13 ms/op`. No
+  `SCARD_E_READER_UNAVAILABLE`, `F105`, or panic occurred during these SHA
+  checks.
+- **General lesson for future algorithms:** A persistent object may hold a
+  transient array reference. `GETFIELD_A` must return the same live heap
+  object throughout the applet context; deserializing such a field on every
+  read duplicates transient arrays and leaks heap. Reuse the field cache for
+  reference identity and test repeated stateful operations, not just one call.
+- **Separate remaining result:** The full official client recorded 34
+  `NO_SUCH_ALGORITHM` results (expected) and 1,866 `CANT_BE_MEASURED` rows,
+  many with `6F00`, across non-SHA operation combinations. They were not
+  addressed by this focused heap/reference fix.
+- Evidence: native trace `artifacts/logs/monitor-alg-static-state-length-20261017.log`
+  (76 append records; includes allocation failure/panic), focused physical
+  pass `artifacts/logs/jcalgtest-static-cache-fix-physical-20261017.log`,
+  official client `artifacts/logs/jcalgtest-static-cache-fix-official-20261017.log`,
+  and post-fix serial `artifacts/logs/monitor-arm-persistent-reference-cache-20261017.log`.

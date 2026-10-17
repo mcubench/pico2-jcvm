@@ -382,11 +382,12 @@ const jint_t JC_Instance::getField_Int(const uint16_t index) {
  */
 const jref_t JC_Instance::getField_Reference(const uint16_t index) {
   if (this->isPersistent()) {
-    fs::Tag tag =
-        FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
-
-    return FlashMemory_Handler::getPersistentField_Reference(tag,
-                                                              this->getOwner());
+    // Persistent references are restored into the instance's field cache on
+    // first access. Re-reading them from flash on every GETFIELD_A allocates a
+    // fresh heap wrapper each time; transient arrays stored by crypto objects
+    // then leak one backing allocation per operation and lose object identity.
+    const auto fields = this->getFields();
+    return jref_t(fields->at(index).value);
   } else {
 
 #ifdef JCVM_TYPED_HEAP
