@@ -780,6 +780,32 @@ fix.
   `artifacts/logs/build-pc-ownerpinx-cleanup-20261017.log`, and
   `artifacts/logs/build-arm-ownerpinx-cleanup-20261017.log`.
 
+## JCAlgTest VPCD startup delay before support queries — 2026-10-17
+
+- **Observed:** The desktop VPCD integration can install and SELECT the
+  JCAlgTest 1.8.2 applet, then fail to receive GETVERSION. Three bounded runs
+  timed out on that first post-SELECT APDU at 20, 90, and 30 seconds. The 90-
+  second run used the release VM; the 30-second diagnostic run used the debug
+  VM. No OwnerPINX support APDU was sent, so this is not evidence against the
+  OwnerPINX implementation.
+- **Trace finding:** JCAlgTest defers initialization until the first process
+  APDU. When its large transient arrays fit, `AlgPerformanceTest` construction
+  also creates `JavaCardAES`, whose constructor allocates four 256-element
+  lookup tables and generates the S-boxes in interpreted Java bytecode. The
+  debug trace was still in that S-box generation loop at index 91 when stopped.
+  The VM's normal release trace was not enabled for the 90-second timeout, so
+  the exact no-debug instruction count remains unknown.
+- **Current handling:** Keep the small OwnerPINx VPCD behavior regression as
+  the reliable functional check. Do not use this desktop JCAlgTest path as an
+  official support result until GETVERSION completes. The physical support
+  sweep has not been rerun after OwnerPINx implementation. The build was
+  returned to release mode after tracing.
+- **Evidence:** `artifacts/logs/pc-vpcd-ownerpinx-support-20261017.log`,
+  `artifacts/logs/pc-vpcd-ownerpinx-support-retry-20261017.log`,
+  `artifacts/logs/pc-vpcd-ownerpinx-debug-20261017.log`,
+  `artifacts/logs/build-pc-ownerpinx-support-debug-20261017.log`, and
+  `artifacts/logs/build-pc-ownerpinx-support-release-20261017.log`.
+
 
 ## Host-access invocation latch — 2026-10-17
 

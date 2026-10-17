@@ -4161,6 +4161,11 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/logs/jcsystem-ownerpinx-cleanup-vpcd-20261017.log`,
   `artifacts/logs/build-pc-ownerpinx-cleanup-20261017.log`, and
   `artifacts/logs/build-arm-ownerpinx-cleanup-20261017.log`.
+- The official JCAlgTest VPCD wrapper was also attempted to check the two
+  support rows. It installed and SELECTed the applet but timed out in GETVERSION
+  after 90 seconds; no support query was reached. Trace points into the
+  delayed `AlgPerformanceTest`/`JavaCardAES` S-box setup. Keep the official
+  physical support comparison open until a later hardware validation.
 - Commits: root `63a13eb`; API `0199d51`; rommask `051b389` and `f3c309a`.
 - Next: continue from the open static benchmark heap-lifetime and reader-path
   issues. Do not access USB or flash hardware without a specific request.

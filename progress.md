@@ -4629,6 +4629,16 @@
 - Commit: root `63a13eb`; nested API `0199d51`; nested rommask `051b389` and `f3c309a`. This SHA was filled in by the follow-up progress-record commit.
 - Artifacts/logs: `artifacts/logs/jcsystem-ownerpinx-full-vpcd-20261017.log`, `artifacts/logs/jcsystem-ownerpinx-cleanup-vpcd-20261017.log`, `artifacts/logs/build-pc-ownerpinx-cleanup-20261017.log`, `artifacts/logs/build-arm-ownerpinx-cleanup-20261017.log`.
 
+## 2026-10-17 — Clarify OwnerPINx support validation limits
+
+- Step/experiment: `ownerpinx-official-support-vpcd-attempt`
+- Change: Updated TODO, QKB, and handoff to mark OwnerPINx behavior implemented while keeping the post-change physical support sweep open. Documented the VPCD startup delay so it is not mistaken for an OwnerPINx failure. Removed the unvalidated support-query additions to the generic VPCD harness.
+- Validation: Confirmed the focused OwnerPINx case 13 still passes from the preceding cleanup run. Official JCAlgTest VPCD reached SELECT, then GETVERSION timed out after 20 seconds and again after 90 seconds; a debug run timed out after 30 seconds and traced the VM in JavaCardAES S-box generation. No OwnerPINX support APDU was reached. Rebuilt PC VM with `CHOUPI_JCVM_DEBUG=OFF`; build passed. No hardware was accessed.
+- Result: The applet's behavior is covered by the focused VPCD case, while official capability-row comparison remains unverified after implementation. The expensive delayed applet setup is a separate desktop VPCD limitation.
+- Decision: Do not claim the physical support comparison complete. Continue the separate static benchmark/reader-path investigation; keep the board untouched.
+- Commit: `pending`.
+- Artifacts/logs: `artifacts/logs/pc-vpcd-ownerpinx-support-20261017.log`, `artifacts/logs/pc-vpcd-ownerpinx-support-retry-20261017.log`, `artifacts/logs/pc-vpcd-ownerpinx-debug-20261017.log`, `artifacts/logs/build-pc-ownerpinx-support-debug-20261017.log`, `artifacts/logs/build-pc-ownerpinx-support-release-20261017.log`.
+
 ## 2026-10-17 — Diagnose supported-sweep heap exhaustion
 
 - Step/experiment: `supported-sweep-retained-exceptions`

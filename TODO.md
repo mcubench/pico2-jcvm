@@ -84,20 +84,37 @@ plan's unsupported capability. The failure mechanism is documented in
 `.agent/QKB.md`; do not implement unsafe offset-list clearing. This run does
 not prove AC3's supported-algorithms mode, which remains outstanding.
 
-Latest supported-algorithm update (2026-10-17): the previous `6F00` was caused
-by `InitializedMessageDigest.OneShot.open()` returning null for an unsupported
-factory; it now throws `CryptoException.NO_SUCH_ALGORITHM`. The focused VPCD
-golden test passes this exception reason, and the physical official CSV records
-the OneShot SHA-256 row as unsupported without `6F00`. Two full physical
-`ALG_SUPPORT_EXTENDED` runs stopped at the same DSA/SHA-384 row after 1,637
-CSV rows. A 240-second serial capture during the second showed normal runtime
-and CCID traffic, then recorded `malloc 12 failed to allocate memory` at the
-failure point. `CryptoException.throwIt()` allocates a new exception each time,
-while `Heap::addInstance()` retains all instances and has no reclamation path;
-this explains the cumulative heap exhaustion. The client then lost PC/SC
-reader publication, which returned after reflash. The runs are incomplete, not
-an AC3 pass; most `no` rows are expected unsupported capabilities. See
-`.agent/QKB.md` for evidence and the rejected persistent-static cache approach.
+Latest supported-algorithm update (2026-10-17):
+`InitializedMessageDigest.OneShot.open()` throws
+`CryptoException.NO_SUCH_ALGORITHM` for unsupported factories. Retained
+exception exhaustion is now fixed for both ROM and imported
+`javacard.security` class views with separate VM-owned per-heap roots. The
+focused VPCD 50-throw regression passes. `RandomData.OneShot.open()` now also
+throws `CryptoException.NO_SUCH_ALGORITHM` instead of `ILLEGAL_USE` for this
+unsupported factory; its six JCAlgTest rows changed from
+`error(ILLEGAL_USE)` to `no`. The corrected physical official
+`ALG_SUPPORT_EXTENDED` run completed all 4,525 result rows: 15 `yes`, 4,510
+`no`, and no `error(...)` rows. The previous Java-static exception cache was
+invalid because statics serialize through flash. Unsupported algorithms remain
+expected; do not implement them merely to avoid `NO_SUCH_ALGORITHM`.
+
+The initial cross-check against jCardSim and API factories is recorded in
+`artifacts/results/jcalgtest-support-comparison-20261017.md`. It found two
+false-positive `yes` rows because `OwnerPINBuilder.OWNER_PIN_X` and
+`OWNER_PIN_X_WITH_PREDECREMENT` returned `null` and the JCAlgTest factory probe
+did not check the returned reference. Both variants are now implemented and
+the VPCD OwnerPINx behavior regression passes. The official physical support
+sweep has not been rerun after this implementation; keep that comparison open
+until a later hardware validation.
+
+The separate physical `ALG_PERFORMANCE_STATIC` run remains unresolved. A
+previous run directly observed cumulative array retention and allocation
+failure. This rerun completed a 250-call DES CBC `Cipher_doFinal` measurement
+(28.64 ms/op average), then the next DES `Cipher_init` request failed with
+`SCARD_E_READER_UNAVAILABLE`; its bounded serial capture did not record an
+allocation failure, and the physical reader was visible again after ACL
+refresh. Keep the known array-retention root cause and this distinct reader
+failure separate; do not report the static suite as passed. See `.agent/QKB.md`.
 
 Next actions:
 
@@ -109,19 +126,21 @@ Next actions:
    consistency and nonzero persistent/transient values.
 2. Finish golden applet, applet callback, GP DELETE/GET DATA, transaction
    failure, and persistent restore tests. The official physical static suite
-   has been run but fails from the documented heap retention; preserve that
-   result and do not misreport it as passing.
-3. Diagnose the repeatable CCID/PCSC recovery failure in the physical
-   supported-algorithm sweep, then finish the matching JCAlgTest v1.8.2 mode
-   and compare its CSV against the jCardSim reference and declared support
-   list. Treat absent algorithms and `NO_SUCH_ALGORITHM` as expected unless
-   the declared support list says otherwise.
+   has not passed; diagnose the latest PC/SC reader loss and implement a safe
+   array-lifetime strategy before claiming completion.
+3. [x] Finish the matching JCAlgTest v1.8.2 `ALG_SUPPORT_EXTENDED` mode on the
+   named physical reader. The corrected run completed 4,525 rows with no
+   transport or row errors. [x] Implement the two OwnerPINX builder variants
+   and validate their behavior through VPCD. [ ] Rerun the physical support
+   checks and finish AC4's simulator/source comparison. Treat absent
+   algorithms and `NO_SUCH_ALGORITHM` as expected unless the implementation
+   claims support.
 4. Complete AC1–AC5 and the clean-flash integration sequence three times.
 
 Earlier startup-timeout and physical `F503` observations below are historical
-checkpoints. The current physical behavior passed direct CCID applet probes
-after flashing the current ARM image; the official PC/SC Java client remains
-unverified. RISC-V remains out of scope.
+checkpoints. The current physical ARM image passes runtime checks and the
+official PC/SC Java client completes the supported-algorithm mode. RISC-V
+remains out of scope for the current development objective.
 
 The two-process VPCD transcript is
 `artifacts/logs/vpcd-persistence-corrected-transcript-20261016.log`, with
