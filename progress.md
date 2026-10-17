@@ -4688,3 +4688,12 @@
 - Decision: Continue next with package/app deletion and context lifecycle tracing before implementing static-reference caching.
 - Commit: `af36522` (this SHA was filled in by the follow-up progress-record commit).
 - Artifacts/logs: none.
+## 2026-10-17 — Canonicalize restored static reference roots
+
+- Step/experiment: `static-reference-root-cache`
+- Change: Routed `GETSTATIC_A` through `Static_Handler::getPersistentRef` and added a per-heap cache keyed by resolved package and field. Successful persistent reference writes refresh the cache. Added transaction-probe case 14 to verify repeated reads of an install-written static object preserve identity after restore. Recorded the root cause and lifecycle behavior in `.agent/QKB.md` and `.agent/HANDOFF.md`.
+- Validation: `./tools/build-pc` passed; `./tools/build-jcsystem-transaction-probe` passed; focused VPCD case 14 passed with `019000` (`TEST:SUMMARY pass=3 fail=0 elapsed_s=6.819`); full VPCD regression passed (`TEST:SUMMARY pass=17 fail=0 elapsed_s=109.117`); `./tools/build arm` passed. No hardware or RISC-V validation was run.
+- Result: Repeated static reference reads return one canonical heap handle and no longer allocate duplicate restored wrappers. This is not heap reclamation.
+- Decision: Commit the static-reference cache and regression independently. Any future transactional static-field rollback must reconcile this cache on abort.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/build-pc-static-reference-cache-20261017.log`, `artifacts/logs/build-jcsystem-static-reference-cache-20261017.log`, `artifacts/logs/jcsystem-static-reference-cache-full-vpcd-20261017.log`, `artifacts/logs/build-arm-static-reference-cache-20261017.log`.

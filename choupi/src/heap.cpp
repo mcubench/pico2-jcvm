@@ -169,6 +169,31 @@ jref_t Heap::addInstance(JC_Instance &&instance) {
   return ref;
 }
 
+bool Heap::getStaticReferenceRoot(const jpackage_ID_t package_id,
+                                  const uint16_t field_number,
+                                  jref_t &reference) const noexcept {
+  for (const StaticReferenceRoot &root : this->static_reference_roots) {
+    if (root.package_id == package_id && root.field_number == field_number) {
+      reference = root.reference;
+      return true;
+    }
+  }
+  return false;
+}
+
+void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
+                                  const uint16_t field_number,
+                                  const jref_t reference) {
+  for (StaticReferenceRoot &root : this->static_reference_roots) {
+    if (root.package_id == package_id && root.field_number == field_number) {
+      root.reference = reference;
+      return;
+    }
+  }
+  this->static_reference_roots.push_back(
+      StaticReferenceRoot{package_id, field_number, reference});
+}
+
 /*
  * Getting array from heap.
  *

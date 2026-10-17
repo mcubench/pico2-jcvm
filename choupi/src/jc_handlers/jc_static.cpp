@@ -78,10 +78,18 @@ jint_t Static_Handler::getPersistentInt(const uint16_t index) const {
  */
 jref_t Static_Handler::getPersistentRef(const uint16_t index,
                                         Heap &heap) const {
-  fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
-      this->package.getPackageID(), index);
+  jref_t reference;
+  const jpackage_ID_t package_id = this->package.getPackageID();
+  if (heap.getStaticReferenceRoot(package_id, index, reference)) {
+    return reference;
+  }
 
-  return FlashMemory_Handler::getPersistentField_Reference(tag, heap);
+  fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
+      package_id, index);
+
+  reference = FlashMemory_Handler::getPersistentField_Reference(tag, heap);
+  heap.setStaticReferenceRoot(package_id, index, reference);
+  return reference;
 }
 
 /**
@@ -96,6 +104,7 @@ void Static_Handler::setPersistentRef(const uint16_t index,
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   FlashMemory_Handler::setPersistentField_Reference(tag, value, heap);
+  heap.setStaticReferenceRoot(this->package.getPackageID(), index, value);
 }
 
 /**

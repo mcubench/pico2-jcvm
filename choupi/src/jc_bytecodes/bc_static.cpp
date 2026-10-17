@@ -71,7 +71,6 @@ void Bytecodes::bc_getstatic_a() {
   uint16_t index;
 
   Stack &stack = this->context.getStack();
-  Static_Handler static_handler(context.getCurrentPackage());
   ConstantPool_Handler cp(context.getCurrentPackage());
   Heap &heap = this->context.getHeap();
 
@@ -119,10 +118,9 @@ void Bytecodes::bc_getstatic_a() {
     fieldNumber = static_field_offset;
   }
 
-  fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(packageID, fieldNumber);
-
   jref_t static_field =
-      FlashMemory_Handler::getPersistentField_Reference(tag, heap);
+      Static_Handler(Package(packageID))
+          .getPersistentRef(fieldNumber, heap);
 
   stack.push_Reference(static_field);
 

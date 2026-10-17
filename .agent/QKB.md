@@ -863,3 +863,23 @@ fix.
   root cache should key on the resolved package ID and static-field number,
   update only after successful `PUTSTATIC_A`, and define invalidation for
   package/app deletion or context teardown before it becomes a collector root.
+
+## Canonical roots for serialized static references — 2026-10-17
+
+- **Cause:** `GETSTATIC_A` decoded the serialized reference from flash on every
+  read. Each decode appended a fresh array or instance to the heap. Repeated
+  reads therefore returned different handles and retained duplicate wrappers.
+- **Viable fix:** Route `GETSTATIC_A` through `Static_Handler::getPersistentRef`
+  and cache each restored handle in the owning `Heap`, keyed by resolved
+  package ID and static-field number. `PUTSTATIC_A` updates the root only after
+  the persistent write succeeds. The heap lifetime matches the selected
+  applet context; this VM destroys that context on deselect, and GP DELETE
+  deselects before deleting package state.
+- **Regression:** JCSystem transaction-probe case 14 reads the install-written
+  static object twice after restore and checks reference identity. The focused
+  VPCD case returned `019000`; the full VPCD suite passed 17/17 in 109.117 s.
+  PC and ARM builds passed. No hardware or RISC-V build was used.
+- **Limit:** This only canonicalizes Java static references; it is not a
+  collector and does not make heap slots reusable. If persistent transaction
+  rollback becomes supported for static references, the in-memory root must
+  also be reconciled on abort.

@@ -1,5 +1,25 @@
 # Handoff
 
+## Latest continuation — canonical static reference roots — 2026-10-17
+
+- `GETSTATIC_A` previously deserialized object/array references from flash on
+  every read, causing duplicate heap entries and broken Java reference
+  identity. It now goes through `Static_Handler::getPersistentRef`, which
+  caches references by package ID and static field in the current applet heap.
+  Successful `PUTSTATIC_A` writes refresh the root.
+- The per-heap roots are scoped to the selected applet context. The lifecycle
+  trace confirmed context destruction on deselect and GP DELETE deselection
+  before package removal.
+- Added transaction-probe case 14. Focused VPCD case passed (`019000`); full
+  VPCD regression passed 17/17 in 109.117 s. `./tools/build-pc`,
+  `./tools/build-jcsystem-transaction-probe`, and `./tools/build arm` passed.
+  No hardware or RISC-V build was used.
+- This is root canonicalization only, not garbage collection or heap-slot
+  reuse. If persistent transaction rollback is implemented for static fields,
+  ensure abort also reconciles cached roots.
+- Next: stage and commit only this feature, its regression, records, and its
+  validation logs; keep unrelated worktree modifications out of the commit.
+
 ## Latest continuation — prevent restricted-context USB probes — 2026-10-17
 
 - Hardened shell and Python USB/PCSC guards to fail closed unless the caller

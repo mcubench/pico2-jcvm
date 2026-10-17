@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 14),
+        "--case", type=int, action="append", choices=range(1, 15),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -151,6 +151,7 @@ def main() -> int:
                                2, 2, 0, 2, 1, 3, 1, 3, 0)),
                         "OwnerPINx try limit and predecrement behavior",
                     ),
+                    (14, b"\x01", "static reference identity after restore"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

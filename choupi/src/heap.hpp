@@ -39,6 +39,7 @@
 #include "types.hpp"
 
 #include <memory>
+#include <vector>
 
 namespace jcvm {
 
@@ -46,6 +47,13 @@ class JC_Array; // Forward declaration of JC_Array
 enum ClearEvent : uint8_t;
 
 class Heap {
+public:
+  struct StaticReferenceRoot {
+    jpackage_ID_t package_id;
+    uint16_t field_number;
+    jref_t reference;
+  };
+
 private:
   ///
   const japplet_ID_t owner;
@@ -54,6 +62,8 @@ private:
   List<std::shared_ptr<JC_Array>> arrays;
   /// List of instance in the heap.
   List<std::shared_ptr<JC_Instance>> instances;
+  /// Canonical handles for serialized Java static reference fields.
+  std::vector<StaticReferenceRoot> static_reference_roots;
 
   /// Getting field reference from an instance reference.
   // jc_field_t &getFieldFromInstanceRef(jref_t objectref, uint16_t index);
@@ -79,6 +89,12 @@ public:
                      const jclass_index_t instantiated_class);
   /// Adding an instance in in the transient heap.
   jref_t addInstance(JC_Instance &&instance);
+  /// Look up or update a package/static-field reference cached for this heap.
+  bool getStaticReferenceRoot(jpackage_ID_t package_id,
+                              uint16_t field_number,
+                              jref_t &reference) const noexcept;
+  void setStaticReferenceRoot(jpackage_ID_t package_id,
+                              uint16_t field_number, jref_t reference);
 
   /// Getting array from the transient heap.
   std::shared_ptr<JC_Array> getArray(const jref_t objectref)

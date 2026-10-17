@@ -15,12 +15,14 @@ import javacard.security.InitializedMessageDigest;
 import javacard.security.CryptoException;
 
 public final class JCTransactionProbe extends Applet {
+  private static Object staticReferenceRoot;
   private byte value = 0x11;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
   private final byte[] shaDigest = new byte[32];
 
   private JCTransactionProbe() {
     register();
+    staticReferenceRoot = this;
   }
 
   public static void install(byte[] bArray, short bOffset, byte bLength) {
@@ -207,6 +209,13 @@ public final class JCTransactionProbe extends Applet {
         buffer[14] = predecrement.getTriesRemaining();
         buffer[15] = (byte)(predecrement.isValidated() ? 1 : 0);
         length = 16;
+        break;
+      }
+      case 14: {
+        Object first = staticReferenceRoot;
+        Object second = staticReferenceRoot;
+        buffer[0] = (byte)(first == second ? 1 : 0);
+        length = 1;
         break;
       }
       default:
