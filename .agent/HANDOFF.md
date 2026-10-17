@@ -3869,3 +3869,28 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   serial capture. Preserve unrelated worktree changes.
 - Evidence logs: final builds, flash, boot, focused reader probe, full official
   run and serial panic are listed in `.agent/QKB.md`.
+
+## Physical cipher OOM root cause — 2026-10-17
+
+- Continued with per-APDU heap and stack counters on the physical Pico. The
+  official JCAlgTest 1.8.2 static run again passed five AES-128 CBC no-padding
+  `Cipher_doFinal` baselines (average `566.4 ms`) and failed on the first
+  50-call measurement with `SCARD_E_READER_UNAVAILABLE`. The board then
+  recovered through the watchdog path.
+- **Root cause identified:** VM arrays and instances are append-only in
+  `Heap`; no garbage collector or object removal exists, and
+  `JCSystem.requestObjectDeletion()` is a no-op. Cipher repeats allocate about
+  two tracked arrays per call; the static suite accumulated 594 arrays and 192
+  instances before the failing APDU. The frame stack was empty after every
+  completed APDU (high-water 11), ruling out the JSR/frame leak for this OOM.
+- The temporary counter instrumentation has been removed. ARM and RISC-V
+  builds passed; the clean ARM firmware was flashed and bounded boot output
+  again showed `TEST:PASS choupi_runtime`. Board is back in normal running mode.
+- Do not delete indexed heap entries, clear the heap per APDU, or pool by array
+  size: `jref_t` encodes list offsets and live refs may reside in statics,
+  object/persistent fields, or active frames. Next implementation step is a
+  GC/root-lifetime design that preserves handles, then test allocation/reuse
+  across the full static workload. Until then, the official static suite is
+  unresolved; unsupported `NO_SUCH_ALGORITHM` rows remain expected.
+- Evidence files and hashes are recorded in the latest `Physical
+  ALG_PERFORMANCE_STATIC heap retention` section of `.agent/QKB.md`.

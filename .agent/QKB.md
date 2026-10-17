@@ -439,3 +439,51 @@ fix.
   `artifacts/logs/jcalgtest-jsr-final-reader-probe-20261017.log`,
   `artifacts/logs/jcalgtest-static-jsr-pc-slot-reuse-final-20261017.log`, and
   `artifacts/logs/monitor-arm-jsr-pc-slot-reuse-static-final-20261017.log`.
+
+## Physical ALG_PERFORMANCE_STATIC heap retention — 2026-10-17
+
+- **Confirmed remaining OOM cause:** The RP2350 VM heap has no object
+  reclamation. `Heap::addArray()` and `Heap::addInstance()` append owning
+  `shared_ptr`s to index-addressed lists, and there is no removal/GC path.
+  `Heap::clearTransientArrays()` clears transient array contents but does not
+  remove array objects. The JNI implementation of
+  `JCSystem.requestObjectDeletion()` is currently a no-op. This causes
+  unreachable Java objects created by repeated JCAlgTest cipher calls to
+  accumulate until the global allocator fails. The JSR saved-PC defect was
+  independent and already fixed; this heap retention is the remaining static
+  suite failure.
+- **Physical evidence:** With temporary per-APDU counters on the named reader,
+  the official 1.8.2 `ALG_PERFORMANCE_STATIC` run passed SELECT, GETVERSION,
+  JCSystem info, SHA digest operations, and the five AES-128 CBC no-padding
+  `Cipher_doFinal` baselines (average `566.4 ms`). The first 50-call measurement
+  then returned `SCARD_E_READER_UNAVAILABLE`; the board recovered through its
+  watchdog path. During cipher measurements, each 50-call operation added
+  about 100 tracked arrays (roughly two per operation) and added instances as
+  cipher/key objects were created. Before the failing AES measurement, the
+  counters showed `arrays=594 instances=192 frames=0 frame_high=6`; the final
+  APDU could not print its completion counters because allocation failed.
+  SHA-256 `B041` repeat calls kept the tracked array count flat at 13, so the
+  observed growth is in the cipher measurement path, not the SHA accelerator.
+- **Stack ruled out:** After each completed APDU the interpreter frame count
+  was zero, with maximum observed frame high-water `11`. The failure is not a
+  retained interpreter call stack.
+- **Safe-fix constraint:** Heap offsets are encoded directly in `jref_t` and
+  instances/arrays can be retained by statics, object fields, persistent
+  fields, APDU state, and active frames. Deleting list entries or resetting
+  per APDU would invalidate live references. A correct fix needs a tracing
+  collector or a carefully specified allocation lifetime/root scheme that
+  scans every reference-bearing root and preserves/remaps indexed handles.
+  Do not paper over this by clearing the heap or pooling arrays by size.
+- **Validation and cleanup:** ARM and RISC-V wrapper builds passed with the
+  temporary counters. The instrumented image booted and its reader probe
+  passed. After evidence capture, the temporary counters were removed, both
+  architectures rebuilt successfully, and the clean ARM image was flashed;
+  bounded serial output reported `TEST:PASS choupi_runtime` with no
+  `TEST:FAIL`/`FAULT`. The official static suite remains failed and must not be
+  reported as passing. `NO_SUCH_ALGORITHM` remains expected.
+- **Evidence:**
+  `artifacts/logs/jcalgtest-static-memory-counters-20261017.log`;
+  `artifacts/logs/monitor-arm-jsr-memory-counters-static-20261017.log`;
+  `artifacts/logs/monitor-arm-jsr-memory-counters-post-failure-20261017.log`;
+  `artifacts/logs/monitor-arm-jsr-memory-counters-cleanup-20261017.log`;
+  and build/flash records with the `jsr-memory-counters` stem.
