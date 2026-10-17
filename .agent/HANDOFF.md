@@ -3830,3 +3830,9 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   inspect whether its prepare status is unsupported or a runtime error. Avoid
   expanding implementation to algorithms JCAlgTest explicitly reports as
   `NO_SUCH_ALGORITHM`.
+- Final cleanup after the official run removed the temporary DES virtual and
+  interface dispatch prints. Rebuilt ARM and RISC-V, reflashed the ARM image,
+  captured bounded clean boot/runtime logs (`TEST:PASS choupi_runtime`), and
+  reran `--des-cipher-prepare`; it still returned `AA9000`. The committed
+  diagnostic-build suite result remains valid; the final clean image has the
+  exact focused prepare and runtime self-test retested.

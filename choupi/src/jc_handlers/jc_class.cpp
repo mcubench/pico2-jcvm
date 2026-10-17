@@ -444,21 +444,8 @@ Class_Handler::getImplementedInterfaceMethodOffset(
   ConstantPool_Handler cp_handler(this->package);
   ConstantPool_Handler interface_cp(interface_package);
   const auto requested_interface = interface_cp.classref2interface(interface);
-  std::printf(
-      "CHOUPI:INTERFACE_RESOLVE_BEGIN caller_package=%u receiver_class=%u "
-      "interface_class=%u method=%u array=%u\r\n",
-      static_cast<unsigned>(this->package.getPackageID()),
-      static_cast<unsigned>(class_ref.internal_classref),
-      static_cast<unsigned>(interface.internal_classref),
-      static_cast<unsigned>(implemented_interface_method_number),
-      static_cast<unsigned>(isArray));
   auto claz = (isArray ? this->getObjectClassFromAnObjectRef(class_ref)
                        : cp_handler.classref2class(class_ref));
-  std::printf(
-      "CHOUPI:INTERFACE_RESOLVE_CLASS package=%u class=%u count=%u\r\n",
-      static_cast<unsigned>(claz.first.getPackageID()),
-      static_cast<unsigned>(class_ref.internal_classref),
-      static_cast<unsigned>(claz.second->interface_count));
 
   for (uint16_t index = 0; index < claz.second->interface_count; ++index) {
     const auto &interfaces = claz.second->interfaces(index);
@@ -468,30 +455,8 @@ Class_Handler::getImplementedInterfaceMethodOffset(
     if (implemented_interface.first == requested_interface.first &&
         implemented_interface.second == requested_interface.second) {
 
-      if (this->package.getPackageID() ==
-          FlashMemory_Handler::DYNAMIC_PACKAGE_ID) {
-        const auto method_indexes = interfaces.indexes();
-        std::printf(
-            "CHOUPI:INTERFACE_DISPATCH receiver_package=%u receiver_class=%u "
-            "interface_class=%u token=%u count=%u\r\n",
-            static_cast<unsigned>(claz.first.getPackageID()),
-            static_cast<unsigned>(class_ref.internal_classref),
-            static_cast<unsigned>(interface.internal_classref),
-            static_cast<unsigned>(implemented_interface_method_number),
-            static_cast<unsigned>(method_indexes.size()));
-      }
-
       uint8_t public_method_offset =
           interfaces.indexes().at(implemented_interface_method_number);
-      std::printf(
-          "CHOUPI:INTERFACE_MATCH caller_package=%u receiver_package=%u "
-          "class_ref=%u method=%u table_count=%u public_token=%u\r\n",
-          static_cast<unsigned>(interface_package.getPackageID()),
-          static_cast<unsigned>(claz.first.getPackageID()),
-          static_cast<unsigned>(class_ref.internal_classref),
-          static_cast<unsigned>(implemented_interface_method_number),
-          static_cast<unsigned>(interfaces.indexes().size()),
-          static_cast<unsigned>(public_method_offset));
 
       if (isArray) {
         return this->doGetPublicMethodOffset(claz.first, claz.second,

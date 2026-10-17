@@ -195,48 +195,6 @@ void Bytecodes::bc_invokevirtual() {
         virtual_method_ref_info, receiver_instance->getPackageID(),
         receiver_instance->getClassIndex());
   }();
-  if (context.getCurrentPackage().getPackageID() ==
-      FlashMemory_Handler::DYNAMIC_PACKAGE_ID) {
-    const auto receiver_instance =
-        receiver.isArray() ? nullptr : context.getHeap().getInstance(receiver);
-    uint8_t mapped_method_token = virtual_method_ref_info.token;
-    if (virtual_method_ref_info.class_ref.isExternalClassRef()) {
-      const uint8_t package_token =
-          virtual_method_ref_info.class_ref.external_classref.package_token &
-          0x7F;
-      const uint8_t class_token =
-          virtual_method_ref_info.class_ref.external_classref.class_token;
-      const auto *package_info =
-          Import_Handler(context.getCurrentPackage())
-              .getPackageAID(package_token);
-      mapped_method_token = remap_imported_virtual_method_token(
-          *package_info, class_token, virtual_method_ref_info.token);
-    }
-    std::printf(
-        "CHOUPI:VIRTUAL_DISPATCH package=%u import=%u class_token=%u "
-        "method_raw=%u method_mapped=%u declared=%u:%u receiver=%u:%u "
-        "target=%u:%u nargs=%u\r\n",
-        static_cast<unsigned>(context.getCurrentPackage().getPackageID()),
-        static_cast<unsigned>(virtual_method_ref_info.class_ref.isExternalClassRef()
-                                  ? virtual_method_ref_info.class_ref.external_classref.package_token & 0x7F
-                                  : 0xFF),
-        static_cast<unsigned>(virtual_method_ref_info.class_ref.isExternalClassRef()
-                                  ? virtual_method_ref_info.class_ref.external_classref.class_token
-                                  : 0xFF),
-        static_cast<unsigned>(virtual_method_ref_info.token),
-        static_cast<unsigned>(mapped_method_token),
-        static_cast<unsigned>(declared_method.first.getPackageID()),
-        static_cast<unsigned>(declared_method.second),
-        receiver_instance
-            ? static_cast<unsigned>(receiver_instance->getPackageID())
-            : 0xFFu,
-        receiver_instance
-            ? static_cast<unsigned>(receiver_instance->getClassIndex())
-            : 0xFFFFu,
-        static_cast<unsigned>(method_offset.first.getPackageID()),
-        static_cast<unsigned>(method_offset.second),
-        static_cast<unsigned>(nargs));
-  }
   // Calling the method and updating PC value
   method_handler.setPackage(method_offset.first);
   method_handler.callVirtualMethod(method_offset.second);
@@ -674,12 +632,6 @@ void Bytecodes::bc_invokeinterface() {
   uint16_t index = pc.getNextShort();
   uint8_t method = pc.getNextByte();
 
-  std::printf(
-      "CHOUPI:INVOKEINTERFACE package=%u nargs=%u cp_index=%u method=%u\r\n",
-      static_cast<unsigned>(context.getCurrentPackage().getPackageID()),
-      static_cast<unsigned>(nargs), static_cast<unsigned>(index),
-      static_cast<unsigned>(method));
-
   if (nargs == 0) {
     throw Exceptions::SecurityException;
   }
@@ -692,26 +644,10 @@ void Bytecodes::bc_invokeinterface() {
         interface_ref.external_classref.package_token & 0x7F);
     interface_method = remap_imported_interface_method_token(
         *package_info, interface_ref.external_classref.class_token, method);
-    std::printf(
-        "CHOUPI:INTERFACE_TOKEN_MAP package_token=%u class_token=%u "
-        "aid=%02X%02X%02X%02X%02X%02X%02X raw=%u mapped=%u\r\n",
-        static_cast<unsigned>(
-            interface_ref.external_classref.package_token & 0x7F),
-        static_cast<unsigned>(interface_ref.external_classref.class_token),
-        package_info->AID[0], package_info->AID[1], package_info->AID[2],
-        package_info->AID[3], package_info->AID[4], package_info->AID[5],
-        package_info->AID[6], static_cast<unsigned>(method),
-        static_cast<unsigned>(interface_method));
   }
-  std::printf("CHOUPI:INVOKEINTERFACE_RESOLVED class=%u\r\n",
-              static_cast<unsigned>(interface_ref.internal_classref));
 
   // nargs-th arguments should be popped to access the objectref.
   jref_t objectref = stack.get_Pushed_Element(nargs);
-  std::printf("CHOUPI:INVOKEINTERFACE_RECEIVER ref=%04X array=%u null=%u\r\n",
-              static_cast<unsigned>(objectref.compact()),
-              static_cast<unsigned>(objectref.isArray()),
-              static_cast<unsigned>(objectref.isNullPointer()));
 
   if (objectref.isNullPointer()) {
     throw Exceptions::NullPointerException;

@@ -4359,3 +4359,13 @@
 - Decision: Preserve import/export method-order comparisons as a compatibility check. Triage the first remaining failure at its prepare APDU before changing algorithm support.
 - Commit: `aca9c3e` (metadata recorded in a follow-up commit)
 - Artifacts/logs: `artifacts/logs/jcalgtest-des-cipher-token-map-fix-20261017.log` (SHA-256 `6e0997e4d9de771fdb7d69d664986bbdfdd48512a98fe914beccfe773e6ee3f9`); `artifacts/logs/jcalgtest-static-des-cipher-token-map-fix-20261017.log` (SHA-256 `0bd56cada46732f5eb399b3a9c59808ddf7466de67fde87ed11fe6aee4795980`); raw result `artifacts/results/jcalgtest-static-des-cipher-token-map-fix-20261017/ALGTEST_log_1792236553761.log`; CSV and bounded serial capture are in the same result/log directories. Build and flash logs are under `artifacts/logs/`.
+
+## 2026-10-17 — Remove temporary DES dispatch diagnostics
+
+- Step/experiment: `physical-jcalgtest-des-diagnostic-cleanup`
+- Change: Removed temporary virtual/interface dispatch `printf` traces used to identify JC305 token order. Kept the verified method translation and cross-package interface resolution.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Flashed the final ARM image to the physical Pico. Bounded boot and APDU captures reported `TEST:PASS choupi_runtime`, no `TEST:FAIL` or `FAULT`; `./tools/probe-jc-algtest --des-cipher-prepare` returned `AA9000` after cleanup.
+- Result: The fix passes on the final firmware without per-dispatch diagnostic output. The official full static suite was run successfully on the preceding diagnostic image with the same functional mappings; the remaining first 3-key DES ISO9797 M1 `6F00` remains open.
+- Decision: Keep the production virtual/interface dispatch path free of this investigation's high-volume trace output; next isolate the later prepare failure only if continuing suite triage.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/build-arm-des-cipher-cleanup-20261017.log`; `artifacts/logs/build-riscv-des-cipher-cleanup-20261017.log`; `artifacts/logs/flash-arm-des-cipher-cleanup-20261017.log`; `artifacts/logs/monitor-arm-des-cipher-cleanup-boot-20261017.log`; `artifacts/logs/monitor-arm-des-cipher-cleanup-apdu-20261017.log`; `artifacts/logs/jcalgtest-des-cipher-cleanup-20261017.log`.
