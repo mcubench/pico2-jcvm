@@ -1,5 +1,38 @@
 # Handoff
 
+## Latest continuation — stream collector roots and remove traversal buffers — 2026-10-18
+
+- Replaced dynamic GC worklist traversal with repeated stable-handle bitmap
+  scans. Root and child references stream directly from `Context`/`Heap` into
+  the marks, eliminating the large temporary root vector, pending queue, and
+  child-reference vector. Mark states are 0 unreachable, 1 pending, and 2
+  scanned; collection still sweeps only after a complete walk.
+- ARM, RISC-V, and PC builds passed. The final `./tools/cycle choupi` passed
+  on the physical Pico 2 with `TEST:SUMMARY pass=1 fail=0`.
+- The physical JCAlgTest 1.8.2 static run reached 544 CSV rows, beyond the
+  previous collector OOM point at 512 rows, without an allocation failure,
+  panic, or GC-skip marker in the serial capture. It stopped when PC/SC returned
+  `SCARD_E_READER_UNAVAILABLE` during AES-192. A recovery probe after the first
+  interruption passed SELECT, GETVERSION, JCSystem info, and DES prepare
+  (`AA9000`). A later probe showed SELECT reached firmware but GETVERSION was
+  absent from serial; the USB ACL helper intermittently found zero devices or
+  Java could not enumerate the Pico reader. This looks like a separate
+  USB/PCSC passthrough issue. Do not report the static matrix as complete.
+- The earlier fixed-capacity worklist attempt was not viable: it failed at a
+  1,642-byte allocation. Removing the root vector was necessary after the
+  bitmap-only walk still hit a 2,048-byte root-list allocation at 528 rows.
+- Relevant evidence: `artifacts/logs/build-{arm,riscv,pc}-gc-stream-roots-final-20261018.log`,
+  `artifacts/logs/cycle-choupi-gc-stream-roots-final-20261018.log`,
+  `artifacts/logs/monitor-static-gc-stream-roots-20261018.log`,
+  `artifacts/logs/jcalgtest-static-gc-stream-roots-20261018.log`, and the
+  partial result directory
+  `artifacts/results/physical-perf-static-gc-stream-roots-20261018/`.
+- Next: diagnose the intermittent host USB/PCSC loss. Compare host USB
+  enumeration, PC/SC reader visibility, and the firmware's CCID receive
+  counters at the exact failed APDU. Then rerun static testing and resume the
+  JCSystem/context audit. Keep expected `NO_SUCH_ALGORITHM` rows out of the bug
+  count.
+
 ## Latest continuation — add project status overview — 2026-10-18
 
 - Added root `STATUS.md` as the concise current-state summary, with tested

@@ -71,6 +71,15 @@ std::unique_ptr<jcvm::Context> selected_applet_context;
 bool selected_applet_is_active = false;
 pico2_jcvm::ShortApduResponseChain pending_apdu_response;
 
+#ifndef PC_VERSION
+void enumerate_selected_applet_roots(
+    jcvm::Heap::ReferenceVisitor visitor, void *visitor_context,
+    void *context) {
+  static_cast<const jcvm::Context *>(context)->visitRootReferences(
+      visitor, visitor_context);
+}
+#endif
+
 #ifdef PC_VERSION
 void trace_heap_after_apdu_if_enabled() {
   const char *trace_setting = std::getenv("PICO2_HEAP_TRACE");
@@ -142,9 +151,8 @@ void collect_heap_after_apdu() {
   }
 
   try {
-    std::vector<jcvm::jref_t> roots;
-    context.appendRootReferences(roots);
-    const auto summary = context.getHeap().collectUnreachableFrom(roots);
+    const auto summary = context.getHeap().collectUnreachableFrom(
+        enumerate_selected_applet_roots, &context);
     if (!summary.complete) {
       std::printf(
           "CHOUPI:HEAP_GC_SKIP invalid=%u edge_failures=%u\r\n",

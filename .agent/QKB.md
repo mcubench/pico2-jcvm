@@ -1589,3 +1589,46 @@ fix.
   `artifacts/logs/monitor-heap-unwind-stress-20261018.log`,
   `artifacts/logs/jcalgtest-static-heap-unwind-final-20261018.log`, and
   `artifacts/logs/monitor-static-heap-unwind-final-20261018.log`.
+
+## Collector scratch vectors exhausted RP2350 heap — 2026-10-18
+
+- **Symptom:** After exception frames were unwound, physical
+  `ALG_PERFORMANCE_STATIC` still panicked around 512 rows. First the tracing
+  worklist grew from 1,622 to 3,244 bytes and failed. Reserving the maximum
+  local handle count avoided that growth pattern but requested a 1,642-byte
+  contiguous block and failed around 508 rows. Removing the worklist and child
+  vector advanced to 528 rows, then the temporary root vector requested 2,048
+  bytes and failed.
+- **Viable collector fix:** Stream root and child references directly into
+  stable-slot mark bitmaps. Reuse each mark byte as `0` unreachable, `1` marked
+  and pending, and `2` scanned; repeatedly scan the stable handle tables until
+  no new references are marked. This removes the temporary root list, pending
+  queue, and child-reference vector. The sweep remains gated on a complete
+  trace, and stable handle slots are preserved.
+- **Validation:** ARM, RISC-V, and PC builds passed. The physical CHOUPI cycle
+  passed (`TEST:SUMMARY pass=1 fail=0`). The official static client reached
+  544 CSV rows, beyond the previous OOM point, with no allocation-failure,
+  panic, or GC-skip marker in serial output. The client then lost PC/SC access
+  during an AES-192 APDU. A later focused trace showed SELECT reached the
+  firmware, but GETVERSION was not received. A subsequent Java scan could not
+  see the reader despite the authorized USB ACL helper finding the device.
+  Another focused probe after the earlier interruption did pass SELECT,
+  GETVERSION, JCSystem info, and DES prepare (`AA9000`). Thus the collector OOM
+  is addressed through the observed threshold, but full static completion is
+  still unverified; the remaining interruption appears in the host USB/PCSC
+  path and needs a separate diagnosis.
+- **Regression guidance:** During future long physical runs, capture serial
+  output in parallel. On `SCARD_E_READER_UNAVAILABLE`, check whether the APDU
+  appears in CHOUPI's CCID counters/logs before attributing it to the VM. Run a
+  focused SELECT/GETVERSION after restoring access; do not count skipped or
+  transport-failed rows as algorithm outcomes.
+- Evidence: `artifacts/logs/cycle-choupi-gc-stream-roots-final-20261018.log`,
+  `artifacts/logs/monitor-static-gc-stream-roots-20261018.log`,
+  `artifacts/logs/jcalgtest-static-gc-stream-roots-20261018.log`,
+  `artifacts/logs/monitor-gc-stream-roots-recovery-probe-20261018.log`, and
+  `artifacts/logs/physical-gc-stream-roots-recovery-20261018.log`. The rejected
+  allocation strategies are captured in
+  `artifacts/logs/jcalgtest-static-worklist-bound-20261018.log`,
+  `artifacts/logs/monitor-static-worklist-bound-20261018.log`,
+  `artifacts/logs/jcalgtest-static-gc-bitmap-20261018.log`, and
+  `artifacts/logs/monitor-static-gc-bitmap-20261018.log`.

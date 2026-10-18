@@ -136,6 +136,9 @@ public:
   uint16_t consumePendingSystemExceptionReason() noexcept;
   /// Append context and heap-owned Java references for root tracing.
   void appendRootReferences(std::vector<jref_t> &references) const;
+  /// Visit context and heap-owned references without a temporary root vector.
+  void visitRootReferences(Heap::ReferenceVisitor visitor,
+                           void *visitor_context) const;
   /// Get context Java Card stack.
   Stack &getStack() noexcept;
   /// Get context heap.

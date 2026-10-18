@@ -44,10 +44,14 @@
 namespace jcvm {
 
 class JC_Array; // Forward declaration of JC_Array
+class Context;
 enum ClearEvent : uint8_t;
 
 class Heap {
 public:
+  using ReferenceVisitor = void (*)(jref_t, void *);
+  using RootReferenceEnumerator = void (*)(ReferenceVisitor, void *, void *);
+
   struct StaticReferenceRoot {
     jpackage_ID_t package_id;
     uint16_t field_number;
@@ -92,7 +96,7 @@ private:
 
   /// Mark roots and typed children into stable-slot bitmaps.
   ReachabilitySummary traceAndMark(
-      const std::vector<jref_t> &roots,
+      RootReferenceEnumerator enumerate_roots, void *root_context,
       std::vector<uint8_t> &marked_arrays,
       std::vector<uint8_t> &marked_instances);
 
@@ -140,9 +144,13 @@ public:
                               uint16_t field_number, jref_t reference);
   /// Append VM-owned roots held by this heap.
   void appendRootReferences(std::vector<jref_t> &references) const;
-  /// Append typed object/array children for one live reference.
-  void appendChildReferences(const jref_t reference,
-                             std::vector<jref_t> &references);
+  /// Visit VM-owned roots without allocating a temporary reference vector.
+  void visitRootReferences(ReferenceVisitor visitor,
+                           void *visitor_context) const;
+  /// Visit typed object/array children without allocating a temporary buffer.
+  void visitChildReferences(const jref_t reference,
+                            ReferenceVisitor visitor,
+                            void *visitor_context);
   /// Resolve a heap-owned array pointer back to its stable handle.
   bool getArrayReference(const JC_Array *array, jref_t &reference) const;
   /// Resolve an already-loaded persistent object/array by its flash tag.
@@ -154,6 +162,9 @@ public:
   /// Reclaim unmarked local slots only after a complete mark pass.
   ReachabilitySummary collectUnreachableFrom(
       const std::vector<jref_t> &roots);
+  /// Reclaim using a streamed root set and no root/worklist buffers.
+  ReachabilitySummary collectUnreachableFrom(
+      RootReferenceEnumerator enumerate_roots, void *root_context);
 
   /// Getting array from the transient heap.
   std::shared_ptr<JC_Array> getArray(const jref_t objectref)

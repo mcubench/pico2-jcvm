@@ -317,20 +317,28 @@ uint16_t Context::consumePendingSystemExceptionReason() noexcept {
 
 void Context::appendRootReferences(
     std::vector<jref_t> &references) const {
-  this->heap.appendRootReferences(references);
+  const auto append_reference = [](const jref_t reference, void *opaque) {
+    static_cast<std::vector<jref_t> *>(opaque)->push_back(reference);
+  };
+  this->visitRootReferences(append_reference, &references);
+}
+
+void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
+                                  void *visitor_context) const {
+  this->heap.visitRootReferences(visitor, visitor_context);
   const jref_t direct_roots[] = {
       this->applet_aid_object_ref, this->registered_applet_ref,
       this->restored_applet_ref, this->apdu_buffer_ref,
       this->apdu_object_ref, this->apdu_outgoing_buffer_ref};
   for (const jref_t &reference : direct_roots) {
     if (!reference.isNullPointer()) {
-      references.push_back(reference);
+      visitor(reference, visitor_context);
     }
   }
   jref_t root_return_reference;
   if (this->stack.getRootReferenceReturnValue(root_return_reference) &&
       !root_return_reference.isNullPointer()) {
-    references.push_back(root_return_reference);
+    visitor(root_return_reference, visitor_context);
   }
   const auto append_array_mirror = [&](const std::shared_ptr<JC_Array> &array) {
     if (!array) {
@@ -340,7 +348,7 @@ void Context::appendRootReferences(
     if (!this->heap.getArrayReference(array.get(), reference)) {
       throw Exceptions::SecurityException;
     }
-    references.push_back(reference);
+    visitor(reference, visitor_context);
   };
   append_array_mirror(this->apdu_java_buffer);
   append_array_mirror(this->apdu_outgoing_buffer);

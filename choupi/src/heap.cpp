@@ -26,6 +26,7 @@
 */
 
 #include "heap.hpp"
+#include "context.hpp"
 #include "jc_handlers/jc_cp.hpp"
 #include "jc_types/jc_array.hpp"
 
@@ -43,10 +44,27 @@ namespace jcvm {
 namespace {
 constexpr uint16_t kMaximumLocalArrayHandles = 0x3fff;
 
+struct VectorRootContext {
+  const std::vector<jref_t> *roots;
+};
+
 Heap &globalArrayHeap() {
   static Heap heap(0, true);
   return heap;
 }
+
+void appendRootToVector(const jref_t reference, void *opaque) {
+  static_cast<std::vector<jref_t> *>(opaque)->push_back(reference);
+}
+
+void enumerateVectorRoots(Heap::ReferenceVisitor visitor,
+                          void *visitor_context, void *root_context) {
+  const auto &roots = *static_cast<VectorRootContext *>(root_context)->roots;
+  for (const jref_t &root : roots) {
+    visitor(root, visitor_context);
+  }
+}
+
 } // namespace
 
 /**
@@ -368,21 +386,26 @@ void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
 }
 
 void Heap::appendRootReferences(std::vector<jref_t> &references) const {
+  this->visitRootReferences(appendRootToVector, &references);
+}
+
+void Heap::visitRootReferences(const ReferenceVisitor visitor,
+                               void *visitor_context) const {
   const jref_t runtime_roots[] = {this->runtime_crypto_exception_rom,
                                   this->runtime_crypto_exception_imported};
   for (const jref_t &reference : runtime_roots) {
     if (!reference.isNullPointer()) {
-      references.push_back(reference);
+      visitor(reference, visitor_context);
     }
   }
   for (const RuntimeExceptionRoot &root : this->runtime_exception_roots) {
     if (!root.reference.isNullPointer()) {
-      references.push_back(root.reference);
+      visitor(root.reference, visitor_context);
     }
   }
   for (const StaticReferenceRoot &root : this->static_reference_roots) {
     if (!root.reference.isNullPointer()) {
-      references.push_back(root.reference);
+      visitor(root.reference, visitor_context);
     }
   }
 
@@ -397,7 +420,7 @@ void Heap::appendRootReferences(std::vector<jref_t> &references) const {
       jref_t reference;
       reference.setAsArray(true);
       reference.setOffset(offset);
-      references.push_back(reference);
+      visitor(reference, visitor_context);
     }
   }
 
@@ -408,7 +431,7 @@ void Heap::appendRootReferences(std::vector<jref_t> &references) const {
       jref_t reference;
       reference.setAsArray(false);
       reference.setOffset(offset);
-      references.push_back(reference);
+      visitor(reference, visitor_context);
     }
   }
 }
@@ -468,8 +491,9 @@ bool Heap::getPersistentReference(const fs::Tag &tag,
   return false;
 }
 
-void Heap::appendChildReferences(const jref_t reference,
-                                 std::vector<jref_t> &references) {
+void Heap::visitChildReferences(const jref_t reference,
+                                const ReferenceVisitor visitor,
+                                void *visitor_context) {
   // Global arrays belong to the separate JCRE heap and are reclaimed by the
   // reset lifecycle, not by an applet heap walk.
   if (reference.isNullPointer() || reference.isGlobalArray()) {
@@ -483,7 +507,7 @@ void Heap::appendChildReferences(const jref_t reference,
     for (uint16_t index = 0; index < array->size(); ++index) {
       const jref_t child = array->getReferenceEntry(index);
       if (!child.isNullPointer()) {
-        references.push_back(child);
+        visitor(child, visitor_context);
       }
     }
     return;
@@ -500,7 +524,7 @@ void Heap::appendChildReferences(const jref_t reference,
         if (child.isArray()) {
           throw Exceptions::SecurityException;
         }
-        references.push_back(child);
+        visitor(child, visitor_context);
       }
       break;
     }
@@ -523,7 +547,7 @@ void Heap::appendChildReferences(const jref_t reference,
         if (!child.isArray()) {
           throw Exceptions::SecurityException;
         }
-        references.push_back(child);
+        visitor(child, visitor_context);
       }
       break;
     }
@@ -534,16 +558,14 @@ void Heap::appendChildReferences(const jref_t reference,
 }
 
 Heap::ReachabilitySummary Heap::traceAndMark(
-    const std::vector<jref_t> &roots,
+    const RootReferenceEnumerator enumerate_roots, void *root_context,
     std::vector<uint8_t> &marked_arrays,
     std::vector<uint8_t> &marked_instances) {
   ReachabilitySummary summary;
   marked_arrays.assign(this->arrays.size(), 0);
   marked_instances.assign(this->instances.size(), 0);
-  std::vector<jref_t> pending;
-  pending.reserve(roots.size());
-
-  const auto enqueue = [&](const jref_t reference) {
+  bool found_new_reference = false;
+  const auto mark_reference = [&](const jref_t reference) {
     // Global-array handles use the same reference bit as local arrays, but
     // their offset belongs to the runtime-wide global heap. Never interpret
     // that offset as a local applet-heap slot.
@@ -567,33 +589,59 @@ Heap::ReachabilitySummary Heap::traceAndMark(
       summary.complete = false;
       return;
     }
-    if (marks.size() < slot_count) {
-      marks.resize(slot_count, 0);
-    }
     const std::size_t mark_index = offset - 1;
     if (marks[mark_index] == 0) {
       marks[mark_index] = 1;
-      pending.push_back(reference);
+      found_new_reference = true;
     }
   };
 
-  for (const jref_t &root : roots) {
-    enqueue(root);
-  }
+  struct VisitorContext {
+    const decltype(mark_reference) *mark_fn;
+  } visitor_context{&mark_reference};
+  const auto visit_child = [](const jref_t child, void *opaque) {
+    const auto &context = *static_cast<VisitorContext *>(opaque);
+    (*context.mark_fn)(child);
+  };
 
-  std::vector<jref_t> children;
-  for (std::size_t cursor = 0; cursor < pending.size(); ++cursor) {
-    children.clear();
-    try {
-      this->appendChildReferences(pending[cursor], children);
-    } catch (Exceptions) {
-      ++summary.edge_load_failures;
-      summary.complete = false;
+  enumerate_roots(visit_child, &visitor_context, root_context);
+
+  // A mark byte is also the work state: zero is unreachable, one is marked
+  // and pending, and two is fully scanned. Repeated stable-slot passes avoid
+  // heap allocations for a work queue and a per-object child buffer.
+  do {
+    found_new_reference = false;
+    for (std::size_t index = 0; index < marked_arrays.size(); ++index) {
+      if (marked_arrays[index] != 1) {
+        continue;
+      }
+      marked_arrays[index] = 2;
+      jref_t reference;
+      reference.setAsArray(true);
+      reference.setOffset(static_cast<uint16_t>(index + 1));
+      try {
+        this->visitChildReferences(reference, visit_child, &visitor_context);
+      } catch (Exceptions) {
+        ++summary.edge_load_failures;
+        summary.complete = false;
+      }
     }
-    for (const jref_t &child : children) {
-      enqueue(child);
+    for (std::size_t index = 0; index < marked_instances.size(); ++index) {
+      if (marked_instances[index] != 1) {
+        continue;
+      }
+      marked_instances[index] = 2;
+      jref_t reference;
+      reference.setAsArray(false);
+      reference.setOffset(static_cast<uint16_t>(index + 1));
+      try {
+        this->visitChildReferences(reference, visit_child, &visitor_context);
+      } catch (Exceptions) {
+        ++summary.edge_load_failures;
+        summary.complete = false;
+      }
     }
-  }
+  } while (found_new_reference);
 
   summary.arrays_total = static_cast<uint32_t>(this->arrays.size());
   summary.instances_total = static_cast<uint32_t>(this->instances.size());
@@ -610,7 +658,9 @@ Heap::ReachabilitySummary Heap::traceReachableFrom(
     const std::vector<jref_t> &roots) {
   std::vector<uint8_t> marked_arrays;
   std::vector<uint8_t> marked_instances;
-  return this->traceAndMark(roots, marked_arrays, marked_instances);
+  VectorRootContext root_context{&roots};
+  return this->traceAndMark(enumerateVectorRoots, &root_context,
+                            marked_arrays, marked_instances);
 }
 
 Heap::ReachabilitySummary Heap::collectUnreachableFrom(
@@ -623,7 +673,46 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
 
   std::vector<uint8_t> marked_arrays;
   std::vector<uint8_t> marked_instances;
-  summary = this->traceAndMark(roots, marked_arrays, marked_instances);
+  VectorRootContext root_context{&roots};
+  summary = this->traceAndMark(enumerateVectorRoots, &root_context,
+                               marked_arrays, marked_instances);
+  if (!summary.complete) {
+    return summary;
+  }
+
+  std::size_t index = 0;
+  for (auto &array : this->arrays) {
+    if (array && (index >= marked_arrays.size() || marked_arrays[index] == 0)) {
+      array.reset();
+      ++summary.arrays_reclaimed;
+    }
+    ++index;
+  }
+
+  index = 0;
+  for (auto &instance : this->instances) {
+    if (instance &&
+        (index >= marked_instances.size() || marked_instances[index] == 0)) {
+      instance.reset();
+      ++summary.instances_reclaimed;
+    }
+    ++index;
+  }
+  return summary;
+}
+
+Heap::ReachabilitySummary Heap::collectUnreachableFrom(
+    const RootReferenceEnumerator enumerate_roots, void *root_context) {
+  ReachabilitySummary summary;
+  if (this->global_heap) {
+    summary.complete = false;
+    return summary;
+  }
+
+  std::vector<uint8_t> marked_arrays;
+  std::vector<uint8_t> marked_instances;
+  summary = this->traceAndMark(enumerate_roots, root_context, marked_arrays,
+                               marked_instances);
   if (!summary.complete) {
     return summary;
   }
