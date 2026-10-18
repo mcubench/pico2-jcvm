@@ -4735,7 +4735,7 @@
   complete root set; these counts are not safe for reclamation.
 - Decision: Expose remaining VM roots and establish a quiescent post-APDU
   invocation before considering any slot reclamation or reuse.
-- Commit: `PENDING`.
+- Commit: `a7f1f58`.
 - Artifacts/logs: `artifacts/logs/build-pc-heap-mark-only-20261018.log`,
   `artifacts/logs/build-arm-heap-mark-only-20261018.log`,
   `artifacts/logs/build-riscv-heap-mark-only-20261018.log`, and
