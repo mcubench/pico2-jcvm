@@ -5266,3 +5266,23 @@
   materially changes; retain `HANDOFF.md` for chronological session details.
 - Commit: `b3e845a`.
 - Artifacts/logs: `STATUS.md`.
+
+## 2026-10-18 — Exclude global arrays from applet heap tracing
+
+- Step/experiment: `heap-trace-global-array-classification`
+- Change: Updated the mark-only heap tracer to ignore global-array handles
+  when marking applet-local slots or traversing local heap children. Global
+  arrays belong to the runtime-wide heap and use reset lifecycle handling.
+- Validation: `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc`
+  passed. Focused VPCD JCSystem cases 36–41 passed with
+  `PICO2_HEAP_TRACE=2` (`TEST:SUMMARY pass=8 fail=0`); all 12 trace passes were
+  complete with zero invalid references and zero edge-load failures. The
+  official JCAlgTest VPCD harness was attempted but timed out at GETVERSION
+  after 20 seconds per APDU; it did not reach an algorithm query. No board was
+  accessed. Existing Rust and packed-member warnings remain in the PC build.
+- Result: Global-array offsets no longer falsely mark applet-local arrays in
+  the diagnostic tracer. No heap slots are reclaimed or reused.
+- Decision: Continue root completeness audit before implementing a sweep.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/heap-global-tracer-focused-vpcd-20261018.log`
+  (SHA-256 `3ebc56b04665c3e0cf87b9e51a0456d6a8c9c7c2125dc05bdce12feb254c01e2`).

@@ -1139,6 +1139,25 @@ fix.
 - **Decision:** Audit remaining persistent/runtime root paths, add a focused
   test for root-set completeness, and only then design stable-slot tombstones.
 
+### Global arrays are outside applet-heap tracing
+
+- **Cause:** `jref_t` marks global arrays with the array bit plus an offset
+  bit, but `Heap::traceReachableFrom()` previously treated every array handle
+  offset as an index into the local applet heap. A global handle could
+  therefore falsely mark an unrelated local array, and child traversal could
+  walk a global array as if it were owned by the applet heap.
+- **Viable fix:** Ignore global-array references when enqueueing local heap
+  marks and when enumerating children. Global arrays are owned by the runtime
+  global heap and follow the separate reset lifecycle.
+- **Validation:** PC, ARM, and RISC-V builds passed. VPCD JCSystem cases 36–41
+  passed with two trace passes after each APDU: 12 traces complete, zero
+  invalid references, and zero edge-load failures. One local array was
+  unreachable in cases 40–41, as expected; no slots were mutated. The focused
+  log is `artifacts/logs/heap-global-tracer-focused-vpcd-20261018.log`.
+- **Limit:** This fixes a tracer classification error; it does not establish
+  complete roots for all native/global holders and does not authorize heap
+  reclamation. Reclamation remains disabled.
+
 ### Repeated-walk validation
 
 - The PC diagnostic accepts a repeat count from `PICO2_HEAP_TRACE`, clamped

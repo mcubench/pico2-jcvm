@@ -4535,6 +4535,26 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `Heap::addArray/addInstance` counts, rebuild both architectures, then repeat
   the exact AES static APDU on a freshly reset physical image with bounded
   serial capture. Preserve unrelated worktree changes.
+
+## 2026-10-18 — Heap tracer global-array classification
+
+- The next STATUS priority remains heap retention. The current worktree already
+  has an opt-in, mark-only post-APDU tracer; no reclamation is enabled.
+- Fixed a tracer bug: global-array handles encode an offset in the runtime-wide
+  heap and must not be interpreted as local applet array slots. The local mark
+  walk now skips global roots and their children.
+- PC, ARM, and RISC-V builds passed. Focused JCSystem VPCD cases 36–41 passed
+  with `PICO2_HEAP_TRACE=2`: 12 traces complete, no invalid handles or edge
+  failures. One local array remained unreachable in cases 40–41; slots were
+  not cleared or reused. Log:
+  `artifacts/logs/heap-global-tracer-focused-vpcd-20261018.log`.
+- An official JCAlgTest VPCD attempt was stopped at GETVERSION after the 20 s
+  per-APDU timeout; the previous SELECT succeeded. Do not treat that as a
+  regression result for the heap change or as a JCAlgTest pass.
+- Next: continue the root inventory, especially any persistent/native roots
+  outside `Context` and `Heap`; add tests that distinguish local from global
+  handle marks. Do not enable tombstoning/reuse until that audit is complete.
+- Preserve all unrelated dirty worktree files. No physical board was flashed.
 - Evidence logs: final builds, flash, boot, focused reader probe, full official
   run and serial panic are listed in `.agent/QKB.md`.
 

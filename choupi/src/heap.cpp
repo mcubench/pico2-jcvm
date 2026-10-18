@@ -378,7 +378,9 @@ bool Heap::getPersistentReference(const fs::Tag &tag,
 
 void Heap::appendChildReferences(const jref_t reference,
                                  std::vector<jref_t> &references) {
-  if (reference.isNullPointer()) {
+  // Global arrays belong to the separate JCRE heap and are reclaimed by the
+  // reset lifecycle, not by an applet heap walk.
+  if (reference.isNullPointer() || reference.isGlobalArray()) {
     return;
   }
   if (reference.isArray()) {
@@ -448,7 +450,10 @@ Heap::ReachabilitySummary Heap::traceReachableFrom(
   pending.reserve(roots.size());
 
   const auto enqueue = [&](const jref_t reference) {
-    if (reference.isNullPointer()) {
+    // Global-array handles use the same reference bit as local arrays, but
+    // their offset belongs to the runtime-wide global heap. Never interpret
+    // that offset as a local applet-heap slot.
+    if (reference.isNullPointer() || reference.isGlobalArray()) {
       return;
     }
     const uint16_t offset = reference.getOffset();
