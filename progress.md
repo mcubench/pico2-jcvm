@@ -5081,6 +5081,6 @@
 - Decision: Continue auditing remaining JCSystem method stubs and lifecycle
   behavior. Cross-applet context caching remains unverified; heap reclamation
   stays disabled.
-- Commit: `PENDING`.
+- Commit: `370a1bd`.
 - Artifacts/logs: `artifacts/logs/jcsystem-transient-lifecycle-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-transient-lifecycle-full-vpcd-20261018.log`.
