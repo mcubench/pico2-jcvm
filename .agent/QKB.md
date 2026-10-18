@@ -1037,3 +1037,23 @@ fix.
   for every persistent reference-array/alias graph or prove root completeness
   for all applets. Repeated tracing is diagnostic only and has measurable
   overhead; leave it disabled in normal operation.
+
+## Persistent reference-array child identity — 2026-10-18
+
+- A focused VPCD probe exposed a separate identity defect: a persistent
+  `Object[]` containing the same `byte[]` twice restored two different child
+  handles (`first == second` was false). Persistent object references already
+  had alias handling, but array references serialized each occurrence under a
+  distinct field tag.
+- Persistent arrays now retain their canonical flash tag after a successful
+  write. Repeated writes at another reference location store an array-alias
+  record; reads resolve that record back to the canonical array tag. Heap
+  lookup by persistent tag also reuses a previously loaded instance or array.
+- Focused case 15 passed with `019000`; the full VPCD JCSystem suite passed
+  18/18 in 81.386 s. The two-pass diagnostic emitted 18 paired trace results;
+  every walk completed with zero invalid handles and zero edge-load failures.
+  No hardware was flashed or accessed.
+- This verifies repeated array children in the exercised persistent array
+  shape. It does not cover cyclic object arrays, all persistent field layouts,
+  or safe slot reclamation. Keep tombstones and reuse disabled pending broader
+  root and alias validation.

@@ -49,6 +49,7 @@ namespace jcvm {
 namespace {
 
 constexpr uint8_t kPersistentObjectAlias = 0xFE;
+constexpr uint8_t kPersistentArrayAlias = 0xFD;
 constexpr size_t kMaxPersistentObjectDepth = TAG_MAX_LENGTH / 2 + 1;
 
 struct PersistentObjectFrame {
@@ -181,6 +182,27 @@ void write_persistent_object_alias(const fs::Tag &tag,
   if (write_persistent_tag(tag, data, 2 + target_tag.len)) {
     throw Exceptions::IOException;
   }
+}
+
+void write_persistent_array_alias(const fs::Tag &tag,
+                                  const fs::Tag &target_tag) {
+  uint8_t data[2 + TAG_MAX_LENGTH] = {kPersistentArrayAlias, target_tag.len};
+  std::memcpy(data + 2, target_tag.value, target_tag.len);
+  if (write_persistent_tag(tag, data, 2 + target_tag.len)) {
+    throw Exceptions::IOException;
+  }
+}
+
+fs::Tag read_persistent_alias_target(uint32_t length, const uint8_t *data) {
+  if (length < 2 || data[1] == 0 ||
+      length != static_cast<uint32_t>(2u + data[1]) ||
+      data[1] > TAG_MAX_LENGTH) {
+    throw Exceptions::SecurityException;
+  }
+  fs::Tag target_tag;
+  target_tag.len = data[1];
+  std::memcpy(target_tag.value, data + 2, target_tag.len);
+  return target_tag;
 }
 
 } // namespace
@@ -410,6 +432,10 @@ void FlashMemory_Handler::writeArray(const fs::Tag &tag, const FieldType type,
     throw Exceptions::IOException;
   }
 
+  if (!array.isTransientArray()) {
+    array.setPersistentTag(tag);
+  }
+
 }
 ///
 ///        Compute tag to access to persistant data
@@ -570,6 +596,11 @@ const fs::Tag FlashMemory_Handler::getAppletInstanceTag(
  */
 jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
                                                          Heap &heap) {
+  jref_t existing_reference;
+  if (heap.getPersistentReference(tag, existing_reference)) {
+    return existing_reference;
+  }
+
   uint32_t length = 0;
   const uint8_t *data = nullptr;
 
@@ -621,7 +652,15 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
     const jpackage_ID_t package = target_data[1];
     const jclass_index_t claz =
         static_cast<jclass_index_t>(BYTES_TO_SHORT(target_data[2], target_data[3]));
+    if (heap.getPersistentReference(target_tag, existing_reference)) {
+      return existing_reference;
+    }
     return heap.addInstance(JC_Instance(heap, package, claz, target_tag));
+  }
+
+  if (data[0] == kPersistentArrayAlias) {
+    const fs::Tag target_tag = read_persistent_alias_target(length, data);
+    return FlashMemory_Handler::getPersistentField_Reference(target_tag, heap);
   }
 
   if (type == FieldType::FIELD_TYPE_UNINITIALIZED) {
@@ -744,6 +783,34 @@ FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &tag) {
   if (data[0] == kPersistentObjectAlias) {
     return FieldType::FIELD_TYPE_OBJECT;
   }
+  if (data[0] == kPersistentArrayAlias) {
+    const fs::Tag target_tag = read_persistent_alias_target(length, data);
+    auto [target_length, target_data] =
+        FlashMemory_Handler::getDataInPlaceFromTag(target_tag);
+    if (target_length == 0 || target_data == nullptr) {
+      throw Exceptions::SecurityException;
+    }
+    const FieldType target_type = static_cast<FieldType>(target_data[0]);
+    switch (target_type) {
+    case FieldType::FIELD_TYPE_ARRAY_BYTE:
+    case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
+    case FieldType::FIELD_TYPE_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+    case FieldType::FIELD_TYPE_ARRAY_INT:
+#endif
+    case FieldType::FIELD_TYPE_ARRAY_OBJECT:
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
+#endif
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT:
+      return target_type;
+    default:
+      throw Exceptions::SecurityException;
+    }
+  }
   return static_cast<FieldType>(data[0]);
 }
 
@@ -793,6 +860,13 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
 
   if (value.isArray()) {
     auto array = heap.getArray(value);
+    if (array->isPersistent() && !array->isTransientArray()) {
+      const fs::Tag array_tag = array->getPersistentTag();
+      if (!tags_equal(tag, array_tag)) {
+        write_persistent_array_alias(tag, array_tag);
+      }
+      return;
+    }
     FlashMemory_Handler::setPersistentField_Array(tag, *array, heap);
     return;
   }
@@ -1014,7 +1088,14 @@ void FlashMemory_Handler::setPersistentField_Instance(
       }
 
       auto array = heap.getArray(arrayref);
-      FlashMemory_Handler::writeArray(field_tag, field.type, *array, heap);
+      if (array->isPersistent() && !array->isTransientArray()) {
+        const fs::Tag array_tag = array->getPersistentTag();
+        if (!tags_equal(field_tag, array_tag)) {
+          write_persistent_array_alias(field_tag, array_tag);
+        }
+      } else {
+        FlashMemory_Handler::writeArray(field_tag, field.type, *array, heap);
+      }
 
       break;
     }

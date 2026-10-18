@@ -63,6 +63,9 @@ private:
   const jc_cp_offset_t reference_type;
   /// Data
   JCVMArray<uint8_t> array;
+  /// Canonical flash identity once this array is serialized persistently.
+  fs::Tag persistent_tag;
+  bool has_persistent_tag = false;
   /// When to clear data
   ClearEvent clear;
 
@@ -164,6 +167,13 @@ public:
 
   /// Get a const pointer to array data
   const uint8_t *getData() const;
+
+  /// Get the backing tag for a persistent array.
+  fs::Tag getPersistentTag() const noexcept { return this->computeTag(); }
+  /// Assign the persistent tag after first successful serialization.
+  void setPersistentTag(const fs::Tag &tag) noexcept;
+  /// Whether this array already has a canonical persistent identity.
+  bool hasPersistentTag() const noexcept { return this->has_persistent_tag; }
 
   /// Is a transient array
   const bool isTransientArray() const noexcept;

@@ -29,6 +29,8 @@
 #include "jc_handlers/jc_cp.hpp"
 #include "jc_types/jc_array.hpp"
 
+#include <cstring>
+
 #include <algorithm>
 #include <utility>
 
@@ -240,6 +242,42 @@ bool Heap::getArrayReference(const JC_Array *array, jref_t &reference) const {
       reference.setAsArray(true);
       reference.setOffset(offset);
       return true;
+    }
+  }
+  return false;
+}
+
+bool Heap::getPersistentReference(const fs::Tag &tag,
+                                  jref_t &reference) const noexcept {
+  if (tag.len > sizeof(tag.value)) {
+    return false;
+  }
+
+  uint16_t offset = 0;
+  for (const auto &array : this->arrays) {
+    ++offset;
+    if (array && array->hasPersistentTag()) {
+      const fs::Tag candidate = array->getPersistentTag();
+      if (candidate.len == tag.len &&
+          std::memcmp(candidate.value, tag.value, tag.len) == 0) {
+        reference.setAsArray(true);
+        reference.setOffset(offset);
+        return true;
+      }
+    }
+  }
+
+  offset = 0;
+  for (const auto &instance : this->instances) {
+    ++offset;
+    if (instance && instance->hasPersistentTag()) {
+      const fs::Tag candidate = instance->getPersistentTag();
+      if (candidate.len == tag.len &&
+          std::memcmp(candidate.value, tag.value, tag.len) == 0) {
+        reference.setAsArray(false);
+        reference.setOffset(offset);
+        return true;
+      }
     }
   }
   return false;

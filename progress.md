@@ -4825,3 +4825,27 @@
   `artifacts/logs/build-arm-heap-trace-repeat-20261018.log`,
   `artifacts/logs/build-riscv-heap-trace-repeat-20261018.log`, and
   `artifacts/logs/jcsystem-heap-trace-repeat-vpcd-20261018.log`.
+## 2026-10-18 — Canonicalize persistent reference-array children
+
+- Step/experiment: `persistent-array-child-identity`
+- Change: Persisted arrays now retain their canonical flash tag. Repeated
+  persistent references encode an array alias and resolve through heap lookup
+  by persistent tag. Added case 15 for two entries referencing one shared
+  byte array.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. Focused case 15 passed (`019000`, 3/3 checks).
+  Full VPCD JCSystem regression with `PICO2_HEAP_TRACE=2` passed
+  `TEST:SUMMARY pass=18 fail=0 elapsed_s=81.386`. All 36 trace walks completed
+  with zero invalid refs and zero edge-load failures. No hardware was used.
+- Result: The test reproduced false reference identity before the fix and
+  passed after alias canonicalization. This covers the tested array-child
+  graph only; cyclic arrays and other persistent layouts remain unverified.
+- Decision: Keep reclamation disabled. Expand alias/root coverage before any
+  tombstone or stable-slot reuse design.
+- Commit: `<pending>`.
+- Artifacts/logs: `artifacts/logs/build-pc-persistent-array-identity-final-20261018.log`,
+  `artifacts/logs/build-arm-persistent-array-identity-final-20261018.log`,
+  `artifacts/logs/build-riscv-persistent-array-identity-final-20261018.log`,
+  `artifacts/logs/jcsystem-persistent-array-identity-fix-vpcd-20261018.log`,
+  and `artifacts/logs/jcsystem-persistent-array-identity-full-vpcd-20261018.log`.
+

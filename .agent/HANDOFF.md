@@ -1,5 +1,24 @@
 # Handoff
 
+## Latest continuation — canonicalize persistent array children — 2026-10-18
+
+- Added regression case 15: a persistent `Object[]` stores the same byte array
+  twice and checks that both restored entries are reference-identical. The
+  first focused run failed (`00`), exposing that array children lacked the
+  persistent alias handling already used for objects.
+- Persistent arrays now retain their canonical tag after a successful write;
+  repeated references persist as tag aliases and resolve through the heap's
+  canonical persistent-tag lookup. Temporary `PARRAYTRACE` output was removed.
+- PC, ARM, and RISC-V builds passed. Focused VPCD case 15 passed (`019000`),
+  and the full JCSystem suite with two heap walks per APDU passed 18/18 in
+  81.386 s. All 36 walks completed with zero invalid refs or edge failures.
+  No board was used.
+- No reclamation or slot reuse was added. Cyclic arrays and other persistent
+  graph shapes remain untested.
+- Next: extend identity coverage to persistent instance fields and array
+  mutation through an alias, then reassess what heap edges/roots are still
+  missing before designing tombstones.
+
 ## Latest continuation — test repeated heap walks — 2026-10-18
 
 - Bounded `PICO2_HEAP_TRACE` to 1–4 consecutive walks per APDU for host

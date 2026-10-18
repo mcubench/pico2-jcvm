@@ -16,6 +16,7 @@ import javacard.security.CryptoException;
 
 public final class JCTransactionProbe extends Applet {
   private static Object staticReferenceRoot;
+  private static Object[] persistentReferenceArray;
   private byte value = 0x11;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
   private final byte[] shaDigest = new byte[32];
@@ -23,6 +24,8 @@ public final class JCTransactionProbe extends Applet {
   private JCTransactionProbe() {
     register();
     staticReferenceRoot = this;
+    byte[] shared = {0x01};
+    persistentReferenceArray = new Object[] {shared, shared};
   }
 
   public static void install(byte[] bArray, short bOffset, byte bLength) {
@@ -214,6 +217,13 @@ public final class JCTransactionProbe extends Applet {
       case 14: {
         Object first = staticReferenceRoot;
         Object second = staticReferenceRoot;
+        buffer[0] = (byte)(first == second ? 1 : 0);
+        length = 1;
+        break;
+      }
+      case 15: {
+        Object first = persistentReferenceArray[0];
+        Object second = persistentReferenceArray[1];
         buffer[0] = (byte)(first == second ? 1 : 0);
         length = 1;
         break;

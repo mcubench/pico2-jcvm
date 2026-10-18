@@ -97,6 +97,8 @@ JC_Array::JC_Array(Heap &owner, const jc_array_type type,
                         sizeof(uint8_t)],
             true),
       clear(event) {
+  this->persistent_tag = tag;
+  this->has_persistent_tag = true;
   this->array[0] = tag.len;
 
   for (uint8_t idx = 0; idx < tag.len; idx++) {
@@ -115,6 +117,10 @@ JC_Array::~JC_Array() noexcept = default;
  * @return tag value
  */
 fs::Tag JC_Array::computeTag() const noexcept {
+  if (this->has_persistent_tag) {
+    return this->persistent_tag;
+  }
+
   fs::Tag out;
 
   out.len = this->array[0];
@@ -124,6 +130,12 @@ fs::Tag JC_Array::computeTag() const noexcept {
   }
 
   return out;
+}
+
+void JC_Array::setPersistentTag(const fs::Tag &tag) noexcept {
+  this->persistent_tag = tag;
+  this->has_persistent_tag = true;
+  this->setPersistent(true);
 }
 
 /**

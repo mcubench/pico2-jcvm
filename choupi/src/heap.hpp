@@ -119,6 +119,9 @@ public:
                              std::vector<jref_t> &references);
   /// Resolve a heap-owned array pointer back to its stable handle.
   bool getArrayReference(const JC_Array *array, jref_t &reference) const;
+  /// Resolve an already-loaded persistent object/array by its flash tag.
+  bool getPersistentReference(const fs::Tag &tag,
+                              jref_t &reference) const noexcept;
   /// Mark reachable handles from a supplied root set without freeing slots.
   ReachabilitySummary traceReachableFrom(
       const std::vector<jref_t> &roots);
