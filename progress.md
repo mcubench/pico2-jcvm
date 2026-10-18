@@ -5510,7 +5510,7 @@
 - Decision: Bound `traceAndMark()` worklist allocation by total stable handle
   count, then rerun a serial-captured physical static suite. Keep
   `NO_SUCH_ALGORITHM` rows expected.
-- Commit: pending
+- Commit: `90238e3`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261018T173718Z.log`;
   `artifacts/logs/physical-heap-unwind-stress-20261018.log` SHA-256
   `89f3f5cdc99bfb5dec9e63312785d1b689af7d68ca45e799a9c2519834abbf5d`;
