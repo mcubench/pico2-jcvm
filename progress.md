@@ -5648,5 +5648,5 @@
   callback and permits a subsequent successful selection.
 - Decision: Continue the applet lifecycle audit with deselect, reset, and
   persistence boundaries; physical transport remains stalled after SELECT.
-- Commit: pending
+- Commit: `c949b1d`
 - Artifacts/logs: `artifacts/logs/jcsystem-applet-lifecycle-vpcd-20261018.log`
