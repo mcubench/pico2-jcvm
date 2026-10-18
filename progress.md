@@ -4778,7 +4778,7 @@
   unenumerated.
 - Decision: Verify the APDU call boundary and establish a quiescent point
   before invoking the tracer; do not reclaim slots yet.
-- Commit: `PENDING`.
+- Commit: `0f2f64b`.
 - Artifacts/logs: `artifacts/logs/build-pc-typed-root-return-20261018.log`,
   `artifacts/logs/build-arm-typed-root-return-20261018.log`,
   `artifacts/logs/build-riscv-typed-root-return-20261018.log`, and
