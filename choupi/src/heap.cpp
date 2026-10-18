@@ -125,6 +125,16 @@ void Heap::clearGlobalArrays(const ClearEvent event) {
 jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type) {
   jref_t ref;
 
+  uint16_t offset = 0;
+  for (auto &slot : this->arrays) {
+    ++offset;
+    if (!slot) {
+      slot = std::make_shared<JC_Array>(*this, nb_entry, type);
+      ref.setAsArray(true);
+      ref.setOffset(offset);
+      return ref;
+    }
+  }
   if (this->arrays.size() >= kMaximumLocalArrayHandles) {
     throw Exceptions::RuntimeException;
   }
@@ -150,6 +160,16 @@ jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type,
                       const jc_cp_offset_t reference_type) {
   jref_t ref;
 
+  uint16_t offset = 0;
+  for (auto &slot : this->arrays) {
+    ++offset;
+    if (!slot) {
+      slot = std::make_shared<JC_Array>(*this, nb_entry, type, reference_type);
+      ref.setAsArray(true);
+      ref.setOffset(offset);
+      return ref;
+    }
+  }
   if (this->arrays.size() >= kMaximumLocalArrayHandles) {
     throw Exceptions::RuntimeException;
   }
@@ -174,6 +194,16 @@ jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type,
 jref_t Heap::addArray(JC_Array array) {
   jref_t ref;
 
+  uint16_t offset = 0;
+  for (auto &slot : this->arrays) {
+    ++offset;
+    if (!slot) {
+      slot = std::make_shared<JC_Array>(array);
+      ref.setAsArray(true);
+      ref.setOffset(offset);
+      return ref;
+    }
+  }
   if (this->arrays.size() >= kMaximumLocalArrayHandles) {
     throw Exceptions::RuntimeException;
   }
@@ -192,7 +222,8 @@ jref_t Heap::addArray(JC_Array array) {
  */
 void Heap::clearTransientArrays(const ClearEvent event) {
   for (auto &array : this->arrays) {
-    if (array->isTransientArray() && array->getClearEvent() == event) {
+    if (array && array->isTransientArray() &&
+        array->getClearEvent() == event) {
       array->clearTransientData();
     }
   }
@@ -211,6 +242,27 @@ void Heap::clearTransientArrays(const ClearEvent event) {
 jref_t Heap::addInstance(const jpackage_ID_t packageID,
                          const jclass_index_t instantiated_class) {
   jref_t ref;
+
+  uint16_t offset = 0;
+  for (auto &slot : this->instances) {
+    ++offset;
+    if (!slot) {
+#ifndef PC_VERSION
+      choupi_install_stage(3);
+#endif
+      slot = std::make_shared<JC_Instance>(*this, packageID,
+                                           instantiated_class);
+#ifndef PC_VERSION
+      choupi_install_stage(10);
+#endif
+      ref.setAsArray(false);
+      ref.setOffset(offset);
+      return ref;
+    }
+  }
+  if (this->instances.size() >= 0x7fff) {
+    throw Exceptions::RuntimeException;
+  }
 
   // Creating and adding new instance in the heap.
 #ifndef PC_VERSION
@@ -235,6 +287,20 @@ jref_t Heap::addInstance(const jpackage_ID_t packageID,
  */
 jref_t Heap::addInstance(JC_Instance &&instance) {
   jref_t ref;
+
+  uint16_t offset = 0;
+  for (auto &slot : this->instances) {
+    ++offset;
+    if (!slot) {
+      slot = std::make_shared<JC_Instance>(std::move(instance));
+      ref.setAsArray(false);
+      ref.setOffset(offset);
+      return ref;
+    }
+  }
+  if (this->instances.size() >= 0x7fff) {
+    throw Exceptions::RuntimeException;
+  }
 
   // Creating and adding new instance in the heap.
   this->instances.push_back(
@@ -467,11 +533,13 @@ void Heap::appendChildReferences(const jref_t reference,
   }
 }
 
-Heap::ReachabilitySummary Heap::traceReachableFrom(
-    const std::vector<jref_t> &roots) {
+Heap::ReachabilitySummary Heap::traceAndMark(
+    const std::vector<jref_t> &roots,
+    std::vector<uint8_t> &marked_arrays,
+    std::vector<uint8_t> &marked_instances) {
   ReachabilitySummary summary;
-  std::vector<uint8_t> marked_arrays(this->arrays.size(), 0);
-  std::vector<uint8_t> marked_instances(this->instances.size(), 0);
+  marked_arrays.assign(this->arrays.size(), 0);
+  marked_instances.assign(this->instances.size(), 0);
   std::vector<jref_t> pending;
   pending.reserve(roots.size());
 
@@ -487,6 +555,14 @@ Heap::ReachabilitySummary Heap::traceReachableFrom(
     const std::size_t slot_count =
         reference.isArray() ? this->arrays.size() : this->instances.size();
     if (offset == 0 || offset > slot_count) {
+      ++summary.invalid_references;
+      summary.complete = false;
+      return;
+    }
+    const bool slot_is_live = reference.isArray()
+                                  ? static_cast<bool>(this->arrays.at(offset - 1))
+                                  : static_cast<bool>(this->instances.at(offset - 1));
+    if (!slot_is_live) {
       ++summary.invalid_references;
       summary.complete = false;
       return;
@@ -530,6 +606,49 @@ Heap::ReachabilitySummary Heap::traceReachableFrom(
   return summary;
 }
 
+Heap::ReachabilitySummary Heap::traceReachableFrom(
+    const std::vector<jref_t> &roots) {
+  std::vector<uint8_t> marked_arrays;
+  std::vector<uint8_t> marked_instances;
+  return this->traceAndMark(roots, marked_arrays, marked_instances);
+}
+
+Heap::ReachabilitySummary Heap::collectUnreachableFrom(
+    const std::vector<jref_t> &roots) {
+  ReachabilitySummary summary;
+  if (this->global_heap) {
+    summary.complete = false;
+    return summary;
+  }
+
+  std::vector<uint8_t> marked_arrays;
+  std::vector<uint8_t> marked_instances;
+  summary = this->traceAndMark(roots, marked_arrays, marked_instances);
+  if (!summary.complete) {
+    return summary;
+  }
+
+  std::size_t index = 0;
+  for (auto &array : this->arrays) {
+    if (array && (index >= marked_arrays.size() || marked_arrays[index] == 0)) {
+      array.reset();
+      ++summary.arrays_reclaimed;
+    }
+    ++index;
+  }
+
+  index = 0;
+  for (auto &instance : this->instances) {
+    if (instance &&
+        (index >= marked_instances.size() || marked_instances[index] == 0)) {
+      instance.reset();
+      ++summary.instances_reclaimed;
+    }
+    ++index;
+  }
+  return summary;
+}
+
 /*
  * Getting array from heap.
  *
@@ -557,7 +676,11 @@ std::shared_ptr<JC_Array> Heap::getArray(const jref_t objectref)
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
-  return this->arrays.at(objectref.getOffset() - 1);
+  const auto array = this->arrays.at(objectref.getOffset() - 1);
+  if (!array) {
+    throw Exceptions::SecurityException;
+  }
+  return array;
 }
 
 /*
@@ -583,7 +706,11 @@ std::shared_ptr<JC_Instance> Heap::getInstance(const jref_t objectref)
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
-  return this->instances.at(objectref.getOffset() - 1);
+  const auto instance = this->instances.at(objectref.getOffset() - 1);
+  if (!instance) {
+    throw Exceptions::SecurityException;
+  }
+  return instance;
 }
 
 } // namespace jcvm

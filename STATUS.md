@@ -21,6 +21,13 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   `JCSystem` APIs.
 - SHA-256 has known-answer and repeated-call coverage. The CCID/PCSC interface
   and physical reader have passed bounded probes in earlier sessions.
+- Heap tracing now has a guarded sweep path in firmware: it runs after APDU
+  interpreter scopes return and only reclaims after a complete root walk.
+  Persistent-tagged objects are conservatively pinned, global arrays are
+  excluded, and stable handle slots are reused. VPCD allocation batches for
+  arrays and objects passed; a 15-minute physical static benchmark run ended
+  at the wrapper timeout after 1,297 cipher measurements returned `6F00`, with
+  no observed allocation failure or PC/SC disconnect.
 
 ## Main gaps
 
@@ -29,9 +36,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
    support, or custom shareable-interface callback and ownership model. The
    current shareable lookup fallback is verified only for the default-null
    probe applet.
-2. **Memory lifecycle:** heap reclamation is disabled. Repeated allocations can
-   exhaust the heap; the physical static benchmark has a documented
-   heap-retention failure.
+2. **Memory lifecycle:** basic stable-slot reclamation is enabled and tested,
+   but persistent objects are pinned until deletion is implemented. The root
+   walk and object ownership model still need broader audits, especially for
+   native-held references and future multi-context operation.
 3. **Physical end-to-end validation:** the physical JCAlgTest support sweep has
    stopped early with reader disconnects, and the full static performance run
    is not passing. Do not report either suite as complete.
@@ -46,8 +54,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 
 ## Next priorities
 
-1. Fix and regression-test heap reclamation/retention, then retry the physical
-   static benchmark.
+1. Diagnose the physical `ALG_PERFORMANCE_STATIC` `6F00` cipher factory path;
+   rerun the suite after that separate failure is fixed. The current bounded
+   run exercised over 1,200 static requests without heap failure or reader
+   loss but did not complete its full matrix.
 2. Diagnose physical CCID reader loss during long JCAlgTest support sweeps.
 3. Define the supported Java Card version/profile, then audit runtime APIs,
    applet lifecycle, and firewall behavior against it.

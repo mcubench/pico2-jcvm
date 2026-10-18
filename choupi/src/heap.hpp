@@ -65,6 +65,8 @@ public:
     uint32_t arrays_reachable = 0;
     uint32_t instances_total = 0;
     uint32_t instances_reachable = 0;
+    uint32_t arrays_reclaimed = 0;
+    uint32_t instances_reclaimed = 0;
     uint32_t invalid_references = 0;
     uint32_t edge_load_failures = 0;
     bool complete = true;
@@ -87,6 +89,12 @@ private:
   std::vector<RuntimeExceptionRoot> runtime_exception_roots;
   /// Canonical handles for serialized Java static reference fields.
   std::vector<StaticReferenceRoot> static_reference_roots;
+
+  /// Mark roots and typed children into stable-slot bitmaps.
+  ReachabilitySummary traceAndMark(
+      const std::vector<jref_t> &roots,
+      std::vector<uint8_t> &marked_arrays,
+      std::vector<uint8_t> &marked_instances);
 
   /// Getting field reference from an instance reference.
   // jc_field_t &getFieldFromInstanceRef(jref_t objectref, uint16_t index);
@@ -142,6 +150,9 @@ public:
                               jref_t &reference) const noexcept;
   /// Mark reachable handles from a supplied root set without freeing slots.
   ReachabilitySummary traceReachableFrom(
+      const std::vector<jref_t> &roots);
+  /// Reclaim unmarked local slots only after a complete mark pass.
+  ReachabilitySummary collectUnreachableFrom(
       const std::vector<jref_t> &roots);
 
   /// Getting array from the transient heap.

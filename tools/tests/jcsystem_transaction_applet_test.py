@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 49),
+        "--case", type=int, action="append", choices=range(1, 55),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -186,6 +186,12 @@ def main() -> int:
                     (46, b"\x01", "integrity-sensitive array support is reported as false"),
                     (47, b"\x03", "integrity-sensitive query handles instances and null"),
                     (48, b"\x03", "shareable lookup returns null for absent servers and the default applet method"),
+                    (49, b"\x01", "transient allocation batch 1 is reclaimed after APDU"),
+                    (50, b"\x01", "transient allocation batch 2 reuses reclaimed slots"),
+                    (51, b"\x01", "transient allocation batch 3 keeps heap size bounded"),
+                    (52, b"\x01", "unreferenced object batch 1 is reclaimed after APDU"),
+                    (53, b"\x01", "unreferenced object batch 2 reuses instance slots"),
+                    (54, b"\x01", "unreferenced object batch 3 keeps instance heap bounded"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

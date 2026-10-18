@@ -5307,3 +5307,42 @@
 - Commit: `510fd14`.
 - Artifacts/logs: `artifacts/logs/heap-persistent-roots-focused-vpcd-20261018.log`
   (SHA-256 `f2e776ef989199e8781811bad8d3a7acb1014e3566dddc1056e9b74c2e651a00`).
+
+## 2026-10-18 — Reclaim unreferenced stable heap slots
+
+- Step/experiment: `heap-stable-slot-reclamation`
+- Change: Added a mark-and-sweep operation that reclaims only after a complete
+  typed root walk. Reclaimed entries remain tombstones so live `jref_t` offsets
+  do not move; future allocations reuse those entries. Firmware runs the sweep
+  after APDU interpreter/native scopes return and skips collection when Java
+  frames remain or tracing/root enumeration is incomplete. Persistent-tagged
+  objects are conservatively pinned; global arrays are excluded. Added probe
+  cases 49–54 for repeated array and object allocation batches.
+- Validation: `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc`
+  passed. VPCD focused GC/root cases passed 17/17 in 96.701 s; all traces were
+  complete with zero invalid references and zero edge-load failures, and the
+  64-element batches reused slots. `./tools/cycle choupi` flashed the physical
+  ARM target and reported `TEST:SUMMARY pass=1 fail=0`; a bounded 240-second
+  serial capture showed `TEST:PASS choupi_runtime` and no heap-GC skip, panic,
+  or allocation-failure marker. Physical JCAlgTest 1.8.2
+  `ALG_PERFORMANCE_STATIC` ran for the wrapper's 900-second limit, then exited
+  124; 1,297 cipher measurements returned `6F00`, with no allocation failure,
+  OOM, fault, or reader-unavailable status in the client log.
+- Result: Stable-slot collection and repeated allocation work in VPCD. The
+  physical long run did not expose heap exhaustion or reader loss, but its
+  static matrix did not complete and the cipher `6F00` failures remain a
+  separate unresolved issue. Loaded persistent objects remain pinned.
+- Decision: Keep reclamation enabled with the complete-trace/empty-stack guards.
+  Next diagnose the cipher factory `6F00` path and rerun the full static suite;
+  later audit native-held roots and implement persistent deletion before
+  claiming general garbage collection.
+- Commit: `pending`.
+- Artifacts/logs: VPCD log
+  `artifacts/logs/heap-collector-full-focused-vpcd-20261018.log`
+  (SHA-256 `bdd4601530b538a6aa8e9d57bfbaca8b8a02a0d5ea801b994adc55e54895bc09`);
+  physical cycle `artifacts/logs/cycle-choupi-20261018T121110Z.log`;
+  physical client log
+  `artifacts/results/physical-perf-static-heap-gc-20261018/ALGTEST_log_1792325580379.log`
+  (SHA-256 `31fc35f16fafac2709ef2ede586c2a14031aff0afa0a63f22195ce8eaea93847`);
+  results CSV SHA-256
+  `33d85895a7e18872ac44bfb7753797e782b4f5e15b89e81821306cb1eb8bf150`.

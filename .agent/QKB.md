@@ -1410,3 +1410,32 @@ fix.
 - **Scope:** The runtime has one selected applet context; this fix reuses that
   context when the same AID is selected again. Cross-applet context caching
   and shareable-interface behavior remain outside this verified path.
+
+## Heap reclamation must preserve Java Card handles — 2026-10-18
+
+- **Cause/risk:** Java references encode offsets into heap tables. Erasing an
+  unreferenced entry shifts later offsets and corrupts still-live references.
+  Persistent static objects can also be lazily restored, so cached static
+  roots alone do not cover every loaded persistent object.
+- **Viable approach:** Trace typed object and array fields from context/runtime
+  roots, then reclaim only after a complete walk. Leave empty table slots as
+  tombstones so surviving handles stay stable; reuse tombstones on later
+  allocation. Pin every loaded persistent-tagged object until deletion and
+  persisted-root enumeration are implemented. Never sweep the separate global
+  array heap as part of an applet heap walk.
+- **Safety condition:** Run only with an empty Java frame stack, after native
+  interpreter scopes have returned. If root enumeration or edge traversal
+  fails, skip the entire sweep. Allocation failure during tracing must also
+  leave heap slots untouched.
+- **Evidence:** VPCD cases 49–54 each allocated 64 arrays or objects across
+  repeated APDUs; the second and third batches reused slots. All 17 selected
+  GC and root regressions passed, with complete traces, zero invalid refs, and
+  zero edge failures. A 15-minute physical `ALG_PERFORMANCE_STATIC` attempt
+  completed 1,297 APDU measurements before the wrapper timeout; all 1,297
+  returned `6F00` in cipher measurement rows, with no allocation failure or
+  reader disconnect in the client log. Bounded serial output showed
+  `TEST:PASS choupi_runtime` and no GC-skip or panic marker.
+- **Limitations:** Loaded persistent objects remain pinned, so this is not
+  persistent-object deletion or full garbage collection. The static suite
+  remains incomplete; the `6F00` cipher factory path is a separate unresolved
+  VM issue. Do not treat expected `NO_SUCH_ALGORITHM` responses as failures.

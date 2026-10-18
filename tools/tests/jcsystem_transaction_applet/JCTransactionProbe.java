@@ -641,6 +641,24 @@ public final class JCTransactionProbe extends Applet {
         length = 1;
         break;
       }
+      case 49:
+      case 50:
+      case 51: {
+        byte[] discarded = null;
+        for (short i = 0; i < 64; i++) discarded = new byte[16];
+        buffer[0] = discarded.length == 16 ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
+      case 52:
+      case 53:
+      case 54: {
+        Object discarded = null;
+        for (short i = 0; i < 64; i++) discarded = new Object();
+        buffer[0] = discarded != null ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
     }

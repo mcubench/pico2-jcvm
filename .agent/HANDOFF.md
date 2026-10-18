@@ -4688,3 +4688,28 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `051b389` and `f3c309a`.
 - Next: continue from the open static benchmark heap-lifetime and reader-path
   issues. Do not access USB or flash hardware without a specific request.
+
+## Latest continuation — stable-slot heap reclamation — 2026-10-18
+
+- Added guarded mark-and-sweep to local applet heaps. It preserves reference
+  offsets by leaving tombstone slots and reuses them on allocation. Persistent
+  objects are pinned, global arrays are excluded, and embedded sweep runs only
+  after interpreter scopes return with an empty Java stack and a complete root
+  walk.
+- ARM, RISC-V, and PC build wrappers passed. Focused VPCD cases 14–16, 36–41,
+  and 49–54 passed (17 total) in 96.701 s; no invalid references or trace edge
+  failures, and allocation batches reused slots. Physical ARM cycle passed
+  `TEST:SUMMARY pass=1 fail=0`.
+- Physical JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` ran 900 seconds and was
+  stopped by the wrapper (exit 124) at RSA CRT 768-bit SHA PKCS#1 signature
+  setup. The client log contains 1,297 `6F00`/`CANT_BE_MEASURED` cipher rows,
+  with no allocation failure, OOM, fault, or reader-unavailable error. A
+  bounded 240-second serial capture showed runtime PASS and no GC-skip/panic
+  marker. Full static results are not established.
+- The installation record in `progress.md` confirms GPPro 26.06.04 sent all
+  LOAD blocks and final INSTALL for the exact supplied CAP; each returned
+  `9000`, and subsequent SELECT/readback confirmed the applet.
+- Next: investigate the static cipher `6F00` independently from expected
+  `NO_SUCH_ALGORITHM`; rerun static after that fix. Then audit native-held
+  roots and persistent-object deletion. Preserve unrelated pre-existing
+  worktree changes and stage only the current step's files and hunks.

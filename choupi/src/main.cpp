@@ -74,14 +74,21 @@ pico2_jcvm::ShortApduResponseChain pending_apdu_response;
 #ifdef PC_VERSION
 void trace_heap_after_apdu_if_enabled() {
   const char *trace_setting = std::getenv("PICO2_HEAP_TRACE");
-  if (trace_setting == nullptr || !selected_applet_context) {
+  const char *collect_setting = std::getenv("PICO2_HEAP_GC");
+  const bool collect_enabled = collect_setting != nullptr &&
+                               std::strcmp(collect_setting, "1") == 0;
+  const bool trace_enabled = trace_setting != nullptr;
+  if ((!trace_enabled && !collect_enabled) || !selected_applet_context) {
     return;
   }
 
-  char *end = nullptr;
-  unsigned long repeat_count = std::strtoul(trace_setting, &end, 10);
-  if (end == trace_setting || *end != '\0' || repeat_count == 0) {
-    repeat_count = 1;
+  unsigned long repeat_count = 1;
+  if (trace_enabled) {
+    char *end = nullptr;
+    repeat_count = std::strtoul(trace_setting, &end, 10);
+    if (end == trace_setting || *end != '\0' || repeat_count == 0) {
+      repeat_count = 1;
+    }
   }
   if (repeat_count > 4) {
     repeat_count = 4;
@@ -97,15 +104,21 @@ void trace_heap_after_apdu_if_enabled() {
     try {
       std::vector<jcvm::jref_t> roots;
       context.appendRootReferences(roots);
-      const auto summary = context.getHeap().traceReachableFrom(roots);
+      const auto summary = collect_enabled
+                               ? context.getHeap().collectUnreachableFrom(roots)
+                               : context.getHeap().traceReachableFrom(roots);
       std::fprintf(stderr,
                    "HEAP_TRACE: pass=%lu roots=%u arrays=%u/%u "
-                   "instances=%u/%u invalid=%u edge_failures=%u complete=%u\n",
+                   "instances=%u/%u reclaimed_arrays=%u "
+                   "reclaimed_instances=%u invalid=%u edge_failures=%u "
+                   "complete=%u\n",
                    pass, static_cast<unsigned>(roots.size()),
                    static_cast<unsigned>(summary.arrays_reachable),
                    static_cast<unsigned>(summary.arrays_total),
                    static_cast<unsigned>(summary.instances_reachable),
                    static_cast<unsigned>(summary.instances_total),
+                   static_cast<unsigned>(summary.arrays_reclaimed),
+                   static_cast<unsigned>(summary.instances_reclaimed),
                    static_cast<unsigned>(summary.invalid_references),
                    static_cast<unsigned>(summary.edge_load_failures),
                    summary.complete ? 1u : 0u);
@@ -114,6 +127,32 @@ void trace_heap_after_apdu_if_enabled() {
                    pass);
       break;
     }
+  }
+}
+#else
+void collect_heap_after_apdu() {
+  if (!selected_applet_context) {
+    return;
+  }
+
+  jcvm::Context &context = *selected_applet_context;
+  if (!context.getStack().empty()) {
+    std::printf("CHOUPI:HEAP_GC_SKIP reason=active_java_frames\r\n");
+    return;
+  }
+
+  try {
+    std::vector<jcvm::jref_t> roots;
+    context.appendRootReferences(roots);
+    const auto summary = context.getHeap().collectUnreachableFrom(roots);
+    if (!summary.complete) {
+      std::printf(
+          "CHOUPI:HEAP_GC_SKIP invalid=%u edge_failures=%u\r\n",
+          static_cast<unsigned>(summary.invalid_references),
+          static_cast<unsigned>(summary.edge_load_failures));
+    }
+  } catch (...) {
+    std::printf("CHOUPI:HEAP_GC_SKIP reason=root_enumeration_failed\r\n");
   }
 }
 #endif
@@ -462,6 +501,10 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
   // The try scope above owns the interpreter and temporary native references.
   // Run diagnostics only after those objects have been destroyed.
   trace_heap_after_apdu_if_enabled();
+#else
+  // Keep Java handles stable by collecting only after interpreter/native call
+  // scopes have returned and the complete typed root walk has succeeded.
+  collect_heap_after_apdu();
 #endif
 
   if (static_cast<uint32_t>(data_length) + 2 > response_capacity) {
