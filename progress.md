@@ -4972,7 +4972,7 @@
   its cause is unresolved and recorded in QKB.
 - Decision: Keep the ArrayStoreException mapping. Continue the remaining VM
   exception audit and separately investigate `new java.lang.Object()`.
-- Commit: `<pending>`.
+- Commit: `3cc4c61`.
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-arraystore-dispatch-final-20261018.log`,
   `artifacts/logs/jcsystem-arraystore-this-probe-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-arraystore-dispatch-full-vpcd-20261018.log`.
