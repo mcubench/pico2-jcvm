@@ -5179,3 +5179,31 @@
   Keep heap reclamation disabled.
 - Commit: `b7d8136`.
 - Artifacts/logs: none.
+
+## 2026-10-18 — Implement JCSystem.makeGlobalArray
+
+- Step/experiment: `jcsystem-makeglobalarray`
+- Change: Added a runtime-wide global-array heap and tagged handles for
+  boolean, byte, short, int, and Object arrays. Global arrays use
+  `CLEAR_ON_RESET`, resolve through applet heaps, and cannot be stored in
+  instance/static fields or array components. Object[] casts recognize the
+  Object component; null entries work, while applet-owned object writes are
+  rejected because shareable-object ownership is not implemented. Added cases
+  36–41 and extended the case selector.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. Focused global-array cases passed. The full
+  VPCD JCSystem suite passed `TEST:SUMMARY pass=44 fail=0 elapsed_s=144.901`.
+  Case 41 was rerun after adding Object[] null-entry coverage and passed. No
+  physical device was accessed. Existing pinned Rust OS and packed CAP-member
+  warnings remain.
+- Result: Primitive/Object global-array creation, access, invalid arguments,
+  transient classification, and reference-store restrictions pass simulator
+  checks. Cross-applet calls and reset clearing through an externally retained
+  global reference remain unverified because this runtime has one applet
+  context and lacks shareable-object ownership.
+- Decision: Continue the JCSystem/runtime API audit. Keep heap reclamation off
+  and treat unsupported algorithm results as expected.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/jcsystem-global-array-focused-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-global-array-full-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-global-array-object-vpcd-20261018.log`.

@@ -1,5 +1,26 @@
 # Handoff
 
+## Latest continuation — implement JCSystem.makeGlobalArray — 2026-10-18
+
+- Implemented runtime-wide JCRE-owned array handles for boolean, byte, short,
+  int (when enabled), and Object arrays. Global arrays are marked transient
+  with `CLEAR_ON_RESET`, resolved through any active applet heap, and cleared
+  on reset. Invalid type reports `SystemException.ILLEGAL_VALUE`; negative
+  length reports `NegativeArraySizeException`.
+- Global-array references are rejected from applet instance/static fields and
+  array components. Global `Object[]` accepts null; writes of applet-owned
+  objects are rejected because this VM does not yet implement shareable object
+  ownership. Global Object[] casts recognize the wildcard Object component.
+- Added JCSystem probe cases 36–41. PC, ARM M33, and RISC-V builds passed. The
+  focused global-array cases passed; case 41 was rerun after adding null-entry
+  coverage and passed. Full VPCD suite passed
+  `TEST:SUMMARY pass=44 fail=0 elapsed_s=144.901`. No physical board was
+  accessed; the current board image remains the ARM smoke firmware.
+- Existing pinned Rust OS and packed CAP-member compiler warnings remain.
+- Next: continue auditing remaining JCSystem/runtime API stubs, starting with
+  `JCSystem.getPreviousContextAID()` and applet-context limitations. Do not
+  treat unsupported algorithm results as VM defects.
+
 ## Latest continuation — add concise hardware JCAlgTest runbook — 2026-10-18
 
 - Created root `readme.md` with copyable steps to extract the official

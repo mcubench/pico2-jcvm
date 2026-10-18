@@ -73,6 +73,8 @@ public:
 private:
   ///
   const japplet_ID_t owner;
+  /// True only for the runtime-wide heap that owns global arrays.
+  const bool global_heap;
 
   /// List of array in the heap.
   List<std::shared_ptr<JC_Array>> arrays;
@@ -91,10 +93,16 @@ private:
 
 public:
   /// Default constructor.
-  Heap(const japplet_ID_t owner) noexcept;
+  Heap(const japplet_ID_t owner, bool global_heap = false) noexcept;
 
   /// Getting the applet ID owner
   japplet_ID_t getOwner() const;
+  bool isGlobalHeap() const noexcept;
+
+  /// Allocate and resolve JCRE-owned temporary global arrays.
+  static jref_t addGlobalArray(uint16_t length, jc_array_type type);
+  static std::shared_ptr<JC_Array> getGlobalArray(jref_t reference);
+  static void clearGlobalArrays(ClearEvent event);
 
   /// Adding new array in the transient heap.
   jref_t addArray(const uint16_t nb_entry, const jc_array_type type);

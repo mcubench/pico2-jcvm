@@ -40,12 +40,22 @@ extern "C" void choupi_install_stage(uint8_t stage);
 
 namespace jcvm {
 
+namespace {
+constexpr uint16_t kMaximumLocalArrayHandles = 0x3fff;
+
+Heap &globalArrayHeap() {
+  static Heap heap(0, true);
+  return heap;
+}
+} // namespace
+
 /**
  * Default constructor.
  *
  * @param[owner] Applet ID owner
  */
-Heap::Heap(const japplet_ID_t owner) noexcept : owner(owner) {}
+Heap::Heap(const japplet_ID_t owner, const bool global_heap) noexcept
+    : owner(owner), global_heap(global_heap) {}
 
 /*
  * Getting the applet ID owner
@@ -53,6 +63,56 @@ Heap::Heap(const japplet_ID_t owner) noexcept : owner(owner) {}
  * @return heap owner.
  */
 japplet_ID_t Heap::getOwner() const { return this->owner; }
+
+bool Heap::isGlobalHeap() const noexcept { return this->global_heap; }
+
+jref_t Heap::addGlobalArray(const uint16_t length, const jc_array_type type) {
+  Heap &heap = globalArrayHeap();
+  if (heap.arrays.size() >= kMaximumLocalArrayHandles) {
+    throw Exceptions::RuntimeException;
+  }
+
+  constexpr ClearEvent clear_on_reset = ClearEvent::CLEAR_ON_RESET;
+  if (type == JAVA_ARRAY_T_REFERENCE) {
+    // A global Object[] has no applet-specific component class. Keep its
+    // component type wildcarded, while giving it the required reset lifetime.
+    heap.arrays.push_back(std::make_shared<JC_Array>(
+        heap, length, type, static_cast<jc_cp_offset_t>(0xffff), true,
+        clear_on_reset));
+  } else {
+    heap.arrays.push_back(std::make_shared<JC_Array>(
+        heap, length, type, true, clear_on_reset));
+  }
+
+  jref_t reference;
+  reference.setAsArray(true);
+  reference.setOffset(static_cast<uint16_t>(heap.arrays.size()));
+  reference.setAsGlobalArray();
+  return reference;
+}
+
+std::shared_ptr<JC_Array> Heap::getGlobalArray(const jref_t reference) {
+  if (!reference.isGlobalArray()) {
+    throw Exceptions::SecurityException;
+  }
+  const uint16_t index = reference.getGlobalArrayIndex();
+  if (index == 0) {
+    throw Exceptions::SecurityException;
+  }
+  return globalArrayHeap().arrays.at(index - 1);
+}
+
+void Heap::clearGlobalArrays(const ClearEvent event) {
+  if (event != ClearEvent::CLEAR_ON_RESET) {
+    return;
+  }
+  for (const auto &array : globalArrayHeap().arrays) {
+    if (array && array->isTransientArray() &&
+        array->getClearEvent() == event) {
+      array->clearTransientData();
+    }
+  }
+}
 
 /*
  * Creating an array of primitive in the heap.
@@ -64,6 +124,10 @@ japplet_ID_t Heap::getOwner() const { return this->owner; }
  */
 jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type) {
   jref_t ref;
+
+  if (this->arrays.size() >= kMaximumLocalArrayHandles) {
+    throw Exceptions::RuntimeException;
+  }
 
   // Creating and adding new array in the heap.
   this->arrays.push_back(std::make_shared<JC_Array>(*this, nb_entry, type));
@@ -86,6 +150,10 @@ jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type,
                       const jc_cp_offset_t reference_type) {
   jref_t ref;
 
+  if (this->arrays.size() >= kMaximumLocalArrayHandles) {
+    throw Exceptions::RuntimeException;
+  }
+
   // Creating and adding new array in the heap.
   this->arrays.push_back(
       std::make_shared<JC_Array>(*this, nb_entry, type, reference_type));
@@ -106,6 +174,10 @@ jref_t Heap::addArray(const uint16_t nb_entry, const jc_array_type type,
 jref_t Heap::addArray(JC_Array array) {
   jref_t ref;
 
+  if (this->arrays.size() >= kMaximumLocalArrayHandles) {
+    throw Exceptions::RuntimeException;
+  }
+
   // Adding new array in the heap.
   this->arrays.push_back(std::make_shared<JC_Array>(array));
 
@@ -123,6 +195,9 @@ void Heap::clearTransientArrays(const ClearEvent event) {
     if (array->isTransientArray() && array->getClearEvent() == event) {
       array->clearTransientData();
     }
+  }
+  if (!this->global_heap && event == ClearEvent::CLEAR_ON_RESET) {
+    Heap::clearGlobalArrays(event);
   }
 }
 
@@ -437,6 +512,10 @@ std::shared_ptr<JC_Array> Heap::getArray(const jref_t objectref)
 
   if (objectref.isNullPointer()) {
     throw Exceptions::NullPointerException;
+  }
+
+  if (objectref.isGlobalArray()) {
+    return Heap::getGlobalArray(objectref);
   }
 
 #ifdef JCVM_SECURE_HEAP_ACCESS

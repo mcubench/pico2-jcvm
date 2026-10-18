@@ -101,6 +101,9 @@ jref_t Static_Handler::getPersistentRef(const uint16_t index,
  */
 void Static_Handler::setPersistentRef(const uint16_t index,
                                       const jref_t value, Heap &heap) {
+  if (value.isGlobalArray()) {
+    throw Exceptions::SecurityException;
+  }
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   FlashMemory_Handler::setPersistentField_Reference(tag, value, heap);

@@ -490,6 +490,9 @@ void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
  * @param[value] new value.
  */
 void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
+  if (ref.isGlobalArray()) {
+    throw Exceptions::SecurityException;
+  }
   if (this->isPersistent()) {
     std::printf("CHOUPI:PUTFIELD_A phase=load index=%u package=%u class=%u\r\n",
                 static_cast<unsigned>(index),

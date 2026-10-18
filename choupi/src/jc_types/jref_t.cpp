@@ -62,6 +62,19 @@ uint16_t jref_t::compact() const noexcept { return this->value.packed; }
  */
 bool jref_t::isArray() const noexcept { return this->value.unpacked.isArray; }
 
+bool jref_t::isGlobalArray() const noexcept {
+  return this->isArray() && (this->value.unpacked.offset & 0x4000u) != 0;
+}
+
+void jref_t::setAsGlobalArray() noexcept {
+  this->setAsArray(true);
+  this->value.unpacked.offset |= 0x4000u;
+}
+
+uint16_t jref_t::getGlobalArrayIndex() const noexcept {
+  return static_cast<uint16_t>(this->value.unpacked.offset & 0x3fffu);
+}
+
 /*
  * Set as an array
  *

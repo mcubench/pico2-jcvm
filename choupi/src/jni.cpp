@@ -38,6 +38,7 @@
 #include "types.hpp"
 
 #include <cstring>
+#include <new>
 #include <algorithm>
 #include "mbedtls/sha256.h"
 #ifndef PC_VERSION
@@ -605,10 +606,46 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
                                     getTransientClearEvent(event));
 }
 
-jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeGlobalArray(jbyte_t,
-                                                                   jshort_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeGlobalArray(
+    const jbyte_t type, const jshort_t length) {
+  Context &context = Context::getActiveContext();
+  if (length < 0) {
+    throw Exceptions::NegativeArraySizeException;
+  }
+
+  jc_array_type array_type;
+  switch (static_cast<uint8_t>(type)) {
+  case 1:
+    array_type = JAVA_ARRAY_T_BOOLEAN;
+    break;
+  case 2:
+    array_type = JAVA_ARRAY_T_BYTE;
+    break;
+  case 3:
+    array_type = JAVA_ARRAY_T_SHORT;
+    break;
+  case 4:
+#ifdef JCVM_INT_SUPPORTED
+    array_type = JAVA_ARRAY_T_INT;
+    break;
+#else
+    context.setPendingSystemExceptionReason(1);
+    throw Exceptions::SystemException;
+#endif
+  case 5:
+    array_type = JAVA_ARRAY_T_REFERENCE;
+    break;
+  default:
+    context.setPendingSystemExceptionReason(1);
+    throw Exceptions::SystemException;
+  }
+
+  try {
+    return Heap::addGlobalArray(static_cast<uint16_t>(length), array_type);
+  } catch (const std::bad_alloc &) {
+    context.setPendingSystemExceptionReason(2);
+    throw Exceptions::SystemException;
+  }
 }
 
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAID() {

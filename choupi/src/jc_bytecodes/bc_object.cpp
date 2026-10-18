@@ -149,6 +149,9 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
   case Exceptions::RuntimeException:
     class_token = 3;
     break;
+  case Exceptions::SecurityException:
+    class_token = 10;
+    break;
   case Exceptions::ArrayStoreException:
     class_token = 11;
     break;
@@ -351,6 +354,18 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
 
       auto current_package = context.getCurrentPackage();
       ConstantPool_Handler constantpool_handler(current_package);
+
+      // Native-created global Object[] arrays use 0xFFFF to denote the
+      // java.lang.Object component. Resolve the requested component and allow
+      // the cast only when it is Object itself; arbitrary reference-array
+      // casts would lose the runtime's component-type check.
+      if (type_in == 0xFFFF) {
+        auto array_reference_classref =
+            constantpool_handler.getClassRef(type_out);
+        auto array_reference_class =
+            constantpool_handler.classref2class(array_reference_classref);
+        return array_reference_class.second->isObjectClass() ? TRUE : FALSE;
+      }
 
       auto type_in_ref = constantpool_handler.getClassRef(type_in);
       auto type_out_ref = constantpool_handler.getClassRef(type_out);

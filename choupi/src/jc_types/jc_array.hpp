@@ -159,11 +159,7 @@ public:
                          ,
                          Context &context
 #endif /* JCVM_FIREWALL_CHECKS */
-                         )
-#if !defined(JCVM_SECURE_HEAP_ACCESS) && !defined(JCVM_FIREWALL_CHECKS)
-      noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
-#endif /* !JCVM_SECURE_HEAP_ACCESS && !JCVM_FIREWALL_CHECKS */
-          ;
+                         );
 
   /// Get a const pointer to array data
   const uint8_t *getData() const;

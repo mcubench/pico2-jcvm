@@ -5,7 +5,26 @@ the reliable recovery, and any limits. Promote only reproducible fixes to the
 viable-solution status; a single successful probe is evidence, not a universal
 fix.
 
-## JCSystem.makeGlobalArray requires global reference semantics — 2026-10-18
+## JCSystem.makeGlobalArray implementation — 2026-10-18
+
+- **Viable fix:** `Heap` now owns a runtime-wide global array heap with tagged
+  references. It creates transient `CLEAR_ON_RESET` arrays for type codes 1–5,
+  resolves them from active applet heaps, and clears their contents on reset.
+  Global array references are rejected from applet instance/static fields and
+  array components. Invalid types raise `SystemException.ILLEGAL_VALUE` and
+  negative lengths raise `NegativeArraySizeException`.
+- **Validation:** Probe cases 36–41 cover byte-array access and transient
+  classification, invalid type/length, reference-storage rejection, Object[]
+  null entry, and applet-object store rejection. PC, ARM M33, and RISC-V builds
+  passed. Focused cases passed; full VPCD suite passed 44/44 in 144.901 s.
+  No physical device was accessed.
+- **Limits:** Only one applet context is modeled, so cross-applet calls and
+  reset clearing through a reference retained across contexts are not directly
+  exercised. The VM has no shareable-object ownership model, so it rejects
+  non-null applet-owned objects in global Object[]. Global handles reserve one
+  bit in the 15-bit array offset, limiting a heap to 16,383 array handles.
+
+### Initial audit (superseded by the implementation above)
 
 - **Finding:** The JC305 API specifies that global arrays are accessible from
   any applet context and that references to them cannot be stored in applet

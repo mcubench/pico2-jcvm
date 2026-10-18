@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 36),
+        "--case", type=int, action="append", choices=range(1, 42),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -173,6 +173,12 @@ def main() -> int:
                     (33, b"\x03", "card reset clears both CLEAR_ON_DESELECT and CLEAR_ON_RESET arrays"),
                     (34, b"\x01", "unsupported object deletion throws SystemException.ILLEGAL_USE"),
                     (35, b"\x01", "isAppletActive recognizes the current applet and rejects an unknown AID"),
+                    (36, b"\x01", "global byte array access and CLEAR_ON_RESET classification"),
+                    (37, b"\x03", "global array invalid type and negative size exceptions"),
+                    (38, b"\x01", "global array references cannot be stored in instance fields"),
+                    (39, b"\x01", "global array references cannot be stored in static fields"),
+                    (40, b"\x01", "global array references cannot be stored in array components"),
+                    (41, b"\x01", "applet objects cannot escape through global object arrays"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

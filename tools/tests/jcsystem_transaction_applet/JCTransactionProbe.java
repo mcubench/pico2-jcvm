@@ -21,6 +21,7 @@ public final class JCTransactionProbe extends Applet {
   private static Object staticReferenceRoot;
   private static Object[] persistentReferenceArray;
   private static SharedArrayHolder persistentReferenceHolder;
+  private Object globalArrayInstanceReference;
   private byte value = 0x11;
   private byte lastApduExceptionReason = (byte)0x7f;
   private byte[] transientResetArray;
@@ -452,6 +453,87 @@ public final class JCTransactionProbe extends Applet {
         AID otherAid = new AID(otherAidBytes, (short)0, (byte)otherAidBytes.length);
         buffer[0] = JCSystem.isAppletActive(JCSystem.getAID()) &&
                 !JCSystem.isAppletActive(otherAid) ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
+      case 36: {
+        byte[] global = (byte[])JCSystem.makeGlobalArray(
+            JCSystem.ARRAY_TYPE_BYTE, (short)2);
+        global[0] = 0x5a;
+        buffer[0] = global[0] == 0x5a &&
+                JCSystem.isTransient(global) == JCSystem.MEMORY_TYPE_TRANSIENT_RESET
+            ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
+      case 37: {
+        byte result = 0;
+        try {
+          JCSystem.makeGlobalArray((byte)0, (short)1);
+        } catch (SystemException e) {
+          if (e.getReason() == SystemException.ILLEGAL_VALUE) result |= 1;
+        }
+        try {
+          JCSystem.makeGlobalArray(JCSystem.ARRAY_TYPE_BYTE, (short)-1);
+        } catch (NegativeArraySizeException e) {
+          result |= 2;
+        }
+        buffer[0] = result;
+        length = 1;
+        break;
+      }
+      case 38: {
+        byte[] global = (byte[])JCSystem.makeGlobalArray(
+            JCSystem.ARRAY_TYPE_BYTE, (short)1);
+        try {
+          globalArrayInstanceReference = global;
+          buffer[0] = 0;
+        } catch (java.lang.SecurityException e) {
+          buffer[0] = 1;
+        }
+        length = 1;
+        break;
+      }
+      case 39: {
+        byte[] global = (byte[])JCSystem.makeGlobalArray(
+            JCSystem.ARRAY_TYPE_BYTE, (short)1);
+        try {
+          staticReferenceRoot = global;
+          buffer[0] = 0;
+        } catch (java.lang.SecurityException e) {
+          buffer[0] = 1;
+        }
+        length = 1;
+        break;
+      }
+      case 40: {
+        byte[] global = (byte[])JCSystem.makeGlobalArray(
+            JCSystem.ARRAY_TYPE_BYTE, (short)1);
+        Object[] local = new Object[1];
+        try {
+          local[0] = global;
+          buffer[0] = 0;
+        } catch (java.lang.SecurityException e) {
+          buffer[0] = 1;
+        }
+        length = 1;
+        break;
+      }
+      case 41: {
+        Object[] global = (Object[])JCSystem.makeGlobalArray(
+            JCSystem.ARRAY_TYPE_OBJECT, (short)1);
+        global[0] = null;
+        if (global[0] != null) {
+          buffer[0] = 0;
+          length = 1;
+          break;
+        }
+        try {
+          global[0] = this;
+          buffer[0] = 0;
+        } catch (java.lang.SecurityException e) {
+          buffer[0] = 1;
+        }
         length = 1;
         break;
       }

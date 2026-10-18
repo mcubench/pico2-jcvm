@@ -29,6 +29,7 @@
 #include "../jc_utils.hpp"
 #include "ffi.h"
 #include "jc_array_type.hpp"
+#include "../heap.hpp"
 
 #ifdef JCVM_FIREWALL_CHECKS
 #include "../context.hpp"
@@ -587,11 +588,15 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value
                                  Context &context
 #endif /* JCVM_FIREWALL_CHECKS */
                                  )
-#if !defined(JCVM_SECURE_HEAP_ACCESS) && !defined(JCVM_FIREWALL_CHECKS)
-    noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
-#endif /* !JCVM_SECURE_HEAP_ACCESS && !JCVM_FIREWALL_CHECKS */
 {
   checkArrayEntryIndex(*this, index);
+  if (value.isGlobalArray() ||
+      (this->getOwner().isGlobalHeap() && !value.isNullPointer())) {
+    // Global-array references cannot be retained in array components. This
+    // runtime has no shareable-object model, so a global Object[] accepts null
+    // entries only until cross-context object ownership is implemented.
+    throw Exceptions::SecurityException;
+  }
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   if (this->type != jc_array_type::JAVA_ARRAY_T_REFERENCE) {
