@@ -1,5 +1,21 @@
 # Handoff
 
+## Latest continuation — add mark-only heap tracing — 2026-10-18
+
+- Added `Heap::traceReachableFrom()` with separate array/instance marks, a
+  deduplicating work queue, offset validation, and mark-vector growth while
+  persistent edge reads append heap entries. It reports incomplete traversal
+  for invalid references or VM edge-load exceptions. It never frees slots.
+- PC, ARM M33, and RISC-V builds passed. The VPCD JCSystem/transaction suite
+  passed 17/17 in 70.499 s. No hardware was flashed or accessed.
+- The tracer is not invoked by runtime code and only covers references passed
+  by its caller. The committed visitors still omit runtime CryptoException
+  roots; Java stack words and native locals are not enumerated. This is not a
+  collector and its counts must not authorize slot reuse.
+- Next: expose all VM-owned roots, establish a quiescent post-APDU point with
+  no outstanding native handles, then add diagnostic mark accounting across
+  repeated APDUs. Preserve stable handles and keep reclamation disabled.
+
 ## Latest continuation — expose heap roots and typed edges — 2026-10-18
 
 - Added `Heap::appendRootReferences()` for cached static references, plus

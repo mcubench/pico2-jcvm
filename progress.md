@@ -4717,3 +4717,26 @@
 - Decision: Add mark-only reachability traversal at a post-APDU quiescent point; defer all slot reclamation and reuse until completeness is demonstrated.
 - Commit: `cb17037`
 - Artifacts/logs: `artifacts/logs/build-pc-heap-root-visitors-20261018.log`, `artifacts/logs/build-arm-heap-root-visitors-20261018.log`, `artifacts/logs/build-riscv-heap-root-visitors-20261018.log`, `artifacts/logs/jcsystem-heap-root-visitors-vpcd-20261018.log`.
+
+## 2026-10-18 — Add mark-only typed heap traversal
+
+- Step/experiment: `heap-mark-only-traversal`
+- Change: Added `Heap::traceReachableFrom()` to mark and count array/instance
+  handles reachable from a supplied root set. It uses a deduplicating
+  work queue, validates offsets, follows the typed edge visitor, and grows
+  mark vectors when persistent reads append objects. Invalid handles and VM
+  edge-load exceptions make the result incomplete; no slots are freed.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. The full VPCD JCSystem/transaction regression
+  passed `TEST:SUMMARY pass=17 fail=0 elapsed_s=70.499`. No hardware was
+  flashed. PC build emitted the existing packed-member warnings.
+- Result: Mark-only traversal compiles and does not regress the applet suite.
+  It is not wired into runtime code and has not yet been measured against a
+  complete root set; these counts are not safe for reclamation.
+- Decision: Expose remaining VM roots and establish a quiescent post-APDU
+  invocation before considering any slot reclamation or reuse.
+- Commit: `PENDING`.
+- Artifacts/logs: `artifacts/logs/build-pc-heap-mark-only-20261018.log`,
+  `artifacts/logs/build-arm-heap-mark-only-20261018.log`,
+  `artifacts/logs/build-riscv-heap-mark-only-20261018.log`, and
+  `artifacts/logs/jcsystem-heap-mark-only-vpcd-20261018.log`.

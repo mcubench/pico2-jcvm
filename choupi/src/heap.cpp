@@ -284,6 +284,66 @@ void Heap::appendChildReferences(const jref_t reference,
   }
 }
 
+Heap::ReachabilitySummary Heap::traceReachableFrom(
+    const std::vector<jref_t> &roots) {
+  ReachabilitySummary summary;
+  std::vector<uint8_t> marked_arrays(this->arrays.size(), 0);
+  std::vector<uint8_t> marked_instances(this->instances.size(), 0);
+  std::vector<jref_t> pending;
+  pending.reserve(roots.size());
+
+  const auto enqueue = [&](const jref_t reference) {
+    if (reference.isNullPointer()) {
+      return;
+    }
+    const uint16_t offset = reference.getOffset();
+    auto &marks = reference.isArray() ? marked_arrays : marked_instances;
+    const std::size_t slot_count =
+        reference.isArray() ? this->arrays.size() : this->instances.size();
+    if (offset == 0 || offset > slot_count) {
+      ++summary.invalid_references;
+      summary.complete = false;
+      return;
+    }
+    if (marks.size() < slot_count) {
+      marks.resize(slot_count, 0);
+    }
+    const std::size_t mark_index = offset - 1;
+    if (marks[mark_index] == 0) {
+      marks[mark_index] = 1;
+      pending.push_back(reference);
+    }
+  };
+
+  for (const jref_t &root : roots) {
+    enqueue(root);
+  }
+
+  std::vector<jref_t> children;
+  for (std::size_t cursor = 0; cursor < pending.size(); ++cursor) {
+    children.clear();
+    try {
+      this->appendChildReferences(pending[cursor], children);
+    } catch (Exceptions) {
+      ++summary.edge_load_failures;
+      summary.complete = false;
+    }
+    for (const jref_t &child : children) {
+      enqueue(child);
+    }
+  }
+
+  summary.arrays_total = static_cast<uint32_t>(this->arrays.size());
+  summary.instances_total = static_cast<uint32_t>(this->instances.size());
+  for (const uint8_t mark : marked_arrays) {
+    summary.arrays_reachable += mark != 0 ? 1u : 0u;
+  }
+  for (const uint8_t mark : marked_instances) {
+    summary.instances_reachable += mark != 0 ? 1u : 0u;
+  }
+  return summary;
+}
+
 /*
  * Getting array from heap.
  *

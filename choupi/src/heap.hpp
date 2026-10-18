@@ -54,6 +54,16 @@ public:
     jref_t reference;
   };
 
+  struct ReachabilitySummary {
+    uint32_t arrays_total = 0;
+    uint32_t arrays_reachable = 0;
+    uint32_t instances_total = 0;
+    uint32_t instances_reachable = 0;
+    uint32_t invalid_references = 0;
+    uint32_t edge_load_failures = 0;
+    bool complete = true;
+  };
+
 private:
   ///
   const japplet_ID_t owner;
@@ -102,6 +112,9 @@ public:
                              std::vector<jref_t> &references);
   /// Resolve a heap-owned array pointer back to its stable handle.
   bool getArrayReference(const JC_Array *array, jref_t &reference) const;
+  /// Mark reachable handles from a supplied root set without freeing slots.
+  ReachabilitySummary traceReachableFrom(
+      const std::vector<jref_t> &roots);
 
   /// Getting array from the transient heap.
   std::shared_ptr<JC_Array> getArray(const jref_t objectref)

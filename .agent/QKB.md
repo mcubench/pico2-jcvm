@@ -938,3 +938,28 @@ fix.
   used. The first ARM build found a range-loop copy warning in the new context
   visitor; it was corrected to a const-reference loop before the passing ARM
   build.
+
+## Mark-only typed heap traversal — 2026-10-18
+
+- **Implemented:** `Heap::traceReachableFrom()` performs a work-queue walk from
+  caller-supplied references, keeps array and instance marks separate, and
+  deduplicates handles before traversing typed fields and reference-array
+  elements. It checks reference offsets against current slot counts and grows
+  the mark vectors when lazy persistent reads append objects during traversal.
+- **Failure reporting:** Invalid handles and caught Java Card `Exceptions`
+  increment separate counters and make the result incomplete. Host allocation
+  failures are not swallowed. The returned totals reflect the heap after the
+  walk, including objects loaded during edge traversal.
+- **Limit:** This only traces the supplied roots and does not mutate or reclaim
+  heap slots. It is not called by runtime code or yet validated against an
+  actual complete root set. `Context` root enumeration currently includes
+  static/context handles, but runtime exception roots are not yet exposed by
+  the committed heap visitor; Java stack words and native locals also remain
+  outside the visitor API. Never use this result to authorize reclamation.
+- **Validation:** PC, ARM M33, and RISC-V builds passed. The full VPCD
+  JCSystem/transaction regression passed 17/17 in 70.499 s. No board was
+  flashed. The PC build retains pre-existing packed-member warnings.
+- **Decision:** Next expose every VM-owned root and define a safe post-APDU
+  boundary, then exercise the tracer diagnostically across repeated APDUs.
+  Keep slot destruction and reuse disabled until root coverage and mark
+  accounting are demonstrated.
