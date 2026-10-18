@@ -95,6 +95,13 @@ public:
                               jref_t &reference) const noexcept;
   void setStaticReferenceRoot(jpackage_ID_t package_id,
                               uint16_t field_number, jref_t reference);
+  /// Append cached Java static references held by this heap.
+  void appendRootReferences(std::vector<jref_t> &references) const;
+  /// Append typed object/array children for one live reference.
+  void appendChildReferences(const jref_t reference,
+                             std::vector<jref_t> &references);
+  /// Resolve a heap-owned array pointer back to its stable handle.
+  bool getArrayReference(const JC_Array *array, jref_t &reference) const;
 
   /// Getting array from the transient heap.
   std::shared_ptr<JC_Array> getArray(const jref_t objectref)

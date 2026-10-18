@@ -305,6 +305,32 @@ uint16_t Context::getAPDUOutgoingLength() const noexcept {
   return this->apdu_outgoing_length;
 }
 
+void Context::appendRootReferences(
+    std::vector<jref_t> &references) const {
+  this->heap.appendRootReferences(references);
+  const jref_t direct_roots[] = {
+      this->applet_aid_object_ref, this->registered_applet_ref,
+      this->restored_applet_ref, this->apdu_buffer_ref,
+      this->apdu_object_ref, this->apdu_outgoing_buffer_ref};
+  for (const jref_t &reference : direct_roots) {
+    if (!reference.isNullPointer()) {
+      references.push_back(reference);
+    }
+  }
+  const auto append_array_mirror = [&](const std::shared_ptr<JC_Array> &array) {
+    if (!array) {
+      return;
+    }
+    jref_t reference;
+    if (!this->heap.getArrayReference(array.get(), reference)) {
+      throw Exceptions::SecurityException;
+    }
+    references.push_back(reference);
+  };
+  append_array_mirror(this->apdu_java_buffer);
+  append_array_mirror(this->apdu_outgoing_buffer);
+}
+
 /**
  * Get context Java Card stack.
  *

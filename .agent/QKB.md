@@ -914,3 +914,27 @@ fix.
   collector and does not make heap slots reusable. If persistent transaction
   rollback becomes supported for static references, the in-memory root must
   also be reconciled on abort.
+
+
+## Root and typed-edge visitor API — 2026-10-18
+
+- **Implemented:** `Heap::appendRootReferences()` exposes cached
+  static-reference roots. `Context::appendRootReferences()`
+  adds AID, registration/restoration, APDU, and outgoing-buffer handles, and
+  resolves context-held APDU `shared_ptr` mirrors back to stable heap handles.
+- **Implemented:** `Heap::appendChildReferences()` follows only typed
+  reference fields and reference-array entries. Walking persistent fields or
+  arrays can deserialize children and append heap entries, so callers must use
+  a work queue and tolerate heap growth; do not iterate a presumed fixed-size
+  snapshot as though loading were pure.
+- **Not implemented:** No mark state, APDU-boundary invocation, slot tombstones,
+  reclamation, or slot reuse exists yet. These visitor methods do not inspect
+  Java stack words or native locals. Callers must establish a quiescent boundary
+  and account for stack return values and other VM-owned roots before any future
+  reclamation. In particular, VM-owned roots that are not in the static cache
+  are not surfaced by `Heap::appendRootReferences()` yet.
+- **Validation:** PC, ARM M33, and RISC-V builds passed. Full VPCD
+  JCSystem/transaction regression passed 17/17 in 78.115 s. No hardware was
+  used. The first ARM build found a range-loop copy warning in the new context
+  visitor; it was corrected to a const-reference loop before the passing ARM
+  build.

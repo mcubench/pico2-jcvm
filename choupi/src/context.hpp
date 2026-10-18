@@ -38,6 +38,7 @@
 
 #include <array>
 #include <memory>
+#include <vector>
 
 namespace jcvm {
 
@@ -129,6 +130,8 @@ public:
   jref_t getAPDUOutgoingBufferRef() const noexcept;
   uint16_t getAPDUOutgoingOffset() const noexcept;
   uint16_t getAPDUOutgoingLength() const noexcept;
+  /// Append context and heap-owned Java references for root tracing.
+  void appendRootReferences(std::vector<jref_t> &references) const;
   /// Get context Java Card stack.
   Stack &getStack() noexcept;
   /// Get context heap.

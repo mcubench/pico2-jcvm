@@ -1,5 +1,25 @@
 # Handoff
 
+## Latest continuation — expose heap roots and typed edges — 2026-10-18
+
+- Added `Heap::appendRootReferences()` for cached static references, plus
+  `Context::appendRootReferences()` for context-held
+  handles. The context visitor also maps retained APDU buffer `shared_ptr`s
+  back to their stable array handles.
+- Added `Heap::appendChildReferences()` to follow typed instance reference
+  fields and Java reference-array elements. Persistent reads can deserialize
+  new heap entries during this traversal.
+- PC, ARM, and RISC-V builds passed. Full VPCD regression passed 17/17 in
+  78.115 s. The initial ARM build caught a range-loop-copy warning; corrected
+  before the passing build. No board was flashed.
+- This is traversal support only: there is no mark-only traversal or slot
+  reclamation. These methods do not inspect live Java stack words, C++ locals,
+  or VM-owned roots stored outside the static-reference cache.
+- Next: build a mark-only work-queue walk that tolerates deserialization growth,
+  invoke it only after the APDU interpreter/native frames return, and validate
+  its accounting across repeated APDUs. Keep reclamation and slot reuse out
+  until root accounting is complete.
+
 ## Latest continuation — heap-root inventory — 2026-10-17
 
 - Read-only source review after commit `425602b` mapped the remaining roots and

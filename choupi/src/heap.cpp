@@ -194,6 +194,96 @@ void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
       StaticReferenceRoot{package_id, field_number, reference});
 }
 
+void Heap::appendRootReferences(std::vector<jref_t> &references) const {
+  for (const StaticReferenceRoot &root : this->static_reference_roots) {
+    if (!root.reference.isNullPointer()) {
+      references.push_back(root.reference);
+    }
+  }
+}
+
+bool Heap::getArrayReference(const JC_Array *array, jref_t &reference) const {
+  if (array == nullptr) {
+    return false;
+  }
+  uint16_t offset = 0;
+  for (const auto &candidate : this->arrays) {
+    if (offset == 0x7fff) {
+      return false;
+    }
+    ++offset;
+    if (candidate.get() == array) {
+      reference.setAsArray(true);
+      reference.setOffset(offset);
+      return true;
+    }
+  }
+  return false;
+}
+
+void Heap::appendChildReferences(const jref_t reference,
+                                 std::vector<jref_t> &references) {
+  if (reference.isNullPointer()) {
+    return;
+  }
+  if (reference.isArray()) {
+    const auto array = this->getArray(reference);
+    if (array->getType() != JAVA_ARRAY_T_REFERENCE) {
+      return;
+    }
+    for (uint16_t index = 0; index < array->size(); ++index) {
+      const jref_t child = array->getReferenceEntry(index);
+      if (!child.isNullPointer()) {
+        references.push_back(child);
+      }
+    }
+    return;
+  }
+
+  const auto instance = this->getInstance(reference);
+  const auto fields = instance->getFields();
+  for (uint16_t index = 0; index < fields->size(); ++index) {
+    const jc_field_t &field = fields->at(index);
+    switch (field.type) {
+    case FieldType::FIELD_TYPE_OBJECT: {
+      const jref_t child(field.value);
+      if (!child.isNullPointer()) {
+        if (child.isArray()) {
+          throw Exceptions::SecurityException;
+        }
+        references.push_back(child);
+      }
+      break;
+    }
+    case FieldType::FIELD_TYPE_ARRAY_BYTE:
+    case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
+    case FieldType::FIELD_TYPE_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+    case FieldType::FIELD_TYPE_ARRAY_INT:
+#endif
+    case FieldType::FIELD_TYPE_ARRAY_OBJECT:
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
+#endif
+    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT: {
+      const jref_t child(field.value);
+      if (!child.isNullPointer()) {
+        if (!child.isArray()) {
+          throw Exceptions::SecurityException;
+        }
+        references.push_back(child);
+      }
+      break;
+    }
+    default:
+      break;
+    }
+  }
+}
+
 /*
  * Getting array from heap.
  *
