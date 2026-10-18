@@ -5336,7 +5336,7 @@
   Next diagnose the cipher factory `6F00` path and rerun the full static suite;
   later audit native-held roots and implement persistent deletion before
   claiming general garbage collection.
-- Commit: `pending`.
+- Commit: `b7b069a`.
 - Artifacts/logs: VPCD log
   `artifacts/logs/heap-collector-full-focused-vpcd-20261018.log`
   (SHA-256 `bdd4601530b538a6aa8e9d57bfbaca8b8a02a0d5ea801b994adc55e54895bc09`);
