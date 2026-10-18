@@ -197,7 +197,30 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
   } else {
     auto array = heap.getArray(objectref);
 
-    auto array_type = static_cast<jc_array_type>(atype);
+    jc_array_type array_type;
+    switch (atype) {
+    case 10:
+      array_type = jc_array_type::JAVA_ARRAY_T_BOOLEAN;
+      break;
+    case 11:
+      array_type = jc_array_type::JAVA_ARRAY_T_BYTE;
+      break;
+    case 12:
+      array_type = jc_array_type::JAVA_ARRAY_T_SHORT;
+      break;
+    case 13:
+#ifdef JCVM_INT_SUPPORTED
+      array_type = jc_array_type::JAVA_ARRAY_T_INT;
+      break;
+#else
+      throw Exceptions::SecurityException;
+#endif /* JCVM_INT_SUPPORTED */
+    case 14:
+      array_type = jc_array_type::JAVA_ARRAY_T_REFERENCE;
+      break;
+    default:
+      throw Exceptions::SecurityException;
+    }
 
     if (array->getType() != array_type) {
       return FALSE;

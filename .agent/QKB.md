@@ -1075,3 +1075,21 @@ fix.
 - No embedded source changed, no board was accessed, and no reclamation was
   enabled. Next isolate the cast failure, then add root/alias graph shapes
   before considering tombstones.
+
+## Array `checkcast` type-code mapping — 2026-10-18
+
+- A focused cast from `Object` to `byte[]` failed with `ClassCastException`
+  (`opcode=0x94`). `docheck()` directly cast the bytecode's `atype` to
+  `jc_array_type`; the bytecode encodes array types as decimal `10`–`14`, while
+  the internal enum uses `0x10`–`0x14`. These representations do not match.
+- Replaced the cast with an explicit mapping for boolean, byte, short, optional
+  int, and reference arrays. Unsupported/invalid codes raise
+  `SecurityException`; valid but mismatched array types still produce a
+  failed type check.
+- Focused VPCD case 17 passed (`019000`), including after case 16 had mutated
+  the shared array. PC, ARM, and RISC-V builds passed. Full VPCD JCSystem suite
+  passed 20/20 in 114.250 s; all 36 repeated heap walks were complete with
+  zero invalid refs and zero edge-load failures. No board was accessed.
+- This validates a positive byte-array cast. Add a negative cast regression
+  for mismatched array types before treating the full `checkcast` family as
+  covered. The explicit type mapping is the viable fix for this mismatch.

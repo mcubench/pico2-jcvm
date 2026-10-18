@@ -1,5 +1,21 @@
 # Handoff
 
+## Latest continuation — map Java Card array `checkcast` types — 2026-10-18
+
+- Fixed `docheck()` to map bytecode array codes 10–14 explicitly to internal
+  `jc_array_type` values. The direct enum cast compared decimal bytecode codes
+  with enum values in the `0x10` range, making valid array casts fail.
+- Added case 17, which casts the persisted byte array from `Object[]` to
+  `byte[]`. Focused test passed (`019000`); cases 16 and 17 passed together
+  after case 16 mutates their shared array. PC, ARM, and RISC-V builds passed.
+- Final full VPCD suite passed 20/20 in 114.250 s with 36 complete trace
+  walks, zero invalid refs, and zero edge failures. No hardware was accessed.
+  A first full run after the code fix exposed a test-order expectation bug
+  (case 17 expected the original byte after case 16 changed it); the assertion
+  now checks array length instead.
+- Next: add a negative mismatched-array cast case, then continue auditing root
+  and persistent graph shapes. Heap reclamation remains disabled.
+
 ## Latest continuation — verify persistent instance array aliases — 2026-10-18
 
 - Expanded the identity probe to include two fields on a persisted holder that

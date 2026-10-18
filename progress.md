@@ -4872,3 +4872,29 @@
 - Artifacts/logs: `artifacts/logs/jcsystem-persistent-object-array-alias-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-persistent-object-array-alias-vpcd-v2-20261018.log`,
   `artifacts/logs/jcsystem-persistent-object-array-alias-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Fix Java Card array checkcast type mapping
+
+- Step/experiment: `checkcast-array-type-code-map`
+- Change: Replaced the direct bytecode-to-`jc_array_type` cast in `docheck()`
+  with explicit mappings for array `atype` codes 10–14. Added case 17 to cast
+  a restored `byte[]` reached through `Object[]`.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. Focused case 17 passed (`019000`); cases 16 and
+  17 also passed in order (`019000` each). Full VPCD suite passed
+  `TEST:SUMMARY pass=20 fail=0 elapsed_s=114.250`. All 36 heap trace walks
+  completed with zero invalid refs and zero edge-load failures. No board was
+  accessed.
+- Result: Valid byte-array casts now pass. The first full run failed only
+  because case 17 expected the original array byte after case 16 intentionally
+  mutated it; the probe now checks array length. Negative mismatched-type casts
+  remain untested.
+- Decision: Keep the explicit atype mapping and add a negative cast case next.
+- Commit: `<pending>`.
+- Artifacts/logs: `artifacts/logs/build-pc-checkcast-array-type-map-20261018.log`,
+  `artifacts/logs/build-arm-checkcast-array-type-map-20261018.log`,
+  `artifacts/logs/build-riscv-checkcast-array-type-map-20261018.log`,
+  `artifacts/logs/jcsystem-checkcast-byte-array-from-persistent-object-array-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-checkcast-byte-array-type-map-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-checkcast-array-type-map-focused-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-checkcast-array-type-map-full-vpcd-20261018.log`.
