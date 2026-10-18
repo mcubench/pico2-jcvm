@@ -5102,6 +5102,6 @@
   request now returns the specified catchable exception with reason 6.
 - Decision: Continue auditing the remaining JCSystem stubs, beginning with
   `makeGlobalArray()` and `isAppletActive()`. Keep heap reclamation disabled.
-- Commit: `PENDING`.
+- Commit: `288f61b`.
 - Artifacts/logs: `artifacts/logs/jcsystem-object-deletion-unsupported-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-object-deletion-unsupported-full-vpcd-20261018.log`.
