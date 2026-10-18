@@ -5140,5 +5140,5 @@
 - Decision: Design a JCRE-owned global array store and global-reference type,
   including reset clearing and store rejection, before implementing this API.
   Keep heap reclamation disabled.
-- Commit: `PENDING`.
+- Commit: `b7d8136`.
 - Artifacts/logs: none.
