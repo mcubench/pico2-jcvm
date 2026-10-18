@@ -4868,7 +4868,7 @@
   untriaged and recorded in QKB.
 - Decision: Keep reclamation disabled. Isolate the cast failure and continue
   broader root/alias coverage before designing tombstones.
-- Commit: `<pending>`.
+- Commit: `b6db227`.
 - Artifacts/logs: `artifacts/logs/jcsystem-persistent-object-array-alias-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-persistent-object-array-alias-vpcd-v2-20261018.log`,
   `artifacts/logs/jcsystem-persistent-object-array-alias-full-vpcd-20261018.log`.
