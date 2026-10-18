@@ -1922,6 +1922,25 @@
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: none.
 
+## 2026-10-18 — Validate ARM smoke image on physical Pico 2
+
+- Step/experiment: `physical-arm-smoke-cycle`
+- Change: Flashed the ARM smoke UF2 to the attached Pico 2 and captured bounded
+  serial output. The repository wrapper built both architectures as required
+  by the flash gate; only ARM was flashed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle arm` passed. ARM and
+  RISC-V builds passed. The device lacked its normal reset interface, but the
+  wrapper's CDC 1200-baud BOOTSEL recovery succeeded. Eight-second capture
+  repeatedly reported `TEST:PASS random_stream_varies` and
+  `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` appeared.
+- Result: Real-device ARM smoke validation passed. The board now runs the smoke
+  image; this cycle did not exercise CHOUPI, the applet, or JCSystem.
+- Decision: Resume applet-level physical testing only after reflashing CHOUPI.
+  Continue the separate `makeGlobalArray()` design work.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-arm-20261018T074707Z.log` (SHA-256
+  `eb58edba0a3c95145b4112453485896f959c2b4d2292e033340691b73ed222d3`).
+
 ## 2026-10-14 — Verify offline CHOUPI host-build dependencies
 
 - Step/experiment: `host-vm-offline-dependency-check-20261014`

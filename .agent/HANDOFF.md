@@ -1,5 +1,22 @@
 # Handoff
 
+## Latest continuation — real-device ARM smoke cycle — 2026-10-18
+
+- Ran `PICO2_HOST_USB_ACCESS=1 ./tools/cycle arm` against the attached Pico 2.
+  Both required architectures built successfully; only the ARM smoke image was
+  flashed. The normal reset interface was missing, and the wrapper recovered
+  with CDC 1200-baud BOOTSEL before loading the image successfully.
+- Bounded 8-second serial capture passed: repeated
+  `TEST:PASS random_stream_varies`, `TEST:SUMMARY pass=1 fail=0`; no
+  `TEST:FAIL` or `FAULT`. Full output is in
+  `artifacts/logs/cycle-arm-20261018T074707Z.log`.
+- The device is now running `pico2_jcvm_smoke.uf2`, not CHOUPI. This verifies
+  the ARM smoke target on hardware; it does not validate the Java Card applet
+  or JCSystem calls. Reflash CHOUPI before resuming physical applet tests.
+- Next: continue the `JCSystem.makeGlobalArray()` design audit/implementation
+  separately; preserve the confirmed flash recovery path and keep unsupported
+  algorithms expected.
+
 ## Latest continuation — scope remaining JCSystem global-array gap — 2026-10-18
 
 - Audited `JCSystem.makeGlobalArray()` against the bundled JC305 API and heap
