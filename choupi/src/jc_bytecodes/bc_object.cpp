@@ -36,12 +36,53 @@
 #include "../stack.hpp"
 #include "bytecodes.hpp"
 
+#include <cstring>
+
 #ifndef PC_VERSION
 extern "C" void choupi_install_stage(uint8_t stage);
 extern "C" void choupi_install_context(uint32_t context);
 #endif
 
 namespace jcvm {
+
+namespace {
+bool isRuntimeCryptoExceptionFactoryAllocation(
+    Context &context,
+    const std::pair<jpackage_ID_t, jclass_index_t> instantiated_class) {
+  // The ROM view resolves CryptoException at offset 234 under the combined
+  // framework AID; the imported javacard.security CAP uses AID ...0102 and
+  // offset 233. Keep both package identity and class offset in the match.
+  constexpr jclass_index_t crypto_exception_rom_offset = 234;
+  constexpr jclass_index_t crypto_exception_import_offset = 233;
+  static constexpr uint8_t rom_package_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01};
+  static constexpr uint8_t security_package_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x02};
+
+  if (context.getCurrentPackageID() != instantiated_class.first) {
+    return false;
+  }
+
+  const auto *header = Package(instantiated_class.first)
+                           .getCap()
+                           .getHeader();
+  if (header == nullptr) {
+    return false;
+  }
+  const auto &package = header->package;
+  const bool is_rom_package =
+      instantiated_class.first == 0 &&
+      instantiated_class.second == crypto_exception_rom_offset &&
+      package.AID_length == sizeof(rom_package_aid) &&
+      std::memcmp(package.AID, rom_package_aid, sizeof(rom_package_aid)) == 0;
+  const bool is_security_import =
+      instantiated_class.second == crypto_exception_import_offset &&
+      package.AID_length == sizeof(security_package_aid) &&
+      std::memcmp(package.AID, security_package_aid,
+                  sizeof(security_package_aid)) == 0;
+  return is_rom_package || is_security_import;
+}
+} // namespace
 
 /**
  * Create new object
@@ -100,8 +141,12 @@ void Bytecodes::bc_new() {
       (static_cast<uint32_t>(instantiated_class.first) << 16) |
       instantiated_class.second);
 #endif
-  jref_t objectref =
-      heap.addInstance(instantiated_class.first, instantiated_class.second);
+  const jref_t objectref =
+      isRuntimeCryptoExceptionFactoryAllocation(context, instantiated_class)
+          ? heap.addRuntimeCryptoException(instantiated_class.first,
+                                           instantiated_class.second)
+          : heap.addInstance(instantiated_class.first,
+                             instantiated_class.second);
 #ifndef PC_VERSION
   choupi_install_stage(3);
 #endif

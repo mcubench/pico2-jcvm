@@ -963,3 +963,23 @@ fix.
   boundary, then exercise the tracer diagnostically across repeated APDUs.
   Keep slot destruction and reuse disabled until root coverage and mark
   accounting are demonstrated.
+
+## Runtime CryptoException handles are heap roots — 2026-10-18
+
+- **Implemented:** The heap keeps separate reusable `CryptoException`
+  instances for its ROM and imported security-package class views. The
+  `NEW` factory path routes only matching package/class allocations to those
+  slots. `Heap::appendRootReferences()` now includes each non-null runtime
+  exception handle alongside cached Java static references.
+- **Reason:** Repeated `CryptoException.throwIt()` calls must not append one
+  permanent instance per call, and a future heap walk must retain the shared
+  runtime-owned instances even though Java statics are not their owner.
+- **Validation:** PC, ARM M33, and RISC-V builds passed. VPCD JCSystem suite
+  passed 17/17 in 71.327 s, including the 50-throw stable-identity/reason
+  check. No hardware was flashed. The root visitor itself is not yet invoked
+  by the runtime tracer.
+- **Limit:** This closes only the two runtime exception roots. Stack reference
+  return values, active Java words, and native locals still need coverage or a
+  proven quiescent boundary. Do not reclaim slots based on current tracing.
+- **Decision:** Determine how to represent a typed root return value and prove
+  the APDU caller has returned before running diagnostic mark accounting.

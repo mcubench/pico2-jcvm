@@ -169,6 +169,23 @@ jref_t Heap::addInstance(JC_Instance &&instance) {
   return ref;
 }
 
+/*
+ * Get the JCRE-owned CryptoException instance for this applet context.
+ * CryptoException.throwIt() allocates through the normal NEW bytecode, but
+ * Java Card requires throwIt() to reuse a runtime-owned temporary instance.
+ * Keeping the root here avoids storing it in a Java static field, since this
+ * VM persists Java static references through flash serialization.
+ */
+jref_t Heap::addRuntimeCryptoException(const jpackage_ID_t packageID,
+                                       const jclass_index_t classIndex) {
+  jref_t &root = classIndex == 234 ? this->runtime_crypto_exception_rom
+                                   : this->runtime_crypto_exception_imported;
+  if (root.isNullPointer()) {
+    root = this->addInstance(packageID, classIndex);
+  }
+  return root;
+}
+
 bool Heap::getStaticReferenceRoot(const jpackage_ID_t package_id,
                                   const uint16_t field_number,
                                   jref_t &reference) const noexcept {
@@ -195,6 +212,13 @@ void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
 }
 
 void Heap::appendRootReferences(std::vector<jref_t> &references) const {
+  const jref_t runtime_roots[] = {this->runtime_crypto_exception_rom,
+                                  this->runtime_crypto_exception_imported};
+  for (const jref_t &reference : runtime_roots) {
+    if (!reference.isNullPointer()) {
+      references.push_back(reference);
+    }
+  }
   for (const StaticReferenceRoot &root : this->static_reference_roots) {
     if (!root.reference.isNullPointer()) {
       references.push_back(root.reference);

@@ -4740,3 +4740,25 @@
   `artifacts/logs/build-arm-heap-mark-only-20261018.log`,
   `artifacts/logs/build-riscv-heap-mark-only-20261018.log`, and
   `artifacts/logs/jcsystem-heap-mark-only-vpcd-20261018.log`.
+
+## 2026-10-18 — Enumerate runtime CryptoException roots
+
+- Step/experiment: `heap-runtime-exception-roots`
+- Change: Added per-heap reusable handles for ROM and imported
+  `CryptoException` views, routed matching `NEW` factory allocations to those
+  handles, and made `Heap::appendRootReferences()` enumerate them with static
+  references.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. VPCD JCSystem regression passed
+  `TEST:SUMMARY pass=17 fail=0 elapsed_s=71.327`, including the 50-throw
+  identity/reason case. No hardware was flashed.
+- Result: Runtime exception objects are reused per view and visible to the
+  heap root visitor. The tracer still is not invoked in runtime code; other
+  stack/native roots remain unresolved.
+- Decision: Inspect the root-return cache's typing/lifetime and establish a
+  safe post-APDU diagnostic mark point before considering reclamation.
+- Commit: `PENDING`.
+- Artifacts/logs: `artifacts/logs/build-pc-heap-runtime-roots-20261018.log`,
+  `artifacts/logs/build-arm-heap-runtime-roots-20261018.log`,
+  `artifacts/logs/build-riscv-heap-runtime-roots-20261018.log`, and
+  `artifacts/logs/jcsystem-heap-runtime-roots-vpcd-20261018.log`.

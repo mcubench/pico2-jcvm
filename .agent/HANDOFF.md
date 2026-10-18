@@ -1,5 +1,19 @@
 # Handoff
 
+## Latest continuation — enumerate runtime exception roots — 2026-10-18
+
+- Added per-heap reusable exception slots for the ROM and imported
+  `CryptoException` class views, routed matching factory allocations to those
+  slots, and included both handles in `Heap::appendRootReferences()`.
+- PC, ARM M33, and RISC-V builds passed. VPCD JCSystem regression passed
+  17/17 in 71.327 s, including 50 repeated throws with stable object identity
+  and updated reason. No hardware was flashed or accessed.
+- This completes only heap-owned runtime exception roots. The tracer is still
+  not called by runtime code. The root-return cache loses its value type, and
+  active Java words/native locals cannot be scanned safely.
+- Next: inspect root-return lifecycle, then establish and validate a
+  post-APDU safepoint for diagnostic mark accounting. Keep reclamation off.
+
 ## Latest continuation — add mark-only heap tracing — 2026-10-18
 
 - Added `Heap::traceReachableFrom()` with separate array/instance marks, a

@@ -72,6 +72,10 @@ private:
   List<std::shared_ptr<JC_Array>> arrays;
   /// List of instance in the heap.
   List<std::shared_ptr<JC_Instance>> instances;
+
+  /// Roots for the ROM and imported class views of the JCRE CryptoException.
+  jref_t runtime_crypto_exception_rom;
+  jref_t runtime_crypto_exception_imported;
   /// Canonical handles for serialized Java static reference fields.
   std::vector<StaticReferenceRoot> static_reference_roots;
 
@@ -99,13 +103,16 @@ public:
                      const jclass_index_t instantiated_class);
   /// Adding an instance in in the transient heap.
   jref_t addInstance(JC_Instance &&instance);
+  /// Get the per-context JCRE-owned CryptoException instance.
+  jref_t addRuntimeCryptoException(const jpackage_ID_t packageID,
+                                   const jclass_index_t classIndex);
   /// Look up or update a package/static-field reference cached for this heap.
   bool getStaticReferenceRoot(jpackage_ID_t package_id,
                               uint16_t field_number,
                               jref_t &reference) const noexcept;
   void setStaticReferenceRoot(jpackage_ID_t package_id,
                               uint16_t field_number, jref_t reference);
-  /// Append cached Java static references held by this heap.
+  /// Append VM-owned roots held by this heap.
   void appendRootReferences(std::vector<jref_t> &references) const;
   /// Append typed object/array children for one live reference.
   void appendChildReferences(const jref_t reference,
