@@ -5,6 +5,23 @@ the reliable recovery, and any limits. Promote only reproducible fixes to the
 viable-solution status; a single successful probe is evidence, not a universal
 fix.
 
+## JCSystem object-deletion request silently succeeded while unsupported — 2026-10-18
+
+- **Cause:** `JCSystem.isObjectDeletionSupported()` correctly returned false,
+  but `requestObjectDeletion()` was a no-op. The supplied Java Card API
+  specifies `SystemException.ILLEGAL_USE` when deletion is unsupported.
+- **Viable fix:** Carry the pending VM-raised `SystemException` reason in the
+  active `Context`; consume and reset it during Java exception dispatch. The
+  deletion request sets reason 6 (`ILLEGAL_USE`) and throws the mapped
+  `SystemException`.
+- **Evidence:** Case 34 caught the exception and checked reason 6. Focused
+  VPCD passed; the full JCSystem VPCD suite passed 37/37 in 173.290 s. PC, ARM,
+  and RISC-V builds passed. No physical device was used.
+- **Test-harness note:** When a new APDU case is added, rebuild the generated
+  probe CAP with `./tools/build-jcsystem-transaction-probe` before running the
+  harness. Otherwise a stale CAP can execute unrelated bytecode and fail at
+  `6F00`, making it appear the native path is broken.
+
 ## Restricted-context USB access — complete fail-fast coverage — 2026-10-17
 
 - The first guard covered the usual `flash`, `monitor`, and physical JCAlgTest

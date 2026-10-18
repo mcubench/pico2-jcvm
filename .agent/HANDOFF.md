@@ -1,5 +1,21 @@
 # Handoff
 
+## Latest continuation — honor unsupported object-deletion requests — 2026-10-18
+
+- `JCSystem.isObjectDeletionSupported()` returns false, but
+  `requestObjectDeletion()` silently returned. It now raises a catchable
+  `SystemException.ILLEGAL_USE` (reason 6), as specified by the supplied API.
+  VM-raised `SystemException` reasons are carried through the active `Context`
+  and reset after dispatch.
+- Added case 34. PC, ARM M33, and RISC-V builds passed; the probe CAP rebuilt;
+  focused case passed (`019000`). Full VPCD suite passed 37/37 in 173.290 s.
+  No physical device was accessed.
+- A focused run initially used a stale generated probe CAP. Rebuilding with
+  `./tools/build-jcsystem-transaction-probe` incorporated the new case.
+- Next: audit remaining JCSystem stubs such as `makeGlobalArray()` and
+  `isAppletActive()`, with semantic and lifecycle coverage before changes.
+  Preserve expected unsupported algorithms and keep heap reclamation disabled.
+
 ## Latest continuation — preserve JCSystem transient-array lifetimes — 2026-10-18
 
 - Changed invalid transient clear-event handling to catchable

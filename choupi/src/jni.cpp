@@ -761,8 +761,9 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_isObjectDeletionSupported() {
 }
 
 void fr_gouv_ssi_nativeimpl_NativeImplementation_requestObjectDeletion() {
-  // Object deletion is not supported; the Java Card API specifies this as a
-  // request and callers can query the unsupported capability above.
+  // The runtime reports deletion unsupported, so the API requires ILLEGAL_USE.
+  Context::getActiveContext().setPendingSystemExceptionReason(6);
+  throw Exceptions::SystemException;
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAssignedChannel() {

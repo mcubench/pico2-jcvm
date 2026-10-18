@@ -5084,3 +5084,24 @@
 - Commit: `370a1bd`.
 - Artifacts/logs: `artifacts/logs/jcsystem-transient-lifecycle-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-transient-lifecycle-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Honor unsupported JCSystem object-deletion requests
+
+- Step/experiment: `jcsystem-object-deletion-unsupported`
+- Change: `requestObjectDeletion()` now throws a catchable
+  `SystemException.ILLEGAL_USE` (reason 6) when object deletion is unsupported.
+  VM-raised SystemException reasons are carried by the active context and
+  consumed/reset during Java exception dispatch. Added probe case 34.
+- Validation: `./tools/build-pc`, `./tools/build arm`, `./tools/build riscv`,
+  and `./tools/build-jcsystem-transaction-probe` passed. Focused VPCD case 34
+  passed (`019000`). Full VPCD suite passed
+  `TEST:SUMMARY pass=37 fail=0 elapsed_s=173.290`. No physical device was
+  accessed. Builds still report pre-existing Rust SDK and packed CAP-member
+  warnings.
+- Result: `JCSystem.isObjectDeletionSupported()` reports false and the paired
+  request now returns the specified catchable exception with reason 6.
+- Decision: Continue auditing the remaining JCSystem stubs, beginning with
+  `makeGlobalArray()` and `isAppletActive()`. Keep heap reclamation disabled.
+- Commit: `PENDING`.
+- Artifacts/logs: `artifacts/logs/jcsystem-object-deletion-unsupported-focused-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-object-deletion-unsupported-full-vpcd-20261018.log`.

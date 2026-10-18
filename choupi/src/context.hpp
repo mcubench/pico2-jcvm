@@ -71,6 +71,8 @@ private:
   uint16_t apdu_response_sent_length = 0;
   uint8_t apdu_state = 0;
   bool apdu_outgoing_no_chaining = false;
+  /// Reason code for the next VM-raised SystemException.
+  uint16_t pending_system_exception_reason = 1;
   std::array<uint8_t, 1022> apdu_response_data{};
   uint16_t apdu_outgoing_offset = 0;
   uint16_t apdu_outgoing_length = 0;
@@ -130,6 +132,8 @@ public:
   jref_t getAPDUOutgoingBufferRef() const noexcept;
   uint16_t getAPDUOutgoingOffset() const noexcept;
   uint16_t getAPDUOutgoingLength() const noexcept;
+  void setPendingSystemExceptionReason(uint16_t reason) noexcept;
+  uint16_t consumePendingSystemExceptionReason() noexcept;
   /// Append context and heap-owned Java references for root tracing.
   void appendRootReferences(std::vector<jref_t> &references) const;
   /// Get context Java Card stack.

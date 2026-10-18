@@ -170,8 +170,9 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
       this->context, exception_package_aid, exception_package_aid_length,
       class_token);
   if (exception == Exceptions::SystemException) {
-    // JCSystem.getAvailableMemory() rejects invalid types with ILLEGAL_VALUE.
-    this->context.getHeap().getInstance(reference)->setField_Short(0, 1);
+    const auto reason = this->context.consumePendingSystemExceptionReason();
+    this->context.getHeap().getInstance(reference)->setField_Short(
+        0, static_cast<jshort_t>(reason));
   } else if (exception == Exceptions::APDUException) {
     // APDU state-machine violations are APDUException.ILLEGAL_USE.
     this->context.getHeap().getInstance(reference)->setField_Short(0, 1);

@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 34),
+        "--case", type=int, action="append", choices=range(1, 35),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -171,6 +171,7 @@ def main() -> int:
                     (31, b"\x03", "CLEAR_ON_DESELECT clears while CLEAR_ON_RESET survives applet reselection"),
                     (32, b"\x01", "prepare transient values for card reset check"),
                     (33, b"\x03", "card reset clears both CLEAR_ON_DESELECT and CLEAR_ON_RESET arrays"),
+                    (34, b"\x01", "unsupported object deletion throws SystemException.ILLEGAL_USE"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

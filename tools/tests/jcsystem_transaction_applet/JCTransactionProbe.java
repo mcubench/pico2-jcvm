@@ -435,6 +435,17 @@ public final class JCTransactionProbe extends Applet {
         length = 1;
         break;
       }
+      case 34: {
+        try {
+          JCSystem.requestObjectDeletion();
+          buffer[0] = 0;
+        } catch (SystemException e) {
+          buffer[0] = e.getReason() == SystemException.ILLEGAL_USE
+              ? (byte)1 : (byte)0;
+        }
+        length = 1;
+        break;
+      }
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
     }

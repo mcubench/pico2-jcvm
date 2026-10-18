@@ -305,6 +305,16 @@ uint16_t Context::getAPDUOutgoingLength() const noexcept {
   return this->apdu_outgoing_length;
 }
 
+void Context::setPendingSystemExceptionReason(const uint16_t reason) noexcept {
+  this->pending_system_exception_reason = reason;
+}
+
+uint16_t Context::consumePendingSystemExceptionReason() noexcept {
+  const uint16_t reason = this->pending_system_exception_reason;
+  this->pending_system_exception_reason = 1;
+  return reason;
+}
+
 void Context::appendRootReferences(
     std::vector<jref_t> &references) const {
   this->heap.appendRootReferences(references);
