@@ -934,7 +934,7 @@
 - Validation: pcscd socket and service were active, but `pcsc_scan -r` reported no reader. VM `lsusb` listed only root hubs and the VirtualBox USB Tablet; sysfs had no VID `2e8a`, and `picotool info -a` found no RP-series device. Inspection only; no build or flash was performed.
 - Result: The reader was absent from the VM USB bus at the time of the scan, so libccid and pcscd had no device to enumerate.
 - Decision: Reattach the Pico through VirtualBox; verify `lsusb -d 2e8a:0009`, then rerun `pcsc_scan -r`.
-- Commit: pending
+- Commit: `73efd4c`.
 - Artifacts/logs: `artifacts/logs/pcsc-usb-absent-20261011.txt`
 
 ## 2026-10-11 — Correct CCID APDU exchange declaration
