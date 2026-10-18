@@ -5570,3 +5570,26 @@
   refresh ACL and check the reader before another physical run.
 - Commit: `7b1d519`.
 - Artifacts/logs: `artifacts/logs/pcsc-host-state-gc-stream-roots-20261018.log`.
+
+## 2026-10-18 — Isolate PC/SC failure after applet selection
+
+- Step/experiment: `physical-pcsc-select-followup-isolation`
+- Change: Updated STATUS, QKB, and HANDOFF with a host-vs-firmware boundary
+  diagnosis. The serial capture shows the Pico answered SELECT (`9000`) and
+  received no GETVERSION request afterward.
+- Validation: The authorized ACL helper succeeded and USB remained visible as
+  `2e8a:0009`; `pcscd.service` was active. A post-restart reader scan briefly
+  listed the physical Pico and both Virtual PCD readers. The focused
+  `probe-jc-algtest --des-cipher-prepare` timed out after successful SELECT;
+  a concurrent 18-second serial capture recorded GetSlotStatus and one SELECT
+  XfrBlock (`xfr=1`), with runtime self-checks passing and no `FAULT`. `./tools/doctor`
+  passed. No source change was made, so builds and firmware tests were
+  intentionally skipped.
+- Result: The current failure occurs before the host sends GETVERSION; the
+  available evidence does not implicate JCVM execution or the collector. The
+  physical static run remains incomplete.
+- Decision: Continue investigating PC/SC host transport without unbounded
+  `pcsc_scan`; keep software/runtime work moving independently.
+- Commit: `69c180d`.
+- Artifacts/logs: `artifacts/logs/monitor-pcsc-probe-concurrent-20261018.log`
+  and `artifacts/logs/monitor-pcsc-after-restart-20261018.log`.
