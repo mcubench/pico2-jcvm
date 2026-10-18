@@ -5552,3 +5552,21 @@
   `artifacts/logs/monitor-static-gc-stream-roots-20261018.log`; partial output
   under `artifacts/results/physical-perf-static-gc-stream-roots-20261018/`;
   PC/SC recovery traces under `artifacts/logs/*gc-stream-roots-recovery*20261018.log`.
+
+## 2026-10-18 — Diagnose PC/SC stall after static test
+
+- Step/experiment: `physical-usb-pcsc-layer-isolation`
+- Change: Recorded the observed difference between USB, PC/SC daemon, and Java
+  reader enumeration in QKB, STATUS, and the session handoff.
+- Validation: The Pico remained visible in `lsusb` as `2e8a:0009`; `pcscd` was
+  active, and the authorized helper returned `PCSC:ACCESS_GRANTED`. A bounded
+  `timeout 5s pcsc_scan -r` timed out without output. Earlier serial capture
+  showed SELECT completed (`9000`) while the following GETVERSION was absent.
+  No source or firmware test was run in this diagnostic-only step.
+- Result: The collector run itself reached 544 CSV rows with no OOM or panic;
+  current PC/SC enumeration is stalled even though USB is present.
+- Decision: Request operator restart of `pcscd.service`, because repository
+  `AGENTS.md` permits autonomous sudo only for the Pico ACL helper; then
+  refresh ACL and check the reader before another physical run.
+- Commit: `7b1d519`.
+- Artifacts/logs: `artifacts/logs/pcsc-host-state-gc-stream-roots-20261018.log`.
