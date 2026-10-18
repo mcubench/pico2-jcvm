@@ -5480,7 +5480,7 @@
   itself passes in isolation. This is not evidence for implementing M1.
 - Decision: Diagnose the long-run PC/SC availability drop and rerun the full
   static suite. Then resume the JCSystem/context API audit.
-- Commit: pending
+- Commit: `5ff5a32`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261018T171028Z.log`;
   `artifacts/logs/physical-m1-exception-alias-20261018.log` SHA-256
   `88966d8b0f6844b9b0b4dc323383af73ad6dbbc86af5f02e4cc9be869cdc557e`;
