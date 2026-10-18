@@ -4800,7 +4800,7 @@
   unreachable slots are not yet safe to reclaim.
 - Decision: Audit persistent/runtime root paths and add a focused completeness
   test before designing tombstones or reuse.
-- Commit: `PENDING`.
+- Commit: `88077d8`.
 - Artifacts/logs: `artifacts/logs/build-pc-heap-trace-diagnostic-20261018.log`,
   `artifacts/logs/build-arm-heap-trace-diagnostic-20261018.log`,
   `artifacts/logs/build-riscv-heap-trace-diagnostic-20261018.log`, and
