@@ -157,6 +157,11 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
     exception_package_aid_length = sizeof(javacard_framework_aid);
     class_token = 13;
     break;
+  case Exceptions::APDUException:
+    exception_package_aid = javacard_framework_aid;
+    exception_package_aid_length = sizeof(javacard_framework_aid);
+    class_token = 12;
+    break;
   default:
     return false;
   }
@@ -166,6 +171,9 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
       class_token);
   if (exception == Exceptions::SystemException) {
     // JCSystem.getAvailableMemory() rejects invalid types with ILLEGAL_VALUE.
+    this->context.getHeap().getInstance(reference)->setField_Short(0, 1);
+  } else if (exception == Exceptions::APDUException) {
+    // APDU state-machine violations are APDUException.ILLEGAL_USE.
     this->context.getHeap().getInstance(reference)->setField_Short(0, 1);
   }
   this->doThrow(reference);

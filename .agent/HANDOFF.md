@@ -1,5 +1,23 @@
 # Handoff
 
+## Latest continuation — dispatch VM-raised APDUException — 2026-10-18
+
+- Mapped internal `Exceptions::APDUException` to framework export token 12
+  (JC305 import remap is applied by the shared resolver) and set the reusable
+  instance reason to `APDUException.ILLEGAL_USE` for APDU state-machine
+  violations.
+- Added cases 26–27: call `setIncomingAndReceive()` twice to trigger the
+  internal invalid-state path, return without using the invalid APDU state,
+  then read the captured reason on the next APDU. Focused VPCD passed; full
+  suite passed 30/30 in 159.731 s. PC, ARM M33, and RISC-V builds passed. No
+  physical device was accessed.
+- The first probe attempted to send an outgoing response after triggering an
+  APDU state error and got `6F00` on that follow-up send. The final probe
+  returns immediately and verifies the catch result on the next command.
+- Next: audit the remaining `JCSystem` transient-array methods and their
+  clear-event behavior. Keep heap reclamation disabled and preserve expected
+  `NO_SUCH_ALGORITHM` results.
+
 ## Latest continuation — instantiate the root java.lang.Object class — 2026-10-18
 
 - Fixed `Class_Handler::getInstanceFieldsSize()` to stop at the root

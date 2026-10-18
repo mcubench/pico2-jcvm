@@ -1,6 +1,7 @@
 package algtest;
 
 import javacard.framework.APDU;
+import javacard.framework.APDUException;
 import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
@@ -20,6 +21,7 @@ public final class JCTransactionProbe extends Applet {
   private static Object[] persistentReferenceArray;
   private static SharedArrayHolder persistentReferenceHolder;
   private byte value = 0x11;
+  private byte lastApduExceptionReason = (byte)0x7f;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
   private final byte[] shaDigest = new byte[32];
 
@@ -335,6 +337,21 @@ public final class JCTransactionProbe extends Applet {
       case 25: {
         Object value = new Object();
         buffer[0] = value == null ? (byte)0 : (byte)1;
+        length = 1;
+        break;
+      }
+      case 26: {
+        lastApduExceptionReason = (byte)0x7f;
+        try {
+          apdu.setIncomingAndReceive();
+          apdu.setIncomingAndReceive();
+        } catch (APDUException e) {
+          lastApduExceptionReason = (byte)e.getReason();
+        }
+        return;
+      }
+      case 27: {
+        buffer[0] = lastApduExceptionReason;
         length = 1;
         break;
       }

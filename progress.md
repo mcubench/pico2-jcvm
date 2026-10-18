@@ -5021,3 +5021,24 @@
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-java-lang-object-construction-20261018.log`,
   `artifacts/logs/jcsystem-java-lang-object-construction-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-java-lang-object-construction-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Dispatch VM-raised APDUException
+
+- Step/experiment: `apdu-exception-handler-dispatch`
+- Change: Mapped the VM's internal APDU state exception to the imported Java
+  Card framework `APDUException` and populated its reason with
+  `ILLEGAL_USE`. Added cases 26–27 to provoke a native APDU state violation,
+  catch it, and verify its reason on the next command.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. Focused VPCD cases 26–27 passed. Full VPCD
+  regression passed `TEST:SUMMARY pass=30 fail=0 elapsed_s=159.731`. No
+  physical board was accessed.
+- Result: Java applet code catches the APDU state exception and observes reason
+  `1` (`APDUException.ILLEGAL_USE`). A prior test design received `6F00` while
+  sending a response on the already-invalid APDU state; the corrected test
+  returns from `process()` and checks the stored reason on the next APDU.
+- Decision: Continue checking the remaining `JCSystem` transient-array
+  operations and clear events. Heap reclamation stays disabled.
+- Commit: `<pending>`.
+- Artifacts/logs: `artifacts/logs/apdu-exception-dispatch-focused-vpcd-20261018.log`,
+  `artifacts/logs/apdu-exception-dispatch-full-vpcd-20261018.log`.

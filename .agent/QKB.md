@@ -1206,3 +1206,24 @@ fix.
 - The prior ArrayStoreException diagnostic about `new Object()` is superseded
   by this fix. It had been a constructor-path failure before the mismatched
   array store, not a dispatch failure.
+
+## VM-raised APDUException bypassed Java catch handlers — 2026-10-18
+
+- **Cause:** Internal APDU state-machine errors were represented by
+  `Exceptions::APDUException`, but the VM-to-Java exception dispatcher had no
+  Java Card framework mapping for that enum value. A handler importing
+  `javacard.framework.APDUException` therefore could not catch native APDU
+  state violations.
+- **Viable fix:** Resolve the framework APDUException through export token 12
+  and initialize its reason field to `ILLEGAL_USE` for the current internal
+  APDU state violations. The focused probe invokes
+  `setIncomingAndReceive()` twice, returns immediately after the catch, and
+  reads the captured reason on a subsequent APDU. It passed with reason 1.
+- **Test-harness note:** A first probe called `setOutgoing()` and then used the
+  normal final response path; its `6F00` was from trying to send after the APDU
+  state had already failed. Returning from `process()` and checking the stored
+  catch result on the next APDU isolates exception dispatch from response
+  transmission state.
+- **Evidence:** PC, ARM, and RISC-V builds passed. Focused VPCD cases 26–27
+  passed. Full VPCD suite passed 30/30 in 159.731 s. No physical board was
+  accessed.
