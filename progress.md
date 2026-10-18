@@ -985,8 +985,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed. `git diff --check` passed. Hardware/APDU validation was skipped because the current VM session reports no usable libusb context and no PC/SC service; no flash was attempted.
 - Result: The VM has a safe CAP metadata primitive for locating applet entries by AID and reading the matching install method offset. No applet is selected or executed yet.
 - Decision: Next wire the lookup into a persistent applet registry/lifecycle path; do not treat this parser primitive as SELECT or install support.
-- Commit: `f10a7d6` (this record's commit ID is recorded in the following
-  metadata commit)
+- Commit: pending
 - Artifacts/logs: none
 
 ## 2026-10-11 — Record CAP lookup commit metadata
@@ -5449,7 +5448,7 @@
   M1 prepare response `03 9000` and a normal follow-up SELECT, then test a
   bounded static subset and the full matrix. Do not implement the DES padding
   algorithm; preserve `NO_SUCH_ALGORITHM` semantics.
-- Commit: pending
+- Commit: `f10a7d6`; metadata commit: pending
 - Artifacts/logs: build records
   `artifacts/logs/build-arm-catch-alias-final-20261018.log`,
   `artifacts/logs/build-riscv-catch-alias-final-20261018.log`,
