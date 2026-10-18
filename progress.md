@@ -4949,7 +4949,7 @@
 - Decision: Continue auditing other VM exception sources and root paths. Keep
   heap reclamation disabled; `NO_SUCH_ALGORITHM` remains expected for absent
   algorithms.
-- Commit: `<pending>`.
+- Commit: `022c080`.
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-vm-runtime-exception-dispatch-20261018.log`,
   `artifacts/logs/jcsystem-runtime-exception-dispatch-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-runtime-exception-dispatch-mappings-vpcd-20261018.log`,
