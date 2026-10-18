@@ -5650,3 +5650,20 @@
   persistence boundaries; physical transport remains stalled after SELECT.
 - Commit: `c949b1d`
 - Artifacts/logs: `artifacts/logs/jcsystem-applet-lifecycle-vpcd-20261018.log`
+## 2026-10-18 — Verify applet lifecycle callbacks across card reset
+
+- Step/experiment: `wp5-applet-reset-callbacks`
+- Change: Added a VPCD case that compares applet callback counters across card
+  reset and reselect.
+- Validation: `./tools/test-jcsystem-transaction-applet --case 57` passed.
+  Cases 55/56/57 also passed together: ordinary reselect increments both
+  callbacks once, rejected selection returns `6999` and blocks process APDUs
+  until a successful SELECT, and card reset increments deselect/select once.
+  Combined result: `TEST:SUMMARY pass=5 fail=0 elapsed_s=21.503`.
+- Result: The VPCD runtime invokes `deselect()` before reset cleanup and invokes
+  `select()` on the subsequent successful SELECT.
+- Decision: Continue checking lifecycle edge cases and persistent state on
+  VPCD; no physical APDU was attempted because PC/SC remains stalled after
+  SELECT.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcsystem-applet-lifecycle-callbacks-vpcd-20261018.log`

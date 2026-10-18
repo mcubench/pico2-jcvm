@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 57),
+        "--case", type=int, action="append", choices=range(1, 58),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -194,6 +194,7 @@ def main() -> int:
                     (54, b"\x01", "unreferenced object batch 3 keeps instance heap bounded"),
                     (55, b"", "reselect invokes applet deselect and select callbacks exactly once"),
                     (56, b"\x01", "rejected applet selection clears selection until a later successful select"),
+                    (57, b"", "card reset deselects the active applet before reselection"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -201,6 +202,31 @@ def main() -> int:
                     else cases
                 )
                 for p1, expected, label in selected_cases:
+                    if p1 == 57:
+                        before = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 55, 0x00, 0x00)),
+                            "read applet lifecycle callback counts before reset",
+                        )
+                        if len(before) != 2:
+                            raise RuntimeError(
+                                f"callback counts before reset: expected 2 bytes, got {before.hex().upper()}"
+                            )
+                        send_message(connection, b"\x02")
+                        exchange(connection, select, "select applet after card reset")
+                        after = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 55, 0x00, 0x00)),
+                            "read applet lifecycle callback counts after reset",
+                        )
+                        expected_counts = bytes(((before[0] + 1) & 0xff,
+                                                 (before[1] + 1) & 0xff))
+                        if after != expected_counts:
+                            raise RuntimeError(
+                                f"{label}: expected callback counts {expected_counts.hex().upper()}, got {after.hex().upper()}"
+                            )
+                        print(f"TEST:PASS {label}")
+                        continue
                     if p1 == 56:
                         exchange(
                             connection,

@@ -20,7 +20,8 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   arrays and reset/deselect lifetimes, memory queries, and selected
   `JCSystem` APIs. Focused lifecycle checks confirm that reselecting an applet
   invokes `deselect()` and `select()` exactly once, rejected selection returns
-  `6999` and leaves the applet unavailable for APDUs, and a later SELECT works.
+  `6999` and leaves the applet unavailable for APDUs, a later SELECT works,
+  and card reset invokes deselect before the next successful select.
 - SHA-256 has known-answer and repeated-call coverage. The CCID/PCSC interface
   and physical reader have passed bounded probes in earlier sessions.
 - Heap tracing now has a guarded sweep path in firmware: it runs after APDU

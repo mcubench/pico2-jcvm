@@ -1,5 +1,18 @@
 # Handoff
 
+## Latest continuation — verify lifecycle callbacks across card reset — 2026-10-18
+
+- Added case 57 to read the probe applet's callback counters, send VPCD card
+  reset, SELECT again, and require one `deselect()` plus one `select()`.
+- Focused case 57 passed (`TEST:SUMMARY pass=3 fail=0`, 16.801 s). Then cases
+  55/56/57 passed together in one session (`TEST:SUMMARY pass=5 fail=0`,
+  21.503 s): ordinary reselect counts `01 00`→`02 01`; rejected SELECT and a
+  process APDU while unselected both returned `6999`, and a subsequent SELECT
+  succeeded; reset/reselect counts advanced `04 02`→`05 03`.
+- Log: `artifacts/logs/jcsystem-applet-lifecycle-callbacks-vpcd-20261018.log`.
+  Physical testing was not used. Continue the profile/lifecycle audit on VPCD;
+  the PC/SC host path still stops after SELECT.
+
 ## Latest continuation — verify rejected applet selection cleanup — 2026-10-18
 
 - Extended the VPCD transaction probe with a test-only switch that makes the
