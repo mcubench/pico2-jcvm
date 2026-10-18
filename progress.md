@@ -5488,3 +5488,34 @@
   `artifacts/logs/physical-des3-static-probe-20261018.log`;
   partial CSV and client log under
   `artifacts/results/physical-perf-static-exception-alias-20261018/`.
+
+## 2026-10-18 — Unwind frames after interpreter exception returns
+
+- Step/experiment: `interpreter-stack-unwind-before-heap-sweep`
+- Change: Added `Stack::unwind()` and use it for status-word, Java exception,
+  timeout, entry, and abort returns from `Interpretor::run()`. This makes the
+  after-APDU heap sweep see an empty Java stack after interpretation has ended,
+  while preserving root results on normal completion.
+- Validation: PC, ARM, and RISC-V builds passed; final CHOUPI cycle passed with
+  `TEST:SUMMARY pass=1 fail=0`. On hardware, 50 M1 prepares each returned
+  `03 9000`, followed by 3-key DES CBC NOPAD prepare/50-call measurement
+  (`AA9000`) and SELECT; all passed. The concurrent serial log contained no
+  `HEAP_GC_SKIP`. The official static run reached 512 CSV rows before
+  `malloc 3244 failed to allocate memory` and panic during AES CBC PKCS5
+  prepare; it is incomplete. The PC/VPCD harness still timed out at GETVERSION.
+- Result: Stale frames caused the collector to skip after exception returns;
+  the stack unwind removes that blocker. The next failure is collector scratch
+  memory exhaustion while growing its traversal worklist, not a missing AES
+  algorithm implementation.
+- Decision: Bound `traceAndMark()` worklist allocation by total stable handle
+  count, then rerun a serial-captured physical static suite. Keep
+  `NO_SUCH_ALGORITHM` rows expected.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261018T173718Z.log`;
+  `artifacts/logs/physical-heap-unwind-stress-20261018.log` SHA-256
+  `89f3f5cdc99bfb5dec9e63312785d1b689af7d68ca45e799a9c2519834abbf5d`;
+  `artifacts/logs/monitor-heap-unwind-stress-20261018.log`;
+  `artifacts/logs/jcalgtest-static-heap-unwind-final-20261018.log`;
+  `artifacts/logs/monitor-static-heap-unwind-final-20261018.log`;
+  partial CSV and client log under
+  `artifacts/results/physical-perf-static-heap-unwind-final-20261018/`.

@@ -1552,10 +1552,40 @@ fix.
   then returned `AA9000`; a follow-up SELECT also succeeded.
 - **Status:** Firmware remained responsive and the isolated failing workload
   passed. The static matrix is incomplete, so this does not establish full
-  static-suite success. The cause of the transient PC/SC reader loss is not
-  yet known.
+  static-suite success. A later run with serial capture showed that the
+  reader-unavailable result followed firmware heap exhaustion, so the apparent
+  transport loss is a consequence of the VM panic rather than an independent
+  PC/SC problem.
 - **Regression guidance:** After `SCARD_E_READER_UNAVAILABLE`, inspect USB
   enumeration separately from PC/SC, rerun the authorized ACL helper once the
   USB node exists, confirm the reader with a short bounded scan, and validate
   card response with a focused APDU before restarting a long suite. Do not
   treat a client-side reader loss as an algorithm result.
+
+## Interpreter frames were left active after APDU exceptions — 2026-10-18
+
+- **Symptom and cause:** After an applet intentionally caught an unsupported
+  algorithm `CryptoException` and used `ISOException.throwIt(0x9000)` to return
+  the JCAlgTest result, `Interpretor::run()` returned the status word without
+  unwinding its Java frames. `collect_heap_after_apdu()` then reported
+  `HEAP_GC_SKIP reason=active_java_frames`. Repeated `NO_SUCH_ALGORITHM`
+  requests accumulated objects and later ended in `malloc` failure and panic.
+- **Viable fix:** Add `Stack::unwind()` to clear frames and any stale root return
+  value on every exceptional/aborted interpreter exit, including the terminal
+  ISO status path. Keep root return values on normal completion.
+- **Validation:** PC, ARM, and RISC-V builds passed; the physical cycle passed.
+  Fifty M1 prepare calls each returned `03 9000`, followed by a 50-call
+  3-key-DES CBC NOPAD measurement returning `AA9000` and a successful SELECT.
+  The concurrent serial capture had no `HEAP_GC_SKIP` or panic during this
+  focused sequence.
+- **Remaining issue:** A full static rerun reached 512 CSV rows and then
+  panicked with `malloc 3244 failed to allocate memory` while the collector
+  was tracing the AES CBC PKCS5 prepare. `SCARD_E_READER_UNAVAILABLE` was the
+  client-visible consequence. The capture shows a 1,622-byte allocation
+  immediately before the 3,244-byte request; inspect pending-worklist growth
+  in `Heap::traceAndMark()` and reserve no more than the total stable handle
+  count before claiming the full static run is fixed.
+- Evidence: `artifacts/logs/physical-heap-unwind-stress-20261018.log`,
+  `artifacts/logs/monitor-heap-unwind-stress-20261018.log`,
+  `artifacts/logs/jcalgtest-static-heap-unwind-final-20261018.log`, and
+  `artifacts/logs/monitor-static-heap-unwind-final-20261018.log`.

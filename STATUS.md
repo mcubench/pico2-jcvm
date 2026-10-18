@@ -24,19 +24,19 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 - Heap tracing now has a guarded sweep path in firmware: it runs after APDU
   interpreter scopes return and only reclaims after a complete root walk.
   Persistent-tagged objects are conservatively pinned, global arrays are
-  excluded, and stable handle slots are reused. VPCD allocation batches for
-  arrays and objects passed. After fixing the DESKey interface token, the
-  physical `ALG_PERFORMANCE_STATIC` client completed all 7,785 result rows
-  without a reader disconnect. SHA-256 and DES CBC NOPAD were measured, and 40
-  probes reported expected `NO_SUCH_ALGORITHM`. However, 1,852 operations
-  returned `6F00`/`CANT_BE_MEASURED`. An isolated DES CBC ISO9797 M1 prepare
-  previously reproduced `6F00`. The ROM/imported exception class-view fix is
-  now verified on hardware: M1 returns `03 9000` and the client records the
-  expected `NO_SUCH_ALGORITHM`. A post-fix full static rerun reached that case
-  and continued, but later stopped with `SCARD_E_READER_UNAVAILABLE` during a
-  3-key DES CBC NOPAD measurement. A focused prepare plus 50-call measurement
-  for that operation passed after PC/SC access was restored. The new full
-  static matrix is therefore still incomplete.
+  excluded, and stable handle slots are reused. Exception exits now unwind Java
+  frames so the post-APDU collector can run. A physical 50-request M1 stress
+  plus 50-call DES3 measurement passed without a GC skip. However, the latest
+  full static attempt reached 512 CSV rows and then panicked when collection
+  requested a 3,244-byte worklist allocation. The earlier reader-unavailable
+  reports were consequences of firmware OOM, not unsupported-algorithm results.
+  VPCD allocation batches for arrays and objects passed. The historical
+  physical static run after the DESKey mapping completed 7,785 rows, but had
+  1,852 `6F00`/`CANT_BE_MEASURED` results and was not a passing matrix. The
+  ROM/imported exception class-view fix is now verified on hardware: M1 returns
+  `03 9000` and JCAlgTest records the expected `NO_SUCH_ALGORITHM`. The latest
+  post-fix matrix remains incomplete because the collector panics while growing
+  scratch storage.
 
 ## Main gaps
 
@@ -49,10 +49,11 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
    but persistent objects are pinned until deletion is implemented. The root
    walk and object ownership model still need broader audits, especially for
    native-held references and future multi-context operation.
-3. **Physical end-to-end validation:** the physical JCAlgTest support sweep has
-   stopped early with reader disconnects. The full static client completed its
-   matrix, but most failed measurements remain unresolved `6F00` results. Do
-   not report either suite as passing.
+3. **Physical end-to-end validation:** the support sweep has stopped early with
+   firmware out-of-memory failures. A historical static run completed its
+   matrix with many `6F00` results, while the latest post-fix run stopped at
+   512 rows during collector scratch allocation. Do not report either suite as
+   passing.
 4. **Profile/API completeness:** several APIs are deliberately unsupported,
    including object deletion and integrity-sensitive arrays. Remaining runtime
    behavior needs systematic comparison against a selected Java Card profile.
@@ -64,9 +65,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 
 ## Next priorities
 
-1. Diagnose the transient PC/SC reader loss during the physical static run,
-   then rerun the full matrix. The Pico remained on USB and a repeated access
-   helper restored the reader; the exact DES3 workload passed in isolation.
+1. Reduce collector scratch allocation in `Heap::traceAndMark()` so the guarded
+   root walk remains safe when many handles are live; rerun the physical static
+   suite with serial capture. The focused exception and DES3 workloads pass,
+   but the full run still panics at a 3,244-byte worklist allocation.
 2. Define the supported Java Card version/profile, then audit runtime APIs,
    applet lifecycle, and firewall behavior against it.
 3. Expand power-cycle, CAP-validation, and host/physical regression coverage.

@@ -75,6 +75,13 @@ public:
 
   // Popping the current frame without return value
   void pop_Frame();
+  /// Discard frames and any saved root result after an aborted interpretation.
+  void unwind() noexcept {
+    this->frames.clear();
+    this->root_return_value_available = false;
+    this->root_return_value_is_reference = false;
+    this->root_return_value = 0;
+  }
   // The stack is empty? (no pushed Java Card frame)
   bool empty() noexcept;
   /// Whether the current frame is the top-level interpreter entry.

@@ -4831,3 +4831,37 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: diagnose the transient PC/SC loss, then rerun the full static matrix.
   After that, continue the remaining JCSystem/context audit; keep expected
   `NO_SUCH_ALGORITHM` results out of the bug count.
+
+## Latest continuation — unwind interpreter frames after exception returns — 2026-10-18
+
+- Serial capture found `CHOUPI:HEAP_GC_SKIP reason=active_java_frames` after
+  applet exception returns. `Interpretor::run()` returned directly from its
+  ISO status-word and fatal exception paths, leaving frames in the shared
+  `Context::Stack`; the after-APDU collector correctly refused to sweep an
+  incomplete root set. Repeated unsupported-algorithm prepares accumulated
+  memory and caused an OOM panic.
+- Added `Stack::unwind()` and call it on aborted interpreter exits, clearing
+  stale root return state as well as frames. PC, ARM, and RISC-V builds passed;
+  the physical cycle passed. A hardware stress probe ran 50 DES CBC ISO9797 M1
+  prepares (`03 9000` each), then 3-key DES CBC NOPAD prepare and 50-call
+  measurement (`AA9000`), then SELECT; all passed. Serial capture showed no
+  `HEAP_GC_SKIP` or panic during that sequence.
+- The official static run now progresses farther but remains incomplete. With
+  a 300-second serial capture it reached 512 CSV rows, then the collector path
+  failed `malloc 3244` and panicked during AES CBC PKCS5 prepare. The client
+  reported `SCARD_E_READER_UNAVAILABLE` afterward. A 1,622-byte allocation
+  preceded the failing request; likely worklist growth in `Heap::traceAndMark`
+  needs bounded reservation to the stable handle count. Do not report the full
+  matrix as passing.
+- The PC/VPCD suite still times out at GETVERSION before exercising applet APDUs;
+  hardware results are from the Pico 2 only.
+- Artifacts: `artifacts/logs/cycle-choupi-20261018T173718Z.log`,
+  `artifacts/logs/physical-heap-unwind-stress-20261018.log`,
+  `artifacts/logs/monitor-heap-unwind-stress-20261018.log`,
+  `artifacts/logs/jcalgtest-static-heap-unwind-final-20261018.log`,
+  `artifacts/logs/monitor-static-heap-unwind-final-20261018.log`, and
+  `artifacts/results/physical-perf-static-heap-unwind-final-20261018/`.
+- Next: bound `traceAndMark()` worklist capacity to the total local handle
+  count, verify all traversed object references fit that bound, then rerun the
+  same hardware capture. Continue the JCSystem/context API audit after the
+  collector survives the full static matrix.

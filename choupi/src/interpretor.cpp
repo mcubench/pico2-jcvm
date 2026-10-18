@@ -200,6 +200,7 @@ uint16_t Interpretor::run() noexcept {
                        static_cast<int>(stack.readLocal_Short(1)),
                        static_cast<unsigned>(this->installLength));
           if (!arguments_match) {
+            stack.unwind();
             return 0x6f00;
           }
         }
@@ -207,10 +208,12 @@ uint16_t Interpretor::run() noexcept {
       } catch (Exceptions e) {
         this->last_exception_id = e;
         this->startJCVMException(e);
+        context.getStack().unwind();
         return this->status_word;
       } catch (...) {
         this->last_exception_id = Exceptions::SecurityException;
         this->startJCVMException(Exceptions::SecurityException);
+        context.getStack().unwind();
         return this->status_word;
       }
     } else {
@@ -224,6 +227,7 @@ uint16_t Interpretor::run() noexcept {
         this->initialReferenceCount == 0) {
       this->last_exception_id = Exceptions::SecurityException;
       this->startJCVMException(Exceptions::SecurityException);
+      context.getStack().unwind();
       return this->status_word;
     }
     try {
@@ -235,6 +239,7 @@ uint16_t Interpretor::run() noexcept {
           startup_frame.getOP() - startup_frame.getFP()) {
         this->last_exception_id = Exceptions::SecurityException;
         this->startJCVMException(Exceptions::SecurityException);
+        startup_stack.unwind();
         return this->status_word;
       }
       for (uint8_t index = 0; index < this->initialReferenceCount; ++index) {
@@ -248,6 +253,7 @@ uint16_t Interpretor::run() noexcept {
                    static_cast<unsigned>(e),
                    static_cast<unsigned>(this->startingMethodPackage),
                    static_cast<unsigned>(this->startingMethodOffset));
+      context.getStack().unwind();
       return 0x6f00;
     } catch (...) {
       this->last_exception_id = Exceptions::SecurityException;
@@ -255,6 +261,7 @@ uint16_t Interpretor::run() noexcept {
                    "CHOUPI:VM_ENTRY_EXCEPTION id=unknown package=%u offset=%u\n",
                    static_cast<unsigned>(this->startingMethodPackage),
                    static_cast<unsigned>(this->startingMethodOffset));
+      context.getStack().unwind();
       return 0x6f00;
     }
   } else { // TODO: exported virtual method entry by class/method token.
@@ -313,6 +320,7 @@ uint16_t Interpretor::run() noexcept {
       this->last_exception_opcode_history = this->opcode_history;
       this->last_exception_depth_history = this->depth_history;
       this->status_word = 0x6400;
+      stack.unwind();
       return this->status_word;
     }
 #endif
@@ -349,6 +357,14 @@ uint16_t Interpretor::run() noexcept {
 
       // execute
       (bytecodes.*bc)();
+    } catch (const ISOExceptionStatusWord &iso_exception) {
+      this->last_exception_id = Exceptions::ISOException;
+      this->last_exception_opcode = bytecode;
+      this->last_exception_pc =
+          static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc));
+      this->status_word = iso_exception.value;
+      stack.unwind();
+      return this->status_word;
     } catch (Exceptions e) {
       try {
         if (bytecodes.dispatchJavaException(e)) {
@@ -386,6 +402,7 @@ uint16_t Interpretor::run() noexcept {
                        static_cast<const void *>(stack.getPC().getValue()));
       }
       this->startJCVMException(e);
+      stack.unwind();
       return this->status_word;
     } catch (...) {
       this->last_exception_id = Exceptions::SecurityException;
@@ -409,6 +426,7 @@ uint16_t Interpretor::run() noexcept {
                     static_cast<const void *>(stack.getPC().getValue()));
       }
       this->startJCVMException(Exceptions::SecurityException);
+      stack.unwind();
       return this->status_word;
     }
     if (trace_instruction) {
