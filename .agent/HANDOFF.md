@@ -1,6 +1,21 @@
 # Handoff
 
-## Latest continuation — dispatch ArrayStoreException — 2026-10-18
+## Latest continuation — dispatch JCSystem SystemException — 2026-10-18
+
+- Generalized VM exception class lookup from `java.lang` to a package AID and
+  class token. `Exceptions::SystemException` now resolves framework export
+  token 13 and reuses a rooted instance. For the current invalid
+  `JCSystem.getAvailableMemory` type path, it sets reason
+  `SystemException.ILLEGAL_VALUE` before dispatch.
+- Added case 24, which passes memory type 3, catches `SystemException`, checks
+  the reason, and returns `019000`. PC, ARM M33, and RISC-V builds passed.
+  Full VPCD suite passed 27/27 in 98.571 s; all 50 heap trace walks completed
+  with zero invalid refs or edge-load failures. No board was accessed.
+- Next: continue auditing VM-raised Java Card framework exceptions and
+  investigate the separate `new java.lang.Object()` constructor failure.
+  Unsupported algorithm rows remain expected; heap reclamation stays off.
+
+## Previous continuation — dispatch ArrayStoreException — 2026-10-18
 
 - Added the `java.lang.ArrayStoreException` export-token mapping (token 11) to
   the common VM-to-Java exception dispatcher. The focused probe creates an

@@ -86,9 +86,9 @@ bool isRuntimeCryptoExceptionFactoryAllocation(
 }
 
 jref_t runtimeExceptionReference(Context &context,
+                                 const uint8_t *exception_package_aid,
+                                 const size_t exception_package_aid_length,
                                  const uint8_t class_token) {
-  static constexpr uint8_t java_lang_aid[] = {
-      0xA0, 0x00, 0x00, 0x00, 0x62, 0x00, 0x01};
 
   Package applet_package = context.getCurrentPackage();
   Import_Handler imports(applet_package);
@@ -99,9 +99,9 @@ jref_t runtimeExceptionReference(Context &context,
 
   for (uint8_t token = 0; token < import_component->count; ++token) {
     const auto *package_info = imports.getPackageAID(token);
-    if (package_info->AID_length != sizeof(java_lang_aid) ||
-        std::memcmp(package_info->AID, java_lang_aid,
-                    sizeof(java_lang_aid)) != 0) {
+    if (package_info->AID_length != exception_package_aid_length ||
+        std::memcmp(package_info->AID, exception_package_aid,
+                    exception_package_aid_length) != 0) {
       continue;
     }
 
@@ -120,6 +120,12 @@ jref_t runtimeExceptionReference(Context &context,
 } // namespace
 
 bool Bytecodes::dispatchJavaException(const Exceptions exception) {
+  static constexpr uint8_t java_lang_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x00, 0x01};
+  static constexpr uint8_t javacard_framework_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01};
+  const uint8_t *exception_package_aid = java_lang_aid;
+  size_t exception_package_aid_length = sizeof(java_lang_aid);
   uint8_t class_token = 0;
   switch (exception) {
   case Exceptions::IndexOutOfBoundsException:
@@ -146,11 +152,23 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
   case Exceptions::ArrayStoreException:
     class_token = 11;
     break;
+  case Exceptions::SystemException:
+    exception_package_aid = javacard_framework_aid;
+    exception_package_aid_length = sizeof(javacard_framework_aid);
+    class_token = 13;
+    break;
   default:
     return false;
   }
 
-  this->doThrow(runtimeExceptionReference(this->context, class_token));
+  const jref_t reference = runtimeExceptionReference(
+      this->context, exception_package_aid, exception_package_aid_length,
+      class_token);
+  if (exception == Exceptions::SystemException) {
+    // JCSystem.getAvailableMemory() rejects invalid types with ILLEGAL_VALUE.
+    this->context.getHeap().getInstance(reference)->setField_Short(0, 1);
+  }
+  this->doThrow(reference);
   return true;
 }
 

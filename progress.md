@@ -4976,3 +4976,25 @@
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-arraystore-dispatch-final-20261018.log`,
   `artifacts/logs/jcsystem-arraystore-this-probe-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-arraystore-dispatch-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Dispatch JCSystem SystemException
+
+- Step/experiment: `catchable-jcsystem-system-exception`
+- Change: Generalized VM exception resolution to select a package by AID and
+  class export token. Mapped internal `SystemException` to
+  `javacard.framework` token 13 and set reason field 0 to `ILLEGAL_VALUE` for
+  the invalid `JCSystem.getAvailableMemory(byte)` type path. Added case 24 to
+  verify Java catch behavior and the reason code.
+- Validation: PC, ARM M33, and RISC-V builds passed. Focused VPCD case 24
+  passed (`019000`). Full suite with two-pass heap tracing passed
+  `TEST:SUMMARY pass=27 fail=0 elapsed_s=98.571`; all 50 trace walks completed
+  with zero invalid refs and zero edge-load failures. No board was accessed.
+- Result: The VM-raised SystemException is caught by the applet, and
+  `getReason()` returns `SystemException.ILLEGAL_VALUE` (1).
+- Decision: Continue auditing VM-raised Java Card framework exceptions.
+  Exception values that lack a known reason mapping remain unmodified. Keep
+  heap reclamation disabled.
+- Commit: `<pending>`.
+- Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-jcsystem-systemexception-20261018.log`,
+  `artifacts/logs/jcsystem-systemexception-focused-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-systemexception-full-vpcd-20261018.log`.

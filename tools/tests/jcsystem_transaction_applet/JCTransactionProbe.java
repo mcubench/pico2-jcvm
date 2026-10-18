@@ -9,6 +9,7 @@ import javacard.framework.OwnerPINBuilder;
 import javacard.framework.OwnerPINx;
 import javacard.framework.OwnerPINxWithPredecrement;
 import javacard.framework.PINException;
+import javacard.framework.SystemException;
 import javacard.framework.TransactionException;
 import javacard.security.MessageDigest;
 import javacard.security.InitializedMessageDigest;
@@ -316,6 +317,17 @@ public final class JCTransactionProbe extends Applet {
           buffer[0] = 0;
         } catch (ArrayStoreException e) {
           buffer[0] = 1;
+        }
+        length = 1;
+        break;
+      }
+      case 24: {
+        try {
+          JCSystem.getAvailableMemory((byte)3);
+          buffer[0] = 0;
+        } catch (SystemException e) {
+          buffer[0] = e.getReason() == SystemException.ILLEGAL_VALUE
+              ? (byte)1 : (byte)2;
         }
         length = 1;
         break;

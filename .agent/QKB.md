@@ -1165,3 +1165,21 @@ fix.
 - The earlier note that `ArrayStoreException` was unmapped is superseded by
   this correction. Security violations and other unmapped exception values
   remain outside Java dispatch.
+
+### Correction — dispatch JCSystem SystemException
+
+- `JCSystem.getAvailableMemory(byte)` forwards an invalid type into the native
+  binding, which raises internal `Exceptions::SystemException`. The Java class
+  is in the imported `javacard.framework` package, not `java.lang`; its JC 3.0.5
+  class export token is 13. Exception lookup now matches a requested package
+  AID and token, and the SystemException path sets `reason` field 0 to
+  `ILLEGAL_VALUE` (1) before Java handler dispatch.
+- Case 24 passed through VPCD: type 3 was caught as `SystemException`,
+  `getReason()` equaled `SystemException.ILLEGAL_VALUE`, and response was
+  `019000`. Full suite passed 27/27 in 98.571 s. All 50 heap walks were
+  complete with zero invalid references and zero edge-load failures. PC, ARM,
+  and RISC-V builds passed; no board was accessed.
+- This covers the invalid-type native path only. Other framework exception
+  values and reason codes still need explicit mappings and tests. The generic
+  VM exception enum does not carry reasons, so only paths with a known reason
+  should synthesize one.
