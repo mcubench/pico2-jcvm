@@ -4954,3 +4954,25 @@
   `artifacts/logs/jcsystem-runtime-exception-dispatch-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-runtime-exception-dispatch-mappings-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-runtime-exception-dispatch-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Dispatch ArrayStoreException
+
+- Step/experiment: `catchable-array-store-exception`
+- Change: Mapped internal `ArrayStoreException` to Java `java.lang` export token
+  11 and added a probe that stores the applet instance into an `Exception[]`
+  through an `Object[]` reference, exercising a VM-raised type mismatch.
+- Validation: PC, ARM M33, and RISC-V builds passed. Focused VPCD case 23 passed
+  (`019000`). Full suite with two-pass heap tracing passed
+  `TEST:SUMMARY pass=26 fail=0 elapsed_s=116.840`; all 48 walks were complete
+  with zero invalid refs and zero edge-load failures. No physical board was
+  accessed.
+- Result: The checked-in JC 3.0.5 `java/lang/javacard/lang.jca` identifies
+  `ArrayStoreException` as export token 11. Java catches the runtime exception.
+  A separate `new Object()` probe terminated the PC emulator before the store;
+  its cause is unresolved and recorded in QKB.
+- Decision: Keep the ArrayStoreException mapping. Continue the remaining VM
+  exception audit and separately investigate `new java.lang.Object()`.
+- Commit: `<pending>`.
+- Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-arraystore-dispatch-final-20261018.log`,
+  `artifacts/logs/jcsystem-arraystore-this-probe-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-arraystore-dispatch-full-vpcd-20261018.log`.

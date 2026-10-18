@@ -1143,3 +1143,25 @@ fix.
   violations, and other exception values not listed in the mapping remain
   outside Java dispatch and must be audited separately. Heap reclamation stays
   disabled.
+
+### Correction — dispatch ArrayStoreException
+
+- JC 3.0.5's checked-in `java/lang/javacard/lang.jca` exports
+  `ArrayStoreException` at token 11. The dispatcher now maps internal
+  `Exceptions::ArrayStoreException` to that class. A VPCD probe assigned the
+  active applet instance into an `Exception[]` through an `Object[]` reference;
+  Java caught the VM-raised mismatch and returned `019000`.
+- PC, ARM, and RISC-V builds passed. Full VPCD suite passed 26/26 in 116.840 s;
+  24 pairs (48 total) of heap walks were complete with zero invalid references
+  or edge-load failures. No board was accessed.
+- The initial probe used `new Object()` and the PC emulator terminated with an
+  uncaught `jcvm::Exceptions` before reaching the array store. Allocation of
+  `Exception[]` and same-type `Exception` stores work, and using the active
+  applet instance reliably exercises the mismatched store. **Open issue:**
+  isolate and fix the `new java.lang.Object()` path; current evidence does not
+  identify the throwing source. Logs:
+  `artifacts/logs/jcsystem-arraystore-exception-dispatch-vpcd-20261018.log` and
+  `artifacts/logs/jcsystem-arraystore-object-allocation-probe-vpcd-20261018.log`.
+- The earlier note that `ArrayStoreException` was unmapped is superseded by
+  this correction. Security violations and other unmapped exception values
+  remain outside Java dispatch.

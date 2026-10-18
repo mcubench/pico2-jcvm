@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 23),
+        "--case", type=int, action="append", choices=range(1, 24),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -160,6 +160,7 @@ def main() -> int:
                     (20, b"\x01", "array access throws catchable ArrayIndexOutOfBoundsException"),
                     (21, b"\x01", "division by zero throws catchable ArithmeticException"),
                     (22, b"\x01", "negative array size throws catchable NegativeArraySizeException"),
+                    (23, b"\x01", "reference array store throws catchable ArrayStoreException"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

@@ -1,6 +1,22 @@
 # Handoff
 
-## Latest continuation — dispatch VM runtime exceptions through Java handlers — 2026-10-18
+## Latest continuation — dispatch ArrayStoreException — 2026-10-18
+
+- Added the `java.lang.ArrayStoreException` export-token mapping (token 11) to
+  the common VM-to-Java exception dispatcher. The focused probe creates an
+  `Exception[]`, stores the active applet instance through an `Object[]`
+  reference, and verifies the mismatch is caught with response `019000`.
+- PC, ARM M33, and RISC-V builds passed. Full VPCD JCSystem suite passed
+  26/26 in 116.840 s; all 48 heap trace walks completed with zero invalid
+  refs or edge-load failures. No physical board was accessed.
+- A separate probe using `new Object()` terminated the PC emulator with an
+  uncaught `jcvm::Exceptions` before the tested array store. This is tracked
+  in QKB as an independent object-construction issue. Do not use that variant
+  as the ArrayStoreException regression.
+- Next: audit remaining exception types and the object construction failure.
+  Heap reclamation remains disabled.
+
+## Previous continuation — dispatch VM runtime exceptions through Java handlers — 2026-10-18
 
 - The interpreter now translates common VM-raised runtime exceptions into
   reusable, per-heap Java exception objects and dispatches them through the

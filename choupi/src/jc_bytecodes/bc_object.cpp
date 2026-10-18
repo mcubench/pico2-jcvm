@@ -143,6 +143,9 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
   case Exceptions::RuntimeException:
     class_token = 3;
     break;
+  case Exceptions::ArrayStoreException:
+    class_token = 11;
+    break;
   default:
     return false;
   }
