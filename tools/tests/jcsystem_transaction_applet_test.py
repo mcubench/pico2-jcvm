@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 30),
+        "--case", type=int, action="append", choices=range(1, 34),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -167,6 +167,10 @@ def main() -> int:
                     (27, b"\x01", "caught APDUException preserves the ILLEGAL_USE reason"),
                     (28, b"\x01", "transient byte/object arrays preserve clear events and values"),
                     (29, b"\x01", "invalid transient array event throws SystemException.ILLEGAL_VALUE"),
+                    (30, b"\x01", "prepare transient values for deselect lifecycle check"),
+                    (31, b"\x03", "CLEAR_ON_DESELECT clears while CLEAR_ON_RESET survives applet reselection"),
+                    (32, b"\x01", "prepare transient values for card reset check"),
+                    (33, b"\x03", "card reset clears both CLEAR_ON_DESELECT and CLEAR_ON_RESET arrays"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -174,6 +178,11 @@ def main() -> int:
                     else cases
                 )
                 for p1, expected, label in selected_cases:
+                    if p1 == 31:
+                        exchange(connection, select, "reselect applet for transient lifecycle check")
+                    if p1 == 33:
+                        send_message(connection, b"\x02")
+                        exchange(connection, select, "reselect applet after card reset")
                     data = exchange(
                         connection,
                         bytes((0x80, 0x00, p1, 0x00, 0x00)),

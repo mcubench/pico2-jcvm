@@ -22,6 +22,8 @@ public final class JCTransactionProbe extends Applet {
   private static SharedArrayHolder persistentReferenceHolder;
   private byte value = 0x11;
   private byte lastApduExceptionReason = (byte)0x7f;
+  private byte[] transientResetArray;
+  private byte[] transientDeselectArray;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
   private final byte[] shaDigest = new byte[32];
 
@@ -388,6 +390,48 @@ public final class JCTransactionProbe extends Applet {
           buffer[0] = e.getReason() == SystemException.ILLEGAL_VALUE
               ? (byte)1 : (byte)2;
         }
+        length = 1;
+        break;
+      }
+      case 30: {
+        transientResetArray = JCSystem.makeTransientByteArray(
+            (short)1, JCSystem.CLEAR_ON_RESET);
+        transientDeselectArray = JCSystem.makeTransientByteArray(
+            (short)1, JCSystem.CLEAR_ON_DESELECT);
+        transientResetArray[0] = 0x55;
+        transientDeselectArray[0] = 0x66;
+        buffer[0] = 1;
+        length = 1;
+        break;
+      }
+      case 31: {
+        byte result = 0;
+        if (transientDeselectArray != null && transientDeselectArray[0] == 0) {
+          result |= 1;
+        }
+        if (transientResetArray != null && transientResetArray[0] == 0x55) {
+          result |= 2;
+        }
+        buffer[0] = result;
+        length = 1;
+        break;
+      }
+      case 32: {
+        transientResetArray[0] = 0x2a;
+        transientDeselectArray[0] = 0x3b;
+        buffer[0] = 1;
+        length = 1;
+        break;
+      }
+      case 33: {
+        byte result = 0;
+        if (transientDeselectArray != null && transientDeselectArray[0] == 0) {
+          result |= 1;
+        }
+        if (transientResetArray != null && transientResetArray[0] == 0) {
+          result |= 2;
+        }
+        buffer[0] = result;
         length = 1;
         break;
       }

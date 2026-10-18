@@ -46,8 +46,6 @@ void Session::clear_or_deselect() {
       (void)callbacks_.deselect(callbacks_.context);
     }
     selected_ = false;
-  } else if (callbacks_.clear != nullptr) {
-    callbacks_.clear(callbacks_.context);
   }
 }
 
@@ -76,14 +74,20 @@ SessionResult Session::handle_message(const uint8_t *message,
   if (message_length == 1) {
     switch (message[0]) {
     case kControlOff:
-      powered_ = false;
       clear_or_deselect();
+      if (callbacks_.clear != nullptr) {
+        callbacks_.clear(callbacks_.context);
+      }
+      powered_ = false;
       return SessionResult::NoResponse;
     case kControlOn:
       powered_ = true;
       return SessionResult::NoResponse;
     case kControlReset:
       clear_or_deselect();
+      if (callbacks_.clear != nullptr) {
+        callbacks_.clear(callbacks_.context);
+      }
       powered_ = true;
       return SessionResult::NoResponse;
     case kControlAtr:
@@ -111,9 +115,6 @@ SessionResult Session::handle_message(const uint8_t *message,
   if (select_by_aid(applet_aid_.data(), applet_aid_.size(), message,
                     message_length)) {
     clear_or_deselect();
-    if (callbacks_.clear != nullptr) {
-      callbacks_.clear(callbacks_.context);
-    }
     if (callbacks_.restore == nullptr ||
         callbacks_.restore(callbacks_.context, applet_aid_.data(),
                            static_cast<uint8_t>(applet_aid_.size())) != 0) {

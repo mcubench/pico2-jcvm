@@ -139,6 +139,25 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                  uint8_t aid_length) {
   pending_apdu_response.queue(nullptr, 0);
   try {
+    if (selected_applet_context &&
+        selected_applet_context->hasRestoredAppletInstance()) {
+      uint8_t retained_aid[16]{};
+      uint8_t retained_aid_length = 0;
+      const jcvm::jref_t applet_ref =
+          selected_applet_context->getRestoredAppletRef();
+      const auto applet =
+          selected_applet_context->getHeap().getInstance(applet_ref);
+      if (applet->getPackageID() == package_id &&
+          applet->getClassIndex() == class_index &&
+          selected_applet_context->copyAppletAID(retained_aid,
+                                                 retained_aid_length) &&
+          retained_aid_length == aid_length &&
+          std::memcmp(retained_aid, aid, aid_length) == 0) {
+        selected_applet_is_active = false;
+        return 0;
+      }
+    }
+
     auto context = std::make_unique<jcvm::Context>(
         0, static_cast<jcvm::jpackage_ID_t>(package_id));
     if (!context->setAppletAID(aid, aid_length) ||
@@ -162,7 +181,10 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
 
 void choupi_vm_clear_selected_applet(void) {
   pending_apdu_response.queue(nullptr, 0);
-  selected_applet_context.reset();
+  if (selected_applet_context) {
+    selected_applet_context->getHeap().clearTransientArrays(
+        jcvm::ClearEvent::CLEAR_ON_RESET);
+  }
   selected_applet_is_active = false;
 }
 
@@ -241,12 +263,12 @@ uint16_t choupi_vm_select_applet(void) {
 uint16_t choupi_vm_deselect_applet(void) {
   pending_apdu_response.queue(nullptr, 0);
   if (!selected_applet_context || !selected_applet_is_active) {
-    selected_applet_context.reset();
     selected_applet_is_active = false;
     return 0x9000;
   }
   const uint16_t status = invoke_selected_applet_method(4, nullptr);
-  selected_applet_context.reset();
+  selected_applet_context->getHeap().clearTransientArrays(
+      jcvm::ClearEvent::CLEAR_ON_DESELECT);
   selected_applet_is_active = false;
   return status;
 }

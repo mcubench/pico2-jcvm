@@ -5064,3 +5064,23 @@
 - Commit: `80b09fd`.
 - Artifacts/logs: `artifacts/logs/jcsystem-transient-arrays-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-transient-arrays-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Preserve JCSystem transient-array lifetimes
+
+- Step/experiment: `jcsystem-transient-array-lifecycle`
+- Change: Retained the applet `Context` across same-AID reselection. After the
+  applet's `deselect()` callback, clear `CLEAR_ON_DESELECT` arrays; on card
+  reset or power-off, clear `CLEAR_ON_RESET` arrays. VPCD selection no longer
+  invokes the reset clear callback. Added lifecycle cases 30–33.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. Focused VPCD cases 28–33 passed. Full VPCD
+  suite passed `TEST:SUMMARY pass=36 fail=0 elapsed_s=114.875`. No physical
+  device was accessed.
+- Result: Reset-event arrays survive applet deselection/reselection;
+  deselect-event arrays clear on deselection; both clear after card reset.
+- Decision: Continue auditing remaining JCSystem method stubs and lifecycle
+  behavior. Cross-applet context caching remains unverified; heap reclamation
+  stays disabled.
+- Commit: `PENDING`.
+- Artifacts/logs: `artifacts/logs/jcsystem-transient-lifecycle-focused-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-transient-lifecycle-full-vpcd-20261018.log`.

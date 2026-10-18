@@ -1241,8 +1241,18 @@ fix.
   `JCSystem.isTransient()` reports the requested event. Focused and full VPCD
   tests passed; the full suite passed 32/32 in 113.436 s. PC, ARM, and RISC-V
   builds passed. No physical device was used.
-- **Open lifecycle question:** `Heap::clearTransientArrays()` has no call
-  sites. VPCD reset/deselect tears down the selected context and heap, which
-  makes transient data inaccessible, but no test yet proves clear-event
-  behavior for a lifecycle where a heap survives. Keep this distinction clear
-  before wiring new lifecycle calls.
+- **Lifecycle cause:** VPCD deselection destroyed the selected applet context;
+  restoration rebuilt transient arrays with zeroed contents for both event
+  types. This incorrectly cleared `CLEAR_ON_RESET` arrays on deselection.
+  `Heap::clearTransientArrays()` existed but had no runtime call sites.
+- **Viable lifecycle fix:** Retain and reuse the same applet `Context` for a
+  same-AID reselection. After invoking the applet's `deselect()` method, clear
+  only `CLEAR_ON_DESELECT` arrays. On card reset/power-off, additionally clear
+  `CLEAR_ON_RESET` arrays. VPCD selection no longer invokes the reset clear
+  callback. Cases 30–33 verify reset-array retention across deselect, deselect
+  clearing, and both events clearing after card reset.
+- **Evidence:** Focused lifecycle tests passed; full VPCD suite passed 36/36 in
+  114.875 s. PC, ARM, and RISC-V builds passed. No physical device was used.
+- **Scope:** The runtime has one selected applet context; this fix reuses that
+  context when the same AID is selected again. Cross-applet context caching
+  and shareable-interface behavior remain outside this verified path.
