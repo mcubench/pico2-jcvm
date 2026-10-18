@@ -985,7 +985,8 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed. `git diff --check` passed. Hardware/APDU validation was skipped because the current VM session reports no usable libusb context and no PC/SC service; no flash was attempted.
 - Result: The VM has a safe CAP metadata primitive for locating applet entries by AID and reading the matching install method offset. No applet is selected or executed yet.
 - Decision: Next wire the lookup into a persistent applet registry/lifecycle path; do not treat this parser primitive as SELECT or install support.
-- Commit: pending
+- Commit: `f10a7d6` (this record's commit ID is recorded in the following
+  metadata commit)
 - Artifacts/logs: none
 
 ## 2026-10-11 — Record CAP lookup commit metadata
