@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest continuation — verify rejected applet selection cleanup — 2026-10-18
+
+- Extended the VPCD transaction probe with a test-only switch that makes the
+  applet reject its next `select()` callback. The driver checks the SELECT
+  failure status (`6999`), confirms a process APDU is not dispatched while the
+  applet is unselected, then verifies a subsequent SELECT succeeds.
+- `./tools/build-jcsystem-transaction-probe` passed. The combined cases 55/56
+  passed in one session: callback counts advanced `01 00` to `02 01`, rejected
+  SELECT and the subsequent process APDU returned `6999`, and the next SELECT
+  returned `9000`. Summary: `TEST:SUMMARY pass=4 fail=0 elapsed_s=19.811`.
+  Log: `artifacts/logs/jcsystem-applet-lifecycle-vpcd-20261018.log`.
+- No hardware was used for this step. Continue with the Java Card profile and
+  lifecycle audit on VPCD; physical consecutive APDUs remain blocked by the
+  host PC/SC stall after SELECT.
+
 ## Latest continuation — verify applet callbacks and retry physical reader — 2026-10-18
 
 - `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed: ARM and RISC-V builds

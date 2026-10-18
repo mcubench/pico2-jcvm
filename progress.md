@@ -5633,3 +5633,20 @@
 - Commit: `654f922`
 - Artifacts/logs: `artifacts/logs/jcsystem-applet-callback-vpcd-20261018.log`,
   `artifacts/logs/cycle-choupi-20261018T194931Z.log`
+## 2026-10-18 — Verify rejected applet selection cleanup
+
+- Step/experiment: `wp5-applet-select-rejection`
+- Change: Added a test-only flag to reject the next `Applet.select()` callback
+  and a VPCD regression for rejection status, process gating, and later
+  successful selection.
+- Validation: `./tools/build-jcsystem-transaction-probe` passed. Combined
+  cases 55/56 passed in one VPCD session: callback counts advanced from
+  `01 00` to `02 01`; rejected SELECT returned `6999`; a process APDU while
+  unselected returned `6999`; a later SELECT returned `9000`.
+  `TEST:SUMMARY pass=4 fail=0 elapsed_s=19.811`.
+- Result: The VPCD selection lifecycle clears selected state after a rejected
+  callback and permits a subsequent successful selection.
+- Decision: Continue the applet lifecycle audit with deselect, reset, and
+  persistence boundaries; physical transport remains stalled after SELECT.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcsystem-applet-lifecycle-vpcd-20261018.log`

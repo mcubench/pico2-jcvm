@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 56),
+        "--case", type=int, action="append", choices=range(1, 57),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -193,6 +193,7 @@ def main() -> int:
                     (53, b"\x01", "unreferenced object batch 2 reuses instance slots"),
                     (54, b"\x01", "unreferenced object batch 3 keeps instance heap bounded"),
                     (55, b"", "reselect invokes applet deselect and select callbacks exactly once"),
+                    (56, b"\x01", "rejected applet selection clears selection until a later successful select"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -200,6 +201,33 @@ def main() -> int:
                     else cases
                 )
                 for p1, expected, label in selected_cases:
+                    if p1 == 56:
+                        exchange(
+                            connection,
+                            bytes((0x80, 0x00, p1, 0x00, 0x00)),
+                            "arm applet to reject next selection",
+                        )
+                        send_message(connection, select)
+                        rejected = receive_message(connection)
+                        if rejected[-2:] != b"\x69\x99":
+                            raise RuntimeError(
+                                f"rejected SELECT: expected SW=6999, got {rejected.hex().upper()}"
+                            )
+                        print(f"TEST:APDU rejected SELECT response={rejected.hex().upper()}")
+                        send_message(
+                            connection,
+                            bytes((0x80, 0x00, 55, 0x00, 0x00)),
+                        )
+                        not_selected = receive_message(connection)
+                        if not_selected[-2:] != b"\x69\x99":
+                            raise RuntimeError(
+                                "APDU after rejected SELECT was dispatched: "
+                                f"{not_selected.hex().upper()}"
+                            )
+                        print(f"TEST:APDU APDU after rejected SELECT response={not_selected.hex().upper()}")
+                        exchange(connection, select, "select applet after rejected selection")
+                        print(f"TEST:PASS {label}")
+                        continue
                     if p1 == 31:
                         exchange(connection, select, "reselect applet for transient lifecycle check")
                     if p1 == 33:

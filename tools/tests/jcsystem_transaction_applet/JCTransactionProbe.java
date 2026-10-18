@@ -26,6 +26,7 @@ public final class JCTransactionProbe extends Applet {
   private byte value = 0x11;
   private byte selectCount;
   private byte deselectCount;
+  private byte rejectNextSelect;
   private byte lastApduExceptionReason = (byte)0x7f;
   private byte[] transientResetArray;
   private byte[] transientDeselectArray;
@@ -46,6 +47,10 @@ public final class JCTransactionProbe extends Applet {
 
   public boolean select() {
     selectCount++;
+    if (rejectNextSelect != 0) {
+      rejectNextSelect = 0;
+      return false;
+    }
     return true;
   }
 
@@ -668,6 +673,12 @@ public final class JCTransactionProbe extends Applet {
         buffer[0] = selectCount;
         buffer[1] = deselectCount;
         length = 2;
+        break;
+      }
+      case 56: {
+        rejectNextSelect = 1;
+        buffer[0] = 1;
+        length = 1;
         break;
       }
       default:
