@@ -4890,7 +4890,7 @@
   mutated it; the probe now checks array length. Negative mismatched-type casts
   remain untested.
 - Decision: Keep the explicit atype mapping and add a negative cast case next.
-- Commit: `<pending>`.
+- Commit: `678655a`.
 - Artifacts/logs: `artifacts/logs/build-pc-checkcast-array-type-map-20261018.log`,
   `artifacts/logs/build-arm-checkcast-array-type-map-20261018.log`,
   `artifacts/logs/build-riscv-checkcast-array-type-map-20261018.log`,
