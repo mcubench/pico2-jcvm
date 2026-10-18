@@ -1,5 +1,25 @@
 # Project issue knowledge base
 
+## PC/SC stops sending APDUs after SELECT — 2026-10-18
+
+- **Symptom:** After `pcscd.service` restart, Java SmartcardIO enumerates the
+  Pico and SELECT returns `9000`, but its next `SCardTransmit` fails with
+  `SCARD_E_NOT_TRANSACTED` or times out. The Pico remains present as
+  `2e8a:0009` and `pcscd.service` stays active.
+- **Isolation:** A concurrent serial trace logged GetSlotStatus traffic and one
+  XfrBlock for SELECT (`00A404...`, 16 bytes, `9000`). The CCID receive/task
+  count reached 30, but `xfr=1`; no GETVERSION XfrBlock arrived. The runtime
+  continued passing its periodic self-check. This places the observed failure
+  between the host PC/SC API and CCID OUT endpoint after the first response; it
+  does not establish a VM/APDU-handler failure.
+- **Recovery status:** Restarting the daemon restored reader enumeration but
+  did not make consecutive APDUs reliable. The authorized ACL helper and USB
+  visibility alone are insufficient. Avoid unbounded `pcsc_scan`; it has
+  previously saturated the VM. Find a host-side PC/SC recovery or inspect
+  daemon/driver diagnostics before rerunning long JCAlgTest operations.
+- **Evidence:** `artifacts/logs/monitor-pcsc-probe-concurrent-20261018.log` and
+  `artifacts/logs/monitor-pcsc-after-restart-20261018.log`.
+
 ## JCSystem shareable lookup requires a context-switch bridge — 2026-10-18
 
 - **Cause:** `JCSystem.getAppletShareableInterfaceObject()` previously threw

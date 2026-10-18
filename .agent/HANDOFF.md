@@ -1,5 +1,31 @@
 # Handoff
 
+## Latest continuation — isolate PC/SC failure after SELECT — 2026-10-18
+
+- The operator restarted `pcscd.service`. The authorized helper granted access
+  to `/dev/bus/usb/001/068`; `lsusb` showed `2e8a:0009`, and the daemon was
+  active. PC/SC briefly enumerated the physical reader alongside both Virtual
+  PCD readers.
+- `./tools/probe-jc-algtest --des-cipher-prepare` repeatedly selected
+  JCAlgTest successfully (`9000`) and then timed out before GETVERSION. One
+  run returned `SCARD_E_NOT_TRANSACTED`; another bounded run expired after
+  eight seconds.
+- A concurrent serial capture shows repeated GetSlotStatus requests, then
+  exactly one XfrBlock: SELECT AID, 16 bytes, `select=9000`, `xfr=1`. No second
+  XfrBlock/GETVERSION reached the card. Runtime self-checks continued to pass;
+  there was no `FAULT` or applet failure. USB was still enumerated after the
+  probe. This isolates the current failure to the host PC/SC transaction path
+  after the first response, not the streamed collector or algorithm code.
+- Evidence: `artifacts/logs/monitor-pcsc-probe-concurrent-20261018.log` and
+  `artifacts/logs/monitor-pcsc-after-restart-20261018.log`. The focused probe
+  itself was run in the terminal and its raw output was not archived. The
+  monitor wrapper returned 137 after its 18-second capture because `cat` did
+  not terminate promptly; the complete captured serial output is present.
+- Next: use a host-side PC/SC diagnostic/recovery that does not run an
+  unbounded `pcsc_scan`; then confirm SELECT + GETVERSION + JCSystem with one
+  reader session before retrying the static suite. If host transport remains
+  unavailable, continue the applet and JCSystem audit independently.
+
 ## Latest continuation — isolate the remaining PC/SC interruption — 2026-10-18
 
 - After `677d4e3`, the USB ID remained present as `2e8a:0009`; `pcscd.service`

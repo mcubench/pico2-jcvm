@@ -29,11 +29,12 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   roots and children through stable-slot bitmaps without temporary root,
   pending, or child-reference vectors. Physical static testing passed the
   earlier 512-row OOM point and reached 544 rows without a firmware panic, then
-  hit an intermittent PC/SC reader loss. A focused retry showed SELECT reached
-  the firmware but GETVERSION did not; a later Java PC/SC scan could not see
-  the reader although the USB helper had found the device.
-  At last check USB enumerated the Pico and `pcscd.service` was active, but
-  `timeout 5s pcsc_scan -r` hung after the helper granted access.
+  hit an intermittent PC/SC reader loss. After restarting `pcscd.service`, a
+  focused retry selected the applet (`9000`) but the host did not send the next
+  GETVERSION APDU. Concurrent serial diagnostics confirm one XfrBlock (SELECT)
+  and no second XfrBlock; runtime self-checks pass and USB remains enumerated.
+  The static run remains blocked at the host PC/SC transaction path, not by an
+  observed VM algorithm failure.
   A physical 50-request M1 stress plus 50-call DES3 measurement passed without
   a GC skip.
   VPCD allocation batches for arrays and objects passed. The historical
@@ -71,10 +72,11 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 
 ## Next priorities
 
-1. Diagnose the intermittent physical USB/PC/SC loss during consecutive
-   applet APDUs, then rerun the static matrix. The streamed collector passed
-   544 rows without the earlier 3,244-byte worklist or 2,048-byte root-vector
-   allocation failures; the matrix remains incomplete.
+1. Restore reliable consecutive APDUs through physical PC/SC, then rerun the
+   static matrix. The latest trace isolates the loss after SELECT: the Pico
+   answered `9000`, and the host did not send GETVERSION. The streamed
+   collector passed 544 rows without the earlier allocation failures; the
+   matrix remains incomplete.
 2. Define the supported Java Card version/profile, then audit runtime APIs,
    applet lifecycle, and firewall behavior against it.
 3. Expand power-cycle, CAP-validation, and host/physical regression coverage.
