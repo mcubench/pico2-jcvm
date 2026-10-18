@@ -5061,6 +5061,6 @@
 - Decision: Inspect the reset/deselect lifecycle before wiring the currently
   unused heap clear helper. Continue auditing JCSystem methods; keep heap
   reclamation disabled.
-- Commit: `<pending>`.
+- Commit: `80b09fd`.
 - Artifacts/logs: `artifacts/logs/jcsystem-transient-arrays-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-transient-arrays-full-vpcd-20261018.log`.
