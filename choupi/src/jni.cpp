@@ -771,9 +771,44 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAssignedChannel() {
   return 0;
 }
 
-jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletActive(jref_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletActive(
+    const jref_t aid_reference) {
+  if (aid_reference.isNullPointer()) {
+    return FALSE;
+  }
+
+  Context &context = Context::getActiveContext();
+  if (!context.wasAppletRegistered() && !context.hasRestoredAppletInstance()) {
+    return FALSE;
+  }
+
+  Heap &heap = context.getHeap();
+  const auto aid_object = heap.getInstance(aid_reference);
+  if (aid_object->getNumberOfFields() == 0) {
+    return FALSE;
+  }
+  const jref_t bytes_reference = aid_object->getField_Reference(0);
+  if (bytes_reference.isNullPointer() || !bytes_reference.isArray()) {
+    return FALSE;
+  }
+  const auto bytes = heap.getArray(bytes_reference);
+  if (bytes->getType() != JAVA_ARRAY_T_BYTE || bytes->size() < 5 ||
+      bytes->size() > 16) {
+    return FALSE;
+  }
+
+  uint8_t active_aid[16]{};
+  uint8_t active_aid_length = 0;
+  if (!context.copyAppletAID(active_aid, active_aid_length) ||
+      active_aid_length != bytes->size()) {
+    return FALSE;
+  }
+  for (uint8_t index = 0; index < active_aid_length; ++index) {
+    if (static_cast<uint8_t>(bytes->getByteEntry(index)) != active_aid[index]) {
+      return FALSE;
+    }
+  }
+  return TRUE;
 }
 
 void fr_gouv_ssi_nativeimpl_NativeImplementation_assertIntegrity(jref_t) {

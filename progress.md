@@ -5105,3 +5105,23 @@
 - Commit: `288f61b`.
 - Artifacts/logs: `artifacts/logs/jcsystem-object-deletion-unsupported-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-object-deletion-unsupported-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Implement single-context JCSystem.isAppletActive
+
+- Step/experiment: `jcsystem-isappletactive-current-context`
+- Change: Implemented current-app AID matching for `JCSystem.isAppletActive()`.
+  The native method checks the AID object's encapsulated byte array against the
+  registered/restored applet AID and returns false for null, malformed,
+  unregistered, or nonmatching AIDs. Added case 35 for current and unknown AIDs.
+- Validation: `./tools/build-pc`, `./tools/build arm`, `./tools/build riscv`,
+  and `./tools/build-jcsystem-transaction-probe` passed. Focused VPCD case 35
+  passed (`019000`). Full suite passed
+  `TEST:SUMMARY pass=38 fail=0 elapsed_s=221.009`. No physical device was
+  accessed. Existing Rust SDK and packed CAP-member warnings remain.
+- Result: Current registered applet is active; an unknown valid AID is not.
+  Multiple logical channels and cross-applet activity are not modeled.
+- Decision: Review `makeGlobalArray()` lifecycle semantics before implementing
+  that remaining JCSystem stub. Heap reclamation stays disabled.
+- Commit: `PENDING`.
+- Artifacts/logs: `artifacts/logs/jcsystem-isappletactive-focused-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-isappletactive-full-vpcd-20261018.log`.

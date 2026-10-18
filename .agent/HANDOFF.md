@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest continuation — implement single-context JCSystem.isAppletActive — 2026-10-18
+
+- `isAppletActive(AID)` now checks the supplied AID object's byte-array field
+  against the active context's registered/restored applet AID. It returns
+  false for null, malformed, unregistered, or nonmatching AIDs. Added case 35
+  for the current applet and an unknown AID.
+- PC, ARM M33, and RISC-V builds and the probe CAP build passed. Focused VPCD
+  case 35 passed. Full suite passed 38/38 in 221.009 s. No physical device was
+  accessed.
+- Scope: one current context/basic channel only; applets active on other
+  logical channels and cross-applet context state remain unsupported.
+- Next: audit `makeGlobalArray()` semantics and clear-on-reset lifetime before
+  implementing it. Keep unsupported algorithms expected and heap reclamation
+  disabled.
+
 ## Latest continuation — honor unsupported object-deletion requests — 2026-10-18
 
 - `JCSystem.isObjectDeletionSupported()` returns false, but

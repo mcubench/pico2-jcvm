@@ -5,6 +5,22 @@ the reliable recovery, and any limits. Promote only reproducible fixes to the
 viable-solution status; a single successful probe is evidence, not a universal
 fix.
 
+## JCSystem.isAppletActive always threw NotYetImplemented — 2026-10-18
+
+- **Cause:** The native method had no behavior despite this runtime having a
+  registered/restored current applet and its AID in `Context`.
+- **Viable fix:** For the current single applet context, read the supplied AID
+  instance's encapsulated byte array and compare it with the current applet
+  AID. Return false for null, malformed, unregistered, or nonmatching AIDs;
+  return true only for the registered/restored applet that matches the active
+  context.
+- **Evidence:** Case 35 checks the current AID and a well-formed unknown AID.
+  Focused VPCD passed; full suite passed 38/38 in 221.009 s. PC, ARM, and
+  RISC-V builds passed. No physical device was used.
+- **Scope:** This does not report applets active on other logical channels or
+  model multiple applet contexts. The runtime currently exposes only the
+  basic channel and selected context.
+
 ## JCSystem object-deletion request silently succeeded while unsupported — 2026-10-18
 
 - **Cause:** `JCSystem.isObjectDeletionSupported()` correctly returned false,

@@ -2,6 +2,7 @@ package algtest;
 
 import javacard.framework.APDU;
 import javacard.framework.APDUException;
+import javacard.framework.AID;
 import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
@@ -443,6 +444,14 @@ public final class JCTransactionProbe extends Applet {
           buffer[0] = e.getReason() == SystemException.ILLEGAL_USE
               ? (byte)1 : (byte)0;
         }
+        length = 1;
+        break;
+      }
+      case 35: {
+        byte[] otherAidBytes = {0x01, 0x02, 0x03, 0x04, 0x05};
+        AID otherAid = new AID(otherAidBytes, (short)0, (byte)otherAidBytes.length);
+        buffer[0] = JCSystem.isAppletActive(JCSystem.getAID()) &&
+                !JCSystem.isAppletActive(otherAid) ? (byte)1 : (byte)0;
         length = 1;
         break;
       }
