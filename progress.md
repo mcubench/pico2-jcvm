@@ -5225,7 +5225,25 @@
   static method-token translation allows JC305 applets to reach these handlers.
 - Decision: Continue auditing `getAppletShareableInterfaceObject()` and other
   remaining JCSystem behavior against the current single-context model.
-- Commit: pending.
+- Commit: `d220fdb`.
 - Artifacts/logs: `artifacts/logs/sensitive-arrays-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-sensitive-arrays-full-vpcd-20261018.log`,
   `artifacts/logs/sensitive-arrays-case42-vpcd-20261018.log`.
+
+## 2026-10-18 — Define single-applet shareable lookup fallback
+
+- Step/experiment: `jcsystem-shareable-lookup-single-applet`
+- Change: Replaced the fatal `NotYetImplemented` native with the Java Card
+  `null` result for absent servers and the default `Applet` implementation.
+  Added case 48 for null, unknown, and current applet AIDs.
+- Validation: PC build and probe CAP build passed. Focused VPCD case passed
+  `TEST:SUMMARY pass=3 fail=0 elapsed_s=7.688`. ARM and RISC-V builds passed.
+  Full VPCD regression is running. No physical device was accessed.
+- Result: The probe applet's supported default lookup path no longer aborts the
+  VM. Custom `getShareableInterfaceObject` callbacks remain unsupported because
+  the runtime has no multi-applet registry or context-switch bridge.
+- Decision: Continue JCSystem and applet runtime audit; preserve expected
+  unsupported algorithms.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/jcsystem-shareable-default-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-shareable-full-vpcd-20261018.log`.

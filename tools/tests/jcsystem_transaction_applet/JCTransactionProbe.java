@@ -625,6 +625,22 @@ public final class JCTransactionProbe extends Applet {
         length = 1;
         break;
       }
+      case 48: {
+        byte result = 0;
+        if (JCSystem.getAppletShareableInterfaceObject(null, (byte)0) == null) {
+          result |= 1;
+        }
+        byte[] unknownAidBytes = {0x01, 0x02, 0x03, 0x04, 0x05};
+        AID unknownAid = new AID(unknownAidBytes, (short)0,
+                                 (byte)unknownAidBytes.length);
+        if (JCSystem.getAppletShareableInterfaceObject(unknownAid, (byte)0) == null &&
+            JCSystem.getAppletShareableInterfaceObject(JCSystem.getAID(), (byte)0) == null) {
+          result |= 2;
+        }
+        buffer[0] = result;
+        length = 1;
+        break;
+      }
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
     }

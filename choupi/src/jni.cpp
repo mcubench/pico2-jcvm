@@ -787,9 +787,11 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_getAvailableMemory(
 
 jref_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_getAppletShareableInterfaceObject(
-    jref_t, jbyte_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+    const jref_t, const jbyte_t) {
+  // This runtime has no multi-applet registry or shareable-interface callback
+  // bridge. For the current single-applet runtime, no external server applet
+  // is registered; the default Applet implementation also returns null.
+  return jref_t{};
 }
 
 jbool_t

@@ -1,5 +1,21 @@
 # Handoff
 
+## Latest continuation — define single-applet shareable lookup fallback — 2026-10-18
+
+- Replaced `getAppletShareableInterfaceObject()`'s `NotYetImplemented` VM abort
+  with `null` for the current single-applet/default-Applet behavior. Added case
+  48 covering null AID, an absent server AID, and the probe applet inheriting
+  Applet's default method.
+- PC build and probe CAP build passed. Focused VPCD case passed
+  `TEST:SUMMARY pass=3 fail=0 elapsed_s=7.688`; ARM and RISC-V builds passed.
+  Full VPCD suite is running. No physical device was accessed.
+- Limitation: custom shareable-object callbacks require a multi-applet registry
+  and applet context-switch bridge, which this VM does not have. The fallback
+  is verified only for the default-null probe applet.
+- The prior SensitiveArrays step is committed as `d220fdb`.
+- Next: collect full JCSystem regression output, commit the scoped fallback,
+  then audit the remaining framework/runtime API gaps.
+
 ## Latest continuation — define unsupported SensitiveArrays behavior — 2026-10-18
 
 - Replaced the remaining `NotYetImplemented` behavior for integrity-sensitive

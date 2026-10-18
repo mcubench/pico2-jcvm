@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 48),
+        "--case", type=int, action="append", choices=range(1, 49),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -185,6 +185,7 @@ def main() -> int:
                     (45, b"\x03", "clearArray rejects non-sensitive arrays and null"),
                     (46, b"\x01", "integrity-sensitive array support is reported as false"),
                     (47, b"\x03", "integrity-sensitive query handles instances and null"),
+                    (48, b"\x03", "shareable lookup returns null for absent servers and the default applet method"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

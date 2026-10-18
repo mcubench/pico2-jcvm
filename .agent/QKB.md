@@ -1,5 +1,18 @@
 # Project issue knowledge base
 
+## JCSystem shareable lookup requires a context-switch bridge — 2026-10-18
+
+- **Cause:** `JCSystem.getAppletShareableInterfaceObject()` previously threw
+  `NotYetImplemented`. The current runtime has one applet context and no
+  applet registry or callback bridge for invoking a server applet's custom
+  `getShareableInterfaceObject()` implementation.
+- **Scoped behavior:** The native returns `null`, which is correct for absent
+  server AIDs and for applets using `Applet`'s default implementation. Case 48
+  verified null AID, unknown AID, and self lookup on the probe applet.
+- **Limitation:** This does not implement custom shareable objects. Do not treat
+  the null fallback as full Java Card applet firewall/shareable support; a
+  callback requires explicit context ownership and switch/restore semantics.
+
 Use this file as the recurring issue checklist. Record the observed symptom,
 the reliable recovery, and any limits. Promote only reproducible fixes to the
 viable-solution status; a single successful probe is evidence, not a universal
