@@ -73,9 +73,18 @@ pico2_jcvm::ShortApduResponseChain pending_apdu_response;
 
 #ifdef PC_VERSION
 void trace_heap_after_apdu_if_enabled() {
-  if (std::getenv("PICO2_HEAP_TRACE") == nullptr ||
-      !selected_applet_context) {
+  const char *trace_setting = std::getenv("PICO2_HEAP_TRACE");
+  if (trace_setting == nullptr || !selected_applet_context) {
     return;
+  }
+
+  char *end = nullptr;
+  unsigned long repeat_count = std::strtoul(trace_setting, &end, 10);
+  if (end == trace_setting || *end != '\0' || repeat_count == 0) {
+    repeat_count = 1;
+  }
+  if (repeat_count > 4) {
+    repeat_count = 4;
   }
 
   jcvm::Context &context = *selected_applet_context;
@@ -84,23 +93,27 @@ void trace_heap_after_apdu_if_enabled() {
     return;
   }
 
-  try {
-    std::vector<jcvm::jref_t> roots;
-    context.appendRootReferences(roots);
-    const auto summary = context.getHeap().traceReachableFrom(roots);
-    std::fprintf(stderr,
-                 "HEAP_TRACE: roots=%u arrays=%u/%u instances=%u/%u "
-                 "invalid=%u edge_failures=%u complete=%u\n",
-                 static_cast<unsigned>(roots.size()),
-                 static_cast<unsigned>(summary.arrays_reachable),
-                 static_cast<unsigned>(summary.arrays_total),
-                 static_cast<unsigned>(summary.instances_reachable),
-                 static_cast<unsigned>(summary.instances_total),
-                 static_cast<unsigned>(summary.invalid_references),
-                 static_cast<unsigned>(summary.edge_load_failures),
-                 summary.complete ? 1u : 0u);
-  } catch (...) {
-    std::fprintf(stderr, "HEAP_TRACE:ERROR root_enumeration_failed\n");
+  for (unsigned long pass = 1; pass <= repeat_count; ++pass) {
+    try {
+      std::vector<jcvm::jref_t> roots;
+      context.appendRootReferences(roots);
+      const auto summary = context.getHeap().traceReachableFrom(roots);
+      std::fprintf(stderr,
+                   "HEAP_TRACE: pass=%lu roots=%u arrays=%u/%u "
+                   "instances=%u/%u invalid=%u edge_failures=%u complete=%u\n",
+                   pass, static_cast<unsigned>(roots.size()),
+                   static_cast<unsigned>(summary.arrays_reachable),
+                   static_cast<unsigned>(summary.arrays_total),
+                   static_cast<unsigned>(summary.instances_reachable),
+                   static_cast<unsigned>(summary.instances_total),
+                   static_cast<unsigned>(summary.invalid_references),
+                   static_cast<unsigned>(summary.edge_load_failures),
+                   summary.complete ? 1u : 0u);
+    } catch (...) {
+      std::fprintf(stderr, "HEAP_TRACE:ERROR pass=%lu root_enumeration_failed\n",
+                   pass);
+      break;
+    }
   }
 }
 #endif

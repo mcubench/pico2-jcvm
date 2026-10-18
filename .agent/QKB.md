@@ -1024,3 +1024,16 @@ fix.
   hook is diagnostic and remains opt-in.
 - **Decision:** Audit remaining persistent/runtime root paths, add a focused
   test for root-set completeness, and only then design stable-slot tombstones.
+
+### Repeated-walk validation
+
+- The PC diagnostic accepts a repeat count from `PICO2_HEAP_TRACE`, clamped
+  to 1–4. With value `2`, the VPCD JCSystem suite passed 17/17 in 96.618 s
+  and produced 15 pairs of consecutive walks. Every one of the 30 walks was
+  complete, with zero invalid references and zero edge-load failures; no
+  pair's array or instance totals grew between pass 1 and pass 2.
+- This rules out tracer-induced duplicate deserialization for the persistent
+  graph shapes exercised by this probe. It does not prove canonical identity
+  for every persistent reference-array/alias graph or prove root completeness
+  for all applets. Repeated tracing is diagnostic only and has measurable
+  overhead; leave it disabled in normal operation.

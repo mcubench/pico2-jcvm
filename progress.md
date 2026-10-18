@@ -4805,3 +4805,23 @@
   `artifacts/logs/build-arm-heap-trace-diagnostic-20261018.log`,
   `artifacts/logs/build-riscv-heap-trace-diagnostic-20261018.log`, and
   `artifacts/logs/jcsystem-heap-trace-diagnostic-vpcd-20261018.log`.
+
+## 2026-10-18 — Check for allocations caused by repeated tracing
+
+- Step/experiment: `heap-trace-repeat-stability`
+- Change: Added a bounded 1–4 pass count to the opt-in PC heap diagnostic so
+  consecutive graph walks can reveal deserialization or cache growth.
+- Validation: PC, ARM, and RISC-V builds passed. VPCD JCSystem regression
+  passed `TEST:SUMMARY pass=17 fail=0 elapsed_s=96.618` with two walks per
+  APDU. All 30 trace results were complete, with zero invalid references and
+  zero edge-load failures; no heap-total changes appeared between the 15
+  consecutive pass pairs. No hardware was used.
+- Result: Repeat tracing did not grow the exercised VPCD heap graph. This
+  does not cover every persistent reference-array or alias shape.
+- Decision: Add focused identity/root tests for persistent arrays and aliases
+  before considering tombstones or reuse. Keep repeat tracing opt-in.
+- Commit: `PENDING`.
+- Artifacts/logs: `artifacts/logs/build-pc-heap-trace-repeat-20261018.log`,
+  `artifacts/logs/build-arm-heap-trace-repeat-20261018.log`,
+  `artifacts/logs/build-riscv-heap-trace-repeat-20261018.log`, and
+  `artifacts/logs/jcsystem-heap-trace-repeat-vpcd-20261018.log`.

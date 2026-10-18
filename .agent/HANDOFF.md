@@ -1,5 +1,18 @@
 # Handoff
 
+## Latest continuation — test repeated heap walks — 2026-10-18
+
+- Bounded `PICO2_HEAP_TRACE` to 1–4 consecutive walks per APDU for host
+  diagnostics. At repeat count 2, VPCD passed 17/17 in 96.618 s and emitted
+  15 pass pairs. All 30 walks were complete, with zero invalid handles or
+  edge-load failures; array and instance totals did not grow between paired
+  walks.
+- This confirms repeat traversal does not allocate duplicates for the graph
+  shapes in the probe. It is not a general persistent-identity proof and does
+  not establish complete roots for all applets. Keep repeated tracing opt-in.
+- Next: expand root/identity tests to persistent reference arrays and aliases,
+  then decide whether mark-only results can safely drive tombstoning.
+
 ## Latest continuation — add opt-in post-APDU heap diagnostics — 2026-10-18
 
 - Added host-only `PICO2_HEAP_TRACE=1` diagnostics after the APDU `try` scope
