@@ -5593,3 +5593,23 @@
 - Commit: `69c180d`.
 - Artifacts/logs: `artifacts/logs/monitor-pcsc-probe-concurrent-20261018.log`
   and `artifacts/logs/monitor-pcsc-after-restart-20261018.log`.
+
+## 2026-10-18 — Check VPCD bridge as a physical PC/SC fallback
+
+- Step/experiment: `physical-ccid-vpcd-bridge-availability`
+- Change: Documented the VPCD fallback's runtime requirements and USB ownership
+  conflict in STATUS, QKB, and HANDOFF.
+- Validation: The installed bridge first connected to the Pico USB interface
+  but port 35963 refused the connection. A bounded Java SmartcardIO query
+  showed `Virtual PCD 00 00/01` with no card and activated listeners on
+  35963/35964. Retrying the bridge then failed at CCID interface claim with
+  libusb status `-6` (busy). No firmware or card data was changed.
+- Result: The bridge cannot run while the system PC/SC daemon owns the physical
+  Pico interface. The PC/SC/reader configuration must release or exclude that
+  interface while keeping the virtual reader endpoint available.
+- Decision: Do not run the direct bridge concurrently with the PC/SC physical
+  reader driver. Continue host configuration recovery before physical JCAlgTest.
+- Commit: `84713c0`.
+- Artifacts/logs: No persistent bridge log; command output is recorded in this
+  session. Existing serial evidence remains in
+  `artifacts/logs/monitor-pcsc-probe-concurrent-20261018.log`.
