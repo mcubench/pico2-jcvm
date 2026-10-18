@@ -5448,7 +5448,7 @@
   M1 prepare response `03 9000` and a normal follow-up SELECT, then test a
   bounded static subset and the full matrix. Do not implement the DES padding
   algorithm; preserve `NO_SUCH_ALGORITHM` semantics.
-- Commit: `f10a7d6`; metadata commit: pending
+- Commit: `f10a7d6`; metadata commit: `2931ce4`
 - Artifacts/logs: build records
   `artifacts/logs/build-arm-catch-alias-final-20261018.log`,
   `artifacts/logs/build-riscv-catch-alias-final-20261018.log`,
