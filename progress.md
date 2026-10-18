@@ -5304,6 +5304,6 @@
 - Decision: Complete the remaining native-root audit before implementing a
   stable-slot sweep; persistent objects will remain pinned until deletion is
   supported.
-- Commit: `pending`
+- Commit: `510fd14`.
 - Artifacts/logs: `artifacts/logs/heap-persistent-roots-focused-vpcd-20261018.log`
   (SHA-256 `f2e776ef989199e8781811bad8d3a7acb1014e3566dddc1056e9b74c2e651a00`).
