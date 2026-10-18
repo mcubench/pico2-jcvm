@@ -1,5 +1,26 @@
 # Handoff
 
+## Latest continuation — isolate the remaining PC/SC interruption — 2026-10-18
+
+- After `677d4e3`, the USB ID remained present as `2e8a:0009`; `pcscd.service`
+  was active and the authorized ACL helper returned `PCSC:ACCESS_GRANTED`.
+  Still, `timeout 5s pcsc_scan -r` hung without output and Java sometimes
+  listed only the two Virtual PCD readers.
+- Serial capture after a failed probe recorded SELECT and a firmware `9000`,
+  but no GETVERSION APDU. An earlier recovery probe after the static run did
+  pass SELECT, GETVERSION, JCSystem info, and DES prepare (`AA9000`). This
+  intermittent reader/daemon state remains separate from the collector: the
+  static capture showed no allocator failure or panic through 544 rows.
+- Evidence: `artifacts/logs/pcsc-host-state-gc-stream-roots-20261018.log`,
+  `artifacts/logs/monitor-gc-stream-roots-recovery-probe-20261018.log`, and
+  `artifacts/logs/physical-gc-stream-roots-recovery-final-20261018.log`.
+- **Blocked action:** restart `pcscd.service`. The supplied repository
+  `AGENTS.md` permits autonomous sudo only for
+  `/usr/local/sbin/pico2-pcsc-reader`, so I cannot run `sudo systemctl restart`
+  myself. Operator command: `sudo systemctl restart pcscd.service`; then run
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` and `timeout 5s pcsc_scan -r`.
+  Resume hardware testing once the Pico appears in the PC/SC list.
+
 ## Latest continuation — stream collector roots and remove traversal buffers — 2026-10-18
 
 - Replaced dynamic GC worklist traversal with repeated stable-handle bitmap

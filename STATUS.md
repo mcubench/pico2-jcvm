@@ -32,6 +32,8 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   hit an intermittent PC/SC reader loss. A focused retry showed SELECT reached
   the firmware but GETVERSION did not; a later Java PC/SC scan could not see
   the reader although the USB helper had found the device.
+  At last check USB enumerated the Pico and `pcscd.service` was active, but
+  `timeout 5s pcsc_scan -r` hung after the helper granted access.
   A physical 50-request M1 stress plus 50-call DES3 measurement passed without
   a GC skip.
   VPCD allocation batches for arrays and objects passed. The historical
@@ -40,7 +42,8 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   ROM/imported exception class-view fix is now verified on hardware: M1 returns
   `03 9000` and JCAlgTest records the expected `NO_SUCH_ALGORITHM`. The latest
   post-fix matrix remains incomplete due to the host USB/PC/SC interruption;
-  the latest serial capture shows no collector allocation failure or panic.
+  the latest serial capture shows no collector allocation failure or panic;
+  the reader path needs PC/SC daemon recovery before another static run.
 
 ## Main gaps
 

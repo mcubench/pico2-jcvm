@@ -1632,3 +1632,25 @@ fix.
   `artifacts/logs/monitor-static-worklist-bound-20261018.log`,
   `artifacts/logs/jcalgtest-static-gc-bitmap-20261018.log`, and
   `artifacts/logs/monitor-static-gc-bitmap-20261018.log`.
+
+## PC/SC daemon hangs while Pico USB device remains present — 2026-10-18
+
+- **Symptom:** After a physical static run or focused APDU, Java may report
+  `SCARD_E_READER_UNAVAILABLE`, and `TerminalFactory` may list only the two
+  Virtual PCD readers. In the latest reproduction, USB still listed the Pico
+  as `2e8a:0009`, `pcscd.service` was active, and the authorized
+  `pico2-pcsc-reader` helper returned `PCSC:ACCESS_GRANTED`; nevertheless,
+  `timeout 5s pcsc_scan -r` expired without printing a reader list.
+- **Firmware evidence:** A concurrent serial capture recorded SELECT and
+  `9000`, but no following GETVERSION APDU. A separate probe after an earlier
+  interruption did complete SELECT, GETVERSION, JCSystem info, and DES prepare
+  (`AA9000`). USB visibility alone does not prove PC/SC is responsive.
+- **Recovery:** Restarting `pcscd.service` and running the authorized ACL
+  helper has restored readers in earlier setup. The assistant cannot restart
+  the service autonomously because repository `AGENTS.md` only permits sudo
+  for `/usr/local/sbin/pico2-pcsc-reader`. Ask the operator to run
+  `sudo systemctl restart pcscd.service`, then rerun the helper and verify with
+  a bounded `pcsc_scan -r`.
+- **Evidence:** `artifacts/logs/pcsc-host-state-gc-stream-roots-20261018.log`,
+  `artifacts/logs/monitor-gc-stream-roots-recovery-probe-20261018.log`, and
+  `artifacts/logs/physical-gc-stream-roots-recovery-final-20261018.log`.
