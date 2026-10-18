@@ -5365,7 +5365,7 @@
   The full physical static matrix remains to be rerun.
 - Decision: Rerun `ALG_PERFORMANCE_STATIC` on the corrected image, classify
   later failures independently, and preserve expected `NO_SUCH_ALGORITHM`.
-- Commit: `pending`.
+- Commit: `278322e`.
 - Artifacts/logs: `artifacts/logs/probe-des-interface-token-fix-20261018.log`
   (SHA-256 `f6e784fdb1038d011924351d670d5a7510bbb8704e3fb9881d604aebad7ad1fa`);
   serial capture `artifacts/logs/monitor-des-interface-token-fix-20261018.log`
