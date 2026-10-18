@@ -5122,6 +5122,6 @@
   Multiple logical channels and cross-applet activity are not modeled.
 - Decision: Review `makeGlobalArray()` lifecycle semantics before implementing
   that remaining JCSystem stub. Heap reclamation stays disabled.
-- Commit: `PENDING`.
+- Commit: `3c7da1d`.
 - Artifacts/logs: `artifacts/logs/jcsystem-isappletactive-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-isappletactive-full-vpcd-20261018.log`.
