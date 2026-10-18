@@ -5665,5 +5665,5 @@
 - Decision: Continue checking lifecycle edge cases and persistent state on
   VPCD; no physical APDU was attempted because PC/SC remains stalled after
   SELECT.
-- Commit: pending
+- Commit: `ee50fa0`
 - Artifacts/logs: `artifacts/logs/jcsystem-applet-lifecycle-callbacks-vpcd-20261018.log`
