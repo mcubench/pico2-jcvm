@@ -5,6 +5,26 @@ the reliable recovery, and any limits. Promote only reproducible fixes to the
 viable-solution status; a single successful probe is evidence, not a universal
 fix.
 
+## JCSystem.makeGlobalArray requires global reference semantics — 2026-10-18
+
+- **Finding:** The JC305 API specifies that global arrays are accessible from
+  any applet context and that references to them cannot be stored in applet
+  static fields, instance fields, or array components. The current runtime has
+  one `Heap` per `Context`; handles are heap-local and do not tag global arrays.
+- **Decision:** Do not implement `makeGlobalArray()` by merely creating an
+  ordinary `CLEAR_ON_RESET` transient array. That would appear to work only
+  inside one context while violating cross-applet visibility, lifetime, and
+  storage restrictions.
+- **Required design:** Add a JCRE-owned global array store/handle class that
+  remains resolvable from each active context, clear global arrays on reset,
+  and reject storing global references in applet fields or reference arrays.
+  Then map JCSystem's boolean, byte, short, int, and object type codes and
+  validate invalid types with `SystemException.ILLEGAL_VALUE`.
+- **Evidence/validation:** Inspected the API contract in
+  `javacard/framework/JCSystem.java` and heap ownership/array-handle code in
+  `Context`, `Heap`, and `JC_Array`. This was a read-only design audit; no code,
+  build, or runtime test was performed.
+
 ## JCSystem.isAppletActive always threw NotYetImplemented — 2026-10-18
 
 - **Cause:** The native method had no behavior despite this runtime having a

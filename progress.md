@@ -5125,3 +5125,20 @@
 - Commit: `3c7da1d`.
 - Artifacts/logs: `artifacts/logs/jcsystem-isappletactive-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-isappletactive-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Audit JCSystem global-array implementation boundary
+
+- Step/experiment: `jcsystem-makeglobalarray-design-audit`
+- Change: Documented why `makeGlobalArray()` cannot be correctly implemented
+  as an ordinary transient array: global arrays need cross-context visibility
+  and must be rejected from applet static/instance fields and array components.
+- Validation: Read-only inspection of the JC305 `JCSystem.java` contract and
+  the `Context`, `Heap`, `JC_Array`, and handle/firewall implementation. No
+  code, build, or runtime test was performed by design.
+- Result: The current per-context heap and heap-local handles cannot express
+  global ownership or the required store restriction.
+- Decision: Design a JCRE-owned global array store and global-reference type,
+  including reset clearing and store rejection, before implementing this API.
+  Keep heap reclamation disabled.
+- Commit: `PENDING`.
+- Artifacts/logs: none.

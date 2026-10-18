@@ -1,5 +1,17 @@
 # Handoff
 
+## Latest continuation — scope remaining JCSystem global-array gap — 2026-10-18
+
+- Audited `JCSystem.makeGlobalArray()` against the bundled JC305 API and heap
+  model. A simple transient-array allocation would not satisfy its cross-applet
+  access or global-array reference restrictions.
+- The current VM owns one `Heap` per `Context`; handles and firewall checks do
+  not represent globally shared arrays or prohibit storing global references
+  in applet fields/arrays. No code or tests changed in this inspection step.
+- Next: design a JCRE-owned global heap/reference kind and enforce the API's
+  non-storable global-array rule before implementing `makeGlobalArray()`.
+  Keep unsupported algorithms expected and heap reclamation disabled.
+
 ## Latest continuation — implement single-context JCSystem.isAppletActive — 2026-10-18
 
 - `isAppletActive(AID)` now checks the supplied AID object's byte-array field
