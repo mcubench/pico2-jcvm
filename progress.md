@@ -4842,7 +4842,7 @@
   graph only; cyclic arrays and other persistent layouts remain unverified.
 - Decision: Keep reclamation disabled. Expand alias/root coverage before any
   tombstone or stable-slot reuse design.
-- Commit: `<pending>`.
+- Commit: `f42982d`.
 - Artifacts/logs: `artifacts/logs/build-pc-persistent-array-identity-final-20261018.log`,
   `artifacts/logs/build-arm-persistent-array-identity-final-20261018.log`,
   `artifacts/logs/build-riscv-persistent-array-identity-final-20261018.log`,
