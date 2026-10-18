@@ -4713,3 +4713,23 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `NO_SUCH_ALGORITHM`; rerun static after that fix. Then audit native-held
   roots and persistent-object deletion. Preserve unrelated pre-existing
   worktree changes and stage only the current step's files and hunks.
+
+## Latest continuation — fix JC305 DESKey interface index — 2026-10-18
+
+- The first static cipher prepare returned `6F00` with `SecurityException` 29
+  at an `invokeinterface` call in key setup. Reflashing with collection
+  temporarily disabled reproduced the same exception, so this was independent
+  of the new heap collector.
+- Cause: JC305's `DESKey` interface ref uses token 10; the generated CHOUPI
+  security export uses token 12. Added the security-package interface map
+  `10 -> 12`, separate from method-token remapping. ARM, RISC-V, and PC builds
+  passed. The normal collector-enabled image flashed and passed its runtime
+  cycle; the exact physical probe now returns `AA9000` for DES prepare.
+- The serial monitor had hung in `stty` while opening a stale ACM node during a
+  prior cycle. `tools/monitor` now bounds each `stty` retry with `timeout`; the
+  following cycle and finite monitor capture completed. Avoid unbounded
+  `pcsc_scan -r` probes; if needed, wrap the reader check in a short timeout.
+- Next: rerun physical `ALG_PERFORMANCE_STATIC` after this mapping fix. The
+  previous 900-second run and its 1,297 `6F00` cipher rows predate the fix; it
+  is not evidence for current cipher behavior. Continue distinguishing
+  expected `NO_SUCH_ALGORITHM` from unhandled exceptions.

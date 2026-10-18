@@ -60,8 +60,8 @@ uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
   static constexpr uint8_t java_lang[] = {
       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
   static constexpr uint8_t javacard_framework[] = {
-      1,  3,  6,  13, 15, 8,  14, 18, 9,  11, 7,  16,
-      10, 19, 20, 21, 22, 2,  0,  4,  5,  12, 17};
+      1,  3,  6,  13, 18, 8,  16, 21, 9,  11, 7,  19,
+      10, 22, 23, 24, 25, 2,  0,  4,  5,  12, 20};
   static constexpr uint8_t javacard_security[] = {
       0x00, 0x05, 0x03, 0x04, 0x01, 0x06, 0x07, 0x10, 0x11, 0x12, 0x0c,
       0x18, 0x1d, 0x15, 0x1f, 0x21, 0x16, 0x08, 0x09, 0x0a, 0x13, 0x17,
@@ -100,6 +100,33 @@ uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
   return mapping[token];
 }
 
+// JC305 export files assign interface tokens independently from class tokens.
+// Map the framework interfaces to the generated ROM API's interface tokens.
+uint8_t remap_imported_interface_token(
+    const jc_cap_package_info &package_info, const uint8_t token) noexcept {
+  static constexpr uint8_t jc305_to_embedded_interface[] = {
+      1, 3, 6, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 2, 0, 4, 5};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+      token < sizeof(jc305_to_embedded_interface)) {
+    // The public JC305 framework interface tokens are 0, 1, 2, 17, 18, 19,
+    // and 20 in the reference export file. Unlisted token values pass through.
+    return jc305_to_embedded_interface[token];
+  }
+  // JCAlgTest's JC305 security export places DESKey at interface token 10;
+  // CHOUPI's generated security export places it at token 12. The class-token
+  // map also maps this entry to 12, but interface references use their own
+  // token namespace and must be translated here explicitly.
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      token == 10) {
+    return 12;
+  }
+  return token;
+}
+
 uint8_t remap_imported_static_method_token(
     const jc_cap_package_info &package_info, const uint8_t class_token,
     const uint8_t method_token) noexcept {
@@ -125,18 +152,18 @@ uint8_t remap_imported_static_method_token(
     mapping_size = sizeof(framework_jcsystem_methods);
   } else if (package_info.AID_length == 7 &&
              std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+             class_token == 22) {
+    // The embedded class has a constructor at token 0, while the JC305
+    // export assigns SensitiveArrays' five static methods tokens 0–4.
+    mapping = framework_sensitivearrays_methods;
+    mapping_size = sizeof(framework_sensitivearrays_methods);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
                          "\xA0\x00\x00\x00\x62\x00\x01", 7) == 0 &&
              class_token == 0) {
     mapping = java_lang_object_methods;
     mapping_size = sizeof(java_lang_object_methods);
-  } else if (package_info.AID_length == 7 &&
-             std::memcmp(package_info.AID,
-                         "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
-             class_token == 22) {
-    // The embedded class has a constructor at token 0, while the JC305
-    // export assigns SensitiveArrays' five static methods tokens 0-4.
-    mapping = framework_sensitivearrays_methods;
-    mapping_size = sizeof(framework_sensitivearrays_methods);
   } else if (package_info.AID_length == 7 &&
              std::memcmp(package_info.AID,
                          "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
@@ -252,6 +279,18 @@ uint8_t remap_imported_interface_method_token(
       class_token == 10 &&
       method_token < sizeof(security_des_key_interface_methods)) {
     return security_des_key_interface_methods[method_token];
+  }
+  // The reference JC305 export orders OwnerPINx.check before
+  // getTriesRemaining, while this API's generated interface order follows
+  // PIN and places getTriesRemaining first. Remap both related interfaces.
+  static constexpr uint8_t framework_ownerpinx_interface_methods[] = {
+      1, 0, 2, 3, 4, 5, 6, 7, 8};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+      (class_token == 19 || class_token == 20) &&
+      method_token < sizeof(framework_ownerpinx_interface_methods)) {
+    return framework_ownerpinx_interface_methods[method_token];
   }
   return method_token;
 }
@@ -541,7 +580,7 @@ ConstantPool_Handler::classref2interface(const jc_cap_class_ref classref)
     noexcept
 #endif
 {
-  auto interface = this->resolveClassref(classref);
+  auto interface = this->resolveClassref(classref, true);
 
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 
@@ -565,7 +604,8 @@ ConstantPool_Handler::classref2interface(const jc_cap_class_ref classref)
  * @return a struct jc_cap_class or struct jc_cap_interface structure.
  */
 std::pair<Package, const uint8_t *>
-ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
+ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref,
+                                      const bool is_interface)
 #if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
     noexcept
 #endif
@@ -615,10 +655,18 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref)
 
     const uint8_t imported_class_token =
         BYTE_TO_SHORT(classref.external_classref.class_token);
-    class_token = use_jc305_compatibility_tokens
-                      ? remap_imported_class_token(*imported_package_ID,
-                                                   imported_class_token)
-                      : imported_class_token;
+    // JC305 class references use a compatibility map because the embedded
+    // ROM API was assembled from a different export ordering. Interface
+    // tokens have their own namespace and must retain their interface index.
+    if (use_jc305_compatibility_tokens) {
+      class_token = is_interface
+                        ? remap_imported_interface_token(*imported_package_ID,
+                                                         imported_class_token)
+                        : remap_imported_class_token(*imported_package_ID,
+                                                     imported_class_token);
+    } else {
+      class_token = imported_class_token;
+    }
 #ifndef PC_VERSION
     choupi_install_stage(18);
     choupi_install_context(

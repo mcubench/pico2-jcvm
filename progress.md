@@ -5346,3 +5346,34 @@
   (SHA-256 `31fc35f16fafac2709ef2ede586c2a14031aff0afa0a63f22195ce8eaea93847`);
   results CSV SHA-256
   `33d85895a7e18872ac44bfb7753797e782b4f5e15b89e81821306cb1eb8bf150`.
+
+## 2026-10-18 — Remap the JC305 DESKey interface token
+
+- Step/experiment: `jc305-deskey-interface-token-map`
+- Change: Added the JC305 security-package interface mapping for `DESKey`
+  (interface token 10 maps to generated CHOUPI token 12). Kept interface
+  reference mapping separate from interface method-token mapping.
+- Validation: ARM, RISC-V, and PC build wrappers passed. The exact physical
+  `B0 31` DES Cipher prepare first returned `6F00` with `SecurityException`
+  29. Reflashing with heap collection temporarily bypassed reproduced the same
+  exception, ruling out the collector. With the token mapping and normal
+  collection restored, the physical cycle passed and the focused probe passed:
+  SELECT `9000`, GETVERSION `1.8.2_jc305`, JCSystem info `9000`, DES prepare
+  `AA9000`. Bounded serial capture showed no applet exception during the probe.
+- Result: The DES Cipher prepare failure was an imported interface-identity
+  mismatch, not an unsupported algorithm result and not a heap-sweep failure.
+  The full physical static matrix remains to be rerun.
+- Decision: Rerun `ALG_PERFORMANCE_STATIC` on the corrected image, classify
+  later failures independently, and preserve expected `NO_SUCH_ALGORITHM`.
+- Commit: `pending`.
+- Artifacts/logs: `artifacts/logs/probe-des-interface-token-fix-20261018.log`
+  (SHA-256 `f6e784fdb1038d011924351d670d5a7510bbb8704e3fb9881d604aebad7ad1fa`);
+  serial capture `artifacts/logs/monitor-des-interface-token-fix-20261018.log`
+  (SHA-256 `8a1bbffacf43e8a33721c721f126aab93c905a5c7bef616a82444d4611b97e55`);
+  physical cycle `artifacts/logs/cycle-choupi-20261018T125316Z.log`; ARM,
+  RISC-V, and PC builds are recorded in
+  `artifacts/logs/build-arm-des-interface-token-fix-20261018.log`,
+  `artifacts/logs/build-riscv-des-interface-token-fix-20261018.log`, and
+  `artifacts/logs/build-pc-des-interface-token-fix-20261018.log`. The no-GC
+  comparison logs are `artifacts/logs/probe-gc-disabled-des-cipher-20261018.log`
+  and `artifacts/logs/monitor-gc-disabled-des-probe-20261018.log`.

@@ -1437,5 +1437,29 @@ fix.
   `TEST:PASS choupi_runtime` and no GC-skip or panic marker.
 - **Limitations:** Loaded persistent objects remain pinned, so this is not
   persistent-object deletion or full garbage collection. The static suite
-  remains incomplete; the `6F00` cipher factory path is a separate unresolved
-  VM issue. Do not treat expected `NO_SUCH_ALGORITHM` responses as failures.
+  remains incomplete; cipher rows after the interface-token fix still require
+  validation. Do not treat expected `NO_SUCH_ALGORITHM` responses as failures.
+
+## JC305 DESKey interface token must be remapped — 2026-10-18
+
+- **Symptom:** The exact JCAlgTest `B0 31` DES CBC no-padding prepare returned
+  `6F00`; serial tracing showed `SecurityException` (29) through
+  `invokeinterface` in the applet's key setup. Bypassing heap collection and
+  reflashing produced the same exception, ruling out the new collector.
+- **Cause:** JC305 imports `DESKey` as interface token 10, while the generated
+  CHOUPI security export assigns `DESKey` interface token 12. The new
+  cross-package interface resolver correctly stopped applying class-token
+  mappings to interface references, but had no security-package interface map
+  for this token. The receiver therefore failed the interface identity check.
+- **Viable fix:** In the JC305 compatibility path, map security AID
+  `A0000000620102`, interface token 10 to generated token 12. Keep interface
+  token mapping separate from method-token mapping. The exact physical probe
+  now returns `AA9000` with heap collection enabled.
+- **Validation:** ARM, RISC-V, and PC builds passed; the physical CHOUPI cycle
+  passed; PC/SC selected the Pico reader; physical SELECT, GETVERSION
+  `1.8.2_jc305`, JCSystem info, and DES prepare all returned `9000`. The full
+  static matrix still needs rerunning after this fix.
+- **Regression guidance:** When adding imported interface resolution, compare
+  interface token tables separately from class tokens and virtual/interface
+  method tokens. A stale/unmapped identity can raise Java `SecurityException`
+  before the applet's expected `CryptoException` handling runs.

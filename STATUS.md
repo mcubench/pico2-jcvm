@@ -25,9 +25,12 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   interpreter scopes return and only reclaims after a complete root walk.
   Persistent-tagged objects are conservatively pinned, global arrays are
   excluded, and stable handle slots are reused. VPCD allocation batches for
-  arrays and objects passed; a 15-minute physical static benchmark run ended
-  at the wrapper timeout after 1,297 cipher measurements returned `6F00`, with
-  no observed allocation failure or PC/SC disconnect.
+  arrays and objects passed. The first post-GC physical static run ended at the
+  wrapper timeout after 1,297 cipher measurements returned `6F00`, with no
+  allocation failure or PC/SC disconnect. A no-GC comparison reproduced the
+  same `SecurityException`; the DESKey interface-token mismatch is now fixed,
+  and the exact physical prepare APDU returns `AA9000`. The full static matrix
+  has not yet been rerun after that fix.
 
 ## Main gaps
 
@@ -54,10 +57,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 
 ## Next priorities
 
-1. Diagnose the physical `ALG_PERFORMANCE_STATIC` `6F00` cipher factory path;
-   rerun the suite after that separate failure is fixed. The current bounded
-   run exercised over 1,200 static requests without heap failure or reader
-   loss but did not complete its full matrix.
+1. Rerun physical `ALG_PERFORMANCE_STATIC` with the corrected DESKey interface
+   mapping. The earlier bounded run exercised over 1,200 static requests
+   without heap failure or reader loss, but ended before completing its full
+   matrix and before this mapping fix.
 2. Diagnose physical CCID reader loss during long JCAlgTest support sweeps.
 3. Define the supported Java Card version/profile, then audit runtime APIs,
    applet lifecycle, and firewall behavior against it.
