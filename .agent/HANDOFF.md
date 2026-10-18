@@ -25,6 +25,16 @@
   unbounded `pcsc_scan`; then confirm SELECT + GETVERSION + JCSystem with one
   reader session before retrying the static suite. If host transport remains
   unavailable, continue the applet and JCSystem audit independently.
+- Tried `tools/bridge-pico-ccid-vpcd` as an alternate host path. Initially the
+  virtual endpoint refused connections. A bounded Java SmartcardIO status
+  query showed both Virtual PCD readers with no card and caused TCP listeners
+  on ports 35963/35964 to appear. The bridge then failed to claim CCID
+  interface 2 (`libusb ... failed: -6`), consistent with the PC/SC service
+  owning that USB interface. Do not run both paths against the same interface.
+- Next access needed for this route: release or exclude the Pico interface
+  from the system PC/SC daemon while preserving the Virtual PCD reader; then
+  start the direct bridge and target `Virtual PCD 00 00`. This requires a host
+  PC/SC configuration/service change and was not performed here.
 
 ## Latest continuation — isolate the remaining PC/SC interruption — 2026-10-18
 

@@ -33,8 +33,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   focused retry selected the applet (`9000`) but the host did not send the next
   GETVERSION APDU. Concurrent serial diagnostics confirm one XfrBlock (SELECT)
   and no second XfrBlock; runtime self-checks pass and USB remains enumerated.
-  The static run remains blocked at the host PC/SC transaction path, not by an
-  observed VM algorithm failure.
+  The VPCD bridge is installed, but it cannot claim the Pico USB interface
+  while `pcscd` owns it (`libusb ... failed: -6`). The static run remains
+  blocked at host reader ownership/PC/SC transport, not by an observed VM
+  algorithm failure.
   A physical 50-request M1 stress plus 50-call DES3 measurement passed without
   a GC skip.
   VPCD allocation batches for arrays and objects passed. The historical
@@ -76,7 +78,8 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
    static matrix. The latest trace isolates the loss after SELECT: the Pico
    answered `9000`, and the host did not send GETVERSION. The streamed
    collector passed 544 rows without the earlier allocation failures; the
-   matrix remains incomplete.
+   matrix remains incomplete. The direct VPCD bridge also needs an available
+   USB interface and a live VPCD endpoint.
 2. Define the supported Java Card version/profile, then audit runtime APIs,
    applet lifecycle, and firewall behavior against it.
 3. Expand power-cycle, CAP-validation, and host/physical regression coverage.

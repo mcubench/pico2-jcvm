@@ -20,6 +20,20 @@
 - **Evidence:** `artifacts/logs/monitor-pcsc-probe-concurrent-20261018.log` and
   `artifacts/logs/monitor-pcsc-after-restart-20261018.log`.
 
+## Direct Pico-to-VPCD bridge requires exclusive USB interface access — 2026-10-18
+
+- **Symptom:** `tools/bridge-pico-ccid-vpcd` first failed because port 35963
+  refused a connection. After a bounded Java SmartcardIO presence query, the
+  VPCD listeners on ports 35963/35964 appeared, but the bridge failed with
+  `libusb claim interface 2 failed: -6`.
+- **Cause/limit:** The system PC/SC daemon owns the Pico CCID USB interface
+  while managing the physical reader. The direct libusb bridge cannot run
+  concurrently against that interface. Do not start both paths at once.
+- **Next:** To use the VPCD bridge, configure/restart the host PC/SC stack so
+  it keeps Virtual PCD available but releases/excludes the Pico CCID interface;
+  then run the bridge and target `Virtual PCD 00 00`. This host configuration
+  change requires operator action and has not been made.
+
 ## JCSystem shareable lookup requires a context-switch bridge — 2026-10-18
 
 - **Cause:** `JCSystem.getAppletShareableInterfaceObject()` previously threw
