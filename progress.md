@@ -4820,7 +4820,7 @@
   does not cover every persistent reference-array or alias shape.
 - Decision: Add focused identity/root tests for persistent arrays and aliases
   before considering tombstones or reuse. Keep repeat tracing opt-in.
-- Commit: `PENDING`.
+- Commit: `926c14a`.
 - Artifacts/logs: `artifacts/logs/build-pc-heap-trace-repeat-20261018.log`,
   `artifacts/logs/build-arm-heap-trace-repeat-20261018.log`,
   `artifacts/logs/build-riscv-heap-trace-repeat-20261018.log`, and
