@@ -5457,3 +5457,34 @@
   `artifacts/logs/monitor-des-m1-iso-class-check-20261018.log`; latest cycle
   `artifacts/logs/cycle-choupi-20261018T131939Z.log`; VPCD timeout
   `artifacts/logs/vpcd-des-m1-iso-alias-20261018.log`.
+
+## 2026-10-18 — Validate exception aliases and isolate static reader loss
+
+- Step/experiment: `physical-jcalgtest-exception-alias-validation`
+- Change: Validated the committed ROM/imported `CryptoException` and
+  `ISOException` alias handling on the physical Pico 2. Added physical APDU,
+  static-client, and focused DES3 workload logs; updated status and recurring
+  issue notes.
+- Validation: ARM and RISC-V builds passed. `./tools/cycle choupi` passed and
+  captured runtime `TEST:SUMMARY pass=1 fail=0`. The exact M1 prepare returned
+  `03 9000`, followed by successful SELECT. Official `ALG_PERFORMANCE_STATIC`
+  reached M1 and recorded `NO_SUCH_ALGORITHM`, then exited after 382 CSV rows
+  with `SCARD_E_READER_UNAVAILABLE` during 3-key DES CBC NOPAD. USB remained
+  enumerated; rerunning the authorized PC/SC ACL helper restored the reader.
+  The exact 3-key DES CBC NOPAD prepare and 50-call operation then returned
+  `AA9000`, with a successful follow-up SELECT. No full static completion is
+  claimed.
+- Result: The exception-alias fix is physically verified for the previously
+  failing unsupported M1 path. The full matrix remains pending due to a
+  transient PC/SC reader loss of unknown cause; the affected DES3 operation
+  itself passes in isolation. This is not evidence for implementing M1.
+- Decision: Diagnose the long-run PC/SC availability drop and rerun the full
+  static suite. Then resume the JCSystem/context API audit.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261018T171028Z.log`;
+  `artifacts/logs/physical-m1-exception-alias-20261018.log` SHA-256
+  `88966d8b0f6844b9b0b4dc323383af73ad6dbbc86af5f02e4cc9be869cdc557e`;
+  `artifacts/logs/jcalgtest-static-exception-alias-20261018.log`;
+  `artifacts/logs/physical-des3-static-probe-20261018.log`;
+  partial CSV and client log under
+  `artifacts/results/physical-perf-static-exception-alias-20261018/`.

@@ -1522,13 +1522,40 @@ fix.
   the same class during catch matching, and recognizes ROM `ISOException`
   offset 350 as well as exported offset 316 in the terminal status-word path.
   This is a narrow alias correction; it adds no algorithm implementation.
-- PC, ARM, and RISC-V build wrappers pass. Physical validation is **pending**:
-  after the latest image flash reported `FLASH:PASS`, the device did not
-  re-enumerate as USB serial or CCID, and the authorized access helper found no
-  Pico. The PC VPCD applet harness installed and selected JCAlgTest but timed
-  out at GETVERSION after 20 seconds, before the isolated APDU. Do not mark the
-  source fix viable until the physical `B0 31` M1 prepare returns `03 9000`.
+- PC, ARM, and RISC-V build wrappers pass. Physical validation now confirms the
+  exact DES CBC ISO9797 M1 prepare returns `03 9000`, followed by a successful
+  SELECT in the same PC/SC session. The official static run also returned
+  `03 9000`/`NO_SUCH_ALGORITHM` for M1 and continued into neighboring cipher
+  tests; the exception-alias correction is viable for this path.
 - Evidence: `artifacts/logs/monitor-des-m1-alias-fix-20261018.log`,
   `artifacts/logs/monitor-des-m1-iso-class-check-20261018.log`,
   `artifacts/logs/cycle-choupi-20261018T131939Z.log`, and
   `artifacts/logs/vpcd-des-m1-iso-alias-20261018.log`.
+- Physical validation evidence after the correction:
+  `artifacts/logs/physical-m1-exception-alias-20261018.log` (SHA-256
+  `88966d8b0f6844b9b0b4dc323383af73ad6dbbc86af5f02e4cc9be869cdc557e`),
+  `artifacts/logs/jcalgtest-static-exception-alias-20261018.log`, and
+  `artifacts/logs/physical-des3-static-probe-20261018.log`.
+
+## PC/SC reader disappears during physical static run — 2026-10-18
+
+- **Symptom:** The official static client completed 382 CSV rows, including
+  SHA-256 and the M1 `NO_SUCH_ALGORITHM` rows, then reported
+  `SCARD_E_READER_UNAVAILABLE` while measuring 3-key DES CBC NOPAD and exited
+  because its noninteractive stdin had no retry response. The Pico remained
+  enumerated as USB `2e8a:0009`; a first ACL-helper run raced enumeration and
+  found zero devices.
+- **Recovery:** A second
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` found the re-enumerated node and
+  restored the PC/SC reader. The finite serial monitor reported runtime
+  `TEST:PASS`. A focused 3-key DES CBC NOPAD prepare and 50-call measurement
+  then returned `AA9000`; a follow-up SELECT also succeeded.
+- **Status:** Firmware remained responsive and the isolated failing workload
+  passed. The static matrix is incomplete, so this does not establish full
+  static-suite success. The cause of the transient PC/SC reader loss is not
+  yet known.
+- **Regression guidance:** After `SCARD_E_READER_UNAVAILABLE`, inspect USB
+  enumeration separately from PC/SC, rerun the authorized ACL helper once the
+  USB node exists, confirm the reader with a short bounded scan, and validate
+  card response with a focused APDU before restarting a long suite. Do not
+  treat a client-side reader loss as an algorithm result.

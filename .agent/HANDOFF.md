@@ -4799,3 +4799,35 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   access, and submit only DES M1 prepare. Require response `03 9000` plus a
   normal follow-up SELECT; then run a bounded static subset before the full
   matrix.
+
+## Latest continuation — physically validate exception aliases — 2026-10-18
+
+- Rebuilt current sources for ARM and RISC-V; both passed. `./tools/cycle
+  choupi` rebuilt both, flashed the physical RP2350, and completed with
+  `CYCLE:PASS` and repeated `TEST:SUMMARY pass=1 fail=0`.
+- The first existing probe was for DES CBC NOPAD (algorithm 1), so it did not
+  exercise the reported M1 failure. A corrected temporary PC/SC probe sent
+  DES CBC ISO9797 M1 (algorithm 2), got `03 9000`, then reselected the applet
+  successfully in the same session. This confirms the expected unsupported
+  algorithm response and the ROM/imported CryptoException plus ISOException
+  class-view fix on hardware.
+- The official JCAlgTest 1.8.2 static run recorded 382 CSV rows. SHA-256
+  measurements passed and M1 prepare calls produced `03 9000` and
+  `NO_SUCH_ALGORITHM`; the client continued beyond M1. It later exited with
+  `SCARD_E_READER_UNAVAILABLE` at a 3-key DES CBC NOPAD measurement. USB
+  `2e8a:0009` remained enumerated, the first PC/SC helper call raced USB
+  re-enumeration, and the second helper call restored the reader. A finite
+  serial monitor showed `TEST:PASS`.
+- Reproduced the exact 3-key DES CBC NOPAD prepare and 50-call measurement in
+  a focused physical probe: both returned `AA9000`, follow-up SELECT returned
+  `9000`, and the probe passed. This isolates the long-run failure to a
+  transient PC/SC/reader availability event; its cause is unknown. Do not
+  count the partial static matrix as full-suite success.
+- Artifacts: `artifacts/logs/cycle-choupi-20261018T171028Z.log`,
+  `artifacts/logs/physical-m1-exception-alias-20261018.log`,
+  `artifacts/logs/jcalgtest-static-exception-alias-20261018.log`,
+  `artifacts/logs/physical-des3-static-probe-20261018.log`, and
+  `artifacts/results/physical-perf-static-exception-alias-20261018/`.
+- Next: diagnose the transient PC/SC loss, then rerun the full static matrix.
+  After that, continue the remaining JCSystem/context audit; keep expected
+  `NO_SUCH_ALGORITHM` results out of the bug count.

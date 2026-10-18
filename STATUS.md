@@ -30,9 +30,13 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   without a reader disconnect. SHA-256 and DES CBC NOPAD were measured, and 40
   probes reported expected `NO_SUCH_ALGORITHM`. However, 1,852 operations
   returned `6F00`/`CANT_BE_MEASURED`. An isolated DES CBC ISO9797 M1 prepare
-  reproduced `6F00` with a `SecurityException` while the applet source expects
-  to catch `CryptoException`; investigate exception dispatch before treating
-  these failures as algorithm capability results.
+  previously reproduced `6F00`. The ROM/imported exception class-view fix is
+  now verified on hardware: M1 returns `03 9000` and the client records the
+  expected `NO_SUCH_ALGORITHM`. A post-fix full static rerun reached that case
+  and continued, but later stopped with `SCARD_E_READER_UNAVAILABLE` during a
+  3-key DES CBC NOPAD measurement. A focused prepare plus 50-call measurement
+  for that operation passed after PC/SC access was restored. The new full
+  static matrix is therefore still incomplete.
 
 ## Main gaps
 
@@ -60,16 +64,12 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 
 ## Next priorities
 
-1. Validate the `CryptoException`/`ISOException` ROM and imported class-view
-   matching change on hardware. The observed path is `CryptoException` reason
-   3, then `ISOException(9000)`; the device stopped enumerating after the latest
-   flash, so no result from the current image is available. Expect the isolated
-   M1 prepare APDU to return `03 9000`, then rerun physical static testing.
-   Preserve expected `NO_SUCH_ALGORITHM` behavior.
-2. Diagnose physical CCID reader loss during long JCAlgTest support sweeps.
-3. Define the supported Java Card version/profile, then audit runtime APIs,
+1. Diagnose the transient PC/SC reader loss during the physical static run,
+   then rerun the full matrix. The Pico remained on USB and a repeated access
+   helper restored the reader; the exact DES3 workload passed in isolation.
+2. Define the supported Java Card version/profile, then audit runtime APIs,
    applet lifecycle, and firewall behavior against it.
-4. Expand power-cycle, CAP-validation, and host/physical regression coverage.
+3. Expand power-cycle, CAP-validation, and host/physical regression coverage.
 
 ## Project notes
 
