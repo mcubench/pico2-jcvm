@@ -5039,6 +5039,6 @@
   returns from `process()` and checks the stored reason on the next APDU.
 - Decision: Continue checking the remaining `JCSystem` transient-array
   operations and clear events. Heap reclamation stays disabled.
-- Commit: `<pending>`.
+- Commit: `f42a2bc`.
 - Artifacts/logs: `artifacts/logs/apdu-exception-dispatch-focused-vpcd-20261018.log`,
   `artifacts/logs/apdu-exception-dispatch-full-vpcd-20261018.log`.
