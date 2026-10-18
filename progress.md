@@ -4994,7 +4994,7 @@
 - Decision: Continue auditing VM-raised Java Card framework exceptions.
   Exception values that lack a known reason mapping remain unmodified. Keep
   heap reclamation disabled.
-- Commit: `<pending>`.
+- Commit: `26583e2`.
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-jcsystem-systemexception-20261018.log`,
   `artifacts/logs/jcsystem-systemexception-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-systemexception-full-vpcd-20261018.log`.
