@@ -1,5 +1,21 @@
 # Project issue knowledge base
 
+## Post-SELECT PC/SC timeout repeated after successful reflash — 2026-10-18
+
+- **Observation:** A fresh ARM build/flash cycle passed runtime self-checks.
+  After refreshing USB access, Java listed both Virtual PCD readers and the
+  Pico reader, ATR was `3B800181`, and SELECT returned `9000`. The bounded
+  probe then timed out before GETVERSION (15-second wrapper exit 124).
+- **Interpretation:** This reproduces the existing PC/SC transport symptom
+  after reflash; firmware starts and handles SELECT. USB enumeration and ACL
+  success do not ensure that the host sends a second APDU. No static workload
+  was started.
+- **Action:** Stop physical retries at this boundary and continue independent
+  VM work through VPCD. Resume physical probing only after a host-side PC/SC
+  transaction recovery establishes consecutive APDUs.
+- **Evidence:** `artifacts/logs/cycle-choupi-20261018T194931Z.log`; the focused
+  probe output was collected in the terminal and was not archived.
+
 ## PC/SC stops sending APDUs after SELECT — 2026-10-18
 
 - **Symptom:** After `pcscd.service` restart, Java SmartcardIO enumerates the

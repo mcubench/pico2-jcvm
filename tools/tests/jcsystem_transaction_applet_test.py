@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 55),
+        "--case", type=int, action="append", choices=range(1, 56),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -192,6 +192,7 @@ def main() -> int:
                     (52, b"\x01", "unreferenced object batch 1 is reclaimed after APDU"),
                     (53, b"\x01", "unreferenced object batch 2 reuses instance slots"),
                     (54, b"\x01", "unreferenced object batch 3 keeps instance heap bounded"),
+                    (55, b"", "reselect invokes applet deselect and select callbacks exactly once"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -204,6 +205,30 @@ def main() -> int:
                     if p1 == 33:
                         send_message(connection, b"\x02")
                         exchange(connection, select, "reselect applet after card reset")
+                    if p1 == 55:
+                        before = exchange(
+                            connection,
+                            bytes((0x80, 0x00, p1, 0x00, 0x00)),
+                            "read applet lifecycle callback counts before reselect",
+                        )
+                        if len(before) != 2:
+                            raise RuntimeError(
+                                f"callback counts before reselect: expected 2 bytes, got {before.hex().upper()}"
+                            )
+                        exchange(connection, select, "reselect applet for callback check")
+                        after = exchange(
+                            connection,
+                            bytes((0x80, 0x00, p1, 0x00, 0x00)),
+                            "read applet lifecycle callback counts after reselect",
+                        )
+                        expected_counts = bytes(((before[0] + 1) & 0xff,
+                                                 (before[1] + 1) & 0xff))
+                        if after != expected_counts:
+                            raise RuntimeError(
+                                f"{label}: expected callback counts {expected_counts.hex().upper()}, got {after.hex().upper()}"
+                            )
+                        print(f"TEST:PASS {label}")
+                        continue
                     data = exchange(
                         connection,
                         bytes((0x80, 0x00, p1, 0x00, 0x00)),

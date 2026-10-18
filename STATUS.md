@@ -18,7 +18,8 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   (`TEST:SUMMARY pass=51 fail=0 elapsed_s=138.095`). Coverage includes APDU
   handling, Java exceptions, transactions, persistent references, transient
   arrays and reset/deselect lifetimes, memory queries, and selected
-  `JCSystem` APIs.
+  `JCSystem` APIs. A focused lifecycle callback check also confirms that
+  reselecting an applet invokes `deselect()` and `select()` exactly once.
 - SHA-256 has known-answer and repeated-call coverage. The CCID/PCSC interface
   and physical reader have passed bounded probes in earlier sessions.
 - Heap tracing now has a guarded sweep path in firmware: it runs after APDU
@@ -33,6 +34,9 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   focused retry selected the applet (`9000`) but the host did not send the next
   GETVERSION APDU. Concurrent serial diagnostics confirm one XfrBlock (SELECT)
   and no second XfrBlock; runtime self-checks pass and USB remains enumerated.
+  The latest cycle again passed both builds and the 18-second ARM runtime
+  capture; a bounded PC/SC retry reproduced SELECT `9000` followed by no
+  GETVERSION and timed out.
   The VPCD bridge is installed, but it cannot claim the Pico USB interface
   while `pcscd` owns it (`libusb ... failed: -6`). The static run remains
   blocked at host reader ownership/PC/SC transport, not by an observed VM

@@ -24,6 +24,8 @@ public final class JCTransactionProbe extends Applet {
   private static SharedArrayHolder persistentReferenceHolder;
   private Object globalArrayInstanceReference;
   private byte value = 0x11;
+  private byte selectCount;
+  private byte deselectCount;
   private byte lastApduExceptionReason = (byte)0x7f;
   private byte[] transientResetArray;
   private byte[] transientDeselectArray;
@@ -43,10 +45,13 @@ public final class JCTransactionProbe extends Applet {
   }
 
   public boolean select() {
+    selectCount++;
     return true;
   }
 
-  public void deselect() {}
+  public void deselect() {
+    deselectCount++;
+  }
 
   private static short appendMemory(byte[] output, short offset, byte type) {
     short scalar = JCSystem.getAvailableMemory(type);
@@ -657,6 +662,12 @@ public final class JCTransactionProbe extends Applet {
         for (short i = 0; i < 64; i++) discarded = new Object();
         buffer[0] = discarded != null ? (byte)1 : (byte)0;
         length = 1;
+        break;
+      }
+      case 55: {
+        buffer[0] = selectCount;
+        buffer[1] = deselectCount;
+        length = 2;
         break;
       }
       default:

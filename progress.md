@@ -5613,3 +5613,23 @@
 - Artifacts/logs: No persistent bridge log; command output is recorded in this
   session. Existing serial evidence remains in
   `artifacts/logs/monitor-pcsc-probe-concurrent-20261018.log`.
+## 2026-10-18 — Verify applet select and deselect callbacks
+
+- Step/experiment: `wp5-applet-reselect-callbacks`
+- Change: Added VPCD probe case 55, which records callback counters before and
+  after same-AID reselect and asserts exactly one `deselect()` and one `select()`.
+- Validation: `./tools/build-jcsystem-transaction-probe` passed. The focused
+  `./tools/test-jcsystem-transaction-applet --case 55` passed with counts
+  changing from `01 00` to `02 01` (`TEST:SUMMARY pass=3 fail=0`, 13.627 s).
+  An initial sandboxed emulator attempt failed with `EPERM`; the host-access
+  rerun passed. The preceding `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi`
+  passed ARM/RISC-V builds, ARM flash, and finite serial runtime checks. The
+  physical reader probe then returned SELECT `9000` but timed out before
+  GETVERSION, so no physical callback assertion was made.
+- Result: The VPCD callback bridge invokes both callbacks once on same-AID
+  reselect. Physical consecutive-APDU validation remains blocked by PC/SC.
+- Decision: Keep broadening the lifecycle regression on VPCD; do not repeat
+  physical APDUs until PC/SC transmits beyond SELECT.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcsystem-applet-callback-vpcd-20261018.log`,
+  `artifacts/logs/cycle-choupi-20261018T194931Z.log`

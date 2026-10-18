@@ -1,5 +1,26 @@
 # Handoff
 
+## Latest continuation — verify applet callbacks and retry physical reader — 2026-10-18
+
+- `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed: ARM and RISC-V builds
+  succeeded, ARM CHOUPI flashed, and the 18-second serial capture reported
+  repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` with no
+  `FAULT`. Log: `artifacts/logs/cycle-choupi-20261018T194931Z.log`.
+- Refreshed the authorized USB ACL. PC/SC listed both Virtual PCD readers and
+  `Pico 2 CHOUPI CCID`; the bounded JCAlgTest probe selected the applet and got
+  `9000`, then timed out without GETVERSION. No further physical APDUs were
+  attempted; this matches the recorded post-SELECT host transport failure.
+- Added VPCD case 55 to measure applet callback counters around a same-AID
+  reselect. Focused test passed: initial counts `01 00`, then `02 01`; both
+  `select()` and `deselect()` ran once. CAP build passed. The first sandboxed
+  emulator run failed with `EPERM`; rerunning the local probe with host access
+  passed in 13.627 seconds. Log:
+  `artifacts/logs/jcsystem-applet-callback-vpcd-20261018.log`.
+- Next: continue the Java Card profile/runtime audit on VPCD. Broader callback
+  checks still need applet selection rejection, power-off/reset behavior, and
+  multi-applet context support. Do not rerun physical APDUs until PC/SC can
+  transmit the APDU after SELECT.
+
 ## Latest continuation — isolate PC/SC failure after SELECT — 2026-10-18
 
 - The operator restarted `pcscd.service`. The authorized helper granted access
