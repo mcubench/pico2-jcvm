@@ -494,9 +494,12 @@ Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
 
   uint16_t instance_size = 0;
 
-  do {
+  while (true) {
     ConstantPool_Handler cp_handler(package);
     instance_size += (claz->declared_instance_size & 0x00FF);
+    if (claz->isObjectClass()) {
+      break;
+    }
 #ifndef PC_VERSION
     choupi_install_stage(6);
     choupi_install_context(NTOHS(claz->super_class_ref.internal_classref));
@@ -507,7 +510,7 @@ Class_Handler::getInstanceFieldsSize(const jclass_index_t claz_index) const
 #endif
     package = pair.first;
     claz = pair.second;
-  } while (!(claz->isObjectClass()));
+  }
 
   return instance_size;
 }

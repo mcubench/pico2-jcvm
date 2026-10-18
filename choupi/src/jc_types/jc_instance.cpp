@@ -73,7 +73,7 @@ uint8_t persistent_tag_root_length(uint8_t first, uint8_t length) {
  * @param[instantiated_class] Constant Pool token to the instantiated class.
  */
 JC_Instance::JC_Instance(Heap &owner, const Package &package_owner,
-                         const jc_cp_offset_t instantiated_class) noexcept
+                         const jc_cp_offset_t instantiated_class)
     : JC_Object(owner, false) {
   ConstantPool_Handler cp(package_owner);
   std::pair<jpackage_ID_t, jclass_index_t> pair =
@@ -95,7 +95,7 @@ JC_Instance::JC_Instance(Heap &owner, const Package &package_owner,
  * @param[claz] class index
  */
 JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
-                         const jclass_index_t claz) noexcept
+                         const jclass_index_t claz)
     : JC_Object(owner, false), packageID(packageID), claz(claz) {
 #ifndef PC_VERSION
   choupi_install_stage(4);
@@ -124,7 +124,7 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
  */
 JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
                          const jclass_index_t claz_index,
-                         const fs::Tag &tag) noexcept
+                         const fs::Tag &tag)
     : JC_Object(owner, true), packageID(packageID), claz(claz_index) {
   this->has_persistent_tag = true;
   this->persistent_tag_length = tag.len;

@@ -4998,3 +4998,26 @@
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-jcsystem-systemexception-20261018.log`,
   `artifacts/logs/jcsystem-systemexception-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-systemexception-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Instantiate java.lang.Object safely
+
+- Step/experiment: `java-lang-object-root-class-construction`
+- Change: Fixed `Class_Handler::getInstanceFieldsSize()` to stop at the root
+  class before resolving a superclass, and removed `noexcept` from
+  `JC_Instance` constructors that perform CAP lookup and field sizing. Added
+  case 25 to instantiate `new Object()` and check the result.
+- Validation: PC, ARM M33, and RISC-V builds passed. Focused VPCD case 25 passed
+  (`019000`). Full suite with two-pass heap tracing passed
+  `TEST:SUMMARY pass=28 fail=0 elapsed_s=102.270`; all 52 trace walks completed
+  with zero invalid refs and zero edge-load failures. No physical board was
+  accessed.
+- Result: `new java.lang.Object()` no longer resolves Object's nonexistent
+  superclass or terminates the emulator through a `noexcept` constructor.
+  Earlier ArrayStoreException test failure was caused by this construction
+  path; case 23 now uses the applet instance and still passes.
+- Decision: Continue auditing VM exception and allocation paths. Keep heap
+  reclamation disabled.
+- Commit: `<pending>`.
+- Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-java-lang-object-construction-20261018.log`,
+  `artifacts/logs/jcsystem-java-lang-object-construction-focused-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-java-lang-object-construction-full-vpcd-20261018.log`.

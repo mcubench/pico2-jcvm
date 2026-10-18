@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 25),
+        "--case", type=int, action="append", choices=range(1, 26),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -162,6 +162,7 @@ def main() -> int:
                     (22, b"\x01", "negative array size throws catchable NegativeArraySizeException"),
                     (23, b"\x01", "reference array store throws catchable ArrayStoreException"),
                     (24, b"\x01", "JCSystem invalid memory type throws SystemException with reason"),
+                    (25, b"\x01", "java.lang.Object root class can be instantiated"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

@@ -65,11 +65,11 @@ private:
 
 public:
   JC_Instance(Heap &owner, const Package &package_owner,
-              const jc_cp_offset_t instantiated_class) noexcept;
+              const jc_cp_offset_t instantiated_class);
   JC_Instance(Heap &owner, const jpackage_ID_t packageID,
-              const jclass_index_t claz_index) noexcept;
+              const jclass_index_t claz_index);
   JC_Instance(Heap &owner, const jpackage_ID_t packageID,
-              const jclass_index_t claz_index, const fs::Tag &tag) noexcept;
+              const jclass_index_t claz_index, const fs::Tag &tag);
   JC_Instance(JC_Instance &&other) noexcept;
   JC_Instance(const JC_Instance &) = delete;
   JC_Instance &operator=(JC_Instance &&) = delete;

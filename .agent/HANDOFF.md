@@ -1,6 +1,22 @@
 # Handoff
 
-## Latest continuation — dispatch JCSystem SystemException — 2026-10-18
+## Latest continuation — instantiate the root java.lang.Object class — 2026-10-18
+
+- Fixed `Class_Handler::getInstanceFieldsSize()` to stop at the root
+  `java.lang.Object` class before resolving a superclass. Its old `do/while`
+  attempted to resolve Object's absent superclass. Also removed `noexcept`
+  from `JC_Instance` constructors that perform CAP lookups and field sizing,
+  so malformed metadata can reach the VM's normal exception boundary.
+- Added case 25, which instantiates `new Object()` and checks the returned
+  reference. PC, ARM M33, and RISC-V builds passed. Focused VPCD case passed
+  (`019000`); full suite passed 28/28 in 102.270 s. All 52 heap trace walks
+  were complete with zero invalid refs or edge-load failures. No board was
+  accessed.
+- This resolves the object-allocation failure that initially obscured the
+  ArrayStoreException test. Next audit remaining Java Card runtime exception
+  paths; keep heap reclamation disabled.
+
+## Previous continuation — dispatch JCSystem SystemException — 2026-10-18
 
 - Generalized VM exception class lookup from `java.lang` to a package AID and
   class token. `Exceptions::SystemException` now resolves framework export

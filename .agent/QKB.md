@@ -1183,3 +1183,26 @@ fix.
   values and reason codes still need explicit mappings and tests. The generic
   VM exception enum does not carry reasons, so only paths with a known reason
   should synthesize one.
+
+## Root java.lang.Object allocation terminated the emulator — 2026-10-18
+
+- **Symptom:** A valid applet APDU containing `new Object()` terminated the PC
+  emulator with `terminate called after throwing an instance of
+  'jcvm::Exceptions'`. Allocating `Exception[]` and constructing other
+  non-root classes worked.
+- **Cause:** `Class_Handler::getInstanceFieldsSize()` used a `do/while` loop
+  that always resolved one superclass. For root `java.lang.Object`, whose
+  superclass reference is absent, that lookup raised `SecurityException`.
+  The exception escaped through `JC_Instance` constructors declared
+  `noexcept`, which caused termination before the interpreter's Java/VM
+  exception handling.
+- **Viable fix:** Walk class sizes with an explicit root check before resolving
+  the parent. Remove `noexcept` from `JC_Instance` constructors that perform
+  CAP lookup or class field sizing, preserving normal error propagation for
+  invalid CAP metadata. Case 25 (`new Object()`) now passes (`019000`).
+- **Regression evidence:** PC, ARM, and RISC-V builds passed. Full VPCD suite
+  passed 28/28 in 102.270 s; 26 pairs (52 total) of heap walks completed with
+  zero invalid references and zero edge-load failures. No board was accessed.
+- The prior ArrayStoreException diagnostic about `new Object()` is superseded
+  by this fix. It had been a constructor-path failure before the mismatched
+  array store, not a dispatch failure.
