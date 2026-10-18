@@ -1158,6 +1158,27 @@ fix.
   complete roots for all native/global holders and does not authorize heap
   reclamation. Reclamation remains disabled.
 
+### Pin loaded objects with persistent flash tags
+
+- **Root gap:** Static reference values are loaded into
+  `static_reference_roots` only on first access. A persistent object or array
+  already loaded through another reference could therefore be absent from
+  that cache when a post-APDU trace runs.
+- **Viable conservative fix:** Enumerate every loaded array and instance with
+  a persistent flash tag as a root. This pins all loaded persistent objects
+  (and, through typed edges, their children) even if the associated static
+  field has not been read in the current context. It may retain unreachable
+  persistent objects, which is acceptable while object deletion remains
+  unsupported.
+- **Validation:** PC, ARM, and RISC-V builds passed. VPCD cases 14–16 passed
+  for restored static identity, persistent array-child identity, and aliased
+  persistent object fields. Six repeated traces were complete with zero
+  invalid references and zero edge-load failures; all loaded arrays and
+  instances were reachable. Log:
+  `artifacts/logs/heap-persistent-roots-focused-vpcd-20261018.log`.
+- **Limit:** This improves conservative root coverage but does not by itself
+  prove that every native handle is represented. No heap slots are reclaimed.
+
 ### Repeated-walk validation
 
 - The PC diagnostic accepts a repeat count from `PICO2_HEAP_TRACE`, clamped

@@ -319,6 +319,32 @@ void Heap::appendRootReferences(std::vector<jref_t> &references) const {
       references.push_back(root.reference);
     }
   }
+
+  // Persisted static fields are deserialized lazily, so an object loaded by
+  // another reference may not yet be represented in static_reference_roots.
+  // Conservatively pin every loaded persistent object and array until the
+  // runtime can enumerate persisted roots without loading them on demand.
+  uint16_t offset = 0;
+  for (const auto &array : this->arrays) {
+    ++offset;
+    if (array && array->hasPersistentTag()) {
+      jref_t reference;
+      reference.setAsArray(true);
+      reference.setOffset(offset);
+      references.push_back(reference);
+    }
+  }
+
+  offset = 0;
+  for (const auto &instance : this->instances) {
+    ++offset;
+    if (instance && instance->hasPersistentTag()) {
+      jref_t reference;
+      reference.setAsArray(false);
+      reference.setOffset(offset);
+      references.push_back(reference);
+    }
+  }
 }
 
 bool Heap::getArrayReference(const JC_Array *array, jref_t &reference) const {

@@ -5286,3 +5286,24 @@
 - Commit: `c9aeb9d`.
 - Artifacts/logs: `artifacts/logs/heap-global-tracer-focused-vpcd-20261018.log`
   (SHA-256 `3ebc56b04665c3e0cf87b9e51a0456d6a8c9c7c2125dc05bdce12feb254c01e2`).
+
+## 2026-10-18 — Conservatively pin loaded persistent heap objects
+
+- Step/experiment: `heap-trace-persistent-tag-roots`
+- Change: Added every loaded persistent-tagged array and instance to the heap
+  trace roots. Static reference fields are lazy-loaded, so their cached root
+  entries alone could miss a persistent object already present in the heap.
+- Validation: `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc`
+  passed. JCSystem VPCD cases 14–16 passed (`TEST:SUMMARY pass=5 fail=0`);
+  six repeated traces were complete with zero invalid references and zero
+  edge-load failures. No physical device was accessed. Existing Rust and
+  packed-member warnings remain in the PC build.
+- Result: Loaded persistent objects and their typed descendants remain
+  conservatively reachable even before a lazy static-field read. No heap
+  reclamation or slot reuse is enabled.
+- Decision: Complete the remaining native-root audit before implementing a
+  stable-slot sweep; persistent objects will remain pinned until deletion is
+  supported.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/heap-persistent-roots-focused-vpcd-20261018.log`
+  (SHA-256 `f2e776ef989199e8781811bad8d3a7acb1014e3566dddc1056e9b74c2e651a00`).

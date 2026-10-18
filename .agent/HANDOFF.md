@@ -4555,6 +4555,26 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   outside `Context` and `Heap`; add tests that distinguish local from global
   handle marks. Do not enable tombstoning/reuse until that audit is complete.
 - Preserve all unrelated dirty worktree files. No physical board was flashed.
+
+## 2026-10-18 — Conservatively root loaded persistent objects
+
+- Root inventory confirmed that persistent static fields are deserialized and
+  cached lazily. The heap now appends all loaded objects and arrays with a
+  persistent flash tag to its root set. This prevents collection from freeing
+  a persistent object merely because its static field has not been accessed
+  in the current context. Persistent objects may remain pinned indefinitely;
+  deletion is unsupported.
+- The `jref_t`/`shared_ptr<JC_Array>` inventory found Java references in
+  `Context`, `Heap`, stack frames, typed instance fields, and reference-array
+  contents. Post-APDU collection must still require an empty Java stack; APDU
+  shared-pointer mirrors are already enumerated by `Context`. JNI temporary
+  shared pointers are call locals and should have left scope at that boundary.
+- PC, ARM, and RISC-V builds passed. JCSystem cases 14–16 passed under VPCD;
+  six heap traces were complete with zero invalid refs or edge failures. Log:
+  `artifacts/logs/heap-persistent-roots-focused-vpcd-20261018.log`.
+- Next: finish native-handle/root audit and implement stable-slot tombstones
+  plus reuse only after a complete mark. Validate collection after Java and
+  native caller frames have fully unwound. No physical board was accessed.
 - Evidence logs: final builds, flash, boot, focused reader probe, full official
   run and serial panic are listed in `.agent/QKB.md`.
 
