@@ -1,5 +1,16 @@
 # Handoff
 
+## Latest continuation — add project status overview — 2026-10-18
+
+- Added root `STATUS.md` as the concise current-state summary, with tested
+  capabilities, explicit limitations, current physical-test blockers, next
+  priorities, and links to the runbook, plan, handoff, QKB, and progress log.
+- Checked the summary against the latest VPCD result (51/51), current build
+  wrappers, and physical-validation findings recorded in this handoff/QKB. No
+  builds, tests, or hardware actions were needed for this documentation step.
+- Next: use `STATUS.md` as the high-level overview and keep it current when
+  major capabilities or validation status changes.
+
 ## Latest continuation — define single-applet shareable lookup fallback — 2026-10-18
 
 - Replaced `getAppletShareableInterfaceObject()`'s `NotYetImplemented` VM abort

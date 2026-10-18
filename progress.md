@@ -5249,3 +5249,20 @@
 - Commit: `b34ed04`.
 - Artifacts/logs: `artifacts/logs/jcsystem-shareable-default-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-shareable-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Add high-level project status
+
+- Step/experiment: `project-status-overview`
+- Change: Added root `STATUS.md` summarizing the tested subset, major gaps,
+  physical validation state, next priorities, and links to the runbook and
+  detailed project records.
+- Validation: Cross-checked the summary against `readme.md`, `plan.md`, the
+  latest handoff, QKB, build wrappers, and the recorded VPCD/hardware results.
+  No build, test, or hardware action was needed for this documentation-only
+  change.
+- Result: The repository now has a concise entry point for current project
+  maturity and remaining work. Historical plan content is explicitly labeled.
+- Decision: Keep this summary current when capability or validation status
+  materially changes; retain `HANDOFF.md` for chronological session details.
+- Commit: pending.
+- Artifacts/logs: `STATUS.md`.
