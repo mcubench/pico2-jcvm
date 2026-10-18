@@ -5519,3 +5519,36 @@
   `artifacts/logs/monitor-static-heap-unwind-final-20261018.log`;
   partial CSV and client log under
   `artifacts/results/physical-perf-static-heap-unwind-final-20261018/`.
+
+## 2026-10-18 — Stream collector roots and children
+
+- Step/experiment: `heap-gc-stream-root-and-child-visitors`
+- Change: Removed dynamic root, pending-worklist, and child-reference buffers
+  from the physical collector path. Root and child references are visited
+  directly; stable-slot mark bytes track unreachable, pending, and scanned
+  states. Updated STATUS, QKB, and the session handoff with observed limits.
+- Validation: `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc`
+  passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed with
+  `CYCLE:PASS` and `TEST:SUMMARY pass=1 fail=0`. Physical JCAlgTest 1.8.2
+  `ALG_PERFORMANCE_STATIC` reached 544 CSV rows; no collector allocation
+  failure, panic, or GC skip appeared in serial output. The client stopped on
+  `SCARD_E_READER_UNAVAILABLE` during AES-192. A focused recovery probe once
+  passed SELECT, GETVERSION, JCSystem info, and DES prepare (`AA9000`); later
+  retries showed intermittent PC/SC reader enumeration/transport failures.
+  The static matrix is incomplete. Existing packed CAP-member warnings remain
+  in the PC build.
+- Result: Streaming roots was needed in addition to bitmap traversal: prior
+  attempts failed at 3,244-byte/1,642-byte worklist allocations and a 2,048-byte
+  root-vector allocation. The final collector passed the prior failure point
+  without panic through 544 rows. Remaining end-to-end blocker is intermittent
+  host USB/PC/SC access; `NO_SUCH_ALGORITHM` remains an expected applet result.
+- Decision: Diagnose host passthrough/reader instability at the exact failed
+  APDU, then rerun the full physical static matrix. Resume the JCSystem/context
+  API audit after PC/SC remains stable through the long test.
+- Commit: `677d4e3`.
+- Artifacts/logs: ARM/RISC-V/PC builds and physical cycle under
+  `artifacts/logs/*gc-stream-roots-final-20261018.log`; static client and serial
+  logs `artifacts/logs/jcalgtest-static-gc-stream-roots-20261018.log` and
+  `artifacts/logs/monitor-static-gc-stream-roots-20261018.log`; partial output
+  under `artifacts/results/physical-perf-static-gc-stream-roots-20261018/`;
+  PC/SC recovery traces under `artifacts/logs/*gc-stream-roots-recovery*20261018.log`.
