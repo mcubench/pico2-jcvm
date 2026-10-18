@@ -5017,7 +5017,7 @@
   path; case 23 now uses the applet instance and still passes.
 - Decision: Continue auditing VM exception and allocation paths. Keep heap
   reclamation disabled.
-- Commit: `<pending>`.
+- Commit: `f2b33f8`.
 - Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-java-lang-object-construction-20261018.log`,
   `artifacts/logs/jcsystem-java-lang-object-construction-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-java-lang-object-construction-full-vpcd-20261018.log`.
