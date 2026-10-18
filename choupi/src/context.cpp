@@ -317,6 +317,11 @@ void Context::appendRootReferences(
       references.push_back(reference);
     }
   }
+  jref_t root_return_reference;
+  if (this->stack.getRootReferenceReturnValue(root_return_reference) &&
+      !root_return_reference.isNullPointer()) {
+    references.push_back(root_return_reference);
+  }
   const auto append_array_mirror = [&](const std::shared_ptr<JC_Array> &array) {
     if (!array) {
       return;

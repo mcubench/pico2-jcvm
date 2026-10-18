@@ -61,6 +61,7 @@ private:
   jword_t jc_stack[JCVM_STACK_SIZE];
   List<Frame> frames;
   bool root_return_value_available = false;
+  bool root_return_value_is_reference = false;
   uint32_t root_return_value = 0;
 
 public:
@@ -80,8 +81,11 @@ public:
   bool isRootFrame() const noexcept;
   /// Save a typed method result when the top-level entry returns.
   void setRootReturnValue(uint32_t value) noexcept;
+  /// Save a reference result so root enumeration preserves its heap handle.
+  void setRootReferenceReturnValue(jref_t value) noexcept;
   bool hasRootReturnValue() const noexcept;
   uint32_t getRootReturnValue() const noexcept;
+  bool getRootReferenceReturnValue(jref_t &value) const noexcept;
 
   // Pushing a byte to the operand stack
   void push_Byte(const jbyte_t value) noexcept(

@@ -1,5 +1,17 @@
 # Handoff
 
+## Latest continuation — preserve typed reference return roots — 2026-10-18
+
+- `Stack` now tags the top-level `ARETURN` cache as a reference and exposes it
+  through `Context::appendRootReferences()`. Primitive returns clear the tag;
+  entering the next root frame clears stale return state.
+- PC, ARM M33, and RISC-V builds passed. VPCD JCSystem regression passed
+  17/17 in 70.323 s. No hardware was flashed or accessed.
+- This does not scan active Java locals/operands or native C++ locals. A mark
+  walk is only useful at a quiescent boundary after callers release references.
+- Next: prove the APDU return boundary and root-return lifecycle, then run
+  diagnostic marking there without enabling reclamation.
+
 ## Latest continuation — enumerate runtime exception roots — 2026-10-18
 
 - Added per-heap reusable exception slots for the ROM and imported

@@ -4762,3 +4762,24 @@
   `artifacts/logs/build-arm-heap-runtime-roots-20261018.log`,
   `artifacts/logs/build-riscv-heap-runtime-roots-20261018.log`, and
   `artifacts/logs/jcsystem-heap-runtime-roots-vpcd-20261018.log`.
+
+## 2026-10-18 — Preserve typed top-level reference return roots
+
+- Step/experiment: `typed-root-return-value`
+- Change: Added a type tag for the top-level stack return cache. `ARETURN`
+  stores a typed `jref_t`; primitive return setters clear the tag and a new
+  root frame resets stale return state. `Context::appendRootReferences()` now
+  includes the cached reference return when present.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. VPCD JCSystem regression passed
+  `TEST:SUMMARY pass=17 fail=0 elapsed_s=70.323`. No hardware was flashed.
+- Result: The root visitor can distinguish cached references from primitive
+  top-level return values. Active Java frames and native locals remain
+  unenumerated.
+- Decision: Verify the APDU call boundary and establish a quiescent point
+  before invoking the tracer; do not reclaim slots yet.
+- Commit: `PENDING`.
+- Artifacts/logs: `artifacts/logs/build-pc-typed-root-return-20261018.log`,
+  `artifacts/logs/build-arm-typed-root-return-20261018.log`,
+  `artifacts/logs/build-riscv-typed-root-return-20261018.log`, and
+  `artifacts/logs/jcsystem-typed-root-return-vpcd-20261018.log`.

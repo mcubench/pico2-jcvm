@@ -983,3 +983,22 @@ fix.
   proven quiescent boundary. Do not reclaim slots based on current tracing.
 - **Decision:** Determine how to represent a typed root return value and prove
   the APDU caller has returned before running diagnostic mark accounting.
+
+## Preserve top-level reference return values as typed roots — 2026-10-18
+
+- **Implemented:** `Stack` now distinguishes a reference result from primitive
+  top-level results. `ARETURN` stores the compact handle with a reference tag;
+  short/int return paths clear the tag, and a new root frame clears the stale
+  result state. `Context::appendRootReferences()` adds the cached reference
+  result when one is present.
+- **Reason:** The prior root-return cache stored only a `uint32_t`, so a
+  reference returned to native code could not be distinguished from a
+  primitive or included in the root set.
+- **Validation:** PC, ARM M33, and RISC-V builds passed. Full VPCD JCSystem
+  regression passed 17/17 in 70.323 s. No hardware was flashed.
+- **Limit:** This covers only a top-level returned reference. It does not
+  scan local/operand words in active Java frames or C++ native locals. A
+  collector still requires a proven quiescent caller boundary.
+- **Decision:** Locate the exact APDU call-return boundary and verify that the
+  Java stack is empty and native references are out of scope before invoking
+  mark-only tracing.

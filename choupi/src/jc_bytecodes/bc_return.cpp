@@ -67,7 +67,7 @@ void Bytecodes::bc_areturn() {
   context.backToPreviousPackageID();
 
   if (root_frame) {
-    stack.setRootReturnValue(returned_value.compact());
+    stack.setRootReferenceReturnValue(returned_value);
   } else {
     stack.push_Reference(returned_value);
   }

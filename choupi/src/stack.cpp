@@ -53,6 +53,7 @@ void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
 
   if (this->frames.empty()) { // the first frame is pushing.
     this->root_return_value_available = false;
+    this->root_return_value_is_reference = false;
     this->root_return_value = 0;
     new_fp = &(this->jc_stack[0]);
   } else {
@@ -130,6 +131,13 @@ bool Stack::isRootFrame() const noexcept { return this->frames.size() == 1; }
 void Stack::setRootReturnValue(const uint32_t value) noexcept {
   this->root_return_value = value;
   this->root_return_value_available = true;
+  this->root_return_value_is_reference = false;
+}
+
+void Stack::setRootReferenceReturnValue(const jref_t value) noexcept {
+  this->root_return_value = value.compact();
+  this->root_return_value_available = true;
+  this->root_return_value_is_reference = true;
 }
 
 bool Stack::hasRootReturnValue() const noexcept {
@@ -138,6 +146,15 @@ bool Stack::hasRootReturnValue() const noexcept {
 
 uint32_t Stack::getRootReturnValue() const noexcept {
   return this->root_return_value;
+}
+
+bool Stack::getRootReferenceReturnValue(jref_t &value) const noexcept {
+  if (!this->root_return_value_available ||
+      !this->root_return_value_is_reference) {
+    return false;
+  }
+  value = jref_t(static_cast<uint16_t>(this->root_return_value));
+  return true;
 }
 
 /**
