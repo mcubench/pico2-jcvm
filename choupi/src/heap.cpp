@@ -188,13 +188,17 @@ jref_t Heap::addRuntimeCryptoException(const jpackage_ID_t packageID,
   return root;
 }
 
-jref_t Heap::addRuntimeClassCastException(const jpackage_ID_t packageID,
-                                          const jclass_index_t classIndex) {
-  if (this->runtime_class_cast_exception.isNullPointer()) {
-    this->runtime_class_cast_exception =
-        this->addInstance(packageID, classIndex);
+jref_t Heap::addRuntimeException(const jpackage_ID_t packageID,
+                                 const jclass_index_t classIndex) {
+  for (const RuntimeExceptionRoot &root : this->runtime_exception_roots) {
+    if (root.package_id == packageID && root.class_index == classIndex) {
+      return root.reference;
+    }
   }
-  return this->runtime_class_cast_exception;
+  const jref_t reference = this->addInstance(packageID, classIndex);
+  this->runtime_exception_roots.push_back(
+      RuntimeExceptionRoot{packageID, classIndex, reference});
+  return reference;
 }
 
 bool Heap::getStaticReferenceRoot(const jpackage_ID_t package_id,
@@ -224,11 +228,15 @@ void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
 
 void Heap::appendRootReferences(std::vector<jref_t> &references) const {
   const jref_t runtime_roots[] = {this->runtime_crypto_exception_rom,
-                                  this->runtime_crypto_exception_imported,
-                                  this->runtime_class_cast_exception};
+                                  this->runtime_crypto_exception_imported};
   for (const jref_t &reference : runtime_roots) {
     if (!reference.isNullPointer()) {
       references.push_back(reference);
+    }
+  }
+  for (const RuntimeExceptionRoot &root : this->runtime_exception_roots) {
+    if (!root.reference.isNullPointer()) {
+      references.push_back(root.reference);
     }
   }
   for (const StaticReferenceRoot &root : this->static_reference_roots) {

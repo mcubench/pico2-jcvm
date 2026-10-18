@@ -4925,3 +4925,32 @@
   `artifacts/logs/jcsystem-checkcast-positive-negative-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-checkcast-exception-50-reuse-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-checkcast-exception-50-reuse-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Dispatch VM runtime exceptions through Java handlers
+
+- Step/experiment: `catchable-vm-runtime-exceptions`
+- Change: The interpreter now maps supported VM-raised runtime faults to
+  reusable, heap-rooted Java exception instances and invokes the normal
+  exception-table search. Added catchable cases for null array access, array
+  bounds, division by zero, and negative array size. Added logical-length
+  checks to all typed `JC_Array` read/write entry points so out-of-range access
+  raises `ArrayIndexOutOfBoundsException` instead of leaking the generic
+  container exception.
+- Validation: PC, ARM M33, and RISC-V builds passed. Focused VPCD cases 19–22
+  passed (`019000` each), as did the 50-cast ClassCastException regression.
+  Full VPCD suite with `PICO2_HEAP_TRACE=2` passed
+  `TEST:SUMMARY pass=25 fail=0 elapsed_s=104.317`; all 46 trace walks were
+  complete with zero invalid refs and zero edge-load failures. No board was
+  accessed.
+- Result: Caught NPE, AIOOBE, ArithmeticException, NegativeArraySizeException,
+  and ClassCastException execute through Java handlers. Initial case 20
+  exposed the incorrect generic bounds exception; the logical-length checks
+  fixed it. Unsupported/unmapped VM exceptions remain fatal by design.
+- Decision: Continue auditing other VM exception sources and root paths. Keep
+  heap reclamation disabled; `NO_SUCH_ALGORITHM` remains expected for absent
+  algorithms.
+- Commit: `<pending>`.
+- Artifacts/logs: `artifacts/logs/build-{pc,arm,riscv}-vm-runtime-exception-dispatch-20261018.log`,
+  `artifacts/logs/jcsystem-runtime-exception-dispatch-focused-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-runtime-exception-dispatch-mappings-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-runtime-exception-dispatch-full-vpcd-20261018.log`.

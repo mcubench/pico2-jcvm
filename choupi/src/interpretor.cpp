@@ -350,6 +350,13 @@ uint16_t Interpretor::run() noexcept {
       // execute
       (bytecodes.*bc)();
     } catch (Exceptions e) {
+      try {
+        if (bytecodes.dispatchJavaException(e)) {
+          continue;
+        }
+      } catch (...) {
+        // If no Java handler matches, retain the existing VM-fatal path.
+      }
       this->last_exception_id = e;
       this->last_exception_opcode = bytecode;
       this->last_exception_pc =

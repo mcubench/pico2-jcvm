@@ -268,6 +268,47 @@ public final class JCTransactionProbe extends Applet {
         length = 1;
         break;
       }
+      case 19: {
+        byte[] nullArray = null;
+        try {
+          short ignored = (short)nullArray.length;
+          buffer[0] = 0;
+        } catch (NullPointerException e) {
+          buffer[0] = 1;
+        }
+        length = 1;
+        break;
+      }
+      case 20: {
+        byte[] values = new byte[1];
+        try {
+          buffer[0] = values[1];
+        } catch (ArrayIndexOutOfBoundsException e) {
+          buffer[0] = 1;
+        }
+        length = 1;
+        break;
+      }
+      case 21: {
+        try {
+          short ignored = (short)(1 / 0);
+          buffer[0] = 0;
+        } catch (ArithmeticException e) {
+          buffer[0] = 1;
+        }
+        length = 1;
+        break;
+      }
+      case 22: {
+        try {
+          byte[] invalid = new byte[-1];
+          buffer[0] = 0;
+        } catch (NegativeArraySizeException e) {
+          buffer[0] = 1;
+        }
+        length = 1;
+        break;
+      }
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
     }

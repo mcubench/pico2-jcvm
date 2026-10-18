@@ -1,5 +1,30 @@
 # Handoff
 
+## Latest continuation — dispatch VM runtime exceptions through Java handlers — 2026-10-18
+
+- The interpreter now translates common VM-raised runtime exceptions into
+  reusable, per-heap Java exception objects and dispatches them through the
+  current Java exception table. Mappings cover `IndexOutOfBoundsException`,
+  `ArrayIndexOutOfBoundsException`, `NegativeArraySizeException`,
+  `NullPointerException`, `ClassCastException`, `ArithmeticException`, and
+  `RuntimeException`. Unmapped/security failures retain the existing VM-fatal
+  behavior.
+- The new upper-bound probe initially exposed that `JC_Array` backing access
+  leaked generic `IndexOutOfBoundsException`. All eight typed array read/write
+  entry points now check logical array length first and raise Java's expected
+  `ArrayIndexOutOfBoundsException`.
+- PC, ARM M33, and RISC-V builds passed. Focused VPCD cases for null access,
+  array bounds, division by zero, and negative array size passed (`019000` for
+  each); the 50-cast ClassCastException regression also passed. Full VPCD
+  JCSystem suite passed 25/25 in 104.317 s. All 46 heap trace walks completed
+  with zero invalid refs or edge-load failures. No physical board was
+  accessed.
+- Next: audit remaining VM exception sources, especially type/store and
+  security violations. The mapping is not exhaustive; keep heap reclamation
+  disabled and preserve the existing expected `NO_SUCH_ALGORITHM` behavior.
+
+## Previous continuation — dispatch and reuse ClassCastException — 2026-10-18
+
 ## Latest continuation — dispatch and reuse ClassCastException — 2026-10-18
 
 - Fixed array `checkcast` atype mapping and then found the negative-cast path

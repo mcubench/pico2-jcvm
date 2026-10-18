@@ -39,6 +39,14 @@
 
 namespace jcvm {
 
+namespace {
+void checkArrayEntryIndex(const JC_Array &array, const uint16_t index) {
+  if (index >= array.size()) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+}
+} // namespace
+
 /**
  * Constructor
  */
@@ -246,6 +254,7 @@ jbyte_t JC_Array::getByteEntry(const uint16_t index)
     const noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
+  checkArrayEntryIndex(*this, index);
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   switch (type) {
@@ -294,6 +303,7 @@ jshort_t JC_Array::getShortEntry(const uint16_t index)
     const noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
+  checkArrayEntryIndex(*this, index);
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   if (this->type != jc_array_type::JAVA_ARRAY_T_SHORT) {
@@ -340,6 +350,7 @@ jint_t JC_Array::getIntEntry(const uint16_t index)
     const noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
+  checkArrayEntryIndex(*this, index);
 
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
@@ -387,6 +398,7 @@ jref_t JC_Array::getReferenceEntry(const uint16_t index)
     noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
+  checkArrayEntryIndex(*this, index);
 
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
@@ -426,6 +438,7 @@ void JC_Array::setByteEntry(const uint16_t index, const jbyte_t value)
     noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
+  checkArrayEntryIndex(*this, index);
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   switch (type) {
@@ -474,6 +487,7 @@ void JC_Array::setShortEntry(const uint16_t index, const jshort_t value)
     noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
+  checkArrayEntryIndex(*this, index);
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   if (this->type != jc_array_type::JAVA_ARRAY_T_SHORT) {
@@ -519,6 +533,7 @@ void JC_Array::setIntEntry(const uint16_t index, const jint_t value)
     noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
+  checkArrayEntryIndex(*this, index);
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   if (this->type != jc_array_type::JAVA_ARRAY_T_INT) {
@@ -576,6 +591,7 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value
     noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS && !JCVM_FIREWALL_CHECKS */
 {
+  checkArrayEntryIndex(*this, index);
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   if (this->type != jc_array_type::JAVA_ARRAY_T_REFERENCE) {

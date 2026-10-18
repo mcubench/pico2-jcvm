@@ -85,10 +85,10 @@ bool isRuntimeCryptoExceptionFactoryAllocation(
   return is_rom_package || is_security_import;
 }
 
-jref_t runtimeClassCastExceptionReference(Context &context) {
+jref_t runtimeExceptionReference(Context &context,
+                                 const uint8_t class_token) {
   static constexpr uint8_t java_lang_aid[] = {
       0xA0, 0x00, 0x00, 0x00, 0x62, 0x00, 0x01};
-  constexpr uint8_t class_cast_exception_export_token = 8;
 
   Package applet_package = context.getCurrentPackage();
   Import_Handler imports(applet_package);
@@ -107,17 +107,49 @@ jref_t runtimeClassCastExceptionReference(Context &context) {
 
     const jpackage_ID_t package_id = imports.getPackageIndex(package_info);
     Package java_lang_package(package_id);
-    const uint8_t class_token = remap_imported_class_token(
-        *package_info, class_cast_exception_export_token);
-    const jclass_index_t class_index = HTONS(
-        Export_Handler(java_lang_package).getExportedClassOffset(class_token));
-    return context.getHeap().addRuntimeClassCastException(package_id,
-                                                          class_index);
+    const uint8_t mapped_class_token =
+        remap_imported_class_token(*package_info, class_token);
+    const jclass_index_t class_index = HTONS(Export_Handler(java_lang_package)
+                                                 .getExportedClassOffset(
+                                                     mapped_class_token));
+    return context.getHeap().addRuntimeException(package_id, class_index);
   }
 
   throw Exceptions::RuntimeException;
 }
 } // namespace
+
+bool Bytecodes::dispatchJavaException(const Exceptions exception) {
+  uint8_t class_token = 0;
+  switch (exception) {
+  case Exceptions::IndexOutOfBoundsException:
+    class_token = 4;
+    break;
+  case Exceptions::ArrayIndexOutOfBoundsException:
+    class_token = 5;
+    break;
+  case Exceptions::NegativeArraySizeException:
+    class_token = 6;
+    break;
+  case Exceptions::NullPointerException:
+    class_token = 7;
+    break;
+  case Exceptions::ClassCastException:
+    class_token = 8;
+    break;
+  case Exceptions::ArithmeticException:
+    class_token = 9;
+    break;
+  case Exceptions::RuntimeException:
+    class_token = 3;
+    break;
+  default:
+    return false;
+  }
+
+  this->doThrow(runtimeExceptionReference(this->context, class_token));
+  return true;
+}
 
 /**
  * Create new object
@@ -427,8 +459,7 @@ void Bytecodes::bc_checkcast() {
 
   if (objectref.isNullPointer() == FALSE) {
     if (this->docheck(objectref, atype, index) == FALSE) {
-      this->doThrow(runtimeClassCastExceptionReference(this->context));
-      return;
+      throw Exceptions::ClassCastException;
     }
   }
 

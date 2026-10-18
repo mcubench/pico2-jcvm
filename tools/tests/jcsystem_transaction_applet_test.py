@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 19),
+        "--case", type=int, action="append", choices=range(1, 23),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -156,6 +156,10 @@ def main() -> int:
                     (16, b"\x01", "persistent object array-field alias identity and mutation"),
                     (17, b"\x01", "checkcast byte array restored from Object[]"),
                     (18, b"\x01", "mismatched array checkcast throws ClassCastException"),
+                    (19, b"\x01", "null array access throws catchable NullPointerException"),
+                    (20, b"\x01", "array access throws catchable ArrayIndexOutOfBoundsException"),
+                    (21, b"\x01", "division by zero throws catchable ArithmeticException"),
+                    (22, b"\x01", "negative array size throws catchable NegativeArraySizeException"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

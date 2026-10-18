@@ -1111,3 +1111,35 @@ fix.
 - This establishes catchable/reusable ClassCastException for this path. Other
   VM-generated runtime exceptions still need review for consistent Java
   handler dispatch.
+
+## VM-generated Java runtime exception dispatch — 2026-10-18
+
+- **Symptom:** `arraylength` on a null reference raised internal
+  `Exceptions::NullPointerException`; the interpreter caught it as a VM error
+  and returned `6F00`, even though the CAP had a matching Java catch handler.
+- **Cause:** Bytecode implementations use C++ `Exceptions` values for runtime
+  faults, but the interpreter's per-instruction catch path called the VM-fatal
+  status handler directly. Those internal exceptions never became Java object
+  references and never entered `Bytecodes::doThrow()`'s exception-table search.
+- **Viable fix:** At the per-instruction catch point, map supported VM
+  exception values to class export tokens in the applet's `java.lang` import,
+  obtain one rooted reusable exception instance per imported class in the
+  applet heap, and send it through `doThrow()`. Resume interpretation when
+  Java finds a handler. Leave security/unmapped exceptions on the existing
+  fatal path. Current tested mappings are index bounds, array index bounds,
+  negative array size, null, class cast, arithmetic, and generic runtime.
+- **Related bounds defect:** `JC_Array` delegated upper-bound errors to the
+  generic `JCVMArray` backing store, which raised `IndexOutOfBoundsException`.
+  All typed array read/write entry points now validate against the Java array's
+  logical length and raise `ArrayIndexOutOfBoundsException` before touching
+  storage. Keep this check at the Java array boundary; generic list/array
+  container checks retain their own exception semantics.
+- **Evidence:** Focused VPCD cases 19–22 caught null, array-index, arithmetic,
+  and negative-size exceptions (`019000` for all). Case 18's 50 mismatched
+  casts still passed. Full suite passed 25/25 in 104.317 s; 23 pairs (46 total)
+  of heap trace walks were complete with zero invalid refs and zero edge-load
+  failures. PC, ARM, and RISC-V builds passed. No board was accessed.
+- **Limit:** This is not exhaustive. `ArrayStoreException`, VM security
+  violations, and other exception values not listed in the mapping remain
+  outside Java dispatch and must be audited separately. Heap reclamation stays
+  disabled.
