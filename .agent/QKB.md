@@ -1463,3 +1463,20 @@ fix.
   interface token tables separately from class tokens and virtual/interface
   method tokens. A stale/unmapped identity can raise Java `SecurityException`
   before the applet's expected `CryptoException` handling runs.
+
+## Bound serial configuration when Pico USB is re-enumerating — 2026-10-18
+
+- **Symptom:** After flashing, `tools/monitor` found `/dev/ttyACM0` but hung
+  indefinitely in `stty -F ...`. The retry loop looked finite, but each `stty`
+  open could block while the VM/USB ACM node was stale. This stalled the whole
+  physical cycle after a successful flash.
+- **Viable fix:** Wrap each `stty` attempt in
+  `timeout --foreground --kill-after=1s 1s`; keep the existing bounded retry
+  count and finite `cat` capture. This makes both the per-attempt open and the
+  overall monitor startup bounded.
+- **Validation:** `bash -n tools/monitor` passed. The finite monitor captured
+  CHOUPI runtime PASS, and the following `./tools/cycle choupi` reached
+  `CYCLE:PASS` with the Pico reporting `TEST:SUMMARY pass=1 fail=0`.
+- **Caution:** Run PC/SC reader checks only in the authorized host-access
+  context and wrap `pcsc_scan -r` with a short timeout. Unrestricted scans in
+  this VM can remain active and flood errors when pcscd has no usable device.

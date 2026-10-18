@@ -5377,3 +5377,22 @@
   `artifacts/logs/build-pc-des-interface-token-fix-20261018.log`. The no-GC
   comparison logs are `artifacts/logs/probe-gc-disabled-des-cipher-20261018.log`
   and `artifacts/logs/monitor-gc-disabled-des-probe-20261018.log`.
+
+## 2026-10-18 — Bound serial-port configuration retries
+
+- Step/experiment: `bounded-monitor-stty-open`
+- Change: Wrapped every `stty` attempt in `tools/monitor` with a one-second
+  timeout and one-second kill grace period. Opening a stale ACM device had
+  blocked the physical cycle indefinitely after flash.
+- Validation: `bash -n tools/monitor` passed. `./tools/monitor --seconds 8`
+  completed and captured repeated `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. The subsequent collector-enabled
+  `./tools/cycle choupi` completed with `CYCLE:PASS`.
+- Result: Serial setup retry and finite capture are now bounded even if a USB
+  ACM node blocks during re-enumeration.
+- Decision: Keep per-attempt timeouts; continue using host-access authorization
+  for hardware and a short timeout for PC/SC scans.
+- Commit: `pending`.
+- Artifacts/logs: `artifacts/logs/monitor-gc-disabled-diagnostic-20261018.log`
+  (finite capture); collector-enabled cycle
+  `artifacts/logs/cycle-choupi-20261018T125316Z.log`.

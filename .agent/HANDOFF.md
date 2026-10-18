@@ -4733,3 +4733,15 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   previous 900-second run and its 1,297 `6F00` cipher rows predate the fix; it
   is not evidence for current cipher behavior. Continue distinguishing
   expected `NO_SUCH_ALGORITHM` from unhandled exceptions.
+
+## Latest continuation — bound USB serial setup retries — 2026-10-18
+
+- `tools/monitor` now runs each serial `stty` attempt under a one-second
+  `timeout` with a one-second kill grace period. A stale `/dev/ttyACM0` open
+  previously blocked the cycle after flash despite the retry count.
+- `bash -n tools/monitor` passed. The finite capture logged runtime PASS, and
+  the next full `./tools/cycle choupi` completed with `CYCLE:PASS` and
+  `TEST:SUMMARY pass=1 fail=0`.
+- Next: rerun physical `ALG_PERFORMANCE_STATIC` against the corrected DESKey
+  token map and keep the timeout bounded. Avoid unbounded `pcsc_scan -r` in a
+  restricted context; use authorized host access and a short timeout.
