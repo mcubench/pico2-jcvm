@@ -4757,7 +4757,7 @@
   stack/native roots remain unresolved.
 - Decision: Inspect the root-return cache's typing/lifetime and establish a
   safe post-APDU diagnostic mark point before considering reclamation.
-- Commit: `PENDING`.
+- Commit: `352d709`.
 - Artifacts/logs: `artifacts/logs/build-pc-heap-runtime-roots-20261018.log`,
   `artifacts/logs/build-arm-heap-runtime-roots-20261018.log`,
   `artifacts/logs/build-riscv-heap-runtime-roots-20261018.log`, and
