@@ -5630,6 +5630,6 @@
   reselect. Physical consecutive-APDU validation remains blocked by PC/SC.
 - Decision: Keep broadening the lifecycle regression on VPCD; do not repeat
   physical APDUs until PC/SC transmits beyond SELECT.
-- Commit: pending
+- Commit: `654f922`
 - Artifacts/logs: `artifacts/logs/jcsystem-applet-callback-vpcd-20261018.log`,
   `artifacts/logs/cycle-choupi-20261018T194931Z.log`
