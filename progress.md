@@ -5264,5 +5264,5 @@
   maturity and remaining work. Historical plan content is explicitly labeled.
 - Decision: Keep this summary current when capability or validation status
   materially changes; retain `HANDOFF.md` for chronological session details.
-- Commit: pending.
+- Commit: `b3e845a`.
 - Artifacts/logs: `STATUS.md`.
