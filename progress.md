@@ -4918,7 +4918,7 @@
   still bypass Java exception-table dispatch.
 - Decision: Audit other VM-generated exception paths and continue graph/root
   coverage; keep reclamation disabled.
-- Commit: `<pending>`.
+- Commit: `f91a9b5`.
 - Artifacts/logs: `artifacts/logs/build-pc-catchable-classcast-20261018.log`,
   `artifacts/logs/build-arm-catchable-classcast-20261018.log`,
   `artifacts/logs/build-riscv-catchable-classcast-20261018.log`,
