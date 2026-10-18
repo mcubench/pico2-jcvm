@@ -1057,3 +1057,21 @@ fix.
   shape. It does not cover cyclic object arrays, all persistent field layouts,
   or safe slot reclamation. Keep tombstones and reuse disabled pending broader
   root and alias validation.
+
+## Persistent instance fields sharing an array — 2026-10-18
+
+- Added a second VPCD probe where two fields of a persisted holder refer to one
+  byte array. With the holder fields typed `byte[]`, case 16 verified both
+  `first == second` and a write through the second field observed through the
+  first. Focused case passed `019000`; full suite passed 19/19 in 85.020 s.
+  All 34 repeated heap walks completed with zero invalid refs or edge failures.
+- An initial version declared the fields as `Object` and cast them back to
+  `byte[]`; that APDU failed with `ClassCastException` at `checkcast` opcode
+  `0x94`. Replacing the field declarations with their actual `byte[]` type
+  made the identity/mutation probe pass. The cast failure is separate from the
+  alias result and remains untriaged; do not treat the typed-field result as a
+  fix for general `checkcast` behavior. Evidence is in
+  `artifacts/logs/jcsystem-persistent-object-array-alias-vpcd-20261018.log`.
+- No embedded source changed, no board was accessed, and no reclamation was
+  enabled. Next isolate the cast failure, then add root/alias graph shapes
+  before considering tombstones.

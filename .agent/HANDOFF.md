@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest continuation — verify persistent instance array aliases — 2026-10-18
+
+- Expanded the identity probe to include two fields on a persisted holder that
+  reference one byte array. The test writes `0x2A` through one field and checks
+  both reference identity and the value through the other field.
+- Focused VPCD case 16 passed (`019000`). Full JCSystem/VPCD suite passed
+  19/19 in 85.020 s with two post-APDU heap walks; all 34 walks completed with
+  zero invalid refs and zero edge-load failures. Final counts: arrays 6/16,
+  instances 5/13. No board was accessed.
+- A first version used `Object` fields and explicit casts; it failed with a
+  `ClassCastException` at checkcast opcode `0x94`. Typed `byte[]` fields pass,
+  so general cast behavior is a separate untriaged issue (recorded in QKB).
+- Next: isolate the cast failure and broaden heap graph/root tests. Keep
+  reclamation disabled.
+
 ## Latest continuation — canonicalize persistent array children — 2026-10-18
 
 - Added regression case 15: a persistent `Object[]` stores the same byte array

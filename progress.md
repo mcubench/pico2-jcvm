@@ -4849,3 +4849,26 @@
   `artifacts/logs/jcsystem-persistent-array-identity-fix-vpcd-20261018.log`,
   and `artifacts/logs/jcsystem-persistent-array-identity-full-vpcd-20261018.log`.
 
+
+## 2026-10-18 — Verify aliases in persistent instance fields
+
+- Step/experiment: `persistent-instance-array-alias-identity`
+- Change: Extended the transaction applet probe with a persisted holder whose
+  two `byte[]` fields point to the same array. The APDU checks reference
+  identity and mutation visibility across the two fields.
+- Validation: The repository test wrapper compiled the CAP and focused VPCD
+  case 16 passed (`019000`, 3/3 checks). Full VPCD regression with
+  `PICO2_HEAP_TRACE=2` passed `TEST:SUMMARY pass=19 fail=0 elapsed_s=85.020`.
+  All 34 trace walks completed with zero invalid refs and zero edge-load
+  failures. No C++ source changed; ARM/RISC-V rebuild and hardware access were
+  intentionally skipped.
+- Result: Alias identity and shared mutation work through persisted object
+  fields in this tested shape. The initial `Object`-typed version failed at
+  `checkcast` (`0x94`) with `ClassCastException`; that separate behavior is
+  untriaged and recorded in QKB.
+- Decision: Keep reclamation disabled. Isolate the cast failure and continue
+  broader root/alias coverage before designing tombstones.
+- Commit: `<pending>`.
+- Artifacts/logs: `artifacts/logs/jcsystem-persistent-object-array-alias-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-persistent-object-array-alias-vpcd-v2-20261018.log`,
+  `artifacts/logs/jcsystem-persistent-object-array-alias-full-vpcd-20261018.log`.

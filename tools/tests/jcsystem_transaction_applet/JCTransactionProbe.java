@@ -17,6 +17,7 @@ import javacard.security.CryptoException;
 public final class JCTransactionProbe extends Applet {
   private static Object staticReferenceRoot;
   private static Object[] persistentReferenceArray;
+  private static SharedArrayHolder persistentReferenceHolder;
   private byte value = 0x11;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
   private final byte[] shaDigest = new byte[32];
@@ -26,6 +27,7 @@ public final class JCTransactionProbe extends Applet {
     staticReferenceRoot = this;
     byte[] shared = {0x01};
     persistentReferenceArray = new Object[] {shared, shared};
+    persistentReferenceHolder = new SharedArrayHolder(shared);
   }
 
   public static void install(byte[] bArray, short bOffset, byte bLength) {
@@ -228,9 +230,27 @@ public final class JCTransactionProbe extends Applet {
         length = 1;
         break;
       }
+      case 16: {
+        byte[] first = persistentReferenceHolder.first;
+        byte[] second = persistentReferenceHolder.second;
+        second[0] = 0x2A;
+        buffer[0] = (byte)(first == second && first[0] == 0x2A ? 1 : 0);
+        length = 1;
+        break;
+      }
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
     }
     apdu.setOutgoingAndSend((short)0, length);
+  }
+}
+
+final class SharedArrayHolder {
+  byte[] first;
+  byte[] second;
+
+  SharedArrayHolder(byte[] shared) {
+    first = shared;
+    second = shared;
   }
 }
