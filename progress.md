@@ -974,7 +974,8 @@
 - Validation: `git ls-files -s choupi/src/jc_cap/jc_cap_applet.hpp` reports regular-file mode `100644`; both architecture builds passed for the implementation.
 - Result: The implementation is committed as `52c7c7d`; the regular-file mode correction is committed as `6f54e5e`.
 - Decision: Continue with firmware lifecycle integration.
-- Commit: pending
+- Commit: `72a1ead` (this record's commit ID is recorded in the following
+  metadata commit)
 - Artifacts/logs: none
 
 ## 2026-10-11 — Add bounded CAP applet AID lookup
