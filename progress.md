@@ -4715,5 +4715,5 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Initial ARM build caught a new `-Werror=range-loop-construct`; changed the loop variable to a const reference and rebuilt successfully. Full VPCD transaction/JCSystem regression passed `TEST:SUMMARY pass=17 fail=0 elapsed_s=110.271`. No board flash or hardware check was run. PC build emitted pre-existing Rust and packed-member warnings; final ARM build had no warnings.
 - Result: Context/heap roots and typed object/array edges can now be enumerated. Persistent edge reads may allocate heap wrappers, so the next mark walk must use a dynamically growing work queue. Stack words/native locals are still outside this visitor API.
 - Decision: Add mark-only reachability traversal at a post-APDU quiescent point; defer all slot reclamation and reuse until completeness is demonstrated.
-- Commit: pending
+- Commit: `cb17037`
 - Artifacts/logs: `artifacts/logs/build-pc-heap-root-visitors-20261018.log`, `artifacts/logs/build-arm-heap-root-visitors-20261018.log`, `artifacts/logs/build-riscv-heap-root-visitors-20261018.log`, `artifacts/logs/jcsystem-heap-root-visitors-vpcd-20261018.log`.
