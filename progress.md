@@ -5236,14 +5236,16 @@
 - Change: Replaced the fatal `NotYetImplemented` native with the Java Card
   `null` result for absent servers and the default `Applet` implementation.
   Added case 48 for null, unknown, and current applet AIDs.
-- Validation: PC build and probe CAP build passed. Focused VPCD case passed
-  `TEST:SUMMARY pass=3 fail=0 elapsed_s=7.688`. ARM and RISC-V builds passed.
-  Full VPCD regression is running. No physical device was accessed.
+- Validation: `./tools/build-pc`, the probe CAP build, `./tools/build arm`, and
+  `./tools/build riscv` passed. Focused VPCD case passed
+  `TEST:SUMMARY pass=3 fail=0 elapsed_s=7.688`; full suite passed
+  `TEST:SUMMARY pass=51 fail=0 elapsed_s=138.095`. No physical device was
+  accessed.
 - Result: The probe applet's supported default lookup path no longer aborts the
   VM. Custom `getShareableInterfaceObject` callbacks remain unsupported because
   the runtime has no multi-applet registry or context-switch bridge.
 - Decision: Continue JCSystem and applet runtime audit; preserve expected
   unsupported algorithms.
-- Commit: pending.
+- Commit: `b34ed04`.
 - Artifacts/logs: `artifacts/logs/jcsystem-shareable-default-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-shareable-full-vpcd-20261018.log`.

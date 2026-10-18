@@ -8,13 +8,15 @@
   Applet's default method.
 - PC build and probe CAP build passed. Focused VPCD case passed
   `TEST:SUMMARY pass=3 fail=0 elapsed_s=7.688`; ARM and RISC-V builds passed.
-  Full VPCD suite is running. No physical device was accessed.
+  Full suite passed `TEST:SUMMARY pass=51 fail=0 elapsed_s=138.095`. No
+  physical device was accessed.
 - Limitation: custom shareable-object callbacks require a multi-applet registry
   and applet context-switch bridge, which this VM does not have. The fallback
   is verified only for the default-null probe applet.
-- The prior SensitiveArrays step is committed as `d220fdb`.
-- Next: collect full JCSystem regression output, commit the scoped fallback,
-  then audit the remaining framework/runtime API gaps.
+- SensitiveArrays is committed as `d220fdb`; this step is committed as
+  `b34ed04`.
+- Next: audit the remaining framework/runtime API gaps, especially applet
+  context and shareable-object dispatch.
 
 ## Latest continuation — define unsupported SensitiveArrays behavior — 2026-10-18
 
