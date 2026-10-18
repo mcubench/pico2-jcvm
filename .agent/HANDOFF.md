@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest continuation — add opt-in post-APDU heap diagnostics — 2026-10-18
+
+- Added host-only `PICO2_HEAP_TRACE=1` diagnostics after the APDU `try` scope
+  has destroyed the interpreter and temporary native references. The hook
+  runs only when `Stack::empty()`; default and embedded builds do not trace.
+- VPCD produced 15 trace samples, all complete with zero invalid references,
+  zero edge-load failures, and no active-frame skips. The final sample showed
+  arrays `6/16` reachable and instances `4/12` reachable. Lazy persistent
+  reads grew heap totals during traversal. VPCD regression passed 17/17 in
+  73.382 s. No board was used.
+- These are candidates only; mark completeness across every runtime path is
+  not yet proven, and no objects were cleared or reused.
+- Next: audit persistent/runtime root paths and add focused root completeness
+  validation. Keep the diagnostic opt-in and reclamation disabled.
+
 ## Latest continuation — preserve typed reference return roots — 2026-10-18
 
 - `Stack` now tags the top-level `ARETURN` cache as a reference and exposes it

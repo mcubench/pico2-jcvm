@@ -4783,3 +4783,25 @@
   `artifacts/logs/build-arm-typed-root-return-20261018.log`,
   `artifacts/logs/build-riscv-typed-root-return-20261018.log`, and
   `artifacts/logs/jcsystem-typed-root-return-vpcd-20261018.log`.
+
+## 2026-10-18 — Add opt-in post-APDU heap diagnostics
+
+- Step/experiment: `post-apdu-heap-trace-diagnostic`
+- Change: Added a PC-only `PICO2_HEAP_TRACE=1` hook after the APDU try scope
+  has released its interpreter/native locals. It requires an empty Java stack,
+  collects Context roots, and reports mark totals without reclaiming slots.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. VPCD regression passed 17/17 in 73.382 s with
+  tracing enabled. All 15 trace samples were complete, with zero invalid
+  handles, zero edge-load failures, and no active-frame skips. Final sample:
+  arrays 6/16 reachable, instances 4/12 reachable. No hardware was used.
+- Result: The typed visitors and mark walk run at a host-side post-APDU
+  boundary and tolerate lazy heap growth. Remaining roots still need audit;
+  unreachable slots are not yet safe to reclaim.
+- Decision: Audit persistent/runtime root paths and add a focused completeness
+  test before designing tombstones or reuse.
+- Commit: `PENDING`.
+- Artifacts/logs: `artifacts/logs/build-pc-heap-trace-diagnostic-20261018.log`,
+  `artifacts/logs/build-arm-heap-trace-diagnostic-20261018.log`,
+  `artifacts/logs/build-riscv-heap-trace-diagnostic-20261018.log`, and
+  `artifacts/logs/jcsystem-heap-trace-diagnostic-vpcd-20261018.log`.

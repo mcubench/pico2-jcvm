@@ -40,9 +40,11 @@
 #include "../../src/short_apdu.hpp"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #ifdef PC_VERSION
 extern int main_pc(int argc, char *argv[]);
@@ -68,6 +70,41 @@ namespace {
 std::unique_ptr<jcvm::Context> selected_applet_context;
 bool selected_applet_is_active = false;
 pico2_jcvm::ShortApduResponseChain pending_apdu_response;
+
+#ifdef PC_VERSION
+void trace_heap_after_apdu_if_enabled() {
+  if (std::getenv("PICO2_HEAP_TRACE") == nullptr ||
+      !selected_applet_context) {
+    return;
+  }
+
+  jcvm::Context &context = *selected_applet_context;
+  if (!context.getStack().empty()) {
+    std::fprintf(stderr, "HEAP_TRACE:SKIP reason=active_java_frames\n");
+    return;
+  }
+
+  try {
+    std::vector<jcvm::jref_t> roots;
+    context.appendRootReferences(roots);
+    const auto summary = context.getHeap().traceReachableFrom(roots);
+    std::fprintf(stderr,
+                 "HEAP_TRACE: roots=%u arrays=%u/%u instances=%u/%u "
+                 "invalid=%u edge_failures=%u complete=%u\n",
+                 static_cast<unsigned>(roots.size()),
+                 static_cast<unsigned>(summary.arrays_reachable),
+                 static_cast<unsigned>(summary.arrays_total),
+                 static_cast<unsigned>(summary.instances_reachable),
+                 static_cast<unsigned>(summary.instances_total),
+                 static_cast<unsigned>(summary.invalid_references),
+                 static_cast<unsigned>(summary.edge_load_failures),
+                 summary.complete ? 1u : 0u);
+  } catch (...) {
+    std::fprintf(stderr, "HEAP_TRACE:ERROR root_enumeration_failed\n");
+  }
+}
+#endif
+
 }
 
 #ifdef __cplusplus
@@ -385,6 +422,12 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     status = 0x6f00;
     data_length = 0;
   }
+
+#ifdef PC_VERSION
+  // The try scope above owns the interpreter and temporary native references.
+  // Run diagnostics only after those objects have been destroyed.
+  trace_heap_after_apdu_if_enabled();
+#endif
 
   if (static_cast<uint32_t>(data_length) + 2 > response_capacity) {
     status = 0x6f00;

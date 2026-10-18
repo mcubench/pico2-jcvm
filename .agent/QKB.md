@@ -1002,3 +1002,25 @@ fix.
 - **Decision:** Locate the exact APDU call-return boundary and verify that the
   Java stack is empty and native references are out of scope before invoking
   mark-only tracing.
+
+## Opt-in post-APDU heap trace — 2026-10-18
+
+- **Implemented:** PC builds accept `PICO2_HEAP_TRACE=1` to enumerate roots
+  and run the mark-only tracer after `choupi_vm_process_applet()` exits its
+  APDU `try` scope. The interpreter and temporary native references from that
+  scope have been destroyed; the diagnostic also requires `Stack::empty()`.
+  Default PC behavior and embedded ARM/RISC-V code do not run this trace.
+- **Observed:** The VPCD JCSystem suite produced 15 post-APDU trace samples.
+  All reported `complete=1`, zero invalid handles, and zero edge-load
+  failures; none were skipped for active Java frames. The final sample had
+  8 roots, 6/16 arrays reachable, and 4/12 instances reachable. Lazy
+  persistent reads caused heap totals to grow during the walk, confirming
+  that the work queue follows newly loaded objects.
+- **Validation:** PC, ARM M33, and RISC-V builds passed. VPCD regression
+  passed 17/17 in 73.382 s with tracing enabled. No hardware was used.
+- **Limit:** A complete mark result in this applet run does not prove every
+  possible native/global root is accounted for, and unreachable counts are
+  not yet evidence safe to clear. No slot was reclaimed or reused. The trace
+  hook is diagnostic and remains opt-in.
+- **Decision:** Audit remaining persistent/runtime root paths, add a focused
+  test for root-set completeness, and only then design stable-slot tombstones.
