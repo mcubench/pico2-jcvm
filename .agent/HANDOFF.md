@@ -4742,6 +4742,29 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - `bash -n tools/monitor` passed. The finite capture logged runtime PASS, and
   the next full `./tools/cycle choupi` completed with `CYCLE:PASS` and
   `TEST:SUMMARY pass=1 fail=0`.
-- Next: rerun physical `ALG_PERFORMANCE_STATIC` against the corrected DESKey
-  token map and keep the timeout bounded. Avoid unbounded `pcsc_scan -r` in a
-  restricted context; use authorized host access and a short timeout.
+- The corrected physical static run and its current failure analysis are
+  recorded below.
+
+## Latest continuation — completed physical static matrix — 2026-10-18
+
+- The official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` run completed on the
+  physical Pico 2 after the DESKey mapping fix. It produced 7,785 CSV rows,
+  including working SHA-256 and DES CBC NOPAD measurements, 40 expected
+  `NO_SUCH_ALGORITHM` results, and 1,852 `CANT_BE_MEASURED` results with
+  `6F00`. No reader disconnect occurred during the run.
+- Isolated the first DES CBC ISO9797 M1 prepare APDU. The official applet source
+  catches `CryptoException` and should return a successful APDU with an
+  unsupported-algorithm code. Instead it returns `6F00`; serial reports
+  exception 29 at `ATHROW` and frames in package 63 around offsets 15671 and
+  15705. A PC/SC reset was required to restore SELECT after the full run, and
+  a single APDU reproduced the failure. This is an exception-dispatch bug to
+  investigate; do not implement the unsupported padding algorithm.
+- Artifacts:
+  `artifacts/results/physical-perf-static-des-interface-fix-20261018/`,
+  `artifacts/logs/monitor-static-des-interface-fix-20261018.log`, and
+  `artifacts/logs/monitor-des-m1-reset-isolated-20261018.log`. Exact hashes and
+  detail are in `.agent/QKB.md` and `progress.md`.
+- Next: inspect `Bytecodes::doThrow()` handler-range and catch-class matching
+  for the applet's `CryptoException` catch. Add a focused exception regression,
+  validate on PC/VPCD, build PC/ARM/RISC-V, then flash and rerun a bounded
+  physical static subset. Preserve the expected unsupported-algorithm result.

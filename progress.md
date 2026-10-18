@@ -5396,3 +5396,30 @@
 - Artifacts/logs: `artifacts/logs/monitor-gc-disabled-diagnostic-20261018.log`
   (finite capture); collector-enabled cycle
   `artifacts/logs/cycle-choupi-20261018T125316Z.log`.
+
+## 2026-10-18 — Complete physical JCAlgTest static matrix and isolate catch failure
+
+- Step/experiment: `physical-static-after-deskey-map`
+- Change: Archived the complete physical JCAlgTest 1.8.2 static run and isolated
+  its first DES CBC ISO9797 M1 prepare failure with a single APDU and serial
+  capture. Updated STATUS, QKB, and handoff with findings and next priority.
+- Validation: Official `ALG_PERFORMANCE_STATIC` completed on the physical Pico
+  2 with 7,785 CSV rows and no reader disconnect. SHA-256 and DES CBC NOPAD
+  returned measurements; 40 unsupported probes reported `NO_SUCH_ALGORITHM`.
+  There were 1,852 `CANT_BE_MEASURED` results. After a PC/SC reset, the isolated
+  M1 prepare still returned `6F00`; serial showed exception 29 at `ATHROW`.
+  No code or firmware was changed in this documentation/evidence step.
+- Result: The DESKey interface fix resolved DES CBC NOPAD. Unsupported padding
+  variants still fail because the applet's `CryptoException` catch does not
+  complete normally. This is VM exception-dispatch behavior, not a request to
+  implement those algorithms. The full static client completed but did not
+  pass.
+- Decision: Diagnose the catch-class/range path in `Bytecodes::doThrow()` and
+  add a focused regression before the next physical matrix run. Keep expected
+  `NO_SUCH_ALGORITHM` behavior.
+- Commit: pending
+- Artifacts/logs: client log SHA-256
+  `3d869a23c9350a02839d0e5f10a948cf110365ae7de17a3c11305904bf74c1e0`; CSV
+  SHA-256 `f4abcb6507fced3a6ece90902f5b33bd6c24b07ba38210adc4b9c08f404904ba`;
+  full-run monitor `artifacts/logs/monitor-static-des-interface-fix-20261018.log`;
+  isolated monitor `artifacts/logs/monitor-des-m1-reset-isolated-20261018.log`.

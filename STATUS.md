@@ -25,12 +25,14 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   interpreter scopes return and only reclaims after a complete root walk.
   Persistent-tagged objects are conservatively pinned, global arrays are
   excluded, and stable handle slots are reused. VPCD allocation batches for
-  arrays and objects passed. The first post-GC physical static run ended at the
-  wrapper timeout after 1,297 cipher measurements returned `6F00`, with no
-  allocation failure or PC/SC disconnect. A no-GC comparison reproduced the
-  same `SecurityException`; the DESKey interface-token mismatch is now fixed,
-  and the exact physical prepare APDU returns `AA9000`. The full static matrix
-  has not yet been rerun after that fix.
+  arrays and objects passed. After fixing the DESKey interface token, the
+  physical `ALG_PERFORMANCE_STATIC` client completed all 7,785 result rows
+  without a reader disconnect. SHA-256 and DES CBC NOPAD were measured, and 40
+  probes reported expected `NO_SUCH_ALGORITHM`. However, 1,852 operations
+  returned `6F00`/`CANT_BE_MEASURED`. An isolated DES CBC ISO9797 M1 prepare
+  reproduced `6F00` with a `SecurityException` while the applet source expects
+  to catch `CryptoException`; investigate exception dispatch before treating
+  these failures as algorithm capability results.
 
 ## Main gaps
 
@@ -44,8 +46,9 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
    walk and object ownership model still need broader audits, especially for
    native-held references and future multi-context operation.
 3. **Physical end-to-end validation:** the physical JCAlgTest support sweep has
-   stopped early with reader disconnects, and the full static performance run
-   is not passing. Do not report either suite as complete.
+   stopped early with reader disconnects. The full static client completed its
+   matrix, but most failed measurements remain unresolved `6F00` results. Do
+   not report either suite as passing.
 4. **Profile/API completeness:** several APIs are deliberately unsupported,
    including object deletion and integrity-sensitive arrays. Remaining runtime
    behavior needs systematic comparison against a selected Java Card profile.
@@ -57,10 +60,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 
 ## Next priorities
 
-1. Rerun physical `ALG_PERFORMANCE_STATIC` with the corrected DESKey interface
-   mapping. The earlier bounded run exercised over 1,200 static requests
-   without heap failure or reader loss, but ended before completing its full
-   matrix and before this mapping fix.
+1. Diagnose why thrown `CryptoException` is not caught for unsupported DES
+   cipher variants (`B0 31`, algorithm 2), then verify normal `9000` handling
+   and rerun the physical static matrix. Keep expected `NO_SUCH_ALGORITHM`
+   behavior intact.
 2. Diagnose physical CCID reader loss during long JCAlgTest support sweeps.
 3. Define the supported Java Card version/profile, then audit runtime APIs,
    applet lifecycle, and firewall behavior against it.

@@ -1480,3 +1480,31 @@ fix.
 - **Caution:** Run PC/SC reader checks only in the authorized host-access
   context and wrap `pcsc_scan -r` with a short timeout. Unrestricted scans in
   this VM can remain active and flood errors when pcscd has no usable device.
+
+## Physical JCAlgTest static run — CryptoException catch failure — 2026-10-18
+
+- After the JC305 `DESKey` interface-token fix, the official JCAlgTest 1.8.2
+  `ALG_PERFORMANCE_STATIC` client completed its full result matrix on the
+  physical Pico 2. The reader remained present. Across 7,785 CSV rows, the
+  client recorded 1,852 `CANT_BE_MEASURED` failures and 40
+  `NO_SUCH_ALGORITHM` results. SHA-256 and DES CBC NOPAD both produced timing
+  measurements; the expected unsupported-algorithm response remains valid.
+- **Isolated failure:** DES CBC ISO9797 M1 prepare (`B0 31`, algorithm ID 2)
+  returned `6F00` after an applet-side `ATHROW`. The `AlgPerformanceTest`
+  source catches `CryptoException` in `prepare_class_Cipher()` and should
+  return a one-byte algorithm-exception result with `9000`. The serial trace
+  instead ended at `VPCD:APPLET_PROCESS status=6F00 exception=29 opcode=93`
+  and showed exception frames through package 63 offsets 15671/15705. A PC/SC
+  reset restored SELECT, then the single isolated prepare reproduced `6F00`.
+- **Status:** This is a VM exception-dispatch/catch issue, not a request to
+  implement the unsupported padding algorithm. Fix exception handling so the
+  applet can report `NO_SUCH_ALGORITHM` normally; do not count the algorithm as
+  supported. After the long run, a later SELECT also failed until card reset,
+  so audit frame cleanup after uncaught VM exceptions as part of this issue.
+- Evidence:
+  `artifacts/results/physical-perf-static-des-interface-fix-20261018/ALGTEST_log_1792328303323.log`
+  (SHA-256 `3d869a23c9350a02839d0e5f10a948cf110365ae7de17a3c11305904bf74c1e0`),
+  its CSV (`f4abcb6507fced3a6ece90902f5b33bd6c24b07ba38210adc4b9c08f404904ba`),
+  full-run serial trace
+  `artifacts/logs/monitor-static-des-interface-fix-20261018.log`, and isolated
+  trace `artifacts/logs/monitor-des-m1-reset-isolated-20261018.log`.
