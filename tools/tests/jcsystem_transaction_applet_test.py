@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 18),
+        "--case", type=int, action="append", choices=range(1, 19),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -155,6 +155,7 @@ def main() -> int:
                     (15, b"\x01", "persistent array child identity after restore"),
                     (16, b"\x01", "persistent object array-field alias identity and mutation"),
                     (17, b"\x01", "checkcast byte array restored from Object[]"),
+                    (18, b"\x01", "mismatched array checkcast throws ClassCastException"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

@@ -4898,3 +4898,30 @@
   `artifacts/logs/jcsystem-checkcast-byte-array-type-map-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-checkcast-array-type-map-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-checkcast-array-type-map-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Dispatch and reuse ClassCastException
+
+- Step/experiment: `catchable-runtime-classcast-exception`
+- Change: A failing array `checkcast` now resolves the `java.lang` imported
+  ClassCastException class, obtains a per-heap JCRE-owned exception instance,
+  and calls the normal Java exception-table dispatcher. Heap root enumeration
+  retains this runtime-owned object. Case 18 performs 50 mismatched casts and
+  checks they are caught using one stable exception instance.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. Focused 50-cast case passed (`019000`). Full
+  VPCD regression with `PICO2_HEAP_TRACE=2` passed
+  `TEST:SUMMARY pass=21 fail=0 elapsed_s=110.937`. All 38 walks completed with
+  zero invalid refs and zero edge-load failures. Final trace: arrays 6/16,
+  instances 6/14. No board was accessed.
+- Result: Negative array casts are caught by Java and repeated failures reuse
+  one VM-owned exception object. Other VM-generated runtime exceptions may
+  still bypass Java exception-table dispatch.
+- Decision: Audit other VM-generated exception paths and continue graph/root
+  coverage; keep reclamation disabled.
+- Commit: `<pending>`.
+- Artifacts/logs: `artifacts/logs/build-pc-catchable-classcast-20261018.log`,
+  `artifacts/logs/build-arm-catchable-classcast-20261018.log`,
+  `artifacts/logs/build-riscv-catchable-classcast-20261018.log`,
+  `artifacts/logs/jcsystem-checkcast-positive-negative-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-checkcast-exception-50-reuse-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-checkcast-exception-50-reuse-full-vpcd-20261018.log`.

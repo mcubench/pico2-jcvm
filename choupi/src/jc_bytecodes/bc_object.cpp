@@ -31,6 +31,8 @@
 #include "../jc_handlers/flashmemory.hpp"
 #include "../jc_handlers/jc_class.hpp"
 #include "../jc_handlers/jc_cp.hpp"
+#include "../jc_handlers/jc_export.hpp"
+#include "../jc_handlers/jc_import.hpp"
 #include "../jc_types/jc_array.hpp"
 #include "../jc_types/jc_instance.hpp"
 #include "../stack.hpp"
@@ -81,6 +83,39 @@ bool isRuntimeCryptoExceptionFactoryAllocation(
       std::memcmp(package.AID, security_package_aid,
                   sizeof(security_package_aid)) == 0;
   return is_rom_package || is_security_import;
+}
+
+jref_t runtimeClassCastExceptionReference(Context &context) {
+  static constexpr uint8_t java_lang_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x00, 0x01};
+  constexpr uint8_t class_cast_exception_export_token = 8;
+
+  Package applet_package = context.getCurrentPackage();
+  Import_Handler imports(applet_package);
+  const auto import_component = applet_package.getCap().getImport();
+  if (import_component == nullptr) {
+    throw Exceptions::RuntimeException;
+  }
+
+  for (uint8_t token = 0; token < import_component->count; ++token) {
+    const auto *package_info = imports.getPackageAID(token);
+    if (package_info->AID_length != sizeof(java_lang_aid) ||
+        std::memcmp(package_info->AID, java_lang_aid,
+                    sizeof(java_lang_aid)) != 0) {
+      continue;
+    }
+
+    const jpackage_ID_t package_id = imports.getPackageIndex(package_info);
+    Package java_lang_package(package_id);
+    const uint8_t class_token = remap_imported_class_token(
+        *package_info, class_cast_exception_export_token);
+    const jclass_index_t class_index = HTONS(
+        Export_Handler(java_lang_package).getExportedClassOffset(class_token));
+    return context.getHeap().addRuntimeClassCastException(package_id,
+                                                          class_index);
+  }
+
+  throw Exceptions::RuntimeException;
 }
 } // namespace
 
@@ -390,9 +425,11 @@ void Bytecodes::bc_checkcast() {
 
   TRACE_JCVM_DEBUG("CHECKCAST 0x%02X 0x%02X", atype, index);
 
-  if ((objectref.isNullPointer() == FALSE) &&
-      (this->docheck(objectref, atype, index) == FALSE)) {
-    throw Exceptions::ClassCastException;
+  if (objectref.isNullPointer() == FALSE) {
+    if (this->docheck(objectref, atype, index) == FALSE) {
+      this->doThrow(runtimeClassCastExceptionReference(this->context));
+      return;
+    }
   }
 
   stack.push_Reference(objectref);

@@ -76,6 +76,7 @@ private:
   /// Roots for the ROM and imported class views of the JCRE CryptoException.
   jref_t runtime_crypto_exception_rom;
   jref_t runtime_crypto_exception_imported;
+  jref_t runtime_class_cast_exception;
   /// Canonical handles for serialized Java static reference fields.
   std::vector<StaticReferenceRoot> static_reference_roots;
 
@@ -106,6 +107,9 @@ public:
   /// Get the per-context JCRE-owned CryptoException instance.
   jref_t addRuntimeCryptoException(const jpackage_ID_t packageID,
                                    const jclass_index_t classIndex);
+  /// Get the per-context JCRE-owned ClassCastException instance.
+  jref_t addRuntimeClassCastException(const jpackage_ID_t packageID,
+                                      const jclass_index_t classIndex);
   /// Look up or update a package/static-field reference cached for this heap.
   bool getStaticReferenceRoot(jpackage_ID_t package_id,
                               uint16_t field_number,

@@ -1,5 +1,21 @@
 # Handoff
 
+## Latest continuation — dispatch and reuse ClassCastException — 2026-10-18
+
+- Fixed array `checkcast` atype mapping and then found the negative-cast path
+  threw a C++ exception directly, bypassing Java catch handlers. It now
+  resolves `java.lang.ClassCastException` from the active applet imports,
+  creates/reuses a JCRE-owned per-heap instance, and routes it through
+  `doThrow()`.
+- The ClassCastException handle is included in heap roots. Case 18 performs 50
+  mismatched casts in one APDU and verifies all are caught with one stable
+  exception instance. Focused case passed. PC, ARM, and RISC-V builds passed.
+- Full VPCD suite passed 21/21 in 110.937 s; 38 post-APDU trace walks were
+  complete with zero invalid references and zero edge failures. Final sample:
+  arrays 6/16, instances 6/14. No board was accessed.
+- Next: audit other VM-generated runtime exceptions for Java handler dispatch,
+  and continue root/alias coverage before any heap tombstones or reuse.
+
 ## Latest continuation — map Java Card array `checkcast` types — 2026-10-18
 
 - Fixed `docheck()` to map bytecode array codes 10–14 explicitly to internal

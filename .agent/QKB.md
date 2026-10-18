@@ -1093,3 +1093,21 @@ fix.
 - This validates a positive byte-array cast. Add a negative cast regression
   for mismatched array types before treating the full `checkcast` family as
   covered. The explicit type mapping is the viable fix for this mismatch.
+
+### Correction — catch and reuse VM-generated ClassCastException
+
+- The first negative-cast regression exposed a second defect: `checkcast`
+  threw the C++ `Exceptions::ClassCastException` directly, which bypassed
+  Java exception-table dispatch and returned `6F00` even inside a Java catch.
+- The bytecode now resolves `java.lang.ClassCastException` from the applet's
+  imports, obtains a per-heap JCRE-owned instance, and sends it through the
+  normal `doThrow()` handler search. The heap visitor includes this exception
+  root. Repeated mismatched casts reuse the same instance.
+- Case 18 passed 50 mismatched casts in one APDU, checking both catch behavior
+  and stable exception identity. Full VPCD suite passed 21/21 in 110.937 s;
+  all 38 repeated heap walks completed with zero invalid refs and zero
+  edge-load failures. Final sample: arrays 6/16, instances 6/14. PC, ARM, and
+  RISC-V builds passed; no hardware was accessed.
+- This establishes catchable/reusable ClassCastException for this path. Other
+  VM-generated runtime exceptions still need review for consistent Java
+  handler dispatch.
