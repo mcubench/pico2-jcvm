@@ -5042,3 +5042,25 @@
 - Commit: `f42a2bc`.
 - Artifacts/logs: `artifacts/logs/apdu-exception-dispatch-focused-vpcd-20261018.log`,
   `artifacts/logs/apdu-exception-dispatch-full-vpcd-20261018.log`.
+
+## 2026-10-18 — Correct invalid JCSystem transient-array event handling
+
+- Step/experiment: `jcsystem-transient-array-events`
+- Change: Changed invalid transient clear-event values to throw the Java Card
+  specified `SystemException.ILLEGAL_VALUE`. Added cases 28–29 covering all
+  four transient array factories, event reporting, values, and invalid-event
+  catch/reason behavior.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. Focused VPCD cases 28–29 passed. Full VPCD
+  suite passed `TEST:SUMMARY pass=32 fail=0 elapsed_s=113.436`. No hardware was
+  accessed.
+- Result: Byte, boolean, short, and object transient factories return arrays
+  with correct element access and event values from `JCSystem.isTransient()`;
+  invalid event 3 is caught with reason 1. This verifies API metadata and
+  factory behavior, not reset/deselect clearing while a heap survives.
+- Decision: Inspect the reset/deselect lifecycle before wiring the currently
+  unused heap clear helper. Continue auditing JCSystem methods; keep heap
+  reclamation disabled.
+- Commit: `<pending>`.
+- Artifacts/logs: `artifacts/logs/jcsystem-transient-arrays-focused-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-transient-arrays-full-vpcd-20261018.log`.

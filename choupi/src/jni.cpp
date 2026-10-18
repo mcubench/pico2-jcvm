@@ -60,7 +60,7 @@ ClearEvent getTransientClearEvent(const jbyte_t event) {
   case static_cast<jbyte_t>(ClearEvent::CLEAR_ON_DESELECT):
     return ClearEvent::CLEAR_ON_DESELECT;
   default:
-    throw Exceptions::SecurityException;
+    throw Exceptions::SystemException;
   }
 }
 

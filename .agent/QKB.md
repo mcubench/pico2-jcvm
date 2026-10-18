@@ -1227,3 +1227,22 @@ fix.
 - **Evidence:** PC, ARM, and RISC-V builds passed. Focused VPCD cases 26–27
   passed. Full VPCD suite passed 30/30 in 159.731 s. No physical board was
   accessed.
+
+## Invalid transient-array clear event raised the wrong exception — 2026-10-18
+
+- **Cause:** `getTransientClearEvent()` returned the two supported lifecycle
+  events but raised internal `SecurityException` for any other value. The API
+  contract specifies `SystemException.ILLEGAL_VALUE`, which is catchable by an
+  applet.
+- **Viable fix:** Raise internal `SystemException`; the VM's existing mapping
+  supplies the `ILLEGAL_VALUE` reason. Case 29 passes for event value 3.
+- **Coverage:** Case 28 creates byte, boolean, short, and object transient
+  arrays with reset/deselect events; writes and reads values; and verifies
+  `JCSystem.isTransient()` reports the requested event. Focused and full VPCD
+  tests passed; the full suite passed 32/32 in 113.436 s. PC, ARM, and RISC-V
+  builds passed. No physical device was used.
+- **Open lifecycle question:** `Heap::clearTransientArrays()` has no call
+  sites. VPCD reset/deselect tears down the selected context and heap, which
+  makes transient data inaccessible, but no test yet proves clear-event
+  behavior for a lifecycle where a heap survives. Keep this distinction clear
+  before wiring new lifecycle calls.

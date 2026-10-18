@@ -355,6 +355,42 @@ public final class JCTransactionProbe extends Applet {
         length = 1;
         break;
       }
+      case 28: {
+        byte[] resetBytes = JCSystem.makeTransientByteArray(
+            (short)2, JCSystem.CLEAR_ON_RESET);
+        boolean[] resetBooleans = JCSystem.makeTransientBooleanArray(
+            (short)1, JCSystem.CLEAR_ON_RESET);
+        short[] deselectShorts = JCSystem.makeTransientShortArray(
+            (short)1, JCSystem.CLEAR_ON_DESELECT);
+        Object[] deselectObjects = JCSystem.makeTransientObjectArray(
+            (short)1, JCSystem.CLEAR_ON_DESELECT);
+        resetBytes[0] = 0x5a;
+        resetBooleans[0] = true;
+        deselectShorts[0] = 0x1234;
+        deselectObjects[0] = this;
+        buffer[0] = resetBytes.length == 2 && resetBytes[0] == 0x5a &&
+                    resetBooleans[0] &&
+                    JCSystem.isTransient(resetBooleans) == JCSystem.CLEAR_ON_RESET &&
+                    deselectShorts[0] == 0x1234 &&
+                    JCSystem.isTransient(deselectShorts) == JCSystem.CLEAR_ON_DESELECT &&
+                    JCSystem.isTransient(resetBytes) == JCSystem.CLEAR_ON_RESET &&
+                    deselectObjects[0] == this &&
+                    JCSystem.isTransient(deselectObjects) == JCSystem.CLEAR_ON_DESELECT
+                        ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
+      case 29: {
+        try {
+          JCSystem.makeTransientByteArray((short)1, (byte)3);
+          buffer[0] = 0;
+        } catch (SystemException e) {
+          buffer[0] = e.getReason() == SystemException.ILLEGAL_VALUE
+              ? (byte)1 : (byte)2;
+        }
+        length = 1;
+        break;
+      }
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
     }

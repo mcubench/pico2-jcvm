@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 28),
+        "--case", type=int, action="append", choices=range(1, 30),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -165,6 +165,8 @@ def main() -> int:
                     (25, b"\x01", "java.lang.Object root class can be instantiated"),
                     (26, b"", "APDU incoming state violation returns without sending on the invalid APDU state"),
                     (27, b"\x01", "caught APDUException preserves the ILLEGAL_USE reason"),
+                    (28, b"\x01", "transient byte/object arrays preserve clear events and values"),
+                    (29, b"\x01", "invalid transient array event throws SystemException.ILLEGAL_VALUE"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

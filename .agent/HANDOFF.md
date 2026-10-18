@@ -1,5 +1,21 @@
 # Handoff
 
+## Latest continuation — validate JCSystem transient-array factories — 2026-10-18
+
+- Changed invalid `CLEAR_ON_*` event handling in the shared transient-array
+  factory from VM `SecurityException` to `SystemException`, matching the
+  Java Card API's `ILLEGAL_VALUE` contract. Added cases 28–29 to cover
+  boolean, byte, short, and object arrays, read/write behavior,
+  `JCSystem.isTransient()`, and invalid-event handling.
+- PC, ARM M33, and RISC-V builds passed. Focused VPCD cases passed. Full VPCD
+  suite passed 32/32 in 113.436 s; no physical device was accessed.
+- Clear-event lifecycle still needs direct verification: `Heap::clearTransientArrays`
+  currently has no call sites, while VPCD reset/deselect destroys the selected
+  applet context and its heap. Determine whether any supported lifecycle keeps
+  that heap alive across reset/deselect before changing the lifecycle hooks.
+- Next: inspect that lifecycle and verify observable reset/deselect clearing;
+  then audit remaining JCSystem methods. Heap reclamation remains disabled.
+
 ## Latest continuation — dispatch VM-raised APDUException — 2026-10-18
 
 - Mapped internal `Exceptions::APDUException` to framework export token 12
