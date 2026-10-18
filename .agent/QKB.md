@@ -1508,3 +1508,27 @@ fix.
   full-run serial trace
   `artifacts/logs/monitor-static-des-interface-fix-20261018.log`, and isolated
   trace `artifacts/logs/monitor-des-m1-reset-isolated-20261018.log`.
+
+## Correction — ROM and imported exception class views — 2026-10-18
+
+- The isolated DES M1 trace shows that the thrown `CryptoException` is the
+  imported security view (package 2, class offset 233, reason 3). After the
+  catch-class alias was added, the applet executed its catch and threw
+  `ISOException(0x9000)`. That object was the ROM view at package 0, class
+  offset 350; the JC305 exported `ISOException` view resolved to offset 316.
+  The existing cast check returned false for this pair, so the APDU still
+  ended in `6F00`.
+- The current source treats the ROM and imported `CryptoException` records as
+  the same class during catch matching, and recognizes ROM `ISOException`
+  offset 350 as well as exported offset 316 in the terminal status-word path.
+  This is a narrow alias correction; it adds no algorithm implementation.
+- PC, ARM, and RISC-V build wrappers pass. Physical validation is **pending**:
+  after the latest image flash reported `FLASH:PASS`, the device did not
+  re-enumerate as USB serial or CCID, and the authorized access helper found no
+  Pico. The PC VPCD applet harness installed and selected JCAlgTest but timed
+  out at GETVERSION after 20 seconds, before the isolated APDU. Do not mark the
+  source fix viable until the physical `B0 31` M1 prepare returns `03 9000`.
+- Evidence: `artifacts/logs/monitor-des-m1-alias-fix-20261018.log`,
+  `artifacts/logs/monitor-des-m1-iso-class-check-20261018.log`,
+  `artifacts/logs/cycle-choupi-20261018T131939Z.log`, and
+  `artifacts/logs/vpcd-des-m1-iso-alias-20261018.log`.

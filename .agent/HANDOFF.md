@@ -4768,3 +4768,34 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   for the applet's `CryptoException` catch. Add a focused exception regression,
   validate on PC/VPCD, build PC/ARM/RISC-V, then flash and rerun a bounded
   physical static subset. Preserve the expected unsupported-algorithm result.
+
+## Latest continuation — exception class-view alias fix, hardware retry pending — 2026-10-18
+
+- CAP exception-table inspection confirmed the failing `prepare_class_Cipher()`
+  call at package 63 method offset 15671 is inside its `CryptoException` catch
+  range. The physical trace then showed `CryptoException` package 2/class 233,
+  reason 3, followed by the catch throwing `ISOException(9000)` at package
+  0/class 350. JC305's exported ISOException resolves to offset 316, so the
+  old class cast failed and returned `6F00`.
+- `bc_exceptions.cpp` now treats the ROM/imported CryptoException records
+  (offsets 234/233) as one Java type while matching catch clauses, and accepts
+  ROM ISOException offset 350 in the terminal SW path alongside export offset
+  316. This should allow the unsupported Cipher variant to return `03 9000`.
+- PC, ARM, and RISC-V builds pass. A physical image was flashed successfully,
+  but the board failed to re-enumerate; the authorized
+  `/usr/local/sbin/pico2-pcsc-reader` helper found no Pico, and no serial
+  device was present. The PC VPCD harness installed and selected the CAP but
+  timed out at GETVERSION after 20 seconds, before reaching the new APDU. The
+  current code fix
+  is therefore not validated; do not claim completion.
+- Evidence: `artifacts/logs/monitor-des-m1-alias-fix-20261018.log`,
+  `artifacts/logs/monitor-des-m1-iso-class-check-20261018.log`,
+  `artifacts/logs/cycle-choupi-20261018T131939Z.log`,
+  `artifacts/logs/vpcd-des-m1-iso-alias-20261018.log`, and the
+  `*-catch-alias-final-20261018.log` build records. The final source removes a
+  temporary ISOException diagnostic print but retains the exception dispatch
+  trace that exposed the class offsets.
+- Next: after the Pico is visible again, rerun the ARM cycle, refresh PC/SC
+  access, and submit only DES M1 prepare. Require response `03 9000` plus a
+  normal follow-up SELECT; then run a bounded static subset before the full
+  matrix.

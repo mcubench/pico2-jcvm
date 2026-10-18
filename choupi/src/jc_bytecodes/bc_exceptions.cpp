@@ -33,8 +33,39 @@
 #include "../stack.hpp"
 #include "bytecodes.hpp"
 #include <cstring>
+#include <cstdio>
 
 namespace jcvm {
+
+namespace {
+bool isCryptoExceptionClass(
+    const std::pair<Package, const uint8_t *> class_reference) {
+  static constexpr uint8_t framework_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01};
+  static constexpr uint8_t security_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x02};
+  const auto *header = class_reference.first.getCap().getHeader();
+  if (header == nullptr) {
+    return false;
+  }
+
+  const auto &package = header->package;
+  ConstantPool_Handler class_pool(class_reference.first);
+  if (package.AID_length == sizeof(framework_aid) &&
+      std::memcmp(package.AID, framework_aid, sizeof(framework_aid)) == 0) {
+    // The combined ROM-mask view exports CryptoException at class offset 234.
+    return class_reference.second == reinterpret_cast<const uint8_t *>(
+                                         class_pool.getClassFromClassIndex(234));
+  }
+  if (package.AID_length == sizeof(security_aid) &&
+      std::memcmp(package.AID, security_aid, sizeof(security_aid)) == 0) {
+    // The JC305 imported security-package view exports it at offset 233.
+    return class_reference.second == reinterpret_cast<const uint8_t *>(
+                                         class_pool.getClassFromClassIndex(233));
+  }
+  return false;
+}
+} // namespace
 
 /**
  * Throw exception or error
@@ -114,6 +145,22 @@ void Bytecodes::doThrow(jref_t objectref) {
       exception_cp.getClassRefFromClassIndex(exception->getClassIndex()));
   bool checking_caller_frame = false;
 
+#ifndef PC_VERSION
+  static uint8_t exception_trace_budget = 0;
+  if (exception_trace_budget < 8) {
+    const auto field_count = exception->getNumberOfFields();
+    const uint16_t first_field =
+        field_count == 0 ? 0 : static_cast<uint16_t>(exception->getField_Short(0));
+    std::printf("CHOUPI:EXCEPTION_DISPATCH package=%u class=%u fields=%u field0=%04X\r\n",
+                static_cast<unsigned>(exception->getPackageID()),
+                static_cast<unsigned>(exception->getClassIndex()),
+                static_cast<unsigned>(field_count),
+                static_cast<unsigned>(first_field));
+    std::fflush(stdout);
+    ++exception_trace_budget;
+  }
+#endif
+
   while (!stack.empty()) {
     Package package = this->context.getCurrentPackage();
     const auto method_component = package.getCap().getMethod();
@@ -129,6 +176,16 @@ void Bytecodes::doThrow(jref_t objectref) {
 
     const uint32_t opcode_offset =
         static_cast<uint32_t>(throw_pc - method_offset);
+#ifndef PC_VERSION
+    if (exception_trace_budget <= 8) {
+      std::printf("CHOUPI:EXCEPTION_FRAME package=%u pc=%u opcode=%02X caller=%u\r\n",
+                  static_cast<unsigned>(package.getPackageID()),
+                  static_cast<unsigned>(opcode_offset),
+                  static_cast<unsigned>(methods[opcode_offset]),
+                  checking_caller_frame ? 1u : 0u);
+      std::fflush(stdout);
+    }
+#endif
     const auto handlers = method_component->exception_handlers();
     const uint32_t handler_table_bytes = static_cast<uint32_t>(
         handlers.size() * sizeof(jc_cap_exception_handler_info));
@@ -166,6 +223,14 @@ void Bytecodes::doThrow(jref_t objectref) {
         const auto catch_class = catch_cp.resolveClassref(
             catch_cp.getClassRef(catch_type_index));
         matches = Class_Handler::docheckcast(exception_class, catch_class);
+        // CryptoException has two class records in this VM's API model: one
+        // in the combined ROM mask and one in the JC305 imported security
+        // package. They are the same Java Card type even though their class
+        // records have different addresses and offsets.
+        if (!matches && isCryptoExceptionClass(exception_class) &&
+            isCryptoExceptionClass(catch_class)) {
+          matches = true;
+        }
       }
 
       if (matches) {
@@ -197,12 +262,18 @@ void Bytecodes::doThrow(jref_t objectref) {
                     sizeof(framework_aid)) == 0) {
       // JC305's ISOException import token 7 maps to ROM-mask export token 18.
       static constexpr uint8_t iso_exception_export_token = 18;
+      // The compiled ROM-mask class view also has a runtime-owned
+      // ISOException record at byte offset 350; the public exported view is
+      // at offset 316. Both represent the same framework class.
+      static constexpr jclass_index_t iso_exception_rom_offset = 350;
       const uint16_t iso_exception_index = HTONS(
           Export_Handler(exception_package)
               .getExportedClassOffset(iso_exception_export_token));
       const auto iso_exception_class = exception_cp.resolveClassref(
           exception_cp.getClassRefFromClassIndex(iso_exception_index));
       const bool is_iso_exception =
+          exception->getClassIndex() == iso_exception_index ||
+          exception->getClassIndex() == iso_exception_rom_offset ||
           Class_Handler::docheckcast(exception_class, iso_exception_class);
       if (is_iso_exception) {
         // ISOException inherits CardRuntimeException.reason, a short stored

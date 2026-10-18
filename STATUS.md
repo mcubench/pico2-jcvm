@@ -60,10 +60,12 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 
 ## Next priorities
 
-1. Diagnose why thrown `CryptoException` is not caught for unsupported DES
-   cipher variants (`B0 31`, algorithm 2), then verify normal `9000` handling
-   and rerun the physical static matrix. Keep expected `NO_SUCH_ALGORITHM`
-   behavior intact.
+1. Validate the `CryptoException`/`ISOException` ROM and imported class-view
+   matching change on hardware. The observed path is `CryptoException` reason
+   3, then `ISOException(9000)`; the device stopped enumerating after the latest
+   flash, so no result from the current image is available. Expect the isolated
+   M1 prepare APDU to return `03 9000`, then rerun physical static testing.
+   Preserve expected `NO_SUCH_ALGORITHM` behavior.
 2. Diagnose physical CCID reader loss during long JCAlgTest support sweeps.
 3. Define the supported Java Card version/profile, then audit runtime APIs,
    applet lifecycle, and firewall behavior against it.

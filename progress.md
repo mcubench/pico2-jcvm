@@ -5424,3 +5424,36 @@
   SHA-256 `f4abcb6507fced3a6ece90902f5b33bd6c24b07ba38210adc4b9c08f404904ba`;
   full-run monitor `artifacts/logs/monitor-static-des-interface-fix-20261018.log`;
   isolated monitor `artifacts/logs/monitor-des-m1-reset-isolated-20261018.log`.
+
+## 2026-10-18 — Match ROM and imported CryptoException views
+
+- Step/experiment: `jcalgtest-cryptoexception-rom-alias`
+- Change: In exception-table matching, recognize the ROM and imported
+  `CryptoException` class records (offsets 234 and 233) as the same Java Card
+  type. In the terminal status-word path, recognize the ROM `ISOException`
+  record at offset 350 alongside the JC305 export view at offset 316.
+- Validation: ARM, RISC-V, and PC build wrappers passed. The prior isolated
+  physical trace confirmed that after the CryptoException alias match, the
+  applet catch ran, recorded reason 3, and threw `ISOException(9000)`; it still
+  returned `6F00` because the old terminal ISOException cast failed. The latest
+  image reported `FLASH:PASS` but did not re-enumerate as USB serial or CCID,
+  so the current fix has not been verified on hardware. The PC VPCD harness
+  installed and selected JCAlgTest but timed out at GETVERSION after 20 seconds
+  before the isolated APDU.
+- Result: The physical failure is an API class-view alias problem through both
+  the applet catch and ISO status conversion. The new source covers the two
+  observed pairs, but success remains unproven. The current RP2350 device is
+  absent from this VM; the authorized PC/SC helper found no Pico.
+- Decision: Resume physical checks once the device enumerates. First require
+  M1 prepare response `03 9000` and a normal follow-up SELECT, then test a
+  bounded static subset and the full matrix. Do not implement the DES padding
+  algorithm; preserve `NO_SUCH_ALGORITHM` semantics.
+- Commit: pending
+- Artifacts/logs: build records
+  `artifacts/logs/build-arm-catch-alias-final-20261018.log`,
+  `artifacts/logs/build-riscv-catch-alias-final-20261018.log`,
+  `artifacts/logs/build-pc-catch-alias-final-20261018.log`; physical traces
+  `artifacts/logs/monitor-des-m1-alias-fix-20261018.log` and
+  `artifacts/logs/monitor-des-m1-iso-class-check-20261018.log`; latest cycle
+  `artifacts/logs/cycle-choupi-20261018T131939Z.log`; VPCD timeout
+  `artifacts/logs/vpcd-des-m1-iso-alias-20261018.log`.
