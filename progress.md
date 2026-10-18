@@ -1941,6 +1941,24 @@
 - Artifacts/logs: `artifacts/logs/cycle-arm-20261018T074707Z.log` (SHA-256
   `eb58edba0a3c95145b4112453485896f959c2b4d2292e033340691b73ed222d3`).
 
+## 2026-10-18 — Add physical Pico 2 JCAlgTest runbook
+
+- Step/experiment: `readme-physical-jcalgtest-runbook`
+- Change: Added root `readme.md` with concise commands to extract the official
+  JCAlgTest v1.8.2 client, build/flash ARM CHOUPI, grant PC/SC access, install
+  the supplied JC305 CAP if needed, and run `ALG_SUPPORT_EXTENDED` and
+  `ALG_PERFORMANCE_STATIC` against the exact reader.
+- Validation: Documentation-only review against `tools/cycle`,
+  `tools/run-jcalgtest`, `tools/pico2-pcsc-reader-root`, and GlobalPlatformPro
+  `--help`. No build, test, or hardware command was run.
+- Result: The readme includes the existing 900-second client timeout and notes
+  that `NO_SUCH_ALGORITHM` results are expected. It assumes the versioned
+  client archive and local toolchain are already prepared.
+- Decision: Use this as the short physical-device procedure; the current board
+  still runs the ARM smoke image and must be reflashed with CHOUPI first.
+- Commit: pending
+- Artifacts/logs: none.
+
 ## 2026-10-14 — Verify offline CHOUPI host-build dependencies
 
 - Step/experiment: `host-vm-offline-dependency-check-20261014`

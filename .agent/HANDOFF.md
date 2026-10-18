@@ -1,5 +1,19 @@
 # Handoff
 
+## Latest continuation — add concise hardware JCAlgTest runbook — 2026-10-18
+
+- Created root `readme.md` with copyable steps to extract the official
+  JCAlgTest 1.8.2 client, build/flash CHOUPI, expose the Pico through PC/SC,
+  install the supplied JC305 CAP when needed, and run support and static
+  performance operations against the exact physical reader.
+- Checked the documented flags against `tools/cycle`, `tools/run-jcalgtest`,
+  the PC/SC helper, and GlobalPlatformPro help. No tests or hardware commands
+  were run for this documentation-only change.
+- The board remains on `pico2_jcvm_smoke.uf2` from the preceding ARM cycle;
+  run the documented CHOUPI cycle before physical applet tests.
+- Next: continue `JCSystem.makeGlobalArray()` design work, or follow the
+  runbook when returning to physical JCAlgTest validation.
+
 ## Latest continuation — real-device ARM smoke cycle — 2026-10-18
 
 - Ran `PICO2_HOST_USB_ACCESS=1 ./tools/cycle arm` against the attached Pico 2.
