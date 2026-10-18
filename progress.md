@@ -5283,6 +5283,6 @@
 - Result: Global-array offsets no longer falsely mark applet-local arrays in
   the diagnostic tracer. No heap slots are reclaimed or reused.
 - Decision: Continue root completeness audit before implementing a sweep.
-- Commit: `pending`
+- Commit: `c9aeb9d`.
 - Artifacts/logs: `artifacts/logs/heap-global-tracer-focused-vpcd-20261018.log`
   (SHA-256 `3ebc56b04665c3e0cf87b9e51a0456d6a8c9c7c2125dc05bdce12feb254c01e2`).
