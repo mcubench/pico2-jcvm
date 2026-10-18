@@ -5392,7 +5392,7 @@
   ACM node blocks during re-enumeration.
 - Decision: Keep per-attempt timeouts; continue using host-access authorization
   for hardware and a short timeout for PC/SC scans.
-- Commit: `pending`.
+- Commit: `d386520`.
 - Artifacts/logs: `artifacts/logs/monitor-gc-disabled-diagnostic-20261018.log`
   (finite capture); collector-enabled cycle
   `artifacts/logs/cycle-choupi-20261018T125316Z.log`.
