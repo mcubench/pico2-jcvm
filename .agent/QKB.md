@@ -5,6 +5,35 @@ the reliable recovery, and any limits. Promote only reproducible fixes to the
 viable-solution status; a single successful probe is evidence, not a universal
 fix.
 
+## JC305 SensitiveArrays invocation used the wrong embedded method token — 2026-10-18
+
+- **Symptom:** A JC305 applet calling
+  `SensitiveArrays.isIntegritySensitive(byte[])` received `6F00`; the emulator
+  trace reported `exception=20 opcode=FE`. The native handler was present, but
+  the call resolved to the wrong framework method.
+- **Cause:** JC305 import tokens number the five `SensitiveArrays` static
+  methods 0–4. The embedded framework class has a constructor at token 0 and
+  numbers those methods 1–5. The framework remapper translated the class token
+  but had no method-token mapping for `SensitiveArrays`.
+- **Viable fix:** For the framework package and imported class token 22, map
+  static method tokens `{0,1,2,3,4}` to `{1,2,3,4,5}`. Focused cases 42–47
+  passed after this mapping; full VPCD JCSystem suite passed 50/50 in 138.900
+  s. PC, ARM M33, and RISC-V builds passed.
+- **Correction:** The earlier diagnosis that the embedded API did not export
+  `SensitiveArrays` was incorrect. The class exists; the defect was its static
+  method-token mapping.
+
+## SensitiveArrays is intentionally unsupported when capability is false — 2026-10-18
+
+- **Viable behavior:** `isIntegritySensitiveArraysSupported()` returns false;
+  valid creation raises `SystemException.ILLEGAL_USE`; invalid type/memory
+  raises `ILLEGAL_VALUE`; negative length raises `NegativeArraySizeException`;
+  `assertIntegrity` and `clearArray` raise `ILLEGAL_VALUE` for non-sensitive
+  objects. Null inputs retain `NullPointerException` behavior.
+- **Validation:** Cases 42–47 cover the capability, query, creation, assertion,
+  and clear behavior, including reason codes. Focused and full VPCD tests
+  passed. No physical board was accessed.
+
 ## JCSystem.makeGlobalArray implementation — 2026-10-18
 
 - **Viable fix:** `Heap` now owns a runtime-wide global array heap with tagged

@@ -1,5 +1,26 @@
 # Handoff
 
+## Latest continuation — define unsupported SensitiveArrays behavior — 2026-10-18
+
+- Replaced the remaining `NotYetImplemented` behavior for integrity-sensitive
+  array APIs with their documented unsupported-feature outcomes. The runtime
+  reports the capability as false; valid creation calls raise
+  `SystemException.ILLEGAL_USE`, invalid type/memory raises
+  `SystemException.ILLEGAL_VALUE`, negative length raises
+  `NegativeArraySizeException`, and assertion/clear of non-sensitive arrays
+  raises `ILLEGAL_VALUE` (null still raises `NullPointerException`).
+- Fixed JC305 framework method-token remapping for `SensitiveArrays`: the
+  imported static tokens 0–4 map to embedded method tokens 1–5 because the
+  embedded class has a constructor at token 0. Before the fix, case 42 called
+  the wrong native and raised `SystemException`.
+- Added probe cases 42–47. PC, ARM M33, and RISC-V builds passed; focused cases
+  passed; full VPCD suite passed
+  `TEST:SUMMARY pass=50 fail=0 elapsed_s=138.900`. No hardware was accessed.
+  Existing pinned Rust OS and packed CAP-member warnings remain.
+- Next: audit `JCSystem.getAppletShareableInterfaceObject()` against the
+  single-context runtime and determine whether a useful standards-compatible
+  behavior can be implemented without inventing cross-applet state.
+
 ## Latest continuation — implement JCSystem.makeGlobalArray — 2026-10-18
 
 - Implemented runtime-wide JCRE-owned array handles for boolean, byte, short,

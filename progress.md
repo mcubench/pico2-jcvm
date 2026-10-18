@@ -5203,7 +5203,29 @@
   context and lacks shareable-object ownership.
 - Decision: Continue the JCSystem/runtime API audit. Keep heap reclamation off
   and treat unsupported algorithm results as expected.
-- Commit: pending.
+- Commit: `1c652bd`.
 - Artifacts/logs: `artifacts/logs/jcsystem-global-array-focused-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-global-array-full-vpcd-20261018.log`,
   `artifacts/logs/jcsystem-global-array-object-vpcd-20261018.log`.
+
+## 2026-10-18 — Implement documented SensitiveArrays unsupported behavior
+
+- Step/experiment: `sensitive-arrays-unsupported-semantics-and-jc305-remap`
+- Change: Implemented the documented exceptions for integrity-sensitive array
+  APIs while the capability is false. Added JC305 framework method-token
+  translation for SensitiveArrays (imported tokens 0–4 map to embedded 1–5).
+  Added probe cases 42–47 for query, assertion, creation, clear, null, and
+  reason-code behavior.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. Focused VPCD cases 42–47 passed. Full suite
+  passed `TEST:SUMMARY pass=50 fail=0 elapsed_s=138.900`. No physical device
+  was accessed. Existing pinned Rust OS and packed CAP-member warnings remain.
+- Result: Unsupported integrity-sensitive arrays now fail with catchable,
+  API-specific Java Card exceptions rather than `NotYetImplemented`. Correct
+  static method-token translation allows JC305 applets to reach these handlers.
+- Decision: Continue auditing `getAppletShareableInterfaceObject()` and other
+  remaining JCSystem behavior against the current single-context model.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sensitive-arrays-focused-vpcd-20261018.log`,
+  `artifacts/logs/jcsystem-sensitive-arrays-full-vpcd-20261018.log`,
+  `artifacts/logs/sensitive-arrays-case42-vpcd-20261018.log`.

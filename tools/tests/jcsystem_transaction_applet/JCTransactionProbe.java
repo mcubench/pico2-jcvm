@@ -11,6 +11,7 @@ import javacard.framework.OwnerPINBuilder;
 import javacard.framework.OwnerPINx;
 import javacard.framework.OwnerPINxWithPredecrement;
 import javacard.framework.PINException;
+import javacard.framework.SensitiveArrays;
 import javacard.framework.SystemException;
 import javacard.framework.TransactionException;
 import javacard.security.MessageDigest;
@@ -534,6 +535,93 @@ public final class JCTransactionProbe extends Applet {
         } catch (java.lang.SecurityException e) {
           buffer[0] = 1;
         }
+        length = 1;
+        break;
+      }
+      case 42: {
+        buffer[0] = SensitiveArrays.isIntegritySensitive(new byte[1])
+            ? (byte)0 : (byte)1;
+        length = 1;
+        break;
+      }
+      case 43: {
+        byte result = 0;
+        try {
+          SensitiveArrays.assertIntegrity(new byte[1]);
+        } catch (SystemException e) {
+          if (e.getReason() == SystemException.ILLEGAL_VALUE) result |= 1;
+        }
+        try {
+          SensitiveArrays.assertIntegrity(null);
+        } catch (NullPointerException e) {
+          result |= 2;
+        }
+        buffer[0] = result;
+        length = 1;
+        break;
+      }
+      case 44: {
+        byte result = 0;
+        try {
+          SensitiveArrays.makeIntegritySensitiveArray(
+              JCSystem.ARRAY_TYPE_BYTE, JCSystem.MEMORY_TYPE_TRANSIENT_RESET,
+              (short)1);
+        } catch (SystemException e) {
+          if (e.getReason() == SystemException.ILLEGAL_USE) result |= 1;
+        }
+        try {
+          SensitiveArrays.makeIntegritySensitiveArray((byte)0,
+              JCSystem.MEMORY_TYPE_PERSISTENT, (short)1);
+        } catch (SystemException e) {
+          if (e.getReason() == SystemException.ILLEGAL_VALUE) result |= 2;
+        }
+        try {
+          SensitiveArrays.makeIntegritySensitiveArray(JCSystem.ARRAY_TYPE_BYTE,
+              (byte)3, (short)1);
+        } catch (SystemException e) {
+          if (e.getReason() == SystemException.ILLEGAL_VALUE) result |= 4;
+        }
+        try {
+          SensitiveArrays.makeIntegritySensitiveArray(JCSystem.ARRAY_TYPE_BYTE,
+              JCSystem.MEMORY_TYPE_PERSISTENT, (short)-1);
+        } catch (NegativeArraySizeException e) {
+          result |= 8;
+        }
+        buffer[0] = result;
+        length = 1;
+        break;
+      }
+      case 45: {
+        byte result = 0;
+        try {
+          SensitiveArrays.clearArray(new byte[1]);
+        } catch (SystemException e) {
+          if (e.getReason() == SystemException.ILLEGAL_VALUE) result |= 1;
+        }
+        try {
+          SensitiveArrays.clearArray(null);
+        } catch (NullPointerException e) {
+          result |= 2;
+        }
+        buffer[0] = result;
+        length = 1;
+        break;
+      }
+      case 46: {
+        buffer[0] = SensitiveArrays.isIntegritySensitiveArraysSupported()
+            ? (byte)0 : (byte)1;
+        length = 1;
+        break;
+      }
+      case 47: {
+        byte result = SensitiveArrays.isIntegritySensitive(new Object())
+            ? (byte)0 : (byte)1;
+        try {
+          SensitiveArrays.isIntegritySensitive(null);
+        } catch (NullPointerException e) {
+          result |= 2;
+        }
+        buffer[0] = result;
         length = 1;
         break;
       }

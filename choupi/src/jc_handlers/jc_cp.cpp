@@ -106,6 +106,8 @@ uint8_t remap_imported_static_method_token(
   static constexpr uint8_t framework_jcsystem_methods[] = {
       11, 10, 12, 8,  19, 15, 16, 13, 14, 7,  1,  9,
       2,  3,  5,  4,  17, 20, 21, 22, 23, 6,  18};
+  static constexpr uint8_t framework_sensitivearrays_methods[] = {
+      1, 2, 3, 4, 5};
   static constexpr uint8_t java_lang_object_methods[] = {0};
   static constexpr uint8_t framework_apdu_methods[] = {1, 2, 3, 7, 4, 5, 6};
   static constexpr uint8_t framework_util_methods[] = {4, 0, 1, 3, 6, 5, 7, 2};
@@ -127,6 +129,14 @@ uint8_t remap_imported_static_method_token(
              class_token == 0) {
     mapping = java_lang_object_methods;
     mapping_size = sizeof(java_lang_object_methods);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+             class_token == 22) {
+    // The embedded class has a constructor at token 0, while the JC305
+    // export assigns SensitiveArrays' five static methods tokens 0-4.
+    mapping = framework_sensitivearrays_methods;
+    mapping_size = sizeof(framework_sensitivearrays_methods);
   } else if (package_info.AID_length == 7 &&
              std::memcmp(package_info.AID,
                          "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&

@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 42),
+        "--case", type=int, action="append", choices=range(1, 48),
         help="run only this numbered APDU case; may be repeated",
     )
     args = parser.parse_args()
@@ -179,6 +179,12 @@ def main() -> int:
                     (39, b"\x01", "global array references cannot be stored in static fields"),
                     (40, b"\x01", "global array references cannot be stored in array components"),
                     (41, b"\x01", "applet objects cannot escape through global object arrays"),
+                    (42, b"\x01", "ordinary byte arrays are not integrity-sensitive"),
+                    (43, b"\x03", "assertIntegrity rejects unsupported arrays and null"),
+                    (44, b"\x0f", "integrity-sensitive array creation validation and unsupported reason"),
+                    (45, b"\x03", "clearArray rejects non-sensitive arrays and null"),
+                    (46, b"\x01", "integrity-sensitive array support is reported as false"),
+                    (47, b"\x03", "integrity-sensitive query handles instances and null"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

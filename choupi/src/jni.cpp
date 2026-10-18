@@ -848,9 +848,15 @@ jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletActive(
   return TRUE;
 }
 
-void fr_gouv_ssi_nativeimpl_NativeImplementation_assertIntegrity(jref_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+void fr_gouv_ssi_nativeimpl_NativeImplementation_assertIntegrity(
+    const jref_t objectref) {
+  if (objectref.isNullPointer()) {
+    throw Exceptions::NullPointerException;
+  }
+
+  // No integrity-sensitive arrays can be created by this implementation.
+  Context::getActiveContext().setPendingSystemExceptionReason(1);
+  throw Exceptions::SystemException;
 }
 
 jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitive(
@@ -870,14 +876,40 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitiveArraysSupported(
 }
 
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeIntegritySensitiveArray(
-    jbyte_t, jbyte_t, jshort_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+    const jbyte_t type, const jbyte_t memory, const jshort_t length) {
+  Context &context = Context::getActiveContext();
+  if (length < 0) {
+    throw Exceptions::NegativeArraySizeException;
+  }
+
+  const uint8_t array_type = static_cast<uint8_t>(type);
+  const uint8_t memory_type = static_cast<uint8_t>(memory);
+  if (array_type < 1 || array_type > 5 || memory_type > 2) {
+    context.setPendingSystemExceptionReason(1);
+    throw Exceptions::SystemException;
+  }
+#ifndef JCVM_INT_SUPPORTED
+  if (array_type == 4) {
+    context.setPendingSystemExceptionReason(1);
+    throw Exceptions::SystemException;
+  }
+#endif
+
+  // The API specifies ILLEGAL_USE when integrity-sensitive arrays are not
+  // supported. The advertised capability remains false.
+  context.setPendingSystemExceptionReason(6);
+  throw Exceptions::SystemException;
 }
 
-jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_clearArray(jref_t) {
-  // TODO: to implement;
-  throw Exceptions::NotYetImplemented;
+jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_clearArray(
+    const jref_t objectref) {
+  if (objectref.isNullPointer()) {
+    throw Exceptions::NullPointerException;
+  }
+
+  // No integrity-sensitive arrays can exist while support is disabled.
+  Context::getActiveContext().setPendingSystemExceptionReason(1);
+  throw Exceptions::SystemException;
 }
 
 std::shared_ptr<JC_Array>
