@@ -6293,7 +6293,7 @@
   before install, after install, and after emulator process restore.
 - Decision: Keep the registration guard and include null-before-register in
   JCSystem lifecycle regressions.
-- Commit: `<pending>`
+- Commit: `15dc3fcc5c5ead672e52d1ed5634ec78459e457d`
 - Artifacts/logs: `artifacts/logs/jcsystem-get-aid-registration-vpcd-20261019.log`,
   `artifacts/logs/jcsystem-get-aid-registration-restore-vpcd-20261019.log`, and
   `artifacts/logs/cycle-choupi-20261019T193502Z.log`.
