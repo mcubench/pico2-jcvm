@@ -41,6 +41,14 @@ out explicitly.
   following GET RESPONSE to that applet. CCID and VPCD transport paths now
   recognize `9000` and `61xx` as successful selection outcomes. VPCD session
   regression verifies the selection state and GET RESPONSE dispatch.
+
+## Open persistence risks
+
+- [ ] Make CAP installation metadata and VM filesystem state recover together.
+  The CAP slot is marked installed before the filesystem transaction's final
+  `fs_sync()`; a sync failure rolls back filesystem snapshots but not the CAP
+  slot header. This is currently source-inspection evidence only. See
+  `.agent/QKB.md`; add failure injection before choosing the recovery protocol.
 - [x] Implement `Applet.selectingApplet()` and deliver a successful applet
   SELECT APDU to `Applet.process()`. Lifecycle probes verify the flag during
   `select()` and SELECT processing, its absence during `deselect()`, and reset,

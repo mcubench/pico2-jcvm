@@ -6131,3 +6131,24 @@
 - Commit: `86ffde9`
 - Artifacts/logs: Test summary `TEST:SUMMARY pass=18 fail=0`; no archived log.
 
+## 2026-10-19 — Record CAP install cross-store recovery risk
+
+- Step/experiment: `cap-install-cross-store-commit-review`
+- Change: Documented the mismatch between the CAP slot's installed header and
+  the VM filesystem transaction, and made fault injection/reconciliation an
+  explicit open persistence item.
+- Validation: Read-only inspection of `CapLoadSession::installAndMakeSelectable`,
+  `cap_store_mark_installed`, and
+  `FlashMemory_Handler::commitPersistentWriteTransaction`; bounded
+  `timeout 8s pcsc_scan -r` listed only the two Virtual PCD readers. No injected
+  sync failure, flash, or physical APDU was attempted.
+- Result: The CAP metadata write occurs before the final `fs_sync()`. A failed
+  sync rolls back filesystem snapshots, while the CAP header is stored outside
+  those snapshots. This is a source-confirmed failure window, not a reproduced
+  card failure.
+- Decision: Add failure injection for the final sync and CAP metadata write
+  before implementing a durable intent/reconciliation design.
+- Commit: `<pending>`
+- Artifacts/logs: No artifact log; source references are recorded in
+  `.agent/QKB.md`.
+

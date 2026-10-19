@@ -1,5 +1,17 @@
 # Handoff
 
+## Latest persistence review — CAP and filesystem commit boundary — 2026-10-19
+
+- Source inspection found that INSTALL writes the separate CAP slot's
+  installed AID/class metadata before the persistent filesystem transaction's
+  final `fs_sync()`. If sync fails, filesystem snapshots roll back but the CAP
+  header does not. The physical failure has not been reproduced.
+- Recorded in `.agent/QKB.md` and `TODO.md`. Next: add fault injection for the
+  final sync and metadata write, then design startup reconciliation across the
+  two flash stores.
+- A bounded `timeout 8s pcsc_scan -r` listed only Virtual PCD 00 00/00 01; no
+  physical APDU ran. Existing host tests and ARM build for SELECT `61xx` passed.
+
 ## Latest implementation — SELECT 61xx continuation — 2026-10-19
 
 - CCID and VPCD now keep an applet selected when its SELECT APDU returns

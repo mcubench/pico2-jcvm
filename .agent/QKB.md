@@ -1,5 +1,28 @@
 # Project issue knowledge base
 
+## CAP installation metadata can outlive a failed filesystem commit — 2026-10-19
+
+- **Symptom/risk:** `CapLoadSession::installAndMakeSelectable()` writes the
+  installed instance AID and class index into the separate CAP flash slot before
+  `commitPersistentWriteTransaction()` performs its final `fs_sync()`. If that
+  final sync fails, the VM transaction rolls its filesystem records back, but
+  the CAP slot header remains marked installed.
+- **Evidence:** In `src/cap_load.cpp`, the initial `fs_sync()` is followed by
+  `choupi_store_cap_instance()` and then the transaction commit. The Pico
+  implementation maps that call to `cap_store_mark_installed()` in
+  `src/choupi_pico2.cpp`; the function erases and rewrites the CAP header
+  sector. `FlashMemory_Handler::commitPersistentWriteTransaction()` in
+  `choupi/src/jc_handlers/flashmemory.cpp` calls `fs_sync()` and rolls back its
+  in-memory snapshots on failure. The CAP header is outside those snapshots.
+- **Status:** Confirmed by source-path inspection only. No injected final-sync
+  failure or physical power cut has reproduced the inconsistent state.
+- **Next:** Add failure injection around the final filesystem sync and CAP
+  metadata write, then make installation recoverable across both stores. A
+  durable intent/reconciliation protocol is preferable to assuming the two
+  flash operations are one transaction.
+- **Related validation limit:** The latest bounded `pcsc_scan -r` saw only
+  `Virtual PCD 00 00` and `Virtual PCD 00 01`, so no physical APDU test ran.
+
 ## CAP Method component size was decoded in host byte order — 2026-10-19
 
 - **Symptom:** Installing the enlarged JCSystem lifecycle probe failed at
