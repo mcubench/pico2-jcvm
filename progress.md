@@ -5418,7 +5418,7 @@
 - Decision: Diagnose the catch-class/range path in `Bytecodes::doThrow()` and
   add a focused regression before the next physical matrix run. Keep expected
   `NO_SUCH_ALGORITHM` behavior.
-- Commit: `61cdcdedf3068dd8126b8b2da54c2b958ce8121a`
+- Commit: pending
 - Artifacts/logs: client log SHA-256
   `3d869a23c9350a02839d0e5f10a948cf110365ae7de17a3c11305904bf74c1e0`; CSV
   SHA-256 `f4abcb6507fced3a6ece90902f5b33bd6c24b07ba38210adc4b9c08f404904ba`;
