@@ -898,7 +898,8 @@ jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletActive(
   }
 
   Context &context = Context::getActiveContext();
-  if (!context.wasAppletRegistered() && !context.hasRestoredAppletInstance()) {
+  if (!context.isAppletActive() ||
+      (!context.wasAppletRegistered() && !context.hasRestoredAppletInstance())) {
     return FALSE;
   }
 

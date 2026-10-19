@@ -171,6 +171,14 @@ jref_t Context::getRestoredAppletRef() const noexcept {
   return this->restored_applet_ref;
 }
 
+void Context::setAppletActive(const bool active) noexcept {
+  this->applet_active = active;
+}
+
+bool Context::isAppletActive() const noexcept {
+  return this->applet_active;
+}
+
 void Context::setAPDUBufferRef(const jref_t reference,
                                const uint16_t incoming_length,
                                const uint16_t expected_response_length,

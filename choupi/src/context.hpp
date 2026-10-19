@@ -61,6 +61,7 @@ private:
   jref_t registered_applet_ref;
   bool applet_instance_restored = false;
   jref_t restored_applet_ref;
+  bool applet_active = false;
   jref_t apdu_buffer_ref;
   std::shared_ptr<JC_Array> apdu_java_buffer;
   jref_t apdu_object_ref;
@@ -115,6 +116,8 @@ public:
                              jclass_index_t class_index) noexcept;
   bool hasRestoredAppletInstance() const noexcept;
   jref_t getRestoredAppletRef() const noexcept;
+  void setAppletActive(bool active) noexcept;
+  bool isAppletActive() const noexcept;
   /// Set and query the APDU buffer and response window for the current command.
   void setAPDUBufferRef(jref_t reference, uint16_t incoming_length,
                         uint16_t expected_response_length,

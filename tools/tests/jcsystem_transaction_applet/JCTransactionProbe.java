@@ -34,6 +34,7 @@ public final class JCTransactionProbe extends Applet {
   private byte currentApduBufferHiddenOutsideProcess;
   private byte lastApduExceptionReason = (byte)0x7f;
   private byte explicitRegistrationFailureReason;
+  private byte installSawAppletActive;
   private byte[] transientResetArray;
   private byte[] transientDeselectArray;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
@@ -59,6 +60,8 @@ public final class JCTransactionProbe extends Applet {
     } else {
       register();
     }
+    installSawAppletActive =
+        JCSystem.isAppletActive(JCSystem.getAID()) ? (byte)1 : (byte)0;
     staticReferenceRoot = this;
     byte[] shared = {0x01};
     persistentReferenceArray = new Object[] {shared, shared};
@@ -831,6 +834,11 @@ public final class JCTransactionProbe extends Applet {
             ? (byte)1 : (byte)0;
         break;
       }
+      case 76:
+        buffer[0] = installSawAppletActive == 0 &&
+                JCSystem.isAppletActive(JCSystem.getAID())
+            ? (byte)1 : (byte)0;
+        break;
       case 67: {
         byte reason = 0;
         try {

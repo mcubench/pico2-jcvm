@@ -300,6 +300,7 @@ void choupi_vm_clear_selected_applet(void) {
   selected_applet_select_process_pending = false;
   selected_applet_reselection_process_pending = false;
   if (selected_applet_context) {
+    selected_applet_context->setAppletActive(false);
     selected_applet_context->getHeap().clearTransientArrays(
         jcvm::ClearEvent::CLEAR_ON_RESET);
   }
@@ -386,6 +387,7 @@ uint16_t choupi_vm_select_applet(void) {
     return 0x6999;
   }
   selected_applet_is_active = true;
+  selected_applet_context->setAppletActive(true);
   selected_applet_select_process_pending = true;
   return 0x9000;
 }
@@ -403,6 +405,7 @@ extern "C" uint16_t choupi_vm_deselect_applet(
     return 0x9000;
   }
   const uint16_t status = invoke_selected_applet_method(4, nullptr);
+  selected_applet_context->setAppletActive(false);
   selected_applet_context->getHeap().clearTransientArrays(
       jcvm::ClearEvent::CLEAR_ON_DESELECT);
   selected_applet_is_active = false;
