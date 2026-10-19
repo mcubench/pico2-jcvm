@@ -35,6 +35,8 @@ public final class JCTransactionProbe extends Applet {
   private byte lastApduExceptionReason = (byte)0x7f;
   private byte explicitRegistrationFailureReason;
   private byte installSawAppletActive;
+  private byte selectSawAppletActive;
+  private byte deselectSawAppletActive;
   private byte[] transientResetArray;
   private byte[] transientDeselectArray;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
@@ -78,6 +80,8 @@ public final class JCTransactionProbe extends Applet {
 
   public boolean select() {
     selectCount++;
+    selectSawAppletActive =
+        JCSystem.isAppletActive(JCSystem.getAID()) ? (byte)1 : (byte)0;
     if (selectingApplet()) selectingAppletProbeFlags |= 1;
     lastSelectWasReselect = reSelectingApplet() ? (byte)1 : (byte)0;
     try {
@@ -101,6 +105,8 @@ public final class JCTransactionProbe extends Applet {
 
   public void deselect() {
     deselectCount++;
+    deselectSawAppletActive =
+        JCSystem.isAppletActive(JCSystem.getAID()) ? (byte)1 : (byte)0;
     selectingAppletProbeFlags |= selectingApplet() ? (byte)4 : (byte)8;
   }
 
@@ -838,6 +844,12 @@ public final class JCTransactionProbe extends Applet {
         buffer[0] = installSawAppletActive == 0 &&
                 JCSystem.isAppletActive(JCSystem.getAID())
             ? (byte)1 : (byte)0;
+        break;
+      case 77:
+        buffer[0] = installSawAppletActive == 0 &&
+                selectSawAppletActive == 0 && deselectSawAppletActive == 1 &&
+                JCSystem.isAppletActive(JCSystem.getAID())
+            ? (byte)0x0f : (byte)0;
         break;
       case 67: {
         byte reason = 0;

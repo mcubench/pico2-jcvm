@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 77),
+        "--case", type=int, action="append", choices=range(1, 78),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -248,6 +248,7 @@ def main() -> int:
                     (74, b"", "unknown AID SELECT deselects the applet and returns file not found"),
                     (75, b"\x01", "AID byte-array equality returns false for null and compares valid full and partial AIDs"),
                     (76, b"\x01", "JCSystem.isAppletActive is false during install and true after SELECT"),
+                    (77, b"\x0f", "JCSystem.isAppletActive follows install/select/deselect/process lifecycle"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -255,6 +256,24 @@ def main() -> int:
                     else cases
                 )
                 for p1, expected, label in selected_cases:
+                    if p1 == 77:
+                        exchange(
+                            connection,
+                            bytes.fromhex("00A4040008A00000015100000000"),
+                            "deselect applet while checking active state",
+                        )
+                        exchange(connection, select, "select applet for active lifecycle check")
+                        observed = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 77, 0x00, 0x00)),
+                            label,
+                        )
+                        if observed != expected:
+                            raise RuntimeError(
+                                f"{label}: expected {expected.hex().upper()}, got {observed.hex().upper()}"
+                            )
+                        print(f"TEST:PASS {label}")
+                        continue
                     if p1 == 74:
                         unknown_select = bytes.fromhex("00A4040007F000000001234500")
                         send_message(connection, unknown_select)
