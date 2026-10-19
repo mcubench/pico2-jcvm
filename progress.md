@@ -6086,3 +6086,31 @@
   design CAP/filesystem recovery separately and verify injected power cuts.
 - Commit: this documentation commit (`git log -1 --format=%H -- review_20261019.md`).
 - Artifacts/logs: `review_20261019.md`; no runtime logs.
+## 2026-10-19 — Allow distinct applet instance AIDs during restore
+
+- Step/experiment: `distinct-applet-instance-aid-restore`
+- Change: Removed the CAP applet-AID equality check from installed-instance
+  restoration. A temporary PC VPCD CLI experiment used a distinct instance AID
+  without retaining edits to the already-dirty emulator source.
+- Validation: The temporary distinct-AID probe passed install/commit 3/3 and
+  fresh-process restore 7/7. The retained `./tools/test-vpcd-persistence`
+  passed install/commit 3/3 and restore 7/7. `./tools/build arm` passed for
+  RP2350 ARM M33. No flash was attempted; physical reboot testing is pending.
+- Result: The temporary probe used CAP Applet AID `4A43416C675465737431` and
+  instance AID `A00000015150455253495354`. It selected the instance and restored
+  persisted objects and field `0x33`. The PC emulator restore path does not
+  invoke firmware-only `CapLoadSession::restoreInstalled()`, so that exact
+  metadata reader is compile-checked but not directly exercised.
+- Decision: Keep the AID distinction in GlobalPlatform metadata and retry
+  hardware power-cycle validation when Pico PC/SC is available.
+- Commit: `<pending>`
+- Artifacts/logs: temporary distinct-AID logs
+  `artifacts/logs/vpcd-persistence-commit-20261019T181446Z.log`,
+  SHA-256 `d8fc996e3cbd758be9e62dc7b7b1af006bc7b27ae81ea0d65ca66f5077d35d95`;
+  `artifacts/logs/vpcd-persistence-restore-20261019T181446Z.log`, SHA-256
+  `7b898e84a3a5bfa6c878739dced131933b1cfa136d5f73e76e496fb12b878bc3`; final
+  retained regression logs `artifacts/logs/vpcd-persistence-commit-20261019T181900Z.log`,
+  SHA-256 `8982ccad9a7fba7a96510069b9dfcd3a67ce91e83de955962da98bec6a94b9a5`;
+  `artifacts/logs/vpcd-persistence-restore-20261019T181900Z.log`, SHA-256
+  `482f43b2eff35de0ee80df934efc65837d72ea59384b3b3b2c64ff5c0a6b7f4a`.
+

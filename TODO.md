@@ -31,6 +31,12 @@ out explicitly.
   the supplied AID must match the install instance AID. VPCD cases 67–70 pass
   for a matching AID; a mismatched AID reports
   `SystemException.ILLEGAL_AID` and the applet can complete fallback install.
+- [x] Restore the registered applet instance AID independently of the CAP
+  Applet component AID. GlobalPlatform INSTALL can assign distinct AIDs; reboot
+  restore no longer rejects this valid metadata. A temporary VPCD CLI probe
+  installed and selected an applet using a distinct instance AID and restored
+  persistent objects successfully; the retained standard persistence test also
+  passes. Physical Pico reboot validation remains open.
 - [x] Implement `Applet.selectingApplet()` and deliver a successful applet
   SELECT APDU to `Applet.process()`. Lifecycle probes verify the flag during
   `select()` and SELECT processing, its absence during `deselect()`, and reset,

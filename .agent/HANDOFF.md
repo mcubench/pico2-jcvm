@@ -1,5 +1,25 @@
 # Handoff
 
+## Latest implementation — distinct instance AID restore — 2026-10-19
+
+- Removed the incorrect requirement that a persisted instance AID equal the
+  CAP Applet component AID. The GlobalPlatform INSTALL command records these
+  AIDs separately and permits distinct values.
+- A temporary PC VPCD CLI experiment used instance AID
+  `A00000015150455253495354` while the probe CAP registers
+  `4A43416C675465737431`. Install/commit passed 3/3; a fresh emulator process
+  selected the instance and restored persisted references and field `0x33`,
+  passing 7/7. The test CLI edits were removed because `main_pc.cpp` has
+  extensive unrelated pre-existing changes and could not be staged separately.
+- The retained same-AID regression `./tools/test-vpcd-persistence` also passed
+  install/commit 3/3 and process-restart restore 7/7.
+- `./tools/build arm` passed. No flash was attempted. Note: the PC emulator
+  restores VM state from its configured AID but does not invoke the firmware
+  `CapLoadSession::restoreInstalled()` metadata reader; that exact reader is
+  compile-checked and awaits physical power-cycle verification.
+- Next: commit this focused loader change and continue the runtime/card-manager
+  review, starting with SELECT response handling for `61xx`.
+
 ## Latest implementation — null-safe Java Card AID comparisons — 2026-10-19
 
 - Java Card `AID.equals(byte[],short,byte)` and
