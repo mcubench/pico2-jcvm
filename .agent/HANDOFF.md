@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest continuation — test GP DELETE target resolution offline — 2026-10-19
+
+- Extracted the pre-mutation target decision from `CapLoadSession::deleteObject()`
+  into `gp::resolve_delete_target()` and wired the production method through
+  it.
+- `./tools/test-gp-delete` passed 26 checks, including unknown AID (`6A88`),
+  package dependency rejection (`6985`), related-object package deletion, and
+  instance deletion. `./tools/build arm` and `./tools/build riscv` both passed.
+- This verifies command-to-target policy and transaction sequencing through
+  shared code, but not real persistent records, CAP-slot erase, authenticated
+  CCID dispatch, or restart restoration. No card APDU/flash was attempted
+  because the Pico is in BOOTSEL.
+- Next: connect the session lifecycle to a host storage/CAP-store test backend
+  and exercise delete, GET STATUS, and restore across a fresh session.
+
 ## Latest continuation — exercise GP DELETE transaction sequencing offline — 2026-10-19
 
 - Extracted the persistent transaction portion of `CapLoadSession::deleteObject()`

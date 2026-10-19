@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 namespace gp {
 
@@ -11,6 +12,37 @@ struct DeleteRequest {
   uint8_t aid_length = 0;
   bool delete_related_objects = false;
 };
+
+struct DeleteTarget {
+  bool package = false;
+};
+
+// Resolve the requested AID against the currently loaded package and
+// installed instance before starting any persistent mutation.
+inline uint16_t resolve_delete_target(
+    bool package_loaded, bool applet_installed, const uint8_t *aid,
+    size_t aid_length, const uint8_t *package_aid,
+    size_t package_aid_length, const uint8_t *instance_aid,
+    size_t instance_aid_length, bool delete_related_objects,
+    DeleteTarget &target) noexcept {
+  target = {};
+  if (!package_loaded || aid == nullptr || aid_length < 5 || aid_length > 16) {
+    return 0x6a88;
+  }
+  const bool delete_package =
+      package_aid != nullptr && aid_length == package_aid_length &&
+      std::memcmp(aid, package_aid, aid_length) == 0;
+  const bool delete_applet =
+      applet_installed && instance_aid != nullptr &&
+      aid_length == instance_aid_length &&
+      std::memcmp(aid, instance_aid, aid_length) == 0;
+  if (!delete_package && !delete_applet) return 0x6a88;
+  if (delete_package && applet_installed && !delete_related_objects) {
+    return 0x6985;
+  }
+  target.package = delete_package;
+  return 0x9000;
+}
 
 // Parse the supported single-object GlobalPlatform DELETE command. This card
 // supports one AID qualifier (4F) and the P2 related-object flag only.

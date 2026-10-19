@@ -132,8 +132,8 @@ Next actions:
    has host checks for instance-deleted/package-present and package-deleted
    views, but these do not exercise deletion or persistence. The transaction
    sequence used by `CapLoadSession::deleteObject()` now has fake-backend tests
-   for success and rollback paths; production storage integration is still
-   open. Unselected and SCP03-authenticated `0066` Card Recognition Data plus
+   for target resolution, success, and rollback paths; production storage
+   integration is still open. Unselected and SCP03-authenticated `0066` Card Recognition Data plus
    unavailable `9F7F` CPLC passed direct physical APDU probes. Persistent
    transaction tests cover injected write/commit rollback failures; filesystem
    overlay tests cover 1,000 randomized power-cut atomicity cases and restart

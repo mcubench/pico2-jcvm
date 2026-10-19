@@ -5748,3 +5748,13 @@
 - Decision: Continue toward a storage-backed `CapLoadSession` test boundary and retain the physical DELETE/restart lifecycle as open.
 - Commit: `2536480`; recorded in follow-up metadata commit
 - Artifacts/logs: test and build output from this session; no separate build logs captured.
+
+## 2026-10-19 — Test GP DELETE target resolution offline
+
+- Step/experiment: `gp-delete-target-resolution`
+- Change: Extracted package/instance AID resolution and package dependency checks into `gp::resolve_delete_target()` and routed `CapLoadSession::deleteObject()` through the shared decision code.
+- Validation: `./tools/test-gp-delete` passed 26/26 checks. `./tools/build arm` and `./tools/build riscv` passed. `git diff --check` passed. No hardware cycle was run because the Pico is in BOOTSEL.
+- Result: The production resolver returns `6A88` for unknown/unloaded targets, `6985` for package deletion with an installed instance and no related-object flag, and selects valid instance/package targets without mutating storage.
+- Decision: Next exercise persistent lifecycle markers, GET STATUS, CAP deletion, and restore through a storage-backed host session; authenticated CCID DELETE remains unverified.
+- Commit: pending
+- Artifacts/logs: test and build output from this session; no separate logs captured.

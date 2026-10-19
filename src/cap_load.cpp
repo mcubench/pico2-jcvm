@@ -593,16 +593,13 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
 
 uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
                                      bool delete_related_objects) noexcept {
-  if (!loaded_ || aid == nullptr || aid_length < 5 || aid_length > 16) {
-    return 0x6a88;
-  }
-  const bool delete_package =
-      aid_matches(aid, aid_length, load_package_aid_, load_package_aid_length_);
-  const bool delete_applet =
-      installed_ &&
-      aid_matches(aid, aid_length, instance_aid_, instance_aid_length_);
-  if (!delete_package && !delete_applet) return 0x6a88;
-  if (delete_package && installed_ && !delete_related_objects) return 0x6985;
+  gp::DeleteTarget target;
+  const uint16_t target_status = gp::resolve_delete_target(
+      loaded_, installed_, aid, aid_length, load_package_aid_,
+      load_package_aid_length_, instance_aid_, instance_aid_length_,
+      delete_related_objects, target);
+  if (target_status != 0x9000) return target_status;
+  const bool delete_package = target.package;
 
   struct DeleteBackend {
     bool begin() noexcept {

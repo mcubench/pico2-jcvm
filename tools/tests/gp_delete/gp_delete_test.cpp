@@ -110,6 +110,46 @@ int main() {
                                    nonminimal_length.size(), request),
          "reject_nonminimal_length");
 
+  constexpr uint8_t package_aid[] = {0x4a, 0x43, 0x41, 0x6c, 0x67,
+                                     0x54, 0x65, 0x73, 0x74};
+  constexpr uint8_t instance_aid[] = {0x4a, 0x43, 0x41, 0x6c, 0x67,
+                                     0x54, 0x65, 0x73, 0x74, 0x31};
+  constexpr uint8_t unknown_aid[] = {0xa0, 0x00, 0x00, 0x01, 0x51};
+  gp::DeleteTarget target;
+  expect(gp::resolve_delete_target(true, true, instance_aid,
+                                   sizeof(instance_aid), package_aid,
+                                   sizeof(package_aid), instance_aid,
+                                   sizeof(instance_aid), false, target) ==
+                 0x9000 &&
+             !target.package,
+         "resolve_instance_delete_target");
+  expect(gp::resolve_delete_target(true, true, package_aid,
+                                   sizeof(package_aid), package_aid,
+                                   sizeof(package_aid), instance_aid,
+                                   sizeof(instance_aid), false, target) ==
+             0x6985,
+         "block_package_delete_with_installed_instance");
+  expect(gp::resolve_delete_target(true, true, package_aid,
+                                   sizeof(package_aid), package_aid,
+                                   sizeof(package_aid), instance_aid,
+                                   sizeof(instance_aid), true, target) ==
+                 0x9000 &&
+             target.package,
+         "resolve_related_package_delete_target");
+  expect(gp::resolve_delete_target(true, true, unknown_aid,
+                                   sizeof(unknown_aid), package_aid,
+                                   sizeof(package_aid), instance_aid,
+                                   sizeof(instance_aid), true, target) ==
+                 0x6a88 &&
+             !target.package,
+         "unknown_aid_has_no_delete_target");
+  expect(gp::resolve_delete_target(false, false, package_aid,
+                                   sizeof(package_aid), package_aid,
+                                   sizeof(package_aid), instance_aid,
+                                   sizeof(instance_aid), true, target) ==
+             0x6a88,
+         "unloaded_package_has_no_delete_target");
+
   FakeDeleteBackend instance_backend;
   expect(gp::commit_delete_state(instance_backend, false, true, 0x1234) ==
              0x9000,
