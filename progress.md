@@ -5852,3 +5852,14 @@
 - Decision: Keep hardware power-up validation open; retry after Pico registration appears in `pcsc_scan -r`.
 - Commit: `8eda0c2`.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T102428Z.log` (SHA-256 `4d6bd6d6f532c82dda5aa93f28163d14d546bd79fc513af2929a300aadf5f9fa`)
+
+
+## 2026-10-19 — Implement Applet.reSelectingApplet lifecycle state
+
+- Step/experiment: `applet-reselecting-state`
+- Change: Track same-AID reselection across card-manager, VPCD, and applet lifecycle paths. `Applet.reSelectingApplet()` now queries a scoped VM flag during `Applet.select()`; rejected selections, reset, and power-off clear the flag. Added regression assertions for true/false states.
+- Validation: `./tools/build arm` passed. The focused VPCD lifecycle cases passed, then the full `tools/tests/jcsystem_transaction_applet_test.py --timeout 240` suite passed (`TEST:SUMMARY pass=69 fail=0 elapsed_s=442.556`). It verified the flag is true only for same-AID reselection and false after rejected selection and reset. No RISC-V build, physical flash, or hardware runtime test was performed.
+- Result: Same-AID reselection semantics and the surrounding callback ordering pass the complete current VPCD JCSystem/APDU regression.
+- Decision: Continue the Java Card runtime API/profile audit; physical power-cycle persistence remains open because the latest GPPro/PCSC registry only exposed Virtual PCD readers.
+- Commit: API `814d409`; root `c098a86`.
+- Artifacts/logs: `artifacts/logs/applet-reselecting-vpcd-20261019.log` (SHA-256 `02a733eb484772581e4e65390f0abdc4e3ad8754bcf91230da6a62f57db08950`); `artifacts/logs/jcsystem-full-reselect-vpcd-20261019.log` (SHA-256 `bb139accf35ce574e0b49ac0facee2483c7c35bf6e8437f554fc74d673a34ad4`).

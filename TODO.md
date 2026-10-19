@@ -128,8 +128,10 @@ Next actions:
    separate physical live-memory probe confirms Pico scalar/extended
    consistency and nonzero persistent/transient values.
 2. [partial] Golden applet and applet callback checks now cover same-AID
-   reselect, rejected SELECT cleanup, and reset callbacks. A fresh VPCD process
-   restored committed instance state and persistent reference identity.
+   reselect, rejected SELECT cleanup, and reset callbacks. `Applet.reSelectingApplet()`
+   reports true only during same-AID reselection; the full 69-check VPCD
+   JCSystem/APDU suite passes. A fresh VPCD process restored committed instance
+   state and persistent reference identity.
    Authenticated GP DELETE was exercised on the Pico: applet deletion left the
    package loaded, related-object package deletion removed both, and the exact
    JCAlgTest v1.8.2 CAP was reinstalled. After a firmware restart, GPPro still
@@ -143,6 +145,9 @@ Next actions:
    The explicit reinsertion retry at 2026-10-19 09:54 UTC again received USB
    ACL access but GPPro listed only Virtual PCD readers in all three attempts;
    `artifacts/logs/pico-powerup-persistence-20261019T095458Z.log` records it.
+   A second explicit retry at 10:24 UTC also saw only the two Virtual PCD
+   readers; `artifacts/logs/pico-powerup-persistence-20261019T102428Z.log`
+   records that failure. True power-off/on persistence remains open.
    The GET STATUS builder also has host checks for the expected deleted views,
    while the shared DELETE target/transaction code has fake-backend success
    and rollback coverage. Unselected and SCP03-authenticated `0066` Card

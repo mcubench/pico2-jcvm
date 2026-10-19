@@ -14,13 +14,15 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 
 - PC, RP2350 ARM, and RP2350 RISC-V build wrappers pass. ARM is the physical
   target; RISC-V builds are maintained as an additional check.
-- The JCSystem/APDU probe regression passed on VPCD: 51 cases, no failures
-  (`TEST:SUMMARY pass=51 fail=0 elapsed_s=138.095`). Coverage includes APDU
+- The full JCSystem/APDU probe regression passed on VPCD: 69 checks, no failures
+  (`TEST:SUMMARY pass=69 fail=0 elapsed_s=442.556`). Coverage includes APDU
   handling, Java exceptions, transactions, persistent references, transient
   arrays and reset/deselect lifetimes, memory queries, and selected
   `JCSystem` APIs. Focused lifecycle checks confirm that reselecting an applet
-  invokes `deselect()` and `select()` exactly once, rejected selection returns
-  `6999` and leaves the applet unavailable for APDUs, a later SELECT works,
+  invokes `deselect()` and `select()` exactly once, and
+  `Applet.reSelectingApplet()` is true only inside the same-AID select callback.
+  Rejected selection returns `6999` and leaves the applet unavailable for APDUs;
+  a later SELECT works,
   and card reset invokes deselect before the next successful select. A fresh
   VPCD emulator process also restored a committed instance field (`0x33`) and
   persistent static/array reference identities across process restart; that
@@ -74,13 +76,14 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   ARM/RISC-V build gates passed, ARM firmware flashed, and serial output
   repeatedly reported `TEST:PASS choupi_runtime` with no `FAULT`
   (`artifacts/logs/cycle-choupi-20261019T061401Z.log`).
-  The latest `tools/test-pico-powerup` run found USB `2e8a:0009` and refreshed
-  its ACL, but GPPro and `pcsc_scan -r` exposed only Virtual PCD readers. Three
+  The latest `tools/test-pico-powerup` retries received USB ACL access, but GPPro
+  and `pcsc_scan -r` exposed only Virtual PCD readers. Three
   bounded registry attempts failed before an applet APDU; power-up persistence
   is inconclusive in this run.
   The explicit reinserted-board retry also received USB ACL access but listed
   only Virtual PCD readers on all three attempts; see
-  `artifacts/logs/pico-powerup-persistence-20261019T095458Z.log`.
+  `artifacts/logs/pico-powerup-persistence-20261019T102428Z.log` (latest; the
+  earlier retry is `artifacts/logs/pico-powerup-persistence-20261019T095458Z.log`).
   The VPCD bridge is installed, but it cannot claim the Pico USB interface
   while `pcscd` owns it (`libusb ... failed: -6`). The static run remains
   blocked at host reader ownership/PC/SC transport, not by an observed VM

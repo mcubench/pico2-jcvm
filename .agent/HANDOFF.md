@@ -5269,3 +5269,13 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   count, verify all traversed object references fit that bound, then rerun the
   same hardware capture. Continue the JCSystem/context API audit after the
   collector survives the full static matrix.
+
+
+## Latest continuation — implement applet reselection state — 2026-10-19
+
+- `Applet.reSelectingApplet()` previously always returned false. Added a VM-owned flag set only when a successful `deselect()` is followed by a SELECT-by-AID for the same installed applet. The flag is visible during `Applet.select()` and is consumed/reset around the callback. Power-off, reset, cross-AID selection, rejected selection, and clear-selected paths reset it.
+- The CCID handler and PC VPCD session now pass whether a same-AID reselect is underway. The JC305 API bridge calls the native query; the probe applet records the value.
+- `./tools/build arm` passed. Focused VPCD lifecycle cases passed, and the full JCSystem/APDU VPCD suite passed 69/69 in 442.556 s. The log contains all APDU results; no hardware flash or RISC-V build was run.
+- Commits: API `814d409`; root implementation/tests/logs `c098a86`.
+- Physical power-up validation was retried after reinsertion, but GPPro and `pcsc_scan -r` still listed only Virtual PCD readers. See `artifacts/logs/pico-powerup-persistence-20261019T102428Z.log`; no physical APDU ran.
+- Next: resume the remaining Java Card API/runtime audit in TODO.md, and retry power-cycle persistence when the Pico is visible through PC/SC.
