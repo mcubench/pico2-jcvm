@@ -1738,3 +1738,24 @@ fix.
 - **Evidence:** `artifacts/logs/pcsc-host-state-gc-stream-roots-20261018.log`,
   `artifacts/logs/monitor-gc-stream-roots-recovery-probe-20261018.log`, and
   `artifacts/logs/physical-gc-stream-roots-recovery-final-20261018.log`.
+
+## Pico power-up check sees USB device but no PC/SC reader — 2026-10-19
+
+- **Symptom:** `tools/test-pico-powerup` found USB VID/PID `2e8a:0009` and the
+  authorized ACL helper granted `/dev/bus/usb/001/004`, but GPPro listed only
+  `Virtual PCD 00 00` and `Virtual PCD 00 01`. A subsequent bounded
+  `pcsc_scan -r` gave the same two readers. Earlier in this session, GPPro had
+  briefly listed the Pico and confirmed the JCAlgTest package/applet, then the
+  Java APDU probe lost the reader during transmit.
+- **Mitigation:** The power-up check now retries registry discovery and the
+  applet APDU probe separately, refreshing the ACL each time. Defaults are
+  three attempts and 20 seconds per registry/APDU attempt; configure them with
+  `PICO2_POWERUP_ATTEMPTS`, `PICO2_POWERUP_LIST_TIMEOUT_SECONDS`, and
+  `PICO2_APDU_TIMEOUT_SECONDS`.
+- **Result:** Retries ended in a clear bounded failure because `pcscd` did not
+  enumerate the device. The physical persistence check remains inconclusive.
+  The known recovery is to restart `pcscd.service` from an interactive shell,
+  run the authorized ACL helper, and verify a Pico reader with a bounded scan.
+  The assistant's sudo exception does not permit restarting the service.
+- **Evidence:** `artifacts/logs/pico-powerup-persistence-20261019T084640Z.log`,
+  `artifacts/logs/pico-powerup-persistence-20261019T085227Z.log`.

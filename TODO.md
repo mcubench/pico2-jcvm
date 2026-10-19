@@ -132,7 +132,11 @@ Next actions:
    JCAlgTest v1.8.2 CAP was reinstalled. After a firmware restart, GPPro still
    listed the applet as selectable and package as loaded; the bounded
    `tools/test-pico-powerup` check passed SELECT, GETVERSION, and JCSystem.
-   Remaining: true power-off/on validation and broader CAP restore validation.
+   The check now retries registry discovery and applet APDUs up to three times
+   while refreshing USB ACLs. On 2026-10-19, USB remained enumerated but all
+   three GPPro attempts saw only the two Virtual PCD readers, so no applet APDU
+   was sent. Remaining: restore physical PC/SC enumeration, then repeat the
+   check after true power-off/on and broader CAP restore validation.
    The GET STATUS builder also has host checks for the expected deleted views,
    while the shared DELETE target/transaction code has fake-backend success
    and rollback coverage. Unselected and SCP03-authenticated `0066` Card

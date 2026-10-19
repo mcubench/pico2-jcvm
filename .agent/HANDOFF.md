@@ -1,5 +1,24 @@
 # Handoff
 
+## Latest continuation — make the Pico power-up check tolerate reader re-enumeration — 2026-10-19
+
+- Updated `tools/test-pico-powerup` with independently bounded retries for
+  GPPro registry discovery and the SELECT/GETVERSION/JCSystem probe. Each
+  retry refreshes the authorized USB ACL; attempts and command output are
+  retained in the timestamped transcript. Attempt count and timeouts are
+  validated and bounded.
+- `bash -n tools/test-pico-powerup` and `git diff --check --
+  tools/test-pico-powerup` passed. Running the updated test on the reinserted
+  Pico granted ACL access to `/dev/bus/usb/001/004`, but all three GPPro
+  attempts saw only `Virtual PCD 00 00` and `Virtual PCD 00 01`. A bounded
+  `pcsc_scan -r` also listed only the virtual readers. The test stopped before
+  an applet APDU.
+- Log: `artifacts/logs/pico-powerup-persistence-20261019T085227Z.log`.
+  This does not prove a power-cycle persistence failure; the PC/SC reader was
+  unavailable. Do not use RISC-V. Continue offline implementation while the
+  physical PC/SC path is unavailable; retry the power-up check after reader
+  enumeration recovers.
+
 ## Latest continuation — verify DELETE and persistence on the Pico — 2026-10-19
 
 - Rebuilt ARM/RISC-V, flashed the CHOUPI ARM image, and captured repeated

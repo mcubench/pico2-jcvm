@@ -60,6 +60,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   ARM/RISC-V build gates passed, ARM firmware flashed, and serial output
   repeatedly reported `TEST:PASS choupi_runtime` with no `FAULT`
   (`artifacts/logs/cycle-choupi-20261019T061401Z.log`).
+  The latest `tools/test-pico-powerup` run found USB `2e8a:0009` and refreshed
+  its ACL, but GPPro and `pcsc_scan -r` exposed only Virtual PCD readers. Three
+  bounded registry attempts failed before an applet APDU; power-up persistence
+  is inconclusive in this run.
   The VPCD bridge is installed, but it cannot claim the Pico USB interface
   while `pcscd` owns it (`libusb ... failed: -6`). The static run remains
   blocked at host reader ownership/PC/SC transport, not by an observed VM
