@@ -37,6 +37,9 @@ out explicitly.
   installed and selected an applet using a distinct instance AID and restored
   persistent objects successfully; the retained standard persistence test also
   passes. Physical Pico reboot validation remains open.
+- [x] Make `JCSystem.isAppletActive(AID)` reflect selection state. It is false
+  during install and `select()`, true during `deselect()` and `process()`, and
+  false after deselection/reset. VPCD lifecycle cases 76–77 pass.
 - [x] Keep an applet selected when its SELECT APDU returns `61xx`; dispatch the
   following GET RESPONSE to that applet. CCID and VPCD transport paths now
   recognize `9000` and `61xx` as successful selection outcomes. VPCD session

@@ -6,8 +6,9 @@
   during install because it checked identity/registration but not selection
   lifecycle. `Context` now records active state; the VM sets it after successful
   `select()` and clears it after `deselect()` or reset. Case 76 verifies false
-  during install and true in `process()` after SELECT (`TEST:SUMMARY pass=3
-  fail=0`). Commit: `da6a6e6`.
+  during install and true in `process()`; case 77 verifies false in `select()`,
+  true in `deselect()`, and true in `process()` (`TEST:SUMMARY pass=3 fail=0`).
+  Implementation commit: `da6a6e6`; callback regression commit: `e1ebcfe`.
 - `./tools/build-pc` and ARM/RISC-V build gates passed. `cycle arm` passed the
   smoke test; `cycle choupi` flashed the changed ARM VM and passed its 18-second
   runtime capture with repeated `TEST:PASS` and no `FAULT`.

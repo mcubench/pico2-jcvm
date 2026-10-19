@@ -6206,3 +6206,22 @@
   `artifacts/logs/physical-jcsystem-active-retry-20261019.log` (SHA-256
   `3aa9ca87751a04bc1308d72070d03648593f460ddc367996a9d9f5a677d5d3fa`).
 
+## 2026-10-19 — Cover active state inside applet callbacks
+
+- Step/experiment: `jcsystem-is-applet-active-callbacks`
+- Change: Extended the applet probe to inspect `JCSystem.isAppletActive()` from
+  `select()` and `deselect()`, alongside the existing install/process checks.
+  The test drives ISD SELECT to invoke deselect, then selects and processes the
+  probe applet.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet
+  --case 77` passed 3/3 in 23.691 s. Responses confirmed ISD SELECT `9000`, applet
+  SELECT `9000`, and lifecycle mask `0F9000`.
+- Result: `isAppletActive` is false during install and select callbacks, true
+  during deselect and process callbacks. No firmware source changed in this
+  validation-only step, so builds and flash were not repeated.
+- Decision: Keep the active-state timing and retain callback assertions in the
+  focused lifecycle test.
+- Commit: `e1ebcfe`
+- Artifacts/logs: `artifacts/logs/jcsystem-is-applet-active-callbacks-20261019.log`
+  (SHA-256 `ae2eedbd46cbe0e25c2995dc958109caa36d69d47404ffaeb45b182002567705`).
+
