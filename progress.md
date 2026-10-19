@@ -6152,3 +6152,27 @@
 - Artifacts/logs: No artifact log; source references are recorded in
   `.agent/QKB.md`.
 
+## 2026-10-19 — Reject incomplete applet restore metadata
+
+- Step/experiment: `restore-requires-class-index`
+- Change: Firmware restore now leaves an applet uninstalled when the CAP slot
+  does not contain a valid persisted applet class index. This prevents
+  incomplete or legacy metadata from advertising an applet that cannot be
+  reconstructed.
+- Validation: `./tools/build arm` passed. `./tools/test-vpcd-persistence`
+  passed install/commit (3/3) and fresh-process restore (7/7). No RISC-V build
+  or flash was run under the ARM-only scope.
+- Result: ARM CHOUPI image ends at `0x100bb520`. On hardware, GPPro confirmed
+  the package/applet registry and SELECT returned `9000`; GETVERSION failed
+  with `SCARD_E_NOT_TRANSACTED`. The Pico remained visible to `lsusb` and serial
+  reported `TEST:PASS choupi_runtime`, but PC/SC lost its reader. Physical
+  applet processing and power-cycle persistence remain unverified.
+- Decision: Keep the restore guard. Diagnose post-SELECT PC/SC/CCID loss
+  separately; continue offline applet/runtime work.
+- Commit: `169c131`
+- Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261019T182907Z.log`
+  (SHA-256 `f5eac0e3cbecfff2ab93bdaaecb770190cd10b06fc6e20e8e7f57ca8c895b49d`),
+  `artifacts/logs/vpcd-persistence-restore-20261019T182907Z.log` (SHA-256
+  `c24e0c55c89c4ea759f5e667f50b4e792f51187ec5e2feb7804e5fcb9ab89a58`), and
+  `artifacts/logs/pico-powerup-persistence-20261019T183156Z.log` (SHA-256
+  `8e39987aea3e657be75315a089103a79ac0785a7e713facc392c5dca89d73e38`).

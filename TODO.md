@@ -44,6 +44,12 @@ out explicitly.
 
 ## Open persistence risks
 
+- [ ] Diagnose the Pico PC/SC failure after SELECT: the latest visible-reader
+  run confirmed the installed package and applet and SELECT returned `9000`,
+  but GETVERSION ended in `SCARD_E_NOT_TRANSACTED`; USB remained enumerated
+  while PC/SC lost the reader. This did not complete a true power-cycle check.
+  See `.agent/QKB.md` and `artifacts/logs/pico-powerup-persistence-20261019T183156Z.log`.
+
 - [ ] Make CAP installation metadata and VM filesystem state recover together.
   The CAP slot is marked installed before the filesystem transaction's final
   `fs_sync()`; a sync failure rolls back filesystem snapshots but not the CAP

@@ -1,5 +1,26 @@
 # Project issue knowledge base
 
+## Pico reader disappears from PC/SC during second applet APDU — 2026-10-19
+
+- **Observation:** After the authorized USB ACL helper ran, bounded
+  `pcsc_scan -r` listed the Pico. GPPro listed the JCAlgTest package as LOADED
+  and its applet as SELECTABLE. The physical probe read ATR `3B800181` and
+  SELECT returned `9000`, but the following GETVERSION transmit failed with
+  `SCARD_E_NOT_TRANSACTED`. A retry found no Pico reader in PC/SC. `lsusb`
+  still showed `2e8a:0009`, and the finite serial monitor showed repeated
+  `TEST:PASS choupi_runtime` with no `FAULT`.
+- **Interpretation:** This is a post-SELECT PC/SC/CCID transport failure, not
+  evidence that the package or applet registry is missing. Cause is unknown;
+  the wrapper did not complete process/persistence APDUs, and no actual power
+  cycle was performed.
+- **Recovery/status:** Re-running the authorized ACL helper made the Pico
+  visible briefly, but did not prevent the next-APDU failure. Stop repeated
+  applet retries; preserve the bounded probe log, USB enumeration, and serial
+  evidence. If it recurs, have the operator restart `pcscd.service`, rerun the
+  authorized helper, confirm the reader, and retry only the bounded probe.
+  No durable fix is established.
+- **Evidence:** `artifacts/logs/pico-powerup-persistence-20261019T183156Z.log`.
+
 ## CAP installation metadata can outlive a failed filesystem commit — 2026-10-19
 
 - **Symptom/risk:** `CapLoadSession::installAndMakeSelectable()` writes the

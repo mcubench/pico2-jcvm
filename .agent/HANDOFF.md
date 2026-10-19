@@ -1,5 +1,24 @@
 # Handoff
 
+## Latest continuation — validate applet restore metadata and Pico reader — 2026-10-19
+
+- `CapLoadSession::restoreInstalled()` now requires a valid persisted class
+  index before setting `installed_`; missing or invalid metadata can no longer
+  produce a falsely installed applet. Commit `169c131`.
+- `./tools/build arm` passed (`pico2_choupi` image end `0x100bb520`).
+  `./tools/test-vpcd-persistence` passed install/commit 3/3 and fresh-process
+  restore 7/7. Logs use timestamp `20261019T182907Z`.
+- The physical Pico reader appeared after the authorized ACL helper; GPPro
+  listed the JCAlgTest package and selectable applet. ATR and SELECT succeeded,
+  but GETVERSION failed with `SCARD_E_NOT_TRANSACTED`; retries then lost the
+  reader from PC/SC while `lsusb` still saw `2e8a:0009` and the finite serial
+  monitor showed repeated `TEST:PASS choupi_runtime`. This is not a successful
+  applet APDU or a true power-cycle persistence check. See the new `.agent/QKB.md`
+  entry and `pico-powerup-persistence-20261019T183156Z.log`.
+- No flash or RISC-V build was attempted under the ARM-only scope. Next:
+  diagnose post-SELECT PC/SC loss when reader access is available; continue
+  applet/JCSystem runtime work offline meanwhile.
+
 ## Latest persistence review — CAP and filesystem commit boundary — 2026-10-19
 
 - Source inspection found that INSTALL writes the separate CAP slot's
