@@ -6244,7 +6244,7 @@
   firmware. No source-code tests were run in this hardware-only step.
 - Decision: Do not repeat the same probe until the host PC/SC/CCID transmit path
   is diagnosed. Continue implementation and VPCD verification offline.
-- Commit: `<pending>`
+- Commit: `0c31204d8468adea9ffc669d9c38aa09518b13f5`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T191503Z.log`
   (SHA-256 `14ecbe9209f62be8fd7b3f3327ef553e54d2d1fb52202bf808ad57086cfb5ed4`),
   `artifacts/logs/monitor-apdu-probe-after-timeout-20261019.log` (SHA-256
