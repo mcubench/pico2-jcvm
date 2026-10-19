@@ -123,6 +123,14 @@ the VPCD OwnerPINx behavior regression passes. The official physical support
 sweep has not been rerun after this implementation; keep that comparison open
 until a later hardware validation.
 
+The reusable AC4 comparator now matches the archived Pico and jCardSim CSVs on
+all 4,525 `(section, algorithm_name)` identities, checks the CHOUPI status
+values against the reviewed 15-entry declaration in
+`tools/jcalgtest-supported-v1.8.2.csv`, and reports simulator capability
+differences separately. It passed with 15 declared/observed `yes` rows, 4,510
+`no` rows, and no CHOUPI error statuses. The archived physical CSV predates the
+OwnerPINX fix, so AC4 still needs a fresh physical run.
+
 The separate physical `ALG_PERFORMANCE_STATIC` run remains unresolved. A
 previous run directly observed cumulative array retention and allocation
 failure. This rerun completed a 250-call DES CBC `Cipher_doFinal` measurement
@@ -173,10 +181,11 @@ Next actions:
 3. [x] Finish the matching JCAlgTest v1.8.2 `ALG_SUPPORT_EXTENDED` mode on the
    named physical reader. The corrected run completed 4,525 rows with no
    transport or row errors. [x] Implement the two OwnerPINX builder variants
-   and validate their behavior through VPCD. [ ] Rerun the physical support
-   checks and finish AC4's simulator/source comparison. Treat absent
-   algorithms and `NO_SUCH_ALGORITHM` as expected unless the implementation
-   claims support.
+   and validate their behavior through VPCD. [x] Compare the archived result
+   with the jCardSim CSV and declared implementation list; row identities and
+   all CHOUPI statuses match. [ ] Rerun the physical support checks after the
+   OwnerPINX fix. Treat absent algorithms and `NO_SUCH_ALGORITHM` as expected
+   unless the implementation claims support.
 4. Implement and verify the remaining applet lifecycle/API behavior, then
    complete AC1–AC5 and the clean-flash integration sequence three times.
 

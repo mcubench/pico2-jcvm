@@ -1,0 +1,16 @@
+section;algorithm_name
+javacard.framework.OwnerPINBuilder;OWNER_PIN
+javacard.framework.OwnerPINBuilder;OWNER_PIN_X
+javacard.framework.OwnerPINBuilder;OWNER_PIN_X_WITH_PREDECREMENT
+javacard.security.KeyBuilder;TYPE_AES LENGTH_AES_128
+javacard.security.KeyBuilder;TYPE_AES LENGTH_AES_192
+javacard.security.KeyBuilder;TYPE_AES LENGTH_AES_256
+javacard.security.KeyBuilder;TYPE_DES LENGTH_DES
+javacard.security.KeyBuilder;TYPE_DES LENGTH_DES3_2KEY
+javacard.security.KeyBuilder;TYPE_DES LENGTH_DES3_3KEY
+javacard.security.MessageDigest;ALG_SHA_256
+javacard.security.RandomData;ALG_SECURE_RANDOM
+javacardx.crypto.Cipher;ALG_AES_BLOCK_128_CBC_NOPAD
+javacardx.crypto.Cipher;ALG_DES_CBC_NOPAD
+javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess);CIPHER_AES_CBC PAD_NOPAD
+javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess);CIPHER_DES_CBC PAD_NOPAD
