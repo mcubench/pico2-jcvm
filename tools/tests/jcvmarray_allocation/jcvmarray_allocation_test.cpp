@@ -1,3 +1,4 @@
+#include "../../../choupi/src/jc_types/jc_array.hpp"
 #include "../../../choupi/src/jcvm_types/jcvmarray.hpp"
 
 #include <cstddef>
@@ -5,6 +6,14 @@
 #include <cstdlib>
 #include <new>
 #include <stdint.h>
+#include <type_traits>
+
+static_assert(
+    !std::is_nothrow_constructible_v<
+        jcvm::JC_Array, jcvm::Heap &, jcvm::jc_array_type,
+        jcvm::jc_cp_offset_t, const jcvm::fs::Tag &, bool, jcvm::ClearEvent,
+        uint16_t>,
+    "persistent array allocation must be allowed to propagate failure");
 
 namespace {
 bool fail_next_array_allocation = false;

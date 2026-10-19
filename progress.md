@@ -6350,3 +6350,24 @@
   low-memory injection if a safe allocator seam is introduced.
 - Commit: `61cdcdedf3068dd8126b8b2da54c2b958ce8121a`
 - Artifacts/logs: none.
+
+
+## 2026-10-19 — Propagate persistent array restoration allocation failures
+
+- Step/experiment: `persistent-array-restore-allocation-propagation`
+- Change: Removed `noexcept` from the persistent `JC_Array` constructor, which
+  allocates its tagged backing buffer. Extended the allocation regression with a
+  static assertion that the constructor is permitted to propagate failure.
+- Validation: `./tools/build arm` passed. The first test build failed because
+  `-Wpedantic -Werror` promoted legacy flexible-array and qualifier warnings in
+  included CAP headers; the wrapper was narrowed to `-Wall -Wextra` with the two
+  existing header warning classes suppressed. The final
+  `./tools/test-jcvmarray-allocation` passed (`TEST:PASS
+  allocation_failure_propagates`).
+- Result: Allocation failure from persistent-array construction can now unwind
+  to restore/APDU handling instead of terminating at the constructor boundary.
+  Its exact initializer failure was not injected.
+- Decision: Keep the change; add a constructor-level fault injection seam only if
+  needed for broader restore low-memory coverage.
+- Commit: pending
+- Artifacts/logs: none.

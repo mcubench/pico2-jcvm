@@ -93,7 +93,7 @@ JC_Array::JC_Array(Heap &owner, const uint16_t size, const jc_array_type type,
 JC_Array::JC_Array(Heap &owner, const jc_array_type type,
                    const jc_cp_offset_t reference_type, const fs::Tag &tag,
                    const bool isTransientArray, const ClearEvent event,
-                   const uint16_t length) noexcept
+                   const uint16_t length)
     : JC_Object(owner, true), isTransient(isTransientArray), type(type),
       reference_type(reference_type),
       array(tag.len +

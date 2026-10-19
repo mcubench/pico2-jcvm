@@ -1999,3 +1999,17 @@ fix.
   `allocation_failure_propagates`. The native factory's Java exception mapping
   is covered by inspection, not by forced allocator failure through the full VM;
   real-board low-memory APDU validation was not run.
+
+
+## Persistent array restoration allocation used `noexcept` constructor — 2026-10-19
+
+- **Symptom/cause:** The persistent `JC_Array` constructor allocates the tagged
+  backing buffer with `new[]` in its initializer but was declared `noexcept`. A
+  low-memory restore could terminate the firmware before `Context::restore` or
+  the APDU boundary could handle the failure.
+- **Viable fix:** Remove `noexcept` from both declaration and definition so the
+  allocation failure propagates into existing restore/APDU catch boundaries.
+- **Validation:** ARM build passed. The allocation regression now statically
+  asserts that this constructor is potentially throwing and continues to inject
+  an actual `new[]` failure for `JCVMArray`; the regression passes. The
+  persistent-constructor allocation itself was not fault-injected.

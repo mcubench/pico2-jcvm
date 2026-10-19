@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest hardening — allow persistent array restore allocation to fail cleanly — 2026-10-19
+
+- Removed `noexcept` from the persistent `JC_Array` constructor, which allocates
+  a tagged backing buffer with `new[]`. Restore and APDU caller boundaries catch
+  failures; previously this constructor could invoke `std::terminate` first.
+- Extended `tools/test-jcvmarray-allocation` with a compile-time assertion that
+  the constructor may throw. The test also injects a backing `new[]` failure into
+  `JCVMArray` and passes. ARM build passed. Initial strict test compilation
+  failed on legacy warnings in included CAP/API headers; the test wrapper now
+  keeps `-Wall -Wextra` and suppresses those two pre-existing header warning
+  classes. No hardware test was run.
+- Next: add direct failure injection for persistent restore if a safe allocator
+  seam is available, then continue the runtime/API audit.
+
+
 ## Latest implementation — map transient allocation failure — 2026-10-19
 
 - `JCVMArray` backing allocation could throw inside a `noexcept` constructor,

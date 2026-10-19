@@ -90,7 +90,7 @@ public:
            const jc_cp_offset_t reference_type, const fs::Tag &tag,
            const bool isTransientArray,
            const ClearEvent event = ClearEvent::None,
-           const uint16_t length = 0) noexcept;
+           const uint16_t length = 0);
 
   /// Default destructor
   ~JC_Array() noexcept;
