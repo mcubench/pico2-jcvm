@@ -5726,7 +5726,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/probe-gp-get-data` passed on the named Pico reader. INITIALIZE UPDATE and EXTERNAL AUTHENTICATE both returned `9000`; protected `84CA006608CB721BF61EAE254100` returned the expected Card Recognition Data and `9000`. `git diff --check` passed; firmware builds were not repeated because only probe/docs changed.
 - Result: Open-channel and SCP03-authenticated GET DATA both work physically. The probe did not select an applet or modify persistent card content.
 - Decision: Proceed to authenticated GP DELETE lifecycle coverage, including GET STATUS and restore.
-- Commit: pending
+- Commit: `43a0721`
 - Artifacts/logs: `artifacts/logs/gp-get-data-physical-20261019.log`
 
 ## 2026-10-19 — Cover GET STATUS after GP deletion states
@@ -5736,5 +5736,5 @@
 - Validation: `./tools/test-gp-registry` passed 47 checks; targeted `git diff --check` passed. The test exercises GET STATUS encoding only, not persistent deletion.
 - Result: The registry builder emits no applet after instance deletion while preserving the package entry; a package-deleted view emits no load-file entry.
 - Decision: Keep actual authenticated DELETE dispatch, `CapLoadSession::deleteObject()`, and restart restoration as open work; next add a testable persistence/CAP-store boundary.
-- Commit: pending
+- Commit: `8b9095d`; validated step, recorded in metadata commit `4fb7515`
 - Artifacts/logs: test output from this session; no separate log captured.
