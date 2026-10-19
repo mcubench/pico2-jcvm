@@ -128,9 +128,9 @@ Next actions:
    reselect, rejected SELECT cleanup, and reset callbacks. A fresh VPCD process
    restored committed instance state and persistent reference identity.
    Remaining: authenticated GP DELETE and post-delete GET STATUS/restore,
-   authenticated GET DATA verification (the unselected `0066` Card Recognition
-   Data and absent `9F7F` CPLC responses passed a direct physical APDU probe),
-   and broader CAP restore validation. Persistent
+   and broader CAP restore validation. Unselected and SCP03-authenticated
+   `0066` Card Recognition Data plus unavailable `9F7F` CPLC passed direct
+   physical APDU probes. Persistent
    transaction tests cover injected write/commit rollback failures; filesystem
    overlay tests cover 1,000 randomized power-cut atomicity cases and restart
    recovery. The official physical static suite has not passed; PC/SC still

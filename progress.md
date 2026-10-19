@@ -5718,3 +5718,13 @@
 - Decision: Continue with authenticated GP DELETE lifecycle coverage and test authenticated GET DATA separately.
 - Commit: `0ca6a57`; recorded in follow-up metadata commit
 - Artifacts/logs: `artifacts/logs/gp-get-data-physical-20261019.log`
+
+## 2026-10-19 — Verify SCP03-authenticated GET DATA on physical Pico
+
+- Step/experiment: `gp-get-data-scp03-physical`
+- Change: Extended the bounded PC/SC probe to derive SCP03 session keys, verify the card cryptogram, authenticate with C-MAC, and send protected GET DATA.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/probe-gp-get-data` passed on the named Pico reader. INITIALIZE UPDATE and EXTERNAL AUTHENTICATE both returned `9000`; protected `84CA006608CB721BF61EAE254100` returned the expected Card Recognition Data and `9000`. `git diff --check` passed; firmware builds were not repeated because only probe/docs changed.
+- Result: Open-channel and SCP03-authenticated GET DATA both work physically. The probe did not select an applet or modify persistent card content.
+- Decision: Proceed to authenticated GP DELETE lifecycle coverage, including GET STATUS and restore.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/gp-get-data-physical-20261019.log`

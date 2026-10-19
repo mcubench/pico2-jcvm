@@ -1,5 +1,16 @@
 # Handoff
 
+## Latest continuation — verify SCP03-authenticated GET DATA on the Pico — 2026-10-19
+
+- Extended `tools/probe-gp-get-data` to establish SCP03 S8, verify the card
+  cryptogram, authenticate with C-MAC, and send protected GET DATA (`0066`).
+- On the physical Pico, both unprotected discovery and SCP03-authenticated
+  GET DATA returned the expected Card Recognition Data with `9000`; absent
+  CPLC still returned `6A88`. Full transcript:
+  `artifacts/logs/gp-get-data-physical-20261019.log`.
+- This probe does not select an applet or mutate card content. The next open
+  lifecycle task is authenticated GP DELETE with GET STATUS and restore checks.
+
 ## Latest continuation — verify GET DATA directly on the Pico — 2026-10-19
 
 - Added `tools/probe-gp-get-data`, a bounded PC/SC probe that sends only
@@ -13,8 +24,8 @@
   `80CA006600` → `6618731606072A864886FC6B01640B06092A864886FC6B0403109000`;
   `80CA9F7F00` → `6A88`.
 - The probe log is `artifacts/logs/gp-get-data-physical-20261019.log`. No
-  applet SELECT or secure-channel setup was sent. The authenticated GET DATA
-  route and GP DELETE lifecycle remain open.
+  applet SELECT was sent. The SCP03-authenticated GET DATA route is covered in
+  the latest continuation above; GP DELETE lifecycle remains open.
 - Next: build an offline authenticated `E4 DELETE` regression that exercises
   the actual card-manager lifecycle, including unknown AID, instance deletion,
   package dependency handling, and GET STATUS / restore after restart.

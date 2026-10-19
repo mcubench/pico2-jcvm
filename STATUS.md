@@ -36,8 +36,9 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   unit checks. CPLC (`9F7F`) remains unavailable because the firmware has no
   manufacturing-data source. A direct real-reader probe sent both APDUs
   without selecting an applet: Card Data returned the expected TLV with `9000`,
-  and CPLC returned `6A88`. The authenticated GET DATA route has not been
-  separately exercised.
+  and CPLC returned `6A88`. A second physical probe established SCP03 S8,
+  verified the card cryptogram, authenticated with C-MAC, and returned the
+  same Card Recognition Data over protected GET DATA with `9000`.
 - SHA-256 has known-answer and repeated-call coverage. The CCID/PCSC interface
   and physical reader have passed bounded probes in earlier sessions.
 - Heap tracing now has a guarded sweep path in firmware: it runs after APDU
@@ -97,7 +98,7 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
    persistence has a two-process VPCD check, and GET DATA Card Recognition Data
    has encoder/status unit coverage and a direct physical open-channel APDU
    check. Authenticated GP DELETE, post-delete GET STATUS, broader CAP restore,
-   authenticated GET DATA, and end-to-end power-cycle validation remain open
+   authenticated GP DELETE and end-to-end power-cycle validation remain open
    before claiming general card compatibility.
 6. **Conformance and hardening:** no full Java Card conformance suite or
    certification-grade security assessment has been completed.
