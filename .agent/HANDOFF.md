@@ -1,5 +1,24 @@
 # Handoff
 
+## Latest continuation — flash and verify the reinserted Pico — 2026-10-19
+
+- The reinserted BOOTSEL board accepted `build/arm/pico2_choupi.uf2`;
+  `FLASH:PASS` was recorded. ARM/RISC-V gates completed because the cycle
+  reached its flash stage. A separate 18-second monitor capture then recorded
+  repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`.
+- The authorized PC/SC helper and bounded reader scan listed the Pico. GPPro
+  confirmed JCAlgTest package `4A43416C6754657374` and selectable applet
+  `4A43416C675465737431`. The one-attempt power-up probe connected and read ATR
+  `3B800181`, but SELECT timed out after 15 seconds. Serial counters remained
+  `rx_events=0`, `tasks=0`, `xfr=0`; no applet APDU reached firmware.
+- Evidence: `artifacts/logs/pico-powerup-persistence-20261019T191503Z.log`
+  and `artifacts/logs/monitor-apdu-probe-after-timeout-20261019.log`.
+  The first `cycle choupi` log ends after `FLASH:PASS` because its serial stage
+  was interrupted; use the separate bounded monitor as runtime evidence.
+- Next: stop repeating physical probes until an XfrBlock reaches firmware.
+  Continue the Java Card API/runtime audit and VPCD checks offline; physical
+  applet execution and true power-cycle persistence are still open.
+
 ## Latest implementation — track whether the applet is active — 2026-10-19
 
 - `JCSystem.isAppletActive(AID)` previously returned true for the registered AID

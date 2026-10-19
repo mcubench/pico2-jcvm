@@ -1920,3 +1920,26 @@ fix.
   regular applet APDU returned `6999`. PC release and ARM M33 builds passed.
 - **Scope:** Covers short case-3 and case-4 SELECT-by-AID APDUs with AID length
   5–16 and any optional short `Le`. Extended-length APDUs are not modeled.
+
+## Pico PC/SC lists the card but Java APDU transmit stalls — 2026-10-19
+
+- **Symptom:** After flashing the CHOUPI image, the authorized USB ACL helper
+  succeeded and bounded `pcsc_scan -r` listed the physical Pico. GlobalPlatformPro
+  also listed the installed JCAlgTest package and selectable applet. The Java
+  SmartcardIO probe connected and read ATR `3B800181`, then timed out while
+  transmitting SELECT; no APDU response was received.
+- **Firmware evidence:** A bounded serial capture immediately after the probe
+  repeatedly reported `stage=2`, `rx_events=0`, `tasks=0`, and `xfr=0`, alongside
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The command did
+  not reach the firmware CCID XfrBlock handler. This points to a host PC/SC or
+  CCID transport issue before applet dispatch; it does not establish an applet
+  execution failure.
+- **Viable recovery:** The ACL helper and `pcsc_scan -r` restore discovery, but
+  they do not fix this transmit stall. Stop after one bounded probe and inspect
+  firmware CCID counters; do not count this as power-cycle persistence success.
+  A working consecutive APDU path is still required before physical persistence
+  validation can continue.
+- **Evidence:** `artifacts/logs/pico-powerup-persistence-20261019T191503Z.log`
+  (SHA-256 `14ecbe9209f62be8fd7b3f3327ef553e54d2d1fb52202bf808ad57086cfb5ed4`)
+  and `artifacts/logs/monitor-apdu-probe-after-timeout-20261019.log` (SHA-256
+  `3dc13d33a620ae7cc5dd1ccfa38029139d678e2682fbff2de4c0516ea2a8dad8`).

@@ -6225,3 +6225,29 @@
 - Artifacts/logs: `artifacts/logs/jcsystem-is-applet-active-callbacks-20261019.log`
   (SHA-256 `ae2eedbd46cbe0e25c2995dc958109caa36d69d47404ffaeb45b182002567705`).
 
+## 2026-10-19 — Retry Pico firmware and applet power-up probe
+
+- Step/experiment: `pico-powerup-apdu-transport-retry`
+- Change: Flashed the reinserted BOOTSEL Pico with the current CHOUPI ARM image
+  and recorded the physical PC/SC/APDU failure in `.agent/QKB.md` for future
+  diagnosis.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` reached and passed
+  its ARM/RISC-V build gates and recorded `FLASH:PASS`. The cycle log stopped
+  before serial capture, so `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --seconds
+  18` was run separately and showed repeated runtime pass summaries. The
+  authorized PC/SC helper and `timeout 8s pcsc_scan -r` listed the Pico. A
+  single-attempt `tools/test-pico-powerup` confirmed the JCAlgTest package and
+  selectable applet, read ATR `3B800181`, then timed out transmitting SELECT.
+  Follow-up finite serial capture reported `rx_events=0`, `tasks=0`, `xfr=0`.
+- Result: Firmware flashed and booted; physical applet execution and true
+  power-cycle persistence remain unverified because no XfrBlock reached the
+  firmware. No source-code tests were run in this hardware-only step.
+- Decision: Do not repeat the same probe until the host PC/SC/CCID transmit path
+  is diagnosed. Continue implementation and VPCD verification offline.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T191503Z.log`
+  (SHA-256 `14ecbe9209f62be8fd7b3f3327ef553e54d2d1fb52202bf808ad57086cfb5ed4`),
+  `artifacts/logs/monitor-apdu-probe-after-timeout-20261019.log` (SHA-256
+  `3dc13d33a620ae7cc5dd1ccfa38029139d678e2682fbff2de4c0516ea2a8dad8`), and
+  `artifacts/logs/cycle-choupi-20261019T191306Z.log`.
+
