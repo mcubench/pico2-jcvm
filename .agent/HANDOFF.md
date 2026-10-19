@@ -11,6 +11,8 @@
   The constructor's own allocation failure was not directly injected. The host
   rebuild emitted existing Rust/C++ and CAP-header warnings. No hardware flash
   or physical APDU ran.
+- Commits: source `1ac2955fbb901c13158f94481d0bfd1497c9ad92`; validation/docs
+  `b2947afa6cdb494dcdc17b758df567ae9d0d5f00`.
 - Next: continue the runtime memory/API audit; physical APDU delivery remains
   blocked by the known PC/SC transmit issue.
 

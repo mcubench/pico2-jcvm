@@ -6449,6 +6449,7 @@
 - Result: Failure while resolving fields or allocating the fields array cannot
   leak the persistent tag overflow buffer.
 - Decision: Keep the RAII staging; continue the runtime memory/API audit.
-- Commit: pending
+- Commit: source `1ac2955fbb901c13158f94481d0bfd1497c9ad92`;
+  validation/docs `b2947afa6cdb494dcdc17b758df567ae9d0d5f00`.
 - Artifacts/logs: artifacts/logs/vpcd-persistence-commit-20261019T203708Z.log
   and artifacts/logs/vpcd-persistence-restore-20261019T203708Z.log.
