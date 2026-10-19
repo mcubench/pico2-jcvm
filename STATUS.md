@@ -35,6 +35,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 - `APDU.waitExtension()` enforces the no-chaining `ILLEGAL_USE` rule, and the
   VPCD probe confirms its normal outgoing path. CCID/T=1 WTX signaling remains
   unsupported because the VM processes commands synchronously.
+- `JCSystem.lookupAID()` validates null and array bounds, returns the active
+  applet AID only on an exact byte match, and returns null for a miss. VPCD
+  cases 65–66 pass. This is limited by the current single-applet context model;
+  it does not establish lookup across multiple installed applet contexts.
 - Native transaction and storage recovery checks pass: injected record-write
   and snapshot-commit failures roll back cleanly, and the filesystem overlay
   test passes 1,000 randomized multi-record power-cut cases plus reset, CRC
@@ -74,6 +78,9 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   its ACL, but GPPro and `pcsc_scan -r` exposed only Virtual PCD readers. Three
   bounded registry attempts failed before an applet APDU; power-up persistence
   is inconclusive in this run.
+  The explicit reinserted-board retry also received USB ACL access but listed
+  only Virtual PCD readers on all three attempts; see
+  `artifacts/logs/pico-powerup-persistence-20261019T095458Z.log`.
   The VPCD bridge is installed, but it cannot claim the Pico USB interface
   while `pcscd` owns it (`libusb ... failed: -6`). The static run remains
   blocked at host reader ownership/PC/SC transport, not by an observed VM

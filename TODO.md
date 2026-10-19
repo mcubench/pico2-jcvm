@@ -22,6 +22,9 @@ out explicitly.
   `1` instead of incorrectly returning `-1`; nested API commit `6dceb7e`.
 - [x] Limit the default target build to two parallel jobs to avoid saturating
   all VM cores; override with `PICO_BUILD_JOBS` when desired.
+- [x] Implement `JCSystem.lookupAID()` null/range validation and matching for
+  the active applet AID; VPCD cases 65–66 pass. Lookup across additional applet
+  contexts remains open with the single-context runtime limitation.
 
 ## Active: validate the applet process APDUs and client results
 
@@ -137,6 +140,9 @@ Next actions:
    three GPPro attempts saw only the two Virtual PCD readers, so no applet APDU
    was sent. Remaining: restore physical PC/SC enumeration, then repeat the
    check after true power-off/on and broader CAP restore validation.
+   The explicit reinsertion retry at 2026-10-19 09:54 UTC again received USB
+   ACL access but GPPro listed only Virtual PCD readers in all three attempts;
+   `artifacts/logs/pico-powerup-persistence-20261019T095458Z.log` records it.
    The GET STATUS builder also has host checks for the expected deleted views,
    while the shared DELETE target/transaction code has fake-backend success
    and rollback coverage. Unselected and SCP03-authenticated `0066` Card

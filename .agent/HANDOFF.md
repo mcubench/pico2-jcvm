@@ -1,5 +1,30 @@
 # Handoff
 
+## Latest continuation — implement JCSystem.lookupAID — 2026-10-19
+
+- `JCSystem.lookupAID()` now validates null and byte-array ranges, returns the
+  active applet AID on an exact match, and returns null for a miss. This is
+  limited to the active applet because the runtime still models one applet
+  context. VPCD cases 65–66 pass (`TEST:SUMMARY pass=4 fail=0 elapsed_s=24.373`).
+- The first VPCD run failed with `StackUnderflowException` at `invokevirtual`.
+  Root cause: JC305 AID method tokens differ from the embedded API. Added
+  mapping `{0, 4, 2, 1, 3, 5}` so JC305 `getBytes()` token 3 resolves to embedded
+  token 1 instead of four-argument `partialEquals()`. The nested API commit is
+  `aa4c7e0`; the runtime and VPCD test commit is `5f995a0`.
+- `./tools/build arm`, `./tools/build-jcsystem-transaction-probe`, and
+  `./tools/build-pc` passed. A default restricted VPCD run returned
+  `Operation not permitted`; the host-context retry passed. The first retry
+  after adding the mapping used a stale PC emulator and still failed; rebuild
+  the host VM before VPCD verification.
+- The explicit `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` retry
+  granted USB ACL access but GPPro listed only the two Virtual PCD readers in
+  all three attempts. No applet APDU was sent, so power-up persistence remains
+  inconclusive. Log: `artifacts/logs/pico-powerup-persistence-20261019T095458Z.log`.
+- No RISC-V build or physical flash was attempted.
+- Next: continue the JCSystem/context API audit; prioritize behavior that can
+  be implemented correctly within the single-context runtime, and keep
+  multi-applet lookup/firewall work open rather than claiming it verified.
+
 ## Latest continuation — implement APDU.waitExtension state checks — 2026-10-19
 
 - Removed the remaining `APDU.waitExtension()` stub. It now returns for a

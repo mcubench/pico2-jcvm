@@ -1763,3 +1763,24 @@ fix.
   `artifacts/logs/pico-powerup-persistence-20261019T092025Z.log`. The last run
   again acquired USB ACL access but timed out on all three GPPro registry
   attempts; it did not reach the applet APDU phase.
+
+## JC305 AID virtual-method token mismatch — 2026-10-19
+
+- **Symptom:** `JCSystem.lookupAID()` reached `6F00` with a VM-raised
+  `StackUnderflowException` at `invokevirtual`. The JC305 `AID` export assigns
+  token 3 to `getBytes([BS)B`, while the embedded ROM-mask API assigns token 3
+  to `partialEquals([BSB)Z`. The VM therefore read a four-word argument count
+  for a three-word call.
+- **Viable solution:** Map the six JC305 `javacard.framework.AID` virtual
+  method tokens to the embedded AID method order as `{0, 4, 2, 1, 3, 5}`.
+  Keep this mapping in `remap_imported_virtual_method_token()` alongside the
+  other JC305-to-ROM API mappings.
+- **Validation:** `./tools/build arm` passed. After refreshing the host
+  emulator with `./tools/build-pc`, VPCD cases 65–66 passed (`TEST:SUMMARY
+  pass=4 fail=0 elapsed_s=24.373`), covering a matching active AID, a miss,
+  null, negative offset/length, and out-of-range input. The first VPCD attempt
+  used a stale host emulator and still failed; rebuild it before validating a
+  VM code change. The VPCD runner returned `Operation not permitted` in the
+  restricted shell; rerunning that local test in host execution context passed.
+- **Scope:** The Java API currently searches only the active applet AID because
+  the VM models one applet context. Multi-applet registry lookup remains open.

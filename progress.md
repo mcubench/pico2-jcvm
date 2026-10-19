@@ -5832,3 +5832,13 @@
   WTX if the target profile requires long-running applet timeout extension.
 - Commit: root `122e01e`; nested API repository `edfa4cf`.
 - Artifacts/logs: `artifacts/logs/jcsystem-apdu-wait-extension-vpcd-20261019.log`
+
+## 2026-10-19 — Implement JCSystem.lookupAID for the active applet
+
+- Step/experiment: `jcsystem-lookup-aid-active-context`
+- Change: Implemented `JCSystem.lookupAID()` null/range validation and active-AID matching; added VPCD cases 65–66. Fixed JC305 AID method-token translation (`{0, 4, 2, 1, 3, 5}`), which had dispatched JC305 `getBytes()` as the embedded four-argument `partialEquals()` method and raised `StackUnderflowException`.
+- Validation: `./tools/build arm` passed. `./tools/build-jcsystem-transaction-probe` passed. `./tools/build-pc` passed and refreshed the emulator. VPCD cases 65–66 passed (`TEST:SUMMARY pass=4 fail=0 elapsed_s=24.373`); the current AID matched, an unknown AID returned null, and all null/range checks passed. The default restricted VPCD invocation returned `Operation not permitted`; the same local VPCD command in the host execution context passed. No RISC-V build or hardware flash was run. The requested `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` received USB ACL access but all three GPPro attempts listed only Virtual PCD readers; persistence was inconclusive. `git diff --check` passed with `core.whitespace=cr-at-eol` for the existing CRLF sources.
+- Result: The call path works for the single active applet context. Lookup among multiple installed applets is still limited by the VM's single-context registry model. The initial failed VPCD retry was against a stale host emulator; rebuilding PC/VPCD is required for trustworthy validation.
+- Decision: Keep the one-context limitation explicit; continue the Java Card API/profile audit and retry physical persistence only after the Pico reader enumerates in PC/SC.
+- Commit: API `aa4c7e0`; root `5f995a0`; progress/docs/QKB recorded in follow-up metadata commit.
+- Artifacts/logs: `artifacts/logs/jcsystem-lookup-aid-fixed-vpcd-20261019.log` (SHA-256 `00c28d3a4f316c9c69f9d202f149fa41dc70e09b544034c5f56c8156dd7a72ba`); diagnostic successful run `artifacts/logs/jcsystem-lookup-aid-diagnostic-vpcd-20261019.log` (SHA-256 `e43cc19da4c91ea176fd9ab14f10695feb61dd2034c6cec407484d43e7a40a39`); physical reader discovery retry `artifacts/logs/pico-powerup-persistence-20261019T095458Z.log` (SHA-256 `4d6bd6d6f532c82dda5aa93f28163d14d546bd79fc513af2929a300aadf5f9fa`).
