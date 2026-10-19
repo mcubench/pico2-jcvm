@@ -6369,5 +6369,5 @@
   Its exact initializer failure was not injected.
 - Decision: Keep the change; add a constructor-level fault injection seam only if
   needed for broader restore low-memory coverage.
-- Commit: pending
+- Commit: `a64a9d72b7387c4a15797930dd638b418762daab`
 - Artifacts/logs: none.

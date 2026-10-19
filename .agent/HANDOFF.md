@@ -11,6 +11,7 @@
   failed on legacy warnings in included CAP/API headers; the test wrapper now
   keeps `-Wall -Wextra` and suppresses those two pre-existing header warning
   classes. No hardware test was run.
+- Commit: `a64a9d72b7387c4a15797930dd638b418762daab`.
 - Next: add direct failure injection for persistent restore if a safe allocator
   seam is available, then continue the runtime/API audit.
 
