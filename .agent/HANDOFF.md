@@ -1,5 +1,23 @@
 # Handoff
 
+## Latest continuation — implement APDU.waitExtension state checks — 2026-10-19
+
+- Removed the remaining `APDU.waitExtension()` stub. It now returns for a
+  normal outgoing transfer, throws `APDUException.ILLEGAL_USE` after
+  `setOutgoingNoChaining()`, and maps a negative APDU error state to
+  `APDUException.IO_ERROR`. The internal native bridge reads the per-command
+  no-chaining flag from `Context`.
+- The API does not perform T=1 WTX: the current CCID transport dispatches a
+  command synchronously and has no asynchronous time-extension message path.
+  This remains a transport limitation to resolve if long-running applets need
+  reader timeout extensions.
+- `./tools/build arm` and `./tools/build-jcsystem-transaction-probe` passed.
+  VPCD cases 63–64 passed (`TEST:SUMMARY pass=4 fail=0 elapsed_s=14.110`). No
+  RISC-V build or flash was attempted.
+- Java API change committed in the nested API repository as `edfa4cf`.
+- Continue the APDU/profile audit; next inspect callback lifecycle, applet
+  firewall behavior, and remaining JCSystem native contracts.
+
 ## Latest continuation — gate APDU current buffer access — 2026-10-19
 
 - `APDU.getCurrentAPDUBuffer()` now delegates through the active APDU object,

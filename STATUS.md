@@ -32,6 +32,9 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 - `APDU.getCurrentAPDUBuffer()` now returns that object's buffer during
   `Applet.process()` and raises `SecurityException` during `Applet.select()`;
   focused VPCD checks passed both cases.
+- `APDU.waitExtension()` enforces the no-chaining `ILLEGAL_USE` rule, and the
+  VPCD probe confirms its normal outgoing path. CCID/T=1 WTX signaling remains
+  unsupported because the VM processes commands synchronously.
 - Native transaction and storage recovery checks pass: injected record-write
   and snapshot-commit failures roll back cleanly, and the filesystem overlay
   test passes 1,000 randomized multi-record power-cut cases plus reset, CRC

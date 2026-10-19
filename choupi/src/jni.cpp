@@ -377,6 +377,10 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUState() {
   return static_cast<jbyte_t>(Context::getActiveContext().getAPDUState());
 }
 
+jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAPDUOutgoingNoChaining() {
+  return Context::getActiveContext().isAPDUOutgoingNoChaining() ? TRUE : FALSE;
+}
+
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_receiveAPDUIncoming() {
   Context &context = Context::getActiveContext();
   context.markAPDUIncomingReceived();

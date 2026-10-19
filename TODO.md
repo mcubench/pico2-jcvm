@@ -380,7 +380,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   VPCD applet cases. Physical validation remains blocked by missing Pico PC/SC
   enumeration. `APDU.getCurrentAPDUBuffer()` now returns the same buffer as
   `getBuffer()` during `process()` and throws `SecurityException` during
-  `select()`, verified in two more VPCD cases.
+  `select()`, verified in two more VPCD cases. `APDU.waitExtension()` now
+  rejects calls after `setOutgoingNoChaining()` with `ILLEGAL_USE` and accepts
+  normal outgoing mode. The implementation cannot send a T=1 WTX while the
+  VM synchronously processes a CCID command, so actual transport time-extension
+  signaling remains unsupported.
   The bridge fragments data responses at
   short Le and serves `GET RESPONSE` using `61xx`. Parser, response-chain, and
   Context state tests pass; the Pico cycle also passed after flashing this

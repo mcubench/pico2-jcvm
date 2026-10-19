@@ -254,6 +254,10 @@ void Context::setAPDUOutgoingLength(const uint16_t length) {
 
 uint8_t Context::getAPDUState() const noexcept { return this->apdu_state; }
 
+bool Context::isAPDUOutgoingNoChaining() const noexcept {
+  return this->apdu_outgoing_no_chaining;
+}
+
 void Context::markAPDUIncomingReceived() {
   if (this->apdu_state != 0) {
     throw Exceptions::APDUException;

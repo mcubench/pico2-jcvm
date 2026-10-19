@@ -90,6 +90,7 @@ public final class JCTransactionProbe extends Applet {
     byte[] buffer = apdu.getBuffer();
     byte command = buffer[ISO7816.OFFSET_P1];
     short length = 1;
+    boolean manualResponse = false;
     switch (command) {
       case 1:
         JCSystem.beginTransaction();
@@ -715,6 +716,32 @@ public final class JCTransactionProbe extends Applet {
         length = 1;
         break;
       }
+      case 63: {
+        apdu.setOutgoingNoChaining();
+        try {
+          APDU.waitExtension();
+          buffer[0] = 0;
+        } catch (APDUException expected) {
+          buffer[0] = (byte)expected.getReason();
+        }
+        apdu.setOutgoingLength((short)1);
+        apdu.sendBytes((short)0, (short)1);
+        manualResponse = true;
+        break;
+      }
+      case 64: {
+        apdu.setOutgoing();
+        try {
+          APDU.waitExtension();
+          buffer[0] = 1;
+        } catch (APDUException unexpected) {
+          buffer[0] = (byte)unexpected.getReason();
+        }
+        apdu.setOutgoingLength((short)1);
+        apdu.sendBytes((short)0, (short)1);
+        manualResponse = true;
+        break;
+      }
       case 56: {
         rejectNextSelect = 1;
         buffer[0] = 1;
@@ -724,7 +751,7 @@ public final class JCTransactionProbe extends Applet {
       default:
         ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
     }
-    apdu.setOutgoingAndSend((short)0, length);
+    if (!manualResponse) apdu.setOutgoingAndSend((short)0, length);
   }
 }
 

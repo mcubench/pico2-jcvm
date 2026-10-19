@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 63),
+        "--case", type=int, action="append", choices=range(1, 65),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -215,6 +215,8 @@ def main() -> int:
                     (60, b"\x01", "APDU.getCurrentAPDU is unavailable during applet select callback"),
                     (61, b"\x01", "APDU.getCurrentAPDUBuffer returns the active process buffer"),
                     (62, b"\x01", "APDU.getCurrentAPDUBuffer is unavailable during applet select callback"),
+                    (63, b"\x01", "APDU.waitExtension rejects no-chaining mode"),
+                    (64, b"\x01", "APDU.waitExtension is accepted for normal outgoing mode"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

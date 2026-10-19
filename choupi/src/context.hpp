@@ -127,6 +127,7 @@ public:
   uint16_t beginAPDUOutgoing(bool no_chaining);
   void setAPDUOutgoingLength(uint16_t length);
   uint8_t getAPDUState() const noexcept;
+  bool isAPDUOutgoingNoChaining() const noexcept;
   void markAPDUIncomingReceived();
   void setAPDUOutgoing(std::shared_ptr<JC_Array> buffer, uint16_t offset,
                        uint16_t length);

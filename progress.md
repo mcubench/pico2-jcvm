@@ -1005,7 +1005,7 @@
 - Validation: `AlgTest_v1.8.2_jc305.cap` contains Applet.cap component size 14, count 1, AID `4A43416C675465737431`, and big-endian install offset `0x3DA3` (15779); record traversal consumes the component exactly with zero trailing bytes.
 - Result: The new lookup's component-size convention matches the supplied JCAlgTest v1.8.2 Applet component.
 - Decision: Continue into applet lifecycle dispatch. Host hardware access is unavailable in this VM session (`lsusb` reports libusb initialization error -99; system bus/PCSC unavailable), so defer flashing until USB access returns.
-- Commit: root `433d5c2`; nested API repository `2ec9efa`.
+- Commit: nested API repository `2ec9efa`; root implementation commit pending.
 - Artifacts/logs: supplied `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` (source artifact; no new log)
 
 ## 2026-10-11 — Resolve applet AID across installed packages
@@ -5801,13 +5801,34 @@
   elapsed_s=33.705`). The requested `PICO2_HOST_USB_ACCESS=1
   ./tools/test-pico-powerup` acquired USB ACL access but all three GPPro
   registry attempts timed out before applet APDUs. No RISC-V build or flash was
-  attempted. `git diff --check` is pending.
+  attempted. Targeted `git diff --check` passed.
 - Result: During `Applet.process()`, the method returned the exact same buffer
   as the active APDU object's `getBuffer()`; during `Applet.select()`, it
   raised `SecurityException`. Physical persistence remains inconclusive due
   to missing Pico PC/SC registry visibility.
 - Decision: Keep physical power-up validation open and continue the APDU API
   audit offline until the Pico reader enumerates through PC/SC.
-- Commit: pending
+- Commit: root `433d5c2`; nested API repository `2ec9efa`.
 - Artifacts/logs: `artifacts/logs/jcsystem-current-apdu-buffer-vpcd-20261019.log`,
   `artifacts/logs/pico-powerup-persistence-20261019T092025Z.log`
+
+## 2026-10-19 — Implement APDU wait-extension state checks
+
+- Step/experiment: `apdu-wait-extension-state`
+- Change: Replaced the `APDU.waitExtension()` stub with its APDU error-state and
+  no-chaining checks. Added an internal native query for the current command's
+  no-chaining flag and VPCD cases for both rejected and accepted modes.
+- Validation: `./tools/build arm` passed, including Java Card export/ROM-mask
+  generation and the RP2350 ARM image. `./tools/build-jcsystem-transaction-probe`
+  passed. VPCD cases 63–64 passed (`TEST:SUMMARY pass=4 fail=0
+  elapsed_s=14.110`). No RISC-V build or flash was attempted; no physical
+  serial validation was run. Targeted staged and unstaged `git diff --check`
+  passed.
+- Result: `waitExtension()` returns in ordinary outgoing mode and throws
+  `APDUException.ILLEGAL_USE` after `setOutgoingNoChaining()`. The CCID stack
+  still has no asynchronous T=1 WTX path, so transport-level wait-time extension
+  is not implemented.
+- Decision: Continue auditing APDU and JCSystem runtime semantics; revisit T=1
+  WTX if the target profile requires long-running applet timeout extension.
+- Commit: nested API repository `edfa4cf`; root implementation commit pending.
+- Artifacts/logs: `artifacts/logs/jcsystem-apdu-wait-extension-vpcd-20261019.log`
