@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -eq 0 ]] || die "usage: ./tools/test-vpcd-persistence"
+require_command mktemp
+require_command tee
+require_command date
+
+timeout_seconds="${PICO2_VPCD_PERSISTENCE_TIMEOUT:-180}"
+[[ "${timeout_seconds}" =~ ^[1-9][0-9]*$ ]] || \
+  die "PICO2_VPCD_PERSISTENCE_TIMEOUT must be a positive integer"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log_dir="${repo_root}/artifacts/logs"
+mkdir -p "${log_dir}"
+temporary_dir="$(mktemp -d)"
+trap 'rm -rf "${temporary_dir}"' EXIT
+
+build_log="${log_dir}/build-pc-vpcd-persistence-${timestamp}.log"
+install_log="${log_dir}/vpcd-persistence-commit-${timestamp}.log"
+restore_log="${log_dir}/vpcd-persistence-restore-${timestamp}.log"
+install_emulator_log="${log_dir}/vpcd-persistence-install-emulator-${timestamp}.log"
+restore_emulator_log="${log_dir}/vpcd-persistence-restore-emulator-${timestamp}.log"
+memory_image="${temporary_dir}/FLASH_MEMORY"
+
+set -o pipefail
+CHOUPI_JCVM_DEBUG=OFF "${repo_root}/tools/build-pc" 2>&1 | tee "${build_log}"
+"${repo_root}/tools/build-jcsystem-transaction-probe" 2>&1 | tee -a "${build_log}"
+
+"${repo_root}/tools/env" python3 \
+  "${repo_root}/tools/tests/jcsystem_transaction_applet_test.py" \
+  --case 6 --timeout "${timeout_seconds}" --memory "${memory_image}" \
+  --log "${install_emulator_log}" 2>&1 | tee "${install_log}"
+
+"${repo_root}/tools/env" python3 \
+  "${repo_root}/tools/tests/jcsystem_transaction_applet_test.py" \
+  --case 58 --restore-existing --timeout "${timeout_seconds}" \
+  --memory "${memory_image}" --log "${restore_emulator_log}" 2>&1 | \
+  tee "${restore_log}"
+
+grep -Fq 'TEST:PASS committed persistent applet field survives emulator process restart' \
+  "${restore_log}" || die "restored persistent field assertion did not pass"
+printf 'PERSISTENCE:PASS emulator_process_restart install_log=%s restore_log=%s\n' \
+  "${install_log}" "${restore_log}"

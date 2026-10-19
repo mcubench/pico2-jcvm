@@ -58,6 +58,11 @@ def main() -> int:
         help="reuse saved emulator memory and restore the installed applet",
     )
     parser.add_argument(
+        "--memory", type=Path,
+        default=repo / "artifacts/results/jcsystem-transaction-probe/FLASH_MEMORY",
+        help="emulator flash image to initialize or restore",
+    )
+    parser.add_argument(
         "--install-params",
         help="hex bytes passed as the applet's proprietary install parameters",
     )
@@ -68,7 +73,7 @@ def main() -> int:
     args = parser.parse_args()
     build = repo / "build/jcsystem-transaction-probe"
     emulator = repo / "build/choupi-pc/choupi"
-    memory = repo / "artifacts/results/jcsystem-transaction-probe/FLASH_MEMORY"
+    memory = args.memory.resolve()
     cap_code = build / "load-code.bin"
     rom_mask = repo / "build/choupi-pc/flash"
     for path in (emulator, cap_code, rom_mask):
