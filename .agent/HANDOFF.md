@@ -1,5 +1,21 @@
 # Handoff
 
+## Latest regression — inject JCVMArray copy-constructor allocation failure — 2026-10-19
+
+- `tools/test-jcvmarray-allocation` now forces allocation failure in mutable
+  `JCVMArray` copy construction and verifies `std::bad_alloc` propagates. The
+  successful copy path observes its size and first element; without that use,
+  the compiler optimized the copy and its allocation away, so the injection
+  never triggered. The QKB records this test-design caveat.
+- Validation: the focused test passes all four cases: constructor failure,
+  copy-constructor failure, copy-assignment preservation, and persistent-array
+  constructor failure. ARM build was intentionally skipped because only the
+  host test changed. No hardware operation was needed.
+- Test commit: `b8545a9`.
+- Next: continue the bounded runtime memory/API audit. Preserve unrelated dirty
+  files and do not run USB/PCSC unless the required elevated host-access path is
+  available from the first attempt.
+
 ## Latest allocator fix — preserve JCVMArray on failed copy — 2026-10-19
 
 - Mutable JCVMArray copy construction and assignment now stage backing storage

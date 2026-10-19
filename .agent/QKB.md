@@ -1,5 +1,17 @@
 # Project issue knowledge base
 
+## Allocation-failure test optimized away an unused JCVMArray copy — 2026-10-19
+
+- **Symptom/cause:** An injected `new[]` failure did not fire in the copy-
+  constructor regression when the newly copied object was unused. The host
+  compiler eliminated the unobservable copy and its replaceable allocation.
+- **Viable solution:** Make the success path observe copied state (for example,
+  size and an element) before asserting the allocation failure. This keeps the
+  allocation semantically required and makes the global `operator new[]`
+  injection deterministic.
+- **Validation:** `./tools/test-jcvmarray-allocation` passes the copy-
+  construction failure case when the copy's size and first value are read.
+
 ## JCSystem.isAppletActive must include registered install/select callbacks — 2026-10-19
 
 - **Symptom:** The first lifecycle implementation returned false while the
