@@ -15,6 +15,7 @@ struct FakeCard {
   unsigned int restore_count = 0;
   unsigned int select_count = 0;
   unsigned int deselect_count = 0;
+  bool last_deselect_same_applet = false;
   unsigned int process_count = 0;
   uint8_t restore_result = 0;
   uint16_t select_status = 0x9000;
@@ -42,8 +43,10 @@ uint16_t select(void *opaque) {
   return card.select_status;
 }
 
-uint16_t deselect(void *opaque, bool) {
-  ++static_cast<FakeCard *>(opaque)->deselect_count;
+uint16_t deselect(void *opaque, bool selecting_same_applet) {
+  auto &card = *static_cast<FakeCard *>(opaque);
+  ++card.deselect_count;
+  card.last_deselect_same_applet = selecting_same_applet;
   return 0x9000;
 }
 
@@ -71,7 +74,17 @@ std::vector<uint8_t> applet_select() {
   std::vector<uint8_t> command{0x00, 0xa4, 0x04, 0x00,
                                static_cast<uint8_t>(kAppletAid.size())};
   command.insert(command.end(), kAppletAid.begin(), kAppletAid.end());
-  command.push_back(0x00);
+  command.push_back(0x40);
+  return command;
+}
+
+std::vector<uint8_t> unknown_applet_select() {
+  constexpr std::array<uint8_t, 7> unknown_aid = {
+      0xf0, 0x00, 0x00, 0x00, 0x01, 0x23, 0x45};
+  std::vector<uint8_t> command{0x00, 0xa4, 0x04, 0x00,
+                               static_cast<uint8_t>(unknown_aid.size())};
+  command.insert(command.end(), unknown_aid.begin(), unknown_aid.end());
+  command.push_back(0x40);
   return command;
 }
 
@@ -128,6 +141,14 @@ int main() {
             card.process_count == 2 && card.last_command == command &&
             response == std::vector<uint8_t>({0xde, 0xad, 0x90, 0x00}),
         "selected applet receives APDU and returns response");
+
+  message = unknown_applet_select();
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            response == std::vector<uint8_t>({0x6a, 0x82}) &&
+            !session.applet_selected() && card.deselect_count == 1 &&
+            !card.last_deselect_same_applet && card.process_count == 2,
+        "unknown AID SELECT deselects applet without dispatching to process");
 
   message = control(0x00);
   result = session.handle_message(message.data(), message.size(), response);

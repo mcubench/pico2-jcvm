@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 74),
+        "--case", type=int, action="append", choices=range(1, 75),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -240,6 +240,7 @@ def main() -> int:
                     (70, bytes((args.expect_register_reason,)), "Applet.register(AID) reports the expected install-time validation reason"),
                     (71, b"\x0b", "Applet.selectingApplet is true during select and process, false during deselect"),
                     (73, b"\x0b", "Applet.selectingApplet is false during deselect and resumes for the next selection"),
+                    (74, b"", "unknown AID SELECT deselects the applet and returns file not found"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -247,6 +248,24 @@ def main() -> int:
                     else cases
                 )
                 for p1, expected, label in selected_cases:
+                    if p1 == 74:
+                        unknown_select = bytes.fromhex("00A4040007F000000001234500")
+                        send_message(connection, unknown_select)
+                        unknown_response = receive_message(connection)
+                        if unknown_response != b"\x6a\x82":
+                            raise RuntimeError(
+                                f"{label}: expected 6A82, got {unknown_response.hex().upper()}"
+                            )
+                        print(f"TEST:APDU {label} response={unknown_response.hex().upper()}")
+                        send_message(connection, bytes((0x80, 0x00, 55, 0x00, 0x00)))
+                        inactive_response = receive_message(connection)
+                        if inactive_response != b"\x69\x99":
+                            raise RuntimeError(
+                                "APDU after unknown AID SELECT was dispatched: "
+                                f"{inactive_response.hex().upper()}"
+                            )
+                        print(f"TEST:PASS {label}")
+                        continue
                     if p1 == 71:
                         exchange(
                             connection,

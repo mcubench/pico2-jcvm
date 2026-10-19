@@ -64,6 +64,21 @@ bool Session::select_by_aid(const uint8_t *aid, const size_t aid_length,
   return std::equal(aid, aid + aid_length, command + 5);
 }
 
+namespace {
+
+bool is_select_by_aid(const uint8_t *command, const size_t command_length) {
+  if (command == nullptr || command_length < 5 || command[0] != 0x00 ||
+      command[1] != 0xa4 || command[2] != 0x04 || command[3] != 0x00 ||
+      command[4] < 5 || command[4] > 16) {
+    return false;
+  }
+  const size_t aid_length = command[4];
+  return command_length == 5 + aid_length ||
+         command_length == 6 + aid_length;
+}
+
+} // namespace
+
 SessionResult Session::handle_message(const uint8_t *message,
                                       const size_t message_length,
                                       std::vector<uint8_t> &response) {
@@ -151,6 +166,12 @@ SessionResult Session::handle_message(const uint8_t *message,
         response[response_length - 1] != 0x00) {
       clear_or_deselect(false);
     }
+    return SessionResult::Response;
+  }
+
+  if (is_select_by_aid(message, message_length)) {
+    clear_or_deselect(false);
+    append_status(response, 0x6a82);
     return SessionResult::Response;
   }
 

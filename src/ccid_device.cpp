@@ -39,6 +39,16 @@ constexpr size_t kMaxMessage = 320;
 constexpr size_t kMaxCcidMessage = 300;
 constexpr uint8_t kAtr[] = {0x3b, 0x80, 0x01, 0x81};
 
+bool is_select_by_aid(const uint8_t *apdu, size_t apdu_length) {
+  if (apdu == nullptr || apdu_length < 5 || apdu[0] != 0x00 ||
+      apdu[1] != 0xa4 || apdu[2] != 0x04 || apdu[3] != 0x00 ||
+      apdu[4] < 5 || apdu[4] > 16) {
+    return false;
+  }
+  return apdu_length == 5u + static_cast<size_t>(apdu[4]) ||
+         apdu_length == 6u + static_cast<size_t>(apdu[4]);
+}
+
 // The standard CDC interface remains available for diagnostics. CCID is the
 // third interface in this composite device and uses independent endpoints.
 constexpr uint16_t kConfigLength = TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN +
@@ -162,17 +172,14 @@ void process_message(uint8_t rhport) {
       const uint8_t instance_aid_length =
           cap_load_session.instanceAidLength();
       const bool selecting_same_applet =
-          cap_load_session.installed() && apdu_length >= 5 &&
-          apdu[2] == 0x04 && apdu[3] == 0x00 &&
+          cap_load_session.installed() &&
+          is_select_by_aid(apdu, apdu_length) &&
           apdu[4] == instance_aid_length &&
-          (apdu_length == 5u + static_cast<size_t>(apdu[4]) ||
-           (apdu_length == 6u + static_cast<size_t>(apdu[4]) &&
-            apdu[apdu_length - 1] == 0x00)) &&
           std::memcmp(apdu + 5, cap_load_session.instanceAid(),
                       instance_aid_length) == 0;
       const bool selecting_isd = apdu_length == 5 && apdu[2] == 0x04 &&
                                   apdu[3] == 0x00 && apdu[4] == 0x00;
-      if (selecting_same_applet || selecting_isd) {
+      if (is_select_by_aid(apdu, apdu_length) || selecting_isd) {
         get_status_first_seen = false;
         (void)choupi_vm_deselect_applet(selecting_same_applet ? 1 : 0);
       }
@@ -377,15 +384,11 @@ void process_message(uint8_t rhport) {
       response[sizeof(isd_fci)] = 0x90;
       response[sizeof(isd_fci) + 1] = 0x00;
       response_length = sizeof(isd_fci) + 2;
-    } else if (apdu_length >= 5 && apdu[0] == 0x00 && apdu[1] == 0xa4 &&
-               apdu[2] == 0x04 && apdu[3] == 0x00) {
+    } else if (is_select_by_aid(apdu, apdu_length)) {
       const uint8_t installed_aid_length =
           cap_load_session.instanceAidLength();
       const bool select_instance_command =
           cap_load_session.installed() && apdu[4] == installed_aid_length &&
-          (apdu_length == 5u + static_cast<size_t>(apdu[4]) ||
-           (apdu_length == 6u + static_cast<size_t>(apdu[4]) &&
-            apdu[apdu_length - 1] == 0x00)) &&
           std::memcmp(apdu + 5, cap_load_session.instanceAid(),
                       installed_aid_length) == 0;
       std::printf("CHOUPI:SELECT_APDU len=%u lc=%u installed=%u aid_len=%u match=%u\r\n",
@@ -472,28 +475,9 @@ void process_message(uint8_t rhport) {
           }
         }
       } else {
-        uint16_t applet_response_length = 0;
-        const uint16_t process_status = choupi_vm_process_applet(
-            apdu, static_cast<uint16_t>(apdu_length), response,
-            static_cast<uint16_t>(sizeof(response)),
-            &applet_response_length);
-        if (process_status == 0xffff) {
-          response[0] = 0x6a;
-          response[1] = 0x82;
-          response_length = 2;
-        } else if (applet_response_length < 2 ||
-                   applet_response_length > sizeof(response)) {
-          response[0] = 0x6f;
-          response[1] = 0x00;
-          response_length = 2;
-        } else {
-          response_length = applet_response_length;
-          if (fs_sync() != 0) {
-            response[0] = 0x6f;
-            response[1] = 0x00;
-            response_length = 2;
-          }
-        }
+        response[0] = 0x6a;
+        response[1] = 0x82;
+        response_length = 2;
       }
     } else if (apdu_length <= UINT16_MAX) {
       uint16_t applet_response_length = 0;
