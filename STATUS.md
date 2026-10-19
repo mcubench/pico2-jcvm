@@ -30,6 +30,12 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   test passes 1,000 randomized multi-record power-cut cases plus reset, CRC
   fallback, and tombstone restart checks. Authenticated GP DELETE and
   Java-level power-cycle behavior still lack end-to-end regression coverage.
+- GET DATA (`0066`) now returns Card Recognition Data both before
+  authentication, for card discovery, and through the authenticated
+  card-manager path. Its exact encoding and status-word behavior pass 11 host
+  unit checks. CPLC (`9F7F`) remains unavailable because the firmware has no
+  manufacturing-data source. The APDU response has not yet been exercised
+  through an emulator or physical reader.
 - SHA-256 has known-answer and repeated-call coverage. The CCID/PCSC interface
   and physical reader have passed bounded probes in earlier sessions.
 - Heap tracing now has a guarded sweep path in firmware: it runs after APDU
@@ -47,6 +53,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   The latest cycle again passed both builds and the 18-second ARM runtime
   capture; a bounded PC/SC retry reproduced SELECT `9000` followed by no
   GETVERSION and timed out (2026-10-19).
+  The latest CHOUPI-specific cycle also passed after the GET DATA change:
+  ARM/RISC-V build gates passed, ARM firmware flashed, and serial output
+  repeatedly reported `TEST:PASS choupi_runtime` with no `FAULT`
+  (`artifacts/logs/cycle-choupi-20261019T061401Z.log`).
   The VPCD bridge is installed, but it cannot claim the Pico USB interface
   while `pcscd` owns it (`libusb ... failed: -6`). The static run remains
   blocked at host reader ownership/PC/SC transport, not by an observed VM
@@ -81,10 +91,12 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
    including object deletion and integrity-sensitive arrays. Remaining runtime
    behavior needs systematic comparison against a selected Java Card profile.
 5. **Card-management and persistence assurance:** storage rollback and
-   randomized power-cut recovery have focused native coverage, and applet
-   persistence has a two-process VPCD check. Authenticated GP DELETE,
-   post-delete GET STATUS, broader CAP restore, and end-to-end power-cycle
-   validation remain open before claiming general card compatibility.
+   randomized power-cut recovery have focused native coverage, applet
+   persistence has a two-process VPCD check, and GET DATA Card Recognition Data
+   has encoder/status unit coverage. Authenticated GP DELETE, post-delete GET
+   STATUS, broader CAP restore, GET DATA APDU transport, and end-to-end
+   power-cycle validation remain open before claiming general card
+   compatibility.
 6. **Conformance and hardening:** no full Java Card conformance suite or
    certification-grade security assessment has been completed.
 

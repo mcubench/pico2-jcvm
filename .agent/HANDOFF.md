@@ -1,5 +1,27 @@
 # Handoff
 
+## Latest continuation — add truthful GlobalPlatform Card Data GET DATA — 2026-10-19
+
+- Added `src/gp_get_data.hpp` with a Card Recognition Data (`0066`) TLV for the
+  implemented GlobalPlatform recognition OID and SCP03 S8 OID. The response
+  does not claim a CPLC or unique chip identity; `9F7F` and unknown tags remain
+  `6A88` because there is no manufacturing-data source.
+- Added `./tools/test-gp-get-data`; all 11 checks passed, including exact TLV
+  bytes, success/not-found status words, unavailable CPLC, unknown-tag output
+  clearing, and insufficient response capacity. `./tools/build arm` passed and
+  rebuilt the CHOUPI firmware; `./tools/build riscv` passed.
+- GET DATA `0066` is dispatched before authentication for card discovery and
+  through the authenticated card-manager path. No physical or emulator APDU
+  test was run, so transport and GlobalPlatformPro parsing remain unverified.
+- `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed both target build gates,
+  flashed the ARM CHOUPI firmware, and captured an 18-second serial run with
+  repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; no
+  `FAULT` occurred. Log: `artifacts/logs/cycle-choupi-20261019T061401Z.log`.
+- Next: create an offline authenticated `E4 DELETE` regression that exercises
+  the actual card-manager lifecycle, including unknown AID, instance deletion,
+  package dependency handling, and GET STATUS / restore after restart. Keep
+  CPLC unavailable until a real manufacturing-data source exists.
+
 ## Latest continuation — confirm transaction rollback and power-cut coverage — 2026-10-19
 
 - Re-ran `./tools/test-persistent-transaction`: all 29 checks passed, including

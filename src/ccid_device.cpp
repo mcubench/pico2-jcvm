@@ -9,6 +9,7 @@
 #include "cap_load.hpp"
 #include "gp_registry.hpp"
 #include "gp_delete.hpp"
+#include "gp_get_data.hpp"
 
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
@@ -149,6 +150,17 @@ void process_message(uint8_t rhport) {
     if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
       get_status_first_seen = false;
       (void)choupi_vm_deselect_applet();
+    }
+    if (!secure_channel.active() && apdu_length == 5 && apdu[0] == 0x80 &&
+        apdu[1] == 0xca) {
+      if (!gp::write_get_data_response(apdu[2], apdu[3], response,
+                                       sizeof(response), response_length)) {
+        response[0] = 0x6f;
+        response[1] = 0x00;
+        response_length = 2;
+      }
+      send_response(rhport, 0x80, response, response_length);
+      break;
     }
     if (apdu_length >= 2 && apdu[0] == 0x80 && apdu[1] == 0x50) {
       size_t data_length = 0;
@@ -312,8 +324,12 @@ void process_message(uint8_t rhport) {
           }
         }
       } else if (instruction == 0xca) {
-        response[0] = 0x6a;
-        response[1] = 0x88;
+        if (!gp::write_get_data_response(p1, p2, response,
+                                         sizeof(response), response_length)) {
+          response[0] = 0x6f;
+          response[1] = 0x00;
+          response_length = 2;
+        }
       } else {
         response[0] = 0x6d;
         response[1] = 0x00;

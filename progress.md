@@ -5700,3 +5700,12 @@
 - Decision: Continue with authenticated card-manager DELETE integration and post-delete restore/GET STATUS; do not repeat already-covered storage-layer tests without a new scenario.
 - Commit: `2a793fe`; this commit records the validated step
 - Artifacts/logs: tool output from this session; no separate log captured.
+## 2026-10-19 — Implement GlobalPlatform Card Data GET DATA
+
+- Step/experiment: `gp-get-data-card-recognition`
+- Change: Added Card Recognition Data (`0066`) encoding for the supported GlobalPlatform recognition OID and SCP03 S8. Wired it into open-channel discovery and authenticated CCID card-manager GET DATA dispatch. CPLC remains unavailable (`6A88`) because no manufacturing-data source exists.
+- Validation: `./tools/test-gp-get-data` passed 11/11 exact-encoding, response-status, and unavailable-tag checks; `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed both build gates, flashed ARM, and captured repeated `TEST:PASS choupi_runtime` in 18 seconds with no `FAULT`. No card-manager APDU was sent.
+- Result: The firmware now returns the bounded `0066` data object before and after secure-channel authentication and retains `6A88` for CPLC/unknown tags. Firmware boot/runtime is hardware-verified; GET DATA APDU transport is unverified.
+- Decision: Continue with authenticated DELETE lifecycle regression; verify GET DATA through a live APDU path when available.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261019T061401Z.log`; test output from this session.

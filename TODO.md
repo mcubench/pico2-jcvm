@@ -128,7 +128,9 @@ Next actions:
    reselect, rejected SELECT cleanup, and reset callbacks. A fresh VPCD process
    restored committed instance state and persistent reference identity.
    Remaining: authenticated GP DELETE and post-delete GET STATUS/restore,
-   truthful GET DATA behavior, and broader CAP restore validation. Persistent
+   GET DATA APDU verification (Card Recognition Data `0066` encoder is now
+   implemented; CPLC `9F7F` is unavailable without manufacturing data), and
+   broader CAP restore validation. Persistent
    transaction tests cover injected write/commit rollback failures; filesystem
    overlay tests cover 1,000 randomized power-cut atomicity cases and restart
    recovery. The official physical static suite has not passed; PC/SC still
