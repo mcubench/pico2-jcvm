@@ -444,7 +444,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   object from the installed/selected instance AID; installation and restored
   contexts receive that AID from the card manager. Context byte retention is
   covered by the focused native test and ARM build. Java-level `getAID()` use
-  and broader API coverage remain unverified/incomplete.
+  and broader API coverage remain unverified/incomplete. `AID.equals(byte[],...)`
+  and `partialEquals(byte[],...)` now return false for null arrays as required
+  by the Java Card 3.0.5 contract; VPCD case 75 exercises null and valid full /
+  prefix comparisons through the applet runtime. Physical validation remains
+  open.
 - [x] Implement `JCSystem.makeTransientObjectArray()` with Java-null default
   entries and a wildcard component type that accepts any reference. ARM build
   and focused factory tests pass; installed-applet use remains unverified.

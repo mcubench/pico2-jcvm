@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 75),
+        "--case", type=int, action="append", choices=range(1, 76),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -246,6 +246,7 @@ def main() -> int:
                     (71, b"\x0b", "Applet.selectingApplet is true during select and process, false during deselect"),
                     (73, b"\x0b", "Applet.selectingApplet is false during deselect and resumes for the next selection"),
                     (74, b"", "unknown AID SELECT deselects the applet and returns file not found"),
+                    (75, b"\x01", "AID byte-array equality returns false for null and compares valid full and partial AIDs"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

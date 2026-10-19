@@ -815,6 +815,22 @@ public final class JCTransactionProbe extends Applet {
         buffer[0] = result;
         break;
       }
+      case 75: {
+        AID currentAID = JCSystem.getAID();
+        byte[] currentAIDBytes = new byte[16];
+        byte currentAIDLength = currentAID.getBytes(currentAIDBytes, (short)0);
+        boolean equalBytes = currentAID.equals(
+            currentAIDBytes, (short)0, currentAIDLength);
+        boolean equalNull = currentAID.equals(
+            (byte[])null, (short)0, currentAIDLength);
+        boolean partialNull = currentAID.partialEquals(
+            null, (short)0, (byte)5);
+        boolean partialPrefix = currentAID.partialEquals(
+            currentAIDBytes, (short)0, (byte)5);
+        buffer[0] = equalBytes && !equalNull && !partialNull && partialPrefix
+            ? (byte)1 : (byte)0;
+        break;
+      }
       case 67: {
         byte reason = 0;
         try {
