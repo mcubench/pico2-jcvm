@@ -5728,3 +5728,13 @@
 - Decision: Proceed to authenticated GP DELETE lifecycle coverage, including GET STATUS and restore.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/gp-get-data-physical-20261019.log`
+
+## 2026-10-19 — Cover GET STATUS after GP deletion states
+
+- Step/experiment: `gp-get-status-delete-state-views`
+- Change: Added exact registry-response checks for an instance-deleted/package-present view and an empty package registry after package deletion.
+- Validation: `./tools/test-gp-registry` passed 47 checks; targeted `git diff --check` passed. The test exercises GET STATUS encoding only, not persistent deletion.
+- Result: The registry builder emits no applet after instance deletion while preserving the package entry; a package-deleted view emits no load-file entry.
+- Decision: Keep actual authenticated DELETE dispatch, `CapLoadSession::deleteObject()`, and restart restoration as open work; next add a testable persistence/CAP-store boundary.
+- Commit: pending
+- Artifacts/logs: test output from this session; no separate log captured.

@@ -127,8 +127,10 @@ Next actions:
 2. [partial] Golden applet and applet callback checks now cover same-AID
    reselect, rejected SELECT cleanup, and reset callbacks. A fresh VPCD process
    restored committed instance state and persistent reference identity.
-   Remaining: authenticated GP DELETE and post-delete GET STATUS/restore,
-   and broader CAP restore validation. Unselected and SCP03-authenticated
+   Remaining: authenticated GP DELETE and post-delete restore validation,
+   and broader CAP restore validation. The GET STATUS response builder now
+   has host checks for instance-deleted/package-present and package-deleted
+   views, but these do not exercise deletion or persistence. Unselected and SCP03-authenticated
    `0066` Card Recognition Data plus unavailable `9F7F` CPLC passed direct
    physical APDU probes. Persistent
    transaction tests cover injected write/commit rollback failures; filesystem

@@ -11,6 +11,18 @@
 - This probe does not select an applet or mutate card content. The next open
   lifecycle task is authenticated GP DELETE with GET STATUS and restore checks.
 
+## Latest continuation — cover post-delete GET STATUS representations — 2026-10-19
+
+- Extended the GP registry host checks to assert that an instance-deleted view
+  returns no applet entry while retaining the loaded package entry, and that a
+  package-deleted view returns no package entry.
+- These checks validate the GET STATUS response builder for the expected
+  lifecycle states. They do not call `CapLoadSession::deleteObject()` or prove
+  persistence across restart.
+- `./tools/test-gp-registry` passed 47 checks.
+- Next: add an offline seam around persistent lifecycle/CAP storage so the
+  actual authenticated DELETE dispatch and restart restoration can be tested.
+
 ## Latest continuation — verify GET DATA directly on the Pico — 2026-10-19
 
 - Added `tools/probe-gp-get-data`, a bounded PC/SC probe that sends only
@@ -26,9 +38,9 @@
 - The probe log is `artifacts/logs/gp-get-data-physical-20261019.log`. No
   applet SELECT was sent. The SCP03-authenticated GET DATA route is covered in
   the latest continuation above; GP DELETE lifecycle remains open.
-- Next: build an offline authenticated `E4 DELETE` regression that exercises
-  the actual card-manager lifecycle, including unknown AID, instance deletion,
-  package dependency handling, and GET STATUS / restore after restart.
+- The parser and registry response builder have isolated host tests; the
+  authenticated APDU dispatch and `CapLoadSession` persistent deletion remain
+  untested end to end.
 
 ## Latest continuation — add truthful GlobalPlatform Card Data GET DATA — 2026-10-19
 

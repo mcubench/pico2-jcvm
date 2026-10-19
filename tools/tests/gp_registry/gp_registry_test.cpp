@@ -195,6 +195,24 @@ int main() {
              output_length == 0,
          "empty_application_registry_is_successful");
 
+  output_length = 0;
+  expect(gp::build_get_status_first_response(
+             0x20, wildcard_search, sizeof(wildcard_search), registry,
+             output.data(), output.size() - 2, output_length) == 0x9000,
+         "package_remains_after_instance_delete");
+  expect(output_length == load_file_entry.size() &&
+             std::memcmp(output.data(), load_file_entry.data(),
+                         load_file_entry.size()) == 0,
+         "package_status_bytes_after_instance_delete");
+
+  registry.package_loaded = false;
+  output_length = 99;
+  expect(gp::build_get_status_first_response(
+             0x20, wildcard_search, sizeof(wildcard_search), registry,
+             output.data(), output.size() - 2, output_length) == 0x9000 &&
+             output_length == 0,
+         "package_registry_empty_after_package_delete");
+
   expect(gp::validate_get_status_next(false, 0x40, wildcard_search,
                                       sizeof(wildcard_search)) == 0x6985,
          "reject_next_without_first_query");
