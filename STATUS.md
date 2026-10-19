@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-18
+Updated: 2026-10-19
 
 ## Summary
 
@@ -23,7 +23,13 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   `6999` and leaves the applet unavailable for APDUs, a later SELECT works,
   and card reset invokes deselect before the next successful select. A fresh
   VPCD emulator process also restored a committed instance field (`0x33`) and
-  persistent static/array reference identities across process restart.
+  persistent static/array reference identities across process restart; that
+  dedicated restore run passed seven checks (`TEST:SUMMARY pass=7 fail=0`).
+- Native transaction and storage recovery checks pass: injected record-write
+  and snapshot-commit failures roll back cleanly, and the filesystem overlay
+  test passes 1,000 randomized multi-record power-cut cases plus reset, CRC
+  fallback, and tombstone restart checks. Authenticated GP DELETE and
+  Java-level power-cycle behavior still lack end-to-end regression coverage.
 - SHA-256 has known-answer and repeated-call coverage. The CCID/PCSC interface
   and physical reader have passed bounded probes in earlier sessions.
 - Heap tracing now has a guarded sweep path in firmware: it runs after APDU
@@ -74,9 +80,11 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 4. **Profile/API completeness:** several APIs are deliberately unsupported,
    including object deletion and integrity-sensitive arrays. Remaining runtime
    behavior needs systematic comparison against a selected Java Card profile.
-5. **Card-management and persistence assurance:** broader CAP validation,
-   package/applet lifecycle, GlobalPlatform management, and power-loss recovery
-   need end-to-end validation before claiming general card compatibility.
+5. **Card-management and persistence assurance:** storage rollback and
+   randomized power-cut recovery have focused native coverage, and applet
+   persistence has a two-process VPCD check. Authenticated GP DELETE,
+   post-delete GET STATUS, broader CAP restore, and end-to-end power-cycle
+   validation remain open before claiming general card compatibility.
 6. **Conformance and hardening:** no full Java Card conformance suite or
    certification-grade security assessment has been completed.
 

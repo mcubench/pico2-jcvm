@@ -1,5 +1,24 @@
 # Handoff
 
+## Latest continuation — confirm transaction rollback and power-cut coverage — 2026-10-19
+
+- Re-ran `./tools/test-persistent-transaction`: all 29 checks passed, including
+  rollback after an injected record-write failure and a failed filesystem
+  snapshot commit. Existing ignored-qualifier and packed-member warnings remain;
+  the test command exited 0.
+- Re-ran `./tools/test-rp2350-fs-overlay`: all 27 checks passed, including
+  1,000 randomized multi-record power-cut mutation points, CRC fallback,
+  transaction deferral, reset restoration, and tombstone persistence. The host
+  test emitted the existing `mallinfo()` deprecation warning and exited 0.
+- This confirms storage-layer failure/recovery coverage; it does not prove an
+  authenticated DELETE APDU or Java-level power-cycle behavior. Updated
+  `STATUS.md` and `TODO.md` to remove storage-layer tests from the open list
+  while retaining those end-to-end gaps.
+- No physical token or APDU path was used. Next: build an offline regression
+  for authenticated card-manager DELETE semantics, including unknown AID,
+  applet deletion, package dependency handling, and post-delete GET STATUS / fresh
+  process restore. GET DATA still needs truthful, profile-specific data.
+
 ## Latest continuation — restore committed applet state across emulator process restart — 2026-10-19
 
 - `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed ARM and RISC-V builds,

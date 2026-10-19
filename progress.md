@@ -5690,3 +5690,13 @@
 - Artifacts/logs: `artifacts/logs/jcsystem-restore-save-vpcd-20261019.log`,
   `artifacts/logs/jcsystem-restore-second-process-vpcd-20261019.log`,
   `artifacts/logs/cycle-choupi-20261019T035222Z.log`
+
+## 2026-10-19 — Confirm transaction failure and power-cut recovery coverage
+
+- Step/experiment: `continue-storage-recovery-audit`
+- Change: Reconciled `STATUS.md` and `TODO.md` with existing storage-level rollback and power-cut coverage; retained the open end-to-end GP DELETE and card power-cycle checks.
+- Validation: `./tools/test-persistent-transaction` passed all 29 checks; `./tools/test-rp2350-fs-overlay` passed all 27 checks, including 1,000 randomized multi-record power-cut cases. Existing upstream compiler warnings and host `mallinfo()` deprecation warning remain.
+- Result: Injected record-write and snapshot-commit failures roll back cleanly in the transaction test; randomized filesystem recovery returns an atomic old or new multi-record state. No physical hardware was accessed.
+- Decision: Continue with authenticated card-manager DELETE integration and post-delete restore/GET STATUS; do not repeat already-covered storage-layer tests without a new scenario.
+- Commit: `pending`
+- Artifacts/logs: tool output from this session; no separate log captured.
