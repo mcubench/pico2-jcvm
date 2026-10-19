@@ -5778,3 +5778,13 @@
 - Decision: Keep physical persistence and consecutive APDUs open. Continue offline implementation; retry after the PC/SC reader is available.
 - Commit: `73eaca3`; progress record follows in metadata commit.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T084640Z.log`, `artifacts/logs/pico-powerup-persistence-20261019T085227Z.log`
+
+## 2026-10-19 — Implement APDU current object access
+
+- Step/experiment: `apdu-get-current-apdu`
+- Change: Implemented `APDU.getCurrentAPDU()` with a native bridge to the active context's APDU object. The VM scopes access to `Applet.process()` and raises Java `SecurityException` from `Applet.select()`. Added VPCD regression cases for object identity and access rejection.
+- Validation: `./tools/build arm` passed for ARM M33; API converter reported zero errors (existing optional export/int-support warnings and compiler packed-member warnings remain). `./tools/build-jcsystem-transaction-probe` passed. `./tools/test-jcsystem-transaction-applet --case 59 --case 60 --timeout 120 --log artifacts/logs/jcsystem-current-apdu-vpcd-20261019.log` passed (`TEST:SUMMARY pass=4 fail=0 elapsed_s=11.280`). No RISC-V build or physical flash was attempted. The physical reader was not available through PC/SC.
+- Result: During `process()`, `getCurrentAPDU()` returned the same reference as the callback argument; during `select()`, it produced the expected `SecurityException`.
+- Decision: Continue the Java Card APDU API/profile audit and add further focused golden coverage; retain physical validation as open until PC/SC enumerates the Pico.
+- Commit: `2780db1`; Java API hunk committed in nested API repository as `43f9877`.
+- Artifacts/logs: `artifacts/logs/jcsystem-current-apdu-vpcd-20261019.log`
