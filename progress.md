@@ -6348,5 +6348,5 @@
   fails. The full VM's transient-factory reason-2 mapping remains inspection-only.
 - Decision: Keep the regression and continue the API/runtime audit; add full-VM
   low-memory injection if a safe allocator seam is introduced.
-- Commit: pending
+- Commit: `61cdcdedf3068dd8126b8b2da54c2b958ce8121a`
 - Artifacts/logs: none.

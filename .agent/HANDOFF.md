@@ -13,7 +13,8 @@
   requires both architectures, while current work scope is ARM-only. The new
   `./tools/test-jcvmarray-allocation` regression deterministically forces a
   backing `new[]` failure and passes `allocation_failure_propagates`; full-VM
-  exception mapping under forced exhaustion remains untested.
+  exception mapping under forced exhaustion remains untested. Regression commit:
+  `61cdcdedf3068dd8126b8b2da54c2b958ce8121a`.
 - Commit: `da50522af16913d8b7dc1351c805b7ed15b1d66e`.
 - Next: continue the selected Java Card runtime/API audit. Physical PC/SC applet
   APDUs remain blocked by the documented host transmit stall.
