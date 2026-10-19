@@ -35,6 +35,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <memory>
 
 #ifndef PC_VERSION
 extern "C" void choupi_install_stage(uint8_t stage);
@@ -144,9 +145,10 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
           ? static_cast<uint8_t>(root_length + (tag.len - root_length) / 2)
           : tag.len;
   uint8_t *stored_tag = this->persistent_tag_value;
+  std::unique_ptr<uint8_t[]> pending_tag_overflow;
   if (stored_length > sizeof(this->persistent_tag_value)) {
-    this->persistent_tag_overflow = new uint8_t[stored_length];
-    stored_tag = this->persistent_tag_overflow;
+    pending_tag_overflow = std::make_unique<uint8_t[]>(stored_length);
+    stored_tag = pending_tag_overflow.get();
   }
   if (this->persistent_tag_compressed) {
     std::memcpy(stored_tag, tag.value, root_length);
@@ -161,7 +163,10 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
   Class_Handler class_handler(this->packageID);
   const uint16_t fields_size =
       class_handler.getInstanceFieldsSize(this->claz);
-  this->fields = new JCVMArray<jc_field_t>(fields_size);
+  std::unique_ptr<JCVMArray<jc_field_t>> pending_fields(
+      new JCVMArray<jc_field_t>(fields_size));
+  this->persistent_tag_overflow = pending_tag_overflow.release();
+  this->fields = pending_fields.release();
   this->persistent_fields_loaded = false;
 }
 
