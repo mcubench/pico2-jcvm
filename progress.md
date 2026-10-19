@@ -5967,3 +5967,30 @@
   `artifacts/logs/unknown-aid-select-vpcd-20261019.log`,
   `artifacts/logs/build-pc-unknown-aid-select-20261019.log`, and
   `artifacts/logs/build-arm-unknown-aid-select-20261019.log`.
+
+## 2026-10-19 — Automate VPCD applet persistence restart check
+
+- Step/experiment: `vpcd-applet-persistent-field-process-restart`
+- Change: Added a selectable flash-image path to the JCSystem applet VPCD test
+  runner and `tools/test-vpcd-persistence`. The wrapper builds the PC emulator
+  and probe, commits persistent instance field `0x33`, then starts a fresh
+  emulator process with the same saved flash image and verifies the restored
+  value. The image is isolated in a temporary directory.
+- Validation: `PICO2_VPCD_PERSISTENCE_TIMEOUT=180 ./tools/test-vpcd-persistence`
+  passed. The first process committed
+  `0x33` (`339000`) in 11.997 s; the fresh process restored and returned
+  `0x33` (`339000`) in 7.159 s. PC emulator, Java Card API/ROM mask, and probe
+  builds passed. The legacy converter emitted Maven repository warnings, but
+  the build completed successfully. No ARM build or physical flash was needed
+  for this host-only check; physical power-off/on remains unverified.
+- Result: Registered applet instance state survives a clean host emulator
+  process restart and decode from the saved filesystem image.
+- Decision: Keep physical AC5 open until the Pico is visible through PC/SC and
+  a true power-off/on persistence check can run.
+- Commit: `1d30dd9`.
+- Artifacts/logs: build log SHA-256
+  `bc8d84e356f0509f9434fcebae5e6a5cd781296b12a567783b85c0051da249df`;
+  commit-phase output `artifacts/logs/vpcd-persistence-commit-20261019T120347Z.log`;
+  restore-phase output `artifacts/logs/vpcd-persistence-restore-20261019T120347Z.log`;
+  emulator logs `artifacts/logs/vpcd-persistence-install-emulator-20261019T120347Z.log`
+  and `artifacts/logs/vpcd-persistence-restore-emulator-20261019T120347Z.log`.

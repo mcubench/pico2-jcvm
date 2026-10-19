@@ -1,5 +1,22 @@
 # Handoff
 
+## Latest continuation — automate VPCD applet persistence restart — 2026-10-19
+
+- Added `--memory` to the JCSystem applet VPCD runner and a
+  `tools/test-vpcd-persistence` wrapper. It builds the host emulator and probe,
+  commits the persistent instance field (`0x33`) in a first emulator process,
+  then restores that flash image in a fresh process and verifies the field.
+- Validation passed: first process committed `0x33` (`339000`); the fresh
+  process restored the registered applet and returned `339000` for case 58.
+  This is a host process-restart check, not a physical Pico power cycle.
+- Logs: `artifacts/logs/build-pc-vpcd-persistence-20261019T120347Z.log`,
+  `artifacts/logs/vpcd-persistence-commit-20261019T120347Z.log`,
+  `artifacts/logs/vpcd-persistence-restore-20261019T120347Z.log`, and the two
+  emulator logs with `install-emulator` / `restore-emulator` in their names.
+- Next: continue remaining runtime/card-manager work. Retry physical AC5 only
+  after PC/SC exposes the Pico reader; current power-up check sees Virtual PCD
+  readers only.
+
 ## Latest continuation — reject unknown AID SELECT — 2026-10-19
 
 - CCID and VPCD now identify well-formed short SELECT-by-AID APDUs before

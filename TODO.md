@@ -440,7 +440,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   entries and a wildcard component type that accepts any reference. ARM build
   and focused factory tests pass; installed-applet use remains unverified.
 - [ ] Verify that an installed applet instance and its persistent fields survive
-  a power cycle, not only that its CAP blob survives.
+  a power cycle, not only that its CAP blob survives. The new
+  `./tools/test-vpcd-persistence` regression commits instance field `0x33` in
+  one emulator process, then starts a fresh process from its saved flash image
+  and verifies `0x33` is restored. It passed; this models a process restart,
+  not a physical power-off/on. Hardware persistence still needs a true power
+  cycle and PC/SC access.
 
 ## Card manager and host integration
 
