@@ -5746,5 +5746,5 @@
 - Validation: `./tools/test-gp-delete` passed 21/21 checks. `./tools/build arm` passed, including the CHOUPI ARM image; `./tools/build riscv` passed. `git diff --check` passed. No hardware cycle was run because the Pico is in BOOTSEL.
 - Result: The same transaction ordering production uses is now host-testable. Tests cover begin, applet/package clearing, tombstone write, snapshot sync/commit, rollback, and marker exceptions. They do not exercise actual flash records, CAP-slot deletion, authenticated CCID dispatch, or restart restoration.
 - Decision: Continue toward a storage-backed `CapLoadSession` test boundary and retain the physical DELETE/restart lifecycle as open.
-- Commit: pending
+- Commit: `2536480`; recorded in follow-up metadata commit
 - Artifacts/logs: test and build output from this session; no separate build logs captured.
