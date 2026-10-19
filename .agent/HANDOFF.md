@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest continuation — retry Pico power-up persistence — 2026-10-19
+
+- Re-ran `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` after reinsertion.
+  The access helper granted `/dev/bus/usb/001/004`; `lsusb` confirmed Pico
+  `2e8a:0009`, but GPPro and a bounded `pcsc_scan -r` listed only the two
+  Virtual PCD readers. The check exited after three bounded retries before
+  package or applet APDUs, so physical persistence remains unverified.
+- To resume, restart `pcscd.service` interactively, run the authorized
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper, and confirm the Pico
+  reader appears before rerunning the power-up test.
+- Evidence: `artifacts/logs/pico-powerup-persistence-20261019T105115Z.log`.
+- Next implementation task remains the in-progress `Applet.register()`
+  registration semantics work; inspect the worktree before staging or editing
+  because many unrelated changes from prior sessions are present.
+
 ## Latest continuation — implement JCSystem.lookupAID — 2026-10-19
 
 - `JCSystem.lookupAID()` now validates null and byte-array ranges, returns the

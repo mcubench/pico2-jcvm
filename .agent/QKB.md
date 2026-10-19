@@ -1763,6 +1763,13 @@ fix.
   `artifacts/logs/pico-powerup-persistence-20261019T092025Z.log`. The last run
   again acquired USB ACL access but timed out on all three GPPro registry
   attempts; it did not reach the applet APDU phase.
+- **Latest retry:** On reinsertion, `tools/test-pico-powerup` again acquired
+  the USB ACL for `/dev/bus/usb/001/004`; `lsusb` showed `2e8a:0009`, while
+  GPPro and `pcsc_scan -r` listed only the two Virtual PCD readers. The
+  bounded three-attempt run ended before package or applet verification.
+  Restart `pcscd.service` interactively, refresh the ACL, and confirm the Pico
+  reader before retrying. Evidence:
+  `artifacts/logs/pico-powerup-persistence-20261019T105115Z.log`.
 
 ## JC305 AID virtual-method token mismatch — 2026-10-19
 

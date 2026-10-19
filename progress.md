@@ -5863,3 +5863,24 @@
 - Decision: Continue the Java Card runtime API/profile audit; physical power-cycle persistence remains open because the latest GPPro/PCSC registry only exposed Virtual PCD readers.
 - Commit: API `814d409`; root `c098a86`.
 - Artifacts/logs: `artifacts/logs/applet-reselecting-vpcd-20261019.log` (SHA-256 `02a733eb484772581e4e65390f0abdc4e3ad8754bcf91230da6a62f57db08950`); `artifacts/logs/jcsystem-full-reselect-vpcd-20261019.log` (SHA-256 `bb139accf35ce574e0b49ac0facee2483c7c35bf6e8437f554fc74d673a34ad4`).
+
+## 2026-10-19 — Retry Pico power-up persistence after reinsertion
+
+- Step/experiment: `pico-powerup-persistence-retry-105115Z`
+- Change: Re-ran the bounded physical power-up persistence check after the user
+  reinserted the Pico; archived the reader-discovery log.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` exited 1
+  after three attempts. The authorized USB ACL helper granted access to
+  `/dev/bus/usb/001/004`, and `lsusb -d 2e8a:0009` confirmed the Pico. GPPro
+  listed only `Virtual PCD 00 00` and `Virtual PCD 00 01` on each attempt;
+  escalated `pcsc_scan -r` confirmed the same reader list. The persistence test
+  did not reach package verification or applet APDUs. No build or flash was
+  attempted.
+- Result: The physical Pico is USB-enumerated but absent from PC/SC. Power-up
+  persistence remains unverified.
+- Decision: Resume after `pcscd.service` has been restarted interactively,
+  refresh access with the authorized helper, and confirm the named Pico reader
+  using a bounded scan before rerunning the test.
+- Commit: pending metadata commit.
+- Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T105115Z.log`
+  (SHA-256 `4d6bd6d6f532c82dda5aa93f28163d14d546bd79fc513af2929a300aadf5f9fa`).
