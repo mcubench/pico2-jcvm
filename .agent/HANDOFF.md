@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest implementation — null-safe Java Card AID comparisons — 2026-10-19
+
+- Java Card `AID.equals(byte[],short,byte)` and
+  `AID.partialEquals(byte[],short,byte)` now return false for null arrays, as
+  required by their JC 3.0.5 contract. Added VPCD applet case 75 to verify null
+  handling plus valid full-AID and prefix matches.
+- Validation: `./tools/build-pc` passed API/ROM-mask generation and PC emulator
+  build; `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet
+  --case 75 --log artifacts/logs/aid-null-comparison-20261019.log` passed 3/3;
+  `./tools/build arm` passed. The ROM-mask step printed a hostname socket
+  permission warning and existing Maven/converter warnings but completed.
+- Commits: nested API `f3e41e0`; root test/TODO `c9fc0eb`.
+- Continue the API/runtime audit. The focused VPCD test covers the behavior;
+  physical APDU validation remains unavailable while PC/SC omits the Pico.
+
 ## Latest review handoff — functionality implementation guide — 2026-10-19
 
 - Added `review_20261019.md` with concrete code paths, implementation steps,

@@ -6049,6 +6049,27 @@
   `4d6bd6d6f532c82dda5aa93f28163d14d546bd79fc513af2929a300aadf5f9fa`
   (`artifacts/logs/pico-powerup-persistence-20261019T121536Z.log`).
 
+## 2026-10-19 — Make AID byte comparisons null-safe
+
+- Step/experiment: `aid-null-safe-array-comparisons`
+- Change: Updated `AID.equals(byte[], short, byte)` and
+  `AID.partialEquals(byte[], short, byte)` to return false for null arrays,
+  matching the Java Card 3.0.5 contract. Added applet case 75 to exercise null,
+  matching full-AID, and matching prefix comparisons.
+- Validation: `./tools/build-pc` regenerated the Java Card API and ROM mask and
+  built the PC emulator successfully; existing converter/Maven warnings and a
+  blocked hostname lookup were reported, without build errors. The focused
+  VPCD applet test passed 3/3 (`TEST:SUMMARY pass=3 fail=0 elapsed_s=15.877`).
+  `./tools/build arm` passed for `rp2350-arm-s`. No RISC-V build or physical
+  flash was performed.
+- Result: Null AID comparisons are catch-free false results, while valid full
+  and prefix comparisons remain true in the applet VM.
+- Decision: Continue the JCSystem and runtime API audit; physical validation
+  waits for PC/SC to expose the Pico reader.
+- Commit: API `f3e41e0`; applet regression and TODO `c9fc0eb`.
+- Artifacts/logs: `artifacts/logs/aid-null-comparison-20261019.log`, SHA-256
+  `eb6bc6f6ac662f62b69e36b1ab2b8708e29792003df006ad74b441c50e266541`.
+
 ## 2026-10-19 — Prepare functionality review implementation guide
 
 - Step/experiment: `functionality-review-handoff`
