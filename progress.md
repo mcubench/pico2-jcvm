@@ -1025,7 +1025,7 @@
 - Validation: ARM/RISC-V wrapper builds passed before the change was committed.
 - Result: Implementation and required progress/handoff are committed as `fe7e12f`.
 - Decision: Continue toward interpreter-backed applet install and APDU processing.
-- Commit: pending
+- Commit: `6285edf`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Reflash CHOUPI after Pico 2 replug

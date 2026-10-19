@@ -9,7 +9,7 @@
 - Validation: `./tools/test-jcvmarray-allocation` passed all six cases with a
   warning-free rebuild. No firmware build or hardware operation was needed;
   this changes only the host regression.
-- Test commit: pending.
+- Test commit: `6285edf`.
 - Next: continue the bounded runtime memory/API audit, preserving the extensive
   unrelated worktree changes.
 
