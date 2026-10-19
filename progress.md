@@ -5895,6 +5895,34 @@
   mismatched install `artifacts/logs/applet-register-mismatched-aid-vpcd-20261019-retry.log`
   (SHA-256 `14ea7fac44ebc178cbcfd043b1a60fe417c8fb14f9ac5e59347b8d6a25e32eea`).
 
+## 2026-10-19 — Implement selectingApplet lifecycle and correct CAP Method bounds
+
+- Step/experiment: `applet-selecting-cap-method-bounds`
+- Change: `Applet.selectingApplet()` now reflects execution during `select()` and
+  the subsequent SELECT APDU `process()` call. The CCID and VPCD paths deliver
+  the original SELECT APDU to the applet after a successful selection. Fixed
+  CAP Method component length decoding to convert network byte order and remove
+  both the handler-count byte and exception-handler table from the method-code
+  array length.
+- Validation: `CHOUPI_JCVM_DEBUG=OFF ./tools/build-pc`,
+  `./tools/build-jcsystem-transaction-probe`, and `./tools/build arm` passed.
+  `./tools/test-vpcd-session` passed (`TEST:SUMMARY pass=15 fail=0`). The full
+  VPCD applet regression passed 75 checks in 276.309 s. No RISC-V build,
+  physical flash, or applet APDU was attempted. The separate power-up probe
+  refreshed USB access, but GPPro listed only Virtual PCD readers through all
+  three retries and exited before applet APDUs.
+- Result: Lifecycle state was observed as true during select and SELECT
+  processing, false during deselect, and correct across reset, rejected select,
+  and reselect. The 4,102-byte CAP Method component now installs correctly;
+  it previously appeared as 1,552 bytes and failed at method offset 4,089.
+- Decision: Continue the Java Card API/runtime audit; keep physical power-up
+  persistence open because PC/SC currently exposes only Virtual PCD readers.
+- Commit: root `694b408`; API `bf323aa`.
+- Artifacts/logs: `artifacts/logs/applet-lifecycle-full-vpcd-final-20261019.log`,
+  `artifacts/logs/test-vpcd-session-selecting-applet-20261019.log`,
+  `artifacts/logs/build-arm-method-component-endian-fix-20261019.log`, and
+  diagnostic `artifacts/logs/applet-selecting-debug-vpcd-20261019.log`.
+
 ## 2026-10-19 — Retry Pico power-up persistence after reinsertion
 
 - Step/experiment: `pico-powerup-persistence-retry-105115Z`

@@ -1,5 +1,28 @@
 # Handoff
 
+## Latest implementation — Applet.selectingApplet and CAP Method bounds — 2026-10-19
+
+- Implemented `Applet.selectingApplet()` across Java API, VM, and native bridge.
+  On a successful applet SELECT, the VM now invokes `Applet.process()` with the
+  original SELECT APDU while the selecting flag is true. It is true during
+  `select()`, false during `deselect()`, and tested across reset, rejected
+  selection, and re-selection.
+- Fixed `jc_cap_method_component::methods()` to decode the component size in
+  network byte order and exclude the handler-count byte and exception table.
+  This resolved a reproducible install failure for the probe CAP's 4,102-byte
+  Method component (previously exposed as 1,552 bytes).
+- Commits: API `bf323aa`; root implementation/tests `694b408`.
+- Validation: PC release build, probe CAP build, ARM M33 build, and VPCD
+  session test passed. Full applet regression passed 75 checks in 276.309 s.
+  No RISC-V build, physical flash, or physical APDU was attempted.
+- Physical power-up retry `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup`
+  acquired USB access for `/dev/bus/usb/001/004`, but GPPro again saw only
+  `Virtual PCD 00 00` and `Virtual PCD 00 01` through all three retries. See
+  `artifacts/logs/pico-powerup-persistence-20261019T111724Z.log`; persistence
+  remains unverified.
+- Next: continue the Java Card API/runtime audit from TODO.md. Retry physical
+  persistence after `pcscd.service` exposes the named Pico reader.
+
 ## Latest implementation — Applet.register installation semantics — 2026-10-19
 
 - Implemented native `Applet.register()` overloads. They are legal only during

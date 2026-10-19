@@ -1,5 +1,44 @@
 # Project issue knowledge base
 
+## CAP Method component size was decoded in host byte order — 2026-10-19
+
+- **Symptom:** Installing the enlarged JCSystem lifecycle probe failed at
+  `INVOKESPECIAL` with `IndexOutOfBoundsException`. The CAP encoded a 4,102-byte
+  Method component, but the host runtime exposed only 1,552 bytes; a valid
+  method offset of 4,089 was rejected.
+- **Cause:** `jc_cap_method_component::methods()` used the raw two-byte CAP size
+  field without `NTOHS()`. It also failed to subtract the one-byte
+  `handler_count` field when computing the method code length. The field is
+  network byte order, and the component size includes `handler_count`, the
+  exception-handler table, and method code.
+- **Viable solution:** Convert the component size with `NTOHS(size)`, subtract
+  `sizeof(handler_count)` and the complete exception-handler table, then expose
+  the remaining method bytes. Do not base method bounds on the raw host-endian
+  field.
+- **Validation:** The 4,102-byte CAP installed and the full VPCD JCSystem/APDU
+  lifecycle suite passed 75 checks (`elapsed_s=276.309`). ARM M33 build passed.
+  The generated probe CAP is about 4.1 KiB in its Method component; smaller
+  earlier CAPs did not expose the truncation.
+- **Scope:** This affects every dynamically loaded CAP whose Method component
+  crosses the mistaken byte-order bound. Malformed-component underflow checks
+  remain part of the CAP validation/hardening backlog.
+
+## USB-visible Pico omitted from PC/SC reader list — 2026-10-19
+
+- **Observation:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` refreshed
+  the authorized ACL for `/dev/bus/usb/001/004`, while GPPro listed only
+  `Virtual PCD 00 00` and `Virtual PCD 00 01` through three registry retries.
+  The probe exited before package or applet APDUs. See
+  `artifacts/logs/pico-powerup-persistence-20261019T111724Z.log`.
+- **Interpretation:** USB enumeration/ACL success does not establish that
+  pcscd registered the Pico reader. This attempt does not indicate an applet
+  persistence failure.
+- **Recovery:** Still unresolved. Restart `pcscd.service` interactively, run
+  the authorized `/usr/local/sbin/pico2-pcsc-reader` helper, then use a bounded
+  `pcsc_scan -r` to confirm the named Pico reader before retrying.
+- **Limit:** Do not run the applet persistence assertion until the Pico reader
+  appears in PC/SC; the latest run did not reach card APDUs.
+
 ## Pico PC/SC lifecycle verified after CDC/BOOTSEL flash cycle — 2026-10-19
 
 - **Observation:** After the `cycle choupi` path recovered through CDC 1200-baud

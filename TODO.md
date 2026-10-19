@@ -31,6 +31,12 @@ out explicitly.
   the supplied AID must match the install instance AID. VPCD cases 67–70 pass
   for a matching AID; a mismatched AID reports
   `SystemException.ILLEGAL_AID` and the applet can complete fallback install.
+- [x] Implement `Applet.selectingApplet()` and deliver a successful applet
+  SELECT APDU to `Applet.process()`. Lifecycle probes verify the flag during
+  `select()` and SELECT processing, its absence during `deselect()`, and reset,
+  rejected-selection, and re-selection behavior. The full VPCD lifecycle suite
+  passed 75 checks; physical validation remains open while the Pico is absent
+  from PC/SC.
 
 ## Active: validate the applet process APDUs and client results
 
