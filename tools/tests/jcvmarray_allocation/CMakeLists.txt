@@ -15,5 +15,6 @@ target_include_directories(jcvmarray_allocation_test PRIVATE
 target_compile_options(jcvmarray_allocation_test PRIVATE
   -Wall -Wextra -ffunction-sections -fdata-sections
   -Wno-ignored-qualifiers -Wno-address-of-packed-member
+  -Wno-mismatched-new-delete
 )
 target_link_options(jcvmarray_allocation_test PRIVATE -Wl,--gc-sections)

@@ -1,5 +1,18 @@
 # Handoff
 
+## Latest regression — clean up JCVMArray storage when element copies throw — 2026-10-19
+
+- The allocation regression now uses a throwing element assignment to exercise
+  failures after backing allocation. Copy construction releases the partial
+  array; copy assignment releases its staged replacement and preserves the
+  destination's old contents. The test counts exact array deallocations.
+- Validation: `./tools/test-jcvmarray-allocation` passed all six cases with a
+  warning-free rebuild. No firmware build or hardware operation was needed;
+  this changes only the host regression.
+- Test commit: pending.
+- Next: continue the bounded runtime memory/API audit, preserving the extensive
+  unrelated worktree changes.
+
 ## Latest regression — inject JCVMArray copy-constructor allocation failure — 2026-10-19
 
 - `tools/test-jcvmarray-allocation` now forces allocation failure in mutable

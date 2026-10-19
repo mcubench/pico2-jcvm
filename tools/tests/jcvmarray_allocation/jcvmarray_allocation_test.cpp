@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <new>
 #include <stdint.h>
+#include <stdexcept>
 #include <type_traits>
 
 static_assert(
@@ -17,6 +18,22 @@ static_assert(
 
 namespace {
 bool fail_next_array_allocation = false;
+std::size_t array_deallocations = 0;
+
+struct ThrowOnCopy {
+  static bool fail_assignment;
+  uint8_t value = 0;
+
+  ThrowOnCopy &operator=(const ThrowOnCopy &other) {
+    if (fail_assignment) {
+      throw std::runtime_error("injected element copy failure");
+    }
+    value = other.value;
+    return *this;
+  }
+};
+
+bool ThrowOnCopy::fail_assignment = false;
 }
 
 void *operator new[](const std::size_t size) {
@@ -30,9 +47,13 @@ void *operator new[](const std::size_t size) {
   throw std::bad_alloc();
 }
 
-void operator delete[](void *memory) noexcept { std::free(memory); }
+void operator delete[](void *memory) noexcept {
+  ++array_deallocations;
+  std::free(memory);
+}
 
 void operator delete[](void *memory, std::size_t) noexcept {
+  ++array_deallocations;
   std::free(memory);
 }
 
@@ -70,6 +91,48 @@ int main() {
     return EXIT_FAILURE;
   }
   std::puts("TEST:PASS copy_construction_failure_propagates");
+
+  jcvm::JCVMArray<ThrowOnCopy> throwing_source(2);
+  throwing_source[0].value = 0x66;
+  throwing_source[1].value = 0x77;
+  const std::size_t deallocations_before_copy = array_deallocations;
+  ThrowOnCopy::fail_assignment = true;
+  bool element_copy_failed = false;
+  try {
+    jcvm::JCVMArray<ThrowOnCopy> copy(throwing_source);
+    if (copy.size() != throwing_source.size()) {
+      std::puts("TEST:FAIL throwing_copy_contents");
+      return EXIT_FAILURE;
+    }
+  } catch (const std::runtime_error &) {
+    element_copy_failed = true;
+  }
+  ThrowOnCopy::fail_assignment = false;
+  if (!element_copy_failed ||
+      array_deallocations != deallocations_before_copy + 1) {
+    std::puts("TEST:FAIL copy_constructor_releases_partial_buffer");
+    return EXIT_FAILURE;
+  }
+  std::puts("TEST:PASS copy_constructor_releases_partial_buffer");
+
+  jcvm::JCVMArray<ThrowOnCopy> throwing_destination(1);
+  throwing_destination[0].value = 0x88;
+  const std::size_t deallocations_before_assignment = array_deallocations;
+  ThrowOnCopy::fail_assignment = true;
+  bool element_assignment_failed = false;
+  try {
+    throwing_destination = throwing_source;
+  } catch (const std::runtime_error &) {
+    element_assignment_failed = true;
+  }
+  ThrowOnCopy::fail_assignment = false;
+  if (!element_assignment_failed || throwing_destination.size() != 1 ||
+      throwing_destination[0].value != 0x88 ||
+      array_deallocations != deallocations_before_assignment + 1) {
+    std::puts("TEST:FAIL copy_assignment_releases_temporary_and_preserves_destination");
+    return EXIT_FAILURE;
+  }
+  std::puts("TEST:PASS copy_assignment_releases_temporary_and_preserves_destination");
 
   jcvm::JCVMArray<uint8_t> destination(2);
   destination[0] = 0x44;

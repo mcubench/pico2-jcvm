@@ -1923,6 +1923,26 @@
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: none.
 
+
+## 2026-10-19 — Verify JCVMArray temporary cleanup when element copies throw
+
+- Step/experiment: jcvmarray-element-copy-exception-safety
+- Change: Extended the allocation regression with an element type whose copy
+  assignment throws. Copy construction must free its partially populated
+  backing array; copy assignment must free its temporary and preserve the
+  destination's original length/value. The test build suppresses GCC's
+  mismatched-new-delete diagnostic for the deliberate global allocation
+  replacement backed by malloc/free.
+- Validation: `./tools/test-jcvmarray-allocation` passed all six cases,
+  including exact one-array deallocation checks for both throwing element-copy
+  paths. Rebuild completed with no warnings.
+- Result: The `unique_ptr` staging paths release allocations on element-copy
+  exceptions, not only on allocation failure.
+- Decision: Keep the exception-safety regression and continue the memory/API
+  audit.
+- Commit: pending
+- Artifacts/logs: none.
+
 ## 2026-10-18 — Validate ARM smoke image on physical Pico 2
 
 - Step/experiment: `physical-arm-smoke-cycle`
