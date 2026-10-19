@@ -378,7 +378,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `APDU.getCurrentAPDU()` now returns the same Java APDU object passed to
   `process()` and throws `SecurityException` during `select()`, verified in two
   VPCD applet cases. Physical validation remains blocked by missing Pico PC/SC
-  enumeration.
+  enumeration. `APDU.getCurrentAPDUBuffer()` now returns the same buffer as
+  `getBuffer()` during `process()` and throws `SecurityException` during
+  `select()`, verified in two more VPCD cases.
   The bridge fragments data responses at
   short Le and serves `GET RESPONSE` using `61xx`. Parser, response-chain, and
   Context state tests pass; the Pico cycle also passed after flashing this

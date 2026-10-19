@@ -1005,7 +1005,7 @@
 - Validation: `AlgTest_v1.8.2_jc305.cap` contains Applet.cap component size 14, count 1, AID `4A43416C675465737431`, and big-endian install offset `0x3DA3` (15779); record traversal consumes the component exactly with zero trailing bytes.
 - Result: The new lookup's component-size convention matches the supplied JCAlgTest v1.8.2 Applet component.
 - Decision: Continue into applet lifecycle dispatch. Host hardware access is unavailable in this VM session (`lsusb` reports libusb initialization error -99; system bus/PCSC unavailable), so defer flashing until USB access returns.
-- Commit: pending
+- Commit: nested API repository `2ec9efa`; root implementation commit pending.
 - Artifacts/logs: supplied `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` (source artifact; no new log)
 
 ## 2026-10-11 — Resolve applet AID across installed packages
@@ -5788,3 +5788,26 @@
 - Decision: Continue the Java Card APDU API/profile audit and add further focused golden coverage; retain physical validation as open until PC/SC enumerates the Pico.
 - Commit: `2780db1`; Java API hunk committed in nested API repository as `43f9877`.
 - Artifacts/logs: `artifacts/logs/jcsystem-current-apdu-vpcd-20261019.log`
+
+## 2026-10-19 — Gate APDU current buffer access
+
+- Step/experiment: `apdu-get-current-apdu-buffer`
+- Change: Implemented `APDU.getCurrentAPDUBuffer()` by returning the active
+  APDU object's buffer, so the existing process-scope guard also protects the
+  buffer API. Added VPCD cases for buffer identity and rejection during
+  `Applet.select()`; updated status, handoff, and PC/SC issue notes.
+- Validation: `./tools/build arm` and `./tools/build-jcsystem-transaction-probe`
+  passed. VPCD cases 59–62 passed (`TEST:SUMMARY pass=6 fail=0
+  elapsed_s=33.705`). The requested `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-pico-powerup` acquired USB ACL access but all three GPPro
+  registry attempts timed out before applet APDUs. No RISC-V build or flash was
+  attempted. `git diff --check` is pending.
+- Result: During `Applet.process()`, the method returned the exact same buffer
+  as the active APDU object's `getBuffer()`; during `Applet.select()`, it
+  raised `SecurityException`. Physical persistence remains inconclusive due
+  to missing Pico PC/SC registry visibility.
+- Decision: Keep physical power-up validation open and continue the APDU API
+  audit offline until the Pico reader enumerates through PC/SC.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcsystem-current-apdu-buffer-vpcd-20261019.log`,
+  `artifacts/logs/pico-powerup-persistence-20261019T092025Z.log`

@@ -1,5 +1,22 @@
 # Handoff
 
+## Latest continuation — gate APDU current buffer access — 2026-10-19
+
+- `APDU.getCurrentAPDUBuffer()` now delegates through the active APDU object,
+  inheriting the `Applet.process()` scope check from `getCurrentAPDU()`. The
+  probe verifies buffer identity during `process()` and `SecurityException`
+  during `select()`.
+- `./tools/build arm` and `./tools/build-jcsystem-transaction-probe` passed.
+  VPCD cases 59–62 passed: `TEST:SUMMARY pass=6 fail=0 elapsed_s=33.705`.
+- Java API change committed in the nested API repository as `2ec9efa`.
+- The requested physical `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup`
+  run acquired USB ACL access to `/dev/bus/usb/001/004`, but GPPro timed out
+  discovering the package/applet registry in all three attempts. See
+  `artifacts/logs/pico-powerup-persistence-20261019T092025Z.log`; this does not
+  establish whether the persistent applet survived power-up.
+- No RISC-V build or flash was attempted. Continue the APDU API audit and retry
+  physical persistence once the Pico reader is visible in PC/SC.
+
 ## Latest continuation — implement APDU.getCurrentAPDU — 2026-10-19
 
 - Implemented `APDU.getCurrentAPDU()` through a native bridge to the current

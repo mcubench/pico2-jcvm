@@ -1758,4 +1758,8 @@ fix.
   run the authorized ACL helper, and verify a Pico reader with a bounded scan.
   The assistant's sudo exception does not permit restarting the service.
 - **Evidence:** `artifacts/logs/pico-powerup-persistence-20261019T084640Z.log`,
-  `artifacts/logs/pico-powerup-persistence-20261019T085227Z.log`.
+  `artifacts/logs/pico-powerup-persistence-20261019T085227Z.log`, and the
+  retry after reinsertion at
+  `artifacts/logs/pico-powerup-persistence-20261019T092025Z.log`. The last run
+  again acquired USB ACL access but timed out on all three GPPro registry
+  attempts; it did not reach the applet APDU phase.
