@@ -5850,5 +5850,5 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` exited 1 after three registry attempts. USB access was granted for `/dev/bus/usb/001/004`, but GPPro listed only `Virtual PCD 00 00` and `Virtual PCD 00 01`; a subsequent escalated `pcsc_scan -r` also listed only those virtual readers. No package/APDU persistence assertion ran. No build or flash was attempted.
 - Result: Physical persistence remains unverified because PC/SC does not currently expose the Pico reader to the client.
 - Decision: Keep hardware power-up validation open; retry after Pico registration appears in `pcsc_scan -r`.
-- Commit: pending.
+- Commit: `8eda0c2`.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T102428Z.log` (SHA-256 `4d6bd6d6f532c82dda5aa93f28163d14d546bd79fc513af2929a300aadf5f9fa`)
