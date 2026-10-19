@@ -5686,7 +5686,7 @@
   survived a full PC emulator process restart.
 - Decision: Continue GP DELETE/GET DATA and transaction failure/power-loss
   validation on VPCD. The physical reader still stalls after SELECT.
-- Commit: pending
+- Commit: `fc05835`
 - Artifacts/logs: `artifacts/logs/jcsystem-restore-save-vpcd-20261019.log`,
   `artifacts/logs/jcsystem-restore-second-process-vpcd-20261019.log`,
   `artifacts/logs/cycle-choupi-20261019T035222Z.log`
