@@ -14,6 +14,7 @@
   7/7, including persistent array aliases and the committed applet field. No
   physical flash or APDU test was run.
 - Commit: `01f7eba75fc1afc53dbabcecb68cf4cdf5e307ed`.
+- Validation record commit: `71c6811c33e15f3672d31b2fb37c2efcea123785`.
 - Next: continue runtime memory/API audit; physical APDU delivery remains blocked
   by the known PC/SC transmit stall.
 

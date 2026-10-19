@@ -6430,6 +6430,6 @@
   and object graph reconstruction in the host VPCD emulator.
 - Decision: Keep the change; physical persistence still requires a real board
   power cycle and functioning PC/SC applet APDUs.
-- Commit: pending
+- Commit: `71c6811c33e15f3672d31b2fb37c2efcea123785`
 - Artifacts/logs: artifacts/logs/vpcd-persistence-commit-20261019T203104Z.log
   and artifacts/logs/vpcd-persistence-restore-20261019T203104Z.log.
