@@ -70,6 +70,8 @@ namespace {
 std::unique_ptr<jcvm::Context> selected_applet_context;
 bool selected_applet_is_active = false;
 pico2_jcvm::ShortApduResponseChain pending_apdu_response;
+bool selected_applet_reselection_pending = false;
+bool selected_applet_is_reselecting = false;
 
 class APDUProcessScope {
 public:
@@ -323,7 +325,8 @@ uint16_t choupi_vm_select_applet(void) {
   return 0x9000;
 }
 
-uint16_t choupi_vm_deselect_applet(void) {
+extern "C" uint16_t choupi_vm_deselect_applet(
+    const uint8_t selecting_same_applet) {
   pending_apdu_response.queue(nullptr, 0);
   if (!selected_applet_context || !selected_applet_is_active) {
     selected_applet_is_active = false;
@@ -503,6 +506,8 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
       }
     }
     if (status == 0x9000 && parsed_command.has_expected_response_length &&
+  selected_applet_reselection_pending = false;
+  selected_applet_is_reselecting = false;
         data_length > parsed_command.expected_response_length) {
       const uint16_t first_chunk = parsed_command.expected_response_length;
       const uint16_t remaining =
@@ -567,7 +572,10 @@ uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
         static_cast<unsigned long>(interpretor.lastExceptionOpcodeHistory()),
         static_cast<unsigned long>(interpretor.lastExceptionDepthHistory()));
     std::fflush(stdout);
+  selected_applet_is_reselecting = selected_applet_reselection_pending;
+  selected_applet_reselection_pending = false;
   }
+  selected_applet_is_reselecting = false;
 #endif
   return status;
 }
@@ -584,6 +592,8 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
                                 uint32_t *exception_pc,
                                 uint32_t *exception_prefix,
                                 uint16_t *exception_operand,
+  selected_applet_reselection_pending = false;
+  selected_applet_is_reselecting = false;
                                 uint8_t *exception_stack_depth,
                                 uint32_t *exception_opcode_history,
                                 uint32_t *exception_depth_history,
@@ -592,9 +602,15 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
   TRACE_JCVM_DEBUG("Starting CAP install method at offset %u",
                    static_cast<unsigned>(method_offset));
 #ifndef PC_VERSION
+  selected_applet_reselection_pending = selecting_same_applet != 0 &&
+                                         status == 0x9000;
   choupi_install_stage(0);
   choupi_install_context(0);
 #endif
+extern "C" uint8_t choupi_vm_is_reselecting_applet(void) {
+  return selected_applet_is_reselecting ? 1 : 0;
+}
+
   jcvm::Interpretor interpretor(0,
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
                                 method_offset, install_data, install_length);

@@ -54,6 +54,8 @@ extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
 #endif
 
 namespace {
+extern "C" uint8_t choupi_vm_is_reselecting_applet(void);
+
 ClearEvent getTransientClearEvent(const jbyte_t event) {
   switch (event) {
   case static_cast<jbyte_t>(ClearEvent::CLEAR_ON_RESET):
@@ -341,6 +343,10 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getCurrentAPDU() {
   Context &context = Context::getActiveContext();
   const jref_t reference = context.getAPDUObjectRef();
   if (!context.isAPDUProcessActive() || reference.isNullPointer() ||
+jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletReselecting() {
+  return choupi_vm_is_reselecting_applet() != 0 ? TRUE : FALSE;
+}
+
       reference.isArray()) {
     throw Exceptions::SecurityException;
   }

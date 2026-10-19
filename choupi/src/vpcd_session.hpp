@@ -15,7 +15,7 @@ struct CardCallbacks {
   uint8_t (*restore)(void *context, const uint8_t *aid, uint8_t aid_length) =
       nullptr;
   uint16_t (*select)(void *context) = nullptr;
-  uint16_t (*deselect)(void *context) = nullptr;
+  uint16_t (*deselect)(void *context, bool selecting_same_applet) = nullptr;
   uint16_t (*process)(void *context, const uint8_t *command,
                       uint16_t command_length, uint8_t *response,
                       uint16_t response_capacity, uint16_t *response_length) =
@@ -36,7 +36,7 @@ public:
   bool applet_selected() const noexcept { return selected_; }
 
 private:
-  void clear_or_deselect();
+  void clear_or_deselect(bool selecting_same_applet);
   bool select_by_aid(const uint8_t *aid, size_t aid_length,
                      const uint8_t *command, size_t command_length) const;
 

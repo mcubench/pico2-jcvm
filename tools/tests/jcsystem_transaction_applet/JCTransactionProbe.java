@@ -26,6 +26,7 @@ public final class JCTransactionProbe extends Applet {
   private byte value = 0x11;
   private byte selectCount;
   private byte deselectCount;
+  private byte lastSelectWasReselect;
   private byte rejectNextSelect;
   private byte currentApduHiddenOutsideProcess;
   private byte currentApduBufferHiddenOutsideProcess;
@@ -49,6 +50,7 @@ public final class JCTransactionProbe extends Applet {
 
   public boolean select() {
     selectCount++;
+    lastSelectWasReselect = reSelectingApplet() ? (byte)1 : (byte)0;
     try {
       APDU.getCurrentAPDU();
       currentApduHiddenOutsideProcess = 0;
@@ -687,7 +689,8 @@ public final class JCTransactionProbe extends Applet {
       case 55: {
         buffer[0] = selectCount;
         buffer[1] = deselectCount;
-        length = 2;
+        buffer[2] = lastSelectWasReselect;
+        length = 3;
         break;
       }
       case 58: {

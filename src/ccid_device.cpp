@@ -21,7 +21,7 @@ extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                             uint8_t aid_length);
 extern "C" void choupi_vm_clear_selected_applet(void);
 extern "C" uint16_t choupi_vm_select_applet(void);
-extern "C" uint16_t choupi_vm_deselect_applet(void);
+extern "C" uint16_t choupi_vm_deselect_applet(uint8_t selecting_same_applet);
 extern "C" uint16_t choupi_vm_process_applet(const uint8_t *command,
                                               uint16_t command_length,
                                               uint8_t *response,
@@ -132,7 +132,7 @@ void process_message(uint8_t rhport) {
     send_response(rhport, 0x80, kAtr, sizeof(kAtr));
     break;
   case 0x63: // PC_to_RDR_IccPowerOff
-    (void)choupi_vm_deselect_applet();
+    (void)choupi_vm_deselect_applet(0);
     slot_state = 1;
     secure_channel.reset();
     get_status_first_seen = false;
@@ -149,7 +149,18 @@ void process_message(uint8_t rhport) {
     size_t response_length = 2;
     if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
       get_status_first_seen = false;
-      (void)choupi_vm_deselect_applet();
+      const uint8_t instance_aid_length =
+          cap_load_session.instanceAidLength();
+      const bool selecting_same_applet =
+          cap_load_session.installed() && apdu_length >= 5 &&
+          apdu[2] == 0x04 && apdu[3] == 0x00 &&
+          apdu[4] == instance_aid_length &&
+          (apdu_length == 5u + static_cast<size_t>(apdu[4]) ||
+           (apdu_length == 6u + static_cast<size_t>(apdu[4]) &&
+            apdu[apdu_length - 1] == 0x00)) &&
+          std::memcmp(apdu + 5, cap_load_session.instanceAid(),
+                      instance_aid_length) == 0;
+      (void)choupi_vm_deselect_applet(selecting_same_applet ? 1 : 0);
     }
     if (!secure_channel.active() && apdu_length == 5 && apdu[0] == 0x80 &&
         apdu[1] == 0xca) {
@@ -205,7 +216,7 @@ void process_message(uint8_t rhport) {
                                      command_data_length, request);
         uint16_t status = 0x6a80;
         if (valid_request) {
-          (void)choupi_vm_deselect_applet();
+          (void)choupi_vm_deselect_applet(0);
           get_status_first_seen = false;
           status = cap_load_session.deleteObject(
               request.aid, request.aid_length,

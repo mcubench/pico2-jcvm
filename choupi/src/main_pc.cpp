@@ -73,7 +73,7 @@ extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                              uint8_t aid_length);
 extern "C" void choupi_vm_clear_selected_applet(void);
 extern "C" uint16_t choupi_vm_select_applet(void);
-extern "C" uint16_t choupi_vm_deselect_applet(void);
+extern "C" uint16_t choupi_vm_deselect_applet(uint8_t selecting_same_applet);
 extern "C" uint16_t choupi_vm_process_applet(const uint8_t *command,
                                               uint16_t command_length,
                                               uint8_t *response,
@@ -193,7 +193,9 @@ uint8_t vpcd_restore_applet(void *, const uint8_t *aid, uint8_t aid_length) {
 
 uint16_t vpcd_select_applet(void *) { return choupi_vm_select_applet(); }
 
-uint16_t vpcd_deselect_applet(void *) { return choupi_vm_deselect_applet(); }
+uint16_t vpcd_deselect_applet(void *, const bool selecting_same_applet) {
+  return choupi_vm_deselect_applet(selecting_same_applet ? 1 : 0);
+}
 
 uint16_t vpcd_process_apdu(void *, const uint8_t *command,
                            uint16_t command_length, uint8_t *response,

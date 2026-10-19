@@ -40,10 +40,11 @@ void append_select_response(std::vector<uint8_t> &response, const uint8_t *aid,
 Session::Session(std::vector<uint8_t> applet_aid, CardCallbacks callbacks)
     : applet_aid_(std::move(applet_aid)), callbacks_(callbacks) {}
 
-void Session::clear_or_deselect() {
+void Session::clear_or_deselect(const bool selecting_same_applet) {
   if (selected_) {
     if (callbacks_.deselect != nullptr) {
-      (void)callbacks_.deselect(callbacks_.context);
+      (void)callbacks_.deselect(callbacks_.context,
+                                selecting_same_applet);
     }
     selected_ = false;
   }
@@ -74,7 +75,7 @@ SessionResult Session::handle_message(const uint8_t *message,
   if (message_length == 1) {
     switch (message[0]) {
     case kControlOff:
-      clear_or_deselect();
+      clear_or_deselect(false);
       if (callbacks_.clear != nullptr) {
         callbacks_.clear(callbacks_.context);
       }
@@ -84,7 +85,7 @@ SessionResult Session::handle_message(const uint8_t *message,
       powered_ = true;
       return SessionResult::NoResponse;
     case kControlReset:
-      clear_or_deselect();
+      clear_or_deselect(false);
       if (callbacks_.clear != nullptr) {
         callbacks_.clear(callbacks_.context);
       }
@@ -107,14 +108,14 @@ SessionResult Session::handle_message(const uint8_t *message,
   }
 
   if (select_by_aid(kIsdAid, sizeof(kIsdAid), message, message_length)) {
-    clear_or_deselect();
+    clear_or_deselect(false);
     append_select_response(response, kIsdAid, sizeof(kIsdAid));
     return SessionResult::Response;
   }
 
   if (select_by_aid(applet_aid_.data(), applet_aid_.size(), message,
                     message_length)) {
-    clear_or_deselect();
+    clear_or_deselect(true);
     if (callbacks_.restore == nullptr ||
         callbacks_.restore(callbacks_.context, applet_aid_.data(),
                            static_cast<uint8_t>(applet_aid_.size())) != 0) {
@@ -158,7 +159,7 @@ SessionResult Session::handle_message(const uint8_t *message,
 }
 
 void Session::disconnect() {
-  clear_or_deselect();
+  clear_or_deselect(false);
   powered_ = false;
 }
 

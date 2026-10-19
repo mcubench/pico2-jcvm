@@ -232,9 +232,9 @@ def main() -> int:
                             bytes((0x80, 0x00, 55, 0x00, 0x00)),
                             "read applet lifecycle callback counts before reset",
                         )
-                        if len(before) != 2:
+                        if len(before) != 3:
                             raise RuntimeError(
-                                f"callback counts before reset: expected 2 bytes, got {before.hex().upper()}"
+                                f"callback state before reset: expected 3 bytes, got {before.hex().upper()}"
                             )
                         send_message(connection, b"\x02")
                         exchange(connection, select, "select applet after card reset")
@@ -245,9 +245,9 @@ def main() -> int:
                         )
                         expected_counts = bytes(((before[0] + 1) & 0xff,
                                                  (before[1] + 1) & 0xff))
-                        if after != expected_counts:
+                        if len(after) != 3 or after[:2] != expected_counts or after[2] != 0:
                             raise RuntimeError(
-                                f"{label}: expected callback counts {expected_counts.hex().upper()}, got {after.hex().upper()}"
+                                f"{label}: expected callback state {expected_counts.hex().upper()}00, got {after.hex().upper()}"
                             )
                         print(f"TEST:PASS {label}")
                         continue
@@ -276,6 +276,16 @@ def main() -> int:
                             )
                         print(f"TEST:APDU APDU after rejected SELECT response={not_selected.hex().upper()}")
                         exchange(connection, select, "select applet after rejected selection")
+                        reselection_state = exchange(
+                            connection,
+                            bytes((0x80, 0x00, 55, 0x00, 0x00)),
+                            "read selection state after rejected reselect",
+                        )
+                        if len(reselection_state) != 3 or reselection_state[2] != 0:
+                            raise RuntimeError(
+                                "reselection flag persisted after a rejected select: "
+                                f"{reselection_state.hex().upper()}"
+                            )
                         print(f"TEST:PASS {label}")
                         continue
                     if p1 == 31:
@@ -289,9 +299,9 @@ def main() -> int:
                             bytes((0x80, 0x00, p1, 0x00, 0x00)),
                             "read applet lifecycle callback counts before reselect",
                         )
-                        if len(before) != 2:
+                        if len(before) != 3:
                             raise RuntimeError(
-                                f"callback counts before reselect: expected 2 bytes, got {before.hex().upper()}"
+                                f"callback state before reselect: expected 3 bytes, got {before.hex().upper()}"
                             )
                         exchange(connection, select, "reselect applet for callback check")
                         after = exchange(
@@ -301,9 +311,9 @@ def main() -> int:
                         )
                         expected_counts = bytes(((before[0] + 1) & 0xff,
                                                  (before[1] + 1) & 0xff))
-                        if after != expected_counts:
+                        if len(after) != 3 or after[:2] != expected_counts or after[2] != 1:
                             raise RuntimeError(
-                                f"{label}: expected callback counts {expected_counts.hex().upper()}, got {after.hex().upper()}"
+                                f"{label}: expected callback state {expected_counts.hex().upper()}01, got {after.hex().upper()}"
                             )
                         print(f"TEST:PASS {label}")
                         continue
