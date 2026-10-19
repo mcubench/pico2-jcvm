@@ -45,9 +45,29 @@ int main() {
     return EXIT_FAILURE;
   } catch (const std::bad_alloc &) {
     std::puts("TEST:PASS allocation_failure_propagates");
-    return EXIT_SUCCESS;
   } catch (...) {
     std::puts("TEST:FAIL allocation_failure_wrong_exception");
     return EXIT_FAILURE;
   }
+
+  jcvm::Heap owner(1);
+  jcvm::fs::Tag tag{};
+  tag.len = 3;
+  tag.value[0] = 0xa0;
+  tag.value[1] = 0x01;
+  tag.value[2] = 0x01;
+  fail_next_array_allocation = true;
+  try {
+    jcvm::JC_Array array(owner, jcvm::JAVA_ARRAY_T_BYTE, 0, tag, false,
+                         jcvm::ClearEvent::None, 0);
+    (void)array;
+    std::puts("TEST:FAIL persistent_array_failure_was_swallowed");
+    return EXIT_FAILURE;
+  } catch (const std::bad_alloc &) {
+    std::puts("TEST:PASS persistent_array_failure_propagates");
+  } catch (...) {
+    std::puts("TEST:FAIL persistent_array_failure_wrong_exception");
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
 }

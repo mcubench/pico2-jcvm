@@ -6371,3 +6371,24 @@
   needed for broader restore low-memory coverage.
 - Commit: `a64a9d72b7387c4a15797930dd638b418762daab`
 - Artifacts/logs: none.
+
+
+## 2026-10-19 — Inject failure in persistent array constructor
+
+- Step/experiment: `persistent-array-allocation-failure-injection`
+- Change: Extended the focused allocation regression to construct a persistent
+  `JC_Array` with a real `Heap` and inject `std::bad_alloc` into its tagged
+  backing-buffer `new[]` initializer. Added the required OS FFI include path and
+  `jref_t.cpp` test linkage.
+- Validation: `./tools/test-jcvmarray-allocation` passed both
+  `allocation_failure_propagates` and
+  `persistent_array_failure_propagates`. Its first integrated build lacked the
+  FFI include path; the next link lacked `jref_t.cpp`; the corrected wrapper
+  completed cleanly. The ARM build passed after the source change in the preceding
+  step.
+- Result: Both the general JCVM array constructor and the persistent array
+  constructor propagate deterministic allocation failures. Full VM restore/APDU
+  handling remains unverified under forced exhaustion.
+- Decision: Keep the targeted regression; continue the broader runtime/API audit.
+- Commit: pending
+- Artifacts/logs: none.

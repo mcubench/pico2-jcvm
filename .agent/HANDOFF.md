@@ -5,15 +5,16 @@
 - Removed `noexcept` from the persistent `JC_Array` constructor, which allocates
   a tagged backing buffer with `new[]`. Restore and APDU caller boundaries catch
   failures; previously this constructor could invoke `std::terminate` first.
-- Extended `tools/test-jcvmarray-allocation` with a compile-time assertion that
-  the constructor may throw. The test also injects a backing `new[]` failure into
-  `JCVMArray` and passes. ARM build passed. Initial strict test compilation
-  failed on legacy warnings in included CAP/API headers; the test wrapper now
-  keeps `-Wall -Wextra` and suppresses those two pre-existing header warning
-  classes. No hardware test was run.
+- Extended `tools/test-jcvmarray-allocation` to force `new[]` failure in both
+  `JCVMArray` and the persistent `JC_Array` constructor. Both propagation checks
+  pass. ARM build passed. The test wrapper uses `-Wall -Wextra` and suppresses two
+  pre-existing warnings in included CAP/API headers; no hardware test was run.
+- The test initially failed to compile/link until the OS FFI include path and
+  `jref_t.cpp` were added.
 - Commit: `a64a9d72b7387c4a15797930dd638b418762daab`.
-- Next: add direct failure injection for persistent restore if a safe allocator
-  seam is available, then continue the runtime/API audit.
+- Next: continue the runtime/API audit. Full firmware restore/APDU behavior under
+  forced exhaustion and transient-factory exception mapping through the VM remain
+  open.
 
 
 ## Latest implementation — map transient allocation failure — 2026-10-19

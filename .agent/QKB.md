@@ -2009,7 +2009,8 @@ fix.
   the APDU boundary could handle the failure.
 - **Viable fix:** Remove `noexcept` from both declaration and definition so the
   allocation failure propagates into existing restore/APDU catch boundaries.
-- **Validation:** ARM build passed. The allocation regression now statically
-  asserts that this constructor is potentially throwing and continues to inject
-  an actual `new[]` failure for `JCVMArray`; the regression passes. The
-  persistent-constructor allocation itself was not fault-injected.
+- **Validation:** ARM build passed. `./tools/test-jcvmarray-allocation` injects
+  `std::bad_alloc` into this persistent constructor's `new[]` initializer and
+  passes `persistent_array_failure_propagates`, in addition to the direct
+  `JCVMArray` allocation-failure case. Full firmware restore/APDU behavior under
+  forced exhaustion remains untested.
