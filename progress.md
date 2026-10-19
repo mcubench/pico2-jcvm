@@ -5943,3 +5943,27 @@
 - Commit: pending metadata commit.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T105115Z.log`
   (SHA-256 `4d6bd6d6f532c82dda5aa93f28163d14d546bd79fc513af2929a300aadf5f9fa`).
+
+## 2026-10-19 — Reject unknown applet SELECT AIDs
+
+- Step/experiment: `unknown-aid-select-routing`
+- Change: Added short SELECT-by-AID recognition to CCID and VPCD routing. A
+  valid unknown AID now deselects the active applet and returns `6A82` instead
+  of being passed to `Applet.process()`. Added a unit regression and VPCD case
+  74; the unit test also covers a nonzero optional short Le byte.
+- Validation: `./tools/test-vpcd-session` passed (16/16). The focused VPCD applet
+  test passed (3/3): unknown SELECT returned `6A82`, and a subsequent applet
+  command returned `6999`. `CHOUPI_JCVM_DEBUG=OFF ./tools/build-pc`,
+  `./tools/build-jcsystem-transaction-probe`, and `./tools/build arm` passed.
+  PC Rust dependency compilation emitted its existing 49 warnings. RISC-V
+  build and physical flash/APDU validation were intentionally skipped.
+- Result: Both transport paths reject unknown short AID SELECTs without
+  dispatching to the selected applet. The physical reader remains absent from
+  PC/SC, so no on-device result is available.
+- Decision: Continue the Java Card runtime/API audit in TODO.md; retry physical
+  persistence when PC/SC lists the Pico reader.
+- Commit: `d9ea607`.
+- Artifacts/logs: `artifacts/logs/test-vpcd-session-unknown-aid-select-20261019.log`,
+  `artifacts/logs/unknown-aid-select-vpcd-20261019.log`,
+  `artifacts/logs/build-pc-unknown-aid-select-20261019.log`, and
+  `artifacts/logs/build-arm-unknown-aid-select-20261019.log`.

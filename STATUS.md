@@ -14,8 +14,8 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 
 - PC, RP2350 ARM, and RP2350 RISC-V build wrappers pass. ARM is the physical
   target; RISC-V builds are maintained as an additional check.
-- The full JCSystem/APDU probe regression passed on VPCD: 69 checks, no failures
-  (`TEST:SUMMARY pass=69 fail=0 elapsed_s=442.556`). Coverage includes APDU
+- The full JCSystem/APDU probe regression passed on VPCD: 75 checks, no failures
+  (`TEST:SUMMARY pass=75 fail=0 elapsed_s=276.309`). Coverage includes APDU
   handling, Java exceptions, transactions, persistent references, transient
   arrays and reset/deselect lifetimes, memory queries, and selected
   `JCSystem` APIs. Focused lifecycle checks confirm that reselecting an applet
@@ -27,6 +27,9 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   VPCD emulator process also restored a committed instance field (`0x33`) and
   persistent static/array reference identities across process restart; that
   dedicated restore run passed seven checks (`TEST:SUMMARY pass=7 fail=0`).
+- A focused VPCD APDU check confirms an unknown SELECT-by-AID returns `6A82`,
+  deselects the active applet, and leaves later applet APDUs unavailable. The
+  card-manager path also compiles for RP2350 ARM; no physical flash was run.
 - `APDU.getCurrentAPDU()` now returns the exact APDU object passed to
   `Applet.process()` and raises `SecurityException` from `Applet.select()`;
   focused VPCD checks passed both cases. This validates host VM dispatch only,

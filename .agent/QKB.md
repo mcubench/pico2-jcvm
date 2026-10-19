@@ -1830,3 +1830,19 @@ fix.
   restricted shell; rerunning that local test in host execution context passed.
 - **Scope:** The Java API currently searches only the active applet AID because
   the VM models one applet context. Multi-applet registry lookup remains open.
+
+## Unknown AID SELECT dispatched to active applet — 2026-10-19
+
+- **Symptom:** With an applet selected, a well-formed SELECT-by-AID for an
+  uninstalled AID could fall through to `Applet.process()` in both CCID and
+  VPCD session handling. VPCD could therefore preserve a selected applet after
+  a failed app selection, and CCID could misinterpret the SELECT as an applet
+  command.
+- **Viable solution:** Recognize valid short SELECT-by-AID APDUs before normal
+  applet dispatch. On an unknown AID, deselect the active applet and return
+  `6A82`; only the configured applet AID enters restore/select/process.
+- **Validation:** VPCD session unit test passed 16 checks. Focused applet VPCD
+  test passed 3 checks and verified the unknown SELECT returned `6A82`, then a
+  regular applet APDU returned `6999`. PC release and ARM M33 builds passed.
+- **Scope:** Covers short case-3 and case-4 SELECT-by-AID APDUs with AID length
+  5–16 and any optional short `Le`. Extended-length APDUs are not modeled.

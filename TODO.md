@@ -34,9 +34,10 @@ out explicitly.
 - [x] Implement `Applet.selectingApplet()` and deliver a successful applet
   SELECT APDU to `Applet.process()`. Lifecycle probes verify the flag during
   `select()` and SELECT processing, its absence during `deselect()`, and reset,
-  rejected-selection, and re-selection behavior. The full VPCD lifecycle suite
-  passed 75 checks; physical validation remains open while the Pico is absent
-  from PC/SC.
+  rejected-selection, and re-selection behavior. Unknown AID SELECT returns
+  `6A82`, deselects the applet, and is not dispatched to `process()`; focused
+  VPCD coverage passes. The earlier full lifecycle suite passed 75 checks.
+  Physical validation remains open while the Pico is absent from PC/SC.
 
 ## Active: validate the applet process APDUs and client results
 

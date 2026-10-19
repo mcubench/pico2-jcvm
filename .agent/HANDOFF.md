@@ -1,5 +1,24 @@
 # Handoff
 
+## Latest continuation — reject unknown AID SELECT — 2026-10-19
+
+- CCID and VPCD now identify well-formed short SELECT-by-AID APDUs before
+  applet dispatch. Unknown AIDs deselect the active applet and return `6A82`;
+  they no longer reach `Applet.process()`.
+- Validation: VPCD session unit test passed 16 checks; focused applet VPCD
+  case 74 passed (unknown AID returned `6A82`, next applet APDU returned
+  `6999`). PC emulator and RP2350 ARM builds passed. No flash or physical APDU
+  was attempted.
+- Artifacts: `artifacts/logs/test-vpcd-session-unknown-aid-select-20261019.log`,
+  `artifacts/logs/unknown-aid-select-vpcd-20261019.log`,
+  `artifacts/logs/build-pc-unknown-aid-select-20261019.log`, and
+  `artifacts/logs/build-arm-unknown-aid-select-20261019.log`.
+- Physical power-up remains unverified: the latest bounded test saw USB but
+  PC/SC exposed only Virtual PCD readers. See
+  `artifacts/logs/pico-powerup-persistence-20261019T111724Z.log`.
+- Next: continue the runtime/API audit in TODO.md; retry physical persistence
+  after the Pico reader appears in PC/SC.
+
 ## Latest implementation — Applet.selectingApplet and CAP Method bounds — 2026-10-19
 
 - Implemented `Applet.selectingApplet()` across Java API, VM, and native bridge.
