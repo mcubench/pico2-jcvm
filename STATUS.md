@@ -97,12 +97,13 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
    randomized power-cut recovery have focused native coverage, applet
    persistence has a two-process VPCD check, and GET DATA Card Recognition Data
   has encoder/status unit coverage and direct physical open-channel and
-  SCP03-authenticated APDU checks. GET STATUS encoding covers the expected
-  instance-deleted and package-deleted views. DELETE transaction ordering and
-  rollback now have fake-backend host checks, but authenticated GP DELETE,
-  production storage integration, post-delete restart/restore, broader CAP
-  restore, and end-to-end power-cycle validation remain open before claiming
-  general card compatibility.
+  SCP03-authenticated APDU checks. On the Pico, authenticated applet DELETE
+  left the package loaded; related-object package DELETE removed both; the
+  supplied CAP was reinstalled, and both entries survived a firmware restart.
+  The post-restart applet SELECT, GETVERSION, JCSystem, SHA-256, and static
+  calls passed. `tools/test-pico-powerup` now checks registry persistence and
+  applet execution after a boot. A true power-off/on test, broader CAP restore,
+  and general card compatibility assurance remain open.
 6. **Conformance and hardening:** no full Java Card conformance suite or
    certification-grade security assessment has been completed.
 

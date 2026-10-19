@@ -19,6 +19,10 @@ pcsc_scan -r
 # Use the exact Pico reader name printed above.
 reader_name='Pico 2 CHOUPI CCID [JCAlgTest CCID] (D92E743D5F640C0F) 00 00'
 
+# After powering/restarting the Pico, verify CAP/applet persistence and that
+# the JCAlgTest applet can still be selected and process JCSystem APDUs.
+PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup "$reader_name"
+
 # Install the supplied JCAlgTest 1.8.2 JC305 CAP (skip if already installed).
 ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar \
   --reader "$reader_name" \

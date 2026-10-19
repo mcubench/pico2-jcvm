@@ -80,6 +80,12 @@ public final class JCAlgTestApduProbe {
           new CommandAPDU(0xB0, 0x73, 0x01, 0x00,
               new byte[] {0x01}, 256));
 
+      if (args.length == 1 && "--version-only".equals(args[0])) {
+        System.out.println(
+            "TEST:PASS jc_algtest_persistence_probe version=" + versionText);
+        return;
+      }
+
       if (args.length == 1 && "--des-cipher-prepare".equals(args[0])) {
         // Isolate the first supported-looking Cipher prepare that returned
         // 6F00 in ALG_PERFORMANCE_STATIC. These are the exact JC305 settings

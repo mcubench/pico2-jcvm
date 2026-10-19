@@ -127,14 +127,17 @@ Next actions:
 2. [partial] Golden applet and applet callback checks now cover same-AID
    reselect, rejected SELECT cleanup, and reset callbacks. A fresh VPCD process
    restored committed instance state and persistent reference identity.
-   Remaining: authenticated GP DELETE and post-delete restore validation,
-   and broader CAP restore validation. The GET STATUS response builder now
-   has host checks for instance-deleted/package-present and package-deleted
-   views, but these do not exercise deletion or persistence. The transaction
-   sequence used by `CapLoadSession::deleteObject()` now has fake-backend tests
-   for target resolution, success, and rollback paths; production storage
-   integration is still open. Unselected and SCP03-authenticated `0066` Card Recognition Data plus
-   unavailable `9F7F` CPLC passed direct physical APDU probes. Persistent
+   Authenticated GP DELETE was exercised on the Pico: applet deletion left the
+   package loaded, related-object package deletion removed both, and the exact
+   JCAlgTest v1.8.2 CAP was reinstalled. After a firmware restart, GPPro still
+   listed the applet as selectable and package as loaded; the bounded
+   `tools/test-pico-powerup` check passed SELECT, GETVERSION, and JCSystem.
+   Remaining: true power-off/on validation and broader CAP restore validation.
+   The GET STATUS builder also has host checks for the expected deleted views,
+   while the shared DELETE target/transaction code has fake-backend success
+   and rollback coverage. Unselected and SCP03-authenticated `0066` Card
+   Recognition Data plus unavailable `9F7F` CPLC passed physical APDU probes.
+   Persistent
    transaction tests cover injected write/commit rollback failures; filesystem
    overlay tests cover 1,000 randomized power-cut atomicity cases and restart
    recovery. The official physical static suite has not passed; PC/SC still

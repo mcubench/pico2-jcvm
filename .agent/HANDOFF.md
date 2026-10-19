@@ -1,5 +1,33 @@
 # Handoff
 
+## Latest continuation — verify DELETE and persistence on the Pico — 2026-10-19
+
+- Rebuilt ARM/RISC-V, flashed the CHOUPI ARM image, and captured repeated
+  `TEST:PASS choupi_runtime` with no `FAULT` in
+  `artifacts/logs/cycle-choupi-20261019T064423Z.log`.
+- GPPro initially listed JCAlgTest 1.8.2. Authenticated instance DELETE
+  removed the selectable applet while leaving the package loaded. Authenticated
+  `--force --delete <package AID>` removed the package and applet; a subsequent
+  list showed only the ISD. The exact supplied v1.8.2 CAP reinstalled
+  successfully. CLI operation output is in
+  `artifacts/logs/gp-delete-physical-20261019.log`.
+- Reflashed/restarted CHOUPI through
+  `artifacts/logs/cycle-choupi-20261019T065052Z.log`. After the restart,
+  GPPro again listed the package as `LOADED` and applet as `SELECTABLE`.
+  `tools/probe-jc-algtest` selected it, read `1.8.2_jc305`, passed JCSystem,
+  repeated SHA-256 doFinal, and the static SHA-256 workload. A single retained
+  `WATCHDOG_RECOVERY ... marker=494E5354` was reported; runtime self-checks
+  continued to pass and no `FAULT` appeared.
+- Added and ran `tools/test-pico-powerup`. It checks GPPro registry state and
+  applet SELECT/GETVERSION/JCSystem, saving
+  `artifacts/logs/pico-powerup-persistence-20261019T065455Z.log`.
+- Limitation: `picotool reboot` could not access the composite device reset
+  interface. The repository cycle used its CDC/BOOTSEL recovery and reflashed
+  the same image, which verifies persistence across restart/reflash, not a
+  true removal and restoration of USB power.
+- Next: use `tools/test-pico-powerup` after a real power-off/on when available;
+  retain broader CAP restore validation as open.
+
 ## Latest continuation — test GP DELETE target resolution offline — 2026-10-19
 
 - Extracted the pre-mutation target decision from `CapLoadSession::deleteObject()`

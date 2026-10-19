@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -le 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup [reader-name]"
+require_command timeout
+require_command tee
+require_command grep
+require_host_usb_access
+
+reader_name="${1:-Pico 2 CHOUPI CCID [JCAlgTest CCID] (D92E743D5F640C0F) 00 00}"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
+
+PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+
+mkdir -p "${repo_root}/artifacts/logs"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log="${repo_root}/artifacts/logs/pico-powerup-persistence-${timestamp}.log"
+printf 'PERSISTENCE:START reader=%s\n' "${reader_name}" | tee "${log}"
+
+timeout --signal=TERM --kill-after=2s 20s \
+  "${repo_root}/tools/env" java -jar "${gp_jar}" \
+  --reader "${reader_name}" --list 2>&1 | tee -a "${log}"
+grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' "${log}" || \
+  die "JCAlgTest applet is not selectable after Pico power-up; see ${log}"
+grep -Fq 'PKG: 4A43416C6754657374 (LOADED)' "${log}" || \
+  die "JCAlgTest package is not loaded after Pico power-up; see ${log}"
+
+PICO2_HOST_USB_ACCESS=1 PICO2_APDU_TIMEOUT_SECONDS="${PICO2_APDU_TIMEOUT_SECONDS:-20}" \
+  "${repo_root}/tools/probe-jc-algtest" --version-only 2>&1 | tee -a "${log}"
+grep -Fq 'TEST:PASS jc_algtest_persistence_probe version=1.8.2_jc305' "${log}" || \
+  die "JCAlgTest process probe did not confirm the restored applet; see ${log}"
+
+printf 'PERSISTENCE:PASS rebooted_package_and_applet log=%s\n' "${log}"

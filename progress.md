@@ -5758,3 +5758,13 @@
 - Decision: Next exercise persistent lifecycle markers, GET STATUS, CAP deletion, and restore through a storage-backed host session; authenticated CCID DELETE remains unverified.
 - Commit: `108ac39`; recorded in follow-up metadata commit
 - Artifacts/logs: test and build output from this session; no separate logs captured.
+
+## 2026-10-19 — Verify GP DELETE and persistence on the Pico
+
+- Step/experiment: `gp-delete-pico-restart-persistence`
+- Change: Added `tools/test-pico-powerup`, a bounded post-boot check that verifies the JCAlgTest package/applet registry and applet SELECT, GETVERSION, and JCSystem calls. Added a `--version-only` mode to the existing hardware APDU probe.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed ARM/RISC-V build gates, reflashed ARM, and captured runtime passes. GPPro authenticated applet DELETE left the package loaded; authenticated related-object package DELETE removed both; reinstall of the supplied CAP succeeded. After a second CHOUPI firmware restart, GPPro listed the package as `LOADED` and applet as `SELECTABLE`; `tools/test-pico-powerup` passed, including SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem `9000`. The full post-restart `tools/probe-jc-algtest` also passed SHA-256 repeated and static calls. `bash -n tools/test-pico-powerup` passed.
+- Result: Authenticated instance/package deletion, CAP reinstall, and persistence through firmware restart/reflash are verified on the real Pico. One prior `INSTALL` watchdog marker was reported once during boot; runtime self-checks passed and no `FAULT` occurred.
+- Decision: The environment cannot perform true USB power removal; `picotool reboot` failed because the composite device has no accessible reset interface. Keep physical power-off/on validation open and run `tools/test-pico-powerup` after such a cycle when available.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/gp-delete-physical-20261019.log`, `artifacts/logs/cycle-choupi-20261019T065052Z.log`, `artifacts/logs/pico-powerup-persistence-20261019T065455Z.log`
