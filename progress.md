@@ -1015,7 +1015,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed; both generated their expected RP2350 UF2s. The supplied CAP layout was independently checked in the preceding step. `git diff --check` passed. Flashing was skipped because `picotool info -a` cannot initialize libusb (`-99`) in this VM session.
 - Result: Static ROM-mask applets can now be resolved through one registry API using their AID. No install method is invoked, no applet instance is retained, and no APDU is dispatched yet.
 - Decision: Next add interpreter entry/lifetime support for applet install and virtual process calls, with APDU data retained in context; then connect this registry query to a SELECT path.
-- Commit: `b8545a9`
+- Commit: pending
 - Artifacts/logs: none
 
 ## 2026-10-11 — Record package AID registry commit
@@ -1025,7 +1025,7 @@
 - Validation: ARM/RISC-V wrapper builds passed before the change was committed.
 - Result: Implementation and required progress/handoff are committed as `fe7e12f`.
 - Decision: Continue toward interpreter-backed applet install and APDU processing.
-- Commit: `6285edf`
+- Commit: pending
 - Artifacts/logs: none
 
 ## 2026-10-11 — Reflash CHOUPI after Pico 2 replug
@@ -1940,7 +1940,7 @@
   exceptions, not only on allocation failure.
 - Decision: Keep the exception-safety regression and continue the memory/API
   audit.
-- Commit: pending
+- Commit: `6285edf`
 - Artifacts/logs: none.
 
 ## 2026-10-18 — Validate ARM smoke image on physical Pico 2
@@ -6507,5 +6507,5 @@
 - Result: Copy-constructor failure propagation is now deterministically covered
   alongside the existing construction, assignment, and persistent-array cases.
 - Decision: Keep the focused test and continue the runtime memory/API audit.
-- Commit: pending
+- Commit: `b8545a9`
 - Artifacts/logs: none.
