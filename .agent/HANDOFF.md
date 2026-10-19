@@ -10,9 +10,9 @@
   attempted.
 - The earlier distinct instance-AID restore change is committed as `b3da80e`;
   its finalized progress/handoff metadata is `e0602ff`.
-- Next: stage this step without including the pre-existing diagnostics and
-  USB-recovery edits in `src/ccid_device.cpp`, then continue the API/runtime
-  audit and retry physical power-up when the Pico is visible in PC/SC.
+- Commit: `86ffde9`.
+- Next: continue the API/runtime audit and retry physical power-up when the
+  Pico is visible in PC/SC.
 
 ## Latest implementation — distinct instance AID restore — 2026-10-19
 

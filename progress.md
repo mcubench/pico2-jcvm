@@ -6128,6 +6128,6 @@
   selection failures still clear selection.
 - Decision: Keep the explicit status rule in both transports; continue the
   card-manager behavior audit.
-- Commit: `<pending>`
+- Commit: `86ffde9`
 - Artifacts/logs: Test summary `TEST:SUMMARY pass=18 fail=0`; no archived log.
 
