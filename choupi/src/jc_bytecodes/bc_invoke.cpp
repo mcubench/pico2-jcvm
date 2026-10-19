@@ -148,24 +148,6 @@ void Bytecodes::bc_invokevirtual() {
         static_cast<unsigned>(NTOHS(virtual_method_ref_info.class_ref.internal_classref)),
         static_cast<unsigned>(virtual_method_ref_info.token));
   }
-  bool applet_register_call = false;
-  if (virtual_method_ref_info.class_ref.isExternalClassRef()) {
-    const uint8_t package_token =
-        virtual_method_ref_info.class_ref.external_classref.package_token &
-        0x7f;
-    const auto *package_aid =
-        Import_Handler(this->context.getCurrentPackage())
-            .getPackageAID(package_token);
-    const uint8_t class_token =
-        virtual_method_ref_info.class_ref.external_classref.class_token;
-    const uint8_t method_token = virtual_method_ref_info.token & 0x7f;
-    applet_register_call =
-        package_aid->AID_length == 7 &&
-        std::memcmp(package_aid->AID, "\xA0\x00\x00\x00\x62\x01\x01", 7) ==
-            0 &&
-        class_token == 3 && (method_token == 1 || method_token == 2);
-
-  }
   const auto declared_method =
       class_handler.getMethodOffset(virtual_method_ref_info);
   Method_Handler declared_method_handler(context);
@@ -198,12 +180,6 @@ void Bytecodes::bc_invokevirtual() {
   // Calling the method and updating PC value
   method_handler.setPackage(method_offset.first);
   method_handler.callVirtualMethod(method_offset.second);
-
-  // checking if the this reference is non NULL
-  jref_t objectref = stack.readLocal_Reference((uint8_t)0);
-  if (applet_register_call) {
-    context.markAppletRegistered(objectref);
-  }
 
   return;
 }

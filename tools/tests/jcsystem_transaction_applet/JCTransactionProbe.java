@@ -31,13 +31,32 @@ public final class JCTransactionProbe extends Applet {
   private byte currentApduHiddenOutsideProcess;
   private byte currentApduBufferHiddenOutsideProcess;
   private byte lastApduExceptionReason = (byte)0x7f;
+  private byte explicitRegistrationFailureReason;
   private byte[] transientResetArray;
   private byte[] transientDeselectArray;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
   private final byte[] shaDigest = new byte[32];
 
   private JCTransactionProbe() {
-    register();
+    this(null, (short)0, (byte)0, false);
+  }
+
+  private JCTransactionProbe(byte[] requestedAID, short offset, byte length) {
+    this(requestedAID, offset, length, true);
+  }
+
+  private JCTransactionProbe(byte[] requestedAID, short offset, byte length,
+                             boolean explicitAID) {
+    if (explicitAID) {
+      try {
+        register(requestedAID, offset, length);
+      } catch (SystemException expected) {
+        explicitRegistrationFailureReason = (byte)expected.getReason();
+        register();
+      }
+    } else {
+      register();
+    }
     staticReferenceRoot = this;
     byte[] shared = {0x01};
     persistentReferenceArray = new Object[] {shared, shared};
@@ -45,7 +64,11 @@ public final class JCTransactionProbe extends Applet {
   }
 
   public static void install(byte[] bArray, short bOffset, byte bLength) {
-    new JCTransactionProbe();
+    if (bLength == 10) {
+      new JCTransactionProbe(bArray, bOffset, bLength);
+    } else {
+      new JCTransactionProbe();
+    }
   }
 
   public boolean select() {
@@ -781,6 +804,44 @@ public final class JCTransactionProbe extends Applet {
           result |= 8;
         }
         buffer[0] = result;
+        break;
+      }
+      case 67: {
+        byte reason = 0;
+        try {
+          register();
+        } catch (SystemException expected) {
+          reason = (byte)expected.getReason();
+        }
+        buffer[0] = reason;
+        break;
+      }
+      case 68: {
+        byte reason = 0;
+        byte[] requestedAID = {
+            0x4a, 0x43, 0x41, 0x6c, 0x67,
+            0x54, 0x65, 0x73, 0x74, 0x31};
+        try {
+          register(requestedAID, (short)0, (byte)requestedAID.length);
+        } catch (SystemException expected) {
+          reason = (byte)expected.getReason();
+        }
+        buffer[0] = reason;
+        break;
+      }
+      case 69: {
+        byte reason = 0;
+        byte[] invalidAID = {0x01, 0x02, 0x03, 0x04};
+        try {
+          register(invalidAID, (short)0, (byte)invalidAID.length);
+        } catch (SystemException expected) {
+          reason = (byte)expected.getReason();
+        }
+        buffer[0] = reason;
+        break;
+      }
+      case 70: {
+        buffer[0] = explicitRegistrationFailureReason;
         break;
       }
       case 56: {

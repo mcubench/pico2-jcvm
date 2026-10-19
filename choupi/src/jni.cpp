@@ -48,14 +48,14 @@
 
 namespace jcvm {
 
+extern "C" uint8_t choupi_vm_is_reselecting_applet(void);
+
 #ifndef PC_VERSION
 extern "C" uint32_t choupi_available_transient_memory_bytes(void);
 extern "C" uint32_t choupi_available_persistent_memory_bytes(void);
 #endif
 
 namespace {
-extern "C" uint8_t choupi_vm_is_reselecting_applet(void);
-
 ClearEvent getTransientClearEvent(const jbyte_t event) {
   switch (event) {
   case static_cast<jbyte_t>(ClearEvent::CLEAR_ON_RESET):
@@ -324,6 +324,67 @@ jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet() {
   return FALSE;
 }
 
+jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletReselecting() {
+  return choupi_vm_is_reselecting_applet() != 0 ? TRUE : FALSE;
+}
+
+namespace {
+void requireAppletRegistrationAllowed(Context &context,
+                                     const jref_t applet_reference) {
+  if (applet_reference.isNullPointer() || applet_reference.isArray()) {
+    throw Exceptions::NullPointerException;
+  }
+  if (!context.isAppletInstallationActive() || context.wasAppletRegistered()) {
+    context.setPendingSystemExceptionReason(4); // SystemException.ILLEGAL_AID
+    throw Exceptions::SystemException;
+  }
+}
+} // namespace
+
+void fr_gouv_ssi_nativeimpl_NativeImplementation_registerAppletUsingInstallAID(
+    const jref_t applet_reference) {
+  Context &context = Context::getActiveContext();
+  requireAppletRegistrationAllowed(context, applet_reference);
+  context.markAppletRegistered(applet_reference);
+}
+
+void fr_gouv_ssi_nativeimpl_NativeImplementation_registerApplet(
+    const jref_t applet_reference, std::shared_ptr<JC_Array> requested_aid,
+    const jshort_t offset, const jbyte_t length) {
+  Context &context = Context::getActiveContext();
+  requireAppletRegistrationAllowed(context, applet_reference);
+  if (!requested_aid) {
+    throw Exceptions::NullPointerException;
+  }
+  if (requested_aid->getType() != JAVA_ARRAY_T_BYTE) {
+    throw Exceptions::ArrayStoreException;
+  }
+  const uint8_t aid_length = static_cast<uint8_t>(length);
+  if (aid_length < 5 || aid_length > 16) {
+    context.setPendingSystemExceptionReason(1); // SystemException.ILLEGAL_VALUE
+    throw Exceptions::SystemException;
+  }
+  if (offset < 0 || static_cast<uint32_t>(offset) + aid_length >
+                        requested_aid->size()) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  uint8_t installed_aid[16]{};
+  uint8_t installed_aid_length = 0;
+  if (!context.copyAppletAID(installed_aid, installed_aid_length) ||
+      installed_aid_length != aid_length) {
+    context.setPendingSystemExceptionReason(4); // SystemException.ILLEGAL_AID
+    throw Exceptions::SystemException;
+  }
+  for (uint8_t index = 0; index < aid_length; ++index) {
+    if (static_cast<uint8_t>(requested_aid->getByteEntry(
+            static_cast<uint16_t>(offset + index))) != installed_aid[index]) {
+      context.setPendingSystemExceptionReason(4); // SystemException.ILLEGAL_AID
+      throw Exceptions::SystemException;
+    }
+  }
+  context.markAppletRegistered(applet_reference);
+}
+
 std::shared_ptr<JC_Array>
 fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUBuffer() {
   Context &context = Context::getActiveContext();
@@ -343,10 +404,6 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getCurrentAPDU() {
   Context &context = Context::getActiveContext();
   const jref_t reference = context.getAPDUObjectRef();
   if (!context.isAPDUProcessActive() || reference.isNullPointer() ||
-jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletReselecting() {
-  return choupi_vm_is_reselecting_applet() != 0 ? TRUE : FALSE;
-}
-
       reference.isArray()) {
     throw Exceptions::SecurityException;
   }

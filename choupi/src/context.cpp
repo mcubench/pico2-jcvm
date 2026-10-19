@@ -129,6 +129,14 @@ jref_t Context::getRegisteredAppletRef() const noexcept {
   return this->registered_applet_ref;
 }
 
+void Context::setAppletInstallationActive(const bool active) noexcept {
+  this->applet_installation_active = active;
+}
+
+bool Context::isAppletInstallationActive() const noexcept {
+  return this->applet_installation_active;
+}
+
 bool Context::restoreAppletInstance(const jpackage_ID_t package_id,
                                    const jclass_index_t class_index) noexcept {
   this->applet_instance_restored = false;

@@ -50,12 +50,20 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 67),
+        "--case", type=int, action="append", choices=range(1, 71),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
         "--restore-existing", action="store_true",
         help="reuse saved emulator memory and restore the installed applet",
+    )
+    parser.add_argument(
+        "--install-params",
+        help="hex bytes passed as the applet's proprietary install parameters",
+    )
+    parser.add_argument(
+        "--expect-register-reason", type=int, choices=(0, 1, 4), default=0,
+        help="expected explicit Applet.register(AID) failure reason reported by case 70",
     )
     args = parser.parse_args()
     build = repo / "build/jcsystem-transaction-probe"
@@ -92,6 +100,13 @@ def main() -> int:
             command.extend(("--class-index", "0"))
         else:
             command.append("--install")
+            if args.install_params is not None:
+                if len(args.install_params) % 2 or any(
+                    char not in "0123456789abcdefABCDEF"
+                    for char in args.install_params
+                ):
+                    raise SystemExit("--install-params must be even-length hex")
+                command.extend(("--install-params", args.install_params))
         command.append("-s")
         started = time.monotonic()
         with log_path.open("w+b") as log:
@@ -219,6 +234,10 @@ def main() -> int:
                     (64, b"\x01", "APDU.waitExtension is accepted for normal outgoing mode"),
                     (65, b"\x01", "JCSystem.lookupAID returns only a matching installed AID"),
                     (66, b"\x0f", "JCSystem.lookupAID validates null and byte-array bounds"),
+                    (67, b"\x04", "Applet.register() is rejected outside installation"),
+                    (68, b"\x04", "Applet.register(AID) is rejected outside installation"),
+                    (69, b"\x01", "Applet.register(AID) rejects an invalid AID length"),
+                    (70, bytes((args.expect_register_reason,)), "Applet.register(AID) reports the expected install-time validation reason"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

@@ -93,6 +93,7 @@ Interpretor::Interpretor(const japplet_ID_t appletID,
                          const uint8_t *installData,
                          const uint8_t installLength) {
   Context context(appletID, selectedPackageID);
+  context.setAppletInstallationActive(true);
   this->contexts.push_back(context);
   this->startingClass = 0;
   this->startingMethod = 0;

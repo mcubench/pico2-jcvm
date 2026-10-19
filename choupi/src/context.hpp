@@ -56,6 +56,8 @@ private:
   jref_t applet_aid_object_ref;
   /// Set when the active install method invokes Applet.register().
   bool applet_registered = false;
+  /// Applet.register() is legal only while the install entry point runs.
+  bool applet_installation_active = false;
   jref_t registered_applet_ref;
   bool applet_instance_restored = false;
   jref_t restored_applet_ref;
@@ -106,6 +108,8 @@ public:
   void markAppletRegistered(jref_t applet_ref) noexcept;
   bool wasAppletRegistered() const noexcept;
   jref_t getRegisteredAppletRef() const noexcept;
+  void setAppletInstallationActive(bool active) noexcept;
+  bool isAppletInstallationActive() const noexcept;
   /// Restore the persisted applet root and eagerly decode its field graph.
   bool restoreAppletInstance(jpackage_ID_t package_id,
                              jclass_index_t class_index) noexcept;
