@@ -6410,5 +6410,5 @@
   in the runtime heap, including on read failures.
 - Decision: Keep the ownership change and allocation-count regression; continue
   the runtime memory audit.
-- Commit: pending
+- Commit: `01f7eba75fc1afc53dbabcecb68cf4cdf5e307ed`
 - Artifacts/logs: none.
