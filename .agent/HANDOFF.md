@@ -12,6 +12,7 @@
 - The test initially failed to compile/link until the OS FFI include path and
   `jref_t.cpp` were added.
 - Commit: `a64a9d72b7387c4a15797930dd638b418762daab`.
+- Regression commit: `292802da16f02c12915b87381eb0a18d52bb8301`.
 - Next: continue the runtime/API audit. Full firmware restore/APDU behavior under
   forced exhaustion and transient-factory exception mapping through the VM remain
   open.

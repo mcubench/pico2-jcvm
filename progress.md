@@ -6390,5 +6390,5 @@
   constructor propagate deterministic allocation failures. Full VM restore/APDU
   handling remains unverified under forced exhaustion.
 - Decision: Keep the targeted regression; continue the broader runtime/API audit.
-- Commit: pending
+- Commit: `292802da16f02c12915b87381eb0a18d52bb8301`
 - Artifacts/logs: none.
