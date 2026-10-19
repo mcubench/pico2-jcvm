@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest exception-safety fix — persistent JC_Instance construction — 2026-10-19
+
+- The persistent JC_Instance constructor now holds its overflow tag and field
+  array in local unique_ptrs until all throwing setup completes. A failure
+  resolving field metadata or allocating fields can no longer leak the tag
+  buffer from a partially constructed object.
+- Validation: ./tools/build arm passed. PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-persistence passed install/commit 3/3 and fresh restore 7/7.
+  The constructor's own allocation failure was not directly injected. The host
+  rebuild emitted existing Rust/C++ and CAP-header warnings. No hardware flash
+  or physical APDU ran.
+- Next: continue the runtime memory/API audit; physical APDU delivery remains
+  blocked by the known PC/SC transmit issue.
+
+
 ## Latest memory fix — release persistent field read buffers — 2026-10-19
 
 - getDataFromTag() returned an owning raw pointer. Persistent byte/short/int

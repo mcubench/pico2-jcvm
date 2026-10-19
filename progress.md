@@ -6433,3 +6433,22 @@
 - Commit: `71c6811c33e15f3672d31b2fb37c2efcea123785`
 - Artifacts/logs: artifacts/logs/vpcd-persistence-commit-20261019T203104Z.log
   and artifacts/logs/vpcd-persistence-restore-20261019T203104Z.log.
+
+
+## 2026-10-19 — Keep persistent instance construction exception-safe
+
+- Step/experiment: persistent-instance-construction-raii
+- Change: The persistent JC_Instance constructor now holds the optional overflow
+  tag buffer and fields array in local unique_ptrs, transferring ownership into
+  the object only after all potentially throwing setup completes.
+- Validation: ./tools/build arm passed. PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-persistence passed install/commit 3/3 and fresh-process
+  restore 7/7. The constructor's own failure path was not directly injected.
+  Existing Rust/C++ and packed CAP-header warnings appeared during the host
+  rebuild; the command completed successfully.
+- Result: Failure while resolving fields or allocating the fields array cannot
+  leak the persistent tag overflow buffer.
+- Decision: Keep the RAII staging; continue the runtime memory/API audit.
+- Commit: pending
+- Artifacts/logs: artifacts/logs/vpcd-persistence-commit-20261019T203708Z.log
+  and artifacts/logs/vpcd-persistence-restore-20261019T203708Z.log.

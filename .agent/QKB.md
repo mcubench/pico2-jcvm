@@ -2030,3 +2030,17 @@ fix.
   allocate and free exactly one temporary buffer. The test and ARM build pass.
   The two-process VPCD persistence test also passed install/commit 3/3 and fresh
   restore 7/7, including persistent array aliases and the committed applet field.
+
+
+## Persistent JC_Instance construction could leak its temporary tag buffer — 2026-10-19
+
+- **Symptom/cause:** The persistent JC_Instance constructor allocated an
+  overflow buffer into a raw member before resolving class field metadata and
+  allocating its fields array. If either later step threw, the incomplete object
+  destructor did not run, leaking the overflow buffer.
+- **Viable fix:** Hold the overflow tag and field array in local unique_ptrs.
+  Transfer them into the object only after all potentially throwing setup
+  succeeds.
+- **Validation:** ARM build passed. The two-process VPCD persistence regression
+  passed install/commit 3/3 and fresh restore 7/7. The constructor failure path
+  was not directly allocation-injected.
