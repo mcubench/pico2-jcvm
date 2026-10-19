@@ -25,6 +25,12 @@ out explicitly.
 - [x] Implement `JCSystem.lookupAID()` null/range validation and matching for
   the active applet AID; VPCD cases 65–66 pass. Lookup across additional applet
   contexts remains open with the single-context runtime limitation.
+- [x] Implement `Applet.register()` and `Applet.register(byte[],short,byte)`:
+  registration is limited to the active install entry, only one successful
+  registration is accepted, explicit AID lengths and bounds are checked, and
+  the supplied AID must match the install instance AID. VPCD cases 67–70 pass
+  for a matching AID; a mismatched AID reports
+  `SystemException.ILLEGAL_AID` and the applet can complete fallback install.
 
 ## Active: validate the applet process APDUs and client results
 
@@ -164,7 +170,8 @@ Next actions:
    checks and finish AC4's simulator/source comparison. Treat absent
    algorithms and `NO_SUCH_ALGORITHM` as expected unless the implementation
    claims support.
-4. Complete AC1–AC5 and the clean-flash integration sequence three times.
+4. Implement and verify the remaining applet lifecycle/API behavior, then
+   complete AC1–AC5 and the clean-flash integration sequence three times.
 
 Earlier startup-timeout and physical `F503` observations below are historical
 checkpoints. The current physical ARM image passes runtime checks and the

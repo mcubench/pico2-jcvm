@@ -1,5 +1,24 @@
 # Handoff
 
+## Latest implementation — Applet.register installation semantics — 2026-10-19
+
+- Implemented native `Applet.register()` overloads. They are legal only during
+  the install entry point, reject duplicate successful registration, validate
+  explicit AID length and array bounds, and require the explicit AID to match
+  the instance AID from INSTALL. Registration now comes from the API native
+  bridge instead of matching hard-coded bytecode import tokens.
+- API commit: `5cd9aec`; root implementation/tests: `3b9e6de`.
+- Validation: `./tools/build-pc`, `./tools/build-jcsystem-transaction-probe`,
+  and `./tools/build arm` passed. VPCD cases 67–70 passed for matching AID
+  (`6/6`, 16.536 s); a mismatched explicit AID produced reason 4 and fallback
+  install passed (`3/3`, 11.097 s). No RISC-V build or physical flash was run.
+- Physical Pico power-up validation remains blocked because USB enumeration
+  succeeds but PC/SC exposes only Virtual PCD readers. Its latest evidence is
+  in `artifacts/logs/pico-powerup-persistence-20261019T105115Z.log`.
+- Next: continue the applet lifecycle and Java Card API audit from TODO.md.
+  Inspect `Applet.selectingApplet()` and card-manager SELECT/PROCESS ordering;
+  maintain the ARM-only target and preserve all other dirty worktree changes.
+
 ## Latest continuation — retry Pico power-up persistence — 2026-10-19
 
 - Re-ran `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` after reinsertion.

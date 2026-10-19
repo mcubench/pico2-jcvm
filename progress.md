@@ -5864,6 +5864,37 @@
 - Commit: API `814d409`; root `c098a86`.
 - Artifacts/logs: `artifacts/logs/applet-reselecting-vpcd-20261019.log` (SHA-256 `02a733eb484772581e4e65390f0abdc4e3ad8754bcf91230da6a62f57db08950`); `artifacts/logs/jcsystem-full-reselect-vpcd-20261019.log` (SHA-256 `bb139accf35ce574e0b49ac0facee2483c7c35bf6e8437f554fc74d673a34ad4`).
 
+## 2026-10-19 — Implement Applet.register installation semantics
+
+- Step/experiment: `applet-register-installation-context`
+- Change: Replaced bytecode-token recognition with explicit native API calls.
+  Both overloads now require the install entry point and reject duplicate
+  registration. The explicit AID overload checks length, bounds, and equality
+  with the install instance AID. The probe records caught install-time failure
+  reasons and falls back to no-argument registration for mismatch testing.
+- Validation: `./tools/build-pc`,
+  `./tools/build-jcsystem-transaction-probe`, and `./tools/build arm` passed.
+  VPCD cases 67–70 passed for the matching install AID
+  (`TEST:SUMMARY pass=6 fail=0 elapsed_s=16.536`). A mismatched AID produced
+  `SystemException.ILLEGAL_AID` reason `04`, then fallback registration passed
+  (`TEST:SUMMARY pass=3 fail=0 elapsed_s=11.097`). No RISC-V build or physical
+  flash was performed. The PC build emitted legacy converter/Rust warnings;
+  the ARM build completed with `BUILD:PASS arch=arm` and
+  `BUILD:PASS target=choupi`.
+- Result: Install-time registration state, matching/mismatched AID handling,
+  and post-install rejection are verified on VPCD. Hardware persistence of a
+  newly installed applet remains unverified because PC/SC currently omits the
+  physically USB-enumerated Pico.
+- Decision: Continue the lifecycle audit from `Applet.selectingApplet()` and
+  its ordering relative to applet SELECT/PROCESS callbacks.
+- Commit: API `5cd9aec`; root source/tests `3b9e6de`.
+- Artifacts/logs: ARM build `artifacts/logs/build-arm-applet-register-final-20261019.log`
+  (SHA-256 `e68ffebbbed5a0d78478656e18834f004007ec0d0a41dbc57c757fa575efb12a`);
+  matching install `artifacts/logs/applet-register-validation-vpcd-20261019-retry2.log`
+  (SHA-256 `a2c7e8f6229ce52840bf9ef63aa85be9eee32c3a8c917a1008b7b16f6214fb00`);
+  mismatched install `artifacts/logs/applet-register-mismatched-aid-vpcd-20261019-retry.log`
+  (SHA-256 `14ea7fac44ebc178cbcfd043b1a60fe417c8fb14f9ac5e59347b8d6a25e32eea`).
+
 ## 2026-10-19 — Retry Pico power-up persistence after reinsertion
 
 - Step/experiment: `pico-powerup-persistence-retry-105115Z`
