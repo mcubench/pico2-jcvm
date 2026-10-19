@@ -50,8 +50,12 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 58),
+        "--case", type=int, action="append", choices=range(1, 59),
         help="run only this numbered APDU case; may be repeated",
+    )
+    parser.add_argument(
+        "--restore-existing", action="store_true",
+        help="reuse saved emulator memory and restore the installed applet",
     )
     args = parser.parse_args()
     build = repo / "build/jcsystem-transaction-probe"
@@ -63,7 +67,13 @@ def main() -> int:
         if not path.is_file():
             raise SystemExit(f"required input is missing: {path}; run tools/build-jcsystem-transaction-probe")
     memory.parent.mkdir(parents=True, exist_ok=True)
-    memory.write_bytes(b"")
+    if args.restore_existing:
+        if not memory.is_file() or memory.stat().st_size == 0:
+            raise SystemExit(
+                f"saved memory is missing or empty: {memory}; run an installing probe first"
+            )
+    else:
+        memory.write_bytes(b"")
     log_path = args.log or (repo / "artifacts/logs/jcsystem-transaction-apdu-vpcd-20261016.log")
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -76,8 +86,13 @@ def main() -> int:
         command = [
             str(emulator), "-m", str(memory), "-s", "--vpcd", f"{host}:{port}",
             "--applet-aid", AID.hex(), "--package-id", "63", "--cap-code",
-            str(cap_code), "--rom-mask", str(rom_mask), "--install", "-s",
+            str(cap_code), "--rom-mask", str(rom_mask),
         ]
+        if args.restore_existing:
+            command.extend(("--class-index", "0"))
+        else:
+            command.append("--install")
+        command.append("-s")
         started = time.monotonic()
         with log_path.open("w+b") as log:
             process = subprocess.Popen(
@@ -195,6 +210,7 @@ def main() -> int:
                     (55, b"", "reselect invokes applet deselect and select callbacks exactly once"),
                     (56, b"\x01", "rejected applet selection clears selection until a later successful select"),
                     (57, b"", "card reset deselects the active applet before reselection"),
+                    (58, b"\x33", "committed persistent applet field survives emulator process restart"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -298,12 +314,17 @@ def main() -> int:
                 if connection is not None:
                     connection.close()
                 if process.poll() is None:
-                    process.send_signal(signal.SIGTERM)
                     try:
-                        process.wait(timeout=3)
+                        # Let the VPCD EOF path return through starting_jcre()
+                        # so --save writes flash before this emulator exits.
+                        process.wait(timeout=5)
                     except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait(timeout=2)
+                        process.send_signal(signal.SIGTERM)
+                        try:
+                            process.wait(timeout=3)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            process.wait(timeout=2)
     return 0
 
 

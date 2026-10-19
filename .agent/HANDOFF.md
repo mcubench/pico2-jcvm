@@ -1,5 +1,31 @@
 # Handoff
 
+## Latest continuation — restore committed applet state across emulator process restart — 2026-10-19
+
+- `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed ARM and RISC-V builds,
+  flashed the ARM image from BOOTSEL, and captured repeated
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` with no `FAULT`.
+  Log: `artifacts/logs/cycle-choupi-20261019T035222Z.log`.
+- The authorized ACL helper found `/dev/bus/usb/001/073` and PC/SC listed the
+  Pico reader. SELECT returned `9000`, but the bounded probe again timed out
+  before GETVERSION (15-second wrapper, exit 124). No further physical APDUs
+  were attempted.
+- Improved the JCSystem VPCD test runner so closing its socket lets the
+  emulator return through its normal save path. Added `--restore-existing` to
+  reuse saved memory and launch without reinstalling the applet. First process
+  committed instance value `0x33`; the new 512 KiB flash image was then used by
+  a fresh emulator process. Static reference identity, persistent array child
+  identity, persistent object-array alias/mutation, restored array checkcast,
+  and the committed field all passed. Summary:
+  `TEST:SUMMARY pass=7 fail=0 elapsed_s=9.520`.
+- The first restore attempt reused case 7, whose existing expected value is
+  `0x11` after transaction abort; actual restored value `0x33` showed commit
+  persistence worked. Added dedicated case 58 expecting `0x33`; the rerun
+  passed. Log: `artifacts/logs/jcsystem-restore-second-process-vpcd-20261019.log`.
+- Next: continue GP DELETE/GET DATA and transaction failure/power-loss checks
+  through VPCD. Do not retry the physical static workload until PC/SC sends an
+  APDU after SELECT.
+
 ## Latest continuation — verify lifecycle callbacks across card reset — 2026-10-18
 
 - Added case 57 to read the probe applet's callback counters, send VPCD card

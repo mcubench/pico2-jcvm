@@ -5667,3 +5667,26 @@
   SELECT.
 - Commit: `ee50fa0`
 - Artifacts/logs: `artifacts/logs/jcsystem-applet-lifecycle-callbacks-vpcd-20261018.log`
+
+## 2026-10-19 — Verify persistent applet state across emulator restart
+
+- Step/experiment: `wp5-applet-persistent-restart`
+- Change: Added `--restore-existing` to the JCSystem VPCD runner, which reuses
+  saved memory and restores the installed applet without reinstalling. The
+  runner now closes VPCD and waits for the emulator's normal save path before
+  terminating it. Added case 58 for the committed instance value.
+- Validation: Both emulator processes used the same 512 KiB memory image. The
+  first committed field value `0x33`; a fresh process restored it and passed
+  static reference identity, persistent array child identity, object-array
+  alias/mutation, restored array checkcast, and field-value checks:
+  `TEST:SUMMARY pass=7 fail=0 elapsed_s=9.520`. An initial attempt used case 7,
+  which correctly expected the separate abort value `0x11`; after observing
+  `0x33`, the dedicated case 58 passed with the restore checks.
+- Result: Committed instance data and persistent reference relationships
+  survived a full PC emulator process restart.
+- Decision: Continue GP DELETE/GET DATA and transaction failure/power-loss
+  validation on VPCD. The physical reader still stalls after SELECT.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcsystem-restore-save-vpcd-20261019.log`,
+  `artifacts/logs/jcsystem-restore-second-process-vpcd-20261019.log`,
+  `artifacts/logs/cycle-choupi-20261019T035222Z.log`

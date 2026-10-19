@@ -675,6 +675,11 @@ public final class JCTransactionProbe extends Applet {
         length = 2;
         break;
       }
+      case 58: {
+        buffer[0] = value;
+        length = 1;
+        break;
+      }
       case 56: {
         rejectNextSelect = 1;
         buffer[0] = 1;

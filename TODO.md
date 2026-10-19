@@ -124,10 +124,12 @@ Next actions:
    commit capacities remain zero; it passed 13/13 on the desktop backend. The
    separate physical live-memory probe confirms Pico scalar/extended
    consistency and nonzero persistent/transient values.
-2. Finish golden applet, applet callback, GP DELETE/GET DATA, transaction
-   failure, and persistent restore tests. The official physical static suite
-   has not passed; diagnose the latest PC/SC reader loss and implement a safe
-   array-lifetime strategy before claiming completion.
+2. [partial] Golden applet and applet callback checks now cover same-AID
+   reselect, rejected SELECT cleanup, and reset callbacks. A fresh VPCD process
+   restored committed instance state and persistent reference identity.
+   Remaining: GP DELETE/GET DATA edge cases, transaction failure/power-loss
+   behavior, and broader CAP restore validation. The official physical static
+   suite has not passed; PC/SC still stalls after SELECT.
 3. [x] Finish the matching JCAlgTest v1.8.2 `ALG_SUPPORT_EXTENDED` mode on the
    named physical reader. The corrected run completed 4,525 rows with no
    transport or row errors. [x] Implement the two OwnerPINX builder variants

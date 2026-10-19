@@ -1,5 +1,19 @@
 # Project issue knowledge base
 
+## Post-SELECT PC/SC timeout repeated after 2026-10-19 reflash
+
+- **Observation:** ARM and RISC-V builds passed and the ARM image flashed from
+  BOOTSEL. The bounded serial capture reported repeated runtime passes and no
+  fault. The ACL helper found the new USB node and PC/SC listed the Pico;
+  ATR and SELECT succeeded (`3B800181`, `9000`), but the probe timed out before
+  GETVERSION (15-second wrapper exit 124).
+- **Interpretation/action:** This repeats the host-side post-SELECT stall
+  already described below. A visible reader and successful SELECT are not
+  enough to begin a long test. Stop physical retries and continue on VPCD until
+  consecutive APDUs work.
+- **Evidence:** `artifacts/logs/cycle-choupi-20261019T035222Z.log`; the probe
+  output was captured in the terminal, not archived.
+
 ## Post-SELECT PC/SC timeout repeated after successful reflash — 2026-10-18
 
 - **Observation:** A fresh ARM build/flash cycle passed runtime self-checks.
