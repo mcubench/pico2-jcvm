@@ -673,11 +673,13 @@ void CapLoadSession::restoreInstalled() noexcept {
   uint8_t instance_aid[16]{};
   uint8_t instance_aid_length = 0;
   if (!cap_store_instance_aid(instance_aid, instance_aid_length)) return;
+  uint16_t applet_class_index = 0xffff;
+  if (!cap_store_applet_class_index(applet_class_index)) return;
   // INSTALL for install-and-make-selectable records the registered instance
   // AID separately from the Applet component AID. They are allowed to differ.
   std::memcpy(instance_aid_, instance_aid, instance_aid_length);
   instance_aid_length_ = instance_aid_length;
-  (void)cap_store_applet_class_index(applet_class_index_);
+  applet_class_index_ = applet_class_index;
   installed_ = true;
 }
 
