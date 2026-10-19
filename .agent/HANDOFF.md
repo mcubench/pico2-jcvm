@@ -1,5 +1,24 @@
 # Handoff
 
+## Latest continuation — verify GET DATA directly on the Pico — 2026-10-19
+
+- Added `tools/probe-gp-get-data`, a bounded PC/SC probe that sends only
+  `80CA006600` and `80CA9F7F00` on the basic channel, without selecting an
+  applet. It checks the exact Card Recognition Data bytes and the unavailable
+  CPLC status.
+- `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted access to
+  `/dev/bus/usb/001/078`. The physical reader was
+  `Pico 2 CHOUPI CCID [JCAlgTest CCID] (D92E743D5F640C0F) 00 00`, ATR
+  `3B800181`. Both APDUs passed:
+  `80CA006600` → `6618731606072A864886FC6B01640B06092A864886FC6B0403109000`;
+  `80CA9F7F00` → `6A88`.
+- The probe log is `artifacts/logs/gp-get-data-physical-20261019.log`. No
+  applet SELECT or secure-channel setup was sent. The authenticated GET DATA
+  route and GP DELETE lifecycle remain open.
+- Next: build an offline authenticated `E4 DELETE` regression that exercises
+  the actual card-manager lifecycle, including unknown AID, instance deletion,
+  package dependency handling, and GET STATUS / restore after restart.
+
 ## Latest continuation — add truthful GlobalPlatform Card Data GET DATA — 2026-10-19
 
 - Added `src/gp_get_data.hpp` with a Card Recognition Data (`0066`) TLV for the

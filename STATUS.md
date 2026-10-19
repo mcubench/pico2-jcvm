@@ -34,8 +34,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   authentication, for card discovery, and through the authenticated
   card-manager path. Its exact encoding and status-word behavior pass 11 host
   unit checks. CPLC (`9F7F`) remains unavailable because the firmware has no
-  manufacturing-data source. The APDU response has not yet been exercised
-  through an emulator or physical reader.
+  manufacturing-data source. A direct real-reader probe sent both APDUs
+  without selecting an applet: Card Data returned the expected TLV with `9000`,
+  and CPLC returned `6A88`. The authenticated GET DATA route has not been
+  separately exercised.
 - SHA-256 has known-answer and repeated-call coverage. The CCID/PCSC interface
   and physical reader have passed bounded probes in earlier sessions.
 - Heap tracing now has a guarded sweep path in firmware: it runs after APDU
@@ -93,10 +95,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 5. **Card-management and persistence assurance:** storage rollback and
    randomized power-cut recovery have focused native coverage, applet
    persistence has a two-process VPCD check, and GET DATA Card Recognition Data
-   has encoder/status unit coverage. Authenticated GP DELETE, post-delete GET
-   STATUS, broader CAP restore, GET DATA APDU transport, and end-to-end
-   power-cycle validation remain open before claiming general card
-   compatibility.
+   has encoder/status unit coverage and a direct physical open-channel APDU
+   check. Authenticated GP DELETE, post-delete GET STATUS, broader CAP restore,
+   authenticated GET DATA, and end-to-end power-cycle validation remain open
+   before claiming general card compatibility.
 6. **Conformance and hardening:** no full Java Card conformance suite or
    certification-grade security assessment has been completed.
 
