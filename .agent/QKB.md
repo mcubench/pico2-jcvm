@@ -13,13 +13,20 @@
   evidence that the package or applet registry is missing. Cause is unknown;
   the wrapper did not complete process/persistence APDUs, and no actual power
   cycle was performed.
+- **Follow-up after a fresh firmware cycle:** The helper and bounded
+  `pcsc_scan -r` listed the Pico, but `probe-jc-algtest --version-only` timed
+  out (exit 124) after ATR and before SELECT response. An eight-second serial
+  capture showed CCID `stage=2`, `rx_events=0`, `tasks=0`, `xfr=0` and repeated
+  runtime `TEST:PASS`; this attempt delivered no XfrBlock to firmware. See
+  `artifacts/logs/physical-jcsystem-active-retry-20261019.log`.
 - **Recovery/status:** Re-running the authorized ACL helper made the Pico
   visible briefly, but did not prevent the next-APDU failure. Stop repeated
   applet retries; preserve the bounded probe log, USB enumeration, and serial
   evidence. If it recurs, have the operator restart `pcscd.service`, rerun the
   authorized helper, confirm the reader, and retry only the bounded probe.
   No durable fix is established.
-- **Evidence:** `artifacts/logs/pico-powerup-persistence-20261019T183156Z.log`.
+- **Evidence:** `artifacts/logs/pico-powerup-persistence-20261019T183156Z.log` and
+  `artifacts/logs/physical-jcsystem-active-retry-20261019.log`.
 
 ## CAP installation metadata can outlive a failed filesystem commit — 2026-10-19
 

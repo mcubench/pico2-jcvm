@@ -6176,3 +6176,33 @@
   `c24e0c55c89c4ea759f5e667f50b4e792f51187ec5e2feb7804e5fcb9ab89a58`), and
   `artifacts/logs/pico-powerup-persistence-20261019T183156Z.log` (SHA-256
   `8e39987aea3e657be75315a089103a79ac0785a7e713facc392c5dca89d73e38`).
+
+## 2026-10-19 — Track applet activity for JCSystem.isAppletActive
+
+- Step/experiment: `jcsystem-is-applet-active-lifecycle`
+- Change: Added active lifecycle state to `Context`. The VM marks the context
+  active after a successful applet `select()` and clears it after `deselect()`
+  and card reset. `JCSystem.isAppletActive(AID)` now also requires that state,
+  avoiding a false positive during install. Added probe case 76.
+- Validation: `./tools/build-pc` passed (Java API/ROM-mask and host VM); focused
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --case 76`
+  passed 3/3 in 14.986 s. `./tools/build riscv` passed; `PICO2_HOST_USB_ACCESS=1
+  ./tools/cycle arm` passed the ARM smoke check, and `PICO2_HOST_USB_ACCESS=1
+  ./tools/cycle choupi` passed ARM/RISC-V build gates, flash, and the 18-second
+  CHOUPI runtime capture. No `TEST:FAIL` or `FAULT` appeared.
+- Result: Case 76 confirmed `isAppletActive` false during install and true after
+  SELECT. Physical follow-up listed the Pico and read ATR `3B800181`, but timed
+  out before SELECT response; serial counters remained `stage=2`, `rx_events=0`,
+  `tasks=0`, `xfr=0`. No physical applet APDU reached firmware.
+- Decision: Keep the lifecycle state fix. Continue JCSystem/runtime work on
+  VPCD; diagnose PC/SC transport before relying on physical APDU tests.
+- Commit: `da6a6e6`
+- Artifacts/logs: `artifacts/logs/jcsystem-is-applet-active-lifecycle-20261019.log`
+  (SHA-256 `2785080c8ae40cbc52f38cd02b278ff398bb9b9de36837ff2ba73d6b102138b1`),
+  `artifacts/logs/cycle-arm-20261019T184719Z.log` (SHA-256
+  `ee199babc6c764a3a746ad975ec3a931d06374cd4c60e697fd80b106068d4426`),
+  `artifacts/logs/cycle-choupi-20261019T184813Z.log` (SHA-256
+  `63fc54ebb7072a42ed270283acf8f377ca43c7383d1b7391c66d9874ddaeb8fe`), and
+  `artifacts/logs/physical-jcsystem-active-retry-20261019.log` (SHA-256
+  `3aa9ca87751a04bc1308d72070d03648593f460ddc367996a9d9f5a677d5d3fa`).
+

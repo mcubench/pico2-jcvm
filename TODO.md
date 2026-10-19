@@ -44,11 +44,13 @@ out explicitly.
 
 ## Open persistence risks
 
-- [ ] Diagnose the Pico PC/SC failure after SELECT: the latest visible-reader
-  run confirmed the installed package and applet and SELECT returned `9000`,
-  but GETVERSION ended in `SCARD_E_NOT_TRANSACTED`; USB remained enumerated
-  while PC/SC lost the reader. This did not complete a true power-cycle check.
-  See `.agent/QKB.md` and `artifacts/logs/pico-powerup-persistence-20261019T183156Z.log`.
+- [ ] Diagnose intermittent Pico PC/SC/USB transport loss. The package and
+  applet registry were confirmed and one attempt returned SELECT `9000` before
+  GETVERSION failed with `SCARD_E_NOT_TRANSACTED`. After a fresh firmware cycle,
+  the reader appeared in PC/SC but the bounded probe timed out before SELECT;
+  serial reported `xfr=0`, so no command reached firmware. Physical APDUs and a
+  true power-cycle persistence check remain unverified. See `.agent/QKB.md` and
+  `artifacts/logs/physical-jcsystem-active-retry-20261019.log`.
 
 - [ ] Make CAP installation metadata and VM filesystem state recover together.
   The CAP slot is marked installed before the filesystem transaction's final

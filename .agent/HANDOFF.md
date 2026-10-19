@@ -1,5 +1,23 @@
 # Handoff
 
+## Latest implementation — track whether the applet is active — 2026-10-19
+
+- `JCSystem.isAppletActive(AID)` previously returned true for the registered AID
+  during install because it checked identity/registration but not selection
+  lifecycle. `Context` now records active state; the VM sets it after successful
+  `select()` and clears it after `deselect()` or reset. Case 76 verifies false
+  during install and true in `process()` after SELECT (`TEST:SUMMARY pass=3
+  fail=0`). Commit: `da6a6e6`.
+- `./tools/build-pc` and ARM/RISC-V build gates passed. `cycle arm` passed the
+  smoke test; `cycle choupi` flashed the changed ARM VM and passed its 18-second
+  runtime capture with repeated `TEST:PASS` and no `FAULT`.
+- After the flash, PC/SC listed the Pico and the probe read ATR `3B800181`, but
+  timed out before SELECT response. The serial CCID state stayed at `xfr=0`, so
+  that attempt did not deliver an XfrBlock to firmware. See
+  `artifacts/logs/physical-jcsystem-active-retry-20261019.log` and QKB.
+- Next: continue the JCSystem/API audit on VPCD; physical consecutive APDUs remain
+  blocked by intermittent PC/SC/USB transport loss. No RISC-V flash was run.
+
 ## Latest continuation — validate applet restore metadata and Pico reader — 2026-10-19
 
 - `CapLoadSession::restoreInstalled()` now requires a valid persisted class

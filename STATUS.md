@@ -107,6 +107,13 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   the latest serial capture shows no collector allocation failure or panic;
   the reader path needs PC/SC daemon recovery before another static run.
 
+Latest physical retry (2026-10-19): after a successful CHOUPI ARM cycle,
+PC/SC listed the Pico and the probe read ATR `3B800181`, then timed out before a
+SELECT response. Serial reported CCID `stage=2`, `rx_events=0`, `tasks=0`,
+`xfr=0`, with repeated runtime passes. The request did not reach firmware, so
+this does not test the new JCSystem behavior on hardware. See
+`artifacts/logs/physical-jcsystem-active-retry-20261019.log`.
+
 ## Main gaps
 
 1. **Applet contexts and firewall:** only one applet context is modeled. There
