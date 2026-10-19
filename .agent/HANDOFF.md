@@ -1,5 +1,31 @@
 # Handoff
 
+## Latest continuation — AC4 support comparison and Pico PC/SC diagnosis — 2026-10-19
+
+- Added `tools/compare-jcalgtest-support.py` and a reviewed 15-entry support
+  declaration. The comparator validates matching applet versions, all result
+  row identities/statuses, and agreement between CHOUPI `yes` rows and the
+  declared API support set. Archived comparison passed: 4,525 matched rows,
+  15 expected/observed support rows, 4,510 `no`, and zero CHOUPI error rows.
+  This CSV predates the OwnerPINX implementation, so a fresh physical support
+  sweep remains required to close AC4. Comparator commit: `4863b56`.
+- Validation against the current worktree also passed `./tools/build arm` and
+  the host two-process persistence regression (install 3/3, restore 7/7). The
+  first persistence invocation in the restricted shell returned `EPERM`; the
+  host-access retry passed. Current source changes are extensive and
+  pre-existing; preserve them and stage only files belonging to a focused step.
+- Reinserted Pico power-up check: USB access was granted for
+  `/dev/bus/usb/001/004`, but GPPro listed only Virtual PCD readers. USB
+  descriptors advertise the CCID interface and libccid has the VID/PID match.
+  `pcscd.socket` is active with normal idle auto-exit service state; its
+  foreground daemon cannot bind the system-owned socket as the current user.
+  No applet APDU or physical persistence check ran. See the QKB entry and
+  `artifacts/logs/pico-powerup-persistence-20261019T121536Z.log`.
+- The physical PC/SC issue has not yielded a new recovery. Avoid unbounded
+  `pcsc_scan` and do not launch another pcscd instance. Continue implementation
+  and VPCD verification; rerun physical checks after the named Pico reader
+  returns.
+
 ## Latest continuation — verify persistent graph after VPCD restart — 2026-10-19
 
 - Expanded `tools/test-vpcd-persistence` to check cases 14–17 and 58 after a

@@ -1810,6 +1810,29 @@ fix.
   reader before retrying. Evidence:
   `artifacts/logs/pico-powerup-persistence-20261019T105115Z.log`.
 
+### Reinserted-device retry and descriptor check — 2026-10-19
+
+- **Observation:** The repeated `tools/test-pico-powerup` run granted access to
+  `/dev/bus/usb/001/004` but GlobalPlatformPro still listed only the two
+  Virtual PCD readers. `lsusb -v` confirmed the Pico advertises three
+  interfaces, including interface 2 class `0x0B` (Chip/SmartCard), T=1, and
+  CCID bulk endpoints `0x03`/`0x83`. The installed libccid `Info.plist` has
+  entries for VID/PID `2E8A:0009`.
+- **Host state:** `pcscd.socket` is active and listening while
+  `pcscd.service` is inactive between client connections. This is normal for
+  the configured socket-activated, auto-exit service; service inactivity alone
+  is not the cause. A manual unprivileged foreground daemon could not bind the
+  system socket or create its pid file, so that is not a recovery path.
+  `lsusb -t` showed `Driver=[none]` on the CCID interface, as expected for the
+  libusb-backed libccid driver.
+- **Result:** The reader remained absent from PC/SC and a later bounded scan
+  timed out without output. No applet APDU was sent; power-cycle persistence
+  remains unverified. The exact latest run is
+  `artifacts/logs/pico-powerup-persistence-20261019T121536Z.log`.
+- **Next:** Resume after external PC/SC/device state changes. Avoid launching a
+  second `pcscd` manually or using unbounded `pcsc_scan`; the service socket is
+  already owned by systemd and the scanner has saturated VM CPUs in past runs.
+
 ## JC305 AID virtual-method token mismatch — 2026-10-19
 
 - **Symptom:** `JCSystem.lookupAID()` reached `6F00` with a VM-raised

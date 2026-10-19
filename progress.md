@@ -6021,3 +6021,30 @@
   `artifacts/logs/vpcd-persistence-commit-20261019T121017Z.log`,
   `artifacts/logs/vpcd-persistence-install-emulator-20261019T121017Z.log`,
   and `artifacts/logs/vpcd-persistence-restore-emulator-20261019T121017Z.log`.
+
+## 2026-10-19 — Validate JCAlgTest support comparison
+
+- Step/experiment: `jcalgtest-support-declaration-comparison`
+- Change: Added a reusable v1.8.2 CSV comparator and a reviewed declaration of
+  the 15 CHOUPI-supported result identities. Updated the AC4 report and TODO
+  to distinguish expected simulator capability differences from stale
+  physical evidence.
+- Validation: `python3 -m py_compile tools/compare-jcalgtest-support.py`
+  passed. Comparing the archived Pico and jCardSim CSVs matched all 4,525
+  `(section, algorithm_name)` rows; CHOUPI had 15 `yes`, 4,510 `no`, zero
+  other statuses, and exact agreement with all 15 declared supported rows.
+  `./tools/build arm` passed. The current-source VPCD persistence check passed
+  install/commit 3/3 and restore 7/7. RISC-V build was intentionally skipped
+  per the ARM-only project scope.
+- Result: Archived AC4 inputs are structurally consistent and CHOUPI support
+  statuses match the declaration. The physical CSV predates the OwnerPINX
+  implementation, so AC4 remains open pending a fresh physical run.
+- Decision: Continue runtime implementation and VPCD checks; retry hardware
+  support and power-cycle tests when PC/SC exposes the Pico CCID reader.
+- Commit: `4863b56`.
+- Artifacts/logs: comparator output SHA-256
+  `945b10b7ea4c29aa50805bc94a4f88caf8169f6bb3de5f518d033cbc2fe1b882`
+  (`artifacts/logs/jcalgtest-support-compare-20261019.log`); latest power-up
+  attempt SHA-256
+  `4d6bd6d6f532c82dda5aa93f28163d14d546bd79fc513af2929a300aadf5f9fa`
+  (`artifacts/logs/pico-powerup-persistence-20261019T121536Z.log`).
