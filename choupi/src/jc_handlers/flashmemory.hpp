@@ -58,7 +58,8 @@ struct Tag {
 class FlashMemory_Handler {
 private:
   /// Read data from tag
-  static std::pair<uint32_t, uint8_t *> getDataFromTag(const fs::Tag &tag);
+  static std::pair<uint32_t, std::unique_ptr<uint8_t[]>>
+  getDataFromTag(const fs::Tag &tag);
   /// Read data in place from tag
   static std::pair<uint32_t, const uint8_t *>
   getDataInPlaceFromTag(const fs::Tag &tag);

@@ -2014,3 +2014,17 @@ fix.
   passes `persistent_array_failure_propagates`, in addition to the direct
   `JCVMArray` allocation-failure case. Full firmware restore/APDU behavior under
   forced exhaustion remains untested.
+
+
+## Persistent primitive reads leaked temporary buffers — 2026-10-19
+
+- **Symptom/cause:** FlashMemory_Handler::getDataFromTag() allocated a raw
+  buffer for every persistent field read. The byte, short, and int getters never
+  freed it, including when validation or fs_read() failed. Repeated persistent
+  field access therefore consumed the runtime heap.
+- **Viable fix:** Return std::unique_ptr<uint8_t[]> from getDataFromTag() and
+  pass .get() to fs_read(). Structured-binding callers retain ownership
+  through validation and automatically release the data on every exit path.
+- **Validation:** The persistent transaction test now counts array allocations
+  and deletions. A valid byte read and an injected fs_read() failure each
+  allocate and free exactly one temporary buffer. The test and ARM build pass.

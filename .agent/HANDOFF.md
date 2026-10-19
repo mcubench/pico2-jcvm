@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest memory fix — release persistent field read buffers — 2026-10-19
+
+- getDataFromTag() returned an owning raw pointer. Persistent byte/short/int
+  getters did not free it, including on read or validation errors. It now returns
+  std::unique_ptr<uint8_t[]>; the shared getter path releases the buffer on all
+  exits.
+- ./tools/test-persistent-transaction passes. Its allocation tracker verifies
+  exactly one new[] and delete[] for a valid byte read and for injected
+  fs_read() failure (TEST:SUMMARY fail=0). ./tools/build arm passed. The
+  wrapper now suppresses existing qualifier/packed-member header warnings. No
+  physical flash or APDU test was run.
+- Next: continue runtime memory/API audit; physical APDU delivery remains blocked
+  by the known PC/SC transmit stall.
+
+
 ## Latest hardening — allow persistent array restore allocation to fail cleanly — 2026-10-19
 
 - Removed `noexcept` from the persistent `JC_Array` constructor, which allocates

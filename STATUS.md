@@ -132,9 +132,10 @@ this does not test the new JCSystem behavior on hardware. See
    current shareable lookup fallback is verified only for the default-null
    probe applet.
 2. **Memory lifecycle:** basic stable-slot reclamation is enabled and tested,
-   but persistent objects are pinned until deletion is implemented. The root
-   walk and object ownership model still need broader audits, especially for
-   native-held references and future multi-context operation.
+   but persistent objects are pinned until deletion is implemented. Persistent
+   primitive field reads now release their temporary buffers on success and error.
+   The root walk and object ownership model still need broader audits, especially
+   for native-held references and future multi-context operation.
 3. **Physical end-to-end validation:** the latest static run reached 544 rows,
    passed the earlier collector OOM point, and then stopped when PC/SC lost the
    reader. A historical static run completed its matrix with many `6F00`

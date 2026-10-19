@@ -3,15 +3,44 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <new>
+#include <utility>
 #include <vector>
 
 namespace persistent_transaction_test {
 std::vector<uint8_t> read(const uint8_t *tag, uint8_t length);
 void seed(const uint8_t *tag, uint8_t tag_length, std::vector<uint8_t> value);
 void fail_one_write();
+void fail_one_read();
 void fail_one_sync();
 unsigned int sync_count_value();
-} // namespace persistent_transaction_test
+void start_array_allocation_tracking();
+std::pair<unsigned int, unsigned int> stop_array_allocation_tracking();
+bool track_array_allocations = false;
+unsigned int tracked_array_allocations = 0;
+unsigned int tracked_array_deallocations = 0;
+}
+
+void *operator new[](const std::size_t size) {
+  if (void *memory = std::malloc(size == 0 ? 1 : size)) {
+    if (persistent_transaction_test::track_array_allocations)
+      ++persistent_transaction_test::tracked_array_allocations;
+    return memory;
+  }
+  throw std::bad_alloc();
+}
+
+void operator delete[](void *memory) noexcept {
+  if (persistent_transaction_test::track_array_allocations)
+    ++persistent_transaction_test::tracked_array_deallocations;
+  std::free(memory);
+}
+
+void operator delete[](void *memory, std::size_t) noexcept {
+  if (persistent_transaction_test::track_array_allocations)
+    ++persistent_transaction_test::tracked_array_deallocations;
+  std::free(memory);
+}
 
 namespace {
 int failures = 0;
@@ -43,6 +72,31 @@ int main() {
   using jcvm::FlashMemory_Handler;
   using persistent_transaction_test::read;
   using persistent_transaction_test::seed;
+
+  const auto scalar = make_tag(6);
+  seed(scalar.value, scalar.len,
+       {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_BYTE), 0x5a});
+  persistent_transaction_test::start_array_allocation_tracking();
+  expect(FlashMemory_Handler::getPersistentField_Byte(scalar) == 0x5a,
+         "persistent_byte_read_returns_stored_value");
+  auto [successful_reads_allocated, successful_reads_freed] =
+      persistent_transaction_test::stop_array_allocation_tracking();
+  expect(successful_reads_allocated == 1 && successful_reads_freed == 1,
+         "persistent_byte_read_releases_temporary_buffer");
+
+  persistent_transaction_test::start_array_allocation_tracking();
+  persistent_transaction_test::fail_one_read();
+  bool read_failed = false;
+  try {
+    (void)FlashMemory_Handler::getPersistentField_Byte(scalar);
+  } catch (jcvm::Exceptions) {
+    read_failed = true;
+  }
+  expect(read_failed, "persistent_byte_read_error_is_reported");
+  auto [failed_reads_allocated, failed_reads_freed] =
+      persistent_transaction_test::stop_array_allocation_tracking();
+  expect(failed_reads_allocated == 1 && failed_reads_freed == 1,
+         "failed_persistent_byte_read_releases_temporary_buffer");
 
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
          "depth_zero_initially");

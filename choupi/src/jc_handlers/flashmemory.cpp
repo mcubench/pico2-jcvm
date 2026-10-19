@@ -273,7 +273,7 @@ static constexpr uint16_t getPackagesArrayLength() {
  * @param[tag] Associated tag value.
  * @return data associated to the tag.
  */
-std::pair<uint32_t, uint8_t *>
+std::pair<uint32_t, std::unique_ptr<uint8_t[]>>
 FlashMemory_Handler::getDataFromTag(const fs::Tag &tag) {
   uint32_t data_length = 0;
 
@@ -285,17 +285,12 @@ FlashMemory_Handler::getDataFromTag(const fs::Tag &tag) {
     throw Exceptions::IOException;
   }
 
-  uint8_t *data = new uint8_t[data_length];
-
-  if (data == nullptr) {
+  std::unique_ptr<uint8_t[]> data(new uint8_t[data_length]);
+  if (fs_read(&(tag.value[0]), tag.len, data.get(), data_length)) {
     throw Exceptions::IOException;
   }
 
-  if (fs_read(&(tag.value[0]), tag.len, data, data_length)) {
-    throw Exceptions::IOException;
-  }
-
-  return std::make_pair(data_length, data);
+  return std::make_pair(data_length, std::move(data));
 }
 
 /**

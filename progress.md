@@ -6392,3 +6392,23 @@
 - Decision: Keep the targeted regression; continue the broader runtime/API audit.
 - Commit: `292802da16f02c12915b87381eb0a18d52bb8301`
 - Artifacts/logs: none.
+
+
+## 2026-10-19 — Release temporary buffers after persistent field reads
+
+- Step/experiment: persistent-field-read-buffer-ownership
+- Change: getDataFromTag() now returns std::unique_ptr<uint8_t[]>; byte,
+  short, and int field getters release the temporary buffer after use or during
+  exception unwinding. Added allocation/deallocation tracking to the persistent
+  transaction test, including an injected filesystem read error.
+- Validation: ./tools/test-persistent-transaction passed with
+  TEST:SUMMARY fail=0; tracked successful and failed reads each allocated and
+  freed exactly one array. ./tools/build arm passed. The first test run printed
+  existing warnings from CAP headers; its wrapper now suppresses the existing
+  qualifier and packed-member warning classes and the final run was clean.
+- Result: Persistent primitive field reads no longer retain temporary buffers
+  in the runtime heap, including on read failures.
+- Decision: Keep the ownership change and allocation-count regression; continue
+  the runtime memory audit.
+- Commit: pending
+- Artifacts/logs: none.

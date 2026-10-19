@@ -51,6 +51,12 @@ out explicitly.
   recognize `9000` and `61xx` as successful selection outcomes. VPCD session
   regression verifies the selection state and GET RESPONSE dispatch.
 
+- [x] Release temporary buffers after persistent byte/short/int field reads.
+  getDataFromTag now returns owned storage, so successful reads and read or
+  type-validation failures release the temporary buffer. The persistent-store
+  regression counts new[]/delete[] on both success and injected fs_read()
+  failure; all cases pass.
+
 ## Open persistence risks
 
 - [ ] Diagnose intermittent Pico PC/SC/USB transport loss. The package and
