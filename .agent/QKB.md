@@ -1994,6 +1994,8 @@ fix.
   the pending system-exception reason to `NO_TRANSIENT_SPACE` (2), and throw the
   VM's `SystemException`. Invalid clear events set `ILLEGAL_VALUE` (1).
 - **Validation:** ARM build passed. VPCD applet cases 28 and 29 passed (transient
-  array behavior and invalid event reason). A deterministic allocation-failure
-  injection and real-board APDU validation were not run; record those limits
-  before treating the low-memory path as fully verified.
+  array behavior and invalid event reason). `./tools/test-jcvmarray-allocation`
+  deterministically failed backing `new[]` and passed
+  `allocation_failure_propagates`. The native factory's Java exception mapping
+  is covered by inspection, not by forced allocator failure through the full VM;
+  real-board low-memory APDU validation was not run.

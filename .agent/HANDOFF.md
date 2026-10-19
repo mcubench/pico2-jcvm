@@ -10,12 +10,13 @@
 - Validation: `./tools/build arm` passed. The restricted VPCD attempt returned
   `EPERM`; the required host-access retry passed probe cases 28 and 29,
   `TEST:SUMMARY pass=4 fail=0`. No Pico flash was run; the build gate for flashing
-  requires both architectures, while current work scope is ARM-only. Allocation
-  failure injection remains untested.
+  requires both architectures, while current work scope is ARM-only. The new
+  `./tools/test-jcvmarray-allocation` regression deterministically forces a
+  backing `new[]` failure and passes `allocation_failure_propagates`; full-VM
+  exception mapping under forced exhaustion remains untested.
 - Commit: `da50522af16913d8b7dc1351c805b7ed15b1d66e`.
-- Next: add a deterministic low-memory regression, then continue the selected
-  Java Card runtime/API audit. Physical PC/SC applet APDUs remain blocked by the
-  documented host transmit stall.
+- Next: continue the selected Java Card runtime/API audit. Physical PC/SC applet
+  APDUs remain blocked by the documented host transmit stall.
 
 
 ## Latest correction — JCSystem.getAID before registration — 2026-10-19

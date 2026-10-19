@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+build_dir="${repo_root}/build/jcvmarray-allocation"
+"${repo_root}/tools/env" cmake -S "${repo_root}/tools/tests/jcvmarray_allocation" \
+  -B "${build_dir}" -DCMAKE_BUILD_TYPE=Release
+"${repo_root}/tools/env" cmake --build "${build_dir}" --parallel 2
+"${build_dir}/jcvmarray_allocation_test"

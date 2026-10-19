@@ -6333,3 +6333,20 @@
   before claiming the low-memory path fully verified.
 - Commit: `da50522af16913d8b7dc1351c805b7ed15b1d66e`
 - Artifacts/logs: `artifacts/logs/jcsystem-transient-allocation-errors-vpcd-20261019.log`.
+
+
+## 2026-10-19 — Inject transient backing-array allocation failure
+
+- Step/experiment: `jcvmarray-allocation-failure-regression`
+- Change: Added a standalone focused test that overrides array allocation to
+  fail deterministically and checks the JCVM backing-array constructor propagates
+  `std::bad_alloc`. Added `tools/test-jcvmarray-allocation` as its repository
+  wrapper.
+- Validation: `./tools/test-jcvmarray-allocation` passed with
+  `TEST:PASS allocation_failure_propagates`.
+- Result: Confirms the constructor no longer terminates when backing allocation
+  fails. The full VM's transient-factory reason-2 mapping remains inspection-only.
+- Decision: Keep the regression and continue the API/runtime audit; add full-VM
+  low-memory injection if a safe allocator seam is introduced.
+- Commit: pending
+- Artifacts/logs: none.

@@ -483,8 +483,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   Transient primitive and object array factories now translate allocation failure
   into `SystemException.NO_TRANSIENT_SPACE`; the allocator backing constructor no
   longer terminates the VM on `std::bad_alloc`. Invalid event values report
-  `SystemException.ILLEGAL_VALUE`. ARM build and VPCD cases 28–29 pass; an
-  injected exhaustion test and physical validation remain open.
+  `SystemException.ILLEGAL_VALUE`. ARM build, VPCD cases 28–29, and a
+  deterministic backing-allocation failure regression pass; physical low-memory
+  validation remains open.
   `AID.equals(byte[],...)`
   and `partialEquals(byte[],...)` now return false for null arrays as required
   by the Java Card 3.0.5 contract; VPCD case 75 exercises null and valid full /
