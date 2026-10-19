@@ -370,24 +370,26 @@ uint16_t choupi_vm_select_applet(void) {
   selected_applet_is_reselecting =
       selected_applet_reselection_process_pending;
   selected_applet_reselection_pending = false;
+  selected_applet_context->setAppletActive(true);
   selected_applet_is_selecting = true;
   const uint16_t status = invoke_selected_applet_method(6, &selected);
   selected_applet_is_selecting = false;
   selected_applet_is_reselecting = false;
   if (status != 0x9000) {
+    selected_applet_context->setAppletActive(false);
     selected_applet_context.reset();
     selected_applet_is_active = false;
     selected_applet_reselection_process_pending = false;
     return status;
   }
   if (selected == 0) {
+    selected_applet_context->setAppletActive(false);
     selected_applet_context.reset();
     selected_applet_is_active = false;
     selected_applet_reselection_process_pending = false;
     return 0x6999;
   }
   selected_applet_is_active = true;
-  selected_applet_context->setAppletActive(true);
   selected_applet_select_process_pending = true;
   return 0x9000;
 }

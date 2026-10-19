@@ -1,5 +1,24 @@
 # Project issue knowledge base
 
+## JCSystem.isAppletActive must include registered install/select callbacks — 2026-10-19
+
+- **Symptom:** The first lifecycle implementation returned false while the
+  registered applet ran `install()` and `select()`, because the runtime marked
+  the applet active only after `select()` returned true.
+- **Contract:** The bundled JC 3.0.5 `JCSystem.java` Javadoc states that a
+  successfully registered applet returns true even in `Applet.install()` and
+  `Applet.select()`. Oracle's published Java Card API documents the same rule:
+  <https://docs.oracle.com/en/java/javacard/3.2/jcapi/api_classic/javacard/framework/JCSystem.html
+- **Viable solution:** During install, accept `isAppletInstallationActive()`
+  only after registration. Set the context's active flag before entering
+  `Applet.select()` and clear it if selection throws or returns false. Keep it
+  set throughout `deselect()` and clear it after that callback completes.
+- **Validation:** Focused VPCD cases 76 and 77 passed for install/select/
+  deselect/process callbacks; rejected-selection case 56 passed. ARM/RISC-V
+  builds and the physical CHOUPI runtime cycle passed.
+- **Scope:** This runtime still supports one applet context and the basic
+  logical channel only. Physical applet APDUs were not validated in this step.
+
 ## Pico reader disappears from PC/SC during second applet APDU — 2026-10-19
 
 - **Observation:** After the authorized USB ACL helper ran, bounded

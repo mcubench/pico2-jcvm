@@ -841,13 +841,13 @@ public final class JCTransactionProbe extends Applet {
         break;
       }
       case 76:
-        buffer[0] = installSawAppletActive == 0 &&
+        buffer[0] = installSawAppletActive == 1 &&
                 JCSystem.isAppletActive(JCSystem.getAID())
             ? (byte)1 : (byte)0;
         break;
       case 77:
-        buffer[0] = installSawAppletActive == 0 &&
-                selectSawAppletActive == 0 && deselectSawAppletActive == 1 &&
+        buffer[0] = installSawAppletActive == 1 &&
+                selectSawAppletActive == 1 && deselectSawAppletActive == 1 &&
                 JCSystem.isAppletActive(JCSystem.getAID())
             ? (byte)0x0f : (byte)0;
         break;

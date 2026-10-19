@@ -6251,3 +6251,28 @@
   `3dc13d33a620ae7cc5dd1ccfa38029139d678e2682fbff2de4c0516ea2a8dad8`), and
   `artifacts/logs/cycle-choupi-20261019T191306Z.log`.
 
+## 2026-10-19 — Correct applet-active state during callbacks
+
+- Step/experiment: `jcsystem-is-applet-active-callback-contract`
+- Change: Matched `JCSystem.isAppletActive(AID)` to the Java Card 3.0.5
+  contract. It now returns true after successful registration while `install()`
+  runs, and the context becomes active before `select()` is invoked. The active
+  flag is cleared when `select()` fails or rejects selection and after
+  `deselect()` completes. Updated lifecycle regressions to expect true in the
+  documented callbacks.
+- Validation: Focused VPCD cases 76, 77, and 56 passed (`3/3` each; 14.540 s,
+  22.576 s, and 28.979 s). `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi`
+  passed both build gates, flashed the ARM image, and passed the 18-second
+  runtime capture with no `TEST:FAIL` or `FAULT`.
+- Result: The implementation follows the JC 3.0.5 callback behavior and keeps
+  the flag cleared after a rejected select. The Java physical-card probe remains
+  blocked before the first SELECT XfrBlock by the PC/SC/CCID transport issue.
+- Decision: Keep the corrected callback semantics; use VPCD for applet behavior
+  until consecutive physical APDUs reach the firmware.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261019T192429Z.log` (SHA-256
+  `8518fcfe2c8ae4369e41a4fdd2bd931505ff866031cd321555ff100ab99a1e4a`), plus
+  `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261016.log` emitted by the
+  focused applet VPCD regression.
+

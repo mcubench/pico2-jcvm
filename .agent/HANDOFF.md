@@ -1,5 +1,22 @@
 # Handoff
 
+## Latest correction — JCSystem.isAppletActive callback contract — 2026-10-19
+
+- The previous lifecycle fix incorrectly made `JCSystem.isAppletActive()`
+  false during `install()` and `select()`. JC 3.0.5 specifies true during both
+  callbacks after successful registration. The native query now allows the
+  install window after registration, and the selected context is marked active
+  before invoking `select()`; failed selection clears it.
+- Focused VPCD cases 76, 77, and rejected-selection case 56 passed (`3/3` each).
+  ARM and RISC-V builds passed. `./tools/cycle choupi` passed both build gates,
+  flashed the ARM image, and captured repeated `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0` output.
+- Physical package listing succeeded, but the Java APDU probe timed out before
+  SELECT reached firmware (`xfr=0`); see the Pico transport QKB entry. Physical
+  applet behavior remains unverified.
+- Next: continue API/runtime audit offline; do not repeat physical probes until
+  the host PC/SC/CCID transmit stall is diagnosed.
+
 ## Latest continuation — flash and verify the reinserted Pico — 2026-10-19
 
 - The reinserted BOOTSEL board accepted `build/arm/pico2_choupi.uf2`;
