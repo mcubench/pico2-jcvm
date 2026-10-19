@@ -29,6 +29,7 @@
 #include "interpretor.hpp"
 #include "jc_config.h"
 #include "types.hpp"
+#include "ffi.h"
 
 #include "jc_handlers/jc_class.hpp"
 #include "jc_handlers/jc_cp.hpp"
@@ -69,9 +70,53 @@ int main
 namespace {
 std::unique_ptr<jcvm::Context> selected_applet_context;
 bool selected_applet_is_active = false;
-pico2_jcvm::ShortApduResponseChain pending_apdu_response;
 bool selected_applet_reselection_pending = false;
 bool selected_applet_is_reselecting = false;
+bool selected_applet_is_selecting = false;
+bool selected_applet_select_process_pending = false;
+bool selected_applet_reselection_process_pending = false;
+pico2_jcvm::ShortApduResponseChain pending_apdu_response;
+
+bool is_select_for_applet(const uint8_t *command, const uint16_t length,
+                          const jcvm::Context &context) noexcept {
+  uint8_t aid[16]{};
+  uint8_t aid_length = 0;
+  if (command == nullptr || length < 5 || command[0] != 0x00 ||
+      command[1] != 0xa4 || command[2] != 0x04 || command[3] != 0x00 ||
+      !context.copyAppletAID(aid, aid_length) || command[4] != aid_length ||
+      (length != static_cast<uint16_t>(5 + aid_length) &&
+       length != static_cast<uint16_t>(6 + aid_length)) ||
+      (length == static_cast<uint16_t>(6 + aid_length) &&
+       command[length - 1] != 0x00)) {
+    return false;
+  }
+  return std::memcmp(command + 5, aid, aid_length) == 0;
+}
+
+class SelectingAppletProcessScope {
+public:
+  SelectingAppletProcessScope(const uint8_t *command, const uint16_t length,
+                              const jcvm::Context *context) noexcept {
+    const bool was_pending = selected_applet_select_process_pending;
+    selected_applet_select_process_pending = false;
+    selected_applet_is_selecting =
+        was_pending && context != nullptr &&
+        is_select_for_applet(command, length, *context);
+    selected_applet_is_reselecting =
+        selected_applet_is_selecting &&
+        selected_applet_reselection_process_pending;
+    selected_applet_reselection_process_pending = false;
+  }
+
+  ~SelectingAppletProcessScope() {
+    selected_applet_is_selecting = false;
+    selected_applet_is_reselecting = false;
+  }
+
+  SelectingAppletProcessScope(const SelectingAppletProcessScope &) = delete;
+  SelectingAppletProcessScope &operator=(
+      const SelectingAppletProcessScope &) = delete;
+};
 
 class APDUProcessScope {
 public:
@@ -203,6 +248,9 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                  uint16_t class_index, const uint8_t *aid,
                                  uint8_t aid_length) {
   pending_apdu_response.queue(nullptr, 0);
+  selected_applet_is_selecting = false;
+  selected_applet_select_process_pending = false;
+  selected_applet_reselection_process_pending = false;
   try {
     if (selected_applet_context &&
         selected_applet_context->hasRestoredAppletInstance()) {
@@ -246,6 +294,11 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
 
 void choupi_vm_clear_selected_applet(void) {
   pending_apdu_response.queue(nullptr, 0);
+  selected_applet_reselection_pending = false;
+  selected_applet_is_reselecting = false;
+  selected_applet_is_selecting = false;
+  selected_applet_select_process_pending = false;
+  selected_applet_reselection_process_pending = false;
   if (selected_applet_context) {
     selected_applet_context->getHeap().clearTransientArrays(
         jcvm::ClearEvent::CLEAR_ON_RESET);
@@ -309,25 +362,42 @@ uint16_t invoke_selected_applet_method(const uint8_t method_token,
 
 uint16_t choupi_vm_select_applet(void) {
   pending_apdu_response.queue(nullptr, 0);
+  selected_applet_select_process_pending = false;
   uint32_t selected = 0;
+  selected_applet_reselection_process_pending =
+      selected_applet_reselection_pending;
+  selected_applet_is_reselecting =
+      selected_applet_reselection_process_pending;
+  selected_applet_reselection_pending = false;
+  selected_applet_is_selecting = true;
   const uint16_t status = invoke_selected_applet_method(6, &selected);
+  selected_applet_is_selecting = false;
+  selected_applet_is_reselecting = false;
   if (status != 0x9000) {
     selected_applet_context.reset();
     selected_applet_is_active = false;
+    selected_applet_reselection_process_pending = false;
     return status;
   }
   if (selected == 0) {
     selected_applet_context.reset();
     selected_applet_is_active = false;
+    selected_applet_reselection_process_pending = false;
     return 0x6999;
   }
   selected_applet_is_active = true;
+  selected_applet_select_process_pending = true;
   return 0x9000;
 }
 
 extern "C" uint16_t choupi_vm_deselect_applet(
     const uint8_t selecting_same_applet) {
   pending_apdu_response.queue(nullptr, 0);
+  selected_applet_reselection_pending = false;
+  selected_applet_is_reselecting = false;
+  selected_applet_is_selecting = false;
+  selected_applet_select_process_pending = false;
+  selected_applet_reselection_process_pending = false;
   if (!selected_applet_context || !selected_applet_is_active) {
     selected_applet_is_active = false;
     return 0x9000;
@@ -339,11 +409,33 @@ extern "C" uint16_t choupi_vm_deselect_applet(
   return status;
 }
 
+extern "C" uint8_t choupi_vm_is_reselecting_applet(void) {
+  return selected_applet_is_reselecting ? 1 : 0;
+}
+
+extern "C" uint8_t choupi_vm_is_selecting_applet(void) {
+  return selected_applet_is_selecting ? 1 : 0;
+}
+
 uint16_t choupi_vm_process_applet(const uint8_t *command,
                                  uint16_t command_length,
                                  uint8_t *response,
                                  uint16_t response_capacity,
                                  uint16_t *response_length) {
+#ifdef PC_VERSION
+  const char *apdu_trace_setting = std::getenv("CHOUPI_VM_TRACE_APDU");
+  const bool apdu_trace = apdu_trace_setting != nullptr &&
+                          std::strcmp(apdu_trace_setting, "1") == 0;
+  if (apdu_trace) {
+    std::fprintf(stderr,
+                 "CHOUPI:APDU_PROCESS stage=begin len=%u ins=%02X\n",
+                 static_cast<unsigned>(command_length),
+                 command != nullptr && command_length > 1 ? command[1] : 0);
+  }
+#endif
+  SelectingAppletProcessScope selection_scope(
+      command, command_length,
+      selected_applet_context ? selected_applet_context.get() : nullptr);
   if (response_length != nullptr) {
     *response_length = 0;
   }

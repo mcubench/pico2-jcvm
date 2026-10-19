@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 #include "device/usbd.h"
@@ -148,7 +149,16 @@ void process_message(uint8_t rhport) {
     uint8_t response[96] = {0x6d, 0x00}; // instruction not supported
     size_t response_length = 2;
     if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
-      get_status_first_seen = false;
+      std::printf("CHOUPI:SELECT_RX len=%u bytes=",
+                  static_cast<unsigned>(apdu_length));
+      const size_t shown = apdu_length < 16 ? apdu_length : 16;
+      for (size_t index = 0; index < shown; ++index) {
+        std::printf("%02X", static_cast<unsigned>(apdu[index]));
+      }
+      std::printf("\r\n");
+      std::fflush(stdout);
+    }
+    if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
       const uint8_t instance_aid_length =
           cap_load_session.instanceAidLength();
       const bool selecting_same_applet =
@@ -160,7 +170,12 @@ void process_message(uint8_t rhport) {
             apdu[apdu_length - 1] == 0x00)) &&
           std::memcmp(apdu + 5, cap_load_session.instanceAid(),
                       instance_aid_length) == 0;
-      (void)choupi_vm_deselect_applet(selecting_same_applet ? 1 : 0);
+      const bool selecting_isd = apdu_length == 5 && apdu[2] == 0x04 &&
+                                  apdu[3] == 0x00 && apdu[4] == 0x00;
+      if (selecting_same_applet || selecting_isd) {
+        get_status_first_seen = false;
+        (void)choupi_vm_deselect_applet(selecting_same_applet ? 1 : 0);
+      }
     }
     if (!secure_channel.active() && apdu_length == 5 && apdu[0] == 0x80 &&
         apdu[1] == 0xca) {
@@ -362,54 +377,124 @@ void process_message(uint8_t rhport) {
       response[sizeof(isd_fci)] = 0x90;
       response[sizeof(isd_fci) + 1] = 0x00;
       response_length = sizeof(isd_fci) + 2;
-    } else if (cap_load_session.installed() && apdu_length >= 5 &&
-               apdu[0] == 0x00 && apdu[1] == 0xa4 && apdu[2] == 0x04 &&
-               apdu[3] == 0x00 &&
-               apdu[4] == cap_load_session.instanceAidLength() &&
-               (apdu_length == 5u + static_cast<size_t>(apdu[4]) ||
-                (apdu_length == 6u + static_cast<size_t>(apdu[4]) &&
-                 apdu[apdu_length - 1] == 0x00)) &&
-               std::memcmp(apdu + 5, cap_load_session.instanceAid(),
-                           cap_load_session.instanceAidLength()) == 0) {
-      uint8_t package_id = 0;
-      uint16_t install_method_offset = 0;
-      if (choupi_vm_find_applet(cap_load_session.instanceAid(),
-                                cap_load_session.instanceAidLength(),
-                                &package_id, &install_method_offset) != 0 ||
-          package_id != 63) {
-        send_response(rhport, 0x80, response, response_length);
-        break;
-      }
-      uint16_t applet_class_index = 0xffff;
-      if (cap_load_session.appletClassIndex(applet_class_index) &&
-          choupi_vm_restore_applet(package_id, applet_class_index,
-                                   cap_load_session.instanceAid(),
-                                   cap_load_session.instanceAidLength()) != 0) {
-        response[0] = 0x6f;
-        response[1] = 0x00;
-        response_length = 2;
-        send_response(rhport, 0x80, response, response_length);
-        break;
-      }
-      if (applet_class_index != 0xffff) {
-        const uint16_t select_status = choupi_vm_select_applet();
-        if (select_status != 0x9000) {
-          response[0] = static_cast<uint8_t>(select_status >> 8);
-          response[1] = static_cast<uint8_t>(select_status);
+    } else if (apdu_length >= 5 && apdu[0] == 0x00 && apdu[1] == 0xa4 &&
+               apdu[2] == 0x04 && apdu[3] == 0x00) {
+      const uint8_t installed_aid_length =
+          cap_load_session.instanceAidLength();
+      const bool select_instance_command =
+          cap_load_session.installed() && apdu[4] == installed_aid_length &&
+          (apdu_length == 5u + static_cast<size_t>(apdu[4]) ||
+           (apdu_length == 6u + static_cast<size_t>(apdu[4]) &&
+            apdu[apdu_length - 1] == 0x00)) &&
+          std::memcmp(apdu + 5, cap_load_session.instanceAid(),
+                      installed_aid_length) == 0;
+      std::printf("CHOUPI:SELECT_APDU len=%u lc=%u installed=%u aid_len=%u match=%u\r\n",
+                  static_cast<unsigned>(apdu_length),
+                  static_cast<unsigned>(apdu[4]),
+                  cap_load_session.installed() ? 1u : 0u,
+                  static_cast<unsigned>(installed_aid_length),
+                  select_instance_command ? 1u : 0u);
+      std::fflush(stdout);
+      if (select_instance_command) {
+        uint8_t package_id = 0;
+        uint16_t install_method_offset = 0;
+        const uint8_t lookup_status = choupi_vm_find_applet(
+            cap_load_session.instanceAid(),
+            cap_load_session.instanceAidLength(), &package_id,
+            &install_method_offset);
+        std::printf("CHOUPI:SELECT lookup=%u package=%u install=%04X\r\n",
+                    static_cast<unsigned>(lookup_status),
+                    static_cast<unsigned>(package_id),
+                    static_cast<unsigned>(install_method_offset));
+        std::fflush(stdout);
+        if (lookup_status != 0 || package_id != 63) {
+          response[0] = 0x6a;
+          response[1] = 0x82;
           response_length = 2;
-          send_response(rhport, 0x80, response, response_length);
-          break;
+        } else {
+          uint16_t applet_class_index = 0xffff;
+          const bool has_applet_class =
+              cap_load_session.appletClassIndex(applet_class_index);
+          std::printf("CHOUPI:SELECT class_found=%u class=%04X\r\n",
+                      has_applet_class ? 1u : 0u,
+                      static_cast<unsigned>(applet_class_index));
+          std::fflush(stdout);
+        bool select_failed = false;
+          if (has_applet_class) {
+            const uint8_t restore_status = choupi_vm_restore_applet(
+                package_id, applet_class_index, cap_load_session.instanceAid(),
+                cap_load_session.instanceAidLength());
+            std::printf("CHOUPI:SELECT restore=%u\r\n",
+                        static_cast<unsigned>(restore_status));
+            std::fflush(stdout);
+            if (restore_status != 0) {
+              response[0] = 0x6f;
+              response[1] = 0x00;
+              response_length = 2;
+            select_failed = true;
+            }
+          }
+        if (!select_failed && applet_class_index != 0xffff) {
+            const uint16_t select_status = choupi_vm_select_applet();
+            std::printf("CHOUPI:SELECT select=%04X\r\n",
+                        static_cast<unsigned>(select_status));
+            std::fflush(stdout);
+            if (select_status != 0x9000) {
+              response[0] = static_cast<uint8_t>(select_status >> 8);
+              response[1] = static_cast<uint8_t>(select_status);
+              response_length = 2;
+            select_failed = true;
+            }
+          }
+        if (!select_failed) {
+            uint16_t applet_response_length = 0;
+            const uint16_t process_status = choupi_vm_process_applet(
+                apdu, static_cast<uint16_t>(apdu_length), response,
+                static_cast<uint16_t>(sizeof(response)),
+                &applet_response_length);
+            if (process_status == 0xffff || applet_response_length < 2 ||
+                applet_response_length > sizeof(response)) {
+              response[0] = 0x6f;
+              response[1] = 0x00;
+              response_length = 2;
+              (void)choupi_vm_deselect_applet(0);
+            } else {
+              response_length = applet_response_length;
+              if (process_status != 0x9000) {
+                (void)choupi_vm_deselect_applet(0);
+              } else if (fs_sync() != 0) {
+                response[0] = 0x6f;
+                response[1] = 0x00;
+                response_length = 2;
+                (void)choupi_vm_deselect_applet(0);
+              }
+            }
+          }
+        }
+      } else {
+        uint16_t applet_response_length = 0;
+        const uint16_t process_status = choupi_vm_process_applet(
+            apdu, static_cast<uint16_t>(apdu_length), response,
+            static_cast<uint16_t>(sizeof(response)),
+            &applet_response_length);
+        if (process_status == 0xffff) {
+          response[0] = 0x6a;
+          response[1] = 0x82;
+          response_length = 2;
+        } else if (applet_response_length < 2 ||
+                   applet_response_length > sizeof(response)) {
+          response[0] = 0x6f;
+          response[1] = 0x00;
+          response_length = 2;
+        } else {
+          response_length = applet_response_length;
+          if (fs_sync() != 0) {
+            response[0] = 0x6f;
+            response[1] = 0x00;
+            response_length = 2;
+          }
         }
       }
-      const uint8_t aid_length = cap_load_session.instanceAidLength();
-      response[0] = 0x6f;
-      response[1] = static_cast<uint8_t>(aid_length + 2);
-      response[2] = 0x84;
-      response[3] = aid_length;
-      std::memcpy(response + 4, cap_load_session.instanceAid(), aid_length);
-      response[4 + aid_length] = 0x90;
-      response[5 + aid_length] = 0x00;
-      response_length = 6 + aid_length;
     } else if (apdu_length <= UINT16_MAX) {
       uint16_t applet_response_length = 0;
       const uint16_t status = choupi_vm_process_applet(

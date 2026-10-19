@@ -130,8 +130,27 @@ SessionResult Session::handle_message(const uint8_t *message,
       return SessionResult::Response;
     }
     selected_ = true;
-    append_select_response(response, applet_aid_.data(),
-                           static_cast<uint8_t>(applet_aid_.size()));
+    response.resize(kResponseCapacity);
+    uint16_t response_length = 0;
+    const uint16_t process_status = callbacks_.process == nullptr
+                                        ? 0xffff
+                                        : callbacks_.process(
+                                              callbacks_.context, message,
+                                              static_cast<uint16_t>(message_length),
+                                              response.data(),
+                                              static_cast<uint16_t>(response.size()),
+                                              &response_length);
+    if (process_status == 0xffff || response_length < 2 ||
+        response_length > response.size()) {
+      append_status(response, 0x6999);
+      clear_or_deselect(false);
+      return SessionResult::Response;
+    }
+    response.resize(response_length);
+    if (response[response_length - 2] != 0x90 ||
+        response[response_length - 1] != 0x00) {
+      clear_or_deselect(false);
+    }
     return SessionResult::Response;
   }
 

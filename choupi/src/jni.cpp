@@ -49,6 +49,7 @@
 namespace jcvm {
 
 extern "C" uint8_t choupi_vm_is_reselecting_applet(void);
+extern "C" uint8_t choupi_vm_is_selecting_applet(void);
 
 #ifndef PC_VERSION
 extern "C" uint32_t choupi_available_transient_memory_bytes(void);
@@ -320,12 +321,15 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
 }
 
 jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet() {
-  // The current VM has no applet selection lifecycle or pending-select state.
-  return FALSE;
+  return choupi_vm_is_selecting_applet() != 0 ? TRUE : FALSE;
 }
 
 jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletReselecting() {
   return choupi_vm_is_reselecting_applet() != 0 ? TRUE : FALSE;
+}
+
+jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_isAppletSelecting() {
+  return choupi_vm_is_selecting_applet() != 0 ? TRUE : FALSE;
 }
 
 namespace {

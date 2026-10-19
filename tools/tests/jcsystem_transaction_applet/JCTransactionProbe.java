@@ -27,6 +27,8 @@ public final class JCTransactionProbe extends Applet {
   private byte selectCount;
   private byte deselectCount;
   private byte lastSelectWasReselect;
+  private byte lastSelectProcessWasReselect;
+  private byte selectingAppletProbeFlags;
   private byte rejectNextSelect;
   private byte currentApduHiddenOutsideProcess;
   private byte currentApduBufferHiddenOutsideProcess;
@@ -73,6 +75,7 @@ public final class JCTransactionProbe extends Applet {
 
   public boolean select() {
     selectCount++;
+    if (selectingApplet()) selectingAppletProbeFlags |= 1;
     lastSelectWasReselect = reSelectingApplet() ? (byte)1 : (byte)0;
     try {
       APDU.getCurrentAPDU();
@@ -95,6 +98,7 @@ public final class JCTransactionProbe extends Applet {
 
   public void deselect() {
     deselectCount++;
+    selectingAppletProbeFlags |= selectingApplet() ? (byte)4 : (byte)8;
   }
 
   private static short appendMemory(byte[] output, short offset, byte type) {
@@ -111,7 +115,11 @@ public final class JCTransactionProbe extends Applet {
   }
 
   public void process(APDU apdu) throws ISOException {
-    if (selectingApplet()) return;
+    if (selectingApplet()) {
+      selectingAppletProbeFlags |= 2;
+      lastSelectProcessWasReselect = reSelectingApplet() ? (byte)1 : (byte)0;
+      return;
+    }
     byte[] buffer = apdu.getBuffer();
     byte command = buffer[ISO7816.OFFSET_P1];
     short length = 1;
@@ -713,7 +721,8 @@ public final class JCTransactionProbe extends Applet {
         buffer[0] = selectCount;
         buffer[1] = deselectCount;
         buffer[2] = lastSelectWasReselect;
-        length = 3;
+        buffer[3] = lastSelectProcessWasReselect;
+        length = 4;
         break;
       }
       case 58: {
@@ -842,6 +851,15 @@ public final class JCTransactionProbe extends Applet {
       }
       case 70: {
         buffer[0] = explicitRegistrationFailureReason;
+        break;
+      }
+      case 71: {
+        buffer[0] = selectingAppletProbeFlags;
+        break;
+      }
+      case 72: {
+        selectingAppletProbeFlags = 0;
+        buffer[0] = 0;
         break;
       }
       case 56: {

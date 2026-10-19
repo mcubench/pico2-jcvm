@@ -42,7 +42,7 @@ uint16_t select(void *opaque) {
   return card.select_status;
 }
 
-uint16_t deselect(void *opaque) {
+uint16_t deselect(void *opaque, bool) {
   ++static_cast<FakeCard *>(opaque)->deselect_count;
   return 0x9000;
 }
@@ -56,8 +56,8 @@ uint16_t process(void *opaque, const uint8_t *command,
   if (response_capacity < 4) return 0x6f00;
   response[0] = 0xde;
   response[1] = 0xad;
-  response[2] = 0x90;
-  response[3] = 0x00;
+  response[2] = static_cast<uint8_t>(card.process_status >> 8);
+  response[3] = static_cast<uint8_t>(card.process_status);
   *response_length = 4;
   return card.process_status;
 }
@@ -117,15 +117,15 @@ int main() {
   result = session.handle_message(message.data(), message.size(), response);
   check(result == choupi::vpcd::SessionResult::Response &&
             session.applet_selected() && card.restore_count == 1 &&
-            card.select_count == 1 && response.size() == 13 &&
-            response[0] == 0x6f && response[11] == 0x90 &&
-            response[12] == 0x00,
-        "applet SELECT restores, selects, and returns FCI");
+            card.select_count == 1 && card.process_count == 1 &&
+            card.last_command == message &&
+            response == std::vector<uint8_t>({0xde, 0xad, 0x90, 0x00}),
+        "applet SELECT restores, selects, and dispatches its APDU");
 
   const std::vector<uint8_t> command{0x00, 0x10, 0x00, 0x00};
   result = session.handle_message(command.data(), command.size(), response);
   check(result == choupi::vpcd::SessionResult::Response &&
-            card.process_count == 1 && card.last_command == command &&
+            card.process_count == 2 && card.last_command == command &&
             response == std::vector<uint8_t>({0xde, 0xad, 0x90, 0x00}),
         "selected applet receives APDU and returns response");
 
@@ -156,6 +156,15 @@ int main() {
             response.size() == 14 && response[12] == 0x90 &&
             response[13] == 0x00,
         "ISD SELECT deselects applet and returns FCI");
+
+  card.process_status = 0x6a82;
+  message = applet_select();
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            !session.applet_selected() &&
+            response == std::vector<uint8_t>({0xde, 0xad, 0x6a, 0x82}),
+        "failed SELECT process response clears applet selection");
+  card.process_status = 0x9000;
 
   message = applet_select();
   card.restore_result = 1;
