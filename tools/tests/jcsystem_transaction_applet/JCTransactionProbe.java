@@ -742,6 +742,44 @@ public final class JCTransactionProbe extends Applet {
         manualResponse = true;
         break;
       }
+      case 65: {
+        AID currentAID = JCSystem.getAID();
+        byte[] currentAIDBytes = new byte[16];
+        byte currentAIDLength = currentAID.getBytes(currentAIDBytes, (byte)0);
+        AID foundAID = JCSystem.lookupAID(currentAIDBytes, (short)0,
+                                           currentAIDLength);
+        byte[] unknownAIDBytes = {0x01, 0x02, 0x03, 0x04, 0x05};
+        AID unknownAID = JCSystem.lookupAID(unknownAIDBytes, (short)0,
+                                            (byte)unknownAIDBytes.length);
+        buffer[0] = foundAID == currentAID && unknownAID == null
+            ? (byte)1 : (byte)0;
+        break;
+      }
+      case 66: {
+        byte result = 0;
+        try {
+          JCSystem.lookupAID(null, (short)0, (byte)5);
+        } catch (NullPointerException expected) {
+          result |= 1;
+        }
+        try {
+          JCSystem.lookupAID(buffer, (short)-1, (byte)5);
+        } catch (ArrayIndexOutOfBoundsException expected) {
+          result |= 2;
+        }
+        try {
+          JCSystem.lookupAID(buffer, (short)0, (byte)-1);
+        } catch (ArrayIndexOutOfBoundsException expected) {
+          result |= 4;
+        }
+        try {
+          JCSystem.lookupAID(buffer, (short)(buffer.length - 2), (byte)5);
+        } catch (ArrayIndexOutOfBoundsException expected) {
+          result |= 8;
+        }
+        buffer[0] = result;
+        break;
+      }
       case 56: {
         rejectNextSelect = 1;
         buffer[0] = 1;

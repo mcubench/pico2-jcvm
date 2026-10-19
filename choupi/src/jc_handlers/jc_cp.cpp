@@ -207,6 +207,11 @@ uint8_t remap_imported_virtual_method_token(
     const uint8_t method_token) noexcept {
   static constexpr uint8_t framework_applet_methods[] = {
       0, 1, 2, 3, 5, 6, 4, 7};
+  // JC305 orders AID's public methods differently from the embedded
+  // framework API. In particular, JC305 token 3 is getBytes([BS)B, while
+  // embedded token 3 is partialEquals([BSB)Z (which takes one more word).
+  static constexpr uint8_t framework_aid_virtual_methods[] = {
+      0, 4, 2, 1, 3, 5};
   // The JC305 APDU export uses a different virtual-method order from the
   // embedded CHOUPI framework API. Tokens below are from the JC305 APDU
   // export; values are the corresponding CHOUPI framework APDU tokens.
@@ -248,6 +253,13 @@ uint8_t remap_imported_virtual_method_token(
       class_token == 1 &&
       method_token < sizeof(crypto_cipher_virtual_methods)) {
     return crypto_cipher_virtual_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+      class_token == 6 &&
+      method_token < sizeof(framework_aid_virtual_methods)) {
+    return framework_aid_virtual_methods[method_token];
   }
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
