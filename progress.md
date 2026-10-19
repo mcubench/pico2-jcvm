@@ -5830,5 +5830,5 @@
   is not implemented.
 - Decision: Continue auditing APDU and JCSystem runtime semantics; revisit T=1
   WTX if the target profile requires long-running applet timeout extension.
-- Commit: nested API repository `edfa4cf`; root implementation commit pending.
+- Commit: root `122e01e`; nested API repository `edfa4cf`.
 - Artifacts/logs: `artifacts/logs/jcsystem-apdu-wait-extension-vpcd-20261019.log`
