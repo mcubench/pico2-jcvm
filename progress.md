@@ -6103,7 +6103,7 @@
   metadata reader is compile-checked but not directly exercised.
 - Decision: Keep the AID distinction in GlobalPlatform metadata and retry
   hardware power-cycle validation when Pico PC/SC is available.
-- Commit: `<pending>`
+- Commit: `b3da80e`
 - Artifacts/logs: temporary distinct-AID logs
   `artifacts/logs/vpcd-persistence-commit-20261019T181446Z.log`,
   SHA-256 `d8fc996e3cbd758be9e62dc7b7b1af006bc7b27ae81ea0d65ca66f5077d35d95`;

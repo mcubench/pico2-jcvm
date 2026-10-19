@@ -17,8 +17,9 @@
   restores VM state from its configured AID but does not invoke the firmware
   `CapLoadSession::restoreInstalled()` metadata reader; that exact reader is
   compile-checked and awaits physical power-cycle verification.
-- Next: commit this focused loader change and continue the runtime/card-manager
-  review, starting with SELECT response handling for `61xx`.
+- Commit: `b3da80e`.
+- Next: continue the runtime/card-manager review, starting with SELECT
+  response handling for `61xx`.
 
 ## Latest implementation — null-safe Java Card AID comparisons — 2026-10-19
 
