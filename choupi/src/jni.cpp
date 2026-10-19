@@ -731,6 +731,9 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeGlobalArray(
 
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAID() {
   Context &context = Context::getActiveContext();
+  if (!context.wasAppletRegistered() && !context.hasRestoredAppletInstance()) {
+    return jref_t{};
+  }
   const jref_t cached_aid = context.getAppletAIDObjectRef();
   if (!cached_aid.isNullPointer()) {
     return cached_aid;

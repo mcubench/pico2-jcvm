@@ -6276,3 +6276,25 @@
   `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261016.log` emitted by the
   focused applet VPCD regression.
 
+## 2026-10-19 — Return null from JCSystem.getAID before registration
+
+- Step/experiment: `jcsystem-get-aid-registration-state`
+- Change: `NativeImplementation.getAID()` now returns a null reference until
+  `Applet.register()` succeeds or the VM restores a previously installed
+  applet. The focused probe records the `getAID()` result before registration
+  and asserts that it is null.
+- Validation: The first VPCD attempt used a stale PC emulator and failed this
+  new assertion; after `./tools/build-pc`, the focused install test passed
+  (`TEST:SUMMARY pass=3 fail=0`, 17.964 s). A fresh-process restore run also
+  passed (`pass=3 fail=0`, 9.986 s). `./tools/cycle choupi` passed ARM/RISC-V
+  build gates, flashed the updated ARM image, and passed the 18-second runtime
+  check. Existing Cargo/C++ warnings remain in the dependency/build output.
+- Result: The Java-level `getAID()` value now follows the registration state
+  before install, after install, and after emulator process restore.
+- Decision: Keep the registration guard and include null-before-register in
+  JCSystem lifecycle regressions.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/jcsystem-get-aid-registration-vpcd-20261019.log`,
+  `artifacts/logs/jcsystem-get-aid-registration-restore-vpcd-20261019.log`, and
+  `artifacts/logs/cycle-choupi-20261019T193502Z.log`.
+

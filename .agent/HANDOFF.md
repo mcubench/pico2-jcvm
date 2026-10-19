@@ -1,5 +1,22 @@
 # Handoff
 
+## Latest correction — JCSystem.getAID before registration — 2026-10-19
+
+- `JCSystem.getAID()` previously created an AID object from the INSTALL
+  instance AID before the applet had called `Applet.register()`. The native
+  bridge now returns null until registration succeeds, and continues returning
+  the AID for a restored installed instance.
+- The focused VPCD install check passed (`TEST:SUMMARY pass=3 fail=0`), confirming
+  null before registration and the registered AID during install. A fresh
+  emulator process restoring the saved applet passed the same check
+  (`pass=3 fail=0`). The CHOUPI cycle passed ARM/RISC-V build gates, flashed the
+  ARM image, and passed its 18-second runtime capture.
+- Logs: `artifacts/logs/jcsystem-get-aid-registration-vpcd-20261019.log`,
+  `artifacts/logs/jcsystem-get-aid-registration-restore-vpcd-20261019.log`, and
+  `artifacts/logs/cycle-choupi-20261019T193502Z.log`.
+- Next: continue JCSystem/API contract audit; hardware APDU testing still needs
+  the PC/SC transmit path to deliver an XfrBlock.
+
 ## Latest correction — JCSystem.isAppletActive callback contract — 2026-10-19
 
 - The previous lifecycle fix incorrectly made `JCSystem.isAppletActive()`

@@ -247,7 +247,7 @@ def main() -> int:
                     (73, b"\x0b", "Applet.selectingApplet is false during deselect and resumes for the next selection"),
                     (74, b"", "unknown AID SELECT deselects the applet and returns file not found"),
                     (75, b"\x01", "AID byte-array equality returns false for null and compares valid full and partial AIDs"),
-                    (76, b"\x01", "JCSystem.isAppletActive is true after register during install and after SELECT"),
+                    (76, b"\x01", "JCSystem.getAID is null before register and isAppletActive is true after register during install"),
                     (77, b"\x0f", "JCSystem.isAppletActive is true during install/select/deselect/process callbacks"),
                 )
                 selected_cases = (

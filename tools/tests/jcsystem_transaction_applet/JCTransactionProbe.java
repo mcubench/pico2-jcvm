@@ -34,6 +34,7 @@ public final class JCTransactionProbe extends Applet {
   private byte currentApduBufferHiddenOutsideProcess;
   private byte lastApduExceptionReason = (byte)0x7f;
   private byte explicitRegistrationFailureReason;
+  private byte installSawAIDNullBeforeRegister;
   private byte installSawAppletActive;
   private byte selectSawAppletActive;
   private byte deselectSawAppletActive;
@@ -52,6 +53,8 @@ public final class JCTransactionProbe extends Applet {
 
   private JCTransactionProbe(byte[] requestedAID, short offset, byte length,
                              boolean explicitAID) {
+    installSawAIDNullBeforeRegister =
+        JCSystem.getAID() == null ? (byte)1 : (byte)0;
     if (explicitAID) {
       try {
         register(requestedAID, offset, length);
@@ -841,7 +844,8 @@ public final class JCTransactionProbe extends Applet {
         break;
       }
       case 76:
-        buffer[0] = installSawAppletActive == 1 &&
+        buffer[0] = installSawAIDNullBeforeRegister == 1 &&
+                installSawAppletActive == 1 &&
                 JCSystem.isAppletActive(JCSystem.getAID())
             ? (byte)1 : (byte)0;
         break;

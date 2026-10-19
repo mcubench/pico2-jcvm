@@ -19,6 +19,24 @@
 - **Scope:** This runtime still supports one applet context and the basic
   logical channel only. Physical applet APDUs were not validated in this step.
 
+## JCSystem.getAID exposed an unregistered instance during install — 2026-10-19
+
+- **Symptom:** The native `getAID()` bridge created an AID object from the
+  INSTALL instance AID before the applet had called `Applet.register()`.
+- **Contract:** JC 3.0.5 `JCSystem.getAID()` returns null until the applet
+  successfully registers. During installation the instance AID is already
+  available to the card manager, so the native bridge must check registration
+  state before constructing the Java AID object.
+- **Viable solution:** Return a null reference unless the current context has
+  successfully registered the applet or restored an installed applet instance.
+  Then use the existing cached AID construction path.
+- **Validation:** Focused VPCD install and fresh-process restore checks passed;
+  the regression observes null before registration and a matching AID after
+  registration and restore. ARM/RISC-V builds and physical CHOUPI runtime cycle
+  passed.
+- **Scope:** The runtime still has one applet context. Physical Java applet
+  APDUs remain blocked by the host PC/SC transmit stall documented above.
+
 ## Pico reader disappears from PC/SC during second applet APDU — 2026-10-19
 
 - **Observation:** After the authorized USB ACL helper ran, bounded
