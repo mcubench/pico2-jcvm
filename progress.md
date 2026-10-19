@@ -6270,7 +6270,7 @@
   blocked before the first SELECT XfrBlock by the PC/SC/CCID transport issue.
 - Decision: Keep the corrected callback semantics; use VPCD for applet behavior
   until consecutive physical APDUs reach the firmware.
-- Commit: `<pending>`
+- Commit: `f6b5439209eabf47824cd8bbc6a50933dd6c178c`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261019T192429Z.log` (SHA-256
   `8518fcfe2c8ae4369e41a4fdd2bd931505ff866031cd321555ff100ab99a1e4a`), plus
   `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261016.log` emitted by the
