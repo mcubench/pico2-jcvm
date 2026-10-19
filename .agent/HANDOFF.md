@@ -10,6 +10,7 @@
   constructor failure propagation, copy-assignment preservation, and persistent
   JC_Array constructor failure propagation. ./tools/build arm passed. No
   hardware flash was run.
+- Commit: `79c2a79c0fd42e21f154bf5e973bca9e7f497d83`.
 - Next: continue the runtime memory/API audit; physical PC/SC APDU delivery
   remains blocked by the known host transmit stall.
 

@@ -6467,5 +6467,5 @@
 - Result: A failed mutable array copy no longer leaves a nonzero length with a
   null backing pointer; assignment failure preserves the destination's values.
 - Decision: Keep the staged ownership and continue the memory/API audit.
-- Commit: pending
+- Commit: `79c2a79c0fd42e21f154bf5e973bca9e7f497d83`
 - Artifacts/logs: none.
