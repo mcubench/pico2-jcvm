@@ -12,6 +12,7 @@
   `TEST:SUMMARY pass=4 fail=0`. No Pico flash was run; the build gate for flashing
   requires both architectures, while current work scope is ARM-only. Allocation
   failure injection remains untested.
+- Commit: `da50522af16913d8b7dc1351c805b7ed15b1d66e`.
 - Next: add a deterministic low-memory regression, then continue the selected
   Java Card runtime/API audit. Physical PC/SC applet APDUs remain blocked by the
   documented host transmit stall.

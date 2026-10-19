@@ -6331,5 +6331,5 @@
   the backing-array constructor. Deterministic exhaustion injection was not run.
 - Decision: Keep the exception translation; add allocation-failure injection
   before claiming the low-memory path fully verified.
-- Commit: pending
+- Commit: `da50522af16913d8b7dc1351c805b7ed15b1d66e`
 - Artifacts/logs: `artifacts/logs/jcsystem-transient-allocation-errors-vpcd-20261019.log`.
