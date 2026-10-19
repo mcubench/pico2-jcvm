@@ -1,5 +1,21 @@
 # Handoff
 
+## Latest continuation — exercise GP DELETE transaction sequencing offline — 2026-10-19
+
+- Extracted the persistent transaction portion of `CapLoadSession::deleteObject()`
+  into `gp::commit_delete_state()`. The production call site uses a backend
+  adapter wired to `FlashMemory_Handler` and `fs_sync`; host tests use a fake
+  backend to verify ordering and errors without Pico flash APIs.
+- `./tools/test-gp-delete` passed 21 checks, including instance/package
+  deletion sequencing, start failure, applet/static clear failure, sync
+  failure, commit failure, and marker exceptions. `./tools/build arm` and
+  `./tools/build riscv` both passed.
+- The test does not exercise actual persistent records, CAP-slot deletion,
+  authenticated CCID dispatch, or restart restoration. The device is in
+  BOOTSEL, so no card APDU or flash operation was attempted.
+- Next: add a storage-backed `CapLoadSession` test seam to cover markers,
+  GET STATUS after actual deletion, CAP deletion, and restore after restart.
+
 ## Latest continuation — verify SCP03-authenticated GET DATA on the Pico — 2026-10-19
 
 - Extended `tools/probe-gp-get-data` to establish SCP03 S8, verify the card

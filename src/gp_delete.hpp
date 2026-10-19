@@ -52,6 +52,74 @@ inline bool parse_delete_request(uint8_t p1, uint8_t p2, const uint8_t *data,
   return true;
 }
 
+// Apply the persistent part of a DELETE operation through a small backend
+// contract. Keeping ordering and rollback here lets host tests exercise the
+// same transaction path used by CapLoadSession without emulating RP2350 flash.
+// The backend provides begin(), clear_applet(class_index),
+// clear_package_static(), mark_deleted(package), sync(), rollback(), and
+// commit() methods. It may throw; failures map to NV-memory failure (6581).
+template <typename Backend>
+uint16_t commit_delete_state(Backend &backend, bool delete_package,
+                             bool applet_installed,
+                             uint16_t applet_class_index) noexcept {
+  bool began = false;
+  try {
+    began = backend.begin();
+  } catch (...) {
+    return 0x6581;
+  }
+  if (!began) return 0x6581;
+  bool transaction_active = true;
+  const auto rollback = [&]() noexcept {
+    if (!transaction_active) return true;
+    transaction_active = false;
+    bool restored = false;
+    try {
+      restored = backend.rollback();
+    } catch (...) {
+      restored = false;
+    }
+    uint8_t sync_status = 1;
+    try {
+      sync_status = backend.sync();
+    } catch (...) {
+      sync_status = 1;
+    }
+    return sync_status == 0 && restored;
+  };
+
+  try {
+    if (delete_package) {
+      if (applet_installed && !backend.clear_applet(applet_class_index)) {
+        (void)rollback();
+        return 0x6581;
+      }
+      if (!backend.clear_package_static()) {
+        (void)rollback();
+        return 0x6581;
+      }
+    } else if (!backend.clear_applet(applet_class_index)) {
+      (void)rollback();
+      return 0x6581;
+    }
+
+    backend.mark_deleted(delete_package);
+    if (backend.sync() != 0) {
+      (void)rollback();
+      return 0x6581;
+    }
+    if (!backend.commit()) {
+      transaction_active = false;
+      return 0x6581;
+    }
+    transaction_active = false;
+  } catch (...) {
+    (void)rollback();
+    return 0x6581;
+  }
+  return 0x9000;
+}
+
 } // namespace gp
 
 #endif

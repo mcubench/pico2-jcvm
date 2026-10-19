@@ -5738,3 +5738,13 @@
 - Decision: Keep actual authenticated DELETE dispatch, `CapLoadSession::deleteObject()`, and restart restoration as open work; next add a testable persistence/CAP-store boundary.
 - Commit: `8b9095d`; validated step, recorded in metadata commit `4fb7515`
 - Artifacts/logs: test output from this session; no separate log captured.
+
+## 2026-10-19 — Exercise GP DELETE transaction sequencing offline
+
+- Step/experiment: `gp-delete-transaction-backend`
+- Change: Extracted the persistent transaction sequence from `CapLoadSession::deleteObject()` into a small templated backend routine; the firmware adapter still calls the existing flash/filesystem operations. Added fake-backend tests for success and each rollback/error branch.
+- Validation: `./tools/test-gp-delete` passed 21/21 checks. `./tools/build arm` passed, including the CHOUPI ARM image; `./tools/build riscv` passed. `git diff --check` passed. No hardware cycle was run because the Pico is in BOOTSEL.
+- Result: The same transaction ordering production uses is now host-testable. Tests cover begin, applet/package clearing, tombstone write, snapshot sync/commit, rollback, and marker exceptions. They do not exercise actual flash records, CAP-slot deletion, authenticated CCID dispatch, or restart restoration.
+- Decision: Continue toward a storage-backed `CapLoadSession` test boundary and retain the physical DELETE/restart lifecycle as open.
+- Commit: pending
+- Artifacts/logs: test and build output from this session; no separate build logs captured.

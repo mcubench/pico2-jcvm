@@ -96,10 +96,13 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 5. **Card-management and persistence assurance:** storage rollback and
    randomized power-cut recovery have focused native coverage, applet
    persistence has a two-process VPCD check, and GET DATA Card Recognition Data
-   has encoder/status unit coverage and a direct physical open-channel APDU
-   check. Authenticated GP DELETE, post-delete GET STATUS, broader CAP restore,
-   authenticated GP DELETE and end-to-end power-cycle validation remain open
-   before claiming general card compatibility.
+  has encoder/status unit coverage and direct physical open-channel and
+  SCP03-authenticated APDU checks. GET STATUS encoding covers the expected
+  instance-deleted and package-deleted views. DELETE transaction ordering and
+  rollback now have fake-backend host checks, but authenticated GP DELETE,
+  production storage integration, post-delete restart/restore, broader CAP
+  restore, and end-to-end power-cycle validation remain open before claiming
+  general card compatibility.
 6. **Conformance and hardening:** no full Java Card conformance suite or
    certification-grade security assessment has been completed.
 

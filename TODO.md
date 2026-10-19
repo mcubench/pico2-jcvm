@@ -130,9 +130,11 @@ Next actions:
    Remaining: authenticated GP DELETE and post-delete restore validation,
    and broader CAP restore validation. The GET STATUS response builder now
    has host checks for instance-deleted/package-present and package-deleted
-   views, but these do not exercise deletion or persistence. Unselected and SCP03-authenticated
-   `0066` Card Recognition Data plus unavailable `9F7F` CPLC passed direct
-   physical APDU probes. Persistent
+   views, but these do not exercise deletion or persistence. The transaction
+   sequence used by `CapLoadSession::deleteObject()` now has fake-backend tests
+   for success and rollback paths; production storage integration is still
+   open. Unselected and SCP03-authenticated `0066` Card Recognition Data plus
+   unavailable `9F7F` CPLC passed direct physical APDU probes. Persistent
    transaction tests cover injected write/commit rollback failures; filesystem
    overlay tests cover 1,000 randomized power-cut atomicity cases and restart
    recovery. The official physical static suite has not passed; PC/SC still

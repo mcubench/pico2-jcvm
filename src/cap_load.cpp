@@ -1,5 +1,6 @@
 #include "cap_load.hpp"
 #include "cap_store.hpp"
+#include "gp_delete.hpp"
 
 #ifdef PC_VERSION
 // The host filesystem backend writes each record synchronously, so it has no
@@ -603,51 +604,33 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
   if (!delete_package && !delete_applet) return 0x6a88;
   if (delete_package && installed_ && !delete_related_objects) return 0x6985;
 
-  if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
-    return 0x6581;
-  }
-  bool transaction_active = true;
-  const auto rollback = [&transaction_active]() noexcept {
-    if (!transaction_active) return true;
-    transaction_active = false;
-    const bool restored =
-        jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
-    return fs_sync() == 0 && restored;
-  };
+  struct DeleteBackend {
+    bool begin() noexcept {
+      return jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
+    }
+    bool clear_applet(uint16_t class_index) noexcept {
+      return clear_applet_persistent_state(class_index);
+    }
+    bool clear_package_static() noexcept {
+      return clear_package_static_state();
+    }
+    void mark_deleted(bool package) {
+      jcvm::FlashMemory_Handler::setPersistentField_Byte(
+          lifecycle_tag(package ? 2 : 1),
+          package ? kPackageDeletedState : kAppletDeletedState);
+    }
+    uint8_t sync() noexcept { return fs_sync(); }
+    bool rollback() noexcept {
+      return jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    }
+    bool commit() noexcept {
+      return jcvm::FlashMemory_Handler::commitPersistentWriteTransaction();
+    }
+  } backend;
 
-  try {
-    if (delete_package) {
-      if (installed_ && !clear_applet_persistent_state(applet_class_index_)) {
-        (void)rollback();
-        return 0x6581;
-      }
-      if (!clear_package_static_state()) {
-        (void)rollback();
-        return 0x6581;
-      }
-      jcvm::FlashMemory_Handler::setPersistentField_Byte(
-          lifecycle_tag(2), kPackageDeletedState);
-    } else {
-      if (!clear_applet_persistent_state(applet_class_index_)) {
-        (void)rollback();
-        return 0x6581;
-      }
-      jcvm::FlashMemory_Handler::setPersistentField_Byte(
-          lifecycle_tag(1), kAppletDeletedState);
-    }
-    if (fs_sync() != 0) {
-      (void)rollback();
-      return 0x6581;
-    }
-    if (!jcvm::FlashMemory_Handler::commitPersistentWriteTransaction()) {
-      transaction_active = false;
-      return 0x6581;
-    }
-    transaction_active = false;
-  } catch (...) {
-    (void)rollback();
-    return 0x6581;
-  }
+  const uint16_t transaction_status = gp::commit_delete_state(
+      backend, delete_package, installed_, applet_class_index_);
+  if (transaction_status != 0x9000) return transaction_status;
 
   if (delete_package) {
     reset();
