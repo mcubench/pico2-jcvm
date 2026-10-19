@@ -985,7 +985,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed. `git diff --check` passed. Hardware/APDU validation was skipped because the current VM session reports no usable libusb context and no PC/SC service; no flash was attempted.
 - Result: The VM has a safe CAP metadata primitive for locating applet entries by AID and reading the matching install method offset. No applet is selected or executed yet.
 - Decision: Next wire the lookup into a persistent applet registry/lifecycle path; do not treat this parser primitive as SELECT or install support.
-- Commit: pending
+- Commit: `43a0721`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Record CAP lookup commit metadata
@@ -995,7 +995,7 @@
 - Validation: `git ls-files -s choupi/src/jc_cap/jc_cap_applet.hpp` reports regular-file mode `100644`; both architecture builds passed for the implementation.
 - Result: The implementation is committed as `52c7c7d`; the regular-file mode correction is committed as `6f54e5e`.
 - Decision: Continue with firmware lifecycle integration.
-- Commit: pending
+- Commit: `8b9095d`; this commit records the validated step
 - Artifacts/logs: none
 
 ## 2026-10-11 — Confirm v1.8.2 Applet component record layout
