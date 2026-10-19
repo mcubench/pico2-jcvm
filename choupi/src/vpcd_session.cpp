@@ -1,4 +1,5 @@
 #include "vpcd_session.hpp"
+#include "../../src/apdu_status.hpp"
 
 #ifdef PC_VERSION
 
@@ -162,8 +163,10 @@ SessionResult Session::handle_message(const uint8_t *message,
       return SessionResult::Response;
     }
     response.resize(response_length);
-    if (response[response_length - 2] != 0x90 ||
-        response[response_length - 1] != 0x00) {
+    const uint16_t select_status = static_cast<uint16_t>(
+        (static_cast<uint16_t>(response[response_length - 2]) << 8) |
+        response[response_length - 1]);
+    if (!select_status_keeps_applet_selected(select_status)) {
       clear_or_deselect(false);
     }
     return SessionResult::Response;

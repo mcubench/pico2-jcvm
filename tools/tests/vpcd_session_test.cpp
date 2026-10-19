@@ -201,6 +201,21 @@ int main() {
             !session.applet_selected() &&
             response == std::vector<uint8_t>({0x69, 0x99}),
         "failed applet select preserves VM status");
+  card.select_status = 0x9000;
+  card.process_status = 0x6103;
+  result = session.handle_message(message.data(), message.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            session.applet_selected() &&
+            response == std::vector<uint8_t>({0xde, 0xad, 0x61, 0x03}),
+        "SELECT 61xx keeps applet selected for GET RESPONSE");
+  const std::vector<uint8_t> get_response{0x00, 0xc0, 0x00, 0x00, 0x03};
+  card.process_status = 0x9000;
+  result = session.handle_message(get_response.data(), get_response.size(),
+                                  response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            session.applet_selected() && card.last_command == get_response &&
+            response == std::vector<uint8_t>({0xde, 0xad, 0x90, 0x00}),
+        "GET RESPONSE dispatches to applet after SELECT 61xx");
 
   const uint8_t bad_control = 0x03;
   result = session.handle_message(&bad_control, 1, response);

@@ -37,6 +37,10 @@ out explicitly.
   installed and selected an applet using a distinct instance AID and restored
   persistent objects successfully; the retained standard persistence test also
   passes. Physical Pico reboot validation remains open.
+- [x] Keep an applet selected when its SELECT APDU returns `61xx`; dispatch the
+  following GET RESPONSE to that applet. CCID and VPCD transport paths now
+  recognize `9000` and `61xx` as successful selection outcomes. VPCD session
+  regression verifies the selection state and GET RESPONSE dispatch.
 - [x] Implement `Applet.selectingApplet()` and deliver a successful applet
   SELECT APDU to `Applet.process()`. Lifecycle probes verify the flag during
   `select()` and SELECT processing, its absence during `deselect()`, and reset,

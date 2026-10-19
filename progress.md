@@ -6114,3 +6114,20 @@
   `artifacts/logs/vpcd-persistence-restore-20261019T181900Z.log`, SHA-256
   `482f43b2eff35de0ee80df934efc65837d72ea59384b3b3b2c64ff5c0a6b7f4a`.
 
+## 2026-10-19 — Preserve applet selection for SELECT 61xx
+
+- Step/experiment: `select-get-response-continuation`
+- Change: Added shared SELECT status handling for `9000` and `61xx`. CCID and
+  VPCD no longer deselect the applet when SELECT reports pending response data.
+  Added VPCD coverage proving GET RESPONSE is dispatched while the applet stays
+  selected.
+- Validation: `./tools/test-vpcd-session` passed 18 checks. `./tools/build arm`
+  passed for RP2350 ARM M33. No firmware flash or physical APDU was attempted.
+- Result: A `6103` SELECT result leaves the VPCD applet selected and the next
+  `00 C0 00 00 03` APDU reaches its process callback. Non-`9000`/non-`61xx`
+  selection failures still clear selection.
+- Decision: Keep the explicit status rule in both transports; continue the
+  card-manager behavior audit.
+- Commit: `<pending>`
+- Artifacts/logs: Test summary `TEST:SUMMARY pass=18 fail=0`; no archived log.
+

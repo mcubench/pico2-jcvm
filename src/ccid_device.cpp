@@ -7,6 +7,7 @@
 #include "pico/unique_id.h"
 #include "tusb.h"
 #include "scp03.hpp"
+#include "apdu_status.hpp"
 #include "cap_load.hpp"
 #include "gp_registry.hpp"
 #include "gp_delete.hpp"
@@ -463,7 +464,7 @@ void process_message(uint8_t rhport) {
               (void)choupi_vm_deselect_applet(0);
             } else {
               response_length = applet_response_length;
-              if (process_status != 0x9000) {
+              if (!select_status_keeps_applet_selected(process_status)) {
                 (void)choupi_vm_deselect_applet(0);
               } else if (fs_sync() != 0) {
                 response[0] = 0x6f;
