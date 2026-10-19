@@ -50,6 +50,27 @@ int main() {
     return EXIT_FAILURE;
   }
 
+  jcvm::JCVMArray<uint8_t> source(3);
+  source[0] = 0x11;
+  source[1] = 0x22;
+  source[2] = 0x33;
+  jcvm::JCVMArray<uint8_t> destination(2);
+  destination[0] = 0x44;
+  destination[1] = 0x55;
+  fail_next_array_allocation = true;
+  bool assignment_failed = false;
+  try {
+    destination = source;
+  } catch (const std::bad_alloc &) {
+    assignment_failed = true;
+  }
+  if (!assignment_failed || destination.size() != 2 ||
+      destination[0] != 0x44 || destination[1] != 0x55) {
+    std::puts("TEST:FAIL copy_assignment_preserves_destination");
+    return EXIT_FAILURE;
+  }
+  std::puts("TEST:PASS copy_assignment_preserves_destination");
+
   jcvm::Heap owner(1);
   jcvm::fs::Tag tag{};
   tag.len = 3;

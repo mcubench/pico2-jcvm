@@ -2044,3 +2044,18 @@ fix.
 - **Validation:** ARM build passed. The two-process VPCD persistence regression
   passed install/commit 3/3 and fresh restore 7/7. The constructor failure path
   was not directly allocation-injected.
+
+
+## JCVMArray copy assignment lost its destination on allocation failure — 2026-10-19
+
+- **Symptom/cause:** Mutable JCVMArray copy assignment released its current
+  buffer before allocating and copying the replacement. If allocation failed,
+  the assignment threw after setting the length but left the destination without
+  backing storage.
+- **Viable fix:** Build the replacement in a local unique_ptr, copy all elements,
+  then release the old buffer and commit the new pointer/length. The copy
+  constructor also stages its allocation so an element-copy exception cannot
+  leak a partial buffer.
+- **Validation:** The allocation test injects failure during assignment and
+  verifies that the destination retains its old length and values. ARM build and
+  the focused allocation regression pass.

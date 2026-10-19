@@ -6453,3 +6453,19 @@
   validation/docs `b2947afa6cdb494dcdc17b758df567ae9d0d5f00`.
 - Artifacts/logs: artifacts/logs/vpcd-persistence-commit-20261019T203708Z.log
   and artifacts/logs/vpcd-persistence-restore-20261019T203708Z.log.
+
+
+## 2026-10-19 — Preserve JCVMArray when copy allocation fails
+
+- Step/experiment: jcvmarray-copy-allocation-safety
+- Change: JCVMArray copy construction now stages an owned copy until element
+  copying finishes. Mutable copy assignment stages its replacement before
+  releasing the destination's old backing buffer.
+- Validation: ./tools/test-jcvmarray-allocation passed
+  allocation_failure_propagates, copy_assignment_preserves_destination, and
+  persistent_array_failure_propagates. ./tools/build arm passed.
+- Result: A failed mutable array copy no longer leaves a nonzero length with a
+  null backing pointer; assignment failure preserves the destination's values.
+- Decision: Keep the staged ownership and continue the memory/API audit.
+- Commit: pending
+- Artifacts/logs: none.

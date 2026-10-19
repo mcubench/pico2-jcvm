@@ -31,6 +31,7 @@
 #include "../jc_config.h"
 #include "../types.hpp"
 
+#include <memory>
 #include <type_traits>
 
 #ifdef JCVM_ARRAY_SIZE_CHECK
@@ -93,11 +94,12 @@ public:
     if constexpr (std::is_const_v<T>) {
       this->array = other.array;
     } else if (this->length > 0) {
-      this->array = new T[this->length];
-      this->allocated_data = true;
+      std::unique_ptr<T[]> copy(new T[this->length]);
       for (uint16_t index = 0; index < this->length; ++index) {
-        this->array[index] = other.array[index];
+        copy[index] = other.array[index];
       }
+      this->array = copy.release();
+      this->allocated_data = true;
     }
   }
 
@@ -114,17 +116,22 @@ public:
       return *this;
     }
 
-    this->release();
-    this->length = other.length;
-
     if constexpr (std::is_const_v<T>) {
+      this->release();
+      this->length = other.length;
       this->array = other.array;
-    } else if (this->length > 0) {
-      this->array = new T[this->length];
-      this->allocated_data = true;
-      for (uint16_t index = 0; index < this->length; ++index) {
-        this->array[index] = other.array[index];
+    } else {
+      std::unique_ptr<T[]> copy;
+      if (other.length > 0) {
+        copy.reset(new T[other.length]);
+        for (uint16_t index = 0; index < other.length; ++index) {
+          copy[index] = other.array[index];
+        }
       }
+      this->release();
+      this->length = other.length;
+      this->array = copy.release();
+      this->allocated_data = this->array != nullptr;
     }
     return *this;
   }

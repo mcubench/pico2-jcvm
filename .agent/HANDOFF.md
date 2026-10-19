@@ -1,5 +1,19 @@
 # Handoff
 
+## Latest allocator fix — preserve JCVMArray on failed copy — 2026-10-19
+
+- Mutable JCVMArray copy construction and assignment now stage backing storage
+  in a local unique_ptr. Assignment only replaces the original after allocation
+  and copying succeed; a failed assignment preserves the destination's original
+  length and elements.
+- ./tools/test-jcvmarray-allocation passed all three injected allocation checks:
+  constructor failure propagation, copy-assignment preservation, and persistent
+  JC_Array constructor failure propagation. ./tools/build arm passed. No
+  hardware flash was run.
+- Next: continue the runtime memory/API audit; physical PC/SC APDU delivery
+  remains blocked by the known host transmit stall.
+
+
 ## Latest exception-safety fix — persistent JC_Instance construction — 2026-10-19
 
 - The persistent JC_Instance constructor now holds its overflow tag and field
