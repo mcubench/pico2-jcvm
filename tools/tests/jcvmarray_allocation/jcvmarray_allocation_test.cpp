@@ -54,6 +54,23 @@ int main() {
   source[0] = 0x11;
   source[1] = 0x22;
   source[2] = 0x33;
+  fail_next_array_allocation = true;
+  bool copy_construction_failed = false;
+  try {
+    jcvm::JCVMArray<uint8_t> copy(source);
+    if (copy.size() != source.size() || copy[0] != source[0]) {
+      std::puts("TEST:FAIL copy_construction_contents");
+      return EXIT_FAILURE;
+    }
+  } catch (const std::bad_alloc &) {
+    copy_construction_failed = true;
+  }
+  if (!copy_construction_failed) {
+    std::puts("TEST:FAIL copy_construction_failure_propagates");
+    return EXIT_FAILURE;
+  }
+  std::puts("TEST:PASS copy_construction_failure_propagates");
+
   jcvm::JCVMArray<uint8_t> destination(2);
   destination[0] = 0x44;
   destination[1] = 0x55;

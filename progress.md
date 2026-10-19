@@ -6469,3 +6469,23 @@
 - Decision: Keep the staged ownership and continue the memory/API audit.
 - Commit: `79c2a79c0fd42e21f154bf5e973bca9e7f497d83`
 - Artifacts/logs: none.
+
+
+## 2026-10-19 — Exercise JCVMArray copy-constructor allocation failure
+
+- Step/experiment: jcvmarray-copy-construction-allocation-failure
+- Change: Extended the focused allocation regression to inject `std::bad_alloc`
+  while copying a mutable `JCVMArray` and assert that the failure propagates.
+  The copied array's size and first element are observed on the success path so
+  the host compiler cannot elide the unused copy and its allocation.
+- Validation: `./tools/test-jcvmarray-allocation` passed all four checks:
+  `allocation_failure_propagates`, `copy_construction_failure_propagates`,
+  `copy_assignment_preserves_destination`, and
+  `persistent_array_failure_propagates`. The first run exposed the test's
+  unused-copy optimization and failed as expected; the observable-use revision
+  passed. ARM build was not rerun because only the host regression changed.
+- Result: Copy-constructor failure propagation is now deterministically covered
+  alongside the existing construction, assignment, and persistent-array cases.
+- Decision: Keep the focused test and continue the runtime memory/API audit.
+- Commit: pending
+- Artifacts/logs: none.
