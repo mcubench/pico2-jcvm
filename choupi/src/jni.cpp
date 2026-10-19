@@ -64,6 +64,7 @@ ClearEvent getTransientClearEvent(const jbyte_t event) {
   case static_cast<jbyte_t>(ClearEvent::CLEAR_ON_DESELECT):
     return ClearEvent::CLEAR_ON_DESELECT;
   default:
+    Context::getActiveContext().setPendingSystemExceptionReason(1);
     throw Exceptions::SystemException;
   }
 }
@@ -76,9 +77,16 @@ std::shared_ptr<JC_Array> makeTransientArray(const jshort_t length,
   }
 
   Heap &heap = Context::getActiveContext().getHeap();
-  return std::make_shared<JC_Array>(
-      heap, static_cast<uint16_t>(length), type, true,
-      getTransientClearEvent(event));
+  std::shared_ptr<JC_Array> array;
+  try {
+    array = std::make_shared<JC_Array>(
+        heap, static_cast<uint16_t>(length), type, true,
+        getTransientClearEvent(event));
+  } catch (const std::bad_alloc &) {
+    Context::getActiveContext().setPendingSystemExceptionReason(2);
+    throw Exceptions::SystemException;
+  }
+  return array;
 }
 
 void checkArrayRange(const JC_Array &array, const jshort_t offset,
@@ -681,10 +689,15 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
   // Object[] has no applet-specific component class. The all-ones class
   // reference is the wildcard used for an array that accepts any reference.
   constexpr jc_cp_offset_t any_reference_type = 0xffff;
-  return std::make_shared<JC_Array>(heap, static_cast<uint16_t>(length),
-                                    JAVA_ARRAY_T_REFERENCE,
-                                    any_reference_type, true,
-                                    getTransientClearEvent(event));
+  try {
+    return std::make_shared<JC_Array>(heap, static_cast<uint16_t>(length),
+                                      JAVA_ARRAY_T_REFERENCE,
+                                      any_reference_type, true,
+                                      getTransientClearEvent(event));
+  } catch (const std::bad_alloc &) {
+    Context::getActiveContext().setPendingSystemExceptionReason(2);
+    throw Exceptions::SystemException;
+  }
 }
 
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeGlobalArray(

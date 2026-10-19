@@ -1980,3 +1980,20 @@ fix.
   (SHA-256 `14ecbe9209f62be8fd7b3f3327ef553e54d2d1fb52202bf808ad57086cfb5ed4`)
   and `artifacts/logs/monitor-apdu-probe-after-timeout-20261019.log` (SHA-256
   `3dc13d33a620ae7cc5dd1ccfa38029139d678e2682fbff2de4c0516ea2a8dad8`).
+
+
+## Transient array allocation failure terminated the VM — 2026-10-19
+
+- **Symptom/cause:** `JCVMArray(uint16_t)` was `noexcept` while allocating its
+  backing `new[]`. A failed transient array allocation therefore called
+  `std::terminate` before `JCSystem.makeTransient*Array()` could map the error
+  to its specified `SystemException.NO_TRANSIENT_SPACE`. The native transient
+  factories also lacked an allocation-failure mapping.
+- **Viable fix:** Allow the backing-array constructor to propagate
+  `std::bad_alloc`; catch it in primitive and reference transient factories, set
+  the pending system-exception reason to `NO_TRANSIENT_SPACE` (2), and throw the
+  VM's `SystemException`. Invalid clear events set `ILLEGAL_VALUE` (1).
+- **Validation:** ARM build passed. VPCD applet cases 28 and 29 passed (transient
+  array behavior and invalid event reason). A deterministic allocation-failure
+  injection and real-board APDU validation were not run; record those limits
+  before treating the low-memory path as fully verified.

@@ -58,7 +58,9 @@ public:
   /*
    * Default class constructor.
    */
-  JCVMArray(const uint16_t length) noexcept {
+  // Allocation failure must propagate so Java Card factories can translate it
+  // to their documented exception instead of terminating the VM.
+  JCVMArray(const uint16_t length) {
     this->length = length;
     this->array = nullptr;
     this->allocated_data = false;

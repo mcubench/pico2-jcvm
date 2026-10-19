@@ -6314,3 +6314,22 @@
 - Commit: `14a8edccfb7518458f9074017ed9b9db14b5828d`
 - Artifacts/logs: `STATUS.md`, `TODO.md`.
 
+
+
+## 2026-10-19 — Translate transient allocation failure to Java Card exception
+
+- Step/experiment: `transient-array-no-space-exception`
+- Change: Removed `noexcept` from the allocating `JCVMArray` constructor so
+  allocation errors propagate. Primitive and reference transient-array factories
+  now map `std::bad_alloc` to `SystemException.NO_TRANSIENT_SPACE` (reason 2);
+  invalid transient clear events set `SystemException.ILLEGAL_VALUE` (reason 1).
+- Validation: `./tools/build arm` passed. The restricted VPCD invocation returned
+  `EPERM`; rerunning through the repository's required host-access path passed
+  cases 28 and 29 (`TEST:SUMMARY pass=4 fail=0`, 39.084 s). No flash was run.
+- Result: Transient array clear-event behavior remains correct and allocation
+  failure can now reach Java Card exception dispatch rather than terminating in
+  the backing-array constructor. Deterministic exhaustion injection was not run.
+- Decision: Keep the exception translation; add allocation-failure injection
+  before claiming the low-memory path fully verified.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/jcsystem-transient-allocation-errors-vpcd-20261019.log`.

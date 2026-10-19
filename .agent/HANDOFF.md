@@ -1,5 +1,22 @@
 # Handoff
 
+## Latest implementation — map transient allocation failure — 2026-10-19
+
+- `JCVMArray` backing allocation could throw inside a `noexcept` constructor,
+  terminating the VM. The constructor now propagates allocation failure, and
+  the primitive/reference transient array factories translate `std::bad_alloc`
+  to `SystemException.NO_TRANSIENT_SPACE` (reason 2). Invalid clear events now
+  set `SystemException.ILLEGAL_VALUE` (reason 1).
+- Validation: `./tools/build arm` passed. The restricted VPCD attempt returned
+  `EPERM`; the required host-access retry passed probe cases 28 and 29,
+  `TEST:SUMMARY pass=4 fail=0`. No Pico flash was run; the build gate for flashing
+  requires both architectures, while current work scope is ARM-only. Allocation
+  failure injection remains untested.
+- Next: add a deterministic low-memory regression, then continue the selected
+  Java Card runtime/API audit. Physical PC/SC applet APDUs remain blocked by the
+  documented host transmit stall.
+
+
 ## Latest correction — JCSystem.getAID before registration — 2026-10-19
 
 - `JCSystem.getAID()` previously created an AID object from the INSTALL
