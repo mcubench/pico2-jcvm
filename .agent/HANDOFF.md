@@ -1,5 +1,18 @@
 # Handoff
 
+## Latest review handoff — functionality implementation guide — 2026-10-19
+
+- Added `review_20261019.md` with concrete code paths, implementation steps,
+  regression cases, and completion criteria for distinct instance-AID restore,
+  `61xx` SELECT response handling, and CAP/filesystem power-loss recovery.
+  The embedded SCP03 test key is recorded as deferred hardening.
+- This was a documentation-only step. No source code, firmware build, flash, or
+  hardware test was performed. The extensive pre-existing worktree changes
+  remain untouched.
+- Next: implement the distinct instance-AID restore fix as the smallest
+  independent step, then the SELECT `61xx` fix. Treat durable CAP/filesystem
+  recovery as a separate storage-design change with power-cut tests.
+
 ## Latest continuation — AC4 support comparison and Pico PC/SC diagnosis — 2026-10-19
 
 - Added `tools/compare-jcalgtest-support.py` and a reviewed 15-entry support

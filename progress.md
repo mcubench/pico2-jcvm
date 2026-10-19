@@ -6048,3 +6048,20 @@
   attempt SHA-256
   `4d6bd6d6f532c82dda5aa93f28163d14d546bd79fc513af2929a300aadf5f9fa`
   (`artifacts/logs/pico-powerup-persistence-20261019T121536Z.log`).
+
+## 2026-10-19 — Prepare functionality review implementation guide
+
+- Step/experiment: `functionality-review-handoff`
+- Change: Added `review_20261019.md` with code locations, proposed fixes,
+  regressions, and completion criteria for three functionality issues, plus a
+  deferred SCP03 key-provisioning note. Updated the session handoff.
+- Validation: Read-only inspection of the cited code paths and test wrappers;
+  documentation diff check passed. Builds and hardware checks were intentionally
+  skipped because no source code changed.
+- Result: Follow-up agents have separable implementation steps and validation
+  gates. No runtime metric was measured and none of the proposed fixes was
+  implemented or validated in this step.
+- Decision: Start with distinct instance-AID restoration, then SELECT `61xx`;
+  design CAP/filesystem recovery separately and verify injected power cuts.
+- Commit: this documentation commit (`git log -1 --format=%H -- review_20261019.md`).
+- Artifacts/logs: `review_20261019.md`; no runtime logs.
