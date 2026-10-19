@@ -71,6 +71,22 @@ std::unique_ptr<jcvm::Context> selected_applet_context;
 bool selected_applet_is_active = false;
 pico2_jcvm::ShortApduResponseChain pending_apdu_response;
 
+class APDUProcessScope {
+public:
+  explicit APDUProcessScope(jcvm::Context &context) noexcept
+      : context_(context) {
+    this->context_.setAPDUProcessActive(true);
+  }
+
+  ~APDUProcessScope() { this->context_.setAPDUProcessActive(false); }
+
+  APDUProcessScope(const APDUProcessScope &) = delete;
+  APDUProcessScope &operator=(const APDUProcessScope &) = delete;
+
+private:
+  jcvm::Context &context_;
+};
+
 #ifndef PC_VERSION
 void enumerate_selected_applet_roots(
     jcvm::Heap::ReferenceVisitor visitor, void *visitor_context,
@@ -469,7 +485,10 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     jcvm::Interpretor interpretor(context, method.second,
                                   method.first.getPackageID(),
                                   initial_references, 2);
-    status = interpretor.run();
+    {
+      APDUProcessScope process_scope(context);
+      status = interpretor.run();
+    }
     if (status == 0x9000) {
       data_length = context.getAPDUOutgoingLength();
       if (static_cast<uint32_t>(data_length) + 2 > response_capacity ||

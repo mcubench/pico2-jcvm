@@ -25,6 +25,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   VPCD emulator process also restored a committed instance field (`0x33`) and
   persistent static/array reference identities across process restart; that
   dedicated restore run passed seven checks (`TEST:SUMMARY pass=7 fail=0`).
+- `APDU.getCurrentAPDU()` now returns the exact APDU object passed to
+  `Applet.process()` and raises `SecurityException` from `Applet.select()`;
+  focused VPCD checks passed both cases. This validates host VM dispatch only,
+  not physical PC/SC.
 - Native transaction and storage recovery checks pass: injected record-write
   and snapshot-commit failures roll back cleanly, and the filesystem overlay
   test passes 1,000 randomized multi-record power-cut cases plus reset, CRC

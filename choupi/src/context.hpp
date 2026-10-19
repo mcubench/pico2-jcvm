@@ -62,6 +62,7 @@ private:
   jref_t apdu_buffer_ref;
   std::shared_ptr<JC_Array> apdu_java_buffer;
   jref_t apdu_object_ref;
+  bool apdu_process_active = false;
   jref_t apdu_outgoing_buffer_ref;
   std::shared_ptr<JC_Array> apdu_outgoing_buffer;
   uint16_t apdu_incoming_length = 0;
@@ -119,6 +120,8 @@ public:
   jref_t getAPDUBufferRef() const noexcept;
   void setAPDUObjectRef(jref_t reference) noexcept;
   jref_t getAPDUObjectRef() const noexcept;
+  void setAPDUProcessActive(bool active) noexcept;
+  bool isAPDUProcessActive() const noexcept;
   uint16_t getAPDUIncomingLength() const noexcept;
   uint16_t getAPDUExpectedResponseLength() const noexcept;
   uint16_t beginAPDUOutgoing(bool no_chaining);

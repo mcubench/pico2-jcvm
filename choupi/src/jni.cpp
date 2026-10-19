@@ -337,6 +337,16 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_setAPDUBuffer(
   Context::getActiveContext().setAPDUJavaBuffer(std::move(buffer));
 }
 
+jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getCurrentAPDU() {
+  Context &context = Context::getActiveContext();
+  const jref_t reference = context.getAPDUObjectRef();
+  if (!context.isAPDUProcessActive() || reference.isNullPointer() ||
+      reference.isArray()) {
+    throw Exceptions::SecurityException;
+  }
+  return reference;
+}
+
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAPDUIncomingLength() {
   return static_cast<jshort_t>(
       Context::getActiveContext().getAPDUIncomingLength());

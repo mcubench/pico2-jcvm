@@ -205,6 +205,14 @@ jref_t Context::getAPDUObjectRef() const noexcept {
   return this->apdu_object_ref;
 }
 
+void Context::setAPDUProcessActive(const bool active) noexcept {
+  this->apdu_process_active = active;
+}
+
+bool Context::isAPDUProcessActive() const noexcept {
+  return this->apdu_process_active;
+}
+
 uint16_t Context::getAPDUIncomingLength() const noexcept {
   return this->apdu_incoming_length;
 }

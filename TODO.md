@@ -375,6 +375,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   pass. The VPCD applet reaches its APDU entry and invokes the APDU path, but
   its first applet field access fails before a result can validate these
   helpers.
+  `APDU.getCurrentAPDU()` now returns the same Java APDU object passed to
+  `process()` and throws `SecurityException` during `select()`, verified in two
+  VPCD applet cases. Physical validation remains blocked by missing Pico PC/SC
+  enumeration.
   The bridge fragments data responses at
   short Le and serves `GET RESPONSE` using `61xx`. Parser, response-chain, and
   Context state tests pass; the Pico cycle also passed after flashing this

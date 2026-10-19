@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 59),
+        "--case", type=int, action="append", choices=range(1, 61),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -211,6 +211,8 @@ def main() -> int:
                     (56, b"\x01", "rejected applet selection clears selection until a later successful select"),
                     (57, b"", "card reset deselects the active applet before reselection"),
                     (58, b"\x33", "committed persistent applet field survives emulator process restart"),
+                    (59, b"\x01", "APDU.getCurrentAPDU returns the active process APDU object"),
+                    (60, b"\x01", "APDU.getCurrentAPDU is unavailable during applet select callback"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

@@ -1,5 +1,23 @@
 # Handoff
 
+## Latest continuation — implement APDU.getCurrentAPDU — 2026-10-19
+
+- Implemented `APDU.getCurrentAPDU()` through a native bridge to the current
+  context's APDU object. A scoped process flag makes the reference available
+  only while `Applet.process()` executes; calls during `select()` raise
+  `SecurityException`. The nested Java Card API change is committed as
+  `43f9877` in `choupi/javacard-sdk/javacard-api`.
+- ARM build passed with `./tools/build arm`. API CAP/ROM-mask generation
+  completed without converter errors; existing export/int-support and
+  packed-member warnings remain. `./tools/build-jcsystem-transaction-probe`
+  passed, and VPCD cases 59 and 60 passed (`TEST:SUMMARY pass=4 fail=0
+  elapsed_s=11.280`) for exact object identity during `process()` and security
+  rejection during `select()`.
+- Physical PC/SC validation remains unavailable: USB `2e8a:0009` was present,
+  but pcscd exposed only Virtual PCD readers. No flash was attempted.
+- Next: continue the APDU Java Card profile audit and broaden focused golden
+  coverage; keep the physical test open until the Pico reader enumerates.
+
 ## Latest continuation — make the Pico power-up check tolerate reader re-enumeration — 2026-10-19
 
 - Updated `tools/test-pico-powerup` with independently bounded retries for

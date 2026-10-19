@@ -27,6 +27,7 @@ public final class JCTransactionProbe extends Applet {
   private byte selectCount;
   private byte deselectCount;
   private byte rejectNextSelect;
+  private byte currentApduHiddenOutsideProcess;
   private byte lastApduExceptionReason = (byte)0x7f;
   private byte[] transientResetArray;
   private byte[] transientDeselectArray;
@@ -47,6 +48,12 @@ public final class JCTransactionProbe extends Applet {
 
   public boolean select() {
     selectCount++;
+    try {
+      APDU.getCurrentAPDU();
+      currentApduHiddenOutsideProcess = 0;
+    } catch (SecurityException expected) {
+      currentApduHiddenOutsideProcess = 1;
+    }
     if (rejectNextSelect != 0) {
       rejectNextSelect = 0;
       return false;
@@ -677,6 +684,16 @@ public final class JCTransactionProbe extends Applet {
       }
       case 58: {
         buffer[0] = value;
+        length = 1;
+        break;
+      }
+      case 59: {
+        buffer[0] = APDU.getCurrentAPDU() == apdu ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
+      case 60: {
+        buffer[0] = currentApduHiddenOutsideProcess;
         length = 1;
         break;
       }
