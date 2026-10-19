@@ -1,5 +1,25 @@
 # Project issue knowledge base
 
+## Pico PC/SC lifecycle verified after CDC/BOOTSEL flash cycle — 2026-10-19
+
+- **Observation:** After the `cycle choupi` path recovered through CDC 1200-baud
+  BOOTSEL entry, PC/SC listed the Pico and consecutive GPPro / SmartcardIO
+  exchanges completed. GPPro authenticated applet and related-object package
+  DELETE, the GET STATUS listings reflected each result, CAP reinstall passed,
+  and after the next firmware restart the package/app remained registered. The
+  applet SELECT, GETVERSION, JCSystem, and SHA-256 probes then passed.
+- **Reset limitation:** Direct `picotool reboot -f` reported
+  `Unable to locate reset interface`. The repository `cycle` wrapper's CDC /
+  BOOTSEL fallback reflashed the image and rebooted it successfully. This
+  verifies restart persistence, not removal of USB power.
+- **Recovery status:** This is one successful recovery sequence, not proof that
+  the earlier post-SELECT PC/SC stall is permanently fixed. Reuse the bounded
+  `tools/test-pico-powerup` probe after boot and record any recurrence. Do not
+  run an unbounded scanner.
+- **Evidence:** `artifacts/logs/cycle-choupi-20261019T065052Z.log`,
+  `artifacts/logs/gp-delete-physical-20261019.log`, and
+  `artifacts/logs/pico-powerup-persistence-20261019T065455Z.log`.
+
 ## Post-SELECT PC/SC timeout repeated after 2026-10-19 reflash
 
 - **Observation:** ARM and RISC-V builds passed and the ARM image flashed from
