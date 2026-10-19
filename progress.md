@@ -6298,3 +6298,19 @@
   `artifacts/logs/jcsystem-get-aid-registration-restore-vpcd-20261019.log`, and
   `artifacts/logs/cycle-choupi-20261019T193502Z.log`.
 
+## 2026-10-19 — Synchronize JCSystem status documentation
+
+- Step/experiment: `jcsystem-status-contract-refresh`
+- Change: Updated `STATUS.md` and `TODO.md` to reflect the JC 3.0.5
+  `isAppletActive()` callback contract and the new null-before-register
+  `getAID()` behavior, including VPCD evidence and the outstanding physical
+  APDU transport limitation.
+- Validation: Documentation inspection only; no build, test, or hardware
+  command was required for this metadata update.
+- Result: The project status and TODO no longer describe the previous incorrect
+  install/select behavior or claim Java-level `getAID()` coverage is absent.
+- Decision: Keep the status files synchronized with committed behavior and
+  evidence.
+- Commit: `<pending>`
+- Artifacts/logs: `STATUS.md`, `TODO.md`.
+

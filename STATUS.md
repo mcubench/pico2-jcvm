@@ -45,10 +45,16 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 - `APDU.waitExtension()` enforces the no-chaining `ILLEGAL_USE` rule, and the
   VPCD probe confirms its normal outgoing path. CCID/T=1 WTX signaling remains
   unsupported because the VM processes commands synchronously.
-- `JCSystem.isAppletActive(AID)` now follows the applet selection lifecycle.
-  VPCD case 76 verifies install=false/process=true; case 77 verifies
-  select=false/deselect=true/process=true. The active flag is set only after a
-  successful `select()` callback and remains set through `deselect()`.
+- `JCSystem.isAppletActive(AID)` follows the JC 3.0.5 registration and callback
+  contract. It is false before registration, true after `Applet.register()`
+  during install and select, remains true during deselect/process, and clears
+  after deselect. VPCD cases 76–77 cover these callbacks; case 56 covers a
+  rejected `select()` and subsequent successful selection.
+- `JCSystem.getAID()` returns null before successful registration and returns
+  the registered applet AID during install, after SELECT, and after a fresh
+  VPCD process restores the installed instance. The focused install and restore
+  probes both pass. Physical applet APDUs remain blocked by the PC/SC transmit
+  issue described below.
 - `JCSystem.lookupAID()` validates null and array bounds, returns the active
   applet AID only on an exact byte match, and returns null for a miss. VPCD
   cases 65–66 pass. This is limited by the current single-applet context model;

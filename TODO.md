@@ -37,9 +37,15 @@ out explicitly.
   installed and selected an applet using a distinct instance AID and restored
   persistent objects successfully; the retained standard persistence test also
   passes. Physical Pico reboot validation remains open.
-- [x] Make `JCSystem.isAppletActive(AID)` reflect selection state. It is false
-  during install and `select()`, true during `deselect()` and `process()`, and
-  false after deselection/reset. VPCD lifecycle cases 76–77 pass.
+- [x] Match `JCSystem.isAppletActive(AID)` to the JC 3.0.5 registration and
+  callback contract. It is false before registration; true during install after
+  `Applet.register()`, during `select()`, and through `deselect()`/`process()`;
+  false after deselection/reset. VPCD cases 76–77 and rejected-selection case 56
+  pass.
+- [x] Match `JCSystem.getAID()` registration semantics: return null before
+  successful `Applet.register()`, then return the instance AID during install,
+  selection, and after applet restore. Focused install and fresh-process restore
+  VPCD checks pass; physical APDU validation remains open.
 - [x] Keep an applet selected when its SELECT APDU returns `61xx`; dispatch the
   following GET RESPONSE to that applet. CCID and VPCD transport paths now
   recognize `9000` and `61xx` as successful selection outcomes. VPCD session
@@ -470,10 +476,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   the API CAP and ROM mask successfully; applet-level catch behavior remains
   physically unverified. Native C++ exception mapping for other methods is
   still incomplete. `JCSystem.getAID()` now creates a cached framework `AID`
-  object from the installed/selected instance AID; installation and restored
-  contexts receive that AID from the card manager. Context byte retention is
-  covered by the focused native test and ARM build. Java-level `getAID()` use
-  and broader API coverage remain unverified/incomplete. `AID.equals(byte[],...)`
+  object only after successful registration or restoration; it returns null
+  before registration. Focused VPCD install and fresh-process restore checks
+  pass. Context byte retention is covered by the focused native test and ARM
+  build. Physical `getAID()` validation and broader API coverage remain open.
+  `AID.equals(byte[],...)`
   and `partialEquals(byte[],...)` now return false for null arrays as required
   by the Java Card 3.0.5 contract; VPCD case 75 exercises null and valid full /
   prefix comparisons through the applet runtime. Physical validation remains
