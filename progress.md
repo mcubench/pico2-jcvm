@@ -6148,7 +6148,7 @@
   card failure.
 - Decision: Add failure injection for the final sync and CAP metadata write
   before implementing a durable intent/reconciliation design.
-- Commit: `<pending>`
+- Commit: `cc292ef`
 - Artifacts/logs: No artifact log; source references are recorded in
   `.agent/QKB.md`.
 

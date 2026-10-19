@@ -11,6 +11,7 @@
   two flash stores.
 - A bounded `timeout 8s pcsc_scan -r` listed only Virtual PCD 00 00/00 01; no
   physical APDU ran. Existing host tests and ARM build for SELECT `61xx` passed.
+- Commit: `cc292ef`.
 
 ## Latest implementation — SELECT 61xx continuation — 2026-10-19
 
