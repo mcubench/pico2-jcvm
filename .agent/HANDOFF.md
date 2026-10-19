@@ -1,5 +1,22 @@
 # Handoff
 
+## Latest continuation — verify persistent graph after VPCD restart — 2026-10-19
+
+- Expanded `tools/test-vpcd-persistence` to check cases 14–17 and 58 after a
+  fresh emulator process restores the saved flash image. The assertions cover
+  static reference identity, persistent array child identity, object-field
+  aliasing and mutation, array type restoration, and committed instance field
+  `0x33`.
+- Validation: install/commit process passed 3/3 checks; restore process passed
+  7/7, with all five persistence APDUs returning expected data and `9000`.
+  This remains host process-restart evidence, not physical power-cycle proof.
+- Commit: `636fbfc`.
+- Logs: `artifacts/logs/vpcd-persistence-restore-20261019T121017Z.log` and
+  `artifacts/logs/vpcd-persistence-restore-emulator-20261019T121017Z.log`;
+  full build and other phase logs share timestamp `20261019T121017Z`.
+- Next: continue AC4 support-result verification and outstanding runtime work;
+  physical AC5 still depends on the Pico returning to PC/SC.
+
 ## Latest continuation — automate VPCD applet persistence restart — 2026-10-19
 
 - Added `--memory` to the JCSystem applet VPCD runner and a

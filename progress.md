@@ -5994,3 +5994,30 @@
   restore-phase output `artifacts/logs/vpcd-persistence-restore-20261019T120347Z.log`;
   emulator logs `artifacts/logs/vpcd-persistence-install-emulator-20261019T120347Z.log`
   and `artifacts/logs/vpcd-persistence-restore-emulator-20261019T120347Z.log`.
+
+## 2026-10-19 — Check restored persistent object graph
+
+- Step/experiment: `vpcd-persistent-reference-graph-restart`
+- Change: Expanded `tools/test-vpcd-persistence` so its restore process also
+  checks persistent static reference identity, reference-array child identity,
+  shared array aliases and mutation, and restored array type, in addition to
+  the registered applet's committed field.
+- Validation: `PICO2_VPCD_PERSISTENCE_TIMEOUT=180 ./tools/test-vpcd-persistence`
+  passed. Install/commit phase passed 3/3; fresh restore phase passed 7/7. The
+  restored value was `0x33`; all five restore APDUs returned their expected
+  data and `9000`. PC emulator and probe builds passed, with 49 existing Rust
+  dependency warnings. No target build or physical hardware was required for
+  this host-only persistence test.
+- Result: The process-restart check now covers the applet instance and the
+  persistent reference graph. It does not prove physical flash persistence
+  across a real power-off/on.
+- Decision: Keep physical AC5 open; continue the AC4 and Java Card runtime
+  audit while the Pico is absent from PC/SC.
+- Commit: `636fbfc`.
+- Artifacts/logs: build log SHA-256
+  `4b945b5f65a409f02c30458f0023a2c8a75c9642333b57d1eb487b4e8d8c04c9`;
+  restore transcript SHA-256
+  `bd596435e2c7678cf88cdac881147a39049062281b85b2494796268a2bf4d82b`;
+  `artifacts/logs/vpcd-persistence-commit-20261019T121017Z.log`,
+  `artifacts/logs/vpcd-persistence-install-emulator-20261019T121017Z.log`,
+  and `artifacts/logs/vpcd-persistence-restore-emulator-20261019T121017Z.log`.

@@ -31,8 +31,9 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   deselects the active applet, and leaves later applet APDUs unavailable. The
   card-manager path also compiles for RP2350 ARM; no physical flash was run.
 - `./tools/test-vpcd-persistence` commits applet field `0x33`, exits the host
-  emulator, starts a fresh process from the saved flash image, and reads the
-  restored value successfully. This validates process-restart persistence;
+  emulator, starts a fresh process from the saved flash image, and verifies the
+  restored field, static/array reference identity, object-field alias, and array
+  type (7/7 restore checks). This validates process-restart persistence;
   physical power-off/on persistence remains unverified.
 - `APDU.getCurrentAPDU()` now returns the exact APDU object passed to
   `Applet.process()` and raises `SecurityException` from `Applet.select()`;

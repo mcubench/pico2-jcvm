@@ -443,9 +443,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   a power cycle, not only that its CAP blob survives. The new
   `./tools/test-vpcd-persistence` regression commits instance field `0x33` in
   one emulator process, then starts a fresh process from its saved flash image
-  and verifies `0x33` is restored. It passed; this models a process restart,
-  not a physical power-off/on. Hardware persistence still needs a true power
-  cycle and PC/SC access.
+  and verifies `0x33`, static reference identity, persistent array-child
+  identity, object-field aliasing, and restored array type. The restore phase
+  passed 7/7 checks; this models a process restart, not a physical power-off/on.
+  Hardware persistence still needs a true power cycle and PC/SC access.
 
 ## Card manager and host integration
 
