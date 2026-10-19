@@ -5768,3 +5768,13 @@
 - Decision: The environment cannot perform true USB power removal; `picotool reboot` failed because the composite device has no accessible reset interface. Keep physical power-off/on validation open and run `tools/test-pico-powerup` after such a cycle when available.
 - Commit: `eb700d2`; QKB addendum `aa99182`
 - Artifacts/logs: `artifacts/logs/gp-delete-physical-20261019.log`, `artifacts/logs/cycle-choupi-20261019T065052Z.log`, `artifacts/logs/pico-powerup-persistence-20261019T065455Z.log`
+
+## 2026-10-19 — Retry Pico power-up PC/SC checks
+
+- Step/experiment: `pico-powerup-pcsc-retry`
+- Change: Bounded the registry and applet APDU phases of `tools/test-pico-powerup` to three attempts by default, refreshing the authorized USB ACL before retries. Added configurable positive timeouts and recorded current PC/SC failure evidence in TODO, STATUS, HANDOFF, and QKB.
+- Validation: `bash -n tools/test-pico-powerup` and targeted `git diff --check` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` exited 1 after all three GPPro attempts listed only Virtual PCD readers. `PICO2_HOST_USB_ACCESS=1 lsusb -d 2e8a:0009` found the Pico; bounded `PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` listed only the two virtual readers. No ARM build or flash was needed because firmware sources were unchanged.
+- Result: The failure is now bounded and logged per attempt. USB enumeration and ACL access do not currently restore Pico PC/SC enumeration, so applet persistence was not tested in this run.
+- Decision: Keep physical persistence and consecutive APDUs open. Continue offline implementation; retry after the PC/SC reader is available.
+- Commit: `73eaca3`; progress record follows in metadata commit.
+- Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261019T084640Z.log`, `artifacts/logs/pico-powerup-persistence-20261019T085227Z.log`
