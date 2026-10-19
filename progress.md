@@ -5716,5 +5716,5 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/probe-gp-get-data` passed on the Pico. `80CA006600` returned `6618731606072A864886FC6B01640B06092A864886FC6B0403109000`; `80CA9F7F00` returned `6A88`. Reader ATR was `3B800181`.
 - Result: The open-channel GET DATA path works over physical CCID/PCSC. The authenticated channel route was not exercised.
 - Decision: Continue with authenticated GP DELETE lifecycle coverage and test authenticated GET DATA separately.
-- Commit: `pending`
+- Commit: `0ca6a57`; recorded in follow-up metadata commit
 - Artifacts/logs: `artifacts/logs/gp-get-data-physical-20261019.log`
