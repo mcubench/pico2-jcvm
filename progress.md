@@ -6412,3 +6412,24 @@
   the runtime memory audit.
 - Commit: `01f7eba75fc1afc53dbabcecb68cf4cdf5e307ed`
 - Artifacts/logs: none.
+
+
+## 2026-10-19 — Verify persistent-read ownership through applet restore
+
+- Step/experiment: persistent-field-read-vpcd-restore
+- Change: Ran the full two-process VPCD persistence workflow after the owned
+  persistent-field read buffer change.
+- Validation: PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence passed.
+  The install/commit process passed 3/3 checks and fresh-process restore passed
+  7/7, including static reference identity, persistent array-child identity,
+  object-array alias identity/mutation, restored array type, and committed field
+  0x33. ARM source build had already passed for the implementation commit.
+  The host rebuild emitted existing Java 1.7, converter, Maven, and packed
+  CAP-header warnings; the run completed successfully.
+- Result: The ownership change remains compatible with persistent applet restore
+  and object graph reconstruction in the host VPCD emulator.
+- Decision: Keep the change; physical persistence still requires a real board
+  power cycle and functioning PC/SC applet APDUs.
+- Commit: pending
+- Artifacts/logs: artifacts/logs/vpcd-persistence-commit-20261019T203104Z.log
+  and artifacts/logs/vpcd-persistence-restore-20261019T203104Z.log.

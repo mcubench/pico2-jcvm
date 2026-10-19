@@ -2028,3 +2028,5 @@ fix.
 - **Validation:** The persistent transaction test now counts array allocations
   and deletions. A valid byte read and an injected fs_read() failure each
   allocate and free exactly one temporary buffer. The test and ARM build pass.
+  The two-process VPCD persistence test also passed install/commit 3/3 and fresh
+  restore 7/7, including persistent array aliases and the committed applet field.

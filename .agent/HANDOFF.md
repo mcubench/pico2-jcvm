@@ -9,7 +9,9 @@
 - ./tools/test-persistent-transaction passes. Its allocation tracker verifies
   exactly one new[] and delete[] for a valid byte read and for injected
   fs_read() failure (TEST:SUMMARY fail=0). ./tools/build arm passed. The
-  wrapper now suppresses existing qualifier/packed-member header warnings. No
+  wrapper now suppresses existing qualifier/packed-member header warnings.
+  Follow-up VPCD persistence passed install/commit 3/3 and fresh-process restore
+  7/7, including persistent array aliases and the committed applet field. No
   physical flash or APDU test was run.
 - Commit: `01f7eba75fc1afc53dbabcecb68cf4cdf5e307ed`.
 - Next: continue runtime memory/API audit; physical APDU delivery remains blocked
