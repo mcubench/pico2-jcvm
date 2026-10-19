@@ -6311,6 +6311,6 @@
   install/select behavior or claim Java-level `getAID()` coverage is absent.
 - Decision: Keep the status files synchronized with committed behavior and
   evidence.
-- Commit: `<pending>`
+- Commit: `14a8edccfb7518458f9074017ed9b9db14b5828d`
 - Artifacts/logs: `STATUS.md`, `TODO.md`.
 
