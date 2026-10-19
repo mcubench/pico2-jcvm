@@ -35,11 +35,12 @@ CHOUPI_JCVM_DEBUG=OFF "${repo_root}/tools/build-pc" 2>&1 | tee "${build_log}"
 
 "${repo_root}/tools/env" python3 \
   "${repo_root}/tools/tests/jcsystem_transaction_applet_test.py" \
-  --case 58 --restore-existing --timeout "${timeout_seconds}" \
+  --case 14 --case 15 --case 16 --case 17 --case 58 \
+  --restore-existing --timeout "${timeout_seconds}" \
   --memory "${memory_image}" --log "${restore_emulator_log}" 2>&1 | \
   tee "${restore_log}"
 
-grep -Fq 'TEST:PASS committed persistent applet field survives emulator process restart' \
-  "${restore_log}" || die "restored persistent field assertion did not pass"
+grep -Fq 'TEST:SUMMARY pass=7 fail=0' "${restore_log}" || \
+  die "restored applet field/reference assertions did not all pass"
 printf 'PERSISTENCE:PASS emulator_process_restart install_log=%s restore_log=%s\n' \
   "${install_log}" "${restore_log}"
