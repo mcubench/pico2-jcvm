@@ -6509,3 +6509,22 @@
 - Decision: Keep the focused test and continue the runtime memory/API audit.
 - Commit: `b8545a9`
 - Artifacts/logs: none.
+
+
+## 2026-10-20 — Reserve runtime exception root before heap mutation
+
+- Step/experiment: runtime-exception-root-allocation-order
+- Change: `Heap::addRuntimeException()` reserves one root-vector slot before
+  allocating and inserting the corresponding Java exception object. If root
+  table growth fails, no unrooted object has been added to the heap.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/build-pc`
+  passed and regenerated the ROM mask. Existing converter, Maven/network, and
+  packed-CAP warnings appeared in the host build. The bounded VPCD integration
+  connected but stopped during applet restore without an APDU result; runtime
+  exception behavior was not verified. No hardware operation was run.
+- Result: Root-vector growth now happens before the heap object allocation.
+  Direct failure injection at the reserve boundary remains outstanding.
+- Decision: Keep the ordering fix; continue the heap allocation audit.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/runtime-exception-root-reserve-vpcd-20261020.log`
+  (inconclusive VPCD emulator log).

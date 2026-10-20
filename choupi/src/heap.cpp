@@ -354,6 +354,11 @@ jref_t Heap::addRuntimeException(const jpackage_ID_t packageID,
       return root.reference;
     }
   }
+
+  // Grow the root table before adding the heap object. If reserve fails under
+  // memory pressure, no exception instance is left behind without a root.
+  this->runtime_exception_roots.reserve(this->runtime_exception_roots.size() +
+                                        1);
   const jref_t reference = this->addInstance(packageID, classIndex);
   this->runtime_exception_roots.push_back(
       RuntimeExceptionRoot{packageID, classIndex, reference});
