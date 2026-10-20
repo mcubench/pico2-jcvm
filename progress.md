@@ -6635,6 +6635,6 @@
   remain unverified.
 - Decision: Pause further APDU retries until the host PC/SC transmit or reader
   disconnect path is diagnosed; firmware remains responsive.
-- Commit: `<recorded in follow-up progress commit>`
+- Commit: `f06546a`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T041650Z.log`;
   `artifacts/logs/pico-powerup-persistence-20261020T041802Z.log`.
