@@ -6785,3 +6785,32 @@
   of `TODO.md`; retain older evidence below it for history.
 - Commit: `74ec9c8`
 - Artifacts/logs: none.
+
+## 2026-10-20 — Refresh physical JCAlgTest supported-algorithm results
+
+- Step/experiment: `physical-alg-support-ownerpinx-20261020`
+- Change: Rebuilt both architectures, flashed current CHOUPI ARM firmware, and
+  reran the official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` suite on the named
+  physical Pico after implementing OwnerPINX. Updated AC4 status and handoff.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed;
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed its ARM/RISC-V gates,
+  flash, and 18-second serial check (`TEST:PASS choupi_runtime`,
+  `TEST:SUMMARY pass=1 fail=0`, no `FAULT`). Physical PC/SC showed the exact
+  Pico reader. JCAlgTest produced all 4,525 rows; the support comparator
+  returned `COMPARE:PASS rows_statuses_and_declared_support` with 15 declared
+  supported identities and no extra or missing entries. Documentation and
+  artifact diff checked; no code tests were added.
+- Result: CHOUPI statuses were 15 `yes`, 4,510 `no`, 0 other; jCardSim had
+  1,454 additional `yes` capabilities, which are expected differences. CSV
+  SHA-256 `4877cd4ab8205ae41721d5717bf46328a9a910805e0fc5655f60e7af235495ea`.
+  Official client and serial captures are archived under `artifacts/logs/` and
+  the result CSV under `artifacts/results/physical-alg-support-ownerpinx-20261020/`.
+- Decision: AC4's post-OwnerPINX physical comparison is complete. Next address
+  AC5 with an actual power-off/on persistence readback; do not infer that from a
+  firmware reboot.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/jcalgtest-alg-support-ownerpinx-20261020.log`
+  (SHA-256 `db06f0c398b7e7f091b663232c07d9a27af7d65cd124ba5a2d60d2b4cbae18c5`);
+  `artifacts/logs/monitor-alg-support-ownerpinx-20261020.log` (SHA-256
+  `dd2c20bfb0e70ea166debc12a9423f1bb7e2170dff7de2585c7e0bba1bbde8c6`);
+  comparator log `artifacts/logs/jcalgtest-support-compare-ownerpinx-20261020.log`.

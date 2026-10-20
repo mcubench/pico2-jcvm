@@ -13,15 +13,16 @@ claims to support them; implementing every algorithm is not a goal.
 
 ### Priority 1 — close acceptance criteria AC1–AC5
 
-- [ ] **AC4: refresh the physical support-results comparison after OwnerPINX.**
-  The previous physical `ALG_SUPPORT_EXTENDED` run completed 4,525 rows with
-  15 `yes`, 4,510 `no`, and no transport or row errors. The archived jCardSim
-  comparison matched all row identities and the declared 15-item support
-  list, but the physical CSV predates the OwnerPINX fix. Rerun the official
-  client on Pico, archive CSV/log, and run the comparator. Keep unsupported
-  algorithms and `NO_SUCH_ALGORITHM` out of the failure count. Evidence:
-  `.agent/HANDOFF.md`, `.agent/QKB.md`,
-  `artifacts/results/jcalgtest-support-comparison-20261017.md`.
+- [x] **AC4: refresh the physical support-results comparison after OwnerPINX.**
+  On 2026-10-20 the official physical `ALG_SUPPORT_EXTENDED` run completed
+  4,525 rows: 15 `yes`, 4,510 `no`, and no other CHOUPI statuses. The
+  comparator matched all row identities and the declared support list
+  (15/15; no unexpected or missing entries). jCardSim's additional 1,454
+  supported results are capability differences, not CHOUPI failures. Logs and
+  CSV: `artifacts/logs/jcalgtest-alg-support-ownerpinx-20261020.log`,
+  `artifacts/logs/monitor-alg-support-ownerpinx-20261020.log`,
+  `artifacts/logs/jcalgtest-support-compare-ownerpinx-20261020.log`, and
+  `artifacts/results/physical-alg-support-ownerpinx-20261020/`.
 - [ ] **AC5: prove installed Java applet state survives a real power cycle.**
   VPCD restores applet fields and persistent aliases across a fresh process
   (7/7 checks). Physical `tools/test-pico-powerup` has verified registry and

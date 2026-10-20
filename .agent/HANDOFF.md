@@ -1,5 +1,29 @@
 # Handoff
 
+## Latest priority task — refresh AC4 on physical Pico — 2026-10-20
+
+- Rebuilt ARM and RISC-V, then flashed the CHOUPI ARM image with the gated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi`. Both architecture builds
+  passed and the 18-second runtime capture repeatedly reported
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `FAULT`.
+- Physical PC/SC discovery listed `Pico 2 CHOUPI CCID [JCAlgTest CCID]
+  (D92E743D5F640C0F) 00 00`. The official JCAlgTest 1.8.2
+  `ALG_SUPPORT_EXTENDED` client completed the 4,525-row matrix after the
+  OwnerPINX fix. Results: 15 `yes`, 4,510 `no`, zero other CHOUPI statuses.
+- The comparator passed all row identities and the 15-entry declared support
+  list. jCardSim's 1,454 additional `yes` rows are capability differences;
+  expected unsupported algorithms are not failures.
+- Evidence: `artifacts/results/physical-alg-support-ownerpinx-20261020/`;
+  client log `artifacts/logs/jcalgtest-alg-support-ownerpinx-20261020.log`;
+  serial `artifacts/logs/monitor-alg-support-ownerpinx-20261020.log`;
+  comparison `artifacts/logs/jcalgtest-support-compare-ownerpinx-20261020.log`.
+  CSV SHA-256: `4877cd4ab8205ae41721d5717bf46328a9a910805e0fc5655f60e7af235495ea`.
+- Next highest priority: verify Java applet field persistence across a true
+  physical power-off/on, then rerun `tools/test-pico-powerup`; current
+  `test-pico-powerup` evidence covers firmware restart/selection, not a full
+  power removal. AC1/AC2 still need a current clean GP install transcript and
+  Windows compatibility evidence. See current checklist in `TODO.md`.
+
 ## Current implementation backlog — 2026-10-20
 
 - The prioritized implementation and integration backlog is consolidated in
