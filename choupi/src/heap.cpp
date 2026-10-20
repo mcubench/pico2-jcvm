@@ -611,6 +611,14 @@ Heap::ReachabilitySummary Heap::traceAndMark(
     ++slot_index;
   }
   bool found_new_reference = false;
+  const auto slot_is_live_at = [](const auto &slots,
+                                  const std::size_t slot_index) {
+    auto slot = slots.cbegin();
+    for (std::size_t index = 0; index < slot_index; ++index) {
+      ++slot;
+    }
+    return slot != slots.cend() && static_cast<bool>(*slot);
+  };
   const auto mark_reference = [&](const jref_t reference) {
     // Global-array handles use the same reference bit as local arrays, but
     // their offset belongs to the runtime-wide global heap. Never interpret
@@ -628,10 +636,25 @@ Heap::ReachabilitySummary Heap::traceAndMark(
       return;
     }
     const std::size_t mark_index = offset - 1;
+    // Persistent reference reads may lazily restore additional objects while
+    // tracing. Grow the bitmap before indexing a handle discovered that way.
+    if (marks.size() < slot_count) {
+      marks.resize(slot_count, 0);
+    }
     if (marks[mark_index] == 3) {
-      ++summary.invalid_references;
-      summary.complete = false;
-      return;
+      // Allocation can reuse a previously empty stable handle slot during a
+      // lazy restore. Refresh that rare slot before treating the reference as
+      // invalid.
+      const bool slot_is_live = reference.isArray()
+                                    ? slot_is_live_at(this->arrays, mark_index)
+                                    : slot_is_live_at(this->instances,
+                                                      mark_index);
+      if (!slot_is_live) {
+        ++summary.invalid_references;
+        summary.complete = false;
+        return;
+      }
+      marks[mark_index] = 0;
     }
     if (marks[mark_index] != 0) {
       return;
@@ -678,8 +701,9 @@ Heap::ReachabilitySummary Heap::traceAndMark(
   do {
     found_new_reference = false;
     uint32_t scanned_arrays = 0;
+    const std::size_t array_scan_count = marked_arrays.size();
     auto array = this->arrays.cbegin();
-    for (std::size_t index = 0; index < marked_arrays.size();
+    for (std::size_t index = 0; index < array_scan_count;
          ++index, ++array) {
       if (marked_arrays[index] != 1) {
         continue;
@@ -709,8 +733,9 @@ Heap::ReachabilitySummary Heap::traceAndMark(
     std::fflush(stdout);
 #endif
     uint32_t scanned_instances = 0;
+    const std::size_t instance_scan_count = marked_instances.size();
     auto instance = this->instances.cbegin();
-    for (std::size_t index = 0; index < marked_instances.size();
+    for (std::size_t index = 0; index < instance_scan_count;
          ++index, ++instance) {
       if (marked_instances[index] != 1) {
         continue;

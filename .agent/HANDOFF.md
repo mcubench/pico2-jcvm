@@ -1,29 +1,30 @@
 # Handoff
 
-## Current hardware state — PC/SC visible; APDU stalls in GC — 2026-10-20
+## Current hardware state — APDU and GC pass on Pico — 2026-10-20
 
 - Although the operator reported BOOTSEL insertion, current USB enumeration is
   `2e8a:0009` (CHOUPI CCID), not the RP2350 BOOTSEL ID. The authorized ACL
   helper and `pcsc_scan -r` currently list `Pico 2 CHOUPI CCID`.
-- Physical SELECT reaches firmware: applet lookup, persistent restore, and
-  select return `9000`; `Applet.process()` also returns `9000`. The official
-  focused SELECT/version probe still gets `SCARD_E_NOT_TRANSACTED`, because
-  post-APDU GC never returns to CCID response submission.
-- The latest instrumented GC run enumerated 7 array slots and 6 instance
-  slots, with 13 pending roots. It scanned 7 arrays and 6 instances, started a
-  second pass, then the serial capture ended before GC/CCID completion. Builds
-  and runtime self-test pass; the APDU path remains failed.
-- A first performance attempt replaced per-edge linked-list slot lookups with
-  mark-byte liveness states and iterated heap slots directly. The hardware
-  result did not improve within the probe timeout. This is not a confirmed
-  collector fix; leave the GC checkpoints enabled for the next investigation.
-- Recent cycles: `artifacts/logs/cycle-choupi-20261020T061302Z.log`,
-  `061623Z.log`, `061949Z.log`, and `062341Z.log`. APDU serial captures were
-  inspected live, not archived.
-- Source and diagnostic records are committed as `71c164b`.
-- Next: isolate the second-pass traversal stall. Capture per-instance field
-  and per-reference-array progress, then fix the specific blocking read or
-  traversal path before claiming APDU support.
+- Root cause was mark-vector size becoming stale during GC: persistent
+  reference reads can lazily restore objects and extend the stable heap tables.
+  The collector now grows the relevant bitmap before marking those handles and
+  snapshots each pass's slot count so newly restored slots are visited on the
+  next pass. It also handles lazy restores reusing initially empty slots.
+- Both builds pass. On hardware, SELECT, GETVERSION (`1.8.2_jc305`), and the
+  JCSystem info APDU returned `9000`; serial showed heap growth from 7 arrays / 6
+  instances to 27 / 17, completed GC, and returned the responses. The bounded
+  power-up persistence probe passed package/applet registry and the same APDU
+  checks (`TEST:PASS jc_algtest_persistence_probe`). Log:
+  `artifacts/logs/pico-powerup-persistence-20261020T063339Z.log`.
+- Current USB ID is `2e8a:0009` and PC/SC lists `Pico 2 CHOUPI CCID`; this is
+  firmware mode, not BOOTSEL. Cycle log:
+  `artifacts/logs/cycle-choupi-20261020T063106Z.log`.
+- The first performance-only attempt and stalled captures are committed as
+  `71c164b`; the dynamic-bitmap correction and physical confirmation are
+  pending the next commit.
+- Next: run the requested official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC`
+  against this exact reader with concurrent serial capture, then review the
+  output and collector runtime.
 
 ## Latest hardware check — CHOUPI runtime passes, physical APDU blocked — 2026-10-20
 

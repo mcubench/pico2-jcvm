@@ -6704,3 +6704,26 @@
   observed second-pass stall.
 - Commit: `<recorded in follow-up progress commit>`
 - Artifacts/logs: none.
+
+
+## 2026-10-20 — Grow GC marks for lazily restored heap slots
+
+- Step/experiment: `gc-mark-bitmap-lazy-restore-growth`
+- Change: Resize the corresponding mark bitmap when persistent-reference
+  traversal lazily adds heap slots. Each pass uses a snapshot of the current
+  slot count so appended objects are scanned on the next pass; a reference to
+  a previously empty slot refreshes liveness if lazy restoration reused it.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The
+  `./tools/cycle choupi` passed and flashed ARM firmware. The physical probe
+  returned SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem info `9000`;
+  serial showed GC complete after heap growth from 7 arrays / 6 instances to
+  27 / 17. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` passed registry
+  discovery and the SELECT/version/JCSystem probe.
+- Result: This resolves the reproduced out-of-bounds mark access during lazy
+  heap growth and restores physical APDU response delivery in the focused
+  tests. Full static performance testing remains pending.
+- Decision: Run official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` with serial
+  capture to verify repeated collection under the benchmark workload.
+- Commit: `<recorded in follow-up progress commit>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T063106Z.log`;
+  `artifacts/logs/pico-powerup-persistence-20261020T063339Z.log`.

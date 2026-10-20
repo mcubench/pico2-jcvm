@@ -2186,3 +2186,17 @@ fix.
 - **Artifacts:** `artifacts/logs/cycle-choupi-20261020T061302Z.log`,
   `061623Z.log`, `061949Z.log`, and `062341Z.log`. The concurrent APDU serial
   capture was inspected live but not saved.
+
+- **Viable fix confirmed on hardware:** Persistent reference-array traversal can
+  lazily restore objects, extending the heap slot tables after the mark vectors
+  were initialized. Grow the matching mark vector before indexing a newly
+  discovered handle and snapshot slot limits per pass so additions are visited
+  on a subsequent pass. Refresh a sentinel slot if lazy restoration reuses a
+  previously empty slot.
+- **Validation:** The Pico SELECT, GETVERSION (`1.8.2_jc305`), and JCSystem info
+  probe passed; serial showed heap growth from 7/6 to 27/17 array/instance
+  slots, followed by GC completion and response submission. The bounded
+  `tools/test-pico-powerup` passed registry plus SELECT/version/JCSystem checks.
+  `SCARD_E_NOT_TRANSACTED` did not recur in these focused checks.
+- **Follow-up:** Run official `ALG_PERFORMANCE_STATIC` to ensure repeated GC
+  remains correct as the applet creates more transient objects.
