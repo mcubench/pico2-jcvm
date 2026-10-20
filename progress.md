@@ -6832,7 +6832,7 @@
   alternate-AID install attempt.
 - Decision: After a real power removal and reinsert, rerun the bounded power-up
   probe and repeat `ALG_SUPPORT_EXTENDED` to complete AC5 reproducibility.
-- Commit: `<pending>`
+- Commit: `8fe8ff0`
 - Artifacts/logs: `artifacts/logs/gppro-install-jcsystem-persistence-probe-20261020.log`
   (SHA-256 `ca2fed0d6e487d1e007ecc671a2b95893bc6d30aec1b87220cabe0a134e8e678`);
   `artifacts/logs/pico-powerup-persistence-20261020T131336Z.log` (SHA-256
