@@ -6986,3 +6986,13 @@
   `0f80b709479bf17e6175a1b9f99b929dc381c7805810e29c2edf8516a9d5bcf1`), and
   post-run registry `artifacts/logs/api-coverage-gppro-registry-after-20261020.log`
   (sanitized; SHA-256 `5f70481d7885c4a88c847a908d5c561c94a62115574d5a8878e7d76e91f60a4e`).
+
+## 2026-10-20 — Add multi-package CAP flash slots
+
+- Step/experiment: `multi-cap-slot-storage`
+- Change: Replaced the single reserved CAP slot with eight package-indexed 68 KiB slots at flash offset `0x100000`, each storing a 64 KiB CAP maximum and package AID/code CRC metadata. Added package lookup, package write/delete/data, and per-package installed-instance metadata APIs. Retained ID-63 compatibility wrappers for the card-manager migration.
+- Validation: `./tools/build arm` passed (`BUILD:PASS arch=arm`, `BUILD:PASS target=choupi`). The resulting firmware image ends at `0x100bb400`, below the slot region. RISC-V build and hardware flash were intentionally skipped under the ARM-only development scope and repository hardware build gate.
+- Result: The storage layer now supports up to eight independent CAP images with fixed package IDs 56–63. Loader and VM callers are not migrated yet; arbitrary package AIDs are not end-to-end supported by this step.
+- Decision: Continue by allocating non-conflicting dynamic package IDs and routing CAP parsing, loading, VM lookup, and deletion through the package-indexed APIs.
+- Commit: `pending`
+- Artifacts/logs: build output from `./tools/build arm`; no hardware log

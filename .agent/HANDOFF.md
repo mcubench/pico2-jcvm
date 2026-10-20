@@ -1,5 +1,27 @@
 # Handoff
 
+## Multi-package CAP support — storage layer checkpoint — 2026-10-20
+
+- Began implementing the agreed multi-package plan. `src/cap_store.cpp` now
+  provides eight fixed flash slots, each with a 4 KiB metadata sector and
+  capacity for a 64 KiB CAP payload. Slot headers carry package AID, package
+  ID, code length/CRC, and the current single-instance metadata. The region is
+  relative flash `0x100000..0x188000` and is compile-time checked against the
+  configured flash size; the ARM image ends at `0x100bb400`.
+- Added package-indexed storage calls for lookup, writing, deletion, data and
+  package-AID access, and installed-instance metadata. Legacy entry points
+  still map to package ID 63 so existing card-manager behavior remains
+  buildable during migration.
+- Validation: `./tools/build arm` passed; `BUILD:PASS arch=arm` and
+  `BUILD:PASS target=choupi`. No RISC-V build or hardware flash was run. The
+  repository's current ARM-only scope and hardware build gate were respected.
+- This is only the storage foundation: the CAP loader still accepts one
+  configured package AID, allocates package ID 20 at its call boundary, and
+  persists only one applet instance. Next generalize package-ID allocation
+  and loader validation, then integrate package-indexed lookup into the VM.
+- Current code step is pending its scoped commit; preserve all unrelated dirty
+  worktree changes.
+
 ## Deploy-folder Java Card API coverage attempt — blocked before CAP LOAD — 2026-10-20
 
 - Read `AlgTest_JavaCard/deploy/README.md`: it recommends staged API coverage
