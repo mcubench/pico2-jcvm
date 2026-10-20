@@ -157,8 +157,9 @@ this does not test the new JCSystem behavior on hardware. See
   supplied CAP was reinstalled, and both entries survived a firmware restart.
   The post-restart applet SELECT, GETVERSION, JCSystem, SHA-256, and static
   calls passed. `tools/test-pico-powerup` now checks registry persistence and
-  applet execution after a boot. A true power-off/on test, broader CAP restore,
-  and general card compatibility assurance remain open.
+  applet execution after a boot. The physical five-second power-off/on and
+  post-cycle support-sweep check passed on 2026-10-20 (see `TODO.md`). Broader
+  CAP restore and general card compatibility assurance remain open.
 6. **Conformance and hardening:** no full Java Card conformance suite or
    certification-grade security assessment has been completed.
 

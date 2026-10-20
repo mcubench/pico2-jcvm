@@ -42,12 +42,8 @@
   serial `artifacts/logs/monitor-alg-support-ownerpinx-20261020.log`;
   comparison `artifacts/logs/jcalgtest-support-compare-ownerpinx-20261020.log`.
   CSV SHA-256: `4877cd4ab8205ae41721d5717bf46328a9a910805e0fc5655f60e7af235495ea`.
-- Next highest priority: verify Java applet field persistence across a true
-  physical power-off/on, then rerun `tools/test-pico-powerup` and the official
-  support sweep. A fresh pre-cycle `tools/test-pico-powerup` passed at
-  `artifacts/logs/pico-powerup-persistence-20261020T131336Z.log`: registry
-  confirmed, SELECT and GETVERSION `1.8.2_jc305` returned `9000`, and JCSystem
-  info returned `9000`. This remains a baseline, not a power-cycle result.
+- At this checkpoint AC5 had only a pre-cycle baseline. It has since been
+  completed; see the latest hardware result at the top of this handoff.
   AC1/AC2 still need a current clean GP install transcript and Windows
   compatibility evidence. See current checklist in `TODO.md`.
 - An experiment to install a separate AID-scoped JCSystem persistence CAP was

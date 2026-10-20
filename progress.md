@@ -6869,3 +6869,17 @@
   comparison `artifacts/logs/jcalgtest-support-compare-after-powercycle-20261020.log`
   (SHA-256 `945b10b7ea4c29aa50805bc94a4f88caf8169f6bb3de5f518d033cbc2fe1b882`);
   CSV under `artifacts/results/physical-alg-support-after-powercycle-20261020/`.
+
+## 2026-10-20 — Reconcile current persistence status
+
+- Step/experiment: `ac5-status-reconciliation`
+- Change: Updated the current status and preceding handoff checkpoint so they
+  reflect the completed physical power-cycle validation recorded above.
+- Validation: Reviewed the AC5 probe and post-cycle support comparison records;
+  `git diff --check` passed for the Markdown changes.
+- Result: Current status pages agree that AC5 passed and retain broader CAP
+  restore and clean-install integration work as open items.
+- Decision: Continue with AC1/AC2 clean-install evidence and the three-run
+  clean-flash integration sequence.
+- Commit: `<recorded in metadata follow-up>`
+- Artifacts/logs: none; evidence is in the preceding AC5 progress entry.
