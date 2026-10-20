@@ -13,7 +13,7 @@
   rebuild emitted existing converter/Maven and packed-CAP warnings. No board
   flash or physical APDU was run. Direct allocation injection at the root
   reservation boundary remains open.
-- Source commit: pending.
+- Source commit: `9154aa8`.
 - Evidence: `artifacts/logs/vpcd-persistence-commit-20261020T035837Z.log` and
   `artifacts/logs/vpcd-persistence-restore-20261020T035837Z.log`.
 - Next: continue auditing heap root-vector mutations and add direct low-memory

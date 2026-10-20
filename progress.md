@@ -6549,6 +6549,6 @@
   capacity to retain their GC root.
 - Decision: Keep the ordering fix and continue auditing heap root-vector
   mutation paths.
-- Commit: pending
+- Commit: `9154aa8`
 - Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261020T035837Z.log`,
   `artifacts/logs/vpcd-persistence-restore-20261020T035837Z.log`.
