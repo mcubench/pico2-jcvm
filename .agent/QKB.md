@@ -1,5 +1,19 @@
 # Project issue knowledge base
 
+## Runtime-exception root failure test pulls full VM dependencies — 2026-10-20
+
+- **Symptom/cause:** Calling `Heap::addRuntimeException()` from the small
+  allocation-test target made the linker retain `Heap::addInstance()` and its
+  `JC_Instance`, CAP metadata, and filesystem dependencies, which that target
+  intentionally does not link.
+- **Viable approach:** Keep direct allocator injection on the isolated
+  `reserveStaticReferenceRoot()` API. Runtime exception-root ordering is
+  compiled for both target architectures and should receive a dedicated
+  integration or dependency-complete heap test if direct failure coverage is
+  needed later; do not add test-only VM stubs to the small allocation target.
+- **Validation:** After removing the un-linkable runtime-exception test attempt,
+  `./tools/test-jcvmarray-allocation` passed all nine existing checks.
+
 ## Persistent static reference could commit before GC root registration — 2026-10-20
 
 - **Symptom/cause:** `Static_Handler::setPersistentRef()` wrote a serialized

@@ -6570,3 +6570,23 @@
   paths.
 - Commit: `45581f9`
 - Artifacts/logs: none.
+
+
+## 2026-10-20 — Bound runtime-exception allocation test to the lightweight harness
+
+- Step/experiment: runtime-exception-root-test-link-boundary
+- Change: Tried to exercise `Heap::addRuntimeException()` allocation failure
+  directly from the small allocation-test executable. Its `addInstance()`
+  dependency pulls in `JC_Instance`, CAP, filesystem, and generated FFI
+  definitions that are intentionally absent from that focused target. Removed
+  the un-linkable case and recorded where direct coverage belongs.
+- Validation: The attempted link failed with unresolved JC_Instance and
+  filesystem/FFI symbols. After removing that attempt,
+  `./tools/test-jcvmarray-allocation` passed all nine checks.
+- Result: The static-root reservation failure is directly tested; runtime
+  exception-root ordering remains build-validated but lacks direct allocator
+  injection.
+- Decision: Keep the lightweight harness focused; use a dependency-complete heap
+  integration target if direct runtime-root failure injection becomes necessary.
+- Commit: pending
+- Artifacts/logs: none.

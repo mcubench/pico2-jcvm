@@ -1,5 +1,19 @@
 # Handoff
 
+## Test limitation — runtime exception root injection needs a full heap target — 2026-10-20
+
+- A direct `Heap::addRuntimeException()` allocator-injection case was attempted
+  in the small array-allocation executable, but it pulled `Heap::addInstance()`
+  and unresolved `JC_Instance`, CAP, and filesystem symbols into that target.
+  The attempted case was removed; the executable again passes all nine current
+  checks. The static-root reserve failure remains directly covered.
+- The runtime exception-root ordering fix still passes ARM/RISC-V builds and
+  the host VM build. Direct low-memory failure injection needs a dedicated
+  dependency-complete heap integration target; avoid adding production test
+  hooks just for the lightweight regression.
+- Next: continue auditing heap root and ownership mutations for failure after
+  persistent or VM state changes.
+
 ## Latest regression — inject static-root reservation allocation failure — 2026-10-20
 
 - The focused allocation test now overrides scalar `operator new` to force
