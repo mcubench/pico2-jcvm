@@ -6685,7 +6685,22 @@
   remains unknown. Both architecture builds and runtime checks pass.
 - Decision: Keep instrumentation and inspect per-object child traversal and
   persistent-storage reads before changing GC semantics.
-- Commit: `<recorded in follow-up progress commit>`
+- Commit: `71c164b`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T061302Z.log`,
   `061623Z.log`, `061949Z.log`, and `062341Z.log`; APDU serial traces were
   inspected live and not archived.
+
+
+## 2026-10-20 — Record GC diagnostic commit
+
+- Step/experiment: `physical-apdu-post-select-gc-trace-record`
+- Change: Recorded the implementation and physical validation commit in the
+  progress log and current handoff.
+- Validation: Documentation consistency inspection; no firmware rebuild or
+  hardware command was needed for this metadata-only update.
+- Result: Commit `71c164b` contains the GC traversal optimization attempt and
+  the diagnostic findings; physical APDU delivery remains blocked.
+- Decision: Continue with per-object traversal instrumentation and fix the
+  observed second-pass stall.
+- Commit: `<recorded in follow-up progress commit>`
+- Artifacts/logs: none.

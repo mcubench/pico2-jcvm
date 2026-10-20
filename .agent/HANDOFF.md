@@ -20,6 +20,7 @@
 - Recent cycles: `artifacts/logs/cycle-choupi-20261020T061302Z.log`,
   `061623Z.log`, `061949Z.log`, and `062341Z.log`. APDU serial captures were
   inspected live, not archived.
+- Source and diagnostic records are committed as `71c164b`.
 - Next: isolate the second-pass traversal stall. Capture per-instance field
   and per-reference-array progress, then fix the specific blocking read or
   traversal path before claiming APDU support.
