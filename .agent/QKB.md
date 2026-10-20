@@ -2279,3 +2279,19 @@ fix.
   client behavior.
 - **Evidence:** `artifacts/logs/gppro-install-jcsystem-persistence-probe-20261020.log`
   and `artifacts/logs/pico-powerup-persistence-20261020T131336Z.log`.
+
+- **Reproduction with the deploy API suite:** The supplied `AlgTestApiCore`
+  CAPs for API versions 305, 304, 303, 222, and 221 all failed at GPPro
+  `INSTALL [for load]` with `6D00`. No CAP LOAD blocks were sent. GPPro
+  `--list` afterward still showed only the ISD and the original JCAlgTest
+  package/applet. This prevents the README's API-version detection and all
+  subsequent API coverage areas on the current firmware.
+- **Resolution required:** Generalize runtime CAP package acceptance and the
+  associated storage/registry path so a deployment API test CAP can be loaded,
+  selected, and removed without damaging the existing package. The README
+  runner cannot work around this in its documented flow; it expects ordinary
+  CAP package AIDs. Until that implementation exists, do not interpret this
+  pre-LOAD `6D00` as a Java Card API test result.
+- **Evidence:** `artifacts/logs/api-coverage-pico2-core-auto-20261020.log`,
+  `artifacts/results/api-coverage-pico2-core-auto-20261020.csv`, and
+  `artifacts/logs/api-coverage-gppro-registry-after-20261020.log`.

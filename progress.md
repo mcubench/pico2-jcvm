@@ -6954,3 +6954,35 @@
   serial `artifacts/logs/three-pass-run1-monitor-20261020.log`;
   comparison `artifacts/logs/three-pass-run1-compare-20261020.log`;
   CSV under `artifacts/results/three-pass-run1-20261020/`.
+## 2026-10-20 — Test deploy-folder API coverage Core stage on Pico
+
+- Step/experiment: `physical-deploy-api-coverage-core-20261020`
+- Change: Read the deployment README and attempted its first staged API coverage
+  run against the physical Pico using the supplied Core CAPs and GPPro, instead
+  of the JCAlgTest CAP. Recorded the package-AID loader limitation in QKB,
+  updated the implementation backlog and handoff, and preserved the transcripts.
+- Validation: The previously built/flashed ARM image passed an 18-second
+  serial capture (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, no
+  `FAULT`). PC/SC listed the Pico reader; GPPro `--info` succeeded over T=1.
+  README's `--areas Core --api auto` runner tried CAP versions 305, 304, 303,
+  222, and 221. Every `INSTALL [for load]` returned `6D00`; no LOAD blocks or
+  API calls occurred. A subsequent GPPro `--list` confirmed the original
+  JCAlgTest package/applet remained and no API CAP was installed. No RISC-V
+  build or test was run.
+- Result: Core API coverage is blocked before CAP loading by the runtime's
+  configured package-AID restriction. The failure is not an API test result.
+  The card registry remained unchanged.
+- Decision: Generalize CAP package acceptance and its storage/registry/cleanup
+  lifecycle, then restart with the README's Core stage. Do not proceed to later
+  API areas until Core loads successfully.
+- Commit: pending
+- Artifacts/logs: serial `artifacts/logs/api-coverage-arm-monitor-20261020.log`
+  (SHA-256 `4f295cb3911ceed398a612a8a48c4880fdd9a37daf145d74c9b6a9ba27de86ac`);
+  GPPro preflight `artifacts/logs/api-coverage-gppro-info-20261020.log` (SHA-256
+  `b64cca1aa575b02a78442abd5ad034fdf3a377ebe1d25a38e8877517404809e2`);
+  runner `artifacts/logs/api-coverage-pico2-core-auto-20261020.log` (SHA-256
+  `e40d79117cad3fa18e3ceba1fdc4d2e34db24cc0790f415a3af9c1e715cad8fb`), CSV
+  `artifacts/results/api-coverage-pico2-core-auto-20261020.csv` (SHA-256
+  `0f80b709479bf17e6175a1b9f99b929dc381c7805810e29c2edf8516a9d5bcf1`), and
+  post-run registry `artifacts/logs/api-coverage-gppro-registry-after-20261020.log`
+  (sanitized; SHA-256 `5f70481d7885c4a88c847a908d5c561c94a62115574d5a8878e7d76e91f60a4e`).

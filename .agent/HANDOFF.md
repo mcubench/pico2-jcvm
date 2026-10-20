@@ -1,5 +1,32 @@
 # Handoff
 
+## Deploy-folder Java Card API coverage attempt — blocked before CAP LOAD — 2026-10-20
+
+- Read `AlgTest_JavaCard/deploy/README.md`: it recommends staged API coverage
+  starting with Core, uses ordinary API coverage CAPs plus GPPro, and detects
+  the supported API version by trying Core CAPs from 3.0.5 down to 2.2.1.
+  It warns that full runs create persistent objects and can use about 2,600
+  APDUs; later Crypto stage should exclude RSA-2048 generation.
+- ARM CHOUPI firmware had already been flashed. Bounded serial monitoring
+  passed (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, no `FAULT`).
+  PC/SC listed the Pico and GPPro `--info` connected to the named physical
+  reader over T=1.
+- Ran only the README's first Core stage with `--api auto`. All five supplied
+  `AlgTestApiCore` CAP versions returned `6D00` at `INSTALL [for load]`; no
+  LOAD blocks were sent, so no API methods were exercised. This is the known
+  configured-package-AID restriction, not an API-version compatibility
+  result. Post-run GPPro `--list` still showed the original JCAlgTest package
+  and applet and no API coverage CAPs.
+- Current implementation cannot run the deploy README's stages without a
+  generalized runtime CAP package/storage path. See `.agent/QKB.md` and
+  `TODO.md`. Resume by implementing support for ordinary CAP package AIDs,
+  then rerun Core first and continue stage-by-stage only after it loads.
+- Evidence: serial `artifacts/logs/api-coverage-arm-monitor-20261020.log`;
+  GPPro preflight `artifacts/logs/api-coverage-gppro-info-20261020.log`;
+  runner transcript and CSV `artifacts/logs/api-coverage-pico2-core-auto-20261020.log`
+  and `artifacts/results/api-coverage-pico2-core-auto-20261020.csv`;
+  final registry `artifacts/logs/api-coverage-gppro-registry-after-20261020.log`.
+
 ## Current integration run — pass one awaiting power-cycle repeat — 2026-10-20
 
 - Both `./tools/build arm` and `./tools/build riscv` passed. The subsequent
