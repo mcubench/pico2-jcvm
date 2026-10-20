@@ -19,7 +19,9 @@
   passed. `./tools/test-pc-vpcd-applet` did not complete: the restricted run
   could not create its loopback socket; the host-access retry timed out before
   VPCD connection. No physical flash or API CAP run was performed. The ARM
-  image ends at `0x100c569c`, below the CAP-slot area beginning at `0x10100000`.
+  final image ends at `0x100c56fc`, below the CAP-slot area beginning at
+  `0x10100000`.
+- Implementation commit: `e20944e` (`Support arbitrary CAP package AIDs`).
 - Package DELETE without the related-object flag returns `6985` when its slot
   has any recorded instances, even if another applet was selected most recently.
 - Remaining validation: install two distinct package AIDs through GPPro/API

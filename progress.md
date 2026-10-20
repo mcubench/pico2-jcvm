@@ -7023,7 +7023,7 @@
 - Decision: Keep deploy-folder API coverage open until its Core CAPs complete
   upload, test, and cleanup; next test multiple package AIDs and lifecycle
   operations in an emulator or on the card.
-- Commit: `pending`
+- Commit: `e20944e`
 - Artifacts/logs: Build output only. VPCD attempt used
   `artifacts/logs/host-vpcd-jcalgtest-20261014.log` and timed out before socket
   connection.
