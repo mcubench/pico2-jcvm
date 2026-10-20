@@ -39,7 +39,7 @@
   identity, persistent array aliases, and committed instance data. The host
   rebuild emitted existing converter/Maven and packed-CAP warnings. No board
   flash or physical APDU was run. Direct allocation injection at the root
-  reservation failure is directly covered by the focused host allocation
+  reservation boundary is directly covered by the focused host allocation
   regression.
 - Source commit: `9154aa8`.
 - Evidence: `artifacts/logs/vpcd-persistence-commit-20261020T035837Z.log` and
