@@ -56,7 +56,12 @@ claims to support them; implementing every algorithm is not a goal.
 - [ ] **AC1–AC5: run the plan's clean-flash integration sequence three times.**
   For each run, install the CAP, complete supported-algorithms mode, compare
   its CSV, power-cycle, and repeat. Record each run separately; `plan.md`
-  defines three consecutive passes as the exit criterion.
+  defines three consecutive passes as the exit criterion. Run one is in
+  progress: both architecture builds, the physical ARM CHOUPI cycle, clean
+  reinstall, registry/SELECT/GETVERSION/JCSystem probe, support sweep, and
+  jCardSim comparison passed. The required physical power removal and repeated
+  post-cycle sweep are still pending; no complete three-pass run is counted
+  yet. Evidence is recorded in `.agent/HANDOFF.md` and `progress.md`.
 
 ### Priority 2 — close correctness and reliability gaps
 

@@ -1,5 +1,35 @@
 # Handoff
 
+## Current integration run — pass one awaiting power-cycle repeat — 2026-10-20
+
+- Both `./tools/build arm` and `./tools/build riscv` passed. The subsequent
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` flashed the ARM image and
+  passed the 18-second serial gate (`TEST:PASS choupi_runtime`,
+  `TEST:SUMMARY pass=1 fail=0`, no `FAULT`). The capture also printed one
+  `CHOUPI:WATCHDOG_RECOVERY cause=other` diagnostic; runtime checks continued
+  passing and the cycle wrapper returned 0.
+- After the flash, GPPro listed the ISD and the previously installed applet.
+  For a clean run, the applet instance and package were deleted (`9000` each),
+  the empty registry was confirmed, and the supplied v1.8.2 JC305 CAP was
+  loaded and installed (`9000` on every LOAD block and final INSTALL).
+- `tools/test-pico-powerup` passed: package `LOADED`, applet `SELECTABLE`,
+  SELECT/GETVERSION/JCSystem `9000`, version `1.8.2_jc305`. The official
+  `ALG_SUPPORT_EXTENDED` client completed with status 0. The comparison passed
+  all 4,525 rows: 15 `yes`, 4,510 `no`, zero other CHOUPI statuses, and all
+  declared support identities matched. CSV SHA-256:
+  `8d0c4acd6469d24246e467f1402c5230854f8154e6ea900107817cfa89bbd6a6`.
+- Pass one is not counted complete until the board has a true power removal,
+  the post-cycle probe passes, and the support sweep is repeated. I requested
+  a five-second unplug/reconnect from the user. Do not substitute firmware
+  reboot for power removal. The full three-pass sequence remains open.
+- Artifacts: build logs `artifacts/logs/build-arm-three-pass-integration-20261020.log`
+  and `artifacts/logs/build-riscv-three-pass-integration-20261020.log`; cycle
+  `artifacts/logs/cycle-choupi-20261020T140230Z.log`; GPPro logs with prefix
+  `artifacts/logs/gppro-three-pass-run1-`; probe
+  `artifacts/logs/pico-powerup-persistence-20261020T140519Z.log`; client,
+  serial, comparison and CSV under `artifacts/logs/three-pass-run1-*` and
+  `artifacts/results/three-pass-run1-20261020/`.
+
 ## Latest integration result — clean GlobalPlatform install on Pico — 2026-10-20
 
 - `pcsc_scan -r` listed the physical reader alongside both Virtual PCD readers.

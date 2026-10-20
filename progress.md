@@ -6920,3 +6920,37 @@
   (`65b321477a5ddfc5e052d72cedc4da14fba2f13255592589fcb528b735f17fc3`), and
   `artifacts/logs/pico-powerup-persistence-20261020T135329Z.log`
   (`0c2c63bdec53c2ff4338f90e0413f0d2ee9b7a9c712e0f9363f42c85d73fc75a`).
+
+## 2026-10-20 — Start clean-flash integration pass one
+
+- Step/experiment: `clean-flash-integration-run1-pre-powercycle`
+- Change: Started the plan's three-pass physical integration sequence after the
+  clean GP install. Updated the current checklist and handoff to show run one's
+  validated stages and remaining power-cycle stages.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The gated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed its ARM flash and
+  18-second runtime capture (`TEST:PASS choupi_runtime`,
+  `TEST:SUMMARY pass=1 fail=0`, no `FAULT`). GPPro listed the ISD after flash;
+  the applet instance and package were deleted, the empty registry confirmed,
+  and the supplied CAP was loaded/installed with all LOAD and final INSTALL
+  responses `9000`. `tools/test-pico-powerup` passed. The official physical
+  `ALG_SUPPORT_EXTENDED` run exited 0 and the comparator passed all 4,525 rows
+  and the declared support list. Serial capture completed. No code changed.
+- Result: Before the required power cycle, CHOUPI reported 15 `yes`, 4,510
+  `no`, zero other statuses; all 15 declared supported algorithms matched.
+  CSV SHA-256 `8d0c4acd6469d24246e467f1402c5230854f8154e6ea900107817cfa89bbd6a6`.
+  The cycle log included one `CHOUPI:WATCHDOG_RECOVERY cause=other` line, but
+  subsequent runtime checks passed and the wrapper exited 0.
+- Decision: Run one remains in progress, not counted complete, until a true
+  power removal is followed by a passing power-up probe and repeated support
+  comparison. The user was asked to unplug/reconnect for about five seconds.
+- Commit: `<recorded in metadata follow-up>`
+- Artifacts/logs: build logs `artifacts/logs/build-arm-three-pass-integration-20261020.log`
+  and `artifacts/logs/build-riscv-three-pass-integration-20261020.log`;
+  cycle `artifacts/logs/cycle-choupi-20261020T140230Z.log`;
+  GPPro logs `artifacts/logs/gppro-three-pass-run1-*.log`;
+  power-up probe `artifacts/logs/pico-powerup-persistence-20261020T140519Z.log`;
+  client `artifacts/logs/three-pass-run1-jcalgtest-20261020.log`;
+  serial `artifacts/logs/three-pass-run1-monitor-20261020.log`;
+  comparison `artifacts/logs/three-pass-run1-compare-20261020.log`;
+  CSV under `artifacts/results/three-pass-run1-20261020/`.
