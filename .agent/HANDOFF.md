@@ -1,5 +1,24 @@
 # Handoff
 
+## Latest static-root hardening — reserve before persistent reference write — 2026-10-20
+
+- `Heap::reserveStaticReferenceRoot(package, field)` now reserves an additional
+  GC-root slot when the key is new. `Static_Handler::setPersistentRef()` calls
+  it before writing the serialized reference, so allocation failure cannot
+  leave flash naming a transient handle that was never registered as a root.
+- Validation: ARM and RISC-V builds passed. `./tools/test-persistent-transaction`
+  passed with `TEST:SUMMARY fail=0`. The two-process VPCD persistence workflow
+  passed install/commit 3/3 and fresh restore 7/7, including static reference
+  identity, persistent array aliases, and committed instance data. The host
+  rebuild emitted existing converter/Maven and packed-CAP warnings. No board
+  flash or physical APDU was run. Direct allocation injection at the root
+  reservation boundary remains open.
+- Source commit: pending.
+- Evidence: `artifacts/logs/vpcd-persistence-commit-20261020T035837Z.log` and
+  `artifacts/logs/vpcd-persistence-restore-20261020T035837Z.log`.
+- Next: continue auditing heap root-vector mutations and add direct low-memory
+  coverage where it can be done without disrupting the shared worktree.
+
 ## Latest heap hardening — reserve runtime exception roots before allocation — 2026-10-20
 
 - `Heap::addRuntimeException()` now reserves space in its root vector before

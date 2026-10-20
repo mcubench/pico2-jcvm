@@ -6528,3 +6528,27 @@
 - Commit: `f311958`
 - Artifacts/logs: `artifacts/logs/runtime-exception-root-reserve-vpcd-20261020.log`
   (inconclusive VPCD emulator log).
+
+
+## 2026-10-20 — Reserve static GC roots before persistent reference writes
+
+- Step/experiment: static-reference-root-reserve-before-persist
+- Change: Added `Heap::reserveStaticReferenceRoot()` and call it in
+  `Static_Handler::setPersistentRef()` before writing the persistent reference.
+  Root-vector allocation failure now occurs before the persistent store changes;
+  the final root assignment uses reserved capacity.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed.
+  `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed install/commit
+  3/3 and fresh-process restore 7/7, including static reference identity,
+  persistent array-child identity and aliases, and committed instance data.
+  The host rebuild emitted existing converter/Maven and packed-CAP warnings.
+  No hardware flash or physical APDU was run; root-reserve allocation failure
+  was not directly injected.
+- Result: Persistent reference writes can no longer commit before the heap has
+  capacity to retain their GC root.
+- Decision: Keep the ordering fix and continue auditing heap root-vector
+  mutation paths.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261020T035837Z.log`,
+  `artifacts/logs/vpcd-persistence-restore-20261020T035837Z.log`.

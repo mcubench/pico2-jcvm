@@ -1,5 +1,20 @@
 # Project issue knowledge base
 
+## Persistent static reference could commit before GC root registration — 2026-10-20
+
+- **Symptom/cause:** `Static_Handler::setPersistentRef()` wrote a serialized
+  reference before `Heap::setStaticReferenceRoot()` appended the in-memory GC
+  root. If that vector growth failed, a persistent static could retain a
+  transient object's handle without keeping the object reachable.
+- **Viable solution:** Add a heap API that reserves root-vector capacity for a
+  `(package, field)` pair, and call it before writing the persistent field.
+  Existing roots need no allocation. After the write succeeds, setting the root
+  uses the already-reserved slot.
+- **Validation:** ARM/RISC-V builds and the persistent-transaction test passed.
+  Two-process VPCD persistence passed install/commit 3/3 and fresh restore 7/7,
+  including static reference identity and persistent array aliases. Allocation
+  failure at the reserve boundary is not directly injected.
+
 ## Exception object inserted before its GC root could be allocated — 2026-10-20
 
 - **Symptom/cause:** `Heap::addRuntimeException()` inserted a new exception

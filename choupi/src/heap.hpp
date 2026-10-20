@@ -140,6 +140,9 @@ public:
   bool getStaticReferenceRoot(jpackage_ID_t package_id,
                               uint16_t field_number,
                               jref_t &reference) const noexcept;
+  /// Reserve a root slot before committing the corresponding persistent field.
+  void reserveStaticReferenceRoot(jpackage_ID_t package_id,
+                                  uint16_t field_number);
   void setStaticReferenceRoot(jpackage_ID_t package_id,
                               uint16_t field_number, jref_t reference);
   /// Append VM-owned roots held by this heap.

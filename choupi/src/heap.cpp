@@ -377,6 +377,17 @@ bool Heap::getStaticReferenceRoot(const jpackage_ID_t package_id,
   return false;
 }
 
+void Heap::reserveStaticReferenceRoot(const jpackage_ID_t package_id,
+                                      const uint16_t field_number) {
+  for (const StaticReferenceRoot &root : this->static_reference_roots) {
+    if (root.package_id == package_id && root.field_number == field_number) {
+      return;
+    }
+  }
+  this->static_reference_roots.reserve(this->static_reference_roots.size() +
+                                       1);
+}
+
 void Heap::setStaticReferenceRoot(const jpackage_ID_t package_id,
                                   const uint16_t field_number,
                                   const jref_t reference) {

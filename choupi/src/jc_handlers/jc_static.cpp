@@ -104,10 +104,12 @@ void Static_Handler::setPersistentRef(const uint16_t index,
   if (value.isGlobalArray()) {
     throw Exceptions::SecurityException;
   }
+  const jpackage_ID_t package_id = this->package.getPackageID();
+  heap.reserveStaticReferenceRoot(package_id, index);
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
-      this->package.getPackageID(), index);
+      package_id, index);
   FlashMemory_Handler::setPersistentField_Reference(tag, value, heap);
-  heap.setStaticReferenceRoot(this->package.getPackageID(), index, value);
+  heap.setStaticReferenceRoot(package_id, index, value);
 }
 
 /**
