@@ -6905,7 +6905,7 @@
   returned `6985`; deleting the instance first is the validated sequence.
 - Decision: AC2 is complete. AC1 still needs Windows reader/GPPro validation;
   next run the plan's three-pass clean-flash sequence when applicable.
-- Commit: `<recorded in metadata follow-up>`
+- Commit: `22167b6` (recorded in the metadata follow-up commit)
 - Artifacts/logs: `artifacts/logs/gppro-clean-install-list-before-20261020.log`
   (SHA-256 `87712d58f8af691fe31ef20b19f58627bf66b16e3459abc6bc1635baccdbc3be`),
   `artifacts/logs/gppro-clean-install-delete-20261020.log`
