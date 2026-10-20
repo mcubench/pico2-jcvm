@@ -6975,7 +6975,7 @@
 - Decision: Generalize CAP package acceptance and its storage/registry/cleanup
   lifecycle, then restart with the README's Core stage. Do not proceed to later
   API areas until Core loads successfully.
-- Commit: pending
+- Commit: `970002e`
 - Artifacts/logs: serial `artifacts/logs/api-coverage-arm-monitor-20261020.log`
   (SHA-256 `4f295cb3911ceed398a612a8a48c4880fdd9a37daf145d74c9b6a9ba27de86ac`);
   GPPro preflight `artifacts/logs/api-coverage-gppro-info-20261020.log` (SHA-256
