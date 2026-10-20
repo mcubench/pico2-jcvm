@@ -1,12 +1,110 @@
 # Project TODO
 
-> Legacy chronological tracker. The current prioritized backlog is in
-> [`todo.md`](todo.md); older entries below include superseded hardware
-> failures and should be read as historical evidence, not current status.
-
 This tracker follows the acceptance criteria in `plan.md`. “Done” means the
 behavior has evidence recorded in `progress.md`; partial results are called
 out explicitly.
+
+## Current prioritized backlog — 2026-10-20
+
+The checklist and status notes below contain historical snapshots and can be
+stale. This section is the current source of truth for open work. Missing
+algorithms and JCAlgTest `NO_SUCH_ALGORITHM` results are expected unless CHOUPI
+claims to support them; implementing every algorithm is not a goal.
+
+### Priority 1 — close acceptance criteria AC1–AC5
+
+- [ ] **AC4: refresh the physical support-results comparison after OwnerPINX.**
+  The previous physical `ALG_SUPPORT_EXTENDED` run completed 4,525 rows with
+  15 `yes`, 4,510 `no`, and no transport or row errors. The archived jCardSim
+  comparison matched all row identities and the declared 15-item support
+  list, but the physical CSV predates the OwnerPINX fix. Rerun the official
+  client on Pico, archive CSV/log, and run the comparator. Keep unsupported
+  algorithms and `NO_SUCH_ALGORITHM` out of the failure count. Evidence:
+  `.agent/HANDOFF.md`, `.agent/QKB.md`,
+  `artifacts/results/jcalgtest-support-comparison-20261017.md`.
+- [ ] **AC5: prove installed Java applet state survives a real power cycle.**
+  VPCD restores applet fields and persistent aliases across a fresh process
+  (7/7 checks). Physical `tools/test-pico-powerup` has verified registry and
+  SELECT / GETVERSION / JCSystem after firmware restarts, but a physical
+  power-off/on test that reads back previously written Java applet state is
+  still needed.
+- [ ] **AC1 and AC2: repeat the clean GlobalPlatform install flow.** Confirm
+  `gp --list`, install the supplied JCAlgTest 1.8.2 JC305 CAP with
+  `gp --install`, and select it on current firmware. Linux has prior positive
+  evidence; record a current clean-install transcript and verify Windows
+  reader / GlobalPlatform compatibility.
+- [ ] **AC1–AC5: run the plan's clean-flash integration sequence three times.**
+  For each run, install the CAP, complete supported-algorithms mode, compare
+  its CSV, power-cycle, and repeat. Record each run separately; `plan.md`
+  defines three consecutive passes as the exit criterion.
+
+### Priority 2 — close correctness and reliability gaps
+
+- [ ] **Make CAP installation and filesystem updates recover atomically.** The
+  CAP slot header can be marked installed before the filesystem transaction's
+  final `fs_sync()`. A sync failure can roll back filesystem snapshots without
+  rolling back that header. Add failure-injection coverage and coordinate
+  durable recovery. See `.agent/QKB.md`.
+- [ ] **Complete GlobalPlatform lifecycle verification.** Exercise authenticated
+  `DELETE` over APDU, then verify GET STATUS and reinstall behavior after
+  restart. Parser, tombstone, cleanup, and host tests pass, but the complete
+  DELETE APDU plus restart lifecycle is not covered end to end. Extend GET DATA
+  / GET STATUS continuation cases required by the selected profile. CPLC
+  (`9F7F`) returns `6A88` because no manufacturing-data source is available.
+- [ ] **Broaden garbage-collector root and persistence-alias coverage.** The
+  reachability collector passed the physical static workload (2,262 transfers;
+  heap stabilized at 83 array slots / 28 instance slots; a pass reclaimed 50
+  arrays). Add regressions for static references, native-held handles,
+  aliasing, and lazy restoration in applet shapes beyond JCAlgTest. Preserve
+  flash records when their RAM objects are reclaimed.
+- [ ] **Characterize PC/SC discovery and reinsertion.** BOOTSEL insertion was
+  recognized as `2e8a:000f`, firmware as `2e8a:0009`. Repeated remove/add
+  timing and reader rediscovery after firmware reboot remain unmeasured.
+  Capture bounded udev/PCSC logs and verify the same board serial reappears.
+
+### Priority 3 — define and extend the VM profile
+
+- [ ] **Declare the supported Java Card profile and audit its API contract.**
+  State the supported Java Card Classic version and APIs, then add applet-level
+  behavior tests for each implemented API. Existing tests cover JCSystem,
+  APDU, lifecycle, exceptions, and persistence but do not establish broad
+  profile compatibility.
+- [ ] **Implement multi-applet contexts and firewall semantics if the declared
+  profile requires them.** The runtime has one applet context. General context
+  switching, custom shareable-interface callbacks and ownership checks,
+  cross-applet AID lookup, and logical channels are not implemented. The null
+  shareable lookup only covers the no-server/default case; assigned channel is
+  basic channel 0.
+- [ ] **Make commit-capacity reporting consistent with transactions.**
+  `beginTransaction` / commit / abort and rollback behavior have coverage, but
+  `getMaxCommitCapacity()` and `getUnusedCommitCapacity()` return zero. Record
+  zero as a deliberate capability or implement capacity accounting and tests.
+- [ ] **Add extended APDUs only if required by the selected profile.** The
+  transport rejects extended APDUs. `APDU.waitExtension()` enforces API state,
+  but synchronous CCID processing cannot send actual T=1 WTX while a command
+  is executing.
+
+### Verified; do not reopen as current failures
+
+- ARM and RISC-V repository builds pass; the RP2350 ARM image passes bounded
+  runtime checks on hardware.
+- JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` completed on Pico: 2,262 transfers,
+  no panic or GC traversal error; expected totals were 1,772
+  `NO_SUCH_ALGORITHM` and 95 `CANT_BE_MEASURED`. SHA-256 256-byte timings were
+  3.10 ms/op (`doFinal`), 3.34 ms/op (`update`), and 6.11 ms/op (`reset`).
+- SCP03, basic GlobalPlatform listing/loading/selection, SHA-256 execution,
+  short-response chaining, applet registration/selection/reselection, tested
+  JCSystem methods, transaction rollback, and VPCD process-restart persistence
+  have working implementations and recorded tests.
+- `JCSystem.requestObjectDeletion()` reports `SystemException.ILLEGAL_USE`
+  because `isObjectDeletionSupported()` is false. This is an explicit
+  unsupported capability, not an unfinished no-op.
+
+## Historical checklist and evidence
+
+The material below is retained as chronological context. Its open checkboxes
+and hardware reports are snapshots from earlier sessions; use the current
+prioritized backlog above for present status.
 
 ## Completed
 

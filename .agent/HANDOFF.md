@@ -2,9 +2,9 @@
 
 ## Current implementation backlog — 2026-10-20
 
-- The prioritized implementation and integration backlog is now in
-  [`todo.md`](../todo.md). Treat root `TODO.md` as a historical tracker; its
-  older hardware status predates the latest successful physical static run.
+- The prioritized implementation and integration backlog is consolidated in
+  root [`TODO.md`](../TODO.md). The historical checklist below its current
+  section predates the latest successful physical static run.
 - Highest-priority open items are: rerun physical `ALG_SUPPORT_EXTENDED` after
   OwnerPINX and compare against jCardSim (AC4); prove persisted Java applet
   state across a true physical power-off/on (AC5); repeat the clean GP install

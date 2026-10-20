@@ -6766,3 +6766,22 @@
   uppercase TODO details as historical context.
 - Commit: `ec25917`
 - Artifacts/logs: none.
+
+## 2026-10-20 — Consolidate backlog into existing TODO tracker
+
+- Step/experiment: `merge-current-backlog-into-TODO`
+- Change: Cross-checked the new prioritized backlog against existing `TODO.md`,
+  moved the distinct current items into its leading current-status section,
+  labeled older checklist entries as historical, redirected the handoff, and
+  removed the duplicate lowercase `todo.md`.
+- Validation: Compared each backlog item with existing acceptance, persistence,
+  GlobalPlatform, and API entries; checked the edited Markdown diff for
+  whitespace issues. Documentation-only update; no build or hardware test was
+  needed.
+- Result: `TODO.md` is the single tracker and includes the latest passing
+  2,262-transfer physical static result plus the remaining acceptance and VM
+  gaps.
+- Decision: Continue maintaining the current prioritized section at the top
+  of `TODO.md`; retain older evidence below it for history.
+- Commit: `<pending>`
+- Artifacts/logs: none.
