@@ -6944,7 +6944,7 @@
 - Decision: Run one remains in progress, not counted complete, until a true
   power removal is followed by a passing power-up probe and repeated support
   comparison. The user was asked to unplug/reconnect for about five seconds.
-- Commit: `<recorded in metadata follow-up>`
+- Commit: `2eb1782` (recorded in the metadata follow-up commit)
 - Artifacts/logs: build logs `artifacts/logs/build-arm-three-pass-integration-20261020.log`
   and `artifacts/logs/build-riscv-three-pass-integration-20261020.log`;
   cycle `artifacts/logs/cycle-choupi-20261020T140230Z.log`;
