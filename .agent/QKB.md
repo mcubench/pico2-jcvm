@@ -2039,6 +2039,27 @@ fix.
   `3dc13d33a620ae7cc5dd1ccfa38029139d678e2682fbff2de4c0516ea2a8dad8`).
 
 
+## Physical power-up check confirms registry but APDU transmit is not delivered — 2026-10-20
+
+- **Symptom:** After a successful CHOUPI ARM flash, GlobalPlatformPro listed
+  the installed JCAlgTest 1.8.2 package and selectable applet. The physical
+  SmartcardIO probe listed both virtual readers and the Pico, read ATR
+  `3B800181`, then failed SELECT with `SCARD_E_NOT_TRANSACTED`. On the next
+  retry, the authorized USB ACL helper found no Pico device (`found 0`).
+- **Firmware evidence:** The 18-second cycle capture passed
+  `TEST:SUMMARY pass=1 fail=0`; after the failed transmit, a bounded 3-second
+  serial capture again passed runtime self-tests and reported
+  `rx_events=0 tasks=0 xfr=0`, so no physical APDU reached CCID firmware.
+- **Result:** Package/applet registry visibility survived the flash/runtime
+  cycle, but physical power-up persistence and applet execution are not
+  validated because the host transmit did not reach the card.
+- **Next:** Restore Pico visibility with the authorized ACL helper and verify
+  PC/SC discovery, then retry one bounded APDU only when the physical reader is
+  present. Inspect CCID counters before interpreting applet behavior.
+- **Artifacts:** `artifacts/logs/cycle-choupi-20261020T041200Z.log` and
+  `artifacts/logs/pico-powerup-persistence-20261020T041334Z.log`.
+
+
 ## Transient array allocation failure terminated the VM — 2026-10-19
 
 - **Symptom/cause:** `JCVMArray(uint16_t)` was `noexcept` while allocating its

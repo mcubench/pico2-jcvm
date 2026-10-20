@@ -6590,3 +6590,26 @@
   integration target if direct runtime-root failure injection becomes necessary.
 - Commit: `7a96432`
 - Artifacts/logs: none.
+
+
+## 2026-10-20 — Flash CHOUPI and retry physical persistence probe
+
+- Step/experiment: `physical-choupi-runtime-and-powerup-check`
+- Change: Flashed the freshly built ARM CHOUPI image and ran the bounded
+  physical package/applet and APDU persistence probe; updated the hardware
+  troubleshooting knowledge base and handoff with the transport result.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed ARM and
+  RISC-V builds, flashed successfully after CDC BOOTSEL recovery, and captured
+  18 seconds of serial output with repeated runtime `TEST:PASS` and
+  `TEST:SUMMARY pass=1 fail=0`. `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-pico-powerup` confirmed the package/applet registry but failed
+  physical SELECT with `SCARD_E_NOT_TRANSACTED`; the next retry found zero Pico
+  devices. A bounded post-failure serial monitor again showed runtime passes
+  and `rx_events=0 tasks=0 xfr=0`.
+- Result: Firmware is running and self-tests pass; the physical applet APDU did
+  not reach the CCID handler, so power-up persistence is not established.
+- Decision: Keep the transport issue open; retry physical applet testing after
+  Pico USB/PCSC visibility has been restored, checking counters after one APDU.
+- Commit: `<recorded in follow-up progress commit>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T041200Z.log`;
+  `artifacts/logs/pico-powerup-persistence-20261020T041334Z.log`.
