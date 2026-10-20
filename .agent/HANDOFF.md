@@ -1,5 +1,18 @@
 # Handoff
 
+## Latest regression — inject static-root reservation allocation failure — 2026-10-20
+
+- The focused allocation test now overrides scalar `operator new` to force
+  `Heap::reserveStaticReferenceRoot()` to fail. It verifies the failed reserve
+  leaves no root entry, a later reserve and registration succeed, and reserving
+  an existing key does not allocate.
+- Validation: `./tools/test-jcvmarray-allocation` passes all nine checks with a
+  warning-free build. No firmware rebuild or hardware operation was needed;
+  only the host regression changed.
+- Test commit: pending.
+- Next: continue auditing heap root-vector mutations for operations that can
+  fail after persistent or heap state changes.
+
 ## Latest static-root hardening — reserve before persistent reference write — 2026-10-20
 
 - `Heap::reserveStaticReferenceRoot(package, field)` now reserves an additional
@@ -12,7 +25,8 @@
   identity, persistent array aliases, and committed instance data. The host
   rebuild emitted existing converter/Maven and packed-CAP warnings. No board
   flash or physical APDU was run. Direct allocation injection at the root
-  reservation boundary remains open.
+  reservation failure is directly covered by the focused host allocation
+  regression.
 - Source commit: `9154aa8`.
 - Evidence: `artifacts/logs/vpcd-persistence-commit-20261020T035837Z.log` and
   `artifacts/logs/vpcd-persistence-restore-20261020T035837Z.log`.

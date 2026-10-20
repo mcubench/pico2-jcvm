@@ -6552,3 +6552,21 @@
 - Commit: `9154aa8`
 - Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261020T035837Z.log`,
   `artifacts/logs/vpcd-persistence-restore-20261020T035837Z.log`.
+
+
+## 2026-10-20 — Inject static GC root reservation failure
+
+- Step/experiment: static-reference-root-reservation-failure-injection
+- Change: Extended the focused allocation test with scalar-allocation failure
+  injection for `Heap::reserveStaticReferenceRoot()`. It checks that failure
+  leaves no registered root, a retry can reserve and register the handle, and
+  reserving an existing key is allocation-free.
+- Validation: `./tools/test-jcvmarray-allocation` passed all nine checks with a
+  warning-free build. No firmware build or hardware operation was needed since
+  this step changes only the host regression.
+- Result: The failure behavior of static-root capacity reservation is now
+  deterministic and covered directly.
+- Decision: Keep the regression and continue auditing heap root-vector mutation
+  paths.
+- Commit: pending
+- Artifacts/logs: none.

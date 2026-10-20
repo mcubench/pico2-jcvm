@@ -18,6 +18,7 @@ static_assert(
 
 namespace {
 bool fail_next_array_allocation = false;
+bool fail_next_scalar_allocation = false;
 std::size_t array_deallocations = 0;
 
 struct ThrowOnCopy {
@@ -34,6 +35,23 @@ struct ThrowOnCopy {
 };
 
 bool ThrowOnCopy::fail_assignment = false;
+}
+
+void *operator new(const std::size_t size) {
+  if (fail_next_scalar_allocation) {
+    fail_next_scalar_allocation = false;
+    throw std::bad_alloc();
+  }
+  if (void *memory = std::malloc(size == 0 ? 1 : size)) {
+    return memory;
+  }
+  throw std::bad_alloc();
+}
+
+void operator delete(void *memory) noexcept { std::free(memory); }
+
+void operator delete(void *memory, std::size_t) noexcept {
+  std::free(memory);
 }
 
 void *operator new[](const std::size_t size) {
@@ -58,6 +76,44 @@ void operator delete[](void *memory, std::size_t) noexcept {
 }
 
 int main() {
+  jcvm::Heap owner(1);
+  fail_next_scalar_allocation = true;
+  bool root_reservation_failed = false;
+  try {
+    owner.reserveStaticReferenceRoot(2, 3);
+  } catch (const std::bad_alloc &) {
+    root_reservation_failed = true;
+  }
+  jcvm::jref_t registered_root;
+  if (!root_reservation_failed ||
+      owner.getStaticReferenceRoot(2, 3, registered_root)) {
+    std::puts("TEST:FAIL static_root_reservation_failure_is_atomic");
+    return EXIT_FAILURE;
+  }
+  std::puts("TEST:PASS static_root_reservation_failure_is_atomic");
+
+  owner.reserveStaticReferenceRoot(2, 3);
+  jcvm::jref_t expected_root;
+  expected_root.setAsArray(true);
+  expected_root.setOffset(1);
+  owner.setStaticReferenceRoot(2, 3, expected_root);
+  if (!owner.getStaticReferenceRoot(2, 3, registered_root) ||
+      registered_root.compact() != expected_root.compact()) {
+    std::puts("TEST:FAIL static_root_uses_reserved_slot");
+    return EXIT_FAILURE;
+  }
+  fail_next_scalar_allocation = true;
+  owner.reserveStaticReferenceRoot(2, 3);
+  const bool existing_root_reservation_allocated =
+      !fail_next_scalar_allocation;
+  fail_next_scalar_allocation = false;
+  if (existing_root_reservation_allocated) {
+    std::puts("TEST:FAIL static_root_repeat_reservation_allocates");
+    return EXIT_FAILURE;
+  }
+  std::puts("TEST:PASS static_root_uses_reserved_slot");
+  std::puts("TEST:PASS static_root_repeat_reservation_is_allocation_free");
+
   fail_next_array_allocation = true;
   try {
     jcvm::JCVMArray<uint8_t> array(16);
@@ -151,7 +207,6 @@ int main() {
   }
   std::puts("TEST:PASS copy_assignment_preserves_destination");
 
-  jcvm::Heap owner(1);
   jcvm::fs::Tag tag{};
   tag.len = 3;
   tag.value[0] = 0xa0;

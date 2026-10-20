@@ -12,8 +12,9 @@
   uses the already-reserved slot.
 - **Validation:** ARM/RISC-V builds and the persistent-transaction test passed.
   Two-process VPCD persistence passed install/commit 3/3 and fresh restore 7/7,
-  including static reference identity and persistent array aliases. Allocation
-  failure at the reserve boundary is not directly injected.
+  including static reference identity and persistent array aliases. The
+  allocation regression now injects failure into root-vector reserve, verifies
+  no root is registered, then verifies retry and allocation-free repeat reserve.
 
 ## Exception object inserted before its GC root could be allocated — 2026-10-20
 
