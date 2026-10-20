@@ -2067,6 +2067,21 @@ fix.
   the session user, so host daemon transport diagnostics remain unavailable.
 - **Repeat artifacts:** `artifacts/logs/cycle-choupi-20261020T041650Z.log` and
   `artifacts/logs/pico-powerup-persistence-20261020T041802Z.log`.
+- **Correction from monitored command-history probe:** The zero counters above
+  were captured before a later SELECT was sent. With diagnostic firmware,
+  concurrent serial capture observed repeated `GetSlotStatus` (`0x65`) messages,
+  then `IccPowerOn` (`0x62`) and SELECT XfrBlock. Firmware logged the JCAlgTest
+  AID, restored class `0x0094`, and completed applet selection with `9000`.
+  The Java probe still timed out before printing the SELECT response or
+  GETVERSION. No unknown CCID commands or endpoint errors were reported. After
+  the probe, PC/SC listed only virtual readers; the current bounded scan timed
+  out with no output while USB still enumerated `2e8a:0009`.
+- **Interpretation:** SELECT does reach and execute in firmware. The unresolved
+  failure is at or after the CCID response path, and applet persistence cannot
+  be concluded without a host-visible response and GETVERSION. The latest
+  select/version probe and serial trace were inspected live, not archived;
+  `artifacts/logs/cycle-choupi-20261020T055535Z.log` records the diagnostic
+  firmware build/flash/runtime cycle.
 
 
 ## Transient array allocation failure terminated the VM — 2026-10-19
@@ -2146,3 +2161,28 @@ fix.
 - **Validation:** The allocation test injects failure during assignment and
   verifies that the destination retains its old length and values. ARM build and
   the focused allocation regression pass.
+
+
+## Physical APDU reaches applet, then stalls during post-APDU GC — 2026-10-20
+
+- **Symptom:** PC/SC lists the Pico CCID reader and reads its ATR. A focused
+  JCAlgTest SELECT reaches the firmware; applet lookup/restore/select and
+  `Applet.process()` all return `9000`, but SmartcardIO reports
+  `SCARD_E_NOT_TRANSACTED` before receiving a response.
+- **Observed location:** Serial prints `CHOUPI:APDU_PROCESS stage=gc_begin`.
+  Instrumentation found 7 array slots, 6 instance slots, and 13 pending roots;
+  all 7 arrays and 6 instances scan in the first pass. A second pass starts,
+  then the monitored capture ends before GC or CCID response completion.
+- **Performance change attempted:** GC now iterates the stable heap lists
+  alongside mark bytes rather than resolving each scanned slot with
+  `std::list::at()`. Per-edge liveness is taken from empty-slot sentinels, and
+  persistent array length is read once per scan instead of on each loop test.
+  ARM/RISC-V builds and runtime cycle pass, but the physical probe still fails.
+  This performance hypothesis is not confirmed as the root cause.
+- **Next diagnosis:** Add per-instance field and per-reference-array progress
+  to locate the second-pass stall. Check persistent array storage reads and
+  traversal loop bounds. Do not classify the PC/SC failure as host-only: the
+  firmware has not returned from collection to send the APDU response.
+- **Artifacts:** `artifacts/logs/cycle-choupi-20261020T061302Z.log`,
+  `061623Z.log`, `061949Z.log`, and `062341Z.log`. The concurrent APDU serial
+  capture was inspected live but not saved.

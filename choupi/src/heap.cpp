@@ -31,6 +31,9 @@
 #include "jc_types/jc_array.hpp"
 
 #include <cstring>
+#ifndef PC_VERSION
+#include <cstdio>
+#endif
 
 #include <algorithm>
 #include <utility>
@@ -517,20 +520,33 @@ void Heap::visitChildReferences(const jref_t reference,
   }
   if (reference.isArray()) {
     const auto array = this->getArray(reference);
-    if (array->getType() != JAVA_ARRAY_T_REFERENCE) {
-      return;
-    }
-    for (uint16_t index = 0; index < array->size(); ++index) {
-      const jref_t child = array->getReferenceEntry(index);
-      if (!child.isNullPointer()) {
-        visitor(child, visitor_context);
-      }
-    }
+    this->visitChildReferences(*array, visitor, visitor_context);
     return;
   }
 
   const auto instance = this->getInstance(reference);
-  const auto fields = instance->getFields();
+  this->visitChildReferences(*instance, visitor, visitor_context);
+}
+
+void Heap::visitChildReferences(JC_Array &array,
+                                const ReferenceVisitor visitor,
+                                void *visitor_context) {
+  if (array.getType() != JAVA_ARRAY_T_REFERENCE) {
+    return;
+  }
+  const uint16_t length = array.size();
+  for (uint16_t index = 0; index < length; ++index) {
+    const jref_t child = array.getReferenceEntry(index);
+    if (!child.isNullPointer()) {
+      visitor(child, visitor_context);
+    }
+  }
+}
+
+void Heap::visitChildReferences(const JC_Instance &instance,
+                                const ReferenceVisitor visitor,
+                                void *visitor_context) {
+  const auto fields = instance.getFields();
   for (uint16_t index = 0; index < fields->size(); ++index) {
     const jc_field_t &field = fields->at(index);
     switch (field.type) {
@@ -580,6 +596,20 @@ Heap::ReachabilitySummary Heap::traceAndMark(
   ReachabilitySummary summary;
   marked_arrays.assign(this->arrays.size(), 0);
   marked_instances.assign(this->instances.size(), 0);
+  std::size_t slot_index = 0;
+  for (const auto &array : this->arrays) {
+    if (!array) {
+      marked_arrays[slot_index] = 3;
+    }
+    ++slot_index;
+  }
+  slot_index = 0;
+  for (const auto &instance : this->instances) {
+    if (!instance) {
+      marked_instances[slot_index] = 3;
+    }
+    ++slot_index;
+  }
   bool found_new_reference = false;
   const auto mark_reference = [&](const jref_t reference) {
     // Global-array handles use the same reference bit as local arrays, but
@@ -597,19 +627,17 @@ Heap::ReachabilitySummary Heap::traceAndMark(
       summary.complete = false;
       return;
     }
-    const bool slot_is_live = reference.isArray()
-                                  ? static_cast<bool>(this->arrays.at(offset - 1))
-                                  : static_cast<bool>(this->instances.at(offset - 1));
-    if (!slot_is_live) {
+    const std::size_t mark_index = offset - 1;
+    if (marks[mark_index] == 3) {
       ++summary.invalid_references;
       summary.complete = false;
       return;
     }
-    const std::size_t mark_index = offset - 1;
-    if (marks[mark_index] == 0) {
-      marks[mark_index] = 1;
-      found_new_reference = true;
+    if (marks[mark_index] != 0) {
+      return;
     }
+    marks[mark_index] = 1;
+    found_new_reference = true;
   };
 
   struct VisitorContext {
@@ -620,52 +648,108 @@ Heap::ReachabilitySummary Heap::traceAndMark(
     (*context.mark_fn)(child);
   };
 
+  uint32_t root_count = 0;
+#ifndef PC_VERSION
+  std::printf("CHOUPI:HEAP_GC roots_begin arrays=%u instances=%u\r\n",
+              static_cast<unsigned>(marked_arrays.size()),
+              static_cast<unsigned>(marked_instances.size()));
+  std::fflush(stdout);
+#endif
   enumerate_roots(visit_child, &visitor_context, root_context);
+  for (const uint8_t mark : marked_arrays) {
+    root_count += mark == 1 ? 1u : 0u;
+  }
+  for (const uint8_t mark : marked_instances) {
+    root_count += mark == 1 ? 1u : 0u;
+  }
+#ifndef PC_VERSION
+  std::printf("CHOUPI:HEAP_GC roots_end pending=%lu\r\n",
+              static_cast<unsigned long>(root_count));
+  std::printf("CHOUPI:HEAP_GC loop_begin array_slots=%lu first_mark=%u\r\n",
+              static_cast<unsigned long>(marked_arrays.size()),
+              marked_arrays.empty() ? 0u
+                                    : static_cast<unsigned>(marked_arrays[0]));
+  std::fflush(stdout);
+#endif
 
   // A mark byte is also the work state: zero is unreachable, one is marked
   // and pending, and two is fully scanned. Repeated stable-slot passes avoid
   // heap allocations for a work queue and a per-object child buffer.
   do {
     found_new_reference = false;
-    for (std::size_t index = 0; index < marked_arrays.size(); ++index) {
+    uint32_t scanned_arrays = 0;
+    auto array = this->arrays.cbegin();
+    for (std::size_t index = 0; index < marked_arrays.size();
+         ++index, ++array) {
       if (marked_arrays[index] != 1) {
         continue;
       }
       marked_arrays[index] = 2;
-      jref_t reference;
-      reference.setAsArray(true);
-      reference.setOffset(static_cast<uint16_t>(index + 1));
+      ++scanned_arrays;
+#ifndef PC_VERSION
+      if (scanned_arrays == 1 || (scanned_arrays % 16) == 0) {
+        std::printf("CHOUPI:HEAP_GC arrays_progress scanned=%lu slot=%lu\r\n",
+                    static_cast<unsigned long>(scanned_arrays),
+                    static_cast<unsigned long>(index + 1));
+        std::fflush(stdout);
+      }
+#endif
       try {
-        this->visitChildReferences(reference, visit_child, &visitor_context);
+        if (*array) {
+          this->visitChildReferences(**array, visit_child, &visitor_context);
+        }
       } catch (Exceptions) {
         ++summary.edge_load_failures;
         summary.complete = false;
       }
     }
-    for (std::size_t index = 0; index < marked_instances.size(); ++index) {
+#ifndef PC_VERSION
+    std::printf("CHOUPI:HEAP_GC arrays_end scanned=%lu\r\n",
+                static_cast<unsigned long>(scanned_arrays));
+    std::fflush(stdout);
+#endif
+    uint32_t scanned_instances = 0;
+    auto instance = this->instances.cbegin();
+    for (std::size_t index = 0; index < marked_instances.size();
+         ++index, ++instance) {
       if (marked_instances[index] != 1) {
         continue;
       }
       marked_instances[index] = 2;
-      jref_t reference;
-      reference.setAsArray(false);
-      reference.setOffset(static_cast<uint16_t>(index + 1));
+      ++scanned_instances;
+#ifndef PC_VERSION
+      if (scanned_instances == 1 || (scanned_instances % 16) == 0) {
+        std::printf(
+            "CHOUPI:HEAP_GC instances_progress scanned=%lu slot=%lu\r\n",
+            static_cast<unsigned long>(scanned_instances),
+            static_cast<unsigned long>(index + 1));
+        std::fflush(stdout);
+      }
+#endif
       try {
-        this->visitChildReferences(reference, visit_child, &visitor_context);
+        if (*instance) {
+          this->visitChildReferences(**instance, visit_child,
+                                     &visitor_context);
+        }
       } catch (Exceptions) {
         ++summary.edge_load_failures;
         summary.complete = false;
       }
     }
+#ifndef PC_VERSION
+    std::printf("CHOUPI:HEAP_GC instances_end scanned=%lu\r\n",
+                static_cast<unsigned long>(scanned_instances));
+    std::fflush(stdout);
+#endif
   } while (found_new_reference);
 
   summary.arrays_total = static_cast<uint32_t>(this->arrays.size());
   summary.instances_total = static_cast<uint32_t>(this->instances.size());
   for (const uint8_t mark : marked_arrays) {
-    summary.arrays_reachable += mark != 0 ? 1u : 0u;
+    summary.arrays_reachable += mark == 1 || mark == 2 ? 1u : 0u;
   }
   for (const uint8_t mark : marked_instances) {
-    summary.instances_reachable += mark != 0 ? 1u : 0u;
+    summary.instances_reachable += mark == 1 || mark == 2 ? 1u : 0u;
   }
   return summary;
 }

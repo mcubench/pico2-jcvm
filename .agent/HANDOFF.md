@@ -1,25 +1,53 @@
 # Handoff
 
+## Current hardware state — PC/SC visible; APDU stalls in GC — 2026-10-20
+
+- Although the operator reported BOOTSEL insertion, current USB enumeration is
+  `2e8a:0009` (CHOUPI CCID), not the RP2350 BOOTSEL ID. The authorized ACL
+  helper and `pcsc_scan -r` currently list `Pico 2 CHOUPI CCID`.
+- Physical SELECT reaches firmware: applet lookup, persistent restore, and
+  select return `9000`; `Applet.process()` also returns `9000`. The official
+  focused SELECT/version probe still gets `SCARD_E_NOT_TRANSACTED`, because
+  post-APDU GC never returns to CCID response submission.
+- The latest instrumented GC run enumerated 7 array slots and 6 instance
+  slots, with 13 pending roots. It scanned 7 arrays and 6 instances, started a
+  second pass, then the serial capture ended before GC/CCID completion. Builds
+  and runtime self-test pass; the APDU path remains failed.
+- A first performance attempt replaced per-edge linked-list slot lookups with
+  mark-byte liveness states and iterated heap slots directly. The hardware
+  result did not improve within the probe timeout. This is not a confirmed
+  collector fix; leave the GC checkpoints enabled for the next investigation.
+- Recent cycles: `artifacts/logs/cycle-choupi-20261020T061302Z.log`,
+  `061623Z.log`, `061949Z.log`, and `062341Z.log`. APDU serial captures were
+  inspected live, not archived.
+- Next: isolate the second-pass traversal stall. Capture per-instance field
+  and per-reference-array progress, then fix the specific blocking read or
+  traversal path before claiming APDU support.
+
 ## Latest hardware check — CHOUPI runtime passes, physical APDU blocked — 2026-10-20
 
 - Reflashed from BOOTSEL with `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi`.
   Both ARM and RISC-V builds passed; the ARM image flashed and the 18-second
   capture repeatedly reported `TEST:PASS choupi_runtime` and
   `TEST:SUMMARY pass=1 fail=0`.
-- The bounded power-up test again confirmed the JCAlgTest package/applet in
-  GPPro, then failed SELECT with `SCARD_E_NOT_TRANSACTED`. The retry found no
-  Pico device. USB enumeration still showed `2e8a:0009`; refreshing the
-  authorized ACL restored the Pico in `pcsc_scan -r`. A 3-second serial capture
-  showed runtime passes and `rx_events=0 tasks=0 xfr=0`, so no APDU reached
-  firmware. CCID descriptors enumerate, but `pcscd` journal messages were not
-  available to this user. Do not count this as physical applet or persistence
-  validation.
-- Logs: `artifacts/logs/cycle-choupi-20261020T041650Z.log` and
-  `artifacts/logs/pico-powerup-persistence-20261020T041802Z.log`. The previous
-  attempt is recorded in logs ending `041200Z` and `041334Z`.
-- Next: a software fix to the host PC/SC transmit/disconnect path is needed
-  before repeating the APDU probe; the firmware is responsive and sees no
-  XfrBlock.
+- The bounded power-up test confirmed the JCAlgTest package/applet in GPPro but
+  failed SELECT with `SCARD_E_NOT_TRANSACTED`. Diagnostic firmware then showed
+  repeated `GetSlotStatus` (`0x65`) polling, followed by `IccPowerOn` (`0x62`)
+  and the SELECT XfrBlock. The applet lookup/restore/selection path completed
+  with internal status `9000`; however, the bounded Java probe timed out before
+  printing an APDU response or GETVERSION. PC/SC discovery later listed only
+  virtual readers, and the latest scan timed out without output, while `lsusb`
+  still sees `2e8a:0009`. Thus physical SELECT reaches firmware, but response
+  delivery to SmartcardIO and persistent applet behavior are unverified.
+- The temporary CCID diagnostic reports unknown-command count and a 12-command
+  rolling history. No unknown commands or endpoint errors were seen. The
+  PC/SC daemon journal is not readable by this user.
+- Logs: `artifacts/logs/cycle-choupi-20261020T055535Z.log` for the diagnostic
+  firmware cycle; the select/version probe and concurrent 20-second serial
+  trace were inspected live but not archived. Earlier power-up attempts remain
+  in logs ending `041200Z`, `041334Z`, `041650Z`, and `041802Z`.
+- Next: restore PC/SC service discovery, then run a longer bounded probe with
+  concurrent serial capture to verify the CCID IN response and GETVERSION.
 
 ## Test limitation — runtime exception root injection needs a full heap target — 2026-10-20
 

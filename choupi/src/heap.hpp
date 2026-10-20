@@ -100,6 +100,14 @@ private:
       std::vector<uint8_t> &marked_arrays,
       std::vector<uint8_t> &marked_instances);
 
+  /// Visit children on an already-resolved stable heap slot.
+  void visitChildReferences(JC_Array &array,
+                            ReferenceVisitor visitor,
+                            void *visitor_context);
+  void visitChildReferences(const JC_Instance &instance,
+                            ReferenceVisitor visitor,
+                            void *visitor_context);
+
   /// Getting field reference from an instance reference.
   // jc_field_t &getFieldFromInstanceRef(jref_t objectref, uint16_t index);
 

@@ -6638,3 +6638,54 @@
 - Commit: `f06546a`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T041650Z.log`;
   `artifacts/logs/pico-powerup-persistence-20261020T041802Z.log`.
+
+
+## 2026-10-20 — Trace CCID command history during physical SELECT timeout
+
+- Step/experiment: `physical-ccid-command-history`
+- Change: Added CCID unknown-command count and a 12-message rolling command
+  history to the existing serial diagnostics. This identifies commands that
+  precede PC/SC transmit failures without logging APDU payloads.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed ARM and
+  RISC-V builds, flashed ARM after two bounded BOOTSEL attempts, and captured
+  repeated runtime `TEST:SUMMARY pass=1 fail=0`. A monitored bounded
+  `./tools/probe-jc-algtest --version-only` timed out (exit 124) after ATR.
+  Serial showed repeated `0x65` GetSlotStatus commands, then `0x62` IccPowerOn
+  and SELECT XfrBlock; the applet lookup, restore, and select completed with
+  `9000`. The host did not print an APDU response or GETVERSION. No unknown
+  commands or endpoint errors appeared. Subsequent PC/SC scans listed only
+  virtual readers or timed out, while USB enumeration still found `2e8a:0009`.
+- Result: The SELECT reaches and executes in firmware; response delivery to the
+  host is still unverified. The board is USB-visible but not presently listed
+  by PC/SC. Physical persistence remains unverified.
+- Decision: Keep the command-history diagnostic and resume with a longer
+  bounded response-path probe after PC/SC discovery is restored.
+- Commit: `<recorded in follow-up progress commit>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T055535Z.log`; the
+  concurrent SELECT trace was inspected live and not archived.
+
+
+## 2026-10-20 — Trace physical GC stall after applet SELECT
+
+- Step/experiment: `physical-apdu-post-select-gc-trace`
+- Change: Added direct slot iteration, mark-byte live-slot checks, cached
+  persistent array lengths, and serial checkpoints around GC root and pass
+  boundaries. The slot access change removes linked-list walks from the object
+  scan and every visited edge.
+- Validation: ARM and RISC-V builds passed. Four CHOUPI hardware cycles
+  passed the runtime check (`TEST:SUMMARY pass=1 fail=0`). The focused physical
+  SELECT/version probe repeatedly failed with `SCARD_E_NOT_TRANSACTED` after
+  the applet returned `9000`. The latest serial trace found 7 array slots, 6
+  instance slots, and 13 pending roots; the first pass scanned all objects,
+  then the second pass began without returning from GC. The reader is currently
+  visible through `pcsc_scan -r`; USB ID `2e8a:0009` shows firmware running,
+  not BOOTSEL mode.
+- Result: APDU response delivery is blocked inside or after the second GC pass.
+  The complexity improvement did not resolve the observed stall; its root cause
+  remains unknown. Both architecture builds and runtime checks pass.
+- Decision: Keep instrumentation and inspect per-object child traversal and
+  persistent-storage reads before changing GC semantics.
+- Commit: `<recorded in follow-up progress commit>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T061302Z.log`,
+  `061623Z.log`, `061949Z.log`, and `062341Z.log`; APDU serial traces were
+  inspected live and not archived.
