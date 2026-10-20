@@ -6783,5 +6783,5 @@
   gaps.
 - Decision: Continue maintaining the current prioritized section at the top
   of `TODO.md`; retain older evidence below it for history.
-- Commit: `<pending>`
+- Commit: `74ec9c8`
 - Artifacts/logs: none.
