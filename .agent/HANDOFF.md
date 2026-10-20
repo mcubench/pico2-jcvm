@@ -19,10 +19,19 @@
   comparison `artifacts/logs/jcalgtest-support-compare-ownerpinx-20261020.log`.
   CSV SHA-256: `4877cd4ab8205ae41721d5717bf46328a9a910805e0fc5655f60e7af235495ea`.
 - Next highest priority: verify Java applet field persistence across a true
-  physical power-off/on, then rerun `tools/test-pico-powerup`; current
-  `test-pico-powerup` evidence covers firmware restart/selection, not a full
-  power removal. AC1/AC2 still need a current clean GP install transcript and
-  Windows compatibility evidence. See current checklist in `TODO.md`.
+  physical power-off/on, then rerun `tools/test-pico-powerup` and the official
+  support sweep. A fresh pre-cycle `tools/test-pico-powerup` passed at
+  `artifacts/logs/pico-powerup-persistence-20261020T131336Z.log`: registry
+  confirmed, SELECT and GETVERSION `1.8.2_jc305` returned `9000`, and JCSystem
+  info returned `9000`. This remains a baseline, not a power-cycle result.
+  AC1/AC2 still need a current clean GP install transcript and Windows
+  compatibility evidence. See current checklist in `TODO.md`.
+- An experiment to install a separate AID-scoped JCSystem persistence CAP was
+  rejected before LOAD with `INSTALL [for load]` SW `6D00`. `CapLoadSession`
+  intentionally accepts only the configured JCAlgTest package AID, so a
+  separate package cannot be installed on this firmware. No LOAD block was
+  sent and the existing JCAlgTest applet remained selectable. See QKB and
+  `artifacts/logs/gppro-install-jcsystem-persistence-probe-20261020.log`.
 
 ## Current implementation backlog — 2026-10-20
 

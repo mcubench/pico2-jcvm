@@ -6814,3 +6814,26 @@
   `artifacts/logs/monitor-alg-support-ownerpinx-20261020.log` (SHA-256
   `dd2c20bfb0e70ea166debc12a9423f1bb7e2170dff7de2585c7e0bba1bbde8c6`);
   comparator log `artifacts/logs/jcalgtest-support-compare-ownerpinx-20261020.log`.
+
+## 2026-10-20 — Prepare AC5 power-cycle validation baseline
+
+- Step/experiment: `physical-jcvm-power-cycle-baseline`
+- Change: Tried an isolated test CAP, found the loader's configured package-AID
+  restriction, and recorded it in QKB. Removed the temporary host-tool edits;
+  confirmed the existing JCAlgTest CAP was untouched. Updated AC5 to require a
+  true power-off/on followed by the applet probe and support sweep.
+- Validation: GPPro rejected the alternate package at `INSTALL [for load]`
+  with `6D00` before any LOAD blocks. The existing applet then passed
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` on the named reader:
+  registry confirmed, SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem
+  info `9000`. This is the pre-cycle baseline only; AC5 remains open.
+- Result: The physical card is ready for the requested power-off/on check with
+  its original JCAlgTest CAP. No token state was modified by the rejected
+  alternate-AID install attempt.
+- Decision: After a real power removal and reinsert, rerun the bounded power-up
+  probe and repeat `ALG_SUPPORT_EXTENDED` to complete AC5 reproducibility.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/gppro-install-jcsystem-persistence-probe-20261020.log`
+  (SHA-256 `ca2fed0d6e487d1e007ecc671a2b95893bc6d30aec1b87220cabe0a134e8e678`);
+  `artifacts/logs/pico-powerup-persistence-20261020T131336Z.log` (SHA-256
+  `02bbc6ef3f3dd35ed3febe5c27c9550a7fc96637c8692616e24f6542e45570f1`).

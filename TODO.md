@@ -25,10 +25,11 @@ claims to support them; implementing every algorithm is not a goal.
   `artifacts/results/physical-alg-support-ownerpinx-20261020/`.
 - [ ] **AC5: prove installed Java applet state survives a real power cycle.**
   VPCD restores applet fields and persistent aliases across a fresh process
-  (7/7 checks). Physical `tools/test-pico-powerup` has verified registry and
-  SELECT / GETVERSION / JCSystem after firmware restarts, but a physical
-  power-off/on test that reads back previously written Java applet state is
-  still needed.
+  (7/7 checks). The physical `tools/test-pico-powerup` pre-cycle baseline now
+  confirms the JCAlgTest registry, SELECT, GETVERSION, and JCSystem responses,
+  but no true power-off/on test has been completed. After power removal,
+  confirm the applet remains installed, rerun this probe, and repeat the
+  supported-algorithms client to show the result is reproducible.
 - [ ] **AC1 and AC2: repeat the clean GlobalPlatform install flow.** Confirm
   `gp --list`, install the supplied JCAlgTest 1.8.2 JC305 CAP with
   `gp --install`, and select it on current firmware. Linux has prior positive

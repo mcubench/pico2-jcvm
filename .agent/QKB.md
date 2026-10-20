@@ -2244,3 +2244,24 @@ fix.
   available in BOOTSEL mass-storage mode.
 - **Evidence:** Read-only `lsusb`, `udevadm info`, `lsblk`, `findmnt`,
   `picotool info -a`, and BOOTSEL volume metadata query on 2026-10-20.
+
+## Runtime CAP loader accepts only the configured JCAlgTest package AID — 2026-10-20
+
+- **Symptom:** GPPro `--install` of a separately AID-scoped JCSystem probe
+  failed at `INSTALL [for load]` with `6D00`; it did not proceed to LOAD.
+- **Cause:** `CapLoadSession::beginInstallForLoad()` and
+  `validate_cap_code()` compare the requested and embedded package AIDs against
+  the firmware's configured `kPackageAid`. This firmware only supports the
+  supplied JCAlgTest package for runtime CAP loading.
+- **Effect:** The failure occurs before CAP blocks are sent, so the rejected
+  attempt did not replace or modify the installed JCAlgTest package. A fresh
+  `tools/test-pico-powerup` confirmed its registry, SELECT, GETVERSION, and
+  JCSystem responses afterward.
+- **Handling:** Do not use arbitrary package AIDs for temporary test CAPs on
+  this firmware. A second applet test would require replacing the configured
+  package under its supported AID and restoring the official CAP afterward;
+  that replacement was not attempted. For AC5, first run a true power-off/on
+  against the unchanged JCAlgTest CAP and check registry plus reproducible
+  client behavior.
+- **Evidence:** `artifacts/logs/gppro-install-jcsystem-persistence-probe-20261020.log`
+  and `artifacts/logs/pico-powerup-persistence-20261020T131336Z.log`.
