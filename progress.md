@@ -6881,5 +6881,5 @@
   restore and clean-install integration work as open items.
 - Decision: Continue with AC1/AC2 clean-install evidence and the three-run
   clean-flash integration sequence.
-- Commit: `<recorded in metadata follow-up>`
+- Commit: `7b4ec20` (recorded in the metadata follow-up commit)
 - Artifacts/logs: none; evidence is in the preceding AC5 progress entry.
