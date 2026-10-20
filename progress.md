@@ -6859,7 +6859,7 @@
 - Decision: AC5 persistence and reproducibility are verified on the physical
   Pico. Continue with AC1/AC2 clean-install evidence and the three-run
   clean-flash integration sequence. Unsupported algorithms remain expected.
-- Commit: `<recorded in metadata follow-up>`
+- Commit: `457922b` (recorded in the metadata follow-up commit)
 - Artifacts/logs: probe `artifacts/logs/pico-powerup-persistence-20261020T132635Z.log`
   (SHA-256 `96eb1ae56c155d4d1245586bc34bec3b437fb8f59b33e9e7337f06770086c4c0`);
   client `artifacts/logs/jcalgtest-alg-support-after-powercycle-20261020.log`
