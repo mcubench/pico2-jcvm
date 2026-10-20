@@ -6660,7 +6660,7 @@
   by PC/SC. Physical persistence remains unverified.
 - Decision: Keep the command-history diagnostic and resume with a longer
   bounded response-path probe after PC/SC discovery is restored.
-- Commit: `<recorded in follow-up progress commit>`
+- Commit: `dbbbb13`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T055535Z.log`; the
   concurrent SELECT trace was inspected live and not archived.
 
