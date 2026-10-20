@@ -6610,6 +6610,6 @@
   not reach the CCID handler, so power-up persistence is not established.
 - Decision: Keep the transport issue open; retry physical applet testing after
   Pico USB/PCSC visibility has been restored, checking counters after one APDU.
-- Commit: `<recorded in follow-up progress commit>`
+- Commit: `3b73df7`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T041200Z.log`;
   `artifacts/logs/pico-powerup-persistence-20261020T041334Z.log`.
