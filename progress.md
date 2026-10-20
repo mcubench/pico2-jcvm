@@ -6568,5 +6568,5 @@
   deterministic and covered directly.
 - Decision: Keep the regression and continue auditing heap root-vector mutation
   paths.
-- Commit: pending
+- Commit: `45581f9`
 - Artifacts/logs: none.

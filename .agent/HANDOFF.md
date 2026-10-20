@@ -9,7 +9,7 @@
 - Validation: `./tools/test-jcvmarray-allocation` passes all nine checks with a
   warning-free build. No firmware rebuild or hardware operation was needed;
   only the host regression changed.
-- Test commit: pending.
+- Test commit: `45581f9`.
 - Next: continue auditing heap root-vector mutations for operations that can
   fail after persistent or heap state changes.
 
