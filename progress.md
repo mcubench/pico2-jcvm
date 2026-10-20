@@ -6737,3 +6737,13 @@
 - Decision: Use reachability-based reclamation for this workload; continue auditing static-root and alias coverage for other applets.
 - Commit: `<recorded in follow-up progress commit>`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-gc-root-fix-20261020.log`; `artifacts/logs/monitor-static-gc-root-fix-20261020.log`; `artifacts/logs/cycle-choupi-20261020T082304Z.log`; `artifacts/logs/cycle-choupi-20261020T085457Z.log`; `artifacts/results/physical-perf-static-gc-root-fix-20261020/`.
+
+## 2026-10-20 — Verify BOOTSEL reinsertion detection
+
+- Step/experiment: `rp2350-bootsel-reinsertion-observation`
+- Change: Recorded the current BOOTSEL enumeration and corrected the expected RP2350 BOOTSEL USB product ID in the QKB and handoff.
+- Validation: Escalated read-only `lsusb`, `udevadm info`, `lsblk`, `findmnt`, `picotool info -a`, and BOOTSEL volume metadata queries.
+- Result: Device enumerated as `2e8a:000f`, picotool reported `boot type: bootsel`, and Linux exposed `/dev/sdb` with serial `D92E743D5F640C0F` and auto-mounted the `RP2350` volume. No additional unplug/replug cycle or latency measurement was performed.
+- Decision: Reinsertion is recognized by this VM for the observed event; capture udev remove/add timing during a future directly monitored cycle if timing/repeatability is needed.
+- Commit: `<recorded in follow-up progress commit>`
+- Artifacts/logs: Read-only outputs from the current session; no log file created.

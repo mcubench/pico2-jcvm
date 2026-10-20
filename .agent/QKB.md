@@ -2227,3 +2227,20 @@ fix.
   `SCARD_E_NOT_TRANSACTED` did not recur in these focused checks.
 - **Follow-up:** Run official `ALG_PERFORMANCE_STATIC` to ensure repeated GC
   remains correct as the applet creates more transient objects.
+
+
+## RP2350 BOOTSEL reinsertion detection — 2026-10-20
+
+- **Observation:** After the reported reinsert in BOOTSEL, the host enumerated
+  `2e8a:000f` (`Raspberry Pi RP2350 Boot`), `picotool info -a` returned
+  `boot type: bootsel`, and Linux exposed `/dev/sdb` with serial
+  `D92E743D5F640C0F` and DISKSEQ 106. The `RP2350` FAT volume was auto-mounted
+  at `/run/media/claude/RP2350`; `INFO_UF2.TXT` identified UF2 Bootloader v1.1.
+- **Correction:** RP2350 BOOTSEL reports VID/PID `2e8a:000f` in this setup, not
+  `2e8a:0003`.
+- **Limit:** This confirms recognition after the user's reported reinsertion,
+  but no remove/add event monitor was running during the physical transition;
+  no latency or repeated-cycle reliability measurement was made. PC/SC is not
+  available in BOOTSEL mass-storage mode.
+- **Evidence:** Read-only `lsusb`, `udevadm info`, `lsblk`, `findmnt`,
+  `picotool info -a`, and BOOTSEL volume metadata query on 2026-10-20.

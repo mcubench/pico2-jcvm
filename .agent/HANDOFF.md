@@ -1,5 +1,23 @@
 # Handoff
 
+## Current device insertion — BOOTSEL mass storage detected — 2026-10-20
+
+- The user reports reinserting the Pico in BOOTSEL. Host enumeration confirms
+  `2e8a:000f` (`Raspberry Pi RP2350 Boot`); `picotool info -a` reports
+  `boot type: bootsel`. The BOOTSEL product ID here is `000f` (the earlier
+  `0003` expectation was incorrect for this RP2350).
+- The host recognized the same board serial `D92E743D5F640C0F`, created USB
+  disk `/dev/sdb` (DISKSEQ 106), and automatically mounted the `RP2350` FAT
+  volume at `/run/media/claude/RP2350`. `INFO_UF2.TXT` identifies UF2 Bootloader
+  v1.1 / Raspberry Pi RP2350.
+- This verifies host recognition after the reported reinsertion. No additional
+  unplug/replug cycle was performed or timed in this check. BOOTSEL presents a
+  mass-storage device, so the PC/SC reader is expected only after firmware
+  boots.
+- Next: if another physical cycle is requested, observe udev remove/add events
+  and confirm the serial identity and BOOTSEL disk reappear; do not infer
+  reinsertion latency from this snapshot.
+
 ## Current hardware state — APDU and GC pass on Pico — 2026-10-20
 
 - Although the operator reported BOOTSEL insertion, current USB enumeration is
