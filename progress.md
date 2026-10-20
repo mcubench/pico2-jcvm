@@ -6747,3 +6747,22 @@
 - Decision: Reinsertion is recognized by this VM for the observed event; capture udev remove/add timing during a future directly monitored cycle if timing/repeatability is needed.
 - Commit: `56dca05`
 - Artifacts/logs: Read-only outputs from the current session; no log file created.
+
+## 2026-10-20 — Consolidate current implementation backlog
+
+- Step/experiment: `jcvm-current-backlog`
+- Change: Added prioritized `todo.md` with current implementation gaps,
+  remaining acceptance checks, completed evidence, and explicit crypto scope.
+  Marked uppercase `TODO.md` as historical and linked the current backlog from
+  the session handoff.
+- Validation: Cross-checked the backlog against `plan.md`, `STATUS.md`, the
+  latest `.agent/HANDOFF.md` entries, `.agent/QKB.md`, and the session digests.
+  Documentation consistency inspection only; no build or hardware test was
+  needed.
+- Result: Current open work distinguishes implementation gaps from required
+  end-to-end verification; the completed 2,262-transfer physical static run
+  is recorded as passing.
+- Decision: Use `todo.md` as the single prioritized backlog; preserve old
+  uppercase TODO details as historical context.
+- Commit: `<pending>`
+- Artifacts/logs: none.

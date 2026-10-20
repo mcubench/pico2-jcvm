@@ -1,5 +1,9 @@
 # Project TODO
 
+> Legacy chronological tracker. The current prioritized backlog is in
+> [`todo.md`](todo.md); older entries below include superseded hardware
+> failures and should be read as historical evidence, not current status.
+
 This tracker follows the acceptance criteria in `plan.md`. “Done” means the
 behavior has evidence recorded in `progress.md`; partial results are called
 out explicitly.

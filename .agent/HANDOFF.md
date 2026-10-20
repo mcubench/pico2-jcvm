@@ -1,5 +1,18 @@
 # Handoff
 
+## Current implementation backlog — 2026-10-20
+
+- The prioritized implementation and integration backlog is now in
+  [`todo.md`](../todo.md). Treat root `TODO.md` as a historical tracker; its
+  older hardware status predates the latest successful physical static run.
+- Highest-priority open items are: rerun physical `ALG_SUPPORT_EXTENDED` after
+  OwnerPINX and compare against jCardSim (AC4); prove persisted Java applet
+  state across a true physical power-off/on (AC5); repeat the clean GP install
+  flow and complete AC1–AC5 three consecutive times; and close the known
+  CAP-slot/filesystem atomicity risk.
+- The latest physical `ALG_PERFORMANCE_STATIC` run passed at 2,262 transfers.
+  Expected unsupported-algorithm results are not implementation bugs.
+
 ## Current device insertion — BOOTSEL mass storage detected — 2026-10-20
 
 - The user reports reinserting the Pico in BOOTSEL. Host enumeration confirms
