@@ -2,21 +2,24 @@
 
 ## Latest hardware check — CHOUPI runtime passes, physical APDU blocked — 2026-10-20
 
-- `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed both ARM and RISC-V
-  build gates, flashed the ARM CHOUPI image, and captured an 18-second runtime
-  log with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`.
-- `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup` confirmed the JCAlgTest
-  package and applet in GPPro, but its bounded SmartcardIO probe failed SELECT
-  with `SCARD_E_NOT_TRANSACTED`; the next retry could not find the Pico USB
-  device. A 3-second serial capture after the failure still showed runtime
-  passes and `rx_events=0 tasks=0 xfr=0`, confirming the APDU never reached
-  firmware. Do not count this as physical applet or persistence validation.
-- Logs: `artifacts/logs/cycle-choupi-20261020T041200Z.log` and
-  `artifacts/logs/pico-powerup-persistence-20261020T041334Z.log`. The follow-up
-  monitor result was inspected live; it showed zero CCID XfrBlock events.
-- Next: restore physical Pico visibility using the authorized host setup,
-  confirm PC/SC lists the Pico, then make one bounded APDU attempt and inspect
-  firmware counters.
+- Reflashed from BOOTSEL with `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi`.
+  Both ARM and RISC-V builds passed; the ARM image flashed and the 18-second
+  capture repeatedly reported `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`.
+- The bounded power-up test again confirmed the JCAlgTest package/applet in
+  GPPro, then failed SELECT with `SCARD_E_NOT_TRANSACTED`. The retry found no
+  Pico device. USB enumeration still showed `2e8a:0009`; refreshing the
+  authorized ACL restored the Pico in `pcsc_scan -r`. A 3-second serial capture
+  showed runtime passes and `rx_events=0 tasks=0 xfr=0`, so no APDU reached
+  firmware. CCID descriptors enumerate, but `pcscd` journal messages were not
+  available to this user. Do not count this as physical applet or persistence
+  validation.
+- Logs: `artifacts/logs/cycle-choupi-20261020T041650Z.log` and
+  `artifacts/logs/pico-powerup-persistence-20261020T041802Z.log`. The previous
+  attempt is recorded in logs ending `041200Z` and `041334Z`.
+- Next: a software fix to the host PC/SC transmit/disconnect path is needed
+  before repeating the APDU probe; the firmware is responsive and sees no
+  XfrBlock.
 
 ## Test limitation — runtime exception root injection needs a full heap target — 2026-10-20
 

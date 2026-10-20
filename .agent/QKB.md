@@ -2058,6 +2058,15 @@ fix.
   present. Inspect CCID counters before interpreting applet behavior.
 - **Artifacts:** `artifacts/logs/cycle-choupi-20261020T041200Z.log` and
   `artifacts/logs/pico-powerup-persistence-20261020T041334Z.log`.
+- **Repeat check:** After another BOOTSEL flash on 2026-10-20, the same
+  `SCARD_E_NOT_TRANSACTED` occurred and the retry reported zero Pico devices.
+  `lsusb -d 2e8a:0009` still found the board; the ACL helper restored its entry
+  in `pcsc_scan -r`. A subsequent 3-second monitor again showed
+  `rx_events=0 tasks=0 xfr=0`. USB descriptors show the CCID interface and bulk
+  endpoints 0x03/0x83 at 64 bytes. `journalctl -u pcscd` exposed no entries to
+  the session user, so host daemon transport diagnostics remain unavailable.
+- **Repeat artifacts:** `artifacts/logs/cycle-choupi-20261020T041650Z.log` and
+  `artifacts/logs/pico-powerup-persistence-20261020T041802Z.log`.
 
 
 ## Transient array allocation failure terminated the VM — 2026-10-19

@@ -6613,3 +6613,28 @@
 - Commit: `3b73df7`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T041200Z.log`;
   `artifacts/logs/pico-powerup-persistence-20261020T041334Z.log`.
+
+
+## 2026-10-20 — Repeat BOOTSEL flash and diagnose PC/SC reader loss
+
+- Step/experiment: `physical-choupi-pcsc-reproduction`
+- Change: Reflashed the board after BOOTSEL reinsertion, repeated the bounded
+  physical persistence probe, and checked USB enumeration, PC/SC discovery,
+  CCID descriptors, and firmware receive counters.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` passed both build
+  gates and flashed ARM; its 18-second runtime capture repeatedly passed with
+  `TEST:SUMMARY pass=1 fail=0`. `./tools/test-pico-powerup` again confirmed the
+  JCAlgTest package/applet but failed SELECT with `SCARD_E_NOT_TRANSACTED`;
+  retry found zero Pico devices. `lsusb` still found `2e8a:0009`; the
+  authorized ACL helper restored the reader in a bounded `pcsc_scan -r`.
+  Follow-up serial capture passed runtime checks with `rx_events=0 tasks=0
+  xfr=0`. Descriptor inspection found the CCID interface and 64-byte bulk
+  endpoints; `journalctl -u pcscd` returned no visible entries.
+- Result: This reproduces a host-side PC/SC transport/reader loss before the
+  firmware receives any XfrBlock. Physical applet execution and persistence
+  remain unverified.
+- Decision: Pause further APDU retries until the host PC/SC transmit or reader
+  disconnect path is diagnosed; firmware remains responsive.
+- Commit: `<recorded in follow-up progress commit>`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T041650Z.log`;
+  `artifacts/logs/pico-powerup-persistence-20261020T041802Z.log`.
