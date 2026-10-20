@@ -6883,3 +6883,40 @@
   clean-flash integration sequence.
 - Commit: `7b4ec20` (recorded in the metadata follow-up commit)
 - Artifacts/logs: none; evidence is in the preceding AC5 progress entry.
+
+## 2026-10-20 — Clean GlobalPlatformPro install on physical Pico
+
+- Step/experiment: `physical-gppro-clean-install-jcalgtest-182`
+- Change: Documented the clean Linux GlobalPlatform flow, closed AC2, and
+  recorded the remaining Windows check for AC1 in `TODO.md`, `STATUS.md`,
+  `.agent/HANDOFF.md`, and `.agent/QKB.md`.
+- Validation: Physical `pcsc_scan -r` listed the named Pico. GPPro 26.06.04
+  `--list` connected over T=1 and reported ISD `A000000151000000 (OP_READY)`.
+  Deleted applet instance AID `4A43416C675465737431` and package AID
+  `4A43416C6754657374` (each `9000`), confirmed the registry empty, then ran
+  GPPro `--install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`; all LOAD blocks
+  and final INSTALL returned `9000`. `tools/test-pico-powerup '<reader>'`
+  passed: package `LOADED`, applet `SELECTABLE`, SELECT `9000`, GETVERSION
+  `1.8.2_jc305`, and JCSystem info `9000`. No source changed; builds were not
+  rerun.
+- Result: Clean install verified on Linux. CAP SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+  The initial attempt to delete the package while its applet instance existed
+  returned `6985`; deleting the instance first is the validated sequence.
+- Decision: AC2 is complete. AC1 still needs Windows reader/GPPro validation;
+  next run the plan's three-pass clean-flash sequence when applicable.
+- Commit: `<recorded in metadata follow-up>`
+- Artifacts/logs: `artifacts/logs/gppro-clean-install-list-before-20261020.log`
+  (SHA-256 `87712d58f8af691fe31ef20b19f58627bf66b16e3459abc6bc1635baccdbc3be`),
+  `artifacts/logs/gppro-clean-install-delete-20261020.log`
+  (`493cfc1e37332028fcfa1142d183feb569205ce00daaea54a36bc72d9db3103e`),
+  `artifacts/logs/gppro-clean-install-delete-applet-20261020.log`
+  (`27446d25d37d09dcb7551a3b8be69f5b64ee5db209bbbd614b88a1cf16d94e87`),
+  `artifacts/logs/gppro-clean-install-delete-package-20261020.log`
+  (`22181bb44d8996c0fd28f2e598aafa93d970a306574852c238c660b533906d9b`),
+  `artifacts/logs/gppro-clean-install-list-empty-20261020.log`
+  (`8491912b370d634c65a8bb7027750f739ac52e6564d119dc73bed3789a6d0bf6`),
+  `artifacts/logs/gppro-clean-install-load-install-20261020.log`
+  (`65b321477a5ddfc5e052d72cedc4da14fba2f13255592589fcb528b735f17fc3`), and
+  `artifacts/logs/pico-powerup-persistence-20261020T135329Z.log`
+  (`0c2c63bdec53c2ff4338f90e0413f0d2ee9b7a9c712e0f9363f42c85d73fc75a`).

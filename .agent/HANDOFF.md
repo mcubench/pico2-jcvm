@@ -1,5 +1,30 @@
 # Handoff
 
+## Latest integration result — clean GlobalPlatform install on Pico — 2026-10-20
+
+- `pcsc_scan -r` listed the physical reader alongside both Virtual PCD readers.
+  GPPro 26.06.04 `--list` connected over T=1 and reported ISD
+  `A000000151000000 (OP_READY)`.
+- A package-level DELETE initially returned `6985` while the applet instance
+  remained installed. Deleting the instance AID `4A43416C675465737431` returned
+  `9000`; deleting package AID `4A43416C6754657374` then returned `9000`.
+  A fresh `--list` confirmed the test package/applet were absent.
+- GPPro `--install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` completed all
+  LOAD blocks with `9000` and final INSTALL returned `9000`. CAP SHA-256:
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+- Post-install `tools/test-pico-powerup` confirmed package `LOADED`, applet
+  `SELECTABLE`, SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem info
+  `9000`. This completes the Linux install/select portion of AC1 and AC2.
+  Windows reader/GPPro compatibility remains unverified; the three-run clean
+  flash integration sequence is still pending.
+- Transcripts: `artifacts/logs/gppro-clean-install-list-before-20261020.log`,
+  `artifacts/logs/gppro-clean-install-delete-20261020.log` (first package delete
+  attempt, `6985`), `artifacts/logs/gppro-clean-install-delete-applet-20261020.log`,
+  `artifacts/logs/gppro-clean-install-delete-package-20261020.log`,
+  `artifacts/logs/gppro-clean-install-list-empty-20261020.log`,
+  `artifacts/logs/gppro-clean-install-load-install-20261020.log`, and
+  `artifacts/logs/pico-powerup-persistence-20261020T135329Z.log`.
+
 ## Latest hardware result — AC5 physical power-cycle persistence — 2026-10-20
 
 - The user disconnected and reconnected the Pico after about five seconds.
@@ -20,9 +45,9 @@
   serial `artifacts/logs/monitor-alg-support-after-powercycle-20261020.log`;
   comparison `artifacts/logs/jcalgtest-support-compare-after-powercycle-20261020.log`;
   CSV in `artifacts/results/physical-alg-support-after-powercycle-20261020/`.
-- AC5's persistence/reproducibility criterion is now complete. AC1/AC2 clean
-  install evidence and the plan's three-run clean-flash integration sequence
-  remain open; see `TODO.md`.
+- AC5's persistence/reproducibility criterion is complete. AC2 is now complete;
+  AC1 still needs Windows compatibility evidence, and the plan's three-run
+  clean-flash integration sequence remains open; see `TODO.md`.
 
 ## Previous checkpoint — refresh AC4 on physical Pico — 2026-10-20
 

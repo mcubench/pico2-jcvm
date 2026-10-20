@@ -1,5 +1,19 @@
 # Project issue knowledge base
 
+## GPPro package deletion requires removing its applet instance first — 2026-10-20
+
+- **Symptom/cause:** On the physical CHOUPI card, GlobalPlatformPro package
+  deletion for AID `4A43416C6754657374` returned `6985` while registered applet
+  instance `4A43416C675465737431` still existed.
+- **Viable solution:** Delete the applet instance AID first, then delete the
+  package AID. On this firmware both commands returned `9000`; GPPro `--list`
+  then showed only the ISD. Reinstall the supplied CAP with `--install`.
+- **Validation:** The exact JCAlgTest 1.8.2 JC305 CAP reloaded successfully;
+  LOAD blocks and final INSTALL returned `9000`. The applet was subsequently
+  listed as `SELECTABLE`, and SELECT, GETVERSION, and JCSystem info all returned
+  `9000`. See `artifacts/logs/gppro-clean-install-*-20261020.log` and
+  `artifacts/logs/pico-powerup-persistence-20261020T135329Z.log`.
+
 ## Runtime-exception root failure test pulls full VM dependencies — 2026-10-20
 
 - **Symptom/cause:** Calling `Heap::addRuntimeException()` from the small

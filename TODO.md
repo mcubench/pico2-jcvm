@@ -36,11 +36,23 @@ claims to support them; implementing every algorithm is not a goal.
   `artifacts/logs/monitor-alg-support-after-powercycle-20261020.log`,
   `artifacts/logs/jcalgtest-support-compare-after-powercycle-20261020.log`,
   and `artifacts/results/physical-alg-support-after-powercycle-20261020/`.
-- [ ] **AC1 and AC2: repeat the clean GlobalPlatform install flow.** Confirm
-  `gp --list`, install the supplied JCAlgTest 1.8.2 JC305 CAP with
-  `gp --install`, and select it on current firmware. Linux has prior positive
-  evidence; record a current clean-install transcript and verify Windows
-  reader / GlobalPlatform compatibility.
+- [ ] **AC1: verify GPPro on Windows.** Linux PC/SC and GPPro were verified on
+  2026-10-20: `gp --list` showed the Pico ISD, and the clean CAP install worked
+  without a custom reader driver. Windows reader and GlobalPlatformPro
+  compatibility remain unverified.
+- [x] **AC2: cleanly install and select the supplied JCAlgTest 1.8.2 JC305
+  CAP.** Removed the test applet/package, confirmed the registry was empty,
+  installed `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` with GPPro 26.06.04,
+  then confirmed package `LOADED`, applet `SELECTABLE`, SELECT `9000`,
+  GETVERSION `1.8.2_jc305`, and JCSystem info `9000`. CAP SHA-256:
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+  Transcripts: `artifacts/logs/gppro-clean-install-list-before-20261020.log`,
+  `artifacts/logs/gppro-clean-install-delete-applet-20261020.log`,
+  `artifacts/logs/gppro-clean-install-delete-package-20261020.log`,
+  `artifacts/logs/gppro-clean-install-list-empty-20261020.log`,
+  `artifacts/logs/gppro-clean-install-load-install-20261020.log`, and
+  `artifacts/logs/pico-powerup-persistence-20261020T135329Z.log`. Package
+  deletion requires deleting its registered applet instance first; see QKB.
 - [ ] **AC1–AC5: run the plan's clean-flash integration sequence three times.**
   For each run, install the CAP, complete supported-algorithms mode, compare
   its CSV, power-cycle, and repeat. Record each run separately; `plan.md`

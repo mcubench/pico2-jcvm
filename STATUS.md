@@ -34,7 +34,8 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   emulator, starts a fresh process from the saved flash image, and verifies the
   restored field, static/array reference identity, object-field alias, and array
   type (7/7 restore checks). This validates process-restart persistence;
-  physical power-off/on persistence remains unverified.
+  physical applet installation persistence was separately verified after a
+  reported five-second power-off/on on 2026-10-20 (see `TODO.md`).
 - `APDU.getCurrentAPDU()` now returns the exact APDU object passed to
   `Applet.process()` and raises `SecurityException` from `Applet.select()`;
   focused VPCD checks passed both cases. This validates host VM dispatch only,
@@ -80,6 +81,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   information succeeded, and the official 4,525-row `ALG_SUPPORT_EXTENDED`
   sweep completed and matched the declared support list (15 supported
   algorithms). Logs and CSV are recorded in the current section of `TODO.md`.
+- A clean Linux GlobalPlatformPro installation was completed on the Pico on
+  2026-10-20: the supplied JCAlgTest 1.8.2 JC305 CAP loaded and installed, and
+  the applet was selectable with SELECT/GETVERSION/JCSystem returning `9000`.
+  Windows GlobalPlatform compatibility remains unverified.
 - Heap tracing now has a guarded sweep path in firmware: it runs after APDU
   interpreter scopes return and only reclaims after a complete root walk.
   Persistent-tagged objects are conservatively pinned, global arrays are
