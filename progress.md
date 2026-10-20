@@ -6660,7 +6660,7 @@
   by PC/SC. Physical persistence remains unverified.
 - Decision: Keep the command-history diagnostic and resume with a longer
   bounded response-path probe after PC/SC discovery is restored.
-- Commit: `dbbbb13`
+- Commit: `<recorded in follow-up progress commit>`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T055535Z.log`; the
   concurrent SELECT trace was inspected live and not archived.
 
@@ -6702,7 +6702,7 @@
   the diagnostic findings; physical APDU delivery remains blocked.
 - Decision: Continue with per-object traversal instrumentation and fix the
   observed second-pass stall.
-- Commit: `<recorded in follow-up progress commit>`
+- Commit: `56dca05`
 - Artifacts/logs: none.
 
 
@@ -6724,7 +6724,7 @@
   tests. Full static performance testing remains pending.
 - Decision: Run official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` with serial
   capture to verify repeated collection under the benchmark workload.
-- Commit: `<recorded in follow-up progress commit>`
+- Commit: `0f60673`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T063106Z.log`;
   `artifacts/logs/pico-powerup-persistence-20261020T063339Z.log`.
 
@@ -6735,7 +6735,7 @@
 - Validation: `./tools/test-vpcd-persistence` passed 3/3; `./tools/build arm` and `./tools/build riscv` passed; physical `./tools/cycle choupi` passed before and after diagnostics were disabled; official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` completed on the Pico; final named-reader SELECT/GETVERSION/JCSystem probe passed.
 - Result: Full static suite ended at 2,262 transfers with no panic, invalid refs, or edge failures. GC stabilized at 83 array slots / 28 instance slots (33 / 25 reachable); one collection reclaimed 50 arrays. Expected client totals: 1,772 `NO_SUCH_ALGORITHM`, 95 `CANT_BE_MEASURED`. SHA-256 256-byte measurements: `doFinal` 3.10 ms/op, `update` 3.34 ms/op, `reset` 6.11 ms/op. Final serial had `TEST:PASS choupi_runtime`; one `WATCHDOG_RECOVERY cause=other` diagnostic is the known retained scratch marker on ordinary reboot.
 - Decision: Use reachability-based reclamation for this workload; continue auditing static-root and alias coverage for other applets.
-- Commit: `<recorded in follow-up progress commit>`
+- Commit: `dbbbb13`
 - Artifacts/logs: `artifacts/logs/jcalgtest-static-gc-root-fix-20261020.log`; `artifacts/logs/monitor-static-gc-root-fix-20261020.log`; `artifacts/logs/cycle-choupi-20261020T082304Z.log`; `artifacts/logs/cycle-choupi-20261020T085457Z.log`; `artifacts/results/physical-perf-static-gc-root-fix-20261020/`.
 
 ## 2026-10-20 — Verify BOOTSEL reinsertion detection
@@ -6745,5 +6745,5 @@
 - Validation: Escalated read-only `lsusb`, `udevadm info`, `lsblk`, `findmnt`, `picotool info -a`, and BOOTSEL volume metadata queries.
 - Result: Device enumerated as `2e8a:000f`, picotool reported `boot type: bootsel`, and Linux exposed `/dev/sdb` with serial `D92E743D5F640C0F` and auto-mounted the `RP2350` volume. No additional unplug/replug cycle or latency measurement was performed.
 - Decision: Reinsertion is recognized by this VM for the observed event; capture udev remove/add timing during a future directly monitored cycle if timing/repeatability is needed.
-- Commit: `<recorded in follow-up progress commit>`
+- Commit: `56dca05`
 - Artifacts/logs: Read-only outputs from the current session; no log file created.
