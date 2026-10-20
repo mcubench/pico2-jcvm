@@ -6764,5 +6764,5 @@
   is recorded as passing.
 - Decision: Use `todo.md` as the single prioritized backlog; preserve old
   uppercase TODO details as historical context.
-- Commit: `<pending>`
+- Commit: `ec25917`
 - Artifacts/logs: none.
