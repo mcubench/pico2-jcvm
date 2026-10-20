@@ -6525,6 +6525,6 @@
 - Result: Root-vector growth now happens before the heap object allocation.
   Direct failure injection at the reserve boundary remains outstanding.
 - Decision: Keep the ordering fix; continue the heap allocation audit.
-- Commit: pending
+- Commit: `f311958`
 - Artifacts/logs: `artifacts/logs/runtime-exception-root-reserve-vpcd-20261020.log`
   (inconclusive VPCD emulator log).

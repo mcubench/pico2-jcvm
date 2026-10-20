@@ -1,5 +1,20 @@
 # Handoff
 
+## Latest heap hardening — reserve runtime exception roots before allocation — 2026-10-20
+
+- `Heap::addRuntimeException()` now reserves space in its root vector before
+  adding the Java exception object. A root-table allocation failure therefore
+  cannot occur after the heap has been mutated.
+- Validation: ARM and RISC-V wrapper builds passed. `./tools/build-pc` passed;
+  its wrapper regenerated APIs/ROM mask and emitted existing converter,
+  Maven/network, and packed-CAP warnings. The bounded VPCD applet run connected
+  but stopped during persisted-app restoration with no APDU result, so runtime
+  exception behavior remains unverified. No hardware operation was run.
+- Source commit: `f311958`.
+- Next: add direct allocation-failure coverage around runtime exception-root
+  insertion if a focused heap test seam can be added without disturbing the
+  shared worktree; otherwise continue auditing heap mutation boundaries.
+
 ## Latest regression — clean up JCVMArray storage when element copies throw — 2026-10-19
 
 - The allocation regression now uses a throwing element assignment to exercise

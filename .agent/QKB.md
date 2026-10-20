@@ -1,5 +1,20 @@
 # Project issue knowledge base
 
+## Exception object inserted before its GC root could be allocated — 2026-10-20
+
+- **Symptom/cause:** `Heap::addRuntimeException()` inserted a new exception
+  instance into the heap before appending its handle to the runtime-root vector.
+  If vector growth then failed under memory pressure, the instance remained
+  unrooted and the next exception attempt could allocate another one.
+- **Viable solution:** Reserve one additional root-vector slot before creating
+  the exception instance. The subsequent trivial root append then requires no
+  allocation, while reserve failure occurs before the heap is mutated.
+- **Validation:** ARM and RISC-V builds passed. The host VM build passed with
+  existing Java Card converter, Maven/network, and packed-CAP warnings. The
+  local VPCD integration attempt connected but did not complete applet restore;
+  no APDU or exception-root behavior was verified. Allocation failure at the
+  reserve boundary is not directly injected yet.
+
 ## Allocation-failure test optimized away an unused JCVMArray copy — 2026-10-19
 
 - **Symptom/cause:** An injected `new[]` failure did not fire in the copy-
