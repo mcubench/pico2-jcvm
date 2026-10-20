@@ -6808,7 +6808,7 @@
 - Decision: AC4's post-OwnerPINX physical comparison is complete. Next address
   AC5 with an actual power-off/on persistence readback; do not infer that from a
   firmware reboot.
-- Commit: `<pending>`
+- Commit: `daf7ff3`
 - Artifacts/logs: `artifacts/logs/jcalgtest-alg-support-ownerpinx-20261020.log`
   (SHA-256 `db06f0c398b7e7f091b663232c07d9a27af7d65cd124ba5a2d60d2b4cbae18c5`);
   `artifacts/logs/monitor-alg-support-ownerpinx-20261020.log` (SHA-256
