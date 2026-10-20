@@ -55,7 +55,7 @@ jc_cap_virtual_method_ref_info remapVirtualMethodRef(
       method_ref.class_ref.external_classref.class_token;
   const uint8_t method_token = method_ref.token & 0x7F;
   const uint8_t remapped_method =
-      package.getPackageID() == FlashMemory_Handler::DYNAMIC_PACKAGE_ID
+      FlashMemory_Handler::isDynamicPackageID(package.getPackageID())
           ? remap_imported_virtual_method_token(*imported_package, class_token,
                                                 method_token)
           : method_token;

@@ -942,24 +942,38 @@ extern "C" uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length) {
 }
 
 extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
+                                            const uint8_t *package_aid,
+                                            uint8_t package_aid_length,
                                             const uint8_t *data,
-  overlay_dirty = true;
                                             uint32_t length) {
-  if (package_id != 20 || data == nullptr || length == 0 ||
-      length > 28 * 1024) {
+  if (!jcvm::FlashMemory_Handler::isDynamicPackageID(package_id) ||
+      package_aid == nullptr || package_aid_length < 5 ||
+      package_aid_length > 16 || data == nullptr || length == 0 ||
+      length > 64 * 1024) {
     return 1;
   }
-  return cap_store_write(data, length) ? 0 : 1;
+  return cap_store_write_package(package_id, package_aid, package_aid_length,
+                                 data, length) ? 0 : 1;
 }
 
-extern "C" uint8_t choupi_store_cap_instance(const uint8_t *aid,
+extern "C" uint8_t choupi_store_cap_instance(uint8_t package_id,
+                                              const uint8_t *applet_aid,
+                                              uint8_t applet_aid_length,
+                                              const uint8_t *aid,
                                               uint8_t aid_length,
                                               uint16_t applet_class_index) {
-  return cap_store_mark_installed(aid, aid_length, applet_class_index) ? 0 : 1;
+  return cap_store_mark_package_installed(package_id, applet_aid,
+                                          applet_aid_length, aid, aid_length,
+                                          applet_class_index) ? 0 : 1;
 }
 
 extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length) {
   return cap_store_data(length);
+}
+
+extern "C" const uint8_t *choupi_cap_store_data_for_package(
+    uint8_t package_id, uint32_t *length) {
+  return cap_store_data_for_package(package_id, length);
 }
 
 extern "C" uint8_t fs_read_1b_at(const uint8_t *tag, uint8_t tag_length,

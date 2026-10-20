@@ -6996,3 +6996,34 @@
 - Decision: Continue by allocating non-conflicting dynamic package IDs and routing CAP parsing, loading, VM lookup, and deletion through the package-indexed APIs.
 - Commit: `9c7b9ae`
 - Artifacts/logs: build output from `./tools/build arm`; no hardware log
+
+## 2026-10-20 — Accept arbitrary package AIDs and route package lifecycle
+
+- Step/experiment: `arbitrary-cap-package-loader`
+- Change: Removed the configured JCAlgTest package-AID check. CAP LOAD now
+  rejects duplicate package AIDs, allocates an unused ID from 56–63, and stores
+  CAPs by package. Added up to 40 applet-instance records per package, dynamic
+  VM package lookup, package-aware install/restore/delete, and GET STATUS
+  enumeration of loaded packages, declared applet modules, and installed
+  instances. Package DELETE clears each recorded applet class's persistent
+  state.
+- Validation: `./tools/build arm` passed after a package DELETE status fix
+  (`BUILD:PASS arch=arm`, `BUILD:PASS target=choupi`; final image end
+  `0x100c56fc`). `./tools/build-pc` passed before that final shared-source
+  guard; the final host target rebuilt its CAP loader but did not provide a
+  completed command status. Registry tests passed 47/47, DELETE tests 26/26, and install-status
+  tests 10/10. The two-pass PC VPCD applet test did not pass: restricted socket
+  creation was denied, and the host-access retry timed out before VPCD
+  connected. No RISC-V build, physical flash, or physical/API CAP exercise was
+  run.
+- Result: Arbitrary package identifiers and package-indexed runtime paths now
+  compile for ARM and PC. Multiple package installation and deploy Core API CAP
+  interoperability still need end-to-end validation. Existing atomicity gap
+  between CAP metadata and filesystem transaction remains.
+- Decision: Keep deploy-folder API coverage open until its Core CAPs complete
+  upload, test, and cleanup; next test multiple package AIDs and lifecycle
+  operations in an emulator or on the card.
+- Commit: `pending`
+- Artifacts/logs: Build output only. VPCD attempt used
+  `artifacts/logs/host-vpcd-jcalgtest-20261014.log` and timed out before socket
+  connection.

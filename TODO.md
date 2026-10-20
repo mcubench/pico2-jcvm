@@ -89,13 +89,13 @@ claims to support them; implementing every algorithm is not a goal.
 
 ### Priority 3 — define and extend the VM profile
 
-- [ ] **Enable deployment-folder API coverage CAPs.** The README's Core API
-  version detection was attempted on the physical Pico with its supplied
-  `AlgTestApiCore` CAPs for 305, 304, 303, 222, and 221. Each was rejected at
-  `INSTALL [for load]` with `6D00`, before any LOAD blocks, because runtime CAP
-  loading only accepts the configured JCAlgTest package AID. Generalize package
-  loading, registry, and cleanup before repeating the README's Core stage; see
-  `.agent/QKB.md` and the physical transcript under `artifacts/logs/`.
+- [ ] **Validate deployment-folder API coverage CAPs.** Runtime loading now
+  accepts arbitrary package AIDs and assigns package IDs 56–63; each slot keeps
+  its own CAP and applet instance records. SELECT, GET STATUS, install, and
+  DELETE resolve package and instance metadata across slots. Repeat the README's
+  Core stage with its supplied `AlgTestApiCore` CAPs and confirm load, test, and
+  cleanup over the card interface. The previous physical attempt rejected
+  versions 305, 304, 303, 222, and 221 with `6D00` before LOAD; see `.agent/QKB.md`.
 - [ ] **Declare the supported Java Card profile and audit its API contract.**
   State the supported Java Card Classic version and APIs, then add applet-level
   behavior tests for each implemented API. Existing tests cover JCSystem,

@@ -77,9 +77,14 @@ private:
                          JC_Array &array, Heap &heap);
 
 public:
-  // Reserve the final package slot for the CAP accepted by the Pico card
-  // manager. The other package IDs continue to come from the ROM mask.
+  // Reserve the final eight package IDs for independently loaded CAP slots.
+  static constexpr jpackage_ID_t DYNAMIC_PACKAGE_ID_FIRST = 56;
+  static constexpr jpackage_ID_t DYNAMIC_PACKAGE_COUNT = 8;
   static constexpr jpackage_ID_t DYNAMIC_PACKAGE_ID = JCVM_MAX_PACKAGES - 1;
+  static constexpr bool isDynamicPackageID(jpackage_ID_t id) noexcept {
+    return id >= DYNAMIC_PACKAGE_ID_FIRST &&
+           id < DYNAMIC_PACKAGE_ID_FIRST + DYNAMIC_PACKAGE_COUNT;
+  }
 
   ///  Compute tag to access to persistant data
   static fs::Tag computeTag(const fs::Tag &tag, const uint16_t index)

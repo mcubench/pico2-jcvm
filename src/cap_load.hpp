@@ -17,6 +17,10 @@ public:
   uint16_t deleteObject(const uint8_t *aid, uint8_t aid_length,
                         bool delete_related_objects) noexcept;
   void restoreInstalled() noexcept;
+  bool restorePackageForAid(const uint8_t *package_aid,
+                            uint8_t package_aid_length) noexcept;
+  bool restoreInstalledForAid(const uint8_t *instance_aid,
+                              uint8_t instance_aid_length) noexcept;
 
   bool installed() const noexcept { return installed_; }
   bool loaded() const noexcept { return loaded_; }
@@ -84,7 +88,7 @@ public:
   bool appletClassIndex(uint16_t &class_index) const noexcept;
 
 private:
-  static constexpr size_t kMaxLoadTlvLength = 28 * 1024;
+  static constexpr size_t kMaxLoadTlvLength = 64 * 1024 + 1024;
   uint8_t load_data_[kMaxLoadTlvLength]{};
   uint8_t load_package_aid_[16]{};
   uint8_t load_package_aid_length_ = 0;
@@ -93,6 +97,7 @@ private:
   uint8_t instance_aid_[16]{};
   uint8_t instance_aid_length_ = 0;
   uint16_t applet_class_index_ = 0xffff;
+  uint8_t package_id_ = 0xff;
   size_t load_data_length_ = 0;
   uint16_t next_block_ = 0;
   bool loading_ = false;

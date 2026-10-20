@@ -2295,3 +2295,12 @@ fix.
 - **Evidence:** `artifacts/logs/api-coverage-pico2-core-auto-20261020.log`,
   `artifacts/results/api-coverage-pico2-core-auto-20261020.csv`, and
   `artifacts/logs/api-coverage-gppro-registry-after-20261020.log`.
+- **Resolution implemented (validation still pending):** Runtime CAP loading
+  now uses eight package-indexed slots (IDs 56–63), accepts the embedded CAP
+  package AID, and keeps each package's applet and instance AIDs plus class
+  indexes. VM lookup and GET STATUS enumerate these dynamic slots; install can
+  target an already loaded package; SELECT and DELETE restore the requested
+  package/instance first. Package DELETE clears persistent state for every
+  recorded applet instance. ARM/PC builds and focused registry, DELETE, and
+  install-status regressions pass. Physical Core API CAP upload and multiple
+  package install/select/delete have not yet been exercised end-to-end.

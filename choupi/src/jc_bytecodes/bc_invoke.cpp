@@ -289,8 +289,8 @@ void Bytecodes::bc_invokespecial() {
         const uint8_t imported_class_token =
             method_ref.static_method_ref.external_ref.class_token;
         const uint8_t class_token =
-            context.getCurrentPackageID() ==
-                    FlashMemory_Handler::DYNAMIC_PACKAGE_ID
+            FlashMemory_Handler::isDynamicPackageID(
+                context.getCurrentPackageID())
                 ? remap_imported_class_token(*package_aid,
                                              imported_class_token)
                 : imported_class_token;
@@ -474,8 +474,8 @@ void Bytecodes::bc_invokestatic() {
     const uint8_t imported_class_token =
         method_ref.static_method_ref.external_ref.class_token;
     const bool use_jc305_compatibility_tokens =
-        context.getCurrentPackageID() ==
-        FlashMemory_Handler::DYNAMIC_PACKAGE_ID;
+        FlashMemory_Handler::isDynamicPackageID(
+            context.getCurrentPackageID());
     const uint8_t class_token =
         use_jc305_compatibility_tokens
             ? remap_imported_class_token(*package_aid, imported_class_token)

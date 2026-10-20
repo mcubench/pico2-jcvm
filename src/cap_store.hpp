@@ -17,12 +17,25 @@ const uint8_t *cap_store_data_for_package(uint8_t package_id,
 bool cap_store_package_aid(uint8_t package_id, uint8_t *aid,
                            uint8_t &aid_length) noexcept;
 bool cap_store_mark_package_installed(uint8_t package_id,
+                                      const uint8_t *applet_aid,
+                                      uint8_t applet_aid_length,
                                       const uint8_t *instance_aid,
                                       uint8_t instance_aid_length,
                                       uint16_t applet_class_index) noexcept;
-bool cap_store_package_instance(uint8_t package_id, uint8_t *aid,
-                                uint8_t &aid_length) noexcept;
-bool cap_store_package_class_index(uint8_t package_id,
+bool cap_store_remove_package_instance(uint8_t package_id,
+                                       const uint8_t *instance_aid,
+                                       uint8_t instance_aid_length) noexcept;
+bool cap_store_find_instance(const uint8_t *instance_aid,
+                             uint8_t instance_aid_length,
+                             uint8_t &package_id, uint8_t *applet_aid,
+                             uint8_t &applet_aid_length,
+                             uint16_t &class_index) noexcept;
+uint8_t cap_store_package_instance_count(uint8_t package_id) noexcept;
+bool cap_store_package_instance_at(uint8_t package_id, uint8_t index,
+                                   uint8_t *applet_aid,
+                                   uint8_t &applet_aid_length,
+                                   uint8_t *instance_aid,
+                                   uint8_t &instance_aid_length,
                                    uint16_t &class_index) noexcept;
 
 // Legacy single-package wrappers retained while the card-manager call sites

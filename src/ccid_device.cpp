@@ -12,11 +12,16 @@
 #include "gp_registry.hpp"
 #include "gp_delete.hpp"
 #include "gp_get_data.hpp"
+#include "cap_store.hpp"
 
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
                                            uint8_t *package_id,
                                            uint16_t *install_offset);
+extern "C" uint8_t choupi_vm_is_dynamic_package(uint8_t package_id);
+extern "C" uint8_t choupi_cap_package_applet_aid(
+    uint8_t package_id, uint8_t applet_index, uint8_t *aid,
+    uint8_t *aid_length);
 extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                             uint16_t class_index,
                                             const uint8_t *aid,
@@ -91,12 +96,116 @@ volatile uint16_t debug_task_count = 0;
 Scp03Session secure_channel;
 CapLoadSession cap_load_session;
 bool get_status_first_seen = false;
+uint16_t get_status_cursor = 0;
 
 uint32_t read_le32(const uint8_t *p) {
   return static_cast<uint32_t>(p[0]) |
          (static_cast<uint32_t>(p[1]) << 8) |
          (static_cast<uint32_t>(p[2]) << 16) |
          (static_cast<uint32_t>(p[3]) << 24);
+}
+
+uint16_t build_dynamic_get_status_page(
+    uint8_t p1, const uint8_t *search_data, size_t search_data_length,
+    uint8_t *output, size_t capacity, size_t &output_length,
+    bool &more_entries) noexcept {
+  output_length = 0;
+  more_entries = false;
+  if (p1 == 0x80) {
+    gp::RegistryView empty{};
+    return gp::build_get_status_first_response(
+        p1, search_data, search_data_length, empty, output, capacity,
+        output_length);
+  }
+  if (p1 != 0x40 && p1 != 0x20 && p1 != 0x10) return 0x6a86;
+  gp::AidSearch search;
+  if (!gp::parse_aid_search(search_data, search_data_length, search))
+    return 0x6a80;
+
+  uint16_t ordinal = 0;
+  for (uint8_t package_id = 56; package_id < 64; ++package_id) {
+    uint32_t code_length = 0;
+    if (cap_store_data_for_package(package_id, &code_length) == nullptr)
+      continue;
+    uint8_t package_aid[16]{};
+    uint8_t package_aid_length = 0;
+    if (!cap_store_package_aid(package_id, package_aid,
+                               package_aid_length)) continue;
+    const uint8_t instance_count =
+        cap_store_package_instance_count(package_id);
+
+    if (p1 == 0x40) {
+      for (uint8_t index = 0; index < instance_count; ++index) {
+        uint8_t applet_aid[16]{};
+        uint8_t applet_aid_length = 0;
+        uint8_t instance_aid[16]{};
+        uint8_t instance_aid_length = 0;
+        uint16_t class_index = 0xffff;
+        if (!cap_store_package_instance_at(
+                package_id, index, applet_aid, applet_aid_length,
+                instance_aid, instance_aid_length, class_index) ||
+            !gp::aid_matches_search(search, instance_aid,
+                                    instance_aid_length)) continue;
+        if (ordinal++ < get_status_cursor) continue;
+        uint8_t entry[48]{};
+        size_t entry_length = 0;
+        if (!gp::append_registry_entry(
+                entry, sizeof(entry), entry_length, instance_aid,
+                instance_aid_length, package_aid, package_aid_length, 0x07))
+          return 0x6f00;
+        if (entry_length > capacity - output_length) {
+          more_entries = true;
+          return 0x6310;
+        }
+        std::memcpy(output + output_length, entry, entry_length);
+        output_length += entry_length;
+        ++get_status_cursor;
+      }
+    } else if (gp::aid_matches_search(search, package_aid,
+                                      package_aid_length)) {
+      uint8_t declared_applet_count = 0;
+      if (p1 == 0x10) {
+        while (declared_applet_count != UINT8_MAX) {
+          uint8_t applet_aid[16]{};
+          uint8_t applet_aid_length = 0;
+          if (!choupi_cap_package_applet_aid(
+                  package_id, declared_applet_count, applet_aid,
+                  &applet_aid_length)) break;
+          ++declared_applet_count;
+        }
+      }
+      const uint8_t entry_count = p1 == 0x20
+                                      ? 1
+                                      : (declared_applet_count == 0
+                                             ? 1
+                                             : declared_applet_count);
+      for (uint8_t index = 0; index < entry_count; ++index) {
+        uint8_t applet_aid[16]{};
+        uint8_t applet_aid_length = 0;
+        if (p1 == 0x10 && declared_applet_count != 0 &&
+            !choupi_cap_package_applet_aid(
+                package_id, index, applet_aid, &applet_aid_length))
+          continue;
+        if (ordinal++ < get_status_cursor) continue;
+        const bool include_module = p1 == 0x10 && declared_applet_count != 0;
+        uint8_t entry[48]{};
+        size_t entry_length = 0;
+        if (!gp::append_load_file_entry(
+                entry, sizeof(entry), entry_length, package_aid,
+                package_aid_length, include_module ? applet_aid : nullptr,
+                include_module ? applet_aid_length : 0, include_module))
+          return 0x6f00;
+        if (entry_length > capacity - output_length) {
+          more_entries = true;
+          return 0x6310;
+        }
+        std::memcpy(output + output_length, entry, entry_length);
+        output_length += entry_length;
+        ++get_status_cursor;
+      }
+    }
+  }
+  return 0x9000;
 }
 
 void queue_out(uint8_t rhport) {
@@ -323,33 +432,29 @@ void process_message(uint8_t rhport) {
           response_length = 31;
         }
       } else if (instruction == 0xf2 && apdu_length >= 5) {
-        if (p2 == 0x03) {
-          const uint16_t status = gp::validate_get_status_next(
-              get_status_first_seen, p1, apdu + 5, command_data_length);
-          response[0] = static_cast<uint8_t>(status >> 8);
-          response[1] = static_cast<uint8_t>(status);
-        } else if (p2 != 0x02) {
+        if (p2 != 0x02 && p2 != 0x03) {
           response[0] = 0x6a;
           response[1] = 0x86;
         } else {
-          gp::RegistryView registry{};
-          registry.applet_installed = cap_load_session.installed();
-          registry.instance_aid = cap_load_session.instanceAid();
-          registry.instance_aid_length = cap_load_session.instanceAidLength();
-          registry.package_loaded = cap_load_session.loaded();
-          registry.package_aid = cap_load_session.packageAid();
-          registry.package_aid_length = cap_load_session.packageAidLength();
-          registry.module_aid = cap_load_session.appletAid();
-          registry.module_aid_length = cap_load_session.appletAidLength();
-
-          get_status_first_seen = false;
+          uint16_t status = 0x9000;
+          if (p2 == 0x03) {
+            status = gp::validate_get_status_next(
+                get_status_first_seen, p1, apdu + 5, command_data_length);
+          } else {
+            get_status_cursor = 0;
+            get_status_first_seen = false;
+          }
+          bool more_entries = false;
           response_length = 0;
-          const uint16_t status = gp::build_get_status_first_response(
-              p1, apdu + 5, command_data_length, registry, response,
-              sizeof(response) - 2, response_length);
           if (status == 0x9000) {
-            response[response_length++] = 0x90;
-            response[response_length++] = 0x00;
+            status = build_dynamic_get_status_page(
+                p1, apdu + 5, command_data_length, response,
+                sizeof(response) - 2, response_length, more_entries);
+            if (more_entries) status = 0x6310;
+          }
+          if (status == 0x9000 || status == 0x6310) {
+            response[response_length++] = static_cast<uint8_t>(status >> 8);
+            response[response_length++] = static_cast<uint8_t>(status);
             get_status_first_seen = true;
           } else {
             response[0] = static_cast<uint8_t>(status >> 8);
@@ -386,6 +491,7 @@ void process_message(uint8_t rhport) {
       response[sizeof(isd_fci) + 1] = 0x00;
       response_length = sizeof(isd_fci) + 2;
     } else if (is_select_by_aid(apdu, apdu_length)) {
+      (void)cap_load_session.restoreInstalledForAid(apdu + 5, apdu[4]);
       const uint8_t installed_aid_length =
           cap_load_session.instanceAidLength();
       const bool select_instance_command =
@@ -411,7 +517,8 @@ void process_message(uint8_t rhport) {
                     static_cast<unsigned>(package_id),
                     static_cast<unsigned>(install_method_offset));
         std::fflush(stdout);
-        if (lookup_status != 0 || package_id != 63) {
+        if (lookup_status != 0 ||
+            !choupi_vm_is_dynamic_package(package_id)) {
           response[0] = 0x6a;
           response[1] = 0x82;
           response_length = 2;

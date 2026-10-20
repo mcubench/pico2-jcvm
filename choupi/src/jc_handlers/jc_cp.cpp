@@ -45,8 +45,8 @@ namespace {
 bool usesJC305CompatibilityTokens(const Package &source_package) noexcept {
   // These translations describe imports in the uploaded JCAlgTest CAP. ROM
   // mask API CAPs use their own export tokens and must resolve them unchanged.
-  return source_package.getPackageID() ==
-         FlashMemory_Handler::DYNAMIC_PACKAGE_ID;
+  return FlashMemory_Handler::isDynamicPackageID(
+      source_package.getPackageID());
 }
 } // namespace
 

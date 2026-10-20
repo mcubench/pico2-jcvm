@@ -1,5 +1,34 @@
 # Handoff
 
+## Arbitrary package AIDs — loader and registry integration — 2026-10-20
+
+- Generalized runtime CAP loading beyond JCAlgTest. The loader validates the
+  package AID declared in each CAP, rejects duplicate loaded package AIDs,
+  allocates an available dynamic package ID (56–63), and stores the CAP in its
+  indexed flash slot. The VM's package lookup now searches all dynamic slots.
+- CAP slots store up to 40 installed applet-instance records with applet AID,
+  instance AID, and class index. Multiple applets can be installed from one
+  package and distinct packages can use their own AIDs. SELECT restores the
+  matching instance; GET STATUS lists dynamic packages, declared applet
+  modules, and installed instances; DELETE restores the requested target and
+  removes every recorded applet's persistent fields for package deletion.
+- Validation: `./tools/build arm` passed after the package DELETE status fix
+  (image end `0x100c56fc`); `./tools/build-pc` passed before that last small
+  shared-source guard. Focused GP
+  registry (47/47), DELETE (26/26), and install-status (10/10) regressions
+  passed. `./tools/test-pc-vpcd-applet` did not complete: the restricted run
+  could not create its loopback socket; the host-access retry timed out before
+  VPCD connection. No physical flash or API CAP run was performed. The ARM
+  image ends at `0x100c569c`, below the CAP-slot area beginning at `0x10100000`.
+- Package DELETE without the related-object flag returns `6985` when its slot
+  has any recorded instances, even if another applet was selected most recently.
+- Remaining validation: install two distinct package AIDs through GPPro/API
+  CAP flow, SELECT each applet, inspect GET STATUS, then delete one instance
+  and package while confirming the other remains selectable. Retry the deploy
+  README Core stage on the physical card after confirming its PC/SC reader.
+
+## Multi-package CAP storage checkpoint — 2026-10-20
+
 ## Multi-package CAP support — storage layer checkpoint — 2026-10-20
 
 - Began implementing the agreed multi-package plan. `src/cap_store.cpp` now

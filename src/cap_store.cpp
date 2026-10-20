@@ -16,13 +16,24 @@ namespace {
 constexpr uint32_t kSlotsOffset = 0x100000;
 constexpr uint32_t kSlotCount = 8;
 constexpr uint32_t kHeaderSectorSize = FLASH_SECTOR_SIZE;
-constexpr uint32_t kMaxCodeLength = 64 * 1024;
-constexpr uint32_t kSlotStride = kHeaderSectorSize + kMaxCodeLength;
+// JC_Cap exposes component images through a 16-bit length, so reserve one
+// byte below 64 KiB rather than allowing a value that would wrap to zero.
+constexpr uint32_t kMaxCodeLength = 64 * 1024 - 1;
+constexpr uint32_t kSlotStride = kHeaderSectorSize + 64 * 1024;
 constexpr uint32_t kCodeOffset = kHeaderSectorSize;
 constexpr uint8_t kFirstPackageId = 56;
+constexpr uint8_t kMaxPackageInstances = 40;
 constexpr uint32_t kXipBase = 0x10000000;
 constexpr uint32_t kHeaderMagic = 0x33415043; // "CAP3" in little endian
 constexpr uint16_t kHeaderVersion = 3;
+
+struct __attribute__((packed)) AppletInstanceRecord {
+  uint8_t applet_aid_length;
+  uint8_t instance_aid_length;
+  uint16_t class_index;
+  uint8_t applet_aid[16];
+  uint8_t instance_aid[16];
+};
 
 struct __attribute__((packed)) CapSlotHeader {
   uint32_t magic;
@@ -32,18 +43,16 @@ struct __attribute__((packed)) CapSlotHeader {
   uint32_t code_length;
   uint32_t code_crc32;
   uint8_t package_aid[16];
-  uint8_t installed;
-  uint8_t instance_aid_length;
-  uint8_t instance_aid[16];
-  uint16_t applet_class_index;
+  uint8_t instance_count;
   uint16_t reserved;
+  AppletInstanceRecord instances[kMaxPackageInstances];
   uint32_t header_crc32;
 };
 
 static_assert(kSlotCount * kSlotStride == 0x88000,
               "CAP slot region size changed; review flash partition map");
-static_assert(sizeof(CapSlotHeader) <= FLASH_PAGE_SIZE,
-              "CAP slot header must fit in one flash page");
+static_assert(sizeof(CapSlotHeader) <= FLASH_SECTOR_SIZE,
+              "CAP slot header must fit in one metadata sector");
 static_assert((kSlotsOffset % FLASH_SECTOR_SIZE) == 0,
               "CAP slot region must be sector aligned");
 static_assert((kSlotStride % FLASH_SECTOR_SIZE) == 0,
@@ -103,18 +112,16 @@ bool validate_header(const CapSlotHeader &header, uint8_t slot) noexcept {
          header.package_id == static_cast<uint8_t>(kFirstPackageId + slot) &&
          header.package_aid_length >= 5 && header.package_aid_length <= 16 &&
          header.code_length != 0 && header.code_length <= kMaxCodeLength &&
-         header.installed <= 1 &&
-         (header.installed == 0 ||
-          (header.instance_aid_length >= 5 &&
-           header.instance_aid_length <= 16 &&
-           header.applet_class_index != 0xffff)) &&
+         header.instance_count <= kMaxPackageInstances &&
          header.header_crc32 == header_crc(header);
 }
 
-void build_header_page(uint8_t page[FLASH_PAGE_SIZE],
-                       const CapSlotHeader &header) noexcept {
-  std::memset(page, 0xff, FLASH_PAGE_SIZE);
-  std::memcpy(page, &header, sizeof(header));
+int find_slot(uint8_t package_id) noexcept {
+  for (uint8_t slot = 0; slot < kSlotCount; ++slot) {
+    if (cached_headers[slot] != nullptr &&
+        cached_headers[slot]->package_id == package_id) return slot;
+  }
+  return -1;
 }
 
 struct WriteContext {
@@ -141,22 +148,44 @@ void __not_in_flash_func(write_slot_callback)(void *opaque) {
                         page, sizeof(page));
     offset += chunk;
   }
-  build_header_page(page, context->header);
-  flash_range_program(base, page, sizeof(page));
+  const auto *header_bytes =
+      reinterpret_cast<const uint8_t *>(&context->header);
+  for (uint32_t page_offset = 0; page_offset < FLASH_SECTOR_SIZE;
+       page_offset += FLASH_PAGE_SIZE) {
+    std::memset(page, 0xff, sizeof(page));
+    if (page_offset < sizeof(context->header)) {
+      const size_t remaining = sizeof(context->header) - page_offset;
+      const size_t chunk = remaining < sizeof(page) ? remaining : sizeof(page);
+      std::memcpy(page, header_bytes + page_offset, chunk);
+    }
+    flash_range_program(base + page_offset, page, FLASH_PAGE_SIZE);
+  }
   context->success = true;
 }
 
 struct MetadataContext {
   uint8_t slot;
-  uint8_t page[FLASH_PAGE_SIZE];
+  CapSlotHeader header;
   bool success = false;
 };
 
 void __not_in_flash_func(write_metadata_callback)(void *opaque) {
   auto *context = static_cast<MetadataContext *>(opaque);
   flash_range_erase(slot_offset(context->slot), kHeaderSectorSize);
-  flash_range_program(slot_offset(context->slot), context->page,
-                      FLASH_PAGE_SIZE);
+  uint8_t page[FLASH_PAGE_SIZE];
+  const auto *header_bytes =
+      reinterpret_cast<const uint8_t *>(&context->header);
+  for (uint32_t page_offset = 0; page_offset < FLASH_SECTOR_SIZE;
+       page_offset += FLASH_PAGE_SIZE) {
+    std::memset(page, 0xff, sizeof(page));
+    if (page_offset < sizeof(context->header)) {
+      const size_t remaining = sizeof(context->header) - page_offset;
+      const size_t chunk = remaining < sizeof(page) ? remaining : sizeof(page);
+      std::memcpy(page, header_bytes + page_offset, chunk);
+    }
+    flash_range_program(slot_offset(context->slot) + page_offset, page,
+                        FLASH_PAGE_SIZE);
+  }
   context->success = true;
 }
 
@@ -175,7 +204,7 @@ bool write_metadata(uint8_t slot, CapSlotHeader &header) noexcept {
   header.header_crc32 = header_crc(header);
   MetadataContext context{};
   context.slot = slot;
-  build_header_page(context.page, header);
+  context.header = header;
   const int status = flash_safe_execute(write_metadata_callback, &context, 5000);
   return status == PICO_OK && context.success && cap_store_initialize();
 }
@@ -233,11 +262,9 @@ bool cap_store_write_package(uint8_t package_id, const uint8_t *package_aid,
   std::memcpy(header.package_aid, package_aid, package_aid_length);
   std::memset(header.package_aid + package_aid_length, 0xff,
               sizeof(header.package_aid) - package_aid_length);
-  header.installed = 0;
-  header.instance_aid_length = 0;
-  std::memset(header.instance_aid, 0xff, sizeof(header.instance_aid));
-  header.applet_class_index = 0xffff;
+  header.instance_count = 0;
   header.reserved = 0xffff;
+  std::memset(header.instances, 0xff, sizeof(header.instances));
   header.header_crc32 = header_crc(header);
 
   WriteContext context{slot, data, length, header, false};
@@ -283,45 +310,112 @@ bool cap_store_package_aid(uint8_t package_id, uint8_t *aid,
 }
 
 bool cap_store_mark_package_installed(uint8_t package_id,
+                                      const uint8_t *applet_aid,
+                                      uint8_t applet_aid_length,
                                       const uint8_t *instance_aid,
                                       uint8_t instance_aid_length,
                                       uint16_t applet_class_index) noexcept {
-  if (package_id < kFirstPackageId || package_id >= kFirstPackageId + kSlotCount ||
+  if (!aid_valid(applet_aid, applet_aid_length) ||
       !aid_valid(instance_aid, instance_aid_length) ||
       applet_class_index == 0xffff) return false;
-  const uint8_t slot = static_cast<uint8_t>(package_id - kFirstPackageId);
-  if (cached_headers[slot] == nullptr) return false;
+  const int slot_index = find_slot(package_id);
+  if (slot_index < 0) return false;
+  const auto slot = static_cast<uint8_t>(slot_index);
   CapSlotHeader header = *cached_headers[slot];
-  header.installed = 1;
-  header.instance_aid_length = instance_aid_length;
-  std::memset(header.instance_aid, 0xff, sizeof(header.instance_aid));
-  std::memcpy(header.instance_aid, instance_aid, instance_aid_length);
-  header.applet_class_index = applet_class_index;
+  for (uint8_t other_slot = 0; other_slot < kSlotCount; ++other_slot) {
+    const auto *other_header = cached_headers[other_slot];
+    if (other_header == nullptr) continue;
+    for (uint8_t index = 0; index < other_header->instance_count; ++index) {
+      const auto &record = other_header->instances[index];
+      if ((record.instance_aid_length == instance_aid_length &&
+           std::memcmp(record.instance_aid, instance_aid,
+                       instance_aid_length) == 0) ||
+          (other_slot == slot &&
+           record.applet_aid_length == applet_aid_length &&
+           std::memcmp(record.applet_aid, applet_aid,
+                       applet_aid_length) == 0)) return false;
+    }
+  }
+  if (header.instance_count >= kMaxPackageInstances) return false;
+  auto &record = header.instances[header.instance_count++];
+  record.applet_aid_length = applet_aid_length;
+  record.instance_aid_length = instance_aid_length;
+  record.class_index = applet_class_index;
+  std::memset(record.applet_aid, 0xff, sizeof(record.applet_aid));
+  std::memset(record.instance_aid, 0xff, sizeof(record.instance_aid));
+  std::memcpy(record.applet_aid, applet_aid, applet_aid_length);
+  std::memcpy(record.instance_aid, instance_aid, instance_aid_length);
   return write_metadata(slot, header);
 }
 
-bool cap_store_package_instance(uint8_t package_id, uint8_t *aid,
-                                uint8_t &aid_length) noexcept {
-  aid_length = 0;
-  if (aid == nullptr || package_id < kFirstPackageId ||
-      package_id >= kFirstPackageId + kSlotCount) return false;
-  const uint8_t slot = static_cast<uint8_t>(package_id - kFirstPackageId);
-  if (cached_headers[slot] == nullptr || cached_headers[slot]->installed != 1 ||
-      cached_headers[slot]->instance_aid_length < 5 ||
-      cached_headers[slot]->instance_aid_length > 16) return false;
-  aid_length = cached_headers[slot]->instance_aid_length;
-  std::memcpy(aid, cached_headers[slot]->instance_aid, aid_length);
-  return true;
+bool cap_store_remove_package_instance(uint8_t package_id,
+                                       const uint8_t *instance_aid,
+                                       uint8_t instance_aid_length) noexcept {
+  if (!aid_valid(instance_aid, instance_aid_length)) return false;
+  const int slot_index = find_slot(package_id);
+  if (slot_index < 0) return false;
+  const auto slot = static_cast<uint8_t>(slot_index);
+  CapSlotHeader header = *cached_headers[slot];
+  for (uint8_t index = 0; index < header.instance_count; ++index) {
+    auto &record = header.instances[index];
+    if (record.instance_aid_length != instance_aid_length ||
+        std::memcmp(record.instance_aid, instance_aid,
+                    instance_aid_length) != 0) continue;
+    for (uint8_t move = index; move + 1 < header.instance_count; ++move)
+      header.instances[move] = header.instances[move + 1];
+    --header.instance_count;
+    std::memset(&header.instances[header.instance_count], 0xff,
+                sizeof(AppletInstanceRecord));
+    return write_metadata(slot, header);
+  }
+  return false;
 }
 
-bool cap_store_package_class_index(uint8_t package_id,
-                                   uint16_t &class_index) noexcept {
-  if (package_id < kFirstPackageId || package_id >= kFirstPackageId + kSlotCount)
+bool cap_store_find_instance(const uint8_t *instance_aid,
+                             uint8_t instance_aid_length,
+                             uint8_t &package_id, uint8_t *applet_aid,
+                             uint8_t &applet_aid_length,
+                             uint16_t &class_index) noexcept {
+  if (!aid_valid(instance_aid, instance_aid_length) || applet_aid == nullptr)
     return false;
-  const auto *header = cached_headers[package_id - kFirstPackageId];
-  if (header == nullptr || header->installed != 1 ||
-      header->applet_class_index == 0xffff) return false;
-  class_index = header->applet_class_index;
+  for (uint8_t slot = 0; slot < kSlotCount; ++slot) {
+    const auto *header = cached_headers[slot];
+    if (header == nullptr) continue;
+    for (uint8_t index = 0; index < header->instance_count; ++index) {
+      const auto &record = header->instances[index];
+      if (record.instance_aid_length != instance_aid_length ||
+          std::memcmp(record.instance_aid, instance_aid,
+                      instance_aid_length) != 0) continue;
+      package_id = header->package_id;
+      applet_aid_length = record.applet_aid_length;
+      std::memcpy(applet_aid, record.applet_aid, applet_aid_length);
+      class_index = record.class_index;
+      return true;
+    }
+  }
+  return false;
+}
+
+uint8_t cap_store_package_instance_count(uint8_t package_id) noexcept {
+  const int slot = find_slot(package_id);
+  return slot < 0 ? 0 : cached_headers[slot]->instance_count;
+}
+
+bool cap_store_package_instance_at(uint8_t package_id, uint8_t index,
+                                   uint8_t *applet_aid,
+                                   uint8_t &applet_aid_length,
+                                   uint8_t *instance_aid,
+                                   uint8_t &instance_aid_length,
+                                   uint16_t &class_index) noexcept {
+  const int slot = find_slot(package_id);
+  if (slot < 0 || applet_aid == nullptr || instance_aid == nullptr ||
+      index >= cached_headers[slot]->instance_count) return false;
+  const auto &record = cached_headers[slot]->instances[index];
+  applet_aid_length = record.applet_aid_length;
+  instance_aid_length = record.instance_aid_length;
+  class_index = record.class_index;
+  std::memcpy(applet_aid, record.applet_aid, applet_aid_length);
+  std::memcpy(instance_aid, record.instance_aid, instance_aid_length);
   return true;
 }
 
@@ -337,7 +431,8 @@ bool cap_store_delete() noexcept { return cap_store_delete_package(63); }
 
 bool cap_store_mark_installed(const uint8_t *aid, uint8_t aid_length,
                               uint16_t applet_class_index) noexcept {
-  return cap_store_mark_package_installed(63, aid, aid_length, applet_class_index);
+  return cap_store_mark_package_installed(63, aid, aid_length, aid, aid_length,
+                                          applet_class_index);
 }
 
 const uint8_t *cap_store_data(uint32_t *length) noexcept {
@@ -345,9 +440,19 @@ const uint8_t *cap_store_data(uint32_t *length) noexcept {
 }
 
 bool cap_store_instance_aid(uint8_t *aid, uint8_t &aid_length) noexcept {
-  return cap_store_package_instance(63, aid, aid_length);
+  uint8_t applet_aid[16]{};
+  uint8_t applet_aid_length = 0;
+  uint16_t class_index = 0xffff;
+  return cap_store_package_instance_at(63, 0, applet_aid, applet_aid_length, aid,
+                                       aid_length, class_index);
 }
 
 bool cap_store_applet_class_index(uint16_t &class_index) noexcept {
-  return cap_store_package_class_index(63, class_index);
+  uint8_t applet_aid[16]{};
+  uint8_t applet_aid_length = 0;
+  uint8_t instance_aid[16]{};
+  uint8_t instance_aid_length = 0;
+  return cap_store_package_instance_at(63, 0, applet_aid, applet_aid_length,
+                                       instance_aid, instance_aid_length,
+                                       class_index);
 }
