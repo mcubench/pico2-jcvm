@@ -6994,5 +6994,5 @@
 - Validation: `./tools/build arm` passed (`BUILD:PASS arch=arm`, `BUILD:PASS target=choupi`). The resulting firmware image ends at `0x100bb400`, below the slot region. RISC-V build and hardware flash were intentionally skipped under the ARM-only development scope and repository hardware build gate.
 - Result: The storage layer now supports up to eight independent CAP images with fixed package IDs 56–63. Loader and VM callers are not migrated yet; arbitrary package AIDs are not end-to-end supported by this step.
 - Decision: Continue by allocating non-conflicting dynamic package IDs and routing CAP parsing, loading, VM lookup, and deletion through the package-indexed APIs.
-- Commit: `pending`
+- Commit: `9c7b9ae`
 - Artifacts/logs: build output from `./tools/build arm`; no hardware log

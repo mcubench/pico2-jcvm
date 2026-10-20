@@ -19,8 +19,8 @@
   configured package AID, allocates package ID 20 at its call boundary, and
   persists only one applet instance. Next generalize package-ID allocation
   and loader validation, then integrate package-indexed lookup into the VM.
-- Current code step is pending its scoped commit; preserve all unrelated dirty
-  worktree changes.
+- Storage step committed as `9c7b9ae`; preserve all unrelated dirty worktree
+  changes.
 
 ## Deploy-folder Java Card API coverage attempt — blocked before CAP LOAD — 2026-10-20
 
