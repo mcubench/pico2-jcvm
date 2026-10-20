@@ -6588,5 +6588,5 @@
   injection.
 - Decision: Keep the lightweight harness focused; use a dependency-complete heap
   integration target if direct runtime-root failure injection becomes necessary.
-- Commit: pending
+- Commit: `7a96432`
 - Artifacts/logs: none.
