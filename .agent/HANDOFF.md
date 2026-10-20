@@ -1,6 +1,30 @@
 # Handoff
 
-## Latest priority task — refresh AC4 on physical Pico — 2026-10-20
+## Latest hardware result — AC5 physical power-cycle persistence — 2026-10-20
+
+- The user disconnected and reconnected the Pico after about five seconds.
+  Host access was restored through `sudo -n /usr/local/sbin/pico2-pcsc-reader`;
+  PC/SC identified the same reader, `Pico 2 CHOUPI CCID [JCAlgTest CCID]
+  (D92E743D5F640C0F) 00 00`.
+- `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup '<reader>'` passed.
+  GPPro confirmed the JCAlgTest package (`LOADED`) and applet (`SELECTABLE`);
+  SELECT, GETVERSION (`1.8.2_jc305`), and JCSystem info returned `9000`.
+- A fresh official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run completed with
+  status 0 after the power cycle. Comparison passed all 4,525 rows and declared
+  support identities: 15 `yes`, 4,510 `no`, zero other CHOUPI statuses, and no
+  missing or unexpected declared algorithms. Unsupported algorithms remain
+  expected. CSV SHA-256:
+  `b2b0d4d279ace0b2f663b4a79779afcce65c5fc9e0030768b635f4aac759ce8b`.
+- Evidence: probe `artifacts/logs/pico-powerup-persistence-20261020T132635Z.log`;
+  client `artifacts/logs/jcalgtest-alg-support-after-powercycle-20261020.log`;
+  serial `artifacts/logs/monitor-alg-support-after-powercycle-20261020.log`;
+  comparison `artifacts/logs/jcalgtest-support-compare-after-powercycle-20261020.log`;
+  CSV in `artifacts/results/physical-alg-support-after-powercycle-20261020/`.
+- AC5's persistence/reproducibility criterion is now complete. AC1/AC2 clean
+  install evidence and the plan's three-run clean-flash integration sequence
+  remain open; see `TODO.md`.
+
+## Previous checkpoint — refresh AC4 on physical Pico — 2026-10-20
 
 - Rebuilt ARM and RISC-V, then flashed the CHOUPI ARM image with the gated
   `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi`. Both architecture builds
@@ -38,11 +62,9 @@
 - The prioritized implementation and integration backlog is consolidated in
   root [`TODO.md`](../TODO.md). The historical checklist below its current
   section predates the latest successful physical static run.
-- Highest-priority open items are: rerun physical `ALG_SUPPORT_EXTENDED` after
-  OwnerPINX and compare against jCardSim (AC4); prove persisted Java applet
-  state across a true physical power-off/on (AC5); repeat the clean GP install
-  flow and complete AC1–AC5 three consecutive times; and close the known
-  CAP-slot/filesystem atomicity risk.
+- Highest-priority open items are: repeat the clean GP install flow and
+  complete AC1–AC5 three consecutive times; and close the known CAP-slot /
+  filesystem atomicity risk. AC4 and AC5 now have current physical evidence.
 - The latest physical `ALG_PERFORMANCE_STATIC` run passed at 2,262 transfers.
   Expected unsupported-algorithm results are not implementation bugs.
 

@@ -6837,3 +6837,35 @@
   (SHA-256 `ca2fed0d6e487d1e007ecc671a2b95893bc6d30aec1b87220cabe0a134e8e678`);
   `artifacts/logs/pico-powerup-persistence-20261020T131336Z.log` (SHA-256
   `02bbc6ef3f3dd35ed3febe5c27c9550a7fc96637c8692616e24f6542e45570f1`).
+
+## 2026-10-20 — Verify physical applet persistence after power cycle
+
+- Step/experiment: `physical-jcvm-power-cycle-after-reconnect`
+- Change: Recorded the post-disconnect physical evidence, marked AC5 complete in
+  `TODO.md`, refreshed `STATUS.md`, and updated `.agent/HANDOFF.md` with the
+  remaining integration work.
+- Validation: Restored authorized USB access and confirmed the Pico PC/SC reader
+  reappeared after the user's reported five-second disconnect/reconnect.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup '<reader>'` passed: package
+  and applet remained present, SELECT/GETVERSION/JCSystem returned `9000`, and
+  GETVERSION returned `1.8.2_jc305`. The official JCAlgTest 1.8.2
+  `ALG_SUPPORT_EXTENDED` client completed with exit status 0; the comparator
+  returned `COMPARE:PASS rows_statuses_and_declared_support`. Serial capture
+  completed. No code changed, so builds were not rerun.
+- Result: All 4,525 support rows matched the reference identities. CHOUPI
+  reported 15 `yes`, 4,510 `no`, and zero other statuses; all 15 declared
+  supported algorithms matched. CSV SHA-256
+  `b2b0d4d279ace0b2f663b4a79779afcce65c5fc9e0030768b635f4aac759ce8b`.
+- Decision: AC5 persistence and reproducibility are verified on the physical
+  Pico. Continue with AC1/AC2 clean-install evidence and the three-run
+  clean-flash integration sequence. Unsupported algorithms remain expected.
+- Commit: `<recorded in metadata follow-up>`
+- Artifacts/logs: probe `artifacts/logs/pico-powerup-persistence-20261020T132635Z.log`
+  (SHA-256 `96eb1ae56c155d4d1245586bc34bec3b437fb8f59b33e9e7337f06770086c4c0`);
+  client `artifacts/logs/jcalgtest-alg-support-after-powercycle-20261020.log`
+  (SHA-256 `591ab8e88c4ed8b1ac6abac45dae10a06dbd9942485c9fdbff76a6ac81b0f148`);
+  serial `artifacts/logs/monitor-alg-support-after-powercycle-20261020.log`
+  (SHA-256 `ffddea842eb48744e14687ef60a3f82c77d4ba35c4a2d361ec4214e67b421f64`);
+  comparison `artifacts/logs/jcalgtest-support-compare-after-powercycle-20261020.log`
+  (SHA-256 `945b10b7ea4c29aa50805bc94a4f88caf8169f6bb3de5f518d033cbc2fe1b882`);
+  CSV under `artifacts/results/physical-alg-support-after-powercycle-20261020/`.

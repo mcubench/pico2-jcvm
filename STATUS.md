@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-19
+Updated: 2026-10-20
 
 ## Summary
 
@@ -75,6 +75,11 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   same Card Recognition Data over protected GET DATA with `9000`.
 - SHA-256 has known-answer and repeated-call coverage. The CCID/PCSC interface
   and physical reader have passed bounded probes in earlier sessions.
+- After a physical five-second power disconnect/reconnect, the JCAlgTest
+  package and applet remained installed. SELECT, GETVERSION, and JCSystem
+  information succeeded, and the official 4,525-row `ALG_SUPPORT_EXTENDED`
+  sweep completed and matched the declared support list (15 supported
+  algorithms). Logs and CSV are recorded in the current section of `TODO.md`.
 - Heap tracing now has a guarded sweep path in firmware: it runs after APDU
   interpreter scopes return and only reclaims after a complete root walk.
   Persistent-tagged objects are conservatively pinned, global arrays are

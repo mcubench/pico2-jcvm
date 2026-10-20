@@ -23,13 +23,19 @@ claims to support them; implementing every algorithm is not a goal.
   `artifacts/logs/monitor-alg-support-ownerpinx-20261020.log`,
   `artifacts/logs/jcalgtest-support-compare-ownerpinx-20261020.log`, and
   `artifacts/results/physical-alg-support-ownerpinx-20261020/`.
-- [ ] **AC5: prove installed Java applet state survives a real power cycle.**
-  VPCD restores applet fields and persistent aliases across a fresh process
-  (7/7 checks). The physical `tools/test-pico-powerup` pre-cycle baseline now
-  confirms the JCAlgTest registry, SELECT, GETVERSION, and JCSystem responses,
-  but no true power-off/on test has been completed. After power removal,
-  confirm the applet remains installed, rerun this probe, and repeat the
-  supported-algorithms client to show the result is reproducible.
+- [x] **AC5: prove the installed applet survives a real power cycle.**
+  After a reported five-second disconnect/reconnect on 2026-10-20, the same
+  physical Pico reader returned. `tools/test-pico-powerup` confirmed the
+  JCAlgTest package and applet remained installed, SELECT and GETVERSION
+  (`1.8.2_jc305`) returned `9000`, and the JCSystem info APDU returned `9000`.
+  A fresh official `ALG_SUPPORT_EXTENDED` run completed all 4,525 rows and
+  passed comparison against the jCardSim reference: 15 supported, 4,510
+  unsupported, no other CHOUPI statuses, and all 15 declared algorithms
+  matched. Evidence: `artifacts/logs/pico-powerup-persistence-20261020T132635Z.log`,
+  `artifacts/logs/jcalgtest-alg-support-after-powercycle-20261020.log`,
+  `artifacts/logs/monitor-alg-support-after-powercycle-20261020.log`,
+  `artifacts/logs/jcalgtest-support-compare-after-powercycle-20261020.log`,
+  and `artifacts/results/physical-alg-support-after-powercycle-20261020/`.
 - [ ] **AC1 and AC2: repeat the clean GlobalPlatform install flow.** Confirm
   `gp --list`, install the supplied JCAlgTest 1.8.2 JC305 CAP with
   `gp --install`, and select it on current firmware. Linux has prior positive
