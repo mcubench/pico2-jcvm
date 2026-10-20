@@ -1447,6 +1447,33 @@ fix.
 - **Limit:** This improves conservative root coverage but does not by itself
   prove that every native handle is represented. No heap slots are reclaimed.
 
+### Follow-up: reclaim unreachable persistent objects safely — 2026-10-20
+
+- **Finding:** Pinning every loaded persistent-tagged object caused the
+  physical `ALG_PERFORMANCE_STATIC` run to grow to 1,082 arrays and 314
+  instances, then panic with out-of-memory near transfer 798. GC summaries
+  showed zero static roots and almost every loaded object pinned.
+- **Correction:** Persistent flash records survive independently of RAM
+  objects, so GC now marks from current context/runtime roots and reachable
+  fields only. If a previously unreferenced object is later accessed through
+  a lazy static field restore, its tag can reconstruct it. Mark state is stored
+  on the heap object itself so each collection does not allocate temporary
+  mark bitmaps while the heap grows.
+- **Validation:** VPCD persistence test passed 3/3. The official JCAlgTest
+  1.8.2 physical static suite completed at 2,262 transfers with no panic,
+  invalid references, traversal failures, or errors other than expected
+  `NO_SUCH_ALGORITHM` (1,772) and `CANT_BE_MEASURED` (95). GC settled at
+  83 array slots and 28 instance slots, with 33 arrays and 25 instances
+  reachable; an early collection reclaimed 50 arrays. SHA-256 measurements
+  were 3.10 ms/op for 256-byte `doFinal`, 3.34 ms/op for `update`, and
+  6.11 ms/op for `reset`.
+- **Status:** Viable for tested workload and persistence shapes. Continue
+  checking static reference roots and object aliasing across more applets; the
+  result does not prove collector root completeness for all Java Card apps.
+- **Evidence:** `artifacts/logs/jcalgtest-static-gc-root-fix-20261020.log`,
+  `artifacts/logs/monitor-static-gc-root-fix-20261020.log`, and
+  `artifacts/results/physical-perf-static-gc-root-fix-20261020/`.
+
 ### Repeated-walk validation
 
 - The PC diagnostic accepts a repeat count from `PICO2_HEAP_TRACE`, clamped

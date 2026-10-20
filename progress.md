@@ -6727,3 +6727,13 @@
 - Commit: `<recorded in follow-up progress commit>`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261020T063106Z.log`;
   `artifacts/logs/pico-powerup-persistence-20261020T063339Z.log`.
+
+## 2026-10-20 — Reclaim unreachable persistent heap objects
+
+- Step/experiment: `gc-unpin-persistent-heap-objects`
+- Change: Removed blanket GC roots for every loaded persistent-tagged object; collection now follows current context/runtime roots and reachable fields while leaving persistent flash records available for later lazy restoration. Moved marks to heap objects to avoid bitmap allocations during collection. Added opt-in GC summaries for diagnosis.
+- Validation: `./tools/test-vpcd-persistence` passed 3/3; `./tools/build arm` and `./tools/build riscv` passed; physical `./tools/cycle choupi` passed before and after diagnostics were disabled; official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` completed on the Pico; final named-reader SELECT/GETVERSION/JCSystem probe passed.
+- Result: Full static suite ended at 2,262 transfers with no panic, invalid refs, or edge failures. GC stabilized at 83 array slots / 28 instance slots (33 / 25 reachable); one collection reclaimed 50 arrays. Expected client totals: 1,772 `NO_SUCH_ALGORITHM`, 95 `CANT_BE_MEASURED`. SHA-256 256-byte measurements: `doFinal` 3.10 ms/op, `update` 3.34 ms/op, `reset` 6.11 ms/op. Final serial had `TEST:PASS choupi_runtime`; one `WATCHDOG_RECOVERY cause=other` diagnostic is the known retained scratch marker on ordinary reboot.
+- Decision: Use reachability-based reclamation for this workload; continue auditing static-root and alias coverage for other applets.
+- Commit: `<recorded in follow-up progress commit>`
+- Artifacts/logs: `artifacts/logs/jcalgtest-static-gc-root-fix-20261020.log`; `artifacts/logs/monitor-static-gc-root-fix-20261020.log`; `artifacts/logs/cycle-choupi-20261020T082304Z.log`; `artifacts/logs/cycle-choupi-20261020T085457Z.log`; `artifacts/results/physical-perf-static-gc-root-fix-20261020/`.

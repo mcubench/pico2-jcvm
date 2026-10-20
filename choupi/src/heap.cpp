@@ -31,7 +31,7 @@
 #include "jc_types/jc_array.hpp"
 
 #include <cstring>
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
 #include <cstdio>
 #endif
 
@@ -428,31 +428,11 @@ void Heap::visitRootReferences(const ReferenceVisitor visitor,
     }
   }
 
-  // Persisted static fields are deserialized lazily, so an object loaded by
-  // another reference may not yet be represented in static_reference_roots.
-  // Conservatively pin every loaded persistent object and array until the
-  // runtime can enumerate persisted roots without loading them on demand.
-  uint16_t offset = 0;
-  for (const auto &array : this->arrays) {
-    ++offset;
-    if (array && array->hasPersistentTag()) {
-      jref_t reference;
-      reference.setAsArray(true);
-      reference.setOffset(offset);
-      visitor(reference, visitor_context);
-    }
-  }
-
-  offset = 0;
-  for (const auto &instance : this->instances) {
-    ++offset;
-    if (instance && instance->hasPersistentTag()) {
-      jref_t reference;
-      reference.setAsArray(false);
-      reference.setOffset(offset);
-      visitor(reference, visitor_context);
-    }
-  }
+  // Persistent flash records outlive their in-memory objects. Do not pin every
+  // loaded tagged object: trace only references reachable from the current
+  // context/runtime and loaded object fields. If an unreferenced persistent
+  // object is restored later through a still-unread static field, its stored
+  // tag allows that field read to restore it again.
 }
 
 bool Heap::getArrayReference(const JC_Array *array, jref_t &reference) const {
@@ -590,35 +570,30 @@ void Heap::visitChildReferences(const JC_Instance &instance,
 }
 
 Heap::ReachabilitySummary Heap::traceAndMark(
-    const RootReferenceEnumerator enumerate_roots, void *root_context,
-    std::vector<uint8_t> &marked_arrays,
-    std::vector<uint8_t> &marked_instances) {
+    const RootReferenceEnumerator enumerate_roots, void *root_context) {
   ReachabilitySummary summary;
-  marked_arrays.assign(this->arrays.size(), 0);
-  marked_instances.assign(this->instances.size(), 0);
-  std::size_t slot_index = 0;
-  for (const auto &array : this->arrays) {
-    if (!array) {
-      marked_arrays[slot_index] = 3;
+  for (auto &array : this->arrays) {
+    if (array) {
+      array->heap_mark = 0;
     }
-    ++slot_index;
   }
-  slot_index = 0;
-  for (const auto &instance : this->instances) {
-    if (!instance) {
-      marked_instances[slot_index] = 3;
+  for (auto &instance : this->instances) {
+    if (instance) {
+      instance->heap_mark = 0;
     }
-    ++slot_index;
+  }
+  summary.static_roots = static_cast<uint32_t>(this->static_reference_roots.size());
+  summary.runtime_roots = static_cast<uint32_t>(
+      this->runtime_exception_roots.size() + 2);
+  for (const auto &array : this->arrays) {
+    summary.persistent_tagged_arrays +=
+        array && array->hasPersistentTag() ? 1u : 0u;
+  }
+  for (const auto &instance : this->instances) {
+    summary.persistent_tagged_instances +=
+        instance && instance->hasPersistentTag() ? 1u : 0u;
   }
   bool found_new_reference = false;
-  const auto slot_is_live_at = [](const auto &slots,
-                                  const std::size_t slot_index) {
-    auto slot = slots.cbegin();
-    for (std::size_t index = 0; index < slot_index; ++index) {
-      ++slot;
-    }
-    return slot != slots.cend() && static_cast<bool>(*slot);
-  };
   const auto mark_reference = [&](const jref_t reference) {
     // Global-array handles use the same reference bit as local arrays, but
     // their offset belongs to the runtime-wide global heap. Never interpret
@@ -627,39 +602,36 @@ Heap::ReachabilitySummary Heap::traceAndMark(
       return;
     }
     const uint16_t offset = reference.getOffset();
-    auto &marks = reference.isArray() ? marked_arrays : marked_instances;
-    const std::size_t slot_count =
-        reference.isArray() ? this->arrays.size() : this->instances.size();
+    const std::size_t slot_count = reference.isArray()
+                                       ? this->arrays.size()
+                                       : this->instances.size();
     if (offset == 0 || offset > slot_count) {
       ++summary.invalid_references;
       summary.complete = false;
       return;
     }
-    const std::size_t mark_index = offset - 1;
-    // Persistent reference reads may lazily restore additional objects while
-    // tracing. Grow the bitmap before indexing a handle discovered that way.
-    if (marks.size() < slot_count) {
-      marks.resize(slot_count, 0);
-    }
-    if (marks[mark_index] == 3) {
-      // Allocation can reuse a previously empty stable handle slot during a
-      // lazy restore. Refresh that rare slot before treating the reference as
-      // invalid.
-      const bool slot_is_live = reference.isArray()
-                                    ? slot_is_live_at(this->arrays, mark_index)
-                                    : slot_is_live_at(this->instances,
-                                                      mark_index);
-      if (!slot_is_live) {
-        ++summary.invalid_references;
-        summary.complete = false;
-        return;
+    JC_Object *object = nullptr;
+    if (reference.isArray()) {
+      const auto &array = this->arrays.at(static_cast<uint16_t>(offset - 1));
+      if (array) {
+        object = array.get();
       }
-      marks[mark_index] = 0;
+    } else {
+      const auto &instance =
+          this->instances.at(static_cast<uint16_t>(offset - 1));
+      if (instance) {
+        object = instance.get();
+      }
     }
-    if (marks[mark_index] != 0) {
+    if (!object) {
+      ++summary.invalid_references;
+      summary.complete = false;
       return;
     }
-    marks[mark_index] = 1;
+    if (object->heap_mark != 0) {
+      return;
+    }
+    object->heap_mark = 1;
     found_new_reference = true;
   };
 
@@ -671,27 +643,25 @@ Heap::ReachabilitySummary Heap::traceAndMark(
     (*context.mark_fn)(child);
   };
 
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
   uint32_t root_count = 0;
-#ifndef PC_VERSION
   std::printf("CHOUPI:HEAP_GC roots_begin arrays=%u instances=%u\r\n",
-              static_cast<unsigned>(marked_arrays.size()),
-              static_cast<unsigned>(marked_instances.size()));
+              static_cast<unsigned>(this->arrays.size()),
+              static_cast<unsigned>(this->instances.size()));
   std::fflush(stdout);
 #endif
   enumerate_roots(visit_child, &visitor_context, root_context);
-  for (const uint8_t mark : marked_arrays) {
-    root_count += mark == 1 ? 1u : 0u;
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
+  for (const auto &array : this->arrays) {
+    root_count += array && array->heap_mark == 1 ? 1u : 0u;
   }
-  for (const uint8_t mark : marked_instances) {
-    root_count += mark == 1 ? 1u : 0u;
+  for (const auto &instance : this->instances) {
+    root_count += instance && instance->heap_mark == 1 ? 1u : 0u;
   }
-#ifndef PC_VERSION
   std::printf("CHOUPI:HEAP_GC roots_end pending=%lu\r\n",
               static_cast<unsigned long>(root_count));
   std::printf("CHOUPI:HEAP_GC loop_begin array_slots=%lu first_mark=%u\r\n",
-              static_cast<unsigned long>(marked_arrays.size()),
-              marked_arrays.empty() ? 0u
-                                    : static_cast<unsigned>(marked_arrays[0]));
+              static_cast<unsigned long>(this->arrays.size()), 0u);
   std::fflush(stdout);
 #endif
 
@@ -700,17 +670,18 @@ Heap::ReachabilitySummary Heap::traceAndMark(
   // heap allocations for a work queue and a per-object child buffer.
   do {
     found_new_reference = false;
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
     uint32_t scanned_arrays = 0;
-    const std::size_t array_scan_count = marked_arrays.size();
+#endif
     auto array = this->arrays.cbegin();
-    for (std::size_t index = 0; index < array_scan_count;
-         ++index, ++array) {
-      if (marked_arrays[index] != 1) {
+    const std::size_t array_scan_count = this->arrays.size();
+    for (std::size_t index = 0; index < array_scan_count; ++index, ++array) {
+      if (!*array || (*array)->heap_mark != 1) {
         continue;
       }
-      marked_arrays[index] = 2;
+      (*array)->heap_mark = 2;
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
       ++scanned_arrays;
-#ifndef PC_VERSION
       if (scanned_arrays == 1 || (scanned_arrays % 16) == 0) {
         std::printf("CHOUPI:HEAP_GC arrays_progress scanned=%lu slot=%lu\r\n",
                     static_cast<unsigned long>(scanned_arrays),
@@ -727,22 +698,24 @@ Heap::ReachabilitySummary Heap::traceAndMark(
         summary.complete = false;
       }
     }
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
     std::printf("CHOUPI:HEAP_GC arrays_end scanned=%lu\r\n",
                 static_cast<unsigned long>(scanned_arrays));
     std::fflush(stdout);
 #endif
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
     uint32_t scanned_instances = 0;
-    const std::size_t instance_scan_count = marked_instances.size();
+#endif
     auto instance = this->instances.cbegin();
+    const std::size_t instance_scan_count = this->instances.size();
     for (std::size_t index = 0; index < instance_scan_count;
          ++index, ++instance) {
-      if (marked_instances[index] != 1) {
+      if (!*instance || (*instance)->heap_mark != 1) {
         continue;
       }
-      marked_instances[index] = 2;
+      (*instance)->heap_mark = 2;
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
       ++scanned_instances;
-#ifndef PC_VERSION
       if (scanned_instances == 1 || (scanned_instances % 16) == 0) {
         std::printf(
             "CHOUPI:HEAP_GC instances_progress scanned=%lu slot=%lu\r\n",
@@ -761,7 +734,7 @@ Heap::ReachabilitySummary Heap::traceAndMark(
         summary.complete = false;
       }
     }
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
     std::printf("CHOUPI:HEAP_GC instances_end scanned=%lu\r\n",
                 static_cast<unsigned long>(scanned_instances));
     std::fflush(stdout);
@@ -770,22 +743,24 @@ Heap::ReachabilitySummary Heap::traceAndMark(
 
   summary.arrays_total = static_cast<uint32_t>(this->arrays.size());
   summary.instances_total = static_cast<uint32_t>(this->instances.size());
-  for (const uint8_t mark : marked_arrays) {
-    summary.arrays_reachable += mark == 1 || mark == 2 ? 1u : 0u;
+  for (const auto &array : this->arrays) {
+    summary.arrays_reachable +=
+        array && (array->heap_mark == 1 || array->heap_mark == 2) ? 1u : 0u;
   }
-  for (const uint8_t mark : marked_instances) {
-    summary.instances_reachable += mark == 1 || mark == 2 ? 1u : 0u;
+  for (const auto &instance : this->instances) {
+    summary.instances_reachable += instance &&
+                                           (instance->heap_mark == 1 ||
+                                            instance->heap_mark == 2)
+                                       ? 1u
+                                       : 0u;
   }
   return summary;
 }
 
 Heap::ReachabilitySummary Heap::traceReachableFrom(
     const std::vector<jref_t> &roots) {
-  std::vector<uint8_t> marked_arrays;
-  std::vector<uint8_t> marked_instances;
   VectorRootContext root_context{&roots};
-  return this->traceAndMark(enumerateVectorRoots, &root_context,
-                            marked_arrays, marked_instances);
+  return this->traceAndMark(enumerateVectorRoots, &root_context);
 }
 
 Heap::ReachabilitySummary Heap::collectUnreachableFrom(
@@ -796,32 +771,24 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
     return summary;
   }
 
-  std::vector<uint8_t> marked_arrays;
-  std::vector<uint8_t> marked_instances;
   VectorRootContext root_context{&roots};
-  summary = this->traceAndMark(enumerateVectorRoots, &root_context,
-                               marked_arrays, marked_instances);
+  summary = this->traceAndMark(enumerateVectorRoots, &root_context);
   if (!summary.complete) {
     return summary;
   }
 
-  std::size_t index = 0;
   for (auto &array : this->arrays) {
-    if (array && (index >= marked_arrays.size() || marked_arrays[index] == 0)) {
+    if (array && array->heap_mark == 0) {
       array.reset();
       ++summary.arrays_reclaimed;
     }
-    ++index;
   }
 
-  index = 0;
   for (auto &instance : this->instances) {
-    if (instance &&
-        (index >= marked_instances.size() || marked_instances[index] == 0)) {
+    if (instance && instance->heap_mark == 0) {
       instance.reset();
       ++summary.instances_reclaimed;
     }
-    ++index;
   }
   return summary;
 }
@@ -834,31 +801,23 @@ Heap::ReachabilitySummary Heap::collectUnreachableFrom(
     return summary;
   }
 
-  std::vector<uint8_t> marked_arrays;
-  std::vector<uint8_t> marked_instances;
-  summary = this->traceAndMark(enumerate_roots, root_context, marked_arrays,
-                               marked_instances);
+  summary = this->traceAndMark(enumerate_roots, root_context);
   if (!summary.complete) {
     return summary;
   }
 
-  std::size_t index = 0;
   for (auto &array : this->arrays) {
-    if (array && (index >= marked_arrays.size() || marked_arrays[index] == 0)) {
+    if (array && array->heap_mark == 0) {
       array.reset();
       ++summary.arrays_reclaimed;
     }
-    ++index;
   }
 
-  index = 0;
   for (auto &instance : this->instances) {
-    if (instance &&
-        (index >= marked_instances.size() || marked_instances[index] == 0)) {
+    if (instance && instance->heap_mark == 0) {
       instance.reset();
       ++summary.instances_reclaimed;
     }
-    ++index;
   }
   return summary;
 }

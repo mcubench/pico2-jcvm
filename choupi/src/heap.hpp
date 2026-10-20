@@ -73,6 +73,10 @@ public:
     uint32_t instances_reclaimed = 0;
     uint32_t invalid_references = 0;
     uint32_t edge_load_failures = 0;
+    uint32_t static_roots = 0;
+    uint32_t runtime_roots = 0;
+    uint32_t persistent_tagged_arrays = 0;
+    uint32_t persistent_tagged_instances = 0;
     bool complete = true;
   };
 
@@ -96,9 +100,7 @@ private:
 
   /// Mark roots and typed children into stable-slot bitmaps.
   ReachabilitySummary traceAndMark(
-      RootReferenceEnumerator enumerate_roots, void *root_context,
-      std::vector<uint8_t> &marked_arrays,
-      std::vector<uint8_t> &marked_instances);
+      RootReferenceEnumerator enumerate_roots, void *root_context);
 
   /// Visit children on an already-resolved stable heap slot.
   void visitChildReferences(JC_Array &array,

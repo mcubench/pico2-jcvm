@@ -5814,3 +5814,40 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Commits: API `814d409`; root implementation/tests/logs `c098a86`.
 - Physical power-up validation was retried after reinsertion, but GPPro and `pcsc_scan -r` still listed only Virtual PCD readers. See `artifacts/logs/pico-powerup-persistence-20261019T102428Z.log`; no physical APDU ran.
 - Next: resume the remaining Java Card API/runtime audit in TODO.md, and retry power-cycle persistence when the Pico is visible through PC/SC.
+
+
+## Latest continuation — stop pinning unreachable persistent heap objects — 2026-10-20
+
+- The prior conservative policy that treated every loaded persistent-tagged
+  instance/array as a GC root caused the physical JCAlgTest static suite to
+  panic with out-of-memory around transfer 798. Debug summaries showed zero
+  static roots and growth to 1,082 arrays / 314 instances, most tagged and
+  pinned.
+- Changed root enumeration to follow current context/runtime handles and
+  reachable object fields while leaving flash records intact. The collector
+  can now reclaim RAM objects whose persistent records remain stored for later
+  lazy restoration. Mark bits live on each heap object, avoiding temporary
+  mark bitmap allocations during collection. VPCD persistence test passed 3/3.
+- Official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` completed on the physical
+  Pico at 2,262 transfers. It reported only expected `NO_SUCH_ALGORITHM`
+  (1,772) and `CANT_BE_MEASURED` (95), no panic or GC traversal errors. Heap
+  counts stayed at 83 array slots / 28 instance slots; live counts were 33 / 25.
+  SHA-256 256-byte results: `doFinal` 3.10 ms/op, `update` 3.34 ms/op,
+  `reset` 6.11 ms/op.
+- Both builds passed. The diagnostic build flashed and passed runtime; then
+  diagnostics were disabled, both targets rebuilt, and normal firmware flashed
+  and runtime-tested. Final named-reader probe passed SELECT, GETVERSION
+  `1.8.2_jc305`, and JCSystem info. The BOOTSEL report did not match the
+  observed ID (`2e8a:0009` CHOUPI firmware); the reader was visible after ACL
+  refresh.
+- Serial showed one retained `WATCHDOG_RECOVERY cause=other` marker after the
+  final flash, with normal runtime tests passing. This is the known stale
+  scratch diagnostic on an ordinary reboot, not evidence of a watchdog reset.
+- Evidence: `artifacts/logs/jcalgtest-static-gc-root-fix-20261020.log`,
+  `artifacts/logs/monitor-static-gc-root-fix-20261020.log`,
+  `artifacts/logs/cycle-choupi-20261020T082304Z.log`,
+  `artifacts/logs/cycle-choupi-20261020T085457Z.log`, and
+  `artifacts/results/physical-perf-static-gc-root-fix-20261020/`.
+- Next: continue the Java Card API/runtime audit. Revisit completeness of
+  static-reference roots and persistence aliases before extending reclamation
+  to untested object graph shapes.
