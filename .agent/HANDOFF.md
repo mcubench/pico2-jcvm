@@ -6110,3 +6110,22 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: implement and validate Core `Util.arrayCopy` overlap behavior on ARM,
   then fix OwnerPIN. Preserve the current card packages and result CSVs until
   deletion behavior is understood.
+
+## Physical Core overlap fix — 2026-10-21
+
+- Changed `choupi/javacard-sdk/javacard-api/src/javacard/framework/Util.java`
+  to copy backwards for same-array overlapping ranges where the destination
+  begins inside and after the source. This also covers `arrayCopyNonAtomic`.
+- Validation: `./tools/build arm` passed; the physical Pico 2 flash passed
+  after CDC BOOTSEL recovery. Bounded serial output repeatedly reported
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. Deploy Core API
+  3.0.5 ran 291 calls on reader index 3. Both overlap rows now report OK.
+- Results are archived at
+  `artifacts/results/deploy/pico2-overlap-retest-20261021.csv` and
+  `pico2-overlap-retest-client-20261021.log`.
+- Remaining findings include OwnerPIN runtime/SW failures and a wrong
+  Shareable interface result. Some Ext scenario rows say `APPLET_NOT_INSTALLED`
+  (`6999`); the normal Core applet test completed.
+- Next: isolate OwnerPIN's first constructor failure, fix it, and rerun the
+  physical Core API client. Then continue deploy areas and investigate package
+  deletion `6581` before relying on runner cleanup.

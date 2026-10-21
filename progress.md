@@ -7067,3 +7067,27 @@
   `pico2-javacardx-20261021.csv`, `pico2-javacardxint-20261021.csv`, and
   `pico2-service-biometry-20261021.csv` under `artifacts/results/deploy/`.
   Physical serial log: `/tmp/pico2-deploy-core-monitor-selectfix.log`.
+
+## 2026-10-21 — Fix physical Util overlapping copies
+
+- Step/experiment: `physical-core-util-overlap`
+- Change: Updated the Java Card SDK `Util.arrayCopyNonAtomic` implementation
+  to copy backwards when source and destination are the same array and the
+  destination overlaps at a higher offset. `arrayCopy` delegates to this
+  implementation.
+- Validation: `./tools/build arm` passed. Flashed the physical Pico 2 with
+  `PICO2_HOST_USB_ACCESS=1 ./tools/flash build/arm/pico2_choupi.uf2`; the first
+  reset-interface attempt failed, then the wrapper recovered through CDC
+  BOOTSEL and flashing passed. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor
+  --seconds 18` passed repeated runtime checks (summary pass=1 fail=0).
+  Deploy Core API 3.0.5 completed 291 calls on reader index 3; both
+  overlapping-range copy calls returned the expected value and effect.
+- Result: Same-array overlapping copies pass on hardware. This client run
+  still reports OwnerPIN runtime/SW failures and a wrong Shareable interface
+  result; some Ext scenario calls report APPLET_NOT_INSTALLED.
+- Decision: Continue with the OwnerPIN constructor failure, then rerun the
+  complete deploy stages and investigate persistent package DELETE `6581`.
+- Commit: recorded in the next metadata follow-up.
+- Artifacts/logs: `artifacts/results/deploy/pico2-overlap-retest-20261021.csv`,
+  `artifacts/results/deploy/pico2-overlap-retest-client-20261021.log`; bounded
+  monitor output was captured during this session but not archived separately.

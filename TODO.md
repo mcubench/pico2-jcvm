@@ -97,11 +97,13 @@ claims to support them; implementing every algorithm is not a goal.
   INSTALL, Biometry fails at LOAD, and cleanup of populated applets returns
   `6581`. Next fix Core correctness, cleanup, then rerun stages with the fixed
   deploy runner. See `.agent/QKB.md` and the 2026-10-21 deploy result CSVs.
-- [ ] **Fix Core API failures found by physical deploy coverage.** `Util.arrayCopy`
-  and `arrayCopyNonAtomic` fail overlapping-range cases; `OwnerPIN` methods
-  produce runtime exceptions/SW `6F00`; `Shareable` lookup with the test
-  sub-interface returns the wrong result. Preserve the 3.0.5 API test artifacts
-  under `artifacts/results/deploy/` and rerun Core after each fix.
+- [ ] **Fix remaining Core API failures found by physical deploy coverage.**
+  Same-array overlapping-range behavior in `Util.arrayCopy` and
+  `arrayCopyNonAtomic` now passes on the physical Pico after the SDK fix.
+  `OwnerPIN` methods still produce runtime exceptions/SW `6F00`; `Shareable`
+  lookup with the test sub-interface returns the wrong result. Preserve the
+  3.0.5 API artifacts under `artifacts/results/deploy/` and rerun Core after
+  each fix.
 - [ ] **Fix package deletion after applet tests.** GPPro DELETE returns `6581`
   for Core and Service packages after persistent objects have been created,
   while deleting packages with no installed instance succeeds. Determine which

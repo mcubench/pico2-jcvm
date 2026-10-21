@@ -1,5 +1,31 @@
 # Project issue knowledge base
 
+## Util same-array overlapping copy — 2026-10-21
+
+- **Symptom/cause:** Physical API coverage found that byte-array `Util.arrayCopy`
+  and `arrayCopyNonAtomic` copied forward even when the destination overlapped
+  the source at a higher offset. Destination writes overwrote bytes that had
+  not yet been read.
+- **Viable solution:** Use reverse copy order for the same-array case when
+  `destOff > srcOff` and the ranges overlap; retain forward order otherwise.
+  This gives the specified temporary-array behavior without allocating a
+  second array.
+- **Validation:** Flashed ARM firmware to the physical Pico 2, captured
+  `TEST:PASS choupi_runtime`, then ran the deploy Core API 3.0.5 client through
+  physical reader index 3. Both overlapping-range rows report `OK` with the
+  expected returned offset and effect. Evidence:
+  `artifacts/results/deploy/pico2-overlap-retest-20261021.csv`.
+
+## OwnerPIN physical runtime failures — 2026-10-21
+
+- **Symptom:** The deploy Core API client reports OwnerPIN construction,
+  update, check, reset, and inherited PIN calls as `EXC_RUNTIME` or SW `6F00`.
+  The failures span direct and interface dispatch. OwnerPINx-specific methods
+  passed in the earlier Core run, so the cause is not yet isolated.
+- **Current state:** Investigate bytecode dispatch, object fields, array
+  allocation, and exception handling from the first failing constructor before
+  choosing a fix. Do not treat this as expected unsupported behavior.
+
 ## CAP INSTALL and SELECT must resolve the package by the request/instance AID — 2026-10-21
 
 - **Symptom/cause:** GPPro can power-cycle between LOAD and INSTALL. On power-up,
