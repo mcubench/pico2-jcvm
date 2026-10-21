@@ -1,5 +1,25 @@
 # Handoff
 
+## Current functionality review update — 2026-10-21
+
+- Added `review_20261021.md`, comparing the 2026-10-19 review with current
+  source, progress evidence, and six offline test wrappers. Distinct instance
+  AID restore and SELECT `61xx` selection retention are implemented, with
+  firmware/end-to-end coverage still open. CAP/filesystem transaction recovery
+  and SCP03 production key provisioning remain unfinished.
+- **New source-confirmed blocker:** CAP3 slots occupy flash
+  `0x100000..0x188000`, overlapping both filesystem snapshot slots
+  `0x100000..0x180000`. The two stores can erase each other's records. The
+  current 2 MiB flash budget cannot fit the declared CAP and FS capacities
+  above a reserved 1 MiB firmware region. Do not use the current layout for
+  further physical CAP/FS writes; fix and validate the shared map and plan
+  migration first. See the new QKB entry and review for exact evidence.
+- The review changed documentation only. Offline VPCD/session, short-APDU,
+  GP DELETE/registry, persistent-transaction, and filesystem-overlay wrappers
+  exited 0. No build gate, flash, USB/PCSC, or physical APDU ran. Existing
+  uncommitted source work, including unresolved Shareable dispatch, remains
+  untouched.
+
 ## Current task — deploy Core Shareable dispatch handoff — 2026-10-21
 
 - Work was requested to test the deploy API applets on the physical Pico and

@@ -1,5 +1,25 @@
 # Project issue knowledge base
 
+## CAP3 package slots overlap RP2350 filesystem snapshots — 2026-10-21
+
+- **Symptom/risk:** Current source allocates CAP slots over the same flash
+  offsets as both filesystem snapshots. CAP erase/program and filesystem sync
+  can destroy each other's records; physical corruption has not been observed
+  or reproduced in this review.
+- **Cause:** `src/cap_store.cpp` uses eight `0x11000` slots starting at
+  `0x100000`, ending at `0x188000`. `src/choupi_pico2.cpp` still uses snapshot
+  slots `0x100000..0x140000` and `0x140000..0x180000`. Its non-overlap assert
+  compares only with the old CAP boundary `0x1c0000`. Configured flash is
+  2 MiB; the existing firmware reservation plus full CAP and FS capacities
+  exceed it by `0x8000` even with perfect packing.
+- **Status/solution:** No fix yet. Before further physical CAP/FS writes,
+  redesign the shared flash map to fit the device, add pairwise compile-time
+  overlap checks, migrate existing data, and test CAP plus FS writes against
+  one fake flash image. `tools/test-rp2350-fs-overlay` stubs CAP initialization
+  and its passing filesystem-only power-cut suite cannot validate this map.
+- **Evidence:** Source inspection and address arithmetic in
+  `review_20261021.md`; overlap is also present in commit `9c7b9ae`.
+
 ## Imported interface resolution can contaminate later applet interface lookups — 2026-10-21
 
 - **Symptom:** Deploy Core 3.0.5 Shareable probe APDU `B083210000` returns

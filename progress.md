@@ -7404,3 +7404,28 @@
 - Decision: Resume from the unresolved Shareable APDU diagnosis recorded above.
 - Commit: `pending`.
 - Artifacts/logs: none.
+
+## 2026-10-21 — Reassess functionality review against current source
+
+- Step/experiment: `functionality-review-update-20261021`
+- Change: Added `review_20261021.md`, updated handoff and QKB, and identified
+  overlap between the new CAP3 slot region and both RP2350 filesystem snapshots.
+  Reassessed the four findings from `review_20261019.md` against current code
+  and intervening progress records. No source files changed.
+- Validation: `./tools/test-vpcd-session` passed 18/18;
+  `./tools/test-short-apdu`, `./tools/test-persistent-transaction`, and
+  `./tools/test-rp2350-fs-overlay` exited 0, the latter reporting
+  `TEST:SUMMARY fail=0`; `./tools/test-gp-delete` passed 26/26 and
+  `./tools/test-gp-registry` passed 47/47. Source address arithmetic confirmed
+  CAP `0x100000..0x188000` overlaps FS `0x100000..0x180000` by `0x80000`.
+  Builds, flash, USB/PCSC, and physical APDUs were intentionally skipped for
+  this documentation-only review.
+- Result: AID restore and SELECT continuation fixes exist, with remaining
+  targeted coverage gaps. Cross-store recovery and SCP03 key provisioning
+  remain open. The flash-map overlap is a new source-confirmed blocker; no
+  physical corruption was measured or claimed.
+- Decision: Correct and migrate the flash layout before further physical
+  CAP/FS writes; then test combined CAP/filesystem recovery and finish focused
+  AID/SELECT regressions. Preserve all pre-existing uncommitted source work.
+- Commit: this documentation commit (`git log -1 --format=%H -- review_20261021.md`).
+- Artifacts/logs: `review_20261021.md`; no new runtime logs archived.
