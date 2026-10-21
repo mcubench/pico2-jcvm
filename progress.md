@@ -7574,5 +7574,6 @@
 - Validation: Reviewed `.agent/SESSION_CONTINUITY.md`, current handoff, relevant diffs, and existing progress records. ARM build had passed before PC-only trace instrumentation; `./tools/build-pc`, Python syntax check, and shell syntax check passed. No new tests or hardware commands were run for this documentation-only step.
 - Result: The physical Core runner previously completed 291 calls (267 OK, 19 allowed unsupported, 3 status errors, 2 runtime exceptions); VPCD reproduces Shareable probe response `049000`. Latest working tree includes temporary PC-only traces and extensive unrelated dirty files.
 - Decision: Stop here as requested. Next session should resolve package 17 PC 367 / thrown package 15 class 72, remove temporary traces, and respect the ARM-only constraint and flash build gate.
-- Commit: pending; repository has extensive unrelated dirty work, so only handoff and this progress record should be included if committing.
+- Commit: `0e8f47f` (handoff and progress record only).
 - Artifacts/logs: listed in `.agent/HANDOFF.md`; none created by this documentation step.
+
