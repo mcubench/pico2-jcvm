@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 78),
+        "--case", type=int, action="append", choices=range(1, 79),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -249,6 +249,7 @@ def main() -> int:
                     (75, b"\x01", "AID byte-array equality returns false for null and compares valid full and partial AIDs"),
                     (76, b"\x01", "JCSystem.getAID is null before register and isAppletActive is true after register during install"),
                     (77, b"\x0f", "JCSystem.isAppletActive is true during install/select/deselect/process callbacks"),
+                    (78, b"\x01", "UserException.throwIt is caught and preserves its reason"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

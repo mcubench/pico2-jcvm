@@ -2484,3 +2484,29 @@ fix.
   the exact provided 1.8.2 CAP and a fresh erased image still timed out at 30 s
   (VPCD connect 12.368 s, SELECT `9000`). This is unresolved host-emulator
   method execution, not physical evidence; no deploy CAP was uploaded.
+
+## `instanceof` class resolution can fail on an invalid alternate interface token — 2026-10-21
+
+- **Symptom:** The deploy Core `UserException.throwIt` checks returned
+  `EXC_RUNTIME`. A focused VPCD probe reproduced the failure when the applet
+  caught the exception as `Exception` and then evaluated
+  `expected instanceof UserException`; the APDU returned `6F00`.
+- **Cause:** `Bytecodes::docheck()` first resolved the JC305 imported type using
+  its class-token map. It then speculatively resolved the same numeric token in
+  the interface-token namespace. A byte can be a valid class token and an
+  invalid interface token, so that second lookup threw `SecurityException`
+  before the already valid class comparison could run.
+- **Viable fix:** Catch only `SecurityException` from the speculative interface
+  lookup and keep the successfully resolved class reference. Rethrow other VM
+  exceptions. The class/interface alternative remains available when the
+  interface lookup resolves to a real interface.
+- **Evidence:** Release host VPCD case 78 passed (`catch (Exception)`,
+  `instanceof UserException`, `getReason()==0x1234`). The actual
+  `AlgTestApiCore_305.cap` loaded, installed, selected, and its matching
+  `B0 83 17 02 01 00 00` API probe returned data `00000001` with `9000`.
+  ARM build passed with image end `0x100c5c7c`. Physical confirmation remains
+  pending because the Pico was not enumerated by the VM.
+- **Future use:** When a class reference check fails unexpectedly on an imported
+  JC305 API, inspect both class and interface token interpretations. Never let
+  failure to resolve the alternate namespace invalidate the valid primary
+  interpretation. Apply the same principle anywhere token namespaces overlap.

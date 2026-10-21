@@ -14,6 +14,7 @@ import javacard.framework.PINException;
 import javacard.framework.SensitiveArrays;
 import javacard.framework.SystemException;
 import javacard.framework.TransactionException;
+import javacard.framework.UserException;
 import javacard.security.MessageDigest;
 import javacard.security.InitializedMessageDigest;
 import javacard.security.CryptoException;
@@ -855,6 +856,23 @@ public final class JCTransactionProbe extends Applet {
                 JCSystem.isAppletActive(JCSystem.getAID())
             ? (byte)0x0f : (byte)0;
         break;
+      case 78: {
+        byte result = 0;
+        try {
+          UserException.throwIt((short)0x1234);
+          result = 1;
+        } catch (Exception expected) {
+          if (expected instanceof UserException) {
+            UserException userException = (UserException)expected;
+            result = userException.getReason() == (short)0x1234
+                ? (byte)1 : (byte)2;
+          } else {
+            result = 3;
+          }
+        }
+        buffer[0] = result;
+        break;
+      }
       case 67: {
         byte reason = 0;
         try {

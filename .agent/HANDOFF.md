@@ -1,5 +1,35 @@
 # Handoff
 
+## Current task — deploy CAP smoke tests and UserException fix — 2026-10-21
+
+- The authorized BOOTSEL visibility check found no physical Pico in the VM:
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported `found 0`, and gated
+  `lsusb -d 2e8a:` was empty. No flash, physical LOAD/INSTALL, or hardware APDU
+  was attempted.
+- Fixed `Bytecodes::docheck()` so a failed speculative JC305 interface-token
+  lookup cannot replace a valid class reference with `SecurityException`.
+  The cause and workaround are recorded in `.agent/QKB.md`.
+- Validation: ARM build passed (`build/arm/pico2_choupi.uf2`, image end
+  `0x100c5c7c`); host build passed. VPCD case 78 passed, including generic
+  `catch (Exception)`, `instanceof UserException`, and reason `0x1234`. The
+  actual deploy Core 3.0.5 CAP loaded/installed/selected and its UserException
+  APDU returned `000000019000`.
+- Isolated 3.0.5 deploy CAP load/install/select results: Core, Security, Crypto,
+  JavacardxExt, JavacardxSec, Service, and Biometry selected with `9000`.
+  Javacardx and JavacardxInt were refused at install with `6A80`, matching the
+  README's missing framework-package and `int` limitations. These were separate
+  host emulator runs, not concurrent package retention tests or physical API
+  client runs.
+- Host regressions: GP registry 47/47, install-status 10/10, GP DELETE 26/26.
+  Deploy inventory listed all nine areas. The full transaction VPCD run passed
+  cases 1–12 but was interrupted while case 13 waited; case 13 passed alone in
+  59.686 seconds. Investigate the slow cumulative run separately.
+- Build-pc has been restored to the default non-debug configuration. No
+  RISC-V build was run. Next: when the Pico enumerates, flash ARM and run the
+  official deploy Core scenarios; verify both Multi instances, upload a second
+  package concurrently, check GET STATUS/DELETE/reinstall, then continue the
+  README areas with the official client.
+
 ## Multi-applet physical retest — 2026-10-21
 
 - The requested Pico 2 BOOTSEL check was run through the authorized host USB

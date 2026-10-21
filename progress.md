@@ -7278,3 +7278,45 @@
   returns.
 - Commit: `dfacb94` (checkpoint); this correction is committed separately.
 - Artifacts/logs: none.
+
+## 2026-10-21 — Fix imported class checks and smoke-test deploy CAPs
+
+- Step/experiment: `deploy-core-userexception-vpcd`
+- Change: `Bytecodes::docheck()` now preserves a valid imported class reference
+  when its alternate JC305 interface-token interpretation throws
+  `SecurityException`. Added a focused probe for `UserException.throwIt()` caught
+  as `Exception`, followed by `instanceof UserException` and reason validation.
+  Updated TODO, QKB, and handoff with the root cause and physical retest state.
+- Validation: `./tools/build-pc` passed in default mode;
+  `CHOUPI_JCVM_DEBUG=ON ./tools/build-pc` passed for diagnosis;
+  `./tools/build arm` passed (`BUILD:PASS target=choupi`, image end
+  `0x100c5c7c`). VPCD focused case 78 passed with response `01 9000` and
+  `TEST:SUMMARY pass=3 fail=0`. The deploy Core CAP returned ATR `3B800181`,
+  SELECT `9000`, and UserException probe data `00000001` / SW `9000`. Isolated
+  deploy 3.0.5 CAP load/install/select passed for Core, Security, Crypto,
+  JavacardxExt, JavacardxSec, Service, and Biometry; Javacardx and JavacardxInt
+  were refused with install `6A80`, consistent with the README limitations.
+  GP registry passed 47/47, install-status passed 10/10, GP DELETE passed
+  26/26, and deploy asset listing found all nine areas. Full transaction VPCD
+  default release emulator also passed the deploy Core `UserException.throwIt`
+  APDU (`000000019000`). The full transaction VPCD suite passed cases 1–12 but
+  was interrupted while waiting on case 13; the
+  isolated case 13 passed in 59.686 seconds. Physical access check reported no
+  Pico (`pico2-pcsc-reader: found 0`, gated `lsusb -d 2e8a:` empty); no hardware
+  flash or APDU validation was possible. No RISC-V build was run.
+- Result: The exception dispatch failure is fixed and reproduced against the
+  supplied deploy Core CAP on the host emulator. Deploy packages that depend on
+  API packages absent from the ROM remain refused as expected. Multiple packages
+  were not tested concurrently because the PC VPCD shim models one package and
+  instance; concurrent package retention and Multi applet behavior still need
+  physical validation.
+- Decision: On USB enumeration, flash this ARM build and run the official Core
+  scenarios, confirm both Multi AIDs, install a second distinct package while
+  the first remains, then continue Security/Crypto and remaining README stages.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/userexception-supercatch-vpcd-20261021-fix1.log`,
+  `artifacts/logs/deploy-core-userexception-vpcd-20261021.log`,
+  `artifacts/logs/deploy-core-userexception-vpcd-release-20261021.log`,
+  `artifacts/logs/deploy-{core,security,crypto,javacardxext,javacardx,javacardxint,service,biometry,javacardxsec}-select-vpcd-20261021.log`,
+  `artifacts/logs/jcsystem-transaction-full-vpcd-20261021.log`, and
+  `artifacts/logs/jcsystem-ownerpinx-isolated-vpcd-20261021.log`.

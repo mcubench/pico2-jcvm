@@ -96,7 +96,12 @@ claims to support them; implementing every algorithm is not a goal.
   and Crypto expose API/runtime failures, Javacardx and JavacardxInt fail at
   INSTALL, Biometry fails at LOAD, and cleanup of populated applets returns
   `6581`. Next fix Core correctness, cleanup, then rerun stages with the fixed
-  deploy runner. See `.agent/QKB.md` and the 2026-10-21 deploy result CSVs.
+  deploy runner. Offline VPCD smoke checks now load/install/select Core,
+  Security, Crypto, JavacardxExt, JavacardxSec, Service, and Biometry CAPs;
+  Javacardx and JavacardxInt are refused at install as expected from their
+  missing framework/int support. These isolated emulator runs do not validate
+  concurrent package retention or physical PC/SC behavior. See
+  `.agent/QKB.md` and the 2026-10-21 deploy result CSVs.
 - [ ] **Fix remaining Core API failures found by physical deploy coverage.**
   Same-array overlapping-range behavior in `Util.arrayCopy` and
   `arrayCopyNonAtomic` now passes on the physical Pico after the SDK fix.
@@ -104,9 +109,12 @@ claims to support them; implementing every algorithm is not a goal.
   token remapping for the public methods. The deploy Core CAP still reports
   `SW_ERROR` for `getValidatedFlag`, `EXC_RUNTIME` for `setValidatedFlag`, and
   three runtime failures for `UserException.throwIt`; Shareable lookup also
-  returns the wrong result. The Multi and Ext scenario rows were not installed
-  in the latest run. Preserve the 3.0.5 API artifacts under
-  `artifacts/results/deploy/` and rerun Core after each fix.
+  returns the wrong result. A host VPCD regression reproduced and fixed the
+  generic `Exception` catch followed by `instanceof UserException` path, and the
+  deploy Core 3.0.5 CAP now returns normally for its `UserException.throwIt`
+  probe. Physical confirmation is still pending. The Multi and Ext scenario
+  rows were not installed in the latest physical run. Preserve the 3.0.5 API
+  artifacts under `artifacts/results/deploy/` and rerun Core after each fix.
 - [ ] **Fix package deletion after applet tests.** GPPro DELETE returns `6581`
   for Core and Service packages after persistent objects have been created,
   while deleting packages with no installed instance succeeds. Source review

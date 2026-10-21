@@ -273,25 +273,43 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
 
   if (atype == 0) {
     auto instance = heap.getInstance(objectref);
-
-    std::pair<jpackage_ID_t, jclass_index_t> type_in_classinfo =
-        ConstantPool_Handler(instance->getPackageID())
-            .getClassInformation(instance->getClassIndex());
+    const Package type_in_package(instance->getPackageID());
+    const auto *type_in_class =
+        ConstantPool_Handler(type_in_package)
+            .getClassFromClassIndex(instance->getClassIndex());
     auto type_in_ref = std::make_pair(
-        type_in_classinfo.first,
-        reinterpret_cast<const uint8_t *>(
-            ConstantPool_Handler(type_in_classinfo.first)
-                .getClassFromClassIndex(type_in_classinfo.second)));
+        type_in_package, reinterpret_cast<const uint8_t *>(type_in_class));
 
     auto type_out_classref =
         ConstantPool_Handler(context.getCurrentPackage()).getClassRef(index);
+    ConstantPool_Handler type_out_cp(context.getCurrentPackage());
     auto [type_out_package, type_out_class] =
-        ConstantPool_Handler(context.getCurrentPackage())
-            .classref2class(type_out_classref);
+        type_out_cp.resolveClassref(type_out_classref);
+    // A JC305 import may use a class-token remap that differs from its
+    // interface-token index. checkcast accepts both, so if the class mapping
+    // resolves to a class, also try the interface namespace before deciding.
+    if (IS_CLASS(type_out_class)) {
+      try {
+        auto interface_candidate =
+            type_out_cp.resolveClassref(type_out_classref, true);
+        if (IS_INTERFACE(interface_candidate.second)) {
+          type_out_package = interface_candidate.first;
+          type_out_class = interface_candidate.second;
+        }
+      } catch (Exceptions exception) {
+        // The class token can be valid while the same byte is not an
+        // interface token (JC305 assigns those token namespaces separately).
+        // Keep the successfully resolved class in that case.
+        if (exception != SecurityException) {
+          throw;
+        }
+      }
+    }
 
-    auto type_out_ref = std::make_pair(
-        type_out_package, reinterpret_cast<const uint8_t *>(type_out_class));
-
+    // CHECKCAST accepts both class and interface references. Keep the
+    // resolved CAP record untyped here; classref2class rejects interfaces
+    // before Class_Handler::docheckcast can apply the interface rules.
+    auto type_out_ref = std::make_pair(type_out_package, type_out_class);
     return Class_Handler::docheckcast(type_in_ref, type_out_ref);
 
   } else {
