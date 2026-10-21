@@ -7087,7 +7087,8 @@
   result; some Ext scenario calls report APPLET_NOT_INSTALLED.
 - Decision: Continue with the OwnerPIN constructor failure, then rerun the
   complete deploy stages and investigate persistent package DELETE `6581`.
-- Commit: recorded in the next metadata follow-up.
+- Commit: `9dae416` (evidence and progress); SDK submodule source commit
+  `9d70825`.
 - Artifacts/logs: `artifacts/results/deploy/pico2-overlap-retest-20261021.csv`,
   `artifacts/results/deploy/pico2-overlap-retest-client-20261021.log`; bounded
   monitor output was captured during this session but not archived separately.
