@@ -1,5 +1,26 @@
 # Handoff
 
+## Flash layout migration implementation — 2026-10-21
+
+- Shared layout now keeps all eight CAP3 slots at `0x100000..0x188000` and
+  moves JFS2 to `0x188000..0x200000` in two `0x3c000` slots. A valid old JFS2
+  snapshot is copied through RAM into the first new slot at boot. Incomplete
+  migration can retry without erasing the old snapshot. See
+  `docs/flash-layout-migration.md` for recovery boundaries.
+- `./tools/test-rp2350-fs-overlay` now uses the real CAP3 store on one fake
+  flash image and passes coexistence, migration, and power-cut cases. ARM and
+  RISC-V builds passed; ARM was rebuilt after the final source change. A
+  pre-existing host-only `mallinfo()` deprecation warning remains in the test
+  build. Read-only, authorized `lsusb -d 2e8a:` found no Pico (exit 1), so no
+  flash or physical serial validation was possible.
+- CAP2 data at `0x1c0000` is not automatically converted; detection stops
+  initialization before JFS2 could reuse it. A corrupted old JFS2 snapshot
+  cannot be reconstructed and also stops initialization when recoverable
+  storage markers remain. Back up any valuable card flash before deploying.
+- The worktree still contains extensive unrelated edits, including the
+  unfinished Shareable dispatch changes. Only the filesystem-related portion
+  of `src/choupi_pico2.cpp` belongs to this step; preserve its other edits.
+
 ## Current functionality review update — 2026-10-21
 
 - Added `review_20261021.md`, comparing the 2026-10-19 review with current

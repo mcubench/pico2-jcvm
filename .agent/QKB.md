@@ -12,11 +12,15 @@
   compares only with the old CAP boundary `0x1c0000`. Configured flash is
   2 MiB; the existing firmware reservation plus full CAP and FS capacities
   exceed it by `0x8000` even with perfect packing.
-- **Status/solution:** No fix yet. Before further physical CAP/FS writes,
-  redesign the shared flash map to fit the device, add pairwise compile-time
-  overlap checks, migrate existing data, and test CAP plus FS writes against
-  one fake flash image. `tools/test-rp2350-fs-overlay` stubs CAP initialization
-  and its passing filesystem-only power-cut suite cannot validate this map.
+- **Status/solution:** Viable source fix implemented in `src/flash_layout.hpp`:
+  CAP3 remains at `0x100000..0x188000`; JFS2 moves to two `0x3c000` slots at
+  `0x188000..0x200000`. Startup migrates a valid old JFS2 snapshot from RAM
+  to the new first slot without erasing the old snapshot. The fake-flash suite
+  now links the real CAP3 store and checks all eight CAP slots, both snapshots,
+  and migration power cuts. A missing/corrupt snapshot with CAP3 or a JFS2
+  header fails closed. Historical CAP2 magic at `0x1c0000` also fails closed
+  because that format is not automatically converted. See
+  `docs/flash-layout-migration.md` before physical deployment.
 - **Evidence:** Source inspection and address arithmetic in
   `review_20261021.md`; overlap is also present in commit `9c7b9ae`.
 

@@ -1,4 +1,5 @@
 #include "cap_store.hpp"
+#include "flash_layout.hpp"
 
 #include <cstddef>
 #include <cstring>
@@ -7,19 +8,23 @@
 #include "pico/flash.h"
 #include "pico/platform.h"
 
+#ifdef RP2350_FS_OVERLAY_TEST
+extern "C" const uint8_t *rp2350_fs_test_flash_base(void);
+#endif
+
 extern "C" const uint8_t choupi_rommask_end[];
 
 namespace {
 // The first 1 MiB is reserved for the firmware and ROM mask. Dynamic CAPs
 // occupy eight 68 KiB slots; each slot has a 4 KiB metadata sector and up to
 // 64 KiB of page-programmed CAP data.
-constexpr uint32_t kSlotsOffset = 0x100000;
-constexpr uint32_t kSlotCount = 8;
+constexpr uint32_t kSlotsOffset = flash_layout::cap_offset;
+constexpr uint32_t kSlotCount = flash_layout::cap_slot_count;
 constexpr uint32_t kHeaderSectorSize = FLASH_SECTOR_SIZE;
 // JC_Cap exposes component images through a 16-bit length, so reserve one
 // byte below 64 KiB rather than allowing a value that would wrap to zero.
 constexpr uint32_t kMaxCodeLength = 64 * 1024 - 1;
-constexpr uint32_t kSlotStride = kHeaderSectorSize + 64 * 1024;
+constexpr uint32_t kSlotStride = flash_layout::cap_slot_size;
 constexpr uint32_t kCodeOffset = kHeaderSectorSize;
 constexpr uint8_t kFirstPackageId = 56;
 constexpr uint8_t kMaxPackageInstances = 40;
@@ -51,6 +56,8 @@ struct __attribute__((packed)) CapSlotHeader {
 
 static_assert(kSlotCount * kSlotStride == 0x88000,
               "CAP slot region size changed; review flash partition map");
+static_assert(kSlotStride == kHeaderSectorSize + 64 * 1024,
+              "CAP slot must fit metadata and code");
 static_assert(sizeof(CapSlotHeader) <= FLASH_SECTOR_SIZE,
               "CAP slot header must fit in one metadata sector");
 static_assert((kSlotsOffset % FLASH_SECTOR_SIZE) == 0,
@@ -61,6 +68,8 @@ static_assert((kCodeOffset % FLASH_PAGE_SIZE) == 0,
               "CAP code must be page aligned");
 static_assert(PICO_FLASH_SIZE_BYTES >= kSlotsOffset + kSlotCount * kSlotStride,
               "Pico flash is too small for the CAP slot region");
+static_assert(PICO_FLASH_SIZE_BYTES >= flash_layout::filesystem_end,
+              "Pico flash is too small for CAP and filesystem regions");
 
 const CapSlotHeader *cached_headers[kSlotCount]{};
 const uint8_t *cached_codes[kSlotCount]{};
@@ -88,19 +97,32 @@ uint32_t slot_offset(uint8_t slot) noexcept {
 }
 
 const CapSlotHeader *slot_header(uint8_t slot) noexcept {
+#ifdef RP2350_FS_OVERLAY_TEST
+  return reinterpret_cast<const CapSlotHeader *>(
+      rp2350_fs_test_flash_base() + slot_offset(slot));
+#else
   return reinterpret_cast<const CapSlotHeader *>(
       kXipBase + slot_offset(slot));
+#endif
 }
 
 const uint8_t *slot_code(uint8_t slot) noexcept {
+#ifdef RP2350_FS_OVERLAY_TEST
+  return rp2350_fs_test_flash_base() + slot_offset(slot) + kCodeOffset;
+#else
   return reinterpret_cast<const uint8_t *>(
       kXipBase + slot_offset(slot) + kCodeOffset);
+#endif
 }
 
 bool slot_is_inside_reserved_flash() noexcept {
+#ifdef RP2350_FS_OVERLAY_TEST
+  return true;
+#else
   const uintptr_t image_end = reinterpret_cast<uintptr_t>(choupi_rommask_end);
   return image_end < static_cast<uintptr_t>(kXipBase + kSlotsOffset) &&
          kSlotsOffset + kSlotCount * kSlotStride <= PICO_FLASH_SIZE_BYTES;
+#endif
 }
 
 bool aid_valid(const uint8_t *aid, uint8_t length) noexcept {

@@ -1,5 +1,8 @@
 #include "ffi.h"
+#include "cap_store.hpp"
+#include "flash_layout.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstdio>
@@ -10,8 +13,6 @@
 
 extern "C" const uint8_t choupi_rommask_start[] = {0};
 extern "C" const uint8_t choupi_rommask_end[] = {0};
-
-bool cap_store_initialize() noexcept { return true; }
 
 extern "C" uint8_t fs_sync(void);
 
@@ -221,7 +222,7 @@ int main() {
          "filesystem_snapshot_restores_latest_generation");
 
   // Corrupt the newest slot and require recovery from the previous snapshot.
-  fake_flash[0x140000 + 4096 + 17] ^= 0x01;
+  fake_flash[flash_layout::filesystem_slot(1) + 4096 + 17] ^= 0x01;
   expect(fs_init() == 0 &&
              fs_read(persistent_tag, sizeof(persistent_tag), persisted_actual,
                      sizeof(persisted_actual)) == 0 &&
@@ -346,6 +347,119 @@ int main() {
              fs_sync() == 0 && fs_init() == 0 &&
              fs_exists(persistent_tag, sizeof(persistent_tag)) == 0,
          "filesystem_tombstone_survives_restart");
+
+  // Both stores now use the same fake flash. Every CAP slot must leave the
+  // filesystem's committed snapshot intact, including the last CAP slot.
+  fake_flash.fill(0xff);
+  constexpr uint8_t shared_tag[] = {0xb1, 0x22};
+  constexpr uint8_t shared_value[] = {0x4c, 0x59};
+  constexpr uint8_t cap_code[] = {0xca, 0xfe, 0x01, 0x02};
+  constexpr uint8_t package_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x01};
+  bool stores_coexist = fs_init() == 0 &&
+      fs_write(shared_tag, sizeof(shared_tag), shared_value,
+               sizeof(shared_value)) == 0 && fs_sync() == 0;
+  for (uint8_t package_id = 56; package_id < 64 && stores_coexist;
+       ++package_id) {
+    uint8_t aid[sizeof(package_aid)];
+    std::memcpy(aid, package_aid, sizeof(aid));
+    aid[sizeof(aid) - 1] = package_id;
+    stores_coexist = cap_store_write_package(package_id, aid, sizeof(aid),
+                                             cap_code, sizeof(cap_code)) &&
+                     fs_init() == 0;
+    uint8_t actual_value[sizeof(shared_value)]{};
+    stores_coexist = stores_coexist &&
+        fs_read(shared_tag, sizeof(shared_tag), actual_value,
+                sizeof(actual_value)) == 0 &&
+        std::memcmp(actual_value, shared_value, sizeof(shared_value)) == 0;
+  }
+  expect(stores_coexist, "all_cap_slots_preserve_filesystem_snapshot");
+  bool cap_codes_survive_fs_sync = stores_coexist;
+  if (cap_codes_survive_fs_sync) {
+    constexpr uint8_t next_value[] = {0x45, 0x58};
+    cap_codes_survive_fs_sync =
+        fs_write(shared_tag, sizeof(shared_tag), next_value,
+                 sizeof(next_value)) == 0 && fs_sync() == 0 && fs_init() == 0;
+  }
+  for (uint8_t package_id = 56; package_id < 64 && cap_codes_survive_fs_sync;
+       ++package_id) {
+    uint32_t length = 0;
+    const uint8_t *code = cap_store_data_for_package(package_id, &length);
+    cap_codes_survive_fs_sync = code != nullptr && length == sizeof(cap_code) &&
+        std::memcmp(code, cap_code, sizeof(cap_code)) == 0;
+  }
+  expect(cap_codes_survive_fs_sync,
+         "filesystem_snapshots_preserve_all_cap_slots");
+
+  // Simulate a card created by the previous layout: copy a real JFS2 snapshot
+  // to its old address, remove the new copy, then boot and migrate it.
+  fake_flash.fill(0xff);
+  bool legacy_fixture = fs_init() == 0 &&
+      fs_write(shared_tag, sizeof(shared_tag), shared_value,
+               sizeof(shared_value)) == 0 && fs_sync() == 0;
+  if (legacy_fixture) {
+    std::copy_n(fake_flash.begin() + flash_layout::filesystem_slot(0),
+                flash_layout::filesystem_slot_size,
+                fake_flash.begin() + flash_layout::legacy_filesystem_slot(0));
+    std::fill(fake_flash.begin() + flash_layout::filesystem_offset,
+              fake_flash.begin() + flash_layout::filesystem_end, 0xff);
+    legacy_fixture = cap_store_write_package(
+        63, package_aid, sizeof(package_aid), cap_code, sizeof(cap_code));
+  }
+  const auto legacy_flash = fake_flash;
+  uint8_t migrated_value[sizeof(shared_value)]{};
+  bool migrated = legacy_fixture && fs_init() == 0 &&
+      fs_read(shared_tag, sizeof(shared_tag), migrated_value,
+              sizeof(migrated_value)) == 0 &&
+      std::memcmp(migrated_value, shared_value, sizeof(shared_value)) == 0 &&
+      fake_flash[flash_layout::filesystem_slot(0)] == 'J';
+  expect(migrated, "legacy_snapshot_migrates_to_new_layout");
+  uint32_t migrated_cap_length = 0;
+  const uint8_t *migrated_cap = cap_store_data_for_package(
+      63, &migrated_cap_length);
+  expect(migrated && migrated_cap != nullptr &&
+             migrated_cap_length == sizeof(cap_code) &&
+             std::memcmp(migrated_cap, cap_code, sizeof(cap_code)) == 0,
+         "migration_preserves_last_cap_slot");
+  if (migrated) {
+    fake_flash[flash_layout::legacy_filesystem_slot(0)] = 0;
+    migrated = fs_init() == 0 &&
+        fs_read(shared_tag, sizeof(shared_tag), migrated_value,
+                sizeof(migrated_value)) == 0 &&
+        std::memcmp(migrated_value, shared_value, sizeof(shared_value)) == 0;
+  }
+  expect(migrated, "migrated_snapshot_restores_without_legacy_source");
+
+  bool migration_recovers_after_cut = legacy_fixture;
+  for (size_t cut : {size_t{0}, size_t{100}, size_t{4096}, size_t{8192}}) {
+    if (!migration_recovers_after_cut) break;
+    fake_flash = legacy_flash;
+    reset_flash_failure(cut);
+    try {
+      (void)fs_init();
+    } catch (const SimulatedPowerCut &) {
+    }
+    reset_flash_failure();
+    migration_recovers_after_cut = fs_init() == 0 &&
+        fs_read(shared_tag, sizeof(shared_tag), migrated_value,
+                sizeof(migrated_value)) == 0 &&
+        std::memcmp(migrated_value, shared_value, sizeof(shared_value)) == 0;
+  }
+  expect(migration_recovers_after_cut,
+         "legacy_migration_recovers_after_power_cut");
+
+  fake_flash = legacy_flash;
+  fake_flash[flash_layout::legacy_filesystem_slot(0) + 4096] ^= 1;
+  const auto damaged_flash = fake_flash;
+  expect(fs_init() != 0 && fake_flash == damaged_flash,
+         "unrecoverable_legacy_snapshot_fails_without_flash_writes");
+
+  fake_flash.fill(0xff);
+  constexpr uint32_t legacy_cap2_magic = 0x32415043;
+  std::memcpy(fake_flash.data() + flash_layout::legacy_cap2_offset,
+              &legacy_cap2_magic, sizeof(legacy_cap2_magic));
+  const auto cap2_flash = fake_flash;
+  expect(fs_init() != 0 && fake_flash == cap2_flash,
+         "legacy_cap2_blocks_unsafe_filesystem_reuse");
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

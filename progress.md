@@ -7429,3 +7429,30 @@
   AID/SELECT regressions. Preserve all pre-existing uncommitted source work.
 - Commit: this documentation commit (`git log -1 --format=%H -- review_20261021.md`).
 - Artifacts/logs: `review_20261021.md`; no new runtime logs archived.
+
+## 2026-10-21 — Separate CAP3 and JFS2 flash regions and migrate snapshots
+
+- Step/experiment: `flash-layout-jfs2-migration`
+- Change: Added a shared 2 MiB flash map; retained eight CAP3 slots at
+  `0x100000..0x188000`; moved JFS2 to two `0x3c000` slots at
+  `0x188000..0x200000`. Startup migrates a valid legacy JFS2 snapshot without
+  erasing its source and fails closed on unrecoverable snapshots or CAP2 magic.
+  Expanded the fake-flash suite to link the actual CAP3 store and documented
+  recovery limits. The focused source commit also includes pre-existing
+  filesystem parser repairs needed for the currently validated source state;
+  unrelated dirty source hunks remain untouched.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY
+  fail=0`, including all eight CAP slots, restart, migration, four power-cut
+  points, and fail-closed cases. `./tools/build arm` and `./tools/build riscv`
+  passed; ARM was rebuilt after the final source edit. Authorized read-only
+  `PICO2_HOST_USB_ACCESS=1 lsusb -d 2e8a:` found no device (exit 1), so flash
+  and serial validation were not run. The host harness emitted a pre-existing
+  `mallinfo()` deprecation warning; firmware builds emitted no warnings.
+- Result: The configured flash regions no longer overlap, and a valid old
+  JFS2 snapshot has a retryable migration path. Data already erased by the
+  old overlap cannot be reconstructed; CAP2 conversion is not implemented.
+- Decision: Preserve a full card flash backup before a physical firmware
+  upgrade, then verify migration and stored applets on hardware. Continue
+  separate cross-store CAP/filesystem transaction recovery work afterward.
+- Commit: this step's commit (`git log -1 --format=%H -- src/flash_layout.hpp`).
+- Artifacts/logs: `docs/flash-layout-migration.md`; no hardware log.
