@@ -58,6 +58,7 @@ uint8_t persistent_tag_root_length(uint8_t first, uint8_t length) {
   case 0x02:
     return length >= 3 ? 3 : 0;
   case 0x03:
+    if (length >= 6 && (length & 1u) == 0) return 6;
     return length >= 5 ? 5 : 0;
   default:
     return 0;

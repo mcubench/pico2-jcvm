@@ -1,5 +1,30 @@
 # Handoff
 
+## Distinct persistence keys for high CAP class indexes — 2026-10-21
+
+- Extended persistent applet-field tags to preserve the full 16-bit class
+  index for classes above 255. Legacy classes keep their five-byte tags. New
+  wide tags use six-byte roots; high-index reads retry the old low-byte key so
+  records from older firmware remain accessible. DELETE clears wide and
+  legacy records.
+- Validation passed: `./tools/build-pc` (including Java Card OS Rust build),
+  `./tools/build arm` (image end `0x100c5c3c`),
+  `./tools/test-persistent-transaction`, `./tools/test-rp2350-fs-overlay`
+  (30 checks), and `./tools/test-gp-delete` (26 checks). The overlay test
+  confirms class 1 and 257 tags remain distinct and wide array tags compress.
+- `./tools/check-vm-syntax` still cannot complete because the standalone host
+  check lacks `mbedtls/aes.h`; the ARM and PC builds compile the changed VM
+  sources. No RISC-V build was run.
+- Physical follow-up is still open. The VM host cannot see the BOOTSEL Pico
+  (`sudo -n /usr/local/sbin/pico2-pcsc-reader` found 0; gated `lsusb` empty).
+  When it is accessible, flash according to the required build gate, verify
+  high-index persistence and populated DELETE/reinstall, then resume the
+  deploy README stages including Multi and Ext.
+- Files changed for this step: `src/cap_load.cpp`, `src/choupi_pico2.cpp`,
+  `choupi/src/jc_handlers/flashmemory.{cpp,hpp}`,
+  `choupi/src/jc_types/jc_instance.cpp`, `choupi/os/src/{ffi.h,ffi.rs,filename.rs}`,
+  `tools/check-vm-syntax`, and the persistence/overlay tests.
+
 ## Deploy DELETE cleanup follow-up — high CAP class indexes — 2026-10-21
 
 - Source review found the physical deploy cleanup failure path: the applet

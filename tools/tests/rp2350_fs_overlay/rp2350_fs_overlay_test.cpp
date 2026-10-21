@@ -173,6 +173,34 @@ int main() {
              actual[0] == second_value[0],
          "reuse_compressed_child_entry");
 
+  constexpr uint8_t class_one_tag[] = {0x03, 0x00, 0x38, 0x01, 0xff};
+  constexpr uint8_t class_257_tag[] = {0x03, 0x00, 0x38, 0x01, 0x01, 0xff};
+  constexpr uint8_t class_one_value[] = {0x11};
+  constexpr uint8_t class_257_value[] = {0x22};
+  uint8_t class_value = 0;
+  expect(fs_write(class_one_tag, sizeof(class_one_tag), class_one_value,
+                  sizeof(class_one_value)) == 0 &&
+             fs_write(class_257_tag, sizeof(class_257_tag), class_257_value,
+                      sizeof(class_257_value)) == 0,
+         "write_legacy_and_16_bit_class_roots");
+  expect(fs_read(class_one_tag, sizeof(class_one_tag), &class_value,
+                 sizeof(class_value)) == 0 &&
+             class_value == class_one_value[0] &&
+             fs_read(class_257_tag, sizeof(class_257_tag), &class_value,
+                     sizeof(class_value)) == 0 &&
+             class_value == class_257_value[0],
+         "16_bit_class_root_does_not_alias_legacy_class");
+  constexpr uint8_t class_257_array_element[] = {
+      0x03, 0x00, 0x38, 0x01, 0x01, 0x07, 0x00, 0x00};
+  expect(fs_write(class_257_array_element,
+                  sizeof(class_257_array_element), second_value,
+                  sizeof(second_value)) == 0 &&
+             fs_read(class_257_array_element,
+                     sizeof(class_257_array_element), actual,
+                     sizeof(actual)) == 0 &&
+             actual[0] == second_value[0],
+         "compress_16_bit_class_array_element_tag");
+
   constexpr uint8_t persistent_tag[] = {0xa1, 0x22, 0x33};
   constexpr uint8_t persisted_first[] = {0x11, 0x22, 0x33, 0x44};
   constexpr uint8_t persisted_second[] = {0xaa, 0xbb, 0xcc, 0xdd};

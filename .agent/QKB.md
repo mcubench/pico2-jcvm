@@ -2444,3 +2444,22 @@ fix.
 - **Next:** Reflash the clean ARM image when USB returns, retry DELETE for a
   populated Core CAP, confirm registry removal and reinstall, then continue the
   deploy README stages.
+
+## 16-bit applet class indexes need distinct persistence tags — 2026-10-21
+
+- **Cause:** The old `path_applet_field` ABI encoded only the low byte of the
+  16-bit VM class index. Distinct classes such as 1 and 257 could therefore
+  share persistent keys within one package. Removing the DELETE range check
+  alone would have kept this collision.
+- **Fix:** Class indexes through 255 retain the five-byte legacy root. Higher
+  indexes use a six-byte root containing the full class index. Filesystem and
+  `JC_Instance` tag compression recognize both forms. High-index reads fall
+  back to the legacy key for migration, while DELETE removes both forms.
+- **Validation:** `./tools/build-pc`, `./tools/build arm`,
+  `./tools/test-persistent-transaction`, `./tools/test-rp2350-fs-overlay`,
+  and `./tools/test-gp-delete` passed. The overlay regression proves class 1
+  and class 257 tags remain distinct and tests a compressed child tag. No
+  hardware test was possible: the PC/SC helper and gated `lsusb` found no Pico.
+- **Next:** After physical access returns, flash under the applicable build
+  gate, test populated package DELETE/reinstall, and exercise the deploy
+  Multi/Ext applets and subsequent areas.

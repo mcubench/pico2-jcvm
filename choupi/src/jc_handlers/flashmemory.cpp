@@ -45,6 +45,9 @@ extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length);
 extern "C" const uint8_t *choupi_cap_store_data_for_package(
     uint8_t package_id, uint32_t *length);
 extern "C" uint8_t fs_sync(void);
+extern "C" void path_applet_field16(uint8_t applet, uint8_t package,
+                                    uint16_t class_index, uint8_t field,
+                                    uint8_t (*tag)[128], uint8_t *length);
 
 namespace jcvm {
 
@@ -68,6 +71,16 @@ struct PersistentWriteSnapshot {
 };
 
 std::vector<PersistentWriteSnapshot> persistent_write_snapshots;
+bool legacy_applet_tag(const fs::Tag &tag, fs::Tag &legacy) noexcept {
+  if (tag.len < 6 || (tag.len & 1u) != 0 || tag.value[0] != 0x03) {
+    return false;
+  }
+  legacy = {};
+  legacy.len = static_cast<uint8_t>(tag.len - 1);
+  std::memcpy(legacy.value, tag.value, 3);
+  std::memcpy(legacy.value + 3, tag.value + 4, tag.len - 4);
+  return true;
+}
 bool persistent_write_transaction_active = false;
 
 bool tags_equal(const fs::Tag &left, const fs::Tag &right) noexcept {
@@ -277,10 +290,14 @@ static constexpr uint16_t getPackagesArrayLength() {
  */
 std::pair<uint32_t, std::unique_ptr<uint8_t[]>>
 FlashMemory_Handler::getDataFromTag(const fs::Tag &tag) {
+  fs::Tag read_tag = tag;
   uint32_t data_length = 0;
 
-  if (fs_length(&(tag.value[0]), tag.len, &data_length)) {
-    throw Exceptions::IOException;
+  if (fs_length(read_tag.value, read_tag.len, &data_length) != 0) {
+    if (!legacy_applet_tag(tag, read_tag) ||
+        fs_length(read_tag.value, read_tag.len, &data_length) != 0) {
+      throw Exceptions::IOException;
+    }
   }
 
   if (data_length == 0) {
@@ -288,13 +305,12 @@ FlashMemory_Handler::getDataFromTag(const fs::Tag &tag) {
   }
 
   std::unique_ptr<uint8_t[]> data(new uint8_t[data_length]);
-  if (fs_read(&(tag.value[0]), tag.len, data.get(), data_length)) {
+  if (fs_read(read_tag.value, read_tag.len, data.get(), data_length)) {
     throw Exceptions::IOException;
   }
 
   return std::make_pair(data_length, std::move(data));
 }
-
 /**
  * Write persistant instance header
  *
@@ -478,8 +494,14 @@ FlashMemory_Handler::getDataInPlaceFromTag(const fs::Tag &tag) {
   const uint8_t *data = nullptr;
   uint32_t data_length = 0;
 
-  const uint8_t read_status =
+  uint8_t read_status =
       fs_read_inplace(&(tag.value[0]), tag.len, &data, &data_length);
+  fs::Tag legacy_tag;
+  if ((read_status || data_length == 0 || data == nullptr) &&
+      legacy_applet_tag(tag, legacy_tag)) {
+    read_status = fs_read_inplace(legacy_tag.value, legacy_tag.len, &data,
+                                  &data_length);
+  }
   if (read_status) {
     if (tag.len == 5 && tag.value[0] == 0x03 && tag.value[4] == 0xff) {
       std::printf("CHOUPI:RESTORE_STORAGE status=%u length=%lu\r\n",
@@ -569,8 +591,22 @@ const fs::Tag FlashMemory_Handler::getPersistentFieldTag(
     const japplet_ID_t applet_owner, const jpackage_ID_t package,
     const jclass_index_t claz, const uint8_t field) noexcept {
   fs::Tag tag;
-  path_applet_field(applet_owner, package, claz, field, &(tag.value),
-                    &(tag.len));
+  if (claz <= UINT8_MAX) {
+    path_applet_field(applet_owner, package, static_cast<uint8_t>(claz), field,
+                      &(tag.value), &(tag.len));
+  } else {
+    path_applet_field16(applet_owner, package, claz, field, &(tag.value),
+                        &(tag.len));
+  }
+  return tag;
+}
+
+const fs::Tag FlashMemory_Handler::getLegacyPersistentFieldTag(
+    const japplet_ID_t applet_owner, const jpackage_ID_t package,
+    const jclass_index_t claz, const uint8_t field) noexcept {
+  fs::Tag tag;
+  path_applet_field(applet_owner, package, static_cast<uint8_t>(claz), field,
+                    &(tag.value), &(tag.len));
   return tag;
 }
 

@@ -137,15 +137,34 @@ int main() {
 
   const auto high_class_field =
       FlashMemory_Handler::getPersistentFieldTag(0, 63, 0x1234, 7);
-  seed(high_class_field.value, high_class_field.len, {0x10, 0x20});
+  const auto legacy_high_class_field =
+      FlashMemory_Handler::getLegacyPersistentFieldTag(0, 63, 0x1234, 7);
+  expect(high_class_field.len == 6 && high_class_field.value[3] == 0x12 &&
+             high_class_field.value[4] == 0x34 &&
+             legacy_high_class_field.len == 5 &&
+             legacy_high_class_field.value[3] == 0x34,
+         "16_bit_class_tag_keeps_high_byte_distinct");
+  seed(legacy_high_class_field.value, legacy_high_class_field.len,
+       byte_record(0x5c));
+  expect(FlashMemory_Handler::getPersistentField_Byte(high_class_field) ==
+             0x5c,
+         "wide_class_tag_reads_legacy_persistent_value");
+  seed(high_class_field.value, high_class_field.len, byte_record(0x6d));
+  expect(FlashMemory_Handler::getPersistentField_Byte(high_class_field) ==
+             0x6d,
+         "wide_class_tag_read_prefers_native_record");
   expect(FlashMemory_Handler::beginPersistentWriteTransaction(),
          "begin_high_class_delete");
   expect(FlashMemory_Handler::erasePersistentTag(high_class_field),
          "erase_persistent_field_for_16_bit_class_index");
+  expect(FlashMemory_Handler::erasePersistentTag(legacy_high_class_field),
+         "erase_legacy_persistent_field_for_high_class_index");
   expect(FlashMemory_Handler::commitPersistentWriteTransaction(),
          "commit_high_class_delete");
-  expect(read(high_class_field.value, high_class_field.len).empty(),
-         "high_class_field_is_erased");
+  expect(read(high_class_field.value, high_class_field.len).empty() &&
+             read(legacy_high_class_field.value,
+                  legacy_high_class_field.len).empty(),
+         "high_class_field_encodings_are_erased");
 
   expect(FlashMemory_Handler::beginPersistentWriteTransaction(), "begin_commit");
   FlashMemory_Handler::setPersistentField_Byte(existing, 0x77);

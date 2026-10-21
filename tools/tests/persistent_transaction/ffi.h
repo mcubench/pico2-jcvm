@@ -30,4 +30,7 @@ void path_static(uint8_t package, uint8_t static_id, uint8_t (*tag)[128],
                  uint8_t *length);
 void path_applet_field(uint8_t applet, uint8_t package, uint8_t class_index,
                        uint8_t field, uint8_t (*tag)[128], uint8_t *length);
+void path_applet_field16(uint8_t applet, uint8_t package,
+                         uint16_t class_index, uint8_t field,
+                         uint8_t (*tag)[128], uint8_t *length);
 }

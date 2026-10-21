@@ -105,6 +105,11 @@ public:
                                              const jpackage_ID_t package,
                                              const jclass_index_t claz,
                                              const uint8_t field) noexcept;
+  /// Make the legacy one-byte-class form used by persistent records created
+  /// before 16-bit class indexes were supported.
+  static const fs::Tag getLegacyPersistentFieldTag(
+      const japplet_ID_t applet_owner, const jpackage_ID_t package,
+      const jclass_index_t claz, const uint8_t field) noexcept;
   /// Get the reserved root tag for the registered applet object.
   static const fs::Tag getAppletInstanceTag(const japplet_ID_t applet_owner,
                                             const jpackage_ID_t package,

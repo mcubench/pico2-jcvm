@@ -110,12 +110,12 @@ claims to support them; implementing every algorithm is not a goal.
 - [ ] **Fix package deletion after applet tests.** GPPro DELETE returns `6581`
   for Core and Service packages after persistent objects have been created,
   while deleting packages with no installed instance succeeds. Source review
-  found applet cleanup rejected 16-bit CAP class indexes above 255 even though
-  stored field tags use the low byte; this rejection is removed and a host
-  regression passes. Physical DELETE/reinstall confirmation is still pending
-  because the Pico is currently absent from the VM USB bus. The one-byte field
-  tag format may still collide for classes in one package whose indexes differ
-  by 256; fix and validate that format separately.
+  found applet cleanup rejected 16-bit CAP class indexes above 255. High class
+  indexes now use two-byte persistent-field tags, can read legacy one-byte
+  records, and DELETE clears both tag forms. Host persistence, overlay,
+  DELETE, PC build, and ARM build checks pass. Physical DELETE/reinstall
+  confirmation is pending because the Pico is currently absent from the VM USB
+  bus.
 - [ ] **Declare the supported Java Card profile and audit its API contract.**
   State the supported Java Card Classic version and APIs, then add applet-level
   behavior tests for each implemented API. Existing tests cover JCSystem,

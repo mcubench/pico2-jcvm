@@ -19,6 +19,7 @@
 #include "pico/platform.h"
 #include "tusb.h"
 #include "cap_store.hpp"
+#include "jc_handlers/flashmemory.hpp"
 
 extern "C" char __StackLimit;
 
@@ -440,6 +441,7 @@ uint8_t tag_root_length(const uint8_t *tag, uint8_t tag_length) {
   case 0x02:
     return tag_length >= 3 ? 3 : 0;
   case 0x03:
+    if (tag_length >= 6 && (tag_length & 1u) == 0) return 6;
     return tag_length >= 5 ? 5 : 0;
   default:
     return 0;
@@ -1058,6 +1060,14 @@ extern "C" void path_applet_field(uint8_t applet, uint8_t package,
                                   uint8_t class_id, uint8_t field,
                                   uint8_t (*tag)[128], uint8_t *length) {
   set_path(tag, length, {0x03, applet, package, class_id, field});
+}
+
+extern "C" void path_applet_field16(uint8_t applet, uint8_t package,
+                                    uint16_t class_id, uint8_t field,
+                                    uint8_t (*tag)[128], uint8_t *length) {
+  set_path(tag, length,
+           {0x03, applet, package, static_cast<uint8_t>(class_id >> 8),
+            static_cast<uint8_t>(class_id), field});
 }
 
 int main_arm(void) {
