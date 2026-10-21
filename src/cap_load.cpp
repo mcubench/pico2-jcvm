@@ -49,17 +49,37 @@ extern "C" uint16_t runtime_install_method(uint8_t package_id,
                                            uint8_t *install_debug_stage,
                                            uint32_t *install_debug_context);
 
+namespace {
+bool find_cap_applet_install_offset(const uint8_t *code, size_t length,
+                                    const uint8_t *aid, uint8_t aid_length,
+                                    uint16_t &install_offset) noexcept;
+}
+
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
                                            uint8_t *package_id,
                                            uint16_t *install_offset) {
-  if (package_id == nullptr || install_offset == nullptr) return 1;
+  if (aid == nullptr || package_id == nullptr || install_offset == nullptr)
+    return 1;
   try {
-    jcvm::jpackage_ID_t resolved_package = 0;
+    uint8_t resolved_package = 0;
+    uint8_t applet_aid[16]{};
+    uint8_t applet_aid_length = 0;
+    uint16_t class_index = 0xffff;
+    if (!cap_store_find_instance(aid, aid_length, resolved_package,
+                                 applet_aid, applet_aid_length,
+                                 class_index) ||
+        !jcvm::FlashMemory_Handler::isDynamicPackageID(resolved_package))
+      return 1;
+
+    uint32_t cap_length = 0;
+    const uint8_t *cap_code =
+        cap_store_data_for_package(resolved_package, &cap_length);
     uint16_t resolved_offset = 0;
-    if (!jcvm::FlashMemory_Handler::findAppletByAID(
-            aid, aid_length, resolved_package, resolved_offset) ||
-        !jcvm::FlashMemory_Handler::isDynamicPackageID(resolved_package)) {
+    if (cap_code == nullptr || cap_length == 0 ||
+        !find_cap_applet_install_offset(cap_code, cap_length, applet_aid,
+                                        applet_aid_length,
+                                        resolved_offset)) {
       return 1;
     }
     *package_id = resolved_package;
@@ -403,6 +423,52 @@ bool validate_cap_code(const uint8_t *code, size_t length,
   }
   return found_header && offset == length;
 }
+
+bool find_cap_applet_install_offset(const uint8_t *code, size_t length,
+                                    const uint8_t *aid, uint8_t aid_length,
+                                    uint16_t &install_offset) noexcept {
+  if (code == nullptr || aid == nullptr || aid_length < 5 || aid_length > 16)
+    return false;
+  size_t offset = 0;
+  while (offset + 3 <= length) {
+    const uint8_t tag = code[offset];
+    const size_t component_length = read_u16_be(code + offset + 1);
+    if (component_length > length - offset - 3) return false;
+    if (tag == 3) {
+      if (component_length < 1) return false;
+      const uint8_t *payload = code + offset + 3;
+      const uint8_t count = payload[0];
+      size_t cursor = 1;
+      bool found = false;
+      uint16_t resolved_offset = 0;
+      for (uint8_t index = 0; index < count; ++index) {
+        if (cursor >= component_length) return false;
+        const uint8_t current_length = payload[cursor++];
+        if (current_length < 5 || current_length > 16 ||
+            current_length > component_length - cursor ||
+            component_length - cursor - current_length < 2) {
+          return false;
+        }
+        const bool matches = current_length == aid_length &&
+                             std::memcmp(payload + cursor, aid,
+                                         aid_length) == 0;
+        const size_t offset_index = cursor + current_length;
+        if (matches) {
+          if (found) return false;
+          found = true;
+          resolved_offset = read_u16_be(payload + offset_index);
+        }
+        cursor = offset_index + 2;
+      }
+      if (cursor != component_length || !found || resolved_offset == 0)
+        return false;
+      install_offset = resolved_offset;
+      return true;
+    }
+    offset += 3 + component_length;
+  }
+  return false;
+}
 } // namespace
 
 void CapLoadSession::reset() noexcept {
@@ -552,38 +618,36 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
   size_t value_length = 0;
   const uint8_t *install_parameters = nullptr;
   size_t install_parameters_length = 0;
-  if (!loaded_) {
-    size_t package_offset = 0;
-    uint8_t requested_package_aid[16]{};
-    uint8_t requested_package_aid_length = 0;
-    if (!read_aid(data, length, package_offset, requested_package_aid,
-                  requested_package_aid_length) ||
-        !cap_store_find_package(requested_package_aid,
-                                requested_package_aid_length, package_id_)) {
-      install_failure_stage_ = 4;
-      return false;
-    }
-    uint32_t cap_length = 0;
-    const uint8_t *cap_code =
-        cap_store_data_for_package(package_id_, &cap_length);
-    if (cap_code == nullptr ||
-        !validate_cap_code(cap_code, cap_length, load_package_aid_,
-                           load_package_aid_length_, applet_aid_,
-                           applet_aid_length_)) {
-      install_failure_stage_ = 4;
-      return false;
-    }
-    loaded_ = true;
-  }
+  // INSTALL is a separate GlobalPlatform command and commonly arrives after
+  // another PC/SC power-on. In that case restoreInstalled() may have changed
+  // the session's current package to a different installed applet. Resolve the
+  // package from this command's package AID every time; do not rely on the
+  // transient LOAD/session fields.
   if (!read_aid(data, length, offset, package_aid, package_aid_length) ||
-      !aid_matches(package_aid, package_aid_length, load_package_aid_,
-                   load_package_aid_length_) ||
-      !read_aid(data, length, offset, applet_aid, applet_aid_length) ||
-      !aid_matches(applet_aid, applet_aid_length, applet_aid_,
-                   applet_aid_length_)) {
+      !cap_store_find_package(package_aid, package_aid_length, package_id_)) {
+    install_failure_stage_ = 4;
+    return false;
+  }
+  uint32_t requested_cap_length = 0;
+  const uint8_t *requested_cap =
+      cap_store_data_for_package(package_id_, &requested_cap_length);
+  uint8_t stored_package_aid[16]{};
+  uint8_t stored_package_aid_length = 0;
+  uint8_t first_applet_aid[16]{};
+  uint8_t first_applet_aid_length = 0;
+  if (requested_cap == nullptr || requested_cap_length == 0 ||
+      !validate_cap_code(requested_cap, requested_cap_length,
+                         stored_package_aid, stored_package_aid_length,
+                         first_applet_aid, first_applet_aid_length) ||
+      !aid_matches(package_aid, package_aid_length, stored_package_aid,
+                   stored_package_aid_length) ||
+      !read_aid(data, length, offset, applet_aid, applet_aid_length)) {
     install_failure_stage_ = 2;
     return false;
   }
+  std::memcpy(load_package_aid_, stored_package_aid, stored_package_aid_length);
+  load_package_aid_length_ = stored_package_aid_length;
+  loaded_ = true;
   uint8_t instance_aid[16]{};
   uint8_t instance_aid_length = 0;
   if (!read_aid(data, length, offset, instance_aid, instance_aid_length) ||
@@ -608,13 +672,18 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
   }
   uint8_t resolved_package_id = 0;
   uint16_t install_method_offset = 0;
-  if (choupi_vm_find_applet(applet_aid, applet_aid_length,
-                            &resolved_package_id, &install_method_offset) != 0 ||
-      resolved_package_id != package_id_ ||
-      install_method_offset == 0) {
+  uint32_t cap_length = 0;
+  const uint8_t *cap_code =
+      cap_store_data_for_package(package_id_, &cap_length);
+  if (!jcvm::FlashMemory_Handler::isDynamicPackageID(package_id_) ||
+      cap_code == nullptr || cap_length == 0 ||
+      !find_cap_applet_install_offset(cap_code, cap_length, applet_aid,
+                                       applet_aid_length,
+                                       install_method_offset)) {
     install_failure_stage_ = 4;
     return false;
   }
+  resolved_package_id = package_id_;
 
   if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
     install_failure_stage_ = 7;

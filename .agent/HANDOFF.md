@@ -6068,3 +6068,44 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: continue the Java Card API/runtime audit. Revisit completeness of
   static-reference roots and persistence aliases before extending reclamation
   to untested object graph shapes.
+
+## Physical deploy API testing and dynamic package continuation — 2026-10-21
+
+- Updated `src/cap_load.cpp`: INSTALL resolves package AID from each INSTALL
+  command (GPPro power-cycles between LOAD and CREATE), and dynamic SELECT
+  resolves instance AID to package/app AID and the per-applet install offset.
+  Updated `AlgTest_JavaCard/deploy/api_card_runner.py` so an explicit INSTALL
+  failure takes precedence over the preceding `CAP loaded` message.
+- Physical Pico validation: ARM build passed; RISC-V was built before the
+  user’s ARM-only steering arrived. After that steering, only ARM was rebuilt
+  and flashed. The bounded serial monitor passed `choupi_runtime` (summary
+  pass=1 fail=0). Both Multi applet CREATE commands and independent SELECTs
+  returned `9000`; GPPro listed both AIDs selectable.
+- The deploy API client shows two empty VPCD readers before the Pico, so use
+  `--reader-index 3` for this VM. Core API 3.0.5 completed 291 calls:
+  236 OK, 15 expected `UNSUPPORTED_PER_SPEC`, 6 WRONG_RESULT, 18 EXC_RUNTIME,
+  12 SW_ERROR, 4 Ext applet not installed. A second Core run with Ext CAP had
+  235 OK, 15 expected unsupported, 5 wrong, 17 runtime exceptions, 15 SW
+  errors, and 4 Ext SELECT failures (`6999`).
+- Security completed 901 calls (40 OK, 822 unsupported, 16 runtime exceptions,
+  15 SW errors, 8 wrong results). Crypto completed 466 direct calls after a
+  manual GP install retry (13 OK, 444 unsupported, 6 CryptoRuntimeException,
+  3 SW errors). The runner’s first Crypto CSV is a partial-install false
+  success artifact; do not use its 466 APPLET_NOT_INSTALLED rows as the final
+  Crypto result.
+- JavacardxExt completed 13 calls, all SW_ERROR. JavacardxSec completed 84,
+  all SW_ERROR, then package cleanup succeeded. Javacardx and JavacardxInt
+  loaded but failed INSTALL with 6A80; their package-only cleanup succeeded.
+  Service completed 124 calls (77 OK, 28 wrong, 18 runtime exceptions, 1 SW
+  error), but cleanup returned 6581. Biometry LOAD returned 6D00.
+- Core fixes identified next: overlapping `Util.arrayCopy` and
+  `arrayCopyNonAtomic`, OwnerPIN runtime failures, and Shareable interface
+  results. Investigate persistent applet deletion returning 6581 before rerun
+  stages that require freed slots. See `.agent/QKB.md` and `TODO.md`.
+- Artifacts: Core and Crypto client CSVs, deploy stage CSVs under
+  `artifacts/results/deploy/*20261021.csv`; Core Ext serial/test evidence in
+  `/tmp/pico2-deploy-core-monitor-selectfix.log` and the direct client logs in
+  `/tmp/pico2-deploy-core-probe/` and `/tmp/pico2-core-ext-probe/`.
+- Next: implement and validate Core `Util.arrayCopy` overlap behavior on ARM,
+  then fix OwnerPIN. Preserve the current card packages and result CSVs until
+  deletion behavior is understood.

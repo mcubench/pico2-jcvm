@@ -1,5 +1,51 @@
 # Project issue knowledge base
 
+## CAP INSTALL and SELECT must resolve the package by the request/instance AID — 2026-10-21
+
+- **Symptom/cause:** GPPro can power-cycle between LOAD and INSTALL. On power-up,
+  `restoreInstalled()` changes the active loader package to an already installed
+  applet's package. Comparing the next INSTALL package AID with that transient
+  value caused Multi applet creation to fail `6A80`. SELECT then failed `6A82`
+  because the old global CAP scan did not find applets in the dynamic package
+  slots.
+- **Viable solution:** Resolve every INSTALL package from the package AID in
+  that command, then validate it against the stored CAP header. For SELECT,
+  resolve the instance AID through the persisted package instance record and
+  read that applet's install offset from the stored CAP Applet component.
+- **Validation:** On the physical Pico 2, LOAD of `AlgTestApiMulti_305.cap`
+  succeeded, then separate GPPro `--create` commands for applets A and B both
+  returned `9000` across power-ons. `gp --list` showed both selectable AIDs;
+  raw SELECT of each returned `9000`. The deploy Core client then selected its
+  applet and completed 291 API calls. See
+  `artifacts/results/deploy/pico2-core-client-20261021.csv`.
+
+## Deploy API runner can report partial CAP install as success — 2026-10-21
+
+- **Symptom/cause:** GlobalPlatformPro prints `CAP loaded` after a successful
+  LOAD phase even if the following INSTALL command fails. The runner previously
+  checked for `CAP loaded` before checking explicit `INSTALL failed`, so it
+  reported UPLOAD OK and ran a client against an applet that was not installed.
+- **Viable solution:** Classify explicit LOAD/INSTALL/DELETE failures before
+  success markers. The runner's `--reader-index` must also match the SmartcardIO
+  prompt: with two empty VPCD readers listed first, the physical Pico was index
+  3 in this VM.
+- **Validation:** A classifier check now returns `refused_install` for
+  `CAP loaded` followed by `INSTALL ... failed: 0x6A82`. A real Javacardx CAP
+  failure was recorded as UPLOAD_REFUSED_INSTALL after the change. Core,
+  Security, and Crypto applet client runs use reader index 3.
+
+## GP DELETE can return 6581 after API applets write persistent state — 2026-10-21
+
+- **Symptom/cause:** Physical GPPro package deletion returned `6581` after the
+  Core and Service API clients had run. Deletion succeeded for JavacardxExt,
+  Javacardx, JavacardxInt, and JavacardxSec packages without persisted applet
+  data. The failing persistent cleanup substep has not yet been isolated.
+- **Workaround:** Remove a loaded package without an installed instance when
+  possible; those package-only deletions reclaimed their CAP slots. Do not
+  treat a failed cleanup record as success or reuse that test slot.
+- **Next:** Inspect transaction snapshot/erase behavior with applet data, then
+  rerun package deletion and the deploy runner's staged cleanup.
+
 ## GPPro package deletion requires removing its applet instance first — 2026-10-20
 
 - **Symptom/cause:** On the physical CHOUPI card, GlobalPlatformPro package

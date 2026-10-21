@@ -7027,3 +7027,43 @@
 - Artifacts/logs: Build output only. VPCD attempt used
   `artifacts/logs/host-vpcd-jcalgtest-20261014.log` and timed out before socket
   connection.
+
+## 2026-10-21 — Restore physical multi-package INSTALL and SELECT
+
+- Step/experiment: `physical-deploy-multi-package-305`
+- Change: INSTALL now resolves the requested package from its APDU AID on every
+  command, surviving GPPro power-on restoration of another package. Dynamic
+  SELECT resolves the installed instance record to its package/app AID and the
+  per-applet install offset. The deploy runner now checks explicit INSTALL
+  failures before the `CAP loaded` success marker.
+- Validation: `./tools/build arm` passed. Flashed with
+  `PICO2_HOST_USB_ACCESS=1 ./tools/flash build/arm/pico2_choupi.uf2`; bounded
+  `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --seconds 18` passed
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. GPPro physical
+  Multi package LOAD passed; separate applet A and B CREATEs and SELECT APDUs
+  each returned `9000`; `gp --list` showed both selectable. Deploy Core API
+  client ran with reader index 3 and completed 291 calls. Security completed
+  901 calls; Crypto completed 466 direct calls after an INSTALL retry. The
+  classifier check confirmed `CAP loaded` followed by `INSTALL failed: 6A82`
+  returns `refused_install`.
+- Result: Core/Multi packages and applets are installable and selectable across
+  GPPro power-ons. Core API reported 236 OK, 15 expected unsupported, 6 wrong,
+  18 runtime exceptions, 12 SW errors; overlapping array copies and OwnerPIN
+  remain defects. Security reported 40 OK, 822 expected unsupported, 16
+  runtime exceptions, 15 SW errors, 8 wrong. Crypto reported 13 OK, 444
+  expected unsupported, 6 CryptoRuntimeException, 3 SW errors. DELETE returns
+  `6581` for populated Core/Service applets but package-only cleanup succeeds.
+- Decision: Keep deploy validation active; next fix Core Util overlap and
+  OwnerPIN behavior, then isolate persistent applet DELETE `6581`. Later area
+  CSVs record JavacardxExt (13 SW errors), JavacardxSec (84 SW errors),
+  Javacardx/JavacardxInt INSTALL refusal `6A80`, Service (124 calls, 77 OK),
+  and Biometry LOAD refusal `6D00`. The first Crypto runner CSV was a
+  partial-install false positive; use the direct Crypto client CSV as evidence.
+- Commit: pending (the implementation commit will be recorded in a follow-up)
+- Artifacts/logs: `artifacts/results/deploy/pico2-core-client-20261021.csv`,
+  `pico2-core-with-ext-client-20261021.csv`,
+  `pico2-security-20261021.csv`, `pico2-crypto-client-20261021.csv`,
+  `pico2-javacardxext-20261021.csv`, `pico2-javacardxsec-20261021.csv`,
+  `pico2-javacardx-20261021.csv`, `pico2-javacardxint-20261021.csv`, and
+  `pico2-service-biometry-20261021.csv` under `artifacts/results/deploy/`.
+  Physical serial log: `/tmp/pico2-deploy-core-monitor-selectfix.log`.

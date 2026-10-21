@@ -89,13 +89,24 @@ claims to support them; implementing every algorithm is not a goal.
 
 ### Priority 3 — define and extend the VM profile
 
-- [ ] **Validate deployment-folder API coverage CAPs.** Runtime loading now
-  accepts arbitrary package AIDs and assigns package IDs 56–63; each slot keeps
-  its own CAP and applet instance records. SELECT, GET STATUS, install, and
-  DELETE resolve package and instance metadata across slots. Repeat the README's
-  Core stage with its supplied `AlgTestApiCore` CAPs and confirm load, test, and
-  cleanup over the card interface. The previous physical attempt rejected
-  versions 305, 304, 303, 222, and 221 with `6D00` before LOAD; see `.agent/QKB.md`.
+- [ ] **Complete deploy-folder API coverage on the Pico 2.** Runtime loading
+  accepts arbitrary package AIDs and assigns IDs 56–63. Physical tests now
+  install the Core, Security, Crypto, Service, and two Multi applets; Core,
+  Security, Crypto, JavacardxExt, JavacardxSec, and Service clients ran. Core
+  and Crypto expose API/runtime failures, Javacardx and JavacardxInt fail at
+  INSTALL, Biometry fails at LOAD, and cleanup of populated applets returns
+  `6581`. Next fix Core correctness, cleanup, then rerun stages with the fixed
+  deploy runner. See `.agent/QKB.md` and the 2026-10-21 deploy result CSVs.
+- [ ] **Fix Core API failures found by physical deploy coverage.** `Util.arrayCopy`
+  and `arrayCopyNonAtomic` fail overlapping-range cases; `OwnerPIN` methods
+  produce runtime exceptions/SW `6F00`; `Shareable` lookup with the test
+  sub-interface returns the wrong result. Preserve the 3.0.5 API test artifacts
+  under `artifacts/results/deploy/` and rerun Core after each fix.
+- [ ] **Fix package deletion after applet tests.** GPPro DELETE returns `6581`
+  for Core and Service packages after persistent objects have been created,
+  while deleting packages with no installed instance succeeds. Determine which
+  persistent-data cleanup or transaction step fails before relying on runner
+  cleanup for repeated API stages.
 - [ ] **Declare the supported Java Card profile and audit its API contract.**
   State the supported Java Card Classic version and APIs, then add applet-level
   behavior tests for each implemented API. Existing tests cover JCSystem,
