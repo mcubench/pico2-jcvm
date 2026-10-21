@@ -1,5 +1,50 @@
 # Handoff
 
+## Current task — deploy Core Shareable dispatch handoff — 2026-10-21
+
+- Work was requested to test the deploy API applets on the physical Pico and
+  fix any failures. The authorized USB check found no device:
+  `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` reported
+  `found 0`; gated `lsusb -d 2e8a:0003` and `lsusb -d 2e8a:0009` showed none.
+  Nothing was flashed or sent to hardware.
+- The deploy Core 3.0.5 CAP loaded, installed and selected through host VPCD;
+  SELECT returned `9000`. Its Shareable probe APDU `B083210000` still returns
+  `04 9000`, so the Core Shareable row remains broken and the task is
+  incomplete.
+- Runtime work in this checkout adds a Java callback wrapper for
+  `getAppletShareableInterfaceObject()` (self-AID only), exposes the current
+  registered/restored applet reference to that wrapper, and fixes interface
+  resolution so each implementation interface is resolved from the concrete
+  class package. Host build `./tools/build-pc` passed after those changes.
+  `./tools/build arm` passed before the final wrapper/resolver source state, so
+  it must be rerun before any flash. No RISC-V build or physical validation
+  occurred.
+- Diagnosis: interface lookup reused a `ConstantPool_Handler` after resolving
+  an imported framework interface. That mutates the resolver's package; the
+  next internal interface reference was then looked up under package 0 rather
+  than the applet package. A diagnostic run showed the subsequent
+  `invokeinterface` raised `SecurityException` (enum 29). The resolver fix is
+  in `choupi/src/jc_handlers/jc_class.cpp`, but it has not fixed the end-to-end
+  APDU yet. Next, add a narrow temporary trace to confirm whether the fixed
+  lookup matches the applet's internal interface; if it does, trace the
+  callback result and interface method invocation to identify the remaining
+  exception. Remove temporary diagnostics after capture.
+- Temporary `INVOKEVIRTUAL` debug logging was removed during handoff. Preserve
+  unrelated dirty worktree changes. The resolver, callback bridge and wrapper
+  are uncommitted because the deploy Shareable APDU still fails; do not treat
+  them as validated or commit them until the focused APDU passes and both
+  required architecture builds are current.
+- Evidence: `/tmp/deploy-shareable-vpcd-diag.log` (dispatch trace) and
+  `/tmp/deploy-shareable-vpcd-final.log` (post-fix failure). Temporary logs
+  may be unavailable after cleanup/reboot; rerun the bounded VPCD reproduction
+  if missing. The PC VPCD shim is single-package/single-instance and cannot
+  validate concurrent package coexistence; see the QKB entry below and the
+  earlier multi-package notes.
+- Session digests reviewed for this handoff were redacted operational
+  checkpoints only. They are not promoted and are not canonical project
+  knowledge; technical state above comes from the checkout and current test
+  evidence.
+
 ## Current task — deploy CAP smoke tests and UserException fix — 2026-10-21
 
 - The authorized BOOTSEL visibility check found no physical Pico in the VM:

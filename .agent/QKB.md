@@ -1,5 +1,26 @@
 # Project issue knowledge base
 
+## Imported interface resolution can contaminate later applet interface lookups — 2026-10-21
+
+- **Symptom:** Deploy Core 3.0.5 Shareable probe APDU `B083210000` returns
+  `04 9000`. A diagnostic callback returning the selected applet reached
+  `invokeinterface`, which raised `SecurityException` (internal enum 29).
+- **Cause:** `Class_Handler::getImplementedInterfaceMethodOffset()` reused one
+  `ConstantPool_Handler` while resolving an implementation's interface table.
+  Resolving an external framework interface changes the resolver package, so
+  a following internal applet interface can be resolved against package 0
+  instead of its declaring CAP package.
+- **Candidate fix:** Construct a fresh constant-pool resolver for each
+  implemented interface, rooted at the concrete class package. This change is
+  present in `choupi/src/jc_handlers/jc_class.cpp`; a host build passed, but
+  the end-to-end Shareable APDU still returns `04 9000`. It is not yet a
+  verified resolution.
+- **Next diagnostic:** Trace the requested and table interface package/class
+  identities after the fix, then trace callback return and `invokeinterface`
+  dispatch to the precise exception. Reproduce on host VPCD first; physical
+  hardware was not visible on 2026-10-21. Remember that the current host VPCD
+  storage shim supports one package and one applet instance only.
+
 ## PC VPCD storage shim is single-package — 2026-10-21
 
 - **Symptom:** Host VPCD tests cannot exercise two distinct uploaded CAP

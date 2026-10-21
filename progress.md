@@ -7368,3 +7368,26 @@
 - Decision: Physical coexistence and second-package validation remain open.
 - Commit: `8dcd7a1` (Multi smoke-test commit referenced by this correction).
 - Artifacts/logs: none.
+
+## 2026-10-21 — Handoff unresolved deploy Shareable dispatch
+
+- Step/experiment: `deploy-core-shareable-dispatch-handoff`
+- Change: Removed temporary `INVOKEVIRTUAL` diagnostic output and documented
+  the current Shareable callback/interface-dispatch failure, partial diagnosis,
+  validation state, hardware availability, and next bounded diagnostic in
+  `.agent/HANDOFF.md` and `.agent/QKB.md`.
+- Validation: Inspected the focused source diff and confirmed the temporary
+  `DEBUG:INVOKEVIRTUAL` instrumentation is absent. No build or test was run
+  during handoff; user requested stopping and the focused Shareable APDU is
+  already known to fail. Host VPCD SELECT returned `9000`, but Shareable APDU
+  `B083210000` returned `04 9000`. The ARM build passed before the final
+  wrapper/resolver changes only. Authorized USB visibility check found no Pico;
+  no hardware operation was attempted.
+- Result: Shareable support remains incomplete. The interface-resolver fix is
+  plausible but not confirmed end-to-end. The working tree has extensive
+  unrelated changes and this failing implementation is left uncommitted.
+- Decision: Resume with the narrow interface-table/callback trace, rerun the
+  VPCD APDU, then build ARM and RISC-V as required before any hardware flash.
+- Commit: `handoff documentation commit; SHA recorded by the following append-only correction`.
+- Artifacts/logs: `/tmp/deploy-shareable-vpcd-diag.log`,
+  `/tmp/deploy-shareable-vpcd-final.log` (availability not guaranteed).
