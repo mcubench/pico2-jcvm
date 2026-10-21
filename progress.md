@@ -7356,3 +7356,15 @@
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/deploy-multi-a-select-vpcd-20261021.log` and
   `artifacts/logs/deploy-multi-b-select-vpcd-20261021.log`.
+
+## 2026-10-21 — Correct Multi VPCD validation commit reference
+
+- Step/experiment: `deploy-multi-applet-independent-vpcd-commit-reference`
+- Change: Resolved the pending commit marker for the preceding Multi applet
+  smoke-test record.
+- Validation: Inspected commit `8dcd7a1`; it contains the TODO/handoff updates
+  and the append-only test record.
+- Result: The independent Multi A/B emulator check is traceable to its commit.
+- Decision: Physical coexistence and second-package validation remain open.
+- Commit: `8dcd7a1` (Multi smoke-test commit referenced by this correction).
+- Artifacts/logs: none.
