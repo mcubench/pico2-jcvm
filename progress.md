@@ -7068,6 +7068,7 @@
   `pico2-service-biometry-20261021.csv` under `artifacts/results/deploy/`.
   Physical serial log: `/tmp/pico2-deploy-core-monitor-selectfix.log`.
 
+
 ## 2026-10-21 — Fix physical Util overlapping copies
 
 - Step/experiment: `physical-core-util-overlap`
@@ -7116,3 +7117,33 @@
 - Commit: `a577c25`.
 - Artifacts/logs: `artifacts/results/deploy/pico2-ownerpin-map-retest-20261021.csv`
   and `pico2-ownerpin-map-client-20261021.log`.
+
+## 2026-10-21 – Remap inherited framework lifecycle tokens
+
+- Step/experiment: `physical-core-inherited-lifecycle-dispatch`
+- Change: `Class_Handler::doGetPublicMethodOffset()` now remaps an imported
+  virtual method token when lookup crosses from a dynamic CAP subclass to an
+  external embedded framework superclass. This aligns inherited lifecycle
+  calls such as `Applet.select()` with the framework's method table.
+- Validation: `./tools/build arm` passed (image end `0x100c57b8` before the
+  final diagnostic-free rebuild; final clean-source ARM build also passed,
+  image end `0x100c57b8`). The physical Ext applet SELECT changed from `6999`
+  to `9000`; deploy Core API 3.0.5 returned OK for inherited `Applet.select()`
+  and `deselect()`. A bounded monitor reported repeated
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. RISC-V was not
+  built per the active ARM-only instruction. The latest clean image could not
+  be reflashed because the Pico disappeared from the VM USB bus.
+- Result: The inherited lifecycle lookup mismatch is fixed. The 291-call Core
+  client still reports OwnerPIN protected-flag failures, three
+  `UserException.throwIt` runtime failures, one Shareable wrong result, and
+  missing Multi/Ext scenario applets; 11 `UNSUPPORTED_PER_SPEC` rows are
+  expected. API cleanup returned `6581` for populated Core, Security, Crypto,
+  and Service packages.
+- Decision: Keep the superclass-boundary remap. Restore USB access, flash the
+  clean build, reinstall Multi and Ext, then continue Core and later deploy
+  areas. Diagnose populated-package deletion before relying on runner cleanup.
+- Commit: `6c8b3ff`
+- Artifacts/logs: Core CSVs
+  `artifacts/results/deploy/pico2-selectfix_APISUPPORT_3b800181.csv` and
+  `artifacts/results/deploy/pico2-dispatch-fix_APISUPPORT_3b800181.csv`;
+  GPPro cleanup transcript `artifacts/logs/deploy-preclean-305-20261021.log`.
