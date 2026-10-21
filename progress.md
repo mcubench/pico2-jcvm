@@ -7265,3 +7265,16 @@
 - Commit: to be recorded in a follow-up reference correction.
 - Artifacts/logs: none; existing physical Core CSVs remain under
   `artifacts/results/deploy/`.
+
+## 2026-10-21 — Record physical retest checkpoint commit
+
+- Step/experiment: `physical-multi-applet-retest-access-check-commit-reference`
+- Change: Added the committed checkpoint identifier to the preceding progress
+  record without changing its validation results.
+- Validation: Inspected commit `dfacb94`; it contains the handoff, QKB, and
+  progress checkpoint updates.
+- Result: The physical-access checkpoint is now traceable to its commit.
+- Decision: Resume physical Multi and deploy CAP testing when USB enumeration
+  returns.
+- Commit: `dfacb94` (checkpoint); this correction is committed separately.
+- Artifacts/logs: none.
