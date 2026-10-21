@@ -1,5 +1,26 @@
 # Handoff
 
+## Physical flash-layout test interrupted by USB detach — 2026-10-21
+
+- Connected BOOTSEL Pico was visible as `2e8a:000f`. Full flash backup
+  `artifacts/backups/flash-before-layout-migration-20261021.bin` passed
+  `picotool save -a -v`, size 2,097,152 bytes, SHA-256
+  `408ba9dff6edf6924830d6ae9e9860a1aa7fef40fe6976ebe9a2ee736e9bc4b6`.
+  Old JFS2 generations 11747 and 11746 validated. Four CAP3 headers and a
+  valid, distinct CAP2 package 20 image were found. The current firmware
+  intentionally fails closed on that CAP2 marker, so a successful migration
+  test cannot proceed without a data-preserving decision for CAP2.
+- `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi` built ARM and RISC-V, then
+  `picotool` reported 100% transfer but aborted with `picoboot::connection_error`
+  before confirming reboot. The wrapper's recovery exhausted its bounded
+  attempts and authorized `lsusb -d 2e8a:` found no Pico. No serial output or
+  post-flash contents were verified. See
+  `artifacts/logs/cycle-choupi-20261021T091042Z.log` and the new QKB entry.
+- The user has been asked to reconnect in BOOTSEL. After it reappears, first
+  compare flash with the backup, especially `0x100000..0x200000`, then capture
+  bounded serial output. Keep the CAP2 image and backup intact. Do not claim
+  hardware migration passed based on the transfer progress display.
+
 ## Flash layout migration implementation — 2026-10-21
 
 - Shared layout now keeps all eight CAP3 slots at `0x100000..0x188000` and

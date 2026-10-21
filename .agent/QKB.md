@@ -1,5 +1,23 @@
 # Project issue knowledge base
 
+## BOOTSEL picotool transfer disconnect after 100% — 2026-10-21
+
+- **Symptom:** During `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi`, both
+  architecture builds passed and `picotool load -f -x` reached 100%, then
+  aborted with `picoboot::connection_error` before confirming reboot. The
+  wrapper's bounded BOOTSEL and CDC recovery saw no Pico, and authorized
+  `lsusb -d 2e8a:` returned no device. No serial result was captured.
+- **Likely cause / viable recovery:** USB passthrough may have detached when
+  the device changed modes; the host previously needed a manual detach and
+  reattach. Reconnect the Pico in BOOTSEL and verify host visibility before
+  another read or flash. Do not infer success from the 100% progress display;
+  first compare the flash with the pre-flash backup and inspect a bounded
+  runtime log. This recovery has not yet been confirmed for this attempt.
+- **Data protection:** A full 2 MiB `picotool save -a -v` backup was verified
+  before flashing at `artifacts/backups/flash-before-layout-migration-20261021.bin`
+  (SHA-256 `408ba9dff6edf6924830d6ae9e9860a1aa7fef40fe6976ebe9a2ee736e9bc4b6`).
+  Both old JFS2 snapshots and a distinct, valid CAP2 image were present.
+
 ## CAP3 package slots overlap RP2350 filesystem snapshots — 2026-10-21
 
 - **Symptom/risk:** Current source allocates CAP slots over the same flash

@@ -7456,3 +7456,28 @@
   separate cross-store CAP/filesystem transaction recovery work afterward.
 - Commit: this step's commit (`git log -1 --format=%H -- src/flash_layout.hpp`).
 - Artifacts/logs: `docs/flash-layout-migration.md`; no hardware log.
+
+## 2026-10-21 — Back up Pico and attempt physical layout test
+
+- Step/experiment: `flash-layout-first-physical-cycle`
+- Change: Made a verified full-flash backup before testing the layout
+  migration. No source files changed. Inspected snapshot and CAP headers in
+  the backup to establish the pre-flash recovery state.
+- Validation: Authorized `lsusb -d 2e8a:` saw RP2350 BOOTSEL. `picotool save
+  -a -v` completed and verified 2,097,152 bytes. Old JFS2 generations 11747
+  and 11746 had valid header/payload CRCs; four CAP3 headers and a valid CAP2
+  package 20 image were present. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi`
+  passed ARM and RISC-V builds, but flash exited 1 after `picotool` reached
+  100% and aborted with `picoboot::connection_error`. Recovery found no USB
+  device; no serial monitor ran.
+- Result: Hardware migration is unverified and the device's post-transfer
+  state is unknown. CAP2 is valid and distinct, so the new firmware's
+  fail-closed CAP2 guard is expected to stop startup until preservation or
+  conversion is resolved.
+- Decision: Wait for a BOOTSEL reconnect, compare device flash with the
+  backup, then diagnose the runtime without erasing CAP2. Preserve the backup
+  outside commits and do not treat 100% transfer as flash success.
+- Commit: this experiment's documentation commit (`git log -1 --format=%H -- progress.md`).
+- Artifacts/logs: `artifacts/backups/flash-before-layout-migration-20261021.bin`
+  (SHA-256 `408ba9dff6edf6924830d6ae9e9860a1aa7fef40fe6976ebe9a2ee736e9bc4b6`),
+  `artifacts/logs/cycle-choupi-20261021T091042Z.log`.
