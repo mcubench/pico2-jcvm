@@ -7228,3 +7228,17 @@
 - Commit: `bfe6755` records the prior validation checkpoint.
 - Artifacts/logs: `artifacts/logs/jcalgtest-exact-cap-vpcd-20261021.log`;
   generated fixtures `build/algtest-v182-current-{empty-flash,load-code}.bin`.
+
+## 2026-10-21 — Correct checkpoint commit reference
+
+- Step/experiment: `progress-commit-reference-correction`
+- Change: Clarified the commit reference in the preceding progress entry; it is
+  contained in commit `26adbb5`, not `bfe6755`.
+- Validation: Inspected `git show --stat 26adbb5`; the commit contains the
+  preceding progress, handoff, and QKB updates.
+- Result: The prior entry now has an auditable commit reference without
+  rewriting the append-only progress log.
+- Decision: Continue with the same pending physical Multi/Ext test when Pico
+  USB appears in the VM.
+- Commit: `26adbb5` (commit that this correction identifies).
+- Artifacts/logs: none.
