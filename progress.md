@@ -7391,3 +7391,16 @@
 - Commit: `handoff documentation commit; SHA recorded by the following append-only correction`.
 - Artifacts/logs: `/tmp/deploy-shareable-vpcd-diag.log`,
   `/tmp/deploy-shareable-vpcd-final.log` (availability not guaranteed).
+
+## 2026-10-21 — Record Shareable handoff commit
+
+- Step/experiment: `deploy-core-shareable-dispatch-handoff-commit-reference`
+- Change: Recorded the handoff documentation commit identifier without
+  changing the implementation or its validation state.
+- Validation: Confirmed commit `93bdacb8592693c450e4c1d6e4879e3cb22968e0`
+  contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md`.
+- Result: The incomplete Shareable implementation remains uncommitted while
+  the handoff notes are traceable.
+- Decision: Resume from the unresolved Shareable APDU diagnosis recorded above.
+- Commit: `pending`.
+- Artifacts/logs: none.
