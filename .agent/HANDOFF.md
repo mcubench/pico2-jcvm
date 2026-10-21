@@ -1,5 +1,32 @@
 # Handoff
 
+## Physical JFS2 migration verified with CAP2 preserved — 2026-10-21
+
+- With the Pico reinserted in BOOTSEL (`2e8a:000f`), flashed the revised ARM
+  `pico2_choupi.uf2` using `picotool load -v` without auto-reboot; flash
+  verification passed. Rebooted to the application and captured a finite
+  30-second serial log: 30 `TEST:PASS choupi_runtime`, 30 matching summaries,
+  no `FAULT` or `TEST:FAIL`. The one-time migration print was missed by CDC
+  attach timing, so the flash readback is the migration proof.
+- A verified post-migration full-flash image has SHA-256
+  `51a303f6f00da7611737b4e2a7b174ec59e7d793b6efbcb25002daab0adf6391`.
+  JFS2 slot 0 at `0x188000` validates at generation 11748, with 2,264 records,
+  28,852 overlay bytes, and a 51,492-byte payload identical to the old
+  generation-11747 snapshot. CAP3/old-JFS2 region `0x100000..0x188000` and
+  CAP2 extent `0x1c0000..0x1c8000` match the pre-flash backup byte-for-byte.
+  JFS2 slot 1 remains unused; physical second-slot writes were not tested.
+- Booted again from the migrated state: an eight-second serial log had eight
+  runtime passes and summaries, with no failure markers. Physical GPPro
+  `--list` then returned the same four selectable applets and four loaded
+  packages. The repository's `test-pico-powerup` wrapper exited 1 because it
+  expects a different, hard-coded JCAlgTest AID; its GPPro listing itself
+  succeeded. This is a fixture mismatch, not a migration failure.
+- Card is running the revised firmware. Keep the pre-flash backup and
+  post-migration image under `artifacts/backups/`. CAP2 bytes are preserved
+  but CAP2 package ID 20 is not converted into CAP3 or made active in the VM.
+  Do not flash old CAP2-writing firmware without considering its 256 KiB erase
+  range, which overlaps the new JFS2 slot 1.
+
 ## CAP2-preserving flash layout revision — 2026-10-21
 
 - After BOOTSEL reattachment, a verified full flash read showed the previous

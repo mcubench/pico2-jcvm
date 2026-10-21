@@ -15,6 +15,12 @@
   CAP2 bytes unchanged. CAP2 remains stored but is not interpreted by CAP3.
 - **Caveat:** Old firmware that writes its 256 KiB CAP2 erase slot could erase
   the new JFS2 slot 1. Keep the full backup before any rollback.
+- **Physical validation:** Revised ARM firmware was flashed with verification.
+  A verified full-flash readback found new JFS2 generation 11748 with the
+  exact old generation-11747 payload, while CAP3/old-JFS2 and CAP2 bytes were
+  unchanged. Two bounded serial boots passed, and GPPro listed the same four
+  loaded packages and selectable applets after the second boot. The migration
+  print was missed by CDC attach timing; flash CRC/readback provides evidence.
 
 ## BOOTSEL picotool transfer disconnect after 100% — 2026-10-21
 

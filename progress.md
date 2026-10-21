@@ -7504,3 +7504,38 @@
   `408ba9dff6edf6924830d6ae9e9860a1aa7fef40fe6976ebe9a2ee736e9bc4b6`;
   post-transfer backup SHA-256
   `63076672521354b59baea9392031344b18470a3665c14b4d649324ee58f09b37`.
+
+## 2026-10-21 — Verify CAP2-preserving JFS2 migration on Pico 2
+
+- Step/experiment: `flash-layout-cap2-physical-migration`
+- Change: Flashed the validated ARM layout revision to the BOOTSEL Pico,
+  migrated its existing JFS2 state on boot, and captured a verified full-flash
+  image for exact before/after comparison. No source files changed.
+- Validation: `picotool load -v` verified the ARM UF2 before reboot. The first
+  30-second monitor captured 30 `TEST:PASS choupi_runtime` and 30 matching
+  summaries; the post-migration eight-second reboot captured eight of each.
+  Both logs had zero `FAULT` and zero `TEST:FAIL`. `picotool save -a -v`
+  verified the 2 MiB post-migration image. Its JFS2 slot 0 at `0x188000`
+  passed header and payload CRCs at generation 11748; its 51,492-byte
+  payload was identical to the old generation-11747 snapshot (2,264 records,
+  28,852 overlay bytes). The entire CAP3/old-JFS2 range and preserved CAP2
+  extent were byte-for-byte unchanged. GPPro `--list` exited 0 after reboot
+  with four selectable applets and four loaded packages.
+- Result: Physical migration and restart passed. The one-time
+  `CHOUPI:FS_MIGRATE` line was missed during CDC attachment, but verified
+  flash readback proves the migration. JFS2 slot 1 remains blank; its physical
+  write path was not exercised. `test-pico-powerup` exited 1 because it expects
+  a different hard-coded JCAlgTest AID than the four installed deploy applets;
+  its GPPro registry query succeeded.
+- Decision: Keep the revised firmware and the full backups. CAP2 bytes remain
+  preserved but its package ID 20 is not converted to active CAP3 metadata.
+  Continue separate cross-store transaction recovery work later.
+- Commit: this evidence commit (`git log -1 --format=%H -- progress.md`).
+- Artifacts/logs: `artifacts/logs/flash-layout-cap2-preserved-load-20261021.log`,
+  `artifacts/logs/flash-layout-cap2-preserved-runtime-20261021.log`,
+  `artifacts/logs/flash-layout-post-migration-reboot-20261021.log`,
+  `artifacts/logs/flash-layout-post-migration-registry-20261021.log`,
+  `artifacts/backups/flash-after-jfs2-migration-20261021.bin` (SHA-256
+  `51a303f6f00da7611737b4e2a7b174ec59e7d793b6efbcb25002daab0adf6391`),
+  and the pre-flash backup (SHA-256
+  `408ba9dff6edf6924830d6ae9e9860a1aa7fef40fe6976ebe9a2ee736e9bc4b6`).
