@@ -428,8 +428,24 @@ std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
 std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
     const jc_cap_virtual_method_ref_info virtual_method_ref_info,
     const jpackage_ID_t receiver_package, const jclass_index_t receiver_class) {
-  auto method_ref = remapVirtualMethodRef(this->package,
-                                          virtual_method_ref_info);
+  // A dynamic receiver uses the importing CAP's public token numbers until
+  // resolution reaches its external superclass. Translate at that boundary,
+  // not here, or methods such as Applet.select() get translated twice.
+  auto method_ref =
+      FlashMemory_Handler::isDynamicPackageID(receiver_package)
+          ? virtual_method_ref_info
+          : remapVirtualMethodRef(this->package, virtual_method_ref_info);
+  if (FlashMemory_Handler::isDynamicPackageID(receiver_package) &&
+      method_ref.class_ref.isExternalClassRef()) {
+    const auto *imported_package = Import_Handler(this->package).getPackageAID(
+        method_ref.class_ref.external_classref.package_token & 0x7F);
+    if (imported_package->AID_length == 7 &&
+        std::memcmp(imported_package->AID,
+                    "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+        method_ref.class_ref.external_classref.class_token == 3) {
+      method_ref.token &= 0x7F;
+    }
+  }
   Package concrete_package(receiver_package);
   ConstantPool_Handler cp_handler(concrete_package);
   method_ref.class_ref =

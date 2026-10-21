@@ -1,5 +1,22 @@
 # Project issue knowledge base
 
+## Dynamic applet virtual method token translated twice — 2026-10-21
+
+- **Symptom:** A fresh physical deploy Core 3.0.5 run returned
+  `EXC_RUNTIME` for inherited `Applet.select`, `deselect`, `register`,
+  `selectingApplet`, and related probes, despite successful CAP installation.
+- **Cause:** The receiver dispatch path remapped an external method token
+  before looking in the dynamic CAP class table. When lookup reached the
+  embedded framework superclass, it remapped the same token again.
+- **Viable fix:** For a dynamic receiver retain the CAP's original token and
+  remap only at the external superclass boundary. Keep direct embedded
+  receiver remapping and Applet's public/protected bit normalization.
+- **Physical validation:** Core+Multi+Ext completed 291 calls before and after
+  the change. OK rose from 256 to 267, and the nine Applet method failures
+  cleared. Both architectures built, the ARM UF2 passed BOOTSEL readback
+  verification, and a bounded reboot log had seven runtime passes. Five Core
+  failures remain in OwnerPIN and Shareable paths.
+
 ## Preserve CAP2 image while placing two JFS2 slots — 2026-10-21
 
 - **Discovery:** The physical card backup has a valid, distinct CAP2 package

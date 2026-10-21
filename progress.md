@@ -7539,3 +7539,30 @@
   `51a303f6f00da7611737b4e2a7b174ec59e7d793b6efbcb25002daab0adf6391`),
   and the pre-flash backup (SHA-256
   `408ba9dff6edf6924830d6ae9e9860a1aa7fef40fe6976ebe9a2ee736e9bc4b6`).
+
+## 2026-10-21 — Correct dynamic applet virtual-token dispatch
+
+- Step/experiment: `deploy-core-inherited-token-on-pico`
+- Change: Deferred imported virtual-token remapping for dynamic receivers to
+  the embedded framework superclass boundary, avoiding a second translation.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed after the
+  final edit. A full `./tools/build-pc` attempt failed on an intermediate edit,
+  corrected before firmware builds. Physical Core 3.0.5 runner loaded Core,
+  Multi (two instances), and Ext and cleaned all three. `./tools/cycle choupi`
+  built both targets but picotool exited 1 after 100% transfer; a read-only
+  BOOTSEL `picotool verify` of the exact UF2 returned `OK`. The verified image
+  rebooted and an eight-second serial monitor reported seven `TEST:PASS`
+  runtime lines, no `TEST:FAIL` or `FAULT`.
+- Result: Core's 291-call result improved from 256 OK, 14 runtime exceptions,
+  two status errors, and 19 allowed unsupported to 267 OK, two runtime
+  exceptions, three status errors, and 19 allowed unsupported. Nine inherited
+  Applet method failures cleared. The five remaining failures are OwnerPIN
+  validated flag (three) and Shareable (two). No throughput metric measured.
+- Decision: Keep the verified token fix. Probe the remaining deploy CAP areas;
+  diagnose OwnerPIN and Shareable separately.
+- Commit: this step's commit (`git log -1 --format=%H -- choupi/src/jc_handlers/jc_class.cpp`).
+- Artifacts/logs: `artifacts/results/deploy/pico2-deploy-core-20261021.csv`,
+  `artifacts/results/deploy/pico2-deploy-core-tokenfix-20261021.csv`,
+  `artifacts/logs/deploy-inherited-token-fix-verified-boot-20261021.log`;
+  verified UF2 SHA-256
+  `552c2b5a79c3669a24ed70b627ab8c935a3fb404d004c90b20b10cbe32f039a6`.

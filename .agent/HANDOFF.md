@@ -1,5 +1,32 @@
 # Handoff
 
+## Deploy Core dynamic-receiver token fix — 2026-10-21
+
+- The physical Core 3.0.5 runner, with Multi and Ext scenarios, initially
+  reported 256 OK, 19 allowed unsupported, 14 runtime exceptions, and two
+  status errors. All CAP uploads and cleanup passed after flashing the then
+  current source; the earlier populated DELETE `6581` no longer reproduced.
+- Fixed `Class_Handler::getMethodOffset` for a dynamic receiver: keep the
+  importing CAP's virtual token until resolution crosses into the embedded
+  framework superclass, where it is remapped once. The old path remapped
+  before dynamic lookup and again at the superclass boundary. Preserve the
+  unrelated, pre-existing interface-resolution hunk in the same source file.
+- ARM and RISC-V builds passed. The initial `./tools/build-pc` run failed on
+  an intermediate misplaced edit; it was corrected and both firmware builds
+  passed. `./tools/cycle choupi` reached 100% but picotool exited with a USB
+  connection error. A subsequent BOOTSEL `picotool verify` matched the exact
+  built UF2 (SHA-256 `552c2b5a79c3669a24ed70b627ab8c935a3fb404d004c90b20b10cbe32f039a6`),
+  and the verified image rebooted with seven serial `TEST:PASS` lines and no
+  failure markers.
+- The post-fix physical Core runner reported 267 OK, 19 allowed unsupported,
+  three `SW_ERROR`, and two `EXC_RUNTIME`; all nine Applet method failures
+  cleared. Remaining failures are OwnerPIN validated-flag operations and two
+  Shareable calls. Core, Multi, and Ext cleanup passed. The card currently
+  has Security, Crypto, and Service installed; Core was removed by the runner.
+- Continue with Security/Crypto/other deploy CAP probes. Fix OwnerPIN and
+  Shareable separately, then rerun Core and verify restart. Results are in
+  `artifacts/results/deploy/pico2-deploy-core-{,tokenfix-}20261021.csv`.
+
 ## Physical JFS2 migration verified with CAP2 preserved — 2026-10-21
 
 - With the Pico reinserted in BOOTSEL (`2e8a:000f`), flashed the revised ARM
