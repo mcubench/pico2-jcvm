@@ -7334,3 +7334,25 @@
   returns; the hardware remains unavailable in this VM.
 - Commit: `58e92e6` (implementation commit referenced by this correction).
 - Artifacts/logs: none.
+
+## 2026-10-21 — Exercise both deploy Multi CAP applets in VPCD
+
+- Step/experiment: `deploy-multi-applet-independent-vpcd`
+- Change: No runtime code change. Installed and selected each of the two applet
+  AIDs declared by the deploy `AlgTestApiMulti_305.cap` in its own fresh host
+  emulator image. Updated TODO and handoff with the exact result and remaining
+  coexistence limitation.
+- Validation: AID `4A43416C675465737441706D41` installed and selected with `9000`;
+  AID `4A43416C675465737441706D42` installed and selected with `9000`. The
+  authorized BOOTSEL visibility check still reports no physical Pico, so these
+  are host VPCD results only. No simultaneous instances or multiple loaded
+  packages were exercised.
+- Result: Both package applet entry points work independently in the emulator.
+  This does not establish persistence of both instances together or the GP
+  LOAD/CREATE/DELETE lifecycle.
+- Decision: On physical access, run the deploy Core scenarios, verify both AIDs
+  coexist and are independently selectable, then load another distinct
+  package without deleting Multi and check GET STATUS, DELETE, and reinstall.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/deploy-multi-a-select-vpcd-20261021.log` and
+  `artifacts/logs/deploy-multi-b-select-vpcd-20261021.log`.

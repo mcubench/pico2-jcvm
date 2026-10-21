@@ -21,6 +21,10 @@
   README's missing framework-package and `int` limitations. These were separate
   host emulator runs, not concurrent package retention tests or physical API
   client runs.
+- The two applets in `AlgTestApiMulti_305.cap` were each independently
+  installed and selected through VPCD: AID `4A43416C675465737441706D41` and
+  AID `4A43416C675465737441706D42` both returned `9000`. Each used a fresh host
+  emulator image, so this still does not verify both instances coexisting.
 - Host regressions: GP registry 47/47, install-status 10/10, GP DELETE 26/26.
   Deploy inventory listed all nine areas. The full transaction VPCD run passed
   cases 1–12 but was interrupted while case 13 waited; case 13 passed alone in

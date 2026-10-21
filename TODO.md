@@ -100,7 +100,9 @@ claims to support them; implementing every algorithm is not a goal.
   Security, Crypto, JavacardxExt, JavacardxSec, Service, and Biometry CAPs;
   Javacardx and JavacardxInt are refused at install as expected from their
   missing framework/int support. These isolated emulator runs do not validate
-  concurrent package retention or physical PC/SC behavior. See
+  concurrent package retention or physical PC/SC behavior. Both AIDs in the
+  deploy `Multi_305` CAP also install/select independently in fresh emulator
+  images; coexisting instances remain unverified. See
   `.agent/QKB.md` and the 2026-10-21 deploy result CSVs.
 - [ ] **Fix remaining Core API failures found by physical deploy coverage.**
   Same-array overlapping-range behavior in `Util.arrayCopy` and
