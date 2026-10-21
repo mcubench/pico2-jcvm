@@ -7147,3 +7147,27 @@
   `artifacts/results/deploy/pico2-selectfix_APISUPPORT_3b800181.csv` and
   `artifacts/results/deploy/pico2-dispatch-fix_APISUPPORT_3b800181.csv`;
   GPPro cleanup transcript `artifacts/logs/deploy-preclean-305-20261021.log`.
+
+## 2026-10-21 — Remove the high-index CAP DELETE guard
+
+- Step/experiment: `deploy-delete-high-class-index`
+- Change: Removed the cleanup rejection for applet class indexes above 255 and
+  made its conversion to the existing one-byte persistent-field tag explicit.
+  Added a persistent-transaction regression using class index `0x1234`.
+- Validation: `./tools/build arm` passed (`BUILD:PASS target=choupi`, image
+  end `0x100c57b0`); `./tools/test-persistent-transaction` passed with
+  `TEST:SUMMARY fail=0`; `./tools/test-gp-delete` passed 26/26. RISC-V was not
+  built per the active ARM-only instruction. Physical access check found no
+  reader (`sudo -n /usr/local/sbin/pico2-pcsc-reader`: found 0;
+  `PICO2_HOST_USB_ACCESS=1 lsusb -d 2e8a:`: empty), so no flash, monitor, or
+  physical applet DELETE was performed.
+- Result: The implementation path no longer returns `6581` solely because a
+  recorded class index exceeds 255. This matches the current byte-sized field
+  tag ABI; possible collisions for same-package indexes separated by 256
+  remain unresolved and physical DELETE confirmation is pending.
+- Decision: Reflash the clean ARM build when the board returns, delete a
+  populated deploy CAP, confirm GET STATUS and reinstall, then continue the
+  remaining deploy README stages.
+- Commit: `2c3459e` (implementation); progress record commit follows.
+- Artifacts/logs: Build output `build/arm/pico2_choupi.uf2`; host test output
+  was not archived separately.
