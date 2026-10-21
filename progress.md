@@ -7092,3 +7092,27 @@
 - Artifacts/logs: `artifacts/results/deploy/pico2-overlap-retest-20261021.csv`,
   `artifacts/results/deploy/pico2-overlap-retest-client-20261021.log`; bounded
   monitor output was captured during this session but not archived separately.
+
+## 2026-10-21 — Remap physical OwnerPIN and PIN dispatch
+
+- Step/experiment: `physical-core-ownerpin-token-remap`
+- Change: Added independent JC305-to-embedded token maps for OwnerPIN virtual
+  methods and the PIN interface. The reference and embedded `framework.jca`
+  method tables have different orders; using raw external method tokens caused
+  constructor/method probes to fail or call the wrong method.
+- Validation: `./tools/build arm` passed. Flashed with
+  `PICO2_HOST_USB_ACCESS=1 ./tools/flash build/arm/pico2_choupi.uf2`; the
+  wrapper recovered via CDC BOOTSEL after its reset-interface probe failed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --seconds 8` passed repeated runtime
+  checks. The physical deploy Core API 3.0.5 client completed 291 calls and all
+  16 direct OwnerPIN calls and 12 PIN-interface calls passed.
+- Result: OwnerPIN is no longer a physical Core failure. The complete direct
+  Core run had 268 OK, 15 `UNSUPPORTED_PER_SPEC`, 3 UserException runtime
+  probes, 4 Ext scenario `APPLET_NOT_INSTALLED` rows, and one Shareable wrong
+  result. The Ext scenario requires its separate CAP; the single-context
+  Shareable limitation is documented in `.agent/QKB.md`.
+- Decision: Rerun Core through the deploy runner with Multi and Ext CAPs, then
+  continue investigating persistent applet deletion and later API areas.
+- Commit: recorded in the next metadata follow-up.
+- Artifacts/logs: `artifacts/results/deploy/pico2-ownerpin-map-retest-20261021.csv`
+  and `pico2-ownerpin-map-client-20261021.log`.

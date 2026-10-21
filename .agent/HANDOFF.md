@@ -6129,3 +6129,21 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: isolate OwnerPIN's first constructor failure, fix it, and rerun the
   physical Core API client. Then continue deploy areas and investigate package
   deletion `6581` before relying on runner cleanup.
+
+## Physical OwnerPIN dispatch fix — 2026-10-21
+
+- `choupi/src/jc_handlers/jc_cp.cpp` now maps JC305 OwnerPIN virtual-method
+  tokens and PIN interface-method tokens to the embedded API order. The
+  mapping was derived by comparing the supplied JC305 `framework.jca` with the
+  generated embedded `framework.jca`.
+- Validation: `./tools/build arm` passed. Flashed the physical Pico 2 through
+  the wrapper's CDC BOOTSEL recovery. The bounded monitor passed repeated
+  runtime checks. The deploy Core API 3.0.5 client then completed 291 calls;
+  every OwnerPIN constructor, method, and PIN-interface row returned OK.
+- Result: the pre-existing OwnerPIN runtime failures and false
+  `getValidatedFlag` result are fixed on hardware. Current remaining Core
+  findings are one Shareable wrong result, three generic UserException runtime
+  probes, and four Ext scenario calls requiring the separate Ext applet.
+- Next: run the deploy runner's Core stage with its Multi and Ext CAPs so the
+  multi-applet and extended-length scenarios are exercised; then continue
+  cleanup `6581` and the remaining deploy area results.

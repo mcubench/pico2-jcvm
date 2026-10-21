@@ -16,15 +16,27 @@
   expected returned offset and effect. Evidence:
   `artifacts/results/deploy/pico2-overlap-retest-20261021.csv`.
 
-## OwnerPIN physical runtime failures — 2026-10-21
+## JC305 OwnerPIN and PIN dispatch used embedded tokens — 2026-10-21
 
-- **Symptom:** The deploy Core API client reports OwnerPIN construction,
-  update, check, reset, and inherited PIN calls as `EXC_RUNTIME` or SW `6F00`.
-  The failures span direct and interface dispatch. OwnerPINx-specific methods
-  passed in the earlier Core run, so the cause is not yet isolated.
-- **Current state:** Investigate bytecode dispatch, object fields, array
-  allocation, and exception handling from the first failing constructor before
-  choosing a fix. Do not treat this as expected unsupported behavior.
+- **Symptom/cause:** The physical deploy Core API run reported OwnerPIN
+  construction and methods as `EXC_RUNTIME`/SW `6F00`, with a wrong result for
+  `getValidatedFlag`. The reference JC305 framework export assigns `OwnerPIN`
+  class token 9 and orders its virtual methods as `equals`, `check`,
+  `getTriesRemaining`, `getValidatedFlag`, `isValidated`, `reset`,
+  `resetAndUnblock`, `setValidatedFlag`, `update`. The embedded method table
+  uses a different order. The JC305 `PIN` interface also orders `check` before
+  `getTriesRemaining`, opposite the embedded interface.
+- **Viable solution:** Map JC305 OwnerPIN virtual tokens to the embedded
+  OwnerPIN method table and map the PIN interface tokens independently. Keep
+  OwnerPINx's separate map, since its own export order differs too.
+- **Validation:** Rebuilt and flashed ARM firmware to the physical Pico 2;
+  finite serial output reported `TEST:PASS choupi_runtime`. Deploy Core 3.0.5
+  then passed all tested OwnerPIN constructor, update, check, state, and `PIN`
+  interface rows. The complete direct Core run reported 268 OK, 15
+  `UNSUPPORTED_PER_SPEC`, 3 `EXC_RUNTIME` (UserException probes), 4 Ext
+  `APPLET_NOT_INSTALLED` rows (`6999`), and one remaining wrong Shareable
+  result. Evidence:
+  `artifacts/results/deploy/pico2-ownerpin-map-retest-20261021.csv`.
 
 ## CAP INSTALL and SELECT must resolve the package by the request/instance AID — 2026-10-21
 

@@ -100,10 +100,10 @@ claims to support them; implementing every algorithm is not a goal.
 - [ ] **Fix remaining Core API failures found by physical deploy coverage.**
   Same-array overlapping-range behavior in `Util.arrayCopy` and
   `arrayCopyNonAtomic` now passes on the physical Pico after the SDK fix.
-  `OwnerPIN` methods still produce runtime exceptions/SW `6F00`; `Shareable`
-  lookup with the test sub-interface returns the wrong result. Preserve the
-  3.0.5 API artifacts under `artifacts/results/deploy/` and rerun Core after
-  each fix.
+  `OwnerPIN` and `PIN` dispatch now pass the physical Core calls after export
+  token remapping. The remaining Core finding is `Shareable` lookup with the
+  test sub-interface returning the wrong result. Preserve the 3.0.5 API
+  artifacts under `artifacts/results/deploy/` and rerun Core after each fix.
 - [ ] **Fix package deletion after applet tests.** GPPro DELETE returns `6581`
   for Core and Service packages after persistent objects have been created,
   while deleting packages with no installed instance succeeds. Determine which

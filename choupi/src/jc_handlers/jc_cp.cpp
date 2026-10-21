@@ -207,6 +207,11 @@ uint8_t remap_imported_virtual_method_token(
     const uint8_t method_token) noexcept {
   static constexpr uint8_t framework_applet_methods[] = {
       0, 1, 2, 3, 5, 6, 4, 7};
+  // JC305's OwnerPIN export orders its public methods differently from the
+  // embedded implementation. Translate the imported virtual token before
+  // dispatching against the embedded class table.
+  static constexpr uint8_t framework_ownerpin_methods[] = {
+      0, 4, 3, 1, 6, 7, 9, 2, 8};
   // JC305 orders AID's public methods differently from the embedded
   // framework API. In particular, JC305 token 3 is getBytes([BS)B, while
   // embedded token 3 is partialEquals([BSB)Z (which takes one more word).
@@ -257,6 +262,13 @@ uint8_t remap_imported_virtual_method_token(
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+      class_token == 9 &&
+      method_token < sizeof(framework_ownerpin_methods)) {
+    return framework_ownerpin_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
       class_token == 6 &&
       method_token < sizeof(framework_aid_virtual_methods)) {
     return framework_aid_virtual_methods[method_token];
@@ -297,6 +309,15 @@ uint8_t remap_imported_interface_method_token(
   // PIN and places getTriesRemaining first. Remap both related interfaces.
   static constexpr uint8_t framework_ownerpinx_interface_methods[] = {
       1, 0, 2, 3, 4, 5, 6, 7, 8};
+  static constexpr uint8_t framework_pin_interface_methods[] = {
+      1, 0, 2, 3};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
+      class_token == 1 &&
+      method_token < sizeof(framework_pin_interface_methods)) {
+    return framework_pin_interface_methods[method_token];
+  }
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
