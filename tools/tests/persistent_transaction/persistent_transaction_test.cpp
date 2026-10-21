@@ -135,6 +135,18 @@ int main() {
          "rollback_new_record_succeeds");
   expect(read(created.value, created.len).empty(), "rollback_erases_new_record");
 
+  const auto high_class_field =
+      FlashMemory_Handler::getPersistentFieldTag(0, 63, 0x1234, 7);
+  seed(high_class_field.value, high_class_field.len, {0x10, 0x20});
+  expect(FlashMemory_Handler::beginPersistentWriteTransaction(),
+         "begin_high_class_delete");
+  expect(FlashMemory_Handler::erasePersistentTag(high_class_field),
+         "erase_persistent_field_for_16_bit_class_index");
+  expect(FlashMemory_Handler::commitPersistentWriteTransaction(),
+         "commit_high_class_delete");
+  expect(read(high_class_field.value, high_class_field.len).empty(),
+         "high_class_field_is_erased");
+
   expect(FlashMemory_Handler::beginPersistentWriteTransaction(), "begin_commit");
   FlashMemory_Handler::setPersistentField_Byte(existing, 0x77);
   const unsigned int syncs_before_commit =

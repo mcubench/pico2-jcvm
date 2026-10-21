@@ -2423,3 +2423,24 @@ fix.
   there and continue offline until the device appears. Current clean ARM build
   is `build/arm/pico2_choupi.uf2`; it has not been flashed after temporary
   diagnostics were removed.
+
+## DELETE cleanup rejects CAP class indexes above 255 — 2026-10-21
+
+- **Cause found in source:** `clear_applet_persistent_state()` rejected a
+  recorded 16-bit CAP class index above `UINT8_MAX` and returned failure,
+  which GlobalPlatform DELETE maps to `6581`. The CHOUPI `path_applet_field`
+  ABI encodes its class component as one byte, so persisted applet-field keys
+  use the low byte of that class index. Cleanup now uses the same byte
+  conversion as the runtime instead of rejecting the instance.
+- **Validation:** ARM build passed. The persistent-transaction host regression
+  covers erasing a field generated from class index `0x1234`; the GP DELETE
+  protocol regression passes 26/26. Physical confirmation remains pending:
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` found no reader and gated
+  `lsusb -d 2e8a:` showed no connected Pico.
+- **Caveat:** This unblocks cleanup against the current one-byte field-tag
+  format. The broader 16-bit class-index encoding and potential same-package
+  key collisions still need design and compatibility coverage before claiming
+  arbitrary class-index persistence is complete.
+- **Next:** Reflash the clean ARM image when USB returns, retry DELETE for a
+  populated Core CAP, confirm registry removal and reinstall, then continue the
+  deploy README stages.

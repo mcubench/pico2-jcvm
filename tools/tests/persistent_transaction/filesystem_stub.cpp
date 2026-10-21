@@ -12,6 +12,17 @@ extern unsigned int tracked_array_allocations;
 extern unsigned int tracked_array_deallocations;
 } // namespace persistent_transaction_test
 
+extern "C" void path_applet_field(uint8_t applet, uint8_t package,
+                                   uint8_t class_index, uint8_t field,
+                                   uint8_t (*tag)[128], uint8_t *length) {
+  (*tag)[0] = 0x03;
+  (*tag)[1] = applet;
+  (*tag)[2] = package;
+  (*tag)[3] = class_index;
+  (*tag)[4] = field;
+  *length = 5;
+}
+
 namespace {
 std::map<std::string, std::vector<uint8_t>> files;
 bool fail_next_write = false;

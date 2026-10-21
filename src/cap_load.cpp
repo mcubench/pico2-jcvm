@@ -170,13 +170,15 @@ bool read_lifecycle_state(const jcvm::fs::Tag &tag,
 
 bool clear_applet_persistent_state(uint8_t package_id,
                                    uint16_t class_index) noexcept {
-  if (class_index > UINT8_MAX) return false;
+  // Existing applet-field records encode the class component as one byte in
+  // path_applet_field(). Keep using that layout here so DELETE addresses the
+  // same keys that the runtime used when it persisted the instance.
   // Root object and instance fields use the same five-byte tag namespace. Any
   // child array/object records become unreachable when these owning fields are
   // erased and are overwritten if the applet is installed again.
   for (uint16_t field = 0; field <= 0xff; ++field) {
     const auto tag = jcvm::FlashMemory_Handler::getPersistentFieldTag(
-        0, package_id, class_index,
+        0, package_id, static_cast<uint8_t>(class_index),
         static_cast<uint8_t>(field));
     if (!jcvm::FlashMemory_Handler::erasePersistentTag(tag)) return false;
   }

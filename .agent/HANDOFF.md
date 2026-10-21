@@ -1,5 +1,28 @@
 # Handoff
 
+## Deploy DELETE cleanup follow-up — high CAP class indexes — 2026-10-21
+
+- Source review found the physical deploy cleanup failure path: the applet
+  cleanup helper rejected stored 16-bit CAP class indexes above 255 and
+  returned `6581`. CHOUPI's existing `path_applet_field` ABI stores the class
+  component as one byte, so cleanup now makes the same low-byte conversion as
+  the runtime. A persistent-transaction regression deletes a field built from
+  class index `0x1234`.
+- ARM build passed (`build/arm/pico2_choupi.uf2`, image end `0x100c57b0`);
+  persistent-transaction regression and GP DELETE regression passed (26/26
+  DELETE checks).
+- The Pico is not currently enumerated in the VM. The allowed PC/SC helper
+  reported zero readers, and gated `lsusb -d 2e8a:` was empty. Do not claim a
+  physical DELETE fix yet. When it returns, flash the clean ARM image, retry
+  deletion of a populated Core CAP, verify GET STATUS and reinstall, then
+  resume the deploy README stages.
+- The persistent tag format still has only an 8-bit class component. Check for
+  same-package key collisions when class indexes differ by 256; keep that
+  encoding issue separate from the immediate DELETE `6581` fix.
+- Code/test files in this step: `src/cap_load.cpp`,
+  `tools/tests/persistent_transaction/filesystem_stub.cpp`, and
+  `tools/tests/persistent_transaction/persistent_transaction_test.cpp`.
+
 ## Physical deploy API follow-up — inherited lifecycle dispatch — 2026-10-21
 
 - Fixed `Class_Handler::doGetPublicMethodOffset()` to translate a dynamic CAP's

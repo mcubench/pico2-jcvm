@@ -109,9 +109,13 @@ claims to support them; implementing every algorithm is not a goal.
   `artifacts/results/deploy/` and rerun Core after each fix.
 - [ ] **Fix package deletion after applet tests.** GPPro DELETE returns `6581`
   for Core and Service packages after persistent objects have been created,
-  while deleting packages with no installed instance succeeds. Determine which
-  persistent-data cleanup or transaction step fails before relying on runner
-  cleanup for repeated API stages.
+  while deleting packages with no installed instance succeeds. Source review
+  found applet cleanup rejected 16-bit CAP class indexes above 255 even though
+  stored field tags use the low byte; this rejection is removed and a host
+  regression passes. Physical DELETE/reinstall confirmation is still pending
+  because the Pico is currently absent from the VM USB bus. The one-byte field
+  tag format may still collide for classes in one package whose indexes differ
+  by 256; fix and validate that format separately.
 - [ ] **Declare the supported Java Card profile and audit its API contract.**
   State the supported Java Card Classic version and APIs, then add applet-level
   behavior tests for each implemented API. Existing tests cover JCSystem,
