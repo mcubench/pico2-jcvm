@@ -7320,3 +7320,17 @@
   `artifacts/logs/deploy-{core,security,crypto,javacardxext,javacardx,javacardxint,service,biometry,javacardxsec}-select-vpcd-20261021.log`,
   `artifacts/logs/jcsystem-transaction-full-vpcd-20261021.log`, and
   `artifacts/logs/jcsystem-ownerpinx-isolated-vpcd-20261021.log`.
+
+## 2026-10-21 — Correct imported class-check commit reference
+
+- Step/experiment: `deploy-core-userexception-vpcd-commit-reference`
+- Change: Resolved the pending commit marker in the preceding progress record;
+  the implementation, focused regression, TODO, QKB, and handoff were committed
+  together.
+- Validation: Inspected commit `58e92e6` and confirmed it contains the seven
+  files for the imported class-check fix and deploy CAP smoke tests.
+- Result: The implementation step now has an auditable Git reference.
+- Decision: Continue with physical Core/Multi testing when USB enumeration
+  returns; the hardware remains unavailable in this VM.
+- Commit: `58e92e6` (implementation commit referenced by this correction).
+- Artifacts/logs: none.

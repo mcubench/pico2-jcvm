@@ -9,6 +9,7 @@
 - Fixed `Bytecodes::docheck()` so a failed speculative JC305 interface-token
   lookup cannot replace a valid class reference with `SecurityException`.
   The cause and workaround are recorded in `.agent/QKB.md`.
+- Implementation commit: `58e92e6` (`Fix imported class checks for deploy Core`).
 - Validation: ARM build passed (`build/arm/pico2_choupi.uf2`, image end
   `0x100c5c7c`); host build passed. VPCD case 78 passed, including generic
   `catch (Exception)`, `instanceof UserException`, and reason `0x1234`. The
