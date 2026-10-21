@@ -7113,6 +7113,6 @@
   Shareable limitation is documented in `.agent/QKB.md`.
 - Decision: Rerun Core through the deploy runner with Multi and Ext CAPs, then
   continue investigating persistent applet deletion and later API areas.
-- Commit: recorded in the next metadata follow-up.
+- Commit: `a577c25`.
 - Artifacts/logs: `artifacts/results/deploy/pico2-ownerpin-map-retest-20261021.csv`
   and `pico2-ownerpin-map-client-20261021.log`.
