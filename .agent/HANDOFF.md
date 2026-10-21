@@ -12,14 +12,21 @@
   out on GETVERSION at 20 seconds and 60 seconds. The test input files
   `build/algtest-v182-empty-flash.bin` and
   `build/algtest-v182-load-code.bin` are dated 2026-10-14, while the PC
-  emulator and ROM mask were rebuilt on 2026-10-21. Regenerate this fixture
-  pair before drawing conclusions from the timeout.
+  emulator and ROM mask were rebuilt on 2026-10-21. A second run used the
+  exact provided `AlgTest_v1.8.2_jc305.cap` concatenated into fresh load code
+  and a freshly erased 512 KiB image; SELECT passed but GETVERSION still timed
+  out at 30 seconds (connect took 12.368 seconds). This is an unresolved host
+  VPCD method-execution failure, not evidence of a physical regression.
+- Deploy API 3.0.5 asset listing passed for all nine areas; host GP registry,
+  install-status, and DELETE regressions passed 47/47, 10/10, and 26/26. No
+  deploy CAP was uploaded. Once hardware is visible, run Core first; its runner
+  loads Multi and creates both applets with AIDs ending in `41` and `42`.
 - Commit `f964152` includes pre-existing `JC_Instance` diagnostic changes
   along with the intended file-mode repair due an index refresh during the
   staged-mode operation. They are preserved in HEAD; inspect before future
   edits to that file.
-- Next: regenerate the VPCD fixture pair, rerun the APDU smoke test if useful,
-  then restore Pico USB visibility. Once available, load deploy Multi and Ext,
+- Next: diagnose the host VPCD GETVERSION timeout only if emulator testing is
+  needed; restore Pico USB visibility. Once available, load deploy Multi and Ext,
   verify both Multi applets, then continue the README stages in order.
 
 ## Distinct persistence keys for high CAP class indexes — 2026-10-21

@@ -2466,6 +2466,7 @@ fix.
 
 - **Retest note:** The VM's authorized PC/SC helper currently reports no Pico.
   The host VPCD JCAlgTest SELECT succeeds but GETVERSION timed out at both 20 s
-  and 60 s. Its empty-flash and CAP-load-code fixtures are still from
-  2026-10-14; regenerate them before treating that timeout as a current VM
-  regression.
+  and 60 s with the old test fixtures. Repeating with code concatenated from
+  the exact provided 1.8.2 CAP and a fresh erased image still timed out at 30 s
+  (VPCD connect 12.368 s, SELECT `9000`). This is unresolved host-emulator
+  method execution, not physical evidence; no deploy CAP was uploaded.

@@ -7203,3 +7203,28 @@
 - Artifacts/logs: `artifacts/logs/high-index-tag-jcalgtest-vpcd-20261021.log`,
   `artifacts/logs/high-index-tag-jcalgtest-vpcd-20261021-retry.log`, and
   `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-21 — Recheck deploy access and current VPCD applet path
+
+- Step/experiment: `physical-multi-applet-access-recheck`
+- Change: No implementation change. Rechecked physical visibility, verified
+  deploy API 3.0.5 assets, and reran package/install/delete host regressions.
+- Validation: PC/SC helper returned `Expected exactly one Pico 2 CHOUPI CCID
+  (2e8a:0009); found 0`. Deploy `--list --api 305` found all nine areas.
+  GP registry passed 47/47, install status 10/10, and GP DELETE 26/26. A fresh
+  512 KiB erased image plus CAP code assembled directly from
+  `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` reached ATR and JCAlgTest SELECT
+  (`9000`), then GETVERSION timed out at 30 s. VPCD startup was 12.368 s. No
+  deployment Multi/Ext CAP was uploaded because neither a real reader nor a
+  VPCD GlobalPlatform bridge is available. RISC-V was not built.
+- Result: The new persistent-tag and registry regressions pass. The current PC
+  VPCD method-execution path has an unresolved GETVERSION timeout even with
+  exact CAP code and freshly erased storage. This does not establish a physical
+  regression. Physical Multi/Ext and API-area execution remain unverified.
+- Decision: Keep the physical hardware request open. When the device appears
+  in the VM, build/flash ARM under the repository gate, run the deploy Core
+  stage (which loads Multi and creates both `...41` and `...42` applets), then
+  proceed through Security and Crypto.
+- Commit: `bfe6755` records the prior validation checkpoint.
+- Artifacts/logs: `artifacts/logs/jcalgtest-exact-cap-vpcd-20261021.log`;
+  generated fixtures `build/algtest-v182-current-{empty-flash,load-code}.bin`.
