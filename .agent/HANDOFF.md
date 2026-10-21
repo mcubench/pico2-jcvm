@@ -1,5 +1,27 @@
 # Handoff
 
+## Physical and deploy retest checkpoint — 2026-10-21
+
+- The latest gated PC/SC helper invocation reported `found 0`; no Pico 2 was
+  visible to the VM, so nothing was flashed and no physical API CAP was
+  uploaded.
+- `AlgTest_JavaCard/deploy/run_api_test.sh --list --api 305` found the GPPro
+  jar, client, and all nine listed API areas. Focused current regressions pass:
+  GP registry 47/47, install-status 10/10, and GP DELETE 26/26.
+- A bounded host VPCD JCAlgTest run selected the applet successfully but timed
+  out on GETVERSION at 20 seconds and 60 seconds. The test input files
+  `build/algtest-v182-empty-flash.bin` and
+  `build/algtest-v182-load-code.bin` are dated 2026-10-14, while the PC
+  emulator and ROM mask were rebuilt on 2026-10-21. Regenerate this fixture
+  pair before drawing conclusions from the timeout.
+- Commit `f964152` includes pre-existing `JC_Instance` diagnostic changes
+  along with the intended file-mode repair due an index refresh during the
+  staged-mode operation. They are preserved in HEAD; inspect before future
+  edits to that file.
+- Next: regenerate the VPCD fixture pair, rerun the APDU smoke test if useful,
+  then restore Pico USB visibility. Once available, load deploy Multi and Ext,
+  verify both Multi applets, then continue the README stages in order.
+
 ## Distinct persistence keys for high CAP class indexes — 2026-10-21
 
 - Extended persistent applet-field tags to preserve the full 16-bit class

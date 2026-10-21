@@ -2463,3 +2463,9 @@ fix.
 - **Next:** After physical access returns, flash under the applicable build
   gate, test populated package DELETE/reinstall, and exercise the deploy
   Multi/Ext applets and subsequent areas.
+
+- **Retest note:** The VM's authorized PC/SC helper currently reports no Pico.
+  The host VPCD JCAlgTest SELECT succeeds but GETVERSION timed out at both 20 s
+  and 60 s. Its empty-flash and CAP-load-code fixtures are still from
+  2026-10-14; regenerate them before treating that timeout as a current VM
+  regression.

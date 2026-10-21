@@ -7171,3 +7171,35 @@
 - Commit: `2c3459e` (implementation); progress record commit follows.
 - Artifacts/logs: Build output `build/arm/pico2_choupi.uf2`; host test output
   was not archived separately.
+
+## 2026-10-21 — Preserve full-width CAP class indexes in persistent tags
+
+- Step/experiment: `persistent-tags-class-index-16bit`
+- Change: Kept the legacy five-byte applet-field root for class indexes through
+  255 and added a six-byte root containing the complete class index above 255.
+  Added legacy-key fallback for reads and deletion of both encodings. Filesystem
+  overlay and `JC_Instance` tag compression now recognize both roots.
+- Validation: `./tools/build-pc` passed and refreshed ROM mask output;
+  `./tools/build arm` passed (image end `0x100c5c3c`); persistent transaction,
+  RP2350 filesystem overlay, GP registry (47/47), install status, and GP DELETE
+  (26/26) regressions passed. Deploy `--list --api 305` found Core, Security,
+  Crypto, Javacardx, JavacardxExt, JavacardxSec, JavacardxInt, Service, and
+  Biometry CAPs. VPCD JCAlgTest SELECT passed, but GETVERSION timed out at 20 s
+  and again at 60 s; the test's CAP-load and empty-flash fixtures were still
+  dated October 14, so that run is inconclusive. The authorized PC/SC helper
+  reported `found 0`; no physical upload or deploy API calls occurred. RISC-V
+  was not built per the active ARM-only scope.
+- Result: Class indexes 1 and 257 map to distinct persistent keys; legacy
+  values remain readable and high-index cleanup removes both tag forms. The
+  focused package registry and delete regressions still pass. Multi-applet
+  installation and deploy API coverage remain pending physical access.
+- Decision: Regenerate the VPCD fixture set before relying on the JCAlgTest
+  timeout, restore Pico USB visibility, then upload the deploy Multi and Ext
+  CAPs and test both Multi applets before proceeding through the README areas.
+- Commit: `c52e9b9` (implementation); nested OS path encoder commit `7e9d068`.
+  `f964152` additionally captured pre-existing `JC_Instance` diagnostic edits
+  while repairing a file-mode mistake; those edits were preserved in that
+  commit.
+- Artifacts/logs: `artifacts/logs/high-index-tag-jcalgtest-vpcd-20261021.log`,
+  `artifacts/logs/high-index-tag-jcalgtest-vpcd-20261021-retry.log`, and
+  `build/arm/pico2_choupi.uf2`.
