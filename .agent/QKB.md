@@ -1,5 +1,19 @@
 # Project issue knowledge base
 
+## PC VPCD storage shim is single-package — 2026-10-21
+
+- **Symptom:** Host VPCD tests cannot exercise two distinct uploaded CAP
+  packages, even though the Pico card manager has eight package slots.
+- **Cause:** `choupi/src/main_pc.cpp` owns one `vpcd_package_id`, one package
+  AID, and one installed-instance record. Its package lookup and metadata
+  callbacks reject other package IDs and do not maintain a package registry.
+- **Resolution / guidance:** None implemented. Treat PC VPCD as a single-CAP
+  method-execution harness only; do not use it to verify multi-package
+  install/select/delete. Verify that path on the physical Pico when reachable,
+  or implement an indexed host storage backend before claiming emulator parity.
+- **Validation:** Source inspection on 2026-10-21. Physical Pico was not
+  visible (`pico2-pcsc-reader` found 0; gated `lsusb -d 2e8a:` empty).
+
 ## Util same-array overlapping copy — 2026-10-21
 
 - **Symptom/cause:** Physical API coverage found that byte-array `Util.arrayCopy`

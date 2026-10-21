@@ -1,5 +1,27 @@
 # Handoff
 
+## Multi-applet physical retest — 2026-10-21
+
+- The requested Pico 2 BOOTSEL check was run through the authorized host USB
+  path. `PICO2_HOST_USB_ACCESS=1 sudo -n
+  /usr/local/sbin/pico2-pcsc-reader` reported `found 0`, and gated
+  `PICO2_HOST_USB_ACCESS=1 lsusb -d 2e8a:` returned no device. No flash,
+  GlobalPlatform command, or physical applet test was possible.
+- Offline regressions passed: GP registry 47/47, install status 10 checks,
+  and GP DELETE 26/26. Deploy API 3.0.5 asset listing found all nine areas.
+  The runner's three stream-fd permission messages did not prevent listing.
+- Source inspection confirmed the PC VPCD shim in `choupi/src/main_pc.cpp`
+  persists one package and one applet instance only. It cannot validate
+  multiple-package CAP loading through the emulator. Existing hardware notes
+  show the Multi scenario's two applet instances were previously selectable,
+  but the newly generalized multi-package path still needs a fresh physical
+  LOAD/INSTALL/SELECT/GET STATUS/DELETE cycle.
+- Next: when Pico USB enumeration returns, build the ARM target under the
+  repository build gate, flash, and run the deploy Core stage with scenarios.
+  Verify both Multi AIDs, then upload a second distinct package while the
+  first remains installed; check selection, GET STATUS, instance deletion,
+  package deletion, and reinstall. Continue the README areas after Core.
+
 ## Physical and deploy retest checkpoint — 2026-10-21
 
 - The latest gated PC/SC helper invocation reported `found 0`; no Pico 2 was

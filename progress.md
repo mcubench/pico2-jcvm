@@ -7242,3 +7242,26 @@
   USB appears in the VM.
 - Commit: `26adbb5` (commit that this correction identifies).
 - Artifacts/logs: none.
+
+## 2026-10-21 — Recheck physical access and multi-package test coverage
+
+- Step/experiment: `physical-multi-applet-retest-access-check`
+- Change: No runtime code change. Rechecked BOOTSEL device visibility, reran
+  package registry/install/delete regressions, confirmed the deploy API 3.0.5
+  CAP inventory, and inspected the host VPCD storage boundary.
+- Validation: The authorized PC/SC helper reported `found 0`; gated
+  `lsusb -d 2e8a:` returned empty. `./tools/test-gp-registry` passed 47/47,
+  `./tools/test-install-status` passed all 10 checks, and
+  `./tools/test-gp-delete` passed 26/26. Deploy `./run_api_test.sh --list
+  --api 305` found GPPro, client, and all nine areas; it printed three
+  non-fatal stream-fd permission messages. No physical LOAD/INSTALL/APDU or
+  emulator multi-package test was run.
+- Result: Current host VPCD `main_pc.cpp` stores one package and one applet
+  instance, so it cannot prove multi-package behavior. Hardware flash and
+  multiple-CAP validation remain blocked by USB enumeration.
+- Decision: Resume on the physical card once it enumerates: run Core scenarios,
+  verify both Multi instances, install a second package concurrently, test
+  SELECT/GET STATUS/DELETE/reinstall, and proceed with remaining deploy stages.
+- Commit: to be recorded in a follow-up reference correction.
+- Artifacts/logs: none; existing physical Core CSVs remain under
+  `artifacts/results/deploy/`.
