@@ -867,18 +867,6 @@ extern "C" uint8_t fs_init(void) {
       image_end < kFilesystemXipBase + flash_layout::firmware_end_limit;
 #endif
   if (!filesystem_layout_available || !cap_store_initialize()) return 1;
-  // CAP2 was stored at 0x1c0000 by older firmware. Its code would be erased
-  // by the second new filesystem slot, and CAP3 cannot consume its metadata.
-  // Leave the flash untouched until that image has been backed up/recovered.
-  uint32_t legacy_cap2_magic = 0;
-  std::memcpy(&legacy_cap2_magic,
-              filesystem_slot_data(flash_layout::legacy_cap2_offset),
-              sizeof(legacy_cap2_magic));
-  if (legacy_cap2_magic == 0x32415043u) {
-    std::printf("FAULT legacy CAP2 present; preserve flash for recovery\r\n");
-    std::fflush(stdout);
-    return 1;
-  }
   const bool restored_current = restore_overlay_snapshot(false);
   const bool restored_legacy =
       !restored_current && restore_overlay_snapshot(true);

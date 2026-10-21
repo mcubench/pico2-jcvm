@@ -7481,3 +7481,26 @@
 - Artifacts/logs: `artifacts/backups/flash-before-layout-migration-20261021.bin`
   (SHA-256 `408ba9dff6edf6924830d6ae9e9860a1aa7fef40fe6976ebe9a2ee736e9bc4b6`),
   `artifacts/logs/cycle-choupi-20261021T091042Z.log`.
+
+## 2026-10-21 — Preserve legacy CAP2 bytes in revised JFS2 layout
+
+- Step/experiment: `flash-layout-cap2-preservation`
+- Change: Narrowed each JFS2 slot to `0x28000` and placed them at
+  `0x188000..0x1b0000` and `0x1c8000..0x1f0000`, outside CAP3 and CAP2's
+  maximum 32 KiB header/code extent. Removed the CAP2 startup guard and
+  revised the migration documentation and fake-flash test.
+- Validation: `./tools/test-rp2350-fs-overlay` passed `TEST:SUMMARY fail=0`,
+  including migration and a subsequent second-slot sync with simulated CAP2
+  bytes unchanged. `./tools/build arm` and `./tools/build riscv` passed with
+  no firmware warnings; the host harness emitted the pre-existing `mallinfo()`
+  deprecation warning. Physical test of this revision awaits BOOTSEL.
+- Result: The revised layout preserves valid legacy CAP2 storage bytes while
+  allowing both JFS2 snapshot slots to operate. The CAP2 package remains
+  inactive under CAP3; this step does not convert package IDs or VM state.
+- Decision: Reflash the revised ARM image after device reattachment, then
+  verify migration on serial and by reading back flash. Keep both full backups.
+- Commit: this step's commit (`git log -1 --format=%H -- src/flash_layout.hpp`).
+- Artifacts/logs: `docs/flash-layout-migration.md`; pre-flash backup SHA-256
+  `408ba9dff6edf6924830d6ae9e9860a1aa7fef40fe6976ebe9a2ee736e9bc4b6`;
+  post-transfer backup SHA-256
+  `63076672521354b59baea9392031344b18470a3665c14b4d649324ee58f09b37`.

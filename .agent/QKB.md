@@ -1,5 +1,21 @@
 # Project issue knowledge base
 
+## Preserve CAP2 image while placing two JFS2 slots — 2026-10-21
+
+- **Discovery:** The physical card backup has a valid, distinct CAP2 package
+  at `0x1c0000`; the previous new JFS2 slot at `0x1c4000` would have
+  overwritten part of its code. The startup guard stopped USB CDC servicing.
+  A verified post-transfer image showed storage `0x100000..0x200000` remained
+  byte-identical to the pre-flash backup.
+- **Viable source fix:** CAP2's declared maximum is a 4 KiB header plus 28 KiB
+  code, ending at `0x1c8000`. Place JFS2 slots at
+  `0x188000..0x1b0000` and `0x1c8000..0x1f0000` (each `0x28000`).
+  Preserve `0x1c0000..0x1c8000` and remove the CAP2 startup guard. The
+  shared-flash test now covers migration and second-slot sync with simulated
+  CAP2 bytes unchanged. CAP2 remains stored but is not interpreted by CAP3.
+- **Caveat:** Old firmware that writes its 256 KiB CAP2 erase slot could erase
+  the new JFS2 slot 1. Keep the full backup before any rollback.
+
 ## BOOTSEL picotool transfer disconnect after 100% — 2026-10-21
 
 - **Symptom:** During `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi`, both
@@ -17,6 +33,11 @@
   before flashing at `artifacts/backups/flash-before-layout-migration-20261021.bin`
   (SHA-256 `408ba9dff6edf6924830d6ae9e9860a1aa7fef40fe6976ebe9a2ee736e9bc4b6`).
   Both old JFS2 snapshots and a distinct, valid CAP2 image were present.
+- **Follow-up:** After manual reattachment, explicit `--bus 1 --address 17`
+  `picotool info -a` identified the new ARM firmware. A second verified full
+  flash image showed storage `0x100000..0x200000` was byte-identical to the
+  pre-flash backup. The application enumerated as CCID, but the CAP2 guard
+  stopped USB servicing before serial could be configured.
 
 ## CAP3 package slots overlap RP2350 filesystem snapshots — 2026-10-21
 

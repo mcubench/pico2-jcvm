@@ -1,5 +1,31 @@
 # Handoff
 
+## CAP2-preserving flash layout revision — 2026-10-21
+
+- After BOOTSEL reattachment, a verified full flash read showed the previous
+  interrupted transfer had written the new ARM firmware, while every storage
+  byte in `0x100000..0x200000` remained identical to the pre-flash backup.
+  The application enumerated as `2e8a:0009` but the CAP2 fail-closed guard
+  stopped USB servicing, and the bounded serial monitor failed while
+  configuring `/dev/ttyACM0`; no runtime `TEST:PASS` was observed.
+- Revised `src/flash_layout.hpp`: CAP3 remains at `0x100000..0x188000`;
+  JFS2 slots are now `0x188000..0x1b0000` and `0x1c8000..0x1f0000`,
+  preserving CAP2's maximum header/code extent `0x1c0000..0x1c8000`.
+  Removed the CAP2 startup guard. The shared-flash suite passes migration,
+  second-slot sync, and CAP2-byte-preservation tests; ARM and RISC-V builds
+  passed. Hardware validation of this revision awaits another BOOTSEL
+  reattachment. The user has been asked to do that.
+- Keep the pre-flash image at
+  `artifacts/backups/flash-before-layout-migration-20261021.bin` and the
+  verified post-transfer image at
+  `artifacts/backups/flash-after-interrupted-layout-flash-20261021.bin`.
+  The old JFS2/CAP3/CAP2 contents were byte-identical in both. On reconnect,
+  flash the revised ARM image only after confirming the device, then inspect
+  bounded serial output and read back CAP2 bytes and new JFS2 headers.
+- CAP2 bytes are preserved physically, but CAP2 package ID 20 is not converted
+  to the CAP3 format or active in the current VM. Returning to old firmware
+  that writes CAP2 may erase the second new JFS2 slot; keep the backup.
+
 ## Physical flash-layout test interrupted by USB detach — 2026-10-21
 
 - Connected BOOTSEL Pico was visible as `2e8a:000f`. Full flash backup

@@ -1,8 +1,9 @@
 # RP2350 flash layout and migration
 
 The 2 MiB flash reserves `[0x000000, 0x100000)` for firmware. CAP3 keeps eight
-`0x11000`-byte slots at `[0x100000, 0x188000)`. JFS2 now uses two `0x3c000`-byte
-snapshot slots at `[0x188000, 0x1c4000)` and `[0x1c4000, 0x200000)`.
+`0x11000`-byte slots at `[0x100000, 0x188000)`. JFS2 now uses two `0x28000`-byte
+snapshot slots at `[0x188000, 0x1b0000)` and `[0x1c8000, 0x1f0000)`.
+The CAP2 header and maximum code extent `[0x1c0000, 0x1c8000)` remain reserved.
 `src/flash_layout.hpp` owns these offsets and checks the region boundaries.
 The largest serialized filesystem payload is `0x24000` bytes, so it fits the
 smaller snapshot slot with its metadata sector.
@@ -24,11 +25,12 @@ to CAP3 contents if the earlier overlap had already damaged another record;
 the CRC proves only the selected snapshot's integrity.
 
 Earlier CAP2 firmware used a separate slot beginning at `0x1c0000`. CAP3 does
-not understand its metadata, and the second new JFS2 slot would overwrite its
-code. If the CAP2 header magic is present, boot reports `FAULT legacy CAP2
-present; preserve flash for recovery` without writing. Back up and inspect
-that flash image before intentionally removing or converting CAP2 data. The
-firmware does not automatically convert CAP2 package IDs or persistent tags.
+not understand its metadata, but the new filesystem layout leaves its full
+4 KiB header and maximum 28 KiB code image intact. The rest of the old 256 KiB
+CAP2 erase allocation is repurposed; returning to firmware that writes CAP2
+can therefore erase the second JFS2 snapshot. Back up and inspect a CAP2
+image before intentionally removing or converting it. The firmware does not
+automatically convert CAP2 package IDs or persistent tags.
 
 Before deploying this layout to a card with valuable state, retain a full
 readable flash backup and verify its hash. Do not erase the old storage area

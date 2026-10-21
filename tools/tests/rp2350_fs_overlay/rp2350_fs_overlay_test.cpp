@@ -402,6 +402,11 @@ int main() {
                 fake_flash.begin() + flash_layout::legacy_filesystem_slot(0));
     std::fill(fake_flash.begin() + flash_layout::filesystem_offset,
               fake_flash.begin() + flash_layout::filesystem_end, 0xff);
+    std::fill(fake_flash.begin() + flash_layout::legacy_cap2_offset,
+              fake_flash.begin() + flash_layout::legacy_cap2_data_end, 0x5a);
+    constexpr uint32_t cap2_magic = 0x32415043;
+    std::memcpy(fake_flash.data() + flash_layout::legacy_cap2_offset,
+                &cap2_magic, sizeof(cap2_magic));
     legacy_fixture = cap_store_write_package(
         63, package_aid, sizeof(package_aid), cap_code, sizeof(cap_code));
   }
@@ -413,6 +418,11 @@ int main() {
       std::memcmp(migrated_value, shared_value, sizeof(shared_value)) == 0 &&
       fake_flash[flash_layout::filesystem_slot(0)] == 'J';
   expect(migrated, "legacy_snapshot_migrates_to_new_layout");
+  expect(migrated && std::equal(
+             fake_flash.begin() + flash_layout::legacy_cap2_offset,
+             fake_flash.begin() + flash_layout::legacy_cap2_data_end,
+             legacy_flash.begin() + flash_layout::legacy_cap2_offset),
+         "migration_preserves_legacy_cap2_bytes");
   uint32_t migrated_cap_length = 0;
   const uint8_t *migrated_cap = cap_store_data_for_package(
       63, &migrated_cap_length);
@@ -453,13 +463,15 @@ int main() {
   expect(fs_init() != 0 && fake_flash == damaged_flash,
          "unrecoverable_legacy_snapshot_fails_without_flash_writes");
 
-  fake_flash.fill(0xff);
-  constexpr uint32_t legacy_cap2_magic = 0x32415043;
-  std::memcpy(fake_flash.data() + flash_layout::legacy_cap2_offset,
-              &legacy_cap2_magic, sizeof(legacy_cap2_magic));
-  const auto cap2_flash = fake_flash;
-  expect(fs_init() != 0 && fake_flash == cap2_flash,
-         "legacy_cap2_blocks_unsafe_filesystem_reuse");
+  constexpr uint8_t updated_value[] = {0x33, 0x44};
+  const bool second_slot_preserves_cap2 = migration_recovers_after_cut &&
+      fs_write(shared_tag, sizeof(shared_tag), updated_value,
+               sizeof(updated_value)) == 0 && fs_sync() == 0 &&
+      std::equal(fake_flash.begin() + flash_layout::legacy_cap2_offset,
+                 fake_flash.begin() + flash_layout::legacy_cap2_data_end,
+                 legacy_flash.begin() + flash_layout::legacy_cap2_offset);
+  expect(second_slot_preserves_cap2,
+         "second_filesystem_slot_preserves_legacy_cap2_bytes");
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
