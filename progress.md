@@ -7566,3 +7566,13 @@
   `artifacts/logs/deploy-inherited-token-fix-verified-boot-20261021.log`;
   verified UF2 SHA-256
   `552c2b5a79c3669a24ed70b627ab8c935a3fb404d004c90b20b10cbe32f039a6`.
+
+## 2026-10-21 — Handoff Shareable and deploy multi-package investigation
+
+- Step/experiment: `deploy-shareable-handoff`
+- Change: Appended the current investigation state, test results, limitations, and concrete continuation steps to `.agent/HANDOFF.md`; no implementation code changed in this handoff step.
+- Validation: Reviewed `.agent/SESSION_CONTINUITY.md`, current handoff, relevant diffs, and existing progress records. ARM build had passed before PC-only trace instrumentation; `./tools/build-pc`, Python syntax check, and shell syntax check passed. No new tests or hardware commands were run for this documentation-only step.
+- Result: The physical Core runner previously completed 291 calls (267 OK, 19 allowed unsupported, 3 status errors, 2 runtime exceptions); VPCD reproduces Shareable probe response `049000`. Latest working tree includes temporary PC-only traces and extensive unrelated dirty files.
+- Decision: Stop here as requested. Next session should resolve package 17 PC 367 / thrown package 15 class 72, remove temporary traces, and respect the ARM-only constraint and flash build gate.
+- Commit: pending; repository has extensive unrelated dirty work, so only handoff and this progress record should be included if committing.
+- Artifacts/logs: listed in `.agent/HANDOFF.md`; none created by this documentation step.
