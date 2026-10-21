@@ -7059,7 +7059,7 @@
   Javacardx/JavacardxInt INSTALL refusal `6A80`, Service (124 calls, 77 OK),
   and Biometry LOAD refusal `6D00`. The first Crypto runner CSV was a
   partial-install false positive; use the direct Crypto client CSV as evidence.
-- Commit: pending (the implementation commit will be recorded in a follow-up)
+- Commit: `875bf99` (this ID is recorded in the metadata follow-up commit)
 - Artifacts/logs: `artifacts/results/deploy/pico2-core-client-20261021.csv`,
   `pico2-core-with-ext-client-20261021.csv`,
   `pico2-security-20261021.csv`, `pico2-crypto-client-20261021.csv`,

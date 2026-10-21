@@ -6106,6 +6106,7 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `artifacts/results/deploy/*20261021.csv`; Core Ext serial/test evidence in
   `/tmp/pico2-deploy-core-monitor-selectfix.log` and the direct client logs in
   `/tmp/pico2-deploy-core-probe/` and `/tmp/pico2-core-ext-probe/`.
+- Commit: `875bf99` (implementation, runner correction, deploy evidence)
 - Next: implement and validate Core `Util.arrayCopy` overlap behavior on ARM,
   then fix OwnerPIN. Preserve the current card packages and result CSVs until
   deletion behavior is understood.
