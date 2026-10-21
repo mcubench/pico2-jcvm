@@ -309,6 +309,24 @@ Class_Handler::doGetPublicMethodOffset(Package &package,
   ConstantPool_Handler cp_handler(this->package);
   auto token = std::make_pair(package, claz);
 
+  // A dynamic CAP's class and method tokens follow the CAP's imported API
+  // export. Once inheritance crosses into the embedded framework package,
+  // translate the token to that framework's public method table order.
+  const auto resolve_superclass = [&]() {
+    const jc_cap_class_ref super_ref = token.second->super_class_ref;
+    if (super_ref.isExternalClassRef() &&
+        FlashMemory_Handler::isDynamicPackageID(token.first.getPackageID())) {
+      const auto &external_ref = super_ref.external_classref;
+      const auto *imported_package =
+          Import_Handler(token.first).getPackageAID(
+              external_ref.package_token & 0x7F);
+      public_method_offset = remap_imported_virtual_method_token(
+          *imported_package, external_ref.class_token, public_method_offset);
+    }
+    cp_handler.setPackage(token.first);
+    token = cp_handler.classref2class(super_ref);
+  };
+
   for (uint16_t depth = 0; depth < 256; ++depth) {
     const uint8_t base = token.second->public_method_table_base;
     const auto table = token.second->public_virtual_method_table();
@@ -318,8 +336,7 @@ Class_Handler::doGetPublicMethodOffset(Package &package,
       if (token.second->isObjectClass()) {
         throw Exceptions::SecurityException;
       }
-      cp_handler.setPackage(token.first);
-      token = cp_handler.classref2class(token.second->super_class_ref);
+      resolve_superclass();
       continue;
     }
     const uint16_t offset = public_method_offset - base;
@@ -344,8 +361,7 @@ Class_Handler::doGetPublicMethodOffset(Package &package,
     if (token.second->isObjectClass()) {
       throw Exceptions::SecurityException;
     }
-    cp_handler.setPackage(token.first);
-    token = cp_handler.classref2class(token.second->super_class_ref);
+    resolve_superclass();
   }
   throw Exceptions::SecurityException;
 }

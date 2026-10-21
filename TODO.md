@@ -101,9 +101,12 @@ claims to support them; implementing every algorithm is not a goal.
   Same-array overlapping-range behavior in `Util.arrayCopy` and
   `arrayCopyNonAtomic` now passes on the physical Pico after the SDK fix.
   `OwnerPIN` and `PIN` dispatch now pass the physical Core calls after export
-  token remapping. The remaining Core finding is `Shareable` lookup with the
-  test sub-interface returning the wrong result. Preserve the 3.0.5 API
-  artifacts under `artifacts/results/deploy/` and rerun Core after each fix.
+  token remapping for the public methods. The deploy Core CAP still reports
+  `SW_ERROR` for `getValidatedFlag`, `EXC_RUNTIME` for `setValidatedFlag`, and
+  three runtime failures for `UserException.throwIt`; Shareable lookup also
+  returns the wrong result. The Multi and Ext scenario rows were not installed
+  in the latest run. Preserve the 3.0.5 API artifacts under
+  `artifacts/results/deploy/` and rerun Core after each fix.
 - [ ] **Fix package deletion after applet tests.** GPPro DELETE returns `6581`
   for Core and Service packages after persistent objects have been created,
   while deleting packages with no installed instance succeeds. Determine which

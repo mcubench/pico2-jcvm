@@ -2388,3 +2388,38 @@ fix.
   recorded applet instance. ARM/PC builds and focused registry, DELETE, and
   install-status regressions pass. Physical Core API CAP upload and multiple
   package install/select/delete have not yet been exercised end-to-end.
+
+## Physical deploy Core lifecycle and cleanup results — 2026-10-21
+
+- **Cause of Ext SELECT `6999`:** The Core lifecycle bridge invoked the
+  JC305 `Applet.select()` token against the embedded framework table without
+  translating the token at the dynamic-CAP-to-framework superclass boundary.
+  `Class_Handler::doGetPublicMethodOffset()` now remaps imported public tokens
+  when it follows an external superclass reference. This is separate from
+  explicit external-method token remapping.
+- **Viable fix / evidence:** ARM build passed and, after flashing, the physical
+  Ext applet's full AID `4A43416C67546573744170657801` selected with `9000`;
+  the previously failing call returned `6999`. The deploy Core applet's
+  inherited `Applet.select()` and `deselect()` rows also returned OK. Preserve
+  this superclass-boundary remap for future framework lifecycle methods.
+- **OwnerPIN residual:** The deploy Core CAP still reports two
+  `getValidatedFlag()` calls as `SW=6f00` and two `setValidatedFlag()` calls as
+  `EXC_RUNTIME`, while constructors, update/check, validation status, and PIN
+  interface methods pass. A narrowly added high-bit adjustment was tested on
+  hardware and did not change those results; it was removed. The failing
+  dispatch did not appear among the filtered OwnerPIN class-token traces, so
+  capture the full external framework method-ref trace before changing token
+  maps again.
+- **Persistent applet deletion:** GPPro uninstall/delete of Core, Security,
+  Crypto, and Service test applets/packages returned `6581` after API tests;
+  Multi and Ext packages deleted successfully. Exact failure point within
+  GPPro's instance/package cleanup sequence remains to be isolated. Do not
+  treat the runner's cleanup stage as successful or retry broad deletion.
+- **USB recovery:** After CDC BOOTSEL flash recovery, the Pico sometimes takes
+  several seconds to return. `lsusb` initially showed no `2e8a:` device and
+  the PC/SC helper reported zero; subsequent `lsusb` discovery followed by
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` restored access. On the latest
+  attempt the VM did not enumerate the board at all, so stop physical calls
+  there and continue offline until the device appears. Current clean ARM build
+  is `build/arm/pico2_choupi.uf2`; it has not been flashed after temporary
+  diagnostics were removed.

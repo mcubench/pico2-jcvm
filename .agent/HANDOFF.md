@@ -1,5 +1,43 @@
 # Handoff
 
+## Physical deploy API follow-up — inherited lifecycle dispatch — 2026-10-21
+
+- Fixed `Class_Handler::doGetPublicMethodOffset()` to translate a dynamic CAP's
+  imported virtual token when superclass lookup crosses into the embedded
+  framework package. Before the fix, selecting the deploy Ext applet returned
+  `6999`; with the fix, its inherited `Applet.select()` returned `9000` on the
+  physical Pico. Core API 3.0.5 also reports inherited `Applet.select()` and
+  `deselect()` as OK.
+- ARM build passed; the flashed diagnostic firmware's bounded serial capture
+  reported repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`.
+  The source was rebuilt after removing temporary diagnostics, but that clean
+  image could not be flashed because the Pico then disappeared from the VM USB
+  bus (`lsusb -d 2e8a:` empty; PC/SC helper found no device). Reflash the current
+  `build/arm/pico2_choupi.uf2` when USB access returns before hardware tests.
+- The deploy Core client completed 291 calls on reader index 3. JCSystem,
+  Util (including overlap), APDU, AID, and ordinary OwnerPIN/PIN methods passed.
+  Remaining observed results: `getValidatedFlag` twice `SW=6f00`,
+  `setValidatedFlag` twice `EXC_RUNTIME`, three `UserException.throwIt`
+  `EXC_RUNTIME`, one Shareable wrong result, plus four scenario failures
+  because Multi and Ext were not installed during that run. Eleven
+  `UNSUPPORTED_PER_SPEC` rows are expected.
+- Prior physical checks on this card state confirmed Multi applets A and B
+  independently selectable. The documented pre-clean removed Multi and Ext
+  successfully; cleanup of Core, Security, Crypto, and Service applets or
+  packages returned `6581`. The last observed registry contained Core,
+  Security, Crypto, and Service. Do not retry those deletes blindly; diagnose
+  the persistent-data cleanup failure first.
+- Result files: `artifacts/results/deploy/pico2-selectfix_APISUPPORT_3b800181.csv`
+  and `artifacts/results/deploy/pico2-dispatch-fix_APISUPPORT_3b800181.csv`;
+  the pre-clean GPPro transcript is
+  `artifacts/logs/deploy-preclean-305-20261021.log`.
+- Next: restore USB/PCSC discovery, flash the clean current ARM build, retest
+  Ext SELECT and the Core API; reinstall Multi and Ext scenario CAPs and test
+  both Multi applets. Continue Security, Crypto, Javacardx, Service, and
+  Biometry in README order after addressing cleanup `6581`.
+
+## Arbitrary package AIDs — loader and registry integration — 2026-10-20
+
 ## Arbitrary package AIDs — loader and registry integration — 2026-10-20
 
 - Generalized runtime CAP loading beyond JCAlgTest. The loader validates the
