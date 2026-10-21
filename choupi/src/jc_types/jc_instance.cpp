@@ -40,6 +40,18 @@
 #ifndef PC_VERSION
 extern "C" void choupi_install_stage(uint8_t stage);
 extern "C" void choupi_install_origin(uint32_t origin);
+extern "C" void choupi_vm_record_field_bounds(uint16_t field_index,
+                                                uint16_t field_count,
+                                                uint16_t field_package,
+                                                uint16_t field_class,
+                                                uint16_t field_value_ref);
+extern "C" void choupi_vm_record_persistent_restore_failure(
+    uint16_t package_id, uint16_t class_index, uint16_t field_index,
+    uint8_t field_type, uint8_t stage, uint8_t exception_id);
+extern "C" void choupi_vm_record_field_write(
+    uint8_t stage, uint16_t package_id, uint16_t class_index,
+    uint16_t field_index, uint16_t value, uint16_t field_count,
+    uint8_t flags, uint8_t exception_id);
 #endif
 
 namespace jcvm {
@@ -499,43 +511,50 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
   if (ref.isGlobalArray()) {
     throw Exceptions::SecurityException;
   }
+  const auto record_field_write = [&](uint8_t stage, uint8_t exception_id) {
+#ifndef PC_VERSION
+    choupi_vm_record_field_write(
+        stage, this->packageID, this->claz, index, ref.compact(),
+        static_cast<uint16_t>(this->fields->size()),
+        static_cast<uint8_t>((this->isPersistent() ? 1u : 0u) |
+                             (ref.isArray() ? 2u : 0u)),
+        exception_id);
+#else
+    (void)stage;
+    (void)exception_id;
+#endif
+  };
+  record_field_write(1, 0);
   if (this->isPersistent()) {
-    std::printf("CHOUPI:PUTFIELD_A phase=load index=%u package=%u class=%u\r\n",
-                static_cast<unsigned>(index),
-                static_cast<unsigned>(this->packageID),
-                static_cast<unsigned>(this->claz));
     try {
       (void)this->getFields();
     } catch (Exceptions exception) {
-      std::printf("CHOUPI:PUTFIELD_A phase=load-fail id=%u index=%u\r\n",
-                  static_cast<unsigned>(exception),
-                  static_cast<unsigned>(index));
+      record_field_write(10, static_cast<uint8_t>(exception));
       throw;
     }
   }
-  if (this->packageID == 20 && this->claz == 121) {
-    std::printf("CHOUPI:PUTFIELD_A phase=loaded index=%u ref=0x%04X array=%u null=%u\r\n",
-                static_cast<unsigned>(index),
-                static_cast<unsigned>(ref.compact()), ref.isArray() ? 1u : 0u,
-                ref.isNullPointer() ? 1u : 0u);
-    std::fflush(stdout);
+  record_field_write(2, 0);
+#ifdef JCVM_ARRAY_SIZE_CHECK
+  if (index >= this->fields->size()) {
+#ifndef PC_VERSION
+    choupi_vm_record_field_bounds(
+        index, static_cast<uint16_t>(this->fields->size()), this->packageID,
+        this->claz, ref.compact());
+#endif
   }
+#endif
   jc_field_t &field = this->fields->at(index);
+  record_field_write(3, 0);
   field.value = static_cast<jword_t>(ref.compact());
   if (ref.isNullPointer()) {
     field.type = FieldType::FIELD_TYPE_UNINITIALIZED;
   } else if (ref.isArray()) {
-    if (this->packageID == 20 && this->claz == 121) {
-      std::printf("CHOUPI:PUTFIELD_A phase=array-lookup index=%u\r\n",
-                  static_cast<unsigned>(index));
-      std::fflush(stdout);
-    }
-    const auto array = this->getOwner().getArray(ref);
-    if (this->packageID == 20 && this->claz == 121) {
-      std::printf("CHOUPI:PUTFIELD_A phase=array-found index=%u type=%u\r\n",
-                  static_cast<unsigned>(index),
-                  static_cast<unsigned>(array->getType()));
-      std::fflush(stdout);
+    std::shared_ptr<JC_Array> array;
+    try {
+      array = this->getOwner().getArray(ref);
+    } catch (Exceptions exception) {
+      record_field_write(11, static_cast<uint8_t>(exception));
+      throw;
     }
     switch (array->getType()) {
     case JAVA_ARRAY_T_BYTE:
@@ -579,22 +598,12 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
   if (this->isPersistent()) {
     fs::Tag tag =
         FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
-    std::printf("CHOUPI:PUTFIELD_A phase=store tag_len=%u index=%u\r\n",
-                static_cast<unsigned>(tag.len),
-                static_cast<unsigned>(index));
     try {
       FlashMemory_Handler::setPersistentField_Reference(tag, ref,
                                                         this->getOwner());
-      if (this->packageID == 20 && this->claz == 121) {
-        std::printf("CHOUPI:PUTFIELD_A phase=stored index=%u\r\n",
-                    static_cast<unsigned>(index));
-        std::fflush(stdout);
-      }
+      record_field_write(4, 0);
     } catch (Exceptions exception) {
-      std::printf("CHOUPI:PUTFIELD_A phase=store-fail id=%u tag_len=%u index=%u\r\n",
-                  static_cast<unsigned>(exception),
-                  static_cast<unsigned>(tag.len),
-                  static_cast<unsigned>(index));
+      record_field_write(12, static_cast<uint8_t>(exception));
       throw;
     }
   } else {
@@ -632,47 +641,29 @@ auto JC_Instance::getFields() const -> decltype(fields) {
     return this->fields;
   }
 
-  static uint16_t field_load_trace_count = 0;
   for (uint16_t index = 0; index < this->fields->size(); index++) {
     const fs::Tag field_tag = FlashMemory_Handler::computeTag(
         this->recomputeOriginalTag(), index);
     jc_field_t &field = this->fields->at(index);
-    const bool trace = field_load_trace_count < 64;
-    if (trace) {
-      std::printf("CHOUPI:FIELD_LOAD exists:start package=%u class=%u index=%u count=%u tag_len=%u\r\n",
-                  static_cast<unsigned>(this->packageID),
-                  static_cast<unsigned>(this->claz),
-                  static_cast<unsigned>(index),
-                  static_cast<unsigned>(this->fields->size()),
-                  static_cast<unsigned>(field_tag.len));
-      std::fflush(stdout);
-    }
     // Persistent fields with no record have never been assigned. Match the
     // reference getter's missing-tag behavior instead of asking the type
     // reader to turn the expected absence into an IOException.
     const bool field_exists = fs_exists(field_tag.value, field_tag.len) != 0;
-    if (trace) {
-      std::printf("CHOUPI:FIELD_LOAD exists:done package=%u class=%u index=%u exists=%u\r\n",
-                  static_cast<unsigned>(this->packageID),
-                  static_cast<unsigned>(this->claz),
-                  static_cast<unsigned>(index),
-                  field_exists ? 1u : 0u);
-      std::fflush(stdout);
-    }
     if (!field_exists) {
       field.type = FieldType::FIELD_TYPE_UNINITIALIZED;
       field.value = 0;
-      ++field_load_trace_count;
       continue;
     }
-    field.type = FlashMemory_Handler::getPersistentField_Type(field_tag);
-    if (trace) {
-      std::printf("CHOUPI:FIELD_LOAD type package=%u class=%u index=%u type=%u\r\n",
-                  static_cast<unsigned>(this->packageID),
-                  static_cast<unsigned>(this->claz),
-                  static_cast<unsigned>(index),
-                  static_cast<unsigned>(field.type));
-      std::fflush(stdout);
+    try {
+      field.type = FlashMemory_Handler::getPersistentField_Type(field_tag);
+    } catch (Exceptions exception) {
+#ifndef PC_VERSION
+      choupi_vm_record_persistent_restore_failure(
+          this->packageID, this->claz, index,
+          static_cast<uint8_t>(field.type), 1,
+          static_cast<uint8_t>(exception));
+#endif
+      throw;
     }
 
     switch (field.type) {
@@ -714,10 +705,20 @@ auto JC_Instance::getFields() const -> decltype(fields) {
 #endif /* JCVM_INT_SUPPORTED */
     case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT:
     case FieldType::FIELD_TYPE_UNINITIALIZED:
-      field.value = static_cast<jword_t>(
-          FlashMemory_Handler::getPersistentField_Reference(
-              field_tag, const_cast<JC_Instance *>(this)->getOwner())
-              .compact());
+      try {
+        field.value = static_cast<jword_t>(
+            FlashMemory_Handler::getPersistentField_Reference(
+                field_tag, const_cast<JC_Instance *>(this)->getOwner())
+                .compact());
+      } catch (Exceptions exception) {
+#ifndef PC_VERSION
+        choupi_vm_record_persistent_restore_failure(
+            this->packageID, this->claz, index,
+            static_cast<uint8_t>(field.type), 2,
+            static_cast<uint8_t>(exception));
+#endif
+        throw;
+      }
       break;
     default:
       std::printf("CHOUPI:PERSIST_INVALID loaded-field-type=%u index=%u package=%u class=%u\r\n",
@@ -727,14 +728,6 @@ auto JC_Instance::getFields() const -> decltype(fields) {
                   static_cast<unsigned>(this->claz));
       throw Exceptions::SecurityException;
     }
-    if (trace) {
-      std::printf("CHOUPI:FIELD_LOAD value:done package=%u class=%u index=%u\r\n",
-                  static_cast<unsigned>(this->packageID),
-                  static_cast<unsigned>(this->claz),
-                  static_cast<unsigned>(index));
-      std::fflush(stdout);
-    }
-    ++field_load_trace_count;
   }
   this->persistent_fields_loaded = true;
   return this->fields;
