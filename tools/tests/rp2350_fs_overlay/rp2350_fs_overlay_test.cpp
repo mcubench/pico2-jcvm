@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -19,9 +20,35 @@ extern "C" uint8_t fs_sync(void);
 namespace {
 std::array<uint8_t, 2 * 1024 * 1024> fake_flash;
 std::array<uint8_t, 2 * 1024 * 1024> committed_flash;
+std::array<uint8_t, 2 * 1024 * 1024> cross_store_empty_journal_flash;
+std::array<uint8_t, 2 * 1024 * 1024> cross_store_committed_flash;
 size_t flash_mutation_count = 0;
 size_t fail_after_mutations = static_cast<size_t>(-1);
 bool persistent_transaction_active = false;
+
+#pragma pack(push, 1)
+struct LegacyAppletInstanceRecord {
+  uint8_t applet_aid_length;
+  uint8_t instance_aid_length;
+  uint16_t class_index;
+  uint8_t applet_aid[16];
+  uint8_t instance_aid[16];
+};
+
+struct LegacyCapSlotHeaderV3 {
+  uint32_t magic;
+  uint16_t version;
+  uint8_t package_id;
+  uint8_t package_aid_length;
+  uint32_t code_length;
+  uint32_t code_crc32;
+  uint8_t package_aid[16];
+  uint8_t instance_count;
+  uint16_t reserved;
+  LegacyAppletInstanceRecord instances[40];
+  uint32_t header_crc32;
+};
+#pragma pack(pop)
 
 struct SimulatedPowerCut {};
 
@@ -35,6 +62,18 @@ void before_flash_mutation() {
     throw SimulatedPowerCut{};
   }
   ++flash_mutation_count;
+}
+
+uint32_t test_crc32(const uint8_t *data, size_t length) {
+  uint32_t crc = 0xffffffffu;
+  for (size_t index = 0; index < length; ++index) {
+    crc ^= data[index];
+    for (unsigned int bit = 0; bit < 8; ++bit) {
+      const uint32_t mask = 0u - (crc & 1u);
+      crc = (crc >> 1) ^ (0xedb88320u & mask);
+    }
+  }
+  return ~crc;
 }
 }
 
@@ -73,8 +112,12 @@ void flash_range_program(uint32_t offset, const uint8_t *data, size_t count) {
 }
 
 int flash_safe_execute(void (*func)(void *), void *param, uint32_t) {
-  func(param);
-  return 0;
+  try {
+    func(param);
+    return 0;
+  } catch (const SimulatedPowerCut &) {
+    return -1;
+  }
 }
 
 namespace {
@@ -307,11 +350,9 @@ int main() {
     random_state ^= random_state >> 17;
     random_state ^= random_state << 5;
     reset_flash_failure(random_state % snapshot_mutations);
-    try {
-      (void)fs_sync();
+    if (fs_sync() == 0) {
       every_cut_recovers_atomically = false;
       break;
-    } catch (const SimulatedPowerCut &) {
     }
     reset_flash_failure();
 
@@ -343,7 +384,293 @@ int main() {
   expect(every_cut_recovers_atomically,
          "filesystem_1000_randomized_multi_record_power_cuts_are_atomic");
 
-  expect(fs_erase(persistent_tag, sizeof(persistent_tag)) == 0 &&
+  // The install journal uses this lifecycle metadata tag. Exercise removal as
+  // a transaction: a cut while writing the cleared snapshot may recover
+  // either the old journal record or its committed tombstone, never a torn
+  // record that cannot be interpreted after boot.
+  constexpr uint8_t install_journal_tag[] = {0x02, 0xff, 56, 3};
+  constexpr uint8_t install_journal_value[] = {
+      'I', 'N', 'S', '1', 56, 5, 5, 5, 0x01, 0x23};
+  uint32_t cleared_snapshot_mutations = 0;
+  bool journal_baseline_ready =
+      fs_init() == 0 &&
+      fs_write(install_journal_tag, sizeof(install_journal_tag),
+               install_journal_value, sizeof(install_journal_value)) == 0 &&
+      fs_sync() == 0;
+  const auto committed_journal_flash = fake_flash;
+  if (journal_baseline_ready) {
+    persistent_transaction_active = true;
+    journal_baseline_ready =
+        fs_erase(install_journal_tag, sizeof(install_journal_tag)) == 0 &&
+        fs_sync() == 0;
+    persistent_transaction_active = false;
+    reset_flash_failure();
+    journal_baseline_ready = journal_baseline_ready && fs_sync() == 0;
+    cleared_snapshot_mutations =
+        static_cast<uint32_t>(flash_mutation_count);
+  }
+  expect(journal_baseline_ready && cleared_snapshot_mutations > 0,
+         "install_journal_clear_transaction_commits_tombstone");
+
+  bool journal_clear_recovers_atomically =
+      journal_baseline_ready && cleared_snapshot_mutations > 0;
+  uint32_t journal_cut_state = 0x1a57c0de;
+  for (size_t trial = 0; trial < 1000 && journal_clear_recovers_atomically;
+       ++trial) {
+    fake_flash = committed_journal_flash;
+    if (fs_init() != 0) {
+      journal_clear_recovers_atomically = false;
+      break;
+    }
+    persistent_transaction_active = true;
+    const bool erase_staged =
+        fs_erase(install_journal_tag, sizeof(install_journal_tag)) == 0 &&
+        fs_sync() == 0;
+    persistent_transaction_active = false;
+    if (!erase_staged) {
+      journal_clear_recovers_atomically = false;
+      break;
+    }
+    journal_cut_state ^= journal_cut_state << 13;
+    journal_cut_state ^= journal_cut_state >> 17;
+    journal_cut_state ^= journal_cut_state << 5;
+    const size_t cut = journal_cut_state % cleared_snapshot_mutations;
+    reset_flash_failure(cut);
+    const bool interrupted = fs_sync() != 0;
+    reset_flash_failure();
+    if (!interrupted || fs_init() != 0) {
+      journal_clear_recovers_atomically = false;
+      break;
+    }
+    const bool journal_absent =
+        fs_exists(install_journal_tag, sizeof(install_journal_tag)) == 0;
+    uint8_t recovered_journal[sizeof(install_journal_value)]{};
+    uint32_t existing_length = 0;
+    const bool journal_intact =
+        fs_length(install_journal_tag, sizeof(install_journal_tag),
+                  &existing_length) == 0 &&
+        existing_length == sizeof(install_journal_value) &&
+        fs_read(install_journal_tag, sizeof(install_journal_tag),
+                recovered_journal, sizeof(recovered_journal)) == 0 &&
+        std::memcmp(recovered_journal, install_journal_value,
+                    sizeof(install_journal_value)) == 0;
+    if (!journal_absent && !journal_intact) {
+      journal_clear_recovers_atomically = false;
+    }
+  }
+  expect(journal_clear_recovers_atomically,
+         "install_journal_clear_1000_power_cuts_recover_old_or_cleared_state");
+
+  constexpr uint8_t cross_store_journal_tag[] = {0x02, 0xff, 56, 3};
+  constexpr uint8_t cross_store_journal_value[] = {
+      'I', 'N', 'S', '1', 56, 5, 5, 5, 0x01, 0x23};
+  constexpr uint8_t cross_store_package_aid[] = {
+      0xa0, 0x00, 0x00, 0x00, 0x38};
+  constexpr uint8_t cross_store_applet_aid[] = {
+      0xa0, 0x00, 0x00, 0x00, 0x39};
+  constexpr uint8_t cross_store_instance_aid[] = {
+      0xa0, 0x00, 0x00, 0x00, 0x3a};
+  constexpr uint8_t cross_store_cap_code[] = {0xca, 0xfe, 0x56, 0x01};
+  constexpr uint8_t cross_store_seed_tag[] = {0xa3, 0x01};
+  constexpr uint8_t cross_store_seed_value[] = {0x5a};
+  constexpr uint8_t cross_store_applet_state_tag[] = {
+      0x03, 56, 0x01, 0x23, 0x00};
+  constexpr uint8_t cross_store_applet_state_value[] = {0x2a, 0x39};
+  fake_flash.fill(0xff);
+  bool cross_store_baseline = fs_init() == 0 &&
+      fs_write(cross_store_seed_tag, sizeof(cross_store_seed_tag),
+               cross_store_seed_value, sizeof(cross_store_seed_value)) == 0 &&
+      fs_sync() == 0 &&
+      cap_store_write_package(56, cross_store_package_aid,
+                              sizeof(cross_store_package_aid),
+                              cross_store_cap_code,
+                              sizeof(cross_store_cap_code)) &&
+      fs_init() == 0;
+  cross_store_empty_journal_flash = fake_flash;
+  persistent_transaction_active = true;
+  const bool journal_creation_staged = cross_store_baseline &&
+      fs_write(cross_store_journal_tag, sizeof(cross_store_journal_tag),
+               cross_store_journal_value,
+               sizeof(cross_store_journal_value)) == 0 &&
+      fs_write(cross_store_applet_state_tag,
+               sizeof(cross_store_applet_state_tag),
+               cross_store_applet_state_value,
+               sizeof(cross_store_applet_state_value)) == 0 &&
+      fs_sync() == 0;
+  persistent_transaction_active = false;
+  reset_flash_failure();
+  const bool journal_creation_baseline =
+      journal_creation_staged && fs_sync() == 0;
+  const size_t journal_creation_mutations = flash_mutation_count;
+  cross_store_committed_flash = fake_flash;
+  expect(journal_creation_baseline && journal_creation_mutations > 0,
+         "install_journal_and_applet_state_commit_baseline");
+
+  bool journal_creation_atomic =
+      journal_creation_baseline && journal_creation_mutations > 0;
+  uint32_t journal_creation_cut_state = 0x56a93c17;
+  for (size_t trial = 0; trial < 1000 && journal_creation_atomic; ++trial) {
+    fake_flash = cross_store_empty_journal_flash;
+    if (!cap_store_initialize() || fs_init() != 0) {
+      journal_creation_atomic = false;
+      break;
+    }
+    persistent_transaction_active = true;
+    const bool staged =
+        fs_write(cross_store_journal_tag, sizeof(cross_store_journal_tag),
+                 cross_store_journal_value,
+                 sizeof(cross_store_journal_value)) == 0 &&
+        fs_write(cross_store_applet_state_tag,
+                 sizeof(cross_store_applet_state_tag),
+                 cross_store_applet_state_value,
+                 sizeof(cross_store_applet_state_value)) == 0 &&
+        fs_sync() == 0;
+    persistent_transaction_active = false;
+    if (!staged) {
+      journal_creation_atomic = false;
+      break;
+    }
+    journal_creation_cut_state ^= journal_creation_cut_state << 13;
+    journal_creation_cut_state ^= journal_creation_cut_state >> 17;
+    journal_creation_cut_state ^= journal_creation_cut_state << 5;
+    const size_t cut =
+        journal_creation_cut_state % journal_creation_mutations;
+    reset_flash_failure(cut);
+    const bool interrupted = fs_sync() != 0;
+    reset_flash_failure();
+    if (!interrupted || !cap_store_initialize() || fs_init() != 0) {
+      journal_creation_atomic = false;
+      break;
+    }
+    uint32_t journal_length = 0;
+    uint32_t applet_state_length = 0;
+    const bool journal_exists = fs_length(
+        cross_store_journal_tag, sizeof(cross_store_journal_tag),
+        &journal_length) == 0;
+    const bool state_exists = fs_length(
+        cross_store_applet_state_tag, sizeof(cross_store_applet_state_tag),
+        &applet_state_length) == 0;
+    const bool both_absent = !journal_exists && !state_exists;
+    uint8_t journal_bytes[sizeof(cross_store_journal_value)]{};
+    uint8_t applet_state_bytes[sizeof(cross_store_applet_state_value)]{};
+    const bool both_committed = journal_exists && state_exists &&
+        journal_length == sizeof(cross_store_journal_value) &&
+        applet_state_length == sizeof(cross_store_applet_state_value) &&
+        fs_read(cross_store_journal_tag, sizeof(cross_store_journal_tag),
+                journal_bytes, sizeof(journal_bytes)) == 0 &&
+        fs_read(cross_store_applet_state_tag,
+                sizeof(cross_store_applet_state_tag), applet_state_bytes,
+                sizeof(applet_state_bytes)) == 0 &&
+        std::memcmp(journal_bytes, cross_store_journal_value,
+                    sizeof(cross_store_journal_value)) == 0 &&
+        std::memcmp(applet_state_bytes, cross_store_applet_state_value,
+                    sizeof(cross_store_applet_state_value)) == 0;
+    if (!both_absent && !both_committed) journal_creation_atomic = false;
+  }
+  expect(journal_creation_atomic,
+         "install_journal_and_applet_state_recover_atomically_after_1000_cuts");
+
+  fake_flash = cross_store_committed_flash;
+  const bool committed_journal_rebooted =
+      cap_store_initialize() && fs_init() == 0;
+  reset_flash_failure();
+  const bool cross_store_publication_baseline =
+      committed_journal_rebooted &&
+      cap_store_mark_package_installed(
+          56, cross_store_applet_aid, sizeof(cross_store_applet_aid),
+          cross_store_instance_aid, sizeof(cross_store_instance_aid),
+          0x0123);
+  const size_t publication_mutations = flash_mutation_count;
+  expect(cross_store_publication_baseline && publication_mutations > 0,
+         "install_recovery_cross_store_publication_baseline");
+
+  bool cross_store_recovery_atomic =
+      cross_store_baseline && publication_mutations > 0;
+  uint32_t cross_store_cut_state = 0xc01dcafe;
+  for (size_t trial = 0; trial < 1000 && cross_store_recovery_atomic;
+       ++trial) {
+    fake_flash = cross_store_committed_flash;
+    if (!cap_store_initialize() || fs_init() != 0 ||
+        fs_exists(cross_store_journal_tag,
+                  sizeof(cross_store_journal_tag)) == 0) {
+      cross_store_recovery_atomic = false;
+      break;
+    }
+    cross_store_cut_state ^= cross_store_cut_state << 13;
+    cross_store_cut_state ^= cross_store_cut_state >> 17;
+    cross_store_cut_state ^= cross_store_cut_state << 5;
+    const size_t cut = cross_store_cut_state % publication_mutations;
+    reset_flash_failure(cut);
+    try {
+      (void)cap_store_mark_package_installed(
+          56, cross_store_applet_aid, sizeof(cross_store_applet_aid),
+          cross_store_instance_aid, sizeof(cross_store_instance_aid),
+          0x0123);
+    } catch (const SimulatedPowerCut &) {
+    }
+    reset_flash_failure();
+
+    // A reboot must retain both the durable recovery journal and a readable
+    // old-or-new CAP header. Complete registry publication idempotently.
+    const bool rebooted = cap_store_initialize() && fs_init() == 0;
+    const uint8_t published_count = cap_store_package_instance_count(56);
+    const bool registration_usable = published_count == 1 ||
+        (published_count == 0 && cap_store_mark_package_installed(
+            56, cross_store_applet_aid, sizeof(cross_store_applet_aid),
+            cross_store_instance_aid, sizeof(cross_store_instance_aid),
+            0x0123));
+    uint32_t recovered_journal_length = 0;
+    uint8_t recovered_journal[sizeof(cross_store_journal_value)]{};
+    const bool journal_still_durable =
+        fs_length(cross_store_journal_tag,
+                  sizeof(cross_store_journal_tag),
+                  &recovered_journal_length) == 0 &&
+        recovered_journal_length == sizeof(cross_store_journal_value) &&
+        fs_read(cross_store_journal_tag,
+                sizeof(cross_store_journal_tag), recovered_journal,
+                sizeof(recovered_journal)) == 0 &&
+        std::memcmp(recovered_journal, cross_store_journal_value,
+                    sizeof(cross_store_journal_value)) == 0;
+    persistent_transaction_active = true;
+    const bool cleanup_staged = journal_still_durable &&
+        fs_erase(cross_store_journal_tag,
+                 sizeof(cross_store_journal_tag)) == 0 &&
+        fs_sync() == 0;
+    persistent_transaction_active = false;
+    const bool cleanup_committed = cleanup_staged && fs_sync() == 0;
+    const bool final_reboot = cleanup_committed &&
+        cap_store_initialize() && fs_init() == 0;
+    uint8_t stored_applet_aid[16]{};
+    uint8_t stored_applet_aid_length = 0;
+    uint8_t stored_instance_aid[16]{};
+    uint8_t stored_instance_aid_length = 0;
+    uint16_t stored_class_index = 0xffff;
+    const bool final_registry = final_reboot &&
+        cap_store_package_instance_at(
+            56, 0, stored_applet_aid, stored_applet_aid_length,
+            stored_instance_aid, stored_instance_aid_length,
+            stored_class_index) &&
+        stored_applet_aid_length == sizeof(cross_store_applet_aid) &&
+        std::memcmp(stored_applet_aid, cross_store_applet_aid,
+                    sizeof(cross_store_applet_aid)) == 0 &&
+        stored_instance_aid_length == sizeof(cross_store_instance_aid) &&
+        std::memcmp(stored_instance_aid, cross_store_instance_aid,
+                    sizeof(cross_store_instance_aid)) == 0 &&
+        stored_class_index == 0x0123 &&
+        fs_exists(cross_store_journal_tag,
+                  sizeof(cross_store_journal_tag)) == 0;
+    if (!rebooted || !registration_usable || !journal_still_durable ||
+        !cleanup_committed || !final_registry) {
+      cross_store_recovery_atomic = false;
+    }
+  }
+  expect(cross_store_recovery_atomic,
+         "install_registry_and_filesystem_journal_recover_after_1000_header_cuts");
+
+  expect(fs_write(persistent_tag, sizeof(persistent_tag), persisted_first,
+                  sizeof(persisted_first)) == 0 &&
+             fs_sync() == 0 &&
+             fs_erase(persistent_tag, sizeof(persistent_tag)) == 0 &&
              fs_sync() == 0 && fs_init() == 0 &&
              fs_exists(persistent_tag, sizeof(persistent_tag)) == 0,
          "filesystem_tombstone_survives_restart");
@@ -389,6 +716,65 @@ int main() {
   }
   expect(cap_codes_survive_fs_sync,
          "filesystem_snapshots_preserve_all_cap_slots");
+
+  auto *legacy_header = reinterpret_cast<LegacyCapSlotHeaderV3 *>(
+      fake_flash.data() + flash_layout::cap_offset +
+      7 * flash_layout::cap_slot_size);
+  legacy_header->version = 3;
+  legacy_header->reserved = 0xffff;
+  legacy_header->header_crc32 = test_crc32(
+      reinterpret_cast<const uint8_t *>(legacy_header),
+      offsetof(LegacyCapSlotHeaderV3, header_crc32));
+  uint32_t legacy_code_length = 0;
+  const bool legacy_cap_header_is_readable =
+      cap_store_initialize() && cap_store_package_instance_count(63) == 0 &&
+      cap_store_data_for_package(63, &legacy_code_length) != nullptr &&
+      legacy_code_length == sizeof(cap_code);
+  expect(legacy_cap_header_is_readable,
+         "legacy_v3_cap_header_is_readable_before_metadata_upgrade");
+
+  constexpr uint8_t applet_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x63};
+  constexpr uint8_t instance_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x73};
+  const bool installed_record_written = cap_store_mark_package_installed(
+      63, applet_aid, sizeof(applet_aid), instance_aid,
+      sizeof(instance_aid), 0x0123);
+  expect(installed_record_written && cap_store_package_instance_count(63) == 1,
+         "cap_instance_metadata_is_published");
+  reset_flash_failure(4096);
+  const bool interrupted_remove =
+      !cap_store_remove_package_instance(63, instance_aid,
+                                         sizeof(instance_aid));
+  reset_flash_failure();
+  const bool installed_metadata_survives_cut =
+      interrupted_remove && cap_store_initialize() &&
+      cap_store_package_instance_count(63) == 1;
+  expect(installed_metadata_survives_cut,
+         "cap_registry_mirror_preserves_installed_header_after_cut");
+  const bool installed_record_removed = cap_store_remove_package_instance(
+      63, instance_aid, sizeof(instance_aid));
+  uint32_t retained_code_length = 0;
+  const uint8_t *retained_code =
+      cap_store_data_for_package(63, &retained_code_length);
+  expect(installed_record_removed &&
+             cap_store_package_instance_count(63) == 0 &&
+             retained_code != nullptr && retained_code_length == sizeof(cap_code),
+         "cap_instance_metadata_can_be_rolled_back_without_deleting_package");
+
+  // A cut after erasing the copy-on-write destination but before programming
+  // its replacement must leave the previous package/instance header readable.
+  reset_flash_failure(4096);
+  const bool interrupted_metadata_update =
+      !cap_store_mark_package_installed(
+          63, applet_aid, sizeof(applet_aid), instance_aid,
+          sizeof(instance_aid), 0x0123);
+  reset_flash_failure();
+  const bool previous_metadata_survives_cut =
+      interrupted_metadata_update && cap_store_initialize() &&
+      cap_store_package_instance_count(63) == 0 &&
+      cap_store_data_for_package(63, &retained_code_length) != nullptr &&
+      retained_code_length == sizeof(cap_code);
+  expect(previous_metadata_survives_cut,
+         "cap_registry_metadata_update_recovers_previous_header_after_cut");
 
   // Simulate a card created by the previous layout: copy a real JFS2 snapshot
   // to its old address, remove the new copy, then boot and migrate it.

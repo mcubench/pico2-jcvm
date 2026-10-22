@@ -10,6 +10,8 @@ namespace persistent_transaction_test {
 extern bool track_array_allocations;
 extern unsigned int tracked_array_allocations;
 extern unsigned int tracked_array_deallocations;
+bool dynamic_cap_present[8]{};
+const uint8_t dynamic_cap_code[] = {0x01};
 } // namespace persistent_transaction_test
 
 extern "C" void path_applet_field(uint8_t applet, uint8_t package,
@@ -35,6 +37,30 @@ extern "C" void path_applet_field16(uint8_t applet, uint8_t package,
   *length = 6;
 }
 
+extern "C" void path_static16(uint8_t package, uint16_t static_id,
+                               uint8_t (*tag)[128], uint8_t *length) {
+  (*tag)[0] = 0x02;
+  (*tag)[1] = package;
+  (*tag)[2] = static_cast<uint8_t>(static_id >> 8);
+  (*tag)[3] = static_cast<uint8_t>(static_id);
+  *length = 4;
+}
+
+extern "C" void path_package_list(uint8_t (*tag)[128], uint8_t *length) {
+  (*tag)[0] = 0x00;
+  *length = 1;
+}
+
+extern "C" const uint8_t *choupi_cap_store_data_for_package(
+    uint8_t package_id, uint32_t *length) {
+  if (length == nullptr || package_id < 56 || package_id > 63 ||
+      !persistent_transaction_test::dynamic_cap_present[package_id - 56]) {
+    return nullptr;
+  }
+  *length = sizeof(persistent_transaction_test::dynamic_cap_code);
+  return persistent_transaction_test::dynamic_cap_code;
+}
+
 namespace {
 std::map<std::string, std::vector<uint8_t>> files;
 bool fail_next_write = false;
@@ -48,6 +74,15 @@ std::string key_for(const uint8_t *tag, const uint8_t length) {
   return std::string(reinterpret_cast<const char *>(tag), length);
 }
 } // namespace
+
+extern "C" uint8_t fs_read_1b_at(const uint8_t *tag, uint8_t tag_length,
+                                  uint32_t offset, uint8_t *value) {
+  const auto found = files.find(key_for(tag, tag_length));
+  if (found == files.end() || value == nullptr || offset >= found->second.size())
+    return 1;
+  *value = found->second[offset];
+  return 0;
+}
 
 extern "C" uint8_t fs_exists(const uint8_t *tag, const uint8_t tag_length) {
   return files.count(key_for(tag, tag_length)) != 0;

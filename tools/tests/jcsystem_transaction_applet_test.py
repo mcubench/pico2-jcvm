@@ -50,12 +50,17 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 79),
+        "--case", type=int, action="append", choices=range(1, 83),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
         "--restore-existing", action="store_true",
         help="reuse saved emulator memory and restore the installed applet",
+    )
+    parser.add_argument(
+        "--gc-pressure-rounds", type=int, default=0,
+        help=("repeat transient/object allocation APDUs followed by checks of "
+              "static and persistent reference identity"),
     )
     parser.add_argument(
         "--memory", type=Path,
@@ -67,10 +72,16 @@ def main() -> int:
         help="hex bytes passed as the applet's proprietary install parameters",
     )
     parser.add_argument(
+        "--package-id", type=int, choices=range(56, 64), default=63,
+        help="dynamic package ID to use while restoring an installed applet",
+    )
+    parser.add_argument(
         "--expect-register-reason", type=int, choices=(0, 1, 4), default=0,
         help="expected explicit Applet.register(AID) failure reason reported by case 70",
     )
     args = parser.parse_args()
+    if not 0 <= args.gc_pressure_rounds <= 1000:
+        parser.error("--gc-pressure-rounds must be between 0 and 1000")
     build = repo / "build/jcsystem-transaction-probe"
     emulator = repo / "build/choupi-pc/choupi"
     memory = args.memory.resolve()
@@ -103,6 +114,7 @@ def main() -> int:
         ]
         if args.restore_existing:
             command.extend(("--class-index", "0"))
+            command.extend(("--package-id", str(args.package_id)))
         else:
             command.append("--install")
             if args.install_params is not None:
@@ -203,6 +215,7 @@ def main() -> int:
                     (28, b"\x01", "transient byte/object arrays preserve clear events and values"),
                     (29, b"\x01", "invalid transient array event throws SystemException.ILLEGAL_VALUE"),
                     (30, b"\x01", "prepare transient values for deselect lifecycle check"),
+                    (79, b"\x03", "empty transaction abort preserves live transient instance fields"),
                     (31, b"\x03", "CLEAR_ON_DESELECT clears while CLEAR_ON_RESET survives applet reselection"),
                     (32, b"\x01", "prepare transient values for card reset check"),
                     (33, b"\x03", "card reset clears both CLEAR_ON_DESELECT and CLEAR_ON_RESET arrays"),
@@ -250,6 +263,9 @@ def main() -> int:
                     (76, b"\x01", "JCSystem.getAID is null before register and isAppletActive is true after register during install"),
                     (77, b"\x0f", "JCSystem.isAppletActive is true during install/select/deselect/process callbacks"),
                     (78, b"\x01", "UserException.throwIt is caught and preserves its reason"),
+                    (80, b"\x01", "clear one static alias so GC can reclaim its persistent array"),
+                    (81, b"\x01", "unread static alias restores the reclaimed persistent array from flash"),
+                    (82, b"\x01", "nested persistent array aliases and leaf identity survive restore"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
@@ -291,6 +307,7 @@ def main() -> int:
                                 "APDU after unknown AID SELECT was dispatched: "
                                 f"{inactive_response.hex().upper()}"
                             )
+                        exchange(connection, select, "reselect applet after unknown AID")
                         print(f"TEST:PASS {label}")
                         continue
                     if p1 == 71:
@@ -454,7 +471,29 @@ def main() -> int:
                             f"{label}: expected {expected.hex().upper()}, got {data.hex().upper()}"
                         )
                     print(f"TEST:PASS {label}")
-                print(f"TEST:SUMMARY pass={len(selected_cases) + 2} fail=0 elapsed_s={time.monotonic() - started:.3f}")
+                for round_number in range(args.gc_pressure_rounds):
+                    for p1, label in (
+                        (49, "GC pressure transient-array batch"),
+                        (52, "GC pressure unreferenced-instance batch"),
+                        (14, "GC pressure static root identity"),
+                        (15, "GC pressure persistent array child identity"),
+                        (16, "GC pressure persistent object-field alias"),
+                        (17, "GC pressure restored array type"),
+                        (82, "GC pressure nested persistent array graph"),
+                    ):
+                        observed = exchange(
+                            connection,
+                            bytes((0x80, 0x00, p1, 0x00, 0x00)),
+                            f"{label} round {round_number + 1}",
+                        )
+                        if observed != b"\x01":
+                            raise RuntimeError(
+                                f"{label} round {round_number + 1}: "
+                                f"expected 01, got {observed.hex().upper()}"
+                            )
+                    print(f"TEST:PASS GC pressure round={round_number + 1}")
+                total_passes = len(selected_cases) + 2 + args.gc_pressure_rounds * 7
+                print(f"TEST:SUMMARY pass={total_passes} fail=0 elapsed_s={time.monotonic() - started:.3f}")
             finally:
                 if connection is not None:
                     connection.close()

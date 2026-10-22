@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <new>
 #include <utility>
 #include <vector>
@@ -19,6 +20,7 @@ std::pair<unsigned int, unsigned int> stop_array_allocation_tracking();
 bool track_array_allocations = false;
 unsigned int tracked_array_allocations = 0;
 unsigned int tracked_array_deallocations = 0;
+extern bool dynamic_cap_present[8];
 }
 
 void *operator new[](const std::size_t size) {
@@ -72,6 +74,77 @@ int main() {
   using jcvm::FlashMemory_Handler;
   using persistent_transaction_test::read;
   using persistent_transaction_test::seed;
+
+  // A stale package-list bit must not cause import lookup to parse a dynamic
+  // CAP slot that has already been removed.
+  const uint8_t package_list_tag[] = {0x00};
+  std::vector<uint8_t> package_bits(JCVM_MAX_PACKAGES / 8, 0);
+  package_bits[56 / 8] |= static_cast<uint8_t>(1u << (56 % 8));
+  package_bits[57 / 8] |= static_cast<uint8_t>(1u << (57 % 8));
+  seed(package_list_tag, sizeof(package_list_tag), package_bits);
+  persistent_transaction_test::dynamic_cap_present[1] = true;
+  expect(!FlashMemory_Handler::isPackageExist(56),
+         "stale_dynamic_package_bitmap_without_cap_slot_is_absent");
+  expect(FlashMemory_Handler::isPackageExist(57),
+         "dynamic_package_bitmap_with_cap_slot_is_present");
+  expect(!FlashMemory_Handler::isPackageExist(58),
+         "dynamic_package_without_bitmap_bit_is_absent");
+
+  jcvm::fs::Tag journal_tag;
+  journal_tag.len = 2;
+  journal_tag.value[0] = 0xa7;
+  journal_tag.value[1] = 0x10;
+  const uint8_t journal_record[] = {0x4a, 0x49, 0x4e, 0x53, 0x01};
+  expect(FlashMemory_Handler::beginPersistentWriteTransaction() &&
+             FlashMemory_Handler::writePersistentRecord(
+                 journal_tag, journal_record, sizeof(journal_record)) &&
+             FlashMemory_Handler::rollbackPersistentWriteTransaction() &&
+             read(journal_tag.value, journal_tag.len).empty(),
+         "opaque_install_journal_record_rolls_back_with_transaction");
+  bool journal_round_trip =
+      FlashMemory_Handler::beginPersistentWriteTransaction() &&
+      FlashMemory_Handler::writePersistentRecord(
+          journal_tag, journal_record, sizeof(journal_record)) &&
+      FlashMemory_Handler::commitPersistentWriteTransaction();
+  if (journal_round_trip) {
+    auto [journal_length, journal_data] =
+        FlashMemory_Handler::readPersistentRecord(journal_tag);
+    journal_round_trip = journal_length == sizeof(journal_record) &&
+        std::memcmp(journal_data.get(), journal_record,
+                    sizeof(journal_record)) == 0;
+  }
+  expect(journal_round_trip,
+         "opaque_install_journal_record_commits_and_reads_back");
+  bool failed_journal_commit_rolls_back =
+      FlashMemory_Handler::beginPersistentWriteTransaction() &&
+      FlashMemory_Handler::writePersistentRecord(
+          journal_tag, journal_record, sizeof(journal_record));
+  if (failed_journal_commit_rolls_back) {
+    persistent_transaction_test::fail_one_sync();
+    failed_journal_commit_rolls_back =
+        !FlashMemory_Handler::commitPersistentWriteTransaction() &&
+        !FlashMemory_Handler::persistentWriteTransactionActive() &&
+        read(journal_tag.value, journal_tag.len) ==
+            std::vector<uint8_t>(journal_record,
+                                 journal_record + sizeof(journal_record));
+  }
+  expect(failed_journal_commit_rolls_back,
+         "failed_install_journal_commit_preserves_previous_record");
+  const bool journal_erase_rollback =
+      FlashMemory_Handler::beginPersistentWriteTransaction() &&
+      FlashMemory_Handler::erasePersistentTag(journal_tag) &&
+      FlashMemory_Handler::rollbackPersistentWriteTransaction() &&
+      read(journal_tag.value, journal_tag.len) ==
+          std::vector<uint8_t>(journal_record,
+                               journal_record + sizeof(journal_record));
+  expect(journal_erase_rollback,
+         "opaque_install_journal_erase_rolls_back");
+  const bool journal_cleanup =
+      FlashMemory_Handler::beginPersistentWriteTransaction() &&
+      FlashMemory_Handler::erasePersistentTag(journal_tag) &&
+      FlashMemory_Handler::commitPersistentWriteTransaction() &&
+      read(journal_tag.value, journal_tag.len).empty();
+  expect(journal_cleanup, "opaque_install_journal_cleanup_commits");
 
   const auto scalar = make_tag(6);
   seed(scalar.value, scalar.len,

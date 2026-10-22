@@ -19,6 +19,7 @@ int main() {
       {7, 0x6985, "transaction_unavailable"},
       {8, 0x6581, "rollback_failed"},
       {9, 0x6f00, "unexpected_exception"},
+      {10, 0x6a88, "missing_imported_package"},
       {0, 0x6a80, "unknown_stage"},
   };
   for (const auto &test : cases) {

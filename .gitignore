@@ -1,0 +1,9 @@
+AlgTest_JavaCard/
+.local-toolchain/
+artifacts/logs/
+artifacts/backups/
+artifacts/results/
+artifacts/metrics/
+build/
+tools/__pycache__
+tools/tests/__pycache__

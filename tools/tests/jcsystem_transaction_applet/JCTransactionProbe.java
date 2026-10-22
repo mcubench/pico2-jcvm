@@ -22,7 +22,10 @@ import javacard.security.CryptoException;
 public final class JCTransactionProbe extends Applet {
   private static Object staticReferenceRoot;
   private static Object[] persistentReferenceArray;
+  private static NestedArrayHolder persistentNestedReferenceHolder;
   private static SharedArrayHolder persistentReferenceHolder;
+  private static byte[] gcRehydrateAliasA;
+  private static byte[] gcRehydrateAliasB;
   private Object globalArrayInstanceReference;
   private byte value = 0x11;
   private byte selectCount;
@@ -71,7 +74,13 @@ public final class JCTransactionProbe extends Applet {
     staticReferenceRoot = this;
     byte[] shared = {0x01};
     persistentReferenceArray = new Object[] {shared, shared};
+    byte[] nestedLeaf = {0x6b};
+    persistentNestedReferenceHolder = new NestedArrayHolder(
+        new Object[] {nestedLeaf, nestedLeaf});
     persistentReferenceHolder = new SharedArrayHolder(shared);
+    byte[] gcRehydratable = {0x5a};
+    gcRehydrateAliasA = gcRehydratable;
+    gcRehydrateAliasB = gcRehydratable;
   }
 
   public static void install(byte[] bArray, short bOffset, byte bLength) {
@@ -478,6 +487,25 @@ public final class JCTransactionProbe extends Applet {
         length = 1;
         break;
       }
+      case 79: {
+        JCSystem.beginTransaction();
+        JCSystem.abortTransaction();
+        byte result = 0;
+        if (transientResetArray != null && transientResetArray[0] == 0x55 &&
+            JCSystem.isTransient(transientResetArray) ==
+                JCSystem.CLEAR_ON_RESET) {
+          result |= 1;
+        }
+        if (transientDeselectArray != null &&
+            transientDeselectArray[0] == 0x66 &&
+            JCSystem.isTransient(transientDeselectArray) ==
+                JCSystem.CLEAR_ON_DESELECT) {
+          result |= 2;
+        }
+        buffer[0] = result;
+        length = 1;
+        break;
+      }
       case 31: {
         byte result = 0;
         if (transientDeselectArray != null && transientDeselectArray[0] == 0) {
@@ -716,7 +744,7 @@ public final class JCTransactionProbe extends Applet {
       case 50:
       case 51: {
         byte[] discarded = null;
-        for (short i = 0; i < 64; i++) discarded = new byte[16];
+        for (short i = 0; i < 256; i++) discarded = new byte[16];
         buffer[0] = discarded.length == 16 ? (byte)1 : (byte)0;
         length = 1;
         break;
@@ -725,7 +753,7 @@ public final class JCTransactionProbe extends Applet {
       case 53:
       case 54: {
         Object discarded = null;
-        for (short i = 0; i < 64; i++) discarded = new Object();
+        for (short i = 0; i < 256; i++) discarded = new Object();
         buffer[0] = discarded != null ? (byte)1 : (byte)0;
         length = 1;
         break;
@@ -873,6 +901,34 @@ public final class JCTransactionProbe extends Applet {
         buffer[0] = result;
         break;
       }
+      case 80: {
+        byte[] alias = gcRehydrateAliasA;
+        buffer[0] = alias != null && alias.length == 1 && alias[0] == 0x5a
+            ? (byte)1 : (byte)0;
+        gcRehydrateAliasA = null;
+        length = 1;
+        break;
+      }
+      case 81: {
+        byte[] restored = gcRehydrateAliasB;
+        buffer[0] = restored != null && restored.length == 1 &&
+                    restored[0] == 0x5a ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
+      case 82: {
+        Object[] children = persistentNestedReferenceHolder.children;
+        byte[] firstLeaf = (byte[])children[0];
+        byte[] secondLeaf = (byte[])children[1];
+        boolean graphValid = children.length == 2 && firstLeaf == secondLeaf &&
+            firstLeaf.length == 1 && firstLeaf[0] == 0x6b;
+        firstLeaf[0] = 0x6c;
+        boolean aliasMutationVisible = secondLeaf[0] == 0x6c;
+        firstLeaf[0] = 0x6b;
+        buffer[0] = graphValid && aliasMutationVisible ? (byte)1 : (byte)0;
+        length = 1;
+        break;
+      }
       case 67: {
         byte reason = 0;
         try {
@@ -940,5 +996,13 @@ final class SharedArrayHolder {
   SharedArrayHolder(byte[] shared) {
     first = shared;
     second = shared;
+  }
+}
+
+final class NestedArrayHolder {
+  Object[] children;
+
+  NestedArrayHolder(Object[] children) {
+    this.children = children;
   }
 }

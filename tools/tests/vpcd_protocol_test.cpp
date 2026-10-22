@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <sys/socket.h>
+#include <unistd.h>
 #include <vector>
 
 namespace {
@@ -71,6 +73,21 @@ int main() {
   check(choupi::vpcd::decode_frame(nullptr, 0, message) ==
             choupi::vpcd::ReadResult::IoError,
         "reject null frame");
+
+  int sockets[2]{};
+  check(::socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) == 0,
+        "create socket pair for idle read");
+  check(choupi::vpcd::read_message(sockets[0], message, 5) ==
+            choupi::vpcd::ReadResult::Timeout && message.empty(),
+        "report idle frame timeout");
+  const uint8_t partial_header = 0;
+  check(::send(sockets[1], &partial_header, 1, 0) == 1,
+        "send partial frame header");
+  check(choupi::vpcd::read_message(sockets[0], message, 5) ==
+            choupi::vpcd::ReadResult::IoError && message.empty(),
+        "reject timeout after partial frame");
+  ::close(sockets[0]);
+  ::close(sockets[1]);
 
   std::printf("TEST:SUMMARY pass=%u fail=0\n", checks);
   return EXIT_SUCCESS;

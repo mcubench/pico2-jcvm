@@ -17,6 +17,8 @@ struct FakeCard {
   unsigned int deselect_count = 0;
   bool last_deselect_same_applet = false;
   unsigned int process_count = 0;
+  unsigned int card_manager_process_count = 0;
+  unsigned int card_manager_reset_count = 0;
   uint8_t restore_result = 0;
   uint16_t select_status = 0x9000;
   uint16_t process_status = 0x9000;
@@ -65,6 +67,27 @@ uint16_t process(void *opaque, const uint8_t *command,
   return card.process_status;
 }
 
+uint16_t process_card_manager(void *opaque, const uint8_t *command,
+                             uint16_t command_length, uint8_t *response,
+                             uint16_t response_capacity,
+                             uint16_t *response_length) {
+  auto &card = *static_cast<FakeCard *>(opaque);
+  ++card.card_manager_process_count;
+  if (command_length != 5 || command[0] != 0x80 || command[1] != 0xca ||
+      response_capacity < 3) {
+    return 0x6f00;
+  }
+  response[0] = 0x66;
+  response[1] = 0x90;
+  response[2] = 0x00;
+  *response_length = 3;
+  return 0x9000;
+}
+
+void reset_card_manager(void *opaque) {
+  ++static_cast<FakeCard *>(opaque)->card_manager_reset_count;
+}
+
 bool expect(bool condition, const char *name) {
   if (!condition) std::fprintf(stderr, "FAIL: %s\n", name);
   return condition;
@@ -105,7 +128,8 @@ int main() {
 
   FakeCard card;
   const choupi::vpcd::CardCallbacks callbacks{
-      &card, clear, restore, select, deselect, process};
+      &card, clear, restore, select, deselect, process,
+      process_card_manager, reset_card_manager};
   choupi::vpcd::Session session(
       std::vector<uint8_t>(kAppletAid.begin(), kAppletAid.end()), callbacks);
   std::vector<uint8_t> response;
@@ -178,6 +202,23 @@ int main() {
             response[13] == 0x00,
         "ISD SELECT deselects applet and returns FCI");
 
+  const std::vector<uint8_t> default_isd_select{
+      0x00, 0xa4, 0x04, 0x00, 0x00};
+  result = session.handle_message(default_isd_select.data(),
+                                  default_isd_select.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            response == std::vector<uint8_t>({
+                            0x6f, 0x0a, 0x84, 0x08, 0xa0, 0x00, 0x00,
+                            0x01, 0x51, 0x00, 0x00, 0x00, 0x90, 0x00}),
+        "case-1 empty-AID SELECT selects the default ISD");
+  const std::vector<uint8_t> card_data{
+      0x80, 0xca, 0x00, 0x66, 0x00};
+  result = session.handle_message(card_data.data(), card_data.size(), response);
+  check(result == choupi::vpcd::SessionResult::Response &&
+            response == std::vector<uint8_t>({0x66, 0x90, 0x00}) &&
+            card.card_manager_process_count == 1,
+        "card-manager APDU routes after ISD SELECT");
+
   card.process_status = 0x6a82;
   message = applet_select();
   result = session.handle_message(message.data(), message.size(), response);
@@ -227,6 +268,8 @@ int main() {
   session.disconnect();
   check(!session.powered() && !session.applet_selected(),
         "disconnect clears card session state");
+  check(card.card_manager_reset_count != 0,
+        "disconnect resets card-manager security state");
 
   std::printf("TEST:SUMMARY pass=%u fail=%u\n", passed, failed);
   return failed == 0 ? 0 : 1;
