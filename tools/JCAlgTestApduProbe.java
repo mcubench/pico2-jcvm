@@ -4,6 +4,7 @@ import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
+import java.util.ArrayList;
 import java.util.List;
 
 /** Minimal, dependency-free PC/SC probe for the installed JCAlgTest applet. */
@@ -41,6 +42,19 @@ public final class JCAlgTestApduProbe {
   }
 
   public static void main(String[] args) throws Exception {
+    String requestedReader = null;
+    List<String> probeArgs = new ArrayList<>();
+    for (int i = 0; i < args.length; i++) {
+      if ("--reader".equals(args[i])) {
+        if (requestedReader != null || i + 1 >= args.length) {
+          throw new IllegalArgumentException(
+              "--reader must be supplied once with an exact PC/SC reader name");
+        }
+        requestedReader = args[++i];
+      } else {
+        probeArgs.add(args[i]);
+      }
+    }
     List<CardTerminal> terminals =
         TerminalFactory.getDefault().terminals().list();
     for (CardTerminal terminal : terminals) {
@@ -48,13 +62,17 @@ public final class JCAlgTestApduProbe {
     }
     CardTerminal terminal = null;
     for (CardTerminal candidate : terminals) {
-      if (candidate.getName().contains("Pico 2 CHOUPI CCID")) {
+      if (requestedReader == null
+              ? candidate.getName().contains("Pico 2 CHOUPI CCID")
+              : candidate.getName().equals(requestedReader)) {
         terminal = candidate;
         break;
       }
     }
     if (terminal == null) {
-      throw new IllegalStateException("PC/SC reader Pico 2 CHOUPI CCID not found");
+      throw new IllegalStateException("PC/SC reader " +
+          (requestedReader == null ? "Pico 2 CHOUPI CCID" : requestedReader) +
+          " not found");
     }
 
     Card card = terminal.connect("*");
@@ -80,13 +98,45 @@ public final class JCAlgTestApduProbe {
           new CommandAPDU(0xB0, 0x73, 0x01, 0x00,
               new byte[] {0x01}, 256));
 
-      if (args.length == 1 && "--version-only".equals(args[0])) {
+      if (probeArgs.size() == 1 && "--version-only".equals(probeArgs.get(0))) {
         System.out.println(
             "TEST:PASS jc_algtest_persistence_probe version=" + versionText);
         return;
       }
 
-      if (args.length == 1 && "--des-cipher-prepare".equals(args[0])) {
+      if (probeArgs.size() >= 1 && probeArgs.size() <= 2 &&
+          "--secure-random-setseed".equals(probeArgs.get(0))) {
+        int repeatCount = probeArgs.size() == 2
+            ? Integer.parseInt(probeArgs.get(1)) : 50;
+        if (repeatCount < 1 || repeatCount > 50) {
+          throw new IllegalArgumentException("repeatCount must be 1..50");
+        }
+        // Isolate the first supported-path failure from the full static run.
+        // These settings match ALG_SECURE_RANDOM RandomData_setSeed() in the
+        // captured JCAlgTest 1.8.2 ALG_PERFORMANCE_STATIC sequence.
+        byte[] setSeedMeasurement = fromHex(
+            "0016 0002 FFFF FFFF FFFF 0002 0100 FFFF FFFF 0032 0001");
+        setSeedMeasurement[18] = (byte) (repeatCount >>> 8);
+        setSeedMeasurement[19] = (byte) repeatCount;
+        byte[] setSeedBaseline = fromHex(
+            "0016 0002 FFFF FFFF FFFF 0002 0100 FFFF FFFF 0000 0001");
+        transmit(channel, "SECURE_RANDOM_SETSEED_PREPARE",
+            new CommandAPDU(0xB0, 0x33, 0x00, 0x00,
+                setSeedMeasurement, 256));
+        for (int sample = 1; sample <= 5; sample++) {
+          transmit(channel, "SECURE_RANDOM_SETSEED_BASELINE_" + sample,
+              new CommandAPDU(0xB0, 0x42, 0x00, 0x00,
+                  setSeedBaseline, 256));
+        }
+        transmit(channel, "SECURE_RANDOM_SETSEED_" + repeatCount + "_CALLS",
+            new CommandAPDU(0xB0, 0x42, 0x00, 0x00,
+                setSeedMeasurement, 256));
+        System.out.println("TEST:PASS secure_random_setseed_static");
+        return;
+      }
+
+      if (probeArgs.size() == 1 &&
+          "--des-cipher-prepare".equals(probeArgs.get(0))) {
         // Isolate the first supported-looking Cipher prepare that returned
         // 6F00 in ALG_PERFORMANCE_STATIC. These are the exact JC305 settings
         // from the archived official-client APDU for DES CBC no padding,

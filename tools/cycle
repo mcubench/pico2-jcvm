@@ -2,9 +2,21 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-[[ $# -eq 1 ]] || die "usage: ./tools/cycle arm|riscv|choupi"
+[[ $# -ge 1 ]] || die "usage: ./tools/cycle arm|riscv|choupi [--serial SERIAL]"
 arch="$1"
 [[ "$arch" == arm || "$arch" == riscv || "$arch" == choupi ]] || die "choose arm, riscv, or choupi"
+shift
+serial=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --serial)
+      [[ $# -ge 2 && -z "$serial" && "$2" =~ ^[A-Fa-f0-9]{8,32}$ ]] || die "--serial requires an 8..32 character hexadecimal Pico serial"
+      serial="$2"
+      shift 2
+      ;;
+    *) die "usage: ./tools/cycle arm|riscv|choupi [--serial SERIAL]" ;;
+  esac
+done
 require_host_usb_access
 "${repo_root}/tools/build" arm
 "${repo_root}/tools/build" riscv
@@ -17,13 +29,19 @@ log_dir="${repo_root}/artifacts/logs"
 mkdir -p "$log_dir"
 log_file="${log_dir}/cycle-${arch}-$(date -u +%Y%m%dT%H%M%SZ).log"
 printf 'CYCLE:FLASH arch=%s image=%s\n' "$arch" "${image#${repo_root}/}" | tee "$log_file"
-"${repo_root}/tools/flash" "$image" 2>&1 | tee -a "$log_file"
+flash_args=()
+monitor_args=()
+if [[ -n "$serial" ]]; then
+  flash_args=(--serial "$serial")
+  monitor_args=(--serial "$serial")
+fi
+"${repo_root}/tools/flash" "${flash_args[@]}" "$image" 2>&1 | tee -a "$log_file"
 capture_seconds=8
 if [[ "${arch}" == choupi ]]; then
   capture_seconds=18
 fi
 set +e
-"${repo_root}/tools/monitor" --seconds "${capture_seconds}" 2>&1 | tee -a "$log_file"
+"${repo_root}/tools/monitor" "${monitor_args[@]}" --seconds "${capture_seconds}" 2>&1 | tee -a "$log_file"
 monitor_status=${PIPESTATUS[0]}
 set -e
 (( monitor_status == 0 )) || die "serial monitor failed with status ${monitor_status}; log: ${log_file}"

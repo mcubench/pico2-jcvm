@@ -18,8 +18,7 @@ Typical use (card in the contact slot, GlobalPlatform default keys):
     python3 api_card_runner.py --cardname "My card" --api 304 --areas Core,Security
     python3 api_card_runner.py --list                               # only shows the plan (no card needed)
 
-Options worth knowing: --gp-args "-d" (extra gp.jar arguments, e.g. `-d`, `--key ...`, `-r "<reader name>"` for a dual reader), --reader-index (the number the
-client asks for when several readers have a card), --keep (do not remove the CAPs), --retries (reconnect attempts, some readers need a pause between sessions).
+Options worth knowing: --reader-name "<exact PC/SC reader name>" pins GPPro and resolves the official Java client's terminal index; --reader-index is available when an index is intentionally pinned. --gp-args accepts extra gp.jar arguments such as `-d` or `--key ...`. `tools/run-deploy-parallel` distributes areas over up to three named Pico readers into separate CSV and log files. --keep leaves CAPs installed; --retries controls reconnect attempts.
 """
 import shlex
 import argparse
@@ -28,6 +27,7 @@ import datetime
 import glob
 import os
 import re
+import pathlib
 import subprocess
 import sys
 import tempfile
@@ -188,6 +188,26 @@ def cap_path(a, name, version):
     return os.path.join(a.cap_dir, 'AlgTestApi%s_%s.cap' % (name, version))
 
 
+def rollback_partial_install(g, out, area, stage, cap, kind, detail):
+    """Remove a package if GPPro completed LOAD but its INSTALL phase failed."""
+    if kind != 'refused_install' or not re.search(
+            r'\bCAP loaded\b', detail, re.IGNORECASE):
+        return
+    rollback_kind, rollback_detail, attempts = g.call(['--uninstall', cap])
+    if rollback_kind == 'ok':
+        out.stage(area, stage, 'OK', '',
+                  '%s removed after INSTALL refusal; attempts=%d' %
+                  (os.path.basename(cap), attempts))
+        return
+    failure = {
+        'no_connect': 'UPLOAD_ROLLBACK_NO_CONNECT',
+        'timeout': 'UPLOAD_ROLLBACK_TIMEOUT',
+    }.get(rollback_kind, 'UPLOAD_ROLLBACK_FAILED')
+    out.stage(area, stage, 'FAILED', failure,
+              '%s remains after INSTALL refusal; attempts=%d; %s' %
+              (os.path.basename(cap), attempts, rollback_detail))
+
+
 def upload(g, out, a, area, name, version):
     """uploads the CAP of the area; returns True when it is on the card"""
     cap = cap_path(a, name, version)
@@ -198,6 +218,11 @@ def upload(g, out, a, area, name, version):
     if kind != 'ok':
         f = UPLOAD_FAILURE[kind]
         out.stage(area, 'UPLOAD', 'FAILED', f, '%s; attempts=%d; %s' % (UPLOAD_HINT.get(f, ''), attempts, detail))
+        # GPPro sends LOAD before INSTALL. If LOAD succeeded but the applet's
+        # INSTALL failed, the CAP package remains resident and blocks the next
+        # upload of the same AID. Roll back that partial upload immediately.
+        rollback_partial_install(g, out, area, 'UPLOAD_ROLLBACK', cap,
+                                 kind, detail)
         return False
     out.stage(area, 'UPLOAD', 'OK', '', 'attempts=%d' % attempts)
     return True
@@ -229,6 +254,8 @@ def upload_scenarios(g, out, a, version):
             out.stage('Core', 'UPLOAD_EXT', 'OK', '', 'extended length applet installed')
         else:
             out.stage('Core', 'UPLOAD_EXT', 'FAILED', 'UPLOAD_EXT_' + kind.upper(), detail)
+            rollback_partial_install(g, out, 'Core', 'UPLOAD_EXT_ROLLBACK',
+                                     ext, kind, detail)
     return on_card
 
 
@@ -264,6 +291,8 @@ def test(out, a, area, client_area, classes, version, tmp):
         failure, detail = 'TEST_TIMEOUT', 'client did not finish within %d s' % a.test_timeout
     elif 'Unable to connect to the card or no applet' in text:
         failure, detail = 'TEST_NO_APPLET', 'the applet of the area cannot be selected (not installed, or the card cannot be reached)'
+    elif rc != 0:
+        failure, detail = 'TEST_CLIENT_ERROR', 'client exited with status %d%s' % (rc, '; partial results were written' if csvs else '')
     elif not csvs:
         failure, detail = 'TEST_CLIENT_ERROR', 'no result file; ' + ' | '.join(l for l in text.splitlines() if l.strip())[-300:]
     else:
@@ -289,6 +318,31 @@ def test(out, a, area, client_area, classes, version, tmp):
         broken = counts.get('SW_ERROR', 0) + counts.get('CARD_ERROR', 0)
         out.stage(area, 'TEST', 'OK', '', '%d calls; %s%s' % (len(rows), summary, ('; %d SW_ERROR/CARD_ERROR calls' % broken) if broken else ''))
     return len(rows)
+
+
+def resolve_reader_index(a, reader_name):
+    """Resolve the official Java client's one-based index from its full PC/SC list."""
+    build_dir = os.path.join(HERE, '..', '..', 'build', 'api-reader-index')
+    os.makedirs(build_dir, exist_ok=True)
+    helper = os.path.join(HERE, '..', '..', 'tools', 'JCAlgTestReaderIndex.java')
+    subprocess.run([a.javac, '-d', build_dir, helper],
+                   check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    result = subprocess.run([a.java, '-cp', build_dir, 'JCAlgTestReaderIndex', reader_name],
+                            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    return result.stdout.strip()
+
+
+def require_host_access(parser):
+    if os.environ.get('PICO2_HOST_USB_ACCESS') != '1':
+        ap_error = 'PC/SC access requires PICO2_HOST_USB_ACCESS=1 and elevated host access'
+        parser.error(ap_error)
+    try:
+        status = pathlib.Path('/proc/self/status').read_text(encoding='ascii')
+        match = re.search(r'^NoNewPrivs:\s*(\d+)$', status, re.MULTILINE)
+    except OSError:
+        match = None
+    if not match or match.group(1) != '0':
+        parser.error('cannot verify elevated PC/SC host access; use the require_escalated execution path')
 
 
 def cleanup(g, out, area, caps):
@@ -329,8 +383,10 @@ def main():
     ap.add_argument('--gp-args', default='-d', help='extra arguments for every gp.jar call (default -d: the debug mode gave the most stable connection on the tested reader), e.g. "-r \\"reader name\\"" (split on blanks)')
     ap.add_argument('--client', default=os.path.join(HERE, '..', 'AlgTest_JClient', 'dist', 'AlgTestJClient.jar'))
     ap.add_argument('--java', default='java')
+    ap.add_argument('--javac', default='javac')
     ap.add_argument('--pcsc-lib', default=None, help='path of libpcsclite for Java smartcardio on Linux, e.g. /usr/lib/x86_64-linux-gnu/libpcsclite.so.1')
-    ap.add_argument('--reader-index', default='1', help='answer to the reader question of the client (index in the list of readers with a card)')
+    ap.add_argument('--reader-index', default=None, help='explicit one-based Java SmartcardIO terminal index')
+    ap.add_argument('--reader-name', default=None, help='exact PC/SC reader name; resolves Java index and pins GlobalPlatformPro')
     ap.add_argument('--retries', type=int, default=4, help='gp.jar attempts while the card cannot be reached')
     ap.add_argument('--pause', type=int, default=20, help='seconds between attempts')
     ap.add_argument('--gp-timeout', type=int, default=240)
@@ -341,8 +397,22 @@ def main():
     ap.add_argument('--no-scenarios', action='store_true', help='do not install the Multi and Ext CAPs for the Core scenarios')
     ap.add_argument('--delimiter', default=';')
     ap.add_argument('--list', action='store_true', help='show the plan and the CAP files and exit (no card access)')
+    ap.add_argument('--test-only', action='store_true',
+                    help='test an already-installed applet; skip GP upload and cleanup')
     ap.add_argument('--verbose', action='store_true')
     a = ap.parse_args()
+    if a.reader_name or not a.list:
+        require_host_access(ap)
+    if a.reader_name and a.reader_index:
+        ap.error('--reader-name and --reader-index are mutually exclusive')
+    if a.reader_name:
+        supplied_gp_args = shlex.split(a.gp_args) if a.gp_args else []
+        if '-r' in supplied_gp_args or '--reader' in supplied_gp_args:
+            ap.error('do not pass a GPPro reader selector with --reader-name')
+        a.gp_args = shlex.join(supplied_gp_args + ['-r', a.reader_name])
+        a.reader_index = resolve_reader_index(a, a.reader_name)
+    elif a.reader_index is None:
+        a.reader_index = '1'
     a.gp, a.client, a.cap_dir = os.path.abspath(a.gp), os.path.abspath(a.client), os.path.abspath(a.cap_dir)
     wanted = [x for x in a.areas.split(',') if x] or [x[0] for x in AREAS]
     unknown = [x for x in wanted if x not in [y[0] for y in AREAS]]
@@ -356,7 +426,10 @@ def main():
             if area in wanted:
                 print('%-13s CAPs: %s' % (area, ' '.join(v for v in versions if os.path.exists(cap_path(a, name, v))) or 'none found'))
         return
-    for p, what in ((a.gp, 'gp.jar'), (a.client, 'client jar (run `ant clean jar`)')):
+    required_tools = [(a.client, 'client jar (run `ant clean jar`)')]
+    if not a.test_only:
+        required_tools.append((a.gp, 'gp.jar'))
+    for p, what in required_tools:
         if not os.path.exists(p):
             sys.exit('%s not found: %s' % (what, p))
     if a.out is None:
@@ -367,6 +440,17 @@ def main():
 
     tmp = tempfile.mkdtemp(prefix='apitest_card_')
     version = a.api if a.api != 'auto' else None
+    if a.test_only:
+        if version is None:
+            sys.exit('--test-only requires an explicit --api version')
+        for area, _name, client_area, classes, _scen in AREAS:
+            if area not in wanted:
+                continue
+            out.api = version
+            print('== %s (already installed)' % area)
+            test(out, a, area, client_area, classes, version, tmp)
+        return
+
     started_core = False
     for area, name, client_area, classes, scen in AREAS:
         if area not in wanted:

@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log_dir="${repo_root}/artifacts/logs"
+mkdir -p "${log_dir}"
+
+CHOUPI_JCVM_DEBUG=OFF "${repo_root}/tools/build" arm \
+  > "${log_dir}/build-arm-rmi-arrays-${timestamp}.log" 2>&1
+CHOUPI_JCVM_DEBUG=OFF "${repo_root}/tools/build-pc" \
+  > "${log_dir}/build-pc-rmi-arrays-${timestamp}.log" 2>&1
+"${repo_root}/tools/build-rmi-array-fixture"
+
+PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
+  --passes 1 \
+  --memory "${repo_root}/build/algtest-v182-empty-flash.bin" \
+  --cap-code "${repo_root}/build/rmi-array-fixture/rmi-fixture-load-code.bin" \
+  --applet-aid A00000015100000101 \
+  --package-id 63 \
+  --apdu 803802020600017C38000300 \
+  --expect-apdu-response 8100039000 \
+  --apdu 80380202040001266100 \
+  --expect-apdu-response 8100039000 \
+  --apdu 80380202040001967E00 \
+  --expect-apdu-response 810002000B726D692F666978747572650B436F756E746572496D706C9000 \
+  --apdu 80380202040001178900 \
+  --expect-apdu-response 81FF809000 \
+  --apdu 80380202040002266100 \
+  --expect-apdu-response 8100009000 \
+  --apdu 80380202070001B80302112200 \
+  --expect-apdu-response 810211229000 \
+  --apdu 80380202070001081502030400 \
+  --expect-apdu-response 8100079000 \
+  --apdu 8038020214000138370101010201030104010501060107010800 \
+  --expect-apdu-response 8100249000 \
+  --apdu 80380202090001AEBD021234FFFE00 \
+  --expect-apdu-response 81021234FFFE9000 \
+  --apdu 80380202070001CDD902000100 \
+  --expect-apdu-response 810201009000 \
+  --apdu 80380202050001B803FF00 \
+  --expect-apdu-response 81FFFF9000 \
+  --apdu 80380202050001B8030000 \
+  --expect-apdu-response 81009000 \
+  --apdu 80380202070001CDD902000200 \
+  --expect-apdu-response 9900039000 \
+  --apdu 8038020205000108150200 \
+  --expect-apdu-response 9900039000 \
+  --apdu 80380202080001E3A3017F000100 \
+  --expect-apdu-response 820200009000 \
+  --apdu 80380202070001E3A3FF000000 \
+  --expect-apdu-response 820800009000 \
+  --apdu 803802020800017C9C017F000100 \
+  --expect-apdu-response 81559000 \
+  --apdu 8038020204000167FB00 \
+  --expect-apdu-response 822500019000 \
+  --apdu 80380202040001857600 \
+  --expect-apdu-response 830900009000 \
+  --apdu 80380202040001209800 \
+  --expect-apdu-response 830500009000 \
+  --apdu 80380202040001A43800 \
+  --expect-apdu-response 82236A829000 \
+  --log "${log_dir}/rmi-array-invoke-vpcd-${timestamp}.log"
+
+PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
+  --passes 1 \
+  --select-p2 16 \
+  --memory "${repo_root}/build/algtest-v182-empty-flash.bin" \
+  --cap-code "${repo_root}/build/rmi-array-fixture/rmi-fixture-load-code.bin" \
+  --applet-aid A00000015100000101 \
+  --package-id 63 \
+  --apdu 80380202040001967E00 \
+  --expect-apdu-response 81000200010B726D692F6669787475726507436F756E7465729000 \
+  --log "${log_dir}/rmi-reference-interfaces-vpcd-${timestamp}.log"

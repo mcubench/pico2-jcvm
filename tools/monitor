@@ -3,6 +3,7 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 seconds=8
+serial=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --seconds)
@@ -10,7 +11,16 @@ while [[ $# -gt 0 ]]; do
       seconds="$2"
       shift 2
       ;;
-    *) die "usage: ./tools/monitor [--seconds N]" ;;
+    --serial)
+      [[ $# -ge 2 && -z "$serial" && "$2" =~ ^[A-Fa-f0-9]{8,32}$ ]] || die "--serial requires an 8..32 character hexadecimal Pico serial"
+      serial="$2"
+      shift 2
+      ;;
+    --help|-h)
+      printf 'usage: ./tools/monitor [--serial SERIAL] [--seconds N]\n'
+      exit 0
+      ;;
+    *) die "usage: ./tools/monitor [--serial SERIAL] [--seconds N]" ;;
   esac
 done
 
@@ -21,7 +31,21 @@ require_host_usb_access
 # 30 seconds for enumeration before declaring the monitor unavailable.
 device=""
 for _ in $(seq 1 120); do
-  for candidate in /dev/serial/by-id/* /dev/ttyACM*; do
+  candidates=()
+  shopt -s nullglob
+  if [[ -n "$serial" ]]; then
+    candidates=(/dev/serial/by-id/usb-Raspberry_Pi_Pico_*"${serial}"*-if00)
+  else
+    candidates=(/dev/serial/by-id/*)
+    if ((${#candidates[@]} == 0)); then
+      candidates=(/dev/ttyACM*)
+    fi
+  fi
+  shopt -u nullglob
+  if [[ -z "$serial" && ${#candidates[@]} -gt 1 ]]; then
+    die "multiple USB serial devices found; select one with --serial"
+  fi
+  for candidate in "${candidates[@]}"; do
     [[ -e "$candidate" ]] || continue
     device="$candidate"
     break 2

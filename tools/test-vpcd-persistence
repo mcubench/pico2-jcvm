@@ -10,6 +10,11 @@ require_command date
 timeout_seconds="${PICO2_VPCD_PERSISTENCE_TIMEOUT:-180}"
 [[ "${timeout_seconds}" =~ ^[1-9][0-9]*$ ]] || \
   die "PICO2_VPCD_PERSISTENCE_TIMEOUT must be a positive integer"
+gc_pressure_rounds="${PICO2_VPCD_PERSISTENCE_GC_ROUNDS:-4}"
+[[ "${gc_pressure_rounds}" =~ ^[0-9]+$ ]] || \
+  die "PICO2_VPCD_PERSISTENCE_GC_ROUNDS must be a nonnegative integer"
+(( gc_pressure_rounds <= 1000 )) || \
+  die "PICO2_VPCD_PERSISTENCE_GC_ROUNDS must not exceed 1000"
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 log_dir="${repo_root}/artifacts/logs"
@@ -33,14 +38,30 @@ CHOUPI_JCVM_DEBUG=OFF "${repo_root}/tools/build-pc" 2>&1 | tee "${build_log}"
   --case 6 --timeout "${timeout_seconds}" --memory "${memory_image}" \
   --log "${install_emulator_log}" 2>&1 | tee "${install_log}"
 
-"${repo_root}/tools/env" python3 \
+package_id="$(python3 - "${install_emulator_log}" <<'PY'
+import re
+import sys
+
+text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+matches = re.findall(r"VPCD:APPLET_INSTALLED package-id=(\d+) class-index=", text)
+if len(matches) != 1:
+    raise SystemExit(f"expected one installed package ID in emulator log, found {matches}")
+print(matches[0])
+PY
+)"
+echo "VPCD:PERSISTENCE_PACKAGE_ID package=${package_id}"
+
+PICO2_HEAP_GC=1 "${repo_root}/tools/env" python3 \
   "${repo_root}/tools/tests/jcsystem_transaction_applet_test.py" \
-  --case 14 --case 15 --case 16 --case 17 --case 58 \
+  --case 14 --case 15 --case 16 --case 17 --case 58 --case 80 --case 81 --case 82 \
+  --gc-pressure-rounds "${gc_pressure_rounds}" \
+  --package-id "${package_id}" \
   --restore-existing --timeout "${timeout_seconds}" \
   --memory "${memory_image}" --log "${restore_emulator_log}" 2>&1 | \
   tee "${restore_log}"
 
-grep -Fq 'TEST:SUMMARY pass=7 fail=0' "${restore_log}" || \
+expected_passes=$(( 10 + gc_pressure_rounds * 7 ))
+grep -Fq "TEST:SUMMARY pass=${expected_passes} fail=0" "${restore_log}" || \
   die "restored applet field/reference assertions did not all pass"
-printf 'PERSISTENCE:PASS emulator_process_restart install_log=%s restore_log=%s\n' \
-  "${install_log}" "${restore_log}"
+printf 'PERSISTENCE:PASS emulator_process_restart gc_rounds=%s install_log=%s restore_log=%s\n' \
+  "${gc_pressure_rounds}" "${install_log}" "${restore_log}"

@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+"""Distribute independent API deploy areas over up to three physical Pico readers."""
+import argparse
+import csv
+import datetime
+import os
+import re
+import shlex
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+HELPER = ROOT / "tools" / "JCAlgTestReaderIndex.java"
+BUILD = ROOT / "build" / "api-reader-index"
+RUNNER = ROOT / "AlgTest_JavaCard" / "deploy" / "api_card_runner.py"
+DEPLOY = ROOT / "AlgTest_JavaCard" / "deploy"
+DEFAULT_AREAS = [
+    "Core", "Security", "Crypto", "Javacardx", "JavacardxExt",
+    "JavacardxSec", "JavacardxInt", "Service", "Biometry",
+]
+
+
+def reader_names(java, javac):
+    BUILD.mkdir(parents=True, exist_ok=True)
+    subprocess.run([javac, "-d", str(BUILD), str(HELPER)], check=True)
+    result = subprocess.run(
+        [java, "-cp", str(BUILD), "JCAlgTestReaderIndex", "--list"],
+        check=True, text=True, stdout=subprocess.PIPE,
+    )
+    found = []
+    for line in result.stdout.splitlines():
+        index, sep, name = line.partition("\t")
+        if sep and "Pico 2 CHOUPI CCID" in name:
+            found.append((int(index), name))
+    if len({name for _, name in found}) != len(found):
+        raise SystemExit("PC/SC returned duplicate Pico reader names; refusing ambiguous routing")
+    return found
+
+
+def require_host_access(parser):
+    if os.environ.get("PICO2_HOST_USB_ACCESS") != "1":
+        parser.error("PC/SC enumeration requires PICO2_HOST_USB_ACCESS=1 and elevated host access")
+    try:
+        status = Path("/proc/self/status").read_text(encoding="ascii")
+        match = re.search(r"^NoNewPrivs:\s*(\d+)$", status, re.MULTILINE)
+    except OSError:
+        match = None
+    if not match or match.group(1) != "0":
+        parser.error("cannot verify elevated PC/SC host access; use the require_escalated execution path")
+
+
+def failed_stages(csv_path):
+    if not csv_path.exists():
+        return ["result CSV missing"]
+    with csv_path.open(newline="", encoding="utf-8", errors="replace") as stream:
+        rows = csv.DictReader(stream, delimiter=";")
+        return [
+            f"{row.get('area', '?')}/{row.get('stage', '?')}:{row.get('failure_type', 'FAILED')}"
+            for row in rows
+            if row.get("row_type") == "STAGE" and row.get("stage_result") == "FAILED"
+        ]
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--areas", default=",".join(DEFAULT_AREAS),
+                        help="comma-separated deploy areas (default: all API areas)")
+    parser.add_argument("--api", default="305", help="CAP API version (default: 305)")
+    parser.add_argument("--exclude", default="genKeyPair.*LENGTH_RSA_2048",
+                        help="API-call regex to exclude (default avoids the known RSA-2048 reader-drop case; pass an empty string to include it)")
+    parser.add_argument("--max-devices", type=int, default=3, choices=(1, 2, 3))
+    parser.add_argument("--min-devices", type=int, default=3, choices=(1, 2, 3),
+                        help="require this many live PC/SC Pico readers before starting (default: 3)")
+    parser.add_argument("--out-dir", default=None,
+                        help="result directory (default: timestamped under artifacts/results/deploy)")
+    parser.add_argument("--java", default="java")
+    parser.add_argument("--javac", default="javac")
+    parser.add_argument("--dry-run", action="store_true", help="show reader/area assignments without card writes")
+    args = parser.parse_args()
+    areas = [area.strip() for area in args.areas.split(",") if area.strip()]
+    if not areas or len(set(areas)) != len(areas):
+        parser.error("--areas must contain at least one unique area")
+    if args.min_devices > args.max_devices:
+        parser.error("--min-devices cannot exceed --max-devices")
+    require_host_access(parser)
+
+    discovered = reader_names(args.java, args.javac)
+    if not discovered:
+        raise SystemExit("No physical Pico 2 CHOUPI PC/SC readers found. BOOTSEL devices are not testable over PC/SC.")
+    readers = discovered[:args.max_devices]
+    buckets = [[] for _ in readers]
+    # Greedy longest-first assignment keeps expensive areas distributed.
+    weights = {"Security": 901, "Crypto": 466, "Core": 291}
+    ordered = sorted(areas, key=lambda area: weights.get(area, 100), reverse=True)
+    loads = [0] * len(readers)
+    for area in ordered:
+        target = min(range(len(readers)), key=lambda i: loads[i])
+        buckets[target].append(area)
+        loads[target] += weights.get(area, 100)
+
+    out_dir = Path(args.out_dir) if args.out_dir else ROOT / "artifacts" / "results" / "deploy" / (
+        "parallel-" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    print(f"physical readers found: {len(discovered)}; workers: {len(readers)}")
+    for i, ((reader_index, reader), assigned) in enumerate(zip(readers, buckets), 1):
+        print(f"worker {i}: reader {reader_index}: {reader}\n  areas: {', '.join(assigned)}")
+    if args.dry_run:
+        print(f"dry run; result directory would be {out_dir}")
+        if len(discovered) < args.min_devices:
+            print(f"waiting for {args.min_devices - len(discovered)} more PC/SC Pico reader(s) before a live run")
+        return 0
+    if len(discovered) < args.min_devices:
+        raise SystemExit(
+            f"Found {len(discovered)} live PC/SC Pico reader(s); need {args.min_devices}. "
+            "BOOTSEL devices do not accept card tests."
+        )
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    processes = []
+    for i, ((reader_index, reader), assigned) in enumerate(zip(readers, buckets), 1):
+        stem = f"pico{i}"
+        csv_path = out_dir / f"{stem}.csv"
+        log_path = out_dir / f"{stem}.log"
+        command = [sys.executable, str(RUNNER), "--cardname", stem,
+                   "--reader-index", str(reader_index),
+                   "--gp-args", shlex.join(["-d", "-r", reader]), "--api", args.api,
+                   "--cap-dir", str(DEPLOY / "caps"),
+                   "--gp", str(DEPLOY / "gp.jar"),
+                   "--client", str(DEPLOY / "client" / "AlgTestJClient.jar"),
+                   "--areas", ",".join(assigned), "--out", str(csv_path),
+                   "--exclude", args.exclude]
+        log = open(log_path, "w", encoding="utf-8")
+        process = subprocess.Popen(command, cwd=ROOT, stdout=log,
+                                   stderr=subprocess.STDOUT, text=True)
+        processes.append((i, reader, csv_path, log_path, log, process))
+        print(f"started worker {i} pid={process.pid}; log={log_path}")
+
+    failed = False
+    for i, reader, csv_path, log_path, log, process in processes:
+        status = process.wait()
+        log.close()
+        stages = failed_stages(csv_path)
+        print(f"worker {i} exit={status}; failed stages={len(stages)}; results={csv_path}; log={log_path}")
+        if stages:
+            print(f"worker {i} failures: {'; '.join(stages)}")
+        failed |= status != 0 or bool(stages)
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except subprocess.CalledProcessError as exc:
+        sys.exit(f"reader enumeration/build failed with status {exc.returncode}")

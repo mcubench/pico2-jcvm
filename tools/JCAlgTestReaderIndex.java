@@ -9,8 +9,20 @@ public final class JCAlgTestReaderIndex {
   private JCAlgTestReaderIndex() {}
 
   public static void main(String[] args) {
+    if (args.length == 1 && "--list".equals(args[0])) {
+      try {
+        List<CardTerminal> readers = TerminalFactory.getDefault().terminals().list();
+        for (int i = 0; i < readers.size(); i++) {
+          System.out.println((i + 1) + "\t" + readers.get(i).getName());
+        }
+      } catch (CardException | SecurityException e) {
+        System.err.println("Cannot enumerate PC/SC readers: " + e.getMessage());
+        System.exit(5);
+      }
+      return;
+    }
     if (args.length != 1) {
-      System.err.println("Usage: JCAlgTestReaderIndex <exact reader name>");
+      System.err.println("Usage: JCAlgTestReaderIndex <exact reader name> | --list");
       System.exit(2);
     }
 

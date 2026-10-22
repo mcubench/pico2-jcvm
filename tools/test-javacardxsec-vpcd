@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+out_dir="${1:-${repo_root}/artifacts/results/javacardxsec-vpcd-${timestamp}}"
+out_dir="$(mkdir -p "${out_dir}" && cd "${out_dir}" && pwd)"
+
+if [[ "${PICO2_HOST_USB_ACCESS:-}" != "1" ]]; then
+  echo "ERROR: set PICO2_HOST_USB_ACCESS=1 and use the elevated host-access path" >&2
+  exit 2
+fi
+if ! python3 - <<'PY'
+import re
+status = open('/proc/self/status', encoding='ascii').read()
+match = re.search(r'^NoNewPrivs:\s*(\d+)$', status, re.MULTILINE)
+raise SystemExit(0 if match and match.group(1) == '0' else 1)
+PY
+then
+  echo "ERROR: elevated PC/SC host access is required" >&2
+  exit 2
+fi
+
+cd "${repo_root}"
+"${repo_root}/tools/build-pc" > "${out_dir}/build-pc.log" 2>&1
+"${repo_root}/tools/env" java "${repo_root}/tools/VpcdPresenceProbe.java" \
+  "Virtual PCD 00 00" 2000 | tee "${out_dir}/presence-query.log"
+
+flash_copy="${out_dir}/flash.bin"
+cp "${repo_root}/build/algtest-v182-empty-flash.bin" "${flash_copy}"
+"${repo_root}/tools/env" "${repo_root}/build/choupi-pc/choupi" \
+  -m "${flash_copy}" -s --vpcd 127.0.0.1:35963 \
+  --applet-aid 4A43416C67546573744170694A787331 --package-id 63 \
+  --cap-code "${repo_root}/build/deploy-javacardxsec-305-load-code.bin" \
+  --rom-mask "${repo_root}/build/choupi-pc/flash" --install -s \
+  > "${out_dir}/emulator.log" 2>&1 &
+vm_pid=$!
+cleanup() {
+  if kill -0 "${vm_pid}" 2>/dev/null; then
+    kill -TERM "${vm_pid}" 2>/dev/null || true
+    wait "${vm_pid}" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT INT TERM
+
+sleep 2
+if ! kill -0 "${vm_pid}" 2>/dev/null; then
+  cat "${out_dir}/emulator.log" >&2
+  exit 1
+fi
+"${repo_root}/tools/env" java "${repo_root}/tools/VpcdPresenceProbe.java" \
+  "Virtual PCD 00 00" 5000 --require-present \
+  | tee "${out_dir}/card-ready-query.log"
+
+set +e
+PICO2_HOST_USB_ACCESS=1 timeout --signal=TERM --kill-after=5s 200s \
+  python3 "${repo_root}/AlgTest_JavaCard/deploy/api_card_runner.py" \
+    --test-only --api 305 --areas JavacardxSec --reader-index 1 \
+    --client "${repo_root}/AlgTest_JavaCard/deploy/client/AlgTestJClient.jar" \
+    --cardname current-source-vpcd --out "${out_dir}/javacardxsec.csv" \
+    --test-timeout 180 > "${out_dir}/client.log" 2>&1
+client_status=$?
+set -e
+
+cat "${out_dir}/client.log"
+if [[ "${client_status}" -ne 0 ]]; then
+  echo "ERROR: deploy client exited with status ${client_status}" >&2
+  exit "${client_status}"
+fi
+
+python3 - "${out_dir}/javacardxsec.csv" <<'PY'
+import csv
+import sys
+
+with open(sys.argv[1], newline='', encoding='utf-8') as stream:
+    rows = list(csv.DictReader(stream, delimiter=';'))
+calls = [row for row in rows if row.get('row_type') == 'CALL']
+stages = [row for row in rows if row.get('row_type') == 'STAGE']
+bad = [row for row in calls if row.get('status') != 'OK']
+if len(calls) != 84 or bad or not stages or stages[-1].get('stage_result') != 'OK':
+    print(f"ERROR: JavacardxSec validation failed: calls={len(calls)} "
+          f"bad={len(bad)} stages={[(r.get('stage_result'), r.get('failure_type')) for r in stages]}",
+          file=sys.stderr)
+    raise SystemExit(1)
+print(f"VPCD_JAVACARDXSEC:PASS calls={len(calls)} status=OK")
+PY

@@ -4,19 +4,50 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 last_load_failure=unknown
 
-[[ $# -eq 1 ]] || die "usage: ./tools/flash <image.uf2>"
-image="$1"
+serial=""
+image=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --serial)
+      [[ $# -ge 2 && -z "$serial" ]] || die "--serial requires one serial number"
+      serial="$2"
+      shift 2
+      ;;
+    --help|-h)
+      printf 'usage: ./tools/flash [--serial SERIAL] <image.uf2>\n'
+      exit 0
+      ;;
+    --*) die "unknown option: $1" ;;
+    *)
+      [[ -z "$image" ]] || die "usage: ./tools/flash [--serial SERIAL] <image.uf2>"
+      image="$1"
+      shift
+      ;;
+  esac
+done
+[[ -n "$image" ]] || die "usage: ./tools/flash [--serial SERIAL] <image.uf2>"
+if [[ -n "$serial" && ! "$serial" =~ ^[A-Fa-f0-9]{8,32}$ ]]; then
+  die "--serial must be an 8..32 character hexadecimal Pico serial"
+fi
 [[ -f "$image" ]] || die "flash image not found: ${image}"
 require_host_usb_access
 require_command picotool
 require_command timeout
 require_command stty
 
+selector_args=()
+if [[ -n "$serial" ]]; then
+  selector_args=(--ser "$serial")
+fi
+
 rp_usb_present() {
   local device
   for device in /sys/bus/usb/devices/*; do
     [[ -r "${device}/idVendor" ]] || continue
     if [[ "$(<"${device}/idVendor")" == 2e8a ]]; then
+      if [[ -n "$serial" ]]; then
+        [[ -r "${device}/serial" && "$(<"${device}/serial")" == "$serial" ]] || continue
+      fi
       return 0
     fi
   done
@@ -44,7 +75,7 @@ wait_for_rp_usb() {
 
 is_bootsel() {
   local info
-  if ! info="$(timeout --signal=TERM --kill-after=2s 4s picotool info -a 2>&1)"; then
+  if ! info="$(timeout --signal=TERM --kill-after=2s 4s picotool info "${selector_args[@]}" -a 2>&1)"; then
     return 1
   fi
   grep -Eq 'boot type:[[:space:]]*bootsel' <<<"${info}"
@@ -69,7 +100,7 @@ wait_for_bootsel() {
 request_bootsel() {
   local attempt="$1"
   printf 'FLASH:BOOTSEL request attempt=%s method=picotool\n' "${attempt}"
-  if timeout --signal=TERM --kill-after=2s 8s picotool reboot -F -u; then
+  if timeout --signal=TERM --kill-after=2s 8s picotool reboot "${selector_args[@]}" -F -u; then
     return 0
   fi
   printf 'FLASH:BOOTSEL picotool request did not complete cleanly\n'
@@ -80,9 +111,13 @@ request_cdc_bootsel() {
   local ports=()
   local port
   shopt -s nullglob
-  ports=(/dev/serial/by-id/usb-Raspberry_Pi_Pico_*)
-  if ((${#ports[@]} != 1)); then
-    ports=(/dev/ttyACM*)
+  if [[ -n "$serial" ]]; then
+    ports=(/dev/serial/by-id/usb-Raspberry_Pi_Pico_*"${serial}"*-if00)
+  else
+    ports=(/dev/serial/by-id/usb-Raspberry_Pi_Pico_*)
+    if ((${#ports[@]} != 1)); then
+      ports=(/dev/ttyACM*)
+    fi
   fi
   shopt -u nullglob
   if ((${#ports[@]} != 1)); then
@@ -109,7 +144,7 @@ run_load() {
   if [[ "${mode}" == force ]]; then
     load_command+=(-f)
   fi
-  load_command+=(-x "${image}")
+  load_command+=("${selector_args[@]}" -v -x "${image}")
   printf 'FLASH:LOAD mode=%s\n' "${mode}"
   set +e
   timeout --signal=TERM --kill-after=5s 60s "${load_command[@]}" 2>&1 | tee "${load_capture}"
