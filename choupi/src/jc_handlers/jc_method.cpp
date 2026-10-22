@@ -29,6 +29,7 @@
 #include "../debug.hpp"
 #include "../heap.hpp"
 #include "../stack.hpp"
+#include <cstdio>
 
 namespace jcvm {
 
@@ -60,6 +61,10 @@ const uint8_t *Method_Handler::getMethodFromOffset(const uint16_t method_offset)
   const uint16_t handler_bytes = static_cast<uint16_t>(
       method_component->handler_count *
       sizeof(jc_cap_exception_handler_info));
+  TRACE_JCVM_DEBUG("METHOD validate offset=%u handlers=%u handler_bytes=%u",
+                   static_cast<unsigned>(method_offset),
+                   static_cast<unsigned>(method_component->handler_count),
+                   static_cast<unsigned>(handler_bytes));
   if (method_offset <= handler_bytes) {
     throw Exceptions::SecurityException;
   }
@@ -86,7 +91,8 @@ const uint8_t *Method_Handler::getMethodFromOffset(const uint16_t method_offset)
  * @param[isStaticMethod] is a static method?
  */
 void Method_Handler::callMethod(const uint8_t *const method_to_call,
-                                const jbool_t isStaticMethod)
+                                const jbool_t isStaticMethod,
+                                const bool arguments_on_caller_stack)
 #if !defined(JCVM_DYNAMIC_CHECKS_CAP) && !defined(JCVM_FIREWALL_CHECKS)
     noexcept
 #endif
@@ -97,6 +103,8 @@ void Method_Handler::callMethod(const uint8_t *const method_to_call,
 #ifdef JCVM_DYNAMIC_CHECKS_CAP
 
   if (IS_ABSTRACT_METHOD(method_to_call)) {
+    std::fprintf(stderr, "METHOD:ABSTRACT header=%02X %02X %02X\n",
+                 method_to_call[0], method_to_call[1], method_to_call[2]);
     throw Exceptions::SecurityException;
   }
 
@@ -126,13 +134,18 @@ void Method_Handler::callMethod(const uint8_t *const method_to_call,
 #ifdef JCVM_FIREWALL_CHECKS
 
   if ((isStaticMethod == FALSE) && (nargs == 0)) {
+    std::fprintf(stderr,
+                 "METHOD:ZERO_NARGS header=%02X %02X %02X package=%u\n",
+                 method_to_call[0], method_to_call[1], method_to_call[2],
+                 static_cast<unsigned>(this->package.getPackageID()));
     throw Exceptions::SecurityException;
   }
 
 #endif /* JCVM_FIREWALL_CHECKS */
 
   // pushing the new frame
-  this->context.getStack().push_Frame(nargs, max_locals, max_stack, new_pc);
+  this->context.getStack().push_Frame(nargs, max_locals, max_stack, new_pc,
+                                      arguments_on_caller_stack);
 
   //  and updating executed package ID.
 
@@ -147,9 +160,10 @@ void Method_Handler::callMethod(const uint8_t *const method_to_call,
  * @param[method_offset] offset in the method component where the method to
  *                       executed is located.
  */
-void Method_Handler::callVirtualMethod(const uint16_t method_offset) {
+void Method_Handler::callVirtualMethod(
+    const uint16_t method_offset, const bool arguments_on_caller_stack) {
   const uint8_t *method_to_call = this->getMethodFromOffset(method_offset);
-  this->callMethod(method_to_call);
+  this->callMethod(method_to_call, FALSE, arguments_on_caller_stack);
   return;
 }
 

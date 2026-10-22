@@ -34,6 +34,10 @@
 
 namespace jcvm {
 
+#define JC_CAP_CLASS_ACC_INTERFACE (uint8_t)0x8
+#define JC_CAP_CLASS_ACC_SHAREABLE (uint8_t)0x4
+#define JC_CAP_CLASS_ACC_REMOTE (uint8_t)0x2
+
 struct __attribute__((__packed__)) jc_cap_implemented_interface_info {
   jc_cap_class_ref interface; /* Represents the implemented interface */
   uint8_t count;              /* Number of entries in the index[] array */
@@ -47,6 +51,175 @@ struct __attribute__((__packed__)) jc_cap_implemented_interface_info {
     return sizeof(jc_cap_implemented_interface_info) + count * sizeof(uint8_t);
   }
 };
+
+struct __attribute__((__packed__)) jc_cap_remote_method_info {
+  uint16_t method_hash;
+  uint16_t signature_offset;
+  uint8_t virtual_method_token;
+
+  uint16_t getMethodHash() const noexcept { return NTOHS(method_hash); }
+  uint16_t getSignatureOffset() const noexcept {
+    return NTOHS(signature_offset);
+  }
+};
+
+struct __attribute__((__packed__)) jc_cap_remote_interface_info {
+  uint8_t remote_methods_count;
+  jc_cap_remote_method_info remote_methods[/* remote_methods_count */];
+
+  const uint8_t *hashModifierLengthAddress() const noexcept {
+    return reinterpret_cast<const uint8_t *>(remote_methods) +
+           remote_methods_count * sizeof(jc_cap_remote_method_info);
+  }
+
+  uint8_t hashModifierLength() const noexcept {
+    return *hashModifierLengthAddress();
+  }
+
+  const uint8_t *hashModifier() const noexcept {
+    return hashModifierLengthAddress() + 1;
+  }
+
+  const uint8_t *classNameLengthAddress() const noexcept {
+    return hashModifier() + hashModifierLength();
+  }
+
+  uint8_t classNameLength() const noexcept {
+    return *classNameLengthAddress();
+  }
+
+  const uint8_t *className() const noexcept {
+    return classNameLengthAddress() + 1;
+  }
+
+  const uint8_t *remoteInterfacesCountAddress() const noexcept {
+    return className() + classNameLength();
+  }
+
+  uint8_t remoteInterfacesCount() const noexcept {
+    return *remoteInterfacesCountAddress();
+  }
+
+  const jc_cap_class_ref *remoteInterfaces() const noexcept {
+    return reinterpret_cast<const jc_cap_class_ref *>(
+        remoteInterfacesCountAddress() + 1);
+  }
+
+  uint16_t getSize() const noexcept {
+    return static_cast<uint16_t>(
+        sizeof(remote_methods_count) +
+        remote_methods_count * sizeof(jc_cap_remote_method_info) +
+        1 + hashModifierLength() + 1 + classNameLength() + 1 +
+        remoteInterfacesCount() * sizeof(jc_cap_class_ref));
+  }
+};
+
+// Encode the Java Card RMI remote_ref_with_class representation. The caller
+// supplies the package name from Header.cap and the remote object ID from the
+// per-applet export registry. Returns 0 when metadata or output capacity is
+// invalid.
+inline uint16_t encodeRemoteReferenceWithClass(
+    const uint16_t remote_object_id, const uint8_t *package_name,
+    const uint8_t package_name_length,
+    const jc_cap_remote_interface_info &remote_info, uint8_t *output,
+    const uint16_t output_capacity) noexcept {
+  const uint8_t hash_modifier_length = remote_info.hashModifierLength();
+  const uint8_t class_name_length = remote_info.classNameLength();
+  if (remote_object_id == 0xffff || package_name == nullptr ||
+      package_name_length == 0 || remote_info.className() == nullptr ||
+      class_name_length == 0 || output == nullptr) {
+    return 0;
+  }
+
+  const uint16_t required = static_cast<uint16_t>(
+      2 + 1 + hash_modifier_length + 1 + package_name_length + 1 +
+      class_name_length);
+  if (required > output_capacity) {
+    return 0;
+  }
+
+  uint16_t offset = 0;
+  output[offset++] = static_cast<uint8_t>(remote_object_id >> 8);
+  output[offset++] = static_cast<uint8_t>(remote_object_id);
+  output[offset++] = hash_modifier_length;
+  for (uint8_t index = 0; index < hash_modifier_length; ++index) {
+    output[offset++] = remote_info.hashModifier()[index];
+  }
+  output[offset++] = package_name_length;
+  for (uint8_t index = 0; index < package_name_length; ++index) {
+    output[offset++] = package_name[index];
+  }
+  output[offset++] = class_name_length;
+  for (uint8_t index = 0; index < class_name_length; ++index) {
+    output[offset++] = remote_info.className()[index];
+  }
+  return offset;
+}
+
+struct jc_cap_remote_interface_name {
+  const uint8_t *package_name;
+  uint8_t package_name_length;
+  const uint8_t *interface_name;
+  uint8_t interface_name_length;
+};
+
+// Encode the Java Card RMI remote_ref_with_interfaces representation. A zero
+// package-name length reuses the preceding interface's package as specified
+// by the RMI protocol; the first interface must always supply its package.
+inline uint16_t encodeRemoteReferenceWithInterfaces(
+    const uint16_t remote_object_id, const uint8_t *hash_modifier,
+    const uint8_t hash_modifier_length,
+    const jc_cap_remote_interface_name *interfaces,
+    const uint8_t interface_count, uint8_t *output,
+    const uint16_t output_capacity) noexcept {
+  if (remote_object_id == 0xffff || output == nullptr || interfaces == nullptr ||
+      interface_count == 0 || interface_count >= 16 ||
+      (hash_modifier_length != 0 && hash_modifier == nullptr) ||
+      interfaces[0].package_name_length == 0) {
+    return 0;
+  }
+
+  uint16_t required = static_cast<uint16_t>(
+      2 + 1 + hash_modifier_length + 1);
+  for (uint8_t index = 0; index < interface_count; ++index) {
+    const auto &interface = interfaces[index];
+    if (interface.interface_name == nullptr ||
+        interface.interface_name_length == 0 ||
+        (interface.package_name_length != 0 &&
+         interface.package_name == nullptr)) {
+      return 0;
+    }
+    required = static_cast<uint16_t>(required + 1 +
+                                     interface.package_name_length + 1 +
+                                     interface.interface_name_length);
+  }
+  if (required > output_capacity) {
+    return 0;
+  }
+
+  uint16_t offset = 0;
+  output[offset++] = static_cast<uint8_t>(remote_object_id >> 8);
+  output[offset++] = static_cast<uint8_t>(remote_object_id);
+  output[offset++] = hash_modifier_length;
+  for (uint8_t index = 0; index < hash_modifier_length; ++index) {
+    output[offset++] = hash_modifier[index];
+  }
+  output[offset++] = interface_count;
+  for (uint8_t index = 0; index < interface_count; ++index) {
+    const auto &interface = interfaces[index];
+    output[offset++] = interface.package_name_length;
+    for (uint8_t name_index = 0;
+         name_index < interface.package_name_length; ++name_index) {
+      output[offset++] = interface.package_name[name_index];
+    }
+    output[offset++] = interface.interface_name_length;
+    for (uint8_t name_index = 0;
+         name_index < interface.interface_name_length; ++name_index) {
+      output[offset++] = interface.interface_name[name_index];
+    }
+  }
+  return offset;
+}
 
 struct __attribute__((__packed__)) jc_cap_class_info {
 #ifdef NVM_BIG_ENDIAN
@@ -80,20 +253,49 @@ struct __attribute__((__packed__)) jc_cap_class_info {
     uint16_t size = sizeof(jc_cap_class_info) +
                     (public_method_table_count + package_method_table_count) *
                         sizeof(uint16_t);
-
-    uint16_t position = public_method_table_count + package_method_table_count;
+    const uint8_t *variable_data = reinterpret_cast<const uint8_t *>(data) +
+                                   (public_method_table_count +
+                                    package_method_table_count) *
+                                       sizeof(uint16_t);
 
     for (uint8_t index = 0; index < interface_count; index++) {
       auto interface =
           reinterpret_cast<const jc_cap_implemented_interface_info *>(
-              data[position]);
+              variable_data);
 
       uint16_t current_size = interface->getSizeOf();
       size += current_size;
-      position += current_size / sizeof(uint16_t);
+      variable_data += current_size;
+    }
+
+    if ((flags & JC_CAP_CLASS_ACC_REMOTE) != 0) {
+      const auto *remote_info =
+          reinterpret_cast<const jc_cap_remote_interface_info *>(variable_data);
+      size += remote_info->getSize();
     }
 
     return size;
+  }
+
+  const jc_cap_remote_interface_info *remoteInterfaceInfo() const noexcept {
+    if ((flags & JC_CAP_CLASS_ACC_REMOTE) == 0) {
+      return nullptr;
+    }
+
+    const uint16_t method_table_bytes =
+        (public_method_table_count + package_method_table_count) *
+        sizeof(uint16_t);
+    const uint8_t *interfaces =
+        reinterpret_cast<const uint8_t *>(data) + method_table_bytes;
+    uint16_t byte_offset = 0;
+    for (uint8_t index = 0; index < interface_count; ++index) {
+      const auto *implemented_interface =
+          reinterpret_cast<const jc_cap_implemented_interface_info *>(
+              interfaces + byte_offset);
+      byte_offset += implemented_interface->getSizeOf();
+    }
+    return reinterpret_cast<const jc_cap_remote_interface_info *>(
+        interfaces + byte_offset);
   }
 
   inline bool isObjectClass() const noexcept {
@@ -159,13 +361,36 @@ struct __attribute__((__packed__)) jc_cap_interface_info {
   jc_cap_class_ref superinterfaces[/* interface_count */];
 
   const JCVMArray<const jc_cap_class_ref> super_interfaces() const noexcept {
-    return JCVMArray<const jc_cap_class_ref>(NTOHS(interface_count),
-                                             superinterfaces);
+    // interface_count is already extracted from the CAP component's 4-bit
+    // count field. It is not a 16-bit network-order value.
+    return JCVMArray<const jc_cap_class_ref>(interface_count, superinterfaces);
+  }
+
+  const uint8_t *interfaceNameLengthAddress() const noexcept {
+    if ((flags & JC_CAP_CLASS_ACC_REMOTE) == 0) {
+      return nullptr;
+    }
+    return reinterpret_cast<const uint8_t *>(superinterfaces) +
+           interface_count * sizeof(jc_cap_class_ref);
+  }
+
+  uint8_t interfaceNameLength() const noexcept {
+    const uint8_t *length = interfaceNameLengthAddress();
+    return length == nullptr ? 0 : *length;
+  }
+
+  const uint8_t *interfaceName() const noexcept {
+    const uint8_t *length = interfaceNameLengthAddress();
+    return length == nullptr ? nullptr : length + 1;
   }
 
   const uint16_t getSize() const noexcept {
-    return sizeof(jc_cap_interface_info) /* = 1 */ +
-           interface_count * sizeof(jc_cap_class_ref) /* = 2 */;
+    uint16_t size = sizeof(jc_cap_interface_info) +
+                    interface_count * sizeof(jc_cap_class_ref);
+    if ((flags & JC_CAP_CLASS_ACC_REMOTE) != 0) {
+      size += 1 + interfaceNameLength();
+    }
+    return size;
   }
 };
 
@@ -205,11 +430,37 @@ struct __attribute__((__packed__)) jc_cap_class_component {
   const JCVMArray<const uint8_t> claz() const noexcept {
     return JCVMArray<const uint8_t>(NTOHS(size), infos);
   }
-};
 
-#define JC_CAP_CLASS_ACC_INTERFACE (uint8_t)0x8
-#define JC_CAP_CLASS_ACC_SHAREABLE (uint8_t)0x4
-#define JC_CAP_CLASS_ACC_REMOTE (uint8_t)0x2
+  // CAP 2.2+ prefixes Class component contents with a u2 signature-pool
+  // length and that many signature bytes. Callers must check the CAP version
+  // before using this accessor; CAP 2.1 starts directly with interface_info.
+  bool hasValidSignaturePool() const noexcept {
+    const uint16_t component_size = NTOHS(size);
+    if (component_size < 2) {
+      return false;
+    }
+    const uint16_t length = static_cast<uint16_t>(
+        (static_cast<uint16_t>(infos[0]) << 8) | infos[1]);
+    return length <= component_size - 2;
+  }
+
+  uint16_t signaturePoolLength() const noexcept {
+    return hasValidSignaturePool()
+               ? static_cast<uint16_t>((static_cast<uint16_t>(infos[0]) << 8) |
+                                       infos[1])
+               : 0;
+  }
+
+  const uint8_t *signaturePool() const noexcept {
+    return hasValidSignaturePool() ? infos + 2 : nullptr;
+  }
+
+  uint16_t classInfoStartOffset() const noexcept {
+    return hasValidSignaturePool()
+               ? static_cast<uint16_t>(2 + signaturePoolLength())
+               : 0;
+  }
+};
 
 #define IS_INTERFACE(classref)                                                 \
   ((((uint8_t)(((jc_cap_interface_info *)classref)->flags)) &                  \

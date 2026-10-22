@@ -141,6 +141,9 @@ uint8_t remap_imported_static_method_token(
   static constexpr uint8_t security_digest_methods[] = {0, 1, 1};
   static constexpr uint8_t security_signature_methods[] = {0, 1, 1};
   static constexpr uint8_t crypto_cipher_methods[] = {0, 1, 1};
+  static constexpr uint8_t sensitive_result_methods[] = {
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  static constexpr uint8_t apdu_util_methods[] = {1, 2, 3, 4, 5};
 
   const uint8_t *mapping = nullptr;
   size_t mapping_size = 0;
@@ -194,12 +197,42 @@ uint8_t remap_imported_static_method_token(
              class_token == 1) {
     mapping = crypto_cipher_methods;
     mapping_size = sizeof(crypto_cipher_methods);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x02\x05", 7) == 0 &&
+             class_token == 0) {
+    // JC305 exports SensitiveResult's ten static calls at tokens 0–9;
+    // CHOUPI's local class includes a constructor at token 0.
+    mapping = sensitive_result_methods;
+    mapping_size = sizeof(sensitive_result_methods);
+  } else if (package_info.AID_length == 8 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x02\x09\x01", 8) == 0 &&
+             class_token == 0) {
+    // APDUUtil has the same constructor-induced token offset.
+    mapping = apdu_util_methods;
+    mapping_size = sizeof(apdu_util_methods);
   }
 
   if (mapping == nullptr || method_token >= mapping_size) {
     return method_token;
   }
   return mapping[method_token];
+}
+
+uint8_t remap_imported_constructor_method_token(
+    const jc_cap_package_info &package_info, const uint8_t class_token,
+    const uint8_t method_token) noexcept {
+  // JC305's javacard.security.MessageDigest import uses method token 1 for
+  // its protected no-argument constructor. The embedded ROM export places
+  // that constructor at token 2; tokens 0 and 1 have an extra argument.
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 11 && method_token == 1) {
+    return 2;
+  }
+  return method_token;
 }
 
 uint8_t remap_imported_virtual_method_token(
@@ -290,9 +323,36 @@ uint8_t remap_imported_virtual_method_token(
   return method_token;
 }
 
+uint8_t remap_embedded_virtual_method_token(
+    const jc_cap_package_info &package_info, const uint8_t class_token,
+    const uint8_t method_token) noexcept {
+  // Imported CAP tokens map to the embedded API order. Calls originating in
+  // the embedded ROM and targeting an applet override need the inverse map.
+  for (uint16_t imported_token = 0; imported_token < 0x80; ++imported_token) {
+    if (remap_imported_virtual_method_token(
+            package_info, class_token,
+            static_cast<uint8_t>(imported_token)) == method_token) {
+      return static_cast<uint8_t>(imported_token);
+    }
+  }
+  return method_token;
+}
+
 uint8_t remap_imported_interface_method_token(
     const jc_cap_package_info &package_info, const uint8_t class_token,
     const uint8_t method_token) noexcept {
+  // The JC305 Key interface orders methods as clearKey, getSize, getType,
+  // isInitialized. The embedded API order is isInitialized, clearKey,
+  // getType, getSize. Keep this scoped to the Key interface (class token 0)
+  // because other security interfaces have their own token maps below.
+  static constexpr uint8_t security_key_interface_methods[] = {1, 3, 2, 0};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 0 &&
+      method_token < sizeof(security_key_interface_methods)) {
+    return security_key_interface_methods[method_token];
+  }
   // JC305's DESKey interface assigns getKey=4 and setKey=5. The embedded API
   // export declares setKey before getKey, so swap those two interface tokens.
   static constexpr uint8_t security_des_key_interface_methods[] = {

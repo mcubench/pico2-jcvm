@@ -41,6 +41,12 @@
 #include <utility>
 #include <vector>
 
+#ifndef PC_VERSION
+extern "C" void choupi_vm_record_array_write_failure(
+    uint8_t stage, uint16_t index, uint16_t size, uint16_t ref,
+    uint8_t type, uint8_t exception_id);
+#endif
+
 extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length);
 extern "C" const uint8_t *choupi_cap_store_data_for_package(
     uint8_t package_id, uint32_t *length);
@@ -48,6 +54,10 @@ extern "C" uint8_t fs_sync(void);
 extern "C" void path_applet_field16(uint8_t applet, uint8_t package,
                                     uint16_t class_index, uint8_t field,
                                     uint8_t (*tag)[128], uint8_t *length);
+#ifdef PC_VERSION
+extern "C" const uint8_t *choupi_pc_rom_package_data(uint8_t package_id,
+                                                       uint32_t *length);
+#endif
 
 namespace jcvm {
 
@@ -71,6 +81,14 @@ struct PersistentWriteSnapshot {
 };
 
 std::vector<PersistentWriteSnapshot> persistent_write_snapshots;
+bool persistent_write_transaction_active = false;
+uint32_t persistent_write_rollback_generation = 0;
+
+bool tags_equal(const fs::Tag &left, const fs::Tag &right) noexcept {
+  return left.len == right.len &&
+         std::memcmp(left.value, right.value, left.len) == 0;
+}
+
 bool legacy_applet_tag(const fs::Tag &tag, fs::Tag &legacy) noexcept {
   if (tag.len < 6 || (tag.len & 1u) != 0 || tag.value[0] != 0x03) {
     return false;
@@ -80,12 +98,6 @@ bool legacy_applet_tag(const fs::Tag &tag, fs::Tag &legacy) noexcept {
   std::memcpy(legacy.value, tag.value, 3);
   std::memcpy(legacy.value + 3, tag.value + 4, tag.len - 4);
   return true;
-}
-bool persistent_write_transaction_active = false;
-
-bool tags_equal(const fs::Tag &left, const fs::Tag &right) noexcept {
-  return left.len == right.len &&
-         std::memcmp(left.value, right.value, left.len) == 0;
 }
 
 void snapshot_persistent_tag(const fs::Tag &tag) {
@@ -220,6 +232,20 @@ fs::Tag read_persistent_alias_target(uint32_t length, const uint8_t *data) {
   return target_tag;
 }
 
+// Persistent array contents need an identity tag independent of the field
+// that currently references the array. Reserve the impossible array element
+// index 0xffff as a child tag for that body record. Array element indexes are
+// at most 0xfffe (the largest valid index in a 65535-element array).
+fs::Tag persistent_array_body_tag(const fs::Tag &field_tag) {
+  if (field_tag.len > TAG_MAX_LENGTH - 2) {
+    throw Exceptions::IOException;
+  }
+  fs::Tag body_tag = field_tag;
+  body_tag.value[body_tag.len++] = 0xff;
+  body_tag.value[body_tag.len++] = 0xff;
+  return body_tag;
+}
+
 } // namespace
 
 extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
@@ -242,7 +268,12 @@ bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
   persistent_write_transaction_active = false;
   if (fs_sync() != 0) {
     persistent_write_transaction_active = true;
+    const bool restored_persistent_records =
+        !persistent_write_snapshots.empty();
     (void)rollback_persistent_writes();
+    if (restored_persistent_records) {
+      ++persistent_write_rollback_generation;
+    }
     return false;
   }
   persistent_write_snapshots.clear();
@@ -253,11 +284,39 @@ bool FlashMemory_Handler::rollbackPersistentWriteTransaction() noexcept {
   if (!persistent_write_transaction_active) {
     return false;
   }
-  return rollback_persistent_writes();
+  const bool restored_persistent_records =
+      !persistent_write_snapshots.empty();
+  const bool success = rollback_persistent_writes();
+  if (restored_persistent_records) {
+    ++persistent_write_rollback_generation;
+  }
+  return success;
 }
 
 bool FlashMemory_Handler::persistentWriteTransactionActive() noexcept {
   return persistent_write_transaction_active;
+}
+
+uint32_t FlashMemory_Handler::persistentWriteRollbackGeneration() noexcept {
+  return persistent_write_rollback_generation;
+}
+
+std::pair<uint32_t, std::unique_ptr<uint8_t[]>>
+FlashMemory_Handler::readPersistentRecord(const fs::Tag &tag) {
+  return getDataFromTag(tag);
+}
+
+bool FlashMemory_Handler::writePersistentRecord(
+    const fs::Tag &tag, const uint8_t *data, uint32_t length) noexcept {
+  if (tag.len == 0 || tag.len > TAG_MAX_LENGTH || data == nullptr ||
+      length == 0) {
+    return false;
+  }
+  try {
+    return write_persistent_tag(tag, data, length) == 0;
+  } catch (...) {
+    return false;
+  }
 }
 
 bool FlashMemory_Handler::erasePersistentTag(const fs::Tag &tag) noexcept {
@@ -311,6 +370,7 @@ FlashMemory_Handler::getDataFromTag(const fs::Tag &tag) {
 
   return std::make_pair(data_length, std::move(data));
 }
+
 /**
  * Write persistant instance header
  *
@@ -396,9 +456,28 @@ void FlashMemory_Handler::writeArray(const fs::Tag &tag, const FieldType type,
 
       fs::Tag new_tag = FlashMemory_Handler::computeTag(tag, idx);
 
-      jref_t objectref = array.getReferenceEntry(idx);
-      FlashMemory_Handler::setPersistentField_Reference(new_tag, objectref,
-                                                        heap);
+      jref_t objectref;
+      try {
+        objectref = array.getReferenceEntry(idx);
+      } catch (Exceptions exception) {
+#ifndef PC_VERSION
+        choupi_vm_record_array_write_failure(
+            1, idx, array.size(), 0, static_cast<uint8_t>(type),
+            static_cast<uint8_t>(exception));
+#endif
+        throw;
+      }
+      try {
+        FlashMemory_Handler::setPersistentField_Reference(new_tag, objectref,
+                                                          heap);
+      } catch (Exceptions exception) {
+#ifndef PC_VERSION
+        choupi_vm_record_array_write_failure(
+            2, idx, array.size(), objectref.compact(),
+            static_cast<uint8_t>(type), static_cast<uint8_t>(exception));
+#endif
+        throw;
+      }
     }
   } else {
     if (array.isTransientArray()) {
@@ -491,6 +570,17 @@ fs::Tag FlashMemory_Handler::computeTag(const fs::Tag &tag,
  */
 std::pair<uint32_t, const uint8_t *>
 FlashMemory_Handler::getDataInPlaceFromTag(const fs::Tag &tag) {
+#ifdef PC_VERSION
+  if (tag.len == 2 && tag.value[0] == 0x01) {
+    uint32_t rom_length = 0;
+    const uint8_t *rom_data =
+        choupi_pc_rom_package_data(tag.value[1], &rom_length);
+    if (rom_data != nullptr && rom_length != 0) {
+      return std::make_pair(rom_length, rom_data);
+    }
+  }
+#endif
+
   const uint8_t *data = nullptr;
   uint32_t data_length = 0;
 
@@ -502,21 +592,22 @@ FlashMemory_Handler::getDataInPlaceFromTag(const fs::Tag &tag) {
     read_status = fs_read_inplace(legacy_tag.value, legacy_tag.len, &data,
                                   &data_length);
   }
-  if (read_status) {
+  if (read_status || data_length == 0 || data == nullptr) {
     if (tag.len == 5 && tag.value[0] == 0x03 && tag.value[4] == 0xff) {
       std::printf("CHOUPI:RESTORE_STORAGE status=%u length=%lu\r\n",
                   static_cast<unsigned>(read_status),
                   static_cast<unsigned long>(data_length));
       std::fflush(stdout);
     }
-    throw Exceptions::IOException;
-  }
-
-  if (data_length == 0) {
-    throw Exceptions::IOException;
-  }
-
-  if (data == nullptr) {
+#ifdef PC_VERSION
+    std::fprintf(stderr,
+                 "PC_FS:READ_IN_PLACE status=%u length=%u tag_len=%u tag=",
+                 read_status, data_length, tag.len);
+    for (uint8_t index = 0; index < tag.len; ++index) {
+      std::fprintf(stderr, "%02X", tag.value[index]);
+    }
+    std::fprintf(stderr, "\n");
+#endif
     throw Exceptions::IOException;
   }
 
@@ -532,7 +623,6 @@ FlashMemory_Handler::getDataInPlaceFromTag(const fs::Tag &tag) {
  */
 void FlashMemory_Handler::setDataFromTag(const fs::Tag &tag, uint32_t length,
                                          const uint8_t data[]) {
-
   if (write_persistent_tag(tag, data, length)) {
     throw Exceptions::IOException;
   }
@@ -571,9 +661,14 @@ FlashMemory_Handler::getCapTag(const jpackage_ID_t package) noexcept {
  */
 const fs::Tag
 FlashMemory_Handler::getStaticFieldTag(const jpackage_ID_t package,
-                                       const uint8_t static_id) noexcept {
+                                       const uint16_t static_id) noexcept {
   fs::Tag tag;
-  path_static(package, static_id, &(tag.value), &(tag.len));
+  if (static_id <= UINT8_MAX) {
+    path_static(package, static_cast<uint8_t>(static_id), &(tag.value),
+                &(tag.len));
+  } else {
+    path_static16(package, static_id, &(tag.value), &(tag.len));
+  }
   return tag;
 }
 
@@ -669,14 +764,7 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
   FieldType type = static_cast<FieldType>(data[0]);
 
   if (data[0] == kPersistentObjectAlias) {
-    if (length < 2 || data[1] == 0 ||
-        length != static_cast<uint32_t>(2u + data[1]) ||
-        data[1] > TAG_MAX_LENGTH) {
-      throw Exceptions::SecurityException;
-    }
-    fs::Tag target_tag;
-    target_tag.len = data[1];
-    std::memcpy(target_tag.value, data + 2, target_tag.len);
+    const fs::Tag target_tag = read_persistent_alias_target(length, data);
     auto [target_length, target_data] =
         FlashMemory_Handler::getDataInPlaceFromTag(target_tag);
     if (target_length < 4 || target_data[0] != FieldType::FIELD_TYPE_OBJECT) {
@@ -895,12 +983,22 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
     auto array = heap.getArray(value);
     if (array->isPersistent() && !array->isTransientArray()) {
       const fs::Tag array_tag = array->getPersistentTag();
-      if (!tags_equal(tag, array_tag)) {
+      if (tag.len != array_tag.len ||
+          std::memcmp(tag.value, array_tag.value, tag.len) != 0) {
         write_persistent_array_alias(tag, array_tag);
+        return;
       }
+      // Legacy arrays used their first referencing field as their storage
+      // tag. Promote them to a stable body tag before the field can be
+      // cleared or retargeted while aliases still refer to the same object.
+      const fs::Tag body_tag = persistent_array_body_tag(tag);
+      FlashMemory_Handler::setPersistentField_Array(body_tag, *array, heap);
+      write_persistent_array_alias(tag, body_tag);
       return;
     }
-    FlashMemory_Handler::setPersistentField_Array(tag, *array, heap);
+    const fs::Tag body_tag = persistent_array_body_tag(tag);
+    FlashMemory_Handler::setPersistentField_Array(body_tag, *array, heap);
+    write_persistent_array_alias(tag, body_tag);
     return;
   }
 
@@ -1120,15 +1218,8 @@ void FlashMemory_Handler::setPersistentField_Instance(
         throw Exceptions::SecurityException;
       }
 
-      auto array = heap.getArray(arrayref);
-      if (array->isPersistent() && !array->isTransientArray()) {
-        const fs::Tag array_tag = array->getPersistentTag();
-        if (!tags_equal(field_tag, array_tag)) {
-          write_persistent_array_alias(field_tag, array_tag);
-        }
-      } else {
-        FlashMemory_Handler::writeArray(field_tag, field.type, *array, heap);
-      }
+      FlashMemory_Handler::setPersistentField_Reference(field_tag, arrayref,
+                                                        heap);
 
       break;
     }
@@ -1150,23 +1241,30 @@ void FlashMemory_Handler::setPersistentField_Instance(
  */
 const jbyte_t FlashMemory_Handler::getPersistentField_Byte(const fs::Tag &tag) {
   auto [length, data] = FlashMemory_Handler::getDataFromTag(tag);
+  const FieldType type = static_cast<FieldType>(data[0]);
+  // Older persisted applet images can contain a zero/one boolean written in
+  // the short representation. Preserve its value, but reject arbitrary shorts
+  // so a field-layout or type mismatch does not silently pass as a byte read.
+  const bool legacy_boolean =
+      type == FieldType::FIELD_TYPE_SHORT &&
+      length == sizeof(jshort_t) + 1 && data[1] == 0 && data[2] <= 1;
 
-#ifdef JCVM_ARRAY_SIZE_CHECK
-
-  if (length != sizeof(jbyte_t) + 1) {
+  if (length != sizeof(jbyte_t) + 1 && !legacy_boolean) {
     throw Exceptions::SecurityException;
   }
 
-#endif /* JCVM_ARRAY_SIZE_CHECK */
-
 #ifdef JCVM_SECURE_HEAP_ACCESS
-  FieldType type = static_cast<FieldType>(data[0]);
 
   switch (type) {
   case FieldType::FIELD_TYPE_BOOLEAN:
   case FieldType::FIELD_TYPE_BYTE:
     // OK
     break;
+  case FieldType::FIELD_TYPE_SHORT:
+    if (legacy_boolean) {
+      break;
+    }
+    [[fallthrough]];
 
   default:
     // NOK
@@ -1175,7 +1273,7 @@ const jbyte_t FlashMemory_Handler::getPersistentField_Byte(const fs::Tag &tag) {
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
-  return static_cast<jbyte_t>(data[1]);
+  return static_cast<jbyte_t>(legacy_boolean ? data[2] : data[1]);
 }
 
 /**
@@ -1457,6 +1555,16 @@ void FlashMemory_Handler::setPersistentField_Array_Byte(const fs::Tag &tag,
                                                         Heap &heap
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 ) {
+#ifdef PC_VERSION
+  if (index < 2) {
+    std::fprintf(stderr,
+                 "PERSIST_BYTE_WRITE index=%u value=%02X taglen=%u tag0=%02X\n",
+                 static_cast<unsigned>(index),
+                 static_cast<unsigned>(static_cast<uint8_t>(value)),
+                 static_cast<unsigned>(tag.len),
+                 tag.len > 0 ? static_cast<unsigned>(tag.value[0]) : 0u);
+  }
+#endif
 #ifdef JCVM_SECURE_HEAP_ACCESS
   auto array = FlashMemory_Handler::getPersistentField_Array(tag, heap);
 
@@ -1692,7 +1800,7 @@ void FlashMemory_Handler::setPersistentField_Array_Reference(
  *
  * @return a pointer to the packages array.
  */
-std::shared_ptr<const uint8_t> FlashMemory_Handler::getPackagesArray() {
+const uint8_t *FlashMemory_Handler::getPackagesArray() {
   auto &tag = FlashMemory_Handler::getPackagesListTag();
   auto packages_array = FlashMemory_Handler::getDataInPlaceFromTag(tag);
 
@@ -1700,7 +1808,8 @@ std::shared_ptr<const uint8_t> FlashMemory_Handler::getPackagesArray() {
     throw Exceptions::SecurityException;
   }
 
-  return std::shared_ptr<const uint8_t>(packages_array.second);
+  // This data points directly into persistent flash and is not heap-owned.
+  return packages_array.second;
 }
 
 /**
@@ -1757,6 +1866,17 @@ void FlashMemory_Handler::disablePackage(const jpackage_ID_t id) {
  * @param[id] The Package ID to disable.
  */
 bool FlashMemory_Handler::isPackageExist(const jpackage_ID_t id) {
+#ifdef PC_VERSION
+  // The host VPCD image contains its built-in ROM-mask CAPs outside the
+  // mutable package bitmap. Treat those CAPs as resident packages during
+  // import resolution, just as the embedded card does for ROM packages.
+  uint32_t rom_length = 0;
+  const uint8_t *rom_data = choupi_pc_rom_package_data(id, &rom_length);
+  if (rom_data != nullptr && rom_length != 0) {
+    return true;
+  }
+#endif
+
   auto &tag = FlashMemory_Handler::getPackagesListTag();
   uint8_t packages_byte;
 
@@ -1765,7 +1885,22 @@ bool FlashMemory_Handler::isPackageExist(const jpackage_ID_t id) {
     throw Exceptions::IOException;
   }
 
-  return packages_byte & (1 << (id % 8));
+  if ((packages_byte & (1 << (id % 8))) == 0) {
+    return false;
+  }
+
+  if (FlashMemory_Handler::isDynamicPackageID(id)) {
+    // The bitmap can outlive a CAP slot after interrupted cleanup or an
+    // upgrade from the older single-package store. Do not treat that stale
+    // bit as a resident package: import resolution would otherwise call
+    // getCap() on an empty slot and turn a missing dependency into 6F00.
+    uint32_t cap_length = 0;
+    const uint8_t *cap_code =
+        choupi_cap_store_data_for_package(id, &cap_length);
+    return cap_code != nullptr && cap_length != 0;
+  }
+
+  return true;
 }
 
 /**
@@ -1784,10 +1919,9 @@ bool FlashMemory_Handler::findAppletByAID(
     return false;
   }
 
-  const std::shared_ptr<const uint8_t> packages =
-      FlashMemory_Handler::getPackagesArray();
+  const uint8_t *packages = FlashMemory_Handler::getPackagesArray();
   for (uint8_t id = 0; id < JCVM_MAX_PACKAGES; ++id) {
-    if ((packages.get()[id / 8] & (1u << (id % 8))) == 0) {
+    if ((packages[id / 8] & (1u << (id % 8))) == 0) {
       continue;
     }
 

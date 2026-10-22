@@ -124,6 +124,7 @@ public:
   /// Allocate and resolve JCRE-owned temporary global arrays.
   static jref_t addGlobalArray(uint16_t length, jc_array_type type);
   static std::shared_ptr<JC_Array> getGlobalArray(jref_t reference);
+  static void releaseGlobalArray(jref_t reference) noexcept;
   static void clearGlobalArrays(ClearEvent event);
 
   /// Adding new array in the transient heap.

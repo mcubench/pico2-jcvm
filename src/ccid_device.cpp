@@ -34,8 +34,8 @@ extern "C" uint16_t choupi_vm_process_applet(const uint8_t *command,
                                               uint8_t *response,
                                               uint16_t response_capacity,
                                               uint16_t *response_length);
-
 extern "C" uint8_t fs_sync(void);
+
 namespace {
 constexpr uint8_t kCcidInterface = 2;
 constexpr uint8_t kEndpointOut = 0x03;
@@ -47,7 +47,7 @@ constexpr uint8_t kAtr[] = {0x3b, 0x80, 0x01, 0x81};
 
 bool is_select_by_aid(const uint8_t *apdu, size_t apdu_length) {
   if (apdu == nullptr || apdu_length < 5 || apdu[0] != 0x00 ||
-      apdu[1] != 0xa4 || apdu[2] != 0x04 || apdu[3] != 0x00 ||
+      apdu[1] != 0xa4 || apdu[2] != 0x04 || (apdu[3] & 0xef) != 0 ||
       apdu[4] < 5 || apdu[4] > 16) {
     return false;
   }
@@ -93,6 +93,22 @@ volatile uint8_t debug_stage = 0;
 volatile uint8_t debug_endpoint = 0;
 volatile uint16_t debug_rx_events = 0;
 volatile uint16_t debug_task_count = 0;
+volatile uint8_t debug_last_apdu_length = 0;
+volatile uint8_t debug_last_apdu_header[5] = {};
+volatile uint8_t debug_last_message_type = 0;
+volatile uint8_t debug_last_payload_length = 0;
+volatile uint16_t debug_xfr_block_count = 0;
+volatile uint16_t debug_out_xfer_errors = 0;
+volatile uint16_t debug_in_xfer_errors = 0;
+volatile uint16_t debug_out_rearm_errors = 0;
+volatile uint16_t debug_in_submit_errors = 0;
+volatile uint16_t debug_invalid_messages = 0;
+volatile uint8_t debug_last_xfer_result = 0;
+volatile uint16_t debug_unknown_message_count = 0;
+volatile uint8_t debug_last_unknown_message = 0;
+volatile uint8_t debug_recent_commands[12] = {};
+volatile uint8_t debug_recent_command_index = 0;
+volatile uint16_t debug_command_count = 0;
 Scp03Session secure_channel;
 CapLoadSession cap_load_session;
 bool get_status_first_seen = false;
@@ -210,8 +226,10 @@ uint16_t build_dynamic_get_status_page(
 
 void queue_out(uint8_t rhport) {
   if (ep_out != 0 && !usbd_edpt_busy(rhport, ep_out)) {
-    (void)usbd_edpt_xfer(rhport, ep_out, rx_buffer + rx_length,
-                         static_cast<uint16_t>(kEndpointSize));
+    if (!usbd_edpt_xfer(rhport, ep_out, rx_buffer + rx_length,
+                        static_cast<uint16_t>(kEndpointSize))) {
+      ++debug_out_rearm_errors;
+    }
   }
 }
 
@@ -239,16 +257,32 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   }
   rx_length = 0;
   rx_expected = 0;
-  (void)usbd_edpt_xfer(rhport, ep_in, tx_buffer,
-                       static_cast<uint16_t>(payload_length + 10));
+  if (!usbd_edpt_xfer(rhport, ep_in, tx_buffer,
+                      static_cast<uint16_t>(payload_length + 10))) {
+    ++debug_in_submit_errors;
+  }
 }
 
 void process_message(uint8_t rhport) {
   const uint8_t command = rx_buffer[0];
+  debug_recent_commands[debug_recent_command_index] = command;
+  debug_recent_command_index =
+      static_cast<uint8_t>((debug_recent_command_index + 1) %
+                           sizeof(debug_recent_commands));
+  ++debug_command_count;
+  debug_last_message_type = command;
+  debug_last_payload_length = static_cast<uint8_t>(
+      rx_expected >= 10 && rx_expected - 10 < 256 ? rx_expected - 10 : 0xff);
   switch (command) {
   case 0x62: // PC_to_RDR_IccPowerOn
+    // Treat every reader power-on as a card reset. This also drops the
+    // previously selected applet and clears its CLEAR_ON_RESET arrays before
+    // persistent applet state is restored for the next SELECT.
+    choupi_vm_clear_selected_applet();
     slot_state = 0;
+    secure_channel.reset();
     get_status_first_seen = false;
+    cap_load_session.abortTransfer();
     cap_load_session.restoreInstalled();
     send_response(rhport, 0x80, kAtr, sizeof(kAtr));
     break;
@@ -264,8 +298,15 @@ void process_message(uint8_t rhport) {
     send_response(rhport, 0x81, nullptr, 0, slot_state);
     break;
   case 0x6f: { // PC_to_RDR_XfrBlock
+    ++debug_xfr_block_count;
     const size_t apdu_length = rx_expected - 10;
     const uint8_t *apdu = rx_buffer + 10;
+    debug_last_apdu_length =
+        static_cast<uint8_t>(apdu_length < 5 ? apdu_length : 5);
+    for (uint8_t index = 0; index < sizeof(debug_last_apdu_header); ++index) {
+      debug_last_apdu_header[index] =
+          index < debug_last_apdu_length ? apdu[index] : 0;
+    }
     uint8_t response[96] = {0x6d, 0x00}; // instruction not supported
     size_t response_length = 2;
     if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
@@ -294,6 +335,8 @@ void process_message(uint8_t rhport) {
         (void)choupi_vm_deselect_applet(selecting_same_applet ? 1 : 0);
       }
     }
+    // Card Recognition Data is used to discover the card and its secure
+    // channel before authentication, so expose GET DATA on the open channel.
     if (!secure_channel.active() && apdu_length == 5 && apdu[0] == 0x80 &&
         apdu[1] == 0xca) {
       if (!gp::write_get_data_response(apdu[2], apdu[3], response,
@@ -559,10 +602,16 @@ void process_message(uint8_t rhport) {
           }
         if (!select_failed) {
             uint16_t applet_response_length = 0;
+            std::printf("CHOUPI:SELECT process=begin\r\n");
+            std::fflush(stdout);
             const uint16_t process_status = choupi_vm_process_applet(
                 apdu, static_cast<uint16_t>(apdu_length), response,
                 static_cast<uint16_t>(sizeof(response)),
                 &applet_response_length);
+            std::printf("CHOUPI:SELECT process=end sw=%04X len=%u\r\n",
+                        static_cast<unsigned>(process_status),
+                        static_cast<unsigned>(applet_response_length));
+            std::fflush(stdout);
             if (process_status == 0xffff || applet_response_length < 2 ||
                 applet_response_length > sizeof(response)) {
               response[0] = 0x6f;
@@ -594,6 +643,11 @@ void process_message(uint8_t rhport) {
           static_cast<uint16_t>(sizeof(response)), &applet_response_length);
       if (status != 0xffff) {
         response_length = applet_response_length;
+        if (fs_sync() != 0) {
+          response[0] = 0x6f;
+          response[1] = 0x00;
+          response_length = 2;
+        }
       }
     }
     send_response(rhport, 0x80, response, response_length);
@@ -603,6 +657,8 @@ void process_message(uint8_t rhport) {
     send_response(rhport, 0x81, nullptr, 0, slot_state);
     break;
   default:
+    ++debug_unknown_message_count;
+    debug_last_unknown_message = command;
     send_response(rhport, 0x81, nullptr, 0, slot_state);
     break;
   }
@@ -623,10 +679,12 @@ void driver_init() {
 bool driver_deinit() { return true; }
 
 void driver_reset(uint8_t) {
+  choupi_vm_clear_selected_applet();
   rx_length = 0;
   rx_expected = 0;
   message_pending = false;
   slot_state = 1;
+  get_status_first_seen = false;
   ep_out = 0;
   ep_in = 0;
   secure_channel.reset();
@@ -659,11 +717,6 @@ uint16_t driver_open(uint8_t rhport,
       return 0;
     }
     consumed = static_cast<uint16_t>(consumed + descriptor[0]);
-        if (fs_sync() != 0) {
-          response[0] = 0x6f;
-          response[1] = 0x00;
-          response_length = 2;
-        }
     descriptor += descriptor[0];
   }
   if (ep_out == 0 || ep_in == 0) {
@@ -692,7 +745,20 @@ bool driver_control(uint8_t rhport, uint8_t stage,
 bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
                  uint32_t transferred) {
   if (result != XFER_RESULT_SUCCESS) {
-    return false;
+    debug_last_xfer_result = static_cast<uint8_t>(result);
+    if (endpoint == ep_out) {
+      ++debug_out_xfer_errors;
+    } else if (endpoint == ep_in) {
+      ++debug_in_xfer_errors;
+    }
+    // Drop a partial command or a response that could not be delivered. The
+    // host owns APDU retry semantics; keep the reader endpoint armed so a
+    // subsequent CCID command can recover without a USB re-enumeration.
+    rx_length = 0;
+    rx_expected = 0;
+    message_pending = false;
+    queue_out(rhport);
+    return true;
   }
   if (endpoint == ep_in) {
     debug_stage = 7;
@@ -700,6 +766,7 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     return true;
   }
   if (endpoint != ep_out || rx_length + transferred > sizeof(rx_buffer)) {
+    ++debug_invalid_messages;
     rx_length = 0;
     rx_expected = 0;
     queue_out(rhport);
@@ -712,7 +779,9 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
   if (rx_expected == 0 && rx_length >= 10) {
     const uint32_t payload_length = read_le32(rx_buffer + 1);
     if (payload_length + 10 > kMaxCcidMessage) {
+      ++debug_invalid_messages;
       rx_length = 0;
+      rx_expected = 0;
       queue_out(rhport);
       return false;
     }
@@ -756,11 +825,80 @@ extern "C" void choupi_ccid_task(void) {
 
 extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,
                                          uint16_t *rx_events,
-                                         uint16_t *task_count) {
+                                         uint16_t *task_count,
+                                         uint8_t *last_apdu_length,
+                                         uint8_t *last_apdu_header,
+                                         uint8_t *last_message_type,
+                                         uint8_t *last_payload_length,
+                                         uint16_t *xfr_block_count,
+                                         uint16_t *out_xfer_errors,
+                                         uint16_t *in_xfer_errors,
+                                         uint16_t *out_rearm_errors,
+                                         uint16_t *in_submit_errors,
+                                         uint16_t *invalid_messages,
+                                         uint8_t *last_xfer_result) {
   if (stage != nullptr) *stage = debug_stage;
   if (endpoint != nullptr) *endpoint = debug_endpoint;
   if (rx_events != nullptr) *rx_events = debug_rx_events;
   if (task_count != nullptr) *task_count = debug_task_count;
+  if (last_apdu_length != nullptr) {
+    *last_apdu_length = debug_last_apdu_length;
+  }
+  if (last_apdu_header != nullptr) {
+    for (uint8_t index = 0; index < sizeof(debug_last_apdu_header); ++index) {
+      last_apdu_header[index] = debug_last_apdu_header[index];
+    }
+  }
+  if (last_message_type != nullptr) {
+    *last_message_type = debug_last_message_type;
+  }
+  if (last_payload_length != nullptr) {
+    *last_payload_length = debug_last_payload_length;
+  }
+  if (xfr_block_count != nullptr) {
+    *xfr_block_count = debug_xfr_block_count;
+  }
+  if (out_xfer_errors != nullptr) {
+    *out_xfer_errors = debug_out_xfer_errors;
+  }
+  if (in_xfer_errors != nullptr) {
+    *in_xfer_errors = debug_in_xfer_errors;
+  }
+  if (out_rearm_errors != nullptr) {
+    *out_rearm_errors = debug_out_rearm_errors;
+  }
+  if (in_submit_errors != nullptr) {
+    *in_submit_errors = debug_in_submit_errors;
+  }
+  if (invalid_messages != nullptr) {
+    *invalid_messages = debug_invalid_messages;
+  }
+  if (last_xfer_result != nullptr) {
+    *last_xfer_result = debug_last_xfer_result;
+  }
+}
+
+extern "C" void choupi_ccid_debug_unknown(uint8_t *last_message,
+                                            uint16_t *message_count) {
+  if (last_message != nullptr) *last_message = debug_last_unknown_message;
+  if (message_count != nullptr) {
+    *message_count = debug_unknown_message_count;
+  }
+}
+
+extern "C" void choupi_ccid_debug_recent(uint8_t *commands,
+                                           uint8_t command_capacity,
+                                           uint16_t *command_count) {
+  if (command_count != nullptr) *command_count = debug_command_count;
+  if (commands == nullptr) return;
+  const uint8_t count = command_capacity < sizeof(debug_recent_commands)
+                            ? command_capacity
+                            : sizeof(debug_recent_commands);
+  const uint8_t oldest = debug_recent_command_index;
+  for (uint8_t i = 0; i < count; ++i) {
+    commands[i] = debug_recent_commands[(oldest + i) %
+                                        sizeof(debug_recent_commands)];
+  }
 }
 
 extern "C" usbd_class_driver_t const *usbd_app_driver_get_cb(

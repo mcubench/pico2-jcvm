@@ -89,25 +89,37 @@ bool Heap::isGlobalHeap() const noexcept { return this->global_heap; }
 
 jref_t Heap::addGlobalArray(const uint16_t length, const jc_array_type type) {
   Heap &heap = globalArrayHeap();
-  if (heap.arrays.size() >= kMaximumLocalArrayHandles) {
-    throw Exceptions::RuntimeException;
-  }
-
   constexpr ClearEvent clear_on_reset = ClearEvent::CLEAR_ON_RESET;
+  std::shared_ptr<JC_Array> array;
   if (type == JAVA_ARRAY_T_REFERENCE) {
     // A global Object[] has no applet-specific component class. Keep its
     // component type wildcarded, while giving it the required reset lifetime.
-    heap.arrays.push_back(std::make_shared<JC_Array>(
+    array = std::make_shared<JC_Array>(
         heap, length, type, static_cast<jc_cp_offset_t>(0xffff), true,
-        clear_on_reset));
+        clear_on_reset);
   } else {
-    heap.arrays.push_back(std::make_shared<JC_Array>(
-        heap, length, type, true, clear_on_reset));
+    array = std::make_shared<JC_Array>(heap, length, type, true,
+                                       clear_on_reset);
+  }
+
+  uint16_t slot = 0;
+  for (auto &existing : heap.arrays) {
+    if (!existing) {
+      existing = std::move(array);
+      break;
+    }
+    ++slot;
+  }
+  if (slot == heap.arrays.size()) {
+    if (heap.arrays.size() >= kMaximumLocalArrayHandles) {
+      throw Exceptions::RuntimeException;
+    }
+    heap.arrays.push_back(std::move(array));
   }
 
   jref_t reference;
   reference.setAsArray(true);
-  reference.setOffset(static_cast<uint16_t>(heap.arrays.size()));
+  reference.setOffset(static_cast<uint16_t>(slot + 1));
   reference.setAsGlobalArray();
   return reference;
 }
@@ -117,10 +129,23 @@ std::shared_ptr<JC_Array> Heap::getGlobalArray(const jref_t reference) {
     throw Exceptions::SecurityException;
   }
   const uint16_t index = reference.getGlobalArrayIndex();
-  if (index == 0) {
+  if (index == 0 || index > globalArrayHeap().arrays.size() ||
+      !globalArrayHeap().arrays.at(static_cast<uint16_t>(index - 1))) {
     throw Exceptions::SecurityException;
   }
   return globalArrayHeap().arrays.at(index - 1);
+}
+
+void Heap::releaseGlobalArray(const jref_t reference) noexcept {
+  if (!reference.isGlobalArray()) {
+    return;
+  }
+  const uint16_t index = reference.getGlobalArrayIndex();
+  Heap &heap = globalArrayHeap();
+  if (index == 0 || index > heap.arrays.size()) {
+    return;
+  }
+  heap.arrays.at(static_cast<uint16_t>(index - 1)).reset();
 }
 
 void Heap::clearGlobalArrays(const ClearEvent event) {

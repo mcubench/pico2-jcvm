@@ -274,7 +274,7 @@ if(CHOUPI_TARGET_PC)
     COMMAND
       java -jar "${CMAKE_BINARY_DIR}/rommask/rommask.jar"
       "${CMAKE_BINARY_DIR}/javacard-api" "${CMAKE_BINARY_DIR}/flash"
-      "${CMAKE_BINARY_DIR}/jni.hpp" fr.gouv.ssi.starter.Starter.run
+      "${CMAKE_BINARY_DIR}/jni.hpp" fr.gouv.ssi.starter.Starter.runVPCD
     COMMAND ${CMAKE_COMMAND} -E touch "${CHOUPI_ROMMASK_STAMP}"
     DEPENDS "${CHOUPI_JAVACARD_API_STAMP}" ${CHOUPI_ROMMASK_INPUTS}
     BYPRODUCTS "${CMAKE_BINARY_DIR}/rommask/rommask.jar"
@@ -319,13 +319,19 @@ file(GLOB_RECURSE JCVM_CORE_SOURCES_FILES
 if(CHOUPI_TARGET_PC)
 
   add_executable(choupi "${JCVM_CORE_SOURCES_FILES}"
+                        "${CMAKE_SOURCE_DIR}/../src/cap_load.cpp"
+                        "${CMAKE_SOURCE_DIR}/../src/scp03.cpp"
+                        "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
+                        "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/des.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha256.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
 
   target_include_directories(
     choupi PUBLIC ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/src"
                   "${CMAKE_SOURCE_DIR}/os/src"
-                  "$ENV{PICO_SDK_PATH}/lib/mbedtls/include")
+                  "${CMAKE_SOURCE_DIR}/../src"
+                  "$ENV{PICO_SDK_PATH}/lib/mbedtls/include"
+                  "$ENV{PICO_SDK_PATH}/lib/mbedtls/include/mbedtls")
   target_compile_definitions(choupi PRIVATE
     MBEDTLS_CONFIG_FILE=\"mbedtls_config_pc.h\")
 

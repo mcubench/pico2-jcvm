@@ -114,8 +114,22 @@ Interpretor::Interpretor(Context &context, const uint16_t methodOffset,
       startingMethodPackage(methodPackage),
       initialReferences(initial_references),
       initialReferenceCount(initial_reference_count),
-      startsAtMethodOffset(true) {
-}
+      entryFrameDepth(context.getStack().frameDepth()),
+      startsAtMethodOffset(true) {}
+
+Interpretor::Interpretor(
+    Context &context, const uint16_t methodOffset,
+    const jpackage_ID_t methodPackage,
+    const InterpretorInitialLocal *initial_locals,
+    const uint8_t initial_local_count,
+    const bool captureUncaughtExceptions)
+    : external_context(&context), startingClass(0), startingMethod(0),
+      isStaticStatingMethod(false), startingMethodOffset(methodOffset),
+      startingMethodPackage(methodPackage), initialLocals(initial_locals),
+      initialLocalCount(initial_local_count),
+      entryFrameDepth(context.getStack().frameDepth()),
+      startsAtMethodOffset(true),
+      capture_uncaught_exceptions(captureUncaughtExceptions) {}
 
 /**
  * Runs the Java Card interpretor.
@@ -125,6 +139,11 @@ uint16_t Interpretor::run() noexcept {
   Context &context = this->getCurrentContext();
   ActiveContextScope active_context(context);
   Package package = context.getCurrentPackage();
+#ifdef PC_VERSION
+  const char *trace_apdu_setting = std::getenv("CHOUPI_VM_TRACE_APDU");
+  const bool trace_apdu = trace_apdu_setting != nullptr &&
+                          std::strcmp(trace_apdu_setting, "1") == 0;
+#endif
 
   TRACE_JCVM_DEBUG("Executing starting applet");
 
@@ -201,7 +220,7 @@ uint16_t Interpretor::run() noexcept {
                        static_cast<int>(stack.readLocal_Short(1)),
                        static_cast<unsigned>(this->installLength));
           if (!arguments_match) {
-            stack.unwind();
+            stack.unwindToDepth(this->entryFrameDepth);
             return 0x6f00;
           }
         }
@@ -209,12 +228,12 @@ uint16_t Interpretor::run() noexcept {
       } catch (Exceptions e) {
         this->last_exception_id = e;
         this->startJCVMException(e);
-        context.getStack().unwind();
+        context.getStack().unwindToDepth(this->entryFrameDepth);
         return this->status_word;
       } catch (...) {
         this->last_exception_id = Exceptions::SecurityException;
         this->startJCVMException(Exceptions::SecurityException);
-        context.getStack().unwind();
+        context.getStack().unwindToDepth(this->entryFrameDepth);
         return this->status_word;
       }
     } else {
@@ -224,29 +243,97 @@ uint16_t Interpretor::run() noexcept {
     }
 
   } else if (this->startsAtMethodOffset) {
-    if (this->initialReferences == nullptr ||
-        this->initialReferenceCount == 0) {
+    if ((this->initialReferences == nullptr ||
+         this->initialReferenceCount == 0) &&
+        (this->initialLocals == nullptr || this->initialLocalCount == 0)) {
       this->last_exception_id = Exceptions::SecurityException;
       this->startJCVMException(Exceptions::SecurityException);
-      context.getStack().unwind();
+      context.getStack().unwindToDepth(this->entryFrameDepth);
       return this->status_word;
     }
     try {
+#ifdef PC_VERSION
+      if (trace_apdu) {
+        std::fprintf(stderr,
+                     "CHOUPI:VM_ENTRY stage=call_begin package=%u method=%u\n",
+                     static_cast<unsigned>(this->startingMethodPackage),
+                     static_cast<unsigned>(this->startingMethodOffset));
+      }
+#endif
       methodHandler.setPackage(Package(this->startingMethodPackage));
-      methodHandler.callVirtualMethod(this->startingMethodOffset);
+      methodHandler.callVirtualMethod(this->startingMethodOffset,
+                                      this->initialLocals == nullptr);
+#ifdef PC_VERSION
+      if (trace_apdu) {
+        std::fprintf(stderr, "CHOUPI:VM_ENTRY stage=call_done\n");
+      }
+#endif
       Stack &startup_stack = context.getStack();
       const Frame &startup_frame = startup_stack.getCurrentFrame();
       if (this->initialReferenceCount >
           startup_frame.getOP() - startup_frame.getFP()) {
         this->last_exception_id = Exceptions::SecurityException;
         this->startJCVMException(Exceptions::SecurityException);
-        startup_stack.unwind();
+        startup_stack.unwindToDepth(this->entryFrameDepth);
         return this->status_word;
       }
       for (uint8_t index = 0; index < this->initialReferenceCount; ++index) {
         startup_stack.writeLocal_Reference(index,
                                            this->initialReferences[index]);
       }
+      if (this->initialLocals != nullptr) {
+        uint16_t required_locals = 0;
+        for (uint8_t index = 0; index < this->initialLocalCount; ++index) {
+          required_locals +=
+              this->initialLocals[index].type == InterpretorLocalType::Int
+                  ? 2
+                  : 1;
+        }
+        if (required_locals > static_cast<uint16_t>(
+                                  startup_frame.getOP() -
+                                  startup_frame.getFP())) {
+          throw Exceptions::SecurityException;
+        }
+        uint16_t local_index = 0;
+        for (uint8_t index = 0; index < this->initialLocalCount; ++index) {
+          const auto &local = this->initialLocals[index];
+          switch (local.type) {
+          case InterpretorLocalType::Reference:
+            startup_stack.writeLocal_Reference(
+                static_cast<uint8_t>(local_index),
+                jref_t(static_cast<uint16_t>(local.value)));
+            ++local_index;
+            break;
+          case InterpretorLocalType::Byte:
+            startup_stack.writeLocal_Short(
+                static_cast<uint8_t>(local_index),
+                static_cast<jshort_t>(static_cast<int8_t>(local.value)));
+            ++local_index;
+            break;
+          case InterpretorLocalType::Short:
+            startup_stack.writeLocal_Short(
+                static_cast<uint8_t>(local_index),
+                static_cast<jshort_t>(local.value));
+            ++local_index;
+            break;
+          case InterpretorLocalType::Int:
+#ifdef JCVM_INT_SUPPORTED
+            startup_stack.writeLocal_Int(
+                static_cast<uint8_t>(local_index),
+                static_cast<jint_t>(local.value));
+            local_index += 2;
+#else
+            throw Exceptions::NotYetImplemented;
+#endif
+            break;
+          }
+        }
+      }
+#ifdef PC_VERSION
+      if (trace_apdu) {
+        std::fprintf(stderr, "CHOUPI:VM_ENTRY stage=locals_ready\n");
+      }
+#endif
     } catch (Exceptions e) {
       this->last_exception_id = e;
       std::fprintf(stderr,
@@ -254,7 +341,7 @@ uint16_t Interpretor::run() noexcept {
                    static_cast<unsigned>(e),
                    static_cast<unsigned>(this->startingMethodPackage),
                    static_cast<unsigned>(this->startingMethodOffset));
-      context.getStack().unwind();
+      context.getStack().unwindToDepth(this->entryFrameDepth);
       return 0x6f00;
     } catch (...) {
       this->last_exception_id = Exceptions::SecurityException;
@@ -262,7 +349,7 @@ uint16_t Interpretor::run() noexcept {
                    "CHOUPI:VM_ENTRY_EXCEPTION id=unknown package=%u offset=%u\n",
                    static_cast<unsigned>(this->startingMethodPackage),
                    static_cast<unsigned>(this->startingMethodOffset));
-      context.getStack().unwind();
+      context.getStack().unwindToDepth(this->entryFrameDepth);
       return 0x6f00;
     }
   } else { // TODO: exported virtual method entry by class/method token.
@@ -272,11 +359,21 @@ uint16_t Interpretor::run() noexcept {
 
   //  the interpretor runs until the Java Card stack is empty
   uint32_t instruction_count = 0;
+#ifdef PC_VERSION
+  uint32_t progress_interval = 0;
+  if (const char *setting = std::getenv("CHOUPI_VM_PROGRESS_INTERVAL")) {
+    char *end = nullptr;
+    const unsigned long parsed = std::strtoul(setting, &end, 10);
+    if (end != setting && *end == '\0' && parsed > 0 &&
+        parsed <= UINT32_MAX) {
+      progress_interval = static_cast<uint32_t>(parsed);
+    }
+  }
+#endif
 #ifndef PC_VERSION
   const uint32_t install_start_time_us = choupi_time_us_32();
 #endif
-  uint8_t trace_after_putfield_a = 0;
-  while (stack.empty() == false) {
+  while (stack.frameDepth() > this->entryFrameDepth) {
 #ifndef PC_VERSION
     choupi_watchdog_update();
 #endif
@@ -321,21 +418,47 @@ uint16_t Interpretor::run() noexcept {
       this->last_exception_opcode_history = this->opcode_history;
       this->last_exception_depth_history = this->depth_history;
       this->status_word = 0x6400;
-      stack.unwind();
+      stack.unwindToDepth(this->entryFrameDepth);
       return this->status_word;
     }
 #endif
-    if (!this->startsAtMethodOffset &&
-        (bytecode == 0x87 || bytecode == 0xB1 || bytecode == 0xB5)) {
-      trace_after_putfield_a = 24;
+#ifdef PC_VERSION
+    if (progress_interval != 0 &&
+        instruction_count % progress_interval == 0) {
+      const Package active_package = context.getCurrentPackage();
+      const auto *method_component = active_package.getCap().getMethod();
+      const auto methods = method_component == nullptr
+                               ? JCVMArray<const uint8_t>(0, nullptr)
+                               : method_component->methods();
+      const uintptr_t pc_address = reinterpret_cast<uintptr_t>(instruction_pc);
+      const uintptr_t methods_address =
+          reinterpret_cast<uintptr_t>(methods.data());
+      const uintptr_t method_start_address = reinterpret_cast<uintptr_t>(
+          stack.getCurrentFrame().getMethodStartPC());
+      const long method_pc_offset =
+          pc_address >= methods_address &&
+                  pc_address - methods_address < methods.size()
+              ? static_cast<long>(pc_address - methods_address)
+              : -1;
+      const long method_start_offset =
+          method_start_address >= methods_address &&
+                  method_start_address - methods_address < methods.size()
+              ? static_cast<long>(method_start_address - methods_address)
+              : -1;
+      std::fprintf(
+          stderr,
+          "CHOUPI:VM_PROGRESS phase=%s ops=%lu package=%u opcode=%02X pc=%p method_pc=%ld method_start=%ld "
+          "operand_depth=%u op_history=%08X depth_history=%08X\n",
+          this->installMethodEntry ? "install" :
+              (this->startsAtMethodOffset ? "applet" : "runtime"),
+          static_cast<unsigned long>(instruction_count),
+          static_cast<unsigned>(context.getCurrentPackageID()), bytecode,
+          static_cast<const void *>(stack.getPC().getValue()),
+          method_pc_offset, method_start_offset,
+          static_cast<unsigned>(operand_depth), this->opcode_history,
+          this->depth_history);
     }
-    const bool trace_instruction = trace_after_putfield_a != 0;
-    if (trace_instruction) {
-      std::printf("CHOUPI:VM_TRACE before count=%lu opcode=0x%02X pc=%p\r\n",
-                  static_cast<unsigned long>(instruction_count), bytecode,
-                  static_cast<const void *>(instruction_pc));
-      std::fflush(stdout);
-    }
+#endif
     if (!this->startsAtMethodOffset && instruction_count % 1000000u == 0) {
       std::printf("CHOUPI:VM_PROGRESS ops=%lu opcode=0x%02X pc=%p\r\n",
                   static_cast<unsigned long>(instruction_count), bytecode,
@@ -343,7 +466,8 @@ uint16_t Interpretor::run() noexcept {
     }
 
     // bytecodes interface
-    Bytecodes bytecodes(context);
+    Bytecodes bytecodes(context, this->entryFrameDepth,
+                        this->capture_uncaught_exceptions);
 
     // decode: call the corresponding native function
     // #ifdef DEBUG
@@ -358,15 +482,27 @@ uint16_t Interpretor::run() noexcept {
 
       // execute
       (bytecodes.*bc)();
+    } catch (const UncaughtJavaException &uncaught) {
+      this->last_exception_id = Exceptions::NotYetImplemented;
+      this->last_uncaught_exception_reference = uncaught.reference;
+      this->status_word = 0x6f00;
+      stack.unwindToDepth(this->entryFrameDepth);
+      return this->status_word;
     } catch (const ISOExceptionStatusWord &iso_exception) {
       this->last_exception_id = Exceptions::ISOException;
+      this->last_exception_reason = iso_exception.value;
       this->last_exception_opcode = bytecode;
       this->last_exception_pc =
           static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc));
       this->status_word = iso_exception.value;
-      stack.unwind();
+      stack.unwindToDepth(this->entryFrameDepth);
       return this->status_word;
     } catch (Exceptions e) {
+      if (e == Exceptions::SystemException) {
+        this->last_exception_reason = context.pendingSystemExceptionReason();
+      } else if (e == Exceptions::APDUException) {
+        this->last_exception_reason = 1; // APDUException.ILLEGAL_USE
+      }
       try {
         if (bytecodes.dispatchJavaException(e)) {
           continue;
@@ -403,7 +539,7 @@ uint16_t Interpretor::run() noexcept {
                        static_cast<const void *>(stack.getPC().getValue()));
       }
       this->startJCVMException(e);
-      stack.unwind();
+      stack.unwindToDepth(this->entryFrameDepth);
       return this->status_word;
     } catch (...) {
       this->last_exception_id = Exceptions::SecurityException;
@@ -427,15 +563,8 @@ uint16_t Interpretor::run() noexcept {
                     static_cast<const void *>(stack.getPC().getValue()));
       }
       this->startJCVMException(Exceptions::SecurityException);
-      stack.unwind();
+      stack.unwindToDepth(this->entryFrameDepth);
       return this->status_word;
-    }
-    if (trace_instruction) {
-      std::printf("CHOUPI:VM_TRACE after count=%lu opcode=0x%02X pc=%p\r\n",
-                  static_cast<unsigned long>(instruction_count), bytecode,
-                  static_cast<const void *>(stack.getPC().getValue()));
-      std::fflush(stdout);
-      --trace_after_putfield_a;
     }
   }
 

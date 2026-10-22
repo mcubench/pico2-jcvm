@@ -31,6 +31,7 @@
 #include "jc_types/jc_array.hpp"
 
 #include <algorithm>
+#include <cstdio>
 #include <utility>
 
 namespace jcvm {
@@ -38,6 +39,12 @@ namespace jcvm {
 namespace {
 Context *active_context = nullptr;
 }
+
+Context::SensitiveResultKind Context::sensitive_result_kind =
+    Context::SensitiveResultKind::Unassigned;
+bool Context::sensitive_result_boolean = false;
+jshort_t Context::sensitive_result_short = 0;
+jref_t Context::sensitive_result_object;
 
 Context *Context::setActiveContext(Context *context) noexcept {
   Context *previous = active_context;
@@ -147,18 +154,37 @@ bool Context::restoreAppletInstance(const jpackage_ID_t package_id,
     const jref_t reference =
         FlashMemory_Handler::getPersistentField_Reference(tag, this->heap);
     if (reference.isNullPointer() || reference.isArray()) {
+      std::printf("CHOUPI:RESTORE_REF null=%u array=%u package=%u class=%04X\r\n",
+                  reference.isNullPointer() ? 1u : 0u,
+                  reference.isArray() ? 1u : 0u,
+                  static_cast<unsigned>(package_id),
+                  static_cast<unsigned>(class_index));
+      std::fflush(stdout);
       return false;
     }
     const auto instance = this->heap.getInstance(reference);
     if (instance->getPackageID() != package_id ||
         instance->getClassIndex() != class_index) {
+      std::printf("CHOUPI:RESTORE_MISMATCH got=%u/%04X want=%u/%04X\r\n",
+                  static_cast<unsigned>(instance->getPackageID()),
+                  static_cast<unsigned>(instance->getClassIndex()),
+                  static_cast<unsigned>(package_id),
+                  static_cast<unsigned>(class_index));
+      std::fflush(stdout);
       return false;
     }
     (void)instance->getFields();
     this->restored_applet_ref = reference;
     this->applet_instance_restored = true;
     return true;
+  } catch (Exceptions exception) {
+    std::printf("CHOUPI:RESTORE_EXCEPTION id=%u\r\n",
+                static_cast<unsigned>(exception));
+    std::fflush(stdout);
+    return false;
   } catch (...) {
+    std::printf("CHOUPI:RESTORE_EXCEPTION id=unknown\r\n");
+    std::fflush(stdout);
     return false;
   }
 }
@@ -173,10 +199,112 @@ jref_t Context::getRestoredAppletRef() const noexcept {
 
 void Context::setAppletActive(const bool active) noexcept {
   this->applet_active = active;
+  if (active) {
+    return;
+  }
+  for (auto &entry : this->remote_objects) {
+    entry.session_reference = false;
+    if (!entry.exported) {
+      entry.reference = jref_t();
+      entry.object_id = 0xffff;
+    }
+  }
 }
 
 bool Context::isAppletActive() const noexcept {
   return this->applet_active;
+}
+
+uint16_t Context::exportRemoteObject(const jref_t reference) {
+  for (auto &entry : this->remote_objects) {
+    if (entry.object_id != 0xffff && entry.reference == reference) {
+      entry.exported = true;
+      return entry.object_id;
+    }
+  }
+
+  RemoteObjectEntry *free_entry = nullptr;
+  for (auto &entry : this->remote_objects) {
+    if (entry.object_id == 0xffff) {
+      free_entry = &entry;
+      break;
+    }
+  }
+  if (free_entry == nullptr) {
+    return 0xffff;
+  }
+
+  for (uint32_t attempt = 0; attempt < 0xffffu; ++attempt) {
+    const uint16_t candidate = this->next_remote_object_id++;
+    if (this->next_remote_object_id == 0xffff) {
+      this->next_remote_object_id = 1;
+    }
+    bool in_use = false;
+    for (const auto &entry : this->remote_objects) {
+      if (entry.object_id == candidate) {
+        in_use = true;
+        break;
+      }
+    }
+    if (!in_use && candidate != 0xffff) {
+      free_entry->reference = reference;
+      free_entry->object_id = candidate;
+      free_entry->exported = true;
+      return candidate;
+    }
+  }
+  return 0xffff;
+}
+
+void Context::unexportRemoteObject(const jref_t reference) noexcept {
+  for (auto &entry : this->remote_objects) {
+    if (entry.object_id != 0xffff && entry.reference == reference) {
+      entry.exported = false;
+      if (!this->applet_active || !entry.session_reference) {
+        entry.reference = jref_t();
+        entry.object_id = 0xffff;
+        entry.session_reference = false;
+      }
+      return;
+    }
+  }
+}
+
+bool Context::retainRemoteObjectForSession(const jref_t reference) noexcept {
+  for (auto &entry : this->remote_objects) {
+    if (entry.object_id != 0xffff && entry.reference == reference &&
+        entry.exported) {
+      entry.session_reference = true;
+      return true;
+    }
+  }
+  return false;
+}
+
+uint16_t Context::remoteObjectId(const jref_t reference) const noexcept {
+  for (const auto &entry : this->remote_objects) {
+    if (entry.object_id != 0xffff && entry.reference == reference &&
+        entry.exported) {
+      return entry.object_id;
+    }
+  }
+  return 0xffff;
+}
+
+bool Context::remoteObject(const uint16_t object_id,
+                           jref_t &reference) const noexcept {
+  if (object_id == 0xffff) {
+    return false;
+  }
+  for (const auto &entry : this->remote_objects) {
+    if (entry.object_id == object_id &&
+        (entry.exported ||
+         (this->applet_active && entry.session_reference))) {
+      reference = entry.reference;
+      return true;
+    }
+  }
+  return false;
 }
 
 void Context::setAPDUBufferRef(const jref_t reference,
@@ -333,6 +461,66 @@ uint16_t Context::getAPDUOutgoingLength() const noexcept {
   return this->apdu_outgoing_length;
 }
 
+void Context::resetSensitiveResult() noexcept {
+  this->sensitive_result_kind = SensitiveResultKind::Unassigned;
+  this->sensitive_result_boolean = false;
+  this->sensitive_result_short = 0;
+  this->sensitive_result_object = jref_t{};
+}
+
+void Context::setSensitiveResultBoolean(const bool value) noexcept {
+  this->sensitive_result_kind = SensitiveResultKind::Boolean;
+  this->sensitive_result_boolean = value;
+}
+
+void Context::setSensitiveResultShort(const jshort_t value) noexcept {
+  this->sensitive_result_kind = SensitiveResultKind::Short;
+  this->sensitive_result_short = value;
+}
+
+void Context::setSensitiveResultObject(const jref_t value) noexcept {
+  this->sensitive_result_kind = SensitiveResultKind::Object;
+  this->sensitive_result_object = value;
+}
+
+void Context::assertSensitiveResultObject(const jref_t value) const {
+  if (this->sensitive_result_kind != SensitiveResultKind::Object ||
+      this->sensitive_result_object != value) {
+    throw Exceptions::SecurityException;
+  }
+}
+
+void Context::assertSensitiveResultBoolean(const bool value) const {
+  if (this->sensitive_result_kind != SensitiveResultKind::Boolean ||
+      this->sensitive_result_boolean != value) {
+    throw Exceptions::SecurityException;
+  }
+}
+
+void Context::assertSensitiveResultShort(const jshort_t value,
+                                         const uint8_t comparison) const {
+  if (this->sensitive_result_kind != SensitiveResultKind::Short) {
+    throw Exceptions::SecurityException;
+  }
+  bool matches = false;
+  switch (comparison) {
+  case 0:
+    matches = this->sensitive_result_short == value;
+    break;
+  case 1:
+    matches = this->sensitive_result_short > value;
+    break;
+  case 2:
+    matches = this->sensitive_result_short < value;
+    break;
+  default:
+    break;
+  }
+  if (!matches) {
+    throw Exceptions::SecurityException;
+  }
+}
+
 void Context::setPendingSystemExceptionReason(const uint16_t reason) noexcept {
   this->pending_system_exception_reason = reason;
 }
@@ -354,10 +542,16 @@ void Context::appendRootReferences(
 void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
                                   void *visitor_context) const {
   this->heap.visitRootReferences(visitor, visitor_context);
+  for (const auto &entry : this->remote_objects) {
+    if (entry.object_id != 0xffff && !entry.reference.isNullPointer()) {
+      visitor(entry.reference, visitor_context);
+    }
+  }
   const jref_t direct_roots[] = {
       this->applet_aid_object_ref, this->registered_applet_ref,
       this->restored_applet_ref, this->apdu_buffer_ref,
-      this->apdu_object_ref, this->apdu_outgoing_buffer_ref};
+      this->apdu_object_ref, this->apdu_outgoing_buffer_ref,
+      this->sensitive_result_object};
   for (const jref_t &reference : direct_roots) {
     if (!reference.isNullPointer()) {
       visitor(reference, visitor_context);

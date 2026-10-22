@@ -270,7 +270,8 @@ Class_Handler::getObjectClassFromAnObjectRef(const jc_cap_class_ref classref)
  * @return the public virtual method offset in the Method component.
  */
 std::pair<Package, const uint16_t> Class_Handler::getPublicMethodOffset(
-    const jc_cap_virtual_method_ref_info virtual_method_ref_info) {
+    const jc_cap_virtual_method_ref_info virtual_method_ref_info,
+    const bool reverse_embedded_token_for_dynamic_class) {
 #ifndef PC_VERSION
   choupi_install_stage(30);
   choupi_install_context(
@@ -295,7 +296,8 @@ std::pair<Package, const uint16_t> Class_Handler::getPublicMethodOffset(
       (static_cast<uint32_t>(token.second->public_method_table_base) << 8) |
       token.second->public_method_table_count);
 #endif
-  return this->doGetPublicMethodOffset(token.first, token.second, method_token);
+  return this->doGetPublicMethodOffset(token.first, token.second, method_token,
+                                      reverse_embedded_token_for_dynamic_class);
 }
 
 /**
@@ -305,23 +307,60 @@ std::pair<Package, const uint16_t> Class_Handler::getPublicMethodOffset(
 std::pair<Package, const uint16_t>
 Class_Handler::doGetPublicMethodOffset(Package &package,
                                        const jc_cap_class_info *claz,
-                                       uint8_t public_method_offset) {
+                                       uint8_t public_method_offset,
+                                       const bool reverse_embedded_token_for_dynamic_class) {
   ConstantPool_Handler cp_handler(this->package);
   auto token = std::make_pair(package, claz);
+  const uint8_t embedded_method_token = public_method_offset;
 
-  // A dynamic CAP's class and method tokens follow the CAP's imported API
-  // export. Once inheritance crosses into the embedded framework package,
-  // translate the token to that framework's public method table order.
+  // A ROM caller uses the embedded API's token namespace, while the
+  // applet's public method table uses the imported JC API's token namespace.
+  // Convert only while searching dynamic classes; restore the embedded token
+  // when lookup crosses back into the ROM superclass.
+  if (reverse_embedded_token_for_dynamic_class &&
+      FlashMemory_Handler::isDynamicPackageID(token.first.getPackageID())) {
+    auto superclass = token;
+    for (uint16_t depth = 0;
+         depth < 256 && !superclass.second->super_class_ref.isExternalClassRef();
+         ++depth) {
+      if (superclass.second->isObjectClass()) break;
+      cp_handler.setPackage(superclass.first);
+      superclass = cp_handler.classref2class(
+          superclass.second->super_class_ref);
+    }
+    if (!superclass.second->isObjectClass() &&
+        superclass.second->super_class_ref.isExternalClassRef() &&
+        FlashMemory_Handler::isDynamicPackageID(superclass.first.getPackageID())) {
+      const auto &external_ref =
+          superclass.second->super_class_ref.external_classref;
+      const auto *imported_package = Import_Handler(superclass.first)
+          .getPackageAID(external_ref.package_token & 0x7F);
+      if (imported_package == nullptr) {
+        throw Exceptions::SecurityException;
+      }
+      public_method_offset = remap_embedded_virtual_method_token(
+          *imported_package, external_ref.class_token, embedded_method_token);
+    }
+  }
+
+  // Preserve the established CAP-caller translation. For the one ROM-origin
+  // callback above, use the embedded token again after leaving the dynamic
+  // class table.
   const auto resolve_superclass = [&]() {
     const jc_cap_class_ref super_ref = token.second->super_class_ref;
     if (super_ref.isExternalClassRef() &&
         FlashMemory_Handler::isDynamicPackageID(token.first.getPackageID())) {
-      const auto &external_ref = super_ref.external_classref;
-      const auto *imported_package =
-          Import_Handler(token.first).getPackageAID(
-              external_ref.package_token & 0x7F);
-      public_method_offset = remap_imported_virtual_method_token(
-          *imported_package, external_ref.class_token, public_method_offset);
+      if (reverse_embedded_token_for_dynamic_class) {
+        public_method_offset = embedded_method_token;
+      } else {
+        const auto &external_ref = super_ref.external_classref;
+        const auto *imported_package =
+            Import_Handler(token.first).getPackageAID(
+                external_ref.package_token & 0x7F);
+        public_method_offset = remap_imported_virtual_method_token(
+            *imported_package, external_ref.class_token,
+            public_method_offset);
+      }
     }
     cp_handler.setPackage(token.first);
     token = cp_handler.classref2class(super_ref);
@@ -427,7 +466,8 @@ std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
 
 std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
     const jc_cap_virtual_method_ref_info virtual_method_ref_info,
-    const jpackage_ID_t receiver_package, const jclass_index_t receiver_class) {
+    const jpackage_ID_t receiver_package, const jclass_index_t receiver_class,
+    const bool reverse_embedded_token_for_dynamic_class) {
   // A dynamic receiver uses the importing CAP's public token numbers until
   // resolution reaches its external superclass. Translate at that boundary,
   // not here, or methods such as Applet.select() get translated twice.
@@ -453,7 +493,8 @@ std::pair<Package, const uint16_t> Class_Handler::getMethodOffset(
 
   Class_Handler concrete_class_handler(concrete_package);
   if (method_ref.isPublicMethod()) {
-    return concrete_class_handler.getPublicMethodOffset(method_ref);
+    return concrete_class_handler.getPublicMethodOffset(
+        method_ref, reverse_embedded_token_for_dynamic_class);
   }
   return concrete_class_handler.getPackageMethodOffset(method_ref);
 }
@@ -482,8 +523,12 @@ Class_Handler::getImplementedInterfaceMethodOffset(
   for (uint16_t index = 0; index < claz.second->interface_count; ++index) {
     const auto &interfaces = claz.second->interfaces(index);
 
+    // Resolving an external interface changes the resolver's package to the
+    // imported package. Resolve every entry against the concrete class's own
+    // package so one imported interface cannot redirect later internal refs.
+    ConstantPool_Handler implemented_interface_cp(claz.first);
     const auto implemented_interface =
-        cp_handler.classref2interface(interfaces.interface);
+        implemented_interface_cp.classref2interface(interfaces.interface);
     if (implemented_interface.first == requested_interface.first &&
         implemented_interface.second == requested_interface.second) {
 

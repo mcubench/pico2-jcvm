@@ -4,16 +4,34 @@
 
 #include <cerrno>
 #include <cstddef>
+#include <poll.h>
 #include <sys/socket.h>
 
 namespace choupi::vpcd {
 namespace {
 
-enum class ExactRead { Complete, Closed, Error };
+enum class ExactRead { Complete, Closed, Timeout, Error };
 
-ExactRead read_exact(int socket_fd, uint8_t *buffer, size_t length) {
+ExactRead read_exact(int socket_fd, uint8_t *buffer, size_t length,
+                     const int timeout_ms) {
   size_t offset = 0;
   while (offset < length) {
+    if (timeout_ms > 0) {
+      pollfd descriptor{socket_fd, POLLIN, 0};
+      const int ready = ::poll(&descriptor, 1, timeout_ms);
+      if (ready == 0) {
+        return offset == 0 ? ExactRead::Timeout : ExactRead::Error;
+      }
+      if (ready < 0) {
+        if (errno == EINTR) {
+          continue;
+        }
+        return ExactRead::Error;
+      }
+      if ((descriptor.revents & (POLLERR | POLLNVAL)) != 0) {
+        return ExactRead::Error;
+      }
+    }
     const ssize_t count = ::recv(socket_fd, buffer + offset, length - offset, 0);
     if (count == 0) {
       return offset == 0 ? ExactRead::Closed : ExactRead::Error;
@@ -21,6 +39,9 @@ ExactRead read_exact(int socket_fd, uint8_t *buffer, size_t length) {
     if (count < 0) {
       if (errno == EINTR) {
         continue;
+      }
+      if ((errno == EAGAIN || errno == EWOULDBLOCK) && offset == 0) {
+        return ExactRead::Timeout;
       }
       return ExactRead::Error;
     }
@@ -81,13 +102,18 @@ bool encode_frame(const uint8_t *message, const uint16_t length,
   return true;
 }
 
-ReadResult read_message(const int socket_fd, std::vector<uint8_t> &message) {
+ReadResult read_message(const int socket_fd, std::vector<uint8_t> &message,
+                        const int timeout_ms) {
   uint8_t header[2]{};
   message.clear();
 
-  const ExactRead header_result = read_exact(socket_fd, header, sizeof(header));
+  const ExactRead header_result =
+      read_exact(socket_fd, header, sizeof(header), timeout_ms);
   if (header_result == ExactRead::Closed) {
     return ReadResult::Closed;
+  }
+  if (header_result == ExactRead::Timeout) {
+    return ReadResult::Timeout;
   }
   if (header_result != ExactRead::Complete) {
     return ReadResult::IoError;
@@ -101,7 +127,7 @@ ReadResult read_message(const int socket_fd, std::vector<uint8_t> &message) {
 
   message.resize(length);
   const ExactRead payload_result =
-      read_exact(socket_fd, message.data(), message.size());
+      read_exact(socket_fd, message.data(), message.size(), timeout_ms);
   if (payload_result != ExactRead::Complete) {
     message.clear();
     return ReadResult::IoError;

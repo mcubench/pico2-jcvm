@@ -49,7 +49,8 @@ private:
       ;
 
   void callMethod(const uint8_t *const method_to_call,
-                  const jbool_t isStaticMethod = FALSE)
+                  const jbool_t isStaticMethod = FALSE,
+                  const bool arguments_on_caller_stack = true)
 #if !defined(JCVM_DYNAMIC_CHECKS_CAP) && !defined(JCVM_FIREWALL_CHECKS)
       noexcept
 #endif
@@ -61,7 +62,8 @@ public:
       : Component_Handler(context.getCurrentPackage()), context(context){};
 
   /// Call a virtual method
-  void callVirtualMethod(const uint16_t method_offset);
+  void callVirtualMethod(const uint16_t method_offset,
+                         const bool arguments_on_caller_stack = true);
 
   /// Read the receiver and argument word count from a method header.
   uint8_t getArgumentCount(const uint16_t method_offset);

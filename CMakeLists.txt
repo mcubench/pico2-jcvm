@@ -11,6 +11,9 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 project(pico2_jcvm C CXX ASM)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1 CACHE BOOL "Enable C++ exceptions for CHOUPI")
+option(CHOUPI_DEBUG_HEAP_GC "Emit periodic CHOUPI heap GC summaries" OFF)
+option(CHOUPI_DEBUG_HEAP_GC_TRACE "Emit per-object CHOUPI heap GC tracing" OFF)
+option(CHOUPI_DEBUG_MALLOC "Emit Pico SDK allocator tracing" OFF)
 add_compile_options(-Wall -Wextra -Werror)
 if(LOCAL_ARM_NEWLIB_INCLUDE)
   include_directories(SYSTEM "${LOCAL_ARM_NEWLIB_INCLUDE}")
@@ -43,7 +46,8 @@ file(GLOB_RECURSE CHOUPI_VM_SOURCES CONFIGURE_DEPENDS
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX "/main(_arm|_pc)?\\.cpp$")
 if(CHOUPI_VM_SOURCES)
   add_library(choupi_vm_core OBJECT ${CHOUPI_VM_SOURCES})
-  target_link_libraries(choupi_vm_core PRIVATE pico_sha256_headers)
+  target_link_libraries(choupi_vm_core PRIVATE pico_rand_headers
+    pico_mbedtls_headers pico_sha256_headers)
   target_include_directories(choupi_vm_core PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/os/src"
@@ -58,12 +62,11 @@ if(CHOUPI_VM_SOURCES)
     -Wno-unused-parameter
     -Wno-array-bounds
     -Wno-format)
-  target_compile_definitions(choupi_vm_core PRIVATE DEBUG)
   set_target_properties(choupi_vm_core PROPERTIES CXX_STANDARD 17)
 endif()
 
 if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
-  if(TARGET pico_malloc)
+  if(TARGET pico_malloc AND CHOUPI_DEBUG_MALLOC)
     target_compile_definitions(pico_malloc INTERFACE
       PICO_DEBUG_MALLOC=1
       PICO_DEBUG_MALLOC_LOW_WATER=0x20070000)
@@ -86,6 +89,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     src/cap_store.cpp
     src/scp03.cpp
     "${PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
+    "${PICO_SDK_PATH}/lib/mbedtls/library/des.c"
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
     $<TARGET_OBJECTS:choupi_vm_core>)
   target_include_directories(pico2_choupi PRIVATE
@@ -98,10 +102,18 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     -Wno-unused-parameter
     -Wno-array-bounds
     -Wno-format)
-  target_compile_definitions(pico2_choupi PRIVATE DEBUG)
   target_link_libraries(pico2_choupi PRIVATE pico_stdlib pico_rand pico_flash
-    pico_mbedtls_headers)
-  target_link_libraries(pico2_choupi PRIVATE pico_sha256)
+    pico_mbedtls_headers pico_sha256)
+  if(CHOUPI_DEBUG_HEAP_GC)
+    target_compile_definitions(choupi_vm_core PRIVATE CHOUPI_DEBUG_HEAP_GC=1)
+    target_compile_definitions(pico2_choupi PRIVATE CHOUPI_DEBUG_HEAP_GC=1)
+  endif()
+  if(CHOUPI_DEBUG_HEAP_GC_TRACE)
+    target_compile_definitions(choupi_vm_core PRIVATE
+      CHOUPI_DEBUG_HEAP_GC_TRACE=1)
+    target_compile_definitions(pico2_choupi PRIVATE
+      CHOUPI_DEBUG_HEAP_GC_TRACE=1)
+  endif()
   pico_enable_stdio_usb(pico2_choupi 1)
   # This image owns TinyUSB's polling and CCID driver. Keep tud_task() and
   # endpoint operations in the main loop instead of racing the SDK IRQ worker.

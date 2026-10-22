@@ -36,6 +36,13 @@
 
 namespace jcvm {
 
+enum class InterpretorLocalType : uint8_t { Reference, Byte, Short, Int };
+
+struct InterpretorInitialLocal {
+  InterpretorLocalType type;
+  uint32_t value;
+};
+
 class Interpretor {
 public:
   /// Default constructor.
@@ -60,11 +67,24 @@ public:
               const jref_t *initial_references,
               uint8_t initial_reference_count);
 
+  /// Start a nested virtual method call with typed local arguments.
+  Interpretor(Context &context, const uint16_t methodOffset,
+              const jpackage_ID_t methodPackage,
+              const InterpretorInitialLocal *initial_locals,
+              uint8_t initial_local_count,
+              bool captureUncaughtExceptions = false);
+
   /// Run the Java Card Interpretor and return its ISO 7816 status word.
   uint16_t run() noexcept; // All exceptions must be handling there.
 
   uint8_t lastExceptionId() const noexcept {
     return static_cast<uint8_t>(last_exception_id);
+  }
+  uint16_t lastExceptionReason() const noexcept {
+    return last_exception_reason;
+  }
+  uint16_t lastUncaughtExceptionReference() const noexcept {
+    return last_uncaught_exception_reference;
   }
   uint8_t lastExceptionOpcode() const noexcept {
     return last_exception_opcode;
@@ -107,10 +127,16 @@ private:
   uint8_t installLength = 0;
   const jref_t *initialReferences = nullptr;
   uint8_t initialReferenceCount = 0;
+  const InterpretorInitialLocal *initialLocals = nullptr;
+  uint8_t initialLocalCount = 0;
+  uint16_t entryFrameDepth = 0;
   bool startsAtMethodOffset = false;
+  bool capture_uncaught_exceptions = false;
   bool installMethodEntry = false;
   uint16_t status_word = 0x9000;
   Exceptions last_exception_id = Exceptions::NotYetImplemented;
+  uint16_t last_exception_reason = 0;
+  uint16_t last_uncaught_exception_reference = 0;
   uint8_t last_exception_opcode = 0;
   uint32_t last_exception_pc = 0;
   uint32_t last_exception_prefix = 0;

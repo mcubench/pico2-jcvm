@@ -20,6 +20,11 @@ struct CardCallbacks {
                       uint16_t command_length, uint8_t *response,
                       uint16_t response_capacity, uint16_t *response_length) =
       nullptr;
+  uint16_t (*process_card_manager)(void *context, const uint8_t *command,
+                                   uint16_t command_length, uint8_t *response,
+                                   uint16_t response_capacity,
+                                   uint16_t *response_length) = nullptr;
+  void (*reset_card_manager)(void *context) = nullptr;
 };
 
 enum class SessionResult { NoResponse, Response, ProtocolError };
@@ -44,6 +49,7 @@ private:
   CardCallbacks callbacks_;
   bool powered_ = false;
   bool selected_ = false;
+  bool card_manager_selected_ = false;
 };
 
 } // namespace choupi::vpcd

@@ -26,6 +26,7 @@
 */
 
 #include "stack.hpp"
+
 #include "debug.hpp"
 #include "jc_utils.hpp"
 
@@ -44,7 +45,8 @@ namespace jcvm {
  * @return void.
  */
 void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
-                       const uint8_t max_operand_stack, const uint8_t *pc)
+                       const uint8_t max_operand_stack, const uint8_t *pc,
+                       const bool arguments_on_caller_stack)
 #if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
     noexcept
 #endif
@@ -60,20 +62,24 @@ void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
 
     Frame &previous_frame = this->getCurrentFrame();
 
+    if (arguments_on_caller_stack) {
 #ifdef JCRE_STACK_OVERFLOW_PROTECTION
-
-    TRACE_JCVM_DEBUG("PUSH_FRAME nargs=%u available=%d",
-                     static_cast<unsigned>(nargs),
-                     static_cast<int>(previous_frame.getTOS() -
-                                      previous_frame.getOP()));
-    if ((previous_frame.getTOS() - nargs) < previous_frame.getOP()) {
-      // Stack underflow detected!!!!
-      throw Exceptions::StackUnderflowException;
-    }
-
+      TRACE_JCVM_DEBUG("PUSH_FRAME nargs=%u available=%d",
+                       static_cast<unsigned>(nargs),
+                       static_cast<int>(previous_frame.getTOS() -
+                                        previous_frame.getOP()));
+      if ((previous_frame.getTOS() - nargs) < previous_frame.getOP()) {
+        // Stack underflow detected!!!!
+        throw Exceptions::StackUnderflowException;
+      }
 #endif /* JCRE_STACK_OVERFLOW_PROTECTION */
-
-    previous_frame.setTOS(previous_frame.getTOS() - nargs);
+      previous_frame.setTOS(previous_frame.getTOS() - nargs);
+    } else if (previous_frame.getTOS() < previous_frame.getOP()) {
+      // Native entry may start after its Java operands have been consumed,
+      // leaving TOS below the operand-stack base. Place the nested frame at
+      // the base so its locals cannot alias the caller's locals.
+      previous_frame.setTOS(previous_frame.getOP());
+    }
     new_fp = previous_frame.getTOS();
   }
 

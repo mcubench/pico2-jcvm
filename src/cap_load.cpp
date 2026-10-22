@@ -3,21 +3,39 @@
 #include "gp_delete.hpp"
 
 #ifdef PC_VERSION
+#include <cstdio>
+#include <cstdlib>
 // The host filesystem backend writes each record synchronously, so it has no
 // separate snapshot flush phase.
-extern "C" uint8_t fs_sync(void) { return 0; }
+namespace {
+bool test_fail_install_journal_clear_sync_armed = false;
+bool test_fail_install_journal_clear_sync_injected = false;
+} // namespace
+
+extern "C" uint8_t fs_sync(void) {
+  if (test_fail_install_journal_clear_sync_armed) {
+    test_fail_install_journal_clear_sync_armed = false;
+    test_fail_install_journal_clear_sync_injected = true;
+    std::fprintf(stderr,
+                 "VPCD:TEST_FAILED_INSTALL_JOURNAL_CLEAR_SYNC\n");
+    return 1;
+  }
+  return 0;
+}
 #else
 extern "C" uint8_t fs_sync(void);
 #endif
 #include "heap.hpp"
 #include "jc_cap/jc_cap_static_field.hpp"
 #include "jc_handlers/flashmemory.hpp"
+#include "jc_handlers/jc_import.hpp"
 #include "jc_handlers/jc_static.hpp"
 #include "jc_handlers/package.hpp"
 #include "jc_types/jc_array.hpp"
 #include "ffi.h"
 
 #include <cstring>
+#include <cstddef>
 
 extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
                                              const uint8_t *package_aid,
@@ -144,6 +162,26 @@ constexpr uint8_t kLifecycleTagType = 0x02;
 constexpr uint8_t kLifecyclePackageId = 0xff;
 constexpr uint8_t kAppletDeletedState = 1;
 constexpr uint8_t kPackageDeletedState = 2;
+constexpr uint8_t kInstallJournalKind = 3;
+constexpr uint32_t kInstallJournalMagic = 0x31534e49; // "INS1"
+
+bool aid_matches(const uint8_t *left, uint8_t left_length,
+                 const uint8_t *right, size_t right_length) noexcept;
+
+#pragma pack(push, 1)
+struct InstallJournalRecord {
+  uint32_t magic;
+  uint8_t package_id;
+  uint8_t package_aid_length;
+  uint8_t applet_aid_length;
+  uint8_t instance_aid_length;
+  uint16_t applet_class_index;
+  uint8_t package_aid[16];
+  uint8_t applet_aid[16];
+  uint8_t instance_aid[16];
+  uint32_t crc32;
+};
+#pragma pack(pop)
 
 jcvm::fs::Tag lifecycle_tag(uint8_t package_id, uint8_t kind) noexcept {
   jcvm::fs::Tag tag;
@@ -153,6 +191,148 @@ jcvm::fs::Tag lifecycle_tag(uint8_t package_id, uint8_t kind) noexcept {
   tag.value[2] = package_id;
   tag.value[3] = kind;
   return tag;
+}
+
+uint32_t install_journal_crc32(const uint8_t *data, size_t length) noexcept {
+  uint32_t crc = 0xffffffffu;
+  for (size_t index = 0; index < length; ++index) {
+    crc ^= data[index];
+    for (unsigned int bit = 0; bit < 8; ++bit) {
+      const uint32_t mask = 0u - (crc & 1u);
+      crc = (crc >> 1) ^ (0xedb88320u & mask);
+    }
+  }
+  return ~crc;
+}
+
+bool valid_install_journal(const InstallJournalRecord &record,
+                           uint8_t package_id) noexcept {
+  return record.magic == kInstallJournalMagic &&
+         record.package_id == package_id &&
+         record.package_aid_length >= 5 && record.package_aid_length <= 16 &&
+         record.applet_aid_length >= 5 && record.applet_aid_length <= 16 &&
+         record.instance_aid_length >= 5 &&
+         record.instance_aid_length <= 16 &&
+         record.applet_class_index != 0xffff &&
+         record.crc32 == install_journal_crc32(
+                             reinterpret_cast<const uint8_t *>(&record),
+                             offsetof(InstallJournalRecord, crc32));
+}
+
+bool read_install_journal(uint8_t package_id,
+                          InstallJournalRecord &record) noexcept {
+  const auto tag = lifecycle_tag(package_id, kInstallJournalKind);
+  if (fs_exists(tag.value, tag.len) == 0) return false;
+  try {
+    auto [length, data] =
+        jcvm::FlashMemory_Handler::readPersistentRecord(tag);
+    if (length != sizeof(record) || data == nullptr) return false;
+    std::memcpy(&record, data.get(), sizeof(record));
+    return valid_install_journal(record, package_id);
+  } catch (...) {
+    return false;
+  }
+}
+
+bool write_install_journal(const InstallJournalRecord &record) noexcept {
+  const auto tag = lifecycle_tag(record.package_id, kInstallJournalKind);
+  return jcvm::FlashMemory_Handler::writePersistentRecord(
+      tag, reinterpret_cast<const uint8_t *>(&record), sizeof(record));
+}
+
+bool clear_install_journal(uint8_t package_id) noexcept {
+#ifdef PC_VERSION
+  static bool failure_injected = false;
+  const char *leave_journal =
+      std::getenv("CHOUPI_TEST_LEAVE_INSTALL_JOURNAL_ONCE");
+  if (leave_journal != nullptr && leave_journal[0] == '1' &&
+      !failure_injected) {
+    failure_injected = true;
+    std::fprintf(stderr, "VPCD:TEST_LEFT_INSTALL_JOURNAL package=%u\n",
+                 static_cast<unsigned>(package_id));
+    return true;
+  }
+  const char *fail_clear_sync =
+      std::getenv("CHOUPI_TEST_FAIL_INSTALL_JOURNAL_CLEAR_SYNC_ONCE");
+  if (fail_clear_sync != nullptr && fail_clear_sync[0] == '1' &&
+      !test_fail_install_journal_clear_sync_injected) {
+    test_fail_install_journal_clear_sync_armed = true;
+    std::fprintf(stderr,
+                 "VPCD:TEST_ARMED_INSTALL_JOURNAL_CLEAR_SYNC package=%u\n",
+                 static_cast<unsigned>(package_id));
+  }
+#endif
+  const auto tag = lifecycle_tag(package_id, kInstallJournalKind);
+  if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction())
+    return false;
+  if (!jcvm::FlashMemory_Handler::erasePersistentTag(tag)) {
+    (void)jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    return false;
+  }
+  return jcvm::FlashMemory_Handler::commitPersistentWriteTransaction();
+}
+
+bool recover_pending_install_journals() noexcept {
+  bool recovered_all = true;
+  for (uint8_t package_id = kFirstDynamicPackageId;
+       package_id < kFirstDynamicPackageId + kDynamicPackageCount;
+       ++package_id) {
+    InstallJournalRecord record{};
+    if (!read_install_journal(package_id, record)) {
+      const auto tag = lifecycle_tag(package_id, kInstallJournalKind);
+      if (fs_exists(tag.value, tag.len) != 0) recovered_all = false;
+      continue;
+    }
+
+    uint8_t stored_package_aid[16]{};
+    uint8_t stored_package_aid_length = 0;
+    uint32_t cap_length = 0;
+    if (!cap_store_package_aid(package_id, stored_package_aid,
+                               stored_package_aid_length) ||
+        cap_store_data_for_package(package_id, &cap_length) == nullptr ||
+        cap_length == 0 ||
+        !aid_matches(record.package_aid, record.package_aid_length,
+                     stored_package_aid, stored_package_aid_length)) {
+      recovered_all = false;
+      continue;
+    }
+
+    uint8_t existing_package_id = 0xff;
+    uint8_t existing_applet_aid[16]{};
+    uint8_t existing_applet_aid_length = 0;
+    uint16_t existing_class_index = 0xffff;
+    if (cap_store_find_instance(record.instance_aid,
+                                record.instance_aid_length,
+                                existing_package_id, existing_applet_aid,
+                                existing_applet_aid_length,
+                                existing_class_index)) {
+      if (existing_package_id != package_id ||
+          !aid_matches(record.applet_aid, record.applet_aid_length,
+                       existing_applet_aid,
+                       existing_applet_aid_length) ||
+          existing_class_index != record.applet_class_index) {
+        recovered_all = false;
+        continue;
+      }
+    } else if (choupi_store_cap_instance(
+                   package_id, record.applet_aid,
+                   record.applet_aid_length, record.instance_aid,
+                   record.instance_aid_length,
+                   record.applet_class_index) != 0) {
+      recovered_all = false;
+      continue;
+    }
+
+    if (!clear_install_journal(package_id)) {
+      recovered_all = false;
+    } else {
+#ifdef PC_VERSION
+      std::fprintf(stderr, "VPCD:INSTALL_JOURNAL_RECOVERED package=%u\n",
+                   static_cast<unsigned>(package_id));
+#endif
+    }
+  }
+  return recovered_all;
 }
 
 bool read_lifecycle_state(const jcvm::fs::Tag &tag,
@@ -250,6 +430,40 @@ bool aid_matches(const uint8_t *left, uint8_t left_length,
          std::memcmp(left, right, right_length) == 0;
 }
 
+enum class CapImportValidation : uint8_t {
+  valid,
+  missing_package,
+  internal_error,
+};
+
+CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
+  try {
+    const jcvm::Package package(package_id);
+    const jcvm::JC_Cap cap = package.getCap();
+    const jcvm::jc_cap_import_component *component = cap.getImport();
+    if (component == nullptr) {
+      return CapImportValidation::valid;
+    }
+
+    jcvm::Import_Handler imports(package);
+    for (uint16_t index = 0; index < component->count; ++index) {
+      const auto *imported_package =
+          imports.getPackageAID(static_cast<uint8_t>(index));
+      try {
+        (void)imports.getPackageIndex(imported_package);
+      } catch (jcvm::Exceptions exception) {
+        if (exception == jcvm::RuntimeException) {
+          return CapImportValidation::missing_package;
+        }
+        return CapImportValidation::internal_error;
+      }
+    }
+  } catch (...) {
+    return CapImportValidation::internal_error;
+  }
+  return CapImportValidation::valid;
+}
+
 bool allocate_dynamic_package_id(uint8_t &package_id) noexcept {
   for (uint8_t offset = 0; offset < kDynamicPackageCount; ++offset) {
     const uint8_t candidate =
@@ -320,15 +534,16 @@ bool initialize_cap_static_arrays(uint8_t package_id) {
     if (byte_count % entry_size != 0) return false;
 
     // CAP StaticField array initializers correspond to the 16-bit static
-    // image slot at the same initializer index. CHOUPI's static-field API
-    // stores that byte offset in an 8-bit tag.
+    // image slot at the same initializer index. The persistent tag stores
+    // the complete 16-bit byte offset, preserving the legacy 8-bit form when
+    // the offset is representable there.
     const size_t static_offset = static_cast<size_t>(index) * 2;
     if (static_offset + sizeof(jcvm::jref_t) > image_size ||
-        static_offset > UINT8_MAX) {
+        static_offset > UINT16_MAX) {
       return false;
     }
     const auto tag = jcvm::FlashMemory_Handler::getStaticFieldTag(
-        package_id, static_cast<uint8_t>(static_offset));
+        package_id, static_cast<uint16_t>(static_offset));
     if (fs_exists(tag.value, tag.len) != 0 &&
         jcvm::FlashMemory_Handler::getPersistentField_Type(tag) !=
             jcvm::FieldType::FIELD_TYPE_UNINITIALIZED) {
@@ -690,6 +905,17 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
   }
   resolved_package_id = package_id_;
 
+  const CapImportValidation import_validation =
+      validate_cap_imports(resolved_package_id);
+  if (import_validation == CapImportValidation::missing_package) {
+    install_failure_stage_ = 10;
+    return false;
+  }
+  if (import_validation != CapImportValidation::valid) {
+    install_failure_stage_ = 9;
+    return false;
+  }
+
   if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
     install_failure_stage_ = 7;
     return false;
@@ -728,14 +954,25 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
       install_failure_stage_ = rollback() ? 5 : 8;
       return false;
     }
-    if (fs_sync() != 0) {
+    InstallJournalRecord journal{};
+    journal.magic = kInstallJournalMagic;
+    journal.package_id = resolved_package_id;
+    journal.package_aid_length = load_package_aid_length_;
+    journal.applet_aid_length = applet_aid_length;
+    journal.instance_aid_length = instance_aid_length;
+    journal.applet_class_index = applet_class_index;
+    std::memcpy(journal.package_aid, load_package_aid_,
+                journal.package_aid_length);
+    std::memcpy(journal.applet_aid, applet_aid, applet_aid_length);
+    std::memcpy(journal.instance_aid, instance_aid, instance_aid_length);
+    journal.crc32 = install_journal_crc32(
+        reinterpret_cast<const uint8_t *>(&journal),
+        offsetof(InstallJournalRecord, crc32));
+    if (!write_install_journal(journal)) {
       install_failure_stage_ = rollback() ? 6 : 8;
       return false;
     }
-    if (choupi_store_cap_instance(resolved_package_id, applet_aid,
-                                  applet_aid_length, instance_aid,
-                                  instance_aid_length,
-                                  applet_class_index) != 0) {
+    if (fs_sync() != 0) {
       install_failure_stage_ = rollback() ? 6 : 8;
       return false;
     }
@@ -745,6 +982,20 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
       return false;
     }
     transaction_active = false;
+    // The committed filesystem journal is the recovery point. If this
+    // separate CAP-header update is interrupted, restoreInstalled() replays
+    // the journal and publishes the registry entry idempotently.
+    if (choupi_store_cap_instance(resolved_package_id, applet_aid,
+                                  applet_aid_length, instance_aid,
+                                  instance_aid_length,
+                                  applet_class_index) != 0) {
+      install_failure_stage_ = 8;
+      return false;
+    }
+    if (!clear_install_journal(resolved_package_id)) {
+      install_failure_stage_ = 8;
+      return false;
+    }
   } catch (...) {
     install_failure_stage_ = rollback() ? 9 : 8;
     return false;
@@ -845,8 +1096,13 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
   return 0x9000;
 }
 
+bool CapLoadSession::recoverPendingInstalls() noexcept {
+  return recover_pending_install_journals();
+}
+
 void CapLoadSession::restoreInstalled() noexcept {
   reset();
+  (void)recoverPendingInstalls();
   for (uint8_t id = kFirstDynamicPackageId;
        id < kFirstDynamicPackageId + kDynamicPackageCount; ++id) {
     const uint8_t count = cap_store_package_instance_count(id);

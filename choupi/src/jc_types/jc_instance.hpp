@@ -53,6 +53,7 @@ private:
   uint8_t *persistent_tag_overflow = nullptr;
   bool has_persistent_tag = false;
   mutable bool persistent_fields_loaded = true;
+  mutable uint32_t persistent_rollback_generation = 0;
 
   /**
    * Instance fields' values. Each element are encoded on one words (SHORT

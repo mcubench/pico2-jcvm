@@ -82,12 +82,11 @@ bool is_select_for_applet(const uint8_t *command, const uint16_t length,
   uint8_t aid[16]{};
   uint8_t aid_length = 0;
   if (command == nullptr || length < 5 || command[0] != 0x00 ||
-      command[1] != 0xa4 || command[2] != 0x04 || command[3] != 0x00 ||
+      command[1] != 0xa4 || command[2] != 0x04 ||
+      (command[3] & 0xef) != 0 ||
       !context.copyAppletAID(aid, aid_length) || command[4] != aid_length ||
       (length != static_cast<uint16_t>(5 + aid_length) &&
-       length != static_cast<uint16_t>(6 + aid_length)) ||
-      (length == static_cast<uint16_t>(6 + aid_length) &&
-       command[length - 1] != 0x00)) {
+       length != static_cast<uint16_t>(6 + aid_length))) {
     return false;
   }
   return std::memcmp(command + 5, aid, aid_length) == 0;
@@ -207,6 +206,10 @@ void collect_heap_after_apdu() {
     return;
   }
 
+#ifdef CHOUPI_DEBUG_HEAP_GC
+  static uint32_t collection_sequence = 0;
+#endif
+
   jcvm::Context &context = *selected_applet_context;
   if (!context.getStack().empty()) {
     std::printf("CHOUPI:HEAP_GC_SKIP reason=active_java_frames\r\n");
@@ -216,6 +219,30 @@ void collect_heap_after_apdu() {
   try {
     const auto summary = context.getHeap().collectUnreachableFrom(
         enumerate_selected_applet_roots, &context);
+#ifdef CHOUPI_DEBUG_HEAP_GC
+    ++collection_sequence;
+    if ((collection_sequence % 32) == 0 || !summary.complete) {
+      std::printf(
+          "CHOUPI:HEAP_GC summary seq=%lu arrays=%lu/%lu reclaimed=%lu "
+          "instances=%lu/%lu reclaimed=%lu roots_static=%lu "
+          "roots_runtime=%lu tagged_arrays=%lu tagged_instances=%lu "
+          "invalid=%lu edge_failures=%lu\r\n",
+          static_cast<unsigned long>(collection_sequence),
+          static_cast<unsigned long>(summary.arrays_reachable),
+          static_cast<unsigned long>(summary.arrays_total),
+          static_cast<unsigned long>(summary.arrays_reclaimed),
+          static_cast<unsigned long>(summary.instances_reachable),
+          static_cast<unsigned long>(summary.instances_total),
+          static_cast<unsigned long>(summary.instances_reclaimed),
+          static_cast<unsigned long>(summary.static_roots),
+          static_cast<unsigned long>(summary.runtime_roots),
+          static_cast<unsigned long>(summary.persistent_tagged_arrays),
+          static_cast<unsigned long>(summary.persistent_tagged_instances),
+          static_cast<unsigned long>(summary.invalid_references),
+          static_cast<unsigned long>(summary.edge_load_failures));
+      std::fflush(stdout);
+    }
+#endif
     if (!summary.complete) {
       std::printf(
           "CHOUPI:HEAP_GC_SKIP invalid=%u edge_failures=%u\r\n",
@@ -228,10 +255,66 @@ void collect_heap_after_apdu() {
 }
 #endif
 
+struct RuntimeDiagnostics {
+  uint16_t status = 0x6f00;
+  uint16_t exception_id = 0;
+  uint16_t stack_depth = 0;
+  uint8_t opcode = 0;
+  uint32_t pc = 0;
+  uint32_t opcode_history = 0;
+  uint32_t depth_history = 0;
+  bool field_bounds_failure = false;
+  uint16_t field_index = 0;
+  uint16_t field_count = 0;
+  uint16_t field_package = 0;
+  uint16_t field_class = 0;
+  uint16_t field_value_ref = 0;
+  bool field_cp_lookup_recorded = false;
+  bool field_cp_lookup_succeeded = false;
+  uint16_t field_cp_index = 0;
+  uint8_t field_cp_package = 0;
+  uint8_t field_cp_token = 0;
+  uint8_t field_cp_exception = 0;
+  bool field_heap_ref_recorded = false;
+  uint16_t field_heap_ref = 0;
+  uint16_t field_heap_offset = 0;
+  bool field_heap_is_array = false;
+  bool persistent_restore_failure = false;
+  uint16_t persistent_restore_index = 0;
+  uint16_t persistent_restore_package = 0;
+  uint16_t persistent_restore_class = 0;
+  uint8_t persistent_restore_type = 0;
+  uint8_t persistent_restore_stage = 0;
+  uint8_t persistent_restore_exception = 0;
+  uint8_t putfield_stage = 0;
+  uint16_t putfield_stage_object = 0;
+  uint16_t putfield_stage_value = 0;
+  uint8_t putfield_stage_exception = 0;
+  uint8_t field_write_stage = 0;
+  uint16_t field_write_package = 0;
+  uint16_t field_write_class = 0;
+  uint16_t field_write_index = 0;
+  uint16_t field_write_value = 0;
+  uint16_t field_write_count = 0;
+  uint8_t field_write_flags = 0;
+  uint8_t field_write_exception = 0;
+  bool array_write_failure = false;
+  uint8_t array_write_stage = 0;
+  uint16_t array_write_index = 0;
+  uint16_t array_write_size = 0;
+  uint16_t array_write_ref = 0;
+  uint8_t array_write_type = 0;
+  uint8_t array_write_exception_id = 0;
+};
+RuntimeDiagnostics runtime_diagnostics;
 }
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifdef PC_VERSION
+uint8_t choupi_pc_initialize_storage(void);
 #endif
 
 uint16_t choupi_vm_last_native_method_index();
@@ -243,6 +326,208 @@ uint32_t choupi_install_debug_context(void);
 #endif
 
 void choupi_ccid_task(void);
+
+void choupi_vm_runtime_debug_state(uint16_t *status, uint16_t *exception_id,
+                                   uint8_t *opcode, uint32_t *pc,
+                                   uint16_t *stack_depth,
+                                   uint32_t *opcode_history,
+                                   uint32_t *depth_history,
+                                   uint8_t *field_bounds_failure,
+                                   uint16_t *field_index,
+                                   uint16_t *field_count,
+                                   uint16_t *field_package,
+                                   uint16_t *field_class,
+                                   uint16_t *field_value_ref) {
+  if (status != nullptr) *status = runtime_diagnostics.status;
+  if (exception_id != nullptr)
+    *exception_id = runtime_diagnostics.exception_id;
+  if (opcode != nullptr) *opcode = runtime_diagnostics.opcode;
+  if (pc != nullptr) *pc = runtime_diagnostics.pc;
+  if (stack_depth != nullptr) *stack_depth = runtime_diagnostics.stack_depth;
+  if (opcode_history != nullptr)
+    *opcode_history = runtime_diagnostics.opcode_history;
+  if (depth_history != nullptr)
+    *depth_history = runtime_diagnostics.depth_history;
+  if (field_bounds_failure != nullptr)
+    *field_bounds_failure = runtime_diagnostics.field_bounds_failure ? 1 : 0;
+  if (field_index != nullptr) *field_index = runtime_diagnostics.field_index;
+  if (field_count != nullptr) *field_count = runtime_diagnostics.field_count;
+  if (field_package != nullptr)
+    *field_package = runtime_diagnostics.field_package;
+  if (field_class != nullptr) *field_class = runtime_diagnostics.field_class;
+  if (field_value_ref != nullptr)
+    *field_value_ref = runtime_diagnostics.field_value_ref;
+}
+
+void choupi_vm_record_field_bounds(uint16_t field_index, uint16_t field_count,
+                                  uint16_t field_package,
+                                  uint16_t field_class,
+                                  uint16_t field_value_ref) {
+  runtime_diagnostics.field_bounds_failure = true;
+  runtime_diagnostics.field_index = field_index;
+  runtime_diagnostics.field_count = field_count;
+  runtime_diagnostics.field_package = field_package;
+  runtime_diagnostics.field_class = field_class;
+  runtime_diagnostics.field_value_ref = field_value_ref;
+}
+
+void choupi_vm_record_field_cp_lookup(uint8_t package_id, uint16_t cp_index,
+                                      uint8_t succeeded, uint8_t token,
+                                      uint8_t exception_id) {
+  runtime_diagnostics.field_cp_lookup_recorded = true;
+  runtime_diagnostics.field_cp_lookup_succeeded = succeeded != 0;
+  runtime_diagnostics.field_cp_package = package_id;
+  runtime_diagnostics.field_cp_index = cp_index;
+  runtime_diagnostics.field_cp_token = token;
+  runtime_diagnostics.field_cp_exception = exception_id;
+}
+
+void choupi_vm_field_cp_state(uint8_t *recorded, uint8_t *succeeded,
+                              uint8_t *package_id, uint16_t *cp_index,
+                              uint8_t *token, uint8_t *exception_id) {
+  if (recorded != nullptr)
+    *recorded = runtime_diagnostics.field_cp_lookup_recorded ? 1 : 0;
+  if (succeeded != nullptr)
+    *succeeded = runtime_diagnostics.field_cp_lookup_succeeded ? 1 : 0;
+  if (package_id != nullptr)
+    *package_id = runtime_diagnostics.field_cp_package;
+  if (cp_index != nullptr) *cp_index = runtime_diagnostics.field_cp_index;
+  if (token != nullptr) *token = runtime_diagnostics.field_cp_token;
+  if (exception_id != nullptr)
+    *exception_id = runtime_diagnostics.field_cp_exception;
+}
+
+void choupi_vm_record_field_heap_ref(uint16_t objectref, uint16_t offset,
+                                     uint8_t is_array) {
+  runtime_diagnostics.field_heap_ref_recorded = true;
+  runtime_diagnostics.field_heap_ref = objectref;
+  runtime_diagnostics.field_heap_offset = offset;
+  runtime_diagnostics.field_heap_is_array = is_array != 0;
+}
+
+void choupi_vm_field_heap_ref_state(uint8_t *recorded, uint16_t *objectref,
+                                    uint16_t *offset, uint8_t *is_array) {
+  if (recorded != nullptr)
+    *recorded = runtime_diagnostics.field_heap_ref_recorded ? 1 : 0;
+  if (objectref != nullptr) *objectref = runtime_diagnostics.field_heap_ref;
+  if (offset != nullptr) *offset = runtime_diagnostics.field_heap_offset;
+  if (is_array != nullptr)
+    *is_array = runtime_diagnostics.field_heap_is_array ? 1 : 0;
+}
+
+void choupi_vm_record_persistent_restore_failure(uint16_t package_id,
+                                                uint16_t class_index,
+                                                uint16_t field_index,
+                                                uint8_t field_type,
+                                                uint8_t stage,
+                                                uint8_t exception_id) {
+  runtime_diagnostics.persistent_restore_failure = true;
+  runtime_diagnostics.persistent_restore_package = package_id;
+  runtime_diagnostics.persistent_restore_class = class_index;
+  runtime_diagnostics.persistent_restore_index = field_index;
+  runtime_diagnostics.persistent_restore_type = field_type;
+  runtime_diagnostics.persistent_restore_stage = stage;
+  runtime_diagnostics.persistent_restore_exception = exception_id;
+}
+
+void choupi_vm_persistent_restore_failure_state(
+    uint8_t *recorded, uint16_t *package_id, uint16_t *class_index,
+    uint16_t *field_index, uint8_t *field_type, uint8_t *stage,
+    uint8_t *exception_id) {
+  if (recorded != nullptr)
+    *recorded = runtime_diagnostics.persistent_restore_failure ? 1 : 0;
+  if (package_id != nullptr)
+    *package_id = runtime_diagnostics.persistent_restore_package;
+  if (class_index != nullptr)
+    *class_index = runtime_diagnostics.persistent_restore_class;
+  if (field_index != nullptr)
+    *field_index = runtime_diagnostics.persistent_restore_index;
+  if (field_type != nullptr)
+    *field_type = runtime_diagnostics.persistent_restore_type;
+  if (stage != nullptr) *stage = runtime_diagnostics.persistent_restore_stage;
+  if (exception_id != nullptr)
+    *exception_id = runtime_diagnostics.persistent_restore_exception;
+}
+
+void choupi_vm_record_putfield_stage(uint8_t stage, uint16_t objectref,
+                                     uint16_t value, uint8_t exception_id) {
+  runtime_diagnostics.putfield_stage = stage;
+  runtime_diagnostics.putfield_stage_object = objectref;
+  runtime_diagnostics.putfield_stage_value = value;
+  runtime_diagnostics.putfield_stage_exception = exception_id;
+}
+
+void choupi_vm_putfield_stage_state(uint8_t *stage, uint16_t *objectref,
+                                    uint16_t *value, uint8_t *exception_id) {
+  if (stage != nullptr) *stage = runtime_diagnostics.putfield_stage;
+  if (objectref != nullptr)
+    *objectref = runtime_diagnostics.putfield_stage_object;
+  if (value != nullptr) *value = runtime_diagnostics.putfield_stage_value;
+  if (exception_id != nullptr)
+    *exception_id = runtime_diagnostics.putfield_stage_exception;
+}
+
+void choupi_vm_record_field_write(uint8_t stage, uint16_t package_id,
+                                  uint16_t class_index, uint16_t field_index,
+                                  uint16_t value, uint16_t field_count,
+                                  uint8_t flags, uint8_t exception_id) {
+  runtime_diagnostics.field_write_stage = stage;
+  runtime_diagnostics.field_write_package = package_id;
+  runtime_diagnostics.field_write_class = class_index;
+  runtime_diagnostics.field_write_index = field_index;
+  runtime_diagnostics.field_write_value = value;
+  runtime_diagnostics.field_write_count = field_count;
+  runtime_diagnostics.field_write_flags = flags;
+  runtime_diagnostics.field_write_exception = exception_id;
+}
+
+void choupi_vm_field_write_state(uint8_t *stage, uint16_t *package_id,
+                                 uint16_t *class_index, uint16_t *field_index,
+                                 uint16_t *value, uint16_t *field_count,
+                                 uint8_t *flags, uint8_t *exception_id) {
+  if (stage != nullptr) *stage = runtime_diagnostics.field_write_stage;
+  if (package_id != nullptr)
+    *package_id = runtime_diagnostics.field_write_package;
+  if (class_index != nullptr)
+    *class_index = runtime_diagnostics.field_write_class;
+  if (field_index != nullptr)
+    *field_index = runtime_diagnostics.field_write_index;
+  if (value != nullptr) *value = runtime_diagnostics.field_write_value;
+  if (field_count != nullptr)
+    *field_count = runtime_diagnostics.field_write_count;
+  if (flags != nullptr) *flags = runtime_diagnostics.field_write_flags;
+  if (exception_id != nullptr)
+    *exception_id = runtime_diagnostics.field_write_exception;
+}
+
+void choupi_vm_record_array_write_failure(uint8_t stage, uint16_t index,
+                                          uint16_t size, uint16_t ref,
+                                          uint8_t type,
+                                          uint8_t exception_id) {
+  if (runtime_diagnostics.array_write_failure) return;
+  runtime_diagnostics.array_write_failure = true;
+  runtime_diagnostics.array_write_stage = stage;
+  runtime_diagnostics.array_write_index = index;
+  runtime_diagnostics.array_write_size = size;
+  runtime_diagnostics.array_write_ref = ref;
+  runtime_diagnostics.array_write_type = type;
+  runtime_diagnostics.array_write_exception_id = exception_id;
+}
+
+void choupi_vm_array_write_failure_state(uint8_t *recorded, uint8_t *stage,
+                                         uint16_t *index, uint16_t *size,
+                                         uint16_t *ref, uint8_t *type,
+                                         uint8_t *exception_id) {
+  if (recorded != nullptr)
+    *recorded = runtime_diagnostics.array_write_failure ? 1 : 0;
+  if (stage != nullptr) *stage = runtime_diagnostics.array_write_stage;
+  if (index != nullptr) *index = runtime_diagnostics.array_write_index;
+  if (size != nullptr) *size = runtime_diagnostics.array_write_size;
+  if (ref != nullptr) *ref = runtime_diagnostics.array_write_ref;
+  if (type != nullptr) *type = runtime_diagnostics.array_write_type;
+  if (exception_id != nullptr)
+    *exception_id = runtime_diagnostics.array_write_exception_id;
+}
 
 uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                  uint16_t class_index, const uint8_t *aid,
@@ -328,6 +613,7 @@ uint16_t invoke_selected_applet_method(const uint8_t method_token,
   if (!selected_applet_context) {
     return 0x6999;
   }
+  selected_applet_context->resetSensitiveResult();
   try {
     jcvm::Context &context = *selected_applet_context;
     const jcvm::jref_t applet_ref = context.getRestoredAppletRef();
@@ -370,8 +656,8 @@ uint16_t choupi_vm_select_applet(void) {
   selected_applet_is_reselecting =
       selected_applet_reselection_process_pending;
   selected_applet_reselection_pending = false;
-  selected_applet_context->setAppletActive(true);
   selected_applet_is_selecting = true;
+  selected_applet_context->setAppletActive(true);
   const uint16_t status = invoke_selected_applet_method(6, &selected);
   selected_applet_is_selecting = false;
   selected_applet_is_reselecting = false;
@@ -411,6 +697,8 @@ extern "C" uint16_t choupi_vm_deselect_applet(
   selected_applet_context->getHeap().clearTransientArrays(
       jcvm::ClearEvent::CLEAR_ON_DESELECT);
   selected_applet_is_active = false;
+  selected_applet_reselection_pending = selecting_same_applet != 0 &&
+                                         status == 0x9000;
   return status;
 }
 
@@ -438,9 +726,16 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
                  command != nullptr && command_length > 1 ? command[1] : 0);
   }
 #endif
+#ifndef PC_VERSION
+  std::printf("CHOUPI:APDU_PROCESS stage=begin\r\n");
+  std::fflush(stdout);
+#endif
   SelectingAppletProcessScope selection_scope(
       command, command_length,
       selected_applet_context ? selected_applet_context.get() : nullptr);
+  if (selected_applet_context) {
+    selected_applet_context->resetSensitiveResult();
+  }
   if (response_length != nullptr) {
     *response_length = 0;
   }
@@ -453,6 +748,10 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
   uint16_t data_length = 0;
   try {
     if (!selected_applet_context || !selected_applet_is_active) {
+#ifndef PC_VERSION
+      std::printf("CHOUPI:APDU_PROCESS stage=no_active_applet\r\n");
+      std::fflush(stdout);
+#endif
       return 0xffff; // CCID maps the no-selection sentinel to its default SW.
     }
     if (command == nullptr || command_length < 4) {
@@ -521,6 +820,11 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     context.setAPDUBufferRef(buffer_ref, lc,
                              parsed_command.expected_response_length,
                              parsed_command.has_expected_response_length);
+#ifdef PC_VERSION
+    if (apdu_trace) {
+      std::fprintf(stderr, "CHOUPI:APDU_PROCESS stage=buffer_ready\n");
+    }
+#endif
 
     jcvm::jref_t apdu_ref = context.getAPDUObjectRef();
     if (apdu_ref.isNullPointer()) {
@@ -571,6 +875,11 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
       context.setAPDUObjectRef(apdu_ref);
     }
 
+#ifdef PC_VERSION
+    if (apdu_trace) {
+      std::fprintf(stderr, "CHOUPI:APDU_PROCESS stage=method_lookup_done\n");
+    }
+#endif
     const jcvm::jref_t applet_ref = context.getRestoredAppletRef();
     const auto applet = heap.getInstance(applet_ref);
     jcvm::Package applet_package(applet->getPackageID());
@@ -585,9 +894,45 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
     jcvm::Interpretor interpretor(context, method.second,
                                   method.first.getPackageID(),
                                   initial_references, 2);
+#ifdef PC_VERSION
+    if (apdu_trace) {
+      std::fprintf(stderr,
+                   "CHOUPI:APDU_PROCESS stage=interpreter_begin package=%u "
+                   "method=%u\n",
+                   static_cast<unsigned>(method.first.getPackageID()),
+                   static_cast<unsigned>(method.second));
+    }
+#else
+    std::printf("CHOUPI:APDU_PROCESS stage=interpreter_begin package=%u method=%u\r\n",
+                static_cast<unsigned>(method.first.getPackageID()),
+                static_cast<unsigned>(method.second));
+    std::fflush(stdout);
+#endif
     {
       APDUProcessScope process_scope(context);
       status = interpretor.run();
+    }
+#ifndef PC_VERSION
+    std::printf("CHOUPI:APDU_PROCESS stage=interpreter_end sw=%04X\r\n",
+                static_cast<unsigned>(status));
+    std::fflush(stdout);
+#endif
+#ifdef PC_VERSION
+    if (apdu_trace) {
+      std::fprintf(stderr, "CHOUPI:APDU_PROCESS stage=interpreter_end sw=%04X\n",
+                   static_cast<unsigned>(status));
+    }
+#endif
+    if (status != 0x9000) {
+      fprintf(stderr,
+                   "VPCD:APPLET_PROCESS status=%04X exception=%u opcode=%02X "
+                   "pc=%08X stack=%u op_history=%08X depth_history=%08X\n",
+                   status, static_cast<unsigned>(interpretor.lastExceptionId()),
+                   static_cast<unsigned>(interpretor.lastExceptionOpcode()),
+                   static_cast<unsigned>(interpretor.lastExceptionPc()),
+                   static_cast<unsigned>(interpretor.lastExceptionStackDepth()),
+                   static_cast<unsigned>(interpretor.lastExceptionOpcodeHistory()),
+                   static_cast<unsigned>(interpretor.lastExceptionDepthHistory()));
     }
     if (status == 0x9000) {
       data_length = context.getAPDUOutgoingLength();
@@ -603,8 +948,6 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
       }
     }
     if (status == 0x9000 && parsed_command.has_expected_response_length &&
-  selected_applet_reselection_pending = false;
-  selected_applet_is_reselecting = false;
         data_length > parsed_command.expected_response_length) {
       const uint16_t first_chunk = parsed_command.expected_response_length;
       const uint16_t remaining =
@@ -633,7 +976,11 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
 #else
   // Keep Java handles stable by collecting only after interpreter/native call
   // scopes have returned and the complete typed root walk has succeeded.
+  std::printf("CHOUPI:APDU_PROCESS stage=gc_begin\r\n");
+  std::fflush(stdout);
   collect_heap_after_apdu();
+  std::printf("CHOUPI:APDU_PROCESS stage=gc_end\r\n");
+  std::fflush(stdout);
 #endif
 
   if (static_cast<uint32_t>(data_length) + 2 > response_capacity) {
@@ -643,11 +990,20 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
   response[data_length] = static_cast<uint8_t>(status >> 8);
   response[data_length + 1] = static_cast<uint8_t>(status);
   *response_length = static_cast<uint16_t>(data_length + 2);
+#ifndef PC_VERSION
+  std::printf("CHOUPI:APDU_PROCESS stage=end sw=%04X len=%u\r\n",
+              static_cast<unsigned>(status),
+              static_cast<unsigned>(*response_length));
+  std::fflush(stdout);
+#endif
   return status;
 }
 
 uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
   TRACE_JCVM_DEBUG("Starting JCVM");
+#ifdef PC_VERSION
+  if (choupi_pc_initialize_storage() != 0) return 0x6f00;
+#endif
 
   jcvm::japplet_ID_t id_applet = 0;
 
@@ -656,6 +1012,15 @@ uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
                                 id_class, id_method, true);
   const uint16_t status = interpretor.run();
+  runtime_diagnostics.status = status;
+  runtime_diagnostics.exception_id = interpretor.lastExceptionId();
+  runtime_diagnostics.opcode = interpretor.lastExceptionOpcode();
+  runtime_diagnostics.pc = interpretor.lastExceptionPc();
+  runtime_diagnostics.stack_depth = interpretor.lastExceptionStackDepth();
+  runtime_diagnostics.opcode_history =
+      interpretor.lastExceptionOpcodeHistory();
+  runtime_diagnostics.depth_history =
+      interpretor.lastExceptionDepthHistory();
 #ifndef PC_VERSION
   if (status != 0x9000) {
     std::printf(
@@ -669,10 +1034,7 @@ uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
         static_cast<unsigned long>(interpretor.lastExceptionOpcodeHistory()),
         static_cast<unsigned long>(interpretor.lastExceptionDepthHistory()));
     std::fflush(stdout);
-  selected_applet_is_reselecting = selected_applet_reselection_pending;
-  selected_applet_reselection_pending = false;
   }
-  selected_applet_is_reselecting = false;
 #endif
   return status;
 }
@@ -689,8 +1051,6 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
                                 uint32_t *exception_pc,
                                 uint32_t *exception_prefix,
                                 uint16_t *exception_operand,
-  selected_applet_reselection_pending = false;
-  selected_applet_is_reselecting = false;
                                 uint8_t *exception_stack_depth,
                                 uint32_t *exception_opcode_history,
                                 uint32_t *exception_depth_history,
@@ -699,18 +1059,13 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
   TRACE_JCVM_DEBUG("Starting CAP install method at offset %u",
                    static_cast<unsigned>(method_offset));
 #ifndef PC_VERSION
-  selected_applet_reselection_pending = selecting_same_applet != 0 &&
-                                         status == 0x9000;
   choupi_install_stage(0);
   choupi_install_context(0);
 #endif
-extern "C" uint8_t choupi_vm_is_reselecting_applet(void) {
-  return selected_applet_is_reselecting ? 1 : 0;
-}
-
   jcvm::Interpretor interpretor(0,
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
                                 method_offset, install_data, install_length);
+  interpretor.getCurrentContext().resetSensitiveResult();
   if (!interpretor.getCurrentContext().setAppletAID(instance_aid,
                                                     instance_aid_length)) {
     return 0x6a80;

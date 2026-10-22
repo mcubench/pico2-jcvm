@@ -56,7 +56,8 @@ bool Session::select_by_aid(const uint8_t *aid, const size_t aid_length,
                             const size_t command_length) const {
   if (aid == nullptr || command == nullptr || aid_length < 5 ||
       aid_length > 16 || command_length < 5 || command[0] != 0x00 ||
-      command[1] != 0xa4 || command[2] != 0x04 || command[3] != 0x00 ||
+      command[1] != 0xa4 || command[2] != 0x04 ||
+      (command[3] & 0xef) != 0 ||
       command[4] != aid_length ||
       (command_length != 5 + aid_length &&
        command_length != 6 + aid_length)) {
@@ -69,7 +70,8 @@ namespace {
 
 bool is_select_by_aid(const uint8_t *command, const size_t command_length) {
   if (command == nullptr || command_length < 5 || command[0] != 0x00 ||
-      command[1] != 0xa4 || command[2] != 0x04 || command[3] != 0x00 ||
+      command[1] != 0xa4 || command[2] != 0x04 ||
+      (command[3] & 0xef) != 0 ||
       command[4] < 5 || command[4] > 16) {
     return false;
   }
@@ -92,8 +94,12 @@ SessionResult Session::handle_message(const uint8_t *message,
     switch (message[0]) {
     case kControlOff:
       clear_or_deselect(false);
+      card_manager_selected_ = false;
       if (callbacks_.clear != nullptr) {
         callbacks_.clear(callbacks_.context);
+      }
+      if (callbacks_.reset_card_manager != nullptr) {
+        callbacks_.reset_card_manager(callbacks_.context);
       }
       powered_ = false;
       return SessionResult::NoResponse;
@@ -102,8 +108,12 @@ SessionResult Session::handle_message(const uint8_t *message,
       return SessionResult::NoResponse;
     case kControlReset:
       clear_or_deselect(false);
+      card_manager_selected_ = false;
       if (callbacks_.clear != nullptr) {
         callbacks_.clear(callbacks_.context);
+      }
+      if (callbacks_.reset_card_manager != nullptr) {
+        callbacks_.reset_card_manager(callbacks_.context);
       }
       powered_ = true;
       return SessionResult::NoResponse;
@@ -123,14 +133,20 @@ SessionResult Session::handle_message(const uint8_t *message,
     return SessionResult::Response;
   }
 
-  if (select_by_aid(kIsdAid, sizeof(kIsdAid), message, message_length)) {
+  const bool select_default_isd =
+      message_length == 5 && message[0] == 0x00 && message[1] == 0xa4 &&
+      message[2] == 0x04 && message[3] == 0x00 && message[4] == 0x00;
+  if (select_default_isd ||
+      select_by_aid(kIsdAid, sizeof(kIsdAid), message, message_length)) {
     clear_or_deselect(false);
+    card_manager_selected_ = true;
     append_select_response(response, kIsdAid, sizeof(kIsdAid));
     return SessionResult::Response;
   }
 
   if (select_by_aid(applet_aid_.data(), applet_aid_.size(), message,
                     message_length)) {
+    card_manager_selected_ = false;
     clear_or_deselect(true);
     if (callbacks_.restore == nullptr ||
         callbacks_.restore(callbacks_.context, applet_aid_.data(),
@@ -173,12 +189,28 @@ SessionResult Session::handle_message(const uint8_t *message,
   }
 
   if (is_select_by_aid(message, message_length)) {
+    card_manager_selected_ = false;
     clear_or_deselect(false);
     append_status(response, 0x6a82);
     return SessionResult::Response;
   }
 
   if (!selected_) {
+    if (card_manager_selected_ && callbacks_.process_card_manager != nullptr) {
+      response.resize(kResponseCapacity);
+      uint16_t response_length = 0;
+      const uint16_t status = callbacks_.process_card_manager(
+          callbacks_.context, message,
+          static_cast<uint16_t>(message_length), response.data(),
+          static_cast<uint16_t>(response.size()), &response_length);
+      if (status == 0xffff || response_length < 2 ||
+          response_length > response.size()) {
+        append_status(response, 0x6999);
+        return SessionResult::Response;
+      }
+      response.resize(response_length);
+      return SessionResult::Response;
+    }
     append_status(response, 0x6999);
     return SessionResult::Response;
   }
@@ -203,6 +235,10 @@ SessionResult Session::handle_message(const uint8_t *message,
 
 void Session::disconnect() {
   clear_or_deselect(false);
+  card_manager_selected_ = false;
+  if (callbacks_.reset_card_manager != nullptr) {
+    callbacks_.reset_card_manager(callbacks_.context);
+  }
   powered_ = false;
 }
 

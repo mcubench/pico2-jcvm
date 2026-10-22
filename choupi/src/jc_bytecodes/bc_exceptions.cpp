@@ -32,8 +32,10 @@
 #include "../jc_types/jc_instance.hpp"
 #include "../stack.hpp"
 #include "bytecodes.hpp"
+
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
 
 namespace jcvm {
 
@@ -144,6 +146,18 @@ void Bytecodes::doThrow(jref_t objectref) {
   auto exception_class = exception_cp.resolveClassref(
       exception_cp.getClassRefFromClassIndex(exception->getClassIndex()));
   bool checking_caller_frame = false;
+#ifdef PC_VERSION
+  const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
+  const bool trace_dispatch = trace_setting != nullptr &&
+                              std::strcmp(trace_setting, "1") == 0;
+  if (trace_dispatch) {
+    std::fprintf(stderr,
+                 "CHOUPI:EXCEPTION_THROW package=%u class=%u fields=%u\n",
+                 static_cast<unsigned>(exception->getPackageID()),
+                 static_cast<unsigned>(exception->getClassIndex()),
+                 static_cast<unsigned>(exception->getNumberOfFields()));
+  }
+#endif
 
 #ifndef PC_VERSION
   static uint8_t exception_trace_budget = 0;
@@ -161,7 +175,9 @@ void Bytecodes::doThrow(jref_t objectref) {
   }
 #endif
 
-  while (!stack.empty()) {
+  while (!stack.empty() &&
+         (!this->enforce_exception_boundary ||
+          stack.frameDepth() > this->exception_boundary_depth)) {
     Package package = this->context.getCurrentPackage();
     const auto method_component = package.getCap().getMethod();
     const auto methods = method_component->methods();
@@ -176,6 +192,17 @@ void Bytecodes::doThrow(jref_t objectref) {
 
     const uint32_t opcode_offset =
         static_cast<uint32_t>(throw_pc - method_offset);
+#ifdef PC_VERSION
+    if (trace_dispatch) {
+      std::fprintf(stderr,
+                   "CHOUPI:EXCEPTION_FRAME package=%u pc=%u opcode=%02X caller=%u handlers=%u\n",
+                   static_cast<unsigned>(package.getPackageID()),
+                   static_cast<unsigned>(opcode_offset),
+                   static_cast<unsigned>(methods[opcode_offset]),
+                   checking_caller_frame ? 1u : 0u,
+                   static_cast<unsigned>(method_component->exception_handlers().size()));
+    }
+#endif
 #ifndef PC_VERSION
     if (exception_trace_budget <= 8) {
       std::printf("CHOUPI:EXCEPTION_FRAME package=%u pc=%u opcode=%02X caller=%u\r\n",
@@ -198,6 +225,16 @@ void Bytecodes::doThrow(jref_t objectref) {
       const uint16_t handler_component_offset =
           BYTES_TO_SHORT(record[4], record[5]);
       const uint16_t catch_type_index = BYTES_TO_SHORT(record[6], record[7]);
+#ifdef PC_VERSION
+      if (trace_dispatch) {
+        std::fprintf(stderr,
+                     "CHOUPI:EXCEPTION_RANGE index=%u start=%u len=%u handler=%u catch=%u\n",
+                     static_cast<unsigned>(index), static_cast<unsigned>(start),
+                     static_cast<unsigned>(active_length),
+                     static_cast<unsigned>(handler_component_offset),
+                     static_cast<unsigned>(catch_type_index));
+      }
+#endif
       if (start < handler_table_bytes ||
           handler_component_offset <= handler_table_bytes) {
         throw Exceptions::SecurityException;
@@ -220,9 +257,38 @@ void Bytecodes::doThrow(jref_t objectref) {
       bool matches = catch_type_index == 0;
       if (!matches) {
         ConstantPool_Handler catch_cp(package);
-        const auto catch_class = catch_cp.resolveClassref(
-            catch_cp.getClassRef(catch_type_index));
+#ifdef PC_VERSION
+        if (trace_dispatch) {
+          const auto cp_entry = catch_cp.getCPEntry(catch_type_index);
+          std::fprintf(stderr,
+                       "CHOUPI:EXCEPTION_CATCH stage=cp-entry index=%u tag=%u\n",
+                       static_cast<unsigned>(catch_type_index),
+                       static_cast<unsigned>(cp_entry.tag));
+        }
+#endif
+        const auto catch_ref = catch_cp.getClassRef(catch_type_index);
+#ifdef PC_VERSION
+        if (trace_dispatch) {
+          std::fprintf(stderr,
+                       "CHOUPI:EXCEPTION_CATCH stage=class-ref index=%u\n",
+                       static_cast<unsigned>(catch_type_index));
+        }
+#endif
+        const auto catch_class = catch_cp.resolveClassref(catch_ref);
+#ifdef PC_VERSION
+        if (trace_dispatch) {
+          std::fprintf(stderr,
+                       "CHOUPI:EXCEPTION_CATCH stage=class-resolved\n");
+        }
+#endif
         matches = Class_Handler::docheckcast(exception_class, catch_class);
+#ifdef PC_VERSION
+        if (trace_dispatch) {
+          std::fprintf(stderr,
+                       "CHOUPI:EXCEPTION_CATCH stage=assignable result=%u\n",
+                       matches ? 1u : 0u);
+        }
+#endif
         // CryptoException has two class records in this VM's API model: one
         // in the combined ROM mask and one in the JC305 imported security
         // package. They are the same Java Card type even though their class
@@ -232,6 +298,16 @@ void Bytecodes::doThrow(jref_t objectref) {
           matches = true;
         }
       }
+#ifdef PC_VERSION
+      if (trace_dispatch) {
+        std::fprintf(stderr,
+                     "CHOUPI:EXCEPTION_HANDLER index=%u range=%u..%u catch=%u match=%u\n",
+                     static_cast<unsigned>(index),
+                     static_cast<unsigned>(start_method_offset),
+                     static_cast<unsigned>(start_method_offset + active_length),
+                     static_cast<unsigned>(catch_type_index), matches ? 1u : 0u);
+      }
+#endif
 
       if (matches) {
         if (handler_method_offset >= methods.size()) {
@@ -283,6 +359,11 @@ void Bytecodes::doThrow(jref_t objectref) {
         throw ISOExceptionStatusWord{status_word};
       }
     }
+  }
+
+  if (this->enforce_exception_boundary &&
+      stack.frameDepth() <= this->exception_boundary_depth) {
+    throw UncaughtJavaException{objectref.compact()};
   }
 
   throw Exceptions::SecurityException;

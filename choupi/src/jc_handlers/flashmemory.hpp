@@ -99,7 +99,7 @@ public:
   static const fs::Tag getCapTag(const jpackage_ID_t package) noexcept;
   /// Make tag for a static field.
   static const fs::Tag getStaticFieldTag(const jpackage_ID_t package,
-                                         const uint8_t static_id) noexcept;
+                                         const uint16_t static_id) noexcept;
   /// Make tag for an applet field.
   static const fs::Tag getPersistentFieldTag(const japplet_ID_t applet_owner,
                                              const jpackage_ID_t package,
@@ -135,6 +135,14 @@ public:
   static bool commitPersistentWriteTransaction() noexcept;
   static bool rollbackPersistentWriteTransaction() noexcept;
   static bool persistentWriteTransactionActive() noexcept;
+  /// Generation incremented after rollback so live persistent caches reload.
+  static uint32_t persistentWriteRollbackGeneration() noexcept;
+  /// Read or replace an opaque persistent record using transaction snapshots.
+  static std::pair<uint32_t, std::unique_ptr<uint8_t[]>>
+  readPersistentRecord(const fs::Tag &tag);
+  static bool writePersistentRecord(const fs::Tag &tag,
+                                    const uint8_t *data,
+                                    uint32_t length) noexcept;
   /// Erase a persistent record while preserving transaction rollback data.
   static bool erasePersistentTag(const fs::Tag &tag) noexcept;
 
@@ -225,7 +233,7 @@ public:
                                                  Heap &heap);
 
   /// Get a pointer to the Packages array.
-  static std::shared_ptr<const uint8_t> getPackagesArray();
+  static const uint8_t *getPackagesArray();
   /// Enable a package
   static void enablePackage(const jpackage_ID_t id);
   /// Disable a package.

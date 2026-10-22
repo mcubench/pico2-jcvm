@@ -44,10 +44,18 @@ namespace jcvm {
 struct jc_cap_package_info;
 uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
                                    uint8_t token) noexcept;
+uint8_t remap_imported_interface_token(
+    const jc_cap_package_info &package_info, uint8_t token) noexcept;
 uint8_t remap_imported_static_method_token(
     const jc_cap_package_info &package_info, uint8_t class_token,
     uint8_t method_token) noexcept;
+uint8_t remap_imported_constructor_method_token(
+    const jc_cap_package_info &package_info, uint8_t class_token,
+    uint8_t method_token) noexcept;
 uint8_t remap_imported_virtual_method_token(
+    const jc_cap_package_info &package_info, uint8_t class_token,
+    uint8_t method_token) noexcept;
+uint8_t remap_embedded_virtual_method_token(
     const jc_cap_package_info &package_info, uint8_t class_token,
     uint8_t method_token) noexcept;
 uint8_t remap_imported_interface_method_token(
@@ -76,7 +84,8 @@ public:
   /// Converting a union cap_class_ref to either jc_cap_class or
   /// jc_cap_interface structure.
   std::pair<Package, const uint8_t *>
-  resolveClassref(const jc_cap_class_ref classref)
+  resolveClassref(const jc_cap_class_ref classref,
+                  const bool is_interface = false)
 #if !defined(JCVM_ARRAY_SIZE_CHECK) && !defined(JCVM_DYNAMIC_CHECKS_CAP)
       noexcept
 #endif

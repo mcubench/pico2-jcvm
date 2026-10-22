@@ -16,6 +16,7 @@ public:
                                 size_t length) noexcept;
   uint16_t deleteObject(const uint8_t *aid, uint8_t aid_length,
                         bool delete_related_objects) noexcept;
+  bool recoverPendingInstalls() noexcept;
   void restoreInstalled() noexcept;
   bool restorePackageForAid(const uint8_t *package_aid,
                             uint8_t package_aid_length) noexcept;
@@ -41,6 +42,8 @@ public:
       return 0x6985; // install transaction unavailable
     case 9:
       return 0x6f00; // unexpected internal error
+    case 10:
+      return 0x6a88; // an imported package is not resident
     default:
       return 0x6a80;
     }

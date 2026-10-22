@@ -38,10 +38,15 @@ class Bytecodes {
 private:
   /// Current context
   Context &context;
+  uint16_t exception_boundary_depth;
+  bool enforce_exception_boundary;
 
 public:
   // Default constructor
-  Bytecodes(Context &context) noexcept : context(context){};
+  Bytecodes(Context &context, uint16_t exceptionBoundaryDepth = 0,
+            bool enforceExceptionBoundary = false) noexcept
+      : context(context), exception_boundary_depth(exceptionBoundaryDepth),
+        enforce_exception_boundary(enforceExceptionBoundary) {};
 
   // decode a bytecode
   auto decode(const uint8_t value) -> void (Bytecodes::*)();

@@ -13,6 +13,13 @@ constexpr uint32_t cap_end = cap_offset + cap_slot_count * cap_slot_size;
 constexpr uint32_t filesystem_offset = cap_end;
 constexpr uint32_t filesystem_slot_size = 0x28000;
 constexpr uint32_t filesystem_slot_count = 2;
+// Copy-on-write CAP registry headers live in the gap after filesystem slot 0.
+// One erase sector mirrors each of the eight dynamic CAP slot headers.
+constexpr uint32_t cap_metadata_mirror_offset =
+    filesystem_offset + filesystem_slot_size;
+constexpr uint32_t cap_metadata_mirror_sector_size = 0x1000;
+constexpr uint32_t cap_metadata_mirror_size =
+    cap_slot_count * cap_metadata_mirror_sector_size;
 constexpr uint32_t legacy_cap2_offset = 0x1c0000;
 // CAP2 stores at most 28 KiB after its 4 KiB header. Preserve those bytes
 // even though CAP3 no longer interprets the old package ID or metadata.
@@ -35,6 +42,11 @@ static_assert(cap_offset >= firmware_end_limit, "CAP overlaps firmware");
 static_assert(filesystem_offset >= cap_end, "CAP overlaps filesystem");
 static_assert(filesystem_offset + filesystem_slot_size <= legacy_cap2_offset,
               "filesystem slot 0 overlaps preserved CAP2 data");
+static_assert(cap_metadata_mirror_offset >=
+                  filesystem_offset + filesystem_slot_size &&
+              cap_metadata_mirror_offset + cap_metadata_mirror_size <=
+                  legacy_cap2_offset,
+              "CAP metadata mirror overlaps a reserved flash region");
 static_assert(filesystem_slot1_offset >= legacy_cap2_data_end,
               "filesystem slot 1 overlaps preserved CAP2 data");
 static_assert(filesystem_end <= 0x200000, "flash layout must fit 2 MiB");

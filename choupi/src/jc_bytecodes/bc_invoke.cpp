@@ -134,20 +134,6 @@ void Bytecodes::bc_invokevirtual() {
   TRACE_JCVM_DEBUG("INVOKEVIRTUAL 0x%04X", index);
 
   auto virtual_method_ref_info = cp_handler.getVirtualMethodRef(index);
-  if (virtual_method_ref_info.class_ref.isExternalClassRef()) {
-    TRACE_JCVM_DEBUG(
-        "INVOKEVIRTUAL_REF index=%u package_token=%u class_token=%u method_token=%u",
-        static_cast<unsigned>(index),
-        static_cast<unsigned>(virtual_method_ref_info.class_ref.external_classref.package_token),
-        static_cast<unsigned>(virtual_method_ref_info.class_ref.external_classref.class_token),
-        static_cast<unsigned>(virtual_method_ref_info.token));
-  } else {
-    TRACE_JCVM_DEBUG(
-        "INVOKEVIRTUAL_REF index=%u class_index=%u method_token=%u",
-        static_cast<unsigned>(index),
-        static_cast<unsigned>(NTOHS(virtual_method_ref_info.class_ref.internal_classref)),
-        static_cast<unsigned>(virtual_method_ref_info.token));
-  }
   const auto declared_method =
       class_handler.getMethodOffset(virtual_method_ref_info);
   Method_Handler declared_method_handler(context);
@@ -177,9 +163,34 @@ void Bytecodes::bc_invokevirtual() {
         virtual_method_ref_info, receiver_instance->getPackageID(),
         receiver_instance->getClassIndex());
   }();
+  Package target_package = method_offset.first;
+  uint16_t target_method_offset = method_offset.second;
+  // ROM methods use embedded API tokens, while dynamic applet override tables
+  // use the importing CAP's token order. Always resolve these overrides in
+  // the inverse-mapped namespace: two different methods can have the same
+  // argument count, so stack-shape checks alone cannot detect a bad dispatch.
+  if (virtual_method_ref_info.isPublicMethod() &&
+      !FlashMemory_Handler::isDynamicPackageID(
+          context.getCurrentPackageID()) &&
+      !receiver.isArray()) {
+    const auto receiver_instance = context.getHeap().getInstance(receiver);
+    if (FlashMemory_Handler::isDynamicPackageID(
+            receiver_instance->getPackageID())) {
+      const auto reverse_offset = class_handler.getMethodOffset(
+          virtual_method_ref_info, receiver_instance->getPackageID(),
+          receiver_instance->getClassIndex(), true);
+      target_package = reverse_offset.first;
+      target_method_offset = reverse_offset.second;
+    }
+  }
+  Method_Handler resolved_handler(context);
+  resolved_handler.setPackage(target_package);
+  if (resolved_handler.getArgumentCount(target_method_offset) != nargs) {
+    throw Exceptions::SecurityException;
+  }
   // Calling the method and updating PC value
-  method_handler.setPackage(method_offset.first);
-  method_handler.callVirtualMethod(method_offset.second);
+  method_handler.setPackage(target_package);
+  method_handler.callVirtualMethod(target_method_offset);
 
   return;
 }
@@ -294,12 +305,16 @@ void Bytecodes::bc_invokespecial() {
                 ? remap_imported_class_token(*package_aid,
                                              imported_class_token)
                 : imported_class_token;
-        // INVOKESPECIAL resolves constructors and private instance methods.
-        // Keep their imported token: the static API token remap applies only
-        // to INVOKESTATIC and can otherwise turn a constructor into a static
-        // method with no receiver.
+        // Constructors also use StaticMethodref entries. Resolve their
+        // imported token in the constructor namespace rather than assuming
+        // the ROM export uses the same token as the JC305 import.
         const uint8_t method_token =
-            method_ref.static_method_ref.external_ref.token;
+            FlashMemory_Handler::isDynamicPackageID(
+                context.getCurrentPackageID())
+                ? remap_imported_constructor_method_token(
+                      *package_aid, imported_class_token,
+                      method_ref.static_method_ref.external_ref.token)
+                : method_ref.static_method_ref.external_ref.token;
         TRACE_JCVM_DEBUG("INVOKESPECIAL mapped package=%u class=%u method=%u",
                          static_cast<unsigned>(imported.getPackageIndex(package_aid)),
                          class_token, method_token);
@@ -355,10 +370,10 @@ void Bytecodes::bc_invokespecial() {
   }
 
   const uint8_t nargs = method_handler.getArgumentCount(method_offset);
+  const Frame &caller_frame = stack.getCurrentFrame();
   if (nargs == 0) {
     throw Exceptions::SecurityException;
   }
-  const Frame &caller_frame = stack.getCurrentFrame();
   if (static_cast<uint32_t>(nargs) >
       static_cast<uint32_t>(caller_frame.getTOS() - caller_frame.getOP())) {
     throw Exceptions::StackUnderflowException;

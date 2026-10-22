@@ -71,7 +71,6 @@ void Bytecodes::bc_areturn() {
   } else {
     stack.push_Reference(returned_value);
   }
-
   return;
 }
 

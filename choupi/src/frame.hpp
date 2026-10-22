@@ -48,6 +48,7 @@ private:
   jword_t *tos; // top of operand stack
   jword_t *eos; // end of operand stack (= last operand stack word)
   pc_t pc;      // method program counter
+  const uint8_t *method_start_pc; // entry bytecode for this frame
   const uint8_t *instruction_pc; // address of the currently executing opcode
 
   List<old_pc_t> old_pcs;
@@ -56,6 +57,7 @@ public:
   /// default constructor
   Frame(jword_t *fp, jword_t *op, jword_t *tos, jword_t *eos, pc_t &pc) noexcept
       : fp(fp), op(op), tos(tos), eos(eos), pc(pc),
+        method_start_pc(pc.getValue()),
         instruction_pc(pc.getValue()) {}
   // Frame(const Frame &frame) noexcept = default;
   Frame &operator=(const Frame &frame) = default;
@@ -81,6 +83,8 @@ public:
   void setPC(pc_t &pc) noexcept;
   /// Get the address of the currently executing opcode.
   const uint8_t *getInstructionPC() const noexcept;
+  /// Get the entry bytecode of this frame's method.
+  const uint8_t *getMethodStartPC() const noexcept { return method_start_pc; }
   /// Save the address of the opcode before it is decoded.
   void setInstructionPC(const uint8_t *instruction_pc) noexcept;
   /// Discard all operands in this frame.

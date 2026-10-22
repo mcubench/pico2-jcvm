@@ -46,6 +46,7 @@ class JC_Array;
 
 class Context {
 private:
+  enum class SensitiveResultKind : uint8_t { Unassigned, Boolean, Short, Object };
   /// Applet ID.
   japplet_ID_t applet_ID;
   /// Package containing the active applet instance.
@@ -62,6 +63,16 @@ private:
   bool applet_instance_restored = false;
   jref_t restored_applet_ref;
   bool applet_active = false;
+  struct RemoteObjectEntry {
+    jref_t reference;
+    uint16_t object_id = 0xffff;
+    bool exported = false;
+    bool session_reference = false;
+  };
+  // Leave headroom beyond Java Card's 16-object minimum for an applet's
+  // already-exported initial reference while a service exercises the limit.
+  std::array<RemoteObjectEntry, 32> remote_objects{};
+  uint16_t next_remote_object_id = 1;
   jref_t apdu_buffer_ref;
   std::shared_ptr<JC_Array> apdu_java_buffer;
   jref_t apdu_object_ref;
@@ -77,6 +88,11 @@ private:
   bool apdu_outgoing_no_chaining = false;
   /// Reason code for the next VM-raised SystemException.
   uint16_t pending_system_exception_reason = 1;
+  // SensitiveResult is VM-wide and survives Java Card context switches.
+  static SensitiveResultKind sensitive_result_kind;
+  static bool sensitive_result_boolean;
+  static jshort_t sensitive_result_short;
+  static jref_t sensitive_result_object;
   std::array<uint8_t, 1022> apdu_response_data{};
   uint16_t apdu_outgoing_offset = 0;
   uint16_t apdu_outgoing_length = 0;
@@ -118,6 +134,12 @@ public:
   jref_t getRestoredAppletRef() const noexcept;
   void setAppletActive(bool active) noexcept;
   bool isAppletActive() const noexcept;
+  /// Track exported Java Card RMI objects in the applet context and as GC roots.
+  uint16_t exportRemoteObject(jref_t reference);
+  void unexportRemoteObject(jref_t reference) noexcept;
+  bool retainRemoteObjectForSession(jref_t reference) noexcept;
+  uint16_t remoteObjectId(jref_t reference) const noexcept;
+  bool remoteObject(uint16_t object_id, jref_t &reference) const noexcept;
   /// Set and query the APDU buffer and response window for the current command.
   void setAPDUBufferRef(jref_t reference, uint16_t incoming_length,
                         uint16_t expected_response_length,
@@ -143,8 +165,18 @@ public:
   jref_t getAPDUOutgoingBufferRef() const noexcept;
   uint16_t getAPDUOutgoingOffset() const noexcept;
   uint16_t getAPDUOutgoingLength() const noexcept;
+  void resetSensitiveResult() noexcept;
+  void setSensitiveResultBoolean(bool value) noexcept;
+  void setSensitiveResultShort(jshort_t value) noexcept;
+  void setSensitiveResultObject(jref_t value) noexcept;
+  void assertSensitiveResultObject(jref_t value) const;
+  void assertSensitiveResultBoolean(bool value) const;
+  void assertSensitiveResultShort(jshort_t value, uint8_t comparison) const;
   void setPendingSystemExceptionReason(uint16_t reason) noexcept;
   uint16_t consumePendingSystemExceptionReason() noexcept;
+  uint16_t pendingSystemExceptionReason() const noexcept {
+    return pending_system_exception_reason;
+  }
   /// Append context and heap-owned Java references for root tracing.
   void appendRootReferences(std::vector<jref_t> &references) const;
   /// Visit context and heap-owned references without a temporary root vector.

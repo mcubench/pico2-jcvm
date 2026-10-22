@@ -26,11 +26,16 @@ constexpr uint32_t kHeaderSectorSize = FLASH_SECTOR_SIZE;
 constexpr uint32_t kMaxCodeLength = 64 * 1024 - 1;
 constexpr uint32_t kSlotStride = flash_layout::cap_slot_size;
 constexpr uint32_t kCodeOffset = kHeaderSectorSize;
+constexpr uint32_t kMetadataMirrorOffset =
+    flash_layout::cap_metadata_mirror_offset;
+constexpr uint32_t kMetadataMirrorSectorSize =
+    flash_layout::cap_metadata_mirror_sector_size;
 constexpr uint8_t kFirstPackageId = 56;
 constexpr uint8_t kMaxPackageInstances = 40;
 constexpr uint32_t kXipBase = 0x10000000;
 constexpr uint32_t kHeaderMagic = 0x33415043; // "CAP3" in little endian
-constexpr uint16_t kHeaderVersion = 3;
+constexpr uint16_t kHeaderVersion = 4;
+constexpr uint16_t kLegacyHeaderVersion = 3;
 
 struct __attribute__((packed)) AppletInstanceRecord {
   uint8_t applet_aid_length;
@@ -49,7 +54,8 @@ struct __attribute__((packed)) CapSlotHeader {
   uint32_t code_crc32;
   uint8_t package_aid[16];
   uint8_t instance_count;
-  uint16_t reserved;
+  // Version 3 stored 0xffff here. Version 4 uses it as an update generation.
+  uint16_t generation;
   AppletInstanceRecord instances[kMaxPackageInstances];
   uint32_t header_crc32;
 };
@@ -74,6 +80,7 @@ static_assert(PICO_FLASH_SIZE_BYTES >= flash_layout::filesystem_end,
 const CapSlotHeader *cached_headers[kSlotCount]{};
 const uint8_t *cached_codes[kSlotCount]{};
 uint32_t cached_lengths[kSlotCount]{};
+bool cached_header_is_mirror[kSlotCount]{};
 
 uint32_t crc32(const uint8_t *data, size_t length) noexcept {
   uint32_t crc = 0xffffffffu;
@@ -106,6 +113,18 @@ const CapSlotHeader *slot_header(uint8_t slot) noexcept {
 #endif
 }
 
+const CapSlotHeader *mirror_header(uint8_t slot) noexcept {
+#ifdef RP2350_FS_OVERLAY_TEST
+  return reinterpret_cast<const CapSlotHeader *>(
+      rp2350_fs_test_flash_base() + kMetadataMirrorOffset +
+      static_cast<uint32_t>(slot) * kMetadataMirrorSectorSize);
+#else
+  return reinterpret_cast<const CapSlotHeader *>(
+      kXipBase + kMetadataMirrorOffset +
+      static_cast<uint32_t>(slot) * kMetadataMirrorSectorSize);
+#endif
+}
+
 const uint8_t *slot_code(uint8_t slot) noexcept {
 #ifdef RP2350_FS_OVERLAY_TEST
   return rp2350_fs_test_flash_base() + slot_offset(slot) + kCodeOffset;
@@ -130,7 +149,9 @@ bool aid_valid(const uint8_t *aid, uint8_t length) noexcept {
 }
 
 bool validate_header(const CapSlotHeader &header, uint8_t slot) noexcept {
-  return header.magic == kHeaderMagic && header.version == kHeaderVersion &&
+  return header.magic == kHeaderMagic &&
+         (header.version == kHeaderVersion ||
+          header.version == kLegacyHeaderVersion) &&
          header.package_id == static_cast<uint8_t>(kFirstPackageId + slot) &&
          header.package_aid_length >= 5 && header.package_aid_length <= 16 &&
          header.code_length != 0 && header.code_length <= kMaxCodeLength &&
@@ -157,6 +178,10 @@ struct WriteContext {
 void __not_in_flash_func(write_slot_callback)(void *opaque) {
   auto *context = static_cast<WriteContext *>(opaque);
   const uint32_t base = slot_offset(context->slot);
+  flash_range_erase(
+      kMetadataMirrorOffset +
+          static_cast<uint32_t>(context->slot) * kMetadataMirrorSectorSize,
+      kMetadataMirrorSectorSize);
   flash_range_erase(base, kSlotStride);
 
   uint8_t page[FLASH_PAGE_SIZE];
@@ -187,13 +212,18 @@ void __not_in_flash_func(write_slot_callback)(void *opaque) {
 
 struct MetadataContext {
   uint8_t slot;
+  bool mirror;
   CapSlotHeader header;
   bool success = false;
 };
 
 void __not_in_flash_func(write_metadata_callback)(void *opaque) {
   auto *context = static_cast<MetadataContext *>(opaque);
-  flash_range_erase(slot_offset(context->slot), kHeaderSectorSize);
+  const uint32_t offset = context->mirror
+      ? kMetadataMirrorOffset +
+            static_cast<uint32_t>(context->slot) * kMetadataMirrorSectorSize
+      : slot_offset(context->slot);
+  flash_range_erase(offset, kHeaderSectorSize);
   uint8_t page[FLASH_PAGE_SIZE];
   const auto *header_bytes =
       reinterpret_cast<const uint8_t *>(&context->header);
@@ -205,7 +235,7 @@ void __not_in_flash_func(write_metadata_callback)(void *opaque) {
       const size_t chunk = remaining < sizeof(page) ? remaining : sizeof(page);
       std::memcpy(page, header_bytes + page_offset, chunk);
     }
-    flash_range_program(slot_offset(context->slot) + page_offset, page,
+    flash_range_program(offset + page_offset, page,
                         FLASH_PAGE_SIZE);
   }
   context->success = true;
@@ -218,14 +248,25 @@ struct DeleteContext {
 
 void __not_in_flash_func(delete_slot_callback)(void *opaque) {
   auto *context = static_cast<DeleteContext *>(opaque);
+  flash_range_erase(
+      kMetadataMirrorOffset +
+          static_cast<uint32_t>(context->slot) * kMetadataMirrorSectorSize,
+      kMetadataMirrorSectorSize);
   flash_range_erase(slot_offset(context->slot), kSlotStride);
   context->success = true;
 }
 
 bool write_metadata(uint8_t slot, CapSlotHeader &header) noexcept {
-  header.header_crc32 = header_crc(header);
   MetadataContext context{};
   context.slot = slot;
+  context.mirror = !cached_header_is_mirror[slot];
+  const auto *current = cached_headers[slot];
+  header.version = kHeaderVersion;
+  header.generation = current != nullptr &&
+                             current->version == kHeaderVersion
+                         ? static_cast<uint16_t>(current->generation + 1u)
+                         : 1u;
+  header.header_crc32 = header_crc(header);
   context.header = header;
   const int status = flash_safe_execute(write_metadata_callback, &context, 5000);
   return status == PICO_OK && context.success && cap_store_initialize();
@@ -239,8 +280,28 @@ bool cap_store_initialize() noexcept {
     cached_headers[slot] = nullptr;
     cached_codes[slot] = nullptr;
     cached_lengths[slot] = 0;
-    const CapSlotHeader *header = slot_header(slot);
-    if (!validate_header(*header, slot)) continue;
+    cached_header_is_mirror[slot] = false;
+    const CapSlotHeader *primary = slot_header(slot);
+    const CapSlotHeader *mirror = mirror_header(slot);
+    const bool primary_valid = validate_header(*primary, slot);
+    const bool mirror_valid = validate_header(*mirror, slot);
+    const CapSlotHeader *header = nullptr;
+    if (primary_valid && mirror_valid) {
+      const bool mirror_is_newer =
+          mirror->version == kHeaderVersion &&
+          (primary->version != kHeaderVersion ||
+           static_cast<int16_t>(static_cast<uint16_t>(
+               mirror->generation - primary->generation)) > 0);
+      header = mirror_is_newer ? mirror : primary;
+      cached_header_is_mirror[slot] = mirror_is_newer;
+    } else if (primary_valid) {
+      header = primary;
+    } else if (mirror_valid) {
+      header = mirror;
+      cached_header_is_mirror[slot] = true;
+    } else {
+      continue;
+    }
     const uint8_t *code = slot_code(slot);
     if (crc32(code, header->code_length) != header->code_crc32) continue;
     cached_headers[slot] = header;
@@ -285,7 +346,7 @@ bool cap_store_write_package(uint8_t package_id, const uint8_t *package_aid,
   std::memset(header.package_aid + package_aid_length, 0xff,
               sizeof(header.package_aid) - package_aid_length);
   header.instance_count = 0;
-  header.reserved = 0xffff;
+  header.generation = 1;
   std::memset(header.instances, 0xff, sizeof(header.instances));
   header.header_crc32 = header_crc(header);
 

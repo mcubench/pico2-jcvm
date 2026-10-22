@@ -5,12 +5,18 @@
 
 #include "mbedtls/aes.h"
 #include "mbedtls/platform_util.h"
+#ifdef PC_VERSION
+#include <random>
+#else
 #include "pico/rand.h"
+#endif
 
+#ifndef PC_VERSION
 extern "C" void mbedtls_platform_zeroize(void *buffer, size_t length) {
   auto *bytes = static_cast<volatile unsigned char *>(buffer);
   while (length-- != 0) *bytes++ = 0;
 }
+#endif
 
 namespace {
 constexpr uint8_t kStaticKey[16] = {
@@ -136,10 +142,21 @@ bool Scp03Session::initializeUpdate(const uint8_t *apdu, size_t apdu_length,
   }
   std::memcpy(host_challenge_, apdu + 5, sizeof(host_challenge_));
 
+#ifdef PC_VERSION
+  try {
+    std::random_device random;
+    for (uint8_t &value : card_challenge_) {
+      value = static_cast<uint8_t>(random());
+    }
+  } catch (...) {
+    return false;
+  }
+#else
   const rng_128_t random{};
   auto card_random = random;
   get_rand_128(&card_random);
   std::memcpy(card_challenge_, &card_random, sizeof(card_challenge_));
+#endif
 
   uint8_t context[16];
   std::memcpy(context, host_challenge_, 8);

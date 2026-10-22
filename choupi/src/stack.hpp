@@ -67,7 +67,8 @@ private:
 public:
   // Pushing a new frame regarding the invoked method header.
   void push_Frame(const uint8_t nargs, const uint8_t max_locals,
-                  const uint8_t max_operand_stack, const uint8_t *pc)
+                  const uint8_t max_operand_stack, const uint8_t *pc,
+                  const bool arguments_on_caller_stack = true)
 #if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
       noexcept
 #endif
@@ -81,6 +82,20 @@ public:
     this->root_return_value_available = false;
     this->root_return_value_is_reference = false;
     this->root_return_value = 0;
+  }
+  /// Discard only frames above an existing interpreter caller.
+  void unwindToDepth(const uint16_t depth) noexcept {
+    while (this->frames.size() > depth) {
+      this->frames.pop_back();
+    }
+    if (depth == 0) {
+      this->root_return_value_available = false;
+      this->root_return_value_is_reference = false;
+      this->root_return_value = 0;
+    }
+  }
+  uint16_t frameDepth() const noexcept {
+    return static_cast<uint16_t>(this->frames.size());
   }
   // The stack is empty? (no pushed Java Card frame)
   bool empty() noexcept;

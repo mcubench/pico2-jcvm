@@ -267,7 +267,8 @@ void Bytecodes::bc_getfield_s() {
   objectref = stack.pop_Reference();
 
   auto instance = heap.getInstance(objectref);
-  value = instance->getField_Short(resolveInstanceFieldToken(this->context, index));
+  value = instance->getField_Short(
+      resolveInstanceFieldToken(this->context, index));
 
   stack.push_Short(value);
 

@@ -191,6 +191,7 @@ JC_Instance::JC_Instance(JC_Instance &&other) noexcept
       persistent_tag_overflow(other.persistent_tag_overflow),
       has_persistent_tag(other.has_persistent_tag),
       persistent_fields_loaded(other.persistent_fields_loaded),
+      persistent_rollback_generation(other.persistent_rollback_generation),
       fields(other.fields) {
   std::memcpy(this->persistent_tag_value, other.persistent_tag_value,
               sizeof(this->persistent_tag_value));
@@ -328,10 +329,8 @@ void JC_Instance::setClassIndex(const jclass_index_t class_index) noexcept {
  */
 const jbyte_t JC_Instance::getField_Byte(const uint16_t index) {
   if (this->isPersistent()) {
-    fs::Tag tag =
-        FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
-
-    return FlashMemory_Handler::getPersistentField_Byte(tag);
+    const auto fields = this->getFields();
+    return static_cast<jbyte_t>(fields->at(index).value);
   } else {
 
 #ifdef JCVM_TYPED_HEAP
@@ -350,10 +349,8 @@ const jbyte_t JC_Instance::getField_Byte(const uint16_t index) {
  */
 const jshort_t JC_Instance::getField_Short(const uint16_t index) {
   if (this->isPersistent()) {
-    fs::Tag tag =
-        FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
-
-    return FlashMemory_Handler::getPersistentField_Short(tag);
+    const auto fields = this->getFields();
+    return static_cast<jshort_t>(fields->at(index).value);
   } else {
 
 #ifdef JCVM_TYPED_HEAP
@@ -373,10 +370,12 @@ const jshort_t JC_Instance::getField_Short(const uint16_t index) {
  */
 const jint_t JC_Instance::getField_Int(const uint16_t index) {
   if (this->isPersistent()) {
-    fs::Tag tag =
-        FlashMemory_Handler::computeTag(this->recomputeOriginalTag(), index);
-
-    return FlashMemory_Handler::getPersistentField_Int(tag);
+    const auto fields = this->getFields();
+    const jword_t field_high_part = fields->at(index).value;
+    const jword_t field_low_part =
+        fields->at(static_cast<uint16_t>(index + 1)).value;
+    return static_cast<jint_t>(
+        SHORTS_TO_INT(field_high_part, field_low_part));
   } else {
 
     const jword_t field_high_part = this->fields->at(index).value;
@@ -637,6 +636,12 @@ auto JC_Instance::getNumberOfFields() const noexcept
  * @return the number of instance field.
  */
 auto JC_Instance::getFields() const -> decltype(fields) {
+  const uint32_t rollback_generation =
+      FlashMemory_Handler::persistentWriteRollbackGeneration();
+  if (this->persistent_fields_loaded &&
+      this->persistent_rollback_generation != rollback_generation) {
+    this->persistent_fields_loaded = false;
+  }
   if (!this->isPersistent() || this->persistent_fields_loaded) {
     return this->fields;
   }
@@ -729,6 +734,8 @@ auto JC_Instance::getFields() const -> decltype(fields) {
       throw Exceptions::SecurityException;
     }
   }
+  this->persistent_rollback_generation =
+      FlashMemory_Handler::persistentWriteRollbackGeneration();
   this->persistent_fields_loaded = true;
   return this->fields;
 }

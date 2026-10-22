@@ -9,9 +9,10 @@
 
 namespace choupi::vpcd {
 
-enum class ReadResult { Message, Closed, InvalidFrame, IoError };
+enum class ReadResult { Message, Closed, Timeout, InvalidFrame, IoError };
 
-ReadResult read_message(int socket_fd, std::vector<uint8_t> &message);
+ReadResult read_message(int socket_fd, std::vector<uint8_t> &message,
+                        int timeout_ms = 0);
 bool write_message(int socket_fd, const uint8_t *message, uint16_t length);
 ReadResult decode_frame(const uint8_t *frame, size_t frame_length,
                         std::vector<uint8_t> &message);

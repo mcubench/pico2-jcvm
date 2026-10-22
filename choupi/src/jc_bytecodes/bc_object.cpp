@@ -89,7 +89,6 @@ jref_t runtimeExceptionReference(Context &context,
                                  const uint8_t *exception_package_aid,
                                  const size_t exception_package_aid_length,
                                  const uint8_t class_token) {
-
   Package applet_package = context.getCurrentPackage();
   Import_Handler imports(applet_package);
   const auto import_component = applet_package.getCap().getImport();
@@ -234,7 +233,6 @@ void Bytecodes::bc_new() {
 #endif
   ConstantPool_Handler cp(context.getCurrentPackage());
   auto instantiated_class = cp.getClassInformation(index);
-
 #ifndef PC_VERSION
   choupi_install_stage(2);
   choupi_install_context(
@@ -272,14 +270,6 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
   }
 
   if (atype == 0) {
-    auto instance = heap.getInstance(objectref);
-    const Package type_in_package(instance->getPackageID());
-    const auto *type_in_class =
-        ConstantPool_Handler(type_in_package)
-            .getClassFromClassIndex(instance->getClassIndex());
-    auto type_in_ref = std::make_pair(
-        type_in_package, reinterpret_cast<const uint8_t *>(type_in_class));
-
     auto type_out_classref =
         ConstantPool_Handler(context.getCurrentPackage()).getClassRef(index);
     ConstantPool_Handler type_out_cp(context.getCurrentPackage());
@@ -305,6 +295,24 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
         }
       }
     }
+
+    // Java Card arrays are Object instances but do not inherit applet classes
+    // or implement arbitrary interfaces. Do not pass array references to
+    // Heap::getInstance(), which correctly rejects them as non-instance refs.
+    if (objectref.isArray()) {
+      return reinterpret_cast<const jc_cap_class_info *>(type_out_class)
+                     ->isObjectClass()
+                 ? TRUE
+                 : FALSE;
+    }
+
+    auto instance = heap.getInstance(objectref);
+    const Package type_in_package(instance->getPackageID());
+    const auto *type_in_class =
+        ConstantPool_Handler(type_in_package)
+            .getClassFromClassIndex(instance->getClassIndex());
+    auto type_in_ref = std::make_pair(
+        type_in_package, reinterpret_cast<const uint8_t *>(type_in_class));
 
     // CHECKCAST accepts both class and interface references. Keep the
     // resolved CAP record untyped here; classref2class rejects interfaces

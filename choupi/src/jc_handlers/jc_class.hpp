@@ -43,12 +43,14 @@ class Class_Handler : public Component_Handler {
 private:
   /// Get a class package method offset from a class' package method token.
   std::pair<Package, const uint16_t> getPublicMethodOffset(
-      const jc_cap_virtual_method_ref_info virtual_method_ref_info);
+      const jc_cap_virtual_method_ref_info virtual_method_ref_info,
+      bool reverse_embedded_token_for_dynamic_class = false);
 
   /// Do get a class public method offset from a class' public method token.
   std::pair<Package, const uint16_t>
   doGetPublicMethodOffset(Package &package, const jc_cap_class_info *claz,
-                          uint8_t public_method_offset);
+                          uint8_t public_method_offset,
+                          bool reverse_embedded_token_for_dynamic_class = false);
 
   /// Get a class package method offset from a class' package method token.
   std::pair<Package, const uint16_t> getPackageMethodOffset(
@@ -94,7 +96,8 @@ public:
   /// Resolve a virtual method through the receiver's concrete class.
   std::pair<Package, const uint16_t> getMethodOffset(
       const jc_cap_virtual_method_ref_info virtual_method_ref_info,
-      jpackage_ID_t receiver_package, jclass_index_t receiver_class);
+      jpackage_ID_t receiver_package, jclass_index_t receiver_class,
+      bool reverse_embedded_token_for_dynamic_class = false);
 
   /// Get a class' implemented interface method offset from a class' package
   /// method token.
