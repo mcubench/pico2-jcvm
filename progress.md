@@ -7577,3 +7577,2460 @@
 - Commit: `0e8f47f` (handoff and progress record only).
 - Artifacts/logs: listed in `.agent/HANDOFF.md`; none created by this documentation step.
 
+## 2026-10-21 — Handoff completed for Shareable dispatch fix
+
+- Step/experiment: `shareable-dispatch-handoff`
+- Change: Updated `.agent/HANDOFF.md` with the resolved dynamic virtual-token mismatch, implementation outline, exact host validation, hardware/build restrictions, and next steps. This supersedes the earlier stale diagnostic instructions in that file.
+- Validation: Documentation/state review only; no builds, emulator tests, or hardware operations run for this handoff.
+- Result: The handoff now records successful host and ARM builds plus focused VPCD Shareable and applet-selection checks. Updated source has not been flashed or physically validated. Extensive unrelated worktree changes remain preserved.
+- Decision: Stop work as requested. Resume with physical validation only when both the ARM-only user constraint and repository flash gate can be reconciled; otherwise continue offline.
+- Commit: unavailable; `git commit` could not create `.git/index.lock` because `.git` is mounted read-only in this session.
+- Artifacts/logs: see the validation log paths and result CSV listed in `.agent/HANDOFF.md`.
+
+
+## 2026-10-21 — Handoff for physical deploy API coverage
+
+- Step/experiment: `deploy-api-physical-handoff`
+- Change: Appended current build, physical API stage results, capacity finding, constraints, and next actions to `.agent/HANDOFF.md`. No implementation source changed in this handoff step.
+- Validation: Reviewed `.agent/SESSION_CONTINUITY.md`, the existing chronological handoff, current progress state, worktree status, and all three supplied redacted session digests. The digests contain only operational metadata and were not treated as canonical knowledge. No build, test, or hardware operation was run for this documentation-only step.
+- Result: Latest recorded `./tools/build-pc` and `./tools/build arm` passed; no RISC-V build or current-source flash occurred. Physical deploy areas have archived CSV/log evidence and unresolved API failures as itemized in the handoff.
+- Decision: Stop work as requested. Next session should classify deploy expected outcomes, investigate focused framework/KeyBuilder failures, and honor both the ARM-only constraint and the repository flash gate.
+- Commit: Not attempted; prior session reports `.git` read-only, and this checkout already has extensive unrelated dirty changes.
+- Artifacts/logs: listed in `.agent/HANDOFF.md`; none created in this handoff step.
+
+## 2026-10-21 — Handoff for Security KeyBuilder investigation
+
+- Step/experiment: `security-keybuilder-host-handoff`
+- Change: Appended current VPCD failure evidence, temporary trace locations, validation limits, and concrete next steps to `.agent/HANDOFF.md`. No implementation was changed.
+- Validation: Reviewed prior session evidence and current trace-marker locations. No build, test, or hardware operation was run for this documentation handoff.
+- Result: Current host reproduction reports `StackUnderflowException` for the Security DES KeyBuilder probe; the CAP method/offset mismatch is unresolved. Temporary diagnostic prints remain in `bc_invoke.cpp` and must be removed after diagnosis.
+- Decision: Stop as requested. Resume with CAP Method offset and handler-table accounting; keep ARM-only and no-flash-under-build-gate constraints.
+- Commit: Not attempted; prior session reports `.git` read-only in this environment. Only the two handoff files were edited.
+- Artifacts/logs: `artifacts/logs/deploy-security-keybuilder-des-probe-vpcd.log` and related `*-debug/trace*-vpcd.log` files are listed in `.agent/HANDOFF.md`.
+
+## 2026-10-21 — Fix JC305 Security Key interface dispatch
+
+- Step/experiment: `security-key-interface-token-map`
+- Change: Added the JC305 Security `Key` interface token map `{1, 3, 2, 0}` in `remap_imported_interface_method_token`. Removed the temporary `TRACE_STATIC_*` instrumentation from `bc_invoke.cpp` while preserving its existing dispatch changes. Updated TODO, QKB, and handoff with the confirmed mismatch and limits.
+- Validation: `./tools/build arm` passed (RP2350 ARM image end `0x100c6430`); `./tools/build-pc` passed with `ROMMASK:PASS`. VPCD installed the actual `AlgTestApiSecurity_305.cap`; DES KeyBuilder APDU `B0 83 60 01 01 00 00` returned `000040019000`. Summary was `TEST:SUMMARY pass=11 fail=0`. No hardware command or RISC-V build was run.
+- Result: A JC305 `Key.getSize` call previously resolved to embedded `KeyImpl.clearKey`, causing `StackUnderflowException`; the focused row now reports 64-bit size and not-initialized status. The offset resolver was checked against capmap-free parsing and is not implicated. Six exploratory row-index APDUs returned `9000`, but payloads such as `FC` are unclassified.
+- Decision: Keep the scoped Key interface mapping. Continue classifying Security rows and run deploy Core/Security API tests on VPCD. Physical validation remains gated by the ARM-only versus both-build instruction conflict.
+- Commit: Not attempted; `.git` metadata is read-only in this environment, and the source/docs contain unrelated pre-existing worktree changes.
+- Artifacts/logs: `artifacts/logs/deploy-security-keybuilder-des-remap-vpcd-20261021.log`; `artifacts/logs/deploy-security-keybuilder-types-vpcd-20261021.log`; extracted Security class inspection used `/tmp/security-class`.
+
+## 2026-10-21 — Current handoff after Security KeyBuilder fix
+
+- Step/experiment: `security-keybuilder-session-handoff`
+- Change: Appended the latest source state, incomplete Core VPCD probe status, active ARM-only/build-gate constraints, and next continuation steps to `.agent/HANDOFF.md`. No implementation source changed.
+- Validation: Documentation review only. Confirmed the Core VPCD log ends after applet installation and connection without an APDU response or test summary; confirmed no matching VPCD test process remained. No build, test, or hardware operation was run for this handoff.
+- Result: The Security `Key` token translation remains the latest confirmed fix. The new Core Shareable probe is inconclusive and requires inspection/rerun on resume. Extensive prior worktree changes remain intact.
+- Decision: Stop work as requested. Resume by checking the incomplete Core log, then continue focused deploy API validation. Do not flash while the ARM-only request conflicts with the repository's both-architecture flash gate.
+- Commit: Not attempted; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/deploy-core-shareable-current-source-vpcd-20261021.log`; Security validation logs listed in `.agent/HANDOFF.md`.
+
+## 2026-10-21 — Deploy Core Shareable and Security KeyBuilder VPCD regressions
+
+- Step/experiment: `deploy-core-security-vpcd-followup`
+- Change: Revalidated both Core Shareable paths against the deploy Core CAP and corrected six persistent DES/AES KeyBuilder row probes against the deploy Security CAP. Updated TODO, QKB, and handoff with actual response bytes and physical-validation limits; no source code changed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet --passes 1 --apdu-timeout 90 ...` ran through the local VPCD harness. Core own-AID response `00009000`; interface response `0001019000`; each focused session had `TEST:SUMMARY pass=11 fail=0`. Security row payloads were `00004001`, `00008001`, `0000C001`, `00008001`, `0000C001`, `00010001`, all followed by `9000`; summary `pass=11 fail=0`. No ARM build, RISC-V build, USB/PCSC operation, or physical test was run.
+- Result: The Core Shareable fix passes the two focused host probes. The Security interface mapping now verifies six persistent DES/AES sizes instead of only the original DES-64 row. These checks validate response behavior on host VPCD, not physical firmware or concurrent multi-package retention.
+- Decision: Continue Core/Security deploy API coverage on the host. Keep ARM-only; physical flashing remains disallowed by the both-architecture gate in root `AGENTS.md`.
+- Commit: Not attempted; `.git` metadata is read-only in this environment and the files contain unrelated pre-existing edits.
+- Artifacts/logs: `artifacts/logs/deploy-core-shareable-resume-vpcd-20261021.log`; `artifacts/logs/deploy-core-shareable-interface-resume-vpcd-20261021.log`; `artifacts/logs/deploy-security-keybuilder-persistent-rows-vpcd-20261021.log`.
+
+## 2026-10-21 — Handoff: OwnerPIN virtual dispatch and Core API cutoff
+
+- Step/experiment: `ownerpin-core-api-handoff`
+- Change: Recorded the current dispatch fix, official Core client cutoff,
+  focused VPCD results, build/flash constraints, and continuation steps in
+  `.agent/HANDOFF.md`; added the reusable dispatch finding to `.agent/QKB.md`.
+- Validation: Documentation checkpoint only. No new build, test, USB/PCSC,
+  or hardware command was run.
+- Result: Handoff records that temporary virtual-dispatch traces remain and
+  normal host plus ARM builds are still required. No throughput metric was
+  measured.
+- Decision: Stop as requested. Resume with trace cleanup and normal host/ARM
+  builds, then rerun focused VPCD probes and isolate the official client
+  `APDUException.IO_ERROR` cutoff. Do not flash under the active ARM-only and
+  both-architecture flash-gate conflict.
+- Commit: Not attempted; prior repository sessions report `.git` metadata
+  mounted read-only. Preserve the existing dirty worktree.
+- Artifacts/logs: See `.agent/HANDOFF.md`; latest official Core result and raw
+  APDUException logs are under `artifacts/results/deploy/core-vpcd-official-fixed/`
+  and `artifacts/logs/deploy-core-apduexception-*-vpcd-20261021.log`.
+
+## 2026-10-21 — OwnerPIN dispatch cleanup and deploy Core VPCD validation
+
+- Step/experiment: `ownerpin-dispatch-cleanup-core-vpcd`
+- Change: Removed temporary `INVOKEVIRTUAL_REF` / `INVOKEVIRTUAL_RESOLVE`
+  trace calls from `bc_invoke.cpp`, preserving the inverse-mapped dynamic
+  override fix. Updated TODO, QKB, and handoff with completed Core results and
+  the corrected PC/SC timeout diagnosis.
+- Validation: `./tools/build-pc` passed with `ROMMASK:PASS`; `./tools/build
+  arm` passed (`build/arm/pico2_choupi.uf2`, image end `0x100c63e0`). No RISC-V
+  build or flash. Focused host VPCD Core APDUs passed 11/11; six persistent
+  Security DES/AES KeyBuilder rows passed 11/11; Multi AIDs ending `41` and
+  `42` each selected in separate VPCD sessions (11/11). Official Core client
+  completed 291-call summary with 0 wrong results; 14 official APDUException
+  rows passed including `IO_ERROR` (`0x0004`).
+- Result: The prior apparent `IO_ERROR` disconnect was a 900-second full-suite
+  timeout; the longer run completed. The official CSV has 291 detail rows:
+  272 OK, 11 allowed unsupported, and 8 `APPLET_NOT_INSTALLED`, matching the
+  291-call client summary. Multi and Ext scenarios cannot run with the
+  single-applet host VPCD setup. Host VPCD evidence only; no current-source
+  hardware check.
+- Decision: Keep the source fix. Next improve host Multi/Ext scenario setup and
+  continue deploy Security/Crypto API coverage. Do not
+  flash while the ARM-only constraint conflicts with the both-architecture
+  gate.
+- Commit: Not attempted; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/core-vpcd-official-full-20261021/`;
+  `artifacts/results/deploy/core-apduexception-official-20261021/`;
+  `artifacts/logs/deploy-core-ownerpin-dispatch-regression-20261021.log`;
+  `artifacts/logs/deploy-security-keybuilder-dispatch-regression-20261021.log`;
+  `artifacts/logs/deploy-multi-a-vpcd-current-20261021.log`;
+  `artifacts/logs/deploy-multi-b-vpcd-current-20261021.log`.
+## 2026-10-21 — Single physical Pico Security API coverage
+
+- Step/experiment: `single-physical-pico-security-api-coverage`
+- Change: Recorded the reader-index diagnosis, physical Security API results,
+  and current-source validation limitation in TODO, QKB, and handoff.
+- Validation: `pcsc_scan -r` identified the physical Pico as the third PC/SC
+  terminal after two empty Virtual PCD readers. Read-only `gp --info` and
+  `gp --list` succeeded. `AlgTest_JavaCard/deploy/run_api_test.sh --areas
+  Security --api 305 --reader-index 3` completed upload, 901 calls, and CAP
+  cleanup successfully. No source build or flash was run.
+- Result: 822 `UNSUPPORTED_PER_SPEC`, 43 `OK`, 15 `SW_ERROR`, 13
+  `EXC_RUNTIME`, 8 `WRONG_RESULT`; the tests ran against the existing physical
+  firmware, not the latest unflashed source. The first attempt used reader
+  index 1, stalled on an empty Virtual PCD terminal, and was interrupted; its
+  test CAP was explicitly removed before retry.
+- Decision: Keep the complete physical CSV as a baseline. Compare failures
+  against current-source VPCD probes before changing implementation; continue
+  with Core/JCSystem priorities. Do not flash while ARM-only and the
+  both-architecture gate conflict.
+- Commit: Not created; repository `.git` metadata is mounted read-only in this
+  environment. Existing worktree changes were preserved.
+- Artifacts/logs: `artifacts/results/deploy/pico2-single-security-reader3-20261021.csv`
+  (SHA-256 `49032c715eace1fe830e3c42da83603d9f1db83b51deda100c37b6556af86bee`);
+  interrupted run `artifacts/results/deploy/pico2-single-security-20261021.csv`.
+
+## 2026-10-21 — Single physical Pico Crypto API coverage
+
+- Step/experiment: `single-physical-pico-crypto-api-coverage`
+- Change: Added the physical Crypto 3.0.5 results and follow-up classification
+  to the TODO and handoff. No implementation source changed.
+- Validation: On the explicitly named Pico reader (client terminal index 3),
+  `AlgTest_JavaCard/deploy/run_api_test.sh --areas Crypto --api 305` completed
+  upload, 466 client calls, and CAP cleanup. Excluded the documented RSA-2048
+  key-pair reader-drop call. No build or flash was run.
+- Result: 444 `UNSUPPORTED_PER_SPEC`, 14 `OK`, six `EXC_CARDRUNTIME`, and two
+  `SW_ERROR`; both test upload and cleanup stages were `OK`. `6F00` occurred
+  at the Signature and Cipher constructors. ILLEGAL_VALUE (`0x0002`) occurred
+  in six Cipher test cases. These are observations from the firmware already
+  on the board and not current-source verification.
+- Decision: Compare the 8 non-unsupported results with current-source VPCD
+  before making code changes. Continue to `JavacardxExt` on the same physical
+  reader.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/pico2-single-crypto-reader3-20261021.csv`
+  (SHA-256 `1a9766f365ae0d47c370d884017779c2f1ad2f4c2d8baec9120f0b38a7aa4ccf`).
+
+## 2026-10-21 — Wide static-field tags for JavaCardX CAP initialization
+
+- Step/experiment: `javacardx-wide-static-tags`
+- Change: Added a 16-bit big-endian static-field root tag for offsets above
+  255, retaining the three-byte legacy tag for lower offsets. Removed the
+  install-time one-byte offset rejection while keeping CAP image bounds checks.
+  The JavaCardX 3.0.5 CAP has 164 static reference slots and initializer
+  offsets through 326.
+- Validation: `./tools/build arm` passed. `./tools/build-pc` passed with
+  pre-existing Rust and packed-member compiler warnings. Current-source VPCD
+  install and SELECT passed: `TEST:SUMMARY pass=11 fail=0`; SELECT returned
+  `9000`. RISC-V build was skipped under the active ARM-only constraint; no
+  physical card was flashed or modified because the flash gate requires both
+  architecture builds.
+- Formatting: Root scoped `git diff --check` passed. The nested CHOUPI VM diff
+  check reports CRLF line endings across its already modified source files;
+  those files were not normalized to avoid broad unrelated diffs.
+- Result: JavaCardX no longer fails CAP INSTALL because static initializer
+  offsets exceed one byte. Physical firmware validation remains pending.
+- Decision: Continue with the JavaCardX API call results after current-source
+  firmware can be tested on a physical reader.
+- Commit: Not created; repository and nested `.git` metadata are read-only.
+- Artifacts/logs: `artifacts/results/deploy/javacardx-vpcd-select-only-wide-static-20261021.log`
+  (SHA-256 `57a7070ce1451dbee1458d4fbd51167389c7c4929a98b27049f44eb68026fb40`).
+
+## 2026-10-21 — Reboot BOOTSEL boards and enable multi-reader PC/SC access
+
+- Step/experiment: `three-pico-pcsc-reenumeration`
+- Change: Rebooted BOOTSEL boards to their existing applications without
+  flashing. Updated `tools/pico2-pcsc-reader-root` to grant pcscd ACLs to one to
+  three detected CHOUPI readers and restart pcscd once.
+- Validation: USB enumeration found CHOUPI serials `D92E743D5F640C0F` and
+  `E0E14525E64AF6ED`, plus generic Pico serial `5CFC5328F5BDE437`. Both
+  CHOUPI descriptors include CCID; the generic Pico descriptor has only CDC
+  and a vendor reset interface. `pcsc_scan -r` lists only the original CHOUPI
+  because the installed helper ACLs one USB node and rejects multiple devices.
+  `bash -n tools/pico2-pcsc-reader-root tools/install-pcsc-sudoers` passed;
+  `/usr/sbin/visudo` is available. Updated installer has not been run yet.
+- Result: Two boards are running CHOUPI and one board runs generic Pico
+  firmware. Parallel tests are not ready until the revised helper is installed
+  and PC/SC confirms both CCID readers. No device was flashed.
+- Decision: User should run `sudo ./tools/install-pcsc-sudoers`, then the
+  approved `sudo -n /usr/local/sbin/pico2-pcsc-reader`; resume reader validation
+  and two-worker testing afterward. Third board requires CHOUPI firmware.
+- Commit: Not created; repository `.git` metadata is read-only.
+- Artifacts/logs: Descriptor and enumeration output inspected live; no log file.
+
+## 2026-10-21 — ROM package visibility and imported version compatibility
+
+- Step/experiment: `vpcd-rom-package-import-lookup`
+- Change: Import resolution now accepts a resident package when AID and major
+  version match and the imported minor version is no newer than the resident
+  minor version. PC VPCD package-existence checks now include CAPs exposed by
+  the built-in ROM-mask callback, which are stored outside the mutable package
+  bitmap.
+- Validation: `./tools/build arm` and `./tools/build-pc` passed. Final current-
+  source Core VPCD install/SELECT returned `TEST:SUMMARY pass=11 fail=0` at
+  `artifacts/results/deploy/core-import-fix-final-select-vpcd-20261021.log`.
+  The JXExt APDU `B0835102010000` still returns `6F00`: its catch reference
+  imports `javacardx.external` AID `A0000000620203` version 1.0, absent from the
+  generated ROM mask. That unresolved API dependency is now in `TODO.md` and
+  `.agent/QKB.md`. The physical-device scan found one active reader and two
+  BOOTSEL devices; no CAP was uploaded and no firmware was flashed. RISC-V was
+  intentionally not built under the ARM-only constraint.
+- Result: The host emulator can now look up built-in ROM-mask packages and
+  compatible package versions. A missing API package still produces a runtime
+  failure after successful install/select and needs install-time import
+  validation or an expanded ROM profile.
+- Decision: Next, implement CAP import validation at INSTALL, then decide from
+  the supported JCVM profile whether to include `javacardx.external`.
+- Commit: Not created; `.git` metadata is read-only.
+- Artifacts/logs: Core result above; JXExt trace at
+  `artifacts/results/deploy/javacardxext-import-header-trace-vpcd-20261021.log`.
+
+## 2026-10-21 � Three Pico 2 USB and PC/SC enumeration
+
+- Step/experiment: `three-pico-live-enumeration`
+- Change: Recorded current physical-device state and refreshed PC/SC access;
+  no source or firmware changes.
+- Validation: Elevated `lsusb -d 2e8a:` found one `2e8a:0009` CHOUPI device
+  and two `2e8a:000f` RP2350 BOOTSEL devices. The approved PC/SC access helper
+  succeeded. Elevated `pcsc_scan -r` found one physical Pico reader plus two
+  empty VPCD readers. Elevated `PICO2_HOST_USB_ACCESS=1
+  ./tools/run-deploy-parallel --dry-run --min-devices 1` correctly routed the
+  one physical Pico to a worker; no card writes occurred.
+- Result: The two newly inserted BOOTSEL boards are visible to the VM but
+  cannot yet serve as PC/SC cards. Parallel orchestration is ready for three
+  application-mode devices. No firmware was flashed.
+- Decision: Resume the offline JCVM exception/package-resolution investigation;
+  return to the physical parallel run when all three boards expose CHOUPI CCID.
+- Commit: Not created; repository `.git` metadata is read-only.
+- Artifacts/logs: `.agent/HANDOFF.md`; dry-run output was inspected directly.
+
+## 2026-10-21 — Three-reader physical API test setup
+
+- Step/experiment: `parallel-pico-deploy-runner`
+- Change: Added exact `--reader-name` selection to the deploy API runner,
+  SmartcardIO terminal listing to the Java index helper, and
+  `tools/run-deploy-parallel` to distribute API areas over up to three cards
+  with separate CSV and log outputs. The runner defaults to requiring all
+  three physical PC/SC Pico readers and excludes the known RSA-2048 reader-drop
+  case.
+- Validation: Python syntax and scoped `git diff --check` passed. The
+  non-mutating dry run resolved the active Pico as Java terminal 3 despite two
+  empty virtual readers. USB enumeration showed one application-mode Pico
+  (`2e8a:0009`) and two BOOTSEL devices (`2e8a:000f`). A normal invocation
+  safely stopped before starting workers: found one live PC/SC Pico, required
+  three. No card CAP was uploaded by this validation.
+- Result: Three-way orchestration is ready once all devices run CHOUPI and
+  appear as unique PC/SC readers. BOOTSEL devices are deliberately not counted.
+- Decision: Start three independent area workers when the two BOOTSEL devices
+  return to application mode; preserve each worker's separate result file.
+- Commit: Not created; repository `.git` metadata is read-only.
+- Artifacts/logs: Runner `tools/run-deploy-parallel`; exact-name API selection
+  in `AlgTest_JavaCard/deploy/api_card_runner.py` and `tools/JCAlgTestReaderIndex.java`.
+
+
+## 2026-10-21 — Reconcile three Pico USB states
+
+- Step/experiment: `three-board-usb-state-check`
+- Change: Recorded live board/PCSC findings and updated the physical-test handoff and QKB with the stale-helper and BOOTSEL-passthrough recovery steps.
+- Validation: Elevated `lsusb -d 2e8a:` found three `2e8a:0009` boards; elevated `picotool info` found no BOOTSEL targets and identified all three as application-mode RP2350s. Targeted `picotool reboot --usb --force --ser E0E14525E64AF6ED` failed with `Unable to locate reset interface on the device`. Elevated `pcsc_scan -r` listed only the original Pico. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --min-devices 1 --max-devices 3 --dry-run` resolved the physical reader and assigned all areas without card writes.
+- Result: The added boards are not currently available in BOOTSEL to this VM. The updated multi-device ACL helper is not installed; the installed single-device helper rejects three matching Pico USB IDs. No firmware was flashed.
+- Decision: Resolve VirtualBox BOOTSEL passthrough and install the updated helper before attempting parallel physical API tests. Continue offline while those prerequisites are unavailable.
+- Commit: Pending; worktree contains unrelated pre-existing changes, so stage only this step's documentation additions if committing.
+- Artifacts/logs: `.agent/HANDOFF.md`, `.agent/QKB.md`; command output inspected directly.
+
+## 2026-10-21 — Serial-targeted multi-Pico flashing and startup
+
+- Step/experiment: `serial-targeted-pico-cycle`
+- Change: Added `--serial SERIAL` selection to `tools/flash`, `tools/monitor`, and `tools/cycle`. The flash wrapper now puts picotool selectors before positional arguments, targets CDC BOOTSEL recovery by stable by-id path, and requests picotool flash verification.
+- Validation: `bash -n tools/flash tools/monitor tools/cycle`, CLI help, and scoped `git diff --check` passed. `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial 5CFC5328F5BDE437` passed with bounded 18-second serial output. A second cycle targeting `E0E14525E64AF6ED` recovered from `Unable to locate reset interface` through CDC 1200-baud BOOTSEL in 2 seconds, flashed and verified at 100%, and passed runtime output. Latest `lsusb -d 2e8a:` shows all three board serials enumerating as `2e8a:0009`.
+- Result: All three boards run CHOUPI firmware. PC/SC still exposes only the original reader because the installed helper rejects three devices (`found 3`). The repository helper handles up to three; operator install is required before card tests. The parallel runner dry run safely reports two missing PC/SC readers; no API worker or APDU test was started.
+- Decision: Operator should run `sudo ./tools/install-pcsc-sudoers`, then `sudo -n /usr/local/sbin/pico2-pcsc-reader`, and confirm three Pico readers with `pcsc_scan -r`. Then run the three-worker API suite.
+- Commit: Not created; `git apply --cached` failed because `.git/index.lock` cannot be created (`Read-only file system`). No files were staged; unrelated worktree changes were preserved.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261021T181442Z.log` SHA-256 `3e4d09fbee4fcac3f60e20259607be07bf89f001de8c4f373fdebd4a7257715b`; `artifacts/logs/cycle-choupi-20261021T181723Z.log` SHA-256 `035f2437d7fff62d1ea2e31ffbc85a82e4877440cdf20abd590110b9fc0e119d`; ARM UF2 SHA-256 `ffea2e2153fa9270877d5b6417fd1287984227b169d95684aa88ce96a0f3c320`.
+
+## 2026-10-21 — Three-reader deploy coverage and scenario rollback
+
+- Step/experiment: `three-reader-deploy-api-305`
+- Change: Ran the deploy API areas concurrently on all three named Pico readers. Fixed the Core scenario CAP path to roll back a package after GPPro reports `CAP loaded` followed by INSTALL refusal; ordinary API CAP uploads use the same helper. Removed the Ext package left by the first scenario run.
+- Validation: Elevated PC/SC showed three CHOUPI readers (D92, E0E, 5CFC) plus two empty Virtual PCD terminals. The three parallel workers completed; runner exit was 1 because optional CAP imports were unavailable. Security: 901 calls (820 allowed unsupported, 43 OK, 15 SW_ERROR, 13 EXC_RUNTIME, 8 WRONG_RESULT, 2 skipped). Crypto: 466 calls (434 allowed unsupported, 11 OK, 16 EXC_RUNTIME, 3 EXC_CARDRUNTIME, 2 SW_ERROR). Service: 124 calls (94 OK, 28 WRONG_RESULT, 1 SW_ERROR, 1 EXC_RUNTIME). Core: 291 calls (272 OK, 15 allowed unsupported, 4 Ext scenario calls not run). JavacardxSec/Javacardx/JavacardxExt/JavacardxInt/Biometry INSTALLs returned 6A88. Focused Core reruns verified `UPLOAD_EXT_ROLLBACK OK` after 6A88 and GPPro then showed only the ISD; each rerun reproduced one `Applet.deselect()` WRONG_RESULT (`returned=-26`). Python syntax and scoped diff checks passed. No firmware was flashed; hardware results use images already on the boards.
+- Result: Three-card area routing works and every observed partial install was removed after the scenario-path fix. Optional API imports still limit coverage, and the repeated `Applet.deselect()` mismatch needs diagnosis. The many unsupported algorithm results are expected and were not treated as defects.
+- Decision: Preserve the deploy artifacts, investigate the isolated Core mismatch, and continue with missing API package/runtime support. The ARM-only constraint remains in force; no RISC-V build or flash was attempted.
+- Commit: Not created; repository `.git` metadata is read-only in this execution environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261021-204343/` (pico1 CSV SHA-256 `c83f55b46215d40393b40aeb0f3960b4821f6461ef830c23dc8b35cbe41c4bf7`; pico2 `5204d26c278afbe2c843b590613c728dc3190af6d865e244b6e7ea84d47e29ec`; pico3 `18a8ef65b41deef44355fb8c62b2a4d606087a19f6cf81e9029166aef7a215b6`); focused Core CSVs `artifacts/results/deploy/pico3-core-scenario-rollback-20261021.csv` and `artifacts/results/deploy/pico3-core-repeat-20261021.csv`.
+
+## 2026-10-21 — Clean CAP registry after failed install transaction
+
+- Step/experiment: `cap-install-commit-failure-metadata-rollback`
+- Change: If the persistent filesystem transaction fails its final commit sync after the CAP slot metadata has registered the applet, attempt to remove that instance record and sync the metadata store. Added the existing `path_static16` ABI to the persistent-transaction test stub so that this regression suite compiles against current source.
+- Validation: `./tools/build arm` passed; `./tools/build-pc` passed (with existing Rust and packed-member warnings). `./tools/test-rp2350-fs-overlay` and `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; Python syntax and scoped `git diff --check` passed. These tests do not inject a commit failure through the full `CapLoadSession` install path, so the CAP metadata rollback branch remains unverified end to end. No hardware flash was performed.
+- Result: Source compiles for ARM and host; filesystem rollback and flash-overlay regressions pass. The commit-failure metadata cleanup is best-effort and still needs full-path fault injection.
+- Decision: Add targeted install-path fault injection before considering this atomicity issue resolved. Continue ARM-only; no RISC-V build.
+- Commit: Not created; repository `.git` metadata is read-only in this execution environment.
+- Artifacts/logs: Build outputs under `build/arm/` and `build/choupi-pc/`; test binaries under `build/tests/rp2350-fs-overlay/` and `build/tests/persistent-transaction/`.
+
+## 2026-10-21 — Reset VM state on CCID power-on
+
+- Step/experiment: `ccid-poweron-reset-lifecycle`
+- Change: `PC_to_RDR_IccPowerOn` now drops selected applet state, clears `CLEAR_ON_RESET` arrays, resets SCP state, and aborts a partial CAP transfer before restoring installed package metadata. USB bus reset also clears selected applet and reset-transient state. This makes the physical CCID path apply reset semantics already used by the host VPCD bridge.
+- Validation: `./tools/build arm` passed; `./tools/build-pc` passed with existing upstream Rust warnings; `./tools/test-pc-vpcd-applet --passes 1 --log artifacts/results/deploy/vpcd-reset-lifecycle-20261021.log` passed (`TEST:SUMMARY pass=11 fail=0`). Initial sandbox invocation failed to bind its loopback listener with `Operation not permitted`; the same host-only test passed via the elevated path. The physical three-reader Core/Security/Crypto deploy pass preceded this source change and does not validate the new firmware behavior. RISC-V build and flashing skipped under the ARM-only constraint and two-architecture flash gate.
+- Result: The focused physical Core run again found one `Applet.deselect()` counter mismatch: the API probe recorded 239 select callbacks and 98 deselect callbacks. Client disassembly confirms this is the applet's callback counter, not a VM return value. The reset-path omission is fixed, but the mismatch's complete cause is not yet established.
+- Decision: Keep the reset handling. Rebuild both architectures before the next flashable hardware retest; continue investigating callback-count divergence and test physical power/reset behavior.
+- Commit: Not created; `.git` metadata is read-only in this execution context.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261021-210341/pico1.csv` SHA-256 `e94c025620f16804d9c156439a1105d7d327f8d39c39f2918e744fbd51858f4a`; `pico2.csv` SHA-256 `9be757173da3c818afe51bc8bcbce9b32ab8f737ec56695ed2211c0addf76bbc`; `pico3.csv` SHA-256 `be87385da3c15c0cd51928588e3573666955cdb839d4f00a2b358d226ff761b3`; VPCD log SHA-256 `f97674f923f105e8d1b858e29554f1ac49a90bf65d325ebd9403e674ae104a6d`.
+
+## 2026-10-21 — Physically verify CCID reset lifecycle
+
+- Step/experiment: `pico3-core-reset-lifecycle-retest`
+- Change: Flashed the reset-state fix to Pico 3 (serial `5CFC5328F5BDE437`) after ARM and RISC-V builds passed. Refreshed pcscd ACLs after re-enumeration so all three physical readers were visible again.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial 5CFC5328F5BDE437` passed flash verification and its 18-second serial health check (`TEST:SUMMARY pass=1 fail=0`; no `FAULT`/`TEST:FAIL`). Two exact-reader official Core 3.0.5 install/test/cleanup runs passed, each with 291 calls: 272 OK, 15 `UNSUPPORTED_PER_SPEC`, four optional Ext calls `APPLET_NOT_INSTALLED`; no `WRONG_RESULT`, `SW_ERROR`, or `EXC_*`. Both runs reported `Applet.select()` and `Applet.deselect()` counters as `-19`, and both removed Core/Multi CAPs. `git diff --check` and Python syntax checks passed.
+- Result: The missing CCID power-on reset handling was the cause of the fluctuating Core callback-counter mismatch. Applying reset semantics cleared the mismatch on two consecutive physical runs. The Ext CAP still fails INSTALL with `6A88` due to its missing import; partial package rollback passes. A `WATCHDOG_RECOVERY cause=other` marker appeared once in the serial cycle log alongside repeated passing runtime summaries; the marker alone does not indicate a reset or test failure.
+- Decision: Mark the Core callback-count issue fixed. Continue with remaining API/runtime priorities and optional package dependencies; the three-reader setup is usable for parallel runs.
+- Commit: Not created; `.git` metadata is read-only in this execution context.
+- Artifacts/logs: Core CSVs `artifacts/results/deploy/pico3-core-resetfix-20261021.csv` SHA-256 `e536e17f8785f79d327af4cfcb890d2de0fab1bbd34a1b482642e6943f7b060e` and `artifacts/results/deploy/pico3-core-resetfix-repeat-20261021.csv` SHA-256 `d6f1e16a7e7442a39358c19833a35334d9f4ae8fe61fe3df81f4115ffc337b1f`; cycle log `artifacts/logs/cycle-choupi-20261021T191200Z.log` SHA-256 `34d8f780acec083c15c93aa3279162973911dc366055e373d684841688c1a54e`.
+
+## 2026-10-21 — Synchronize three Pico images and repeat API 3.0.5 sweep
+
+- Step/experiment: `three-pico-current-image-api305`
+- Change: Flashed the validated ARM image to Pico 1 and Pico 2 by serial so all three physical boards ran identical firmware. Refreshed pcscd ACLs for all three USB nodes and reran the complete parallel API 3.0.5 deployment matrix.
+- Validation: Both architecture builds passed before the cycles. Pico 1 (`D92E743D5F640C0F`) and Pico 2 (`E0E14525E64AF6ED`) each passed flash verification and an 18-second serial runtime capture. The parallel runner completed all workers. Pico 3 Core: 291 calls, 272 OK, 15 allowed unsupported, four optional Ext calls not installed, zero wrong/status/runtime errors; its JCSystem calls were 37 OK and one spec-allowed unsupported. Core/Multi, Crypto, and Service cleanup succeeded. JavacardxSec/Javacardx/JavacardxExt/JavacardxInt/Biometry CAP INSTALLs were refused with `6A88` for missing imports and rolled back. Security: 901 calls (63 OK, 820 allowed unsupported, 13 EXC_RUNTIME, 2 WRONG_RESULT, 1 SW_ERROR, 2 skipped). Crypto: 466 calls (105 OK, 434 allowed unsupported, 17 EXC_RUNTIME, 3 EXC_CARDRUNTIME, 3 SW_ERROR, 28 WRONG_RESULT). Service: 124 calls (94 OK, 28 WRONG_RESULT, 1 SW_ERROR, 1 EXC_RUNTIME). Those non-Core API findings are recorded; cryptographic algorithm absences remain expected and were not implemented.
+- Result: Three-way physical deploy is repeatable on matched current images. The Core/JCSystem behavior and physical package cleanup pass. Optional API imports remain absent, and Security/Crypto/Service have separate API discrepancies outside this Core-focused step.
+- Decision: Keep the three-reader setup for future independent API coverage. Continue with the remaining VM/runtime priorities while preserving the user's scope of correct applet and JCSystem execution.
+- Commit: Not created; `.git` metadata is read-only in this execution context.
+- Artifacts/logs: CSVs under `artifacts/results/deploy/parallel-20261021-211910/`; hashes Pico 1 `a7565906e8618c8bb164e406b8af2a99856d0aa392b83b11a95d5e3f8cb4cc91`, Pico 2 `da135c19e1de741037e69dc45453766846e28a33fa4796aa31657de040e46cb7`, Pico 3 `22a393d6c1d4643af35240b6eccf71167abc23c4447515401f4da470eae50a1d`. Pico 1/2 cycle logs `artifacts/logs/cycle-choupi-20261021T191640Z.log` SHA-256 `0afa2a93e03f9d21f3d412c8a8ead6371c0fd66b02a85c1941413c77f6a0ea88` and `artifacts/logs/cycle-choupi-20261021T191751Z.log` SHA-256 `2083967473d6000ca13b0bc982b1f11886def36ca89de7ffc6ef960fac74426e`.
+
+## 2026-10-21 — Verify JCAlgTest power-up restoration on Pico 1
+
+- Step/experiment: `jcalgtest-powerup-restoration-pico1`
+- Change: Installed the repository-built JCAlgTest 1.8.2 fixture on Pico 1 after confirming the deploy suite had cleaned its own unrelated CAPs. The fixture was installed with GlobalPlatformPro from `build/choupi-algtest/output/JCAlgTest-1.8.2-rebuilt.cap` (SHA-256 `1b2b17f5999e070f14d184df9b83d7f11abcdbcd5ee7f2e30205d5a324941d57`).
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCAlgTest CCID] (D92E743D5F640C0F) 00 00'` passed registry lookup, applet SELECT (`9000`), GETVERSION (`1.8.2_jc305`), and JCSystem info after separate PC/SC sessions/power-on. Earlier attempts on Pico 3 and Pico 1 before fixture installation showed only the ISD and sent no applet APDU. Pico 3 later remained present in `lsusb` but absent from `pcsc_scan -r` despite ACL refresh and valid CCID descriptors.
+- Result: The installed JCAlgTest package/applet restores and runs through a PC/SC power-up transition on Pico 1. The test fixture remains installed there. Pico 3 reader visibility is an outstanding host/PCSC issue; no persistence conclusion was drawn for that card.
+- Decision: Retain Pico 1 as the persistence test fixture; recover Pico 3 PC/SC visibility before assigning more tests to it.
+- Commit: Not created; `.git` metadata is read-only in this execution context.
+- Artifacts/logs: Passing log `artifacts/logs/pico-powerup-persistence-20261021T192510Z.log` SHA-256 `7452e82a0eac0c5c8f769d2c0eadba0c9a5a0a422abef645e436bb99586cc573`. Failed no-fixture registry checks: Pico 3 `...T192225Z.log` SHA-256 `691d823588fbefdaa5a21397e18afc24383d9b3a07d84d48c7378ea2e740ede9`; Pico 1 `...T192259Z.log` SHA-256 `7fce4bdec24d5495dab8a395fa1f63ae56478b3db6f5f5b1bbb16ff59b468bcc`.
+
+## 2026-10-21 — Refresh three-reader access and probe parallel client waits
+
+- Step/experiment: `three-reader-parallel-wait-reproduction`
+- Change: After cycling Pico 3 to the current ARM image, refreshed the approved PC/SC ACL helper and verified the parallel assignment on all three named physical readers. Documented an incomplete second parallel API run and its affected card/package state in `.agent/HANDOFF.md` and `.agent/QKB.md`.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial 5CFC5328F5BDE437` passed flash verification and finite startup capture. The first `pcsc_scan -r` showed only two readers; `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported `count=3`, and the following scan listed serials D92E743D5F640C0F, E0E14525E64AF6ED, and 5CFC5328F5BDE437. `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305` started all three workers. Pico 2 Crypto completed (466 calls) and cleaned up; Pico 3 Core completed (291 calls) and cleaned up; optional package INSTALL refusals returned `6A88` with successful rollback. Pico 1 Security and Pico 2 Service stalled in the Java client, and Pico 3 Javacardx upload stalled. Interrupted coordinator after roughly three minutes; no worker processes remained. No build was needed because source was unchanged; `git diff --check` was run on the documentation edits.
+- Result: All three readers are accessible after the approved helper refresh. A full parallel run had already completed at `parallel-20261021-211910/`; this reproduction is incomplete and indicates an intermittent concurrent client/transport wait, not a VM result. Preserve the partial artifacts and do not treat them as completed coverage.
+- Decision: Inspect affected readers' package registries and clean partial installs, then retry Security/Service/Javacardx sequentially on exact readers before attempting another parallel matrix. Capture per-stage client output to determine whether reader selection or transport caused the wait.
+- Commit: Not created; `.git` metadata is read-only in this execution environment.
+- Artifacts/logs: Pico 3 cycle `artifacts/logs/cycle-choupi-20261021T193649Z.log` SHA-256 `782ecbf1402a9b7cb7907e347784d15adbcaa32a3417ef210ff2f84a21b66a34`; incomplete results in `artifacts/results/deploy/parallel-20261021-213747/`. CSV hashes Pico 1 `682526db235a72a7b704b035768c54d1932ab0ebdb88fcd3fad364bf41db40b3`, Pico 2 `13b09a4627fbf6540dd94b46741fd6f19cdd137224283056c5f1675075153887`, Pico 3 `8b185c436cf00c7bddd744649f647491acafa7f5bafde369c5ffec0ad7ccfc5d`.
+
+## 2026-10-21 — Re-run stalled API areas sequentially
+
+- Step/experiment: `sequential-security-service-retest`
+- Change: Inspected card registries after the interrupted three-worker run and removed only orphaned Security/Service test CAP packages. Kept the JCAlgTest fixture on Pico 1; Pico 3's registry was already clean.
+- Validation: Security on Pico 1, using exact PC/SC reader selection, completed 901 calls in about two minutes and runner cleanup passed: 822 `UNSUPPORTED_PER_SPEC`, 63 `OK`, 13 `EXC_RUNTIME`, 2 `WRONG_RESULT`, 1 `SW_ERROR`. Service on Pico 2 completed 124 calls in about 12 seconds and cleanup passed: 94 `OK`, 28 `WRONG_RESULT`, 1 `SW_ERROR`, 1 `EXC_RUNTIME`. These runs used the elevated USB/PCSC host-access path. `git diff --check` passed for the continuity edits. No source changed, so no builds were run.
+- Result: Both previously stalled areas complete when run alone and reproduce their earlier API outcomes. This points toward a possible concurrency/host-scheduling interaction, but does not prove its cause. The full matrix at `parallel-20261021-211910/` remains the complete parallel evidence.
+- Decision: Next test two readers with one short area each and timestamped stages; only try three-way concurrency again if two readers finish reliably. Do not treat method-level Security/Service discrepancies as part of the Core/JCSystem implementation scope.
+- Commit: Not created; `.git` metadata is read-only in this execution environment.
+- Artifacts/logs: Pico 1 CSV `artifacts/results/deploy/pico1-security-sequential-20261021.csv` SHA-256 `9d33c4e46a62f3578c846012ffae44260474b1c46d5ef88a6b5b9772618d8759`; Pico 2 CSV `artifacts/results/deploy/pico2-service-sequential-20261021.csv` SHA-256 `11f30e8e62522c13b5cc8a0de07ff5d820232be877fb918fed0d85f935d5c162`.
+
+## 2026-10-21 — Validate one-area parallel batches on three Picos
+
+- Step/experiment: `three-reader-one-area-batch`
+- Change: Exercised the multi-reader runner with one independent area per worker after the earlier full multi-area run stalled. No source changes.
+- Validation: Two-reader `Security,Service` batch completed both workers with exit 0 and cleanup. Three-reader `Crypto,Core,Service` batch completed all workers: Crypto 466 calls/cleanup, Core 291 calls and Core/Multi cleanup, Service 124 calls/cleanup. Optional Core Ext INSTALL was refused with `6A88` and its partial package rollback passed; the coordinator exit was 1 because that optional stage is recorded as failed. Final elevated `pcsc_scan -r` showed all three physical Pico serials. `git diff --check` passed for continuity files. No builds needed.
+- Result: Parallel use of three readers is confirmed for one area per card. The earlier incomplete run was a chained multi-area worker case; this data does not establish which later area stalled. Core applet/JCSystem checks remained 272 OK, 15 spec-allowed unsupported, and four optional Ext methods unavailable; no new algorithm support was added.
+- Decision: Keep future parallel batches to one area per physical reader until the multi-area chaining wait is isolated. Treat missing imports/`6A88` and spec-allowed unsupported calls as expected; investigate only true applet/runtime correctness issues in scope.
+- Commit: Not created; `.git` metadata is read-only in this execution environment.
+- Artifacts/logs: Two-reader run `artifacts/results/deploy/parallel-20261021-214449/`; three-reader run `artifacts/results/deploy/parallel-20261021-214712/`. Three-reader CSV hashes: Pico 1 `a8de9f60a92f743c68fa6d83f6b40e5a589baa00df5bc1b8605f8be29369b471`, Pico 2 `3f406b78e69cfabaaefb23b0f24b8e984a248ae31f8b5416185ac838d099cbcc`, Pico 3 `1fc8ec6747a67708929a43e9847f1f3024fa6600cd788e09fc0c099cb40aca3b`.
+## 2026-10-21 — Run three-reader batch and fix stale import lookup
+
+- Step/experiment: `three-reader-import-guard`
+- Change: Refreshed PC/SC access for all three attached Picos and ran Core,
+  Crypto, and Service as independent parallel areas. Fixed dynamic package
+  lookup so a stale package bitmap bit cannot make an empty CAP slot appear
+  resident. Added regression cases for stale/present/cleared dynamic package
+  state and missing-import INSTALL stage 10.
+- Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted three nodes;
+  elevated `pcsc_scan -r` listed D92E743D5F640C0F, E0E14525E64AF6ED, and
+  5CFC5328F5BDE437. Physical three-reader run exited 0 for all workers:
+  Crypto 466 calls, Core 291 calls (272 OK, 15 spec-allowed unsupported; Ext
+  refused with expected `6A88` and rollback passed), Service 124 calls.
+  `./tools/test-persistent-transaction`, `./tools/test-install-status`,
+  `./tools/build arm`, `./tools/build-pc`, and host VPCD applet test passed;
+  VPCD applet test summary was `pass=11 fail=0`. RISC-V was not built and no
+  firmware was flashed. Physical validation of the source change was therefore
+  intentionally skipped under the ARM-only build constraint and current
+  two-architecture flash gate.
+- Result: Three physical readers can run one independent deploy area each;
+  this bounded shape completed with cleanup on every card. The missing Ext
+  dependency still correctly rejects INSTALL with `6A88`. Stale-bitmap fix is
+  covered offline but remains unverified on hardware. Core's 38 JCSystem rows
+  were 37 `OK` and one profile-allowed `UNSUPPORTED_PER_SPEC` for
+  `requestObjectDeletion()` (`ILLEGAL_USE`); transient/global arrays, memory
+  forms, transactions, and AID/applet-state calls passed.
+- Decision: Keep using one area per reader for parallel hardware testing.
+  Continue with final-sync fault injection through CAP install; revisit
+  physical validation only after the architecture flash gate is resolved.
+- Commit: Not created; `.git` metadata/index are read-only in this execution
+  environment, and the shared worktree contains unrelated changes that must
+  not be included accidentally.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261021-current/`; CSV
+  SHA-256 values: Pico 1
+  `e46785b821c74f7962667288d06ace7b4083c0d669396a53b2e53f514333a5a7`, Pico 2
+  `d2740d7bf1fe71a8a5e931d47853273c77e71081a2fc821f82e044fb0c71950e`, Pico 3
+  `e5721881cc414d53afaf88c8419af7b6a99e87bb9af0b36be0765b4306f68cb3`.
+  Host VPCD log `artifacts/logs/pc-vpcd-applet-import-fix-20261021.log`,
+  SHA-256 `878a9f63bb2a99bcbb942ebaee5fa8d1ba0c909ee0a62b21221d9f01285b4b31`.
+
+
+## 2026-10-21 — Protect CAP registry metadata from interrupted updates
+
+- Step/experiment: `cap-registry-copy-on-write`
+- Change: Added per-slot mirror metadata sectors in the unused flash gap. CAP
+  registry updates now alternate version-4 headers between primary and mirror,
+  with CRC validation and generation selection during initialization. Existing
+  version-3 primary headers remain accepted. Extended the RP2350 filesystem
+  overlay test to inject power cuts in both alternating update directions.
+- Validation: `./tools/test-rp2350-fs-overlay` passed all checks, including
+  interrupted registry update recovery and 1,000 randomized filesystem power
+  cuts (`TEST:SUMMARY fail=0`); an explicit v3 header fixture remains readable.
+  `./tools/build arm`, `./tools/build-pc`, and the host VPCD JCAlgTest 1.8.2
+  regression passed (`TEST:SUMMARY pass=11 fail=0`). The overlay host test
+  uses `mallinfo2()` on glibc to avoid the previous deprecation warning; host
+  build reports existing Rust warnings. No RISC-V build or physical flash was
+  run.
+- Result: A power cut while rewriting one CAP metadata copy leaves the previous
+  valid copy available and retains CAP code. This does not make the separate
+  CAP header and filesystem snapshot one atomic transaction; a cut between
+  publishing an applet instance and final filesystem commit remains open.
+- Decision: Add durable cross-store install journaling and full CAP-install
+  failure injection next. Keep hardware validation pending because the current
+  ARM-only constraint conflicts with the repository's two-architecture flash
+  gate.
+- Commit: Not created; the shared worktree has extensive unrelated changes,
+  and `.git` metadata/index are read-only in this environment.
+- Artifacts/logs: `./tools/test-rp2350-fs-overlay` output; VPCD log
+  `artifacts/logs/pc-vpcd-cap-metadata-cow-20261021.log`, SHA-256
+  `178a83909da7c77e6dc352fde509ff953139357b4807c8f4d6641b3788beeee6`.
+
+## 2026-10-21 — Add durable CAP install intent and boot replay
+
+- Step/experiment: `cap-install-recovery-journal`
+- Change: Added transaction-aware opaque persistent-record APIs. CAP INSTALL now
+  commits a CRC-protected intent (package/applet/instance AIDs and class index)
+  together with applet persistent state, publishes the COW CAP registry entry
+  afterward, then removes the intent in a second transaction. On card power-on,
+  `restoreInstalled()` validates pending intents, publishes missing registry
+  entries idempotently, and transactionally clears completed intents.
+- Validation: `./tools/test-persistent-transaction` passed with five journal
+  record cases, including rollback, readback, failed-sync preservation, erase
+  rollback, and cleanup. `./tools/build arm` and `./tools/build-pc` passed. A
+  fresh VPCD JCAlgTest 1.8.2 install reached
+  `VPCD:APPLET_INSTALLED class-index=148`; `TEST:SUMMARY pass=11 fail=0`.
+  Host build retains existing Rust/C++ warnings. No RISC-V build or hardware
+  flash was run.
+- Result: The durable intent now precedes the separate CAP registry update, so
+  boot has enough validated information to complete an interrupted publication
+  without duplicate registration. Full injected restart tests at each boundary
+  are still missing; atomicity is not yet declared complete.
+- Decision: Add deterministic failure injection for registry publication and
+  journal cleanup, restart VPCD from the saved image, and verify successful
+  recovery/SELECT. Preserve the current ARM-only scope and do not bypass the
+  repository's two-architecture flash gate.
+- Commit: Not created; the shared worktree has extensive unrelated edits and
+  `.git` metadata/index are read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/install-journal-vpcd-current/FLASH_MEMORY`,
+  SHA-256 `78e78ae361ea5c7ff4a6a5ee11ebaa8c5042fee20dda2674ec01b20a29c1ac21`;
+  `artifacts/logs/pc-vpcd-install-journal-current.log`, SHA-256
+  `0240f6b29ed56671e885ff4ec174a001da8ca66f72ad3b1e73d007cf4d6dfa13`.
+
+## 2026-10-21 — Verify CAP install journal across emulator process restart
+
+- Step/experiment: `cap-install-process-restart-recovery`
+- Change: Added a VPCD regression mode that injects a skipped CAP registry
+  publication, leaves the committed install journal pending, shuts down the
+  first emulator, and verifies recovery/SELECT in a fresh process using the
+  saved flash image. The runner records the actual dynamic package ID chosen
+  during LOAD. Emulator shutdown now waits up to five seconds after socket
+  close for normal save/exit before sending a signal. Host CAP package lookup
+  marks a supplied CAP image present only in resume mode, while initial LOAD
+  still registers the package through its normal path.
+- Validation: `python3 -m py_compile tools/tests/pc_vpcd_applet_test.py`,
+  `./tools/build arm`, `./tools/build-pc`, and
+  `./tools/test-persistent-transaction` passed. Elevated host-only VPCD restart
+  test passed: package 57 recovered in the new process, SELECT returned
+  `9000`, JCAlgTest 1.8.2 GETVERSION and JCSystem calls passed, SHA-256 support,
+  doFinal, and static performance APDUs passed, and summary was
+  `TEST:SUMMARY pass=11 fail=0`. Existing same-process recovery injection also
+  passed `pass=11 fail=0`. RISC-V and physical USB/flash validation were
+  intentionally skipped.
+- Result: The durable journal and registry replay survive emulator process
+  restart at the registry-publication gap. Testing also exposed a VPCD test
+  harness race: immediate SIGINT after socket close could prevent the emulator
+  from saving the image; natural transport shutdown fixes it. This does not
+  cover all power-cut boundaries.
+- Decision: Keep install atomicity open. Next inject after registry publish,
+  during journal cleanup, and on CAP metadata write failure, then add cut-boundary
+  coverage.
+- Commit: Not created; `.git` metadata/index are read-only in this execution
+  environment and shared source files contain unrelated pre-existing changes.
+- Artifacts/logs: `artifacts/results/deploy/install-journal-process-restart-v5/FLASH_MEMORY`
+  SHA-256 `adc17e34cc04adf7413c87ed0b309509ee32c2f51f47b348b230218d12143412`;
+  `artifacts/logs/pc-vpcd-install-journal-process-restart-v5.log` SHA-256
+  `89a488f2712202f9819d86a77d8394d1b207f45249934eb2d9c35af51c7febc8`;
+  same-process log `artifacts/logs/pc-vpcd-install-journal-inprocess-final.log`.
+
+## 2026-10-21 — Run three physical deploy areas concurrently
+
+- Step/experiment: `parallel-physical-core-crypto-service-20261021-223127`
+- Change: Used the three visible Pico 2 readers to run one API 3.0.5 area per
+  device concurrently. No firmware was flashed.
+- Validation: Elevated host USB path:
+  `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305 --areas
+  Core,Crypto,Service --min-devices 3 --max-devices 3`. All worker processes
+  exited 0 and all installed CAPs were removed. Crypto (D92E) completed 466
+  calls; Core (E0E1) completed 291 calls (272 OK, 15 spec-allowed unsupported,
+  four optional Ext calls not installed); Service (5CFC) completed 124 calls
+  (94 OK, 28 existing wrong results, one SW_ERROR, one EXC_RUNTIME). Optional
+  Ext INSTALL returned expected `6A88` and rollback passed. The coordinator
+  marks that optional stage failed despite worker exit 0 and successful Core
+  cleanup. No source change was validated by this physical run.
+- Result: Three-reader parallel use works for this bounded one-area-per-reader
+  batch; per-area historical outcomes remain unchanged.
+- Decision: Retain one independent area per reader for predictable parallel
+  sweeps; continue install recovery boundary testing offline.
+- Commit: Not created; `.git` metadata/index are read-only here and the shared
+  worktree contains unrelated changes.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261021-223127/`; CSV
+  SHA-256 values: D92E `a0deba0720def10cb05f650d23bf7d39cb6981fcdc6ed4ce8b3935b042a524fa`,
+  E0E1 `31182bb12643543bc2ec8f2246ed2e5f652fde9b8c7ab85113b55d053c540600`,
+  5CFC `e6a59e244f9d94839e0af51ed331d74b43f5673f80966c828279e41115d21c06`.
+
+## 2026-10-21 — Verify journal replay after registry publication
+
+- Step/experiment: `cap-install-published-registry-restart`
+- Change: Added `--verify-install-after-publication-restart` to the host VPCD
+  regression runner. The first process now leaves the journal pending after
+  successfully publishing the CAP applet entry; the second process must
+  recognize the matching entry, clear the journal idempotently, and restore
+  the applet.
+- Validation: Python syntax compilation passed. Elevated host VPCD test passed:
+  fresh process logged `VPCD:INSTALL_JOURNAL_RECOVERED package=57`, target
+  applet SELECT returned `9000`, and the JCAlgTest APDU regression finished
+  `TEST:SUMMARY pass=11 fail=0`. The test exercises the same save-before-exit
+  path already validated in the missing-registry restart case. No firmware or
+  physical USB test was needed for this host-only change.
+- Result: Both recovery states across process restart are now covered: the CAP
+  registry entry missing, and the matching entry already published. The actual
+  metadata-write error/power-cut cases remain untested.
+- Decision: Add actual CAP metadata write-error and cut-boundary injection next;
+  keep the atomicity item open until then.
+- Commit: Not created; `.git` metadata/index are read-only in this environment,
+  and shared source files include unrelated pre-existing work.
+- Artifacts/logs: `artifacts/results/deploy/install-journal-published-restart/FLASH_MEMORY`
+  SHA-256 `adc17e34cc04adf7413c87ed0b309509ee32c2f51f47b348b230218d12143412`;
+  `artifacts/logs/pc-vpcd-install-journal-published-restart.log` SHA-256
+  `8de41d061f77a5fb94917894d4ebc7504688f60bfb4d097c95a5e2e782771ca1`.
+
+## 2026-10-21 — Recover install journal after CAP metadata write error
+
+- Step/experiment: `cap-install-metadata-write-error-recovery`
+- Change: Added a host-only failure hook that makes CAP instance publication
+  return an error once. Added `--verify-install-metadata-error-restart` to run
+  initial installation without VPCD, persist the image with the committed
+  journal, and then launch a fresh VPCD process to exercise boot replay.
+- Validation: `python3 -m py_compile tools/tests/pc_vpcd_applet_test.py` and
+  `./tools/build-pc` passed. Elevated host-only recovery run logged
+  `VPCD:TEST_FAILED_CAP_INSTANCE_STORE package=57` and
+  `ERROR: PC applet INSTALL failed stage=8 sw=6581`; the next process logged
+  `VPCD:INSTALL_JOURNAL_RECOVERED package=57`, selected the applet (`9000`),
+  and passed all 11 JCAlgTest APDU checks (`TEST:SUMMARY pass=11 fail=0`). The
+  outer emulator exits 0 despite the internal INSTALL error; the regression
+  asserts the explicit marker and status word. No physical flash was run.
+- Result: Journal replay repairs an actual reported CAP instance write failure
+  after the persistent filesystem transaction committed. Combined with the
+  other restart cases, the missing-entry and already-published-entry recovery
+  paths both pass.
+- Decision: Next inject deterministic reset/power cuts at transaction,
+  metadata publication, and cleanup boundaries; keep cross-store atomicity
+  marked incomplete until then.
+- Commit: Not created; `.git` metadata/index are read-only in this environment,
+  and shared source files include unrelated pre-existing work.
+- Artifacts/logs: `artifacts/results/deploy/install-journal-metadata-error-restart-retry/FLASH_MEMORY`
+  SHA-256 `adc17e34cc04adf7413c87ed0b309509ee32c2f51f47b348b230218d12143412`;
+  `artifacts/logs/pc-vpcd-install-journal-metadata-error-restart-retry.log`
+  SHA-256 `4e4713749f5ab26ca832e095f87b9574baa98511ec3a27fb3f107ea1c2dfae3d`.
+
+## 2026-10-21 — Exercise remaining deploy applets across three readers
+
+- Step/experiment: `parallel-physical-deploy-remaining-areas-20261021`
+- Change: Ran the deploy applets not covered by the preceding Core/Crypto/
+  Service batch, distributing Security, Javacardx, JavacardxSec, JavacardxExt,
+  JavacardxInt, and Biometry over the three visible physical Pico readers.
+  No firmware was flashed.
+- Validation: Security on D92 completed 901 calls (820 `UNSUPPORTED_PER_SPEC`,
+  63 OK, 13 EXC_RUNTIME, 2 SKIPPED_BY_USER, 2 WRONG_RESULT, 1 SW_ERROR) and
+  CAP cleanup passed. Javacardx, JavacardxSec, JavacardxInt, and Biometry
+  returned expected missing-import `6A88`; all partial uploads rolled back.
+  JavacardxExt returned `6F00` twice on D92 and `6A88` on other readers; all
+  partial uploads rolled back. The repeated D92 failure is consistent with
+  stale dynamic package bitmap state on old firmware but was not proven by
+  direct package-registry inspection. All worker processes exited 0; the
+  coordinator reports each refused optional applet as a failed stage.
+- Result: Every deploy API area has now been exercised across the three boards
+  using their already-installed firmware. Optional packages remain absent;
+  this run does not validate current-source changes.
+- Decision: Compare Security's non-OK rows against current-source VPCD before
+  changing dispatch or crypto code. Do not treat missing imports or expected
+  `NO_SUCH_ALGORITHM` as implementation defects. Track D92 `6F00` against the
+  known stale-bitmap source fix; physical confirmation requires a permitted
+  firmware flash after the architecture gate is resolved.
+- Commit: Not created; `.git` metadata/index are read-only in this environment
+  and the shared worktree contains unrelated pre-existing modifications.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261021-223749/`,
+  `parallel-20261021-224015/`, and `parallel-20261021-224114/`. CSV SHA-256:
+  Security D92 `53baaaf7fcbf8bd91f41abc92e765112da1cd7fb39a2c989032c309d1252829d`,
+  Javacardx E0E `6be34c1497565317025fb258ce90db02a3ec29603d6bfb31fef792f322cef5e9`,
+  JavacardxSec 5CFC `6530ed9d8ed03258d9bfa5b174225127797046cefc699506bd0eafc36dfe8dc4`,
+  JavacardxExt D92 `1f39b4d8fbcae3e423e3a36e507f06d740264800f9706c809d1afc8c846dba88`,
+  JavacardxInt E0E `6340424a65c76b0c0630ebcc99dc396b92cd86f0bbb29ac143a4e68aa2d6116f`,
+  Biometry 5CFC `b4e7314c44db47ea09e27c736df69a356d36c2024e11a8f5cca3104bafa50efb`,
+  JavacardxExt repeat `dc39fb0befe019ad2c2d5222eaf1a172b4c0ac70aea880a5f8c8c956395b2b9c`.
+
+## 2026-10-21 — Correct VPCD applet regression check counts
+
+- Step/experiment: `vpcd-applet-test-summary-count`
+- Change: Replaced the fixed `pass=11` summary in
+  `tools/tests/pc_vpcd_applet_test.py` with mode-based counts: full suite 15,
+  select-only 2, custom APDU path `2 + N`, and two pre-restart checks when the
+  process-restart fault test runs.
+- Validation: Python syntax compilation passed. Full JCAlgTest VPCD regression
+  reports `TEST:SUMMARY pass=15 fail=0`; Security CAP install/select reports
+  `pass=2`; skipped-registry process restart recovers package 57 and reports
+  `pass=17`. Individual SHA-256, JCSystem, SELECT, and APDU checks passed.
+- Result: Current summaries now match executed checks. Older logs still print
+  `pass=11`; their individual PASS lines remain authoritative, but the numeric
+  summary undercounts and must not be reused as an exact check count.
+- Decision: Apply the corrected counting rule to future VPCD results; use the
+  current 15/2/17 summaries for regression reporting.
+- Commit: Not created; `.git` metadata/index are read-only in this environment
+  and the worktree includes extensive unrelated changes.
+- Artifacts/logs: Full JCAlgTest
+  `artifacts/logs/jcalgtest-vpcd-accurate-summary.log` SHA-256
+  `b97a06dc55d132e0fb28b9ba4f551c0bba1e7ec8c0aacd11e3f0d96a9f3b3d77`;
+  Security select-only
+  `artifacts/logs/deploy-security-select-vpcd-current-accurate.log` SHA-256
+  `3c3807f5ab6a14c4618a763a1f6f5a6903843e87554f52abfae378ae9b142312`;
+  restart `artifacts/logs/pc-vpcd-install-journal-process-restart-accurate.log`
+  SHA-256 `097f47849e47c526cd1c0c27633da63699ac24f3038dbf4c67a35fc98a12e02d`.
+
+## 2026-10-21 — Pin reader indexes for parallel physical deploy tests
+
+- Step/experiment: `parallel-deploy-reader-index-pinning-20261021`
+- Change: The parallel coordinator now captures each Pico's Java SmartcardIO
+  index with its exact PC/SC name and passes the index plus a GPPro `-r`
+  selector to the worker. This skips a second concurrent reader enumeration
+  while still pinning GPPro to the exact reader name.
+- Validation: Python compilation and `git diff --check` passed. First full
+  physical sweep found three readers but the third worker's concurrent Java
+  lookup exited before creating a CSV; the same exact lookup succeeded alone
+  at index 5. With the final index-plus-GPPro-selector invocation, the 3-reader
+  Security/Crypto/Service run completed all three workers and all uploads,
+  tests, and cleanup stages. No firmware was flashed.
+- Result: Security: 901 calls (820 `UNSUPPORTED_PER_SPEC`, 63 OK, 13
+  `EXC_RUNTIME`, 2 `SKIPPED_BY_USER`, 2 `WRONG_RESULT`, 1 `SW_ERROR`). Crypto:
+  466 calls (434 `UNSUPPORTED_PER_SPEC`, 16 `EXC_RUNTIME`, 11 OK, 3
+  `EXC_CARDRUNTIME`, 2 `SW_ERROR`). Service: 124 calls (94 OK, 28
+  `WRONG_RESULT`, 1 `SW_ERROR`, 1 `EXC_RUNTIME`). `JavacardxSec` in the first
+  unconstrained full sweep returned INSTALL `6A88`. Its CAP Import component
+  lists `A000000062020901` and `A0000000620205`; this is not a dependency on
+  the separate Security test CAP. Whether the board should provide these JC
+  API packages needs review.
+- Decision: Keep the index snapshot and exact GPPro name paired per worker.
+  Treat `JavacardxSec` 6A88 as a missing imported API package pending profile
+  review, not a dependency-scheduling failure. Investigate the recorded
+  Security/Crypto/Service non-OK rows separately; expected unsupported calls
+  are not defects.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: First sweep `artifacts/results/deploy/parallel-20261021-225120/`;
+  final pinned confirmation `artifacts/results/deploy/parallel-20261021-225932/`.
+  Confirmation CSV SHA-256: Security
+  `4df6eda84be6f68f8df95cc26a766c0460a5bf7714f67c478a2bdc87782714e2`, Crypto
+  `b7eaaad0a513f9f23f6c5eb3d9bd170da598e64366f271213c0d2061b08324bb`, Service
+  `3f4993cdbddfb15f1bb98b0111c12fa9a419d5adf075a75cac48f095d61c8a44`.
+
+
+## 2026-10-21 — Confirm three-reader setup and rerun parallel deploy APIs
+
+- Step/experiment: `three-reader-physical-recheck-20261021`
+- Change: Rechecked PC/SC visibility after the user ran the updated installer
+  helper, then exercised one API 3.0.5 area on each Pico concurrently. No
+  source or firmware was changed.
+- Validation: Elevated `pcsc_scan -r` listed D92E743D5F640C0F,
+  E0E14525E64AF6ED, and 5CFC5328F5BDE437. The elevated parallel runner pinned
+  Java reader indices 3, 4, and 5 to those exact names. Crypto completed 466
+  calls and cleanup; Service completed 124 calls and cleanup; Core completed
+  291 calls and cleanup. Core's optional Ext INSTALL returned `6A88`; the
+  partial upload rollback passed. Coordinator exit was 1 solely because that
+  optional Ext stage is recorded as refused. Total run time was about 50 sec.
+- Result: All three PC/SC readers are usable concurrently with exact routing.
+  Crypto outcomes: 434 `UNSUPPORTED_PER_SPEC`, 16 `EXC_RUNTIME`, 11 OK, 3
+  `EXC_CARDRUNTIME`, 2 `SW_ERROR`. Core: 272 OK, 15
+  `UNSUPPORTED_PER_SPEC`, 4 optional Ext calls unavailable. Service: 94 OK,
+  28 `WRONG_RESULT`, 1 `SW_ERROR`, 1 `EXC_RUNTIME`. No firmware was flashed;
+  results describe the images currently on the devices.
+- Decision: Keep assigning one independent deploy area per reader. Preserve
+  expected unsupported calls and optional `6A88` separately from runtime bugs.
+- Commit: Not created; `.git` is read-only in this environment and the shared
+  worktree has extensive unrelated modifications.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261021-231607/`. CSV
+  SHA-256: D92 Crypto
+  `202ea769fb83a6fa0b01fb4f7454423119ab560ada5f20b6fde9c19345deb5a8`, E0E Core
+  `807e69453bee86d9842195e300a273e55fb3f921f3b99e545f8dd6a550569ed5`, 5CFC
+  Service `817f061f77f2f0d17744c4a0156e98ce68f099902b986fbc395375b7a4482122`.
+
+
+## 2026-10-21 — Reject partial API results after client failure
+
+- Step/experiment: `api-runner-client-exit-status`
+- Change: Updated `AlgTest_JavaCard/deploy/api_card_runner.py` to fail the
+  TEST stage with `TEST_CLIENT_ERROR` when the Java client exits nonzero, even
+  if it produced a partial CSV. Partial rows remain available for diagnosis.
+- Validation: Synthetic client wrote one row then returned status 143; runner
+  retained the row and emitted a failed TEST stage with `TEST_CLIENT_ERROR`.
+  `python3 -m py_compile AlgTest_JavaCard/deploy/api_card_runner.py` and
+  `git diff --check` passed. No hardware/VPCD access was used for this check.
+- Result: Interrupted clients can no longer appear as completed API test runs.
+  The earlier 551-row host Security CSV is partial and not a passing result.
+- Decision: Resume the exact Security APDU stall investigation with the
+  corrected runner and treat abnormal child exit as test failure.
+- Commit: Not created; `.git` is read-only in this environment.
+- Artifacts/logs: Code change only; synthetic validation was ephemeral.
+## 2026-10-21 — Run remaining deploy areas across three physical readers
+
+- Step/experiment: `three-reader-extension-deploy-20261021`
+- Change: Used the three-reader coordinator for Security, Javacardx,
+  JavacardxExt, JavacardxSec, JavacardxInt, and Biometry API 3.0.5 areas.
+  No firmware was flashed.
+- Validation: All three exact reader names were enumerated. Security on
+  D92E743D5F640C0F completed 901 calls and cleanup: 820
+  `UNSUPPORTED_PER_SPEC`, 63 `OK`, 13 `EXC_RUNTIME`, 2
+  `SKIPPED_BY_USER`, 2 `WRONG_RESULT`, 1 `SW_ERROR`. Javacardx,
+  JavacardxSec, Biometry, JavacardxExt, and JavacardxInt INSTALL were refused
+  with `6A88`; each partial LOAD was removed. Read-only GPPro `--list` checks
+  against the exact three reader names confirmed all were physical CHOUPI
+  readers; the first contained JCAlgTest and the other two had empty applet
+  registries.
+- Result: Parallel routing and cleanup worked. The five `6A88` outcomes are
+  missing imported package dependencies; they do not demonstrate runtime
+  failures in those API areas.
+- Decision: Keep these API package-profile dependencies separate from VM
+  correctness. Continue the CAP install atomicity/power-cut coverage.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261021-232828/`;
+  CSV SHA-256: D92 Security
+  `eaf16b72e299ee9aa54b34261b33a8094ea508b3ea2c59b8b058326bf7ad66de`,
+  E0E Javacardx/JavacardxSec/Biometry
+  `cceb553c9f6c5d5e578a7ec661ccd76cb704d3cdd8be1530b0aa42900ffb4457`,
+  5CFC JavacardxExt/JavacardxInt
+  `1194ee70e972417964a6e0e8a238267d7c0c5b28c92b93934f9ae2fe85e9aa23`.
+
+
+## 2026-10-21 — Fix reader-name test routing and verify package coexistence
+
+- Step/experiment: `physical-multi-package-coexistence-and-reader-name`
+- Change: `api_card_runner.py --reader-name` added the GPPro selector but did
+  not resolve the matching SmartcardIO index, so the official Java test waited
+  at its reader prompt and exited 1. It now resolves the exact name before
+  launching the client.
+- Validation: `python3 -m py_compile AlgTest_JavaCard/deploy/api_card_runner.py`
+  and targeted `git diff --check` passed. Physical Core and Crypto CAPs were
+  installed on E0E14525E64AF6ED with Core retained while Crypto loaded. GPPro
+  listed both packages and applets as LOADED/SELECTABLE. With both resident,
+  the official client completed Core (291 calls: 272 OK, 11
+  `UNSUPPORTED_PER_SPEC`, 8 scenario methods unavailable because Multi/Ext
+  scenarios were disabled) and Crypto (466 calls: 434
+  `UNSUPPORTED_PER_SPEC`, 11 OK, 16 EXC_RUNTIME, 3 EXC_CARDRUNTIME, 2
+  SW_ERROR). Crypto and Core were then uninstalled; final GPPro `--list` showed
+  only the ISD.
+- Result: Multi-package retention, independent applet selection, exact-reader
+  name routing, and cleanup all worked on the firmware already installed on
+  this Pico. The current source image was not flashed; these results do not
+  validate source changes on hardware.
+- Decision: Keep the reader-name fix. Next continue the open CAP install
+  durability and GlobalPlatform lifecycle items; analyze only concrete VM
+  execution failures, not expected unsupported algorithms.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `AlgTest_JavaCard/deploy/results/multi-package-physical-20261021/`;
+  CSV SHA-256: Core upload/initial client failure
+  `72535b638a43d228395b4a10663f54200ca59a6184866f238d06ec1b89673b96`, Core
+  retest `3cc332b043a6ca5e231ed087bb08b213c2b78bfe4aba52636bdfa2edec8f5019`,
+  Crypto `4b5197f2d86cd140656b4d2a7f5349465aeabf8480e92cb4edc7f703a26740ce`,
+  coexistence retest `e6a46014e974fbd0d26317b41815e6297b4b5c4cb4a5291ec84018a1174fd437`.
+
+## 2026-10-21 — Resolve canonical JC305 JavacardxSec imports
+
+- Step/experiment: `jc305-javacardxsec-import-aid-aliases`
+- Change: `Import_Handler::getPackageIndex()` now accepts two exact aliases
+  from standard JC305 import AIDs to the corresponding CHOUPI ROM package AIDs:
+  `javacardx/apdu/util` and `javacardx/security`. Imported static method
+  tokens for APDUUtil and SensitiveResult are shifted by one to account for
+  the constructor token in the local ROM exports.
+- Validation: `./tools/build-pc` and `./tools/build arm` passed; ARM image end
+  `0x100c6c00`. `./tools/test-install-status` passed 11/11. The official
+  JavacardxSec deploy CAP installed and selected through host VPCD
+  (`TEST:SUMMARY pass=2 fail=0`). The standard JCAlgTest VPCD regression passed
+  15/15, including SHA-256 `doFinal`, static 50-call workload, and expected
+  `NO_SUCH_ALGORITHM`. No RISC-V build or physical flash was performed.
+- Result: The `6A88` import lookup cause is confirmed in current source and the
+  two canonical imports now link to the existing ROM packages. This is not
+  full JavacardxSec API support: generated `SensitiveResult` methods are
+  currently no-op stubs; the 84-call API behavior has not been run on current
+  source.
+- Decision: Keep the exact aliases and token maps. Next investigate and test
+  SensitiveResult semantics; leave this API area open until its calls have
+  meaningful behavior or are explicitly rejected by the profile.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/deploy-javacardxsec-import-alias-vpcd-20261021.log`
+  SHA-256 `f2d0b70345eb66ae675eb285d2c0ed2b74652e7f884775a879a1625cef4c6c8b`;
+  `artifacts/logs/jcalgtest-post-import-alias-vpcd-20261021.log` SHA-256
+  `9b8a287a2c88a09dda2e2977be58bb888439f2c3824fd1dafbc8ac99b8133a0b`;
+  `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-21 — Run deploy API coverage across three attached Picos
+
+- Step/experiment: `three-reader-deploy-api-current-firmware`
+- Change: Confirmed the three-reader PC/SC setup after the approved reader helper
+  ran, then used the parallel runner with exact Java reader indices 3–5. Ran
+  Core, Crypto, and Service in one batch and the five remaining deploy areas in
+  a second batch. No firmware was flashed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305
+  --areas Core,Crypto,Service --min-devices 3 --max-devices 3 --dry-run`
+  found D92E743D5F640C0F, E0E14525E64AF6ED, and 5CFC5328F5BDE437. The live
+  three-worker batch completed in about 45 seconds. Crypto: 466 calls, 11 OK,
+  434 `UNSUPPORTED_PER_SPEC`, 16 `EXC_RUNTIME`, 3 `EXC_CARDRUNTIME`, 2
+  `SW_ERROR`; cleanup passed. Core: 291 calls, 271 OK, 15
+  `UNSUPPORTED_PER_SPEC`, four optional Ext calls unavailable, one
+  `Applet.deselect()` `WRONG_RESULT`; Multi applet creation and cleanup passed.
+  Optional Ext INSTALL returned `6A88`, and rollback passed. Service: 124
+  calls, 94 OK, 28 `WRONG_RESULT`, one `SW_ERROR`, one `EXC_RUNTIME`; cleanup
+  passed. The five remaining areas were then distributed across the same
+  readers. Javacardx and JavacardxInt INSTALL returned `6F00`; JavacardxExt,
+  JavacardxSec, and Biometry returned `6A88`. All five partial LOAD rollbacks
+  passed, and no API calls ran for those refused areas.
+- Result: Three-reader routing, concurrent deploy execution, and rollback work
+  in this session. The client logs still print `Virtual PCD` in GPPro error
+  text, but the coordinator enumerated and pinned the three distinct physical
+  Pico names. Results apply to the already installed firmware, not the current
+  source. The `6F00`/`6A88` install refusals are package/install issues, not
+  evidence of VM method execution failures. Core deselect and Service API
+  behavior remain concrete runtime mismatches for diagnosis.
+- Decision: Keep one independent API area per Pico worker for repeatable
+  parallel runs. Investigate Core `Applet.deselect()` and Service behavior
+  separately; continue import/profile analysis for refused packages. Do not
+  attribute expected unsupported algorithm outcomes to VM defects.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261021-234459/` and
+  `artifacts/results/deploy/parallel-20261021-234630/`. First-batch CSV SHA-256:
+  Crypto `72f7ef3128ee2f1563736b3f35697d8db7d8705dcf7f0b67b8a7d289909f1eaf`,
+  Core `dd7a90d8a9b75882036a03f35100fa89119a3e9547bfaa53aa4254f0849a6291`,
+  Service `11e7ff041cfdd59b2559ccbd0694c28ce9ca7fb50af4412739623aa7a2701808`.
+  Second-batch CSV SHA-256: Javacardx/JavacardxInt
+  `0e360a27603de1ad6c48c1faab02490e5802bc6be3c710035ee2dde68ab54851`,
+  JavacardxExt/Biometry
+  `21b5df3f7b3a9c582f56de645c1ded6ac40968bd89621bb82d3b28da791a4eea`,
+  JavacardxSec
+  `b16263d8700e1b63c2b17646c20f525c816acb58696118b87e7ac72093f5ace7`.
+
+## 2026-10-22 — Validate three-reader routing and JC305 Dispatcher semantics
+
+- Step/experiment: `three-reader-service-dispatcher-current-source`
+- Change: Reused the three-reader PC/SC setup and exact-reader parallel coordinator. Validated current-source `Dispatcher` API results using the official JCAlgTest deploy catalog's decoder; no source edits or firmware flash were made in this step.
+- Validation: `pcsc_scan -r` before and after the physical run listed all three readers (D92E743D5F640C0F, E0E14525E64AF6ED, 5CFC5328F5BDE437). The parallel Core/Crypto/Service command ran all three workers and cleaned each installed CAP. Crypto completed 466 calls (11 OK, 434 `UNSUPPORTED_PER_SPEC`, 16 `EXC_RUNTIME`, three `EXC_CARDRUNTIME`, two `SW_ERROR`). Core completed 291 calls (272 OK, 15 `UNSUPPORTED_PER_SPEC`, four optional Ext calls not run); the optional Ext CAP INSTALL returned `6A88` and rollback passed. Service completed 124 calls (94 OK, 28 `WRONG_RESULT`, one `SW_ERROR`, one `EXC_RUNTIME`). The coordinator exited 1 because it counts that optional Ext INSTALL refusal as a failed stage; all worker processes exited 0 and cleanup passed. Separately, ARM and host builds recorded in the previous Service Dispatcher step passed. Current-source VPCD installed and selected the Service CAP, then ran all 33 Dispatcher cases; official decoder result: `SERVICE_API:SUMMARY total=33 pass=33 fail=0`, and harness result: `TEST:SUMMARY pass=35 fail=0` (ATR, SELECT, and 33 APDUs).
+- Result: Exact-reader routing and three-reader concurrency remain usable. Current-source Dispatcher constructor/add/remove/dispatch/process results match all 33 official expected results. Physical Service API mismatches are from firmware already installed on the boards and do not contradict the current-source VPCD result. RMIService remote invocation remains a stub.
+- Decision: Preserve the optional Ext refusal as a dependency/profile issue; next validate current-source BasicService API cases and then scope the remaining RMIService behavior. Do not flash while ARM-only scope conflicts with the repository's both-architecture flash gate.
+- Commit: Not created; repository metadata is read-only in this environment.
+- Artifacts/logs: physical results in `artifacts/results/deploy/parallel-20261022-current/`; current-source VPCD output in `artifacts/logs/service-dispatcher-official-decode-vpcd.txt` and emulator trace in `artifacts/logs/service-dispatcher-official-decode-vpcd-emulator.log`.
+
+## 2026-10-22 — Validate BasicService API cases against the official decoder
+
+- Step/experiment: `jc305-basic-service-vpcd-decoder`
+- Change: Extended a temporary build-only decoder to run all BasicService cases and the RMIService catalog cases against current-source VPCD. No repository source was changed.
+- Validation: The Service CAP installed and selected; 39 BasicService cases plus five RMIService catalog cases returned data matching the official `ApiTesting` decoder: `SERVICE_API:SUMMARY total=44 pass=44 fail=0`; transport harness `TEST:SUMMARY pass=46 fail=0` (ATR, SELECT, 44 APDUs). `BasicService` input/output state checks, common output format, status words, success/fail helpers, and CLA/INS/P1/P2 matched. RMIService constructor null handling matched. API catalog checks do not exercise a complete Java Card RMI SELECT/INVOKE exchange; `RMIService.processCommand()` remains a stub, and `setInvokeInstructionByte()` has no retained state. No physical card was modified in this step.
+- Result: Current-source VPCD passes the tested BasicService and direct RMIService API cases. Full RMI protocol support is still missing, so the whole Service framework is not complete.
+- Decision: Next inspect the SDK's RMI wire-format and object-export helpers before implementing or claiming remote invocation support. Continue to avoid flashing under the ARM-only constraint and both-architecture flash gate.
+- Commit: Not created; repository metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/service-basic-official-vpcd.txt`, `artifacts/logs/service-basic-official-decoded.txt`, `artifacts/logs/service-rmi-official-vpcd.txt`, and `artifacts/logs/service-rmi-official-decoded.txt`.
+
+## 2026-10-22 — Exercise three physical readers concurrently
+
+- Step/experiment: `three-reader-core-crypto-service-rerun-20261022`
+- Change: Ran one JC305 deploy area per attached Pico through the exact-reader parallel runner; no firmware was flashed.
+- Validation: Elevated `pcsc_scan -r` listed physical readers D92E743D5F640C0F, E0E14525E64AF6ED, and 5CFC5328F5BDE437. `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305 --areas Core,Crypto,Service --min-devices 3 --max-devices 3` ran all workers concurrently. Crypto completed 466 calls (11 OK, 434 `UNSUPPORTED_PER_SPEC`, 16 `EXC_RUNTIME`, three `EXC_CARDRUNTIME`, two `SW_ERROR`) and cleanup passed. Core completed 291 calls (272 OK, 15 `UNSUPPORTED_PER_SPEC`, four optional Ext calls unavailable); optional Ext INSTALL returned `6A88`, then rollback and Core cleanup passed. Service completed 124 calls (94 OK, 28 `WRONG_RESULT`, one `SW_ERROR`, one `EXC_RUNTIME`) and cleanup passed. Worker exit codes were all 0; coordinator exit was 1 solely because it counts optional Ext INSTALL refusal as a failed stage.
+- Result: Three-reader routing and concurrent test execution work. Core/Crypto/Service results describe installed board firmware, not the current source. No sequential baseline was measured, so speedup is not quantified.
+- Decision: Keep exact reader pinning and per-worker artifact logs. Continue current-source VPCD testing for code changes; do not flash while the ARM-only scope conflicts with the repository flash gate.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-004140/`; CSV SHA-256: Crypto `04d59e1af3ffd58e3618769904141e3cb097a9b4fa1a028bb71d397d96e5b9e3`, Core `17f6f7c7512160d06b29d325687f33c0978123f30e546794fd4cbca87ca6bbd8`, Service `6b36c15731faeecdc4ec9b659ba4c5e7f10390238257bc0ec3cd14412f4778ea`.
+
+## 2026-10-22 — Correct JC305 MessageDigest constructor dispatch
+
+- Step/experiment: `jc305-message-digest-constructor-token-map`
+- Change: Added a scoped imported-constructor token translation for `javacard.security.MessageDigest`: JC305 token 1 maps to embedded ROM export token 2 when resolving `invokespecial`. The ROM table probe showed tokens 0 and 1 have two arguments, while token 2 has the receiver-only signature. This prevents entering a factory method as the superclass constructor.
+- Validation: Before the fix, the official Security call `MessageDigest()` from a subclass returned `6F00` with `StackUnderflowException`. After the fix, the isolated call returned `049000` and `TEST:SUMMARY pass=3 fail=0`. The full 901-case Security CAP completed with `TEST:SUMMARY pass=903 fail=0`. Official result decoding: 64 `OK`, 822 spec-allowed `UNSUPPORTED_PER_SPEC`, 13 `EXC_RUNTIME`, and two `WRONG_RESULT`; expected unsupported algorithms remain allowed. `./tools/build arm` and `./tools/build-pc` passed. Host build emitted existing Rust and packed-member warnings. RISC-V build and physical flash were intentionally skipped under the ARM-only scope and repository flash gate.
+- Result: The MessageDigest subclass constructor path now executes through the full Security matrix. Remaining runtime statuses and value mismatches are recorded for later triage; this step does not claim complete Security API support.
+- Decision: Preserve this narrow constructor mapping. Next resume the higher-level Service RMI protocol gap, keeping unsupported algorithms distinct from defects.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/security-case407-final.txt`, `artifacts/logs/security-case407-final-emulator.log`, `artifacts/logs/security-full-vpcd-fixed.txt`, `artifacts/logs/security-full-vpcd-fixed-decoded.txt`, `artifacts/logs/security-full-vpcd-fixed-emulator.log`, `artifacts/logs/build-arm-security-constructor-fix.log`, and `artifacts/logs/build-pc-security-constructor-fix-final-normal.log`. Full harness output SHA-256: `1a8aa0c20cbd35b56f8d145b6103980118889baedf9016a1ecc77bc7bf75de14`; decoded output SHA-256: `a73b94b268a0ff5e5153164a67366ee4eab44b4abd4be2ec9da3a73c6343359b`.
+
+
+## 2026-10-22 — Run current firmware deploy APIs across three readers
+
+- Step/experiment: `three-reader-core-crypto-service-rerun-20261022-012453`
+- Change: Refreshed USB permissions with the approved helper, confirmed all three physical CHOUPI PC/SC readers, and ran one JC305 deploy area on each reader concurrently. No device was flashed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`, `PICO2_HOST_USB_ACCESS=1 pcsc_scan -r`, and `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305 --areas Core,Crypto,Service --min-devices 3 --max-devices 3` (host access via elevated execution). Readers: D92E743D5F640C0F, E0E14525E64AF6ED, 5CFC5328F5BDE437. Crypto completed 466 calls (11 OK, 434 spec-allowed unsupported, 16 EXC_RUNTIME, three EXC_CARDRUNTIME, two SW_ERROR) and cleanup passed. Core completed 291 calls (272 OK, 15 spec-allowed unsupported, four optional Ext calls unavailable); optional Ext INSTALL returned 6A88, rollback passed, and Core/Multi cleanup passed. Service completed 124 calls (94 OK, 28 WRONG_RESULT, one SW_ERROR, one EXC_RUNTIME) and cleanup passed. All workers exited 0; coordinator exit 1 because optional Ext refusal is counted as a failed stage.
+- Result: Three-way reader routing and concurrent deploy execution remain functional. The measured API results describe the firmware already on the boards, not current source; no speedup baseline was measured.
+- Decision: Keep exact-reader assignment and one area per worker. Diagnose current-source Service behavior through VPCD; do not flash under ARM-only scope and the repository's two-architecture flash gate.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-012453/`; CSV SHA-256: Crypto `52799dfb81efbe56168b87a2e726118ef6cfc8dd0e5a1f06b12af0a73f4a15da`, Core `ca6379cf6ed1fe48a8627fdad7c9197878492402958dde42cbb3f66408637613`, Service `41a56291602347c7b534c78db30d04f1580f11f95ba6c4bf546d5443378a114c`.
+
+
+## 2026-10-22 — Validate the current-source Service deploy matrix
+
+- Step/experiment: `jc305-service-api-vpcd-current-rmi-state`
+- Change: Re-ran all 124 JC305 Service API probes against current-source host VPCD using the Service CAP's actual applet AID, `4A43416C675465737441706953766331` (`JCAlgTestApiSvc1`). No VM source was changed in this validation step.
+- Validation: The initial attempt used the Security AID (`...53656331`) and failed CAP INSTALL at stage 4/`6A82` before APDUs. Reading the CAP's `Applet.cap` showed the correct Service AID; the corrected run installed and selected the CAP and completed with `TEST:SUMMARY pass=126 fail=0` (ATR, SELECT, 124 APDUs). Official decoder: `SERVICE_API:SUMMARY total=124 pass=124 fail=0`. ARM and host builds from the immediately preceding implementation step passed. No RISC-V build, physical flash, or current-source physical test was performed.
+- Result: The earlier stage-4 failure was a test AID mismatch, not a loader regression. Service catalog behavior including the RMIService public API entry points matches expected return values, but catalog tests do not exercise an RMI SELECT/INVOKE exchange or exported-object access.
+- Decision: Keep the Service applet AID sourced from each CAP rather than reusing an AID from another API area. Resume RMI wire protocol design and implementation; no flash under ARM-only scope and the two-architecture flash gate.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/service-rmi-state-vpcd-correct-aid.txt` (SHA-256 `2e34ba668f2b0370a199ca0bc134e4b7f5da6d1f95277f50d472558eb1cff0da`), `artifacts/logs/service-rmi-state-vpcd-correct-aid-emulator.log`, and `artifacts/logs/service-rmi-state-vpcd-correct-aid-decoded.txt`.
+
+
+## 2026-10-22 — Retain RMIService initial reference and invoke INS state
+
+- Step/experiment: `rmi-service-selection-state-foundation`
+- Change: `RMIService` now retains its initial `Remote`, tracks the active and pending invoke instruction bytes, stages updates in `setInvokeInstructionByte()`, and provides a selection-session activation helper. This is groundwork only; the selection path does not call the helper yet.
+- Validation: `./tools/build arm` passed (`artifacts/logs/build-arm-rmi-session-state.log`); `./tools/build-pc` passed (`artifacts/logs/build-pc-rmi-session-state.log`). Correct-AID host VPCD Service CAP install and all 124 official API catalog cases passed (`SERVICE_API:SUMMARY total=124 pass=124 fail=0`). This catalog verifies public call completion, not that a subsequent SELECT returns the changed INS or exports an object reference. No RISC-V build, current-source physical flash, or device flash was performed.
+- Result: The Java object has the state needed for deferred INS activation. Complete RMI SELECT response construction, object export tracking, and INVOKE execution remain unimplemented.
+- Decision: Implement the selection protocol slice next and add a fixture that observes active INS and the initial remote reference end-to-end.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: ARM and host build logs above; Service VPCD artifacts are recorded in `jc305-service-api-vpcd-current-rmi-state`.
+
+
+## 2026-10-22 — Add per-applet exported remote-object registry
+
+- Step/experiment: `rmi-exported-object-registry`
+- Change: `CardRemoteObject.export()` and `unexport()` now call VM natives backed by a per-applet 32-slot registry. Entries get stable non-null 16-bit IDs, are visited as GC roots, can be re-exported with their original ID, and unexported entries are no longer returned by lookup. Capacity is deliberately above the Java Card minimum to account for existing applet references.
+- Validation: `./tools/build arm` and `./tools/build-pc` passed. Current-source Service CAP VPCD run completed 124 APDUs with `TEST:SUMMARY pass=126 fail=0`; official decoder reports `SERVICE_API:SUMMARY total=124 pass=124 fail=0`. The 16-object case failed at first with `SystemException.NO_RESOURCE` when the registry had 16 slots, because the applet already had remote objects registered; it passed after increasing capacity to 32. No RISC-V build, physical flash, or current-source physical validation was performed.
+- Result: Export/unexport API behavior and the deploy CAP's 16-object capacity scenario pass. Direct GC survival assertions and RMI session-retention behavior are not covered; RMI SELECT/INVOKE remains unimplemented.
+- Decision: Keep the 32-entry bounded registry. Next add explicit per-selection references and connect them to RMI SELECT; then implement reference encoding and INVOKE dispatch.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/build-arm-rmi-export-registry-final.log`, `artifacts/logs/build-pc-rmi-export-registry-final.log`, `artifacts/logs/service-rmi-export-registry-final.txt` (SHA-256 `805fe719b026f7f5462d63c749c43c55a2c011c1d63d7434dae413bf0785039c`), and `artifacts/logs/service-rmi-export-registry-final-decoded.txt`.
+
+
+## 2026-10-22 — Track RMI references published in the active selection
+
+- Step/experiment: `rmi-selection-reference-retention`
+- Change: Added a session-reference bit to exported-object entries. Unexport now releases unpublished objects immediately; a reference explicitly retained for the current selection remains resolvable until applet deselection, when unexported entries are removed. `NativeImplementation.retainRemoteObjectForSession()` exposes the operation, and `RMIService.beginSelectionSession()` now activates its pending invoke INS and retains its initial object. The method is not yet called from `processCommand()` because SELECT response encoding is not implemented.
+- Validation: New `./tools/test-rmi-registry` passes (`RMI_REGISTRY:PASS ids=32 roots=1 session_cleanup=1`), covering stable IDs, capacity, exported-object GC-root enumeration, session retention through unexport, and cleanup on deselection. `./tools/build arm` and `./tools/build-pc` pass. Current-source Service VPCD completed all 124 cases (`TEST:SUMMARY pass=126 fail=0`; `SERVICE_API:SUMMARY total=124 pass=124 fail=0`). No RISC-V build, physical flash, or current-source physical test was run.
+- Result: Registry session behavior has focused host evidence. It is not yet wired to an actual RMI SELECT, and full object-reference encoding/remote invocation remain open.
+- Decision: Next integrate the session helper into the RMI SELECT path and add a VPCD fixture for the initial-reference response and configured INS.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `tools/tests/rmi_registry/`, `tools/test-rmi-registry`, `artifacts/logs/build-arm-rmi-session-retention.log`, `artifacts/logs/build-pc-rmi-session-retention.log`, `artifacts/logs/service-rmi-session-retention.txt` (SHA-256 `3aa76be744648acb0550c2f5dc3d8d107951cfed8ac1a7bc6990080bc68d27cc`), and `artifacts/logs/service-rmi-session-retention-decoded.txt`.
+
+
+## 2026-10-22 — Revalidate three-reader parallel deploy setup
+
+- Step/experiment: `three-reader-core-crypto-service-rerun-20261022-014958`
+- Change: After the PC/SC permission helper ran, confirmed the three physical readers and executed the existing three-worker JC305 deploy runner. No firmware was flashed and no source code changed.
+- Validation: Elevated `pcsc_scan -r` listed physical readers D92E743D5F640C0F, E0E14525E64AF6ED, and 5CFC5328F5BDE437 at Java reader indices 3, 4, and 5 (virtual readers were indices 0–1). `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305 --areas Core,Crypto,Service --min-devices 3 --max-devices 3` assigned Crypto/Core/Service to separate readers. Crypto completed 466 calls (11 OK, 434 spec-allowed unsupported, 16 EXC_RUNTIME, 3 EXC_CARDRUNTIME, 2 SW_ERROR); Core completed 291 calls (272 OK, 15 spec-allowed unsupported, 4 optional Ext calls unavailable); Service completed 124 calls (94 OK, 28 WRONG_RESULT, 1 SW_ERROR, 1 EXC_RUNTIME). All workers exited 0 and all three CAP cleanup stages passed. Core's optional Ext INSTALL returned `6A88`, rollback passed, and this expected unavailable optional package caused coordinator exit 1.
+- Result: The PC/SC helper and parallel runner can route concurrent deploy tests to all three live Pico readers. Results describe the firmware currently on the cards, not current source. No performance speedup baseline was measured.
+- Decision: Keep exact reader-name routing and three-way independent-area assignment. Resume current-source RMI SELECT/INVOKE implementation and VPCD validation; no flash under the ARM-only scope and repository flash gate.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-014958/`; CSV SHA-256: Crypto `1ec235a111705a8b07fbf4bb071c9ec86ec0c405881560d74f9665ef76409a5a`, Core `8dbbfded2752d398cf61302c8f3d25fdeb9241d285fe2f61a6b475e9cf94175e`, Service `17fe5207062c6061a9e983f9a959773cfe55a12ec097178457ea5f4519ce9f2e`.
+
+
+## 2026-10-22 — Identify missing metadata for RMI references
+
+- Step/experiment: `jc305-rmi-reference-name-metadata-inspection`
+- Change: Inspected the RMI API, JC305 CAP contents, and Runtime Environment Specification to establish what blocks a correct SELECT reference descriptor. No VM source changed.
+- Validation: The official JC305 spec defines SELECT response FCI tags `6F/6E/5E`, version `0202`, invoke INS, and a remote reference descriptor; its default class format requires package/class names and the alternate format requires interface names. The deploy Service CAP contains Class/Method/Descriptor components and packaged `.class` resources, but no `Debug.cap`; runtime sources contain no Debug component parser. This is static inspection only; no RMI APDU was run.
+- Result: Encoding an object ID alone would produce an invalid/incomplete interoperable RMI reference. Supporting standard optional Debug component metadata is a prerequisite for naming types, unless a separate standards-compliant metadata source is found.
+- Decision: Add Debug component support/metadata retention to the RMI prerequisites before implementing SELECT FCI; retain the current ARM-only/no-flash scope.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Inspection of `AlgTest_JavaCard/deploy/caps/AlgTestApiService_305.cap` and `choupi/src/jc_cap/`; official reference: [JC305 Runtime Environment Specification, RMI sections](https://docs.oracle.com/cd/E59935_01/JCCRE.pdf).
+
+## 2026-10-22 — Correct RMI metadata source and refresh three-reader access
+
+- Step/experiment: `rmi-cap-metadata-correction-and-reader-refresh`
+- Change: Corrected the earlier conclusion that RMI type names require the optional Debug component. The Java Card VM spec defines remote class metadata in Class component records for CAP 2.2+. Recorded that the supplied Service CAP is format 2.1 and cannot validate that metadata. Updated `TODO.md`, `.agent/QKB.md`, and `.agent/HANDOFF.md`; the existing Class remote-info parser is explicitly treated as an incomplete foundation pending a real CAP 2.2 fixture.
+- Validation: Refreshed USB permissions with `sudo -n /usr/local/sbin/pico2-pcsc-reader` and ran elevated `pcsc_scan -r`; all three physical readers appeared: D92E743D5F640C0F, E0E14525E64AF6ED, 5CFC5328F5BDE437. `./tools/test-rmi-cap-metadata` passed (`RMI_CAP_METADATA:PASS methods=1 class_name=Impl interfaces=1`); `./tools/test-rmi-registry` passed (`RMI_REGISTRY:PASS ids=32 roots=1 session_cleanup=1`); `./tools/build arm` and `./tools/build-pc` passed. RISC-V build, physical APDUs, and flashing were intentionally skipped under ARM-only/no-flash scope.
+- Result: Reader access is ready for parallel physical tests. The synthetic RMI test validates the currently modeled remote-info tail only; complete CAP 2.2 parsing and interoperability are not established. Service CAP header bytes identify version 2.1 (`minor=1`, `major=2`).
+- Decision: Obtain or generate a remote-enabled CAP 2.2+ fixture and validate complete Header/Class parsing before implementing RMI SELECT reference encoding. Do not infer names from Debug absence or claim interoperability from the synthetic test.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/build-arm-rmi-cap-metadata-resume.log`, `artifacts/logs/build-pc-rmi-cap-metadata-resume.log`; no new physical-test log.
+
+
+## 2026-10-22 — Run JC305 deploy areas concurrently across three Pico readers
+
+- Step/experiment: `three-reader-core-crypto-service-rerun-20261022-020215`
+- Change: Refreshed PC/SC permissions and ran one independent deploy API area per physical Pico using the parallel runner. No firmware was flashed.
+- Validation: Elevated `pcsc_scan -r` listed physical readers D92E743D5F640C0F, E0E14525E64AF6ED, and 5CFC5328F5BDE437. `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305 --areas Core,Crypto,Service --min-devices 3 --max-devices 3` assigned Crypto/Core/Service to separate readers. The run completed in about 59 seconds. Crypto: 466 calls (11 OK, 434 spec-allowed unsupported, 16 EXC_RUNTIME, 3 EXC_CARDRUNTIME, 2 SW_ERROR); cleanup passed. Core: 291 calls (272 OK, 15 spec-allowed unsupported, four optional Ext methods unavailable); optional Ext INSTALL returned 6A88 and rollback passed. Service: 124 calls (94 OK, 28 WRONG_RESULT, one SW_ERROR, one EXC_RUNTIME); cleanup passed. All worker processes exited 0; coordinator exit 1 because optional Ext INSTALL refusal is counted as a failed stage.
+- Result: Three-reader routing and parallel deploy testing work again. Results apply to firmware already installed on the cards and do not validate current source. No sequential baseline was collected, so no speedup claim is made.
+- Decision: Keep this runner for independent deploy areas; focus implementation work on the RMI metadata gap using a CAP 2.2+ fixture.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-020215/`; CSV SHA-256: Crypto `afc1948e5741f4d7d466e724fc2980fc15f800acc4288d98dff4be81881d35f5`, Core `62ee65f3180cc7f2f52d80182cf5ec93046ea038324589f194094ba4d50ff92e`, Service `ee08d099e0c47a46e8e20ba76ebb2ac8ee33300748e223efe36bb1594ed13fcb`.
+
+
+## 2026-10-22 — Verify recovery when install-journal cleanup sync fails
+
+- Step/experiment: `install-journal-clear-sync-process-restart`
+- Change: Added a PC-only one-shot sync failure, armed specifically during transactional journal cleanup after CAP instance publication. Added a VPCD process-restart test that confirms rollback preserves the journal and a fresh process clears it idempotently. The runner captures the dynamic package ID from CAP LOAD for restart.
+- Validation: Initial test run failed SELECT `6F00` because restart used requested package ID 63 instead of assigned ID 56; the failure established the actual package mapping requirement. After correcting package-ID propagation, `./tools/test-pc-vpcd-applet --verify-install-journal-clear-restart --passes 1` passed with `TEST:SUMMARY pass=17 fail=0`, including SELECT `9000`, GETVERSION `1.8.2_jc305`, JCSystem info, SHA-256 support/doFinal/static, and expected unsupported-algorithm status. `./tools/test-persistent-transaction`, `./tools/build arm`, and `./tools/build-pc` passed. No RISC-V build, physical APDU, or flash was performed.
+- Result: Host transaction rollback after journal-clear sync failure leaves a recoverable install journal; fresh-process recovery tolerates an already-published applet instance. This does not prove real RP2350 flash interruption behavior.
+- Decision: Extend RP2350 filesystem-overlay cut tests to exercise the journal clear/update boundary. Keep the ARM-only/no-flash restriction.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/install-journal-clear-sync-restart-20261022-retry.log`, `artifacts/logs/build-arm-install-journal-clear-recovery.log`, and `artifacts/logs/build-pc-install-journal-clear-recovery.log`.
+
+
+## 2026-10-22 — Test install recovery across filesystem and CAP registry cuts
+
+- Step/experiment: `rp2350-overlay-cross-store-install-recovery`
+- Change: Extended the RP2350 fake-flash overlay harness with a combined install journal/CAP registry scenario. It commits the filesystem recovery record before applet instance publication, then injects cuts during the actual CAP slot copy-on-write header update and runs idempotent recovery.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). Across 1,000 deterministic pseudo-random CAP header cut locations, every restart retained an intact journal and a readable old or fully published CAP header; recovery finished instance publication, cleared the journal, and preserved applet AID, instance AID, and class index `0x0123` after a further restart. ARM/host builds were not rerun because only the host fake-flash test harness changed in this step. No RISC-V build, physical APDU, or flash was performed.
+- Result: The install ordering across the RP2350 filesystem snapshot and CAP copy-on-write header now has combined restart/failure-injection coverage. This remains fake-flash simulation, not electrical power-cut validation.
+- Decision: Continue the broader install/recovery edge audit, then return to Service RMI CAP 2.2 metadata and SELECT/INVOKE work.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `build/tests/rp2350-fs-overlay/rp2350_fs_overlay_test`; no separate log file.
+
+
+## 2026-10-22 — Simulate flash cuts while clearing the install journal
+
+- Step/experiment: `rp2350-overlay-install-journal-clear-cuts`
+- Change: Extended the RP2350 filesystem-overlay fake-flash test with the install lifecycle journal tag (`02 FF 38 03`). It commits a journal record, stages its transactional erase, then cuts power during the new snapshot write.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`. The targeted test ran 1,000 deterministic pseudo-random cut locations across snapshot erase/program mutations and verified every reboot recovered either the byte-identical committed journal or the committed cleared state. No RISC-V build, physical APDU, or flash was performed.
+- Result: Filesystem snapshot atomicity is now directly covered for the install-journal clear operation in the RP2350 storage implementation's fake-flash harness. This does not test actual electrical power cuts or the full CAP-header/filesystem transaction as a single integrated crash fixture.
+- Decision: Audit cross-store ordering and add a combined CAP-header/filesystem restart case where the existing host emulation provides meaningful coverage. Keep ARM-only/no-flash scope.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `build/tests/rp2350-fs-overlay/rp2350_fs_overlay_test`; no separate log file.
+
+
+## 2026-10-22 — Test atomic install-journal and applet-state creation
+
+- Step/experiment: `rp2350-overlay-install-journal-create-cuts`
+- Change: Extended the RP2350 fake-flash overlay harness to create the install intent journal and applet persistent-state record in the same transaction, then inject interruption during the committed snapshot write.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`. The new case ran 1,000 deterministic pseudo-random mutation cut locations; each simulated reboot recovered either neither record or both complete byte-exact records. Existing clear-journal and CAP-header publication cut cases also passed. No ARM build was needed because only the host fake-flash test changed. No RISC-V build, physical APDU, or flash was performed.
+- Result: Fake-flash cut coverage now exercises install transaction creation, CAP instance-header publication, and journal clear. It does not establish behavior under electrical power interruption on RP2350 hardware.
+- Decision: Continue auditing install crash boundaries, then resume Service RMI fixture work. Keep ARM-only/no-flash scope.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `build/tests/rp2350-fs-overlay/rp2350_fs_overlay_test`; no separate log file.
+
+
+## 2026-10-22 — Run all JC305 deploy areas across three physical Picos
+
+- Step/experiment: `three-reader-all-api-areas-20261022-021536`
+- Change: Used the three live physical PC/SC readers to run the full JC305 deploy-area set concurrently. The documented PC/SC helper granted access to three USB nodes; `pcsc_scan -r` showed readers D92E743D5F640C0F, E0E14525E64AF6ED, and 5CFC5328F5BDE437 (Java reader indices 3–5). No firmware was flashed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305 --min-devices 3 --max-devices 3` completed all three workers. Security: 901 calls (63 OK, 820 spec-allowed unsupported, 13 EXC_RUNTIME, two WRONG_RESULT, two user-skipped, one SW_ERROR). Crypto: 466 calls (11 OK, 434 spec-allowed unsupported, 16 EXC_RUNTIME, three EXC_CARDRUNTIME, two SW_ERROR). Service: 124 calls (94 OK, 28 WRONG_RESULT, one EXC_RUNTIME, one SW_ERROR). Core: 291 calls (271 OK, 15 spec-allowed unsupported, four optional Ext scenarios not installed, one WRONG_RESULT). Main CAP cleanup passed. Optional Core Ext, JavacardxSec, Javacardx, JavacardxExt, JavacardxInt, and Biometry INSTALL returned `6A88`; all partial LOADs were rolled back. Workers exited 0; coordinator returned 1 because optional INSTALL refusals are classified as failed stages.
+- Result: Three-reader full-area routing and cleanup work. `UNSUPPORTED_PER_SPEC` rows and optional package `6A88` refusals are expected capability/package findings; the runtime, wrong-result, and SW_ERROR rows need current-source correlation before attributing them to code, since this firmware was not built from current source.
+- Decision: Validate physical error rows against current-source VPCD coverage before implementation changes, then continue the RMI CAP 2.2+ fixture path. Keep ARM-only/no-flash scope.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-021536/`; CSV SHA-256: pico1 `422ca434884bde410d68982d2037d85bedeb2d91bbc633559b00425731849cfe`, pico2 `e74fea8db046a76e8f36cb47aff697f47b136498debe7963fa8642dcaf4c6e20`, pico3 `08764a6544ed6ce84398552a792845e2d3178404f37e18797549eb8c071a3247`.
+
+
+## 2026-10-22 — Parse bounded package names from CAP 2.2 Headers
+
+- Step/experiment: `rmi-cap22-header-package-name`
+- Change: Added accessors for the CAP 2.2+ Header package-name field following package AID data. Accessors check the Header component length, AID length, name-length byte availability, and complete name bytes before returning a pointer. CAP 2.1 does not expose this optional field.
+- Validation: `./tools/test-rmi-cap-metadata` passed synthetic valid CAP 2.2, absent CAP 2.1, truncated-length, and truncated-name cases (`RMI_CAP_METADATA:PASS package_name=bounded methods=1 class_name=Impl interfaces=1`). `./tools/build arm` passed (`BUILD:PASS target=choupi`, image end `0x100c7368`). The initial truncated-name assertion incorrectly expected the still-present length byte to be unavailable; after correcting the test to check full-name rejection, it passed. No RISC-V or PC build, physical APDU, or flash was run.
+- Result: CAP package names can now be read safely from a version 2.2+ Header when the component data is complete. This remains synthetic validation; no remote-enabled CAP fixture was checked.
+- Decision: Inspect the bundled CAP converter and generated component files for a way to create a small authentic remote-enabled CAP 2.2 fixture, then validate interface references and signature-pool layout.
+- Commit: Not created; repository `.git` metadata is read-only in this environment.
+- Artifacts/logs: `build/tests/rmi-cap-metadata/rmi_cap_metadata_test`; ARM output `build/arm/pico2_choupi.uf2`; no separate log file.
+## 2026-10-22 — Validate CAP 2.2 remote metadata against converter output
+
+- Step/experiment: `rmi-cap22-component-layout-fixture`
+- Change: Added CAP Class component accessors for the CAP 2.2+ signature-pool
+  prefix and optional remote interface names, including rejection of a
+  signature-pool length that exceeds the declared component. Extended the RMI
+  metadata test to parse exact Header/Class component bytes emitted by the
+  bundled JCDK 3.0.5 converter for a remote-enabled CAP 2.2 fixture. Updated
+  TODO, QKB, and handoff with the new evidence and remaining RMI work.
+- Validation: `./tools/test-rmi-cap-metadata` passed:
+  `RMI_CAP_METADATA:PASS package_name=bounded signature_pool=4
+  remote_methods=2 interface=Counter class=CounterImpl`. `./tools/build arm`
+  passed (`BUILD:PASS target=choupi`, image end `0x100c7368`). The authorized
+  host USB path refreshed access and elevated `pcsc_scan -r` showed all three
+  physical readers. RISC-V/PC builds, physical APDUs, and flashing were
+  intentionally skipped. `git diff --check` reports CR at end-of-line as
+  whitespace on the repository's CRLF-formatted modified source; no compiler
+  warnings were reported.
+- Result: Actual emitted CAP 2.2 component layout is validated for the package
+  name, signature pool, remote interface/class metadata, method hashes and
+  remote-interface references. The CAP itself has not been loaded/executed;
+  SELECT/INVOKE interoperability remains unverified.
+- Decision: Connect the parsed CAP metadata to RMI SELECT FCI/reference
+  encoding, then run a current-source VPCD scenario with this fixture. Keep
+  ARM-only/no-flash scope.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `build/rmi-cap22-fixture/cap/rmi/fixture/javacard/fixture.cap`
+  (SHA-256 `5ef8e4587a9445bf5bc80b25b36496261c49e18e5d18e87039254d53a5eb114c`);
+  test binary `build/tests/rmi-cap-metadata/rmi_cap_metadata_test`;
+  firmware image `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-22 — Run JC305 deploy APIs across three physical readers
+
+- Step/experiment: `three-reader-deploy-all-areas-20261022-023306`
+- Change: Ran the deploy-folder JC305 API test runner across all three attached
+  Pico PC/SC readers concurrently. The run performed CAP install/test/cleanup;
+  no firmware was flashed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305
+  --min-devices 3 --max-devices 3` found D92E743D5F640C0F,
+  E0E14525E64AF6ED, and 5CFC5328F5BDE437. Security: 901 calls (63 OK, 820
+  per-spec unsupported, 13 EXC_RUNTIME, two WRONG_RESULT, two skipped, one
+  SW_ERROR). Crypto: 466 (11 OK, 434 per-spec unsupported, 16 EXC_RUNTIME,
+  three EXC_CARDRUNTIME, two SW_ERROR). Service: 124 (94 OK, 28 WRONG_RESULT,
+  one EXC_RUNTIME, one SW_ERROR). Core: 291 (272 OK, 15 per-spec unsupported,
+  four optional scenarios unavailable). Optional JavacardxSec, Javacardx,
+  JavacardxExt, JavacardxInt, Biometry, and Core Ext INSTALLs returned `6A88`;
+  each partial load was rolled back. Workers exited 0; coordinator exited 1
+  because those six optional install stages are classified as failures.
+- Result: Three physical readers were successfully used in parallel for the
+  full JC305 deploy set. Unsupported-per-spec results and missing optional
+  packages are expected profile findings. Runtime/wrong-result/SW_ERROR rows
+  describe firmware already installed on the boards and do not validate current
+  source.
+- Decision: Keep this as the physical deploy baseline. Continue current-source
+  RMI implementation through VPCD; do not flash under ARM-only scope and the
+  two-architecture flash gate.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-023306/`; CSV
+  SHA-256: pico1 `ded2b44d0597a915c44678516f7e74fcfe13bb70a55d561212ec7297b171d8ad`,
+  pico2 `f5343711edf7224d227e25fdb34220bb83ed401322fefce613a221c465b95308`,
+  pico3 `ad2952ff180025e77b4c66ea67c91becb1158604a75244027b12cdafafb987df`.
+
+## 2026-10-22 — Encode standard Java Card RMI reference descriptors
+
+- Step/experiment: `rmi-reference-descriptor-encoders`
+- Change: Added bounded encoders for both `remote_ref_with_class` and
+  `remote_ref_with_interfaces` descriptors. They serialize the 16-bit object
+  ID, hash modifier, package/class or interface names, and validate the
+  reserved null ID, interface count, required names, and destination capacity.
+  Extended the converter-emitted CAP fixture test with descriptor
+  known-answer assertions.
+- Validation: `./tools/test-rmi-cap-metadata` passed with
+  `RMI_CAP_METADATA:PASS package_name=bounded signature_pool=4
+  remote_methods=2 interface=Counter class=CounterImpl`; class and interface
+  descriptor bytes matched the expected Java Card RMI encodings. Rejected
+  `0xFFFF`, missing first interface package name, and undersized output buffer.
+  `./tools/build arm` passed (`BUILD:PASS target=choupi`, image end
+  `0x100c7368`). No RISC-V or PC build, physical APDU, or flash was run.
+- Result: The RMI descriptor serialization format is covered by fixture-backed
+  known-answer checks, but no runtime/native code calls these encoders yet.
+- Decision: Add the native bridge from exported object to CAP remote metadata,
+  then generate FCI in `RMIService.processCommand()` and verify SELECT through
+  current-source VPCD.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `tools/tests/rmi_cap_metadata/rmi_cap_metadata_test.cpp`;
+  `build/tests/rmi-cap-metadata/rmi_cap_metadata_test`;
+  `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-22 — Revalidate parallel deploy across three connected Pico 2 readers
+
+- Step/experiment: `three-reader-deploy-all-areas-20261022-024604`
+- Change: Re-ran the Java Card 3.0.5 deploy suite with the installer helper's
+  three physical readers. No firmware was flashed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n
+  /usr/local/sbin/pico2-pcsc-reader && PICO2_HOST_USB_ACCESS=1 pcsc_scan -r`
+  found D92E743D5F640C0F, E0E14525E64AF6ED, and 5CFC5328F5BDE437. The parallel
+  deploy runner found three readers and launched three workers. Security: 901
+  calls (63 OK, 820 `UNSUPPORTED_PER_SPEC`, 13 `EXC_RUNTIME`, two
+  `WRONG_RESULT`, two skipped, one `SW_ERROR`). Crypto: 466 calls (11 OK, 434
+  `UNSUPPORTED_PER_SPEC`, 16 `EXC_RUNTIME`, three `EXC_CARDRUNTIME`, two
+  `SW_ERROR`). Service: 124 calls (94 OK, 28 `WRONG_RESULT`, one
+  `EXC_RUNTIME`, one `SW_ERROR`). Core: 291 calls (272 OK, 15
+  `UNSUPPORTED_PER_SPEC`, four optional scenarios unavailable). Six optional
+  INSTALL stages returned `6A88`; all partial loads were rolled back. All
+  workers exited 0; coordinator exited 1 because of these optional stages.
+- Result: Three attached readers were used concurrently. Results exercise the
+  previously installed firmware and do not validate current source.
+- Decision: Keep all three devices available for parallel testing. Continue
+  current-source RMI work in the host emulator; no flash is authorized under
+  the ARM-only/two-architecture flash gate.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-024604/`.
+
+## 2026-10-22 — Implement RMI SELECT FCI for CAP 2.2 remote objects
+
+- Step/experiment: `rmi-select-fci-vpcd-20261022`
+- Change: Wired the CAP remote-metadata encoders into a native
+  `RMIService.processCommand()` SELECT path, emitted the Java Card RMI FCI
+  structure, restored the initial object's transient export registration when
+  the installed applet graph is restored, and accepted SELECT P2 `0x10` in the
+  CCID/VPCD applet-selection paths. The VPCD harness can request either P2
+  form and assert exact SELECT response data.
+- Validation: `./tools/test-rmi-cap-metadata` passed. `./tools/build arm`
+  passed (`BUILD:PASS target=choupi`, image end `0x100c794c`), and
+  `./tools/build-pc` passed (`ROMMASK:PASS`, host emulator linked). VPCD
+  fixture SELECT passed with exact expected FCI for class form
+  (`6F236E215E1F020238810001000B726D692F666978747572650B436F756E746572496D706C`)
+  and interface form
+  (`6F206E1E5E1C02023881000100010B726D692F6669787475726507436F756E746572`);
+  both report `TEST:SUMMARY pass=2 fail=0`. Harness Python syntax compilation
+  passed. `git diff --check` still reports CR characters in pre-existing
+  CRLF-formatted modified source files; line endings were preserved.
+- Result: The VM installs the converter-generated CAP 2.2 fixture, selects its
+  applet, retains/restores the initial remote object, and returns the expected
+  class or interface reference in FCI. No external JCRMI client or remote
+  INVOKE was tested. No firmware was flashed.
+- Decision: Continue with RMI INVOKE command parsing, remote method lookup,
+  parameter decoding, dispatch, and response marshalling. Preserve ARM-only
+  and no-flash scope.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/rmi-select-class-vpcd-20261022.log`,
+  `artifacts/logs/rmi-select-interfaces-vpcd-20261022.log`, fixture
+  `build/rmi-cap22-fixture/cap/rmi/fixture/javacard/fixture.cap`.
+## 2026-10-22 — Three-reader deploy and persistent RMI primitive fields
+
+- Step/experiment: `three-reader-deploy-rmi-short-invoke-20261022`
+- Change: Confirmed three distinct physical readers are routable concurrently.
+  Fixed persistent byte, short, and int getters to read through the restored
+  instance field cache, preserving default values and type validation. Removed
+  temporary RMI/frame/field tracing after diagnosis.
+- Validation: Reader dry run mapped D92E743D5F640C0F, E0E14525E64AF6ED, and
+  5CFC5328F5BDE437 to indices 3–5. Parallel JC305 run of Crypto/Core/Service
+  completed with all three workers exit 0; only optional Core Ext INSTALL was
+  refused with expected `6A88` and rolled back. Final `pcsc_scan -r` listed all
+  three readers. `./tools/build arm`, `./tools/build riscv`, and
+  `./tools/build-pc` passed. Current-source VPCD SELECT + `Counter.add(short)`
+  + `Counter.value()` passed exactly (`8100039000` for both method replies),
+  `TEST:SUMMARY pass=6 fail=0`, including unknown method and object error
+  responses. `git diff --check` still flags CRLF lines in
+  modified CRLF source files; line endings were preserved.
+- Result: Three-reader API workers completed in parallel in about one minute.
+  Crypto: 466 calls (11 OK, 434 expected unsupported, 16 runtime exceptions,
+  3 card-runtime exceptions, 2 SW_ERROR); Core: 291 (271 OK, 15 expected
+  unsupported, 4 optional applet unavailable, 1 wrong result); Service: 124
+  (94 OK, 28 wrong results, 1 runtime exception, 1 SW_ERROR). These cards had
+  existing firmware; no flash was performed. RMI short field mutation and
+  readback now work in current-source VPCD.
+- Decision: Keep the three-reader runner using one independent area per reader
+  for stable parallel coverage. Continue RMI reference marshalling and broader
+  persistent-field tests. Do not report current-source physical validation.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-032759/`
+  (CSV SHA-256: pico1 `4ee6b58aa9f63bd6fa537320a456a8bd0561557dda159357f559076f43a6515b`,
+  pico2 `325789010ddea6639ee78920ece89bf14c1886f87c48b765ba11720c424423f1`,
+  pico3 `a00883dbf623f1a3308c73468276771b4d12c773132a79e63f04e6232ab538a4`);
+  `artifacts/logs/rmi-invoke-primitives-errors-20261022.log`.
+
+# 2026-10-22 — Retest deploy API areas across three physical readers
+
+- Step/experiment: `deploy-three-reader-full-20261022-034350`
+- Change: Refreshed physical test baseline across the three connected Pico 2
+  readers using the repository's parallel API deploy runner. Removed only the
+  stale Security and JavacardxInt deploy CAPs from the exact cards that
+  reported duplicate packages; reran both areas against their pinned readers.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305
+  --min-devices 3 --max-devices 3` found all three readers. Core (291 calls),
+  Crypto (466), and Service (124) completed and cleaned up. Security rerun
+  completed 901 calls and cleaned up. JavacardxInt `INSTALL` returned `6A88`
+  for an unavailable import and rollback passed. Other optional package
+  installs were refused with `6A88` and rolled back. No build or flash was
+  performed; this validates the already-installed firmware only.
+- Result: All three readers are usable. Security reproduced two wrong results,
+  13 runtime exceptions, and one SW_ERROR; Core reproduced one
+  `Applet.deselect()` wrong result; Service reproduced 28 wrong results, one
+  runtime exception, and one SW_ERROR. Unsupported-per-spec calls remain
+  expected. The stale-package cause and exact-reader cleanup are in QKB.
+- Decision: Keep all three-reader routing; clean stale CAPs by exact reader
+  before rerunning an interrupted area. Continue with current-source deploy
+  applet tests and investigate reproducible Core/runtime findings. No physical
+  validation of the changed source is claimed.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-034350/`.
+
+# 2026-10-22 — Add Java Card RMI primitive-array marshalling
+
+- Step/experiment: `rmi-array-invoke-vpcd-20261022`
+- Change: Implemented CAP 2.2 RMI decoding for boolean[], byte[], and short[]
+  input arrays and by-value array/null-array response encoding. Incoming arrays
+  use JCRE global arrays and are released after invocation; global heap slots
+  remain stable and are recycled. Added a Java Card 3.0.5 CAP fixture builder,
+  a Class component remote-method inspector, and a repeatable VPCD test wrapper.
+- Validation: `./tools/test-rmi-arrays-vpcd` passed `./tools/build arm`,
+  `./tools/build-pc`, CAP fixture conversion, and current-source VPCD with
+  `TEST:SUMMARY pass=13 fail=0`. Tests include primitive add/readback,
+  byte[] echo/sum, short[] echo, boolean[] mutation, eight array parameters,
+  null/empty arrays, truncated array input, and invalid boolean values. ARM
+  output was `BUILD:PASS target=choupi`; PC output was `ROMMASK:PASS`. The PC
+  build reported 49 warnings from the bundled `javacard-os` Rust crate.
+  RISC-V compilation and physical flashing/testing were intentionally skipped
+  under the user's ARM-only constraint.
+- Result: Exact responses passed for byte[] (`810211229000`), short (`8100079000`),
+  eight arrays (`8100249000`), short[] (`81021234FFFE9000`), boolean[]
+  (`810201009000`), null (`81FFFF9000`), empty (`81009000`), and malformed
+  inputs (`9900039000`). Int[] code is guarded by `JCVM_INT_SUPPORTED` but has
+  no end-to-end fixture coverage yet.
+- Decision: Keep RMI array-by-value support. Next implement remote-reference
+  return and Java Card API exception response encoding, then external JCRMI
+  interoperability. No current-source physical test is claimed.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `tools/tests/rmi_array_fixture/`,
+  `tools/build-rmi-array-fixture`, `tools/test-rmi-arrays-vpcd`, fixture CAP
+  SHA-256 `5f7c5301002fa8d2f8a73d9837a3bed230737042bd982e16b79b9b01b756479f`,
+  load-code SHA-256 `f8d760eba9e1a8cbe6368847bf897ff2b421e1de4c1d0d7c92bf025b4be0cfa`,
+  and `artifacts/logs/rmi-array-invoke-vpcd-20261022T015928Z.log`.
+
+## 2026-10-22 — Reconfirm three-reader deploy coverage
+
+- Step/experiment: `deploy-three-reader-reconfirm-20261022-040147`
+- Change: Reused the refreshed PC/SC setup to run the API 3.0.5 deploy suite
+  across three physical Pico readers concurrently. No firmware was flashed;
+  this tested the already-installed card images.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305
+  --min-devices 3 --max-devices 3` completed all three workers. A post-run
+  elevated dry run again found D92E743D5F640C0F, E0E14525E64AF6ED, and
+  5CFC5328F5BDE437 at Java reader indices 3–5. Security: 901 calls (63 OK,
+  820 unsupported per spec, 13 runtime exceptions, two skipped, two wrong
+  results, one SW_ERROR). Crypto: 466 (11 OK, 434 unsupported per spec, 16
+  runtime exceptions, three card-runtime exceptions, two SW_ERROR). Core: 291
+  (270 OK, 15 unsupported per spec, four optional applets unavailable, two
+  wrong results). Service: 124 (94 OK, 28 wrong results, one runtime
+  exception, one SW_ERROR). All supported-area upload, test, cleanup stages
+  passed. Optional Javacardx-family/Biometry installs returned `6A88` and
+  their partial loads were rolled back. No build or flash was performed.
+- Result: Three-reader routing and cleanup work. `UNSUPPORTED_PER_SPEC` and
+  missing optional imported packages are expected profile limits; the
+  reproducible wrong/runtime results remain follow-up items. These findings
+  are from existing card firmware, not current source.
+- Decision: Keep the three-device parallel setup available for physical
+  validation. Continue current-source RMI support via VPCD; physical flashing
+  remains gated by the required dual-architecture build.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-040147/`.
+
+## 2026-10-22 — Encode Java Card exceptions in RMI INVOKE responses
+
+- Step/experiment: `rmi-exception-response-vpcd-20261022`
+- Change: Added CAP 2.2 `0x82` exception response encoding for VM-raised API
+  exception types and reasons. The nested remote invocation now bounds Java
+  exception-handler search at its entry frame, still honors handlers inside
+  the invoked method, and recognizes ISOException before returning an uncaught
+  exception. This keeps a remote failure from unwinding into RMIService's own
+  Java frames.
+- Validation: `./tools/test-rmi-arrays-vpcd` passed ARM, PC, fixture build, and
+  current-source VPCD with `TEST:SUMMARY pass=18 fail=0`. Exact responses
+  passed for ArrayIndexOutOfBoundsException (`820200009000`),
+  NullPointerException (`820800009000`), SystemException.ILLEGAL_VALUE
+  (`822500019000`), ISOException `0x6A82` (`82236A829000`), and a caught
+  exception method (`81559000`). JCSystem VPCD cases 19, 20, 21, 22, and 24
+  passed. No RISC-V build or physical flash was run under the ARM-only gate.
+- Result: Unhandled API exceptions now use JCRMI exception responses instead
+  of generic `6F00`; the nested invoke boundary preserves local handlers.
+  Broader JCSystem regression remains red: full run case 5 expected persistent
+  field `0x11` after abort but got `0x22`; selected case 27 left the
+  APDUException sentinel `0x7F` instead of its expected reason. Causes are not
+  established and are recorded in `.agent/QKB.md`. Custom exception subclass
+  `0x83` responses and complete API reason capture remain open.
+- Decision: Keep this exception boundary specific to RMI invocation. Continue
+  with remote-reference return values and then external JCRMI interoperability.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/rmi-array-invoke-vpcd-20261022T021751Z.log`;
+  fixture CAP SHA-256 `972ce3969de0353d45395c63f7682b2fd2b845bfa8748d2375ce0b6b4fb201bb`;
+  load code SHA-256 `f3f8cf42cdb6ec449979aeac7f1b467360c49ddaf21660a4b79b2fb1d8863617`.
+
+
+## 2026-10-22 — Marshal Java Card RMI remote-reference returns
+
+- Step/experiment: `rmi-remote-reference-returns-vpcd-20261022`
+- Change: Decode CAP 2.2 remote-interface return signatures, validate the returned object's declared interface, and encode exported references in the selected class or interface form. Returned objects are retained for the active RMI session. Expanded the CAP fixture so its initial `Counter` returns a newly exported child and added a follow-up invocation through the returned object reference.
+- Validation: `./tools/test-rmi-arrays-vpcd` passed ARM and PC builds and VPCD tests. Class form returned `810002000B726D692F666978747572650B436F756E746572496D706C9000`; the client then invoked `value()` on object ID `0002` and received `8100009000`. Interface form returned `81000200010B726D692F6669787475726507436F756E7465729000`. Results: `TEST:SUMMARY pass=20 fail=0` and `TEST:SUMMARY pass=3 fail=0`. The VPCD test needed elevated execution because restricted local socket creation returned `EPERM`. No USB, physical token, RISC-V build, or flash was used under the current ARM-only/no-flash gate.
+- Result: Remote interface returns can now be called through both supported descriptor forms in the emulator fixture. Fixture CAP SHA-256 `bf9edd40addde9adb680fa3f691f9d9d00f1accdfc01c2d2835af6047bd4b400`; load-code SHA-256 `3baf35b6c1378d95332e10b39ba1931414d542444ba4529081ed607a7ab09f7a`.
+- Decision: Continue with custom Java exception subclasses and external JCRMI client interoperability. Physical validation remains gated by the two-architecture build requirement.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/rmi-array-invoke-vpcd-20261022T022852Z.log`, `artifacts/logs/rmi-reference-interfaces-vpcd-20261022T022852Z.log`, `artifacts/logs/build-arm-rmi-arrays-20261022T022852Z.log`, `artifacts/logs/build-pc-rmi-arrays-20261022T022852Z.log`.
+
+## 2026-10-22 — Investigate end-to-end RMI int-array fixture coverage
+
+- Step/experiment: `rmi-int-array-fixture-converter-investigation`
+- Change: Attempted to extend the CAP 2.2 fixture with `int[]` parameter and return methods. The stock `ant-javacard` task has no int-support attribute, so tested a direct JCDK 3.0.5 converter invocation with `-i` enabled. The converter accepted the package but its generated `Class.cap` remote-method table still omitted both methods. Restored the existing fixture source and build workflow; the baseline fixture again builds and lists the expected current signatures.
+- Validation: `./tools/build-rmi-array-fixture` passes after restoration. Before restoration, the converter output was inspected with `build/tests/rmi-array-fixture/rmi_array_cap_inspect`; no int signatures were emitted, so no int-array APDU assertions were attempted. No ARM build, RISC-V build, VPCD exchange, USB access, or hardware operation was needed for this converter investigation.
+- Result: Existing guarded int-array RMI code remains unverified end to end. The converter limitation is reproducible, but its cause is not established. Details are in `.agent/QKB.md`.
+- Decision: Continue with other RMI/deploy coverage; revisit int[] once a valid CAP 2.2 fixture can be generated.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `build/rmi-array-fixture/build.log`, `build/rmi-array-fixture/remote-methods.txt`, and `build/rmi-array-fixture/Class.cap`.
+
+## 2026-10-22 — Restore baseline after int RMI fixture experiment
+
+- Step/experiment: `rmi-int-array-fixture-baseline-restored`
+- Change: Restored the fixture source and JCDK Ant task after the optional-int converter experiment; no runtime or production source was changed by that experiment.
+- Validation: `./tools/build-rmi-array-fixture` passed and emitted the baseline method list, including the remote-reference return method. It still contains no int[] RMI methods; see the preceding investigation record and `.agent/QKB.md`.
+- Result: The existing remote-array fixture remains usable for byte, short, and boolean tests; int[] RMI is explicitly unverified.
+- Decision: Continue implementation and deploy-app test coverage on other supported paths while keeping this converter gap open.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `build/rmi-array-fixture/build.log`, `build/rmi-array-fixture/remote-methods.txt`, and `build/rmi-array-fixture/Class.cap`.
+
+## 2026-10-22 — Encode RMI custom exception subclasses
+
+- Step/experiment: `rmi-custom-exception-subclass-vpcd-20261022`
+- Change: Preserve the uncaught Java exception object reference at the remote
+  invocation boundary. Walk its class hierarchy to find the nearest exported
+  Java Card API exception, and return CAP 2.2 exception-subclass tag `0x83`
+  for a user-defined subclass. Added `CustomRuntimeException` to the RMI CAP
+  fixture.
+- Validation: `./tools/test-rmi-arrays-vpcd` passed ARM and host builds,
+  fixture generation, current-source VPCD (`TEST:SUMMARY pass=21 fail=0`), and
+  interface-reference VPCD (`TEST:SUMMARY pass=3 fail=0`). The new test returns
+  exactly `830900009000` for `CustomRuntimeException extends RuntimeException`;
+  all existing API exception and array cases remained green. Host VPCD was run
+  with approved escalated local socket access. No RISC-V build, USB/PCSC access,
+  physical APDU, or flash was performed.
+- Result: Custom runtime exception instances now encode as type RuntimeException
+  (0x09), reason zero, subclass tag 0x83. Other custom class hierarchies and
+  complete exception reason coverage remain unverified.
+- Decision: Continue with external JCRMI client interoperability and broader
+  exception hierarchy coverage. Current-source hardware validation remains
+  under the ARM-only/no-flash constraint.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/rmi-array-invoke-vpcd-20261022T024228Z.log`,
+  `artifacts/logs/rmi-reference-interfaces-vpcd-20261022T024228Z.log`,
+  `artifacts/logs/build-arm-rmi-arrays-20261022T024228Z.log`,
+  `artifacts/logs/build-pc-rmi-arrays-20261022T024228Z.log`; fixture CAP SHA-256
+  `0289e897fbeb1d6dbcee223a4f6ddd51b6ae562a53cea86067338c8156d42398`, load
+  code SHA-256
+  `e9f4b3cd291feb670714e6b215257638981f3fd75e41a57de8261d00f9a15373`.
+
+## 2026-10-22 — Cover checked RMI exception subclasses
+
+- Step/experiment: `rmi-checked-exception-subclass-vpcd-20261022`
+- Change: Added a checked custom exception extending `java.lang.Exception` and
+  a remote fixture method that throws it. Added an exact response assertion to
+  the VPCD invocation suite, complementing the runtime-subclass case.
+- Validation: `./tools/test-rmi-arrays-vpcd` passed ARM and host builds,
+  fixture conversion, VPCD invocation (`TEST:SUMMARY pass=22 fail=0`), and
+  interface reference tests (`TEST:SUMMARY pass=3 fail=0`). Exact custom
+  responses: RuntimeException subclass `830900009000`; Exception subclass
+  `830500009000`. Host VPCD used escalated local socket access. No RISC-V,
+  physical APDU, USB, or flash was run.
+- Result: Both custom class hierarchies return the nearest API type with
+  subclass tag `0x83` and zero reason.
+- Decision: Continue with an external JCRMI client exchange and broader reason
+  code coverage. Hardware flashing remains gated by the two-architecture build
+  requirement; ARM-only scope is still active.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/rmi-array-invoke-vpcd-20261022T024418Z.log`,
+  `artifacts/logs/rmi-reference-interfaces-vpcd-20261022T024418Z.log`,
+  `artifacts/logs/build-arm-rmi-arrays-20261022T024418Z.log`,
+  `artifacts/logs/build-pc-rmi-arrays-20261022T024418Z.log`; fixture CAP SHA-256
+  `cdbb5be061b06d7b61338cc28f2f797947714dbc9ca23a21a8e70454007e66ed`, load
+  code SHA-256
+  `e3ef992a2ed5db38c468db02e74787f774666f24866e13b39644ce4d0e8b196a`.
+
+## 2026-10-22 — Run JC305 areas across three physical readers
+
+- Step/experiment: `deploy-three-reader-refresh-20261022-044709`
+- Change: Assigned one JC305 deploy API area to each refreshed PC/SC reader and
+  ran Core, Crypto, and Service concurrently. No firmware was flashed; tests
+  exercised the images already installed on the cards.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305
+  --areas Core,Crypto,Service --min-devices 3 --max-devices 3` detected all
+  three readers and completed all workers. Crypto on D92E743D5F640C0F: 466
+  calls (11 OK, 434 unsupported per spec, 16 runtime exceptions, 3 card-runtime
+  exceptions, 2 status errors); upload and cleanup passed. Core on
+  E0E14525E64AF6ED: 291 calls (271 OK, 15 unsupported per spec, 4 optional
+  applets unavailable, 1 wrong result); primary upload and cleanup passed.
+  Service on 5CFC5328F5BDE437: 124 calls (94 OK, 28 wrong results, 1 status
+  error, 1 runtime exception); upload and cleanup passed. Optional Core Ext
+  INSTALL returned `6A88`; its CAP rollback passed. The coordinator returned
+  1 for this optional refused stage, while each worker returned 0.
+- Result: Three-reader routing, concurrent testing, and cleanup work. The
+  optional package refusal is expected; persistent Core/Service wrong results
+  and Crypto errors are findings from existing firmware and need later focused
+  diagnosis.
+- Decision: Keep this parallel setup for physical deploy coverage. Current
+  source validation remains in VPCD under ARM-only/no-flash constraints.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-044709/pico1.csv`
+  through `pico3.csv` and corresponding `.log` files.
+
+## 2026-10-22 — Exercise the official JCRMI client proxy over VPCD
+
+- Step/experiment: `rmi-official-client-proxy-vpcd-20261022`
+- Change: Added a repeatable `tools/test-rmi-client-vpcd` harness around the
+  bundled Oracle Java Card 2.2.1 RMI client and proxy factory. It connects over
+  the local VPCD protocol, runs the RMI fixture, and reports wire and client
+  response encodings.
+- Validation: `./tools/test-rmi-client-vpcd` passed host build, fixture build,
+  SDK SELECT with the harness's documented Le adaptation, primitive
+  `add(short)` (returned 3), and runtime/checked exception proxy decoding.
+  Responses were `830900009000` and `830500009000`; the checked exception is
+  surfaced as `UndeclaredThrowableException` because the proxy method declares
+  only the concrete custom exception type. Without the Le adaptation, SDK
+  SELECT with `Le=7F` returns `6D00`. No ARM/RISC-V build, physical APDU, USB,
+  or flash was performed in this host-only client step.
+- Result: The protocol implementation interworks with the official SDK proxy
+  after adapting SELECT Le and the SDK-specific status-first APDU convention.
+  Full stock-client selection remains unverified; root cause is unknown and
+  documented in `.agent/QKB.md`.
+- Decision: Fix or explain SELECT Le handling, then remove the Le adaptation
+  and rerun. Continue preserving the runtime/checked subclass tests.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `tools/test-rmi-client-vpcd`,
+  `tools/tests/rmi_client_probe/RmiClientProbe.java`,
+  `artifacts/logs/build-pc-rmi-client-20261022T025456Z.log`,
+  `artifacts/logs/rmi-client-official-vpcd-emulator-20261022T025456Z.log`,
+  CAP SHA-256 `8767df84866fbd257a5064881cda53e49a06548ab5852dc2b21780bab1246da6`,
+  load code SHA-256
+  `e3ef992a2ed5db38c468db02e74787f774666f24866e13b39644ce4d0e8b196a`.
+
+## 2026-10-22 — Retest three JC305 areas after reader setup refresh
+
+- Step/experiment: `three-reader-core-crypto-service-20261022-050033`
+- Change: Reused the three-reader coordinator to run Core, Crypto, and Service concurrently after the helper update. No firmware was flashed; the test CAPs were removed at completion.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305 --areas Core,Crypto,Service --min-devices 3 --max-devices 3` found three readers. Crypto (D92E743D5F640C0F): 466 calls (11 OK, 434 unsupported per spec, 16 runtime exceptions, 3 card-runtime exceptions, 2 SW errors); upload/cleanup passed. Core (E0E14525E64AF6ED): 291 calls (272 OK, 15 unsupported per spec, 4 optional applets unavailable); Core Ext INSTALL returned `6A88`, and rollback plus both cleanup steps passed. Service (5CFC5328F5BDE437): 124 calls (94 OK, 28 wrong results, 1 runtime exception, 1 SW error); upload/cleanup passed. All workers exited 0; coordinator exit 1 due to the expected optional Ext INSTALL refusal. Post-run `PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` listed all three physical readers.
+- Result: Parallel reader routing and cleanup passed again. Physical Crypto and Service findings match the existing firmware's known behavior; they do not validate current source. The current-source Service API catalog has already passed VPCD.
+- Decision: Keep the three-reader setup for physical deploy coverage. Continue current-source feature work on VPCD; no new hardware image was flashed.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-050033/`; CSV SHA-256: pico1 `23c30f41cdae7e019b3201f0e5b6330a6adbe890416ef167f3c783eb7caa7917`, pico2 `0415dd6d68c7a3736fd6d50f3070e9cce11bc35fb5af2700532dc4111db95bcf`, pico3 `81eed8912ca2ee90467aed59db28f1d4b7b1fab3766d52be4c955ae0698b728f`.
+
+## 2026-10-22 — Accept SDK RMI SELECT Le=7F
+
+- Step/experiment: `rmi-sdk-select-le-20261022`
+- Change: `is_select_for_applet()` now accepts any optional short Le byte after validating the SELECT header, AID length, and APDU length. The official SDK's `Le=7F` had been rejected by an unnecessary equality check against `00`, leaving `NativeImplementation.isAppletSelecting()` false and causing RMIService to ignore the SELECT.
+- Validation: `./tools/build arm` passed with `BUILD:PASS arch=arm`; `./tools/build-pc` passed (existing Rust crate warnings and packed-member warnings remain). The unadapted `./tools/test-rmi-client-vpcd` passed through elevated local VPCD socket access: SELECT `00A4041009A000000151000001017F` returned interface FCI `6F206E1E5E1C02023881000100010B726D692F6669787475726507436F756E7465729000`; `Counter.add(short)` returned 3; custom runtime and checked exceptions were decoded. `git diff --check` passed. RISC-V build and physical flash were intentionally skipped under ARM-only/no-flash scope.
+- Result: Stock SDK SELECT Le is accepted by current-source VPCD. The SDK wraps the checked exception in `UndeclaredThrowableException` because its remote method declares only the custom subclass while the protocol returns the nearest exported parent type.
+- Decision: Mark the short case-4 SELECT Le issue resolved. Proceed with remaining deploy API gaps; next priority is SensitiveResult state and result capture.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/build-pc-rmi-client-20261022T030617Z.log` (SHA-256 `6a4bced5e0c0c63fceb648760633a8f94653760a456f09f4141ae60fb2750371`) and `artifacts/logs/rmi-client-official-vpcd-emulator-20261022T030617Z.log` (SHA-256 `bea638618b3017c2382314ce46ab8fcc881d58fbad678783b8c90a7086bf8d1e`).
+
+## 2026-10-22 — Implement initial VM-wide SensitiveResult state
+
+- Step/experiment: `sensitive-result-vm-wide-20261022`
+- Change: Replaced `SensitiveResult` reset/assert stubs with native bridge
+  operations and added typed capture for AID equality, JCSystem AID lookup,
+  and selected Util copy/fill/compare operations. Object results are GC roots.
+  Made the slot VM-wide after checking the API contract: the saved result must
+  survive context switches, including Shareable Interface Object calls.
+- Validation: `./tools/build arm` passed (`BUILD:PASS target=choupi`);
+  `./tools/build-pc` passed (`ROMMASK:PASS`, host target built). No RISC-V build
+  or firmware flash was run under the ARM-only/no-flash scope. Current-source
+  `JavacardxSec` execution and explicit context-switch coverage are not yet
+  validated.
+- Result: Both build targets link with the new native methods. A three-reader
+  physical deploy run completed Security (901 calls: 63 OK, 820
+  `UNSUPPORTED_PER_SPEC`, 13 `EXC_RUNTIME`, 2 `WRONG_RESULT`, 1 `SW_ERROR`, 2
+  skipped) and cleanup on ATR `3B800181`. JavacardxSec and JavacardxExt INSTALL
+  each returned `6A88`; both partial loads were rolled back. These physical
+  results used existing firmware and do not validate current source.
+- Decision: Continue with current-source VPCD execution, first covering
+  same-context assertions and then result visibility across a context switch.
+  Implement the remaining sensitive API result producers before marking the
+  JavacardxSec profile complete.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/build-arm-sensitive-result-vm-wide-20261022.log`,
+  `artifacts/logs/build-pc-sensitive-result-vm-wide-20261022.log`, and
+  `artifacts/results/deploy/parallel-20261022-051734/`. SHA-256: ARM log
+  `2e1824b098daa305e69b3e4f6173205a56faad94221d621547b5efec73805b0c`, PC log
+  `1231fbdd7c246b03a4cb223d8c9e2597998df0bc8288b3f683000f42d123b8be`, Pico 1
+  CSV `673d8fa0157e1382b32df9e7cfcbe2f7798f06a411fc502b4b5c182bbc276a7c`, Pico
+  2 CSV `69cf804aa4756e98791ef3863faa6bb259a94ced55bca7e4efae79fe79426543`, Pico
+  3 CSV `4e83c3e2687edd54277db9d86a5a56cd3d27c346e279eab7249678bd47a31bfe`.
+
+## 2026-10-22 — Exercise SensitiveResult through the SDK RMI client
+
+- Step/experiment: `sensitive-result-same-context-vpcd-20261022`
+- Change: Extended the RMI fixture with a remote method that exercises
+  `JCSystem.getAID`, `AID.equals`, `Util.arrayCopyNonAtomic`, and
+  `Util.arrayCompare` against `SensitiveResult` object/boolean/short
+  assertions. It also checks wrong-value rejection and reset to Unassigned.
+- Validation: `./tools/test-rmi-client-vpcd` built the fixture, selected it with
+  the unmodified Oracle JCRMI client over VPCD, and reported
+  `JCRMI_CLIENT:PASS SensitiveResult same-context assertions`. The emulator log
+  ends with `VPCD:DISCONNECTED result=0`. This covers current-source PC VPCD;
+  no physical APDU or flash was used.
+- Result: Initial result capture, assertion type/value checks, failure
+  preservation, and reset are exercised in one applet context. The test does
+  not yet exercise an SIO context switch or the full 84-call deploy API area.
+- Decision: Keep SensitiveResult active and add cross-context coverage next.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/logs/build-pc-rmi-client-20261022T032550Z.log`
+  (SHA-256 `98f3da01f60c2ebc5a40d8c4706f8eddae60542dd1444ad8e3ccccf6d8492add`),
+  `artifacts/logs/rmi-client-official-vpcd-emulator-20261022T032550Z.log`
+  (SHA-256 `d94be3a9fe6929c3c0e9b757ee1628c91cd74dda863ecf073db633a0e7354e99`),
+  and `build/rmi-array-fixture/`.
+
+## 2026-10-22 — Automate current-source JavacardxSec VPCD validation
+
+- Step/experiment: `javacardxsec-deploy-vpcd-20261022`
+- Change: Added `tools/VpcdPresenceProbe.java` and
+  `tools/test-javacardxsec-vpcd`. The wrapper checks the elevated host-access
+  path, runs a bounded SmartcardIO presence query before emulator startup,
+  confirms card presence after connection, runs the official deploy client,
+  and requires exactly 84 `OK` call rows.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-javacardxsec-vpcd` passed
+  through the escalated host-access path. It reported
+  `VPCD:PRESENCE_QUERY ... present=false` before emulator startup,
+  `present=true` after connection, and `VPCD_JAVACARDXSEC:PASS calls=84
+  status=OK`. The first wrapper attempt had a one-second startup race and was
+  rejected by the post-run CSV check; increasing the wait and requiring a
+  second presence query made the run deterministic. No physical token was
+  accessed or flashed.
+- Result: Current-source PC VPCD completes the entire JC305 JavacardxSec area:
+  84 calls, all `OK`, including APDUUtil and SensitiveResult. The pre-query is
+  required because listing a Virtual PCD reader does not activate its TCP
+  listener. SIO context-switch behavior remains outside this suite.
+- Decision: Mark the current-source JavacardxSec profile validated in VPCD;
+  continue with cross-context JCSystem/SIO behavior and remaining sensitive
+  API producers.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `tools/test-javacardxsec-vpcd`,
+  `tools/VpcdPresenceProbe.java`, and
+  `artifacts/results/javacardxsec-vpcd-20261022T033243Z/`. CSV SHA-256
+  `08cc5fe7026075ec876e5795fb4700885423c52eb60b7d5b1be69bf92c1f3e2c`;
+  emulator log SHA-256
+  `b089d95aa56467c827d4d2397d9bf6d0f9d799b48736594bda3d93cf7512350a`.
+
+
+## 2026-10-22 — Run all JC305 deploy areas across three Pico readers
+
+- Step/experiment: `three-reader-jc305-deploy-20261022-053706`
+- Change: No firmware or source changes. Ran the repository parallel deploy
+  runner across all nine JC305 API areas using three independently enumerated
+  physical readers.
+- Validation: Elevated host-access dry run found Java reader indices 3–5 with
+  stable IDs D92E743D5F640C0F, E0E14525E64AF6ED, and 5CFC5328F5BDE437. The live
+  runner completed Security (901 calls), Crypto (466), Service (124), and Core
+  (291). Security outcomes: 63 OK, 820 `UNSUPPORTED_PER_SPEC`, 13
+  `EXC_RUNTIME`, two `WRONG_RESULT`, one `SW_ERROR`, two skipped by the
+  configured exclusion. Crypto: 11 OK, 434 `UNSUPPORTED_PER_SPEC`, 16
+  `EXC_RUNTIME`, three `EXC_CARDRUNTIME`, two `SW_ERROR`. Service: 94 OK, 28
+  `WRONG_RESULT`, one `SW_ERROR`, one `EXC_RUNTIME`. Core: 271 OK, 15
+  `UNSUPPORTED_PER_SPEC`, four optional applet calls unavailable, one
+  `WRONG_RESULT`. Cleanup passed for completed CAP tests. Six package install
+  attempts (optional Core Ext and Javacardx, JavacardxExt, JavacardxSec,
+  JavacardxInt, Biometry) returned `6A88`; each partial package was rolled
+  back. Runner exit status was 1 because of these refused INSTALL stages.
+- Result: Parallel reader routing and the full deploy-area batch are operational.
+  Missing-import refusals match the declared ROM profile. Physical API results
+  describe existing board firmware; no current-source firmware was flashed.
+- Decision: Treat missing optional imports as profile gaps, not broken rollback.
+  Continue with the current-source GlobalPlatform DELETE APDU and lifecycle
+  verification identified in `TODO.md`.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261022-053706/`. CSV
+  SHA-256 values are recorded in `.agent/HANDOFF.md`.
+
+
+## 2026-10-22 — Recognize GPPro default ISD selection in PC VPCD
+
+- Step/experiment: `pc-vpcd-default-isd-select-20261022`
+- Change: Added recognition for GPPro's case-1 empty-AID SELECT of the default
+  ISD, tracked ISD selection separately from applet selection, and added a
+  card-manager processing callback seam to the PC VPCD session. This matches
+  the existing ARM CCID empty-AID behavior. The host callback remains to be
+  wired to SCP03 and card-manager APDUs.
+- Validation: `./tools/test-vpcd-session` passed `TEST:SUMMARY pass=21 fail=0`;
+  `./tools/build-pc` passed; `./tools/build arm` passed. No RISC-V build,
+  physical reader operation, or flash was run. PC build output includes
+  dependency Rust warnings and existing packed-structure warnings.
+- Result: The 21-case VPCD session test covers the default ISD FCI and routing
+  through the callback seam. GPPro originally failed its default SELECT with
+  `6999`; full GPPro listing remains unverified until the callback is wired.
+- Decision: Continue by implementing card-manager command dispatch in the host
+  VPCD path, then exercise the WP6 GPPro lifecycle over Virtual PCD.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/gp-lifecycle-vpcd-20261022/` contains the
+  temporary emulator flash copy from the pre-fix reproduction.
+
+
+## 2026-10-22 — Complete GPPro card-manager lifecycle over PC VPCD
+
+- Step/experiment: `pc-vpcd-gppro-lifecycle-20261022`
+- Change: Wired the host VPCD card-manager callback to SCP03, GET STATUS,
+  GET DATA, CAP LOAD/INSTALL, and DELETE. On resume, rebuild the supported
+  single-instance GET STATUS record from explicit `--applet-aid` and
+  `--class-index` arguments so the registry survives emulator process restart.
+- Validation: `./tools/build-pc` passed; `./tools/build arm` passed earlier in
+  this same implementation step; `./tools/test-vpcd-session` passed 21/21;
+  `./tools/test-gp-delete` passed 26/26; `./tools/test-gp-registry` passed
+  47/47. With host PC/SC access and isolated scratch flash, GPPro 20.01.23
+  `--list`, package `--delete`, CAP `--install`, and `--list` all completed.
+  After emulator process restart, GPPro again listed the package and selectable
+  applet. The first restart check exposed a missing host-side instance record;
+  it passed after reconstructing the record from resume arguments. No Pico was
+  accessed or flashed; no RISC-V build was run.
+- Result: The former default-ISD `6999` failure is resolved in host VPCD and the
+  authenticated package lifecycle passed end to end. The successful restart
+  list contains `APP: 4A43416C675465737431 (SELECTABLE)` and
+  `PKG: 4A43416C6754657374 (LOADED)`. VPCD still models only one dynamic package
+  and one instance; persistent registry enumeration and physical CCID parity
+  remain unverified. VPCD presence probing may report `present=false` before a
+  GP client connects, so integration harnesses should wait for
+  `VPCD:CONNECTED` and then use GPPro itself as the active transport check.
+- Decision: Close the GPPro host VPCD lifecycle task. Continue with GET DATA
+  coverage, full persistent registry restoration, and multi-package/instance
+  behavior without claiming physical-token validation.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/gp-lifecycle-vpcd-20261022/`. GPPro list
+  SHA-256 `ea1a46713762c848bf2b6ce9d4753a2ff5c2b24d9986a3a9be19d69f4893bc62`,
+  delete `54947d66febaea0c5ae3918d8492528df2bbe991698c44f54da03aaf8a47c5c6`,
+  reinstall `66e4a2c3d450cb343ef2815a001fae1502e2bfc1b4f22cd15f64222d5eeca99f`,
+  post-restart list
+  `f33f82775c0bdbd2c5723a625ed0b2396c13443cf399c0c54b7bb82c8996ad40`.
+
+
+## 2026-10-22 — Inspect GPPro GET DATA profile on PC VPCD
+
+- Step/experiment: `pc-vpcd-gppro-get-data-info-20261022`
+- Change: No implementation change. Ran GPPro 20.01.23 `--info --debug` against
+  the current-source VPCD card manager and recorded the requested data tags and
+  returned status words.
+- Validation: GPPro exited 0. Card Recognition Data (`80CA0066`) returned the
+  26-byte `66` TLV and `9000`; it identifies GlobalPlatform and SCP03 i=10.
+  CPLC (`80CA9F7F`), IIN (`80CA0042`), CIN (`80CA0045`), Card Capabilities
+  (`80CA0067`), and Key Info Template (`80CA00E0`) returned `6A88`, which GPPro
+  reported as unavailable without failing. No token was used or flashed.
+- Result: Existing GET DATA support matches the current data source: CRD is
+  advertised; CPLC and other card-specific data are not fabricated. GPPro does
+  not exercise GET STATUS continuation in `--info`; P2=03 and pagination still
+  require targeted testing.
+- Decision: Keep unavailable card-specific objects unsupported until the card
+  has a genuine source for those values. Next test GET STATUS continuation and
+  package/module pagination.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/gp-lifecycle-vpcd-20261022/gppro-info.log`,
+  SHA-256 `4f3cb951e3269915eb0553fbe060c2998e85f945c3dcd2b856373813623c37a5`.
+
+
+## 2026-10-22 — Verify authenticated GET STATUS first/next sequences
+
+- Step/experiment: `pc-vpcd-get-status-pagination-20261022`
+- Change: No implementation change. Used repeated GPPro `--secure-apdu`
+  options so each category's first (`P2=02`) and next (`P2=03`) GET STATUS
+  requests shared one SCP03 session.
+- Validation: The six authenticated commands for application (`P1=40`), load
+  package (`P1=20`), and module (`P1=10`) each returned `9000`. Each first
+  request returned the one existing matching entry; each next request returned
+  an empty successful response. An isolated next request with no preceding
+  first request returned expected `6985`. The log decoder counted all six
+  command/response pairs and passed. No token was used or flashed.
+- Result: GET STATUS continuation state is verified for the currently supported
+  one-entry registry per category. This does not validate pagination among
+  multiple packages, applets, or modules.
+- Decision: Keep multi-entry pagination open until the PC VPCD registry supports
+  multiple records; preserve the validated `P2=02/03` sequencing.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs:
+  `artifacts/results/gp-lifecycle-vpcd-20261022/gppro-get-status-pagination.log`,
+  SHA-256 `59db893aa6321b40a1ffeb7c272c6c1a503dc5e3e229c33ba66583a860681e81`.
+
+
+## 2026-10-22 — Recheck GET DATA object encoding
+
+- Step/experiment: `gp-get-data-regression-20261022`
+- Change: No source change. Re-ran the focused GET DATA unit suite after the
+  official GPPro information query.
+- Validation: `./tools/test-gp-get-data` passed all 11 checks, including exact
+  Card Recognition Data TLV bytes, `9000` response encoding, and `6A88` for
+  unavailable CPLC and unknown objects. No hardware access was involved.
+- Result: Unit behavior agrees with GPPro `--info`; no card-specific values are
+  synthesized when the emulator has no source for them.
+- Decision: Keep `0066` as the advertised GET DATA object; leave CPLC and
+  unsupported objects unavailable.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `./tools/test-gp-get-data` console output; no separate log.
+
+
+## 2026-10-22 — Resume VPCD persistence with allocated package ID
+
+- Step/experiment: `vpcd-persistence-package-id-resume-20261022`
+- Change: Added the CAP LOAD-assigned package ID to the PC VPCD
+  `VPCD:APPLET_INSTALLED` marker. Updated the transaction probe to accept an
+  explicit package ID during restore, and made `tools/test-vpcd-persistence`
+  parse and pass the ID selected by CAP LOAD.
+- Validation: `./tools/build-pc` passed. Shell/Python syntax checks passed.
+  The first full persistence wrapper run failed at applet SELECT (`6F00`):
+  resume looked up package 63 although LOAD had allocated package 56. The
+  corrected `./tools/test-vpcd-persistence` passed commit/install 3/3, restored
+  the actual package ID 56, and passed restore 7/7, including committed field
+  `0x33`, static root identity, persistent array child identity, object-field
+  alias mutation, and restored array type. This is host VPCD process-restart
+  validation only; no physical token was used or flashed. No RISC-V build was
+  run.
+- Result: Resume tests now follow the dynamic package allocator instead of
+  assuming that the input/default package hint is the actual installed slot.
+  The GC/persistence fixture passes beyond JCAlgTest. Forced collection under
+  pressure while exported/static references are held remains open.
+- Decision: Keep dynamic package ID extraction in restart tests; continue with
+  GC root survival under allocation pressure and multi-package persistence.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Build log `artifacts/logs/build-pc-vpcd-persistence-20261022T052745Z.log`;
+  install log SHA-256 `898e2fb4ad75656b80b5122e882c4e9602d3ba2bbc805ee2d2dd3c60712f39a6`;
+  restore log SHA-256 `e1a00ceb6386ca752ef88d806aa1aba5f788bead99a074d578ec4088dd25e9f7`;
+  emulator logs and commit transcript are in `artifacts/logs/` under the same
+  timestamp.
+
+## 2026-10-22 — Reconcile status and handoff with persistence results
+
+- Step/experiment: `vpcd-persistence-doc-reconciliation-20261022`
+- Change: Corrected `STATUS.md` to describe flash-backed lazy restore and the
+  passing two-process VPCD regression. Added the package-ID failure, repair,
+  evidence, limits, and next GC pressure task at the top of `.agent/HANDOFF.md`.
+- Validation: Inspected the existing `tools/test-vpcd-persistence` result and
+  matching artifacts; `git diff --check` passed for the documentation and
+  progress files. No tests were rerun because this step changes documentation
+  only.
+- Result: The current high-level status no longer says persistent objects are
+  pinned until deletion; the handoff now records that the observed restart is
+  process-level VPCD, not a physical power cycle.
+- Decision: Next implement focused allocation-pressure coverage for live static
+  and exported references; keep multi-package persistence and hardware
+  power-cycle validation open.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Existing persistence artifacts under
+  `artifacts/logs/` at timestamp `20261022T052745Z`; see preceding entry for
+  hashes.
+
+## 2026-10-22 — Stress persistent GC roots and isolate transaction rollback cache
+
+- Step/experiment: `gc-persistent-root-pressure-vpcd-20261022`
+- Change: Extended the transaction-probe runner with bounded
+  `--gc-pressure-rounds`. Each round allocates 256 short-lived arrays and 256
+  objects in separate APDUs, then validates static root identity, persistent
+  array child identity, object-field aliases/mutation, and restored array type.
+  Increased the existing allocation batches from 64 to 256 objects.
+- Validation: Probe CAP compilation passed. Python syntax and targeted
+  `git diff --check` passed. Current-source VPCD focused run with cases 14–17
+  and 8 stress rounds passed `TEST:SUMMARY pass=54 fail=0 elapsed_s=9.822`.
+  No physical device was used. The first broader run stopped at the existing
+  case-5 rollback check; rerunning case 5 alone reproduced response `22 9000`
+  instead of expected `11`. Source inspection established that rollback
+  restores flash snapshots but not the live `JC_Instance` field cache. No fix
+  to transaction handling was made in this step.
+- Result: Repeated boundary collection preserves the exercised static and
+  persistent object graph under 256-array/256-instance batches. Exported RMI
+  roots and direct flash recovery after RAM reclamation remain open. The abort
+  cache coherence issue is a separate concrete JCSystem defect requiring the
+  next implementation step.
+- Decision: Fix persistent field cache invalidation/reload on abort, then run
+  cases 5 and 1–7 plus native transaction tests. Keep GC root stress in the
+  regression suite and expand it to exported references later.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Passing transcript
+  `artifacts/logs/gc-pressure-persistent-roots-256-vpcd-transcript-20261022.log`
+  SHA-256 `2b8859e49d463c8a46244a5b74923f37fa092621258cce612f8c1ab6cb5acfff`;
+  standalone rollback reproduction transcript
+  `artifacts/logs/jcsystem-transaction-case5-vpcd-transcript-20261022.log`
+  SHA-256 `f48001859004c6e65fbb3ea24c32f60dc3c7b536713bc7f878f8cffe2825cd70`.
+  Initial 64-item full-run failure is retained at
+  `artifacts/logs/gc-pressure-persistent-roots-vpcd-transcript-20261022.log`.
+
+## 2026-10-22 — Reload persistent fields after transaction abort
+
+- Step/experiment: `jcsystem-abort-cache-reload-vpcd-20261022`
+- Change: Added a persistent-write rollback generation to
+  `FlashMemory_Handler`. `JC_Instance::getFields()` detects a generation change
+  and reloads the instance's fields from the rolled-back records. Updated the
+  VPCD probe runner to reselect the applet after its intentional unknown-AID
+  deselect case, allowing later cases to run.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. Ordered JCSystem transaction cases 1–7 passed
+  10/10, with abort returning `0x11` and subsequent commit retaining `0x33`.
+  The full current-source VPCD suite passed 80/80 in 19.322 s. Native
+  `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`.
+  The initial full-suite rerun passed transactions but stopped at case 75
+  because the harness had not reselected after case 74; after fixing the
+  harness sequencing, the full suite passed. No physical token was used or
+  flashed.
+- Result: Persistent field reads after abort now agree with restored flash
+  snapshots. The cache is preserved during normal access and invalidated only
+  after rollback. Hardware transaction behavior remains unverified.
+- Decision: Keep rollback-generation invalidation and the case-74 reselection
+  in regression coverage. Remaining transaction work is commit-capacity
+  reporting and physical power-cycle verification; remaining GC work is
+  pressure with exported RMI references.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Full VPCD transcript
+  `artifacts/logs/jcsystem-transaction-full-vpcd-fixed-runner-transcript-20261022.log`
+  SHA-256 `d10c03ff46c4951deb40ccbe19d470178626807743b571dea809469b7e4de6d9`;
+  ordered cases transcript
+  `artifacts/logs/jcsystem-transaction-cases1-7-vpcd-transcript-20261022.log`
+  SHA-256 `48b82fbf0e389b3706329cc3ccd2d5125617b62404ee1f4a74ed53e7c321e961`;
+  GC pressure log/transcript are listed in the preceding entry.
+
+## 2026-10-22 — Revalidate RMI array and interface paths; classify Security mismatches
+
+- Step/experiment: `rmi-arrays-revalidate-and-security-triage-20261022`
+- Change: No runtime source changes. Re-ran the current-source RMI array and
+  remote-interface VPCD fixture. Inspected the Security CAP catalog and the
+  matching current-source results to classify its two downstream mismatches.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-arrays-vpcd` through
+  the elevated host-access route passed `./tools/build arm`, `./tools/build-pc`,
+  fixture conversion, the primitive-array/protocol VPCD suite (`22/22`), and
+  interface-reference SELECT (`3/3`). `git -c core.whitespace=cr-at-eol diff
+  --check` passed. No physical device was accessed, no RISC-V build ran, and
+  no firmware was flashed.
+- Result: RMI byte/short/boolean array paths and class/interface reference
+  descriptors remain green. `int[]` is still unverified because the JCDK
+  converter omits its remote methods from fixture metadata. Security's two
+  decoded `Key.isInitialized()` mismatches are dependent on transient AES key
+  setup calls that are themselves `UNSUPPORTED_PER_SPEC`; the SDK KeyBuilder
+  currently supports persistent AES/DES only. This is unavailable-feature
+  fallout, not a reproduced VM defect.
+- Decision: Keep `int[]` metadata as the next RMI test gap. Do not implement
+  transient key types or crypto algorithms only to improve the Security
+  support count; test key initialization with a supported key if investigating
+  the VM semantics.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: RMI INVOKE transcript
+  `artifacts/logs/rmi-array-invoke-vpcd-20261022T055319Z.log` SHA-256
+  `48f3ab5334d911d7b5d8b0b7d2c22974219448b19ad08e5a6d11c11a83c304f3`;
+  interface transcript `artifacts/logs/rmi-reference-interfaces-vpcd-20261022T055319Z.log`
+  SHA-256 `5cd94d7b10efcc5a4826b9d3088d0ee83c3acc941fdf9060f52171228038eb7e`;
+  ARM build SHA-256 `3cbbb83864ccdea8ae0833a33faf05d02e4d9307ef349c3961dbf3eefefea956`;
+  PC build SHA-256 `eff21e439c279a3600258a13393b84cd2a613e7c649aba182e2f79c999b29ccd`.
+
+## 2026-10-22 — Recheck official JCRMI client interoperability
+
+- Step/experiment: `jcrmi-client-vpcd-recheck-20261022`
+- Change: No runtime source changes. Re-ran the bundled Oracle Java Card 2.2.1
+  JCRMI proxy against the current-source VPCD fixture.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` through
+  the elevated host-access route passed the PC build and fixture conversion.
+  The proxy selected with its unmodified `Le=7F`, invoked `Counter.add(short)`
+  and same-context SensitiveResult checks, and decoded runtime and checked
+  exception responses. No physical reader was selected; no RISC-V build or
+  flash was run. `git -c core.whitespace=cr-at-eol diff --check` passed.
+- Result: Client responses matched the previously validated fixture: add
+  returned 3, SensitiveResult returned true, runtime subclass decoding exposed
+  `RuntimeException`, and the checked subclass surfaced as
+  `UndeclaredThrowableException` because the protocol identifies the nearest
+  exported parent type. This is the documented proxy behavior; broader custom
+  exception hierarchy coverage remains open.
+- Decision: Keep the JCRMI client path in the regression set. Continue with
+  wider custom hierarchy/API reason tests and the `int[]` CAP metadata gap.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Emulator transcript
+  `artifacts/logs/rmi-client-official-vpcd-emulator-20261022T055543Z.log`
+  SHA-256 `b40963892744d18ba78e4d574082e13f0d75a04b1d6fd661b6892e481a6618a4`;
+  PC build log `artifacts/logs/build-pc-rmi-client-20261022T055543Z.log` SHA-256
+  `46f76dbff7d0b7002bae5add25f4ef3a0f09b0c476aa1260a01bfd583b09cdd6`.
+
+## 2026-10-22 — Verify exported RMI roots survive collection under pressure
+
+- Step/experiment: `rmi-exported-root-gc-pressure-vpcd-20261022`
+- Change: Added `Counter.allocationPressure()` to the CAP 2.2 fixture; it
+  allocates 256 short-lived 64-byte arrays. Updated the VPCD regression to
+  return a child object, run this pressure APDU with host GC enabled, then
+  invoke the child.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-arrays-vpcd` through
+  elevated host access passed `./tools/build arm`, `./tools/build-pc`, fixture
+  conversion, 23/23 class-form VPCD cases, and 3/3 interface-form checks. The
+  emulator trace reports `arrays=5/261 reclaimed_arrays=256 ... complete=1`;
+  the next child invocation returned `8100009000`. `git -c
+  core.whitespace=cr-at-eol diff --check` passed. No physical device, RISC-V
+  build, or flash was used.
+- Result: The active RMI registry keeps the returned child reachable through a
+  real APDU-boundary collection that reclaimed all 256 temporary arrays. The
+  first test attempt had an incorrect extra length byte in its expected short
+  encoding; corrected expectation `81FF809000` passed. Persistent flash
+  recovery after RAM reclamation remains open.
+- Decision: Keep the regression APDU between child export and child invocation.
+  Next exercise persistent-record restoration under allocation pressure, then
+  return to the outstanding `int[]` converter metadata gap.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Main transcript
+  `artifacts/logs/rmi-array-invoke-vpcd-20261022T060244Z.log` SHA-256
+  `a232c6691824f8554aa4ced99bb64f490cc53340d22299386b743a9e74ffd2d7`;
+  interface transcript `artifacts/logs/rmi-reference-interfaces-vpcd-20261022T060244Z.log`
+  SHA-256 `7911a43152682d8ff536625426d56a93d92173f67a5e56369883c15864dc734b`;
+  ARM build SHA-256 `58bc9f58d84ae14884ac54d6abacdff0c689366f7219fe1cd4927ef4879fe6bb`;
+  PC build SHA-256 `b105af212a363cda56584aaa0f5aed9f8c1bdc78837069405601ca98b2c6f37f`.
+
+## 2026-10-22 — Stress restored persistent aliases with collection enabled
+
+- Step/experiment: `vpcd-persistence-gc-pressure-after-restore-20261022`
+- Change: Extended `tools/test-vpcd-persistence` with configurable
+  `PICO2_VPCD_PERSISTENCE_GC_ROUNDS` (default 4, maximum 1000). The fresh
+  process restore now enables `PICO2_HEAP_GC=1` and passes the configured
+  pressure rounds to the JCSystem probe.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed
+  PC build, probe CAP build, commit/install 3/3, and fresh-process restore plus
+  stress 31/31. Four rounds each allocated 256 arrays and 256 objects, then
+  checked static-root identity, persistent array child, persistent object
+  alias mutation, and restored array type. Emulator traces show complete walks
+  reclaiming 256 arrays and 256 instances in each round. `git -c
+  core.whitespace=cr-at-eol diff --check` passed. No physical device, RISC-V
+  build, or flash was used.
+- Result: A committed applet restored in a new emulator process retains its
+  persistent reference graph across repeated collection of temporary arrays
+  and objects. The persistent graph stays rooted, so this does not yet validate
+  reloading a persistent object after its RAM instance is itself reclaimed.
+  PC build emitted existing Rust, Java source-level, and packed-member
+  warnings; ROM-mask build completed despite unavailable remote Maven metadata.
+- Decision: Preserve the test as process-restart GC regression. Next inspect
+  the root/reload model to determine whether safely reclaiming an unrooted
+  flash-backed object and recreating it on demand is supported by current APIs.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Restore client transcript
+  `artifacts/logs/vpcd-persistence-restore-20261022T060544Z.log` SHA-256
+  `14027e7b2c20292ee6d51ade1d050bd6e422c1ee55290d483714ee4c711f3759`;
+  restore emulator trace `artifacts/logs/vpcd-persistence-restore-emulator-20261022T060544Z.log`
+  SHA-256 `a10a3ec7132d3aa58b0950b4ff6722d1f137a866ab3e22f34e259d28a88748c6`;
+  install client transcript SHA-256 `b3fe0fd1c91b154f0ca6a65361c28b79d5608082f81c60cda283700e40f7d076`;
+  install emulator trace SHA-256 `48be4e8a84f79b8e6082ad523d5e2d30bf94e08b2f0ab313a29101efb4ec2d88`;
+  PC build SHA-256 `5ea37dfd57c8f2c0780e291945a24a24e5edcd0275275788d86003dba38f7817`.
+
+## 2026-10-22 — Keep persistent array aliases valid through collection
+
+- Step/experiment: `persistent-array-stable-identity-after-gc`
+- Change: Moved persistent array bodies to a stable tag derived from their first
+  field tag plus reserved element index `0xffff`; each static or instance
+  reference field now stores an alias to the body. Added probe cases 80/81 to
+  read and clear one of two static aliases, then read the remaining alias after
+  GC. Nested instance-array serialization now follows the same identity path.
+- Validation: `./tools/build arm` passed. Elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed: install
+  `TEST:SUMMARY pass=3 fail=0`; fresh-process restore and four GC pressure
+  rounds `TEST:SUMMARY pass=33 fail=0`. The trace after clearing alias A
+  recorded `arrays=7/8 reclaimed_arrays=1`; the next operation restored B from
+  flash and returned `019000`. `git -c core.whitespace=cr-at-eol diff --check`
+  passed. No physical board, flash, or RISC-V build was used.
+- Result: The prior failure (`case 81: expected 01, got 00`) was caused by the
+  first static reference field doubling as the array's storage tag. Clearing
+  that field overwrote the record targeted by other aliases. Stable array
+  identity fixes current-format VPCD persistence. Migration of already stored
+  legacy field-owned array records and physical power-cycle behavior remain
+  unverified. PC build emitted existing Rust and packed-member warnings.
+- Decision: Keep the lazy restoration regression enabled. Next cover alias
+  reclamation with arrays nested in persistent object graphs, then return to
+  the RMI `int[]` converter metadata gap.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Restore transcript
+  `artifacts/logs/vpcd-persistence-restore-20261022T061524Z.log` SHA-256
+  `7d8ce80bb26891618c8a2ac96330aecdff213605e55e9148000928bb2c6cadc5`;
+  emulator trace
+  `artifacts/logs/vpcd-persistence-restore-emulator-20261022T061524Z.log` SHA-256
+  `6705cc897a446bc6cf37807a5cb43e84fdcc02d65791cfac6e160078469dc445`;
+  install transcript
+  `artifacts/logs/vpcd-persistence-commit-20261022T061524Z.log` SHA-256
+  `aae73c89fc7ad4f603fcfd41fbbb1ce2a1b67b1189fa08f39912906a61ca5af2`.
+
+## 2026-10-22 — Revalidate deploy JavacardxSec on current VPCD
+
+- Step/experiment: `deploy-javacardxsec-vpcd-after-persistence-change`
+- Change: Re-ran the official deploy API 3.0.5 JavacardxSec client against a
+  freshly built PC VPCD image after the stable persistent-array identity fix.
+- Validation: Elevated `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-javacardxsec-vpcd` passed current PC build, CAP install, applet
+  selection, and all 84 deploy API calls (`OK=84`). This is current-source
+  VPCD validation only; no physical device was accessed and no RISC-V build
+  was run. `git -c core.whitespace=cr-at-eol diff --check` passed.
+- Result: The persistence change did not regress the JavacardxSec deploy
+  profile. PC build continues to emit existing Rust and packed-member warnings.
+- Decision: Continue official deploy validation with the current-source Core
+  applet, including the rows that require separately installed Multi/Ext
+  scenario packages.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: `artifacts/results/javacardxsec-vpcd-20261022T061927Z/`;
+  CSV SHA-256 `244b42beadbe2594e461a4410fc1656c60f040f9e62930a00cab7e54e04b2566`;
+  emulator SHA-256
+  `0edf8bc475a511a6bb7073359573da4f85dfdd62b89f436494f644454e78621f`.
+
+## 2026-10-22 — Isolate current Core deploy failure from stable array identity
+
+- Step/experiment: `core-deploy-vpcd-array-serialization-ab`
+- Change: Temporarily reverted only the stable persistent-array body-tag
+  serialization paths for an A/B run, then restored the saved stable source.
+  No implementation change was retained from the experiment.
+- Validation: The pre-change PC build passed. Elevated VPCD Core deploy run
+  completed 291 calls. Stable and reverted runs match on every call's status,
+  class, method, and argument: `OK=208, EXC_RUNTIME=55,
+  UNSUPPORTED_PER_SPEC=11, WRONG_RESULT=8, APPLET_NOT_INSTALLED=8, SW_ERROR=1`.
+  `./tools/build arm` passed after restoring stable source. No RISC-V build,
+  physical USB access, or flash was performed.
+- Result: The stable body-tag change alone is not the cause of this Core
+  failure. The first exceptions occur in the `Util.arrayCopy` group; the APDU
+  trace later ends with `6F00` / `SecurityException`. Root cause remains
+  unresolved. The 8 unavailable applet rows require scenario packages outside
+  this single-package VPCD run.
+- Decision: Keep the stable array identity change and trace the first Util
+  failure into native array access before making another storage change.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Baseline CSV SHA-256
+  `8f3e25e15082cada0ae7d1f1be0232d272e81d41a2ce8c5d2e28d6eae2e42c39`;
+  stable CSV SHA-256
+  `d81221ac923575193414cdba4b3aaf523ccad67c4fd021a29c7255440831cd02`;
+  ARM build log SHA-256
+  `d0e8935fe5c86d7f1b1f980105120a87f6eaa7682ab9ebf53f5e3df2a0a5deb0`;
+  artifacts in `artifacts/results/deploy-current-core-vpcd-20261022/`.
+
+## 2026-10-22 — Preserve caches after empty transaction aborts
+
+- Step/experiment: `empty-transaction-abort-cache-generation`
+- Change: Advanced the persistent rollback generation only when the rollback
+  snapshot list contains records. Aborting a transaction that made no
+  persistent writes no longer forces all live persistent instance fields to
+  reload. The stable persistent-array identity implementation remains intact.
+- Validation: `./tools/build arm` and `CHOUPI_JCVM_DEBUG=OFF
+  ./tools/build-pc` passed. Elevated current-source API 3.0.5 Core VPCD run
+  completed 291 calls: `OK=272, UNSUPPORTED_PER_SPEC=11,
+  APPLET_NOT_INSTALLED=8`; zero `EXC_RUNTIME`, `WRONG_RESULT`, and `SW_ERROR`.
+  Elevated `./tools/test-jcsystem-transaction-applet --case 1 --case 5
+  --case 6 --case 7` passed 7/7, including abort-after-write restoring field
+  `0x11`, readback after abort, commit to `0x33`, and readback after commit.
+  The first local-socket attempt was rejected by the restricted process
+  context (`Operation not permitted`); rerunning the same bounded command via
+  the elevated host-access path passed. RISC-V and physical hardware were not
+  used; nothing was flashed. `git -c core.whitespace=cr-at-eol diff --check`
+  passed.
+- Result: The earlier 55 runtime errors and 8 wrong results were caused by an
+  empty abort spuriously invalidating runtime caches, not by stable array
+  serialization. The remaining eight unavailable deploy rows require the
+  separate Multi/Ext scenario packages; 11 unsupported results are expected
+  per the implementation profile.
+- Decision: Keep the generation guard and the full Core deploy VPCD suite in
+  regression coverage. Continue with the next priority in `TODO.md`.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Core CSV SHA-256
+  `fea66263ad356885aa66ba5bcf0f2987159ef6c61464ae80aeca0d4af5860dab`;
+  Core emulator SHA-256
+  `36bf328eaa45c237127f86c437a1672afab50393e5c928861400599a83aa3db1`;
+  transaction transcript SHA-256
+  `f6496f9053afd003bc9ad00377de51c5f2eae410de4eeda03b96bb17cdb83747`;
+  ARM build log SHA-256
+  `b012017405a6e40b723efe88da895ce194cfde18bf076cc1f7251af72dd7540b`;
+  PC build log SHA-256
+  `5d38a5399a298bf7e30daafd47e410b0cc4ef8a71d084dd2c1d2781f4f43e3b0`;
+  files are under `artifacts/results/deploy-current-core-vpcd-20261022/` and
+  `artifacts/logs/`.
+
+## 2026-10-22 — Cover empty abort between transient-array lifecycle checks
+
+- Step/experiment: `empty-abort-transient-instance-regression`
+- Change: Added transaction probe case 79. It begins and aborts an empty
+  transaction, then checks that the live `CLEAR_ON_RESET` and
+  `CLEAR_ON_DESELECT` instance fields retain their references, values, and
+  event types. The case runs between transient-array setup and the existing
+  deselect-lifecycle check.
+- Validation: Elevated `./tools/test-jcsystem-transaction-applet --case 30
+  --case 79 --case 31` built the probe CAP and passed 5/5 assertions. Case 79
+  returned `03`, and the following deselect case returned `03`. No physical
+  reader, RISC-V build, or flash was used. `git -c
+  core.whitespace=cr-at-eol diff --check` passed.
+- Result: The no-op abort regression is now directly covered without changing
+  the transaction's persistent state; transient fields remain available for
+  their proper reset/deselect lifecycle.
+- Decision: Keep case 79 in the focused probe and continue with the next open
+  implementation priority.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Transcript
+  `artifacts/logs/jcsystem-empty-abort-transient-root-20261022.log` SHA-256
+  `f7a33d80d7a8901413129fde4bd50287e678eeb290163c902501b6723927b2dc`.
+
+## 2026-10-22 — Recheck persistence and GC after rollback-generation fix
+
+- Step/experiment: `vpcd-persistence-after-empty-abort-fix`
+- Change: No additional runtime changes. Re-ran the full persistent CAP
+  install/restart/alias regression after guarding rollback-generation changes
+  on a nonempty snapshot list.
+- Validation: Elevated `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-persistence` passed the PC build, install/commit (3/3),
+  fresh-process restore, stable static array aliases, and four GC pressure
+  rounds (33/33). Each pressure round allocated 256 arrays and 256 objects;
+  static roots, persistent array/object aliases, and restored array type passed
+  after every round. `git -c core.whitespace=cr-at-eol diff --check` passed.
+  No physical reader, RISC-V build, or flash was used.
+- Result: The no-op abort fix preserves the previously passing persistent-array
+  restoration and collection behavior.
+- Decision: Keep the implementation and all three regression layers: official
+  Core deploy, focused transaction/transient probe, and process-restart GC
+  persistence test.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Install transcript
+  `artifacts/logs/vpcd-persistence-commit-20261022T073040Z.log` SHA-256
+  `5761465b67d6459bf2709cb71544190cb5bf689b7310c645fe574bfe3c7ff0f9`;
+  restore transcript
+  `artifacts/logs/vpcd-persistence-restore-20261022T073040Z.log` SHA-256
+  `528027aef95798bb47e2a806dd57da16f056aaaba1e9b5c5d79d2c00b71eefe8`.
+
+## 2026-10-22 — Refresh caches after failed snapshot commits
+
+- Step/experiment: `failed-commit-snapshot-cache-generation`
+- Change: When `commitTransaction()` gets an `fs_sync` error and rolls back a
+  nonempty snapshot list, it now advances the same rollback generation used by
+  explicit abort. Transactions with no persistent writes continue to preserve
+  live caches.
+- Validation: `./tools/test-persistent-transaction` passed all checks,
+  including injected snapshot-commit failure, rollback values, and transaction
+  closure. Final `./tools/build arm` and `CHOUPI_JCVM_DEBUG=OFF
+  ./tools/build-pc` passed. `git -c core.whitespace=cr-at-eol diff --check`
+  passed. No RISC-V build, physical reader, or flash was used.
+- Result: Both explicit abort and failed-commit rollback invalidate caches
+  exactly when persistent snapshots were restored; empty rollback leaves the
+  generation unchanged.
+- Decision: Keep one shared generation rule for both rollback paths. Earlier
+  evidence for the official Core VPCD run, empty-abort transient regression,
+  and persistent array GC suite remains valid because this change affects only
+  the injected `fs_sync` failure path.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Native transaction log SHA-256
+  `5bff5a783e34b05cb3a21e9adb5608dcd2401af45d54ca5785829d0fcc519c33`;
+  ARM build log SHA-256
+  `a5c2676996d8b93a9b58c40d7dbd0a4d0a8730d613270ef276cac721baa45857`;
+  PC build log SHA-256
+  `16d2e1296a6fc93e39e7436f34cbc8e553e5cfa6abce7e8dc5eacda533e05cdf`.
+
+## 2026-10-22 — Cover a nested persistent reference graph
+
+- Step/experiment: `nested-persistent-array-graph-gc`
+- Change: Added transaction-probe case 82. A persistent holder contains an
+  `Object[]` with two references to one byte array; the case checks restored
+  identity, shared mutation visibility, and original value. Added it to the
+  process-restart persistence suite and each GC-pressure round. Updated
+  `TODO.md`, `STATUS.md`, `.agent/HANDOFF.md`, and `.agent/QKB.md` with results
+  and fixture boundaries.
+- Validation: `./tools/build arm` and `./tools/build-pc` passed;
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed install 3/3
+  and restore/stress 38/38, including four rounds of 256 temporary arrays and
+  256 temporary instances. The new graph check passed after restart and in all
+  four GC rounds. `./tools/test-vpcd-session` passed 21/21;
+  `./tools/test-gp-delete` 26/26; `./tools/test-gp-registry` 47/47; and
+  `./tools/test-gp-get-data` 11/11. `git -c core.whitespace=cr-at-eol diff
+  --check` passed. Physical reader preflight found no Pico PC/SC readers; no
+  hardware run, RISC-V build, or flash was performed.
+- Result: Persistent object → reference array → aliased byte-array identity is
+  verified after process restart and repeated collection. JCDK 3.0.5 rejects
+  `Object[][]` during CAP conversion. A direct `Object[]`-in-`Object[]` attempt
+  installed with `SecurityException` at `AASTORE`; that failure remains
+  unisolated and is recorded in `.agent/QKB.md`.
+- Decision: Keep the passing holder graph in regression coverage. Investigate
+  nested `AASTORE` firewall ownership separately before claiming array-of-array
+  writes work.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Restore log SHA-256
+  `5e3861913c0a48f5c70f63d23b646fa9aeee93bea465f56f312cfeab76f22be0`;
+  emulator restore log SHA-256
+  `73b535a2af59df819f1c0cf54ef13228756d2167931a08879143303063cdd744`;
+  install log SHA-256
+  `d9a3b7c2c44cfd7f26081f5fcf638510044951a38e6c9f345fcdf7091ad58b2e`;
+  emulator install log SHA-256
+  `581312a05639d0954aad9f62949c98c0f4236fb2d5aaaaa1fcf1ad1768017f14`;
+  failed initial nested-array emulator log SHA-256
+  `c08e959b0821c5552db2312dd4f153b0f648d6b45acdb40a95be53b698c87100`.
+
+## 2026-10-22 — Validate fresh GPPro card-manager lifecycle over VPCD
+
+- Step/experiment: `pc-vpcd-gppro-fresh-card`
+- Change: Made `--class-index` optional for PC VPCD starts so the host emulator
+  can represent an empty card manager. Per-package CAP data is now exposed as
+  loaded only after package storage commits; explicit class-index mode remains
+  available for resume tests.
+- Validation: `./tools/build-pc` passed. `./tools/test-vpcd-session` passed
+  21/21 earlier in this continuation; this change only touches `main_pc.cpp`.
+  After activating the local reader with `pcsc_scan -r`, GPPro 20.01.23 passed
+  initial ISD-only `--list`, SCP03, JC305 CAP `--install`, listing the
+  selectable applet and loaded package, applet DELETE, verification that the
+  package remained, package DELETE, and final ISD-only listing. No physical
+  PC/SC reader was used; all three Picos were in BOOTSEL. No ARM/RISC-V build,
+  flash, or hardware test was done.
+- Result: The host GPPro path now completes the single-package lifecycle from
+  a reproducible empty-card state.
+- Decision: Next verify SELECT, GETVERSION, and JCSystem calls after external
+  GPPro installation, then verify the saved image after a clean emulator
+  restart. Multi-package VPCD registry support remains open.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: GPPro transcript SHA-256
+  `5ad24ff141b3fba7c92b6b6ae0847d468d7a53af81c00f44e59f538775a92679`;
+  emulator log SHA-256
+  `d3095f1ec86375a6cfe7e3722984e6979cf1d117b61a46791b69855f175c7571`;
+  PC/SC activation log SHA-256
+  `fb0167c87354f218d690dbbb16b5276f5e507f60910a3284af5d4f72f31906de`.
+
+## 2026-10-22 — Invoke JCAlgTest after GPPro CAP installation
+
+- Step/experiment: `pc-vpcd-gppro-installed-applet-invoke`
+- Change: Extended `tools/JCAlgTestApduProbe.java` to accept an exact `--reader`
+  name while retaining its default physical Pico selection. This lets the same
+  SmartcardIO probe exercise GP-installed applets through Virtual PCD.
+- Validation: GPPro 20.01.23 installed the supplied JC305 CAP on a fresh host
+  VPCD manager. `PICO2_HOST_USB_ACCESS=1 ./tools/probe-jc-algtest --reader
+  'Virtual PCD 00 00' --version-only` then passed SELECT, GETVERSION
+  (`1.8.2_jc305`), and `JCSystem` info, each with `9000`. The probe wrapper
+  compiled Java through `tools/env`. No physical reader was used; no ARM/RISC-V
+  build or flash was run.
+- Result: The card-manager LOAD/INSTALL path produces an applet that executes
+  Java Card entry points on the host VM, including JCSystem info.
+- Decision: Next validate cleanly saved persistent state and restore across a
+  fresh emulator process. The PC registry still models one dynamic package and
+  instance; no three-device test is possible while all boards are in BOOTSEL.
+- Commit: Not created; `.git` metadata is read-only in this environment.
+- Artifacts/logs: Probe log SHA-256
+  `43ad960c12553f23c7e8edf971bf27ff4a093649b7ad0c60e7ff55705258e180`;
+  GPPro install log SHA-256
+  `75f7268818bfc5fe84290c7574b6d40e7f430a4d919b24c354b8848007202319`;
+  emulator log SHA-256
+  `e986c8851223fb021862ac1fdca03ae379e2eefb05310512dafd5e472bfca28e`.
+
+## 2026-10-22 — Investigate host VPCD clean-save timeout
+
+- Step/experiment: `pc-vpcd-idle-save-timeout`
+- Change: Removed the unverified `poll()`-based timeout experiment after it
+  failed to wake the CHOUPI PC emulator's VPCD socket loop. Kept the existing
+  socket receive-timeout implementation unchanged; no timeout behavior is
+  considered viable yet.
+- Validation: `./tools/test-vpcd-protocol` passed 19/19 and `./tools/build-pc`
+  passed. GPPro installed `AlgTest_v1.8.2_jc305.cap` on `Virtual PCD 00 00`, but
+  the emulator did not exit after the idle deadline. An isolated 2-second idle
+  deadline was bounded at 12 seconds and exited only when external `timeout`
+  killed it (status 124); the image stayed 32,768 bytes. `git diff --check`
+  passed. No ARM/RISC-V build, flash, or physical test was run.
+- Result: The GPPro install path works, but a clean emulator save/restart could
+  not be validated. External termination is not a substitute for a clean save.
+- Decision: Investigate host emulator syscall/socket readiness and implement a
+  graceful VPCD disconnect/wakeup before retrying persistence across processes.
+- Commit: Not created; `.git` metadata is read-only.
+- Artifacts/logs: Isolation log SHA-256
+  `f2e400a0a61e00322b0d32bfebd2ae02836985a5514d72d44a26df7e142e9f35`;
+  GPPro output and emulator log are under
+  `artifacts/results/gp-vpcd-restart-20261022/`.
+
+## 2026-10-22 — Validate VPCD idle save and native-install restart
+
+- Step/experiment: `pc-vpcd-idle-save-and-restart`
+- Change: Wired the remaining APDU-idle duration from `run_vpcd_transport()` to
+  the framed VPCD reader's `poll()` timeout. Track idle from the last APDU so
+  Virtual PCD ATR/power control frames cannot keep an otherwise idle process
+  alive. The configured deadline now reaches the blocking read.
+- Validation: `./tools/test-vpcd-protocol` passed 18/18 and `./tools/build-pc`
+  passed. With Virtual PCD active, a 2-second idle run emitted
+  `VPCD:IDLE_TIMEOUT seconds=2`, `VPCD:DISCONNECTED result=0`, exited 0, and
+  saved 524,288 bytes from a 32,768-byte initial image. Native `--install` of
+  JCAlgTest package 56/class 148 then passed GPPro listing and the SmartcardIO
+  SELECT, GETVERSION (`1.8.2_jc305`), and JCSystem probe before shutdown and
+  again after restarting from the saved image. The second process also exited
+  cleanly on its 12-second idle deadline. No ARM/RISC-V build, physical board
+  operation, or flash was run. `git diff --check` passed.
+- Result: Clean host VPCD process-restart persistence and post-restart applet
+  execution pass for the native install path. The external GPPro LOAD/INSTALL
+  variant remains unresolved: its fresh-process restore fails at package 63,
+  class 148 (`RESTORE_READ_FAIL`, tag `03003F94FF`), although GPPro GET STATUS
+  reports the applet. This limitation is in `.agent/QKB.md`.
+- Decision: Use the native install restart test as a regression. Next isolate
+  persistent instance state from the external GPPro LOAD/INSTALL path.
+- Commit: Not created; `.git` metadata is read-only.
+- Artifacts/logs: Native install logs and image under
+  `artifacts/results/gp-vpcd-cli-install-restart-20261022/`; install emulator
+  SHA-256 `5e62d7eb05917c4cbac8c9eb48136ba24bed5fa39097c70f144cdcbf2f77bebb`;
+  restore emulator SHA-256
+  `67f55f47920b6be475a4c9371a28bbd196399522c1fd61feb0ff49f16c0ec123`;
+  restored image SHA-256
+  `2b3fa5fecc122dcadd9c024f91be124cd906780135ec6d65e058374219bb2ba2`.
+
+## 2026-10-22 — Correct VPCD external-install restart metadata
+
+- Step/experiment: `pc-vpcd-gppro-restart-package-id`
+- Change: Corrected the restart fixture to use the package ID allocated by CAP
+  LOAD (56 for the first dynamic package) instead of the preconfigured fallback
+  ID 63. Updated STATUS, TODO, QKB, and HANDOFF to distinguish working applet
+  persistence from the remaining automatic-registry discovery limitation.
+- Validation: On the GPPro-installed saved image, resumed CHOUPI with
+  `--package-id 56 --class-index 148`; `RESTORE_READ_OK` returned for tag
+  `03003894FF`, and JCAlgTest SELECT, GETVERSION (`1.8.2_jc305`), and JCSystem
+  info passed with `9000`. The emulator then exited on its 15-second idle
+  deadline with status 0. The earlier ID 63 attempt failed at tag
+  `03003F94FF`; that mismatch explains the false failure. No ARM/RISC-V build,
+  physical-device operation, or flash was run. `git diff --check` passed.
+- Result: GPPro CAP LOAD/INSTALL and applet state both survive a clean VPCD
+  emulator restart when the resumed process uses the actually allocated package
+  ID. Multi-package registry discovery is still missing.
+- Decision: Add or expose allocated package metadata for restart automation,
+  then extend PC VPCD beyond its single-package model. Physical validation stays
+  separate.
+- Commit: Not created; `.git` metadata is read-only.
+- Artifacts/logs: Restore log SHA-256
+  `4cd10afbad3077bedcada5a0ecd57ce2435688c8e4e67313fb837fbfaf0da02e`;
+  probe log SHA-256
+  `43ad960c12553f23c7e8edf971bf27ff4a093649b7ad0c60e7ff55705258e180`;
+  saved image in `artifacts/results/gp-vpcd-restart-final-20261022/FLASH_MEMORY`.
+
+## 2026-10-22 — Run card-manager regressions after restart fix
+
+- Step/experiment: `pc-vpcd-card-manager-regression`
+- Change: No code change; ran focused regressions after wiring the VPCD idle
+  deadline and correcting external-install resume metadata.
+- Validation: `./tools/test-vpcd-session` passed 21/21;
+  `./tools/test-gp-delete` passed 26/26;
+  `./tools/test-gp-registry` passed 47/47;
+  `./tools/test-gp-get-data` passed 11/11; `git diff --check` passed.
+  Physical hardware remained untouched; no firmware build or flash was run.
+- Result: Existing session and GP card-manager behavior remains green.
+- Decision: Continue with automatic host VPCD package/class registry discovery;
+  physical validation is separate.
+- Commit: Not created; `.git` metadata is read-only.
+- Artifacts/logs: Test summaries are in command output; no extra logs.
+
+## 2026-10-22 — Finalize APDU idle deadline accounting
+
+- Step/experiment: `pc-vpcd-idle-deadline-after-response`
+- Change: Reset the idle clock after an APDU response is successfully written,
+  so an APDU that takes a long time to execute does not consume the following
+  idle interval before the card has even answered.
+- Validation: Elevated `./tools/test-vpcd-protocol` passed 18/18;
+  `./tools/build-pc` passed; `./tools/test-vpcd-session` passed 21/21. A final
+  bounded VPCD idle run exited 0, emitted `VPCD:IDLE_TIMEOUT seconds=2` and
+  `VPCD:DISCONNECTED result=0`, and saved exactly 524,288 bytes. The full
+  GPPro install/restart and applet probe passed in the preceding step. No
+  physical board, flash, ARM build, or RISC-V build was used.
+- Result: The clean-save deadline is both wired to blocking reads and measured
+  between completed APDU exchanges.
+- Decision: Continue with automatic package/class metadata discovery for PC
+  VPCD resume. Do not flash while boards are in BOOTSEL and ARM-only builds are
+  not paired with the other required architecture build.
+- Commit: Not created; `.git` metadata is read-only.
+- Artifacts/logs: `artifacts/logs/vpcd-idle-timeout-final-20261022.log`, SHA-256
+  `acbe428d3679fd17439bd2bdc5139deaf9ef80877f0b866288297319600678fa`.
+
+## 2026-10-22 — Partition existing worktree into commits
+
+- Step/experiment: `review-and-commit-dirty-worktree`
+- Change: Grouped existing work by purpose: CHOUPI dependency sources, JCVM
+  runtime source, regression fixtures, developer/deploy scripts, captured data,
+  and project status/handoff documentation. Added root `.gitmodules` entries
+  so the three committed CHOUPI dependency gitlinks have usable clone URLs.
+- Validation: Reviewed tracked/untracked status, staged file lists, and commit
+  summaries. `git diff --check` on the full pre-commit tree surfaced whitespace
+  reports caused by CR characters in Windows-style source/log lines; those
+  files were preserved unchanged. No builds or tests were run because this step
+  only organized already existing changes.
+- Result: The source, tests, scripts, and tracked data groups are committed
+  independently. Ignored CAPs, toolchains, build artifacts, and generated
+  result files were not staged. Generated files and uninitialized nested
+  optional repositories inside the Java Card SDK submodules remain local.
+- Decision: Keep any remaining generated or optional nested submodule content
+  out of source commits; review current `git status` before future staging.
+- Commit: Dependency source commits `83323a4`, `2fedf58`, `af6817f`; root
+  dependency registration `47c8d35`; runtime `6ee8ab9`; tests `d3f1ac3`; tools
+  `fc14b73`; data `507ab39`; documentation commit SHA to be added in a
+  follow-up record.
+- Artifacts/logs: Existing tracked logs and metrics are in `507ab39`; ignored
+  generated artifacts were left untouched.

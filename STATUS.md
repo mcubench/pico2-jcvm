@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-20
+Updated: 2026-10-22
 
 ## Summary
 
@@ -9,6 +9,10 @@ CHOUPI is an experimental Java Card VM port targeting the Raspberry Pi Pico 2
 path and implements a tested subset of Java Card runtime behavior. It is **not
 a complete or Java Card certified VM**. Unsupported algorithms may correctly
 report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
+The physical deployment target is ARM Cortex-M33. ARM, RISC-V, and PC build
+wrappers pass; RISC-V has not been tested on hardware. Recent physical deploy
+tests used the images already installed on the Picos, not the current source
+build.
 
 ## Verified
 
@@ -25,15 +29,20 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   a later SELECT works,
   and card reset invokes deselect before the next successful select. A fresh
   VPCD emulator process also restored a committed instance field (`0x33`) and
-  persistent static/array reference identities across process restart; that
-  dedicated restore run passed seven checks (`TEST:SUMMARY pass=7 fail=0`).
+  persistent static/array reference identities across process restart. A
+  focused alias case clears one static reference, verifies GC reclaims the
+  unrooted persistent array, then restores it through the remaining flash
+  alias; the full restore and four-round pressure run passed 33 checks
+  (`TEST:SUMMARY pass=33 fail=0`).
 - A focused VPCD APDU check confirms an unknown SELECT-by-AID returns `6A82`,
   deselects the active applet, and leaves later applet APDUs unavailable. The
   card-manager path also compiles for RP2350 ARM; no physical flash was run.
 - `./tools/test-vpcd-persistence` commits applet field `0x33`, exits the host
   emulator, starts a fresh process from the saved flash image, and verifies the
-  restored field, static/array reference identity, object-field alias, and array
-  type (7/7 restore checks). This validates process-restart persistence;
+  restored field, static/array reference identity, object-field alias, array
+  type, and lazy restoration after collection. The latest run passed 38/38
+  checks with four pressure rounds, including a nested holder → `Object[]` →
+  aliased byte-array graph. This validates process-restart persistence;
   physical applet installation persistence was separately verified after a
   reported five-second power-off/on on 2026-10-20 (see `TODO.md`).
 - `APDU.getCurrentAPDU()` now returns the exact APDU object passed to
@@ -63,8 +72,21 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 - Native transaction and storage recovery checks pass: injected record-write
   and snapshot-commit failures roll back cleanly, and the filesystem overlay
   test passes 1,000 randomized multi-record power-cut cases plus reset, CRC
-  fallback, and tombstone restart checks. Authenticated GP DELETE and
-  Java-level power-cycle behavior still lack end-to-end regression coverage.
+  fallback, and tombstone restart checks. JCSystem begin/commit/abort now pass
+  the full 80-check VPCD probe; abort invalidates live persistent field caches
+  so subsequent reads observe restored flash snapshots. The native transaction
+  suite passes. Physical transaction and power-cycle behavior remain unverified.
+  An empty abort has a dedicated regression between transient-array setup and
+  deselect clearing; both transient array references, contents, and clear
+  events survive it. A commit whose `fs_sync` fails also invalidates caches
+  when it rolls back nonempty snapshots.
+- Current-source deploy Core API 3.0.5 now passes on PC VPCD after fixing empty
+  transaction aborts: 291 calls completed with 272 `OK`, 11 expected
+  `UNSUPPORTED_PER_SPEC`, and 8 unavailable optional Multi/Ext scenario rows;
+  there were zero runtime exceptions, wrong results, or SW errors. The empty
+  abort no longer advances the cache generation when no persistent records
+  changed. Abort-after-write and commit-after-write still pass the focused
+  transaction persistence probe (7/7).
 - GET DATA (`0066`) now returns Card Recognition Data both before
   authentication, for card discovery, and through the authenticated
   card-manager path. Its exact encoding and status-word behavior pass 11 host
@@ -85,6 +107,72 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
   2026-10-20: the supplied JCAlgTest 1.8.2 JC305 CAP loaded and installed, and
   the applet was selectable with SELECT/GETVERSION/JCSystem returning `9000`.
   Windows GlobalPlatform compatibility remains unverified.
+- Three physical Pico 2 readers are visible concurrently. On the installed
+  image, Core and Crypto were installed as separate packages on one Pico,
+  remained simultaneously selectable, and each completed its official deploy
+  API run. Both packages were then removed and the registry returned to ISD
+  only. The deploy runner's `--reader-name` path now resolves the Java client
+  index as well as pinning GPPro to that reader.
+- Current-source PC VPCD supports a fresh empty card-manager state without
+  `--class-index`. GPPro 20.01.23 completed SCP03, JC305 CAP LOAD/INSTALL,
+  GET STATUS, applet DELETE, package DELETE, and final ISD-only listing. This
+  validates one dynamic package on the host emulator; multi-package registry
+  persistence remains open. The native emulator `--install` path now passes a
+  clean process-restart check: GPPro lists the applet after restart, and SELECT,
+  GETVERSION (`1.8.2_jc305`), and JCSystem info return `9000`. GPPro external
+  LOAD/INSTALL also passes applet restore after restart when resumed with its
+  allocated package ID 56 and class index 148. Automatic registry discovery
+  and multi-package persistence remain open.
+- The latest three-reader deploy batch completed Crypto (466 calls), Core
+  (291), and Service (124) concurrently on the installed firmware, with each
+  reader assigned one area. All workers exited 0 and the main CAP cleanup
+  passed. Core's optional Ext INSTALL returned `6A88` and rollback passed.
+  Crypto had 2 SW_ERROR, Core had 1 wrong result and 4 optional applet-unavailable
+  calls, and Service had 28 wrong results, 1 runtime exception, and 1 SW_ERROR.
+  These results confirm multi-reader routing and cleanup; they do not validate
+  current source because no new image was flashed. See `progress.md` and
+  `.agent/HANDOFF.md` for per-reader artifacts.
+- Current-source host VPCD installs and selects the deploy
+  `AlgTestApiJavacardxSec_305` CAP using canonical-AID aliases for the local
+  APDUUtil and SensitiveResult packages. The official 84-call JavacardxSec
+  client suite passes `OK=84` through `tools/test-javacardxsec-vpcd`. The
+  `SensitiveResult` assertion/reset methods now use a VM-wide typed result slot;
+  same-context AID, JCSystem, and Util capture is covered. SIO context-switch
+  behavior and sensitive result producers outside the tested subset remain
+  open. No current-source image was flashed to hardware.
+- Current-source JC305 Service CAP passes all 33 Dispatcher, 39 BasicService,
+  and 124 deploy Service API catalog cases on VPCD. The 124-call run validates
+  `CardRemoteObject` export/unexport and the 16-object capacity scenario against
+  a VM-owned 32-slot registry whose references are included in GC root walks.
+  RMI SELECT FCI supports class and interface references from a generated CAP
+  2.2 fixture. Current-source VPCD now handles primitive RMI INVOKE: method-hash
+  lookup, byte/boolean/short/int argument decoding, virtual dispatch, primitive
+  result encoding, and unknown-method/object error responses. `Counter.add(short)`
+  and `Counter.value()` pass with exact responses, including persistent field
+  mutation/readback (`TEST:SUMMARY pass=6 fail=0`). Primitive-array marshalling
+  and API exception responses are covered by VPCD fixtures, including preserved
+  SystemException and ISOException reasons. Remote-interface returns now work
+  in class and interface descriptor forms, and a follow-up INVOKE through the
+  returned object passes. The bundled Oracle SDK JCRMI proxy now passes the
+  unmodified SELECT (`Le=7F`), primitive INVOKE, and custom runtime/checked
+  exception cases over current-source VPCD. Broader custom hierarchy coverage,
+  complete API reason-code capture, and int[] end-to-end coverage remain open.
+  The latest focused current-source validation built ARM and PC; RISC-V and
+  physical flashing were intentionally skipped under the current ARM-only/no-
+  flash scope. Three physical readers were confirmed, but current-source
+  hardware behavior remains unverified.
+  See the 2026-10-22 progress and handoff entries.
+- Current-source VPCD completed the deploy Security CAP's 901 calls after
+  correcting the JC305 `MessageDigest()` subclass-constructor token used by
+  `invokespecial`. Official decoding reports 64 `OK`, 822 spec-allowed
+  unsupported outcomes, 13 runtime exceptions, and two result mismatches. The
+  two `Key.isInitialized()` mismatches depend on transient AES keys; the
+  preceding transient-key setup cases return `UNSUPPORTED_PER_SPEC` because
+  `KeyBuilder.buildKey` only supports persistent AES/DES keys. Treat these
+  downstream cases as unavailable-feature fallout, not evidence of a VM
+  defect. Unsupported algorithms remain expected; this does not claim complete
+  Security API support. The current ARM and host builds pass, but no new image
+  was flashed to the three physical readers.
 - Heap tracing now has a guarded sweep path in firmware: it runs after APDU
   interpreter scopes return and only reclaims after a complete root walk.
   Persistent-tagged objects are conservatively pinned, global arrays are
@@ -141,11 +229,19 @@ this does not test the new JCSystem behavior on hardware. See
    support, or custom shareable-interface callback and ownership model. The
    current shareable lookup fallback is verified only for the default-null
    probe applet.
-2. **Memory lifecycle:** basic stable-slot reclamation is enabled and tested,
-   but persistent objects are pinned until deletion is implemented. Persistent
-   primitive field reads now release their temporary buffers on success and error.
-   The root walk and object ownership model still need broader audits, especially
-   for native-held references and future multi-context operation.
+2. **Memory lifecycle:** basic stable-slot reclamation is enabled. The collector
+   walks static/context roots and exported native RMI references; persistent
+   records remain in flash and can be restored lazily. Current-source two-process
+   VPCD persistence passes 7/7 checks for committed fields, static identity,
+   persistent child identity, aliases, and restored array type. Broader forced-GC
+   pressure coverage now includes current-source VPCD checks of static roots
+   and an exported RMI child retained while 256 temporary arrays are collected;
+   the child remains callable after collection. A fresh-process persistence
+   test also rechecks static roots, persistent array/object aliases, and restored
+   array type through four 256-array/256-object collection rounds (31/31 checks).
+   Lazy flash-record restoration after its corresponding RAM object is actually
+   reclaimed remains open. Persistent primitive field reads release temporary
+   buffers on success and error.
 3. **Physical end-to-end validation:** the latest static run reached 544 rows,
    passed the earlier collector OOM point, and then stopped when PC/SC lost the
    reader. A historical static run completed its matrix with many `6F00`

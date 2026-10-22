@@ -29,6 +29,12 @@ measurement finds that; only method does.
 3. **Apply method continuously.** It tells you nothing about the hardware; it
    tells you whether your conclusions survive.
 
+## Compilation
+
+For the repository's concrete ARM and Hazard3 build commands, dependency lookup,
+and artifact paths, use [the compilation guide](compilation.md).
+The repository `AGENTS.md` build and flashing rules remain authoritative.
+
 ## The two checks that catch the most
 
 **Compute the physical floor.** Cycles per operation should be flat across clock

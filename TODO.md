@@ -65,82 +65,353 @@ claims to support them; implementing every algorithm is not a goal.
 
 ### Priority 2 — close correctness and reliability gaps
 
-- [ ] **Make CAP installation and filesystem updates recover atomically.** The
-  CAP slot header can be marked installed before the filesystem transaction's
-  final `fs_sync()`. A sync failure can roll back filesystem snapshots without
-  rolling back that header. Add failure-injection coverage and coordinate
-  durable recovery. See `.agent/QKB.md`.
-- [ ] **Complete GlobalPlatform lifecycle verification.** Exercise authenticated
-  `DELETE` over APDU, then verify GET STATUS and reinstall behavior after
-  restart. Parser, tombstone, cleanup, and host tests pass, but the complete
-  DELETE APDU plus restart lifecycle is not covered end to end. Extend GET DATA
-  / GET STATUS continuation cases required by the selected profile. CPLC
-  (`9F7F`) returns `6A88` because no manufacturing-data source is available.
+- [ ] **Make CAP installation and filesystem updates recover atomically.** CAP
+  metadata uses alternating copy-on-write headers, and install now commits a
+  CRC-protected intent record alongside applet persistent state before
+  publishing the CAP instance registry. `restoreInstalled()` replays pending
+  records idempotently and then clears them transactionally. Unit storage tests
+  pass. A VPCD fault-injection test now skips registry publication, leaves the
+  journal pending, exits the emulator, and verifies recovery plus SELECT in a
+  fresh process. Another restart case makes the CAP instance store return an
+  error after filesystem commit and verifies recovery. A third leaves the
+  journal after successful publication and confirms idempotent recovery. A new
+  VPCD case fails journal-clear transaction sync after publication, verifies
+  rollback preserves the journal, then verifies fresh-process recovery and
+  applet SELECT. This covers the host transaction rollback path; simulated
+  RP2350 overlay testing now also cuts power at 1,000 randomized points while
+  committing the install-journal clear; reboot recovers either the intact
+  prior journal or the fully cleared state. A second fake-flash case injects
+  1,000 cuts while creating the journal and applet-state records; reboot sees
+  both complete or neither. A combined case persists the journal, injects
+  1,000 cuts during CAP instance-header publication, and verifies recovery
+  republishes the instance and clears the journal. These are simulated cuts;
+  full physical power-cut testing remains open. See
+  `.agent/QKB.md`.
+- [x] **Verify authenticated GlobalPlatform DELETE and reinstall lifecycle.**
+  GPPro 20.01.23 completed authenticated package DELETE, CAP reinstall, GET
+  STATUS listing, and post-process-restart listing over host VPCD. The restarted
+  scratch emulator reported both the package as loaded and its applet as
+  selectable. Full persistent registry enumeration and physical CCID behavior
+  remain open; see the card-manager section below.
+- [ ] **Complete the selected GlobalPlatform GET DATA / GET STATUS profile.**
+  GPPro `--info` confirms Card Recognition Data (`0066`) is returned correctly;
+  CPLC (`9F7F`), Card Capabilities (`0067`), Key Info Template (`00E0`), and
+  unknown data objects return `6A88`, which GPPro accepts as unavailable. There
+  is no manufacturing data source for CPLC. Add required data objects only
+  when backed by actual card data. Authenticated GET STATUS first/next pairs
+  (`P2=02/03`) now pass for application, package, and module categories with
+  one entry each; multi-entry pagination still awaits multiple package and
+  instance support.
 - [ ] **Broaden garbage-collector root and persistence-alias coverage.** The
-  reachability collector passed the physical static workload (2,262 transfers;
-  heap stabilized at 83 array slots / 28 instance slots; a pass reclaimed 50
-  arrays). Add regressions for static references, native-held handles,
-  aliasing, and lazy restoration in applet shapes beyond JCAlgTest. Preserve
-  flash records when their RAM objects are reclaimed.
-- [ ] **Characterize PC/SC discovery and reinsertion.** BOOTSEL insertion was
-  recognized as `2e8a:000f`, firmware as `2e8a:0009`. Repeated remove/add
-  timing and reader rediscovery after firmware reboot remain unmeasured.
-  Capture bounded udev/PCSC logs and verify the same board serial reappears.
+  physical static workload passed 2,262 transfers (heap stabilized at 83 array
+  slots / 28 instance slots; one pass reclaimed 50 arrays). The focused
+  transaction-probe applet verifies static-reference identity, persistent
+  array-child identity, object-field aliasing/mutation, and restored array type
+  across fresh-process restoration (`./tools/test-vpcd-persistence`, 7/7).
+  `./tools/test-rmi-registry` covers exported/native-held reference root
+  enumeration. The transaction probe now runs eight VPCD rounds of 256
+  short-lived arrays and 256 objects per batch, then checks static-root identity,
+  persistent array/object aliases, and restored array type (54/54 focused
+  checks). The converter-built RMI fixture now exports a child, allocates 256
+  short-lived arrays in another APDU with `PICO2_HEAP_GC=1`, observes all 256
+  reclaimed, and successfully invokes the child afterward. The process-restart
+  persistence wrapper also enables GC and passes four 256-array/256-instance
+  pressure rounds (31/31) while checking the restored persistent graph.
+  Lazy restoration is now covered for a flash-backed byte array after its RAM
+  object is reclaimed: the probe clears one of two static aliases, confirms GC
+  reclaimed one array, then reads the other alias and verifies the restored
+  value (`tools/test-vpcd-persistence`, 33/33 restore/stress checks). The
+  persistent array body now has a stable tag separate from either reference
+  field. Added a nested persistent graph through an object field containing an
+  `Object[]` with two aliases to a byte array; process-restart restore and four
+  GC-pressure rounds passed 38/38 checks. Physical power-cycle validation of
+  these alias scenarios remains open.
+- [x] **Expose all three Pico 2 devices through PC/SC.** The installed helper
+  granted all three USB nodes, and `pcsc_scan -r` listed readers
+  D92E743D5F640C0F, E0E14525E64AF6ED, and 5CFC5328F5BDE437. A three-worker
+  Core/Crypto/Service deploy run completed with cleanup on every card. This
+  verifies current multi-reader visibility and use; repeated hotplug timing
+  remains a separate characterization task.
+- [x] **Validate CAP imports before applet execution.** INSTALL resolves each
+  imported AID/version before applet execution and returns `6A88` for an absent
+  dependency. A stale dynamic-package bitmap bit previously sent lookup into an
+  empty CAP slot and produced `6F00`; `isPackageExist()` now also verifies that
+  dynamic package IDs have a nonempty stored CAP. Unit tests cover stale bit,
+  present CAP, and clear bit cases; install-status tests cover stage 10/`6A88`.
+  VPCD still correctly rejects the deploy `JavacardxExt` CAP because
+  `javacardx.external` (`A0000000620203`) is not implemented in the ROM profile.
+  Physical validation of the changed firmware remains pending under the ARM-only
+  build constraint; do not add that package implementation as part of import
+  validation.
 
 ### Priority 3 — define and extend the VM profile
 
+- [ ] **Complete JC305 Service framework behavior.** Current-source VPCD
+  matches all 33 official `Dispatcher` cases, all 39 `BasicService` cases, and
+  all 124 deploy Service API cases. `CardRemoteObject` now exports objects into
+  a VM-owned, GC-rooted per-applet registry with stable 16-bit IDs, unexport,
+  and 32 bounded slots; ARM and host builds pass. The 16-object catalog case
+  initially exposed that an applet's existing reference consumes capacity, so
+  the table keeps headroom above the specified minimum. The current catalog
+  validates capacity/export/unexport calls; a focused host regression also
+  verifies registry root enumeration and session retention/cleanup, but it does
+  not force the collector to reclaim neighboring objects. `beginSelectionSession()`
+  activates the staged INS and retains the initial object; it now restores the
+  initial object's transient export registration after applet restore.
+  `RMIService.processCommand()` recognizes applet SELECT and returns FCI with
+  class-name or interface-name reference descriptors. Current-source VPCD
+  tests load the converter-emitted CAP 2.2 fixture and match both exact SELECT
+  FCI responses. SELECT P2 `0x10` is accepted by VPCD and CCID applet
+  selection. Primitive INVOKE now parses the method hash and CAP 2.2 signature,
+  decodes byte/boolean/short/int arguments, performs virtual dispatch, and
+  encodes primitive results. The generated `Counter.add(short)` and
+  `Counter.value()` fixture passes exact VPCD responses, as do unknown-method
+  and unknown-object error cases. Primitive getter persistence uses the restored
+  instance field cache. Array INVOKE now decodes boolean[], byte[], and
+  short[] inputs by value into temporary global arrays and encodes array and
+  null-array results by value. A converter-built CAP 2.2 fixture passes byte,
+  short, and boolean cases, including eight array parameters in one method,
+  empty/null arrays, malformed lengths, and invalid boolean values. It also
+  checks locally caught and uncaught exceptions and exact RMI API exception
+  responses for bounds, null, `SystemException.ILLEGAL_VALUE`, and
+  `ISOException(0x6A82)`. Uncaught exception dispatch is bounded at the nested
+  invocation frame. Remote-interface return references now encode both class
+  and interface forms, and the fixture successfully invokes the returned child
+  object. Int[] is implemented behind `JCVM_INT_SUPPORTED` but lacks an
+  end-to-end fixture check: the JCDK 3.0.5 converter accepted `-i` and emitted
+  a CAP, yet omitted the fixture's `int[]` remote methods from its CAP 2.2
+  remote-method metadata. Resolve this fixture/converter gap before treating
+  the guarded path as verified. Custom `RuntimeException` subclass responses
+  now return CAP 2.2 tag `0x83`, using the nearest API exception type; the
+  fixture verifies exact response `830900009000`. A checked custom exception
+  extending `java.lang.Exception` also returns `830500009000`. Remaining
+  INVOKE work includes broader custom hierarchy coverage, complete API
+  reason-code capture, and int[] end-to-end verification. The bundled SDK
+  2.2.1 proxy now selects the applet with its unmodified `Le=7F`, invokes
+  primitive `add(short)`, and decodes runtime and checked exception responses
+  through current-source VPCD. The checked subclass is surfaced as
+  `UndeclaredThrowableException` because the remote method declares only the
+  concrete subclass while the protocol reports its nearest exported parent.
+  Object/reference arguments are prohibited by the Java Card RMI profile (JCRE
+  3.1 §8.1.1.1); array parameters are passed by value and must be supported.
+  The CAP `Class` format itself
+  carries remote method hashes, class names, hash modifiers, and remote
+  interface class references for remote classes (CAP format 2.2+); this is not
+  Debug-component metadata. The parser now reads the CAP 2.2+ signature-pool
+  prefix and remote interface
+  names. Package-name, signature-pool, interface-name, class-name, method-hash,
+  signature-offset, and remote-interface-reference parsing pass against exact
+  Header/Class component bytes emitted by the JCDK 3.0.5 converter for a small
+  remote-enabled CAP 2.2 package. Malformed signature-pool bounds are rejected.
+  The converter-built fixture is loaded and exercised through current-source
+  VPCD for SELECT, primitive INVOKE, primitive-array INVOKE, and protocol-error
+  responses. The supplied Service CAP is format 2.1 and cannot validate the
+  CAP 2.2 remote metadata path. External JCRMI client interoperability remains
+  unverified.
+  Physical Service results are from existing firmware and do not validate
+  current source.
+
+- [x] **Run deploy API areas on three physical Pico readers concurrently.**
+  Three-reader JC305 batches ran against existing board firmware. The latest
+  full nine-area batch is `artifacts/results/deploy/parallel-20261022-053706/`:
+  Security completed 901 calls (63 OK, 820 expected unsupported, 13 runtime
+  exceptions, two wrong results, one status error, two excluded calls); Crypto
+  completed 466 calls (11 OK, 434 expected unsupported, 16 runtime exceptions,
+  three card-runtime exceptions, two status errors); Service completed 124
+  calls (94 OK, 28 wrong results, one status error, one runtime exception);
+  Core completed 291 calls (271 OK, 15 expected unsupported, four optional
+  applet calls unavailable, one wrong result). Cleanup passed for completed
+  areas. Optional Core Ext and Javacardx, JavacardxExt, JavacardxSec,
+  JavacardxInt, and Biometry installs returned `6A88` for missing imports;
+  each partial CAP was rolled back. Physical runs validate installed firmware,
+  not current source. No firmware was flashed.
+
 - [ ] **Complete deploy-folder API coverage on the Pico 2.** Runtime loading
-  accepts arbitrary package AIDs and assigns IDs 56–63. Physical tests now
-  install the Core, Security, Crypto, Service, and two Multi applets; Core,
-  Security, Crypto, JavacardxExt, JavacardxSec, and Service clients ran. Core
-  and Crypto expose API/runtime failures, Javacardx and JavacardxInt fail at
-  INSTALL, Biometry fails at LOAD, and cleanup of populated applets returns
-  `6581`. Next fix Core correctness, cleanup, then rerun stages with the fixed
-  deploy runner. Offline VPCD smoke checks now load/install/select Core,
-  Security, Crypto, JavacardxExt, JavacardxSec, Service, and Biometry CAPs;
-  Javacardx and JavacardxInt are refused at install as expected from their
-  missing framework/int support. These isolated emulator runs do not validate
-  concurrent package retention or physical PC/SC behavior. Both AIDs in the
-  deploy `Multi_305` CAP also install/select independently in fresh emulator
-  images; coexisting instances remain unverified. See
-  `.agent/QKB.md` and the 2026-10-21 deploy result CSVs.
-- [ ] **Fix remaining Core API failures found by physical deploy coverage.**
+  accepts arbitrary package AIDs and assigns IDs 56–63. The latest physical
+  Core 3.0.5 run completed 291 calls (272 OK, 15 allowed unsupported, and
+  four optional Ext methods unavailable because that CAP was refused with
+  `6A88`). It recorded 38 JCSystem rows: 37 `OK`; `requestObjectDeletion()`
+  returned profile-allowed `UNSUPPORTED_PER_SPEC`/`ILLEGAL_USE`. Current
+  ARM and host builds pass. Fresh VPCD select-only smoke checks pass for
+  Security, Crypto, JavacardxExt, JavacardxSec, Service, Biometry, and each
+  Multi AID independently. Core's own-AID Shareable probe returns `0000`, and
+  its Shareable tagging-interface probe returns `000101`, both with `9000`.
+  These emulator checks do not model concurrent packages or applet instances.
+  Physical validation of the updated firmware remains pending: root
+  `AGENTS.md` requires both architecture builds before flashing, while the
+  user's active constraint prohibits RISC-V builds. Do not bypass either
+  instruction. Earlier physical package deletion failures (`6581`) and
+  Javacardx/JavacardxInt/Biometry load/install limitations still need their
+  respective follow-up. Focused host Security CAP testing fixed the JC305
+  `Key` interface method order mismatch. Six persistent DES/AES
+  `KeyBuilder.buildKey` cases now return `9000` with matching 64/128/192-bit
+  DES and 128/192/256-bit AES sizes in VPCD. The fix has not been flashed or
+  physically confirmed. Latest source also passes normal host and ARM builds;
+  temporary virtual-dispatch traces were removed. The official Core client
+  completed its 291-call VPCD summary with 0 `WRONG_RESULT`; its CSV contains
+  291 detail rows (272 OK, 11 allowed unsupported, 8 scenario entries
+  `APPLET_NOT_INSTALLED`). Count both `javacard.` and `javacardx.` row prefixes.
+  All 14 APDUException rows passed, including `IO_ERROR`; the earlier apparent
+  IO_ERROR disconnect was the 900-second run timeout. Current host VPCD cannot
+  install Multi and Ext scenario CAPs alongside Core, so those eight scenario
+  calls remain uncovered by this run. Both Multi AIDs select independently in
+  fresh VPCD sessions. No current-source hardware validation was run; the
+  ARM-only constraint still conflicts with the both-architecture flash gate.
+  A single-token physical Security 3.0.5 run completed all 901 calls and
+  cleaned up its CAP: 822 allowed unsupported, 43 OK, 15 `SW_ERROR`, 13
+  `EXC_RUNTIME`, and 8 `WRONG_RESULT`. This used the firmware already flashed
+  on the board, so compare its failed Key/AES/DES/MessageDigest rows against
+  current-source VPCD before changing code. The Java client needed reader index
+  3 because two empty Virtual PCD terminals precede the Pico. CSV:
+  `artifacts/results/deploy/pico2-single-security-reader3-20261021.csv`.
+  The Crypto 3.0.5 stage also completed on the physical Pico: 466 calls, 444
+  allowed unsupported, 14 OK, six `EXC_CARDRUNTIME`, and two `SW_ERROR`;
+  upload and CAP cleanup succeeded. RSA-2048 key-pair generation was excluded
+  per the deploy instructions. The `6F00` constructor rows and Cipher
+  `ILLEGAL_VALUE` rows need comparison with current-source VPCD.
+  Artifact: `artifacts/results/deploy/pico2-single-crypto-reader3-20261021.csv`.
+  Current-source VPCD has now completed all 901 Security calls after fixing
+  the JC305 `MessageDigest()` subclass-constructor token. Official decoding
+  reports 64 `OK`, 822 spec-allowed unsupported outcomes, 13 runtime
+  exceptions, and two result mismatches; no firmware was flashed. Keep
+  `UNSUPPORTED_PER_SPEC` separate from correctness defects.
+  A three-reader physical API sweep completed on 2026-10-21, distributing
+  Security to D92, Crypto/Service to E0E, and Core plus optional areas to
+  5CFC. Security completed 901 calls (820 allowed unsupported, 43 OK, 15
+  SW_ERROR, 13 EXC_RUNTIME, 8 WRONG_RESULT, 2 skipped). Crypto completed 466
+  calls (434 allowed unsupported, 11 OK, 16 EXC_RUNTIME, 3 EXC_CARDRUNTIME,
+  2 SW_ERROR); Service completed 124 (94 OK, 28 WRONG_RESULT, 1 SW_ERROR,
+  1 EXC_RUNTIME). Core completed 291 (272 OK, 15 allowed unsupported, four
+  optional Ext scenario calls not run because that CAP's missing import was
+  rejected with 6A88). JavacardxSec, Javacardx, JavacardxExt, JavacardxInt,
+  and Biometry CAPs were refused with 6A88 for absent imported packages.
+  Ordinary CAP upload failures were rolled back. The first Core-scenario
+  runner left Ext's partial LOAD behind; that package was removed manually,
+  then the scenario upload path was fixed and its rollback passed on Pico 3.
+  An isolated Core repeat consistently reported `Applet.deselect()` as one
+  WRONG_RESULT; investigate before marking Core coverage complete. These
+  physical runs used the firmware already on each board, not a new build from
+  this turn. Results: `artifacts/results/deploy/parallel-20261021-204343/`,
+  `artifacts/results/deploy/pico3-core-scenario-rollback-20261021.csv`, and
+  `artifacts/results/deploy/pico3-core-repeat-20261021.csv`. See `.agent/QKB.md`
+  and the handoff for cleanup, reader mapping, and limits. A focused
+  three-reader Core/Security/Crypto rerun completed all areas and cleanup.
+  Core again showed one `Applet.deselect()` counter mismatch (239 selects vs.
+  98 deselects). CCID `IccPowerOn` and USB bus reset now clear selected applet
+  state and `CLEAR_ON_RESET` arrays. After an ARM flash to Pico 3, two clean
+  Core reruns each completed 291 calls with `select()` and `deselect()` both
+  returning `-19` and no wrong results. Results:
+  `artifacts/results/deploy/pico3-core-resetfix-20261021.csv` and
+  `artifacts/results/deploy/pico3-core-resetfix-repeat-20261021.csv`.
+  On 2026-10-21, all remaining physical deploy areas were exercised across
+  the three readers. Security completed 901 calls (820 allowed unsupported,
+  63 OK, 13 runtime exceptions, two skipped, two wrong results, one SW_ERROR)
+  and cleaned up. Javacardx, JavacardxSec, JavacardxInt, and Biometry returned
+  `6A88` and rolled back. JavacardxExt returned `6F00` twice on D92 and `6A88`
+  on the other cards, with rollback each time. The D92 response is consistent
+  with stale dynamic package bitmap state on older firmware, but is unconfirmed.
+  A fresh current-source host VPCD install and SELECT of `AlgTestApiSecurity_305`
+  also passed (`9000`). These physical tests used already-installed firmware,
+  not current source. Results:
+  `artifacts/results/deploy/parallel-20261021-223749/`,
+  `parallel-20261021-224015/`, and `parallel-20261021-224114/`.
+- [x] **Allow CAP static initializers past offset 255.** The 3.0.5
+  Javacardx CAP has 164 static slots; slots 128–163 use byte offsets above
+  255. Added a 16-bit static tag path while retaining the legacy 8-bit key
+  format for lower offsets. Current-source VPCD install and SELECT pass
+  (`TEST:SUMMARY pass=2 fail=0` after correcting the select-only counter), and
+  both host and ARM builds pass.
+- [x] **Run deploy API areas concurrently on three Picos.** Added exact
+  `--reader-name` resolution and `tools/run-deploy-parallel`, which maps each
+  physical Pico to its own GPPro reader, Java index, result CSV, and log. It
+  requires three active PC/SC Pico readers by default and excludes the known
+  RSA-2048 reader-drop case. On 2026-10-21 it found all three named CHOUPI
+  readers and completed parallel runs for all assigned areas. Per-card results
+  and stage failures are recorded above. Repeatable three-way API execution is
+  established. After the CCID reset fix was flashed to all three boards, the
+  full API 3.0.5 suite completed again at
+  `artifacts/results/deploy/parallel-20261021-211910/`. Core had no wrong
+  results or runtime/status errors; the JCSystem rows were 37 OK and one
+  spec-allowed unsupported. Security, Crypto, and Service API issues remain
+  recorded in their CSVs; optional imported-package CAP failures rolled back.
+  A later three-reader refresh completed Crypto (466 calls), Core (291), and
+  Service (124) in parallel with cleanup. This installed image again showed
+  one Core `Applet.deselect()` mismatch and 28 Service wrong results, one
+  runtime exception, and one status error. A second batch attempted the other
+  five areas: Javacardx/JavacardxInt returned `6F00` at INSTALL and
+  JavacardxExt/JavacardxSec/Biometry returned `6A88`; every partial LOAD was
+  rolled back. These are old-image physical results, not current-source
+  validation. CSVs and hashes are in `progress.md` under
+  `three-reader-deploy-api-current-firmware`.
+- [x] **Verify physical coexistence of independently loaded packages and
+  applets.** On the firmware already installed on reader
+  `E0E14525E64AF6ED`, retained the 3.0.5 Core CAP while loading Crypto. GPPro
+  listed both packages as `LOADED` and both applets as `SELECTABLE`; the
+  official client then completed Core (291 calls) and Crypto (466 calls) with
+  both resident. Both test packages were deleted afterward and GPPro showed
+  only the ISD. This confirms coexistence on the installed image, not the
+  current source build; current-source hardware validation remains subject to
+  the ARM flash gate.
+- [x] **Verify the current-source `JavacardxSec` profile.** Its CAP Import
+  component lists `A000000062020901` and `A0000000620205` in addition to the
+  core runtime/framework packages. Current source now recognizes these
+  canonical AIDs as aliases for CHOUPI's local `javacardx/apdu/util` and
+  `javacardx/security` packages, and maps the shifted static method tokens.
+  The deploy CAP installs in host VPCD and the official 3.0.5 deploy client
+  passes all 84 calls against current source using
+  `./tools/test-javacardxsec-vpcd`. The suite covers APDUUtil and
+  SensitiveResult. Earlier physical firmware returned `6A88`; no current-source
+  image was flashed. This is not a dependency on the separate Security test
+  CAP.
+- [ ] **Complete general SensitiveResult coverage.** The result slot is VM-wide
+  and the same-context assertions pass. Add explicit visibility coverage
+  across a Shareable Interface Object context switch, then implement and test
+  remaining sensitive result producers outside the JavacardxSec deploy suite.
+- [x] **Fix remaining Core API failures found by physical deploy coverage.**
   Same-array overlapping-range behavior in `Util.arrayCopy` and
-  `arrayCopyNonAtomic` now passes on the physical Pico after the SDK fix.
-  `OwnerPIN` and `PIN` dispatch now pass the physical Core calls after export
-  token remapping for the public methods. The deploy Core CAP still reports
-  `SW_ERROR` for `getValidatedFlag`, `EXC_RUNTIME` for `setValidatedFlag`, and
-  three runtime failures for `UserException.throwIt`; Shareable lookup also
-  returns the wrong result. A host VPCD regression reproduced and fixed the
-  generic `Exception` catch followed by `instanceof UserException` path, and the
-  deploy Core 3.0.5 CAP now returns normally for its `UserException.throwIt`
-  probe. Physical confirmation is still pending. The Multi and Ext scenario
-  rows were not installed in the latest physical run. Preserve the 3.0.5 API
-  artifacts under `artifacts/results/deploy/` and rerun Core after each fix.
-- [ ] **Fix package deletion after applet tests.** GPPro DELETE returns `6581`
+  `arrayCopyNonAtomic` and `OwnerPIN`/`PIN` dispatch pass on the physical Pico.
+  The earlier physical Core run still has three `SW_ERROR` rows and two runtime
+  exceptions; the current evidence identifies the runtime exceptions as
+  Shareable calls. The host VPCD now passes both Shareable probes after fixing
+  virtual-token translation for calls from the embedded ROM into dynamic applet
+  overrides. OwnerPIN `getValidatedFlag` now also passes before and after a
+  correct PIN check, and the official Core VPCD run reports zero wrong results.
+  The fix has ARM-build and VPCD evidence only; it has not been flashed to
+  hardware at that time. Two post-flash physical Core 3.0.5 runs on Pico 3
+  each completed 291 calls with 272 OK, 15 allowed unsupported, and four
+  optional Ext scenario calls not run; there were no `WRONG_RESULT`,
+  `SW_ERROR`, or `EXC_*` rows. They confirm the reset-state fix and the
+  Shareable/OwnerPIN dispatch changes. Preserve the artifacts under
+  `artifacts/results/deploy/`. Optional Ext coverage still needs its imported
+  packages, and logical channels remain unsupported by design.
+- [x] **Fix package deletion after applet tests.** GPPro DELETE returned `6581`
   for Core and Service packages after persistent objects have been created,
   while deleting packages with no installed instance succeeds. Source review
   found applet cleanup rejected 16-bit CAP class indexes above 255. High class
   indexes now use two-byte persistent-field tags, can read legacy one-byte
   records, and DELETE clears both tag forms. Host persistence, overlay,
-  DELETE, PC build, and ARM build checks pass. Physical DELETE/reinstall
-  confirmation is pending because the Pico is currently absent from the VM USB
-  bus.
+  DELETE, PC build, and ARM build checks pass. The latest three-reader physical
+  run also cleaned up Core/Multi, Crypto, and Service CAPs successfully after
+  their tests, confirming physical deletion on the current firmware.
 - [ ] **Declare the supported Java Card profile and audit its API contract.**
   State the supported Java Card Classic version and APIs, then add applet-level
   behavior tests for each implemented API. Existing tests cover JCSystem,
   APDU, lifecycle, exceptions, and persistence but do not establish broad
   profile compatibility.
 - [ ] **Implement multi-applet contexts and firewall semantics if the declared
-  profile requires them.** The runtime has one applet context. General context
-  switching, custom shareable-interface callbacks and ownership checks,
-  cross-applet AID lookup, and logical channels are not implemented. The null
-  shareable lookup only covers the no-server/default case; assigned channel is
-  basic channel 0.
+  profile requires them.** The runtime has one applet context. Same-context
+  callback dispatch for the Shareable API now passes focused host VPCD probes,
+  but general context switching, cross-applet shareable lookup and ownership
+  checks, cross-applet AID lookup, and logical channels are not implemented.
+  Assigned channel is basic channel 0.
 - [ ] **Make commit-capacity reporting consistent with transactions.**
-  `beginTransaction` / commit / abort and rollback behavior have coverage, but
-  `getMaxCommitCapacity()` and `getUnusedCommitCapacity()` return zero. Record
-  zero as a deliberate capability or implement capacity accounting and tests.
+  `beginTransaction` / commit / abort now pass the full 80-check JCSystem VPCD
+  suite. Abort advances a rollback generation so live persistent field caches
+  reload the restored flash snapshots. The native persistent-transaction tests
+  also pass. `getMaxCommitCapacity()` and `getUnusedCommitCapacity()` still
+  return zero; record zero as a deliberate capability or implement capacity
+  accounting and tests. Physical transaction/power-cycle behavior remains
+  unverified.
 - [ ] **Add extended APDUs only if required by the selected profile.** The
   transport rejects extended APDUs. `APDU.waitExtension()` enforces API state,
   but synchronous CCID processing cannot send actual T=1 WTX while a command
@@ -231,11 +502,14 @@ prioritized backlog above for present status.
   true power-cycle persistence check remain unverified. See `.agent/QKB.md` and
   `artifacts/logs/physical-jcsystem-active-retry-20261019.log`.
 
-- [ ] Make CAP installation metadata and VM filesystem state recover together.
-  The CAP slot is marked installed before the filesystem transaction's final
-  `fs_sync()`; a sync failure rolls back filesystem snapshots but not the CAP
-  slot header. This is currently source-inspection evidence only. See
-  `.agent/QKB.md`; add failure injection before choosing the recovery protocol.
+- [x] Add a committed install journal to recover CAP registry publication and
+  VM filesystem state together. VPCD process-restart cases cover skipped and
+  failed instance publication plus journal-clear sync failure. RP2350 fake-flash
+  tests inject 1,000 cuts during journal-plus-applet-state creation, 1,000
+  during CAP header publication, and 1,000 during transactional journal clear;
+  old/new valid states recover and the instance is published idempotently.
+  Actual electrical power-cut validation remains
+  open; see the current Priority 2 item above and `.agent/QKB.md`.
 - [x] Implement `Applet.selectingApplet()` and deliver a successful applet
   SELECT APDU to `Applet.process()`. Lifecycle probes verify the flag during
   `select()` and SELECT processing, its absence during `deselect()`, and reset,
@@ -531,7 +805,7 @@ rollback and duplicate/invalid registration handling also remain unverified.
   local array reference, offset 0, signed `bLength` 2, array size, and both
   bytes before executing the method. A fresh JCAlgTest run then passed SELECT,
   GETVERSION, JCSystem, support, SHA-256 `doFinal`, and static SHA-256
-  performance APDUs (`TEST:SUMMARY pass=11 fail=0`).
+  performance APDUs (`TEST:SUMMARY pass=15 fail=0` with corrected counting).
 - [x] Resolve JC 3.0.5 imported class and method tokens against the embedded
   CHOUPI exports. Validate each mapping against CAP/export metadata; do not
   treat a GP INSTALL status as proof that Java installation completed. The
@@ -591,6 +865,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   for JCSystem info, support probes, and SHA-256 operations. Separate callback
   tests for `deselect()`, rejected SELECT, and physical applet APDUs remain
   outstanding.
+- [x] Treat CCID `IccPowerOn` and USB bus reset as Java Card resets: drop
+  selected state, clear `CLEAR_ON_RESET` transient arrays, reset secure-channel
+  state, and abort any incomplete CAP transfer before restoring installed
+  package metadata. ARM and RISC-V builds, host VPCD applet regression, and two
+  post-flash physical Core runs pass.
 - [ ] Implement the remaining Java Card APDU buffer and incoming/outgoing
   command methods used by JCAlgTest, including response-length enforcement and
   `61xx` handling. Short cases 1, 2S, 3S, and 4S are parsed; case 2S/4S Le is
@@ -678,8 +957,18 @@ rollback and duplicate/invalid registration handling also remain unverified.
 - [x] Make PC Java API and ROM-mask generation incremental, keyed to their
   inputs. A full regeneration took 1:01 for the Java API and 5:13 for Maven;
   after adding CMake output stamps, the follow-up PC build skipped both stages.
-- [ ] Implement and verify GP DELETE and the remaining required GET STATUS / GET
-  DATA behavior, including accurate package and applet lifecycle state.
+- [x] Complete GlobalPlatform APDU routing in the PC VPCD session and validate
+  official GPPro 20.01.23 `--list`, package `--delete`, CAP `--install`, and
+  post-process-restart registry listing. The session recognizes case-1
+  `00 A4 04 00 00` default-ISD SELECT; the PC callback implements SCP03,
+  GET STATUS/GET DATA, LOAD/INSTALL, and DELETE. GPPro listed the ISD, package,
+  and selectable applet; deleted the package, reinstalled the supplied JC305
+  CAP, and listed the applet again. A fresh emulator process then reported the
+  package and selectable applet from the same scratch flash image. VPCD session
+  regression passes 21/21. This is host VPCD validation, not physical CCID
+  validation.
+- [ ] Complete remaining GET STATUS / GET DATA behavior, including accurate
+  package and applet lifecycle state.
   GET STATUS now handles ISD (`P1=80`), applications (`40`), executable load
   files (`20`), and load files with modules (`10`), with mandatory leading AID
   search criteria, wildcard/RID matching, and basic first/next request state.
@@ -690,9 +979,21 @@ rollback and duplicate/invalid registration handling also remain unverified.
   parsing, persistent applet/package tombstones, instance/static record cleanup,
   and reserved CAP-slot erase for package deletion. The parser passes 11 checks;
   ARM and PC builds pass, and the rebuilt host VPCD applet regression passes
-  11/11. The DELETE APDU itself, restart/GET STATUS after deletion, and physical
-  hardware behavior remain unverified. GET DATA and complete continuation
-  behavior also remain open.
+  11/11. GPPro authenticated package DELETE, CAP reinstall, GET STATUS listing,
+  and process-restart listing now pass. Host VPCD resume currently reconstructs
+  its single instance record from the supplied `--applet-aid` and
+  `--class-index`; omitting `--class-index` starts an empty registry, and CAP
+  bytes are not exposed as loaded until GP LOAD commits them. GPPro 20.01.23
+  fresh-state SCP03, JC305 LOAD/INSTALL, instance DELETE, package DELETE, and
+  final ISD-only GET STATUS pass on VPCD. Persistent metadata is not yet
+  enumerated from storage, and PC VPCD still models only one dynamic package
+  and one instance. A clean two-process PC VPCD restart now passes for both
+  native `--install` and GPPro LOAD/INSTALL when resumed with the allocated
+  package ID (56) and class index (148); GPPro listing plus SELECT, GETVERSION,
+  and JCSystem all pass after restart. Automatic package/class registry
+  discovery, multiple PC VPCD packages/instances, GET DATA coverage beyond
+  GPPro's exercised commands, multi-entry continuation, and physical hardware
+  behavior remain open.
 - [x] Integrate the PC-build vpcd frame transport with power controls, ATR,
   applet SELECT/DESELECT, and APDU dispatch through the VM lifecycle bridge.
   The PC target builds, the frame codec passes 14 checks, and a new session
