@@ -10030,7 +10030,6 @@
   out of source commits; review current `git status` before future staging.
 - Commit: Dependency source commits `83323a4`, `2fedf58`, `af6817f`; root
   dependency registration `47c8d35`; runtime `6ee8ab9`; tests `d3f1ac3`; tools
-  `fc14b73`; data `507ab39`; documentation commit SHA to be added in a
-  follow-up record.
+  `fc14b73`; data `507ab39`; documentation `9c2d41d`.
 - Artifacts/logs: Existing tracked logs and metrics are in `507ab39`; ignored
   generated artifacts were left untouched.
