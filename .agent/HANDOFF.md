@@ -9072,5 +9072,5 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Next: inspect exact Security/Crypto `6F00` calls and determine whether their
   change from baseline is caused by enabling RSA-2048 tests; retry the third
   device once it is attached to the VM. The token-specific D92 Service failure
-  remains reproducible. The step's new progress and handoff records are ready
-  for the required incremental commit.
+  remains reproducible. Validation records were committed as `ea095bc`; the
+  progress record's commit SHA was recorded in follow-up `5cd8ca9`.
