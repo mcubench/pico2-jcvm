@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-arrays-physical 'exact reader name'"
+reader_name="$1"
+gp_jar="${repo_root}/AlgTest_JavaCard/deploy/gp.jar"
+cap="${repo_root}/build/rmi-array-fixture/output/fixture.cap"
+probe="${repo_root}/tools/tests/rmi_array_physical_probe/RmiPhysicalProbe.java"
+[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
+
+"${repo_root}/tools/build-rmi-array-fixture"
+log_dir="${repo_root}/artifacts/logs"
+build_log_dir="${repo_root}/build/rmi-array-fixture/physical-logs"
+mkdir -p "${log_dir}" "${build_log_dir}"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log="${log_dir}/rmi-array-physical-${timestamp}.log"
+install_log="${build_log_dir}/gppro-install-${timestamp}.log"
+uninstall_log="${build_log_dir}/gppro-uninstall-${timestamp}.log"
+registry_log="${build_log_dir}/gppro-registry-${timestamp}.log"
+
+exec > >(tee "${log}") 2>&1
+printf 'RMI_PHYSICAL:START reader=%s\n' "${reader_name}"
+PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+
+gp=("${repo_root}/tools/env" java -jar "${gp_jar}" -d -r "${reader_name}")
+timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --list \
+  > "${registry_log}" 2>&1 || die "GlobalPlatform registry listing failed"
+if grep -Fq 'A000000151000001' "${registry_log}"; then
+  die "RMI fixture package A000000151000001 is already present; refusing to replace it"
+fi
+
+fixture_may_be_loaded=1
+cleanup() {
+  local status=$?
+  trap - EXIT
+  if [[ "${fixture_may_be_loaded}" == 1 ]]; then
+    if timeout --signal=TERM --kill-after=5s 120s "${gp[@]}" --uninstall "${cap}" \
+        > "${uninstall_log}" 2>&1; then
+      if timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --list \
+          > "${registry_log}" 2>&1 && \
+          ! grep -Fq 'PKG: A000000151000001 ' "${registry_log}" && \
+          grep -Fq '4A43416C675465737431' "${registry_log}"; then
+        printf 'RMI_PHYSICAL:CLEANUP package=A000000151000001 result=PASS\n'
+      else
+        printf 'RMI_PHYSICAL:CLEANUP package=A000000151000001 result=VERIFY_FAILED log=%s\n' \
+          "${registry_log}"
+        status=1
+      fi
+    else
+      printf 'RMI_PHYSICAL:CLEANUP package=A000000151000001 result=FAIL log=%s\n' \
+        "${uninstall_log}"
+      status=1
+    fi
+  fi
+  exit "${status}"
+}
+trap cleanup EXIT
+
+if ! timeout --signal=TERM --kill-after=5s 180s "${gp[@]}" --install "${cap}" \
+    > "${install_log}" 2>&1; then
+  grep -E 'CAP loaded|ERROR|Exception|FAILED| 6[A-F][0-9A-F]{2}' \
+    "${install_log}" | tail -20 || true
+  die "GlobalPlatform CAP install failed; see ${install_log}"
+fi
+printf 'RMI_PHYSICAL:INSTALL package=A000000151000001 applet=A00000015100000101 result=PASS\n'
+
+timeout --signal=TERM --kill-after=5s 90s "${repo_root}/tools/env" java \
+  "${probe}" "${reader_name}"
+printf 'RMI_PHYSICAL:PASS int_array_rmi\n'
+
+if ! timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --list \
+    > "${registry_log}" 2>&1; then
+  die "GlobalPlatform registry verification failed"
+fi
+grep -Fq '4A43416C675465737431' "${registry_log}" || \
+  die "original JCAlgTest applet is missing after RMI fixture install"
+printf 'RMI_PHYSICAL:JCALGTEST_PRESERVED result=PASS\n'

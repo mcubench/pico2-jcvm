@@ -10172,3 +10172,13 @@
 - Decision: Mark int[] RMI end-to-end coverage as validated on VPCD. Physical board coverage remains open; proceed to the next open JCVM priority after reviewing TODO.md.
 - Commit: recorded separately in Git history for this logical step.
 - Artifacts/logs: `artifacts/logs/rmi-array-invoke-vpcd-20261023T040059Z.log`; `artifacts/logs/rmi-reference-interfaces-vpcd-20261023T040059Z.log` (SHA-256 `298052464622d6013e4fbd53700e7987defcab052c2ef7333400a8407763900b`); generated CAP and load code under ignored `build/rmi-array-fixture/`.
+
+## 2026-10-23 — Validate int-array RMI on physical Pico 2
+
+- Step/experiment: `physical-rmi-int-array-d92-20261023`
+- Change: Added `tools/test-rmi-arrays-physical`, an exact-reader, bounded test that assembles the fixture CAP, refuses to overwrite an existing matching package, installs the unique fixture, sends raw int[] RMI APDUs, uninstalls the fixture, and confirms JCAlgTest remains. GlobalPlatformPro session transcripts stay in ignored build logs; the artifact log contains sanitized step results.
+- Validation: `./tools/cycle choupi --serial D92E743D5F640C0F` passed both ARM and RISC-V build gates, flashed current ARM firmware, verified it, and captured repeated `TEST:SUMMARY pass=1 fail=0`. Physical SELECT returned `9000`; `sumInts`, signed 32-bit `echoInts`, empty-array, and null-array APDUs all matched expected responses. Fixture cleanup passed and JCAlgTest SELECT/GETVERSION/JCSystem persistence checks passed afterward.
+- Result: The guarded int[] RMI path passes on physical Pico 2 D92, in addition to VPCD. Existing JCAlgTest remained installed; the temporary fixture package was deleted.
+- Decision: Mark int[] RMI validation complete for this fixture on VPCD and physical ARM firmware. Keep wider RMI client interoperability and other int-array signatures as open profile coverage.
+- Commit: recorded separately in Git history for this logical step.
+- Artifacts/logs: `artifacts/logs/rmi-array-physical-20261023T041218Z.log` (SHA-256 `ada9e3747d365338ec3ecd42ee93676b557aee607273634c5bbc1e3bd7c9b583`); `artifacts/logs/cycle-choupi-20261023T040710Z.log` (SHA-256 `7c815169fdea352fea271f55980db1c76c264e84fee5265f81ac298cb6333aa4`); post-cleanup `artifacts/logs/pico-powerup-persistence-20261023T041037Z.log` (SHA-256 `a7c1a4440a9a0261884c942b8d7de5c1cffe3b0eabc625bf810ae413ba136fd8`).
