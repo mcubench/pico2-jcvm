@@ -9083,3 +9083,9 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Config is all true; board is running the current image. Current exact-reader GETVERSION transcript: `artifacts/logs/jcalgtest-current-version-probe-20261023.log`.
 - Full comparison record and cycle paths: `artifacts/results/jcalgtest-capability-profile-20261023/physical-comparison.md`.
 - Next: isolate `JCAlgTestApplet.allocateResources()` constructor stages with a diagnostic CAP or targeted imported class/static method probes. Once GETVERSION succeeds, rerun `ALG_SUPPORT_EXTENDED` on current and minimal profiles, compare each CSV to its generated expected CSV, and only then report AES/SHA deltas.
+
+## Firmware/JCVM architecture guide — 2026-10-23
+
+- Added `FIRMWARE_JCVM_ARCHITECTURE.md` (1,653 words, four sections) from active Pico ARM boot, CCID, VM, crypto and flash source inspection. It explicitly separates inactive STM32/Rust OS and the RISC-V smoke build.
+- Documentation-only validation: source paths/symbols, section count, word count and SHA-256. No firmware build, flash or USB operation occurred.
+- Preserve existing unrelated worktree changes. The guide is the completed deliverable; any future implementation work should inspect generated JNI output and the selected capability configuration first.

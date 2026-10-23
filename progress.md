@@ -10643,3 +10643,13 @@
 - Decision: Preserve the comparison as blocked on JCAlgTest eager initialization; next isolate the constructor/provider causing current `NO_SUCH_ALGORITHM` and minimal `6F00`, then rerun full support reports and compare against generated profile CSVs.
 - Commit: `fae35b1`; existing unrelated worktree changes preserved.
 - Artifacts/logs: `artifacts/results/jcalgtest-capability-profile-20261023/physical-comparison.md`, `artifacts/logs/jcalgtest-current-version-probe-20261023.log`, `artifacts/logs/cycle-choupi-20261023T153233Z.log`, `artifacts/logs/cycle-choupi-20261023T153724Z.log`, `artifacts/logs/cycle-choupi-20261023T154235Z.log`.
+
+## 2026-10-23 — Firmware and JCVM architecture guide
+
+- Step/experiment: `architecture-code-navigation-20261023`
+- Change: Added `FIRMWARE_JCVM_ARCHITECTURE.md`, tracing the active RP2350 ARM boot, CCID/APDU dispatch, VM/native calls, AES CBC, object memory, persistence, and debugging entry points; distinguished inactive STM32/Rust OS and RISC-V smoke paths.
+- Validation: Inspected active CMake targets and corresponding boot, transport, interpreter, native crypto, heap, and flash source; checked four required sections and 1,653-word length. Documentation-only step; firmware builds and hardware validation were intentionally skipped.
+- Result: Guide SHA-256 `494f8fba55f4417f69f63432985f3311a3bd316ec17ce43b6b1c3a563103e23e`; no runtime metric was measured.
+- Decision: Use the guide as an onboarding map, and recheck generated bindings and selected capability profile before modifying implementation.
+- Commit: `pending` (replace with the resulting commit SHA after creation).
+- Artifacts/logs: `FIRMWARE_JCVM_ARCHITECTURE.md`; no test logs.
