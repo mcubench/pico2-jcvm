@@ -10653,3 +10653,14 @@
 - Decision: Use the guide as an onboarding map, and recheck generated bindings and selected capability profile before modifying implementation.
 - Commit: `d683cb8` (guide and initial progress record; SHA recorded by this follow-up commit).
 - Artifacts/logs: `FIRMWARE_JCVM_ARCHITECTURE.md`; no test logs.
+
+
+## 2026-10-23 — Minimal-profile Java exception mapping
+
+- Step/experiment: `minimal-jcalgtest-uncaught-6f00-20261023`
+- Change: Matched JC305 `javacard.framework` and `javacard.security` class tokens to embedded export tokens by class name. Corrected CryptoException recognition to security export token 26 and ISOException uncaught translation to framework export token 18. Removed this step’s temporary invoke/range tracing after diagnosis.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed with the 0/15 minimal profile and again with the restored 15/15 current profile. Minimal ARM was flashed to Pico 2 `D92E743D5F640C0F`; exact package-AID SELECT returned `9000` and GETVERSION changed from `6F00` to `F103`. The surfaced `F103` is the applet’s translation of `CryptoException.NO_SUCH_ALGORITHM` (reason 3), not an uncaught VM exception. All-enabled ARM image was then flashed to D92; finite eight-second monitor passed (`TEST:SUMMARY pass=1 fail=0`). A final SmartcardIO probe of the all-enabled image was blocked because D92 remained USB-visible but PC/SC temporarily enumerated only the other two readers.
+- Result: The minimal-profile `6F00` is fixed. JCAlgTest still does not complete initialization under minimal capabilities because its `AlgStorageTest` constructor unconditionally requests AES/DES engines and keys; thus no complete support CSV was produced and AES/SHA report comparison remains outstanding.
+- Decision: Keep all-enabled support config restored. Next decide how to make the unchanged JCAlgTest fixture tolerate deliberately absent algorithms, then run its complete support query in both profiles.
+- Commit: pending
+- Artifacts/logs: minimal probe output was captured in the session transcript; all-enabled finite monitor `artifacts/logs/minimal-exception-translation-monitor-20261023.log` (ignored by Git), SHA-256 `5a8a5b5abcccd8acc28aa4c677966c26c4be208675d252a54292cb69b2c02c2b`; all-enabled UF2 SHA-256 `6641567323dcaf0d8cf1ba0e6c3108f1e9235fd144cb466a8ba9b6e00d0a2efc`.

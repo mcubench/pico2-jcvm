@@ -9089,3 +9089,12 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Added `FIRMWARE_JCVM_ARCHITECTURE.md` (1,653 words, four sections) from active Pico ARM boot, CCID, VM, crypto and flash source inspection. It explicitly separates inactive STM32/Rust OS and the RISC-V smoke build.
 - Documentation-only validation: source paths/symbols, section count, word count and SHA-256. No firmware build, flash or USB operation occurred.
 - Preserve existing unrelated worktree changes. The guide is the completed deliverable; any future implementation work should inspect generated JNI output and the selected capability configuration first.
+
+
+## Minimal JCAlgTest uncaught exception mapping — 2026-10-23
+
+- Corrected JC305 class-token translations against names in the JC305 3.0.5 and embedded API `.exp` exports. Framework `ISOException` is embedded class token 18; JC305 security `CryptoException` maps to embedded token 26. The uncaught ISOException translator and CryptoException catch logic now use those exports.
+- On minimal 0/15 image flashed to Pico D92, package SELECT returned `9000`; GETVERSION changed from `6F00` to `F103`. `F103` is the expected Java Card translation of `CryptoException.NO_SUCH_ALGORITHM` reason 3, so the internal uncaught exception is fixed.
+- Both ARM/RISC-V wrappers passed under minimal and restored current 15/15 configurations. Current 15/15 ARM was flashed to D92 and finite monitor passed. PC/SC intermittently stopped enumerating D92 after reflashing, so the final current-profile APDU probe was not completed.
+- Residual blocker: JCAlgTest 1.8.2 `AlgStorageTest` eagerly creates AES/DES engines and keys in its constructor. Those intentionally absent in the minimal profile throw `NO_SUCH_ALGORITHM`, which the applet translates to `F103`; thus no complete minimal support report exists yet.
+- Next: update the JCAlgTest fixture path to tolerate unavailable algorithms while reporting them unsupported, then rerun complete support reports. Do not claim AES/SHA result comparison complete. Config is restored to all 15 capabilities enabled.

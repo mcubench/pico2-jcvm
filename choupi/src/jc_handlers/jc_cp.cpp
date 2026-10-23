@@ -41,14 +41,12 @@ extern "C" void choupi_install_context(uint32_t context);
 
 namespace jcvm {
 
-namespace {
 bool usesJC305CompatibilityTokens(const Package &source_package) noexcept {
   // These translations describe imports in the uploaded JCAlgTest CAP. ROM
   // mask API CAPs use their own export tokens and must resolve them unchanged.
   return FlashMemory_Handler::isDynamicPackageID(
       source_package.getPackageID());
 }
-} // namespace
 
 // JCAlgTest 1.8.2 was converted with the JC 3.0.5 API export files. The
 // embedded CHOUPI ROM-mask API uses the same package AIDs and versions but
@@ -60,13 +58,13 @@ uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
   static constexpr uint8_t java_lang[] = {
       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
   static constexpr uint8_t javacard_framework[] = {
-      1,  3,  6,  13, 18, 8,  16, 21, 9,  11, 7,  19,
-      10, 22, 23, 24, 25, 2,  0,  4,  5,  12, 20};
+      0,  1,  2,  13, 15, 8,  14, 18, 9,  11, 7,  16,
+      10, 19, 20, 21, 22, 17, 18, 19, 20, 12, 17};
   static constexpr uint8_t javacard_security[] = {
-      0x00, 0x05, 0x03, 0x04, 0x01, 0x06, 0x07, 0x10, 0x11, 0x12, 0x0c,
-      0x15, 0x19, 0x1b, 0x1c, 0x1f, 0x1e, 0x08, 0x09, 0x0a, 0x13, 0x21,
-      0x1a, 0x0b, 0x0d, 0x14, 0x17, 0x02, 0x0e, 0x0f, 0x16, 0x18, 0x1d,
-      0x20};
+      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+      0x16, 0x1a, 0x1c, 0x1d, 0x1f, 0x21, 0x11, 0x12, 0x13, 0x14, 0x15,
+      0x1b, 0x17, 0x18, 0x19, 0x18, 0x1b, 0x1c, 0x1d, 0x17, 0x19, 0x20,
+      0x21};
   static constexpr uint8_t javacardx_crypto[] = {0, 1, 2, 3};
 
   const uint8_t *mapping = nullptr;
@@ -123,6 +121,15 @@ uint8_t remap_imported_interface_token(
                   "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
       token == 10) {
     return 12;
+  }
+  // JC305 assigns AESKey interface token 20; the generated embedded
+  // security export assigns it token 19. Keep this separate from the class
+  // token map, as both namespaces are used by checkcast/invokeinterface.
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      token == 20) {
+    return 19;
   }
   return token;
 }
@@ -223,13 +230,24 @@ uint8_t remap_imported_static_method_token(
 uint8_t remap_imported_constructor_method_token(
     const jc_cap_package_info &package_info, const uint8_t class_token,
     const uint8_t method_token) noexcept {
+  const bool is_security_package =
+      package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0;
+  const bool is_crypto_package =
+      package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x02\x01", 7) == 0;
   // JC305's javacard.security.MessageDigest import uses method token 1 for
   // its protected no-argument constructor. The embedded ROM export places
   // that constructor at token 2; tokens 0 and 1 have an extra argument.
-  if (package_info.AID_length == 7 &&
-      std::memcmp(package_info.AID,
-                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
-      class_token == 11 && method_token == 1) {
+  // Signature and Cipher use the same JC305-import token / embedded-export
+  // offset pair. Keep class tokens package scoped because both packages
+  // contain unrelated class tables.
+  if (((is_security_package &&
+        (class_token == 11 || class_token == 15)) ||
+       (is_crypto_package && class_token == 1)) &&
+      method_token == 1) {
     return 2;
   }
   return method_token;
@@ -271,12 +289,25 @@ uint8_t remap_imported_virtual_method_token(
   // translate the remaining JC305 tokens to their embedded method tokens.
   static constexpr uint8_t crypto_cipher_virtual_methods[] = {
       0, 6, 3, 1, 2, 7, 4, 5};
+  // The JC305 Signature export begins with getAlgorithm/getLength, while
+  // CHOUPI's embedded API places its init and digest configuration methods
+  // first. Translate imported tokens before dispatching against the embedded
+  // Signature class (and dynamic subclasses overriding these methods).
+  static constexpr uint8_t security_signature_virtual_methods[] = {
+      0, 4, 8, 1, 2, 10, 9, 12, 3, 11, 13, 5, 6, 7};
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
       class_token == 11 &&
       method_token < sizeof(security_digest_virtual_methods)) {
     return security_digest_virtual_methods[method_token];
+  }
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 15 &&
+      method_token < sizeof(security_signature_virtual_methods)) {
+    return security_signature_virtual_methods[method_token];
   }
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
@@ -363,6 +394,19 @@ uint8_t remap_imported_interface_method_token(
       class_token == 10 &&
       method_token < sizeof(security_des_key_interface_methods)) {
     return security_des_key_interface_methods[method_token];
+  }
+  // JC305's AESKey interface orders inherited Key methods as clearKey,
+  // getSize, getType, isInitialized. The embedded API orders those as
+  // isInitialized, clearKey, getType, getSize. Its own setKey/getKey tokens
+  // already match at 4/5.
+  static constexpr uint8_t security_aes_key_interface_methods[] = {
+      1, 3, 2, 0, 4, 5};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 20 &&
+      method_token < sizeof(security_aes_key_interface_methods)) {
+    return security_aes_key_interface_methods[method_token];
   }
   // The reference JC305 export orders OwnerPINx.check before
   // getTriesRemaining, while this API's generated interface order follows

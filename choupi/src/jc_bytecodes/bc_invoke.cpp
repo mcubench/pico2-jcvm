@@ -515,16 +515,47 @@ void Bytecodes::bc_invokestatic() {
             export_handler.getExportedClassOffset(class_token);
         method_offset = export_handler.getExportedStaticMethodOffset(
             class_token, method_token);
+        Method_Handler exported_method_handler(context);
+        exported_method_handler.setPackage(exported_package);
+        const uint8_t argument_count =
+            exported_method_handler.getArgumentCount(method_offset);
+        const auto *operand_top = stack.getCurrentFrame().getTOS();
+        const uint16_t first_argument = argument_count == 0
+                                           ? 0xFFFF
+                                           : static_cast<uint16_t>(
+                                                 operand_top[-argument_count]);
         std::printf(
             "CHOUPI:JC305_SECURITY_CALL raw_class=%u mapped_class=%u "
-            "class_offset=%u raw_method=%u mapped_method=%u offset=%u\r\n",
+            "class_offset=%u raw_method=%u mapped_method=%u offset=%u "
+            "arg_count=%u arg0=%04X\r\n",
             static_cast<unsigned>(imported_class_token),
             static_cast<unsigned>(class_token),
             static_cast<unsigned>(exported_class_offset),
             static_cast<unsigned>(method_ref.static_method_ref.external_ref.token),
             static_cast<unsigned>(method_token),
-            static_cast<unsigned>(method_offset));
+            static_cast<unsigned>(method_offset),
+            static_cast<unsigned>(argument_count),
+            static_cast<unsigned>(first_argument));
         std::fflush(stdout);
+        if (imported_class_token == 14 &&
+            method_ref.static_method_ref.external_ref.token == 0) {
+          for (uint8_t candidate = 25; candidate <= 31; ++candidate) {
+            try {
+              const uint16_t candidate_offset =
+                  export_handler.getExportedStaticMethodOffset(candidate, 0);
+              const uint8_t candidate_nargs =
+                  exported_method_handler.getArgumentCount(candidate_offset);
+              std::printf(
+                  "CHOUPI:JC305_SECURITY_CANDIDATE class=%u offset=%u "
+                  "nargs=%u\r\n",
+                  static_cast<unsigned>(candidate),
+                  static_cast<unsigned>(candidate_offset),
+                  static_cast<unsigned>(candidate_nargs));
+              std::fflush(stdout);
+            } catch (...) {
+            }
+          }
+        }
         ++security_call_trace_budget;
       } else {
         method_offset = export_handler.getExportedStaticMethodOffset(
@@ -648,7 +679,11 @@ void Bytecodes::bc_invokeinterface() {
 
   auto interface_ref = cp_handler.getClassRef(index);
   uint8_t interface_method = method;
-  if (interface_ref.isExternalClassRef()) {
+  // Embedded ROM API bytecode already uses the embedded export's interface
+  // method order. Translate imported method tokens only when the caller is a
+  // JC305-compatible uploaded CAP, just as class and static method refs do.
+  if (interface_ref.isExternalClassRef() &&
+      usesJC305CompatibilityTokens(context.getCurrentPackage())) {
     Import_Handler import_handler(context.getCurrentPackage());
     const auto *package_info = import_handler.getPackageAID(
         interface_ref.external_classref.package_token & 0x7F);

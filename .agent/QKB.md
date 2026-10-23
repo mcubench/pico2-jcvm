@@ -3766,3 +3766,12 @@ fix.
 - **Cause:** Not identified. The unrestricted option may expose paths reached by RSA-2048 cases, but this has not been established. First inspect the 79/192 exact calls and their ordering around RSA-2048 operations; do not attribute the failures to device differences because the totals match on both boards.
 - **Viable fix:** None known.
 - **Artifacts:** `artifacts/results/deploy/full-305-2BED26ED20556535-20261023.csv` and `artifacts/results/deploy/full-305-D92E743D5F640C0F-20261023.csv`.
+
+## Minimal JCAlgTest 6F00 caused by stale JC305 API class-token mappings — 2026-10-23
+
+- **Symptom:** With the 0/15 optional-capability profile, JCAlgTest package SELECT returned `9000` but GETVERSION returned `6F00` after a Java `CryptoException.NO_SUCH_ALGORITHM`.
+- **Cause:** Several JC305 import class tokens were mapped to unrelated embedded API classes. In particular JC305 `ISOException` token 7 mapped to embedded `UserException` token 21, causing a static method argument underflow. The uncaught ISOException converter also looked up token 21. CryptoException catch recognition used stale tokens 5/25 instead of embedded security export token 26. JC305 class-token assignments differ from the embedded ROM export; matching by numeric order is unsafe.
+- **Viable solution:** Derive class-token mappings by matching the JC305 and embedded `.exp` class names. Map JC305 framework ISOException to embedded token 18 and CryptoException to security token 26. This changed minimal GETVERSION from uncaught `6F00` to the applet’s expected `F103` translation. Both architecture builds passed; real Pico D92 returned the corrected status.
+- **Remaining issue:** `F103` is still an applet initialization failure, not a valid support report. `AlgStorageTest` eagerly requests AES and DES ciphers/keys in its constructor, even when those Java Card capabilities are intentionally disabled.
+- **Next:** Make the JCAlgTest fixture’s eager allocations capability-tolerant (without advertising absent algorithms), then rerun complete 0/15 and 15/15 reports.
+- **Artifacts:** Session hardware output; all-enabled monitor `artifacts/logs/minimal-exception-translation-monitor-20261023.log` (ignored).
