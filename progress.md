@@ -10627,7 +10627,7 @@
   the two tokens and need investigation; this unrestricted run differs from
   earlier runs that excluded RSA-2048. Retry the third token when visible and
   compare after identifying the Security/Crypto failing call paths.
-- Commit: pending.
+- Commit: `ea095bc`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261023T141401Z.log`,
   `artifacts/logs/cycle-choupi-20261023T141535Z.log`,
   `artifacts/results/deploy/full-305-2BED26ED20556535-20261023.csv`,
