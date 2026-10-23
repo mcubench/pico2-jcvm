@@ -10033,3 +10033,122 @@
   `fc14b73`; data `507ab39`; documentation `9c2d41d`.
 - Artifacts/logs: Existing tracked logs and metrics are in `507ab39`; ignored
   generated artifacts were left untouched.
+
+## 2026-10-22 — Scope JC305 interface remaps and validate AES/SHA static calls
+
+- Step/experiment: `jc305-interface-remap-scope-physical-performance`
+- Change: `bc_invokeinterface()` now applies imported interface-method token
+  remapping only for dynamic JC305-compatible caller packages. Embedded ROM API
+  bytecode keeps its own export method order. Extended the JCAlgTest APDU probe
+  with the exact AES-128 CBC-NOPAD static sequence (prepare, five empty-repeat
+  baselines, and 50 `doFinal` calls); APDU transcripts now include host elapsed
+  milliseconds.
+- Validation: `./tools/build arm` passed and produced
+  `build/arm/pico2_choupi.uf2`; sequential `./tools/build riscv` passed. Flashed
+  ARM to physical Pico `D92E743D5F640C0F`; the initial force-load found no reset
+  interface, and `tools/flash` recovered through its CDC-1200 BOOTSEL path,
+  then loaded and verified the image at 100%. An 8-second monitor showed
+  repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`; it also
+  emitted a `WATCHDOG_RECOVERY cause=other` marker, which does not prove a
+  watchdog reset. Exact AES probe, SHA probe, and post-run AES probe all passed
+  on the physical reader. `git -c core.whitespace=cr-at-eol diff --check` passed.
+- Result: Official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` measured SHA-256
+  `doFinal()` at 4.04 ms/op and `update()` at 4.38 ms/op (250 invocations
+  each). AES-128 CBC-NOPAD measured `Cipher_doFinal()` at 8.58 ms/op and
+  `Cipher.init()` at 53.16 ms/op (250 invocations each). Every captured
+  performance APDU returned `9000`; the supported cases returned `AA`, and
+  unsupported algorithms returned expected `NO_SUCH_ALGORITHM`. The complete
+  operation hit the configured 900-second timeout while processing RSA CRT
+  public variants: 538 methods started, 537 rows in the generated
+  already-measured list, 17 measurement summaries, and 520 expected unsupported
+  results. GPPro's CPLC info query returned `6A88` for unavailable data. A final
+  focused AES static probe passed after timeout. No other board was flashed.
+- Decision: The AES dispatch issue and tested SHA/AES physical paths are
+  resolved. The full catalog remains incomplete under the 900-second cap; do
+  not treat its timeout or expected unsupported algorithms as VM failures.
+  Continue with the next open acceptance item in `TODO.md`.
+- Commit: Not created; `.git` is read-only in this environment. No files were
+  staged. Pre-existing worktree changes were preserved.
+- Artifacts/logs: Official client transcript SHA-256
+  `c08bb9016c91aecd14b9b06c5959658ec4f618520d0e845e41f606ecb51611c4` at
+  `artifacts/logs/jcalgtest-performance-static-after-aes-remap-20261022.log`;
+  partial CSV SHA-256
+  `7af3c6b95a4d56c6e4b74afad5e02e6726541a066b8b07548b738bbf6a968efb` and
+  already-measured list SHA-256
+  `7cb377973ac6fc85e5b9c2dc74edf17f90e4a49e74658352770d083961fc8f21` under
+  `artifacts/results/physical-performance-static-aes-remap-20261022/`.
+  Focused AES log SHA-256 `e559c60cf322fa5bd7528bed3d3d5d642ac446d549ebd5b367afd097c6a71359`;
+  SHA-256 log `ef8b5799276cc166b466a1a2afea725b7fa552792ba491575ea658fda820e90b`;
+  post-timeout AES log `e6731dd39cca7be8ef5778b3f6c8e5067b6e3827689245166cd47afe565a05f4`.
+
+
+## 2026-10-22 — Run current-source deploy coverage across available Pico readers
+
+- Step/experiment: `physical-deploy-two-reader-current-source-20261022`
+- Change: Flashed the current ARM image to the two remaining BOOTSEL Pico 2 boards and ran Core, Security, Crypto, and Service deploy areas across the two readers visible through SmartcardIO. Moved the official client's generated already-measured list into the ignored run artifact directory.
+- Validation: Both ARM and RISC-V builds had passed before flashing. Both additional boards reported `FLASH:PASS`; each bounded serial monitor reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. PC/SC exposed only two of the three firmware-running boards even after repeating the authorized ACL helper. `run-deploy-parallel --areas Core,Security,Crypto,Service --min-devices 2 --max-devices 2` completed worker tests and cleanup, but exited 1 because optional Core Ext INSTALL returned `6A88`; its rollback passed.
+- Result: Security 77 OK, 820 UNSUPPORTED_PER_SPEC, 2 skipped, 2 WRONG_RESULT (dependent on transient AES key construction already classified unsupported in QKB). Core 272 OK, 15 unsupported, 4 Ext applet-not-installed. Crypto 18 OK, 444 unsupported, 2 SW_ERROR, 1 EXC_CARDRUNTIME, 1 WRONG_RESULT. Service 124 OK. Crypto anomalies: `Signature()` and `Cipher()` returned `6F00`; AES CBC-NOPAD `init(..., IV)` returned `CryptoException` reason 5; empty `doFinal` returned 0 where the test expected illegal use. No RSA/other algorithms were added. Third reader `8E464F4E2BBC0A19` enumerated over USB and passed runtime serial checks but remained absent from PC/SC.
+- Decision: Core, Security, and Service deployment/lifecycle and cleanup paths ran. Investigate the four Crypto outcomes against CAP test expectations and exact dispatch before changing runtime behavior; retain the transient-key rows as unsupported-feature fallout. Retry three-reader scheduling after PC/SC enumeration is stable.
+- Commit: Not created; repository `.git` is read-only in this environment. Existing worktree changes were preserved.
+- Artifacts/logs: `artifacts/results/deploy/current-source-two-reader-20261022/`. Pico1 CSV SHA-256 `43b6020993b2daa8b57203a1e74d369e3ece3685b43d19b54f586fd75c9d9252`; pico2 CSV SHA-256 `f2a654d992bc4fcdce5e72583029b2ac17ce3dcade35ee42ef77d21dc73be0bd`.
+
+
+## 2026-10-22 — Map JC305 Cipher and Signature constructor tokens
+
+- Step/experiment: `physical-crypto-constructor-remap-20261022`
+- Change: Extended the package-scoped external constructor token remap in `choupi/src/jc_handlers/jc_cp.cpp` to JC305 `javacard.security.Signature` and `javacardx.crypto.Cipher`, mapping imported constructor token 1 to embedded export token 2. This follows the previously validated MessageDigest mapping and the API export tables.
+- Validation: `./tools/build arm` passed (`pico2_choupi.uf2` end `0x100c973c`); sequential `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial D92E743D5F640C0F build/arm/pico2_choupi.uf2` passed with 100% verification. Bounded `./tools/monitor --serial D92E743D5F640C0F --seconds 8` reported eight `TEST:PASS choupi_runtime` and eight `TEST:SUMMARY pass=1 fail=0`. An initial scheduler run selected old-image reader 2BED and is excluded from fix validation. Exact-reader physical Crypto area on D92 completed upload, 466 calls, and cleanup successfully.
+- Result: `Cipher()` no longer appears as a `SW_ERROR`; `Signature()` still returns `6F00`. Exact Crypto summary: 19 OK, 444 UNSUPPORTED_PER_SPEC, one SW_ERROR, one EXC_CARDRUNTIME, one WRONG_RESULT. Remaining rows: valid AES CBC-NOPAD init-with-IV raises reason 5; empty doFinal returns 0 where the test expected illegal use. Three-board SmartcardIO availability fluctuated from two to one reader despite the ACL helper granting access to three USB nodes.
+- Decision: Treat the Cipher constructor mapping as validated. Continue tracing Signature's exact imported token independently; do not assume the same mapping for a class whose behavior did not change. Then investigate the two remaining Cipher API outcomes.
+- Commit: Not created; `.git` is read-only. No files were staged.
+- Artifacts/logs: `artifacts/results/deploy/crypto-ctor-remap-d92-20261022.csv`, SHA-256 `780f91b12d90f815dc6840a6af8857e859598ea2543a2f1a7a49b4acd1b0d2e`; initial old-image run `artifacts/results/deploy/crypto-ctor-remap-20261022/` is retained but not used to validate the change.
+
+## 2026-10-22 — Map JC305 Signature virtual methods
+
+- Step/experiment: `physical-crypto-signature-vmap-20261022`
+- Change: Added a JC305 Security-package, class-token-15 virtual-method map for `javacard.security.Signature`. The Crypto probe's `ApiTestCryptoProbeSignature.getAlgorithm()` override had been reached through the imported Signature method table, whose ordering differs from the embedded CHOUPI table.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Flashed ARM firmware to Pico `D92E743D5F640C0F` with `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial D92E743D5F640C0F build/arm/pico2_choupi.uf2`; flash verification passed. A 20-second finite monitor showed 20 `TEST:PASS choupi_runtime` and 20 `TEST:SUMMARY pass=1 fail=0`. The exact-reader JC305 Crypto run completed upload, all 466 calls, and cleanup.
+- Result: `Signature()` no longer returns `6F00`. Crypto run summary: `UNSUPPORTED_PER_SPEC=444`, `OK=20`, `EXC_CARDRUNTIME=1`, `WRONG_RESULT=1`. The two remaining rows are AES CBC-NOPAD IV initialization (`CryptoException.ILLEGAL_VALUE`) and a zero-length `doFinal` result classified by the official test as unexpected. No additional algorithms were implemented.
+- Decision: Keep tracing the AES IV row. Treat the zero-length result as unresolved until CAP and API semantics are reconciled; do not change zero-length `doFinal` behavior based only on the client's label.
+- Commit: Not created; repository `.git` is read-only. No files were staged.
+- Artifacts/logs: `artifacts/results/deploy/crypto-signature-vmap-d92-20261022.csv`, SHA-256 `5f3eb8024111c4081f049c1b20fe4a3eaf005b07dbd40e79e5616be68839c719`.
+
+## 2026-10-22 — Buffer partial CBC Cipher updates
+
+- Step/experiment: `physical-jc305-cipher-streaming-20261022`
+- Change: Implemented `Cipher.update()` partial-block buffering, complete-block processing, and CBC IV chaining in the JC305 API implementation. `doFinal()` combines pending bytes with the final input, throws `ILLEGAL_USE` when a no-padding cipher receives no data, then resets its IV and pending state after success. Aligned calls use the input array directly to avoid a temporary allocation per invocation.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Flashed the ARM image to D92 `D92E743D5F640C0F` and 2BED `2BED26ED20556535`; both reported `FLASH:PASS`. Finite monitors passed on both boards (20 seconds on D92 and 8 seconds on 2BED). The exact-reader Crypto CAP run on D92 completed upload, 466 calls, and cleanup: 22 `OK`, 444 `UNSUPPORTED_PER_SPEC`, zero other statuses. The AES static probe completed prepare, five baselines, and 50 `doFinal()` calls with `AA9000` and `TEST:PASS`; the measurement APDU took 4,114 ms. Five zero-repeat baseline APDUs took 1,229–1,250 ms each.
+- Result: The CAP's 20-byte AES `update()` plus 12-byte `doFinal()` path now passes. Empty `doFinal()` returns the expected exception. An initial static attempt with a new temporary buffer on every aligned call returned `6400`; using the existing input buffer for aligned blocks removed that allocation pressure and the 50-call operation passed. PC/SC reader visibility fluctuated; the authorized helper restored D92 before the final runs. The monitor printed a `WATCHDOG_RECOVERY cause=other` diagnostic, but all runtime assertions passed and no `FAULT`/`TEST:FAIL` appeared.
+- Decision: Keep this as the supported AES/DES CBC no-padding path. Full `ALG_PERFORMANCE_STATIC` was not rerun; other algorithms remain classified by their own support results.
+- Commit: Not created; repository metadata is read-only in this environment. No files were staged.
+- Artifacts/logs: `artifacts/results/deploy/crypto-stream-final-d92-20261022.csv`, SHA-256 `467e3c71f26c2a5a927c7e33e34766893899083e34668802d9df6198fd4f3683`; `artifacts/logs/aes-cipher-static-after-streaming-fix-retry-20261022.log`, SHA-256 `8a29e31f1c1702d12dabdb531465b1e66cf795ceb11337929318b771eb2f1096`.
+
+## 2026-10-22 — Recheck current-source Security and Core deploy APIs on hardware
+
+- Step/experiment: `physical-current-source-security-core-20261022`
+- Change: Flashed the built ARM image to Pico D92 and 2BED, then distributed JC305 Security and Core deploy areas across the two readers. No algorithm implementations were added for unsupported cases.
+- Validation: Both architecture builds passed before flashing. Both flash operations verified successfully. D92's finite monitor passed 20/20 checks during the prior cycle; 2BED's 8-second monitor passed 8/8. Parallel deploy completed Security's 901 calls and Core's 291 calls. Core cleanup passed for the Core and Multi CAPs; optional Ext INSTALL returned `6A88`, and rollback removed the partial CAP successfully. Security worker exit was 0.
+- Result: Security: 77 `OK`, 820 `UNSUPPORTED_PER_SPEC`, two intentionally skipped RSA-2048 keypair cases, and two `WRONG_RESULT` follow-up `Key.isInitialized()` checks. Their paired transient AES KeyBuilder calls returned `UNSUPPORTED_PER_SPEC`/`NO_SUCH_ALGORITHM`, so these two checks did not exercise transient-key clearing. Core: 272 `OK`, 15 `UNSUPPORTED_PER_SPEC`, and four Ext methods unavailable because Ext INSTALL was refused. No unexplained Security/Core runtime or wrong-result rows remain in Core.
+- Decision: Keep transient-key dependent outcomes classified as unsupported-feature fallout. Keep Ext and logical-channel cases unavailable per the runtime's current supported profile. Current-source Security, Core, and Crypto CAP areas have now all completed on physical readers.
+- Commit: Not created; repository metadata is read-only. No files were staged.
+- Artifacts/logs: `artifacts/results/deploy/current-source-sec-core-post-cipher-20261022/`. Security CSV SHA-256 `738fd65657523eaa9aca77881f7c194c77bae8161e0ce6af2348ffe697b16686`; Core CSV SHA-256 `b9d90093a17c9ee686ca615d36d90f972201efb79b1a54b0e013317a6ae516a4`; Security log SHA-256 `139e0301da63b867296265d71b08c214d7c64689eecf9d36713be71cf3222775`; Core log SHA-256 `fbf493fb91f68eee14dd9c2e9f3c171fc40d6b0a9e53a69bfedf2e176c70`.
+
+### Streaming Cipher follow-up — in-place decryption IV preservation
+
+- Step/experiment: `physical-jc305-cipher-inplace-iv-20261022`
+- Change: CBC decryption now saves the final ciphertext block before processing when input and output are the same array, preserving the correct IV for the next update. It uses the existing block scratch buffer.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The final ARM image flashed and verified on D92 and 2BED; bounded monitors passed on both. The final D92 Crypto CAP run completed all 466 calls: 22 `OK`, 444 expected unsupported, zero unexpected statuses. The AES static 50-call `doFinal()` sequence passed all six preparatory APDUs and the measured APDU (`AA9000`), with measurement elapsed time 4,115 ms.
+- Result: Partial-block buffering, CBC chaining, empty-input error behavior, aligned no-allocation execution, and in-place decrypt IV preservation coexist in the final image. Security/Core physical results from the preceding build remain valid for their exercised paths; the final in-place-only revision was reflashed to both boards but those two areas were not rerun after that last small change.
+- Decision: Treat the tested JC305 Crypto area and AES static workload as passing on the final image. Keep all other algorithm support classifications unchanged.
+- Commit: Not created; repository metadata is read-only. No files were staged.
+- Artifacts/logs: `artifacts/results/deploy/crypto-cipher-inplace-final-d92-20261022.csv`, SHA-256 `aeafc4fddf95e785c062db87528ba2b090ce1ef1a7605da64828aef81741d4df`; `artifacts/logs/aes-cipher-static-final-20261022.log`, SHA-256 `fc3c3668e83dcdff0e17a0962077a01cb8ee7430ab1e5ec7ca7a52ba2aad907e`.
+
+## 2026-10-22 — JC305 RMI int-array fixture converter investigation
+
+- Step/experiment: `rmi-int-array-cap-metadata-20261022`
+- Change: Added `echoInts(int[])` and `sumInts(int[])` to the CAP 2.2 RMI fixture. Replaced the Ant JavaCard wrapper for this fixture with an explicit JC305 converter invocation using `-i`, since the bundled Ant task does not expose the converter's int-support option.
+- Validation: `./tools/build-rmi-array-fixture` passed and emitted a CAP. The Class component inspector still reported only the prior 16 remote methods and no int-array entries. The restricted VPCD attempt failed before startup with `[Errno 1] Operation not permitted`; `./tools/test-rmi-arrays-vpcd` through elevated execution passed the exact revised fixture: 23/23 class-form checks and 3/3 interface-form checks. Verbose conversion confirms int signatures are parsed, but the output metadata still omits them after changing `sumInts` to return `short`. ARM and PC build stages passed as part of that wrapper. RISC-V build and physical flash were not run; no hardware result is claimed.
+- Result: JCDK 3.0.5 converter accepts int-enabled conversion and the fixture bytecode, but still omits both int-array remote signatures from CAP Class remote-method metadata. Existing RMI array behavior remains passing; the int-array wire path remains unverified.
+- Decision: Keep int-array RMI marked unverified. Next inspect the converter's remote-method metadata generation or construct a valid CAP 2.2 fixture with another emitter before adding int-array APDU expectations.
+- Commit: Not created; `.git` metadata is read-only in this environment. No files were staged.
+- Artifacts/logs: `build/rmi-array-fixture/remote-methods.txt`, `build/rmi-array-fixture/output/fixture.cap`, and `artifacts/logs/rmi-array-invoke-vpcd-20261022T204723Z.log` (SHA-256 `ad4f71b794689d49b7f710b0e61570ed69653abfb12807f9907ed5e756555f68`) and `artifacts/logs/rmi-reference-interfaces-vpcd-20261022T204723Z.log` (SHA-256 `908719f311d5903ebc3dded6158639049e22efbe236a4744d8e80b69988b0e87`).
