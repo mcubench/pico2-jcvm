@@ -10386,5 +10386,5 @@
 - Validation: Inspected the current 15-entry JCAlgTest support declaration, comparator, API sources, ROM-mask build flow, Pico CMake target, and native implementation locations. No build was run for this documentation-only step.
 - Result: The work package and key integration points are recorded. Existing dirty API submodule state must be preserved.
 - Decision: Start with strict config parsing/generation and build-flow integration, then move algorithm providers and native modules behind the config.
-- Commit: pending; linked from follow-up commit reference.
+- Commit: `ddc7560` (TODO placement correction).
 - Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`; none.
