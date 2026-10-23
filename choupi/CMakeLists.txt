@@ -26,6 +26,9 @@ cmake_minimum_required(VERSION 3.13)
 
 project(CHOUPI)
 
+set(JAVACARD_SUPPORT_GENERATED_DIR "${CMAKE_SOURCE_DIR}/../build/javacard-support")
+include("${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake")
+
 include(CheckIPOSupported)
 enable_language(ASM)
 
@@ -235,7 +238,9 @@ file(GLOB_RECURSE CHOUPI_JAVACARD_API_INPUTS CONFIGURE_DEPENDS
   "${CHOUPI_JAVACARD_API_ROOT}/src/*.java"
   "${CHOUPI_JAVACARD_API_ROOT}/sdks/*")
 list(APPEND CHOUPI_JAVACARD_API_INPUTS
-  "${CHOUPI_JAVACARD_API_ROOT}/build.xml")
+  "${CHOUPI_JAVACARD_API_ROOT}/build.xml"
+  "${CMAKE_SOURCE_DIR}/../config/javacard-support.json"
+  "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake")
 set(CHOUPI_JAVACARD_API_STAMP
     "${CMAKE_BINARY_DIR}/javacard-api/.api-built")
 add_custom_command(
@@ -258,6 +263,9 @@ file(GLOB_RECURSE CHOUPI_ROMMASK_INPUTS CONFIGURE_DEPENDS
   "${CHOUPI_ROMMASK_ROOT}/capmap-free/*")
 list(FILTER CHOUPI_ROMMASK_INPUTS EXCLUDE REGEX "/(target|build|\\.git)/")
 list(APPEND CHOUPI_ROMMASK_INPUTS "${CHOUPI_ROMMASK_ROOT}/Makefile")
+list(APPEND CHOUPI_ROMMASK_INPUTS
+  "${CMAKE_SOURCE_DIR}/../config/javacard-support.json"
+  "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake")
 
 if(CHOUPI_TARGET_PC)
   set(CHOUPI_ROMMASK_STAMP "${CMAKE_BINARY_DIR}/rommask/.rommask-built")

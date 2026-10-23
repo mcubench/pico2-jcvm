@@ -3,10 +3,15 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 build_dir="${repo_root}/build/choupi-pc"
+support_dir="${repo_root}/build/javacard-support"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
 jcvm_debug="${CHOUPI_JCVM_DEBUG:-OFF}"
 [[ -x "${java8_home}/bin/javac" ]] || \
   die "Java 8 javac not found; set JAVA8_HOME to a JDK 8 installation"
+
+python3 "${repo_root}/tools/javacard-support.py" \
+  --config "${repo_root}/config/javacard-support.json" \
+  --out-dir "${support_dir}"
 
 "${repo_root}/tools/env" cmake \
   -S "${repo_root}/choupi" \
@@ -30,6 +35,9 @@ generated_header="${build_dir}/jni.hpp"
     -type f -name '*.java' -print0 | sort -z | xargs -0 sha256sum | \
     sha256sum | awk '{print $1 "  javacard-api-sources"}' > api-sources.sha256
   sha256sum api-sources.sha256 >> generation.sha256
+  sha256sum "${repo_root}/config/javacard-support.json" | \
+    awk '{print $1 "  config/javacard-support.json"}' > support-config.sha256
+  sha256sum support-config.sha256 >> generation.sha256
 )
 printf 'ROMMASK:PASS image=%s header=%s manifest=%s\n' \
   "${rom_image#${repo_root}/}" "${generated_header#${repo_root}/}" \

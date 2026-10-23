@@ -8587,3 +8587,18 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   changes invalidate ROM-mask/JNI generation; then extract Java providers and
   native modules. Preserve existing dirty API submodule and unrelated VM/tool
   changes.
+
+## Support config build wiring — 2026-10-23
+
+- `tools/build-pc` now emits generated support metadata before CMake; both the
+  nested PC build and root Pico build include the same generated CMake values.
+  `tools/build` compares the support JSON hash against the PC generation
+  manifest, forcing API/ROM-mask/JNI regeneration after config edits. API and
+  ROM-mask custom commands also depend on the JSON/config metadata. Comparator
+  default expected CSV now points to generated output.
+- ARM wrapper and RISC-V wrapper both passed. The full ARM CHOUPI image was
+  built but not flashed. ROM-mask/JNI output and manifest checksum checks
+  passed. The API still contains current providers regardless of selection.
+- Next: inspect factory behavior and extract optional Java implementations
+  behind generated dispatch. Then split native functions and conditionalize
+  both PC/Pico module/library source lists.

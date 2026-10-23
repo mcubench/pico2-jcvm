@@ -10,6 +10,9 @@ endif()
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 project(pico2_jcvm C CXX ASM)
+set(JAVACARD_SUPPORT_GENERATED_DIR
+  "${CMAKE_CURRENT_SOURCE_DIR}/build/javacard-support")
+include("${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake")
 set(PICO_CXX_ENABLE_EXCEPTIONS 1 CACHE BOOL "Enable C++ exceptions for CHOUPI")
 option(CHOUPI_DEBUG_HEAP_GC "Emit periodic CHOUPI heap GC summaries" OFF)
 option(CHOUPI_DEBUG_HEAP_GC_TRACE "Emit per-object CHOUPI heap GC tracing" OFF)
@@ -51,7 +54,8 @@ if(CHOUPI_VM_SOURCES)
   target_include_directories(choupi_vm_core PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/os/src"
-    "${CMAKE_CURRENT_BINARY_DIR}/choupi-generated")
+    "${CMAKE_CURRENT_BINARY_DIR}/choupi-generated"
+    "${JAVACARD_SUPPORT_GENERATED_DIR}")
   # The upstream CAP structs are packed by format design, and the source has
   # harmless const-by-value and debug-only parameter diagnostics. Keep the
   # root smoke target's strict warning policy while excluding these legacy
@@ -95,7 +99,8 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   target_include_directories(pico2_choupi PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/os/src"
-    "${CMAKE_CURRENT_BINARY_DIR}/choupi-generated")
+    "${CMAKE_CURRENT_BINARY_DIR}/choupi-generated"
+    "${JAVACARD_SUPPORT_GENERATED_DIR}")
   target_compile_options(pico2_choupi PRIVATE
     -Wno-ignored-qualifiers
     -Wno-address-of-packed-member

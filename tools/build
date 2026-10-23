@@ -18,10 +18,13 @@ build_jobs="${PICO_BUILD_JOBS:-2}"
 [[ "${build_jobs}" =~ ^[1-9][0-9]*$ ]] || \
   die "PICO_BUILD_JOBS must be a positive integer"
 build_pc_dir="${repo_root}/build/choupi-pc"
+support_dir="${repo_root}/build/javacard-support"
 generation_manifest="${build_pc_dir}/generation.sha256"
 api_source_manifest="${build_pc_dir}/api-sources.sha256"
+support_config_manifest="${build_pc_dir}/support-config.sha256"
 generation_current=false
 if [[ -s "${generation_manifest}" && -s "${api_source_manifest}" && \
+      -s "${support_config_manifest}" && \
       -s "${build_pc_dir}/flash" && -s "${build_pc_dir}/jni.hpp" ]] && \
    (cd "${build_pc_dir}" && sha256sum --check generation.sha256 >/dev/null); then
   current_api_hash="$(find "${repo_root}/choupi/javacard-sdk/javacard-api/src" \
@@ -29,11 +32,17 @@ if [[ -s "${generation_manifest}" && -s "${api_source_manifest}" && \
     sha256sum | cut -d ' ' -f 1)"
   recorded_api_hash="$(awk '$2 == "javacard-api-sources" {print $1}' \
     "${api_source_manifest}")"
-  [[ "${current_api_hash}" == "${recorded_api_hash}" ]] && generation_current=true
+  current_support_hash="$(sha256sum "${repo_root}/config/javacard-support.json" | cut -d ' ' -f 1)"
+  recorded_support_hash="$(awk '{print $1}' "${support_config_manifest}")"
+  [[ "${current_api_hash}" == "${recorded_api_hash}" && \
+     "${current_support_hash}" == "${recorded_support_hash}" ]] && generation_current=true
 fi
 if [[ "${generation_current}" != true ]]; then
   "${repo_root}/tools/build-pc"
 fi
+python3 "${repo_root}/tools/javacard-support.py" \
+  --config "${repo_root}/config/javacard-support.json" \
+  --out-dir "${support_dir}"
 build_dir="${repo_root}/build/${arch}"
 linker_flags=""
 arm_newlib_include=""

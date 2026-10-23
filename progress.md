@@ -7313,7 +7313,7 @@
 - Decision: On USB enumeration, flash this ARM build and run the official Core
   scenarios, confirm both Multi AIDs, install a second distinct package while
   the first remains, then continue Security/Crypto and remaining README stages.
-- Commit: pending.
+- Commit: `bcef65f`.
 - Artifacts/logs: `artifacts/logs/userexception-supercatch-vpcd-20261021-fix1.log`,
   `artifacts/logs/deploy-core-userexception-vpcd-20261021.log`,
   `artifacts/logs/deploy-core-userexception-vpcd-release-20261021.log`,
@@ -10412,3 +10412,30 @@
 - Commit: pending.
 - Artifacts/logs: `tools/test-javacard-support.py`; generated scratch output
   under `/tmp/jc-support-current`.
+
+## 2026-10-23 — Wire support config into both build wrappers
+
+- Step/experiment: `selectable-javacard-support-build-invalidation-20261023`
+- Change: Both root and nested CMake include generated capability metadata.
+  `tools/build-pc` creates that metadata before configuring; the root build
+  wrapper checks the JSON hash and rebuilds PC API/ROM-mask/JNI outputs when it
+  changes. PC API and ROM-mask custom commands depend on the config. The
+  comparator now defaults to the generated expected CSV.
+- Validation: `bash -n tools/build tools/build-pc` and the capability test
+  suite passed. `./tools/build arm` and `./tools/build riscv` both passed;
+  full ARM CHOUPI UF2 ends at `0x100c9900`, and RISC-V core compilation passed.
+  ROMMASK generated `build/choupi-pc/flash` and `jni.hpp`; checksum validation
+  passed for both plus API and support-config manifests. No device was flashed.
+- Result: Both architectures use the same validated selection metadata, and
+  a config hash change invalidates generated ROM-mask/JNI state. Providers and
+  native code are not conditional yet, so image-size differences are not
+  expected at this stage. ROM-mask build emitted existing Maven and sandbox
+  hostname warnings but completed successfully; ARM/RISC-V compile steps were
+  warning-free.
+- Decision: Proceed to route Java API factories through selectable providers,
+  then condition native source/module inclusion and test all three profiles.
+- Commit: pending.
+- Artifacts/logs: `build/choupi-pc/generation.sha256`,
+  `build/choupi-pc/support-config.sha256`, `build/choupi-pc/flash`,
+  `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
+  `build/riscv/pico2_jcvm_smoke.uf2`.

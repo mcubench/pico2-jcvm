@@ -105,8 +105,9 @@ def main() -> int:
     parser.add_argument(
         "--expected-support",
         type=Path,
-        default=Path(__file__).with_name("jcalgtest-supported-v1.8.2.csv"),
-        help="declared CHOUPI support identities (default: %(default)s)",
+        default=Path(__file__).resolve().parent.parent
+        / "build/javacard-support/jcalgtest-supported.csv",
+        help="generated CHOUPI support identities (default: %(default)s)",
     )
     args = parser.parse_args()
 
