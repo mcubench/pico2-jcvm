@@ -234,13 +234,20 @@ endif(CHOUPI_TARGET_PC)
 
 set(CHOUPI_JAVACARD_API_ROOT
     "${CMAKE_SOURCE_DIR}/javacard-sdk/javacard-api")
+set(CHOUPI_JAVACARD_GENERATED_JAVA
+    "${JAVACARD_SUPPORT_GENERATED_DIR}/java")
+file(GLOB_RECURSE CHOUPI_JAVACARD_SUPPORT_TEMPLATES CONFIGURE_DEPENDS
+  "${CMAKE_SOURCE_DIR}/../tools/java-support/*")
+list(APPEND CHOUPI_JAVACARD_SUPPORT_TEMPLATES
+  "${CMAKE_SOURCE_DIR}/../tools/javacard-support.py")
 file(GLOB_RECURSE CHOUPI_JAVACARD_API_INPUTS CONFIGURE_DEPENDS
   "${CHOUPI_JAVACARD_API_ROOT}/src/*.java"
   "${CHOUPI_JAVACARD_API_ROOT}/sdks/*")
 list(APPEND CHOUPI_JAVACARD_API_INPUTS
   "${CHOUPI_JAVACARD_API_ROOT}/build.xml"
   "${CMAKE_SOURCE_DIR}/../config/javacard-support.json"
-  "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake")
+  "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake"
+  ${CHOUPI_JAVACARD_SUPPORT_TEMPLATES})
 set(CHOUPI_JAVACARD_API_STAMP
     "${CMAKE_BINARY_DIR}/javacard-api/.api-built")
 add_custom_command(
@@ -251,7 +258,9 @@ add_custom_command(
           "JAVA_HOME=${CHOUPI_JAVA8_HOME}"
           "PATH=${CHOUPI_JAVA8_HOME}/bin:$ENV{PATH}"
           ant -f "${CHOUPI_JAVACARD_API_ROOT}/build.xml"
-          "-Dbuild.dir=${CMAKE_BINARY_DIR}/javacard-api/" clean build
+          "-Dbuild.dir=${CMAKE_BINARY_DIR}/javacard-api/"
+          "-Djavacard.dir=${CHOUPI_JAVACARD_API_ROOT}/src:${CHOUPI_JAVACARD_GENERATED_JAVA}"
+          clean build
   COMMAND ${CMAKE_COMMAND} -E touch "${CHOUPI_JAVACARD_API_STAMP}"
   DEPENDS ${CHOUPI_JAVACARD_API_INPUTS}
   VERBATIM)

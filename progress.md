@@ -7353,7 +7353,7 @@
 - Decision: On physical access, run the deploy Core scenarios, verify both AIDs
   coexist and are independently selectable, then load another distinct
   package without deleting Multi and check GET STATUS, DELETE, and reinstall.
-- Commit: pending.
+- Commit: `3d583bc`.
 - Artifacts/logs: `artifacts/logs/deploy-multi-a-select-vpcd-20261021.log` and
   `artifacts/logs/deploy-multi-b-select-vpcd-20261021.log`.
 
@@ -10409,7 +10409,7 @@
 - Decision: Keep the checked-in 15-row support declaration as a parity
   reference while making the build pass the generated CSV explicitly; wire
   configuration outputs into both build flows next.
-- Commit: pending.
+- Commit: `bcef65f`.
 - Artifacts/logs: `tools/test-javacard-support.py`; generated scratch output
   under `/tmp/jc-support-current`.
 
@@ -10434,8 +10434,31 @@
   warning-free.
 - Decision: Proceed to route Java API factories through selectable providers,
   then condition native source/module inclusion and test all three profiles.
-- Commit: pending.
+- Commit: `3d583bc`.
 - Artifacts/logs: `build/choupi-pc/generation.sha256`,
   `build/choupi-pc/support-config.sha256`, `build/choupi-pc/flash`,
+  `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
+  `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-10-23 — Extract secure random Java provider
+
+- Step/experiment: `selectable-secure-random-provider-20261023`
+- Change: `RandomData.getInstance` now delegates to generated provider
+  dispatch. The public `RandomData` base no longer contains random generation
+  or native calls. `SecureRandomData` is a separate provider template emitted
+  only when `secure_random` is enabled; minimal output omits its source file.
+  The nested CMake API build compiles generated Java sources into the ROM mask.
+- Validation: `python3 tools/test-javacard-support.py` passed 4/4, including
+  presence/absence of secure-random source by config. `./tools/build arm` and
+  `./tools/build riscv` passed; the API compiled 139 Java sources and ROMMASK
+  generated the API/JNI outputs. ARM full image ended at `0x100c9900`. No
+  physical flash was performed.
+- Result: Selected secure random behavior is compiled as provider bytecode;
+  disabled secure random has only an unsupported factory path. The other 14
+  Java algorithm/PIN providers and native implementations remain to extract.
+- Decision: Continue through key and cipher provider extraction, then digest,
+  PIN variants, and native modules; test reduced ROM masks and CSV sweeps.
+- Commit: pending (API submodule `4541b95`).
+- Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.

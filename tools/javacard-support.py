@@ -89,6 +89,36 @@ def emit(config: dict[str, bool], out_dir: Path) -> None:
     (out_dir / "javacard-support.json").write_text(
         json.dumps(config, indent=2) + "\n", encoding="utf-8"
     )
+    java_dir = out_dir / "java/javacard/security"
+    java_dir.mkdir(parents=True, exist_ok=True)
+    random_provider = [
+        "package javacard.security;",
+        "",
+        "final class RandomDataProvider {",
+        "  private RandomDataProvider() {}",
+        "  static RandomData getInstance(byte algorithm) throws CryptoException {",
+    ]
+    if config["secure_random"]:
+        random_provider.extend([
+            "    if (algorithm == RandomData.ALG_SECURE_RANDOM) {",
+            "      return new SecureRandomData();",
+            "    }",
+        ])
+    random_provider.extend([
+        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+        "    return null;",
+        "  }",
+        "}",
+    ])
+    (java_dir / "RandomDataProvider.java").write_text(
+        "\n".join(random_provider) + "\n", encoding="utf-8"
+    )
+    if config["secure_random"]:
+        template = Path(__file__).resolve().parent / "java-support/SecureRandomData.java"
+        provider_path = java_dir / "SecureRandomData.java"
+        provider_path.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+    else:
+        (java_dir / "SecureRandomData.java").unlink(missing_ok=True)
 
 
 def main() -> int:

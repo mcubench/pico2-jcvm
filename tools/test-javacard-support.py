@@ -35,6 +35,7 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertEqual(len(rows) - 1, 15)
             self.assertEqual(sum(CONFIG.values()), 15)
             self.assertIn("#define JC_SUPPORT_SHA256 1", (out / "javacard-support.h").read_text())
+            self.assertTrue((out / "java/javacard/security/SecureRandomData.java").is_file())
 
     def test_minimal_config_generates_empty_supported_set(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -44,6 +45,7 @@ class JavaCardSupportTests(unittest.TestCase):
             with (out / "jcalgtest-supported.csv").open(newline="") as source:
                 self.assertEqual(list(csv.reader(source, delimiter=";")), [["section", "algorithm_name"]])
             self.assertIn("#define JC_SUPPORT_SHA256 0", (out / "javacard-support.h").read_text())
+            self.assertFalse((out / "java/javacard/security/SecureRandomData.java").exists())
 
     def test_rejects_unknown_missing_non_boolean_and_orphan_cipher(self):
         variants = []

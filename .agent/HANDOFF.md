@@ -8602,3 +8602,16 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: inspect factory behavior and extract optional Java implementations
   behind generated dispatch. Then split native functions and conditionalize
   both PC/Pico module/library source lists.
+
+## Secure random provider extraction — 2026-10-23
+
+- `RandomData.getInstance` now routes through generated `RandomDataProvider`;
+  the secure-random implementation is a separate source template emitted only
+  when enabled. The generated API source root is compiled into the ROM mask.
+- Focused generator tests pass 4/4. ARM and RISC-V wrappers pass with the
+  current all-enabled selection; API compiles 139 sources and mask/JNI output
+  regenerates. No physical flash was performed.
+- API submodule commit `4541b95` contains only `RandomData.java`; prior dirty
+  `Cipher.java` and untracked `sdks` remain untouched.
+- Next: extract selected key providers and cipher providers while retaining
+  API signatures. Then finish SHA-256/PIN providers and split native modules.
