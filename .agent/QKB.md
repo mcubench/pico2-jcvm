@@ -3758,3 +3758,11 @@ fix.
 - **Other areas:** Security results match all three (77 OK, 822 expected unsupported including RSA-2048 cases, 2 wrong results). Core 272 OK / 15 unsupported / 4 Ext-dependent unavailable; Crypto 22 OK / 444 expected unsupported; JavacardxSec 84/84 OK. All successful installs cleaned up and partial installs rolled back.
 - **Next:** Inspect persisted Java Card/runtime state per device and trace the exact Service Dispatcher methods returning `6400`; compare with VPCD and a fresh/power-reset card state. Do not attribute the mismatch to firmware revision.
 - **Artifacts:** `artifacts/results/deploy/full-20261023-three-reflashed-all-areas-1315/` and the three `artifacts/logs/cycle-choupi-20261023T110*.log` files.
+
+## Unrestricted API 3.0.5 suite exposes matching 6F00 failures on two tokens — 2026-10-23
+
+- **Observation:** After completely reflashing the two Pico 2 devices visible in the VM with the same current ARM UF2, full API 3.0.5 runs with `--exclude ''` produced identical Security and Crypto outcome counts on both. Security: 79 calls returned `SW=6F00` (plus 702 per-spec unsupported, 106 runtime exceptions, 6 wrong results, 4 card-runtime exceptions, 4 OK). Crypto: 192 calls returned `SW=6F00` (plus 256 unsupported, 7 runtime exceptions, 11 OK). The Security/Crypto tests completed and CAP cleanup succeeded.
+- **Comparison:** This differs from earlier 3.0.5 runs that used the runner's default RSA-2048 exclusion and reported Security 77 OK / 822 unsupported / 2 wrong results and Crypto 22 OK / 444 unsupported. These two new runs were both on exact-reader-pinned, freshly reflashed boards `2BED26ED20556535` and `D92E743D5F640C0F`.
+- **Cause:** Not identified. The unrestricted option may expose paths reached by RSA-2048 cases, but this has not been established. First inspect the 79/192 exact calls and their ordering around RSA-2048 operations; do not attribute the failures to device differences because the totals match on both boards.
+- **Viable fix:** None known.
+- **Artifacts:** `artifacts/results/deploy/full-305-2BED26ED20556535-20261023.csv` and `artifacts/results/deploy/full-305-D92E743D5F640C0F-20261023.csv`.

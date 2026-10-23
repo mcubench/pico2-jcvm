@@ -10596,3 +10596,39 @@
   `/tmp/jc-cap-minimal-riscv.log`, `/tmp/jc-cap-current-final-arm.log`,
   `/tmp/jc-cap-current-final-riscv.log`; generated `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-23 — Reflash reachable Pico 2 tokens and rerun API 3.0.5 suite
+
+- Step/experiment: `full-cap-suite-two-token-reflash-20261023`
+- Change: Rebuilt the all-enabled current firmware and completely reflashed
+  each Pico 2 currently exposed to this VM, using exact USB serials. Both
+  images passed picotool verification and bounded runtime monitoring.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Elevated
+  host-access cycles passed for `2BED26ED20556535` and
+  `D92E743D5F640C0F`, including `FLASH:PASS`, repeated
+  `TEST:PASS choupi_runtime`, and `TEST:SUMMARY pass=1 fail=0`. Full API
+  3.0.5 runs then covered all nine areas on each reader, with the runner's
+  default RSA-2048 exclusion disabled. GPPro cleanup or rollback succeeded
+  for every successfully installed CAP and every refused optional install.
+- Result: In both CSVs Core had 272 OK, 15 expected unsupported, and 4
+  Ext-dependent applet methods unavailable; JavacardxSec passed 84/84.
+  Security matched exactly (702 unsupported, 106 runtime exceptions, 79
+  `SW=6F00`, 6 wrong results, 4 card-runtime exceptions, 4 OK); Crypto matched
+  exactly (256 unsupported, 192 `SW=6F00`, 7 runtime exceptions, 11 OK).
+  Service passed 124/124 on 2BED but had 11 `SW=6400` of 124 on D92. Core's
+  Ext install and the Javacardx, JavacardxExt, JavacardxInt, and Biometry CAPs
+  were refused at INSTALL with `6A88`; partial uploads were rolled back.
+  Only two RP2350 USB devices and two Pico PC/SC readers were visible; the
+  third token (`8E464F4E2BBC0A19`) could not be reflashed or tested in this
+  VM. UF2 SHA-256: `d4fd102051767fce3ed72abeac3eef581c579b0e63b20048f1040b80fc364b57`
+  (1,652,736 bytes).
+- Decision: Treat D92's Service `SW=6400` as a reproduced token-specific
+  failure. The broad Security/Crypto `SW=6F00` results are identical across
+  the two tokens and need investigation; this unrestricted run differs from
+  earlier runs that excluded RSA-2048. Retry the third token when visible and
+  compare after identifying the Security/Crypto failing call paths.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261023T141401Z.log`,
+  `artifacts/logs/cycle-choupi-20261023T141535Z.log`,
+  `artifacts/results/deploy/full-305-2BED26ED20556535-20261023.csv`,
+  `artifacts/results/deploy/full-305-D92E743D5F640C0F-20261023.csv`.

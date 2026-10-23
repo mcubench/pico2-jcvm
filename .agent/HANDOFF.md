@@ -9045,3 +9045,32 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Build logs are currently in `/tmp/jc-cap-*-{arm,riscv}.log` (current ARM
   final log is `/tmp/jc-cap-current-final-arm.log`). Output files are in
   `build/choupi-pc/` and `build/arm/` for the restored current profile.
+
+## 2026-10-23 — Physical full-suite reflash follow-up
+
+- Built both ARM and RISC-V successfully with the all-enabled support profile.
+- Reflashed exact readers `2BED26ED20556535` and `D92E743D5F640C0F` using
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial <serial>` under the
+  elevated host-access path. Both passed flash verification and the finite
+  serial monitor (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`).
+- Full API 3.0.5 suite completed on both with all nine areas and
+  `--exclude ''`. CSVs: `artifacts/results/deploy/full-305-2BED26ED20556535-20261023.csv`
+  and `artifacts/results/deploy/full-305-D92E743D5F640C0F-20261023.csv`.
+  2BED Service passed 124/124; D92 Service returned 11 `SW=6400` among 124.
+  Security and Crypto totals matched between devices but had respectively 79
+  and 192 `SW=6F00` calls. See the newest QKB entry before interpreting these;
+  unlike previous baseline runs, RSA-2048 exclusions were disabled.
+- Optional `Javacardx`, `JavacardxExt`, `JavacardxInt`, and `Biometry` CAPs,
+  plus the Core Ext scenario, were refused with `6A88`; rollbacks succeeded.
+  `JavacardxSec` passed 84/84. The third token `8E464F4E2BBC0A19` is not
+  exposed by this VM: both `lsusb -d 2e8a:` and `pcsc_scan -r` show only
+  2BED and D92, so it has not been reflashed or tested in this session.
+- Current UF2 SHA-256 is
+  `d4fd102051767fce3ed72abeac3eef581c579b0e63b20048f1040b80fc364b57`.
+  Cycle logs are `artifacts/logs/cycle-choupi-20261023T141401Z.log` and
+  `artifacts/logs/cycle-choupi-20261023T141535Z.log`.
+- Next: inspect exact Security/Crypto `6F00` calls and determine whether their
+  change from baseline is caused by enabling RSA-2048 tests; retry the third
+  device once it is attached to the VM. The token-specific D92 Service failure
+  remains reproducible. The step's new progress and handoff records are ready
+  for the required incremental commit.
