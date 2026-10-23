@@ -10507,7 +10507,29 @@
   source path. Native AES/DES code is still combined in `jni.cpp`.
 - Decision: Continue with SHA-256 and OwnerPIN providers, then extract native
   crypto modules and verify reduced-profile ROM and image sizes.
-- Commit: pending (API submodule `f327c66`).
+- Commit: `282b163` (API submodule `f327c66`).
+- Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
+  `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
+  `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-10-23 — Extract SHA-256 Java provider
+
+- Step/experiment: `selectable-sha256-provider-20261023`
+- Change: `MessageDigest.getInstance` now uses generated provider dispatch.
+  The retainable SHA-256 implementation lives in a separate provider source
+  emitted only when `sha256` is enabled. The public API class no longer embeds
+  SHA-256 native bridge calls; its unsupported OneShot methods retain their
+  signatures without referencing the optional SHA bridge.
+- Validation: Python compilation and support generator tests passed 5/5.
+  `./tools/build arm` and `./tools/build riscv` passed. API compiled 149 Java
+  sources; ROMMASK/JNI regenerated with a 36,452-byte ROM image; full ARM image
+  linked through `0x100c9900`. No physical flash was performed.
+- Result: SHA-256 implementation bytecode is controlled by one boolean and
+  support CSV generation follows that selection. Native SHA-256 routines are
+  still in `jni.cpp` and remain to be split.
+- Decision: Next extract optional OwnerPIN variants, then split all selectable
+  native algorithms and libraries while retaining SCP03 AES.
+- Commit: pending (API submodule `f6dab0e`).
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.

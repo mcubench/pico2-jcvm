@@ -251,6 +251,37 @@ def emit(config: dict[str, bool], out_dir: Path) -> None:
         (cipher_dir / "AESCipherProvider.java").unlink(missing_ok=True)
     if not config["cipher_des_cbc_nopad"] and not config["cipher_getinstance_des_cbc_nopad"]:
         (cipher_dir / "DESCipherProvider.java").unlink(missing_ok=True)
+    digest_provider = [
+        "package javacard.security;",
+        "",
+        "final class MessageDigestProvider {",
+        "  private MessageDigestProvider() {}",
+        "  static MessageDigest getInstance(byte algorithm, boolean externalAccess)",
+        "      throws CryptoException {",
+        "    if (externalAccess) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+    ]
+    if config["sha256"]:
+        digest_provider.extend([
+            "    if (algorithm == MessageDigest.ALG_SHA_256)",
+            "      return new Sha256DigestProvider();",
+        ])
+    digest_provider.extend([
+        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+        "    return null;",
+        "  }",
+        "}",
+    ])
+    (java_dir / "MessageDigestProvider.java").write_text(
+        "\n".join(digest_provider) + "\n", encoding="utf-8"
+    )
+    digest_path = java_dir / "Sha256DigestProvider.java"
+    if config["sha256"]:
+        digest_path.write_text(
+            (Path(__file__).resolve().parent / "java-support/Sha256DigestProvider.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    else:
+        digest_path.unlink(missing_ok=True)
 
 
 def main() -> int:

@@ -8644,3 +8644,16 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   javac; restored it and reran successfully. API submodule commit is `f327c66`.
 - Next: extract SHA-256 and OwnerPIN providers, then split native modules and
   perform profile-by-profile ROM-mask, image, GPPro, and JCAlgTest checks.
+
+## SHA-256 provider extraction — 2026-10-23
+
+- `MessageDigest.getInstance` dispatches to a generated SHA-256 provider; its
+  source is omitted when disabled. The public API no longer embeds
+  `Sha256NativeBridge` calls. `OneShot.open` remains unsupported, and its
+  signatures remain present without retaining native SHA-256 logic.
+- Focused support tests pass 5/5. ARM and RISC-V wrappers pass; API compiled
+  149 sources, ROMMASK is 36,452 bytes, and the full ARM CHOUPI image linked.
+  No board flash was performed. API submodule commit `f6dab0e`.
+- Next: extract optional OwnerPIN variants, then move selectable SHA/random/
+  AES/DES native implementations into separate modules and split build library
+  dependencies. Keep the AES source needed by SCP03 card management.
