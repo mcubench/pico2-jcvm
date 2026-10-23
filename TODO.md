@@ -194,8 +194,9 @@ claims to support them; implementing every algorithm is not a goal.
   D92. CryptoException reason `0x1234` also returns exact response
   `823012349000` on VPCD, the official SDK client, and physical D92; its class
   is resolved from the separate `javacard.security` package. A custom applet
-  CryptoException subclass also returns `833012349000` with its inherited
-  reason on VPCD, the official SDK client, and physical D92. The proxy decodes
+  CryptoException subclass, with two applet-defined classes before the API
+  parent, returns `833012349000` with its inherited reason on VPCD, the
+  official SDK client, and physical D92. The proxy decodes
   each tested exception as its proper API class. The
   ISOException special-case export token was corrected from CardException's
   token 18 to ISOException's token 21. Broader hierarchy edge cases remain

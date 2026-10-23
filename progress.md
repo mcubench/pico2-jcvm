@@ -10305,3 +10305,32 @@
   and physical fixture
   `artifacts/logs/rmi-array-physical-20261023T091115Z.log` (SHA-256
   `1ba3269bc978203104971fec36331bfb3ee53d2bd6b9dbe4d8340ced34c33271`).
+
+## 2026-10-23 — Extend RMI CryptoException hierarchy depth
+
+- Step/experiment: `rmi-crypto-exception-depth-two-20261023`
+- Change: Added an applet-defined `CustomCryptoExceptionBase` between the
+  remote leaf exception and Java Card `CryptoException`, exercising a longer
+  package-crossing hierarchy walk. The remote method hash remains `8a9e`.
+- Validation: Elevated VPCD passed 37/37 class-form and 3/3 interface-form
+  APDUs; the official SDK 2.2.1 client decoded the `833012349000` response as
+  its `CryptoExceptionSubclass` wrapper. Physical D92 returned the exact same
+  response; fixture cleanup and JCAlgTest preservation passed. This was a
+  fixture-only change, so firmware was not rebuilt or reflashed.
+- Result: RMI mapping preserves the custom-subclass marker and inherited
+  reason through two applet-defined classes before the exported API parent.
+- Decision: Longer chains, malformed hierarchy data, and other API exception
+  families remain open.
+- Commit: Pending this step's Git commit.
+- Artifacts/logs: VPCD
+  `artifacts/logs/rmi-array-invoke-vpcd-20261023T094919Z.log` (SHA-256
+  `185618b77deb954cbcfca091dbc45db7ccf69c20b8021e7183fb2b3c56c0e06e`),
+  interface VPCD
+  `artifacts/logs/rmi-reference-interfaces-vpcd-20261023T094919Z.log` (SHA-256
+  `ef05a35ca1692b54f6d2b86dfaf416113ecda6b6e83bf38e7f01aeb185c8a3d2`),
+  SDK client
+  `artifacts/logs/rmi-client-official-vpcd-emulator-20261023T095024Z.log`
+  (SHA-256 `00e0bebeef01e5b3e824d25e082a6412d563636c46c26749437c17b8cb451c93`),
+  and physical fixture
+  `artifacts/logs/rmi-array-physical-20261023T095138Z.log` (SHA-256
+  `1ba3269bc978203104971fec36331bfb3ee53d2bd6b9dbe4d8340ced34c33271`).
