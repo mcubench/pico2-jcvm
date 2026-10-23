@@ -1,6 +1,6 @@
 package javacardx.crypto;
 
-import fr.gouv.ssi.nativeimpl.NativeImplementation;
+import fr.gouv.ssi.nativeimpl.CbcCipherNativeBridge;
 import javacard.security.CryptoException;
 import javacard.security.Key;
 
@@ -138,7 +138,7 @@ abstract class CbcCipherProvider extends Cipher {
                                                    lastBlockOffset + index)];
           }
         }
-        NativeImplementation.cipherCbc(
+        CbcCipherNativeBridge.cipherCbc(
             algorithm, mode, keyData, iv, cipherInput, cipherInputOffset,
             (short) outputLength,
             output, outputOffset);

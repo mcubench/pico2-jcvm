@@ -332,6 +332,25 @@ endif(CHOUPI_TARGET_PC)
 file(GLOB_RECURSE JCVM_CORE_SOURCES_FILES
      CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+list(FILTER JCVM_CORE_SOURCES_FILES EXCLUDE REGEX
+  "/native_(random|cipher|aes_cbc|des_cbc|sha256)\\.cpp$")
+if(JC_SUPPORT_SECURE_RANDOM)
+  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_random.cpp")
+endif()
+if(JC_SUPPORT_CIPHER_AES_CBC_NOPAD OR JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR
+   JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD OR
+   JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD)
+  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_cipher.cpp")
+endif()
+if(JC_SUPPORT_CIPHER_AES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD)
+  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_aes_cbc.cpp")
+endif()
+if(JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD)
+  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_des_cbc.cpp")
+endif()
+if(JC_SUPPORT_SHA256)
+  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_sha256.cpp")
+endif()
 
 if(CHOUPI_TARGET_PC)
 
@@ -339,14 +358,21 @@ if(CHOUPI_TARGET_PC)
                         "${CMAKE_SOURCE_DIR}/../src/cap_load.cpp"
                         "${CMAKE_SOURCE_DIR}/../src/scp03.cpp"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
-                        "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/des.c"
-                        "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha256.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
+
+  if(JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR
+     JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD)
+    target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/des.c")
+  endif()
+  if(JC_SUPPORT_SHA256)
+    target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha256.c")
+  endif()
 
   target_include_directories(
     choupi PUBLIC ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/src"
                   "${CMAKE_SOURCE_DIR}/os/src"
                   "${CMAKE_SOURCE_DIR}/../src"
+                  "${JAVACARD_SUPPORT_GENERATED_DIR}"
                   "$ENV{PICO_SDK_PATH}/lib/mbedtls/include"
                   "$ENV{PICO_SDK_PATH}/lib/mbedtls/include/mbedtls")
   target_compile_definitions(choupi PRIVATE

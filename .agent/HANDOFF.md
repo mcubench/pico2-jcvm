@@ -9021,3 +9021,27 @@ confirmed on hardware. The original investigation evidence remains in earlier
   profile builds and verify generated expected CSVs, ROM masks and image sizes;
   then run full ARM hardware / GPPro / JCAlgTest acceptance where hardware is
   available.
+
+## Native modules and profile build validation — 2026-10-23
+
+- Optional JNI methods are no longer in the always-present
+  `NativeImplementation` class. Generated bridges for random data, CBC, and
+  SHA-256 only enter the API ROM mask when selected. `native_random.cpp`,
+  `native_aes_cbc.cpp`, `native_des_cbc.cpp`, and `native_sha256.cpp` are
+  separately selected by both PC and Pico build descriptions. `native_cipher`
+  contains only shared JNI validation/dispatch. Mbed TLS DES/SHA and Pico SHA
+  are conditional; Mbed TLS AES and Pico random remain because SCP03 uses them.
+- Current, no-Java-Card-AES, and minimal configs each passed ARM and RISC-V
+  wrappers. The current expected CSV matched the checked-in 15-row baseline;
+  focused tests passed 5/5. Sizes (active ROM mask / fixed flash container /
+  ARM binary / ARM UF2) in bytes: current `36574 / 524300 / 825560 / 1651712`,
+  no-AES `36169 / 524300 / 824576 / 1649664`, minimal
+  `32491 / 524300 / 812792 / 1626112`. Root config is restored to all enabled.
+- API native bridge removal commit: `9d9ab43`; root implementation/progress
+  commit is pending. Builds are not hardware acceptance: no profile has been
+  flashed as part of this task. Next use elevated host USB access from the
+  first USB probe, identify the physical reader, then perform finite runtime,
+  GPPro install/select, and complete JCAlgTest comparison for each ARM image.
+- Build logs are currently in `/tmp/jc-cap-*-{arm,riscv}.log` (current ARM
+  final log is `/tmp/jc-cap-current-final-arm.log`). Output files are in
+  `build/choupi-pc/` and `build/arm/` for the restored current profile.

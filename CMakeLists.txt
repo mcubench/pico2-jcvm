@@ -47,10 +47,34 @@ pico_add_extra_outputs(pico2_jcvm_smoke)
 file(GLOB_RECURSE CHOUPI_VM_SOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/*.cpp")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX "/main(_arm|_pc)?\\.cpp$")
+list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX
+  "/native_(random|cipher|aes_cbc|des_cbc|sha256)\\.cpp$")
+if(JC_SUPPORT_SECURE_RANDOM)
+  list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_random.cpp")
+endif()
+if(JC_SUPPORT_CIPHER_AES_CBC_NOPAD OR JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR
+   JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD OR
+   JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD)
+  list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_cipher.cpp")
+endif()
+if(JC_SUPPORT_CIPHER_AES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD)
+  list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_aes_cbc.cpp")
+endif()
+if(JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD)
+  list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_des_cbc.cpp")
+endif()
+if(JC_SUPPORT_SHA256)
+  list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_sha256.cpp")
+endif()
 if(CHOUPI_VM_SOURCES)
   add_library(choupi_vm_core OBJECT ${CHOUPI_VM_SOURCES})
-  target_link_libraries(choupi_vm_core PRIVATE pico_rand_headers
-    pico_mbedtls_headers pico_sha256_headers)
+  target_link_libraries(choupi_vm_core PRIVATE pico_mbedtls_headers)
+  if(JC_SUPPORT_SECURE_RANDOM)
+    target_link_libraries(choupi_vm_core PRIVATE pico_rand_headers)
+  endif()
+  if(JC_SUPPORT_SHA256)
+    target_link_libraries(choupi_vm_core PRIVATE pico_sha256_headers)
+  endif()
   target_include_directories(choupi_vm_core PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/os/src"
@@ -93,9 +117,13 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     src/cap_store.cpp
     src/scp03.cpp
     "${PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
-    "${PICO_SDK_PATH}/lib/mbedtls/library/des.c"
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
     $<TARGET_OBJECTS:choupi_vm_core>)
+  if(JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR
+     JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD)
+    target_sources(pico2_choupi PRIVATE
+      "${PICO_SDK_PATH}/lib/mbedtls/library/des.c")
+  endif()
   target_include_directories(pico2_choupi PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/choupi/os/src"
@@ -107,8 +135,13 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     -Wno-unused-parameter
     -Wno-array-bounds
     -Wno-format)
+  # pico_rand also supplies SCP03 host challenge randomness, so it remains a
+  # mandatory card-management dependency even when Java Card RandomData is off.
   target_link_libraries(pico2_choupi PRIVATE pico_stdlib pico_rand pico_flash
-    pico_mbedtls_headers pico_sha256)
+    pico_mbedtls_headers)
+  if(JC_SUPPORT_SHA256)
+    target_link_libraries(pico2_choupi PRIVATE pico_sha256)
+  endif()
   if(CHOUPI_DEBUG_HEAP_GC)
     target_compile_definitions(choupi_vm_core PRIVATE CHOUPI_DEBUG_HEAP_GC=1)
     target_compile_definitions(pico2_choupi PRIVATE CHOUPI_DEBUG_HEAP_GC=1)

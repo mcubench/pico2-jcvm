@@ -1,6 +1,6 @@
 package javacard.security;
 
-import fr.gouv.ssi.nativeimpl.NativeImplementation;
+import fr.gouv.ssi.nativeimpl.RandomDataNativeBridge;
 
 final class SecureRandomData extends RandomData {
   @Override
@@ -10,7 +10,7 @@ final class SecureRandomData extends RandomData {
     if (length == 0) {
       CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
     }
-    NativeImplementation.generateRandomData(buffer, offset, length);
+    RandomDataNativeBridge.generateRandomData(buffer, offset, length);
   }
 
   @Override

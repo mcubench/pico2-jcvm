@@ -91,6 +91,8 @@ def emit(config: dict[str, bool], out_dir: Path) -> None:
     )
     java_dir = out_dir / "java/javacard/security"
     java_dir.mkdir(parents=True, exist_ok=True)
+    nativeimpl_dir = out_dir / "java/fr/gouv/ssi/nativeimpl"
+    nativeimpl_dir.mkdir(parents=True, exist_ok=True)
     random_provider = [
         "package javacard.security;",
         "",
@@ -117,8 +119,13 @@ def emit(config: dict[str, bool], out_dir: Path) -> None:
         template = Path(__file__).resolve().parent / "java-support/SecureRandomData.java"
         provider_path = java_dir / "SecureRandomData.java"
         provider_path.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+        (out_dir / "java/fr/gouv/ssi/nativeimpl/RandomDataNativeBridge.java").write_text(
+            (Path(__file__).resolve().parent / "java-support/RandomDataNativeBridge.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
     else:
         (java_dir / "SecureRandomData.java").unlink(missing_ok=True)
+        (out_dir / "java/fr/gouv/ssi/nativeimpl/RandomDataNativeBridge.java").unlink(missing_ok=True)
     key_provider = [
         "package javacard.security;",
         "",
@@ -229,6 +236,13 @@ def emit(config: dict[str, bool], out_dir: Path) -> None:
         "cipher_aes_cbc_nopad", "cipher_des_cbc_nopad",
         "cipher_getinstance_aes_cbc_nopad", "cipher_getinstance_des_cbc_nopad",
     ))
+    if cipher_enabled:
+        (nativeimpl_dir / "CbcCipherNativeBridge.java").write_text(
+            (Path(__file__).resolve().parent / "java-support/CbcCipherNativeBridge.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    else:
+        (nativeimpl_dir / "CbcCipherNativeBridge.java").unlink(missing_ok=True)
     cbc_cipher_path = cipher_dir / "CbcCipherProvider.java"
     if cipher_enabled:
         cbc_cipher_path.write_text(
@@ -280,8 +294,13 @@ def emit(config: dict[str, bool], out_dir: Path) -> None:
             (Path(__file__).resolve().parent / "java-support/Sha256DigestProvider.java").read_text(encoding="utf-8"),
             encoding="utf-8",
         )
+        (nativeimpl_dir / "Sha256NativeBridge.java").write_text(
+            (Path(__file__).resolve().parent / "java-support/Sha256NativeBridge.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
     else:
         digest_path.unlink(missing_ok=True)
+        (nativeimpl_dir / "Sha256NativeBridge.java").unlink(missing_ok=True)
     framework_dir = out_dir / "java/javacard/framework"
     framework_dir.mkdir(parents=True, exist_ok=True)
     pin_provider = [

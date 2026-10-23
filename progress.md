@@ -10553,7 +10553,46 @@
   algorithms and the three alternate build profiles remain.
 - Decision: Continue extracting selectable native functions and conditionally
   compiling their modules/libraries, while preserving SCP03 AES.
-- Commit: pending (API submodule `727767c`).
+- Commit: `d1e1529` (API submodule `727767c`).
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-10-23 — Split optional native modules and validate profiles
+
+- Step/experiment: `selectable-native-modules-profiles-20261023`
+- Change: RandomData, CBC AES, CBC DES, and SHA-256 implementations now live
+  in separate native source modules. The two cipher backends are independent;
+  PC and Pico CMake select the same modules from the generated support file.
+  Java optional native methods were moved from always-present
+  `NativeImplementation` into generated bridge classes, allowing ROMMASK/JNI
+  generation to remove their entry points with the capability. PC and Pico
+  omit Mbed TLS DES/SHA and Pico SHA modules when disabled. AES and Pico random
+  remain linked because SCP03 still uses them for card management.
+- Validation: Python generator tests passed 5/5 and the current generated
+  15-row expected CSV matched `tools/jcalgtest-supported-v1.8.2.csv` exactly.
+  `./tools/build arm` and `./tools/build riscv` passed for current support,
+  no-Java-Card-AES (10 selected), and minimal (0 selected). Reduced profiles
+  were selected only by editing `config/javacard-support.json`. The minimal
+  JNI header had no optional bridge methods; its Ninja rules contained no
+  optional native modules, Mbed TLS DES/SHA source, or Pico SHA target. PC
+  ROMMASK checks reported imported CAP packages valid in all profiles.
+- Result: ROM-mask active content / fixed `flash` container / ARM binary /
+  ARM UF2 sizes were: current 36,574 / 524,300 / 825,560 / 1,651,712 bytes;
+  no-AES 36,169 / 524,300 / 824,576 / 1,649,664 bytes; minimal 32,491 /
+  524,300 / 812,792 / 1,626,112 bytes. No-AES and minimal active masks and
+  images are smaller than current. The support JSON is restored to the
+  all-enabled current profile. These measurements are build-only; no image
+  was flashed and GPPro/JCAlgTest physical acceptance is still pending.
+- Decision: Keep SCP03 AES and Pico random in all builds; both are required by
+  card management independently of Java Card AES/RandomData capabilities.
+  Next identify an available physical Pico through the host-access path, then
+  test current, no-AES, and minimal images with GPPro and JCAlgTest. Confirm
+  the reports against each profile's generated CSV.
+- Commit: pending (API submodule `9d9ab43`).
+- Artifacts/logs: `/tmp/jc-cap-current-arm.log`,
+  `/tmp/jc-cap-current-riscv.log`, `/tmp/jc-cap-no-aes-arm.log`,
+  `/tmp/jc-cap-no-aes-riscv.log`, `/tmp/jc-cap-minimal-arm.log`,
+  `/tmp/jc-cap-minimal-riscv.log`, `/tmp/jc-cap-current-final-arm.log`,
+  `/tmp/jc-cap-current-final-riscv.log`; generated `build/choupi-pc/flash`,
+  `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`.
