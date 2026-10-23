@@ -10162,3 +10162,13 @@
 - Decision: Keep the guarded VM int[] RMI path unverified. Next use a different CAP emitter or implement a focused CAP Class metadata writer, then add APDU assertions.
 - Commit: recorded separately in Git history for this logical step.
 - Artifacts/logs: `build/rmi-array-fixture/direct/rmi/fixture/javacard/fixture.jca`, `build/rmi-array-fixture/Class.cap`, `build/rmi-array-fixture/remote-methods.txt`.
+
+## 2026-10-23 — Assemble int RMI metadata and validate array INVOKE
+
+- Step/experiment: `rmi-int-array-invoke-vpcd-20261023`
+- Change: Changed the RMI fixture pipeline to have Converter 3.0.5 emit JCA, then run its bundled `capgen` assembler. Added build assertions for `echoInts(int[])` (hash `a336`, signature `dd`), `sumInts(int[])` (hash `bb6c`, signature `d4`), and all 18 remote records. Added APDU cases for short return, signed and nontrivial 32-bit round-trip, empty arrays, and null arrays.
+- Validation: `./tools/test-rmi-arrays-vpcd` passed: ARM and PC builds succeeded; class-form VPCD reported `TEST:SUMMARY pass=28 fail=0`, and interface-form reported `pass=3 fail=0`. A standalone fixture build also passed all metadata assertions. No RISC-V build or physical flash was run; this step changed fixture/tooling and exercised the VM through VPCD.
+- Result: `capgen` preserves the int-array remote method entries omitted by Converter's direct CAP output. The existing guarded `JCVM_INT_SUPPORTED` RMI argument/result path passes VPCD round-trips, null/empty handling, and primitive short result.
+- Decision: Mark int[] RMI end-to-end coverage as validated on VPCD. Physical board coverage remains open; proceed to the next open JCVM priority after reviewing TODO.md.
+- Commit: recorded separately in Git history for this logical step.
+- Artifacts/logs: `artifacts/logs/rmi-array-invoke-vpcd-20261023T040059Z.log`; `artifacts/logs/rmi-reference-interfaces-vpcd-20261023T040059Z.log` (SHA-256 `298052464622d6013e4fbd53700e7987defcab052c2ef7333400a8407763900b`); generated CAP and load code under ignored `build/rmi-array-fixture/`.

@@ -95,6 +95,19 @@ public final class CounterImpl extends CardRemoteObject implements Counter {
     return value;
   }
 
+  public int[] echoInts(int[] value) {
+    return value;
+  }
+
+  public short sumInts(int[] value) {
+    if (value == null) return (short)-1;
+    short sum = 0;
+    for (short index = 0; index < value.length; index++) {
+      sum += (short)value[index];
+    }
+    return sum;
+  }
+
   public boolean[] invert(boolean[] value) {
     if (value == null) return null;
     for (short index = 0; index < value.length; index++) {

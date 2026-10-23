@@ -23,22 +23,34 @@ cat > "${build_dir}/build.xml" <<EOF_ANT
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="build" name="RmiArrayFixture">
   <property name="repo" location="${repo_root}"/>
+  <property name="kit" location="\${repo}/AlgTest_JavaCard/ext/jc305u3_kit"/>
   <target name="build">
-    <taskdef name="javacard" classname="pro.javacard.ant.JavaCard"
-             classpath="\${repo}/AlgTest_JavaCard/ext/ant-javacard.jar"/>
-    <javacard jckit="\${repo}/AlgTest_JavaCard/ext/jc305u3_kit">
-      <cap output="\${basedir}/output/fixture.cap"
-           classes="\${basedir}/classes" aid="a000000151000001">
-        <applet class="rmi.fixture.RmiApplet"
-                aid="a00000015100000101"/>
-      </cap>
-    </javacard>
+    <java classname="com.sun.javacard.converter.Main" fork="true"
+          dir="\${basedir}/output" failonerror="true">
+      <classpath><pathelement location="\${kit}/lib/tools.jar"/></classpath>
+      <arg value="-i"/>
+      <arg value="-classdir"/><arg value="\${basedir}/classes"/>
+      <arg value="-exportpath"/><arg value="\${kit}/api_export_files"/>
+      <arg value="-d"/><arg value="\${basedir}/output"/>
+      <arg value="-out"/><arg value="JCA"/>
+      <arg value="-applet"/><arg value="0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x01:0x01"/>
+      <arg value="rmi.fixture.RmiApplet"/>
+      <arg value="rmi.fixture"/>
+      <arg value="0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x01"/>
+      <arg value="1.0"/>
+    </java>
   </target>
 </project>
 EOF_ANT
 
 JAVA_HOME="${java8_home}" "${repo_root}/tools/env" ant \
   -f "${build_dir}/build.xml" > "${build_dir}/build.log" 2>&1
+
+"${repo_root}/tools/env" java \
+  -cp "${kit}/lib/tools.jar" com.sun.javacard.jcasm.cap.Main \
+  -nobanner -o "${build_dir}/output/fixture.cap" \
+  "${build_dir}/output/rmi/fixture/javacard/fixture.jca" \
+  > "${build_dir}/capgen.log" 2>&1
 
 python3 - "${build_dir}/output/fixture.cap" "${build_dir}/rmi-fixture-load-code.bin" \
   "${build_dir}/Class.cap" <<'PY'
@@ -72,5 +84,19 @@ inspect_dir="${repo_root}/build/tests/rmi-array-fixture"
   --target rmi_array_cap_inspect --parallel 2 > "${build_dir}/inspect-build.log"
 "${inspect_dir}/rmi_array_cap_inspect" "${build_dir}/Class.cap" \
   | tee "${build_dir}/remote-methods.txt"
+grep -Eq 'hash=a336 .*types=dd$' "${build_dir}/remote-methods.txt" || {
+  printf 'ERROR: CAP is missing echoInts(int[]):int[] metadata\n' >&2
+  exit 1
+}
+grep -Eq 'hash=bb6c .*types=d4$' "${build_dir}/remote-methods.txt" || {
+  printf 'ERROR: CAP is missing sumInts(int[]):short metadata\n' >&2
+  exit 1
+}
+method_count="$(wc -l < "${build_dir}/remote-methods.txt")"
+[[ "${method_count}" -eq 18 ]] || {
+  printf 'ERROR: expected 18 RMI methods in Class.cap, found %s\n' \
+    "${method_count}" >&2
+  exit 1
+}
 printf 'RMI_ARRAY_CAP:PASS cap=%s load_code=%s\n' \
   "${build_dir}/output/fixture.cap" "${build_dir}/rmi-fixture-load-code.bin"

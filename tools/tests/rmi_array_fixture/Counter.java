@@ -14,6 +14,8 @@ public interface Counter extends Remote {
   short sumEight(byte[] a, byte[] b, byte[] c, byte[] d, byte[] e,
                  byte[] f, byte[] g, byte[] h) throws RemoteException;
   short[] echoShorts(short[] value) throws RemoteException;
+  int[] echoInts(int[] value) throws RemoteException;
+  short sumInts(int[] value) throws RemoteException;
   boolean[] invert(boolean[] value) throws RemoteException;
   byte arrayAt(byte[] value, short index) throws RemoteException;
   byte arrayAtOrDefault(byte[] value, short index) throws RemoteException;
