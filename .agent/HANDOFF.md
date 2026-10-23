@@ -8565,3 +8565,11 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - One `WATCHDOG_RECOVERY cause=other` diagnostic appeared in each monitor alongside repeated passing summaries. Existing progress/TODO records classify the retained marker alone as non-failure.
 - Final elevated dry run found all three readers. Full report/CSVs are in `artifacts/results/deploy/full-20261023-three-reflashed-all-areas-1315/`; flash logs are `artifacts/logs/cycle-choupi-20261023T110123Z.log`, `...T110257Z.log`, and `...T110419Z.log`.
 - Next: inspect the token-specific Service Dispatcher `SW=6400` behavior after identical image reflash; compare persistent card state and a fresh state if safely available.
+
+## Selectable Java Card firmware capabilities — 2026-10-23
+
+- Added a new top-priority implementation checklist to root `TODO.md` for the 15 selectable JCAlgTest v1.8.2 capabilities and the three requested build profiles.
+- Initial source inspection found existing algorithm bodies in public API classes (`OwnerPINBuilder`, `KeyBuilder`, `MessageDigest`, `RandomData`, `Cipher`) and AES/DES/SHA-256/random native code in `choupi/src/jni.cpp`. The API submodule already has unrelated dirty state (`src/javacardx/crypto/Cipher.java` and untracked `sdks`); preserve it while working there.
+- `tools/compare-jcalgtest-support.py` currently rejects an empty support list, so minimal configuration needs a deliberate comparator change. Existing default support declaration is 15 rows in `tools/jcalgtest-supported-v1.8.2.csv`.
+- Next: implement strict `config/javacard-support.json` parsing and generated capability source/header, with tests for defaults, each of 15 flags, dependency conflicts, and minimal selection. Then wire both PC/Pico API build and `build-pc` ROM-mask generation to the validated configuration before extracting providers/native modules.
+- Preserve existing uncommitted changes and use root build wrappers. Run ARM and RISC-V builds before any physical flash; flash the full ARM CHOUPI image only after both pass.

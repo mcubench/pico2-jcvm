@@ -10378,3 +10378,13 @@
 - Decision: Firmware image mismatch is ruled out as the cause of D92's Service difference. Investigate persistent runtime/card state and Dispatcher behavior; do not reopen expected unsupported algorithms.
 - Commit: `6763690`.
 - Artifacts/logs: `artifacts/results/deploy/full-20261023-three-reflashed-all-areas-1315/SUMMARY.md`, per-token CSV/log files in that directory, and flash/monitor logs `artifacts/logs/cycle-choupi-20261023T110123Z.log`, `artifacts/logs/cycle-choupi-20261023T110257Z.log`, `artifacts/logs/cycle-choupi-20261023T110419Z.log`.
+
+## 2026-10-23 — Record selectable Java Card capability work package
+
+- Step/experiment: `selectable-javacard-capabilities-plan-20261023`
+- Change: Added the complete 15-capability configuration, provider extraction, native modularization, expected-CSV, size-inspection, and three-configuration physical acceptance checklist to root `TODO.md`.
+- Validation: Inspected the current 15-entry JCAlgTest support declaration, comparator, API sources, ROM-mask build flow, Pico CMake target, and native implementation locations. No build was run for this documentation-only step.
+- Result: The work package and key integration points are recorded. Existing dirty API submodule state must be preserved.
+- Decision: Start with strict config parsing/generation and build-flow integration, then move algorithm providers and native modules behind the config.
+- Commit: pending; linked from follow-up commit reference.
+- Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`; none.
