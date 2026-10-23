@@ -10664,3 +10664,13 @@
 - Decision: Keep all-enabled support config restored. Next decide how to make the unchanged JCAlgTest fixture tolerate deliberately absent algorithms, then run its complete support query in both profiles.
 - Commit: `d229f2f`
 - Artifacts/logs: minimal probe output was captured in the session transcript; all-enabled finite monitor `artifacts/logs/minimal-exception-translation-monitor-20261023.log` (ignored by Git), SHA-256 `5a8a5b5abcccd8acc28aa4c677966c26c4be208675d252a54292cb69b2c02c2b`; all-enabled UF2 SHA-256 `6641567323dcaf0d8cf1ba0e6c3108f1e9235fd144cb466a8ba9b6e00d0a2efc`.
+
+## 2026-10-23 — Archive malformed CAP code review
+
+- Step/experiment: `malformed-cap-review-archive-20261023`
+- Change: Saved the source review of malformed CAP crash and stall paths at `todo/review_20261023.md`.
+- Validation: Rechecked the cited source paths, confirmed the file is 826 words, and checked its whitespace. Documentation-only step; build, VPCD, fuzzing, and hardware validation were intentionally skipped.
+- Result: Five prioritized findings and a remediation/test plan recorded; no runtime metric measured. Review SHA-256 `4ecc4b96a719691671f2f2ac1256a3a67460b184f0060b3d48f11c80b90d01b0`.
+- Decision: Keep the findings as source-review hypotheses until malformed fixtures reproduce or refute each path; begin fixes at LOAD-time structural validation.
+- Commit: `pending` (record resulting SHA in a follow-up commit).
+- Artifacts/logs: `todo/review_20261023.md`; no test logs.

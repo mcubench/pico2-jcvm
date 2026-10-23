@@ -9098,3 +9098,9 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Both ARM/RISC-V wrappers passed under minimal and restored current 15/15 configurations. Current 15/15 ARM was flashed to D92 and finite monitor passed. PC/SC intermittently stopped enumerating D92 after reflashing, so the final current-profile APDU probe was not completed.
 - Residual blocker: JCAlgTest 1.8.2 `AlgStorageTest` eagerly creates AES/DES engines and keys in its constructor. Those intentionally absent in the minimal profile throw `NO_SUCH_ALGORITHM`, which the applet translates to `F103`; thus no complete minimal support report exists yet.
 - Next: update the JCAlgTest fixture path to tolerate unavailable algorithms while reporting them unsupported, then rerun complete support reports. Do not claim AES/SHA result comparison complete. Config is restored to all 15 capabilities enabled.
+
+## Malformed CAP review archive — 2026-10-23
+
+- Saved `todo/review_20261023.md` with five prioritized source-review findings: absent Class component, Method length underflow, unbounded bytecode PC, Import record overrun, and superclass cycles.
+- No malformed CAP was executed; findings describe reachable code paths and still need VPCD reproduction before claims about exact runtime outcomes.
+- Next for this review: add LOAD-time structural validation, then malformed CAP fixtures and bounded VM execution checks. Preserve unrelated worktree changes.
