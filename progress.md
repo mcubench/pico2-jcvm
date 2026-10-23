@@ -10651,5 +10651,5 @@
 - Validation: Inspected active CMake targets and corresponding boot, transport, interpreter, native crypto, heap, and flash source; checked four required sections and 1,653-word length. Documentation-only step; firmware builds and hardware validation were intentionally skipped.
 - Result: Guide SHA-256 `494f8fba55f4417f69f63432985f3311a3bd316ec17ce43b6b1c3a563103e23e`; no runtime metric was measured.
 - Decision: Use the guide as an onboarding map, and recheck generated bindings and selected capability profile before modifying implementation.
-- Commit: `pending` (replace with the resulting commit SHA after creation).
+- Commit: `d683cb8` (guide and initial progress record; SHA recorded by this follow-up commit).
 - Artifacts/logs: `FIRMWARE_JCVM_ARCHITECTURE.md`; no test logs.
