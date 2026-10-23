@@ -2,6 +2,13 @@ package rmi.fixture;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import javacard.framework.APDUException;
+import javacard.framework.CardException;
+import javacard.framework.CardRuntimeException;
+import javacard.framework.PINException;
+import javacard.framework.TransactionException;
+import javacard.framework.UserException;
+import javacard.security.CryptoException;
 
 public interface Counter extends Remote {
   short add(short amount) throws RemoteException;
@@ -21,6 +28,15 @@ public interface Counter extends Remote {
   byte arrayAtOrDefault(byte[] value, short index) throws RemoteException;
   short invalidMemoryType() throws RemoteException;
   void throwIso() throws RemoteException;
+  void throwSystemReason() throws RemoteException;
+  void throwCardReason() throws CardException, RemoteException;
+  void throwCardRuntimeReason() throws RemoteException;
+  void throwApduReason() throws RemoteException;
+  void throwPinReason() throws RemoteException;
+  void throwTransactionReason() throws RemoteException;
+  void throwUserReason() throws UserException, RemoteException;
+  void throwCryptoReason() throws RemoteException;
+  void throwCustomCryptoReason() throws CustomCryptoException, RemoteException;
   void throwCustomRuntime() throws RemoteException;
   void throwCustomChecked() throws CustomCheckedException, RemoteException;
 }

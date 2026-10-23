@@ -10182,3 +10182,126 @@
 - Decision: Mark int[] RMI validation complete for this fixture on VPCD and physical ARM firmware. Keep wider RMI client interoperability and other int-array signatures as open profile coverage.
 - Commit: recorded separately in Git history for this logical step.
 - Artifacts/logs: `artifacts/logs/rmi-array-physical-20261023T041218Z.log` (SHA-256 `ada9e3747d365338ec3ecd42ee93676b557aee607273634c5bbc1e3bd7c9b583`); `artifacts/logs/cycle-choupi-20261023T040710Z.log` (SHA-256 `7c815169fdea352fea271f55980db1c76c264e84fee5265f81ac298cb6333aa4`); post-cleanup `artifacts/logs/pico-powerup-persistence-20261023T041037Z.log` (SHA-256 `a7c1a4440a9a0261884c942b8d7de5c1cffe3b0eabc625bf810ae413ba136fd8`).
+
+## 2026-10-23 — Cover transitive custom exceptions in RMI
+
+- Step/experiment: `rmi-transitive-custom-exceptions-20261023`
+- Change: Extended the RMI fixture's custom checked and runtime exceptions through an applet-defined intermediate superclass, exercising superclass traversal to the nearest Java Card API exception class.
+- Validation: `./tools/build-rmi-array-fixture` passed. Elevated `./tools/test-rmi-arrays-vpcd` passed 28/28 class-form APDU checks and 3/3 interface-form checks. Exact responses remained `830900009000` for the runtime branch and `830500009000` for the checked branch. No physical hardware or RISC-V build was needed for this fixture-only change.
+- Result: One intermediate applet-defined superclass is handled correctly for both checked and runtime exception branches.
+- Decision: Keep longer hierarchy/malformed metadata and complete API reason-code capture open; proceed to the remaining RMI edge coverage.
+- Commit: Not created; `.git/index.lock` creation failed because repository metadata is read-only.
+- Artifacts/logs: `build/rmi-array-fixture/output/fixture.cap`, `build/rmi-array-fixture/remote-methods.txt`, `artifacts/logs/rmi-array-invoke-vpcd-20261023T055624Z.log`, and `artifacts/logs/rmi-reference-interfaces-vpcd-20261023T055624Z.log`.
+
+## 2026-10-23 — Preserve SystemException reasons in Java Card RMI
+
+- Step/experiment: `rmi-system-exception-reason-20261023`
+- Change: The RMI exception mapper now recognizes Java Card `SystemException` before its `java.lang.RuntimeException` superclass. It maps the JC305 framework class token 13 to embedded export token 22 and reads the inherited reason from field slot 0. Extended the CAP fixture and physical probe with `SystemException.throwIt(0x1234)`.
+- Validation: `./tools/build arm`, `./tools/build riscv`, and the PC stage in `./tools/test-rmi-arrays-vpcd` passed. VPCD passed 29/29 class-form APDUs and 3/3 interface-form APDUs; the direct throw returned `822512349000`. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial D92E743D5F640C0F` passed the build gate, flash verification, and 18/18 bounded runtime checks. The physical exact-reader probe installed the fixture, passed SELECT/int[]/SystemException calls, removed the fixture, and confirmed JCAlgTest remained installed.
+- Result: Java Card SystemException type and its complete 16-bit reason are preserved in the RMI response on VPCD and physical D92.
+- Decision: Keep reason capture for other Java Card API exception classes and longer hierarchy cases open. D92 is left running full CHOUPI ARM firmware.
+- Commit: Not created; `.git/index.lock` creation failed because repository metadata is read-only.
+- Artifacts/logs: `artifacts/logs/rmi-array-invoke-vpcd-20261023T061114Z.log` (SHA-256 `576ae54340d7dd338f010586f589c67bbd0c7c629d7f0fccad002f8cd76b43e0`), `artifacts/logs/rmi-reference-interfaces-vpcd-20261023T061114Z.log` (SHA-256 `eb88b74a57f68a9d411f47371a7d42c8fc2dead8d01fd193cbdafb60a191c37e`), `artifacts/logs/rmi-array-physical-20261023T061632Z.log` (SHA-256 `9f51c9a0888ede4d1d6b3cf9bf6cd3d8fa73ce689287f8bc25b4598f1a53beaf`), and `artifacts/logs/cycle-choupi-20261023T061508Z.log` (SHA-256 `0a75ffe0c9be2cb9a422a824099d67629d83dda9136712e04482355d21adf03d`).
+
+## 2026-10-23 — Preserve Java Card framework exception reasons over RMI
+
+- Step/experiment: `rmi-framework-exception-reasons-20261023`
+- Change: Added RMI recognition and reason-field propagation for CardException,
+  CardRuntimeException, APDUException, PINException, TransactionException,
+  and UserException, complementing SystemException. Corrected ISOException's
+  embedded dispatch export token from 18 (CardException) to 21 (ISOException).
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Elevated
+  `./tools/test-rmi-arrays-vpcd` passed 35/35 class-form APDUs and 3/3
+  interface-form APDUs. The official SDK 2.2.1 JCRMI client identified all
+  seven tested framework exceptions correctly. The full CHOUPI ARM image was
+  flashed to Pico D92 after the wrapper recovered to BOOTSEL from a missing
+  reset interface; flash verification passed and the 18-second monitor emitted
+  repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. The
+  physical fixture returned exact `0x1234` reasons for all seven exceptions,
+  cleaned up successfully, and confirmed JCAlgTest remained installed.
+- Result: Java Card framework reason preservation and tested exception class
+  decoding pass on VPCD, the SDK JCRMI client, and physical ARM hardware.
+- Decision: Keep broader custom/framework hierarchy and malformed metadata
+  coverage open; continue with remaining Priority 3 RMI profile gaps.
+- Commit: Not created; Git cannot write repository metadata (`.git/index.lock`
+  is read-only in this environment). No files were staged.
+- Artifacts/logs: VPCD
+  `artifacts/logs/rmi-array-invoke-vpcd-20261023T085319Z.log` (SHA-256
+  `b9e137138b2521d639eb009db2a97e76e29b2ea8a915cdf22ca24c1549f60a5b`),
+  reference interface VPCD
+  `artifacts/logs/rmi-reference-interfaces-vpcd-20261023T085319Z.log` (SHA-256
+  `f1a555116372218ab529344fdc6fb212ee55bda229af3ea02420bd8c8b64085d`),
+  official SDK client
+  `artifacts/logs/rmi-client-official-vpcd-emulator-20261023T085436Z.log`
+  (SHA-256 `c1eee5645b58ccc0ff7b80b0e47d796db69a24598e059094e3bc71554c1dd572`),
+  physical fixture
+  `artifacts/logs/rmi-array-physical-20261023T085737Z.log` (SHA-256
+  `3043412af0f39865f27277e0a6f3f3625c1fd0dc88b8983a9d5dcaa04cff576e`), and
+  cycle `artifacts/logs/cycle-choupi-20261023T085610Z.log` (SHA-256
+  `fecca38e10cc1898b92c5ee424515db008285e905a6ddae7fe25ecf319e77041`).
+
+## 2026-10-23 — Preserve CryptoException reasons over RMI
+
+- Step/experiment: `rmi-crypto-exception-reason-20261023`
+- Change: Extended the RMI exception hierarchy walk to recognize
+  `javacard.security.CryptoException` from the security package class view at
+  offset 233 and serialize its 16-bit reason. Added `throwCryptoReason()` to
+  the CAP fixture and physical probe (method hash `ec5c`).
+- Validation: Elevated `./tools/test-rmi-arrays-vpcd` passed 36/36 class-form
+  and 3/3 interface-form APDUs; CryptoException returned `823012349000`.
+  The official SDK 2.2.1 client decoded it as
+  `javacard.security.CryptoException`. `./tools/build arm` and
+  `./tools/build riscv` passed. Full CHOUPI ARM flashed and verified on D92;
+  bounded monitor passed repeated runtime summaries. Physical fixture returned
+  `823012349000`, cleaned up, and confirmed JCAlgTest remained installed.
+- Result: Both native crypto errors and thrown Java CryptoException objects
+  have correct RMI type handling; this fixture confirms Java reason-code
+  propagation on VPCD and physical hardware.
+- Decision: Keep remaining security-package exception types/subclasses and
+  malformed hierarchy coverage open; move to the next RMI profile gap.
+- Commit: Not created; Git could not create `.git/index.lock` because repository
+  metadata is read-only. No files were staged.
+- Artifacts/logs: VPCD
+  `artifacts/logs/rmi-array-invoke-vpcd-20261023T090126Z.log` (SHA-256
+  `d35b03c76aa43980ffa8e0b3272457a4f753d51c7d62dc64bc4ba8f32ef57b85`),
+  interface VPCD
+  `artifacts/logs/rmi-reference-interfaces-vpcd-20261023T090126Z.log` (SHA-256
+  `080a4f5a4371bf54d36ee960b5e0e969e0a85be8e12a86d9c5c934b0f066cb04`),
+  official SDK client
+  `artifacts/logs/rmi-client-official-vpcd-emulator-20261023T090250Z.log`
+  (SHA-256 `65bdfcf5f0f2d3e891832ea1314c2a224fd60b1657eaf8f618495f48aafe0db4`),
+  physical fixture
+  `artifacts/logs/rmi-array-physical-20261023T090545Z.log` (SHA-256
+  `e253d1e54f36011f05c6504d90b5dfa6938f5b295d7c74544554cc8e578e1063`), and
+  cycle `artifacts/logs/cycle-choupi-20261023T090418Z.log` (SHA-256
+  `86eb26d671e4795a6efc504bbfefcc2610136a2dc82f4188e8631e0cfb7b36c5`).
+
+## 2026-10-23 — Validate RMI reason mapping through CryptoException subclasses
+
+- Step/experiment: `rmi-custom-crypto-exception-hierarchy-20261023`
+- Change: Added an applet-defined `CustomCryptoException` subclass and a remote
+  method that throws it with reason `0x1234`. The expected wire response is
+  `833012349000`, mapping the custom class to its nearest exported API parent.
+- Validation: Elevated VPCD suite passed 37/37 class-form and 3/3
+  interface-form APDUs. The SDK 2.2.1 proxy decoded it as its
+  `CryptoExceptionSubclass` wrapper. Physical D92 returned exact
+  `833012349000`; fixture cleanup and JCAlgTest preservation passed. No VM
+  source changed after the preceding ARM/RISC-V builds and physical flash.
+- Result: Cross-package exception hierarchy traversal preserves the framework
+  subclass marker and inherited 16-bit reason on VPCD, SDK client, and hardware.
+- Decision: Keep longer inheritance chains and other API families open; this
+  covers one applet-defined subclass of a Java Card security exception.
+- Commit: Not created; Git cannot create `.git/index.lock` because the
+  repository metadata mount is read-only. No files were staged.
+- Artifacts/logs: VPCD
+  `artifacts/logs/rmi-array-invoke-vpcd-20261023T090847Z.log` (SHA-256
+  `63468996fb3d35b42b6c73da3f2c3513f2215f0798bc55a058484fd4a75caf25`),
+  interface VPCD
+  `artifacts/logs/rmi-reference-interfaces-vpcd-20261023T090847Z.log` (SHA-256
+  `448b2df34db7b0a0592bc955342fc70e7b0bf2decb388b57c2b5f38aeceee98d`),
+  SDK client
+  `artifacts/logs/rmi-client-official-vpcd-emulator-20261023T091002Z.log`
+  (SHA-256 `7272879d6badf19165e0fe27810a139821f38f719fe6341747a1030ebed36abe`),
+  and physical fixture
+  `artifacts/logs/rmi-array-physical-20261023T091115Z.log` (SHA-256
+  `1ba3269bc978203104971fec36331bfb3ee53d2bd6b9dbe4d8340ced34c33271`).

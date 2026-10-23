@@ -96,6 +96,25 @@ public final class RmiClientProbe {
     return text.toString();
   }
 
+  private interface RemoteCall {
+    void invoke() throws Throwable;
+  }
+
+  private static void expectRemoteException(String name, RemoteCall call)
+      throws Exception {
+    Throwable observed = null;
+    try {
+      call.invoke();
+    } catch (Throwable exception) {
+      observed = exception;
+    }
+    if (observed == null) {
+      throw new AssertionError(name + " did not throw");
+    }
+    System.out.println("JCRMI_CLIENT:EXCEPTION name=" + name + " class=" +
+                       observed.getClass().getName());
+  }
+
   public static void main(String[] args) throws Exception {
     if (args.length != 5) {
       throw new IllegalArgumentException(
@@ -155,6 +174,16 @@ public final class RmiClientProbe {
           System.out.println("JCRMI_CLIENT:PASS checked-subclass=" +
                              expected.getClass().getName());
         }
+
+        expectRemoteException("card", counter::throwCardReason);
+        expectRemoteException("cardRuntime", counter::throwCardRuntimeReason);
+        expectRemoteException("apdu", counter::throwApduReason);
+        expectRemoteException("pin", counter::throwPinReason);
+        expectRemoteException("system", counter::throwSystemReason);
+        expectRemoteException("transaction", counter::throwTransactionReason);
+        expectRemoteException("user", counter::throwUserReason);
+        expectRemoteException("crypto", counter::throwCryptoReason);
+        expectRemoteException("customCrypto", counter::throwCustomCryptoReason);
       } finally {
         if (emulatorProcess.isAlive()) {
           emulatorProcess.destroy();

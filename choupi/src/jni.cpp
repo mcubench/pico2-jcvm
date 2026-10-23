@@ -206,8 +206,16 @@ bool getRemoteJavaExceptionInfo(Context &context,
 
   static constexpr uint8_t java_lang_aid[] = {
       0xA0, 0x00, 0x00, 0x00, 0x62, 0x00, 0x01};
+  static constexpr uint8_t javacard_framework_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01};
+  static constexpr uint8_t javacard_security_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x02};
   struct JavaExceptionClass {
     uint8_t token;
+    uint8_t type;
+  };
+  struct FrameworkExceptionClass {
+    uint8_t embedded_token;
     uint8_t type;
   };
   static constexpr JavaExceptionClass java_exception_classes[] = {
@@ -222,6 +230,16 @@ bool getRemoteJavaExceptionInfo(Context &context,
       {9, 0x01},  // ArithmeticException
       {10, 0x0a}, // SecurityException
       {11, 0x03}, // ArrayStoreException
+  };
+  static constexpr FrameworkExceptionClass framework_exception_classes[] = {
+      {8, 0x22},  // CardRuntimeException
+      {10, 0x20}, // APDUException
+      {18, 0x21}, // CardException
+      {19, 0x24}, // PINException
+      {21, 0x23}, // ISOException
+      {22, 0x25}, // SystemException
+      {23, 0x26}, // TransactionException
+      {24, 0x27}, // UserException
   };
 
   Package package(instance->getPackageID());
@@ -241,6 +259,47 @@ bool getRemoteJavaExceptionInfo(Context &context,
     const auto *header = package.getCap().getHeader();
     if (header == nullptr) {
       return false;
+    }
+    // Java Card API exceptions are regular Java objects when an applet calls
+    // their throwIt() method. Recognize them before walking to java.lang
+    // superclasses and carry their reason field in the RMI response. These are
+    // embedded framework export tokens; their JC305 token mappings differ.
+    if (header->package.AID_length == sizeof(javacard_framework_aid) &&
+        std::memcmp(header->package.AID, javacard_framework_aid,
+                    sizeof(javacard_framework_aid)) == 0) {
+      Export_Handler exports(package);
+      ConstantPool_Handler resolver(package);
+      for (const auto &candidate : framework_exception_classes) {
+        const uint16_t candidate_index = HTONS(
+            exports.getExportedClassOffset(candidate.embedded_token));
+        const auto *candidate_class =
+            resolver.getClassFromClassIndex(candidate_index);
+        if (candidate_class == class_info) {
+          result.type = candidate.type;
+          result.reason = static_cast<uint16_t>(instance->getField_Short(0));
+          result.is_subclass =
+              instance->getPackageID() != package.getPackageID() ||
+              instance->getClassIndex() != class_index;
+          return true;
+        }
+      }
+    }
+    // CryptoException belongs to javacard.security rather than the framework
+    // package. The ROM-mask's imported security view exports it at class
+    // offset 233 (the framework view exports it at offset 234).
+    if (header->package.AID_length == sizeof(javacard_security_aid) &&
+        std::memcmp(header->package.AID, javacard_security_aid,
+                    sizeof(javacard_security_aid)) == 0) {
+      ConstantPool_Handler resolver(package);
+      const auto *crypto_exception_class = resolver.getClassFromClassIndex(233);
+      if (crypto_exception_class == class_info) {
+        result.type = 0x30; // CryptoException
+        result.reason = static_cast<uint16_t>(instance->getField_Short(0));
+        result.is_subclass =
+            instance->getPackageID() != package.getPackageID() ||
+            instance->getClassIndex() != class_index;
+        return true;
+      }
     }
     if (header->package.AID_length == sizeof(java_lang_aid) &&
         std::memcmp(header->package.AID, java_lang_aid,

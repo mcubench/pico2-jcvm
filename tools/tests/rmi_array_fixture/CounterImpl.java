@@ -2,10 +2,18 @@ package rmi.fixture;
 
 import java.lang.ArrayIndexOutOfBoundsException;
 import javacard.framework.AID;
+import javacard.framework.APDUException;
+import javacard.framework.CardException;
+import javacard.framework.CardRuntimeException;
 import javacard.framework.JCSystem;
 import javacard.framework.ISOException;
+import javacard.framework.PINException;
+import javacard.framework.SystemException;
+import javacard.framework.TransactionException;
 import javacard.framework.Util;
+import javacard.framework.UserException;
 import javacard.framework.service.CardRemoteObject;
+import javacard.security.CryptoException;
 import javacardx.security.SensitiveResult;
 
 public final class CounterImpl extends CardRemoteObject implements Counter {
@@ -134,6 +142,42 @@ public final class CounterImpl extends CardRemoteObject implements Counter {
 
   public void throwIso() {
     ISOException.throwIt((short)0x6A82);
+  }
+
+  public void throwSystemReason() {
+    SystemException.throwIt((short)0x1234);
+  }
+
+  public void throwCardReason() throws CardException {
+    CardException.throwIt((short)0x1234);
+  }
+
+  public void throwCardRuntimeReason() {
+    CardRuntimeException.throwIt((short)0x1234);
+  }
+
+  public void throwApduReason() {
+    APDUException.throwIt((short)0x1234);
+  }
+
+  public void throwPinReason() {
+    PINException.throwIt((short)0x1234);
+  }
+
+  public void throwTransactionReason() {
+    TransactionException.throwIt((short)0x1234);
+  }
+
+  public void throwUserReason() throws UserException {
+    UserException.throwIt((short)0x1234);
+  }
+
+  public void throwCryptoReason() {
+    CryptoException.throwIt((short)0x1234);
+  }
+
+  public void throwCustomCryptoReason() {
+    throw new CustomCryptoException((short)0x1234);
   }
 
   public void throwCustomRuntime() {

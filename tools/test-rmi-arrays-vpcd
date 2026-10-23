@@ -68,6 +68,24 @@ PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
   --expect-apdu-response 830900009000 \
   --apdu 80380202040001209800 \
   --expect-apdu-response 830500009000 \
+  --apdu 80380202040001168900 \
+  --expect-apdu-response 822512349000 \
+  --apdu 803802020400010C1000 \
+  --expect-apdu-response 822112349000 \
+  --apdu 803802020400014E2400 \
+  --expect-apdu-response 822212349000 \
+  --apdu 8038020204000199E700 \
+  --expect-apdu-response 822012349000 \
+  --apdu 80380202040001CB2800 \
+  --expect-apdu-response 822412349000 \
+  --apdu 80380202040001F2F300 \
+  --expect-apdu-response 822612349000 \
+  --apdu 8038020204000122D000 \
+  --expect-apdu-response 822712349000 \
+  --apdu 80380202040001EC5C00 \
+  --expect-apdu-response 823012349000 \
+  --apdu 803802020400018A9E00 \
+  --expect-apdu-response 833012349000 \
   --apdu 80380202040001A43800 \
   --expect-apdu-response 82236A829000 \
   --log "${log_dir}/rmi-array-invoke-vpcd-${timestamp}.log"

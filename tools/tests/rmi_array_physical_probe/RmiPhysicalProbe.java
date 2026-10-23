@@ -55,6 +55,24 @@ public final class RmiPhysicalProbe {
           "8102123456789ABCDEF09000");
       expect(channel, "echoIntsEmpty", "80380202050001A3360000", "81009000");
       expect(channel, "echoIntsNull", "80380202050001A336FF00", "81FFFF9000");
+      expect(channel, "systemExceptionReason",
+          "80380202040001168900", "822512349000");
+      expect(channel, "cardExceptionReason", "803802020400010C1000",
+          "822112349000");
+      expect(channel, "cardRuntimeExceptionReason",
+          "803802020400014E2400", "822212349000");
+      expect(channel, "apduExceptionReason", "8038020204000199E700",
+          "822012349000");
+      expect(channel, "pinExceptionReason", "80380202040001CB2800",
+          "822412349000");
+      expect(channel, "transactionExceptionReason",
+          "80380202040001F2F300", "822612349000");
+      expect(channel, "userExceptionReason", "8038020204000122D000",
+          "822712349000");
+      expect(channel, "cryptoExceptionReason", "80380202040001EC5C00",
+          "823012349000");
+      expect(channel, "customCryptoExceptionReason",
+          "803802020400018A9E00", "833012349000");
       System.out.println("RMI_PHYSICAL:PASS int_array_rmi");
     } finally {
       card.disconnect(false);

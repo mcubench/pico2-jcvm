@@ -177,21 +177,34 @@ claims to support them; implementing every algorithm is not a goal.
   `ISOException(0x6A82)`. Uncaught exception dispatch is bounded at the nested
   invocation frame. Remote-interface return references now encode both class
   and interface forms, and the fixture successfully invokes the returned child
-  object. Int[] is implemented behind `JCVM_INT_SUPPORTED` but lacks an
-  end-to-end fixture check: the JCDK 3.0.5 converter accepted `-i` and emitted
-  a CAP, yet omitted the fixture's `int[]` remote methods from its CAP 2.2
-  remote-method metadata. Resolve this fixture/converter gap before treating
-  the guarded path as verified. Custom `RuntimeException` subclass responses
+  object. Int[] remote INVOKE is implemented behind `JCVM_INT_SUPPORTED` and
+  passes VPCD end-to-end coverage using the bundled capgen assembler on
+  Converter-generated JCA. The fixture checks the assembled CAP for both int[]
+  methods. Physical int[] INVOKE was verified on Pico 2 D92 after current ARM
+  firmware was flashed; the temporary fixture was removed and JCAlgTest
+  remained installed. Custom `RuntimeException` subclass responses
   now return CAP 2.2 tag `0x83`, using the nearest API exception type; the
-  fixture verifies exact response `830900009000`. A checked custom exception
-  extending `java.lang.Exception` also returns `830500009000`. Remaining
-  INVOKE work includes broader custom hierarchy coverage, complete API
-  reason-code capture, and int[] end-to-end verification. The bundled SDK
-  2.2.1 proxy now selects the applet with its unmodified `Le=7F`, invokes
-  primitive `add(short)`, and decodes runtime and checked exception responses
-  through current-source VPCD. The checked subclass is surfaced as
-  `UndeclaredThrowableException` because the remote method declares only the
-  concrete subclass while the protocol reports its nearest exported parent.
+  fixture verifies exact response `830900009000`. Runtime and checked custom
+  exceptions now each pass through an additional applet-defined superclass and
+  still map to `830900009000` and `830500009000`. `SystemException.throwIt()`
+  with reason `0x1234` returns exact response `822512349000` on VPCD and
+  physical D92. Reason capture also passes for CardException,
+  CardRuntimeException, APDUException, PINException, TransactionException,
+  and UserException on VPCD, through the official SDK proxy, and on physical
+  D92. CryptoException reason `0x1234` also returns exact response
+  `823012349000` on VPCD, the official SDK client, and physical D92; its class
+  is resolved from the separate `javacard.security` package. A custom applet
+  CryptoException subclass also returns `833012349000` with its inherited
+  reason on VPCD, the official SDK client, and physical D92. The proxy decodes
+  each tested exception as its proper API class. The
+  ISOException special-case export token was corrected from CardException's
+  token 18 to ISOException's token 21. Broader hierarchy edge cases remain
+  open. The bundled SDK 2.2.1 proxy selects the applet with its unmodified
+  `Le=7F`, invokes primitive `add(short)`, and decodes runtime, checked, and
+  framework exception responses through current-source VPCD. The checked
+  subclass is surfaced as `UndeclaredThrowableException` because the remote
+  method declares only the concrete subclass while the protocol reports its
+  nearest exported parent.
   Object/reference arguments are prohibited by the Java Card RMI profile (JCRE
   3.1 §8.1.1.1); array parameters are passed by value and must be supported.
   The CAP `Class` format itself
@@ -206,8 +219,9 @@ claims to support them; implementing every algorithm is not a goal.
   The converter-built fixture is loaded and exercised through current-source
   VPCD for SELECT, primitive INVOKE, primitive-array INVOKE, and protocol-error
   responses. The supplied Service CAP is format 2.1 and cannot validate the
-  CAP 2.2 remote metadata path. External JCRMI client interoperability remains
-  unverified.
+  CAP 2.2 remote metadata path. External JCRMI interoperability passed the
+  tested SDK 2.2.1 subset; broader client and RMI profile coverage remains
+  open.
   Physical Service results are from existing firmware and do not validate
   current source.
 
@@ -237,16 +251,18 @@ claims to support them; implementing every algorithm is not a goal.
   Multi AID independently. Core's own-AID Shareable probe returns `0000`, and
   its Shareable tagging-interface probe returns `000101`, both with `9000`.
   These emulator checks do not model concurrent packages or applet instances.
-  Physical validation of the updated firmware remains pending: root
-  `AGENTS.md` requires both architecture builds before flashing, while the
-  user's active constraint prohibits RISC-V builds. Do not bypass either
-  instruction. Earlier physical package deletion failures (`6581`) and
+  The current-source image was physically flashed and checked on 2026-10-22
+  after ARM and RISC-V builds passed. Current-source Security (901 calls),
+  Core (291 calls), and Crypto (466 calls) results are recorded below and in
+  the newest `progress.md` entries. The optional Ext INSTALL refusal still
+  leaves four Core Ext methods unavailable. Earlier physical package deletion failures (`6581`) and
   Javacardx/JavacardxInt/Biometry load/install limitations still need their
   respective follow-up. Focused host Security CAP testing fixed the JC305
   `Key` interface method order mismatch. Six persistent DES/AES
   `KeyBuilder.buildKey` cases now return `9000` with matching 64/128/192-bit
-  DES and 128/192/256-bit AES sizes in VPCD. The fix has not been flashed or
-  physically confirmed. Latest source also passes normal host and ARM builds;
+  DES and 128/192/256-bit AES sizes, and were physically confirmed in the
+  current-source Security area (D92). Latest source also passes both
+  architecture builds;
   temporary virtual-dispatch traces were removed. The official Core client
   completed its 291-call VPCD summary with 0 `WRONG_RESULT`; its CSV contains
   291 detail rows (272 OK, 11 allowed unsupported, 8 scenario entries
@@ -255,8 +271,9 @@ claims to support them; implementing every algorithm is not a goal.
   IO_ERROR disconnect was the 900-second run timeout. Current host VPCD cannot
   install Multi and Ext scenario CAPs alongside Core, so those eight scenario
   calls remain uncovered by this run. Both Multi AIDs select independently in
-  fresh VPCD sessions. No current-source hardware validation was run; the
-  ARM-only constraint still conflicts with the both-architecture flash gate.
+  fresh VPCD sessions. Physical current-source Core coverage later passed 272
+  calls, with four Ext methods unavailable after INSTALL returned `6A88`; the
+  Multi and Core packages cleaned up successfully.
   A single-token physical Security 3.0.5 run completed all 901 calls and
   cleaned up its CAP: 822 allowed unsupported, 43 OK, 15 `SW_ERROR`, 13
   `EXC_RUNTIME`, and 8 `WRONG_RESULT`. This used the firmware already flashed

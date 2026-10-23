@@ -336,8 +336,9 @@ void Bytecodes::doThrow(jref_t objectref) {
     if (package_info->package.AID_length == sizeof(framework_aid) &&
         std::memcmp(package_info->package.AID, framework_aid,
                     sizeof(framework_aid)) == 0) {
-      // JC305's ISOException import token 7 maps to ROM-mask export token 18.
-      static constexpr uint8_t iso_exception_export_token = 18;
+      // JC305's ISOException import token 7 maps to ROM-mask export token 21.
+      // Token 18 is CardException in the embedded framework export.
+      static constexpr uint8_t iso_exception_export_token = 21;
       // The compiled ROM-mask class view also has a runtime-owned
       // ISOException record at byte offset 350; the public exported view is
       // at offset 316. Both represent the same framework class.
