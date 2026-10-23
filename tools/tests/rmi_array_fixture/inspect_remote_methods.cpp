@@ -61,7 +61,6 @@ int main(int argc, char **argv) {
         std::cout << std::dec << '\n';
       }
       found = true;
-      break;
     }
     offset = static_cast<uint16_t>(offset + size);
   }

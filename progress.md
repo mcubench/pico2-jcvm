@@ -10152,3 +10152,13 @@
 - Decision: Keep int-array RMI marked unverified. Next inspect the converter's remote-method metadata generation or construct a valid CAP 2.2 fixture with another emitter before adding int-array APDU expectations.
 - Commit: Not created; `.git` metadata is read-only in this environment. No files were staged.
 - Artifacts/logs: `build/rmi-array-fixture/remote-methods.txt`, `build/rmi-array-fixture/output/fixture.cap`, and `artifacts/logs/rmi-array-invoke-vpcd-20261022T204723Z.log` (SHA-256 `ad4f71b794689d49b7f710b0e61570ed69653abfb12807f9907ed5e756555f68`) and `artifacts/logs/rmi-reference-interfaces-vpcd-20261022T204723Z.log` (SHA-256 `908719f311d5903ebc3dded6158639049e22efbe236a4744d8e80b69988b0e87`).
+
+## 2026-10-23 — Trace int-array RMI metadata loss to CAP emission
+
+- Step/experiment: `rmi-int-array-cap-emission-trace-20261023`
+- Change: Updated the CAP inspector to visit every remote class record. The investigation confirms the generated JCA retains `echoInts(int[])` and `sumInts(int[])` as remote methods, while the resulting CAP Class component has only 16 remote-method records. Updated the working QKB, TODO, and handoff notes with this distinction.
+- Validation: `./tools/build-rmi-array-fixture` passed; inspector output contained 16 `RMI_METHOD` records. Direct Converter 3.0.5 invocation with `-out CAP JCA -i` exited 0 and generated JCA containing both int[] method declarations and `.remote` implementations. `git diff --check` passed for the inspector and documentation paths before progress append.
+- Result: The methods are parsed and represented in JCA, then omitted during JCA-to-CAP emission. The bundled converter is closed source in this workspace; its exact filtering logic remains unknown. No int[] APDU test is valid until a CAP includes the two metadata records.
+- Decision: Keep the guarded VM int[] RMI path unverified. Next use a different CAP emitter or implement a focused CAP Class metadata writer, then add APDU assertions.
+- Commit: recorded separately in Git history for this logical step.
+- Artifacts/logs: `build/rmi-array-fixture/direct/rmi/fixture/javacard/fixture.jca`, `build/rmi-array-fixture/Class.cap`, `build/rmi-array-fixture/remote-methods.txt`.
