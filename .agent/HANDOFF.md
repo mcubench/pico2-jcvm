@@ -8630,3 +8630,17 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   remain uncommitted and preserved.
 - Next: extract Java Card cipher provider(s) and then digest/PIN variants;
   split native modules and verify smaller no-AES/minimal ROM masks/images.
+
+## CBC cipher provider extraction — 2026-10-23
+
+- Public `Cipher.getInstance` entry points now call generated `CipherProvider`.
+  CBC processing is an algorithm-neutral shared base with separate AES and DES
+  provider subclasses, emitted only when corresponding cipher capabilities
+  are selected. Minimal output contains no CBC implementation sources.
+- The 5 focused capability tests pass. API compiled 147 sources, ROMMASK
+  emitted a 36,547-byte image and JNI header, and ARM/RISC-V build wrappers
+  passed. Full ARM image end is `0x100c9900`. No board flash was performed.
+- The first extraction attempt removed the Javadoc opener and was rejected by
+  javac; restored it and reran successfully. API submodule commit is `f327c66`.
+- Next: extract SHA-256 and OwnerPIN providers, then split native modules and
+  perform profile-by-profile ROM-mask, image, GPPro, and JCAlgTest checks.

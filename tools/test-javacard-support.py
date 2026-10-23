@@ -50,6 +50,9 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertFalse((out / "java/javacard/security/SecureRandomData.java").exists())
             self.assertFalse((out / "java/javacard/security/AESKeyProvider.java").exists())
             self.assertFalse((out / "java/javacard/security/DESKeyProvider.java").exists())
+            self.assertFalse((out / "java/javacardx/crypto/AESCipherProvider.java").exists())
+            self.assertFalse((out / "java/javacardx/crypto/DESCipherProvider.java").exists())
+            self.assertFalse((out / "java/javacardx/crypto/CbcCipherProvider.java").exists())
 
     def test_no_aes_config_keeps_des_provider_only(self):
         no_aes = dict(CONFIG)
@@ -66,6 +69,10 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertFalse((java_dir / "AESKeyProvider.java").exists())
             self.assertTrue((java_dir / "DESKeyProvider.java").is_file())
             self.assertNotIn("AESKeyProvider", (java_dir / "KeyBuilderProvider.java").read_text())
+            cipher_dir = out / "java/javacardx/crypto"
+            self.assertFalse((cipher_dir / "AESCipherProvider.java").exists())
+            self.assertTrue((cipher_dir / "DESCipherProvider.java").is_file())
+            self.assertNotIn("AESCipherProvider", (cipher_dir / "CipherProvider.java").read_text())
 
     def test_rejects_unknown_missing_non_boolean_and_orphan_cipher(self):
         variants = []

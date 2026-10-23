@@ -177,6 +177,80 @@ def emit(config: dict[str, bool], out_dir: Path) -> None:
         (java_dir / "KeyProviderBase.java").write_text(
             key_base.read_text(encoding="utf-8"), encoding="utf-8"
         )
+    cipher_dir = out_dir / "java/javacardx/crypto"
+    cipher_dir.mkdir(parents=True, exist_ok=True)
+    cipher_provider = [
+        "package javacardx.crypto;",
+        "",
+        "import javacard.security.CryptoException;",
+        "",
+        "final class CipherProvider {",
+        "  private CipherProvider() {}",
+        "  static Cipher getInstance(byte algorithm, boolean externalAccess)",
+        "      throws CryptoException {",
+        "    if (externalAccess) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+    ]
+    for key, algorithm, provider in (
+        ("cipher_aes_cbc_nopad", "Cipher.ALG_AES_BLOCK_128_CBC_NOPAD", "AESCipherProvider"),
+        ("cipher_des_cbc_nopad", "Cipher.ALG_DES_CBC_NOPAD", "DESCipherProvider"),
+    ):
+        if config[key]:
+            cipher_provider.extend([
+                f"    if (algorithm == {algorithm}) return new {provider}();"
+            ])
+    cipher_provider.extend([
+        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+        "    return null;",
+        "  }",
+        "  static Cipher getInstance(byte cipherAlgorithm, byte paddingAlgorithm,",
+        "                            boolean externalAccess) throws CryptoException {",
+        "    if (externalAccess) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+        "    if (paddingAlgorithm == Cipher.PAD_NOPAD) {",
+    ])
+    for key, algorithm, impl, provider in (
+        ("cipher_getinstance_aes_cbc_nopad", "Cipher.CIPHER_AES_CBC", "Cipher.ALG_AES_BLOCK_128_CBC_NOPAD", "AESCipherProvider"),
+        ("cipher_getinstance_des_cbc_nopad", "Cipher.CIPHER_DES_CBC", "Cipher.ALG_DES_CBC_NOPAD", "DESCipherProvider"),
+    ):
+        if config[key]:
+            cipher_provider.extend([
+                f"      if (cipherAlgorithm == {algorithm}) return new {provider}();"
+            ])
+    cipher_provider.extend([
+        "    }",
+        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+        "    return null;",
+        "  }",
+        "}",
+    ])
+    (cipher_dir / "CipherProvider.java").write_text(
+        "\n".join(cipher_provider) + "\n", encoding="utf-8"
+    )
+    cipher_enabled = any(config[key] for key in (
+        "cipher_aes_cbc_nopad", "cipher_des_cbc_nopad",
+        "cipher_getinstance_aes_cbc_nopad", "cipher_getinstance_des_cbc_nopad",
+    ))
+    cbc_cipher_path = cipher_dir / "CbcCipherProvider.java"
+    if cipher_enabled:
+        cbc_cipher_path.write_text(
+            (Path(__file__).resolve().parent / "java-support/CbcCipherProvider.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    else:
+        cbc_cipher_path.unlink(missing_ok=True)
+    for key, filename in (
+        ("cipher_aes_cbc_nopad", "AESCipherProvider.java"),
+        ("cipher_getinstance_aes_cbc_nopad", "AESCipherProvider.java"),
+        ("cipher_des_cbc_nopad", "DESCipherProvider.java"),
+        ("cipher_getinstance_des_cbc_nopad", "DESCipherProvider.java"),
+    ):
+        path = cipher_dir / filename
+        if config[key]:
+            template = Path(__file__).resolve().parent / "java-support" / filename
+            path.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+    if not config["cipher_aes_cbc_nopad"] and not config["cipher_getinstance_aes_cbc_nopad"]:
+        (cipher_dir / "AESCipherProvider.java").unlink(missing_ok=True)
+    if not config["cipher_des_cbc_nopad"] and not config["cipher_getinstance_des_cbc_nopad"]:
+        (cipher_dir / "DESCipherProvider.java").unlink(missing_ok=True)
 
 
 def main() -> int:

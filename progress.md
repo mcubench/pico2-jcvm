@@ -10458,7 +10458,7 @@
   Java algorithm/PIN providers and native implementations remain to extract.
 - Decision: Continue through key and cipher provider extraction, then digest,
   PIN variants, and native modules; test reduced ROM masks and CSV sweeps.
-- Commit: pending (API submodule `4541b95`).
+- Commit: `d6a9157` (API submodule `4541b95`).
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
@@ -10481,8 +10481,33 @@
   SHA-256, PIN, and native module extraction remain open.
 - Decision: Next route Cipher factory selection through providers and keep
   AES core support needed by SCP03 separate from Java Card AES capability.
-- Commit: pending (API submodule `420c82a`; includes prior provider commit
+- Commit: `591751c` (API submodule `420c82a`; includes prior provider commit
   `4541b95`).
+- Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
+  `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
+  `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-10-23 — Extract selectable CBC cipher providers
+
+- Step/experiment: `selectable-cbc-cipher-providers-20261023`
+- Change: Public `Cipher.getInstance` signatures now dispatch through generated
+  capability-specific factories. The inline AES/DES CBC implementation was
+  extracted into a shared CBC processing provider with separate AES and DES
+  subclasses. Generation emits only the selected cipher-family subclass and
+  omits all CBC processing sources for minimal support.
+- Validation: `python3 -m py_compile tools/javacard-support.py
+  tools/test-javacard-support.py` and the 5-test support suite passed.
+  `./tools/build arm` and `./tools/build riscv` passed after API conversion;
+  API compilation used 147 sources, ROMMASK output was 36,547 bytes and JNI
+  regenerated, and full ARM image linked through `0x100c9900`. A first compile
+  caught a dropped Javadoc opener during extraction; it was restored before
+  the passing build. No physical device was flashed.
+- Result: Java Card AES/DES cipher implementations can be independently left
+  out of generated API ROM masks. SCP03 AES remains in its separate firmware
+  source path. Native AES/DES code is still combined in `jni.cpp`.
+- Decision: Continue with SHA-256 and OwnerPIN providers, then extract native
+  crypto modules and verify reduced-profile ROM and image sizes.
+- Commit: pending (API submodule `f327c66`).
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
