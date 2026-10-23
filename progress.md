@@ -10223,8 +10223,7 @@
   decoding pass on VPCD, the SDK JCRMI client, and physical ARM hardware.
 - Decision: Keep broader custom/framework hierarchy and malformed metadata
   coverage open; continue with remaining Priority 3 RMI profile gaps.
-- Commit: Not created; Git cannot write repository metadata (`.git/index.lock`
-  is read-only in this environment). No files were staged.
+- Commit: `5d3aabc`
 - Artifacts/logs: VPCD
   `artifacts/logs/rmi-array-invoke-vpcd-20261023T085319Z.log` (SHA-256
   `b9e137138b2521d639eb009db2a97e76e29b2ea8a915cdf22ca24c1549f60a5b`),
@@ -10259,8 +10258,7 @@
   propagation on VPCD and physical hardware.
 - Decision: Keep remaining security-package exception types/subclasses and
   malformed hierarchy coverage open; move to the next RMI profile gap.
-- Commit: Not created; Git could not create `.git/index.lock` because repository
-  metadata is read-only. No files were staged.
+- Commit: `5d3aabc`
 - Artifacts/logs: VPCD
   `artifacts/logs/rmi-array-invoke-vpcd-20261023T090126Z.log` (SHA-256
   `d35b03c76aa43980ffa8e0b3272457a4f753d51c7d62dc64bc4ba8f32ef57b85`),
@@ -10291,8 +10289,7 @@
   subclass marker and inherited 16-bit reason on VPCD, SDK client, and hardware.
 - Decision: Keep longer inheritance chains and other API families open; this
   covers one applet-defined subclass of a Java Card security exception.
-- Commit: Not created; Git cannot create `.git/index.lock` because the
-  repository metadata mount is read-only. No files were staged.
+- Commit: `5d3aabc`
 - Artifacts/logs: VPCD
   `artifacts/logs/rmi-array-invoke-vpcd-20261023T090847Z.log` (SHA-256
   `63468996fb3d35b42b6c73da3f2c3513f2215f0798bc55a058484fd4a75caf25`),
@@ -10321,7 +10318,7 @@
   reason through two applet-defined classes before the exported API parent.
 - Decision: Longer chains, malformed hierarchy data, and other API exception
   families remain open.
-- Commit: Pending this step's Git commit.
+- Commit: `f755e9b`
 - Artifacts/logs: VPCD
   `artifacts/logs/rmi-array-invoke-vpcd-20261023T094919Z.log` (SHA-256
   `185618b77deb954cbcfca091dbc45db7ccf69c20b8021e7183fb2b3c56c0e06e`),
