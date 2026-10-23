@@ -8555,3 +8555,13 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - The attempted subset-only Security run uncovered that empty parallel-worker area lists become “all areas” in `api_card_runner.py`; see QKB. Do not use a subset with fewer areas than devices until the wrapper skips empty buckets or supports explicit replication.
 - No firmware was flashed; builds were not needed. Final elevated dry run found all three readers. No PC/SC connection timeout or reader loss occurred.
 - Next: compare board firmware identities; investigate why D92's Service Dispatcher results differ, then fix and validate the parallel wrapper's empty-bucket behavior.
+
+## Full JC305 CAP suite after reflashing all three tokens — 2026-10-23
+
+- `./tools/build arm` and `./tools/build riscv` passed. Flashed the full `pico2_choupi.uf2` to exact serials `8E464F4E2BBC0A19`, `2BED26ED20556535`, and `D92E743D5F640C0F`. All three cycle logs report `FLASH:PASS`, repeated `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, and `CYCLE:PASS`. The same resulting UF2 SHA-256 was `0945dd18ce32477b82c8f224a5f1c51f45cfe3b62a6a413809de629d354b938a`.
+- Ran every API 3.0.5 area and Core Multi/Ext scenarios on each exact reader, including RSA-2048 calls. Each token completed 1,866 calls. Tokens 1/2: 579 OK, 1,281 expected unsupported, 4 Ext-dependent unavailable, 2 wrong results. Token 3: same plus 11 Service `SW_ERROR` (`SW=6400`), so 568 OK.
+- The two transient AES `Key.isInitialized()` wrong results match on every token. Crypto: 22 OK / 444 expected unsupported. JavacardxSec: 84/84 OK. Core: 272 OK / 15 unsupported / 4 Ext applet unavailable. Core Ext plus Javacardx, JavacardxExt, JavacardxInt, and Biometry INSTALL returned `6A88`; all partial LOADs rolled back. Successful package cleanup passed everywhere.
+- Reflashing an identical image did not change D92's Service error behavior; firmware image mismatch is ruled out. Investigate persisted card/runtime state and Dispatcher paths before implementing a fix. QKB contains the expanded finding.
+- One `WATCHDOG_RECOVERY cause=other` diagnostic appeared in each monitor alongside repeated passing summaries. Existing progress/TODO records classify the retained marker alone as non-failure.
+- Final elevated dry run found all three readers. Full report/CSVs are in `artifacts/results/deploy/full-20261023-three-reflashed-all-areas-1315/`; flash logs are `artifacts/logs/cycle-choupi-20261023T110123Z.log`, `...T110257Z.log`, and `...T110419Z.log`.
+- Next: inspect the token-specific Service Dispatcher `SW=6400` behavior after identical image reflash; compare persistent card state and a fresh state if safely available.

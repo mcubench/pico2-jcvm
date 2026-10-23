@@ -10368,3 +10368,13 @@
 - Decision: Treat D92 Service `SW=6400` as reproducible device-specific behavior pending firmware identity comparison and Dispatcher investigation. Fix the parallel runner's empty-area semantics before future subset runs.
 - Commit: `9d8d8fc`.
 - Artifacts/logs: `artifacts/results/deploy/parallel-20261023-three-token-clean-1234/` (including `SUMMARY.md`), `artifacts/results/deploy/parallel-20261023-security-three-token-1240/`, `artifacts/results/deploy/parallel-20261023-service-three-token-1255/`, and `artifacts/results/deploy/service-token3-solo-20261023.csv`.
+
+## 2026-10-23 — Reflash all tokens and run the full JC305 CAP suite
+
+- Step/experiment: `deploy-jc305-reflashed-full-suite-three-tokens-20261023`
+- Change: Rebuilt both architectures, reflashed the full CHOUPI ARM image to all three exact physical serials, and ran every API 3.0.5 area and Core scenario on each token. The suite included RSA-2048 cases.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --serial <serial>` returned `CYCLE:PASS` for all three devices, with verified 100% image loads and 18-second passing monitors. Exact-reader full suites completed with exit 0 on all three. Final elevated dry run found 3 PC/SC readers.
+- Result: Each token completed 1,866 calls. Tokens 1/2 each: 579 OK, 1,281 expected unsupported, 4 `APPLET_NOT_INSTALLED` (optional Ext methods), 2 `WRONG_RESULT`. Token 3: 568 OK, 1,281 expected unsupported, 4 Ext-dependent unavailable, 2 wrong, and 11 Service `SW_ERROR` (`SW=6400`). The 11 Dispatcher failures remain only on D92 after all three boards were flashed with the same UF2 SHA-256 `0945dd18ce32477b82c8f224a5f1c51f45cfe3b62a6a413809de629d354b938a`. All successful CAP installs cleaned up and every partial LOAD rolled back. Optional installs returned the same `6A88` on all boards. Each boot monitor emitted one retained `WATCHDOG_RECOVERY cause=other` marker alongside repeated passing runtime summaries; this marker is already documented as non-failure by itself.
+- Decision: Firmware image mismatch is ruled out as the cause of D92's Service difference. Investigate persistent runtime/card state and Dispatcher behavior; do not reopen expected unsupported algorithms.
+- Commit: pending; linked from follow-up commit reference.
+- Artifacts/logs: `artifacts/results/deploy/full-20261023-three-reflashed-all-areas-1315/SUMMARY.md`, per-token CSV/log files in that directory, and flash/monitor logs `artifacts/logs/cycle-choupi-20261023T110123Z.log`, `artifacts/logs/cycle-choupi-20261023T110257Z.log`, `artifacts/logs/cycle-choupi-20261023T110419Z.log`.

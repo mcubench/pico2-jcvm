@@ -3750,3 +3750,11 @@ fix.
 - **Symptom:** `tools/run-deploy-parallel --areas Security --max-devices 3` assigns the requested area to worker 1 and an empty list to workers 2 and 3. It still launches all workers; `api_card_runner.py --areas ""` interprets the empty argument as all API areas.
 - **Impact:** A supposed one-area matched run also executes every area on empty-bucket readers. This was observed in the captured logs; it did not cause reader loss. The full-area split with non-empty buckets was unaffected.
 - **Next:** Make the parallel wrapper skip empty workers or add an explicit replicate mode that repeats the requested area on each reader. Until fixed, don't use a subset whose area count is less than device count.
+
+## Same-image reflash leaves the token 3 Service failures — 2026-10-23
+
+- **Follow-up:** Rebuilt and flashed the same full CHOUPI ARM UF2 (SHA-256 `0945dd18ce32477b82c8f224a5f1c51f45cfe3b62a6a413809de629d354b938a`) onto all three physical tokens. Every exact-serial cycle verified the flash and returned `CYCLE:PASS`.
+- **Result:** Full API 3.0.5 suite on each token still yields 124/124 Service OK on `8E464F4E2BBC0A19` and `2BED26ED20556535`, versus 113 OK / 11 `SW_ERROR` (`SW=6400`) on `D92E743D5F640C0F`. D92's same 11 Dispatcher failures persisted after reflash. This rules out different firmware image contents as the explanation; token-specific state or device-dependent execution remains possible.
+- **Other areas:** Security results match all three (77 OK, 822 expected unsupported including RSA-2048 cases, 2 wrong results). Core 272 OK / 15 unsupported / 4 Ext-dependent unavailable; Crypto 22 OK / 444 expected unsupported; JavacardxSec 84/84 OK. All successful installs cleaned up and partial installs rolled back.
+- **Next:** Inspect persisted Java Card/runtime state per device and trace the exact Service Dispatcher methods returning `6400`; compare with VPCD and a fresh/power-reset card state. Do not attribute the mismatch to firmware revision.
+- **Artifacts:** `artifacts/results/deploy/full-20261023-three-reflashed-all-areas-1315/` and the three `artifacts/logs/cycle-choupi-20261023T110*.log` files.
