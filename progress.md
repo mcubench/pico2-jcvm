@@ -10462,3 +10462,27 @@
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-10-23 — Extract AES and DES key providers
+
+- Step/experiment: `selectable-symmetric-key-providers-20261023`
+- Change: `KeyBuilder.buildKey` now delegates to a generated dispatch class.
+  Generic key storage and AES/DES key implementations moved out of the public
+  `KeyBuilder` source into separate provider templates. The generator emits
+  only selected AES and/or DES provider classes; key lengths are individually
+  selected in dispatch.
+- Validation: Focused generator suite passed 5/5, including current, no-AES,
+  and minimal provider presence/absence checks. With current support,
+  `./tools/build arm` and `./tools/build riscv` passed. API compilation used
+  143 source files; ROMMASK regenerated and Pico full ARM image built. No
+  hardware flash was performed.
+- Result: Selected key providers are separated from the public class, and
+  disabled AES provider source is omitted for the no-AES profile. Cipher,
+  SHA-256, PIN, and native module extraction remain open.
+- Decision: Next route Cipher factory selection through providers and keep
+  AES core support needed by SCP03 separate from Java Card AES capability.
+- Commit: pending (API submodule `420c82a`; includes prior provider commit
+  `4541b95`).
+- Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
+  `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
+  `build/riscv/pico2_jcvm_smoke.uf2`.

@@ -8615,3 +8615,18 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
   `Cipher.java` and untracked `sdks` remain untouched.
 - Next: extract selected key providers and cipher providers while retaining
   API signatures. Then finish SHA-256/PIN providers and split native modules.
+
+## AES/DES key provider extraction — 2026-10-23
+
+- `KeyBuilder.buildKey` delegates to generated `KeyBuilderProvider`; generic
+  key storage and AES/DES concrete classes live in separate provider sources.
+  Generation omits AES or DES provider source when that key family is
+  unselected, and dispatch maps the individual supported key lengths.
+- Focused tests pass 5/5, covering default, no-AES, and minimal generated
+  source sets. Current-support ARM and RISC-V builds pass; API compiles 143
+  sources, ROM-mask/JNI generation succeeds, and no hardware was flashed.
+- API submodule now has provider delegation commits `4541b95` (RandomData) and
+  `420c82a` (KeyBuilder). Existing dirty `Cipher.java` and untracked `sdks`
+  remain uncommitted and preserved.
+- Next: extract Java Card cipher provider(s) and then digest/PIN variants;
+  split native modules and verify smaller no-AES/minimal ROM masks/images.

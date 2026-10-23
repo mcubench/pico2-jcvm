@@ -119,6 +119,64 @@ def emit(config: dict[str, bool], out_dir: Path) -> None:
         provider_path.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
     else:
         (java_dir / "SecureRandomData.java").unlink(missing_ok=True)
+    key_provider = [
+        "package javacard.security;",
+        "",
+        "final class KeyBuilderProvider {",
+        "  private KeyBuilderProvider() {}",
+        "  static Key buildKey(byte type, short length, boolean encrypted)",
+        "      throws CryptoException {",
+        "    if (encrypted) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+    ]
+    aes_lengths = {
+        "key_aes_128": "KeyBuilder.LENGTH_AES_128",
+        "key_aes_192": "KeyBuilder.LENGTH_AES_192",
+        "key_aes_256": "KeyBuilder.LENGTH_AES_256",
+    }
+    for key, length in aes_lengths.items():
+        if config[key]:
+            key_provider.extend([
+                f"    if (type == KeyBuilder.TYPE_AES && length == {length})",
+                "      return new AESKeyProvider(type, length);",
+            ])
+    des_lengths = {
+        "key_des": "KeyBuilder.LENGTH_DES",
+        "key_des3_2key": "KeyBuilder.LENGTH_DES3_2KEY",
+        "key_des3_3key": "KeyBuilder.LENGTH_DES3_3KEY",
+    }
+    for key, length in des_lengths.items():
+        if config[key]:
+            key_provider.extend([
+                f"    if (type == KeyBuilder.TYPE_DES && length == {length})",
+                "      return new DESKeyProvider(type, length);",
+            ])
+    key_provider.extend([
+        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+        "    return null;",
+        "  }",
+        "}",
+    ])
+    (java_dir / "KeyBuilderProvider.java").write_text(
+        "\n".join(key_provider) + "\n", encoding="utf-8"
+    )
+    key_base = Path(__file__).resolve().parent / "java-support/KeyProviderBase.java"
+    (java_dir / "KeyProviderBase.java").unlink(missing_ok=True)
+    (java_dir / "AESKeyProvider.java").unlink(missing_ok=True)
+    (java_dir / "DESKeyProvider.java").unlink(missing_ok=True)
+    if any(config[key] for key in aes_lengths):
+        (java_dir / "AESKeyProvider.java").write_text(
+            (Path(__file__).resolve().parent / "java-support/AESKeyProvider.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    if any(config[key] for key in des_lengths):
+        (java_dir / "DESKeyProvider.java").write_text(
+            (Path(__file__).resolve().parent / "java-support/DESKeyProvider.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    if any(config[key] for key in (*aes_lengths, *des_lengths)):
+        (java_dir / "KeyProviderBase.java").write_text(
+            key_base.read_text(encoding="utf-8"), encoding="utf-8"
+        )
 
 
 def main() -> int:

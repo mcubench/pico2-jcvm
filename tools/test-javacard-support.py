@@ -36,6 +36,8 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertEqual(sum(CONFIG.values()), 15)
             self.assertIn("#define JC_SUPPORT_SHA256 1", (out / "javacard-support.h").read_text())
             self.assertTrue((out / "java/javacard/security/SecureRandomData.java").is_file())
+            self.assertTrue((out / "java/javacard/security/AESKeyProvider.java").is_file())
+            self.assertTrue((out / "java/javacard/security/DESKeyProvider.java").is_file())
 
     def test_minimal_config_generates_empty_supported_set(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -46,6 +48,24 @@ class JavaCardSupportTests(unittest.TestCase):
                 self.assertEqual(list(csv.reader(source, delimiter=";")), [["section", "algorithm_name"]])
             self.assertIn("#define JC_SUPPORT_SHA256 0", (out / "javacard-support.h").read_text())
             self.assertFalse((out / "java/javacard/security/SecureRandomData.java").exists())
+            self.assertFalse((out / "java/javacard/security/AESKeyProvider.java").exists())
+            self.assertFalse((out / "java/javacard/security/DESKeyProvider.java").exists())
+
+    def test_no_aes_config_keeps_des_provider_only(self):
+        no_aes = dict(CONFIG)
+        for key in (
+            "key_aes_128", "key_aes_192", "key_aes_256",
+            "cipher_aes_cbc_nopad", "cipher_getinstance_aes_cbc_nopad",
+        ):
+            no_aes[key] = False
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / "generated"
+            result = self.run_generator(no_aes, out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            java_dir = out / "java/javacard/security"
+            self.assertFalse((java_dir / "AESKeyProvider.java").exists())
+            self.assertTrue((java_dir / "DESKeyProvider.java").is_file())
+            self.assertNotIn("AESKeyProvider", (java_dir / "KeyBuilderProvider.java").read_text())
 
     def test_rejects_unknown_missing_non_boolean_and_orphan_cipher(self):
         variants = []
