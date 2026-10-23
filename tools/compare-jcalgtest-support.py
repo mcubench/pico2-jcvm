@@ -95,8 +95,6 @@ def load_expected_support(path: Path) -> set[tuple[str, str]]:
                 raise ValueError(f"{path}:{row_number}: duplicate support {key!r}")
             expected.add(key)
 
-    if not expected:
-        raise ValueError(f"{path}: no expected-supported algorithms found")
     return expected
 
 

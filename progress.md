@@ -10388,3 +10388,27 @@
 - Decision: Start with strict config parsing/generation and build-flow integration, then move algorithm providers and native modules behind the config.
 - Commit: `ddc7560` (TODO placement correction).
 - Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`; none.
+
+## 2026-10-23 — Add Java Card capability configuration generator
+
+- Step/experiment: `selectable-javacard-capability-contract-20261023`
+- Change: Added the 15-boolean default `config/javacard-support.json`, strict
+  validation and deterministic CSV/CMake/header/JSON generation in
+  `tools/javacard-support.py`. The JCAlgTest comparator now accepts an empty
+  expected-support file. Added focused tests for default, minimal, invalid, and
+  comparator cases.
+- Validation: `python3 tools/test-javacard-support.py` passed 4 tests;
+  generated default CSV exactly matched
+  `tools/jcalgtest-supported-v1.8.2.csv`. Initial test attempts exposed
+  non-executable helper scripts and a malformed synthetic CSV; the test runner
+  now invokes Python explicitly and uses the client's section-row format.
+- Result: The generator emits exactly 15 support rows for current support and
+  a header-only expected CSV for minimal support. Unknown/missing/non-boolean
+  keys and AES cipher without AES key are rejected. No firmware or hardware
+  validation was required or run in this tooling-only step.
+- Decision: Keep the checked-in 15-row support declaration as a parity
+  reference while making the build pass the generated CSV explicitly; wire
+  configuration outputs into both build flows next.
+- Commit: pending.
+- Artifacts/logs: `tools/test-javacard-support.py`; generated scratch output
+  under `/tmp/jc-support-current`.

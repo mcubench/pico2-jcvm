@@ -8573,3 +8573,17 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - `tools/compare-jcalgtest-support.py` currently rejects an empty support list, so minimal configuration needs a deliberate comparator change. Existing default support declaration is 15 rows in `tools/jcalgtest-supported-v1.8.2.csv`.
 - Next: implement strict `config/javacard-support.json` parsing and generated capability source/header, with tests for defaults, each of 15 flags, dependency conflicts, and minimal selection. Then wire both PC/Pico API build and `build-pc` ROM-mask generation to the validated configuration before extracting providers/native modules.
 - Preserve existing uncommitted changes and use root build wrappers. Run ARM and RISC-V builds before any physical flash; flash the full ARM CHOUPI image only after both pass.
+
+## Capability configuration generator — 2026-10-23
+
+- Added `config/javacard-support.json` with one boolean per each of the current
+  15 JCAlgTest support rows and `tools/javacard-support.py` to validate it and
+  emit CSV, CMake, C-header, and normalized JSON metadata. CBC selections
+  require a compatible selected key capability.
+- The comparator now accepts an empty expected set. Focused tests pass 4/4;
+  generated current-support CSV matches the existing 15-row CSV byte for byte.
+- No firmware build or hardware operation was run in this tooling-only step.
+- Next: wire generated selections into both PC and Pico builds and make config
+  changes invalidate ROM-mask/JNI generation; then extract Java providers and
+  native modules. Preserve existing dirty API submodule and unrelated VM/tool
+  changes.
