@@ -282,6 +282,63 @@ def emit(config: dict[str, bool], out_dir: Path) -> None:
         )
     else:
         digest_path.unlink(missing_ok=True)
+    framework_dir = out_dir / "java/javacard/framework"
+    framework_dir.mkdir(parents=True, exist_ok=True)
+    pin_provider = [
+        "package javacard.framework;",
+        "",
+        "final class OwnerPINBuilderProvider {",
+        "  private OwnerPINBuilderProvider() {}",
+        "  static PIN build(byte tryLimit, byte maxPINSize, byte type)",
+        "      throws PINException {",
+        "    switch (type) {",
+    ]
+    pin_cases = (
+        ("owner_pin", "OwnerPINBuilder.OWNER_PIN", "new OwnerPIN(tryLimit, maxPINSize)"),
+        ("owner_pin_x", "OwnerPINBuilder.OWNER_PIN_X", "new OwnerPINxImpl(tryLimit, maxPINSize)"),
+        ("owner_pin_x_with_predecrement", "OwnerPINBuilder.OWNER_PIN_X_WITH_PREDECREMENT", "new OwnerPINxWithPredecrementImpl(tryLimit, maxPINSize)"),
+    )
+    for key, identifier, implementation in pin_cases:
+        pin_provider.extend([f"    case {identifier}:"])
+        if config[key]:
+            pin_provider.append(f"      return {implementation};")
+        else:
+            pin_provider.extend([
+                "      SystemException.throwIt(SystemException.ILLEGAL_USE);",
+                "      return null;",
+            ])
+    pin_provider.extend([
+        "    default:",
+        "      PINException.throwIt(PINException.ILLEGAL_VALUE);",
+        "      return null;",
+        "    }",
+        "  }",
+        "}",
+    ])
+    (framework_dir / "OwnerPINBuilderProvider.java").write_text(
+        "\n".join(pin_provider) + "\n", encoding="utf-8"
+    )
+    pin_templates = (
+        ("owner_pin_x", "OwnerPINxImpl.java"),
+        ("owner_pin_x_with_predecrement", "OwnerPINxWithPredecrementImpl.java"),
+    )
+    for key, filename in pin_templates:
+        path = framework_dir / filename
+        if config[key]:
+            path.write_text(
+                (Path(__file__).resolve().parent / "java-support" / filename).read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+        else:
+            path.unlink(missing_ok=True)
+    base_path = framework_dir / "OwnerPINxBase.java"
+    if config["owner_pin_x"] or config["owner_pin_x_with_predecrement"]:
+        base_path.write_text(
+            (Path(__file__).resolve().parent / "java-support/OwnerPINxBase.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    else:
+        base_path.unlink(missing_ok=True)
 
 
 def main() -> int:

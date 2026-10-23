@@ -39,6 +39,9 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertTrue((out / "java/javacard/security/AESKeyProvider.java").is_file())
             self.assertTrue((out / "java/javacard/security/DESKeyProvider.java").is_file())
             self.assertTrue((out / "java/javacard/security/Sha256DigestProvider.java").is_file())
+            self.assertTrue((out / "java/javacard/framework/OwnerPINxBase.java").is_file())
+            self.assertTrue((out / "java/javacard/framework/OwnerPINxImpl.java").is_file())
+            self.assertTrue((out / "java/javacard/framework/OwnerPINxWithPredecrementImpl.java").is_file())
 
     def test_minimal_config_generates_empty_supported_set(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -52,6 +55,9 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertFalse((out / "java/javacard/security/AESKeyProvider.java").exists())
             self.assertFalse((out / "java/javacard/security/DESKeyProvider.java").exists())
             self.assertFalse((out / "java/javacard/security/Sha256DigestProvider.java").exists())
+            self.assertFalse((out / "java/javacard/framework/OwnerPINxBase.java").exists())
+            self.assertFalse((out / "java/javacard/framework/OwnerPINxImpl.java").exists())
+            self.assertFalse((out / "java/javacard/framework/OwnerPINxWithPredecrementImpl.java").exists())
             self.assertFalse((out / "java/javacardx/crypto/AESCipherProvider.java").exists())
             self.assertFalse((out / "java/javacardx/crypto/DESCipherProvider.java").exists())
             self.assertFalse((out / "java/javacardx/crypto/CbcCipherProvider.java").exists())

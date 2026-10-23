@@ -10529,7 +10529,31 @@
   still in `jni.cpp` and remain to be split.
 - Decision: Next extract optional OwnerPIN variants, then split all selectable
   native algorithms and libraries while retaining SCP03 AES.
-- Commit: pending (API submodule `f6dab0e`).
+- Commit: `cde592d` (API submodule `f6dab0e`).
+- Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
+  `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
+  `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-10-23 — Extract selectable OwnerPIN providers
+
+- Step/experiment: `selectable-ownerpin-providers-20261023`
+- Change: `OwnerPINBuilder` now dispatches through generated capability logic.
+  Optional OwnerPIN X base/implementation sources are kept as provider
+  templates and emitted only when their corresponding flags are selected.
+  Disabled factory branches retain public signatures and throw
+  `SystemException.ILLEGAL_USE`; invalid type values retain
+  `PINException.ILLEGAL_VALUE`.
+- Validation: `python3 -m py_compile tools/javacard-support.py
+  tools/test-javacard-support.py` and `python3 tools/test-javacard-support.py`
+  passed 5/5. `./tools/build arm` and `./tools/build riscv` both passed on the
+  all-enabled config; ROMMASK/JNI regenerated and full ARM image linked
+  through `0x100c9900`. No physical flash was performed.
+- Result: Selectable PIN bytecode is separated from public API sources. All
+  15 generated dispatch selections now have provider behavior; native
+  algorithms and the three alternate build profiles remain.
+- Decision: Continue extracting selectable native functions and conditionally
+  compiling their modules/libraries, while preserving SCP03 AES.
+- Commit: pending (API submodule `727767c`).
 - Artifacts/logs: `build/choupi-pc/javacard-api`, `build/choupi-pc/flash`,
   `build/choupi-pc/jni.hpp`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
