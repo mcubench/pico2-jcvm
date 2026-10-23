@@ -10672,5 +10672,5 @@
 - Validation: Rechecked the cited source paths, confirmed the file is 826 words, and checked its whitespace. Documentation-only step; build, VPCD, fuzzing, and hardware validation were intentionally skipped.
 - Result: Five prioritized findings and a remediation/test plan recorded; no runtime metric measured. Review SHA-256 `4ecc4b96a719691671f2f2ac1256a3a67460b184f0060b3d48f11c80b90d01b0`.
 - Decision: Keep the findings as source-review hypotheses until malformed fixtures reproduce or refute each path; begin fixes at LOAD-time structural validation.
-- Commit: `pending` (record resulting SHA in a follow-up commit).
+- Commit: `0daf5bf` (review and initial progress record; SHA recorded by this follow-up commit).
 - Artifacts/logs: `todo/review_20261023.md`; no test logs.
