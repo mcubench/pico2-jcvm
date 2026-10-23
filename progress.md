@@ -10348,7 +10348,7 @@
   breaking later RMI calls on VPCD or physical hardware.
 - Decision: Keep malformed signature and other primitive-array boundary cases
   open.
-- Commit: Pending this step's Git commit.
+- Commit: `14e2f7f`
 - Artifacts/logs: VPCD
   `artifacts/logs/rmi-array-invoke-vpcd-20261023T102107Z.log` (SHA-256
   `b6b4e38ef19c2a56215fd9ecb39fee62ed76d696e414aaf6a7e48b18d0984ba8`),
