@@ -10641,5 +10641,5 @@
 - Result: Fresh supplied JCAlgTest CAP SELECT returned `9000` on both profiles. GETVERSION returned `F103` current and `6F00` minimal. No valid support CSV was produced; no AES/SHA support difference can be claimed. The candidate class/static-field fixes did not resolve initialization.
 - Image measurement: Restored current UF2 is 1,653,248 bytes (SHA-256 `5ddd7cba3543e410e1419d43bc2cc53ac1b8b273e9b4f725a46cdbe8f2d74422`). Minimal UF2 hash/size were not preserved before restoring current.
 - Decision: Preserve the comparison as blocked on JCAlgTest eager initialization; next isolate the constructor/provider causing current `NO_SUCH_ALGORITHM` and minimal `6F00`, then rerun full support reports and compare against generated profile CSVs.
-- Commit: pending; existing unrelated worktree changes preserved.
+- Commit: `fae35b1`; existing unrelated worktree changes preserved.
 - Artifacts/logs: `artifacts/results/jcalgtest-capability-profile-20261023/physical-comparison.md`, `artifacts/logs/jcalgtest-current-version-probe-20261023.log`, `artifacts/logs/cycle-choupi-20261023T153233Z.log`, `artifacts/logs/cycle-choupi-20261023T153724Z.log`, `artifacts/logs/cycle-choupi-20261023T154235Z.log`.
