@@ -8545,3 +8545,13 @@ firmware. Do not claim APDU/CCID functionality. Preserve `.local-toolchain/`,
 - Next: test the saved image after clean emulator shutdown/restart. Current PC
   VPCD registry still models one dynamic package and instance.
 - Commit: not created; `.git` metadata is read-only.
+
+## Three-token API 3.0.5 deploy and Service device comparison — 2026-10-23
+
+- Ran all 11 API 3.0.5 CAP scenarios across three physical Pico readers. The full split is recorded in `artifacts/results/deploy/parallel-20261023-three-token-clean-1234/SUMMARY.md` with the worker CSVs and logs.
+- Security, Crypto, JavacardxSec, and Service executable areas passed their worker stages. Core ran 291 calls (272 OK, 15 expected unsupported, 4 Ext methods unavailable); Core and Multi cleanup passed. Core Ext and optional Javacardx/JavacardxExt/JavacardxInt/Biometry INSTALLs returned `6A88`; rollback passed for every partial LOAD.
+- Matched Security results were identical on all three readers: 901 calls, 77 OK, 820 unsupported, 2 skipped RSA-2048, and the same 2 transient AES `Key.isInitialized()` wrong results.
+- Matched Service results differ by board: serials `8E464F4E2BBC0A19` and `2BED26ED20556535` each passed 124/124; D92 serial `D92E743D5F640C0F` reproduced 12 `SW=6400` Dispatcher errors in concurrent and solo runs. Upload/cleanup passed and all three readers remained available. QKB has the issue details.
+- The attempted subset-only Security run uncovered that empty parallel-worker area lists become “all areas” in `api_card_runner.py`; see QKB. Do not use a subset with fewer areas than devices until the wrapper skips empty buckets or supports explicit replication.
+- No firmware was flashed; builds were not needed. Final elevated dry run found all three readers. No PC/SC connection timeout or reader loss occurred.
+- Next: compare board firmware identities; investigate why D92's Service Dispatcher results differ, then fix and validate the parallel wrapper's empty-bucket behavior.

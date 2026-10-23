@@ -3735,3 +3735,18 @@ fix.
   GETVERSION, and JCSystem probe passed. This resolves the apparent external
   install persistence failure. The exact LOAD-assigned package ID must be used
   in the current CLI resume fixture; automatic registry discovery is still open.
+
+## Service Dispatcher returns SW=6400 only on one physical token — 2026-10-23
+
+- **Symptom:** API 3.0.5 Service tests return 12 `SW_ERROR`/`CARD_ERROR` results (`SW=6400`) on Pico serial `D92E743D5F640C0F`; all 12 are `javacard.framework.service.Dispatcher` calls (`addService`, `removeService`, `dispatch`, `process`).
+- **Comparison:** Two other readers, serials `8E464F4E2BBC0A19` and `2BED26ED20556535`, each returned 124/124 `OK`. The D92 token reproduced 112 `OK` / 12 `SW_ERROR` both in a three-reader run and when run alone. CAP upload and cleanup passed each time, and all readers remained available.
+- **Cause:** Not yet identified. The exact firmware image/build identity of the three boards was not compared during this test.
+- **Viable solution:** None known. Do not classify as USB contention: the same D92 result reproduced in a solo run.
+- **Next:** Compare firmware build/image identity across the three boards; inspect Service Dispatcher failure paths and reproduce against VPCD or a freshly flashed, verified image before changing runtime behavior.
+- **Artifacts:** `artifacts/results/deploy/parallel-20261023-three-token-clean-1234/`, `artifacts/results/deploy/parallel-20261023-security-three-token-1240/`, `artifacts/results/deploy/parallel-20261023-service-three-token-1255/`, and `artifacts/results/deploy/service-token3-solo-20261023.csv`.
+
+## Parallel deploy runner empty-area fallback — 2026-10-23
+
+- **Symptom:** `tools/run-deploy-parallel --areas Security --max-devices 3` assigns the requested area to worker 1 and an empty list to workers 2 and 3. It still launches all workers; `api_card_runner.py --areas ""` interprets the empty argument as all API areas.
+- **Impact:** A supposed one-area matched run also executes every area on empty-bucket readers. This was observed in the captured logs; it did not cause reader loss. The full-area split with non-empty buckets was unaffected.
+- **Next:** Make the parallel wrapper skip empty workers or add an explicit replicate mode that repeats the requested area on each reader. Until fixed, don't use a subset whose area count is less than device count.

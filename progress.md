@@ -10358,3 +10358,13 @@
   physical fixture
   `artifacts/logs/rmi-array-physical-20261023T102244Z.log` (SHA-256
   `8b1c3136d3876f95325baf826a5398d4f0773a425b9324a6ddf46b4e299f3004`).
+
+## 2026-10-23 — Run JC305 CAPs across three physical Pico 2 tokens
+
+- Step/experiment: `deploy-jc305-three-token-parallel-20261023`
+- Change: Completed the full API 3.0.5 CAP split on three exact-reader-pinned Pico 2 tokens, then compared Security across all three and repeated Service concurrently and on D92 alone. The artifact summary includes per-token tables and paths.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --api 305 --min-devices 3 --max-devices 3 --out-dir artifacts/results/deploy/parallel-20261023-three-token-clean-1234` completed every worker (worker 3's area-level install failures made the coordinator return 1). Security was repeated on all three; Service was repeated on all three and then solo on D92. Final elevated dry run found all three readers.
+- Result: Security counts matched exactly on all three: 901 calls, 77 OK, 820 unsupported, 2 skipped, 2 `WRONG_RESULT`. Crypto 22/466 OK, JSec 84/84, and Service 124/124 passed on token 2; Core 272 OK / 15 unsupported / 4 Ext methods unavailable. Core optional Ext and Javacardx, JavacardxExt, JavacardxInt, Biometry INSTALLs returned `6A88` on tested tokens; all partial LOADs rolled back. Service on D92 reproduced 12 `SW=6400` Dispatcher errors in concurrent (113/124 then 112/124 on repeat) and solo (112/124) runs. No token disconnected; upload and cleanup passed. Exact firmware identity across tokens was not checked. A subset Security invocation exposed that empty worker buckets run all areas; see QKB and HANDOFF.
+- Decision: Treat D92 Service `SW=6400` as reproducible device-specific behavior pending firmware identity comparison and Dispatcher investigation. Fix the parallel runner's empty-area semantics before future subset runs.
+- Commit: pending; linked from the follow-up progress entry.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261023-three-token-clean-1234/` (including `SUMMARY.md`), `artifacts/results/deploy/parallel-20261023-security-three-token-1240/`, `artifacts/results/deploy/parallel-20261023-service-three-token-1255/`, and `artifacts/results/deploy/service-token3-solo-20261023.csv`.
