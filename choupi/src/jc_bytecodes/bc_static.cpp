@@ -38,6 +38,38 @@
 
 namespace jcvm {
 
+namespace {
+
+struct StaticFieldLocation {
+  jpackage_ID_t package_id;
+  uint16_t field_number;
+};
+
+StaticFieldLocation resolve_static_field(
+    Context &context, const jc_cap_static_field_ref_info &field_ref) {
+  if (IS_CP_INTERNAL_REF(field_ref.static_field_ref)) {
+    return {context.getCurrentPackageID(),
+            NTOHS(field_ref.static_field_ref.internal_ref.offset)};
+  }
+
+  const auto external_ref = field_ref.static_field_ref.external_ref;
+  Import_Handler imported(context.getCurrentPackage());
+  const auto *package_info = imported.getPackageAID(
+      CLEAR_BYTE_MSB(external_ref.package_token));
+  const jpackage_ID_t package_id = imported.getPackageIndex(package_info);
+  const uint8_t class_token =
+      FlashMemory_Handler::isDynamicPackageID(context.getCurrentPackageID())
+          ? remap_imported_class_token(*package_info, external_ref.class_token)
+          : external_ref.class_token;
+
+  const auto export_component = Package(package_id).getCap().getExport();
+  const auto exported_class = export_component->classexport(class_token);
+  const auto field_offsets = exported_class.static_field_offsets();
+  return {package_id, field_offsets[external_ref.token]};
+}
+
+} // namespace
+
 /**
  * Get static reference field from class
  *
@@ -80,47 +112,12 @@ void Bytecodes::bc_getstatic_a() {
 
   TRACE_JCVM_DEBUG("GETSTATIC_A 0x%04X", index);
 
-  jc_cap_static_field_ref_info cp_entry = cp.getStaticFieldRefInfo(index);
-
-  jpackage_ID_t packageID;
-  uint8_t fieldNumber;
-
-  if (IS_CP_INTERNAL_REF(cp_entry.static_field_ref)) {
-    packageID = this->context.getCurrentPackageID();
-    fieldNumber = NTOHS(cp_entry.static_field_ref.internal_ref.offset);
-  } else {
-    jc_cap_external_ref external_ref = cp_entry.static_field_ref.external_ref;
-
-    /// Searching the Package number in the flash.
-    Import_Handler imp(context.getCurrentPackage());
-    auto package_info =
-        imp.getPackageAID(CLEAR_BYTE_MSB(external_ref.package_token));
-    auto package_index = imp.getPackageIndex(package_info);
-
-    packageID = package_index;
-
-    /// Looking for the static field nomber in the package.
-    auto export_comp = Package(package_index).getCap().getExport();
-
-#if defined(JCVM_DYNAMIC_CHECKS_CAP) & defined(JCVM_ARRAY_SIZE_CHECK)
-
-    if (export_comp->class_count <= external_ref.class_token) {
-      throw Exceptions::SecurityException;
-    }
-
-#endif /* defined (JCVM_DYNAMIC_CHECKS_CAP) & defined (JCVM_ARRAY_SIZE_CHECK)  \
-        */
-
-    auto exported_class = export_comp->classexport(external_ref.class_token);
-    auto static_field_offsets = exported_class.static_field_offsets();
-    const uint16_t static_field_offset =
-        static_field_offsets[external_ref.token];
-    fieldNumber = static_field_offset;
-  }
+  const auto location =
+      resolve_static_field(context, cp.getStaticFieldRefInfo(index));
 
   jref_t static_field =
-      Static_Handler(Package(packageID))
-          .getPersistentRef(fieldNumber, heap);
+      Static_Handler(Package(location.package_id))
+          .getPersistentRef(location.field_number, heap);
 
   stack.push_Reference(static_field);
 
@@ -160,14 +157,17 @@ void Bytecodes::bc_getstatic_b() {
   uint16_t index;
 
   Stack &stack = this->context.getStack();
-  Static_Handler static_handler(context.getCurrentPackage());
+  ConstantPool_Handler cp(context.getCurrentPackage());
   pc_t &pc = stack.getPC();
 
   index = pc.getNextShort();
 
   TRACE_JCVM_DEBUG("GETSTATIC_B 0x%04X", index);
 
-  auto value = static_handler.getPersistentByte(index);
+  const auto location =
+      resolve_static_field(context, cp.getStaticFieldRefInfo(index));
+  auto value = Static_Handler(Package(location.package_id))
+                   .getPersistentByte(location.field_number);
   stack.push_Byte(value);
 
   return;
@@ -206,14 +206,17 @@ void Bytecodes::bc_getstatic_s() {
   uint16_t index;
 
   Stack &stack = this->context.getStack();
-  Static_Handler static_handler(context.getCurrentPackage());
+  ConstantPool_Handler cp(context.getCurrentPackage());
   pc_t &pc = stack.getPC();
 
   index = pc.getNextShort();
 
   TRACE_JCVM_DEBUG("GETSTATIC_S 0x%04X", index);
 
-  auto value = static_handler.getPersistentShort(index);
+  const auto location =
+      resolve_static_field(context, cp.getStaticFieldRefInfo(index));
+  auto value = Static_Handler(Package(location.package_id))
+                   .getPersistentShort(location.field_number);
   stack.push_Short(value);
 
   return;
@@ -259,14 +262,17 @@ void Bytecodes::bc_getstatic_i() {
   uint16_t index;
 
   Stack &stack = this->context.getStack();
-  Static_Handler static_handler(context.getCurrentPackage());
+  ConstantPool_Handler cp(context.getCurrentPackage());
   pc_t &pc = stack.getPC();
 
   index = pc.getNextShort();
 
   TRACE_JCVM_DEBUG("GETSTATIC_I 0x%04X", index);
 
-  auto value = static_handler.getPersistentInt(index);
+  const auto location =
+      resolve_static_field(context, cp.getStaticFieldRefInfo(index));
+  auto value = Static_Handler(Package(location.package_id))
+                   .getPersistentInt(location.field_number);
   stack.push_Int(value);
 
   return;
@@ -328,44 +334,10 @@ void Bytecodes::bc_putstatic_a() {
 
   value = stack.pop_Reference();
 
-  jc_cap_static_field_ref_info cp_entry = cp.getStaticFieldRefInfo(index);
-
-  jpackage_ID_t packageID;
-  uint8_t fieldNumber;
-
-  if (IS_CP_INTERNAL_REF(cp_entry.static_field_ref)) {
-    packageID = current_package.getPackageID();
-    fieldNumber = NTOHS(cp_entry.static_field_ref.internal_ref.offset);
-  } else {
-    jc_cap_external_ref external_ref = cp_entry.static_field_ref.external_ref;
-
-    Import_Handler imp(current_package);
-    auto package_info =
-        imp.getPackageAID(CLEAR_BYTE_MSB(external_ref.package_token));
-    packageID = imp.getPackageIndex(package_info);
-
-    auto export_comp = Package(packageID).getCap().getExport();
-
-#if defined(JCVM_DYNAMIC_CHECKS_CAP) && defined(JCVM_ARRAY_SIZE_CHECK)
-    if (export_comp == nullptr ||
-        export_comp->class_count <= external_ref.class_token) {
-      throw Exceptions::SecurityException;
-    }
-#endif
-
-    auto exported_class = export_comp->classexport(external_ref.class_token);
-    const auto static_field_offsets = exported_class.static_field_offsets();
-
-#if defined(JCVM_ARRAY_SIZE_CHECK)
-    if (static_field_offsets.size() <= external_ref.token) {
-      throw Exceptions::SecurityException;
-    }
-#endif
-
-    fieldNumber = static_field_offsets[external_ref.token];
-  }
-
-  Static_Handler(Package(packageID)).setPersistentRef(fieldNumber, value, heap);
+  const auto location =
+      resolve_static_field(context, cp.getStaticFieldRefInfo(index));
+  Static_Handler(Package(location.package_id))
+      .setPersistentRef(location.field_number, value, heap);
 
   return;
 }
@@ -404,7 +376,7 @@ void Bytecodes::bc_putstatic_b() {
   jbyte_t value;
 
   Stack &stack = this->context.getStack();
-  Static_Handler static_handler(context.getCurrentPackage());
+  ConstantPool_Handler cp(context.getCurrentPackage());
   pc_t &pc = stack.getPC();
 
   index = pc.getNextShort();
@@ -412,8 +384,10 @@ void Bytecodes::bc_putstatic_b() {
   TRACE_JCVM_DEBUG("PUTSTATIC_B 0x%04X", index);
 
   value = stack.pop_Byte();
-
-  static_handler.setPersistentByte(index, value);
+  const auto location =
+      resolve_static_field(context, cp.getStaticFieldRefInfo(index));
+  Static_Handler(Package(location.package_id))
+      .setPersistentByte(location.field_number, value);
 
   return;
 }
@@ -453,7 +427,7 @@ void Bytecodes::bc_putstatic_s() {
   jshort_t value;
 
   Stack &stack = this->context.getStack();
-  Static_Handler static_handler(context.getCurrentPackage());
+  ConstantPool_Handler cp(context.getCurrentPackage());
   pc_t &pc = stack.getPC();
 
   index = pc.getNextShort();
@@ -461,7 +435,10 @@ void Bytecodes::bc_putstatic_s() {
   TRACE_JCVM_DEBUG("PUTSTATIC_S 0x%04X", index);
 
   value = stack.pop_Short();
-  static_handler.setPersistentShort(index, value);
+  const auto location =
+      resolve_static_field(context, cp.getStaticFieldRefInfo(index));
+  Static_Handler(Package(location.package_id))
+      .setPersistentShort(location.field_number, value);
 
   return;
 }
@@ -507,7 +484,7 @@ void Bytecodes::bc_putstatic_i() {
   jint_t value;
 
   Stack &stack = this->context.getStack();
-  Static_Handler static_handler(context.getCurrentPackage());
+  ConstantPool_Handler cp(context.getCurrentPackage());
   pc_t &pc = stack.getPC();
 
   index = pc.getNextShort();
@@ -515,7 +492,10 @@ void Bytecodes::bc_putstatic_i() {
   TRACE_JCVM_DEBUG("PUTSTATIC_I 0x%04X", index);
 
   value = stack.pop_Int();
-  static_handler.setPersistentInt(index, value);
+  const auto location =
+      resolve_static_field(context, cp.getStaticFieldRefInfo(index));
+  Static_Handler(Package(location.package_id))
+      .setPersistentInt(location.field_number, value);
 
   return;
 }

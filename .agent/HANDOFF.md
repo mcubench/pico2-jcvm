@@ -9074,3 +9074,12 @@ confirmed on hardware. The original investigation evidence remains in earlier
   device once it is attached to the VM. The token-specific D92 Service failure
   remains reproducible. Validation records were committed as `ea095bc`; the
   progress record's commit SHA was recorded in follow-up `5cd8ca9`.
+
+## Current vs minimal JCAlgTest hardware initialization blocker — 2026-10-23
+
+- Built both ARM and RISC-V in the minimal (0/15) and current (15/15) profiles. Both flashed to exact Pico 2 `2BED26ED20556535` and passed finite runtime monitor. Restored all-enabled config and reflashed the same board at the end.
+- Fresh `AlgTest_v1.8.2_jc305.cap` on the same board: SELECT `9000`; current-profile GETVERSION `F103`; minimal-profile GETVERSION `6F00`. Neither profile reaches valid `yes`/`no` support rows, so the requested AES/SHA report comparison is not yet complete. Do not use the partial minimal CSV in `artifacts/results/jcalgtest-capability-profile-20261023/minimal/`.
+- Fixed class-token map entries by matching JC305 and embedded security export names. Extended imported static-field lookup across all static bytecodes. These changes pass both builds but did not clear the applet init failure. Current `F103` is CryptoException reason 3 / NO_SUCH_ALGORITHM; the exact stage remains unidentified. Static-field access remains a plausible area, not a confirmed cause.
+- Config is all true; board is running the current image. Current exact-reader GETVERSION transcript: `artifacts/logs/jcalgtest-current-version-probe-20261023.log`.
+- Full comparison record and cycle paths: `artifacts/results/jcalgtest-capability-profile-20261023/physical-comparison.md`.
+- Next: isolate `JCAlgTestApplet.allocateResources()` constructor stages with a diagnostic CAP or targeted imported class/static method probes. Once GETVERSION succeeds, rerun `ALG_SUPPORT_EXTENDED` on current and minimal profiles, compare each CSV to its generated expected CSV, and only then report AES/SHA deltas.

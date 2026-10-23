@@ -10632,3 +10632,14 @@
   `artifacts/logs/cycle-choupi-20261023T141535Z.log`,
   `artifacts/results/deploy/full-305-2BED26ED20556535-20261023.csv`,
   `artifacts/results/deploy/full-305-D92E743D5F640C0F-20261023.csv`.
+
+## 2026-10-23 — Physical JCAlgTest capability-profile comparison attempt
+
+- Step/experiment: `jcalgtest-current-minimal-physical-20261023`
+- Change: Matched JC305 security class-token mappings by exported class identity and routed every static-field bytecode through imported static-field resolution. Root support config restored to all 15 enabled.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed for the minimal and restored current profiles. Exact Pico `2BED26ED20556535` cycles passed flash verification and finite runtime monitor for current, minimal, and restored current images.
+- Result: Fresh supplied JCAlgTest CAP SELECT returned `9000` on both profiles. GETVERSION returned `F103` current and `6F00` minimal. No valid support CSV was produced; no AES/SHA support difference can be claimed. The candidate class/static-field fixes did not resolve initialization.
+- Image measurement: Restored current UF2 is 1,653,248 bytes (SHA-256 `5ddd7cba3543e410e1419d43bc2cc53ac1b8b273e9b4f725a46cdbe8f2d74422`). Minimal UF2 hash/size were not preserved before restoring current.
+- Decision: Preserve the comparison as blocked on JCAlgTest eager initialization; next isolate the constructor/provider causing current `NO_SUCH_ALGORITHM` and minimal `6F00`, then rerun full support reports and compare against generated profile CSVs.
+- Commit: pending; existing unrelated worktree changes preserved.
+- Artifacts/logs: `artifacts/results/jcalgtest-capability-profile-20261023/physical-comparison.md`, `artifacts/logs/jcalgtest-current-version-probe-20261023.log`, `artifacts/logs/cycle-choupi-20261023T153233Z.log`, `artifacts/logs/cycle-choupi-20261023T153724Z.log`, `artifacts/logs/cycle-choupi-20261023T154235Z.log`.
