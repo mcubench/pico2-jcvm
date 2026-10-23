@@ -10331,3 +10331,30 @@
   and physical fixture
   `artifacts/logs/rmi-array-physical-20261023T095138Z.log` (SHA-256
   `1ba3269bc978203104971fec36331bfb3ee53d2bd6b9dbe4d8340ced34c33271`).
+
+## 2026-10-23 — Reject truncated and oversized declared RMI int[] payloads
+
+- Step/experiment: `rmi-int-array-payload-bounds-20261023`
+- Change: Added APDU regressions for a truncated int[] (declares five elements,
+  provides one) and a hostile declared length of 254 with only one element.
+  Both must be rejected before array allocation with RMI error `9900039000`.
+- Validation: `./tools/test-rmi-arrays-vpcd` passed 39/39 class-form and 3/3
+  interface-form APDUs. The two new errors were followed by valid int[] calls,
+  which passed. The exact-reader physical D92 probe returned `9900039000` for
+  both malformed requests; subsequent arrays and exception cases passed,
+  cleanup succeeded, and JCAlgTest remained installed. Fixture/test-only
+  change; no firmware rebuild or flash was needed.
+- Result: Truncated and overdeclared int[] byte counts are rejected without
+  breaking later RMI calls on VPCD or physical hardware.
+- Decision: Keep malformed signature and other primitive-array boundary cases
+  open.
+- Commit: Pending this step's Git commit.
+- Artifacts/logs: VPCD
+  `artifacts/logs/rmi-array-invoke-vpcd-20261023T102107Z.log` (SHA-256
+  `b6b4e38ef19c2a56215fd9ecb39fee62ed76d696e414aaf6a7e48b18d0984ba8`),
+  interface VPCD
+  `artifacts/logs/rmi-reference-interfaces-vpcd-20261023T102107Z.log` (SHA-256
+  `9e03d72a589b600263b5152cb7ba9cce66c46985353d6c300245c73b26738f7d`), and
+  physical fixture
+  `artifacts/logs/rmi-array-physical-20261023T102244Z.log` (SHA-256
+  `8b1c3136d3876f95325baf826a5398d4f0773a425b9324a6ddf46b4e299f3004`).

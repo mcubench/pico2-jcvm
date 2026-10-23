@@ -53,6 +53,10 @@ public final class RmiPhysicalProbe {
       expect(channel, "sumInts", "803802020D0001BB6C0200000005FFFFFFFE00", "8100039000");
       expect(channel, "echoInts", "803802020D0001A33602123456789ABCDEF000",
           "8102123456789ABCDEF09000");
+      expect(channel, "truncatedIntArray",
+          "80380202090001A336050000000100", "9900039000");
+      expect(channel, "oversizedDeclaredIntArray",
+          "80380202090001A336FE0000000100", "9900039000");
       expect(channel, "echoIntsEmpty", "80380202050001A3360000", "81009000");
       expect(channel, "echoIntsNull", "80380202050001A336FF00", "81FFFF9000");
       expect(channel, "systemExceptionReason",

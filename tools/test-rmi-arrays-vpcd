@@ -42,6 +42,10 @@ PICO2_HEAP_GC=1 "${repo_root}/tools/test-pc-vpcd-applet" \
   --expect-apdu-response 810200000005FFFFFFFE9000 \
   --apdu 803802020D0001A33602123456789ABCDEF000 \
   --expect-apdu-response 8102123456789ABCDEF09000 \
+  --apdu 80380202090001A336050000000100 \
+  --expect-apdu-response 9900039000 \
+  --apdu 80380202090001A336FE0000000100 \
+  --expect-apdu-response 9900039000 \
   --apdu 80380202050001A3360000 \
   --expect-apdu-response 81009000 \
   --apdu 80380202050001A336FF00 \

@@ -171,7 +171,8 @@ claims to support them; implementing every algorithm is not a goal.
   short[] inputs by value into temporary global arrays and encodes array and
   null-array results by value. A converter-built CAP 2.2 fixture passes byte,
   short, and boolean cases, including eight array parameters in one method,
-  empty/null arrays, malformed lengths, and invalid boolean values. It also
+  empty/null arrays, truncated and oversized declared int[] payload rejection,
+  and invalid boolean values. It also
   checks locally caught and uncaught exceptions and exact RMI API exception
   responses for bounds, null, `SystemException.ILLEGAL_VALUE`, and
   `ISOException(0x6A82)`. Uncaught exception dispatch is bounded at the nested
