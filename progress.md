@@ -11457,7 +11457,7 @@
 - Decision: Preserve this empty card. Next trace OwnerPINx interface dispatch
   without adding Java algorithm/provider implementations or editing upstream
   CAP files.
-- Commit: pending.
+- Commit: `f870980`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T225805Z.log`;
   `artifacts/results/deploy/symm_crypto-D92-ownerpinx-repeat-20261025.csv`;
   image `build/arm/pico2_choupi.uf2` SHA-256
