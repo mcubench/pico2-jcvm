@@ -1015,7 +1015,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed; both generated their expected RP2350 UF2s. The supplied CAP layout was independently checked in the preceding step. `git diff --check` passed. Flashing was skipped because `picotool info -a` cannot initialize libusb (`-99`) in this VM session.
 - Result: Static ROM-mask applets can now be resolved through one registry API using their AID. No install method is invoked, no applet instance is retained, and no APDU is dispatched yet.
 - Decision: Next add interpreter entry/lifetime support for applet install and virtual process calls, with APDU data retained in context; then connect this registry query to a SELECT path.
-- Commit: pending
+- Commit: `fc77c01`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Record package AID registry commit
