@@ -11144,5 +11144,5 @@
 - Result: The persistent workflow now explicitly says not to block progress on
   the first malfunctioning device, including during parallel device runs.
 - Decision: Apply this rule to subsequent physical validation work.
-- Commit: pending.
+- Commit: `a612646`.
 - Artifacts/logs: none.
