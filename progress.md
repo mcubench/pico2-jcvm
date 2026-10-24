@@ -11064,3 +11064,32 @@
 - Artifacts/logs: `FIRMWARE_JCVM_ARCHITECTURE.md`, `.agent/HANDOFF.md`,
   `.agent/QKB.md`; no new runtime logs.
 
+## 2026-10-24 — Emit ROM class metadata and invalidate generator cache
+
+- Step/experiment: `rommask-native-class-metadata`
+- Change: Generated ROM headers now expose package indexes, concrete class
+  indexes, and instance-field tokens for native C++ API implementations.
+  Added a deterministic ROMmask/capmap source fingerprint so changes to the
+  generator invalidate cached ROM and JNI outputs. Documented the cache issue
+  and recovery in `.agent/QKB.md`; updated `.agent/HANDOFF.md`.
+- Validation: `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` passed. Generated metadata
+  reports `javacard.security` package `0x02`, `RSAKeyProvider` class `0x0A`,
+  and modulus instance-field token `0x00`. The physical command
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto
+  --serial 2BED26ED20556535` passed both builds, flash verification, and the
+  finite monitor. The initial reset-interface lookup failed; CDC/BOOTSEL
+  recovery succeeded. Monitor repeatedly reported `TEST:PASS choupi_runtime`
+  and `TEST:SUMMARY pass=1 fail=0`. Existing third-party/compiler warnings
+  remain; no new native compile warning was observed.
+- Result: Native API implementation code can refer to generated ROM indexes,
+  and generator edits now rebuild the PC ROM-mask artifact instead of silently
+  reusing stale output. Physical firmware runtime remained healthy after the
+  reflash.
+- Decision: Use the generated indexes for the next native object/field API
+  step. Keep crypto behavior in direct native C++ dispatch; do not add Java
+  provider logic or modify upstream CAP files.
+- Commit: recorded in follow-up after the implementation commit.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T165018Z.log`; ARM UF2
+  SHA-256 `15de132afc30fff5f5cf35c639b559ead1465ccebee3b88da8fdbf748aefe67d`;
+  PC ROM-mask SHA-256 `1e76a6cd532e54a5059855827e33f34cede704c3e79fa84d7ae17ea42d7ebbe9`.

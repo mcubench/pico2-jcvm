@@ -58,6 +58,9 @@ generated_header="${build_dir}/jni.hpp"
     printf 'profile=%s\n' "${support_profile}"; } | \
     sha256sum | awk '{print $1 "  support-selection"}' > support-config.sha256
   sha256sum support-config.sha256 >> generation.sha256
+  "${repo_root}/tools/rommask-source-hash" | \
+    awk '{print $1 "  rommask-sources"}' > rommask-source.sha256
+  sha256sum rommask-source.sha256 >> generation.sha256
 )
 printf 'ROMMASK:PASS image=%s header=%s manifest=%s\n' \
   "${rom_image#${repo_root}/}" "${generated_header#${repo_root}/}" \

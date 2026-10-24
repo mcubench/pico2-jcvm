@@ -858,6 +858,20 @@
   `artifacts/logs/gp-delete-physical-20261019.log`, and
   `artifacts/logs/pico-powerup-persistence-20261019T065455Z.log`.
 
+## ROMmask source edits skipped by build cache — 2026-10-24
+
+- **Symptom:** Editing the ROMmask generator did not invalidate the cached
+  PC-generated `flash` and `jni.hpp`; the firmware wrapper compared API source
+  and support configuration hashes only.
+- **Cause:** The generation manifest did not include ROMmask/capmap source
+  fingerprints.
+- **Fix:** `tools/rommask-source-hash` fingerprints generator inputs, excluding
+  generated `target`, `build`, and `.git` trees. `tools/build-pc` records this
+  in the generation manifest and `tools/build` compares it before deciding to
+  reuse generated files. When changing ROMmask generation, verify the source
+  fingerprint appears in `build/choupi-pc/rommask-source.sha256` and the
+  generated header contains the expected new output.
+
 ## Post-SELECT PC/SC timeout repeated after 2026-10-19 reflash
 
 - **Observation:** ARM and RISC-V builds passed and the ARM image flashed from

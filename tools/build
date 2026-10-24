@@ -35,9 +35,11 @@ support_dir="${repo_root}/build/javacard-support"
 generation_manifest="${build_pc_dir}/generation.sha256"
 api_source_manifest="${build_pc_dir}/api-sources.sha256"
 support_config_manifest="${build_pc_dir}/support-config.sha256"
+rommask_source_manifest="${build_pc_dir}/rommask-source.sha256"
 generation_current=false
 if [[ -s "${generation_manifest}" && -s "${api_source_manifest}" && \
       -s "${support_config_manifest}" && \
+      -s "${rommask_source_manifest}" && \
       -s "${build_pc_dir}/flash" && -s "${build_pc_dir}/jni.hpp" ]] && \
    (cd "${build_pc_dir}" && sha256sum --check generation.sha256 >/dev/null); then
   current_api_hash="$(find "${repo_root}/choupi/javacard-sdk/javacard-api/src" \
@@ -47,8 +49,11 @@ if [[ -s "${generation_manifest}" && -s "${api_source_manifest}" && \
     "${api_source_manifest}")"
   current_support_hash="$( { sha256sum "${repo_root}/config/javacard-support.json"; printf 'profile=%s\n' "${support_profile}"; } | sha256sum | cut -d ' ' -f 1)"
   recorded_support_hash="$(awk '$2 == "support-selection" {print $1}' "${support_config_manifest}")"
+  current_rommask_hash="$("${repo_root}/tools/rommask-source-hash")"
+  recorded_rommask_hash="$(awk '$2 == "rommask-sources" {print $1}' "${rommask_source_manifest}")"
   [[ "${current_api_hash}" == "${recorded_api_hash}" && \
-     "${current_support_hash}" == "${recorded_support_hash}" ]] && generation_current=true
+     "${current_support_hash}" == "${recorded_support_hash}" && \
+     "${current_rommask_hash}" == "${recorded_rommask_hash}" ]] && generation_current=true
 fi
 if [[ "${generation_current}" != true ]]; then
   "${repo_root}/tools/build-pc" --profile "${support_profile}"

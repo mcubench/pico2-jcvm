@@ -9414,3 +9414,30 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Saved `todo/review_20261023.md` with five prioritized source-review findings: absent Class component, Method length underflow, unbounded bytecode PC, Import record overrun, and superclass cycles.
 - No malformed CAP was executed; findings describe reachable code paths and still need VPCD reproduction before claims about exact runtime outcomes.
 - Next for this review: add LOAD-time structural validation, then malformed CAP fixtures and bounded VM execution checks. Preserve unrelated worktree changes.
+
+## ROMmask native metadata and generator cache invalidation — 2026-10-24
+
+- ROMmask now emits `ROM_PACKAGE_INDEX_*`, `ROM_CLASS_INDEX_*`, and
+  `ROM_FIELD_INDEX_*` macros into generated `jni.hpp`. Package order follows
+  `Main.parsedFiles`; class indexes follow concrete class order in each CAP
+  Class component (interfaces excluded); instance fields use their JCA field
+  tokens. Verified emitted security metadata includes package `0x02`,
+  `RSAKeyProvider` class `0x0A`, and its modulus field token `0x00`.
+- Fixed the PC ROM-mask build cache so edits to ROMmask/capmap inputs trigger
+  regeneration. `tools/rommask-source-hash` excludes build outputs and VCS
+  metadata; `tools/build-pc` writes the hash manifest and `tools/build` checks
+  it before reusing generated files. See `.agent/QKB.md` for the recurrence
+  guidance.
+- Validation: ARM and RISC-V wrappers passed for `asymm_crypto`; a physical
+  cycle reflashed Pico `2BED26ED20556535`, verified flash, and passed repeated
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` checks. The first
+  picotool reset attempt lacked a reset interface; the wrapper recovered via
+  CDC/BOOTSEL and completed successfully. Log:
+  `artifacts/logs/cycle-choupi-20261024T165018Z.log`. UF2 SHA-256:
+  `15de132afc30fff5f5cf35c639b559ead1465ccebee3b88da8fdbf748aefe67d`.
+- Two CHOUPI CCID USB devices were attached and the ACL helper granted access
+  to both. The firmware monitor passed on the identified board; a physical
+  SmartcardIO deploy run was not performed in this step.
+- Next: implement native object allocation and field access around the new
+  metadata, then migrate RSA key operations from interpreted Java providers
+  into direct native C++ API methods. Keep upstream CAPs unchanged.

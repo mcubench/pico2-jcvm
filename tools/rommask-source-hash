@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+rommask_root="${repo_root}/choupi/javacard-sdk/rommask"
+
+for command_name in find sort sha256sum; do
+  command -v "${command_name}" >/dev/null 2>&1 || {
+    printf 'Required command is missing: %s\n' "${command_name}" >&2
+    exit 127
+  }
+done
+
+(
+  cd "${rommask_root}"
+  {
+    find src capmap-free -type f \
+      ! -path '*/target/*' ! -path '*/build/*' ! -path '*/.git/*' -print0
+    printf '%s\0' Makefile pom.xml
+  } | sort -z | xargs -0 sha256sum
+) | sha256sum | awk '{print $1}'
