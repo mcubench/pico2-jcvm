@@ -11093,3 +11093,40 @@
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T165018Z.log`; ARM UF2
   SHA-256 `15de132afc30fff5f5cf35c639b559ead1465ccebee3b88da8fdbf748aefe67d`;
   PC ROM-mask SHA-256 `1e76a6cd532e54a5059855827e33f34cede704c3e79fa84d7ae17ea42d7ebbe9`.
+## 2026-10-24 — Dispatch native CryptoException and reject RSA input >= modulus
+
+- Step/experiment: `native-cryptoexception-rsa-nopad-range`
+- Change: Added a pending native CryptoException reason to `Context` and taught
+  the interpreter to resolve and dispatch the applet's runtime-owned
+  `CryptoException` through ordinary Java Card handlers. Added reason-aware
+  exception helpers to the native SHA, random, digest, cipher, MAC, and RSA
+  modules. The `/deploy` suite exposed raw RSA reducing an input equal to the
+  modulus; reject `x >= n` before Mbed TLS modular exponentiation with
+  `CryptoException.ILLEGAL_USE`.
+- Validation: ARM and RISC-V wrappers passed for `asymm_crypto`. Physical cycle
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto
+  --serial 2BED26ED20556535` passed flash verification and finite monitor after
+  recovering through CDC/BOOTSEL from the absent picotool reset interface. On
+  the same Pico, the pre-fix official Crypto area completed 466 calls with
+  170 `OK`, 286 `UNSUPPORTED_PER_SPEC`, 9 `EXC_CARDRUNTIME`, and one
+  `WRONG_RESULT` (RSA NOPAD input equal to modulus). After range validation,
+  all 466 calls completed with 171 `OK`, 286 `UNSUPPORTED_PER_SPEC`, 9
+  `EXC_CARDRUNTIME`, and zero `WRONG_RESULT`; upload and cleanup passed. After
+  native reason mapping, the same area completed with 174 `OK`, 286
+  `UNSUPPORTED_PER_SPEC`, 6 `EXC_CARDRUNTIME`, and zero `WRONG_RESULT`; three
+  invalid one-shot signature calls matched expected reason 5 rather than 1.
+- Result: Native CryptoException failures can be caught by Java Card CAP code
+  with explicit reason fields. Raw RSA rejects operands outside the valid
+  range. The final 6 `EXC_CARDRUNTIME` rows are expected per suite
+  classification; no broader profile match is claimed.
+- Decision: Reuse native exception dispatch for direct RSA key and cipher API
+  methods. Continue migrating algorithm behavior out of Java provider bodies.
+- Commit: recorded in follow-up after the implementation commit.
+- Artifacts/logs: pre-fix CSV SHA-256
+  `9ab4245f2410634e6a2559552762c2889e3c8f4218c9fc35b8715949da74abae`; fixed
+  range-check CSV SHA-256
+  `e933ea426bc59c6aa02fa575f272f7170191fc6b56afd2bcd8f9a682c688f391`;
+  final reason-code CSV SHA-256
+  `838a6798882a9b189457d87daf33318605628ba57605e79b70125a5d5b50f710`;
+  final cycle log `artifacts/logs/cycle-choupi-20261024T171445Z.log`; ARM UF2
+  SHA-256 `9e27d48a9b1e9f32cd239e73c816a815ea21195a26228290bbe33ffd5961a55b`.

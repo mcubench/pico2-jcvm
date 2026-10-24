@@ -1,6 +1,7 @@
 #include "exceptions.hpp"
 #include "javacard-support.h"
 #include "jc_types/jc_array.hpp"
+#include "native_crypto_exception.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -27,7 +28,8 @@ void cryptBlock(bool aes, bool encrypt, std::vector<unsigned char>& key,
                   std::vector<unsigned char>& output) {
   const int result = aes ? cipherAesEcb(encrypt, key, input, output)
                          : cipherDesEcb(encrypt, key, input, output);
-  if (result != 0) throw Exceptions::CryptoException;
+  if (result != 0)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
 }
 
 void xorBlock(std::vector<unsigned char>& left,
@@ -54,7 +56,8 @@ std::vector<unsigned char> mac(bool aes, uint8_t algorithm,
   const bool nopad = algorithm == 1 || algorithm == 2 || algorithm == 18;
   const bool method1 = algorithm == 3 || algorithm == 4 || algorithm == 47 || algorithm == 48;
   std::vector<unsigned char> data = message;
-  if (nopad && (data.empty() || data.size() % block)) throw Exceptions::CryptoException;
+  if (nopad && (data.empty() || data.size() % block))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (!nopad && !cmac) {
     if (algorithm == 7 || algorithm == 8) {
       const size_t count = block - data.size() % block;
@@ -85,7 +88,8 @@ std::vector<unsigned char> mac(bool aes, uint8_t algorithm,
     return out;
   }
 
-  if (data.empty()) throw Exceptions::CryptoException;
+  if (data.empty())
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   std::vector<unsigned char> state(block, 0), in(block), out(block);
   for (size_t offset = 0; offset < data.size(); offset += block) {
     std::copy_n(data.begin() + offset, block, in.begin());
@@ -127,10 +131,11 @@ void fr_gouv_ssi_nativeimpl_MacNativeBridge_computeMac(
   const uint8_t alg = static_cast<uint8_t>(algorithm);
   const bool aes = alg == 18 || alg == 49;
 #if !JC_SUPPORT_SIGNATURE_AES_MAC_128_NOPAD && !JC_SUPPORT_SIGNATURE_AES_CMAC_128
-  if (aes) throw Exceptions::CryptoException;
+  if (aes)
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
 #endif
   if (!aes && key->size() != 8 && key->size() != 16 && key->size() != 24)
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
   std::vector<unsigned char> keyBytes(key->size()), ivBytes(iv->size()), data(static_cast<size_t>(messageLength));
   for (uint16_t i = 0; i < key->size(); ++i) keyBytes[i] = static_cast<uint8_t>(key->getByteEntry(i));
   for (uint16_t i = 0; i < iv->size(); ++i) ivBytes[i] = static_cast<uint8_t>(iv->getByteEntry(i));

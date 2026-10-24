@@ -872,6 +872,31 @@
   fingerprint appears in `build/choupi-pc/rommask-source.sha256` and the
   generated header contains the expected new output.
 
+## Native CryptoException dispatch and RSA NoPad range check — 2026-10-24
+
+- **Symptom:** C++ native implementations could throw
+  `Exceptions::CryptoException`, but the interpreter did not convert that
+  into a Java Card `CryptoException` object. Native code therefore lacked a
+  catchable exception path with a reason field.
+- **Fix:** `Context` now carries a pending CryptoException reason, and
+  `Bytecodes::dispatchJavaException` resolves the applet's imported Security
+  package, gets the runtime-owned exception reference, stores the reason, and
+  dispatches it through normal Java exception handlers. Native SHA, random,
+  digest, cipher, MAC, and RSA methods now set the reason before throwing
+  `Exceptions::CryptoException`.
+- **Regression found by physical `/deploy` Crypto:** RSA `ALG_RSA_NOPAD`
+  accepted an input equal to the modulus and returned zero. Mbed TLS performs
+  modular reduction for `x >= n`; this is an illegal operation for Java Card
+  raw RSA. Reject it before `mbedtls_mpi_exp_mod` with
+  `CryptoException.ILLEGAL_USE` (reason 5).
+- **Validation:** Both architecture builds passed. On Pico
+  `2BED26ED20556535`, the original Crypto area had one `WRONG_RESULT` for the
+  modulus-equal input. After range validation and reason mapping, the same
+  466-call area had 174 `OK`, 286 `UNSUPPORTED_PER_SPEC`, 6 expected
+  `EXC_CARDRUNTIME`, and zero `WRONG_RESULT`. Three invalid one-shot signature
+  calls now match expected `CryptoException.ILLEGAL_USE` reason 5 instead of
+  returning reason 1. Logs/results are recorded in root `progress.md`.
+
 ## Post-SELECT PC/SC timeout repeated after 2026-10-19 reflash
 
 - **Observation:** ARM and RISC-V builds passed and the ARM image flashed from

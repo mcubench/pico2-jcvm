@@ -1,6 +1,7 @@
 #include "exceptions.hpp"
 #include "javacard-support.h"
 #include "jc_types/jc_array.hpp"
+#include "native_crypto_exception.hpp"
 #include <cstdint>
 #include <memory>
 #if JC_SUPPORT_SHA256
@@ -65,7 +66,7 @@ static void computeSha256(
   }
   mbedtls_sha256_free(&context);
   if (result != 0) {
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   }
   for (uint16_t i = 0; i < sizeof(digest); ++i) {
     output->setByteEntry(static_cast<uint16_t>(outputOffset + i),
@@ -76,7 +77,7 @@ static void computeSha256(
   if (pico_sha256_start_blocking_until(
           &state, SHA256_BIG_ENDIAN, false, make_timeout_time_ms(100)) !=
       PICO_OK) {
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   }
   uint8_t block[64];
   for (jshort_t offset = 0; offset < inputLength;) {

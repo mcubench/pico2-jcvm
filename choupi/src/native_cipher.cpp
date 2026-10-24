@@ -1,6 +1,7 @@
 #include "exceptions.hpp"
 #include "javacard-support.h"
 #include "jc_types/jc_array.hpp"
+#include "native_crypto_exception.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -75,7 +76,8 @@ void fr_gouv_ssi_nativeimpl_CbcCipherNativeBridge_cipherCbc(
   const uint8_t alg = static_cast<uint8_t>(algorithm);
   const bool aes = alg == 13 || alg == 14 || (alg >= 22 && alg <= 27);
   const bool des = alg >= 1 && alg <= 8;
-  if (!aes && !des) throw Exceptions::CryptoException;
+  if (!aes && !des)
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   const bool ecb = (alg >= 5 && alg <= 8) || alg == 14 ||
                    (alg >= 25 && alg <= 27);
   const uint16_t block_size = aes ? 16 : 8;
@@ -99,15 +101,16 @@ void fr_gouv_ssi_nativeimpl_CbcCipherNativeBridge_cipherCbc(
   case 27: enabled = JC_SUPPORT_CIPHER_AES_ECB_PKCS5; break;
   default: break;
   }
-  if (!enabled) throw Exceptions::CryptoException;
+  if (!enabled)
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   if (inputLength % block_size != 0 || (!ecb && iv->size() < block_size) ||
       (aes && (key->size() != 16 && key->size() != 24 && key->size() != 32)) ||
       (des && key->size() != 8 && key->size() != 16 && key->size() != 24)) {
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
   }
   const bool encrypt = static_cast<uint8_t>(mode) == 2;
   if (static_cast<uint8_t>(mode) != 1 && !encrypt) {
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
   }
 
   std::vector<unsigned char> key_bytes(key->size());
@@ -137,7 +140,8 @@ void fr_gouv_ssi_nativeimpl_CbcCipherNativeBridge_cipherCbc(
                  : cipherDesCbc(encrypt, key_bytes, iv_bytes, input_bytes, output_bytes);
 #endif
   }
-  if (result != 0) throw Exceptions::RuntimeException;
+  if (result != 0)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   for (uint16_t index = 0; index < static_cast<uint16_t>(inputLength); ++index) {
     output->setByteEntry(static_cast<uint16_t>(outputOffset + index),
                          static_cast<jbyte_t>(output_bytes[index]));

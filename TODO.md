@@ -1118,7 +1118,7 @@ rollback and duplicate/invalid registration handling also remain unverified.
   unverified.
 - [ ] Pass AC1–AC5 and the plan's clean-flash integration sequence three times.
 
-## Later / optional
+## Expanded and required cryptographic profiles
 
 - [ ] Implement and validate the `asymm_crypto` selectable profile against
   `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`
@@ -1136,10 +1136,17 @@ rollback and duplicate/invalid registration handling also remain unverified.
   storage for all requested sizes, and RSA PKCS#1/NoPad/OAEP ciphers have
   implementations and VPCD covers 20 vectors. The committed RSA cipher Java
   provider is not compliant with the user's native-only implementation
-  instruction and must be replaced by native C++ API dispatch. Physical RSA ciphers passed
-  18/18 vectors on Pico 2 `2BED26ED20556535`. RSA signatures, EC keys/ECDSA,
-  key agreement, key generation, exact full-report comparison, and full deploy
-  acceptance remain.
+  instruction and must be replaced by native C++ API dispatch. Physical RSA
+  ciphers passed 18/18 vectors on Pico 2 `2BED26ED20556535`. Native
+  `CryptoException` dispatch is now catchable with explicit reason codes across
+  native crypto modules. A physical `/deploy` run found and fixed RSA NoPad
+  accepting input equal to the modulus. The final repeated Crypto area had 174
+  `OK`, 286 `UNSUPPORTED_PER_SPEC`, 6 expected `EXC_CARDRUNTIME`, and zero
+  wrong-result rows; three invalid one-shot signature cases now report reason
+  5 as expected. Next migrate RSA key getters/setters and cipher API methods
+  from interpreted provider bodies to direct native C++ methods, then verify
+  with unchanged upstream CAPs and `/deploy`. RSA signatures, EC keys/ECDSA, key agreement, key generation,
+  exact full-report comparison, and full deploy acceptance remain.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).
 - [ ] Complete deferred hardening and robustness work, including malformed CAP

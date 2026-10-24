@@ -1,6 +1,7 @@
 #include "exceptions.hpp"
 #include "javacard-support.h"
 #include "jc_types/jc_array.hpp"
+#include "native_crypto_exception.hpp"
 
 #include "mbedtls/bignum.h"
 #include "mbedtls/platform_time.h"
@@ -93,6 +94,13 @@ void modExp(const std::vector<unsigned char> &modulus,
       mbedtls_mpi_read_binary(&e, exponent.data(), exponent.size()) == 0 &&
       mbedtls_mpi_read_binary(&x, input.data(), input.size()) == 0
           ? 0 : -1;
+  if (importResult == 0 && mbedtls_mpi_cmp_mpi(&x, &n) >= 0) {
+    mbedtls_mpi_free(&rr);
+    mbedtls_mpi_free(&x);
+    mbedtls_mpi_free(&e);
+    mbedtls_mpi_free(&n);
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  }
   const int result = importResult == 0
       ? mbedtls_mpi_exp_mod(&x, &x, &e, &n, &rr) : importResult;
   if (result == 0)
@@ -101,7 +109,8 @@ void modExp(const std::vector<unsigned char> &modulus,
   mbedtls_mpi_free(&x);
   mbedtls_mpi_free(&e);
   mbedtls_mpi_free(&n);
-  if (result != 0) throw Exceptions::CryptoException;
+  if (result != 0)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
 }
 
 std::vector<unsigned char> oaepEncode(
@@ -109,7 +118,7 @@ std::vector<unsigned char> oaepEncode(
   constexpr size_t hashLength = 20;
   if (modulusLength < hashLength * 2 + 2 ||
       message.size() > modulusLength - hashLength * 2 - 2)
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
   static constexpr std::array<unsigned char, 20> emptyLabelHash = {
       0xda,0x39,0xa3,0xee,0x5e,0x6b,0x4b,0x0d,0x32,0x55,
       0xbf,0xef,0x95,0x60,0x18,0x90,0xaf,0xd8,0x07,0x09};
@@ -136,7 +145,7 @@ std::vector<unsigned char> oaepDecode(
     const std::vector<unsigned char> &encoded) {
   constexpr size_t hashLength = 20;
   if (encoded.size() < hashLength * 2 + 2 || encoded[0] != 0)
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   static constexpr std::array<unsigned char, 20> emptyLabelHash = {
       0xda,0x39,0xa3,0xee,0x5e,0x6b,0x4b,0x0d,0x32,0x55,
       0xbf,0xef,0x95,0x60,0x18,0x90,0xaf,0xd8,0x07,0x09};
@@ -155,7 +164,7 @@ std::vector<unsigned char> oaepDecode(
   size_t delimiter = hashLength;
   while (delimiter < dbLength && db[delimiter] == 0) ++delimiter;
   if (bad != 0 || delimiter == dbLength || db[delimiter] != 1)
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   return std::vector<unsigned char>(db.begin() + delimiter + 1, db.end());
 }
 } // namespace
@@ -175,27 +184,29 @@ jshort_t fr_gouv_ssi_nativeimpl_RsaCipherNativeBridge_transform(
   const uint16_t keyLength = modulusArray->size();
   if (keyLength < 64 || exponentArray->size() != keyLength || inputLength < 0 ||
       inputLength > inputArray->size() || outputArray->size() < keyLength)
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
   const uint8_t pad = static_cast<uint8_t>(padding);
   const bool nopad = pad == 1;
   const bool pkcs1 = pad == 7;
   const bool oaep = pad == 9;
   if ((!nopad && !pkcs1 && !oaep) || (privateOperation && nopad == false &&
       pad != 7 && pad != 9))
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   auto modulus = readBytes(*modulusArray, keyLength);
   auto exponent = readBytes(*exponentArray, keyLength);
   auto input = readBytes(*inputArray, static_cast<uint16_t>(inputLength));
   std::vector<unsigned char> encoded;
   if (nopad) {
-    if (input.size() != keyLength) throw Exceptions::CryptoException;
+    if (input.size() != keyLength)
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
     encoded = std::move(input);
   } else if (privateOperation) {
-    if (input.size() != keyLength) throw Exceptions::CryptoException;
+    if (input.size() != keyLength)
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
     encoded = std::move(input);
   } else if (pkcs1) {
     if (input.size() > static_cast<size_t>(keyLength - 11))
-      throw Exceptions::CryptoException;
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
     encoded.assign(keyLength, 0xff);
     encoded[0] = 0;
     encoded[1] = 2;
@@ -215,12 +226,12 @@ jshort_t fr_gouv_ssi_nativeimpl_RsaCipherNativeBridge_transform(
   size_t resultLength = keyLength;
   if (privateOperation && !nopad) {
     if (result[0] != 0 || (pkcs1 && result[1] != 2))
-      throw Exceptions::CryptoException;
+      throwCryptoException(CryptoExceptionReason::IllegalUse);
     if (pkcs1) {
       size_t separator = 2;
       while (separator < result.size() && result[separator] != 0) ++separator;
       if (separator < 10 || separator >= result.size())
-        throw Exceptions::CryptoException;
+        throwCryptoException(CryptoExceptionReason::IllegalUse);
       resultLength = result.size() - separator - 1;
       std::move(result.begin() + separator + 1, result.end(), result.begin());
     } else {

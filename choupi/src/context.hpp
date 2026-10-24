@@ -88,6 +88,8 @@ private:
   bool apdu_outgoing_no_chaining = false;
   /// Reason code for the next VM-raised SystemException.
   uint16_t pending_system_exception_reason = 1;
+  /// Reason code for the next VM-raised CryptoException.
+  uint16_t pending_crypto_exception_reason = 1;
   // SensitiveResult is VM-wide and survives Java Card context switches.
   static SensitiveResultKind sensitive_result_kind;
   static bool sensitive_result_boolean;
@@ -174,6 +176,8 @@ public:
   void assertSensitiveResultShort(jshort_t value, uint8_t comparison) const;
   void setPendingSystemExceptionReason(uint16_t reason) noexcept;
   uint16_t consumePendingSystemExceptionReason() noexcept;
+  void setPendingCryptoExceptionReason(uint16_t reason) noexcept;
+  uint16_t consumePendingCryptoExceptionReason() noexcept;
   uint16_t pendingSystemExceptionReason() const noexcept {
     return pending_system_exception_reason;
   }

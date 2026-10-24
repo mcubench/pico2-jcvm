@@ -1,6 +1,7 @@
 #include "exceptions.hpp"
 #include "javacard-support.h"
 #include "jc_types/jc_array.hpp"
+#include "native_crypto_exception.hpp"
 
 #include "mbedtls/sha1.h"
 #include "mbedtls/sha256.h"
@@ -35,7 +36,7 @@ jbool_t fr_gouv_ssi_nativeimpl_MbedTlsDigestNativeBridge_digest(
   case 7: digestLength = 28; break;
   case 5: digestLength = 48; break;
   case 6: digestLength = 64; break;
-  default: throw Exceptions::CryptoException;
+  default: throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   }
   checkRange(*output, outputOffset, static_cast<jshort_t>(digestLength));
 

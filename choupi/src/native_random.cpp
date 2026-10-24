@@ -1,6 +1,7 @@
 #include "exceptions.hpp"
 #include "javacard-support.h"
 #include "jc_types/jc_array.hpp"
+#include "native_crypto_exception.hpp"
 #include <cstdint>
 #include <memory>
 #ifdef JC_SUPPORT_SECURE_RANDOM
@@ -32,7 +33,7 @@ void fr_gouv_ssi_nativeimpl_RandomDataNativeBridge_generateRandomData(
   }
   checkArrayRange(*buffer, offset, length);
   if (length == 0) {
-    throw Exceptions::CryptoException;
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
   }
   if (buffer->getType() != JAVA_ARRAY_T_BYTE) {
     throw Exceptions::ArrayStoreException;

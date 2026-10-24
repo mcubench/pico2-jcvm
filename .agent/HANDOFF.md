@@ -9442,3 +9442,32 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Next: implement native object allocation and field access around the new
   metadata, then migrate RSA key operations from interpreted Java providers
   into direct native C++ API methods. Keep upstream CAPs unchanged.
+
+## Native CryptoException dispatch and RSA NoPad range validation — 2026-10-24
+
+- Added VM handling for C++ `Exceptions::CryptoException`: native code can set
+  a pending reason, the interpreter resolves the applet's imported Security
+  package, stores the reason on the runtime-owned CryptoException, and performs
+  normal Java handler dispatch.
+- The official `/deploy` Crypto run exposed RSA NoPad accepting an input equal
+  to the modulus. Rejected `x >= n` before modular exponentiation and raised
+  `CryptoException.ILLEGAL_USE` (5).
+- Applied the pending-reason helper to all current native SHA, random, digest,
+  cipher, MAC, and RSA error paths. Three invalid one-shot signature cases now
+  return the expected `ILLEGAL_USE` reason 5 rather than reason 1.
+- Validation on Pico `2BED26ED20556535`: ARM and RISC-V wrappers passed; cycle
+  flashed and verified the ARM image, then the 18-second monitor passed. The
+  first post-flash reset-interface lookup failed, but CDC/BOOTSEL recovery
+  succeeded. Physical Crypto before the fix: 466 calls, 170 OK, 286
+  `UNSUPPORTED_PER_SPEC`, 9 `EXC_CARDRUNTIME`, one `WRONG_RESULT`. After the
+  range fix: 466 calls, 171 OK, 286 `UNSUPPORTED_PER_SPEC`, 9
+  `EXC_CARDRUNTIME`, no `WRONG_RESULT`. After correcting native reason codes:
+  174 OK, 286 `UNSUPPORTED_PER_SPEC`, 6 `EXC_CARDRUNTIME`, and no
+  `WRONG_RESULT`; cleanup passed.
+- Logs: `artifacts/logs/cycle-choupi-20261024T170718Z.log`;
+  `artifacts/results/deploy/native-crypto-exceptions-2BED-20261024/pico1.csv`;
+  `artifacts/results/deploy/native-crypto-exceptions-fixed-2BED-20261024/pico1.csv`;
+  final reason-code CSV: `artifacts/results/deploy/native-crypto-reason-codes-2BED-20261024/pico1.csv`.
+- Next: migrate RSA key getter/setter and cipher methods out of interpreted
+  provider bodies into direct native C++ methods. Preserve public API signatures
+  and use unchanged `/deploy` CAPs for physical tests.

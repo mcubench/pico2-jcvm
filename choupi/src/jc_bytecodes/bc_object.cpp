@@ -133,6 +133,39 @@ jref_t runtimeExceptionReference(Context &context,
 
   throw Exceptions::RuntimeException;
 }
+
+jref_t runtimeCryptoExceptionReference(Context &context) {
+  static constexpr uint8_t security_package_aid[] = {
+      0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x02};
+  Package applet_package(context.getAppletPackageID());
+  const auto import_component = applet_package.getCap().getImport();
+  if (import_component == nullptr) {
+    throw Exceptions::SecurityException;
+  }
+
+  Import_Handler imports(applet_package);
+  constexpr uint8_t jc305_crypto_exception_class_token = 12;
+  for (uint8_t token = 0; token < import_component->count; ++token) {
+    const auto *package_info = imports.getPackageAID(token);
+    if (package_info->AID_length != sizeof(security_package_aid) ||
+        std::memcmp(package_info->AID, security_package_aid,
+                    sizeof(security_package_aid)) != 0) {
+      continue;
+    }
+
+    const jpackage_ID_t package_id = imports.getPackageIndex(package_info);
+    Package security_package(package_id);
+    const uint8_t mapped_class_token = remap_imported_class_token(
+        *package_info, jc305_crypto_exception_class_token);
+    const jclass_index_t class_index = HTONS(
+        Export_Handler(security_package).getExportedClassOffset(
+            mapped_class_token));
+    return context.getHeap().addRuntimeCryptoException(package_id,
+                                                       class_index);
+  }
+
+  throw Exceptions::SecurityException;
+}
 } // namespace
 
 bool Bytecodes::dispatchJavaException(const Exceptions exception) {
@@ -176,6 +209,15 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
     exception_package_aid_length = sizeof(javacard_framework_aid);
     class_token = 13;
     break;
+  case Exceptions::CryptoException: {
+    const jref_t reference = runtimeCryptoExceptionReference(this->context);
+    const uint16_t reason =
+        this->context.consumePendingCryptoExceptionReason();
+    this->context.getHeap().getInstance(reference)->setField_Short(
+        0, static_cast<jshort_t>(reason));
+    this->doThrow(reference);
+    return true;
+  }
   case Exceptions::APDUException:
     exception_package_aid = javacard_framework_aid;
     exception_package_aid_length = sizeof(javacard_framework_aid);
