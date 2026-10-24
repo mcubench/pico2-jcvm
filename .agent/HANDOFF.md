@@ -94,6 +94,14 @@
   verified format description. Do not remove the ROM-mask API packages as a
   response to the earlier mistaken interpretation.
 
+## Multi-board testing rule — 2026-10-24
+
+- Added to `SKILL.md` and `.agent/SESSION_CONTINUITY.md`: when multiple
+  identified Pico 2 boards are available, continue on another board if one is
+  unavailable or unresponsive. Record board identity, image, per-device result,
+  and keep each failed board's evidence. Do not make a single board failure
+  stop the full test sequence.
+
 ## Asymmetric crypto profile — SHA provider groundwork — 2026-10-24
 
 - User request: create `asymm_crypto` matching asymmetric support in

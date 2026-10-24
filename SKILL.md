@@ -35,6 +35,25 @@ For the repository's concrete ARM and Hazard3 build commands, dependency lookup,
 and artifact paths, use [the compilation guide](compilation.md).
 The repository `AGENTS.md` build and flashing rules remain authoritative.
 
+## Java Card runtime boundary
+
+The Pico 2 firmware is the native Java Card VM. It interprets installed CAP
+files; it does not run `.java` or `.class` programs as firmware. Implement
+Java Card API behavior and cryptographic algorithms in native C++ VM code and
+expose it through the VM's native API dispatch. Do not add Java provider or
+adapter implementations to the firmware, and do not create or alter CAP files
+to implement algorithms. Existing upstream CAPs may be used to exercise the
+native API implementation.
+
+## Multi-board physical testing
+
+When multiple identified Pico 2 boards are attached and available for testing,
+keep testing on another board if one becomes unavailable, fails to enumerate,
+or stops responding after a flash. Do not let one malfunctioning board halt
+the whole test sequence. Record each board's identity, image, and result
+separately; retain the failure evidence for the unavailable board and continue
+with the next usable board.
+
 ## The two checks that catch the most
 
 **Compute the physical floor.** Cycles per operation should be flat across clock

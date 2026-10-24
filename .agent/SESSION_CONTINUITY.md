@@ -13,12 +13,21 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
 - Do not claim hardware validation unless an attached Pico 2 was actually
   flashed and its finite serial log inspected. The Pico 2 is now connected;
   follow root `AGENTS.md` build gates before flashing and record bounded logs.
+- When multiple identified physical Pico 2 devices are available, continue
+  validation on another usable board if one becomes unavailable, fails to
+  enumerate, or stops responding. Record identity, image, and outcome per
+  board; preserve the failed board's logs and do not let it block the others.
 - Do not invoke compiler binaries directly. Use the repository build wrappers
   once available.
 - Keep `.agent/HANDOFF.md` current with completed work, blockers, and the next
   concrete action. Never replace or remove earlier `progress.md` records.
 
 ## Source and dependency handling
+
+- Runtime cryptographic and Java Card API behavior belongs in native C++ VM
+  code reached through CAP-to-API dispatch. Do not add Java providers/adapters,
+  or implement algorithms in test or upstream CAP files. Existing CAPs may be
+  run to test native API behavior.
 
 - The planned target is RP2350 Cortex-M33. The plan lists RISC-V as out of
   scope, while repository `AGENTS.md` includes a RISC-V build workflow; follow

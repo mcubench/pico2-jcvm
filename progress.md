@@ -10973,3 +10973,21 @@
 - Commit: pending
 - Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`; no logs
 
+## 2026-10-24 — Preserve progress across multiple physical boards
+
+- Step/experiment: `multi-board-fallback-guidance`
+- Change: Added a persistent rule to `SKILL.md` and
+  `.agent/SESSION_CONTINUITY.md` to continue testing on another identified Pico
+  2 when one board becomes unavailable, while recording per-board identity,
+  image, results, and failure evidence. Updated the handoff.
+- Validation: Inspected the rule in both instruction files and confirmed it
+  requires continuing with another usable board. Documentation inspection
+  only; no device state changed.
+- Result: Future physical test runs should not be blocked by the first
+  malfunctioning board when multiple boards are available.
+- Decision: Apply the fallback rule to multi-board runs and retain failed-board
+  evidence alongside successful-board results.
+- Commit: pending
+- Artifacts/logs: `SKILL.md`, `.agent/SESSION_CONTINUITY.md`,
+  `.agent/HANDOFF.md`; no logs
+
