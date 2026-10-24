@@ -11411,3 +11411,25 @@
 - Commit: `45e5e9f`.
 - Artifacts/logs: `artifacts/results/deploy/symm_crypto-D92-20261025/javacardxsec.csv`,
   `javacardxext.csv`, `javacardxint.csv`, and `service-biometry.csv`.
+
+## 2026-10-25 — Reflash and verify empty `symm_crypto` card
+
+- Step/experiment: `symm-crypto-empty-card-reflash-D92`
+- Change: Rebuilt the current `symm_crypto` ARM firmware and reflashed physical
+  Pico 2 `D92E743D5F640C0F`; no source or CAP files were changed.
+- Validation: `./tools/build arm --profile symm_crypto` and
+  `./tools/build riscv --profile symm_crypto` passed. The ARM cycle completed
+  with repeated `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, and
+  `CYCLE:PASS`. GPPro `--list` after flashing showed only ISD
+  `A000000151000000`; the card remains empty. `lsusb` exposed one CCID device
+  (not the additional BOOTSEL devices reported by the user).
+- Result: The uploaded image is 1,675,264 bytes, SHA-256
+  `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
+  The ROM bootloader recovery path was used after picotool could not locate the
+  runtime reset interface. A single watchdog recovery diagnostic appeared;
+  repeated runtime checks passed.
+- Decision: The current firmware does not preload JCAlgTest; the tested card
+  registry is empty after reflash. Install the upstream CAP explicitly only
+  when beginning an applet test.
+- Commit: `<see follow-up record>`.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T224042Z.log`.

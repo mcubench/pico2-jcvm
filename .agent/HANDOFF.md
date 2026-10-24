@@ -9717,3 +9717,19 @@ confirmed on hardware. The original investigation evidence remains in earlier
   `ILLEGAL_USE`; the broader Core failures are limited to OwnerPINx and the
   unavailable Ext scenario applet. Do not spend time implementing algorithms
   that the active profile does not claim to support.
+
+## Empty-card reflash confirmation — 2026-10-25
+
+- Rebuilt both wrappers with `symm_crypto`; ARM and RISC-V passed. Reflashed
+  ARM to D92 `D92E743D5F640C0F` after discovering it was in runtime mode rather
+  than BOOTSEL. The cycle passed repeated finite runtime checks and produced
+  `CYCLE:PASS`; one watchdog recovery diagnostic occurred.
+- Refreshed PC/SC access and ran GPPro `--list` after flash. Only ISD
+  `A000000151000000` was present. The current card is empty of applet/package
+  CAPs, and JCAlgTest is not preinstalled in the firmware image.
+- The ARM UF2 remains 1,675,264 bytes with SHA-256
+  `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
+  Cycle log: `artifacts/logs/cycle-choupi-20261024T224042Z.log`.
+- Only one Pico CCID reader was visible to this VM despite the report of
+  multiple BOOTSEL tokens. Continue on any additional board once it enumerates;
+  do not attribute D92 results to another token.
