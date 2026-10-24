@@ -8,15 +8,27 @@
 
 namespace jcvm {
 
-#if JC_SUPPORT_CIPHER_AES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD
+#if JC_SUPPORT_CIPHER_AES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD || \
+    JC_SUPPORT_CIPHER_AES_ECB_NOPAD || JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M1 || \
+    JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M2 || JC_SUPPORT_CIPHER_AES_CBC_PKCS5 || \
+    JC_SUPPORT_CIPHER_AES_ECB_ISO9797_M1 || JC_SUPPORT_CIPHER_AES_ECB_ISO9797_M2 || JC_SUPPORT_CIPHER_AES_ECB_PKCS5
 int cipherAesCbc(bool encrypt, std::vector<unsigned char> &key,
                  std::vector<unsigned char> &iv,
                  const std::vector<unsigned char> &input,
                  std::vector<unsigned char> &output);
+int cipherAesEcb(bool encrypt, std::vector<unsigned char> &key,
+                 const std::vector<unsigned char> &input,
+                 std::vector<unsigned char> &output);
 #endif
-#if JC_SUPPORT_CIPHER_DES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD
+#if JC_SUPPORT_CIPHER_DES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD || \
+    JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M1 || JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M2 || \
+    JC_SUPPORT_CIPHER_DES_CBC_PKCS5 || JC_SUPPORT_CIPHER_DES_ECB_NOPAD || \
+    JC_SUPPORT_CIPHER_DES_ECB_ISO9797_M1 || JC_SUPPORT_CIPHER_DES_ECB_ISO9797_M2 || JC_SUPPORT_CIPHER_DES_ECB_PKCS5
 int cipherDesCbc(bool encrypt, std::vector<unsigned char> &key,
                  std::vector<unsigned char> &iv,
+                 const std::vector<unsigned char> &input,
+                 std::vector<unsigned char> &output);
+int cipherDesEcb(bool encrypt, std::vector<unsigned char> &key,
                  const std::vector<unsigned char> &input,
                  std::vector<unsigned char> &output);
 #endif
@@ -35,7 +47,11 @@ void checkArrayRange(const JC_Array &array, const jshort_t offset,
 
 #if JC_SUPPORT_CIPHER_AES_CBC_NOPAD || JC_SUPPORT_CIPHER_DES_CBC_NOPAD || \
     JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD || \
-    JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD
+    JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD || JC_SUPPORT_CIPHER_AES_ECB_NOPAD || \
+    JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M1 || JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M2 || JC_SUPPORT_CIPHER_AES_CBC_PKCS5 || \
+    JC_SUPPORT_CIPHER_AES_ECB_ISO9797_M1 || JC_SUPPORT_CIPHER_AES_ECB_ISO9797_M2 || JC_SUPPORT_CIPHER_AES_ECB_PKCS5 || \
+    JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M1 || JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M2 || JC_SUPPORT_CIPHER_DES_CBC_PKCS5 || \
+    JC_SUPPORT_CIPHER_DES_ECB_NOPAD || JC_SUPPORT_CIPHER_DES_ECB_ISO9797_M1 || JC_SUPPORT_CIPHER_DES_ECB_ISO9797_M2 || JC_SUPPORT_CIPHER_DES_ECB_PKCS5
 void fr_gouv_ssi_nativeimpl_CbcCipherNativeBridge_cipherCbc(
     const jbyte_t algorithm, const jbyte_t mode,
     std::shared_ptr<JC_Array> key, std::shared_ptr<JC_Array> iv,
@@ -56,17 +72,35 @@ void fr_gouv_ssi_nativeimpl_CbcCipherNativeBridge_cipherCbc(
   checkArrayRange(*input, inputOffset, inputLength);
   checkArrayRange(*output, outputOffset, inputLength);
 
-  const bool aes = static_cast<uint8_t>(algorithm) == 13;
-  const bool des = static_cast<uint8_t>(algorithm) == 1;
+  const uint8_t alg = static_cast<uint8_t>(algorithm);
+  const bool aes = alg == 13 || alg == 14 || (alg >= 22 && alg <= 27);
+  const bool des = alg >= 1 && alg <= 8;
   if (!aes && !des) throw Exceptions::CryptoException;
+  const bool ecb = (alg >= 5 && alg <= 8) || alg == 14 ||
+                   (alg >= 25 && alg <= 27);
   const uint16_t block_size = aes ? 16 : 8;
-  if ((aes && !JC_SUPPORT_CIPHER_AES_CBC_NOPAD &&
-       !JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD) ||
-      (des && !JC_SUPPORT_CIPHER_DES_CBC_NOPAD &&
-       !JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD)) {
-    throw Exceptions::CryptoException;
+  bool enabled = false;
+  switch (alg) {
+  case 1: enabled = JC_SUPPORT_CIPHER_DES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD; break;
+  case 2: enabled = JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M1; break;
+  case 3: enabled = JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M2; break;
+  case 4: enabled = JC_SUPPORT_CIPHER_DES_CBC_PKCS5; break;
+  case 5: enabled = JC_SUPPORT_CIPHER_DES_ECB_NOPAD; break;
+  case 6: enabled = JC_SUPPORT_CIPHER_DES_ECB_ISO9797_M1; break;
+  case 7: enabled = JC_SUPPORT_CIPHER_DES_ECB_ISO9797_M2; break;
+  case 8: enabled = JC_SUPPORT_CIPHER_DES_ECB_PKCS5; break;
+  case 13: enabled = JC_SUPPORT_CIPHER_AES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD; break;
+  case 14: enabled = JC_SUPPORT_CIPHER_AES_ECB_NOPAD; break;
+  case 22: enabled = JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M1; break;
+  case 23: enabled = JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M2; break;
+  case 24: enabled = JC_SUPPORT_CIPHER_AES_CBC_PKCS5; break;
+  case 25: enabled = JC_SUPPORT_CIPHER_AES_ECB_ISO9797_M1; break;
+  case 26: enabled = JC_SUPPORT_CIPHER_AES_ECB_ISO9797_M2; break;
+  case 27: enabled = JC_SUPPORT_CIPHER_AES_ECB_PKCS5; break;
+  default: break;
   }
-  if (inputLength % block_size != 0 || iv->size() < block_size ||
+  if (!enabled) throw Exceptions::CryptoException;
+  if (inputLength % block_size != 0 || (!ecb && iv->size() < block_size) ||
       (aes && (key->size() != 16 && key->size() != 24 && key->size() != 32)) ||
       (des && key->size() != 8 && key->size() != 16 && key->size() != 24)) {
     throw Exceptions::CryptoException;
@@ -77,13 +111,13 @@ void fr_gouv_ssi_nativeimpl_CbcCipherNativeBridge_cipherCbc(
   }
 
   std::vector<unsigned char> key_bytes(key->size());
-  std::vector<unsigned char> iv_bytes(block_size);
+  std::vector<unsigned char> iv_bytes(block_size, 0);
   std::vector<unsigned char> input_bytes(inputLength);
   std::vector<unsigned char> output_bytes(inputLength);
   for (uint16_t index = 0; index < key->size(); ++index) {
     key_bytes[index] = static_cast<unsigned char>(key->getByteEntry(index));
   }
-  for (uint16_t index = 0; index < block_size; ++index) {
+  for (uint16_t index = 0; !ecb && index < block_size; ++index) {
     iv_bytes[index] = static_cast<unsigned char>(iv->getByteEntry(index));
   }
   for (uint16_t index = 0; index < static_cast<uint16_t>(inputLength); ++index) {
@@ -93,12 +127,14 @@ void fr_gouv_ssi_nativeimpl_CbcCipherNativeBridge_cipherCbc(
 
   int result = -1;
   if (aes) {
-#if JC_SUPPORT_CIPHER_AES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD
-    result = cipherAesCbc(encrypt, key_bytes, iv_bytes, input_bytes, output_bytes);
+#if JC_SUPPORT_CIPHER_AES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD || JC_SUPPORT_CIPHER_AES_ECB_NOPAD || JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M1 || JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M2 || JC_SUPPORT_CIPHER_AES_CBC_PKCS5 || JC_SUPPORT_CIPHER_AES_ECB_ISO9797_M1 || JC_SUPPORT_CIPHER_AES_ECB_ISO9797_M2 || JC_SUPPORT_CIPHER_AES_ECB_PKCS5
+    result = ecb ? cipherAesEcb(encrypt, key_bytes, input_bytes, output_bytes)
+                 : cipherAesCbc(encrypt, key_bytes, iv_bytes, input_bytes, output_bytes);
 #endif
   } else {
-#if JC_SUPPORT_CIPHER_DES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD
-    result = cipherDesCbc(encrypt, key_bytes, iv_bytes, input_bytes, output_bytes);
+#if JC_SUPPORT_CIPHER_DES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD || JC_SUPPORT_CIPHER_DES_ECB_NOPAD || JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M1 || JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M2 || JC_SUPPORT_CIPHER_DES_CBC_PKCS5 || JC_SUPPORT_CIPHER_DES_ECB_ISO9797_M1 || JC_SUPPORT_CIPHER_DES_ECB_ISO9797_M2 || JC_SUPPORT_CIPHER_DES_ECB_PKCS5
+    result = ecb ? cipherDesEcb(encrypt, key_bytes, input_bytes, output_bytes)
+                 : cipherDesCbc(encrypt, key_bytes, iv_bytes, input_bytes, output_bytes);
 #endif
   }
   if (result != 0) throw Exceptions::RuntimeException;
@@ -106,7 +142,7 @@ void fr_gouv_ssi_nativeimpl_CbcCipherNativeBridge_cipherCbc(
     output->setByteEntry(static_cast<uint16_t>(outputOffset + index),
                          static_cast<jbyte_t>(output_bytes[index]));
   }
-  for (uint16_t index = 0; index < block_size; ++index) {
+  for (uint16_t index = 0; !ecb && index < block_size; ++index) {
     iv->setByteEntry(index, static_cast<jbyte_t>(iv_bytes[index]));
   }
 }

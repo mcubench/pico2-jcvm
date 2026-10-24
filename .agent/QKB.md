@@ -4094,3 +4094,36 @@ fix.
   `artifacts/logs/deploy-no-aes-Security-Crypto-20261024.log`,
   `artifacts/logs/deploy-minimal-Security-Crypto-20261024.log`, and
   `artifacts/logs/deploy-current-Security-Crypto-20261024.log`.
+
+## Virtual PCD VPCD endpoint refused emulator connection — 2026-10-24
+
+- **Observation:** `pcscd.service` was active and `ss -ltn` showed listeners on
+  ports 35963 and 35964, but after applet installation the local CHOUPI PC
+  emulator logged `ERROR: connecting to vpcd endpoint 127.0.0.1:35963:
+  Connection refused`. SmartcardIO consequently reported `Virtual PCD 00 00`
+  absent. The emulator's in-process TCP VPCD test path works separately.
+- **Impact:** The deploy Crypto client could not run through the daemon-backed
+  Virtual PCD reader. No physical Pico CCID device was enumerated either, so
+  hardware testing is currently unavailable.
+- **Cause:** Not identified. The listener shown by `ss` may not be accepting
+  connections in the execution context; do not treat this as a symmetric
+  crypto firmware result.
+- **Viable fix:** None established. The repository's direct `tools/test-pc-vpcd-applet`
+  path can validate CAP installation and APDUs without the PC/SC VPCD daemon.
+  Retry physical tests once a Pico CCID reader is visible; investigate the
+  daemon-backed bridge separately if it remains needed.
+- **Artifacts:** `artifacts/results/symm-crypto-vpcd-crypto-20261024/`.
+## Symmetric crypto profile has no physical test target visible — 2026-10-24
+
+- **Observation:** After both RP2350 architecture builds passed, the approved
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper reported
+  `Expected 1 to 3 Pico 2 CHOUPI CCID devices (2e8a:0009); found 0.`
+- **Impact:** No physical flash, finite serial monitor, Crypto CAP known-answer
+  test, or `/deploy` Crypto run was possible for `symm_crypto`. The PC emulator
+  smoke is not a substitute for those checks.
+- **Cause:** No Pico CCID reader was attached to the VM/visible to pcscd at the
+  time of the check.
+- **Viable solution:** Re-run the helper through the approved host-access path
+  when a card is attached. Confirm an identified reader before flashing; do
+  not flash a board in BOOTSEL without first identifying the expected target.
+- **Artifacts:** `artifacts/logs/symm-crypto-vpcd-applet-final-20261024.log`.

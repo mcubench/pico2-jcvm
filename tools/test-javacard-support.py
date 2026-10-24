@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 GENERATOR = ROOT / "tools/javacard-support.py"
 COMPARATOR = ROOT / "tools/compare-jcalgtest-support.py"
 SUPPORT_CONFIG = json.loads((ROOT / "config/javacard-support.json").read_text())
+REFERENCE = ROOT / "docs/NXP_JCOP4_P71_NoECC_ALGSUPPORT__3b_ea_00_00_81_31_fe_45_00_31_c1_73_c8_40_00_00_90_00_7a.csv"
 CONFIG = SUPPORT_CONFIG["profiles"]["current"]
 
 
@@ -52,6 +53,7 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertTrue((out / "java/javacard/security/Sha256DigestProvider.java").is_file())
             self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/Sha256NativeBridge.java").is_file())
             self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/CbcCipherNativeBridge.java").is_file())
+            self.assertTrue((out / "java/javacardx/crypto/SymmetricCipherProvider.java").is_file())
             self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/RandomDataNativeBridge.java").is_file())
             self.assertTrue((out / "java/javacard/framework/OwnerPINxBase.java").is_file())
             self.assertTrue((out / "java/javacard/framework/OwnerPINxImpl.java").is_file())
@@ -114,9 +116,63 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertTrue((java_dir / "DESKeyProvider.java").is_file())
             self.assertNotIn("AESKeyProvider", (java_dir / "KeyBuilderProvider.java").read_text())
             cipher_dir = out / "java/javacardx/crypto"
-            self.assertFalse((cipher_dir / "AESCipherProvider.java").exists())
-            self.assertTrue((cipher_dir / "DESCipherProvider.java").is_file())
-            self.assertNotIn("AESCipherProvider", (cipher_dir / "CipherProvider.java").read_text())
+            self.assertTrue((cipher_dir / "SymmetricCipherProvider.java").is_file())
+            provider = (cipher_dir / "CipherProvider.java").read_text()
+            self.assertIn("Cipher.ALG_DES_CBC_NOPAD", provider)
+            self.assertNotIn("Cipher.ALG_AES_BLOCK_128_CBC_NOPAD", provider)
+
+    def test_symm_crypto_generates_reference_symmetric_capabilities(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / "generated"
+            result = self.run_named_profile("symm_crypto", out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((out / "profile.txt").read_text(), "symm_crypto\n")
+            with (out / "jcalgtest-supported.csv").open(newline="") as source:
+                rows = {tuple(row) for row in list(csv.reader(source, delimiter=";"))[1:]}
+            symmetric = {
+                row for row in rows
+                if row[0] in ("javacardx.crypto.Cipher", "javacard.security.Signature",
+                              "javacard.security.KeyBuilder")
+            }
+            self.assertEqual(sum(row[0] == "javacardx.crypto.Cipher" for row in symmetric), 16)
+            self.assertEqual(sum(row[0] == "javacard.security.Signature" for row in symmetric), 13)
+            self.assertTrue({
+                ("javacard.security.KeyBuilder", "TYPE_AES_TRANSIENT_RESET"),
+                ("javacard.security.KeyBuilder", "TYPE_AES_TRANSIENT_DESELECT"),
+                ("javacard.security.KeyBuilder", "TYPE_DES_TRANSIENT_RESET"),
+                ("javacard.security.KeyBuilder", "TYPE_DES_TRANSIENT_DESELECT"),
+            }.issubset(symmetric))
+            self.assertTrue((out / "java/javacard/security/SymmetricMacProvider.java").is_file())
+            self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/MacNativeBridge.java").is_file())
+
+            expected = set()
+            with REFERENCE.open(newline="", encoding="utf-8") as source:
+                section = ""
+                for row in csv.reader(source, delimiter=";"):
+                    if len(row) == 1:
+                        section = row[0]
+                        if section == "javacard.crypto.Signature":
+                            section = "javacard.security.Signature"
+                    elif len(row) >= 2 and row[1].strip().lower() == "yes" and section in {
+                        "javacardx.crypto.Cipher", "javacard.security.Signature",
+                        "javacard.security.KeyBuilder",
+                    }:
+                        name = row[0]
+                        symmetric_row = (
+                            section == "javacardx.crypto.Cipher" and name.startswith(("ALG_AES_", "ALG_DES_")) or
+                            section == "javacard.security.Signature" and (
+                                name.startswith("ALG_DES_MAC") or
+                                name in {"ALG_AES_MAC_128_NOPAD", "ALG_AES_CMAC_128"}
+                            ) or
+                            section == "javacard.security.KeyBuilder" and name.startswith(("TYPE_AES", "TYPE_DES"))
+                        )
+                        if symmetric_row:
+                            expected.add((section, name))
+            actual = {row for row in symmetric if row[0] in {
+                "javacardx.crypto.Cipher", "javacard.security.Signature",
+                "javacard.security.KeyBuilder",
+            }}
+            self.assertEqual(actual, expected)
 
     def test_rejects_unknown_missing_non_boolean_and_orphan_cipher(self):
         variants = []

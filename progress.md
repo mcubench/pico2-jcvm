@@ -10768,3 +10768,34 @@
   physical card or VPCD; D92 has only 23 persistent bytes free.
 - Commit: `36c8abf` (preceding step); this record is committed separately.
 - Artifacts/logs: `artifacts/results/capability-profiles-acceptance-20261024/`.
+# 2026-10-24 — Add symmetric cryptography profile
+
+- Step/experiment: `symm-crypto-profile-implementation-20261024`
+- Change: Added the `symm_crypto` profile based on the supplied NXP JCOP4 P71
+  CSV; generated AES/DES cipher, transient key, and symmetric MAC providers;
+  added Mbed TLS ECB paths and MAC primitives; enabled per-profile native
+  module selection. The API submodule change is committed as `d0e7fc6`.
+- Validation: `python3 tools/test-javacard-support.py` passed 7 tests;
+  `./tools/build arm --profile symm_crypto`,
+  `./tools/build riscv --profile symm_crypto`, and
+  `./tools/build-pc --profile symm_crypto` passed; the bounded
+  `./tools/test-pc-vpcd-applet --passes 1` smoke passed 15/15 APDU checks.
+  Physical reader discovery via `sudo -n /usr/local/sbin/pico2-pcsc-reader`
+  found 0 devices, so no flash or real-card test was attempted.
+- Result: ARM UF2 is 1,670,656 bytes (SHA-256
+  `86f203a09fffbbf795739b2b019baaf93f6a86219317d5803e521498ddbf1ca9`);
+  PC ROM-mask image is 524,300 bytes (SHA-256
+  `b8af1c28c384278a2442f5cd9e9e02c8cc1ef2d69b8977e9baaf14315d4d46e5`).
+  Emulator checks establish applet selection, JCSystem info, SHA-256
+  doFinal/static performance, and the existing AES CBC-NOPAD probe. They do
+  not establish known-answer correctness for the newly added AES/DES modes or
+  MAC algorithms; physical acceptance is still required.
+- Decision: Keep `symm_crypto` as the target profile, but treat its new
+  algorithms as build-validated only until cipher/MAC vectors and the complete
+  `/deploy` Crypto area pass on a real card. Do not alter the upstream
+  `AlgTest_v1.8.2_jc305.cap` (SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`).
+- Commit: root implementation commit and handoff SHA are recorded in the
+  following progress entry.
+- Artifacts/logs: `artifacts/logs/symm-crypto-vpcd-applet-final-20261024.log`;
+  reference CSV SHA-256 `8fa3593c5f6a196e9ed5eb88a69bfac528c5acbcc933f5e4fdae36e3bf8d0943`.

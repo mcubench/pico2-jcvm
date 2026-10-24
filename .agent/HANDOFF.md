@@ -54,6 +54,39 @@
 
 # Handoff
 
+## Symmetric cryptography profile — 2026-10-24
+
+- The user-provided target is in
+  `docs/NXP_JCOP4_P71_NoECC_ALGSUPPORT__3b_ea_00_00_81_31_fe_45_00_31_c1_73_c8_40_00_00_90_00_7a.csv`.
+  It remains unmodified (SHA-256
+  `8fa3593c5f6a196e9ed5eb88a69bfac528c5acbcc933f5e4fdae36e3bf8d0943`).
+- Implemented `symm_crypto`: AES/DES CBC and ECB padding variants, DES/AES
+  symmetric MACs including MAC3 and AES-CMAC, transient AES/DES key storage,
+  generated API dispatch, and profile-conditioned native modules. API sources
+  are committed in submodule `d0e7fc6`; root commit is to be recorded after
+  validation notes are committed.
+- `python3 tools/test-javacard-support.py` passed 7 tests. ARM, RISC-V, and PC
+  wrappers passed with `--profile symm_crypto`. The bounded in-process PC VPCD
+  smoke passed 15/15 checks, including installation/selection, JCSystem info,
+  SHA-256 doFinal/static performance, and the existing AES-CBC-NOPAD support
+  query. Log: `artifacts/logs/symm-crypto-vpcd-applet-final-20261024.log`.
+- No physical test was possible at the last check: the authorized
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper reported zero visible
+  Pico CCID devices. Do not claim this profile was flashed or tested on real
+  cards. The emulator smoke also did not exercise known-answer vectors for
+  the newly added AES/DES cipher modes or MAC algorithms.
+- Next: when a physical reader becomes visible, run the identified board
+  through the normal approved host-access path; record its serial, flash the
+  full ARM image only after both architecture builds pass, capture finite
+  runtime output, then run Crypto CAP KATs and the `/deploy` Crypto area. If
+  no board is visible, add or run targeted emulator vectors before claiming
+  correctness. Preserve the upstream JCAlgTest CAP unchanged; its SHA-256 is
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+- Current ARM image: 1,670,656 bytes, SHA-256
+  `86f203a09fffbbf795739b2b019baaf93f6a86219317d5803e521498ddbf1ca9`.
+  PC ROM mask: 524,300 bytes, SHA-256
+  `b8af1c28c384278a2442f5cd9e9e02c8cc1ef2d69b8977e9baaf14315d4d46e5`.
+
 ## Selectable capability profiles acceptance — 2026-10-24
 
 - Follow the user's clarified constraint: do not alter the upstream JCAlgTest

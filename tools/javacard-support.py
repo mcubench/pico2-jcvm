@@ -39,6 +39,50 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     ),
 }
 
+for _family, _rows in {
+    "des": {
+        "cipher_des_cbc_iso9797_m1": "ALG_DES_CBC_ISO9797_M1",
+        "cipher_des_cbc_iso9797_m2": "ALG_DES_CBC_ISO9797_M2",
+        "cipher_des_cbc_pkcs5": "ALG_DES_CBC_PKCS5",
+        "cipher_des_ecb_nopad": "ALG_DES_ECB_NOPAD",
+        "cipher_des_ecb_iso9797_m1": "ALG_DES_ECB_ISO9797_M1",
+        "cipher_des_ecb_iso9797_m2": "ALG_DES_ECB_ISO9797_M2",
+        "cipher_des_ecb_pkcs5": "ALG_DES_ECB_PKCS5",
+    },
+    "aes": {
+        "cipher_aes_ecb_nopad": "ALG_AES_BLOCK_128_ECB_NOPAD",
+        "cipher_aes_cbc_iso9797_m1": "ALG_AES_CBC_ISO9797_M1",
+        "cipher_aes_cbc_iso9797_m2": "ALG_AES_CBC_ISO9797_M2",
+        "cipher_aes_cbc_pkcs5": "ALG_AES_CBC_PKCS5",
+        "cipher_aes_ecb_iso9797_m1": "ALG_AES_ECB_ISO9797_M1",
+        "cipher_aes_ecb_iso9797_m2": "ALG_AES_ECB_ISO9797_M2",
+        "cipher_aes_ecb_pkcs5": "ALG_AES_ECB_PKCS5",
+    },
+}.items():
+    for _key, _algorithm in _rows.items():
+        CAPABILITIES[_key] = ("javacardx.crypto.Cipher", _algorithm)
+
+for _family in ("aes", "des"):
+    for _lifetime, _suffix in (("transient_reset", "TRANSIENT_RESET"),
+                               ("transient_deselect", "TRANSIENT_DESELECT")):
+        CAPABILITIES[f"key_{_family}_{_lifetime}"] = (
+            "javacard.security.KeyBuilder", f"TYPE_{_family.upper()}_{_suffix}"
+        )
+
+for _name in (
+    "DES_MAC8_NOPAD",
+    "DES_MAC4_ISO9797_M1", "DES_MAC8_ISO9797_M1",
+    "DES_MAC4_ISO9797_M2", "DES_MAC8_ISO9797_M2",
+    "DES_MAC4_PKCS5", "DES_MAC8_PKCS5",
+    "AES_MAC_128_NOPAD",
+    "DES_MAC4_ISO9797_1_M2_ALG3", "DES_MAC8_ISO9797_1_M2_ALG3",
+    "DES_MAC4_ISO9797_1_M1_ALG3", "DES_MAC8_ISO9797_1_M1_ALG3",
+    "AES_CMAC_128",
+):
+    CAPABILITIES[f"signature_{_name.lower()}"] = (
+        "javacard.security.Signature", f"ALG_{_name}"
+    )
+
 
 def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     if not isinstance(value, dict):
@@ -53,15 +97,25 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     if invalid:
         raise ValueError(f"{path}: capability values must be booleans: {', '.join(invalid)}")
 
-    aes_key = any(value[key] for key in ("key_aes_128", "key_aes_192", "key_aes_256"))
-    des_key = any(value[key] for key in ("key_des", "key_des3_2key", "key_des3_3key"))
-    if not aes_key and any(value[key] for key in (
-        "cipher_aes_cbc_nopad", "cipher_getinstance_aes_cbc_nopad"
-    )):
+    aes_key = any(value[key] for key in (
+        "key_aes_128", "key_aes_192", "key_aes_256",
+        "key_aes_transient_reset", "key_aes_transient_deselect",
+    ))
+    des_key = any(value[key] for key in (
+        "key_des", "key_des3_2key", "key_des3_3key",
+        "key_des_transient_reset", "key_des_transient_deselect",
+    ))
+    aes_cipher = any(key.startswith("cipher_aes_") and enabled
+                     for key, enabled in value.items())
+    des_cipher = any(key.startswith("cipher_des_") and enabled
+                     for key, enabled in value.items())
+    aes_mac = any(key.startswith("signature_aes_") and enabled
+                  for key, enabled in value.items())
+    des_mac = any(key.startswith("signature_des_") and enabled
+                  for key, enabled in value.items())
+    if not aes_key and (aes_cipher or aes_mac):
         raise ValueError(f"{path}: AES CBC requires at least one enabled AES key capability")
-    if not des_key and any(value[key] for key in (
-        "cipher_des_cbc_nopad", "cipher_getinstance_des_cbc_nopad"
-    )):
+    if not des_key and (des_cipher or des_mac):
         raise ValueError(f"{path}: DES CBC requires at least one enabled DES key capability")
     return value
 
@@ -170,23 +224,43 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         "key_aes_192": "KeyBuilder.LENGTH_AES_192",
         "key_aes_256": "KeyBuilder.LENGTH_AES_256",
     }
-    for key, length in aes_lengths.items():
-        if config[key]:
-            key_provider.extend([
-                f"    if (type == KeyBuilder.TYPE_AES && length == {length})",
-                "      return new AESKeyProvider(type, length);",
-            ])
     des_lengths = {
         "key_des": "KeyBuilder.LENGTH_DES",
         "key_des3_2key": "KeyBuilder.LENGTH_DES3_2KEY",
         "key_des3_3key": "KeyBuilder.LENGTH_DES3_3KEY",
     }
-    for key, length in des_lengths.items():
-        if config[key]:
-            key_provider.extend([
-                f"    if (type == KeyBuilder.TYPE_DES && length == {length})",
-                "      return new DESKeyProvider(type, length);",
-            ])
+    aes_types = {
+        "key_aes_128": ("KeyBuilder.TYPE_AES", "KeyBuilder.LENGTH_AES_128"),
+        "key_aes_192": ("KeyBuilder.TYPE_AES", "KeyBuilder.LENGTH_AES_192"),
+        "key_aes_256": ("KeyBuilder.TYPE_AES", "KeyBuilder.LENGTH_AES_256"),
+    }
+    des_types = {
+        "key_des": ("KeyBuilder.TYPE_DES", "KeyBuilder.LENGTH_DES"),
+        "key_des3_2key": ("KeyBuilder.TYPE_DES", "KeyBuilder.LENGTH_DES3_2KEY"),
+        "key_des3_3key": ("KeyBuilder.TYPE_DES", "KeyBuilder.LENGTH_DES3_3KEY"),
+    }
+    for family, length_rows, types in (("AES", aes_lengths, aes_types),
+                                       ("DES", des_lengths, des_types)):
+        transient_rows = {
+            "key_" + family.lower() + "_transient_reset":
+                f"KeyBuilder.TYPE_{family}_TRANSIENT_RESET",
+            "key_" + family.lower() + "_transient_deselect":
+                f"KeyBuilder.TYPE_{family}_TRANSIENT_DESELECT",
+        }
+        for key, memory_type in transient_rows.items():
+            if config[key]:
+                for length_key, (_, length) in types.items():
+                    if config[length_key]:
+                        key_provider.extend([
+                            f"    if (type == {memory_type} && length == {length})",
+                            f"      return new {family}KeyProvider(type, length);",
+                        ])
+        for key, (memory_type, length) in types.items():
+            if config[key]:
+                key_provider.extend([
+                    f"    if (type == {memory_type} && length == {length})",
+                    f"      return new {family}KeyProvider(type, length);",
+                ])
     key_provider.extend([
         "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
         "    return null;",
@@ -200,17 +274,23 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     (java_dir / "KeyProviderBase.java").unlink(missing_ok=True)
     (java_dir / "AESKeyProvider.java").unlink(missing_ok=True)
     (java_dir / "DESKeyProvider.java").unlink(missing_ok=True)
-    if any(config[key] for key in aes_lengths):
+    if any(config[key] for key in (*aes_lengths, "key_aes_transient_reset",
+                                    "key_aes_transient_deselect")):
         (java_dir / "AESKeyProvider.java").write_text(
             (Path(__file__).resolve().parent / "java-support/AESKeyProvider.java").read_text(encoding="utf-8"),
             encoding="utf-8",
         )
-    if any(config[key] for key in des_lengths):
+    if any(config[key] for key in (*des_lengths, "key_des_transient_reset",
+                                    "key_des_transient_deselect")):
         (java_dir / "DESKeyProvider.java").write_text(
             (Path(__file__).resolve().parent / "java-support/DESKeyProvider.java").read_text(encoding="utf-8"),
             encoding="utf-8",
         )
-    if any(config[key] for key in (*aes_lengths, *des_lengths)):
+    if any(config[key] for key in (*aes_lengths, *des_lengths,
+                                   "key_aes_transient_reset",
+                                   "key_aes_transient_deselect",
+                                   "key_des_transient_reset",
+                                   "key_des_transient_deselect")):
         (java_dir / "KeyProviderBase.java").write_text(
             key_base.read_text(encoding="utf-8"), encoding="utf-8"
         )
@@ -227,14 +307,29 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         "      throws CryptoException {",
         "    if (externalAccess) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
     ]
-    for key, algorithm, provider in (
-        ("cipher_aes_cbc_nopad", "Cipher.ALG_AES_BLOCK_128_CBC_NOPAD", "AESCipherProvider"),
-        ("cipher_des_cbc_nopad", "Cipher.ALG_DES_CBC_NOPAD", "DESCipherProvider"),
-    ):
+    cipher_specs = {
+        "cipher_des_cbc_nopad": ("ALG_DES_CBC_NOPAD", "CIPHER_DES_CBC", "PAD_NOPAD", False, True),
+        "cipher_des_cbc_iso9797_m1": ("ALG_DES_CBC_ISO9797_M1", "CIPHER_DES_CBC", "PAD_ISO9797_M1", False, True),
+        "cipher_des_cbc_iso9797_m2": ("ALG_DES_CBC_ISO9797_M2", "CIPHER_DES_CBC", "PAD_ISO9797_M2", False, True),
+        "cipher_des_cbc_pkcs5": ("ALG_DES_CBC_PKCS5", "CIPHER_DES_CBC", "PAD_PKCS5", False, True),
+        "cipher_des_ecb_nopad": ("ALG_DES_ECB_NOPAD", "CIPHER_DES_ECB", "PAD_NOPAD", False, False),
+        "cipher_des_ecb_iso9797_m1": ("ALG_DES_ECB_ISO9797_M1", "CIPHER_DES_ECB", "PAD_ISO9797_M1", False, False),
+        "cipher_des_ecb_iso9797_m2": ("ALG_DES_ECB_ISO9797_M2", "CIPHER_DES_ECB", "PAD_ISO9797_M2", False, False),
+        "cipher_des_ecb_pkcs5": ("ALG_DES_ECB_PKCS5", "CIPHER_DES_ECB", "PAD_PKCS5", False, False),
+        "cipher_aes_cbc_nopad": ("ALG_AES_BLOCK_128_CBC_NOPAD", "CIPHER_AES_CBC", "PAD_NOPAD", True, True),
+        "cipher_aes_ecb_nopad": ("ALG_AES_BLOCK_128_ECB_NOPAD", "CIPHER_AES_ECB", "PAD_NOPAD", True, False),
+        "cipher_aes_cbc_iso9797_m1": ("ALG_AES_CBC_ISO9797_M1", "CIPHER_AES_CBC", "PAD_ISO9797_M1", True, True),
+        "cipher_aes_cbc_iso9797_m2": ("ALG_AES_CBC_ISO9797_M2", "CIPHER_AES_CBC", "PAD_ISO9797_M2", True, True),
+        "cipher_aes_cbc_pkcs5": ("ALG_AES_CBC_PKCS5", "CIPHER_AES_CBC", "PAD_PKCS5", True, True),
+        "cipher_aes_ecb_iso9797_m1": ("ALG_AES_ECB_ISO9797_M1", "CIPHER_AES_ECB", "PAD_ISO9797_M1", True, False),
+        "cipher_aes_ecb_iso9797_m2": ("ALG_AES_ECB_ISO9797_M2", "CIPHER_AES_ECB", "PAD_ISO9797_M2", True, False),
+        "cipher_aes_ecb_pkcs5": ("ALG_AES_ECB_PKCS5", "CIPHER_AES_ECB", "PAD_PKCS5", True, False),
+    }
+    for key, (alg, cipher, pad, aes, cbc) in cipher_specs.items():
         if config[key]:
-            cipher_provider.extend([
-                f"    if (algorithm == {algorithm}) return new {provider}();"
-            ])
+            cipher_provider.append(
+                f"    if (algorithm == Cipher.{alg}) return new SymmetricCipherProvider(Cipher.{alg}, Cipher.{cipher}, Cipher.{pad}, {str(aes).lower()}, {str(cbc).lower()});"
+            )
     cipher_provider.extend([
         "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
         "    return null;",
@@ -242,18 +337,17 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         "  static Cipher getInstance(byte cipherAlgorithm, byte paddingAlgorithm,",
         "                            boolean externalAccess) throws CryptoException {",
         "    if (externalAccess) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-        "    if (paddingAlgorithm == Cipher.PAD_NOPAD) {",
     ])
-    for key, algorithm, impl, provider in (
-        ("cipher_getinstance_aes_cbc_nopad", "Cipher.CIPHER_AES_CBC", "Cipher.ALG_AES_BLOCK_128_CBC_NOPAD", "AESCipherProvider"),
-        ("cipher_getinstance_des_cbc_nopad", "Cipher.CIPHER_DES_CBC", "Cipher.ALG_DES_CBC_NOPAD", "DESCipherProvider"),
-    ):
-        if config[key]:
-            cipher_provider.extend([
-                f"      if (cipherAlgorithm == {algorithm}) return new {provider}();"
-            ])
+    for key, (alg, cipher, pad, aes, cbc) in cipher_specs.items():
+        getinstance = (
+            config["cipher_getinstance_aes_cbc_nopad"] if aes
+            else config["cipher_getinstance_des_cbc_nopad"]
+        ) if key.endswith("_nopad") and cbc else config[key]
+        if getinstance:
+            cipher_provider.append(
+                f"      if (cipherAlgorithm == Cipher.{cipher} && paddingAlgorithm == Cipher.{pad}) return new SymmetricCipherProvider(Cipher.{alg}, Cipher.{cipher}, Cipher.{pad}, {str(aes).lower()}, {str(cbc).lower()});"
+            )
     cipher_provider.extend([
-        "    }",
         "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
         "    return null;",
         "  }",
@@ -262,10 +356,8 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     (cipher_dir / "CipherProvider.java").write_text(
         "\n".join(cipher_provider) + "\n", encoding="utf-8"
     )
-    cipher_enabled = any(config[key] for key in (
-        "cipher_aes_cbc_nopad", "cipher_des_cbc_nopad",
-        "cipher_getinstance_aes_cbc_nopad", "cipher_getinstance_des_cbc_nopad",
-    ))
+    cipher_enabled = any(config[key] for key in cipher_specs) or any(config[key] for key in (
+        "cipher_getinstance_aes_cbc_nopad", "cipher_getinstance_des_cbc_nopad"))
     if cipher_enabled:
         (nativeimpl_dir / "CbcCipherNativeBridge.java").write_text(
             (Path(__file__).resolve().parent / "java-support/CbcCipherNativeBridge.java").read_text(encoding="utf-8"),
@@ -273,28 +365,67 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         )
     else:
         (nativeimpl_dir / "CbcCipherNativeBridge.java").unlink(missing_ok=True)
-    cbc_cipher_path = cipher_dir / "CbcCipherProvider.java"
     if cipher_enabled:
-        cbc_cipher_path.write_text(
-            (Path(__file__).resolve().parent / "java-support/CbcCipherProvider.java").read_text(encoding="utf-8"),
+        (cipher_dir / "SymmetricCipherProvider.java").write_text(
+            (Path(__file__).resolve().parent / "java-support/SymmetricCipherProvider.java").read_text(encoding="utf-8"),
             encoding="utf-8",
         )
     else:
-        cbc_cipher_path.unlink(missing_ok=True)
-    for key, filename in (
-        ("cipher_aes_cbc_nopad", "AESCipherProvider.java"),
-        ("cipher_getinstance_aes_cbc_nopad", "AESCipherProvider.java"),
-        ("cipher_des_cbc_nopad", "DESCipherProvider.java"),
-        ("cipher_getinstance_des_cbc_nopad", "DESCipherProvider.java"),
-    ):
-        path = cipher_dir / filename
+        (cipher_dir / "SymmetricCipherProvider.java").unlink(missing_ok=True)
+    for stale in ("AESCipherProvider.java", "DESCipherProvider.java", "CbcCipherProvider.java"):
+        (cipher_dir / stale).unlink(missing_ok=True)
+    signature_specs = {
+        "signature_des_mac8_nopad": ("ALG_DES_MAC8_NOPAD", "SIG_CIPHER_DES_MAC8", "PAD_NOPAD", 8, False),
+        "signature_des_mac4_iso9797_m1": ("ALG_DES_MAC4_ISO9797_M1", "SIG_CIPHER_DES_MAC4", "PAD_ISO9797_M1", 4, False),
+        "signature_des_mac8_iso9797_m1": ("ALG_DES_MAC8_ISO9797_M1", "SIG_CIPHER_DES_MAC8", "PAD_ISO9797_M1", 8, False),
+        "signature_des_mac4_iso9797_m2": ("ALG_DES_MAC4_ISO9797_M2", "SIG_CIPHER_DES_MAC4", "PAD_ISO9797_M2", 4, False),
+        "signature_des_mac8_iso9797_m2": ("ALG_DES_MAC8_ISO9797_M2", "SIG_CIPHER_DES_MAC8", "PAD_ISO9797_M2", 8, False),
+        "signature_des_mac4_pkcs5": ("ALG_DES_MAC4_PKCS5", "SIG_CIPHER_DES_MAC4", "PAD_PKCS5", 4, False),
+        "signature_des_mac8_pkcs5": ("ALG_DES_MAC8_PKCS5", "SIG_CIPHER_DES_MAC8", "PAD_PKCS5", 8, False),
+        "signature_aes_mac_128_nopad": ("ALG_AES_MAC_128_NOPAD", "SIG_CIPHER_AES_MAC128", "PAD_NOPAD", 16, True),
+        "signature_des_mac4_iso9797_1_m2_alg3": ("ALG_DES_MAC4_ISO9797_1_M2_ALG3", "SIG_CIPHER_DES_MAC4", "PAD_ISO9797_1_M2_ALG3", 4, False),
+        "signature_des_mac8_iso9797_1_m2_alg3": ("ALG_DES_MAC8_ISO9797_1_M2_ALG3", "SIG_CIPHER_DES_MAC8", "PAD_ISO9797_1_M2_ALG3", 8, False),
+        "signature_des_mac4_iso9797_1_m1_alg3": ("ALG_DES_MAC4_ISO9797_1_M1_ALG3", "SIG_CIPHER_DES_MAC4", "PAD_ISO9797_1_M1_ALG3", 4, False),
+        "signature_des_mac8_iso9797_1_m1_alg3": ("ALG_DES_MAC8_ISO9797_1_M1_ALG3", "SIG_CIPHER_DES_MAC8", "PAD_ISO9797_1_M1_ALG3", 8, False),
+        "signature_aes_cmac_128": ("ALG_AES_CMAC_128", "SIG_CIPHER_AES_CMAC128", "PAD_ISO9797_M2", 16, True),
+    }
+    signature_dir = out_dir / "java/javacard/security"
+    signature_provider = [
+        "package javacard.security;", "", "final class SignatureProvider {",
+        "  private SignatureProvider() {}",
+        "  static Signature getInstance(byte algorithm, boolean externalAccess) throws CryptoException {",
+        "    if (externalAccess) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+    ]
+    for key, (alg, cipher, pad, length, aes) in signature_specs.items():
         if config[key]:
-            template = Path(__file__).resolve().parent / "java-support" / filename
-            path.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
-    if not config["cipher_aes_cbc_nopad"] and not config["cipher_getinstance_aes_cbc_nopad"]:
-        (cipher_dir / "AESCipherProvider.java").unlink(missing_ok=True)
-    if not config["cipher_des_cbc_nopad"] and not config["cipher_getinstance_des_cbc_nopad"]:
-        (cipher_dir / "DESCipherProvider.java").unlink(missing_ok=True)
+            signature_provider.append(
+                f"    if (algorithm == Signature.{alg}) return new SymmetricMacProvider(Signature.{alg}, Signature.{cipher}, javacardx.crypto.Cipher.{pad}, (short){length}, {str(aes).lower()});"
+            )
+    signature_provider.extend([
+        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);", "    return null;", "  }",
+        "  static Signature getInstance(byte digest, byte cipher, byte padding, boolean externalAccess) throws CryptoException {",
+        "    if (externalAccess || digest != MessageDigest.ALG_NULL) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
+    ])
+    for key, (alg, cipher, pad, length, aes) in signature_specs.items():
+        if config[key]:
+            signature_provider.append(
+                f"    if (cipher == Signature.{cipher} && padding == javacardx.crypto.Cipher.{pad}) return new SymmetricMacProvider(Signature.{alg}, Signature.{cipher}, javacardx.crypto.Cipher.{pad}, (short){length}, {str(aes).lower()});"
+            )
+    signature_provider.extend([
+        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);", "    return null;", "  }", "}",
+    ])
+    (signature_dir / "SignatureProvider.java").write_text("\n".join(signature_provider) + "\n", encoding="utf-8")
+    for filename in ("SymmetricMacProvider.java",):
+        path = signature_dir / filename
+        if any(config[key] for key in signature_specs):
+            path.write_text((Path(__file__).resolve().parent / "java-support" / filename).read_text(encoding="utf-8"), encoding="utf-8")
+        else:
+            path.unlink(missing_ok=True)
+    mac_bridge = nativeimpl_dir / "MacNativeBridge.java"
+    if any(config[key] for key in signature_specs):
+        mac_bridge.write_text((Path(__file__).resolve().parent / "java-support/MacNativeBridge.java").read_text(encoding="utf-8"), encoding="utf-8")
+    else:
+        mac_bridge.unlink(missing_ok=True)
     digest_provider = [
         "package javacard.security;",
         "",
