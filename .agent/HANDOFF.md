@@ -63,8 +63,8 @@
 - Implemented `symm_crypto`: AES/DES CBC and ECB padding variants, DES/AES
   symmetric MACs including MAC3 and AES-CMAC, transient AES/DES key storage,
   generated API dispatch, and profile-conditioned native modules. API sources
-  are committed in submodule `d0e7fc6`; root commit is to be recorded after
-  validation notes are committed.
+  are committed in submodule `d0e7fc6`; root implementation commit is
+  `2adca1c`.
 - `python3 tools/test-javacard-support.py` passed 7 tests. ARM, RISC-V, and PC
   wrappers passed with `--profile symm_crypto`. The bounded in-process PC VPCD
   smoke passed 15/15 checks, including installation/selection, JCSystem info,

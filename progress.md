@@ -10795,7 +10795,21 @@
   `/deploy` Crypto area pass on a real card. Do not alter the upstream
   `AlgTest_v1.8.2_jc305.cap` (SHA-256
   `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`).
-- Commit: root implementation commit and handoff SHA are recorded in the
-  following progress entry.
+- Commit: `2adca1c` (root implementation); `d0e7fc6` (Java Card API submodule).
 - Artifacts/logs: `artifacts/logs/symm-crypto-vpcd-applet-final-20261024.log`;
   reference CSV SHA-256 `8fa3593c5f6a196e9ed5eb88a69bfac528c5acbcc933f5e4fdae36e3bf8d0943`.
+
+## 2026-10-24 — Record symmetric crypto implementation commit
+
+- Step/experiment: `symm-crypto-profile-commit-reference-20261024`
+- Change: Recorded the implementation commit and normalized the supplied
+  reference CSV file mode to non-executable without changing its contents.
+- Validation: Confirmed the root commit is `2adca1c`, its API submodule pointer
+  is `d0e7fc6`, and the CSV SHA-256 remains
+  `8fa3593c5f6a196e9ed5eb88a69bfac528c5acbcc933f5e4fdae36e3bf8d0943`.
+- Result: The implementation is committed; physical algorithm acceptance is
+  still pending because no card reader was visible.
+- Decision: Continue with real-card KATs and `/deploy` Crypto when a Pico reader
+  becomes visible; do not report emulator results as hardware validation.
+- Commit: `2adca1c` (implementation commit recorded here).
+- Artifacts/logs: `artifacts/logs/symm-crypto-vpcd-applet-final-20261024.log`.
