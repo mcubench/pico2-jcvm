@@ -1,3 +1,37 @@
+## Latest physical run — empty `symm_crypto` image and OwnerPINx reproduction (2026-10-25)
+
+- User said the Pico tokens were available in BOOTSEL. The VM initially saw
+  only Pico D92 `D92E743D5F640C0F` in runtime CCID mode. The authorized wrapper
+  requested BOOTSEL through the CDC 1200-baud fallback after picotool could not
+  find a reset interface; BOOTSEL appeared after 3 seconds.
+- Both `./tools/build arm --profile symm_crypto` and the RISC-V wrapper passed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile symm_crypto --chipid
+  D92E743D5F640C0F` flashed and verified the 1,675,264-byte image, then its
+  finite monitor passed repeatedly. SHA-256:
+  `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
+- After re-running `sudo -n /usr/local/sbin/pico2-pcsc-reader`, PC/SC exposed
+  the reader. GPPro `--list` showed only ISD `A000000151000000`; the physical
+  registry is empty. Firmware does not preload JCAlgTest. Future applet tests
+  must use explicit `gp --install` with the unchanged upstream CAP.
+- The physical upstream API 3.0.5 Core rerun uploaded the Core CAP, completed
+  291 calls, and cleaned up successfully. Counts: 253 OK, 15
+  `UNSUPPORTED_PER_SPEC`, 17 `EXC_RUNTIME`, 2 `WRONG_RESULT`, and 4 optional
+  Ext `APPLET_NOT_INSTALLED` calls because Ext INSTALL returned `6A88` and its
+  rollback succeeded. All OwnerPINx variants comprise the 17 runtime errors
+  and two wrong results; normal OwnerPIN rows pass. This reproduces the prior
+  failure on a freshly flashed image. No source change has been made to address
+  it yet.
+- The runner needs SmartcardIO's full exact reader string including the serial
+  and slot: `Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00`. The shorter
+  `pcsc_scan` display name is not accepted by its exact-name resolver. Refresh
+  PC/SC ACL after each USB re-enumeration before resolving readers.
+- Evidence: `artifacts/logs/cycle-choupi-20261024T225805Z.log` and
+  `artifacts/results/deploy/symm_crypto-D92-ownerpinx-repeat-20261025.csv`.
+- Next: trace `invokeinterface` method mapping for OwnerPINx and its parent
+  interfaces in the C++ JCVM. Do not add Java providers/adapters or modify
+  upstream CAPs. Rebuild both architectures before any next flash; preserve
+  the empty D92 registry and use another identified board if D92 disappears.
+
 ## Architecture layering analysis — 2026-10-24
 
 - Extended `FIRMWARE_JCVM_ARCHITECTURE.md` to 4,217 words, distinguishing

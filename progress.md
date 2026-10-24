@@ -11433,3 +11433,32 @@
   when beginning an applet test.
 - Commit: `432f6fd`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T224042Z.log`.
+
+## 2026-10-25 — Reflash BOOTSEL-returned Pico and reproduce OwnerPINx Core findings
+
+- Step/experiment: `symm-empty-card-reflash-ownerpinx-repro-D92`
+- Change: Rebuilt/flashed the existing `symm_crypto` ARM image on physical Pico
+  2 `D92E743D5F640C0F`; firmware and upstream CAP files were unchanged. Re-ran
+  the upstream API 3.0.5 Core suite to confirm the outstanding OwnerPINx issue.
+- Validation: ARM and RISC-V wrappers passed. The flasher recovered from a
+  missing reset interface via CDC 1200-baud reset, entered BOOTSEL in 3 s,
+  wrote and verified the image to 100%, and completed the 18-second monitor
+  with repeated `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, and
+  `CYCLE:PASS`. After ACL refresh, GPPro `--list` showed only ISD
+  `A000000151000000`. The Core CAP uploaded, its applet ran 291 calls, and
+  cleanup removed the CAPs it had installed.
+- Result: Core returned 253 OK, 15 `UNSUPPORTED_PER_SPEC`, 17 `EXC_RUNTIME`,
+  four `APPLET_NOT_INSTALLED` rows for the optional Ext scenario, and two
+  `WRONG_RESULT`. The 17 runtime errors and two wrong results are OwnerPINx
+  variants; ordinary OwnerPIN rows pass. The Ext scenario INSTALL refused with
+  `6A88` and rollback passed. Root cause is still under investigation. The
+  deployed firmware image has no embedded JCAlgTest applet, and the physical
+  registry remains empty until a CAP is explicitly installed.
+- Decision: Preserve this empty card. Next trace OwnerPINx interface dispatch
+  without adding Java algorithm/provider implementations or editing upstream
+  CAP files.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T225805Z.log`;
+  `artifacts/results/deploy/symm_crypto-D92-ownerpinx-repeat-20261025.csv`;
+  image `build/arm/pico2_choupi.uf2` SHA-256
+  `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
