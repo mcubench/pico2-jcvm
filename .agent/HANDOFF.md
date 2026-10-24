@@ -85,10 +85,9 @@
   after a clean current-profile install when the card can be safely reset;
   otherwise prioritize the next item in root `TODO.md`. Do not interpret the
   repeated `B0 E2` status as an algorithm-support result.
-- Commit for this step: not created; `.git` is read-only in this session
-  (`git add` failed creating `.git/index.lock`). All task and prior changes are
-  preserved in the worktree; do not discard them. Stage and commit the logical
-  implementation/result record when Git write access is restored.
+- Commit for this step: `744bceb`; the separate follow-up commit records this
+  final handoff/progress SHA. Pre-existing nested submodule artifacts remain
+  untouched.
 
 ## Framework exception reason preservation in RMI — 2026-10-23
 

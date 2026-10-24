@@ -10707,8 +10707,8 @@
   yes/no rows while omitting five optional crypto capabilities. Retain the
   `6A80` response for duplicate or malformed LOAD data. The prior seven-flag
   base trial is superseded.
-- Commit: not created; Git could not create `.git/index.lock` because `.git` is
-  read-only in this session. All task changes remain in the worktree.
+- Commit: `744bceb` (implementation and comparison); this follow-up records the
+  final progress-record SHA.
 - Artifacts/logs: `artifacts/results/jcalgtest-profile-comparison-20261024.md`,
   `artifacts/results/jcalgtest-profile-base10-20261024/`,
   `artifacts/results/jcalgtest-profile-current-20261024/`,
