@@ -1,6 +1,7 @@
 #include "cap_load.hpp"
 #include "cap_store.hpp"
 #include "gp_delete.hpp"
+#include "ffi.h"
 
 #ifdef PC_VERSION
 #include <cstdio>
@@ -22,8 +23,16 @@ extern "C" uint8_t fs_sync(void) {
   }
   return 0;
 }
+extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
+                                    uint8_t prefix_length) {
+  return fs_erase(prefix, prefix_length);
+}
+extern "C" uint8_t fs_erase_package_state(uint8_t) { return 0; }
 #else
 extern "C" uint8_t fs_sync(void);
+extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
+                                    uint8_t prefix_length);
+extern "C" uint8_t fs_erase_package_state(uint8_t package_id);
 #endif
 #include "heap.hpp"
 #include "jc_cap/jc_cap_static_field.hpp"
@@ -32,10 +41,10 @@ extern "C" uint8_t fs_sync(void);
 #include "jc_handlers/jc_static.hpp"
 #include "jc_handlers/package.hpp"
 #include "jc_types/jc_array.hpp"
-#include "ffi.h"
 
 #include <cstring>
 #include <cstddef>
+#include <cstdio>
 
 extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
                                              const uint8_t *package_aid,
@@ -356,12 +365,12 @@ bool clear_applet_persistent_state(uint8_t package_id,
   for (uint16_t field = 0; field <= 0xff; ++field) {
     const auto tag = jcvm::FlashMemory_Handler::getPersistentFieldTag(
         0, package_id, class_index, static_cast<uint8_t>(field));
-    if (!jcvm::FlashMemory_Handler::erasePersistentTag(tag)) return false;
+    if (fs_erase_prefix(tag.value, tag.len) != 0) return false;
     if (class_index > UINT8_MAX) {
       const auto legacy_tag =
           jcvm::FlashMemory_Handler::getLegacyPersistentFieldTag(
               0, package_id, class_index, static_cast<uint8_t>(field));
-      if (!jcvm::FlashMemory_Handler::erasePersistentTag(legacy_tag))
+      if (fs_erase_prefix(legacy_tag.value, legacy_tag.len) != 0)
         return false;
     }
   }
@@ -369,12 +378,59 @@ bool clear_applet_persistent_state(uint8_t package_id,
 }
 
 bool clear_package_static_state(uint8_t package_id) noexcept {
+#ifdef PC_VERSION
   for (uint16_t field = 0; field <= 0xff; ++field) {
     const auto tag = jcvm::FlashMemory_Handler::getStaticFieldTag(
-        package_id,
-        static_cast<uint8_t>(field));
-    if (!jcvm::FlashMemory_Handler::erasePersistentTag(tag)) return false;
+        package_id, static_cast<uint8_t>(field));
+    if (fs_erase_prefix(tag.value, tag.len) != 0) return false;
   }
+  return true;
+#else
+  return fs_erase_package_state(package_id) == 0;
+#endif
+}
+
+bool clear_orphaned_dynamic_persistent_state() noexcept {
+  bool has_orphans = false;
+  for (uint8_t package_id = kFirstDynamicPackageId;
+       package_id < kFirstDynamicPackageId + kDynamicPackageCount;
+       ++package_id) {
+    uint32_t cap_length = 0;
+    if (!jcvm::FlashMemory_Handler::isPackageExist(package_id) &&
+        cap_store_data_for_package(package_id, &cap_length) == nullptr) {
+      has_orphans = true;
+      break;
+    }
+  }
+  if (!has_orphans) return true;
+  if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction())
+    return false;
+  bool success = true;
+  for (uint8_t package_id = kFirstDynamicPackageId;
+       package_id < kFirstDynamicPackageId + kDynamicPackageCount;
+       ++package_id) {
+    uint32_t cap_length = 0;
+    if (jcvm::FlashMemory_Handler::isPackageExist(package_id) ||
+        cap_store_data_for_package(package_id, &cap_length) != nullptr) {
+      continue;
+    }
+    if (!clear_package_static_state(package_id)) {
+      success = false;
+      break;
+    }
+  }
+  if (!success) {
+    (void)jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    (void)fs_sync();
+    return false;
+  }
+  if (fs_sync() != 0) {
+    (void)jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
+    (void)fs_sync();
+    return false;
+  }
+  if (!jcvm::FlashMemory_Handler::commitPersistentWriteTransaction())
+    return false;
   return true;
 }
 
@@ -787,6 +843,7 @@ bool CapLoadSession::finishLoad() noexcept {
                          applet_aid_length_) ||
       cap_store_find_package(load_package_aid_, load_package_aid_length_,
                              package_id_) ||
+      !clear_orphaned_dynamic_persistent_state() ||
       !allocate_dynamic_package_id(package_id_) ||
       choupi_store_cap_package(package_id_, load_package_aid_,
                                load_package_aid_length_, load_data_ + offset,
@@ -1031,10 +1088,12 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
 
   struct DeleteBackend {
     bool begin() noexcept {
+      stage = 1;
       return jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
     }
     uint8_t package_id;
     bool clear_applet(uint16_t class_index) noexcept {
+      stage = 2;
       if (delete_package) {
         const uint8_t count = cap_store_package_instance_count(package_id);
         for (uint8_t index = 0; index < count; ++index) {
@@ -1055,22 +1114,31 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
       return clear_applet_persistent_state(package_id, class_index);
     }
     bool clear_package_static() noexcept {
+      stage = 3;
       return clear_package_static_state(package_id);
     }
     void mark_deleted(bool package) {
+      stage = 4;
       if (!package) return;
       jcvm::FlashMemory_Handler::setPersistentField_Byte(
           lifecycle_tag(package_id, 2), kPackageDeletedState);
       jcvm::FlashMemory_Handler::disablePackage(package_id);
     }
-    uint8_t sync() noexcept { return fs_sync(); }
+    uint8_t sync() noexcept {
+      stage = 5;
+      return fs_sync();
+    }
     bool rollback() noexcept {
+      if (failure_stage == 0) failure_stage = stage;
       return jcvm::FlashMemory_Handler::rollbackPersistentWriteTransaction();
     }
     bool commit() noexcept {
+      stage = 6;
       return jcvm::FlashMemory_Handler::commitPersistentWriteTransaction();
     }
     bool delete_package = false;
+    uint8_t stage = 0;
+    uint8_t failure_stage = 0;
   } backend{package_id_};
 
   backend.delete_package = delete_package;
@@ -1080,12 +1148,37 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
       installed_ ||
           (delete_package && cap_store_package_instance_count(package_id_) != 0),
       applet_class_index_);
-  if (transaction_status != 0x9000) return transaction_status;
+  if (transaction_status != 0x9000) {
+#ifdef PC_VERSION
+    std::fprintf(stderr, "VPCD:DELETE_FAIL stage=%u sw=%04X\n",
+                 static_cast<unsigned>(backend.failure_stage != 0
+                                           ? backend.failure_stage
+                                           : backend.stage),
+                 transaction_status);
+#else
+    std::printf("CHOUPI:DELETE_FAIL stage=%u sw=%04X\r\n",
+                static_cast<unsigned>(backend.failure_stage != 0
+                                          ? backend.failure_stage
+                                          : backend.stage),
+                transaction_status);
+    std::fflush(stdout);
+#endif
+    return transaction_status;
+  }
 
   if (delete_package) {
     const uint8_t deleted_package_id = package_id_;
     reset();
-    return cap_store_delete_package(deleted_package_id) ? 0x9000 : 0x6581;
+    if (!cap_store_delete_package(deleted_package_id)) {
+#ifdef PC_VERSION
+      std::fprintf(stderr, "VPCD:DELETE_FAIL stage=7 sw=6581\n");
+#else
+      std::printf("CHOUPI:DELETE_FAIL stage=7 sw=6581\r\n");
+      std::fflush(stdout);
+#endif
+      return 0x6581;
+    }
+    return 0x9000;
   } else {
     if (!cap_store_remove_package_instance(package_id_, aid, aid_length))
       return 0x6581;

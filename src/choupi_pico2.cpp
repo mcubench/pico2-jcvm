@@ -178,10 +178,16 @@ constexpr uint8_t kOverlayCompressedTag = 1u << 2;
 constexpr uint8_t kOverlayParentTag = 1u << 3;
 constexpr uint8_t kOverlaySerialized = 1u << 4;
 constexpr uint8_t kOverlayDeleted = 1u << 5;
+constexpr uint8_t kMaxOverlayTagLength = 128;
 
 alignas(FLASH_PAGE_SIZE) OverlayFile overlay[kMaxOverlayFiles];
 size_t overlay_file_count = 0;
 alignas(FLASH_PAGE_SIZE) uint8_t overlay_bytes[kMaxOverlayBytes];
+// Prefix deletion must reclaim payload bytes before attempting small records
+// when the fixed overlay is full. Bucket first by tag length (children before
+// parents), then by payload size (largest reclaim first).
+uint16_t erase_bucket_head[kMaxOverlayTagLength + 1][17];
+uint16_t erase_bucket_next[kMaxOverlayFiles];
 size_t overlay_bytes_used = 0;
 bool overlay_dirty = false;
 bool filesystem_layout_available = false;
@@ -687,6 +693,60 @@ OverlayFile *allocate_overlay(const uint8_t *tag, uint8_t tag_length) {
   return nullptr;
 }
 
+bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
+                             uint8_t *tag_length,
+                             uint8_t depth = 0) {
+  if (slot >= kMaxOverlayFiles || tag == nullptr || tag_length == nullptr ||
+      depth > 64) {
+    return false;
+  }
+  const OverlayFile &file = overlay[slot];
+  if (!overlay_is_used(file) || !overlay_has_storage(file) ||
+      file.tag_length == 0 || file.tag_length > 128 ||
+      file.offset >= overlay_bytes_used) {
+    return false;
+  }
+
+  const uint8_t header = overlay_bytes[file.offset];
+  const uint8_t key_length = header & 0x7f;
+  const uint8_t *stored = overlay_bytes + file.offset + 1;
+  if ((header & 0x80) != 0) {
+    if (key_length != 3 || file.tag_length < 2) return false;
+    const uint16_t parent_slot = static_cast<uint16_t>(stored[0]) |
+                                 static_cast<uint16_t>(stored[1] << 8);
+    uint8_t parent_length = 0;
+    if (!reconstruct_overlay_tag(parent_slot, tag, &parent_length,
+                                 static_cast<uint8_t>(depth + 1)) ||
+        parent_length + 2 != file.tag_length) {
+      return false;
+    }
+    tag[parent_length] = stored[2];
+    tag[parent_length + 1] = stored[2];
+    *tag_length = file.tag_length;
+    return true;
+  }
+
+  if (overlay_compresses_tag(file)) {
+    const uint8_t root_length = tag_root_length(stored, file.tag_length);
+    if (root_length == 0 || file.tag_length <= root_length ||
+        ((file.tag_length - root_length) & 1u) != 0 ||
+        key_length != root_length + (file.tag_length - root_length) / 2) {
+      return false;
+    }
+    std::memcpy(tag, stored, root_length);
+    uint8_t stored_index = root_length;
+    for (uint8_t index = root_length; index < file.tag_length; index += 2) {
+      tag[index] = stored[stored_index++];
+      tag[index + 1] = tag[index];
+    }
+  } else {
+    if (key_length != file.tag_length) return false;
+    std::memcpy(tag, stored, file.tag_length);
+  }
+  *tag_length = file.tag_length;
+  return true;
+}
+
 bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
                     uint32_t length) {
   const bool parent_tag = (file.flags & kOverlayParentTag) != 0;
@@ -1013,6 +1073,50 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
   return 0;
 }
 
+namespace {
+uint8_t erase_overlay_slot(uint16_t slot) {
+  if (slot >= kMaxOverlayFiles) return 1;
+  auto &file = overlay[slot];
+  if (!overlay_is_used(file) || !overlay_has_record(file) ||
+      !overlay_has_storage(file) || file.offset >= overlay_bytes_used) {
+    return 1;
+  }
+
+  // Re-encode the existing key bytes verbatim. In particular, a compressed
+  // child can outlive a parent that was deleted by an older firmware; its
+  // canonical tag can be reconstructed, while find_overlay() cannot resolve
+  // it through the now-deleted parent. Preserving the encoding lets us write
+  // a durable tombstone without resolving that parent again.
+  const uint8_t key_header = overlay_bytes[file.offset];
+  const size_t key_length = key_header & 0x7f;
+  const size_t old_record_size = 1 + key_length + file.size;
+  if (old_record_size > overlay_bytes_used - file.offset) return 1;
+  uint8_t encoded_key[128]{};
+  if (key_length + 1 > sizeof(encoded_key)) return 1;
+  std::memcpy(encoded_key, overlay_bytes + file.offset, key_length + 1);
+
+  const size_t old_offset = file.offset;
+  const size_t remaining = overlay_bytes_used - old_offset - old_record_size;
+  std::memmove(overlay_bytes + old_offset,
+               overlay_bytes + old_offset + old_record_size, remaining);
+  for (size_t index = 0; index < kMaxOverlayFiles; ++index) {
+    if (&overlay[index] != &file && overlay_has_storage(overlay[index]) &&
+        overlay[index].offset > old_offset) {
+      overlay[index].offset -= static_cast<uint32_t>(old_record_size);
+    }
+  }
+
+  const size_t new_offset = overlay_bytes_used - old_record_size;
+  std::memcpy(overlay_bytes + new_offset, encoded_key, key_length + 1);
+  overlay_bytes_used = new_offset + key_length + 1;
+  file.offset = static_cast<uint32_t>(new_offset);
+  file.size = 0;
+  file.flags |= kOverlayHasRecord | kOverlayDeleted | kOverlaySerialized;
+  overlay_dirty = true;
+  return 0;
+}
+} // namespace
+
 extern "C" uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length) {
   auto *file = find_overlay(tag, tag_length);
   if (file == nullptr) {
@@ -1025,17 +1129,107 @@ extern "C" uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length) {
     if (file == nullptr) {
       return 1;
     }
+    if (!append_overlay(*file, tag, nullptr, 0)) return 1;
+    file->flags |= kOverlayHasRecord | kOverlayDeleted;
+    overlay_dirty = true;
+    return 0;
   } else if (!overlay_has_record(*file)) {
     return 1;
   }
 
-  if (!append_overlay(*file, tag, nullptr, 0)) {
+  return erase_overlay_slot(static_cast<uint16_t>(file - overlay));
+}
+
+namespace {
+template <typename Match>
+uint8_t erase_overlay_records(Match matches) {
+  std::fill(&erase_bucket_head[0][0],
+            &erase_bucket_head[0][0] +
+                (kMaxOverlayTagLength + 1) * 17,
+            UINT16_MAX);
+  for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+    const OverlayFile &file = overlay[slot];
+    if (!overlay_is_used(file) || !overlay_has_record(file)) continue;
+    uint8_t tag[kMaxOverlayTagLength]{};
+    uint8_t tag_length = 0;
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length) ||
+        !matches(tag, tag_length)) {
+      continue;
+    }
+    const uint8_t payload_bucket = static_cast<uint8_t>(
+        std::min<size_t>(file.size / 256, 16));
+    erase_bucket_next[slot] = erase_bucket_head[tag_length][payload_bucket];
+    erase_bucket_head[tag_length][payload_bucket] = slot;
+  }
+
+  // A child tag is encoded relative to its parent slot. Erase longer tags
+  // first so fs_erase can still resolve each parent while its descendants are
+  // removed. Within each depth, reclaim payload bytes first so a full overlay
+  // can make room for tombstones of smaller records. The fixed buckets avoid
+  // heap allocation in the card manager.
+  for (int length = kMaxOverlayTagLength; length > 0; --length) {
+    for (int payload_bucket = 16; payload_bucket >= 0; --payload_bucket) {
+      for (uint16_t slot = erase_bucket_head[length][payload_bucket];
+           slot != UINT16_MAX; slot = erase_bucket_next[slot]) {
+        uint8_t tag[kMaxOverlayTagLength]{};
+        uint8_t tag_length = 0;
+        if (!reconstruct_overlay_tag(slot, tag, &tag_length) ||
+            tag_length != length) {
+#ifndef RP2350_FS_OVERLAY_TEST
+          std::printf("CHOUPI:FS_ERASE_FAIL reason=tag-reconstruct slot=%u depth=%u\r\n",
+                      static_cast<unsigned>(slot),
+                      static_cast<unsigned>(length));
+          std::fflush(stdout);
+#endif
+          return 1;
+        }
+        if (erase_overlay_slot(slot) != 0) {
+#ifndef RP2350_FS_OVERLAY_TEST
+          std::printf("CHOUPI:FS_ERASE_FAIL reason=slot-delete slot=%u tag_len=%u size=%lu bytes=%lu/%lu tag=",
+                      static_cast<unsigned>(slot),
+                      static_cast<unsigned>(tag_length),
+                      static_cast<unsigned long>(overlay[slot].size),
+                      static_cast<unsigned long>(overlay_bytes_used),
+                      static_cast<unsigned long>(kMaxOverlayBytes));
+          for (uint8_t index = 0; index < tag_length && index < 8; ++index) {
+            std::printf("%02X", tag[index]);
+          }
+          std::printf("\r\n");
+          std::fflush(stdout);
+#endif
+          return 1;
+        }
+      }
+    }
+  }
+  return 0;
+}
+} // namespace
+
+extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
+                                    uint8_t prefix_length) {
+  if (prefix == nullptr || prefix_length == 0 ||
+      prefix_length > kMaxOverlayTagLength) {
     return 1;
   }
-  file->flags &= static_cast<uint8_t>(~kOverlayHasRecord);
-  file->flags |= kOverlayDeleted;
-  overlay_dirty = true;
-  return 0;
+  return erase_overlay_records([prefix, prefix_length](const uint8_t *tag,
+                                                        uint8_t length) {
+    return length >= prefix_length &&
+           std::memcmp(tag, prefix, prefix_length) == 0;
+  });
+}
+
+extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
+  return erase_overlay_records([package_id](const uint8_t *tag,
+                                              uint8_t length) {
+    const bool static_field = length >= 2 && tag[0] == 0x02 &&
+                              tag[1] == package_id;
+    const bool applet_field = length >= 3 && tag[0] == 0x03 &&
+                              tag[2] == package_id;
+    const bool lifecycle = length >= 3 && tag[0] == 0x02 && tag[1] == 0xff &&
+                           tag[2] == package_id;
+    return static_field || applet_field || lifecycle;
+  });
 }
 
 extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,

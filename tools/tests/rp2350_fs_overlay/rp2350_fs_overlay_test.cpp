@@ -16,6 +16,8 @@ extern "C" const uint8_t choupi_rommask_start[] = {0};
 extern "C" const uint8_t choupi_rommask_end[] = {0};
 
 extern "C" uint8_t fs_sync(void);
+extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
+                                    uint8_t prefix_length);
 
 namespace {
 std::array<uint8_t, 2 * 1024 * 1024> fake_flash;
@@ -216,6 +218,43 @@ int main() {
              fs_read(child_tag, sizeof(child_tag), actual, sizeof(actual)) == 0 &&
              actual[0] == second_value[0],
          "reuse_compressed_child_entry");
+
+  constexpr uint8_t namespace_prefix[] = {0x02, 0x14};
+  constexpr uint8_t namespace_parent[] = {0x02, 0x14, 0x08};
+  constexpr uint8_t namespace_child[] = {0x02, 0x14, 0x08, 0x31, 0x31};
+  constexpr uint8_t namespace_grandchild[] = {
+      0x02, 0x14, 0x08, 0x31, 0x31, 0x42, 0x42};
+  expect(fs_write(namespace_parent, sizeof(namespace_parent), first_value,
+                  sizeof(first_value)) == 0 &&
+             fs_write(namespace_child, sizeof(namespace_child), second_value,
+                      sizeof(second_value)) == 0 &&
+             fs_write(namespace_grandchild, sizeof(namespace_grandchild),
+                      first_value, sizeof(first_value)) == 0,
+         "write_nested_namespace_records");
+  expect(fs_erase_prefix(namespace_prefix, sizeof(namespace_prefix)) == 0,
+         "erase_nested_namespace_prefix");
+  expect(fs_exists(namespace_parent, sizeof(namespace_parent)) == 0,
+         "erase_nested_namespace_parent");
+  expect(fs_exists(namespace_child, sizeof(namespace_child)) == 0,
+         "erase_nested_namespace_child");
+  expect(fs_exists(namespace_grandchild,
+                   sizeof(namespace_grandchild)) == 0,
+         "erase_nested_namespace_grandchild");
+
+  constexpr uint8_t orphan_prefix[] = {0x02, 0x19};
+  constexpr uint8_t orphan_parent[] = {0x02, 0x19, 0x09};
+  constexpr uint8_t orphan_child[] = {0x02, 0x19, 0x09, 0x11, 0x11};
+  expect(fs_write(orphan_parent, sizeof(orphan_parent), first_value,
+                  sizeof(first_value)) == 0 &&
+             fs_write(orphan_child, sizeof(orphan_child), second_value,
+                      sizeof(second_value)) == 0 &&
+             fs_erase(orphan_parent, sizeof(orphan_parent)) == 0,
+         "create_orphaned_overlay_child");
+  expect(fs_erase_prefix(orphan_prefix, sizeof(orphan_prefix)) == 0 &&
+             fs_write(orphan_parent, sizeof(orphan_parent), first_value,
+                      sizeof(first_value)) == 0 &&
+             fs_exists(orphan_child, sizeof(orphan_child)) == 0,
+         "prefix_cleanup_removes_child_of_deleted_parent");
 
   constexpr uint8_t class_one_tag[] = {0x03, 0x00, 0x38, 0x01, 0xff};
   constexpr uint8_t class_257_tag[] = {0x03, 0x00, 0x38, 0x01, 0x01, 0xff};
@@ -858,6 +897,60 @@ int main() {
                  legacy_flash.begin() + flash_layout::legacy_cap2_offset);
   expect(second_slot_preserves_cap2,
          "second_filesystem_slot_preserves_legacy_cap2_bytes");
+
+  // A full overlay needs to erase a data-bearing record before a zero-byte
+  // record. Pick tags whose hash slots make the zero-byte entry first in the
+  // old slot-order traversal, reproducing the persistent-storage exhaustion
+  // failure seen on cards after repeated install/delete attempts.
+  expect(fs_init() == 0, "full_overlay_cleanup_setup");
+  std::array<uint8_t, 3> empty_namespace_tag{};
+  std::array<uint8_t, 3> payload_namespace_tag{};
+  bool selected_ordered_tags = false;
+  for (uint16_t empty_tail = 1; empty_tail <= 0xff && !selected_ordered_tags;
+       ++empty_tail) {
+    for (uint16_t payload_tail = 1; payload_tail <= 0xff; ++payload_tail) {
+      const std::array<uint8_t, 3> empty_candidate = {
+          0xb0, 0x01, static_cast<uint8_t>(empty_tail)};
+      const std::array<uint8_t, 3> payload_candidate = {
+          0xb0, 0x01, static_cast<uint8_t>(payload_tail)};
+      if (empty_candidate != payload_candidate &&
+          hash_bucket(empty_candidate) > hash_bucket(payload_candidate)) {
+        empty_namespace_tag = empty_candidate;
+        payload_namespace_tag = payload_candidate;
+        selected_ordered_tags = true;
+        break;
+      }
+    }
+  }
+  std::array<uint8_t, 512> large_namespace_payload{};
+  large_namespace_payload.fill(0x5a);
+  const bool namespace_seeded = selected_ordered_tags &&
+      fs_write(empty_namespace_tag.data(), empty_namespace_tag.size(),
+               nullptr, 0) == 0 &&
+      fs_write(payload_namespace_tag.data(), payload_namespace_tag.size(),
+               large_namespace_payload.data(),
+               large_namespace_payload.size()) == 0;
+  expect(namespace_seeded, "full_overlay_cleanup_namespace_seeded");
+
+  constexpr std::array<uint8_t, 16> fill_payload = {};
+  bool overlay_capacity_reached = false;
+  for (uint32_t value = 0; value <= 0xffff; ++value) {
+    const std::array<uint8_t, 3> tag = {
+        0xb1, static_cast<uint8_t>(value >> 8), static_cast<uint8_t>(value)};
+    if (fs_write(tag.data(), tag.size(), fill_payload.data(),
+                 fill_payload.size()) != 0) {
+      overlay_capacity_reached = true;
+      break;
+    }
+  }
+  expect(overlay_capacity_reached, "full_overlay_cleanup_reaches_capacity");
+  constexpr uint8_t full_overlay_prefix[] = {0xb0, 0x01};
+  expect(fs_erase_prefix(full_overlay_prefix, sizeof(full_overlay_prefix)) == 0,
+         "full_overlay_cleanup_reclaims_payload_before_empty_record");
+  expect(fs_exists(empty_namespace_tag.data(), empty_namespace_tag.size()) == 0 &&
+             fs_exists(payload_namespace_tag.data(),
+                       payload_namespace_tag.size()) == 0,
+         "full_overlay_cleanup_erases_all_namespace_records");
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
