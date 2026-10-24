@@ -4393,5 +4393,29 @@ fix.
   with zero unexpected or missing. Unsupported algorithms remain expected.
 - **Validation:** `python3 tools/test-javacard-support.py` passes all 9 tests;
   archived D92 report comparison prints `COMPARE:PASS`.
+
+## Pico leaves BOOTSEL but runtime CDC is not passed through — 2026-10-25
+
+- **Symptom:** RP2350 `8E464F4E2BBC0A19` was visible in BOOTSEL and picotool
+  wrote and verified the full ARM image, but after reboot
+  `tools/monitor --serial 8E464F4E2BBC0A19` returned
+  `ERROR: no USB serial device found`.
+- **Cause:** Runtime serial enumeration was not passed back into this VM for
+  that board. Successful UF2 verification alone does not prove runtime health
+  or PC/SC visibility.
+- **Viable solution:** Record the board as unavailable for runtime testing and
+  immediately fail over to another identified Pico. D92
+  `D92E743D5F640C0F` remained a PC/SC reader and passed the same finite
+  `symm_crypto` cycle. When starting from runtime mode with `--chipid`, match
+  its runtime USB serial to the same chip ID, then use that serial for CDC
+  reset. Select boards already in BOOTSEL directly through picotool chip-ID
+  lookup.
+- **Validation:** D92 ARM/RISC-V builds passed, flash verification reached
+  100%, the finite monitor passed, and GPPro showed only the ISD after the
+  final reflash. Logs: `artifacts/logs/cycle-choupi-20261024T220417Z.log`
+  (8E flash succeeded, monitor failed),
+  `artifacts/logs/cycle-choupi-20261024T220800Z.log` (D92 pass), and
+  `artifacts/logs/cycle-choupi-20261024T221145Z.log` (D92 chip-ID from runtime
+  pass).
 - **Artifacts:** `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
   `artifacts/logs/cycle-choupi-20261024T213745Z.log`.

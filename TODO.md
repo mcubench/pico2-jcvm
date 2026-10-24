@@ -76,6 +76,13 @@ cipher.
   `4A43416C675465737431` and package AID `4A43416C6754657374`; a subsequent
   `gp --list` showed only ISD `A000000151000000`. Firmware reflashing alone
   does not erase installed CAPs.
+- [x] Rebuild and flash `symm_crypto` to physical D92 `D92E743D5F640C0F`;
+  both ARM and RISC-V wrapper builds passed, UF2 verify reached 100%, runtime
+  monitor passed, and a final GPPro list still showed only the ISD. A separate
+  BOOTSEL board `8E464F4E2BBC0A19` accepted a verified image write but its
+  runtime serial did not reappear in this VM, so it has no runtime pass.
+  Continue on D92 or another identified reader rather than attributing results
+  to 8E.
 - [x] Build and inspect all three capability profiles on physical Pico 2
   `D92E743D5F640C0F`: `current` (15 enabled), `no_aes` (10), and `minimal` (0).
   Build and finite-monitor results are recorded above; this checkbox covers

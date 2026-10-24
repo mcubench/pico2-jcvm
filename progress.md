@@ -11332,3 +11332,30 @@
 - Artifacts/logs: `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
   no new firmware image was built because this step changes host-side
   comparison metadata only.
+
+## 2026-10-25 — Fail over from unavailable BOOTSEL board
+
+- Step/experiment: `symm-crypto-three-board-runtime-failover`
+- Change: Extended `tools/flash --chipid` to identify a runtime device whose
+  USB serial matches its RP2350 chip ID, and use that exact runtime serial for
+  reset fallback. Updated TODO, QKB, and handoff with the multi-board outcome.
+- Validation: ARM and RISC-V `symm_crypto` wrappers passed. Board
+  `8E464F4E2BBC0A19` accepted a full picotool UF2 write and reported verified
+  flash, but its runtime CDC device did not enumerate; its cycle exited 1 and
+  is recorded as a board-access failure, not a firmware pass. Failover board
+  D92 `D92E743D5F640C0F` then passed a `--serial` cycle and a second cycle
+  started by `--chipid` from runtime mode. Both flashed successfully and
+  emitted repeated `TEST:SUMMARY pass=1 fail=0`. GPPro `--list` after the final
+  flash still showed only ISD `A000000151000000`. `bash -n tools/flash
+  tools/cycle` passed.
+- Result: Chip-ID targeting now works from runtime and BOOTSEL states. 8E is
+  not assigned a runtime or PC/SC pass until its serial reappears in the VM.
+  A retained `WATCHDOG_RECOVERY cause=other` trace appeared once on D92; no
+  runtime test failed and the marker is already documented as stale diagnostic
+  state.
+- Decision: Continue physical CAP testing on D92 or another board with
+  confirmed runtime enumeration. Preserve the empty D92 card state.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T220417Z.log`;
+  `artifacts/logs/cycle-choupi-20261024T220800Z.log`;
+  `artifacts/logs/cycle-choupi-20261024T221145Z.log`.

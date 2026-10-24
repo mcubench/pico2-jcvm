@@ -9654,3 +9654,26 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Next: continue selected-profile acceptance on an identified board. The
   comparator mapping is covered by the support-generator test suite.
   `asymm_crypto` work remains paused at user request.
+
+## Multi-board `symm_crypto` cycle follow-up — 2026-10-25
+
+- `tools/flash` now recognizes a selected chip ID while the board is in either
+  BOOTSEL (ROM chip-ID query) or runtime mode (USB serial equal to that chip
+  ID). It uses the discovered runtime serial for the targeted CDC 1200-baud
+  reset. A cycle started from runtime D92 with `--chipid` now succeeds without
+  the prior 120-second USB wait.
+- Target `8E464F4E2BBC0A19`: ARM and RISC-V builds passed, picotool verified
+  the full UF2 write, but the board's CDC serial did not enumerate after
+  reboot. Do not claim runtime validation for 8E. Log:
+  `artifacts/logs/cycle-choupi-20261024T220417Z.log`.
+- Failover to D92 `D92E743D5F640C0F` succeeded. The `--serial` cycle log is
+  `artifacts/logs/cycle-choupi-20261024T220800Z.log`; after the flasher update,
+  the `--chipid` runtime-start cycle also passed at
+  `artifacts/logs/cycle-choupi-20261024T221145Z.log`. Both builds passed and
+  the monitor reported repeated `TEST:SUMMARY pass=1 fail=0`. One retained
+  `WATCHDOG_RECOVERY cause=other` trace printed once; this is known diagnostic
+  state and did not recur or fail runtime checks.
+- GPPro `--list` after the last D92 flash still contains only ISD
+  `A000000151000000`. Leave D92 empty. Next continue physical `/deploy`
+  coverage on D92 or another board that reappears as a PC/SC reader; keep 8E
+  marked unavailable until its runtime USB serial returns.

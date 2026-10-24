@@ -53,6 +53,7 @@ target_sysfs_path=""
 target_bus=""
 target_address=""
 target_product=""
+target_device_serial=""
 if [[ -n "$serial" ]]; then
   serial_selector_args=(--ser "$serial")
   selector_args=("${serial_selector_args[@]}")
@@ -64,19 +65,31 @@ capture_usb_device() {
   target_bus="$(<"${device}/busnum")"
   target_address="$(<"${device}/devnum")"
   target_product="$(<"${device}/idProduct")"
+  if [[ -r "${device}/serial" ]]; then
+    target_device_serial="$(<"${device}/serial")"
+  fi
 }
 
 refresh_target_usb() {
   local device device_serial bus address info observed_chipid
-  local -a bootsel_devices=() serial_devices=() rp_devices=()
+  local -a bootsel_devices=() serial_devices=() chipid_runtime_devices=() rp_devices=()
 
   # The USB port path remains stable across runtime <-> BOOTSEL re-enumeration,
   # while the BOOTSEL ROM does not expose the firmware's USB serial number.
   if [[ -n "$target_sysfs_path" ]]; then
     device="/sys/bus/usb/devices/${target_sysfs_path}"
     if [[ -r "${device}/idVendor" && "$(<"${device}/idVendor")" == 2e8a ]]; then
-      capture_usb_device "$device"
-      return 0
+      if [[ -z "$chipid" || "$(<"${device}/idProduct")" == 000f ]]; then
+        capture_usb_device "$device"
+        return 0
+      fi
+      if [[ -r "${device}/serial" ]]; then
+        device_serial="$(<"${device}/serial")"
+        if [[ "${device_serial^^}" == "$chipid" ]]; then
+          capture_usb_device "$device"
+          return 0
+        fi
+      fi
     fi
   fi
 
@@ -94,9 +107,23 @@ refresh_target_usb() {
         serial_devices+=("${device}")
       fi
     fi
+    if [[ -n "$chipid" && "$(<"${device}/idProduct")" != 000f &&
+          -r "${device}/serial" ]]; then
+      device_serial="$(<"${device}/serial")"
+      if [[ "${device_serial^^}" == "$chipid" ]]; then
+        chipid_runtime_devices+=("${device}")
+      fi
+    fi
   done
 
   if [[ -n "$chipid" ]]; then
+    if ((${#chipid_runtime_devices[@]} == 1)); then
+      capture_usb_device "${chipid_runtime_devices[0]}"
+      return 0
+    fi
+    if ((${#chipid_runtime_devices[@]} > 1)); then
+      return 1
+    fi
     # BOOTSEL drops the runtime USB serial. With multiple BOOTSEL boards,
     # select by the stable RP2350 chip ID reported by the ROM, not USB order.
     for device in "${bootsel_devices[@]}"; do
@@ -133,8 +160,10 @@ refresh_target_usb() {
 }
 
 set_target_selector() {
-  if [[ "$target_product" == 000f || -n "$chipid" ]]; then
+  if [[ "$target_product" == 000f ]]; then
     selector_args=(--bus "$target_bus" --address "$target_address")
+  elif [[ -n "$chipid" && -n "$target_device_serial" ]]; then
+    selector_args=(--ser "$target_device_serial")
   elif [[ -n "$serial" ]]; then
     selector_args=("${serial_selector_args[@]}")
   else
@@ -209,11 +238,15 @@ request_bootsel() {
 request_cdc_bootsel() {
   local ports=()
   local port
+  local reset_serial="$serial"
+  if [[ -z "$reset_serial" && -n "$chipid" ]]; then
+    reset_serial="$target_device_serial"
+  fi
   shopt -s nullglob
-  if [[ -n "$serial" ]]; then
+  if [[ -n "$reset_serial" ]]; then
     # Product strings are firmware-controlled and may change (for example,
     # "Pico2 JCVM CCID"). Select CDC by the stable Pico USB serial instead.
-    ports=(/dev/serial/by-id/*"${serial}"*-if00)
+    ports=(/dev/serial/by-id/*"${reset_serial}"*-if00)
   else
     ports=(/dev/serial/by-id/usb-Raspberry_Pi_Pico_*)
     if ((${#ports[@]} != 1)); then
