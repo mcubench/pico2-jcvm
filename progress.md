@@ -10987,7 +10987,7 @@
   malfunctioning board when multiple boards are available.
 - Decision: Apply the fallback rule to multi-board runs and retain failed-board
   evidence alongside successful-board results.
-- Commit: pending
+- Commit: `9020b92`
 - Artifacts/logs: `SKILL.md`, `.agent/SESSION_CONTINUITY.md`,
   `.agent/HANDOFF.md`; no logs
 
