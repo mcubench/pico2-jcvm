@@ -62,6 +62,19 @@ cipher.
   Current Core has 17 `EXC_RUNTIME` and two OwnerPINx `WRONG_RESULT` rows;
   minimal reports eight disabled-OwnerPINx `ILLEGAL_USE` outcomes. These API
   findings are tracked separately and do not change JCAlgTest support matching.
+- [ ] Reconcile the `symm_crypto` generated support manifest with the official
+  JCAlgTest `ALG_SUPPORT_EXTENDED` CSV. A real D92 run completed all 4,525 rows
+  with 73 `yes`, 4,452 `no`, and no other statuses. The comparator currently
+  fails (46 expected identities versus 73 actual) because the generated list
+  does not yet account for the applet's legacy `javacard.crypto.Signature`
+  section and additional factory-method rows. Normalize equivalent API
+  sections and model the expected factory rows from enabled capabilities; do
+  not treat unrelated `NO_SUCH_ALGORITHM` rows as bugs.
+- [x] Ensure the current physical D92 card is empty before leaving the
+  symmetric-profile test session: GPPro deleted applet AID
+  `4A43416C675465737431` and package AID `4A43416C6754657374`; a subsequent
+  `gp --list` showed only ISD `A000000151000000`. Firmware reflashing alone
+  does not erase installed CAPs.
 - [x] Build and inspect all three capability profiles on physical Pico 2
   `D92E743D5F640C0F`: `current` (15 enabled), `no_aes` (10), and `minimal` (0).
   Build and finite-monitor results are recorded above; this checkbox covers

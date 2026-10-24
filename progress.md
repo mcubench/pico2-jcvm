@@ -11284,3 +11284,29 @@
 - Artifacts/logs: `build/external-test/symm-crypto-windows-test.zip`;
   UF2 SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`;
   archive SHA-256 `f120aab7444689220d2c1e4359ef680b0f9921f86d213eccd1fad692f615802d`.
+
+## 2026-10-24 — Target multi-board BOOTSEL and leave D92 clean
+
+- Step/experiment: `symm-crypto-multiboard-flash-and-card-cleanup`
+- Change: Added stable `--chipid` targeting to `tools/flash` and `tools/cycle`
+  for selecting a particular RP2350 when multiple boards are already in
+  BOOTSEL. Updated TODO, QKB, and handoff with physical JCAlgTest and card
+  state results.
+- Validation: `bash -n tools/flash tools/cycle` and flasher help passed. Both
+  `symm_crypto` ARM/RISC-V wrapper builds passed during the hardware cycle;
+  the successful D92 cycle log reports `CYCLE:PASS` and finite runtime
+  `TEST:SUMMARY pass=1 fail=0`. Official JCAlgTest 1.8.2 extended test on D92
+  completed 4,525 rows (73 yes, 4,452 no, 0 other). GPPro removed the applet
+  and package; final `gp --list` showed only ISD `A000000151000000`.
+- Result: The physical D92 card is empty of installed CAP packages. Reflashing
+  does not clear the persistent CAP store. Support comparison is still failing:
+  46 expected identities vs 73 `yes` rows, exposing missing section alias and
+  factory-method mappings in the generated expected-support list. A second
+  board (2BED) disappeared from VM USB after flash and is not assigned a pass.
+- Decision: Keep D92 available as a known-good physical reader; repair the
+  expected-support CSV mapping before claiming full symmetric-profile
+  acceptance. Continue on any other identified visible Pico if a board drops.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
+  `artifacts/logs/cycle-choupi-20261024T213745Z.log`; UF2 size 1,675,264 bytes,
+  SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.

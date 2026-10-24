@@ -5,6 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 last_load_failure=unknown
 
 serial=""
+chipid=""
 image=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -13,23 +14,33 @@ while [[ $# -gt 0 ]]; do
       serial="$2"
       shift 2
       ;;
+    --chipid)
+      [[ $# -ge 2 && -z "$chipid" ]] || die "--chipid requires one RP2350 chip ID"
+      chipid="$2"
+      shift 2
+      ;;
     --help|-h)
-      printf 'usage: ./tools/flash [--serial SERIAL] <image.uf2>\n'
+      printf 'usage: ./tools/flash [--serial SERIAL | --chipid CHIPID] <image.uf2>\n'
       exit 0
       ;;
     --*) die "unknown option: $1" ;;
     *)
-      [[ -z "$image" ]] || die "usage: ./tools/flash [--serial SERIAL] <image.uf2>"
+      [[ -z "$image" ]] || die "usage: ./tools/flash [--serial SERIAL | --chipid CHIPID] <image.uf2>"
       image="$1"
       shift
       ;;
   esac
 done
-[[ -n "$image" ]] || die "usage: ./tools/flash [--serial SERIAL] <image.uf2>"
+[[ -n "$image" ]] || die "usage: ./tools/flash [--serial SERIAL | --chipid CHIPID] <image.uf2>"
 if [[ -n "$serial" && ! "$serial" =~ ^[A-Fa-f0-9]{8,32}$ ]]; then
   die "--serial must be an 8..32 character hexadecimal Pico serial"
 fi
+if [[ -n "$chipid" && ! "$chipid" =~ ^[A-Fa-f0-9]{16}$ ]]; then
+  die "--chipid must be a 16-character hexadecimal RP2350 chip ID"
+fi
+[[ -z "$serial" || -z "$chipid" ]] || die "choose either --serial or --chipid"
 serial="${serial^^}"
+chipid="${chipid^^}"
 [[ -f "$image" ]] || die "flash image not found: ${image}"
 require_host_usb_access
 require_command picotool
@@ -56,7 +67,7 @@ capture_usb_device() {
 }
 
 refresh_target_usb() {
-  local device device_serial
+  local device device_serial bus address info observed_chipid
   local -a bootsel_devices=() serial_devices=() rp_devices=()
 
   # The USB port path remains stable across runtime <-> BOOTSEL re-enumeration,
@@ -85,6 +96,25 @@ refresh_target_usb() {
     fi
   done
 
+  if [[ -n "$chipid" ]]; then
+    # BOOTSEL drops the runtime USB serial. With multiple BOOTSEL boards,
+    # select by the stable RP2350 chip ID reported by the ROM, not USB order.
+    for device in "${bootsel_devices[@]}"; do
+      bus="$(<"${device}/busnum")"
+      address="$(<"${device}/devnum")"
+      if ! info="$(timeout --signal=TERM --kill-after=2s 4s \
+          picotool info --device --bus "$bus" --address "$address" 2>&1)"; then
+        continue
+      fi
+      observed_chipid="$(sed -nE 's/^[[:space:]]*chipid:[[:space:]]*0x?([[:xdigit:]]{16})[[:space:]]*$/\1/p' <<<"$info" | tr '[:lower:]' '[:upper:]')"
+      if [[ "$observed_chipid" == "$chipid" ]]; then
+        capture_usb_device "$device"
+        return 0
+      fi
+    done
+    return 1
+  fi
+
   if ((${#serial_devices[@]} == 1)); then
     capture_usb_device "${serial_devices[0]}"
     return 0
@@ -103,7 +133,7 @@ refresh_target_usb() {
 }
 
 set_target_selector() {
-  if [[ "$target_product" == 000f ]]; then
+  if [[ "$target_product" == 000f || -n "$chipid" ]]; then
     selector_args=(--bus "$target_bus" --address "$target_address")
   elif [[ -n "$serial" ]]; then
     selector_args=("${serial_selector_args[@]}")
@@ -140,6 +170,11 @@ is_bootsel() {
   refresh_target_usb || return 1
   set_target_selector
   if ! info="$(timeout --signal=TERM --kill-after=2s 4s picotool info "${selector_args[@]}" -a 2>&1)"; then
+    return 1
+  fi
+  if [[ -n "$chipid" ]] &&
+      ! grep -Eqi "^[[:space:]]*chipid:[[:space:]]*0x?${chipid}[[:space:]]*$" <<<"$info"; then
+    printf 'FLASH:TARGET_ID_MISMATCH expected=%s\n' "$chipid"
     return 1
   fi
   grep -Eq 'boot type:[[:space:]]*bootsel' <<<"${info}"

@@ -2,11 +2,12 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-[[ $# -ge 1 ]] || die "usage: ./tools/cycle arm|riscv|choupi [--profile PROFILE] [--serial SERIAL]"
+[[ $# -ge 1 ]] || die "usage: ./tools/cycle arm|riscv|choupi [--profile PROFILE] [--serial SERIAL | --chipid CHIPID]"
 arch="$1"
 [[ "$arch" == arm || "$arch" == riscv || "$arch" == choupi ]] || die "choose arm, riscv, or choupi"
 shift
 serial=""
+chipid=""
 support_profile=current
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -20,9 +21,15 @@ while [[ $# -gt 0 ]]; do
       serial="$2"
       shift 2
       ;;
-    *) die "usage: ./tools/cycle arm|riscv|choupi [--profile PROFILE] [--serial SERIAL]" ;;
+    --chipid)
+      [[ $# -ge 2 && -z "$chipid" && "$2" =~ ^[A-Fa-f0-9]{16}$ ]] || die "--chipid requires a 16-character hexadecimal RP2350 chip ID"
+      chipid="$2"
+      shift 2
+      ;;
+    *) die "usage: ./tools/cycle arm|riscv|choupi [--profile PROFILE] [--serial SERIAL | --chipid CHIPID]" ;;
   esac
 done
+[[ -z "$serial" || -z "$chipid" ]] || die "choose either --serial or --chipid"
 require_host_usb_access
 "${repo_root}/tools/build" arm --profile "${support_profile}"
 "${repo_root}/tools/build" riscv --profile "${support_profile}"
@@ -40,6 +47,9 @@ monitor_args=()
 if [[ -n "$serial" ]]; then
   flash_args=(--serial "$serial")
   monitor_args=(--serial "$serial")
+elif [[ -n "$chipid" ]]; then
+  flash_args=(--chipid "$chipid")
+  monitor_args=(--serial "$chipid")
 fi
 "${repo_root}/tools/flash" "${flash_args[@]}" "$image" 2>&1 | tee -a "$log_file"
 capture_seconds=8

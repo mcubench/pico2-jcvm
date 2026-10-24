@@ -9625,3 +9625,32 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Next: run the requested standard JCAlgTest client if continuing physical
   functional testing. The applet has not been exercised with a full client run
   as part of this empty-image/install validation.
+
+## Symmetric-profile physical run and empty-card handoff — 2026-10-24
+
+- The ARM `symm_crypto` UF2 is built at
+  `build/arm/pico2_choupi.uf2` (1,675,264 bytes,
+  SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`).
+  ARM and RISC-V wrapper builds passed. The standard upstream JCAlgTest CAP
+  remains unchanged.
+- On physical D92 `D92E743D5F640C0F`, official JCAlgTest 1.8.2
+  `ALG_SUPPORT_EXTENDED` completed 4,525 rows: 73 `yes`, 4,452 `no`, 0 other.
+  Output is in `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`.
+  The expected-support comparator failed (46 generated expected identities vs
+  73 reported yes). The likely metadata gaps are the legacy
+  `javacard.crypto.Signature` section alias and the extended factory-method
+  rows. Fix that mapping before claiming a profile match; do not implement
+  unsupported algorithms merely because JCAlgTest reports `no`.
+- After testing, GPPro deleted applet AID `4A43416C675465737431` and package
+  AID `4A43416C6754657374`. Final `gp --list` showed only ISD
+  `A000000151000000`; the physical test card is left empty. Firmware reflashing
+  alone preserves the persistent CAP store.
+- `tools/flash` and `tools/cycle` now accept `--chipid` for stable selection
+  among multiple boards already in BOOTSEL. The successful D92 cycle log is
+  `artifacts/logs/cycle-choupi-20261024T213745Z.log`. The 2BED board was not
+  given a final pass attribution because it disappeared from VM USB after
+  flashing; use another visible board and confirm identity rather than
+  attributing D92 results to it.
+- Next: fix generated support CSV identity mapping and rerun the comparator on
+  the archived physical CSV. Then continue selected-profile acceptance on an
+  identified board. `asymm_crypto` work remains paused at user request.

@@ -4361,3 +4361,31 @@ fix.
   visible Pico devices on 2026-10-24.
 - **Artifacts:**
   `artifacts/results/gppro-empty-install-vpcd-20261024T212248Z/`.
+
+## Multi-board BOOTSEL selection and clean-card verification — 2026-10-24
+
+- **Symptom:** With several Pico 2 boards attached in BOOTSEL, the ROM no
+  longer exposes the firmware USB serial, making order-based selection unsafe.
+- **Viable solution:** Use the RP2350's stable 16-hex chip ID with
+  `./tools/flash --chipid <ID> <image.uf2>` or
+  `./tools/cycle choupi --profile <profile> --chipid <ID>`. The flasher matches
+  each visible BOOTSEL device using pinned picotool's reported chip ID, then
+  retains that device's USB port through re-enumeration. Never select among
+  multiple BOOTSEL boards by bus enumeration order.
+- **Validation:** `bash -n tools/flash tools/cycle` passed. The chip-ID path
+  was exercised during a successful `symm_crypto` cycle on D92; its ARM and
+  RISC-V builds passed and the bounded runtime monitor reported
+  `TEST:SUMMARY pass=1 fail=0`. The 2BED board was not attributed a final
+  runtime result because it disappeared from this VM after flash while a
+  different reader remained visible.
+- **Clean-card result:** On D92, GPPro deleted the explicitly installed
+  JCAlgTest applet and package; the final `gp --list` showed only the ISD.
+  The firmware image does not embed the applet, and reflashing preserves the
+  separate persistent CAP store.
+- **JCAlgTest result:** Official v1.8.2 `ALG_SUPPORT_EXTENDED` completed
+  4,525 rows on D92 (73 yes, 4,452 no, zero other). Profile comparison failed:
+  the generated manifest has 46 entries and misses legacy Signature section
+  normalization and factory-method rows. Fix this expected-support mapping;
+  unsupported algorithms remain expected.
+- **Artifacts:** `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
+  `artifacts/logs/cycle-choupi-20261024T213745Z.log`.
