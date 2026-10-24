@@ -11408,6 +11408,6 @@
 - Decision: Keep crypto `no` results classified as expected. Continue first
   with JCVM core/OwnerPINx or required applet/JCSystem behavior; optional
   Service work remains lower priority.
-- Commit: pending.
+- Commit: `45e5e9f`.
 - Artifacts/logs: `artifacts/results/deploy/symm_crypto-D92-20261025/javacardxsec.csv`,
   `javacardxext.csv`, `javacardxint.csv`, and `service-biometry.csv`.
