@@ -9427,7 +9427,8 @@ confirmed on hardware. The original investigation evidence remains in earlier
   regeneration. `tools/rommask-source-hash` excludes build outputs and VCS
   metadata; `tools/build-pc` writes the hash manifest and `tools/build` checks
   it before reusing generated files. See `.agent/QKB.md` for the recurrence
-  guidance.
+  guidance. ROMmask source commit: `be3a712`; root integration commit:
+  `8d0802d`.
 - Validation: ARM and RISC-V wrappers passed for `asymm_crypto`; a physical
   cycle reflashed Pico `2BED26ED20556535`, verified flash, and passed repeated
   `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` checks. The first

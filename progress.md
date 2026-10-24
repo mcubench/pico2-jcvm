@@ -11089,7 +11089,7 @@
 - Decision: Use the generated indexes for the next native object/field API
   step. Keep crypto behavior in direct native C++ dispatch; do not add Java
   provider logic or modify upstream CAP files.
-- Commit: recorded in follow-up after the implementation commit.
+- Commit: root `8d0802d`; ROMmask submodule `be3a712`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T165018Z.log`; ARM UF2
   SHA-256 `15de132afc30fff5f5cf35c639b559ead1465ccebee3b88da8fdbf748aefe67d`;
   PC ROM-mask SHA-256 `1e76a6cd532e54a5059855827e33f34cede704c3e79fa84d7ae17ea42d7ebbe9`.
