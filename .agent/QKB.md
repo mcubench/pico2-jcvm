@@ -4144,3 +4144,27 @@ fix.
 - **Artifacts:** `tools/tests/symm_crypto_applet/SymmCryptoProbe.java`,
   `tools/tests/test_symm_crypto_vpcd.py`,
   `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`.
+
+## ISO9797-M1 cipher decryption retains zero padding — 2026-10-24
+
+- **Symptom:** The `/deploy` API 3.0.5 Crypto area returned `WRONG_RESULT` for
+  `ALG_DES_CBC_ISO9797_M1`, `ALG_DES_ECB_ISO9797_M1`,
+  `ALG_AES_CBC_ISO9797_M1`, and `ALG_AES_ECB_ISO9797_M1` on physical 8E.
+- **Cause:** `SymmetricCipherProvider` stripped trailing zero bytes on M1
+  decrypt. Java Card `Cipher` preserves ISO9797-M1 padding bytes on decrypt;
+  zero padding cannot encode the original input length. The emulator and
+  physical probe had incorrectly expected the unpadded short message too.
+- **Viable solution:** Do not unpad M1 decrypt output. Expect the complete
+  block-aligned plaintext including zero padding, and allocate a full output
+  buffer for M1. Keep unpadding for ISO9797-M2 and PKCS5.
+- **Validation:** PC VPCD KAT passed 71/71. Physical Pico `2BED26ED20556535`
+  passed 71/71 KATs. The official `/deploy` Crypto run passed all symmetric
+  M1 cases: totals were 158 OK, 305 `UNSUPPORTED_PER_SPEC`, three Signature
+  `SW=6F00`, and zero `WRONG_RESULT`.
+- **Related harness issue:** A stale installed probe CAP still used the old
+  3-byte M1 decrypt output array and produced four `6F00` responses after the
+  firmware change. Rebuild and reinstall `symm-crypto-probe.cap` when its
+  Java Card applet source changes; those errors were not firmware failures.
+- **Artifacts:** `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`,
+  `artifacts/logs/symm-crypto-kat-pcsc-20261024T120000Z.log`, and
+  `artifacts/results/symm-crypto-deploy-crypto-2BED-20261024.csv`.

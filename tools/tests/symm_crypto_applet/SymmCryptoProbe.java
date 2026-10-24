@@ -31,7 +31,8 @@ public final class SymmCryptoProbe extends Applet {
     byte[] output;
     short outputLength;
     if (buffer[ISO7816.OFFSET_INS] == (byte)0x10) {
-      output = operation == 1 && !isNoPadCipher(algorithm)
+      output = operation == 1 && !isNoPadCipher(algorithm) &&
+          !isIso9797M1(algorithm)
           ? new byte[(short)3] : new byte[(short)(inputLength + 32)];
       outputLength = runCipher(algorithm, operation, input, inputLength, output);
     } else {
@@ -77,6 +78,10 @@ public final class SymmCryptoProbe extends Applet {
 
   private static boolean isNoPadCipher(byte algorithm) {
     return algorithm == 1 || algorithm == 5 || algorithm == 13 || algorithm == 14;
+  }
+
+  private static boolean isIso9797M1(byte algorithm) {
+    return algorithm == 2 || algorithm == 6 || algorithm == 22 || algorithm == 25;
   }
 
   private static short runMac(byte algorithm, byte operation, byte[] input,

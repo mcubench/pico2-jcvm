@@ -2,7 +2,7 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-[[ $# -eq 0 ]] || die "usage: ./tools/probe-jcsystem-memory"
+[[ $# -eq 0 || $# -eq 1 ]] || die "usage: ./tools/probe-jcsystem-memory [exact-reader-name]"
 require_host_usb_access
 require_command timeout
 timeout_seconds="${PICO2_APDU_TIMEOUT_SECONDS:-30}"
@@ -13,5 +13,9 @@ build_dir="${repo_root}/build/jcsystem-live-memory-probe"
 mkdir -p "${build_dir}"
 "${repo_root}/tools/env" javac -d "${build_dir}" \
   "${repo_root}/tools/JCSystemLiveMemoryProbe.java"
+probe_args=()
+if [[ $# -eq 1 ]]; then
+  probe_args=(--reader "$1")
+fi
 timeout --signal=TERM --kill-after=2s "${timeout_seconds}s" \
-  "${repo_root}/tools/env" java -cp "${build_dir}" JCSystemLiveMemoryProbe
+  "${repo_root}/tools/env" java -cp "${build_dir}" JCSystemLiveMemoryProbe "${probe_args[@]}"

@@ -124,7 +124,8 @@ final class SymmetricCipherProvider extends Cipher {
       CbcCipherNativeBridge.cipherCbc(algorithm, mode, keyData, iv, buffered,
           (short) 0, dataLength, result, (short) 0);
     }
-    if (!encrypt && padding != PAD_NOPAD) dataLength = unpad(result, dataLength);
+    if (!encrypt && padding != PAD_NOPAD && padding != PAD_ISO9797_M1)
+      dataLength = unpad(result, dataLength);
     check(output, outputOffset, dataLength);
     for (short i = 0; i < dataLength; i++) output[(short)(outputOffset + i)] = result[i];
     clearBuffer();
@@ -133,11 +134,6 @@ final class SymmetricCipherProvider extends Cipher {
   }
 
   private short unpad(byte[] data, short length) {
-    if (padding == PAD_ISO9797_M1) {
-      short i = (short)(length - 1);
-      while (i >= 0 && data[i] == 0) i--;
-      return (short)(i + 1);
-    }
     if (padding == PAD_PKCS5) {
       short last = (short)(length - 1);
       short count = (short)(data[last] & 0xff);

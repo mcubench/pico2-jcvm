@@ -64,7 +64,10 @@ def cipher_vectors() -> list[tuple[bytes, bytes, str]]:
         encoded = bytes((0x80, 0x10, algorithm, 0, len(plaintext))) + plaintext + b"\x00"
         results.append((encoded, ciphertext + b"\x90\x00", f"cipher {algorithm} encrypt"))
         encoded = bytes((0x80, 0x10, algorithm, 1, len(ciphertext))) + ciphertext + b"\x00"
-        results.append((encoded, plaintext + b"\x90\x00", f"cipher {algorithm} decrypt"))
+        # ISO9797-M1 uses zero padding and cannot recover the original length;
+        # Java Card Cipher therefore retains the complete padded output.
+        decrypted = padded if padding == "m1" else plaintext
+        results.append((encoded, decrypted + b"\x90\x00", f"cipher {algorithm} decrypt"))
     return results
 
 

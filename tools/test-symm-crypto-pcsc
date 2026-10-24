@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+require_command timeout
+[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-pcsc '<exact PC/SC reader name>'"
+
+reader_name="$1"
+build_dir="${repo_root}/build/symm-crypto-probe"
+vectors="${build_dir}/physical-vectors.tsv"
+log_dir="${repo_root}/artifacts/logs"
+log_file="${log_dir}/symm-crypto-kat-pcsc-$(date -u +%Y%m%dT%H%M%SZ).log"
+timeout_seconds="${PICO2_APDU_TIMEOUT_SECONDS:-120}"
+[[ "${timeout_seconds}" =~ ^[1-9][0-9]*$ ]] || die "PICO2_APDU_TIMEOUT_SECONDS must be a positive integer"
+[[ -f "${build_dir}/output/symm-crypto-probe.cap" ]] || die "probe CAP missing; run ./tools/build-symm-crypto-probe"
+
+python3 - "${repo_root}" "${vectors}" <<'PY'
+import importlib.util
+import sys
+from pathlib import Path
+
+root, output = Path(sys.argv[1]), Path(sys.argv[2])
+source = root / "tools/tests/test_symm_crypto_vpcd.py"
+spec = importlib.util.spec_from_file_location("symm_crypto_vectors", source)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+vectors = module.cipher_vectors() + module.mac_vectors()
+with output.open("w", encoding="ascii") as stream:
+    labels = [
+        f"cipher_{algorithm}_{mode}"
+        for algorithm, (_, _, _) in {
+            1: (False, True, "nopad"), 2: (False, True, "m1"),
+            3: (False, True, "m2"), 4: (False, True, "pkcs5"),
+            5: (False, False, "nopad"), 6: (False, False, "m1"),
+            7: (False, False, "m2"), 8: (False, False, "pkcs5"),
+            13: (True, True, "nopad"), 14: (True, False, "nopad"),
+            22: (True, True, "m1"), 23: (True, True, "m2"),
+            24: (True, True, "pkcs5"), 25: (True, False, "m1"),
+            26: (True, False, "m2"), 27: (True, False, "pkcs5"),
+        }.items() for mode in ("encrypt", "decrypt")
+    ]
+    mac_labels = []
+    for algorithm in (2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 47, 48, 49):
+        mac_labels.extend((f"mac_{algorithm}_sign", f"mac_{algorithm}_verify_valid",
+                           f"mac_{algorithm}_verify_invalid"))
+    for (command, expected, _), label in zip(vectors, labels + mac_labels):
+        stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
+if len(vectors) != 71:
+    raise SystemExit(f"expected 71 vectors, got {len(vectors)}")
+print(f"VECTORS:PASS count={len(vectors)} file={output}")
+PY
+
+"${repo_root}/tools/env" javac -d "${build_dir}" \
+  "${repo_root}/tools/tests/SymmCryptoPcscProbe.java"
+mkdir -p "${log_dir}"
+printf 'PCSC:LOG %s\n' "${log_file}"
+timeout --signal=TERM --kill-after=3s "${timeout_seconds}s" \
+  "${repo_root}/tools/env" java -cp "${build_dir}" \
+  SymmCryptoPcscProbe "${reader_name}" "${vectors}" | tee "${log_file}"

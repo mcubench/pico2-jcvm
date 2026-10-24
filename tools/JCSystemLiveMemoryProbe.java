@@ -39,18 +39,24 @@ public final class JCSystemLiveMemoryProbe {
   }
 
   public static void main(String[] args) throws Exception {
+    if (args.length != 0 && args.length != 2 ||
+        args.length == 2 && !"--reader".equals(args[0])) {
+      throw new IllegalArgumentException(
+          "usage: JCSystemLiveMemoryProbe [--reader <exact reader name>]");
+    }
+    String requestedReader = args.length == 2 ? args[1] : null;
     List<CardTerminal> terminals =
         TerminalFactory.getDefault().terminals().list();
     CardTerminal target = null;
     for (CardTerminal terminal : terminals) {
       System.out.println("PCSC:READER " + terminal.getName());
-      if (terminal.getName().contains("Pico 2 CHOUPI CCID")) {
+      if (requestedReader == null
+          ? terminal.getName().contains("Pico 2 CHOUPI CCID")
+          : terminal.getName().equals(requestedReader)) {
         target = terminal;
       }
     }
-    if (target == null) {
-      throw new IllegalStateException("physical Pico 2 reader not found");
-    }
+    if (target == null) throw new IllegalStateException("requested Pico 2 reader not found");
 
     Card card = target.connect("*");
     try {

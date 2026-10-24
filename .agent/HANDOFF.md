@@ -54,6 +54,45 @@
 
 # Handoff
 
+## Symmetric crypto physical acceptance and M1 fix — 2026-10-24
+
+- Corrected `Cipher` ISO9797-M1 decryption. Java Card preserves zero padding
+  for M1 because the original length cannot be recovered. The implementation
+  had stripped trailing zeros; the emulator KAT was also updated to expect the
+  padded result and allocate enough output space.
+- `./tools/test-symm-crypto-vpcd` passes 71 cipher/MAC vectors
+  (`TEST:SUMMARY pass=73 fail=0`, with ATR and SELECT). ARM and RISC-V wrappers
+  pass on profile `symm_crypto`.
+- Current ARM image SHA-256:
+  `f7c145df97671400f8657d1cc05d39284c01d8329300146797e8ce6e6d87c467`
+  (1,670,656 bytes). D92 `D92E743D5F640C0F` and 2BED
+  `2BED26ED20556535` received this image and passed their finite cycle monitors.
+  8E `8E464F4E2BBC0A19` flash verification passed, but its USB serial/CCID did
+  not re-enumerate into the VM afterward; the cycle returned an error before
+  monitor validation. Final PC/SC scan lists D92 and 2BED only.
+- Corrected physical KAT on 2BED: 71/71 APDUs pass. The official API 3.0.5
+  Crypto area on the same board completed 466 calls, with 158 OK, 305
+  `UNSUPPORTED_PER_SPEC`, and three unrelated Signature `SW=6F00` cases; no
+  `WRONG_RESULT` rows remain. Before the fix, 8E reported four `WRONG_RESULT`
+  rows for AES/DES CBC/ECB M1 decrypt. The post-fix 2BED run removes all four.
+- Logs and CSVs:
+  `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`,
+  `artifacts/logs/symm-crypto-kat-pcsc-20261024T120000Z.log`,
+  `artifacts/logs/symm-crypto-deploy-crypto-8E-20261024.log`,
+  `artifacts/logs/symm-crypto-deploy-crypto-2BED-20261024.log`,
+  `artifacts/results/symm-crypto-deploy-crypto-8E-20261024.csv`, and
+  `artifacts/results/symm-crypto-deploy-crypto-2BED-20261024.csv`.
+- Physical probe utilities now support exact reader selection for both the
+  known-answer test and JCSystem memory probe. The 2BED and 8E available
+  persistent-memory readings before CAP tests were 42,437 and 52,042 bytes;
+  D92 previously had 23 bytes and was not used for another applet install.
+- Next: reconnect 8E into the VM if board-specific validation is desired. The
+  corrected implementation is validated on 2BED; do not interpret the three
+  Signature errors as symmetric crypto failures. Latest host check on
+  2026-10-24 saw only two CHOUPI CCID readers (D92 and 2BED), no BOOTSEL USB
+  device, and no 8E reader; `lsusb` agreed. The recent insertion notice did not
+  result in a BOOTSEL device visible inside the VM.
+
 ## Symmetric cryptography profile — 2026-10-24
 
 - The user-provided target is in

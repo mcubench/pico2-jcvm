@@ -10834,3 +10834,37 @@
 - Commit: recorded in the following progress entry.
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`;
   run with `./tools/test-symm-crypto-vpcd`.
+
+## 2026-10-24 — Fix ISO9797-M1 decrypt semantics and validate on Pico 2
+
+- Step/experiment: `symm-crypto-m1-decrypt-physical-20261024`
+- Change: Preserve zero padding on ISO9797-M1 decrypt in the symmetric cipher
+  provider. Updated expected emulator/physical KAT output and the physical
+  probe's M1 output buffer. Added exact PC/SC reader selection to the
+  JCSystem-memory probe so low-storage devices can be excluded before installs.
+- Validation: `python3 tools/test-javacard-support.py` passed 7 tests;
+  `git diff --check` and shell syntax checks passed. PC VPCD KAT passed
+  `TEST:SUMMARY pass=73 fail=0` (71 cipher/MAC vectors). ARM and RISC-V
+  `symm_crypto` builds passed. D92 and 2BED were reflashed and their bounded
+  monitors passed. 8E flash verification passed, but it did not re-enumerate
+  its serial/CCID interfaces into the VM; its cycle did not pass monitor
+  validation. Physical 2BED KAT passed 71/71. Official `/deploy` Crypto on
+  2BED completed 466 calls: 158 OK, 305 `UNSUPPORTED_PER_SPEC`, three
+  Signature `SW=6F00`, zero wrong results. Before the fix, 8E had four M1
+  `WRONG_RESULT` rows; none remain on 2BED after the fix.
+- Result: The spec-correct M1 output resolves all four symmetric API
+  mismatches; the remaining three API errors concern Signature invalid-use
+  calls and are outside this profile's symmetric scope.
+- Decision: Keep the corrected M1 behavior. Current image is 1,670,656 bytes,
+  SHA-256 `f7c145df97671400f8657d1cc05d39284c01d8329300146797e8ce6e6d87c467`.
+  D92 has only 23 persistent bytes and was not used for CAP installs. 2BED
+  and 8E had 42,437 and 52,042 bytes available before the probe tests. Reattach
+  8E for any additional board-specific runtime validation.
+- Commit: pending (recorded in follow-up continuity commit).
+- Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`,
+  `artifacts/logs/symm-crypto-kat-pcsc-20261024T120000Z.log`,
+  `artifacts/logs/symm-crypto-deploy-crypto-8E-20261024.log`,
+  `artifacts/logs/symm-crypto-deploy-crypto-2BED-20261024.log`,
+  `artifacts/logs/cycle-choupi-20261024T115434Z.log` (monitor failure),
+  `artifacts/logs/cycle-choupi-20261024T115633Z.log`,
+  `artifacts/logs/cycle-choupi-20261024T120251Z.log`.
