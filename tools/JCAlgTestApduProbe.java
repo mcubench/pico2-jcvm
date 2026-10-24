@@ -46,6 +46,7 @@ public final class JCAlgTestApduProbe {
 
   public static void main(String[] args) throws Exception {
     String requestedReader = null;
+    boolean skipJcSystemInfo = false;
     List<String> probeArgs = new ArrayList<>();
     for (int i = 0; i < args.length; i++) {
       if ("--reader".equals(args[i])) {
@@ -54,6 +55,8 @@ public final class JCAlgTestApduProbe {
               "--reader must be supplied once with an exact PC/SC reader name");
         }
         requestedReader = args[++i];
+      } else if ("--skip-jcsystem-info".equals(args[i])) {
+        skipJcSystemInfo = true;
       } else {
         probeArgs.add(args[i]);
       }
@@ -97,9 +100,11 @@ public final class JCAlgTestApduProbe {
         throw new IllegalStateException("unexpected applet version: " + versionText);
       }
 
-      transmit(channel, "JCSYSTEM_INFO",
-          new CommandAPDU(0xB0, 0x73, 0x01, 0x00,
-              new byte[] {0x01}, 256));
+      if (!skipJcSystemInfo) {
+        transmit(channel, "JCSYSTEM_INFO",
+            new CommandAPDU(0xB0, 0x73, 0x01, 0x00,
+                new byte[] {0x01}, 256));
+      }
 
       if (probeArgs.size() == 1 && "--version-only".equals(probeArgs.get(0))) {
         System.out.println(

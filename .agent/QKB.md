@@ -4057,3 +4057,40 @@ fix.
 - **Artifacts:** `artifacts/results/jcalgtest-profile-comparison-20261024.md`,
   base/current result CSVs under `artifacts/results/jcalgtest-profile-*-20261024/`,
   `artifacts/logs/base10-monitor-20261024.log`, and `/tmp/duplicate-load-base10.log`.
+
+## Selectable capability profile physical acceptance — 2026-10-24
+
+- **Constraint:** Keep `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` byte-for-byte
+  upstream. Its SHA-256 is
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+  Do not create or use modified JCAlgTest CAP files to accommodate profiles.
+- **Observed:** The original applet completes the current-profile support sweep
+  (4,525 yes/no rows, 15 yes, 4,510 no). On no-AES, its eager startup requests
+  disabled crypto and GETVERSION returns `F103`; minimal JCAlgTest is skipped
+  per user instruction. Use the repository `/deploy` CAPs to compare those
+  profiles instead.
+- **Deploy Core:** Current and no-AES each returned 17 `EXC_RUNTIME` and 2
+  `WRONG_RESULT` outcomes, all involving OwnerPINx behavior; minimal returned
+  8 `EXC_SYSTEM reason=ILLEGAL_USE` for disabled OwnerPINx providers and no
+  wrong results. Optional Ext CAP INSTALL returned `6A88` on all three; the
+  runner rolled back, and four Ext calls were unavailable. Root cause of the
+  current/no-AES OwnerPINx outcomes remains unresolved.
+- **Storage limit:** After cumulative stateful `/deploy` installation and test
+  runs, a physical memory query reported 23 persistent bytes free. Subsequent
+  Security/Crypto CAP INSTALL attempts returned `6F00` and rollback succeeded.
+  Stop further state-changing tests on this card. The stateful scenarios and
+  unsupported object deletion can consume persistent storage; use a fresh card
+  for another complete install matrix, and record per-run free-memory values.
+- **Viable procedure:** Use unchanged upstream JCAlgTest only on profiles where
+  it starts (currently verified: current). For no-AES/minimal, use the original
+  `/deploy` CAP suite and classify installation failures separately from
+  method results. Do not interpret storage-exhausted `6F00` as a profile
+  implementation failure without a fresh-card reproduction.
+- **Artifacts:**
+  `artifacts/results/capability-profiles-acceptance-20261024/` and logs
+  `artifacts/logs/deploy-current-Core-with-scenarios-20261024.log`,
+  `artifacts/logs/deploy-no-aes-Core-20261024.log`,
+  `artifacts/logs/deploy-minimal-Core-20261024.log`,
+  `artifacts/logs/deploy-no-aes-Security-Crypto-20261024.log`,
+  `artifacts/logs/deploy-minimal-Security-Crypto-20261024.log`, and
+  `artifacts/logs/deploy-current-Security-Crypto-20261024.log`.

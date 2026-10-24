@@ -23,31 +23,49 @@ Validate JSON keys and boolean values, reject unknown or conflicting
 capabilities, and require an enabled compatible key type for each selected
 cipher.
 
-- [ ] Add the single JSON support file, schema/validation, and generated
+- [x] Add the single JSON support file, schema/validation, and generated
   capability header. Default it to the current 15 declared yes results.
-- [ ] Move optional algorithm implementations and OwnerPINBuilder variants
+- [x] Move optional algorithm implementations and OwnerPINBuilder variants
   out of public API classes into separate provider sources. Keep public API
   signatures stable; generate factory dispatch and include only selected
   providers in the ROM mask so disabled bytecode is absent.
-- [ ] Extract AES CBC, DES CBC, SHA-256, and random-data native implementations
+- [x] Extract AES CBC, DES CBC, SHA-256, and random-data native implementations
   from `choupi/src/jni.cpp` into separately selectable native modules. Use the
   same selection for PC and Pico. Keep the AES primitive required by SCP03 even
   when Java Card AES capabilities are disabled, and omit disabled modules and
   exclusive libraries.
-- [ ] Regenerate the ROM mask and JNI header whenever the JSON changes. Check
+- [x] Regenerate the ROM mask and JNI header whenever the JSON changes. Check
   that API exports, CAP imports, native tokens, and token mappings stay valid.
-- [ ] Generate the expected JCAlgTest support CSV from the same JSON. Update
+- [x] Generate the expected JCAlgTest support CSV from the same JSON. Update
   `tools/compare-jcalgtest-support.py` to accept an empty expected set and fail
   for unexpected yes, missing yes, or any result outside `yes`/`no`.
-- [ ] Validate three configurations by changing only
-  `config/javacard-support.json`: current support (all 15 yes), current support
-  without Java Card AES, and minimal optional support (all 15 false). For each,
-  build ARM and RISC-V with repository wrappers; flash the full ARM image to an
-  identified Pico 2; require the runtime monitor, GPPro CAP install/select,
-  and a complete support sweep matching the generated CSV.
-- [ ] Inspect ROM-mask and firmware outputs to prove disabled providers and
-  native modules are absent. Record exact ROM-mask and image sizes for all
-  three builds; no-AES and minimal images must be smaller than current support.
+- [ ] Finish the `/deploy` physical acceptance matrix for all three capability
+  profiles on identified Pico 2 `D92E743D5F640C0F`. Completed so far: current,
+  no-AES, and minimal ARM/RISC-V wrappers passed; each ARM cycle passed finite
+  monitoring; upstream JCAlgTest CAP (unchanged) completed the current-profile
+  4,525-row report and matched 15 yes results; `/deploy` Core ran on all three,
+  Security and Crypto on no-AES, and Security on minimal. Per user direction,
+  minimal is not tested with JCAlgTest; the unchanged upstream CAP returns
+  `F103` on no-AES startup because it eagerly requests disabled crypto. No
+  modified JCAlgTest CAP is valid evidence. Still missing: minimal Crypto and
+  remaining Security/Crypto runs on current, plus other `/deploy` areas as
+  required. The physical card now has only 23 persistent bytes free and later
+  CAP installs returned `6F00`; continue this matrix on a fresh card or VPCD.
+  Current Core has 17 `EXC_RUNTIME` and two OwnerPINx `WRONG_RESULT` rows;
+  minimal reports eight disabled-OwnerPINx `ILLEGAL_USE` outcomes. These API
+  findings are tracked separately and do not change JCAlgTest support matching.
+- [x] Build and inspect all three capability profiles on physical Pico 2
+  `D92E743D5F640C0F`: `current` (15 enabled), `no_aes` (10), and `minimal` (0).
+  Build and finite-monitor results are recorded above; this checkbox covers
+  compilation, flashing, monitoring, and image inspection only.
+- [x] Inspect profile build outputs. Active ROM-mask sizes are 36,574 / 36,169 /
+  32,491 bytes for current / no-AES / minimal; each stored ROM-mask container
+  is 524,300 bytes. Firmware `.bin` sizes are 829,116 / 828,132 / 816,348
+  bytes, and UF2 sizes are 1,658,880 / 1,656,832 / 1,633,280 bytes. Build logs
+  show the AES-CBC module absent from no-AES and all five optional native modules
+  absent from minimal, for both PC and Pico; SCP03's common AES primitive stays
+  linked. Details and artifacts are recorded in `progress.md` and
+  `.agent/HANDOFF.md`.
 
 Assumptions: minimal disables every selectable capability, including optional
 PIN variants, while core Java Card, card management, and public API entry points

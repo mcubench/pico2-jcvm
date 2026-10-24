@@ -428,13 +428,15 @@ void Bytecodes::doThrow(jref_t objectref) {
                     sizeof(framework_aid)) == 0) {
       // JC305's ISOException import token 7 maps to ROM-mask export token 18.
       static constexpr uint8_t iso_exception_export_token = 18;
-      // The compiled ROM-mask class view also has a runtime-owned
-      // ISOException record at byte offset 350; the public exported view is
-      // at offset 316. Both represent the same framework class.
-      static constexpr jclass_index_t iso_exception_rom_offset = 350;
       const uint16_t iso_exception_index = HTONS(
           Export_Handler(exception_package)
               .getExportedClassOffset(iso_exception_export_token));
+      // The ROM Class component keeps a runtime-owned ISOException class
+      // record 34 bytes after the public exported class record. Derive its
+      // location from the export offset because optional providers shift the
+      // Class component in each support profile.
+      const jclass_index_t iso_exception_rom_offset =
+          static_cast<jclass_index_t>(iso_exception_index + 34);
       const auto iso_exception_class = exception_cp.resolveClassref(
           exception_cp.getClassRefFromClassIndex(iso_exception_index));
       const bool is_iso_exception =

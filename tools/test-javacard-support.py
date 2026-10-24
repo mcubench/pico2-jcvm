@@ -76,7 +76,7 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertFalse((out / "java/javacard/framework/OwnerPINxImpl.java").exists())
             self.assertFalse((out / "java/javacard/framework/OwnerPINxWithPredecrementImpl.java").exists())
 
-    def test_base_profile_keeps_only_applet_startup_dependencies(self):
+    def test_base_profile_matches_ten_declared_capabilities(self):
         with tempfile.TemporaryDirectory() as temporary:
             out = Path(temporary) / "generated"
             result = self.run_named_profile("base", out)
@@ -85,6 +85,9 @@ class JavaCardSupportTests(unittest.TestCase):
             with (out / "jcalgtest-supported.csv").open(newline="") as source:
                 rows = list(csv.reader(source, delimiter=";"))
             self.assertEqual({tuple(row) for row in rows[1:]}, {
+                ("javacard.framework.OwnerPINBuilder", "OWNER_PIN"),
+                ("javacard.framework.OwnerPINBuilder", "OWNER_PIN_X"),
+                ("javacard.framework.OwnerPINBuilder", "OWNER_PIN_X_WITH_PREDECREMENT"),
                 ("javacard.security.KeyBuilder", "TYPE_AES LENGTH_AES_128"),
                 ("javacard.security.KeyBuilder", "TYPE_DES LENGTH_DES3_3KEY"),
                 ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),

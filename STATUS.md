@@ -16,6 +16,23 @@ physical Crypto, Security, and Core deploy areas; details follow.
 
 ## Verified
 
+- **Selectable capability profile acceptance (2026-10-24):** Current (15),
+  no-AES (10), and minimal (0) each passed ARM and RISC-V build wrappers;
+  each ARM image passed a finite physical monitor on Pico D92
+  (`D92E743D5F640C0F`). The official upstream JCAlgTest CAP was left unchanged
+  (SHA-256 `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`).
+  Its full current-profile report matched 15 yes / 4,510 no across 4,525 rows.
+  The upstream applet returns `F103` on no-AES startup; per user direction,
+  minimal was not run through JCAlgTest. Profile behavior was checked with
+  `/deploy` CAPs: Core ran on all profiles; Security and Crypto ran on no-AES;
+  Security ran on minimal. Minimal Crypto INSTALL returned `6F00`; repeated
+  CAP testing later left only 23 persistent bytes free, so physical installation
+  testing stopped. Deploy Core exposed unresolved OwnerPINx outcomes on current
+  and no-AES. These are documented in `.agent/QKB.md` and the dated entry in
+  `.agent/HANDOFF.md`; they are not JCAlgTest support-report results.
+  Active ROM masks are 36,574 / 36,169 / 32,491 bytes and UF2 images are
+  1,658,880 / 1,656,832 / 1,633,280 bytes for current / no-AES / minimal.
+
 - Named `base` and `current` profiles were compared on physical Pico D92
   (`D92E743D5F640C0F`) using the supplied JCAlgTest 1.8.2 JC305 CAP and the
   complete `ALG_SUPPORT_EXTENDED` operation. Both produced 4,525 valid yes/no

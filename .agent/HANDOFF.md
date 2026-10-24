@@ -54,6 +54,45 @@
 
 # Handoff
 
+## Selectable capability profiles acceptance — 2026-10-24
+
+- Follow the user's clarified constraint: do not alter the upstream JCAlgTest
+  CAP. `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` remains SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+  Minimal is intentionally not tested with JCAlgTest; use `/deploy` CAPs across
+  profiles.
+- Current/no-AES/minimal (15/10/0) ARM and RISC-V wrapper builds passed, and
+  all three physical ARM cycles and finite monitors passed on Pico D92
+  (`D92E743D5F640C0F`). Current's full upstream JCAlgTest report passed the
+  generated support comparison: 4,525 rows, 15 yes, 4,510 no. No-AES's
+  unchanged JCAlgTest fails startup with `F103` because it eagerly requests
+  crypto disabled by that profile.
+- `/deploy` Core ran on all three profiles; Security and Crypto ran on no-AES;
+  Security ran on minimal. Results and per-run artifacts are in
+  `artifacts/results/capability-profiles-acceptance-20261024/`. Core's
+  current/no-AES OwnerPINx rows have 17 runtime exceptions and 2 wrong results;
+  minimal's disabled OwnerPINx variants return 8 `ILLEGAL_USE` exceptions.
+  Ext scenario INSTALL returned `6A88` with rollback on all profiles.
+- Do not install more CAPs on D92: physical memory probe found only 23
+  persistent bytes free after the stateful deploy suite. Later installs
+  returned `6F00`; this cannot be distinguished from storage exhaustion.
+  D92 was restored to current firmware and the unchanged JCAlgTest applet was
+  confirmed selectable. Use a fresh card for further stateful deploy work.
+- Profile outputs: active ROM masks 36,574 / 36,169 / 32,491 bytes; UF2 images
+  1,658,880 / 1,656,832 / 1,633,280 bytes (current / no-AES / minimal).
+  Exact image hashes, build/module inspection, and comparator artifacts are
+  recorded under the profile acceptance artifact directory and `progress.md`.
+- Code changes awaiting this acceptance commit: dynamic ISOException ROM offset
+  for profile-dependent ROM layouts; optional JCSYSTEM probe flag; corrected
+  base-profile config test. The original CAP and submodule trees are untouched.
+- Next: finish the `/deploy` matrix: current Security/Crypto, minimal Crypto,
+  and remaining areas where relevant. Use VPCD or a fresh physical card and
+  record free persistent memory before each stateful run. Then isolate the
+  OwnerPINx Core behavior. No further physical tests were run after the 23-byte
+  storage observation. `TODO.md` keeps this acceptance item open.
+- Commit attempt for the current documentation/source step was blocked:
+  `git add` could not create `.git/index.lock` because `.git` is read-only.
+
 ## JCAlgTest base/current physical profile comparison — 2026-10-24
 
 - Completed the requested `base` profile and compared it against `current` on

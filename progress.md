@@ -10716,3 +10716,40 @@
   `artifacts/logs/base10-monitor-20261024.log`,
   `artifacts/logs/cycle-choupi-20261023T222949Z.log`,
   `/tmp/duplicate-load-base10.log`.
+
+## 2026-10-24 — Selectable profile acceptance with upstream and deploy CAPs
+
+- Step/experiment: `selectable-profiles-acceptance-20261024`
+- Change: Recorded acceptance results and limits; made profile-dependent
+  ISOException ROM lookup derive its offset from the exported class location;
+  added an optional JCSystem-info skip to the APDU probe; corrected the base
+  profile test to expect its three enabled OwnerPINBuilder capabilities.
+- Validation: Current, no-AES, and minimal ARM/RISC-V build wrappers passed;
+  their three physical ARM cycles passed finite monitors. The unchanged
+  upstream JCAlgTest CAP completed 4,525 current-profile rows and matched its
+  generated support set (15 yes, 4,510 no). `/deploy` Core ran on all three;
+  Security/Crypto ran on no-AES, and Security ran on minimal. Support-config
+  test and whitespace check are recorded with this step. No new hardware test
+  was run after detecting persistent-storage exhaustion.
+- Result: Active ROM masks: 36,574 / 36,169 / 32,491 bytes; UF2 images:
+  1,658,880 / 1,656,832 / 1,633,280 bytes (current / no-AES / minimal).
+  Original JCAlgTest CAP SHA-256 remains
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+  No-AES upstream JCAlgTest startup returns `F103`; minimal JCAlgTest was
+  skipped as directed. Current/no-AES Core has 17 OwnerPINx runtime exceptions
+  and 2 wrong results; minimal reports 8 disabled-feature `ILLEGAL_USE`
+  results. D92 memory probe found 23 persistent bytes free; later installs
+  returned `6F00`, so those outcomes are storage-limited and not conclusive.
+- Decision: Preserve the upstream CAP unchanged; use `/deploy` CAPs for reduced
+  profiles. This physical acceptance matrix remains open: minimal Crypto and
+  current Security/Crypto plus any remaining `/deploy` areas are unrun. Stop
+  stateful physical installs on D92 and continue on a fresh card or emulator.
+  No size measurement was made for the ROM-mask container beyond its recorded
+  524,300-byte size; exact firmware hashes and logs are in the ignored profile
+  artifact directory.
+- Commit: not created; `git add` was blocked because `.git/index.lock` cannot be
+  created on the read-only filesystem.
+- Artifacts/logs: `artifacts/results/capability-profiles-acceptance-20261024/`,
+  `artifacts/logs/profile-native-modules-20261024.log`,
+  `artifacts/logs/test-javacard-support-20261024.log`, and deploy logs listed
+  in `.agent/HANDOFF.md`.
