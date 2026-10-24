@@ -1,5 +1,23 @@
 # Project issue knowledge base
 
+## ROM class token differs from runtime class index — 2026-10-24
+
+- **Symptom:** Native RSA key methods initially threw `SecurityException`
+  (`6F00`) even though the receiver belonged to native package 17. The generated
+  `ROM_CLASS_INDEX_*` value was 4, while the allocated object's runtime class
+  index was 42.
+- **Cause:** `ROM_CLASS_INDEX_*` is the local ROM/export class token, not the
+  runtime class index. Resolve it through `Export_Handler::getExportedClassOffset`
+  and apply `HTONS`, matching the imported-class resolution in
+  `ConstantPool_Handler::getClassInformation`, before comparing instance IDs.
+  Passing the token directly to `Heap::addInstance` also failed during class
+  resolution; use the VM's normal CAP `new` path for ROM API objects.
+- **Viable fix:** Resolve expected class identity from the package export table
+  and let standard JCVM allocation construct API objects. Native methods can
+  then validate package and resolved class IDs before touching fields.
+- **Validation:** The asymmetric VPCD probe passed 20/20 checks after this fix;
+  ARM and RISC-V builds passed. Physical validation was not run in this step.
+
 ## Pico storage durability depends on VM transaction state — 2026-10-24
 
 - **Source finding:** `src/choupi_pico2.cpp:fs_sync()` returns success without

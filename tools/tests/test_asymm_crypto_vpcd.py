@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run SHA-1/SHA-2 known-answer vectors through the PC VM."""
+"""Run digest, RSA key-storage, and RSA cipher vectors through the PC VM."""
 
 from __future__ import annotations
 

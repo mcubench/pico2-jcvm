@@ -9484,3 +9484,30 @@ confirmed on hardware. The original investigation evidence remains in earlier
   access is restored.
 - This is a documentation-only rule update. No device access or firmware
   validation was performed for this step.
+## Native RSA key component operations — 2026-10-24
+
+- Migrated RSA key component getters/setters, initialization state, clearing,
+  and type/size reads to native C++ methods in
+  `choupi/src/native_rsa_key.cpp`. `RSAKeyProvider` retains Java Card storage
+  construction only; its cryptographic key operations are native. The
+  generated `KeyBuilderProvider` still selects the provider, and RSA cipher
+  operations remain in the interpreted provider pending their native migration.
+- VPCD initially returned `6F00` because native code compared generated ROM
+  class token `4` directly with runtime class index `42`. Resolve the class via
+  `Export_Handler::getExportedClassOffset()` and apply `HTONS`, matching the
+  normal imported-class path. Direct `Heap::addInstance()` with the local token
+  also failed; provider objects now use the normal JCVM `new` allocation path.
+- Validation: support generator 8/8; ARM and RISC-V `asymm_crypto` builds pass;
+  PC ROM-mask build passes; VPCD reports 20/20 checks, including RSA key
+  setter/getter cases and cipher round trips. Log:
+  `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`. No physical test was
+  run for this step.
+- Build-wrapper details: `tools/build` and `tools/build-pc` now regenerate ROM
+  metadata and invalidate the source cache when Java support sources or the
+  support generator changes. `tools/extract-rom-metadata.py` derives the
+  generated header from `jni.hpp`.
+- Next: migrate RSA cipher key validation/buffering dispatch from interpreted
+  Java provider methods to native C++, preserving API signatures and upstream
+  CAPs. Then run unchanged `/deploy` CAP coverage on available physical boards;
+  fail over to another identified board if one becomes unavailable. Continue
+  with RSA signatures, EC, key agreement, and key generation from `TODO.md`.

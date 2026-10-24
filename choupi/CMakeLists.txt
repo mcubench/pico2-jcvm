@@ -275,7 +275,8 @@ list(FILTER CHOUPI_ROMMASK_INPUTS EXCLUDE REGEX "/(target|build|\\.git)/")
 list(APPEND CHOUPI_ROMMASK_INPUTS "${CHOUPI_ROMMASK_ROOT}/Makefile")
 list(APPEND CHOUPI_ROMMASK_INPUTS
   "${CMAKE_SOURCE_DIR}/../config/javacard-support.json"
-  "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake")
+  "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake"
+  "${CMAKE_SOURCE_DIR}/../tools/extract-rom-metadata.py")
 
 if(CHOUPI_TARGET_PC)
   set(CHOUPI_ROMMASK_STAMP "${CMAKE_BINARY_DIR}/rommask/.rommask-built")
@@ -293,11 +294,15 @@ if(CHOUPI_TARGET_PC)
       java -jar "${CMAKE_BINARY_DIR}/rommask/rommask.jar"
       "${CMAKE_BINARY_DIR}/javacard-api" "${CMAKE_BINARY_DIR}/flash"
       "${CMAKE_BINARY_DIR}/jni.hpp" fr.gouv.ssi.starter.Starter.runVPCD
+    COMMAND python3 "${CMAKE_SOURCE_DIR}/../tools/extract-rom-metadata.py"
+      --jni-header "${CMAKE_BINARY_DIR}/jni.hpp"
+      --output "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-rom-metadata.h"
     COMMAND ${CMAKE_COMMAND} -E touch "${CHOUPI_ROMMASK_STAMP}"
     DEPENDS "${CHOUPI_JAVACARD_API_STAMP}" ${CHOUPI_ROMMASK_INPUTS}
     BYPRODUCTS "${CMAKE_BINARY_DIR}/rommask/rommask.jar"
                 "${CMAKE_BINARY_DIR}/flash"
                 "${CMAKE_BINARY_DIR}/jni.hpp"
+                "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-rom-metadata.h"
     VERBATIM)
   add_custom_target(rommask
     DEPENDS "${CHOUPI_ROMMASK_STAMP}" "${CMAKE_BINARY_DIR}/flash"
@@ -357,6 +362,23 @@ if(JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA51
 endif()
 if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_rsa_cipher.cpp")
+endif()
+set(JC_SUPPORT_RSA_KEYS_ENABLED OFF)
+foreach(rsa_bits 512 736 768 896 1024 1280 1536 1984 2048 3072 4096)
+  foreach(rsa_kind PUBLIC PRIVATE CRT_PRIVATE)
+    if(JC_SUPPORT_KEY_RSA_${rsa_kind}_${rsa_bits})
+      set(JC_SUPPORT_RSA_KEYS_ENABLED ON)
+    endif()
+  endforeach()
+endforeach()
+if(JC_SUPPORT_KEY_RSA_PRIVATE_TRANSIENT_RESET OR
+   JC_SUPPORT_KEY_RSA_PRIVATE_TRANSIENT_DESELECT OR
+   JC_SUPPORT_KEY_RSA_CRT_PRIVATE_TRANSIENT_RESET OR
+   JC_SUPPORT_KEY_RSA_CRT_PRIVATE_TRANSIENT_DESELECT)
+  set(JC_SUPPORT_RSA_KEYS_ENABLED ON)
+endif()
+if(JC_SUPPORT_RSA_KEYS_ENABLED)
+  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_rsa_key.cpp")
 endif()
 
 if(CHOUPI_TARGET_PC)

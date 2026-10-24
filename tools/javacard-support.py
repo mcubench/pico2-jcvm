@@ -251,6 +251,8 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     key_provider = [
         "package javacard.security;",
         "",
+        "import fr.gouv.ssi.nativeimpl.RSAKeyProvider;",
+        "",
         "final class KeyBuilderProvider {",
         "  private KeyBuilderProvider() {}",
         "  static Key buildKey(byte type, short length, boolean encrypted)",
@@ -360,10 +362,12 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         (java_dir / "KeyProviderBase.java").write_text(
             key_base.read_text(encoding="utf-8"), encoding="utf-8"
         )
-    rsa_key_provider = java_dir / "RSAKeyProvider.java"
+    rsa_key_provider = out_dir / "java/fr/gouv/ssi/nativeimpl/RSAKeyProvider.java"
     rsa_key_enabled = any(key.startswith("key_rsa_") and enabled
                           for key, enabled in config.items())
+    (java_dir / "RSAKeyProvider.java").unlink(missing_ok=True)
     if rsa_key_enabled:
+        rsa_key_provider.parent.mkdir(parents=True, exist_ok=True)
         rsa_key_provider.write_text(
             (Path(__file__).resolve().parent / "java-support/RSAKeyProvider.java").read_text(encoding="utf-8"),
             encoding="utf-8",

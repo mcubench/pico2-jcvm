@@ -46,10 +46,14 @@ rom_image="${build_dir}/flash"
 generated_header="${build_dir}/jni.hpp"
 [[ -s "${rom_image}" ]] || die "ROM-mask generation did not produce ${rom_image}"
 [[ -s "${generated_header}" ]] || die "ROM-mask generation did not produce ${generated_header}"
+python3 "${repo_root}/tools/extract-rom-metadata.py" \
+  --jni-header "${generated_header}" \
+  --output "${support_dir}/javacard-rom-metadata.h"
 (
   cd "${build_dir}"
   sha256sum flash jni.hpp > generation.sha256
   sha256sum "${support_dir}/javacard-class-token-map.h" >> generation.sha256
+  sha256sum "${support_dir}/javacard-rom-metadata.h" >> generation.sha256
   find "${repo_root}/choupi/javacard-sdk/javacard-api/src" \
     -type f -name '*.java' -print0 | sort -z | xargs -0 sha256sum | \
     sha256sum | awk '{print $1 "  javacard-api-sources"}' > api-sources.sha256

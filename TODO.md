@@ -1134,19 +1134,21 @@ rollback and duplicate/invalid registration handling also remain unverified.
   complete relevant `/deploy` tests on identified physical Pico 2 cards.
   Progress (2026-10-24): SHA-1/224/256/384/512, RSA public/private/CRT key
   storage for all requested sizes, and RSA PKCS#1/NoPad/OAEP ciphers have
-  implementations and VPCD covers 20 vectors. The committed RSA cipher Java
-  provider is not compliant with the user's native-only implementation
-  instruction and must be replaced by native C++ API dispatch. Physical RSA
-  ciphers passed 18/18 vectors on Pico 2 `2BED26ED20556535`. Native
+  implementations. RSA key component storage now uses native C++ getters and
+  setters; the VPCD probe passes 20 harness checks (10 digest, 5 key storage,
+  3 cipher vectors plus ATR and SELECT). ARM and RISC-V builds pass. Physical
+  RSA ciphers passed 18/18 vectors on Pico 2 `2BED26ED20556535`. Native
   `CryptoException` dispatch is now catchable with explicit reason codes across
   native crypto modules. A physical `/deploy` run found and fixed RSA NoPad
   accepting input equal to the modulus. The final repeated Crypto area had 174
   `OK`, 286 `UNSUPPORTED_PER_SPEC`, 6 expected `EXC_CARDRUNTIME`, and zero
   wrong-result rows; three invalid one-shot signature cases now report reason
-  5 as expected. Next migrate RSA key getters/setters and cipher API methods
-  from interpreted provider bodies to direct native C++ methods, then verify
-  with unchanged upstream CAPs and `/deploy`. RSA signatures, EC keys/ECDSA, key agreement, key generation,
-  exact full-report comparison, and full deploy acceptance remain.
+  5 as expected. RSA key getters/setters now dispatch to native C++. The
+  remaining native-only API gap is RSA cipher validation/buffering in the
+  interpreted provider; migrate that behavior to native dispatch and then
+  verify with unchanged upstream CAPs and `/deploy`. RSA signatures, EC
+  keys/ECDSA, key agreement, key generation, exact full-report comparison, and
+  full deploy acceptance remain.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).
 - [ ] Complete deferred hardening and robustness work, including malformed CAP

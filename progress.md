@@ -11146,3 +11146,29 @@
 - Decision: Apply this rule to subsequent physical validation work.
 - Commit: `a612646`.
 - Artifacts/logs: none.
+## 2026-10-24 — Move RSA key component operations to native C++
+
+- Step/experiment: `asymm-rsa-key-native-dispatch`
+- Change: Replaced RSA key provider component access and initialization logic
+  with native C++ methods. The generated factory now uses the normal JCVM
+  object-allocation path; transient and persistent component storage is
+  initialized by the provider constructor. Added generated ROM metadata for
+  class identity and extended source hashing so provider changes regenerate
+  the ROM mask and JNI header.
+- Validation: `./tools/env python3 tools/test-javacard-support.py` passed 8/8;
+  `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` passed. The elevated PC ROM-mask
+  build passed. `./tools/env python3 tools/tests/test_asymm_crypto_vpcd.py`
+  passed 20/20 harness checks, including 10 digest vectors, 5 RSA key storage
+  cases, and 3 RSA cipher round trips. `git diff --check` passed. The VPCD
+  suite needed elevated local socket access; no physical token was tested.
+- Result: Native RSA component getters/setters pass VPCD validation. Resolving
+  the local ROM class token through the export table and applying `HTONS` avoids
+  a false runtime `SecurityException` caused by comparing unlike class-index
+  representations.
+- Decision: Continue migrating the remaining RSA cipher provider behavior to
+  native dispatch, then validate unchanged `/deploy` CAPs on available Pico 2
+  devices using failover across identified boards.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`,
+  `artifacts/logs/build-pc-rsa-validation.log`; no physical hardware log

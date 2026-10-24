@@ -11,11 +11,19 @@ for command_name in find sort sha256sum; do
   }
 done
 
-(
-  cd "${rommask_root}"
-  {
-    find src capmap-free -type f \
-      ! -path '*/target/*' ! -path '*/build/*' ! -path '*/.git/*' -print0
-    printf '%s\0' Makefile pom.xml
-  } | sort -z | xargs -0 sha256sum
-) | sha256sum | awk '{print $1}'
+{
+  (
+    cd "${rommask_root}"
+    {
+      find src capmap-free -type f ! -path '*/target/*' ! -path '*/build/*' ! -path '*/.git/*' -print0
+      printf '%s\0' Makefile pom.xml
+    } | sort -z | xargs -0 sha256sum
+  )
+  (
+    cd "${repo_root}"
+    {
+      find tools/java-support -type f -print0
+      printf '%s\0' tools/javacard-support.py tools/rommask-source-hash tools/extract-rom-metadata.py
+    } | sort -z | xargs -0 sha256sum
+  )
+} | sha256sum | awk '{print $1}'

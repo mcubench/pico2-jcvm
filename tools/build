@@ -40,7 +40,8 @@ generation_current=false
 if [[ -s "${generation_manifest}" && -s "${api_source_manifest}" && \
       -s "${support_config_manifest}" && \
       -s "${rommask_source_manifest}" && \
-      -s "${build_pc_dir}/flash" && -s "${build_pc_dir}/jni.hpp" ]] && \
+      -s "${build_pc_dir}/flash" && -s "${build_pc_dir}/jni.hpp" && \
+      -s "${support_dir}/javacard-rom-metadata.h" ]] && \
    (cd "${build_pc_dir}" && sha256sum --check generation.sha256 >/dev/null); then
   current_api_hash="$(find "${repo_root}/choupi/javacard-sdk/javacard-api/src" \
     -type f -name '*.java' -print0 | sort -z | xargs -0 sha256sum | \
