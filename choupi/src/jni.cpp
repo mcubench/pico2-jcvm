@@ -630,7 +630,8 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
   return -1;
 }
 
-jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet() {
+jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet(
+    const jref_t) {
   return choupi_vm_is_selecting_applet() != 0 ? TRUE : FALSE;
 }
 

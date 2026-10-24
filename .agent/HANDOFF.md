@@ -127,6 +127,27 @@
   and keep each failed board's evidence. Do not make a single board failure
   stop the full test sequence.
 
+## Native instance-method dispatch — 2026-10-24
+
+- The ROM-mask generator now includes a `jref_t` receiver in generated C++
+  declarations and passes it for non-static native methods. Its source commit
+  is `7704b0b` in `choupi/javacard-sdk/rommask`.
+- `NativeImplementation.selectingApplet()` accepts the new receiver ABI.
+  Mbed TLS platform alternatives are selected for the Pico target, avoiding
+  POSIX time/zeroize dependencies when RSA is disabled or enabled.
+- Validation: support-generator tests 8/8; asymmetric ARM and RISC-V builds
+  passed; physical ARM cycle passed on `2BED26ED20556535` with repeated
+  `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, and
+  `CYCLE:PASS`. Log: `artifacts/logs/cycle-choupi-20261024T163247Z.log`.
+- The uncommitted RSA Signature Java provider/bridge experiment was removed.
+  Signature flags are not in the current profile configuration, and these
+  algorithms remain unsupported. Existing interpreted Java crypto providers
+  are still a known architecture violation; migrate the implementations to
+  direct native C++ API dispatch. The new receiver ABI is groundwork for that.
+- Next: inspect native class/object field APIs and implement an end-to-end
+  direct native key operation, beginning with RSA key setters/getters, without
+  adding Java provider methods or editing upstream CAPs.
+
 ## Asymmetric crypto profile — SHA provider groundwork — 2026-10-24
 
 - User request: create `asymm_crypto` matching asymmetric support in

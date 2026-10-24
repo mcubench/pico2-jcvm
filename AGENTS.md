@@ -9,6 +9,16 @@ Supported CPU architectures:
 
 Use the repository wrappers; do not invoke compiler binaries directly.
 
+Java Card runtime boundary:
+
+- Pico 2 runs the native Java Card VM, which interprets installed CAP files.
+  It does not run `.java` or `.class` programs as firmware.
+- Implement Java Card API behavior and cryptographic algorithms in native C++
+  VM code, exposed through native API dispatch.
+- Do not add Java provider/adapter implementations to firmware or create or
+  modify CAP files to implement algorithms. Use existing upstream CAPs only to
+  exercise native API behavior.
+
 - Build ARM: `./tools/build arm`
 - Build RISC-V: `./tools/build riscv`
 - Build both, flash, and capture logs: `./tools/cycle arm` or `./tools/cycle riscv`

@@ -10991,6 +10991,37 @@
 - Artifacts/logs: `SKILL.md`, `.agent/SESSION_CONTINUITY.md`,
   `.agent/HANDOFF.md`; no logs
 
+## 2026-10-24 — Pass receivers to generated native instance methods
+
+- Step/experiment: `rommask-native-instance-receiver-abi`
+- Change: ROM-mask generation now emits the receiver parameter for non-static
+  native methods, pops the receiver after explicit arguments, and passes it to
+  the C++ implementation. Updated `NativeImplementation.selectingApplet()` to
+  accept that receiver. Selected Mbed TLS platform alternatives at firmware
+  target scope so the platform utility compiles for RSA and non-RSA profiles.
+  Removed the uncommitted Java RSA Signature provider experiment and its
+  capability declarations; those algorithms remain unimplemented and are not
+  advertised.
+- Validation: `python3 tools/test-javacard-support.py` passed 8/8;
+  `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` passed. Then
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto
+  --serial 2BED26ED20556535` passed both builds, flash verification, and the
+  finite physical monitor on Pico 2 `2BED26ED20556535`; monitor repeatedly
+  reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`.
+  The generated ROM mask reported 71 native methods. Existing converter, Rust
+  SDK, and packed-header warnings remain; this step added no new C++ warnings.
+- Result: Native instance API methods can receive their owning Java Card
+  object through the generated ABI. Physical runtime remains operational after
+  flashing the asymmetric profile.
+- Decision: Use this receiver ABI for direct native Java Card API methods.
+  Replace the existing Java crypto providers with native API dispatch before
+  treating their cryptographic behavior as compliant.
+- Commit: pending; ROM-mask submodule commit `7704b0b`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T163247Z.log`;
+  ARM UF2 SHA-256 `215de132afc30fff5f5cf35c639b559ead1465ccebee3b88da8fdbf748aefe67d`;
+  PC ROM-mask SHA-256 `1e76a6cd532e54a5059855827e33f34cede704c3e79fa84d7ae17ea42d7ebbe9`.
+
 ## 2026-10-24 — Extend firmware architecture analysis by responsibility layer
 
 - Step/experiment: `firmware-layering-architecture-review`

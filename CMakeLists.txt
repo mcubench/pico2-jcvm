@@ -156,14 +156,13 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     "${PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c"
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
     $<TARGET_OBJECTS:choupi_vm_core>)
-  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR
-     JC_SUPPORT_CIPHER_RSA_OAEP)
-    # The Pico has no POSIX clock. Mbed TLS bignum's platform utility only
-    # needs its monotonic millisecond hook; native_rsa_cipher.cpp supplies it.
-    target_compile_definitions(pico2_choupi PRIVATE
-      MBEDTLS_PLATFORM_MS_TIME_ALT
-      MBEDTLS_PLATFORM_ZEROIZE_ALT)
-  endif()
+  # SCP03 provides the Pico zeroize implementation. Mbed TLS bignum's optional
+  # millisecond clock hook is supplied by native_rsa_cipher.cpp when RSA is
+  # selected. Keep both alternatives selected in every profile so Pico's
+  # platform_util.c never tries to compile unavailable POSIX/time routines.
+  target_compile_definitions(pico2_choupi PRIVATE
+    MBEDTLS_PLATFORM_MS_TIME_ALT
+    MBEDTLS_PLATFORM_ZEROIZE_ALT)
   if(JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD OR
      JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M1 OR JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M2 OR
      JC_SUPPORT_CIPHER_DES_CBC_PKCS5 OR JC_SUPPORT_CIPHER_DES_ECB_NOPAD OR
