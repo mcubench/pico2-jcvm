@@ -4339,3 +4339,25 @@ fix.
 - **Validation:** The updated flasher recovered this board, verified the
   `pico2_choupi.uf2` write, and the final finite monitor passed.
 - **Commit:** `986b277`.
+
+## Firmware reflash does not make a used card empty — 2026-10-24
+
+- **Symptom:** JCAlgTest remained selectable after uploading a new ARM UF2,
+  appearing to be preinstalled in the firmware.
+- **Cause:** The UF2 carries firmware/ROM API data, but its flash update does
+  not wipe the separate persistent filesystem and CAP store. In this case the
+  applet was deliberately installed earlier with GPPro and survived the
+  subsequent firmware update.
+- **Viable solution:** For a fresh emulator card, start with an empty flash
+  image and verify GPPro `--list` reports only the ISD before explicitly
+  running `gp --install <upstream-cap>`. For a used physical card, authenticate
+  and delete applet AID `4A43416C675465737431` first, then package AID
+  `4A43416C6754657374`; verify the registry is empty except for the ISD.
+  Reflashing alone is not a card reset and must not be documented as one.
+- **Validation:** `./tools/test-gppro-empty-install-vpcd` passed from a fresh
+  zero-length flash file: only the ISD was listed before install, and the
+  unchanged JCAlgTest CAP loaded and installed successfully through GPPro.
+  Physical deletion is pending because the authorized host helper found zero
+  visible Pico devices on 2026-10-24.
+- **Artifacts:**
+  `artifacts/results/gppro-empty-install-vpcd-20261024T212248Z/`.

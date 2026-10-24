@@ -102,6 +102,34 @@
 
 # Handoff
 
+## Empty-card state clarification — 2026-10-24
+
+- The `symm_crypto` ARM UF2 (`build/arm/pico2_choupi.uf2`) builds successfully
+  with 46 selected capabilities. It contains no preinstalled JCAlgTest CAP.
+- Physical Pico flash updates firmware but preserve the separate persistent
+  filesystem/CAP store. The D92 board still has JCAlgTest because the earlier
+  task explicitly installed it with GPPro; this persisted state was mistaken
+  for applet code baked into the firmware. Do not claim that re-flashing makes
+  an already-used card empty.
+- Ran `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` with a
+  fresh zero-length flash image. GPPro's pre-install `--list` contained only
+  ISD `A000000151000000`; explicit `--install` of the unchanged upstream
+  JC305 CAP succeeded, and the package/app were then loaded/selectable. Full
+  evidence is in
+  `artifacts/results/gppro-empty-install-vpcd-20261024T212248Z/`.
+- The BOOTSEL/CCID device was not visible inside this VM during this session:
+  `lsusb -d 2e8a:000f` returned no device and the authorized PC/SC ACL helper
+  found zero `2e8a:0009` devices. The physical old package could not be deleted
+  now. When that reader returns, delete applet AID
+  `4A43416C675465737431` first, then package AID `4A43416C6754657374`, and
+  verify `gp --list` shows only the ISD before the next explicit install.
+- Current ARM image SHA-256 is
+  `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`
+  (1,675,264 bytes). ARM and RISC-V `symm_crypto` build wrappers passed.
+- Separate issue to continue offline: the asymmetric VPCD vectors now fail at
+  the first applet APDU with `6F00` (`exception=29`, opcode `93`, PC
+  `C4AE2C6B`). Do not attribute this to the persistent-card state issue.
+
 ## Runtime format correction — 2026-10-24
 
 - Correction to the previous handoff note: the host `.class` outputs are

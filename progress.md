@@ -11241,3 +11241,26 @@
   outside the repository were changed.
 - Commit: `986b277`.
 - Artifacts/logs: `artifacts/logs/monitor-empty-firmware-physical-20261024.log`.
+
+## 2026-10-24 — Verify empty-card state and explicit JCAlgTest install
+
+- Step/experiment: `empty-card-gppro-explicit-install-vpcd`
+- Change: Clarified that the full ARM UF2 does not embed JCAlgTest, while a
+  firmware upload preserves CAPs already written to the card's persistent
+  filesystem. Updated TODO, QKB, and handoff so a previously installed CAP is
+  not mistaken for ROM-mask content.
+- Validation: ARM and RISC-V `symm_crypto` wrapper builds passed. The clean
+  VPCD GPPro workflow started from an empty flash file: pre-install `gp --list`
+  showed only the ISD, and explicit upstream `gp --install` succeeded; the
+  post-install package was `LOADED` and applet was `SELECTABLE`. Physical
+  cleanup was skipped because the authorized helper found zero connected Pico
+  CCID readers and `lsusb -d 2e8a:000f` found no BOOTSEL device.
+- Result: The emulator starts empty as intended; previously installed physical
+  applets survive UF2 updates and require GP DELETE before the card can be
+  considered empty.
+- Decision: Before the next physical install, remove applet AID
+  `4A43416C675465737431`, then package AID `4A43416C6754657374`, and verify
+  `gp --list` lists only the ISD. Keep the upstream CAP unchanged.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261024T212248Z/`;
+  ARM UF2 SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.

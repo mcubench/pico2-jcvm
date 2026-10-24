@@ -82,6 +82,16 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
 
 ### Priority 1 — close acceptance criteria AC1–AC5
 
+- [ ] Keep the physical card state empty until the requested GPPro install.
+  JCAlgTest is not embedded in the ARM UF2 or ROM mask. A successful earlier
+  `gp --install` wrote the CAP to persistent card storage, which survives a
+  firmware upload; reflashing alone does not uninstall packages. The fresh
+  blank-flash VPCD flow now proves `gp --list` shows only the ISD before
+  `gp --install`, after which the unchanged applet becomes selectable. The
+  physical reader is currently absent from this VM, so the previously installed
+  physical applet still needs authenticated GP DELETE (applet first, then
+  package) before treating that card as empty.
+
 - [x] **AC4: refresh the physical support-results comparison after OwnerPINX.**
   On 2026-10-20 the official physical `ALG_SUPPORT_EXTENDED` run completed
   4,525 rows: 15 `yes`, 4,510 `no`, and no other CHOUPI statuses. The
