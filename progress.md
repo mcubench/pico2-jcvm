@@ -11121,7 +11121,7 @@
   classification; no broader profile match is claimed.
 - Decision: Reuse native exception dispatch for direct RSA key and cipher API
   methods. Continue migrating algorithm behavior out of Java provider bodies.
-- Commit: recorded in follow-up after the implementation commit.
+- Commit: `90d765b`.
 - Artifacts/logs: pre-fix CSV SHA-256
   `9ab4245f2410634e6a2559552762c2889e3c8f4218c9fc35b8715949da74abae`; fixed
   range-check CSV SHA-256

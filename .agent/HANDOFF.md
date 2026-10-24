@@ -9468,6 +9468,7 @@ confirmed on hardware. The original investigation evidence remains in earlier
   `artifacts/results/deploy/native-crypto-exceptions-2BED-20261024/pico1.csv`;
   `artifacts/results/deploy/native-crypto-exceptions-fixed-2BED-20261024/pico1.csv`;
   final reason-code CSV: `artifacts/results/deploy/native-crypto-reason-codes-2BED-20261024/pico1.csv`.
+- Commit: `90d765b`.
 - Next: migrate RSA key getter/setter and cipher methods out of interpreted
   provider bodies into direct native C++ methods. Preserve public API signatures
   and use unchanged `/deploy` CAPs for physical tests.
