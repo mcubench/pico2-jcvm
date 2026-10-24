@@ -4383,9 +4383,15 @@ fix.
   The firmware image does not embed the applet, and reflashing preserves the
   separate persistent CAP store.
 - **JCAlgTest result:** Official v1.8.2 `ALG_SUPPORT_EXTENDED` completed
-  4,525 rows on D92 (73 yes, 4,452 no, zero other). Profile comparison failed:
-  the generated manifest has 46 entries and misses legacy Signature section
-  normalization and factory-method rows. Fix this expected-support mapping;
-  unsupported algorithms remain expected.
+  4,525 rows on D92 (73 yes, 4,452 no, zero other). The first comparison
+  reported 46 expected identities against 73 raw yes rows because the client
+  emits legacy Signature section names and cipher/signature factory aliases.
+- **Viable solution:** Normalize the legacy Signature section and map known
+  factory-method identities back to their canonical algorithm capability;
+  retain the specifically configured CBC `getInstance` rows independently.
+  The archived physical report then passes at 46 expected/actual identities,
+  with zero unexpected or missing. Unsupported algorithms remain expected.
+- **Validation:** `python3 tools/test-javacard-support.py` passes all 9 tests;
+  archived D92 report comparison prints `COMPARE:PASS`.
 - **Artifacts:** `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
   `artifacts/logs/cycle-choupi-20261024T213745Z.log`.

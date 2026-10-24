@@ -11310,3 +11310,25 @@
 - Artifacts/logs: `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
   `artifacts/logs/cycle-choupi-20261024T213745Z.log`; UF2 size 1,675,264 bytes,
   SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
+
+## 2026-10-25 — Canonicalize JCAlgTest crypto factory aliases
+
+- Step/experiment: `symm-crypto-support-alias-comparison`
+- Change: Updated the support comparator to normalize the legacy
+  `javacard.crypto.Signature` section and treat cipher/signature factory-matrix
+  rows as aliases for their canonical algorithm capabilities. The explicit
+  AES/DES CBC `getInstance` selections remain separately checked. Added
+  regression coverage; no firmware implementation or CAP file changed.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9. Comparing the
+  physical D92 `ALG_SUPPORT_EXTENDED` CSV against itself with the generated
+  `symm_crypto` expectation passed: 4,525 matched rows, 73 yes, 4,452 no, 0
+  other, 46 expected/actual capability identities, zero unexpected/missing.
+- Result: The earlier 73-vs-46 mismatch was duplicate API paths and legacy
+  naming; after canonicalization the physical result exactly matches the
+  selected support profile. Unsupported results remain expected.
+- Decision: Resume broader profile and `/deploy` acceptance; retain upstream
+  JCAlgTest CAP unchanged. `asymm_crypto` remains paused by user request.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
+  no new firmware image was built because this step changes host-side
+  comparison metadata only.

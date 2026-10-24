@@ -10,6 +10,78 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+SIGNATURE_SECTION = "javacard.security.Signature"
+CIPHER_FACTORY_SECTION = (
+    "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, "
+    "byte paddingAlgorithm, boolean externalAccess)"
+)
+SIGNATURE_FACTORY_SECTION = (
+    "javacard.security.Signature.getInstance(byte messageDigestAlgorithm, "
+    "byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)"
+)
+
+# JCAlgTest v1.8.2 emits the same selected cipher/signature support through
+# both the one-byte algorithm query and the getInstance parameter matrix.
+# Canonicalize those aliases to the capability row generated from the profile.
+CIPHER_FACTORY_ALGORITHMS = {
+    "CIPHER_AES_CBC PAD_NOPAD": ("javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"),
+    "CIPHER_AES_ECB PAD_NOPAD": ("javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_ECB_NOPAD"),
+    "CIPHER_AES_CBC PAD_ISO9797_M1": ("javacardx.crypto.Cipher", "ALG_AES_CBC_ISO9797_M1"),
+    "CIPHER_AES_CBC PAD_ISO9797_M2": ("javacardx.crypto.Cipher", "ALG_AES_CBC_ISO9797_M2"),
+    "CIPHER_AES_CBC PAD_PKCS5": ("javacardx.crypto.Cipher", "ALG_AES_CBC_PKCS5"),
+    "CIPHER_AES_ECB PAD_ISO9797_M1": ("javacardx.crypto.Cipher", "ALG_AES_ECB_ISO9797_M1"),
+    "CIPHER_AES_ECB PAD_ISO9797_M2": ("javacardx.crypto.Cipher", "ALG_AES_ECB_ISO9797_M2"),
+    "CIPHER_AES_ECB PAD_PKCS5": ("javacardx.crypto.Cipher", "ALG_AES_ECB_PKCS5"),
+    "CIPHER_DES_CBC PAD_NOPAD": ("javacardx.crypto.Cipher", "ALG_DES_CBC_NOPAD"),
+    "CIPHER_DES_ECB PAD_NOPAD": ("javacardx.crypto.Cipher", "ALG_DES_ECB_NOPAD"),
+    "CIPHER_DES_CBC PAD_ISO9797_M1": ("javacardx.crypto.Cipher", "ALG_DES_CBC_ISO9797_M1"),
+    "CIPHER_DES_CBC PAD_ISO9797_M2": ("javacardx.crypto.Cipher", "ALG_DES_CBC_ISO9797_M2"),
+    "CIPHER_DES_CBC PAD_PKCS5": ("javacardx.crypto.Cipher", "ALG_DES_CBC_PKCS5"),
+    "CIPHER_DES_ECB PAD_ISO9797_M1": ("javacardx.crypto.Cipher", "ALG_DES_ECB_ISO9797_M1"),
+    "CIPHER_DES_ECB PAD_ISO9797_M2": ("javacardx.crypto.Cipher", "ALG_DES_ECB_ISO9797_M2"),
+    "CIPHER_DES_ECB PAD_PKCS5": ("javacardx.crypto.Cipher", "ALG_DES_ECB_PKCS5"),
+}
+SIGNATURE_FACTORY_ALGORITHMS = {
+    "SIG_CIPHER_AES_CMAC128 PAD_ISO9797_M2 ALG_NULL": "ALG_AES_CMAC_128",
+    "SIG_CIPHER_AES_MAC128 PAD_NOPAD ALG_NULL": "ALG_AES_MAC_128_NOPAD",
+    "SIG_CIPHER_DES_MAC4 PAD_ISO9797_1_M1_ALG3 ALG_NULL": "ALG_DES_MAC4_ISO9797_1_M1_ALG3",
+    "SIG_CIPHER_DES_MAC4 PAD_ISO9797_1_M2_ALG3 ALG_NULL": "ALG_DES_MAC4_ISO9797_1_M2_ALG3",
+    "SIG_CIPHER_DES_MAC4 PAD_ISO9797_M1 ALG_NULL": "ALG_DES_MAC4_ISO9797_M1",
+    "SIG_CIPHER_DES_MAC4 PAD_ISO9797_M2 ALG_NULL": "ALG_DES_MAC4_ISO9797_M2",
+    "SIG_CIPHER_DES_MAC4 PAD_PKCS5 ALG_NULL": "ALG_DES_MAC4_PKCS5",
+    "SIG_CIPHER_DES_MAC8 PAD_ISO9797_1_M1_ALG3 ALG_NULL": "ALG_DES_MAC8_ISO9797_1_M1_ALG3",
+    "SIG_CIPHER_DES_MAC8 PAD_ISO9797_1_M2_ALG3 ALG_NULL": "ALG_DES_MAC8_ISO9797_1_M2_ALG3",
+    "SIG_CIPHER_DES_MAC8 PAD_ISO9797_M1 ALG_NULL": "ALG_DES_MAC8_ISO9797_M1",
+    "SIG_CIPHER_DES_MAC8 PAD_ISO9797_M2 ALG_NULL": "ALG_DES_MAC8_ISO9797_M2",
+    "SIG_CIPHER_DES_MAC8 PAD_NOPAD ALG_NULL": "ALG_DES_MAC8_NOPAD",
+    "SIG_CIPHER_DES_MAC8 PAD_PKCS5 ALG_NULL": "ALG_DES_MAC8_PKCS5",
+}
+
+
+def canonical_section(section: str) -> str:
+    """Normalize the older JCAlgTest crypto package name."""
+    if section == "javacard.crypto.Signature":
+        return SIGNATURE_SECTION
+    if section.startswith("javacard.crypto.Signature."):
+        return SIGNATURE_SECTION + section[len("javacard.crypto.Signature"):]
+    return section
+
+
+def canonical_support_identity(section: str, algorithm: str) -> tuple[str, str]:
+    """Map result-matrix aliases back to their selected algorithm capability."""
+    section = canonical_section(section)
+    if section == CIPHER_FACTORY_SECTION:
+        # These two parameterized overloads are separately selectable flags.
+        if algorithm in ("CIPHER_AES_CBC PAD_NOPAD", "CIPHER_DES_CBC PAD_NOPAD"):
+            return section, algorithm
+        return CIPHER_FACTORY_ALGORITHMS.get((algorithm), (section, algorithm))
+    if section == SIGNATURE_FACTORY_SECTION:
+        signature_algorithm = SIGNATURE_FACTORY_ALGORITHMS.get(algorithm)
+        if signature_algorithm:
+            return SIGNATURE_SECTION, signature_algorithm
+    return section, algorithm
+
+
 @dataclass
 class Dataset:
     path: Path
@@ -55,7 +127,7 @@ def load_dataset(path: Path) -> Dataset:
         if status_index >= len(cells) or not cells[status_index]:
             raise ValueError(f"{path}:{row_number}: result status is missing")
 
-        key = (section, cells[algorithm_index])
+        key = (canonical_section(section), cells[algorithm_index])
         if key in statuses:
             raise ValueError(f"{path}:{row_number}: duplicate result {key!r}")
         statuses[key] = cells[status_index].lower()
@@ -158,7 +230,9 @@ def main() -> int:
         if value not in ("yes", "no")
     )
     actual_support = {
-        key for key, status in choupi.statuses.items() if status == "yes"
+        canonical_support_identity(*key)
+        for key, status in choupi.statuses.items()
+        if status == "yes"
     }
     unexpected_support = sorted(actual_support - expected_support)
     missing_support = sorted(expected_support - actual_support)

@@ -254,6 +254,39 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertNotEqual(failed.returncode, 0)
             self.assertIn("CHOUPI:UNEXPECTED_SUPPORT", failed.stdout)
 
+    def test_comparator_canonicalizes_crypto_factory_aliases(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            expected = directory / "expected.csv"
+            expected.write_text(
+                "section;algorithm_name\n"
+                "javacardx.crypto.Cipher;ALG_AES_BLOCK_128_CBC_NOPAD\n"
+                "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess);CIPHER_AES_CBC PAD_NOPAD\n"
+                "javacard.security.Signature;ALG_AES_MAC_128_NOPAD\n"
+            )
+            result = directory / "result.csv"
+            result.write_text(
+                "AlgTest applet version;1.8.2_jc305\n"
+                "algorithm_name;is_supported\n"
+                "javacardx.crypto.Cipher\n"
+                "ALG_AES_BLOCK_128_CBC_NOPAD;yes\n"
+                "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)\n"
+                "CIPHER_AES_CBC PAD_NOPAD;yes\n"
+                "javacard.crypto.Signature\n"
+                "ALG_AES_MAC_128_NOPAD;yes\n"
+                "javacard.crypto.Signature.getInstance(byte messageDigestAlgorithm, byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)\n"
+                "SIG_CIPHER_AES_MAC128 PAD_NOPAD ALG_NULL;yes\n"
+            )
+            reference = directory / "reference.csv"
+            reference.write_text(result.read_text())
+            command = [
+                sys.executable, str(COMPARATOR), str(result), str(reference),
+                "--expected-support", str(expected),
+            ]
+            compared = subprocess.run(command, text=True, capture_output=True)
+            self.assertEqual(compared.returncode, 0, compared.stdout + compared.stderr)
+            self.assertIn("COMPARE:PASS rows_statuses_and_declared_support", compared.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

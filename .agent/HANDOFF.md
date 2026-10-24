@@ -9636,11 +9636,11 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - On physical D92 `D92E743D5F640C0F`, official JCAlgTest 1.8.2
   `ALG_SUPPORT_EXTENDED` completed 4,525 rows: 73 `yes`, 4,452 `no`, 0 other.
   Output is in `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`.
-  The expected-support comparator failed (46 generated expected identities vs
-  73 reported yes). The likely metadata gaps are the legacy
-  `javacard.crypto.Signature` section alias and the extended factory-method
-  rows. Fix that mapping before claiming a profile match; do not implement
-  unsupported algorithms merely because JCAlgTest reports `no`.
+  The comparator now canonicalizes the legacy `javacard.crypto.Signature`
+  section and alternate factory-method rows to selected capability identities.
+  The archived report passes with 46 expected/actual identities, zero
+  unexpected and zero missing. Unsupported algorithms remain expected; no
+  algorithm implementation was added here.
 - After testing, GPPro deleted applet AID `4A43416C675465737431` and package
   AID `4A43416C6754657374`. Final `gp --list` showed only ISD
   `A000000151000000`; the physical test card is left empty. Firmware reflashing
@@ -9651,6 +9651,6 @@ confirmed on hardware. The original investigation evidence remains in earlier
   given a final pass attribution because it disappeared from VM USB after
   flashing; use another visible board and confirm identity rather than
   attributing D92 results to it.
-- Next: fix generated support CSV identity mapping and rerun the comparator on
-  the archived physical CSV. Then continue selected-profile acceptance on an
-  identified board. `asymm_crypto` work remains paused at user request.
+- Next: continue selected-profile acceptance on an identified board. The
+  comparator mapping is covered by the support-generator test suite.
+  `asymm_crypto` work remains paused at user request.
