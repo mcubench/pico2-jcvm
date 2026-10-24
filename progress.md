@@ -11035,7 +11035,7 @@
   possible after the PC/SC reader list disappeared. Cause is unknown.
 - Decision: Continue offline until an exact PC/SC reader becomes available;
   use another identified board if it appears.
-- Commit: pending
+- Commit: `9748fcc`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T163247Z.log`; no
   deploy CSV was created because no worker started.
 
