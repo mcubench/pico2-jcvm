@@ -334,7 +334,7 @@ file(GLOB_RECURSE JCVM_CORE_SOURCES_FILES
      CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 list(FILTER JCVM_CORE_SOURCES_FILES EXCLUDE REGEX
-  "/native_(random|cipher|aes_cbc|des_cbc|sha256)\\.cpp$")
+  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mbedtls_digest)\\.cpp$")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_random.cpp")
 endif()
@@ -352,6 +352,9 @@ endif()
 if(JC_SUPPORT_SHA256)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_sha256.cpp")
 endif()
+if(JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512)
+  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_mbedtls_digest.cpp")
+endif()
 
 if(CHOUPI_TARGET_PC)
 
@@ -367,6 +370,17 @@ if(CHOUPI_TARGET_PC)
   endif()
   if(JC_SUPPORT_SHA256)
     target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha256.c")
+  endif()
+  if(JC_SUPPORT_SHA1)
+    target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha1.c")
+  endif()
+  if(JC_SUPPORT_SHA224)
+    if(NOT JC_SUPPORT_SHA256)
+      target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha256.c")
+    endif()
+  endif()
+  if(JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512)
+    target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha512.c")
   endif()
 
   target_include_directories(

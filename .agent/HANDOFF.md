@@ -54,6 +54,31 @@
 
 # Handoff
 
+## Asymmetric crypto profile — SHA provider groundwork — 2026-10-24
+
+- User request: create `asymm_crypto` matching asymmetric support in
+  `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`
+  (SHA-256 `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`).
+- Implemented profile plumbing and a bounded buffered Java Card digest provider
+  for SHA-1, SHA-224, SHA-384, and SHA-512 using Mbed TLS; existing SHA-256
+  stays on its current accelerator. Added the Mbed TLS native module to PC,
+  ARM, and RISC-V source selection, plus a VPCD KAT runner.
+- `python3 tools/test-javacard-support.py` passes 8 tests. `./tools/build arm
+  --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto`
+  passed. The local VPCD digest run passed 10 KATs (SHA-1/SHA-224/SHA-256/
+  SHA-384/SHA-512, messages `abc` and 128 bytes):
+  `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
+- The first loopback VPCD attempt needed elevated socket access; with that it
+  passed. The empty-input case was removed because the constructed short APDU
+  was rejected with `6700`; empty-message digest behavior remains untested.
+- **Do not flash this interim profile yet.** `asymm_crypto` currently combines
+  `symm_crypto` and the SHA digest prerequisites only. RSA/EC key storage,
+  RSA cipher/signatures, ECDSA, key agreement, key generation, and the exact
+  target support comparator are still unimplemented.
+- Next: add RSA/EC key builders and methods, then profile-gated Mbed TLS RSA,
+  ECDSA and ECDH providers; cover them with VPCD known-answer tests before the
+  full ARM/RISC-V builds and identified physical board acceptance.
+
 ## Symmetric crypto physical acceptance and M1 fix — 2026-10-24
 
 - Corrected `Cipher` ISO9797-M1 decryption. Java Card preserves zero padding

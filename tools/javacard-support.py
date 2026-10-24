@@ -24,6 +24,10 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "key_des3_2key": ("javacard.security.KeyBuilder", "TYPE_DES LENGTH_DES3_2KEY"),
     "key_des3_3key": ("javacard.security.KeyBuilder", "TYPE_DES LENGTH_DES3_3KEY"),
     "sha256": ("javacard.security.MessageDigest", "ALG_SHA_256"),
+    "sha1": ("javacard.security.MessageDigest", "ALG_SHA"),
+    "sha224": ("javacard.security.MessageDigest", "ALG_SHA_224"),
+    "sha384": ("javacard.security.MessageDigest", "ALG_SHA_384"),
+    "sha512": ("javacard.security.MessageDigest", "ALG_SHA_512"),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
@@ -440,6 +444,18 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "    if (algorithm == MessageDigest.ALG_SHA_256)",
             "      return new Sha256DigestProvider();",
         ])
+    generic_digests = {
+        "sha1": "ALG_SHA",
+        "sha224": "ALG_SHA_224",
+        "sha384": "ALG_SHA_384",
+        "sha512": "ALG_SHA_512",
+    }
+    for key, algorithm in generic_digests.items():
+        if config[key]:
+            digest_provider.extend([
+                f"    if (algorithm == MessageDigest.{algorithm})",
+                f"      return new MbedTlsDigestProvider(MessageDigest.{algorithm});",
+            ])
     digest_provider.extend([
         "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
         "    return null;",
@@ -462,6 +478,19 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     else:
         digest_path.unlink(missing_ok=True)
         (nativeimpl_dir / "Sha256NativeBridge.java").unlink(missing_ok=True)
+    generic_digest_path = java_dir / "MbedTlsDigestProvider.java"
+    if any(config[key] for key in generic_digests):
+        generic_digest_path.write_text(
+            (Path(__file__).resolve().parent / "java-support/MbedTlsDigestProvider.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        (nativeimpl_dir / "MbedTlsDigestNativeBridge.java").write_text(
+            (Path(__file__).resolve().parent / "java-support/MbedTlsDigestNativeBridge.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    else:
+        generic_digest_path.unlink(missing_ok=True)
+        (nativeimpl_dir / "MbedTlsDigestNativeBridge.java").unlink(missing_ok=True)
     framework_dir = out_dir / "java/javacard/framework"
     framework_dir.mkdir(parents=True, exist_ok=True)
     pin_provider = [

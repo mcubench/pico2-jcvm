@@ -8,6 +8,7 @@ import javacard.security.AESKey;
 import javacard.security.DESKey;
 import javacard.security.Key;
 import javacard.security.KeyBuilder;
+import javacard.security.MessageDigest;
 import javacard.security.Signature;
 import javacardx.crypto.Cipher;
 
@@ -30,7 +31,11 @@ public final class SymmCryptoProbe extends Applet {
     for (short i = 0; i < inputLength; i++) input[i] = buffer[(short)(inputOffset + i)];
     byte[] output;
     short outputLength;
-    if (buffer[ISO7816.OFFSET_INS] == (byte)0x10) {
+    byte instruction = buffer[ISO7816.OFFSET_INS];
+    if (instruction == (byte)0x12) {
+      output = new byte[(short)64];
+      outputLength = runDigest(algorithm, input, inputLength, output);
+    } else if (instruction == (byte)0x10) {
       output = operation == 1 && !isNoPadCipher(algorithm) &&
           !isIso9797M1(algorithm)
           ? new byte[(short)3] : new byte[(short)(inputLength + 32)];
@@ -42,6 +47,15 @@ public final class SymmCryptoProbe extends Applet {
     apdu.setOutgoing();
     apdu.setOutgoingLength(outputLength);
     apdu.sendBytesLong(output, (short)0, outputLength);
+  }
+
+  private static short runDigest(byte algorithm, byte[] input,
+                                 short inputLength, byte[] output) {
+    MessageDigest digest = MessageDigest.getInstance(algorithm, false);
+    short split = (short)(inputLength / 2);
+    if (split > 0) digest.update(input, (short)0, split);
+    return digest.doFinal(input, split, (short)(inputLength - split), output,
+                          (short)0);
   }
 
   private static short runCipher(byte algorithm, byte operation, byte[] input,

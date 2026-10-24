@@ -10868,3 +10868,26 @@
   `artifacts/logs/cycle-choupi-20261024T115434Z.log` (monitor failure),
   `artifacts/logs/cycle-choupi-20261024T115633Z.log`,
   `artifacts/logs/cycle-choupi-20261024T120251Z.log`.
+## 2026-10-24 — Add asymmetric profile SHA digest prerequisites
+
+- Step/experiment: `asymm-crypto-digest-provider-20261024`
+- Change: Added selectable SHA-1, SHA-224, SHA-384, and SHA-512 support using a
+  buffered Java Card provider and Mbed TLS native digest module. Added the
+  initial `asymm_crypto` profile over `symm_crypto`, profile-generation checks,
+  and a VPCD digest known-answer runner. The upstream target CSV is unmodified.
+- Validation: `python3 tools/test-javacard-support.py` passed 8 tests;
+  `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` passed. VPCD KAT passed 10/10
+  digests across five hashes and two message lengths. Empty-message APDU was
+  excluded after the harness encoding returned `6700`; empty-message hashing
+  remains unverified. VPCD needed elevated local socket access after the
+  restricted run returned `Operation not permitted`.
+- Result: This establishes the digest dependencies and profile-gated build
+  plumbing. RSA/EC APIs and providers are not yet implemented; this profile is
+  interim and is not ready for flashing or physical acceptance.
+- Decision: Continue with key object providers, RSA cipher/signature methods,
+  ECDSA, EC key agreement and generation, then compare the complete report
+  against the requested JCOP CSV before physical testing.
+- Commit: recorded in following progress entry.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
+  target CSV SHA-256 `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`.

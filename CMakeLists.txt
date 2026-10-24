@@ -48,7 +48,7 @@ file(GLOB_RECURSE CHOUPI_VM_SOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/*.cpp")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX "/main(_arm|_pc)?\\.cpp$")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX
-  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mac)\\.cpp$")
+  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mac|mbedtls_digest)\\.cpp$")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_random.cpp")
 endif()
@@ -95,6 +95,9 @@ if(JC_SUPPORT_SIGNATURE_DES_MAC8_NOPAD OR JC_SUPPORT_SIGNATURE_DES_MAC4_ISO9797_
 endif()
 if(JC_SUPPORT_SHA256)
   list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_sha256.cpp")
+endif()
+if(JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512)
+  list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_mbedtls_digest.cpp")
 endif()
 if(CHOUPI_VM_SOURCES)
   add_library(choupi_vm_core OBJECT ${CHOUPI_VM_SOURCES})
@@ -179,6 +182,12 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     pico_mbedtls_headers)
   if(JC_SUPPORT_SHA256)
     target_link_libraries(pico2_choupi PRIVATE pico_sha256)
+  endif()
+  if(JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512)
+    target_sources(pico2_choupi PRIVATE
+      "${PICO_SDK_PATH}/lib/mbedtls/library/sha1.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/sha256.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/sha512.c")
   endif()
   if(CHOUPI_DEBUG_HEAP_GC)
     target_compile_definitions(choupi_vm_core PRIVATE CHOUPI_DEBUG_HEAP_GC=1)

@@ -168,11 +168,26 @@ class JavaCardSupportTests(unittest.TestCase):
                         )
                         if symmetric_row:
                             expected.add((section, name))
-            actual = {row for row in symmetric if row[0] in {
+            actual = {row for row in rows if row[0] in {
                 "javacardx.crypto.Cipher", "javacard.security.Signature",
                 "javacard.security.KeyBuilder",
             }}
             self.assertEqual(actual, expected)
+
+    def test_asymm_crypto_emits_sha_digest_dependencies(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / "generated"
+            result = self.run_named_profile("asymm_crypto", out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((out / "profile.txt").read_text(), "asymm_crypto\n")
+            generated = (out / "java/javacard/security/MessageDigestProvider.java").read_text()
+            for algorithm in ("ALG_SHA", "ALG_SHA_224", "ALG_SHA_384", "ALG_SHA_512"):
+                self.assertIn(f"MessageDigest.{algorithm}", generated)
+            self.assertTrue((out / "java/javacard/security/MbedTlsDigestProvider.java").is_file())
+            self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/MbedTlsDigestNativeBridge.java").is_file())
+            header = (out / "javacard-support.h").read_text()
+            for capability in ("SHA1", "SHA224", "SHA384", "SHA512"):
+                self.assertIn(f"JC_SUPPORT_{capability} 1", header)
 
     def test_rejects_unknown_missing_non_boolean_and_orphan_cipher(self):
         variants = []

@@ -47,7 +47,11 @@
       "signature_des_mac8_iso9797_1_m2_alg3": false,
       "signature_des_mac4_iso9797_1_m1_alg3": false,
       "signature_des_mac8_iso9797_1_m1_alg3": false,
-      "signature_aes_cmac_128": false
+      "signature_aes_cmac_128": false,
+      "sha1": false,
+      "sha224": false,
+      "sha384": false,
+      "sha512": false
     },
     "base": {
       "owner_pin": true,
@@ -95,7 +99,11 @@
       "signature_des_mac8_iso9797_1_m2_alg3": false,
       "signature_des_mac4_iso9797_1_m1_alg3": false,
       "signature_des_mac8_iso9797_1_m1_alg3": false,
-      "signature_aes_cmac_128": false
+      "signature_aes_cmac_128": false,
+      "sha1": false,
+      "sha224": false,
+      "sha384": false,
+      "sha512": false
     },
     "no_aes": {
       "owner_pin": true,
@@ -143,7 +151,11 @@
       "signature_des_mac8_iso9797_1_m2_alg3": false,
       "signature_des_mac4_iso9797_1_m1_alg3": false,
       "signature_des_mac8_iso9797_1_m1_alg3": false,
-      "signature_aes_cmac_128": false
+      "signature_aes_cmac_128": false,
+      "sha1": false,
+      "sha224": false,
+      "sha384": false,
+      "sha512": false
     },
     "minimal": {
       "owner_pin": false,
@@ -191,7 +203,11 @@
       "signature_des_mac8_iso9797_1_m2_alg3": false,
       "signature_des_mac4_iso9797_1_m1_alg3": false,
       "signature_des_mac8_iso9797_1_m1_alg3": false,
-      "signature_aes_cmac_128": false
+      "signature_aes_cmac_128": false,
+      "sha1": false,
+      "sha224": false,
+      "sha384": false,
+      "sha512": false
     },
     "symm_crypto": {
       "owner_pin": true,
@@ -239,7 +255,63 @@
       "signature_des_mac8_iso9797_1_m2_alg3": true,
       "signature_des_mac4_iso9797_1_m1_alg3": true,
       "signature_des_mac8_iso9797_1_m1_alg3": true,
-      "signature_aes_cmac_128": true
+      "signature_aes_cmac_128": true,
+      "sha1": false,
+      "sha224": false,
+      "sha384": false,
+      "sha512": false
+    },
+    "asymm_crypto": {
+      "owner_pin": true,
+      "owner_pin_x": true,
+      "owner_pin_x_with_predecrement": true,
+      "key_aes_128": true,
+      "key_aes_192": true,
+      "key_aes_256": true,
+      "key_des": true,
+      "key_des3_2key": true,
+      "key_des3_3key": true,
+      "sha256": true,
+      "secure_random": true,
+      "cipher_aes_cbc_nopad": true,
+      "cipher_des_cbc_nopad": true,
+      "cipher_getinstance_aes_cbc_nopad": true,
+      "cipher_getinstance_des_cbc_nopad": true,
+      "cipher_aes_ecb_nopad": true,
+      "cipher_aes_cbc_iso9797_m1": true,
+      "cipher_aes_cbc_iso9797_m2": true,
+      "cipher_aes_cbc_pkcs5": true,
+      "cipher_aes_ecb_iso9797_m1": true,
+      "cipher_aes_ecb_iso9797_m2": true,
+      "cipher_aes_ecb_pkcs5": true,
+      "cipher_des_cbc_iso9797_m1": true,
+      "cipher_des_cbc_iso9797_m2": true,
+      "cipher_des_cbc_pkcs5": true,
+      "cipher_des_ecb_nopad": true,
+      "cipher_des_ecb_iso9797_m1": true,
+      "cipher_des_ecb_iso9797_m2": true,
+      "cipher_des_ecb_pkcs5": true,
+      "key_aes_transient_reset": true,
+      "key_aes_transient_deselect": true,
+      "key_des_transient_reset": true,
+      "key_des_transient_deselect": true,
+      "signature_des_mac8_nopad": true,
+      "signature_des_mac4_iso9797_m1": true,
+      "signature_des_mac8_iso9797_m1": true,
+      "signature_des_mac4_iso9797_m2": true,
+      "signature_des_mac8_iso9797_m2": true,
+      "signature_des_mac4_pkcs5": true,
+      "signature_des_mac8_pkcs5": true,
+      "signature_aes_mac_128_nopad": true,
+      "signature_des_mac4_iso9797_1_m2_alg3": true,
+      "signature_des_mac8_iso9797_1_m2_alg3": true,
+      "signature_des_mac4_iso9797_1_m1_alg3": true,
+      "signature_des_mac8_iso9797_1_m1_alg3": true,
+      "signature_aes_cmac_128": true,
+      "sha1": true,
+      "sha224": true,
+      "sha384": true,
+      "sha512": true
     }
   }
 }

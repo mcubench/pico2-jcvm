@@ -1112,6 +1112,18 @@ rollback and duplicate/invalid registration handling also remain unverified.
 
 ## Later / optional
 
+- [ ] Implement and validate the `asymm_crypto` selectable profile against
+  `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`
+  (SHA-256 `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`).
+  Its asymmetric yes set includes RSA PKCS#1/NoPad/OAEP ciphers; RSA SHA-1/SHA-2
+  PKCS#1, PSS and ISO9796 signatures; ECDSA SHA-1/SHA-224/256/384/512;
+  RSA public/private/CRT keys through 4096-bit construction; EC prime-field
+  private keys 128–521 bits; EC key agreement (DH, DHC, PACE-GM, plain and XY);
+  and RSA/CRT and EC key generation (RSA through 3072-bit generation, EC
+  128/160/192/224/256/384/521-bit generation). Add profile-gated native
+  providers, exact expected-support CSV comparison, emulator known-answer
+  tests, both architecture builds, image and ROM-mask size checks, then run the
+  complete relevant `/deploy` tests on identified physical Pico 2 cards.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).
 - [ ] Complete deferred hardening and robustness work, including malformed CAP
