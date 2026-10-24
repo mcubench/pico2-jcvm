@@ -79,6 +79,20 @@
   ECDSA and ECDH providers; cover them with VPCD known-answer tests before the
   full ARM/RISC-V builds and identified physical board acceptance.
 
+## Asymmetric crypto profile — RSA key storage — 2026-10-24
+
+- Added selectable RSA public, private, and CRT key-builder lengths for 512,
+  736, 768, 896, 1024, 1280, 1536, 1984, 2048, 3072, and 4096 bits, plus
+  reset/deselect transient private variants. `RSAKeyProvider` stores key
+  components and implements initialization, clear, size/type, and getters/setters.
+- Validation: support generator tests pass (8 tests); VPCD probe passed 10
+  digest vectors and five RSA key-storage vectors; ARM and RISC-V builds pass
+  under `asymm_crypto`. This validates key object storage only, not RSA crypto.
+- The VPCD log remains `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
+- Next: implement profile-gated RSA cipher and Signature providers with known
+  answer vectors; then EC key storage, ECDSA, key agreement, and generation.
+  The profile is not ready for physical flashing yet.
+
 ## Symmetric crypto physical acceptance and M1 fix — 2026-10-24
 
 - Corrected `Cipher` ISO9797-M1 decryption. Java Card preserves zero padding

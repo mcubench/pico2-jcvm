@@ -9,6 +9,9 @@ import javacard.security.DESKey;
 import javacard.security.Key;
 import javacard.security.KeyBuilder;
 import javacard.security.MessageDigest;
+import javacard.security.RSAPrivateCrtKey;
+import javacard.security.RSAPrivateKey;
+import javacard.security.RSAPublicKey;
 import javacard.security.Signature;
 import javacardx.crypto.Cipher;
 
@@ -35,6 +38,10 @@ public final class SymmCryptoProbe extends Applet {
     if (instruction == (byte)0x12) {
       output = new byte[(short)64];
       outputLength = runDigest(algorithm, input, inputLength, output);
+    } else if (instruction == (byte)0x13) {
+      output = new byte[(short)1];
+      output[0] = runRsaKey(algorithm) ? (byte)1 : (byte)0;
+      outputLength = (short)1;
     } else if (instruction == (byte)0x10) {
       output = operation == 1 && !isNoPadCipher(algorithm) &&
           !isIso9797M1(algorithm)
@@ -56,6 +63,65 @@ public final class SymmCryptoProbe extends Applet {
     if (split > 0) digest.update(input, (short)0, split);
     return digest.doFinal(input, split, (short)(inputLength - split), output,
                           (short)0);
+  }
+
+  private static boolean runRsaKey(byte selector) {
+    byte[] modulus = new byte[(short)64];
+    byte[] exponent = {(byte)0x01, (byte)0x00, (byte)0x01};
+    for (short i = 0; i < modulus.length; i++) modulus[i] = (byte)(i + 1);
+    modulus[0] = (byte)0x7f;
+    if (selector == 0 || selector == 1 || selector == 3) {
+      byte type = selector == 0 ? KeyBuilder.TYPE_RSA_PUBLIC :
+          selector == 3 ? KeyBuilder.TYPE_RSA_PRIVATE_TRANSIENT_RESET :
+          KeyBuilder.TYPE_RSA_PRIVATE;
+      Key key = KeyBuilder.buildKey(type, KeyBuilder.LENGTH_RSA_512, false);
+      if (selector == 0) {
+        RSAPublicKey rsa = (RSAPublicKey)key;
+        rsa.setModulus(modulus, (short)0, (short)modulus.length);
+        rsa.setExponent(exponent, (short)0, (short)exponent.length);
+        if (!rsa.isInitialized()) return false;
+        byte[] output = new byte[(short)64];
+        return rsa.getModulus(output, (short)0) == 64 &&
+            equal(modulus, output, (short)64) &&
+            rsa.getExponent(output, (short)0) == 3 &&
+            output[0] == 1 && output[1] == 0 && output[2] == 1;
+      }
+      RSAPrivateKey rsa = (RSAPrivateKey)key;
+      rsa.setModulus(modulus, (short)0, (short)modulus.length);
+      rsa.setExponent(modulus, (short)0, (short)modulus.length);
+      if (!rsa.isInitialized()) return false;
+      byte[] output = new byte[(short)64];
+      return rsa.getModulus(output, (short)0) == 64 &&
+          equal(modulus, output, (short)64) &&
+          rsa.getExponent(output, (short)0) == 64 &&
+          equal(modulus, output, (short)64);
+    }
+    if (selector == 2 || selector == 4) {
+      byte type = selector == 2 ? KeyBuilder.TYPE_RSA_CRT_PRIVATE :
+          KeyBuilder.TYPE_RSA_CRT_PRIVATE_TRANSIENT_DESELECT;
+      RSAPrivateCrtKey rsa = (RSAPrivateCrtKey)KeyBuilder.buildKey(
+          type, KeyBuilder.LENGTH_RSA_512, false);
+      byte[] component = new byte[(short)32];
+      for (short i = 0; i < component.length; i++) component[i] = (byte)(i + 2);
+      rsa.setP(component, (short)0, (short)component.length);
+      rsa.setQ(component, (short)0, (short)component.length);
+      rsa.setDP1(component, (short)0, (short)component.length);
+      rsa.setDQ1(component, (short)0, (short)component.length);
+      rsa.setPQ(component, (short)0, (short)component.length);
+      if (!rsa.isInitialized()) return false;
+      byte[] output = new byte[(short)32];
+      return rsa.getP(output, (short)0) == 32 && equal(component, output, (short)32) &&
+          rsa.getQ(output, (short)0) == 32 && equal(component, output, (short)32) &&
+          rsa.getDP1(output, (short)0) == 32 && equal(component, output, (short)32) &&
+          rsa.getDQ1(output, (short)0) == 32 && equal(component, output, (short)32) &&
+          rsa.getPQ(output, (short)0) == 32 && equal(component, output, (short)32);
+    }
+    return false;
+  }
+
+  private static boolean equal(byte[] left, byte[] right, short length) {
+    for (short i = 0; i < length; i++) if (left[i] != right[i]) return false;
+    return true;
   }
 
   private static short runCipher(byte algorithm, byte operation, byte[] input,

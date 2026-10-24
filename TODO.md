@@ -1124,6 +1124,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   providers, exact expected-support CSV comparison, emulator known-answer
   tests, both architecture builds, image and ROM-mask size checks, then run the
   complete relevant `/deploy` tests on identified physical Pico 2 cards.
+  Progress (2026-10-24): SHA-1/224/256/384/512 and RSA public/private/CRT
+  KeyBuilder storage for all requested sizes have profile-gated providers.
+  Current VPCD vectors cover five RSA key type/lifetime variants at 512 bits;
+  RSA cipher/signature operations, EC keys, ECDSA, key agreement, key
+  generation, exact full-report comparison, and physical acceptance remain.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).
 - [ ] Complete deferred hardening and robustness work, including malformed CAP

@@ -10888,6 +10888,26 @@
 - Decision: Continue with key object providers, RSA cipher/signature methods,
   ECDSA, EC key agreement and generation, then compare the complete report
   against the requested JCOP CSV before physical testing.
-- Commit: recorded in following progress entry.
+- Commit: `85c7a16` (`Add asymmetric profile digest prerequisites`).
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
   target CSV SHA-256 `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`.
+
+## 2026-10-24 — Add RSA key storage providers
+
+- Step/experiment: `asymm-crypto-rsa-key-storage-20261024`
+- Change: Added profile-selectable RSA public/private/CRT key lengths (512–4096
+  bits, including the exact intermediate lengths from the target report),
+  transient reset/deselect private variants, ROM factory dispatch, and a Java
+  provider for key component storage. Expanded the VPCD applet probe to check
+  public, private, CRT, and transient key set/get/initialization behavior.
+- Validation: `python3 tools/test-javacard-support.py` passed 8 tests;
+  `./tools/build-symm-crypto-probe` passed; `./tools/test-asymm-crypto-vpcd`
+  passed 10 digest plus 5 RSA key storage APDUs; `./tools/build arm --profile
+  asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed.
+- Result: All tested RSA key storage forms round-trip components in the PC
+  VPCD. No RSA operation, EC operation, physical test, or full target CSV
+  comparison has been completed.
+- Decision: Continue with RSA cipher/signature operations. Do not flash this
+  interim profile.
+- Commit: recorded in following progress entry.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.

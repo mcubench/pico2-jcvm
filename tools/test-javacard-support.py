@@ -185,6 +185,11 @@ class JavaCardSupportTests(unittest.TestCase):
                 self.assertIn(f"MessageDigest.{algorithm}", generated)
             self.assertTrue((out / "java/javacard/security/MbedTlsDigestProvider.java").is_file())
             self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/MbedTlsDigestNativeBridge.java").is_file())
+            self.assertTrue((out / "java/javacard/security/RSAKeyProvider.java").is_file())
+            key_provider = (out / "java/javacard/security/KeyBuilderProvider.java").read_text()
+            self.assertIn("KeyBuilder.TYPE_RSA_PUBLIC", key_provider)
+            self.assertIn("KeyBuilder.LENGTH_RSA_4096", key_provider)
+            self.assertIn("KeyBuilder.TYPE_RSA_CRT_PRIVATE_TRANSIENT_DESELECT", key_provider)
             header = (out / "javacard-support.h").read_text()
             for capability in ("SHA1", "SHA224", "SHA384", "SHA512"):
                 self.assertIn(f"JC_SUPPORT_{capability} 1", header)

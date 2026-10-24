@@ -28,6 +28,9 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
             command += message + b"\x00"
             results.append((command, digest(message).digest() + b"\x90\x00",
                             f"SHA algorithm={algorithm} bytes={len(message)}"))
+    for selector in range(5):
+        command = bytes((0x80, 0x13, selector, 0, 0))
+        results.append((command, b"\x01\x90\x00", f"RSA key builder selector={selector}"))
     return results
 
 
@@ -50,7 +53,7 @@ def main() -> int:
     completed = subprocess.run(command, cwd=ROOT, check=False)
     if completed.returncode:
         return completed.returncode
-    print(f"TEST:SUMMARY sha_vectors={len(cases)} fail=0")
+    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 fail=0")
     print(f"TEST:LOG {log}")
     return 0
 

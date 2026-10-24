@@ -87,6 +87,29 @@ for _name in (
         "javacard.security.Signature", f"ALG_{_name}"
     )
 
+_rsa_lengths = (512, 736, 768, 896, 1024, 1280, 1536, 1984, 2048, 3072, 4096)
+for _key_type, _row_type in (
+    ("public", "RSA_PUBLIC"),
+    ("private", "RSA_PRIVATE"),
+    ("crt_private", "RSA_CRT_PRIVATE"),
+):
+    for _bits in _rsa_lengths:
+        _key = f"key_rsa_{_key_type}_{_bits}"
+        CAPABILITIES[_key] = (
+            "javacard.security.KeyBuilder",
+            f"TYPE_{_row_type} LENGTH_RSA_{_bits}",
+        )
+for _key_type, _row_type in (
+    ("private", "RSA_PRIVATE"),
+    ("crt_private", "RSA_CRT_PRIVATE"),
+):
+    for _lifetime in ("transient_reset", "transient_deselect"):
+        _key = f"key_rsa_{_key_type}_{_lifetime}"
+        _suffix = _lifetime.upper()
+        CAPABILITIES[_key] = (
+            "javacard.security.KeyBuilder", f"TYPE_{_row_type}_{_suffix}"
+        )
+
 
 def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     if not isinstance(value, dict):
@@ -265,6 +288,34 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
                     f"    if (type == {memory_type} && length == {length})",
                     f"      return new {family}KeyProvider(type, length);",
                 ])
+    for kind, type_name in (
+        ("public", "TYPE_RSA_PUBLIC"),
+        ("private", "TYPE_RSA_PRIVATE"),
+        ("crt_private", "TYPE_RSA_CRT_PRIVATE"),
+    ):
+        for bits in _rsa_lengths:
+            key = f"key_rsa_{kind}_{bits}"
+            if config[key]:
+                key_provider.extend([
+                    f"    if (type == KeyBuilder.{type_name} && length == KeyBuilder.LENGTH_RSA_{bits})",
+                    "      return new RSAKeyProvider(type, length);",
+                ])
+    for kind, type_name in (
+        ("private", "TYPE_RSA_PRIVATE"),
+        ("crt_private", "TYPE_RSA_CRT_PRIVATE"),
+    ):
+        for life, suffix in (("transient_reset", "TRANSIENT_RESET"),
+                             ("transient_deselect", "TRANSIENT_DESELECT")):
+            capability = f"key_rsa_{kind}_{life}"
+            if not config[capability]:
+                continue
+            transient_type = f"{type_name}_{suffix}"
+            for bits in _rsa_lengths:
+                if config[f"key_rsa_{kind}_{bits}"]:
+                    key_provider.extend([
+                        f"    if (type == KeyBuilder.{transient_type} && length == KeyBuilder.LENGTH_RSA_{bits})",
+                        "      return new RSAKeyProvider(type, length);",
+                    ])
     key_provider.extend([
         "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
         "    return null;",
@@ -298,6 +349,16 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         (java_dir / "KeyProviderBase.java").write_text(
             key_base.read_text(encoding="utf-8"), encoding="utf-8"
         )
+    rsa_key_provider = java_dir / "RSAKeyProvider.java"
+    rsa_key_enabled = any(key.startswith("key_rsa_") and enabled
+                          for key, enabled in config.items())
+    if rsa_key_enabled:
+        rsa_key_provider.write_text(
+            (Path(__file__).resolve().parent / "java-support/RSAKeyProvider.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    else:
+        rsa_key_provider.unlink(missing_ok=True)
     cipher_dir = out_dir / "java/javacardx/crypto"
     cipher_dir.mkdir(parents=True, exist_ok=True)
     cipher_provider = [
