@@ -83,6 +83,17 @@ cipher.
   runtime serial did not reappear in this VM, so it has no runtime pass.
   Continue on D92 or another identified reader rather than attributing results
   to 8E.
+- [x] Run the upstream `/deploy` Core, Security, and Crypto 3.0.5 areas on
+  physical D92 with the `symm_crypto` firmware. Security completed 901 calls
+  (97 OK, 804 `UNSUPPORTED_PER_SPEC`); Crypto completed 466 calls (161 OK,
+  305 `UNSUPPORTED_PER_SPEC`, with the reader-risky RSA-2048 keygen excluded).
+  Core completed 291 calls and cleanup passed. The JCSystem subset is 37 OK and
+  one spec-permitted `requestObjectDeletion()` ILLEGAL_USE; there are no
+  JCSystem wrong-result/runtime-error rows. Remaining Core findings are 17
+  OwnerPINx `EXC_RUNTIME`, two OwnerPINx `WRONG_RESULT`, and four Ext-scenario
+  `APPLET_NOT_INSTALLED` rows after its scenario CAP INSTALL returned 6A88.
+  All `/deploy` CAPs were cleaned up; GPPro lists only the ISD. CSVs are in
+  `artifacts/results/deploy/symm_crypto-D92-20261025/`.
 - [x] Build and inspect all three capability profiles on physical Pico 2
   `D92E743D5F640C0F`: `current` (15 enabled), `no_aes` (10), and `minimal` (0).
   Build and finite-monitor results are recorded above; this checkbox covers

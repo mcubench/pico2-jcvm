@@ -11359,3 +11359,32 @@
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T220417Z.log`;
   `artifacts/logs/cycle-choupi-20261024T220800Z.log`;
   `artifacts/logs/cycle-choupi-20261024T221145Z.log`.
+
+## 2026-10-25 — Run physical Core, Security, and Crypto API coverage
+
+- Step/experiment: `deploy-symm-crypto-core-security-crypto-D92`
+- Change: Ran unchanged `/AlgTest_JavaCard/deploy` API 3.0.5 CAPs and client
+  against physical D92 with `symm_crypto`; added current results and runner
+  path behavior to TODO, QKB, and handoff. The upstream JCAlgTest CAP remains
+  unchanged.
+- Validation: CAP upload/test/cleanup stages completed for Core, Security,
+  and Crypto. Security: 901 calls (97 OK, 804 `UNSUPPORTED_PER_SPEC`). Crypto:
+  466 calls (161 OK, 305 `UNSUPPORTED_PER_SPEC`), excluding the documented
+  reader-risky RSA-2048 key-generation row. Core: 291 calls (253 OK, 15
+  per-spec unsupported, 17 `EXC_RUNTIME`, two `WRONG_RESULT`, four
+  `APPLET_NOT_INSTALLED`). Its JCSystem subset had 37 OK and one
+  `requestObjectDeletion()` `ILLEGAL_USE` classified per spec; no JCSystem
+  runtime-error or wrong-result rows. GPPro after cleanup listed only the ISD.
+- Result: Security/Crypto produced no wrong-result or runtime-error rows. Core
+  failures remain concentrated in OwnerPINx variants; the four absent-app
+  rows are the optional Ext scenario, whose INSTALL returned 6A88 and rolled
+  back. Two initial runner invocations stopped before card access because
+  their relative `--out` paths resolved beneath the deploy directory; the
+  final run used an absolute artifact path.
+- Decision: Core JCSystem methods are behaving on the symmetric profile; next
+  investigate OwnerPINx or continue the remaining `/deploy` API areas. Keep the
+  physical card empty and continue failover if D92 disappears.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/deploy/symm_crypto-D92-20261025/core.csv`,
+  `security.csv`, and `crypto.csv`; no new build/flash was required for this
+  API-only validation step.

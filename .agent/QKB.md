@@ -4417,5 +4417,18 @@ fix.
   `artifacts/logs/cycle-choupi-20261024T220800Z.log` (D92 pass), and
   `artifacts/logs/cycle-choupi-20261024T221145Z.log` (D92 chip-ID from runtime
   pass).
+
+## `/deploy` runner resolves output paths from its own directory — 2026-10-25
+
+- **Symptom:** Calling `deploy/run_api_test.sh` with a repository-relative
+  `--out artifacts/...` failed before card access because the wrapper changes
+  its working directory to `AlgTest_JavaCard/deploy`.
+- **Viable solution:** Pass an absolute workspace path for `--out` and
+  `--dump-dir`, or use a path rooted under `AlgTest_JavaCard/deploy`.
+- **Validation:** Physical D92 Core, Security, and Crypto 3.0.5 runs then
+  completed and each installed CAP was removed. JCSystem had 37 `OK` results
+  and one expected `requestObjectDeletion()` `ILLEGAL_USE`; Security had 97 OK
+  and 804 per-spec unsupported; Crypto had 161 OK and 305 per-spec unsupported.
+  Results: `artifacts/results/deploy/symm_crypto-D92-20261025/`.
 - **Artifacts:** `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
   `artifacts/logs/cycle-choupi-20261024T213745Z.log`.

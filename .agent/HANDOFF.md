@@ -9677,3 +9677,26 @@ confirmed on hardware. The original investigation evidence remains in earlier
   `A000000151000000`. Leave D92 empty. Next continue physical `/deploy`
   coverage on D92 or another board that reappears as a PC/SC reader; keep 8E
   marked unavailable until its runtime USB serial returns.
+
+## `symm_crypto` physical `/deploy` coverage — 2026-10-25
+
+- D92 `D92E743D5F640C0F` completed Core, Security, and Crypto API 3.0.5 areas
+  with the unchanged CAPs from `/AlgTest_JavaCard/deploy`. Each area cleaned up
+  its CAPs. Final GPPro list contained only the ISD, so the physical card is
+  empty again.
+- Security: 901 calls, 97 OK / 804 `UNSUPPORTED_PER_SPEC`. Crypto: 466 calls,
+  161 OK / 305 `UNSUPPORTED_PER_SPEC`; excluded only the runner-documented
+  reader-risky RSA-2048 key-generation row. No wrong-result or runtime-error
+  rows in Security/Crypto.
+- Core: 291 calls, 253 OK, 15 per-spec unsupported, 17 `EXC_RUNTIME`, two
+  `WRONG_RESULT`, and four `APPLET_NOT_INSTALLED`. All non-OK Core rows are
+  OwnerPINx variants except the four ExtendedLength scenario rows (the Ext
+  scenario CAP INSTALL was refused with `6A88` and rolled back). JCSystem has
+  37 OK and one spec-permitted `requestObjectDeletion()` `ILLEGAL_USE`, with
+  no JCSystem runtime-error/wrong-result rows.
+- CSVs: `artifacts/results/deploy/symm_crypto-D92-20261025/`. The runner
+  changes cwd to `AlgTest_JavaCard/deploy`, so keep absolute paths for output
+  artifacts.
+- Next: prioritize the OwnerPINx Core rows or continue remaining `/deploy`
+  API areas. Leave the upstream JCAlgTest CAP unchanged and keep asymmetric
+  implementation paused as directed.
