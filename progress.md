@@ -10860,7 +10860,7 @@
   D92 has only 23 persistent bytes and was not used for CAP installs. 2BED
   and 8E had 42,437 and 52,042 bytes available before the probe tests. Reattach
   8E for any additional board-specific runtime validation.
-- Commit: pending (recorded in follow-up continuity commit).
+- Commit: `cee1cbb` (`Fix ISO9797-M1 symmetric cipher semantics`).
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`,
   `artifacts/logs/symm-crypto-kat-pcsc-20261024T120000Z.log`,
   `artifacts/logs/symm-crypto-deploy-crypto-8E-20261024.log`,
