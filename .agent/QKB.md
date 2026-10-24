@@ -4127,3 +4127,20 @@ fix.
   when a card is attached. Confirm an identified reader before flashing; do
   not flash a board in BOOTSEL without first identifying the expected target.
 - **Artifacts:** `artifacts/logs/symm-crypto-vpcd-applet-final-20261024.log`.
+
+## Symmetric crypto emulator vector coverage — 2026-10-24
+
+- **Observation:** The in-process PC VPCD test exercised 16 AES/DES cipher
+  variants with encrypt and decrypt, 13 MAC outputs, and valid plus modified
+  signature verification. All 71 vectors matched independent Python
+  `cryptography` results (`TEST:SUMMARY pass=73 fail=0`, including ATR/SELECT).
+- **Impact:** The profile's cipher and MAC primitives now have broad PC VM
+  known-answer coverage, including the exact-size padded-decrypt output path.
+  This does not substitute for RP2350 timing/stack behavior or the requested
+  physical `/deploy` run.
+- **Viable solution:** Run `./tools/test-symm-crypto-vpcd` for deterministic
+  offline vectors. On attached hardware, rebuild both architectures, flash
+  ARM, then run physical KATs and the `/deploy` Crypto area.
+- **Artifacts:** `tools/tests/symm_crypto_applet/SymmCryptoProbe.java`,
+  `tools/tests/test_symm_crypto_vpcd.py`,
+  `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`.

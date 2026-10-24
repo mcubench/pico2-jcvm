@@ -87,6 +87,23 @@
   PC ROM mask: 524,300 bytes, SHA-256
   `b8af1c28c384278a2442f5cd9e9e02c8cc1ef2d69b8977e9baaf14315d4d46e5`.
 
+## Symmetric crypto emulator known-answer follow-up — 2026-10-24
+
+- Added `tools/build-symm-crypto-probe`, a Java Card probe applet, and
+  `tools/test-symm-crypto-vpcd`. The runner checks all 16 enabled cipher
+  algorithms in both directions, 13 MAC outputs, and valid/modified MAC
+  verification. Reference outputs come from Python `cryptography`.
+- Result: all 71 crypto vectors passed; the VPCD test reports
+  `TEST:SUMMARY pass=73 fail=0` including ATR and SELECT. Padded decrypt cases
+  use a 3-byte output array and pass. Log:
+  `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`.
+- Physical checks still show no Pico reader (`found 0`), so these results are
+  emulator-only. When a board is available, rebuild ARM/RISC-V, flash ARM via
+  the approved path, capture the finite monitor, run the probe on the physical
+  card, and run `/deploy` Crypto. The upstream JCAlgTest CAP remains unchanged.
+- Current root commit for the implementation is `2adca1c`; its API submodule
+  commit is `d0e7fc6`. The KAT harness commit will be recorded in progress.
+
 ## Selectable capability profiles acceptance — 2026-10-24
 
 - Follow the user's clarified constraint: do not alter the upstream JCAlgTest

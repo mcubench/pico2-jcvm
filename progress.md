@@ -10813,3 +10813,24 @@
   becomes visible; do not report emulator results as hardware validation.
 - Commit: `2adca1c` (implementation commit recorded here).
 - Artifacts/logs: `artifacts/logs/symm-crypto-vpcd-applet-final-20261024.log`.
+## 2026-10-24 — Add symmetric crypto known-answer harness
+
+- Step/experiment: `symm-crypto-emulator-kat-20261024`
+- Change: Added a Java Card probe CAP and local VPCD runner that checks all 16
+  configured AES/DES cipher modes, 13 MAC tags, and valid/invalid MAC
+  verification against outputs calculated by Python `cryptography`. Padded
+  decryption uses a 3-byte destination to verify final plaintext sizing.
+- Validation: `./tools/build-symm-crypto-probe` passed. The PC emulator's
+  `symm_crypto` ROM mask ran 71 algorithm vectors; VPCD summary was
+  `TEST:SUMMARY pass=73 fail=0` (ATR, SELECT, and 71 APDUs). Final approved
+  physical reader scan returned 0 devices; no flash or real-card test ran.
+- Result: All tested cipher encrypt/decrypt outputs matched the independent
+  reference, all 13 MAC results matched, and all valid/modified-tag checks
+  returned true/false as expected. This is emulator validation, not physical
+  acceptance.
+- Decision: Retain the implementation. On a visible card, first rebuild ARM
+  and RISC-V, then flash the ARM image and run these vectors plus the upstream
+  `/deploy` Crypto area. Keep JCAlgTest upstream CAP unchanged.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`;
+  run with `./tools/test-symm-crypto-vpcd`.
