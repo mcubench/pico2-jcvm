@@ -9546,3 +9546,4 @@ confirmed on hardware. The original investigation evidence remains in earlier
   image. No Windows host or physical card test was run. Asymmetric work is
   paused; its uncommitted in-progress source changes are preserved in the
   worktree and must not be treated as validated or packaged.
+- Documentation/package commit: `31220622add7c273ccd27beda7afbdb72d1dc577`.

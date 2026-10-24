@@ -11190,5 +11190,5 @@
 - Validation: Confirmed the build profile is `symm_crypto`; support generation reports 91 configured capabilities with 46 enabled. `unzip -t` passed and every member hash in `SHA256SUMS.txt` verified. `git diff --check` passed.
 - Result: UF2 size is 1,671,168 bytes with SHA-256 `e302de5a9e3e107ae50790293972e64b03c718194e43b1a16850e6e9177e69e3`. Package SHA-256 is `3d25700c4cc56b5417af2e06b3aa84219a504eb31c5e2305eba1e0e24e097acc`. No Windows PC/SC or physical card test was performed.
 - Decision: Give the package and `docs/symm-crypto-windows-test.md` to the user for Windows flashing and PC/SC validation; resume asymmetric development only when requested.
-- Commit: recorded in the immediate follow-up progress entry.
+- Commit: `31220622add7c273ccd27beda7afbdb72d1dc577`.
 - Artifacts/logs: `build/external-test/symm-crypto-windows-test.zip`, `build/external-test/symm-only-package/SHA256SUMS.txt`, `docs/symm-crypto-windows-test.md`.
