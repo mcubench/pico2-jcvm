@@ -11280,7 +11280,7 @@
   present; it removes that known package and proves the clean precondition.
 - Decision: Use the refreshed symmetric-only archive for external testing.
   Physical cleanup remains pending until a Pico reader is visible here.
-- Commit: pending.
+- Commit: `1c62a35`.
 - Artifacts/logs: `build/external-test/symm-crypto-windows-test.zip`;
   UF2 SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`;
   archive SHA-256 `f120aab7444689220d2c1e4359ef680b0f9921f86d213eccd1fad692f615802d`.
