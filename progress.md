@@ -11328,7 +11328,7 @@
   selected support profile. Unsupported results remain expected.
 - Decision: Resume broader profile and `/deploy` acceptance; retain upstream
   JCAlgTest CAP unchanged. `asymm_crypto` remains paused by user request.
-- Commit: pending.
+- Commit: `7eca12e`.
 - Artifacts/logs: `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
   no new firmware image was built because this step changes host-side
   comparison metadata only.
