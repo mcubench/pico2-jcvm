@@ -25,6 +25,8 @@
   and slot: `Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00`. The shorter
   `pcsc_scan` display name is not accepted by its exact-name resolver. Refresh
   PC/SC ACL after each USB re-enumeration before resolving readers.
+- After Core runner cleanup, GPPro `--list` with the full reader string again
+  showed only ISD `A000000151000000`; no test CAP remains installed.
 - Evidence: `artifacts/logs/cycle-choupi-20261024T225805Z.log` and
   `artifacts/results/deploy/symm_crypto-D92-ownerpinx-repeat-20261025.csv`.
 - Next: trace `invokeinterface` method mapping for OwnerPINx and its parent

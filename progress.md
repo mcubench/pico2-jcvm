@@ -11453,11 +11453,13 @@
   variants; ordinary OwnerPIN rows pass. The Ext scenario INSTALL refused with
   `6A88` and rollback passed. Root cause is still under investigation. The
   deployed firmware image has no embedded JCAlgTest applet, and the physical
-  registry remains empty until a CAP is explicitly installed.
+  registry remains empty until a CAP is explicitly installed. After runner
+  cleanup, a fresh GPPro `--list` again showed only ISD
+  `A000000151000000`.
 - Decision: Preserve this empty card. Next trace OwnerPINx interface dispatch
   without adding Java algorithm/provider implementations or editing upstream
   CAP files.
-- Commit: `f870980`.
+- Commit: `f870980`; final registry recheck recorded in `HASH_PENDING`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T225805Z.log`;
   `artifacts/results/deploy/symm_crypto-D92-ownerpinx-repeat-20261025.csv`;
   image `build/arm/pico2_choupi.uf2` SHA-256
