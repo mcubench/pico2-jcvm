@@ -10911,3 +10911,27 @@
   interim profile.
 - Commit: recorded in following progress entry.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
+
+## 2026-10-24 — Add RSA cipher providers and validate on Pico 2
+
+- Step/experiment: `asymm-crypto-rsa-ciphers-physical-20261024`
+- Change: Added profile-gated RSA PKCS#1 v1.5, raw NoPad, and SHA-1 OAEP
+  ciphers with Java Card provider validation, native Mbed TLS modular
+  exponentiation, and ARM/PC/RISC-V source selection. Corrected JC305 RSA
+  public/private and CRT interface method-token remapping.
+- Validation: `python3 tools/test-javacard-support.py` passed 8/8;
+  `./tools/build-symm-crypto-probe` passed; VPCD passed 20/20; ARM and RISC-V
+  `asymm_crypto` builds passed. ARM cycle/finite monitor passed on Pico 2
+  `D92E743D5F640C0F` and `2BED26ED20556535`. GPPro installed probe on 2BED;
+  physical SmartcardIO vectors passed 18/18. D92 probe INSTALL returned
+  `6581` after LOAD, so its JCAlgTest package was retained.
+- Result: RSA key storage and the three ciphers pass PC VM and one physical
+  target. No RSA signatures, EC, key agreement, generation, full CSV compare,
+  or `/deploy` suite result exists yet.
+- Decision: Continue with RSA signatures, then EC operations and key generation;
+  use 2BED for large test CAPs and keep the target CSV unchanged.
+- Commit: recorded in following progress entry.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`,
+  `artifacts/logs/cycle-choupi-20261024T152252Z.log`,
+  `artifacts/logs/cycle-choupi-20261024T152710Z.log`,
+  `build/symm-crypto-probe/asymm-physical-vectors.tsv`.

@@ -1,3 +1,26 @@
+## RSA cipher providers and physical vectors — 2026-10-24
+
+- Added profile-gated RSA `ALG_RSA_PKCS1`, `ALG_RSA_NOPAD`, and SHA-1 OAEP
+  ciphers. Java provider performs Java Card key/mode validation and buffering;
+  native bridge performs modular exponentiation and PKCS#1/OAEP encoding.
+  Added Mbed TLS bignum sources and Pico millisecond clock hook only when RSA
+  cipher capabilities are selected.
+- Fixed JC305 RSA public/private and CRT method-token remapping. Before this,
+  RSA key setters could dispatch to getters and fail with `6F00`.
+- Validation: support generator 8/8; probe build; VPCD `TEST:SUMMARY pass=20
+  fail=0`; ARM and RISC-V builds passed; ARM cycle and finite serial monitor
+  passed on both `D92E743D5F640C0F` and `2BED26ED20556535`. Probe CAP install
+  on 2BED succeeded and physical tests passed 18/18. D92 install returned
+  `6581` (memory failure) after LOAD, so its JCAlgTest package was preserved.
+- Physical vectors are recorded in `build/symm-crypto-probe/asymm-physical-vectors.tsv`;
+  VPCD log: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
+- Remaining asymm profile scope: RSA SHA-1/SHA-2 PKCS#1/PSS/ISO9796 signatures,
+  EC key types and ECDSA, key agreement, key generation, expected full-report
+  comparator, and complete target `/deploy` acceptance. Target support CSV SHA:
+  `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`.
+- Next: implement RSA signatures, starting with PKCS#1 and PSS digest variants.
+  Keep the user-provided target CSV unchanged and untracked.
+
 ## Crypto constructor dispatch follow-up — 2026-10-22
 
 - Added package and class scoped constructor-token remaps for JC305

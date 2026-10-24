@@ -42,6 +42,9 @@ public final class SymmCryptoProbe extends Applet {
       output = new byte[(short)1];
       output[0] = runRsaKey(algorithm) ? (byte)1 : (byte)0;
       outputLength = (short)1;
+    } else if (instruction == (byte)0x14) {
+      output = new byte[(short)64];
+      outputLength = runRsaCipher(algorithm, input, output);
     } else if (instruction == (byte)0x10) {
       output = operation == 1 && !isNoPadCipher(algorithm) &&
           !isIso9797M1(algorithm)
@@ -121,6 +124,42 @@ public final class SymmCryptoProbe extends Applet {
 
   private static boolean equal(byte[] left, byte[] right, short length) {
     for (short i = 0; i < length; i++) if (left[i] != right[i]) return false;
+    return true;
+  }
+
+  private static short runRsaCipher(byte algorithm, byte[] parameters,
+                                    byte[] output) {
+    if (parameters.length < 132) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+    RSAPublicKey publicKey = (RSAPublicKey)KeyBuilder.buildKey(
+        KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_512, false);
+    RSAPrivateKey privateKey = (RSAPrivateKey)KeyBuilder.buildKey(
+        KeyBuilder.TYPE_RSA_PRIVATE, KeyBuilder.LENGTH_RSA_512, false);
+    publicKey.setModulus(parameters, (short)0, (short)64);
+    publicKey.setExponent(parameters, (short)64, (short)3);
+    privateKey.setModulus(parameters, (short)0, (short)64);
+    privateKey.setExponent(parameters, (short)67, (short)64);
+    short messageLength = (short)(parameters.length - 131);
+    byte[] encrypted = new byte[(short)64];
+    byte[] plaintext = new byte[(short)64];
+    Cipher cipher = Cipher.getInstance(algorithm, false);
+    cipher.init(publicKey, Cipher.MODE_ENCRYPT);
+    short encryptedLength = cipher.doFinal(parameters, (short)131,
+        messageLength, encrypted, (short)0);
+    cipher.init(privateKey, Cipher.MODE_DECRYPT);
+    short plaintextLength = cipher.doFinal(encrypted, (short)0,
+        encryptedLength, plaintext, (short)0);
+    if (plaintextLength != messageLength ||
+        !equal(parameters, (short)131, plaintext, (short)0, messageLength))
+      ISOException.throwIt(ISO7816.SW_UNKNOWN);
+    for (short i = 0; i < plaintextLength; i++) output[i] = plaintext[i];
+    return plaintextLength;
+  }
+
+  private static boolean equal(byte[] left, short leftOffset, byte[] right,
+                               short rightOffset, short length) {
+    for (short i = 0; i < length; i++)
+      if (left[(short)(leftOffset + i)] != right[(short)(rightOffset + i)])
+        return false;
     return true;
   }
 

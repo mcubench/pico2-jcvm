@@ -397,6 +397,29 @@ uint8_t remap_imported_interface_method_token(
       method_token < sizeof(security_aes_key_interface_methods)) {
     return security_aes_key_interface_methods[method_token];
   }
+  // JC305 RSA interfaces place the setters and getters in a different order
+  // from the ROM exports. The JC305 CAP calls setModulus as token 7 and
+  // setExponent as token 6; the embedded RSAPublicKey/RSAPrivateKey order is
+  // setModulus at 4 and setExponent at 5. RSA CRT uses its own declaration
+  // order, so keep each map scoped to its imported interface class token.
+  static constexpr uint8_t security_rsa_public_private_interface_methods[] = {
+      1, 3, 2, 0, 7, 6, 5, 4};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      (class_token == 8 || class_token == 9) &&
+      method_token < sizeof(security_rsa_public_private_interface_methods)) {
+    return security_rsa_public_private_interface_methods[method_token];
+  }
+  static constexpr uint8_t security_rsa_crt_interface_methods[] = {
+      1, 3, 2, 0, 11, 12, 9, 13, 10, 6, 7, 4, 8, 5};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 7 &&
+      method_token < sizeof(security_rsa_crt_interface_methods)) {
+    return security_rsa_crt_interface_methods[method_token];
+  }
   // The reference JC305 export orders OwnerPINx.check before
   // getTriesRemaining, while this API's generated interface order follows
   // PIN and places getTriesRemaining first. Remap both related interfaces.

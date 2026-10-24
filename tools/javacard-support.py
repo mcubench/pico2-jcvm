@@ -28,6 +28,9 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "sha224": ("javacard.security.MessageDigest", "ALG_SHA_224"),
     "sha384": ("javacard.security.MessageDigest", "ALG_SHA_384"),
     "sha512": ("javacard.security.MessageDigest", "ALG_SHA_512"),
+    "cipher_rsa_pkcs1": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1"),
+    "cipher_rsa_nopad": ("javacardx.crypto.Cipher", "ALG_RSA_NOPAD"),
+    "cipher_rsa_oaep": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1_OAEP"),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
@@ -144,6 +147,14 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
         raise ValueError(f"{path}: AES CBC requires at least one enabled AES key capability")
     if not des_key and (des_cipher or des_mac):
         raise ValueError(f"{path}: DES CBC requires at least one enabled DES key capability")
+    rsa_cipher = any(value[key] for key in (
+        "cipher_rsa_pkcs1", "cipher_rsa_nopad", "cipher_rsa_oaep"))
+    rsa_public = any(value[f"key_rsa_public_{bits}"] for bits in _rsa_lengths)
+    rsa_private = any(value[f"key_rsa_private_{bits}"] for bits in _rsa_lengths)
+    if rsa_cipher and (not rsa_public or not rsa_private):
+        raise ValueError(f"{path}: RSA ciphers require enabled public and private RSA key capabilities")
+    if value["cipher_rsa_oaep"] and not value["sha1"]:
+        raise ValueError(f"{path}: RSA OAEP requires SHA-1 support")
     return value
 
 
@@ -395,6 +406,16 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             cipher_provider.append(
                 f"    if (algorithm == Cipher.{alg}) return new SymmetricCipherProvider(Cipher.{alg}, Cipher.{cipher}, Cipher.{pad}, {str(aes).lower()}, {str(cbc).lower()});"
             )
+    rsa_cipher_specs = {
+        "cipher_rsa_pkcs1": ("ALG_RSA_PKCS1", "PAD_PKCS1"),
+        "cipher_rsa_nopad": ("ALG_RSA_NOPAD", "PAD_NOPAD"),
+        "cipher_rsa_oaep": ("ALG_RSA_PKCS1_OAEP", "PAD_PKCS1_OAEP"),
+    }
+    for key, (alg, pad) in rsa_cipher_specs.items():
+        if config[key]:
+            cipher_provider.append(
+                f"    if (algorithm == Cipher.{alg}) return new RSACipherProvider(Cipher.{alg}, Cipher.{pad});"
+            )
     cipher_provider.extend([
         "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
         "    return null;",
@@ -411,6 +432,11 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         if getinstance:
             cipher_provider.append(
                 f"      if (cipherAlgorithm == Cipher.{cipher} && paddingAlgorithm == Cipher.{pad}) return new SymmetricCipherProvider(Cipher.{alg}, Cipher.{cipher}, Cipher.{pad}, {str(aes).lower()}, {str(cbc).lower()});"
+            )
+    for key, (alg, pad) in rsa_cipher_specs.items():
+        if config[key]:
+            cipher_provider.append(
+                f"      if (cipherAlgorithm == Cipher.CIPHER_RSA && paddingAlgorithm == Cipher.{pad}) return new RSACipherProvider(Cipher.{alg}, Cipher.{pad});"
             )
     cipher_provider.extend([
         "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
@@ -439,6 +465,21 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         (cipher_dir / "SymmetricCipherProvider.java").unlink(missing_ok=True)
     for stale in ("AESCipherProvider.java", "DESCipherProvider.java", "CbcCipherProvider.java"):
         (cipher_dir / stale).unlink(missing_ok=True)
+    rsa_cipher_enabled = any(config[key] for key in rsa_cipher_specs)
+    rsa_cipher_provider = cipher_dir / "RSACipherProvider.java"
+    rsa_cipher_bridge = nativeimpl_dir / "RsaCipherNativeBridge.java"
+    if rsa_cipher_enabled:
+        rsa_cipher_provider.write_text(
+            (Path(__file__).resolve().parent / "java-support/RSACipherProvider.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        rsa_cipher_bridge.write_text(
+            (Path(__file__).resolve().parent / "java-support/RsaCipherNativeBridge.java").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    else:
+        rsa_cipher_provider.unlink(missing_ok=True)
+        rsa_cipher_bridge.unlink(missing_ok=True)
     signature_specs = {
         "signature_des_mac8_nopad": ("ALG_DES_MAC8_NOPAD", "SIG_CIPHER_DES_MAC8", "PAD_NOPAD", 8, False),
         "signature_des_mac4_iso9797_m1": ("ALG_DES_MAC4_ISO9797_M1", "SIG_CIPHER_DES_MAC4", "PAD_ISO9797_M1", 4, False),

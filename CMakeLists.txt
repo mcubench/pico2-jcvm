@@ -48,7 +48,7 @@ file(GLOB_RECURSE CHOUPI_VM_SOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/*.cpp")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX "/main(_arm|_pc)?\\.cpp$")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX
-  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mac|mbedtls_digest)\\.cpp$")
+  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mac|mbedtls_digest|rsa_cipher)\\.cpp$")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_random.cpp")
 endif()
@@ -98,6 +98,9 @@ if(JC_SUPPORT_SHA256)
 endif()
 if(JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512)
   list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_mbedtls_digest.cpp")
+endif()
+if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP)
+  list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_rsa_cipher.cpp")
 endif()
 if(CHOUPI_VM_SOURCES)
   add_library(choupi_vm_core OBJECT ${CHOUPI_VM_SOURCES})
@@ -150,8 +153,17 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     src/cap_store.cpp
     src/scp03.cpp
     "${PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
+    "${PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c"
     "${CMAKE_CURRENT_BINARY_DIR}/choupi_rommask.S"
     $<TARGET_OBJECTS:choupi_vm_core>)
+  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR
+     JC_SUPPORT_CIPHER_RSA_OAEP)
+    # The Pico has no POSIX clock. Mbed TLS bignum's platform utility only
+    # needs its monotonic millisecond hook; native_rsa_cipher.cpp supplies it.
+    target_compile_definitions(pico2_choupi PRIVATE
+      MBEDTLS_PLATFORM_MS_TIME_ALT
+      MBEDTLS_PLATFORM_ZEROIZE_ALT)
+  endif()
   if(JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD OR
      JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M1 OR JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M2 OR
      JC_SUPPORT_CIPHER_DES_CBC_PKCS5 OR JC_SUPPORT_CIPHER_DES_ECB_NOPAD OR
@@ -188,6 +200,12 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
       "${PICO_SDK_PATH}/lib/mbedtls/library/sha1.c"
       "${PICO_SDK_PATH}/lib/mbedtls/library/sha256.c"
       "${PICO_SDK_PATH}/lib/mbedtls/library/sha512.c")
+  endif()
+  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP)
+    target_sources(pico2_choupi PRIVATE
+      "${PICO_SDK_PATH}/lib/mbedtls/library/bignum.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/bignum_core.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/constant_time.c")
   endif()
   if(CHOUPI_DEBUG_HEAP_GC)
     target_compile_definitions(choupi_vm_core PRIVATE CHOUPI_DEBUG_HEAP_GC=1)

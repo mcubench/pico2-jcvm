@@ -67,58 +67,158 @@ final class RSAKeyProvider implements RSAPublicKey, RSAPrivateKey, RSAPrivateCrt
   public short getSize() { return size; }
 
   public void setModulus(byte[] buffer, short offset, short length) {
-    set(modulus, (short)0, buffer, offset, length);
+    if (buffer == null) throw new NullPointerException();
+    if (offset < 0 || length <= 0 || offset > buffer.length - length ||
+        length > modulus.length)
+      CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+    for (short i = 0; i < modulus.length; i++) modulus[i] = 0;
+    short start = (short)(modulus.length - length);
+    for (short i = 0; i < length; i++)
+      modulus[(short)(start + i)] = buffer[(short)(offset + i)];
+    lengths[0] = length;
+  }
+
+  public short getModulus(byte[] buffer, short offset) {
+    if (buffer == null) throw new NullPointerException();
+    if (lengths[0] == 0) CryptoException.throwIt(CryptoException.UNINITIALIZED_KEY);
+    if (offset < 0 || offset > buffer.length - lengths[0])
+      throw new ArrayIndexOutOfBoundsException();
+    short start = (short)(modulus.length - lengths[0]);
+    for (short i = 0; i < lengths[0]; i++)
+      buffer[(short)(offset + i)] = modulus[(short)(start + i)];
+    return lengths[0];
   }
   public void setExponent(byte[] buffer, short offset, short length) {
-    set(exponent, (short)1, buffer, offset, length);
+    if (buffer == null) throw new NullPointerException();
+    if (offset < 0 || length <= 0 || offset > buffer.length - length ||
+        length > exponent.length)
+      CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+    for (short i = 0; i < exponent.length; i++) exponent[i] = 0;
+    short start = (short)(exponent.length - length);
+    for (short i = 0; i < length; i++)
+      exponent[(short)(start + i)] = buffer[(short)(offset + i)];
+    lengths[1] = length;
   }
-  public short getModulus(byte[] buffer, short offset) {
-    return get(modulus, (short)0, buffer, offset);
-  }
+
   public short getExponent(byte[] buffer, short offset) {
-    return get(exponent, (short)1, buffer, offset);
+    if (buffer == null) throw new NullPointerException();
+    if (lengths[1] == 0) CryptoException.throwIt(CryptoException.UNINITIALIZED_KEY);
+    if (offset < 0 || offset > buffer.length - lengths[1])
+      throw new ArrayIndexOutOfBoundsException();
+    short start = (short)(exponent.length - lengths[1]);
+    for (short i = 0; i < lengths[1]; i++)
+      buffer[(short)(offset + i)] = exponent[(short)(start + i)];
+    return lengths[1];
   }
   public void setP(byte[] buffer, short offset, short length) {
-    set(p, (short)2, buffer, offset, length);
+    if (buffer == null) throw new NullPointerException();
+    if (offset < 0 || length <= 0 || offset > buffer.length - length ||
+        length > p.length)
+      CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+    for (short i = 0; i < p.length; i++) p[i] = 0;
+    short start = (short)(p.length - length);
+    for (short i = 0; i < length; i++)
+      p[(short)(start + i)] = buffer[(short)(offset + i)];
+    lengths[2] = length;
+  }
+
+  public short getP(byte[] buffer, short offset) {
+    if (buffer == null) throw new NullPointerException();
+    if (lengths[2] == 0) CryptoException.throwIt(CryptoException.UNINITIALIZED_KEY);
+    if (offset < 0 || offset > buffer.length - lengths[2])
+      throw new ArrayIndexOutOfBoundsException();
+    short start = (short)(p.length - lengths[2]);
+    for (short i = 0; i < lengths[2]; i++)
+      buffer[(short)(offset + i)] = p[(short)(start + i)];
+    return lengths[2];
   }
   public void setQ(byte[] buffer, short offset, short length) {
-    set(q, (short)3, buffer, offset, length);
+    if (buffer == null) throw new NullPointerException();
+    if (offset < 0 || length <= 0 || offset > buffer.length - length ||
+        length > q.length)
+      CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+    for (short i = 0; i < q.length; i++) q[i] = 0;
+    short start = (short)(q.length - length);
+    for (short i = 0; i < length; i++)
+      q[(short)(start + i)] = buffer[(short)(offset + i)];
+    lengths[3] = length;
+  }
+
+  public short getQ(byte[] buffer, short offset) {
+    if (buffer == null) throw new NullPointerException();
+    if (lengths[3] == 0) CryptoException.throwIt(CryptoException.UNINITIALIZED_KEY);
+    if (offset < 0 || offset > buffer.length - lengths[3])
+      throw new ArrayIndexOutOfBoundsException();
+    short start = (short)(q.length - lengths[3]);
+    for (short i = 0; i < lengths[3]; i++)
+      buffer[(short)(offset + i)] = q[(short)(start + i)];
+    return lengths[3];
   }
   public void setDP1(byte[] buffer, short offset, short length) {
-    set(dp, (short)4, buffer, offset, length);
+    if (buffer == null) throw new NullPointerException();
+    if (offset < 0 || length <= 0 || offset > buffer.length - length ||
+        length > dp.length)
+      CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+    for (short i = 0; i < dp.length; i++) dp[i] = 0;
+    short start = (short)(dp.length - length);
+    for (short i = 0; i < length; i++)
+      dp[(short)(start + i)] = buffer[(short)(offset + i)];
+    lengths[4] = length;
+  }
+
+  public short getDP1(byte[] buffer, short offset) {
+    if (buffer == null) throw new NullPointerException();
+    if (lengths[4] == 0) CryptoException.throwIt(CryptoException.UNINITIALIZED_KEY);
+    if (offset < 0 || offset > buffer.length - lengths[4])
+      throw new ArrayIndexOutOfBoundsException();
+    short start = (short)(dp.length - lengths[4]);
+    for (short i = 0; i < lengths[4]; i++)
+      buffer[(short)(offset + i)] = dp[(short)(start + i)];
+    return lengths[4];
   }
   public void setDQ1(byte[] buffer, short offset, short length) {
-    set(dq, (short)5, buffer, offset, length);
+    if (buffer == null) throw new NullPointerException();
+    if (offset < 0 || length <= 0 || offset > buffer.length - length ||
+        length > dq.length)
+      CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
+    for (short i = 0; i < dq.length; i++) dq[i] = 0;
+    short start = (short)(dq.length - length);
+    for (short i = 0; i < length; i++)
+      dq[(short)(start + i)] = buffer[(short)(offset + i)];
+    lengths[5] = length;
+  }
+
+  public short getDQ1(byte[] buffer, short offset) {
+    if (buffer == null) throw new NullPointerException();
+    if (lengths[5] == 0) CryptoException.throwIt(CryptoException.UNINITIALIZED_KEY);
+    if (offset < 0 || offset > buffer.length - lengths[5])
+      throw new ArrayIndexOutOfBoundsException();
+    short start = (short)(dq.length - lengths[5]);
+    for (short i = 0; i < lengths[5]; i++)
+      buffer[(short)(offset + i)] = dq[(short)(start + i)];
+    return lengths[5];
   }
   public void setPQ(byte[] buffer, short offset, short length) {
-    set(pq, (short)6, buffer, offset, length);
-  }
-  public short getP(byte[] buffer, short offset) { return get(p, (short)2, buffer, offset); }
-  public short getQ(byte[] buffer, short offset) { return get(q, (short)3, buffer, offset); }
-  public short getDP1(byte[] buffer, short offset) { return get(dp, (short)4, buffer, offset); }
-  public short getDQ1(byte[] buffer, short offset) { return get(dq, (short)5, buffer, offset); }
-  public short getPQ(byte[] buffer, short offset) { return get(pq, (short)6, buffer, offset); }
-
-  private void set(byte[] destination, short component, byte[] source,
-                   short offset, short length) {
-    if (source == null) throw new NullPointerException();
-    if (offset < 0 || length <= 0 || offset > source.length - length ||
-        length > destination.length)
+    if (buffer == null) throw new NullPointerException();
+    if (offset < 0 || length <= 0 || offset > buffer.length - length ||
+        length > pq.length)
       CryptoException.throwIt(CryptoException.ILLEGAL_VALUE);
-    clear(destination);
-    short start = (short)(destination.length - length);
-    for (short i = 0; i < length; i++) destination[(short)(start + i)] = source[(short)(offset + i)];
-    lengths[component] = length;
+    for (short i = 0; i < pq.length; i++) pq[i] = 0;
+    short start = (short)(pq.length - length);
+    for (short i = 0; i < length; i++)
+      pq[(short)(start + i)] = buffer[(short)(offset + i)];
+    lengths[6] = length;
   }
 
-  private short get(byte[] source, short component, byte[] destination, short offset) {
-    if (destination == null) throw new NullPointerException();
-    if (lengths[component] == 0) CryptoException.throwIt(CryptoException.UNINITIALIZED_KEY);
-    if (offset < 0 || offset > destination.length - lengths[component])
+  public short getPQ(byte[] buffer, short offset) {
+    if (buffer == null) throw new NullPointerException();
+    if (lengths[6] == 0) CryptoException.throwIt(CryptoException.UNINITIALIZED_KEY);
+    if (offset < 0 || offset > buffer.length - lengths[6])
       throw new ArrayIndexOutOfBoundsException();
-    short start = (short)(source.length - lengths[component]);
-    for (short i = 0; i < lengths[component]; i++)
-      destination[(short)(offset + i)] = source[(short)(start + i)];
-    return lengths[component];
+    short start = (short)(pq.length - lengths[6]);
+    for (short i = 0; i < lengths[6]; i++)
+      buffer[(short)(offset + i)] = pq[(short)(start + i)];
+    return lengths[6];
   }
+
 }

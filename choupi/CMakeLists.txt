@@ -334,7 +334,7 @@ file(GLOB_RECURSE JCVM_CORE_SOURCES_FILES
      CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 list(FILTER JCVM_CORE_SOURCES_FILES EXCLUDE REGEX
-  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mbedtls_digest)\\.cpp$")
+  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mbedtls_digest|rsa_cipher)\\.cpp$")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_random.cpp")
 endif()
@@ -355,6 +355,9 @@ endif()
 if(JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_mbedtls_digest.cpp")
 endif()
+if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP)
+  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_rsa_cipher.cpp")
+endif()
 
 if(CHOUPI_TARGET_PC)
 
@@ -363,6 +366,13 @@ if(CHOUPI_TARGET_PC)
                         "${CMAKE_SOURCE_DIR}/../src/scp03.cpp"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
+
+  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP)
+    target_sources(choupi PRIVATE
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/bignum.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/bignum_core.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/constant_time.c")
+  endif()
 
   if(JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR
      JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD)
@@ -381,6 +391,12 @@ if(CHOUPI_TARGET_PC)
   endif()
   if(JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512)
     target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha512.c")
+  endif()
+  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP)
+    target_sources(choupi PRIVATE
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/bignum.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/bignum_core.c"
+      "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/constant_time.c")
   endif()
 
   target_include_directories(

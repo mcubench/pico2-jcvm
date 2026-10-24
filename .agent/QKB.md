@@ -4168,3 +4168,27 @@ fix.
 - **Artifacts:** `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`,
   `artifacts/logs/symm-crypto-kat-pcsc-20261024T120000Z.log`, and
   `artifacts/results/symm-crypto-deploy-crypto-2BED-20261024.csv`.
+
+## JC305 RSA key calls use shifted interface method tokens — 2026-10-24
+
+- **Symptom:** JCAlgTest's RSA key builder succeeded, but calls such as
+  `RSAPublicKey.setModulus` returned `6F00` or invoked a different method.
+- **Cause:** JC305 security interface method tokens for RSA public/private and
+  RSA CRT keys do not match the embedded ROM interface declaration order. The
+  call dispatcher translated class tokens but did not remap these method
+  tokens, so getters/setters were shifted.
+- **Viable solution:** Apply package AID and imported class token scoped method
+  maps for JC305 RSA public/private and CRT interfaces in
+  `choupi/src/jc_handlers/jc_cp.cpp`. The VPCD key storage vectors and
+  physical RSA cipher vectors then passed.
+- **Validation:** VPCD asymmetric suite reported `TEST:SUMMARY pass=20 fail=0`.
+  Pico 2 `2BED26ED20556535` passed 18/18 RSA cipher known-answer vectors.
+  Reader `D92E743D5F640C0F` accepted runtime firmware but probe CAP INSTALL
+  returned `6581` after LOAD; its existing JCAlgTest package was preserved.
+- **Viable workflow:** Use the board with sufficient persistent CAP storage
+  (`2BED26ED20556535`) for probe CAP hardware checks. Do not remove the
+  JCAlgTest package from D92 to make room.
+- **Artifacts:** `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`,
+  `artifacts/logs/cycle-choupi-20261024T152252Z.log`,
+  `artifacts/logs/cycle-choupi-20261024T152710Z.log`, and
+  `build/symm-crypto-probe/asymm-physical-vectors.tsv`.
