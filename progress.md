@@ -11306,7 +11306,7 @@
 - Decision: Keep D92 available as a known-good physical reader; repair the
   expected-support CSV mapping before claiming full symmetric-profile
   acceptance. Continue on any other identified visible Pico if a board drops.
-- Commit: pending.
+- Commit: `690ce6a`.
 - Artifacts/logs: `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
   `artifacts/logs/cycle-choupi-20261024T213745Z.log`; UF2 size 1,675,264 bytes,
   SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
