@@ -11022,6 +11022,23 @@
   ARM UF2 SHA-256 `215de132afc30fff5f5cf35c639b559ead1465ccebee3b88da8fdbf748aefe67d`;
   PC ROM-mask SHA-256 `1e76a6cd532e54a5059855827e33f34cede704c3e79fa84d7ae17ea42d7ebbe9`.
 
+## 2026-10-24 — Record post-flash PC/SC visibility loss
+
+- Step/experiment: `asymm-profile-postflash-reader-enumeration`
+- Change: Added the observed post-flash reader-discovery failure and current
+  diagnostics to `.agent/QKB.md` and `.agent/HANDOFF.md`.
+- Validation: The authorized ACL helper granted two USB nodes; elevated
+  `lsusb -d 2e8a:0009` showed two CHOUPI CCID devices; `pcscd.service` was
+  active/running. `timeout 8s pcsc_scan -r` timed out without output, and the
+  upstream deploy runner found no physical readers before starting workers.
+- Result: The board flashed and booted, but no APDU or deploy-area test was
+  possible after the PC/SC reader list disappeared. Cause is unknown.
+- Decision: Continue offline until an exact PC/SC reader becomes available;
+  use another identified board if it appears.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T163247Z.log`; no
+  deploy CSV was created because no worker started.
+
 ## 2026-10-24 — Extend firmware architecture analysis by responsibility layer
 
 - Step/experiment: `firmware-layering-architecture-review`

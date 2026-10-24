@@ -4209,3 +4209,22 @@ fix.
   `artifacts/logs/cycle-choupi-20261024T152252Z.log`,
   `artifacts/logs/cycle-choupi-20261024T152710Z.log`, and
   `build/symm-crypto-probe/asymm-physical-vectors.tsv`.
+
+## Pico USB-visible but absent from PC/SC after asymmetric-profile flash — 2026-10-24
+
+- **Symptom:** Asymmetric-profile image flashed and passed the finite monitor on
+  Pico `2BED26ED20556535`. The subsequent upstream deploy coordinator found no
+  physical PC/SC readers and did not begin applet installation. The approved
+  ACL helper then granted access to two USB nodes (`001/123`, `001/004`), and
+  `lsusb -d 2e8a:0009` listed two Pico 2 CHOUPI CCID devices. A bounded
+  `pcsc_scan -r` timed out without output; the deploy coordinator still found
+  no physical readers. `pcscd.service` reported active/running.
+- **Cause:** Unknown. USB enumeration and ACL grant do not prove SmartcardIO or
+  PC/SC reader enumeration; no physical APDU test could start in this state.
+- **Viable solution:** None established for this occurrence. Preserve the
+  device identities and logs; continue offline while PC/SC is unavailable. If
+  multiple boards are attached, retest another exact reader once PC/SC exposes
+  it. Do not infer a crypto failure from this reader-discovery failure.
+- **Validation:** The successful flash/runtime evidence remains
+  `artifacts/logs/cycle-choupi-20261024T163247Z.log`. The attempted deploy
+  output was a no-reader error before worker start.

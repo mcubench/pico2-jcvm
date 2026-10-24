@@ -148,6 +148,20 @@
   direct native key operation, beginning with RSA key setters/getters, without
   adding Java provider methods or editing upstream CAPs.
 
+## Post-flash PC/SC availability — 2026-10-24
+
+- The asymmetric ARM image was flashed to Pico `2BED26ED20556535` and its
+  finite monitor passed. The subsequent upstream Crypto deploy run could not
+  start because SmartcardIO found no physical reader.
+- The ACL helper found two USB nodes and granted access; `lsusb` saw two
+  `2e8a:0009` devices, while bounded `pcsc_scan -r` timed out with no output.
+  `pcscd.service` was active/running. Cause is unknown. The QKB now records this
+  distinction; do not retry APDUs until exact PC/SC reader names are visible.
+- Continue implementation offline. The next code task is direct native RSA key
+  API dispatch using the newly supported instance receiver; the active RSA
+  cipher and key providers still contain interpreted Java method bodies and
+  must be migrated before they meet the user's native-only requirement.
+
 ## Asymmetric crypto profile — SHA provider groundwork — 2026-10-24
 
 - User request: create `asymm_crypto` matching asymmetric support in
