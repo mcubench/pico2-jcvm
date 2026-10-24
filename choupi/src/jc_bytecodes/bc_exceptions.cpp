@@ -30,6 +30,7 @@
 #include "../jc_handlers/jc_cp.hpp"
 #include "../jc_handlers/jc_export.hpp"
 #include "../jc_handlers/jc_import.hpp"
+#include "javacard-class-token-map.h"
 #include "../jc_types/jc_instance.hpp"
 #include "../stack.hpp"
 #include "bytecodes.hpp"
@@ -54,19 +55,24 @@ bool isCryptoExceptionClass(
 
   const auto &package = header->package;
   ConstantPool_Handler class_pool(class_reference.first);
+  constexpr uint8_t jc305_crypto_exception_class_token = 12;
+  const uint8_t crypto_exception_export_token =
+      jc305_javacard_security_class_tokens[
+          jc305_crypto_exception_class_token];
   if (package.AID_length == sizeof(framework_aid) &&
       std::memcmp(package.AID, framework_aid, sizeof(framework_aid)) == 0) {
-    // The legacy combined framework class view is a separate class record.
-    // Preserve this compatibility check; JC305 imported catch references are
-    // identified by their source CAP token below instead.
+    // The combined ROM framework package does not expose the security
+    // package export-token namespace. Match its runtime-owned exception
+    // record directly.
+    constexpr jclass_index_t crypto_exception_rom_index = 234;
     return class_reference.second == reinterpret_cast<const uint8_t *>(
-                                         class_pool.getClassFromClassIndex(234));
+                                         class_pool.getClassFromClassIndex(
+                                             crypto_exception_rom_index));
   }
   if (package.AID_length == sizeof(security_aid) &&
       std::memcmp(package.AID, security_aid, sizeof(security_aid)) == 0) {
     // Optional providers change byte offsets in the security Class component.
     // Resolve CryptoException from the package export table instead.
-    constexpr uint8_t crypto_exception_export_token = 26;
     const auto class_index = HTONS(Export_Handler(class_reference.first)
                                        .getExportedClassOffset(
                                            crypto_exception_export_token));
@@ -91,7 +97,8 @@ bool isCryptoExceptionCatchType(Package source_package,
          std::memcmp(imported_package->AID, security_aid,
                      sizeof(security_aid)) == 0 &&
          remap_imported_class_token(
-             *imported_package, catch_ref.external_classref.class_token) == 26;
+             *imported_package, catch_ref.external_classref.class_token) ==
+             jc305_javacard_security_class_tokens[12];
 }
 } // namespace
 
@@ -191,11 +198,25 @@ void Bytecodes::doThrow(jref_t objectref) {
   const bool trace_dispatch = trace_setting != nullptr &&
                               std::strcmp(trace_setting, "1") == 0;
   if (trace_dispatch) {
+    const auto *exception_header = exception_package.getCap().getHeader();
+    std::fprintf(stderr, "CHOUPI:EXCEPTION_AID package=%u aid=",
+                 static_cast<unsigned>(exception_package.getPackageID()));
+    if (exception_header != nullptr) {
+      for (uint8_t index = 0; index < exception_header->package.AID_length;
+           ++index) {
+        std::fprintf(stderr, "%02X", exception_header->package.AID[index]);
+      }
+    }
+    std::fprintf(stderr, "\n");
     std::fprintf(stderr,
                  "CHOUPI:EXCEPTION_THROW package=%u class=%u fields=%u\n",
                  static_cast<unsigned>(exception->getPackageID()),
                  static_cast<unsigned>(exception->getClassIndex()),
                  static_cast<unsigned>(exception->getNumberOfFields()));
+    if (isCryptoExceptionClass(exception_class)) {
+      std::fprintf(stderr, "CHOUPI:CRYPTO_EXCEPTION reason=%u\n",
+                   static_cast<unsigned>(exception->getField_Short(0)));
+    }
   }
 #endif
 

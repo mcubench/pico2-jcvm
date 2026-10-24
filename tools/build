@@ -2,11 +2,24 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-[[ $# -eq 1 ]] || die "usage: ./tools/build arm|riscv"
-case "$1" in
+[[ $# -ge 1 ]] || die "usage: ./tools/build arm|riscv [--profile PROFILE]"
+arch_arg="$1"
+shift
+support_profile=current
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --profile)
+      [[ $# -ge 2 ]] || die "--profile requires a profile name"
+      support_profile="$2"
+      shift 2
+      ;;
+    *) die "usage: ./tools/build arm|riscv [--profile PROFILE]" ;;
+  esac
+done
+case "${arch_arg}" in
   arm) arch=arm; platform=rp2350-arm-s ;;
   riscv) arch=riscv; platform=rp2350-riscv ;;
-  *) die "unsupported architecture '$1' (choose arm or riscv)" ;;
+  *) die "unsupported architecture '${arch_arg}' (choose arm or riscv)" ;;
 esac
 
 require_sdk
@@ -32,16 +45,17 @@ if [[ -s "${generation_manifest}" && -s "${api_source_manifest}" && \
     sha256sum | cut -d ' ' -f 1)"
   recorded_api_hash="$(awk '$2 == "javacard-api-sources" {print $1}' \
     "${api_source_manifest}")"
-  current_support_hash="$(sha256sum "${repo_root}/config/javacard-support.json" | cut -d ' ' -f 1)"
-  recorded_support_hash="$(awk '{print $1}' "${support_config_manifest}")"
+  current_support_hash="$( { sha256sum "${repo_root}/config/javacard-support.json"; printf 'profile=%s\n' "${support_profile}"; } | sha256sum | cut -d ' ' -f 1)"
+  recorded_support_hash="$(awk '$2 == "support-selection" {print $1}' "${support_config_manifest}")"
   [[ "${current_api_hash}" == "${recorded_api_hash}" && \
      "${current_support_hash}" == "${recorded_support_hash}" ]] && generation_current=true
 fi
 if [[ "${generation_current}" != true ]]; then
-  "${repo_root}/tools/build-pc"
+  "${repo_root}/tools/build-pc" --profile "${support_profile}"
 fi
 python3 "${repo_root}/tools/javacard-support.py" \
   --config "${repo_root}/config/javacard-support.json" \
+  --profile "${support_profile}" \
   --out-dir "${support_dir}"
 build_dir="${repo_root}/build/${arch}"
 linker_flags=""

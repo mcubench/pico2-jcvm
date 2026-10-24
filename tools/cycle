@@ -2,24 +2,30 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-[[ $# -ge 1 ]] || die "usage: ./tools/cycle arm|riscv|choupi [--serial SERIAL]"
+[[ $# -ge 1 ]] || die "usage: ./tools/cycle arm|riscv|choupi [--profile PROFILE] [--serial SERIAL]"
 arch="$1"
 [[ "$arch" == arm || "$arch" == riscv || "$arch" == choupi ]] || die "choose arm, riscv, or choupi"
 shift
 serial=""
+support_profile=current
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --profile)
+      [[ $# -ge 2 ]] || die "--profile requires a profile name"
+      support_profile="$2"
+      shift 2
+      ;;
     --serial)
       [[ $# -ge 2 && -z "$serial" && "$2" =~ ^[A-Fa-f0-9]{8,32}$ ]] || die "--serial requires an 8..32 character hexadecimal Pico serial"
       serial="$2"
       shift 2
       ;;
-    *) die "usage: ./tools/cycle arm|riscv|choupi [--serial SERIAL]" ;;
+    *) die "usage: ./tools/cycle arm|riscv|choupi [--profile PROFILE] [--serial SERIAL]" ;;
   esac
 done
 require_host_usb_access
-"${repo_root}/tools/build" arm
-"${repo_root}/tools/build" riscv
+"${repo_root}/tools/build" arm --profile "${support_profile}"
+"${repo_root}/tools/build" riscv --profile "${support_profile}"
 if [[ "${arch}" == choupi ]]; then
   image="${repo_root}/build/arm/pico2_choupi.uf2"
 else
@@ -28,7 +34,7 @@ fi
 log_dir="${repo_root}/artifacts/logs"
 mkdir -p "$log_dir"
 log_file="${log_dir}/cycle-${arch}-$(date -u +%Y%m%dT%H%M%SZ).log"
-printf 'CYCLE:FLASH arch=%s image=%s\n' "$arch" "${image#${repo_root}/}" | tee "$log_file"
+printf 'CYCLE:FLASH arch=%s profile=%s image=%s\n' "$arch" "$support_profile" "${image#${repo_root}/}" | tee "$log_file"
 flash_args=()
 monitor_args=()
 if [[ -n "$serial" ]]; then

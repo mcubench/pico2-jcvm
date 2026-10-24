@@ -483,6 +483,12 @@ uint16_t Interpretor::run() noexcept {
       // execute
       (bytecodes.*bc)();
     } catch (const UncaughtJavaException &uncaught) {
+#ifndef PC_VERSION
+      std::printf("CHOUPI:UNCAUGHT_JAVA ref=%08X opcode=%02X depth=%u\r\n",
+                  static_cast<unsigned>(uncaught.reference), bytecode,
+                  static_cast<unsigned>(stack.frameDepth()));
+      std::fflush(stdout);
+#endif
       this->last_exception_id = Exceptions::NotYetImplemented;
       this->last_uncaught_exception_reference = uncaught.reference;
       this->status_word = 0x6f00;
@@ -498,6 +504,13 @@ uint16_t Interpretor::run() noexcept {
       stack.unwindToDepth(this->entryFrameDepth);
       return this->status_word;
     } catch (Exceptions e) {
+#ifndef PC_VERSION
+      std::printf("CHOUPI:VM_CAUGHT_EXCEPTION id=%u opcode=%02X depth=%u\r\n",
+                  static_cast<unsigned>(e), bytecode,
+                  static_cast<unsigned>(stack.getCurrentFrame().getTOS() -
+                                        stack.getCurrentFrame().getOP()));
+      std::fflush(stdout);
+#endif
       if (e == Exceptions::SystemException) {
         this->last_exception_reason = context.pendingSystemExceptionReason();
       } else if (e == Exceptions::APDUException) {

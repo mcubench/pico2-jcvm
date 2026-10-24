@@ -29,6 +29,7 @@ done
 if [[ -n "$serial" && ! "$serial" =~ ^[A-Fa-f0-9]{8,32}$ ]]; then
   die "--serial must be an 8..32 character hexadecimal Pico serial"
 fi
+serial="${serial^^}"
 [[ -f "$image" ]] || die "flash image not found: ${image}"
 require_host_usb_access
 require_command picotool
@@ -41,12 +42,14 @@ if [[ -n "$serial" ]]; then
 fi
 
 rp_usb_present() {
-  local device
+  local device device_serial
   for device in /sys/bus/usb/devices/*; do
     [[ -r "${device}/idVendor" ]] || continue
     if [[ "$(<"${device}/idVendor")" == 2e8a ]]; then
       if [[ -n "$serial" ]]; then
-        [[ -r "${device}/serial" && "$(<"${device}/serial")" == "$serial" ]] || continue
+        [[ -r "${device}/serial" ]] || continue
+        device_serial="$(<"${device}/serial")"
+        [[ "${device_serial^^}" == "$serial" ]] || continue
       fi
       return 0
     fi

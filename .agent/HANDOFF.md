@@ -54,6 +54,42 @@
 
 # Handoff
 
+## JCAlgTest base/current physical profile comparison — 2026-10-24
+
+- Completed the requested `base` profile and compared it against `current` on
+  the same Pico 2 D92 (`D92E743D5F640C0F`). The complete JCAlgTest 1.8.2
+  `ALG_SUPPORT_EXTENDED` reports both contain 4,525 rows and match generated
+  expected-support CSVs: base 10 yes / 4,515 no; current 15 yes / 4,510 no.
+  Current adds AES-192, AES-256, DES, DES3-2KEY, and SHA-256.
+- Base includes all three OwnerPINBuilder variants because the official probe
+  does not catch the documented SystemException for disabled variants; those
+  rows otherwise contain exception text instead of strict yes/no values.
+- Current and base ARM/RISC-V build gates passed. Both ARM images were flashed
+  and their finite runtime monitors passed. Base UF2 size: 1,652,736 bytes;
+  current size was not preserved. A clean CAP LOAD+INSTALL was proven on the
+  initial base trial; the same installed applet remained selectable and
+  passed GETVERSION/JCSystem probes after final base/current reflashes. A new
+  clean install on current was not completed because GPPro DELETE returned
+  `6985` while the applet was active.
+- Duplicate package LOAD now returns `6A80`; physical verification confirmed
+  the existing JCAlgTest package remains available. Each full test also sees
+  4,525 reset-control `B0 E2` APDUs returning `6F00`: the applet doesn't catch
+  `SystemException.ILLEGAL_USE` from unsupported object deletion. This does
+  not alter the subsequent support rows.
+- Full report and checksums:
+  `artifacts/results/jcalgtest-profile-comparison-20261024.md` and the two
+  result directories `artifacts/results/jcalgtest-profile-base10-20261024/`
+  and `artifacts/results/jcalgtest-profile-current-20261024/`. Ignored
+  artifacts remain untracked per `.gitignore`.
+- Next: if continuing capability-profile work, verify package installation
+  after a clean current-profile install when the card can be safely reset;
+  otherwise prioritize the next item in root `TODO.md`. Do not interpret the
+  repeated `B0 E2` status as an algorithm-support result.
+- Commit for this step: not created; `.git` is read-only in this session
+  (`git add` failed creating `.git/index.lock`). All task and prior changes are
+  preserved in the worktree; do not discard them. Stage and commit the logical
+  implementation/result record when Git write access is restored.
+
 ## Framework exception reason preservation in RMI — 2026-10-23
 
 - The RMI exception mapper recognizes embedded framework export tokens for

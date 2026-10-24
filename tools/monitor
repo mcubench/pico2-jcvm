@@ -34,7 +34,14 @@ for _ in $(seq 1 120); do
   candidates=()
   shopt -s nullglob
   if [[ -n "$serial" ]]; then
-    candidates=(/dev/serial/by-id/usb-Raspberry_Pi_Pico_*"${serial}"*-if00)
+    all_candidates=(/dev/serial/by-id/*)
+    for candidate in "${all_candidates[@]}"; do
+      candidate_upper="${candidate^^}"
+      if [[ "$candidate_upper" == *"${serial^^}"* &&
+            "$candidate_upper" == *-IF00 ]]; then
+        candidates+=("$candidate")
+      fi
+    done
   else
     candidates=(/dev/serial/by-id/*)
     if ((${#candidates[@]} == 0)); then

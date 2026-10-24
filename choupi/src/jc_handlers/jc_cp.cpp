@@ -31,8 +31,11 @@
 #include "jc_export.hpp"
 #include "jc_import.hpp"
 #include "flashmemory.hpp"
+#include "javacard-class-token-map.h"
 
 #include <cstring>
+#include <cstdio>
+#include <cstdlib>
 
 #ifndef PC_VERSION
 extern "C" void choupi_install_stage(uint8_t stage);
@@ -55,41 +58,29 @@ bool usesJC305CompatibilityTokens(const Package &source_package) noexcept {
 // its Export component.
 uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
                                    const uint8_t token) noexcept {
-  static constexpr uint8_t java_lang[] = {
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-  static constexpr uint8_t javacard_framework[] = {
-      0,  1,  2,  13, 15, 8,  14, 18, 9,  11, 7,  16,
-      10, 19, 20, 21, 22, 17, 18, 19, 20, 12, 17};
-  static constexpr uint8_t javacard_security[] = {
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
-      0x16, 0x1a, 0x1c, 0x1d, 0x1f, 0x21, 0x11, 0x12, 0x13, 0x14, 0x15,
-      0x1b, 0x17, 0x18, 0x19, 0x18, 0x1b, 0x1c, 0x1d, 0x17, 0x19, 0x20,
-      0x21};
-  static constexpr uint8_t javacardx_crypto[] = {0, 1, 2, 3};
-
   const uint8_t *mapping = nullptr;
   size_t mapping_size = 0;
 
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID, "\xA0\x00\x00\x00\x62\x00\x01", 7) ==
           0) {
-    mapping = java_lang;
-    mapping_size = sizeof(java_lang);
+    mapping = jc305_java_lang_class_tokens;
+    mapping_size = sizeof(jc305_java_lang_class_tokens);
   } else if (package_info.AID_length == 7 &&
              std::memcmp(package_info.AID,
                          "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0) {
-    mapping = javacard_framework;
-    mapping_size = sizeof(javacard_framework);
+    mapping = jc305_javacard_framework_class_tokens;
+    mapping_size = sizeof(jc305_javacard_framework_class_tokens);
   } else if (package_info.AID_length == 7 &&
              std::memcmp(package_info.AID,
                          "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0) {
-    mapping = javacard_security;
-    mapping_size = sizeof(javacard_security);
+    mapping = jc305_javacard_security_class_tokens;
+    mapping_size = sizeof(jc305_javacard_security_class_tokens);
   } else if (package_info.AID_length == 7 &&
              std::memcmp(package_info.AID,
                          "\xA0\x00\x00\x00\x62\x02\x01", 7) == 0) {
-    mapping = javacardx_crypto;
-    mapping_size = sizeof(javacardx_crypto);
+    mapping = jc305_javacardx_crypto_class_tokens;
+    mapping_size = sizeof(jc305_javacardx_crypto_class_tokens);
   }
 
   if (mapping == nullptr || token >= mapping_size) {
@@ -102,36 +93,34 @@ uint8_t remap_imported_class_token(const jc_cap_package_info &package_info,
 // Map the framework interfaces to the generated ROM API's interface tokens.
 uint8_t remap_imported_interface_token(
     const jc_cap_package_info &package_info, const uint8_t token) noexcept {
-  static constexpr uint8_t jc305_to_embedded_interface[] = {
-      1, 3, 6, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 2, 0, 4, 5};
+  const uint8_t *mapping = nullptr;
+  size_t mapping_size = 0;
   if (package_info.AID_length == 7 &&
-      std::memcmp(package_info.AID,
-                  "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0 &&
-      token < sizeof(jc305_to_embedded_interface)) {
-    // The public JC305 framework interface tokens are 0, 1, 2, 17, 18, 19,
-    // and 20 in the reference export file. Unlisted token values pass through.
-    return jc305_to_embedded_interface[token];
+      std::memcmp(package_info.AID, "\xA0\x00\x00\x00\x62\x00\x01", 7) ==
+          0) {
+    mapping = jc305_java_lang_interface_tokens;
+    mapping_size = sizeof(jc305_java_lang_interface_tokens);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x01", 7) == 0) {
+    mapping = jc305_javacard_framework_interface_tokens;
+    mapping_size = sizeof(jc305_javacard_framework_interface_tokens);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0) {
+    mapping = jc305_javacard_security_interface_tokens;
+    mapping_size = sizeof(jc305_javacard_security_interface_tokens);
+  } else if (package_info.AID_length == 7 &&
+             std::memcmp(package_info.AID,
+                         "\xA0\x00\x00\x00\x62\x02\x01", 7) == 0) {
+    mapping = jc305_javacardx_crypto_interface_tokens;
+    mapping_size = sizeof(jc305_javacardx_crypto_interface_tokens);
   }
-  // JCAlgTest's JC305 security export places DESKey at interface token 10;
-  // CHOUPI's generated security export places it at token 12. The class-token
-  // map also maps this entry to 12, but interface references use their own
-  // token namespace and must be translated here explicitly.
-  if (package_info.AID_length == 7 &&
-      std::memcmp(package_info.AID,
-                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
-      token == 10) {
-    return 12;
+
+  if (mapping == nullptr || token >= mapping_size) {
+    return token;
   }
-  // JC305 assigns AESKey interface token 20; the generated embedded
-  // security export assigns it token 19. Keep this separate from the class
-  // token map, as both namespaces are used by checkcast/invokeinterface.
-  if (package_info.AID_length == 7 &&
-      std::memcmp(package_info.AID,
-                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
-      token == 20) {
-    return 19;
-  }
-  return token;
+  return mapping[token];
 }
 
 uint8_t remap_imported_static_method_token(
@@ -826,6 +815,20 @@ ConstantPool_Handler::resolveClassref(const jc_cap_class_ref classref,
                          class_token);
 #endif
   classFound = &(cap.getClass()->claz()[class_token]);
+#ifdef PC_VERSION
+  if (const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
+      trace_setting != nullptr && std::strcmp(trace_setting, "1") == 0 &&
+      classref.isExternalClassRef() && is_interface) {
+    const auto *class_base = cap.getClass()->claz().data();
+    std::fprintf(stderr,
+                 "CHOUPI:INTERFACE_RESOLVE package=%u src_token=%u class_index=%u is_interface=%u ptr_offset=%td\n",
+                 static_cast<unsigned>(this->package.getPackageID()),
+                 static_cast<unsigned>(classref.external_classref.class_token),
+                 static_cast<unsigned>(class_token),
+                 IS_INTERFACE(classFound) ? 1u : 0u,
+                 classFound - class_base);
+  }
+#endif
 #ifndef PC_VERSION
   choupi_install_stage(17);
   choupi_install_stage(20);

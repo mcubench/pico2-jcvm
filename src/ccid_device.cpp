@@ -404,11 +404,13 @@ void process_message(uint8_t rhport) {
                                                command_data_length)) {
         response[0] = 0x90;
         response[1] = 0x00;
-      } else if (instruction == 0xe8 &&
-                 cap_load_session.addLoadBlock(p1, p2, apdu + 5,
-                                               command_data_length)) {
-        response[0] = 0x90;
-        response[1] = 0x00;
+      } else if (instruction == 0xe8) {
+        const bool accepted = apdu_length >= 5 &&
+                              command_data_length <= apdu_length - 5 &&
+                              cap_load_session.addLoadBlock(
+                                  p1, p2, apdu + 5, command_data_length);
+        response[0] = accepted ? 0x90 : 0x6a;
+        response[1] = accepted ? 0x00 : 0x80;
       } else if (instruction == 0xe6 && p1 == 0x0c && p2 == 0x00) {
         if (cap_load_session.installAndMakeSelectable(
                 apdu + 5, command_data_length)) {

@@ -10674,3 +10674,45 @@
 - Decision: Keep the findings as source-review hypotheses until malformed fixtures reproduce or refute each path; begin fixes at LOAD-time structural validation.
 - Commit: `0daf5bf` (review and initial progress record; SHA recorded by this follow-up commit).
 - Artifacts/logs: `todo/review_20261023.md`; no test logs.
+## 2026-10-24 — Physical JCAlgTest base/current capability comparison
+
+- Step/experiment: `jcalgtest-base-current-physical-20261024`
+- Change: Added the working `base` profile (10 of 15 selected). The three
+  OwnerPINBuilder providers remain enabled because JCAlgTest 1.8.2 catches
+  `CryptoException` for capability probes but not the documented
+  `SystemException.ILLEGAL_USE` for disabled PIN variants. Corrected CCID LOAD
+  rejection so failed E8 blocks return `6A80` instead of generic `6D00`.
+  Updated the runbook and status/knowledge records.
+- Validation: Current ARM/RISC-V wrappers and sequential base ARM/RISC-V
+  wrappers passed. An initial concurrent ARM/RISC-V attempt raced in the
+  shared PC build tree; the ARM failure was resolved by rerunning the wrappers
+  sequentially before flashing. Current and final base ARM images were flashed
+  to Pico D92 (`D92E743D5F640C0F`); each bounded runtime monitor passed. GPPro
+  clean LOAD+INSTALL succeeded on base before PIN providers were enabled; the
+  installed CAP remained selectable across reflashes. Complete physical
+  `ALG_SUPPORT_EXTENDED` runs on base and current each matched 4,525 row
+  identities and passed the generated-support comparator. A final duplicate
+  LOAD test returned the expected `6A80`; GPPro LIST and the follow-up physical
+  SELECT/GETVERSION/JCSystem probe confirmed the existing applet remained
+  installed and operational. `git diff --check` passed.
+- Result: Base reports 10 `yes`, 4,515 `no`, zero other statuses. Current
+  reports 15 `yes`, 4,510 `no`, zero other statuses. Current adds only
+  AES-192, AES-256, DES, DES3-2KEY, and SHA-256. The same D92 unit was used for
+  both profiles. Base UF2 is 1,652,736 bytes; current image size was not
+  preserved. Both test logs contain 4,525 `B0 E2` reset APDUs returning
+  `6F00`; JCAlgTest does not catch `SystemException.ILLEGAL_USE` from the
+  deliberately unsupported `JCSystem.requestObjectDeletion()`, but all
+  following capability result rows are valid.
+- Decision: Keep base at 10 capabilities so the official applet emits strict
+  yes/no rows while omitting five optional crypto capabilities. Retain the
+  `6A80` response for duplicate or malformed LOAD data. The prior seven-flag
+  base trial is superseded.
+- Commit: not created; Git could not create `.git/index.lock` because `.git` is
+  read-only in this session. All task changes remain in the worktree.
+- Artifacts/logs: `artifacts/results/jcalgtest-profile-comparison-20261024.md`,
+  `artifacts/results/jcalgtest-profile-base10-20261024/`,
+  `artifacts/results/jcalgtest-profile-current-20261024/`,
+  `artifacts/logs/jcalgtest-profile-comparison-20261024.log`,
+  `artifacts/logs/base10-monitor-20261024.log`,
+  `artifacts/logs/cycle-choupi-20261023T222949Z.log`,
+  `/tmp/duplicate-load-base10.log`.

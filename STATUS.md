@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-22
+Updated: 2026-10-24
 
 ## Summary
 
@@ -10,12 +10,40 @@ path and implements a tested subset of Java Card runtime behavior. It is **not
 a complete or Java Card certified VM**. Unsupported algorithms may correctly
 report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 The physical deployment target is ARM Cortex-M33. ARM, RISC-V, and PC build
-wrappers pass; RISC-V has not been tested on hardware. Recent physical deploy
-tests used the images already installed on the Picos, not the current source
-build.
+wrappers pass; RISC-V has not been tested on hardware. On 2026-10-22, the
+current-source ARM image was flashed to D92 and 2BED and validated with
+physical Crypto, Security, and Core deploy areas; details follow.
 
 ## Verified
 
+- Named `base` and `current` profiles were compared on physical Pico D92
+  (`D92E743D5F640C0F`) using the supplied JCAlgTest 1.8.2 JC305 CAP and the
+  complete `ALG_SUPPORT_EXTENDED` operation. Both produced 4,525 valid yes/no
+  rows matching their generated support sets: base 10 yes / 4,515 no, current
+  15 yes / 4,510 no. Current adds AES-192, AES-256, DES, DES3-2KEY, and
+  SHA-256. Both ARM/RISC-V build gates passed and both flashed ARM images
+  passed finite runtime monitors. See
+  `artifacts/results/jcalgtest-profile-comparison-20261024.md` for exact
+  per-profile rows and runtime notes. This supersedes the earlier seven-flag
+  base trial, whose disabled OwnerPINBuilder rows were exception strings.
+- Duplicate JCAlgTest CAP LOAD on D92 was reproduced and now returns `6A80`
+  instead of misleading `6D00`; the existing package stayed installed and its
+  applet still passed SELECT, GETVERSION, and JCSystem probes. JCAlgTest's
+  repeated `B0 E2` reset APDU still returns `6F00` because the applet does not
+  catch the documented `SystemException.ILLEGAL_USE` from unsupported
+  `JCSystem.requestObjectDeletion()`; following support-result rows remain
+  valid. Details are in `.agent/QKB.md`.
+
+- Current-source physical JC305 deploy coverage on D92/2BED: Crypto completed
+  466 calls (22 OK, 444 expected unsupported, zero unexpected statuses);
+  Security completed 901 calls (77 OK, 820 expected unsupported, two excluded
+  RSA-2048 cases, and two follow-up transient-key results classified in QKB);
+  Core completed 291 calls (272 OK, 15 expected unsupported, four Ext methods
+  unavailable after optional INSTALL returned `6A88` and rollback succeeded).
+  AES CBC streaming and a 50-call static `doFinal()` probe passed physically.
+  Results are in `artifacts/results/deploy/crypto-cipher-inplace-final-d92-20261022.csv`,
+  `artifacts/results/deploy/current-source-sec-core-post-cipher-20261022/`, and
+  `artifacts/logs/aes-cipher-static-final-20261022.log`.
 - PC, RP2350 ARM, and RP2350 RISC-V build wrappers pass. ARM is the physical
   target; RISC-V builds are maintained as an additional check.
 - The full JCSystem/APDU probe regression passed on VPCD: 75 checks, no failures
@@ -155,12 +183,21 @@ build.
   in class and interface descriptor forms, and a follow-up INVOKE through the
   returned object passes. The bundled Oracle SDK JCRMI proxy now passes the
   unmodified SELECT (`Le=7F`), primitive INVOKE, and custom runtime/checked
-  exception cases over current-source VPCD. Broader custom hierarchy coverage,
-  complete API reason-code capture, and int[] end-to-end coverage remain open.
-  The latest focused current-source validation built ARM and PC; RISC-V and
-  physical flashing were intentionally skipped under the current ARM-only/no-
-  flash scope. Three physical readers were confirmed, but current-source
-  hardware behavior remains unverified.
+  exception cases over current-source VPCD. Int[] RMI argument/result handling
+  now passes VPCD with nontrivial 32-bit values, empty arrays, and null arrays.
+  Runtime and checked custom exceptions pass through an extra applet-defined
+  superclass with the expected nearest API exception encoding. Framework
+  reasons for SystemException, CardException, CardRuntimeException,
+  APDUException, PINException, TransactionException, UserException, and
+  CryptoException are preserved through RMI on VPCD and physical D92. A custom
+  CryptoException chain with two applet-defined classes also preserves its
+  inherited reason and subclass tag. The
+  official SDK 2.2.1 proxy
+  identifies each as the expected framework class. ISOException dispatch now
+  uses its correct embedded export token. Broader hierarchy edge cases remain
+  open. Int[] RMI passed on physical D92 after the current ARM image was built
+  for both architectures and flashed; its unique fixture package was removed
+  afterward and JCAlgTest was confirmed intact.
   See the 2026-10-22 progress and handoff entries.
 - Current-source VPCD completed the deploy Security CAP's 901 calls after
   correcting the JC305 `MessageDigest()` subclass-constructor token used by

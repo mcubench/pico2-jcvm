@@ -41,6 +41,7 @@
 #include "jc_types/jc_instance.hpp"
 #include "jc_types/jref_t.hpp"
 #include "types.hpp"
+#include "javacard-class-token-map.h"
 
 #include <algorithm>
 #include <array>
@@ -276,13 +277,21 @@ bool getRemoteJavaExceptionInfo(Context &context,
       }
     }
     // CryptoException belongs to javacard.security rather than the framework
-    // package. The ROM-mask's imported security view exports it at class
-    // offset 233 (the framework view exports it at offset 234).
+    // package. Resolve it from the export table because optional providers
+    // change byte offsets in the security Class component.
     if (header->package.AID_length == sizeof(javacard_security_aid) &&
         std::memcmp(header->package.AID, javacard_security_aid,
                     sizeof(javacard_security_aid)) == 0) {
+      constexpr uint8_t jc305_crypto_exception_class_token = 12;
+      const uint8_t crypto_exception_export_token =
+          jc305_javacard_security_class_tokens[
+              jc305_crypto_exception_class_token];
+      Export_Handler exports(package);
       ConstantPool_Handler resolver(package);
-      const auto *crypto_exception_class = resolver.getClassFromClassIndex(233);
+      const uint16_t crypto_exception_index = HTONS(
+          exports.getExportedClassOffset(crypto_exception_export_token));
+      const auto *crypto_exception_class =
+          resolver.getClassFromClassIndex(crypto_exception_index);
       if (crypto_exception_class == class_info) {
         result.type = 0x30; // CryptoException
         result.reason = static_cast<uint16_t>(instance->getField_Short(0));

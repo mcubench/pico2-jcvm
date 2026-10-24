@@ -37,7 +37,10 @@
 #include "../jc_types/jc_instance.hpp"
 #include "../stack.hpp"
 #include "bytecodes.hpp"
+#include "javacard-class-token-map.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #ifndef PC_VERSION
@@ -51,11 +54,12 @@ namespace {
 bool isRuntimeCryptoExceptionFactoryAllocation(
     Context &context,
     const std::pair<jpackage_ID_t, jclass_index_t> instantiated_class) {
-  // The ROM view resolves CryptoException at offset 234 under the combined
-  // framework AID; the imported javacard.security CAP uses AID ...0102 and
-  // offset 233. Keep both package identity and class offset in the match.
-  constexpr jclass_index_t crypto_exception_rom_offset = 234;
-  constexpr jclass_index_t crypto_exception_import_offset = 233;
+  // Profile-selected providers shift class offsets. Resolve both ROM and
+  // imported CryptoException views using the generated JC305 class-token map.
+  constexpr uint8_t jc305_crypto_exception_class_token = 12;
+  const uint8_t crypto_exception_export_token =
+      jc305_javacard_security_class_tokens[
+          jc305_crypto_exception_class_token];
   static constexpr uint8_t rom_package_aid[] = {
       0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x01};
   static constexpr uint8_t security_package_aid[] = {
@@ -74,15 +78,28 @@ bool isRuntimeCryptoExceptionFactoryAllocation(
   const auto &package = header->package;
   const bool is_rom_package =
       instantiated_class.first == 0 &&
-      instantiated_class.second == crypto_exception_rom_offset &&
       package.AID_length == sizeof(rom_package_aid) &&
       std::memcmp(package.AID, rom_package_aid, sizeof(rom_package_aid)) == 0;
   const bool is_security_import =
-      instantiated_class.second == crypto_exception_import_offset &&
       package.AID_length == sizeof(security_package_aid) &&
       std::memcmp(package.AID, security_package_aid,
                   sizeof(security_package_aid)) == 0;
-  return is_rom_package || is_security_import;
+  if (!is_rom_package && !is_security_import) {
+    return false;
+  }
+
+  // The combined ROM framework package does not export security package
+  // classes in the framework token namespace. Its runtime-owned
+  // CryptoException record has a fixed internal class index; only imported
+  // security package references use the generated security export map.
+  constexpr jclass_index_t crypto_exception_rom_index = 234;
+  if (is_rom_package) {
+    return instantiated_class.second == crypto_exception_rom_index;
+  }
+  const auto crypto_exception_index = HTONS(
+      Export_Handler(Package(instantiated_class.first))
+          .getExportedClassOffset(crypto_exception_export_token));
+  return instantiated_class.second == crypto_exception_index;
 }
 
 jref_t runtimeExceptionReference(Context &context,
@@ -233,18 +250,36 @@ void Bytecodes::bc_new() {
 #endif
   ConstantPool_Handler cp(context.getCurrentPackage());
   auto instantiated_class = cp.getClassInformation(index);
+#ifdef PC_VERSION
+  if (const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
+      trace_setting != nullptr && std::strcmp(trace_setting, "1") == 0) {
+    std::fprintf(stderr, "CHOUPI:NEW_RESOLVED cp=%u package=%u class=%u\n",
+                 static_cast<unsigned>(index),
+                 static_cast<unsigned>(instantiated_class.first),
+                 static_cast<unsigned>(instantiated_class.second));
+  }
+#endif
 #ifndef PC_VERSION
   choupi_install_stage(2);
   choupi_install_context(
       (static_cast<uint32_t>(instantiated_class.first) << 16) |
       instantiated_class.second);
 #endif
-  const jref_t objectref =
-      isRuntimeCryptoExceptionFactoryAllocation(context, instantiated_class)
-          ? heap.addRuntimeCryptoException(instantiated_class.first,
-                                           instantiated_class.second)
-          : heap.addInstance(instantiated_class.first,
-                             instantiated_class.second);
+  const bool is_runtime_crypto_exception =
+      isRuntimeCryptoExceptionFactoryAllocation(context, instantiated_class);
+#ifdef PC_VERSION
+  if (const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
+      trace_setting != nullptr && std::strcmp(trace_setting, "1") == 0) {
+    std::fprintf(stderr, "CHOUPI:NEW_RUNTIME_CRYPTO_EXCEPTION value=%u\n",
+                 is_runtime_crypto_exception ? 1u : 0u);
+  }
+#endif
+  const jref_t objectref = is_runtime_crypto_exception
+                               ? heap.addRuntimeCryptoException(
+                                     instantiated_class.first,
+                                     instantiated_class.second)
+                               : heap.addInstance(instantiated_class.first,
+                                                  instantiated_class.second);
 #ifndef PC_VERSION
   choupi_install_stage(3);
 #endif
@@ -270,26 +305,29 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
   }
 
   if (atype == 0) {
+    const auto source_package = context.getCurrentPackage();
     auto type_out_classref =
-        ConstantPool_Handler(context.getCurrentPackage()).getClassRef(index);
-    ConstantPool_Handler type_out_cp(context.getCurrentPackage());
+        ConstantPool_Handler(source_package).getClassRef(index);
+    ConstantPool_Handler type_out_cp(source_package);
     auto [type_out_package, type_out_class] =
         type_out_cp.resolveClassref(type_out_classref);
-    // A JC305 import may use a class-token remap that differs from its
-    // interface-token index. checkcast accepts both, so if the class mapping
-    // resolves to a class, also try the interface namespace before deciding.
-    if (IS_CLASS(type_out_class)) {
+    // CHECKCAST class references can target either class or interface records.
+    // The class and interface export namespaces are distinct, so an unmapped
+    // interface token can otherwise resolve to a different interface that
+    // happens to occupy the same class export slot. When the first resolution
+    // is already an interface, prefer the explicit interface-token mapping.
+    if (IS_INTERFACE(type_out_class)) {
       try {
+        ConstantPool_Handler interface_type_out_cp(source_package);
         auto interface_candidate =
-            type_out_cp.resolveClassref(type_out_classref, true);
+            interface_type_out_cp.resolveClassref(type_out_classref, true);
         if (IS_INTERFACE(interface_candidate.second)) {
           type_out_package = interface_candidate.first;
           type_out_class = interface_candidate.second;
         }
       } catch (Exceptions exception) {
-        // The class token can be valid while the same byte is not an
-        // interface token (JC305 assigns those token namespaces separately).
-        // Keep the successfully resolved class in that case.
+        // The same byte can be invalid in the interface namespace. Retain the
+        // successfully resolved interface candidate in that case.
         if (exception != SecurityException) {
           throw;
         }
@@ -318,7 +356,44 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
     // resolved CAP record untyped here; classref2class rejects interfaces
     // before Class_Handler::docheckcast can apply the interface rules.
     auto type_out_ref = std::make_pair(type_out_package, type_out_class);
-    return Class_Handler::docheckcast(type_in_ref, type_out_ref);
+    const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
+    const bool trace_cast = trace_setting != nullptr &&
+                            std::strcmp(trace_setting, "1") == 0;
+    if (trace_cast) {
+      std::fprintf(stderr,
+                   "CHOUPI:CHECKCAST cp=%u src_package=%u src_ext=%u "
+                   "src_pkg_token=%u src_class_token=%u in_package=%u "
+                   "in_class=%u out_package=%u out_interface=%u\n",
+                   static_cast<unsigned>(index),
+                   static_cast<unsigned>(source_package.getPackageID()),
+                   type_out_classref.isExternalClassRef() ? 1u : 0u,
+                   type_out_classref.isExternalClassRef()
+                       ? static_cast<unsigned>(type_out_classref.external_classref.package_token)
+                       : 0u,
+                   type_out_classref.isExternalClassRef()
+                       ? static_cast<unsigned>(type_out_classref.external_classref.class_token)
+                       : 0u,
+                   static_cast<unsigned>(type_in_package.getPackageID()),
+                   static_cast<unsigned>(instance->getClassIndex()),
+                   static_cast<unsigned>(type_out_package.getPackageID()),
+                   IS_INTERFACE(type_out_class) ? 1u : 0u);
+    }
+    try {
+      const bool result = Class_Handler::docheckcast(type_in_ref, type_out_ref);
+      if (trace_cast) {
+        std::fprintf(stderr, "CHOUPI:CHECKCAST_RESULT cp=%u result=%u\n",
+                     static_cast<unsigned>(index), result ? 1u : 0u);
+      }
+      return result ? TRUE : FALSE;
+    } catch (Exceptions exception) {
+      if (trace_cast) {
+        std::fprintf(stderr,
+                     "CHOUPI:CHECKCAST_EXCEPTION cp=%u code=%u\n",
+                     static_cast<unsigned>(index),
+                     static_cast<unsigned>(exception));
+      }
+      throw;
+    }
 
   } else {
     auto array = heap.getArray(objectref);

@@ -2,6 +2,18 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
+support_profile=current
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --profile)
+      [[ $# -ge 2 ]] || die "--profile requires a profile name"
+      support_profile="$2"
+      shift 2
+      ;;
+    *) die "usage: ./tools/build-pc [--profile PROFILE]" ;;
+  esac
+done
+
 build_dir="${repo_root}/build/choupi-pc"
 support_dir="${repo_root}/build/javacard-support"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
@@ -11,6 +23,7 @@ jcvm_debug="${CHOUPI_JCVM_DEBUG:-OFF}"
 
 python3 "${repo_root}/tools/javacard-support.py" \
   --config "${repo_root}/config/javacard-support.json" \
+  --profile "${support_profile}" \
   --out-dir "${support_dir}"
 
 "${repo_root}/tools/env" cmake \
@@ -22,6 +35,11 @@ python3 "${repo_root}/tools/javacard-support.py" \
   -DCHOUPI_JCVM_DEBUG="${jcvm_debug}" \
   -DCHOUPI_JAVA8_HOME="${java8_home}"
 
+"${repo_root}/tools/env" cmake --build "${build_dir}" --target javacard-sdk -j2
+python3 "${repo_root}/tools/javacard-class-tokens.py" \
+  --source-root "${repo_root}/choupi/javacard-sdk/javacard-api/sdks/jc305u1_kit/api_export_files" \
+  --target-root "${build_dir}/javacard-api" \
+  --output "${support_dir}/javacard-class-token-map.h"
 "${repo_root}/tools/env" cmake --build "${build_dir}" --target rommask choupi -j2
 
 rom_image="${build_dir}/flash"
@@ -31,12 +49,14 @@ generated_header="${build_dir}/jni.hpp"
 (
   cd "${build_dir}"
   sha256sum flash jni.hpp > generation.sha256
+  sha256sum "${support_dir}/javacard-class-token-map.h" >> generation.sha256
   find "${repo_root}/choupi/javacard-sdk/javacard-api/src" \
     -type f -name '*.java' -print0 | sort -z | xargs -0 sha256sum | \
     sha256sum | awk '{print $1 "  javacard-api-sources"}' > api-sources.sha256
   sha256sum api-sources.sha256 >> generation.sha256
-  sha256sum "${repo_root}/config/javacard-support.json" | \
-    awk '{print $1 "  config/javacard-support.json"}' > support-config.sha256
+  { sha256sum "${repo_root}/config/javacard-support.json"; \
+    printf 'profile=%s\n' "${support_profile}"; } | \
+    sha256sum | awk '{print $1 "  support-selection"}' > support-config.sha256
   sha256sum support-config.sha256 >> generation.sha256
 )
 printf 'ROMMASK:PASS image=%s header=%s manifest=%s\n' \

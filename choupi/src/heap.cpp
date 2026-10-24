@@ -367,8 +367,10 @@ jref_t Heap::addInstance(JC_Instance &&instance) {
  */
 jref_t Heap::addRuntimeCryptoException(const jpackage_ID_t packageID,
                                        const jclass_index_t classIndex) {
-  jref_t &root = classIndex == 234 ? this->runtime_crypto_exception_rom
-                                   : this->runtime_crypto_exception_imported;
+  // The ROM and imported class records use distinct byte offsets that change
+  // with selected providers. Package identity remains stable across profiles.
+  jref_t &root = packageID == 0 ? this->runtime_crypto_exception_rom
+                                : this->runtime_crypto_exception_imported;
   if (root.isNullPointer()) {
     root = this->addInstance(packageID, classIndex);
   }

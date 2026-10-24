@@ -9,12 +9,14 @@ mkdir -p build/algtest-client-1.8.2
 unzip -o build/downloads/AlgTest_dist_1.8.2.zip AlgTestJClient.jar \
   -d build/algtest-client-1.8.2
 
-# Build and flash CHOUPI to the Pico 2.
-PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi
+# Build and flash CHOUPI with the `base` profile to a Pico 2. It enables the
+# minimum crypto needed by JCAlgTest's eager startup allocations, plus all
+# OwnerPINBuilder variants so disabled capabilities are reported as `no`.
+PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile base --serial D92E743D5F640C0F
 
 # Grant pcscd access after USB re-enumeration, then confirm the physical reader.
-sudo -n /usr/local/sbin/pico2-pcsc-reader
-pcsc_scan -r
+PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+PICO2_HOST_USB_ACCESS=1 pcsc_scan -r
 
 # Use the exact Pico reader name printed above.
 reader_name='Pico 2 CHOUPI CCID [JCAlgTest CCID] (D92E743D5F640C0F) 00 00'
@@ -31,7 +33,21 @@ PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup "$reader_name"
 # Retrieve the extended algorithm support report.
 ./tools/run-jcalgtest --reader-name "$reader_name" \
   -op ALG_SUPPORT_EXTENDED -fresh \
-  -outpath artifacts/results/physical-alg-support
+  -outpath artifacts/results/base-alg-support
+
+# Build and flash the all-enabled current profile to a second Pico, then run
+# the same JCAlgTest operation there for an apples-to-apples report comparison.
+PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --serial 2BED26ED20556535
+reader_name_current='Pico 2 CHOUPI CCID [JCAlgTest CCID] (2BED26ED20556535) 00 00'
+./tools/run-jcalgtest --reader-name "$reader_name_current" \
+  -op ALG_SUPPORT_EXTENDED -fresh \
+  -outpath artifacts/results/current-alg-support
+
+# Compare each report against the capability rows generated for that profile.
+./tools/compare-jcalgtest-support.py \
+  artifacts/results/base-alg-support/*ALGSUPPORT*.csv \
+  artifacts/results/base-alg-support/*ALGSUPPORT*.csv \
+  --expected-support artifacts/results/base-alg-support/expected.csv
 
 # Run the static performance suite.
 ./tools/run-jcalgtest --reader-name "$reader_name" \

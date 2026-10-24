@@ -13,15 +13,26 @@ import unittest
 ROOT = Path(__file__).resolve().parent.parent
 GENERATOR = ROOT / "tools/javacard-support.py"
 COMPARATOR = ROOT / "tools/compare-jcalgtest-support.py"
-CONFIG = json.loads((ROOT / "config/javacard-support.json").read_text())
+SUPPORT_CONFIG = json.loads((ROOT / "config/javacard-support.json").read_text())
+CONFIG = SUPPORT_CONFIG["profiles"]["current"]
 
 
 class JavaCardSupportTests(unittest.TestCase):
-    def run_generator(self, config, out_dir):
+    def run_generator(self, config, out_dir, profile=None):
         config_path = out_dir.parent / "config.json"
         config_path.write_text(json.dumps(config))
+        command = [sys.executable, str(GENERATOR), "--config", str(config_path)]
+        if profile is not None:
+            command.extend(("--profile", profile))
+        command.extend(("--out-dir", str(out_dir)))
+        return subprocess.run(command, text=True, capture_output=True)
+
+    def run_named_profile(self, profile, out_dir):
+        config_path = out_dir.parent / "profiles.json"
+        config_path.write_text(json.dumps(SUPPORT_CONFIG))
         return subprocess.run(
-            [sys.executable, str(GENERATOR), "--config", str(config_path), "--out-dir", str(out_dir)],
+            [sys.executable, str(GENERATOR), "--config", str(config_path),
+             "--profile", profile, "--out-dir", str(out_dir)],
             text=True, capture_output=True,
         )
 
@@ -64,9 +75,25 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertFalse((out / "java/javacard/framework/OwnerPINxBase.java").exists())
             self.assertFalse((out / "java/javacard/framework/OwnerPINxImpl.java").exists())
             self.assertFalse((out / "java/javacard/framework/OwnerPINxWithPredecrementImpl.java").exists())
-            self.assertFalse((out / "java/javacardx/crypto/AESCipherProvider.java").exists())
-            self.assertFalse((out / "java/javacardx/crypto/DESCipherProvider.java").exists())
-            self.assertFalse((out / "java/javacardx/crypto/CbcCipherProvider.java").exists())
+
+    def test_base_profile_keeps_only_applet_startup_dependencies(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / "generated"
+            result = self.run_named_profile("base", out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("profile=base", result.stdout)
+            with (out / "jcalgtest-supported.csv").open(newline="") as source:
+                rows = list(csv.reader(source, delimiter=";"))
+            self.assertEqual({tuple(row) for row in rows[1:]}, {
+                ("javacard.security.KeyBuilder", "TYPE_AES LENGTH_AES_128"),
+                ("javacard.security.KeyBuilder", "TYPE_DES LENGTH_DES3_3KEY"),
+                ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
+                ("javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"),
+                ("javacardx.crypto.Cipher", "ALG_DES_CBC_NOPAD"),
+                ("javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)", "CIPHER_AES_CBC PAD_NOPAD"),
+                ("javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)", "CIPHER_DES_CBC PAD_NOPAD"),
+            })
+            self.assertEqual((out / "profile.txt").read_text(), "base\n")
 
     def test_no_aes_config_keeps_des_provider_only(self):
         no_aes = dict(CONFIG)

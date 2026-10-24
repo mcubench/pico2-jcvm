@@ -1,5 +1,52 @@
 # Project issue knowledge base
 
+## JC305 CardException was reported as ISOException through RMI — 2026-10-23
+
+- **Symptom:** RMI calls throwing `CardException` and a `UserException`
+  subclass returned ISOException type `0x23`, instead of their own exception
+  types. Other Java Card framework exception reason fields also needed explicit
+  propagation through the RMI wire response.
+- **Cause:** The ISOException dispatch special-case treated embedded framework
+  export token 18 as ISOException. In this ROM export, token 18 is
+  `CardException`; `ISOException` is token 21. The RMI mapper also continued
+  walking framework exceptions into `java.lang` superclasses without first
+  recognizing the framework type and its inherited reason field.
+- **Viable fix:** Match framework classes by embedded export token before
+  walking to `java.lang`, return their protocol type, and read the 16-bit
+  reason from instance field slot 0. Use token 21 in the ISOException dispatch
+  special-case. Keep JC305 imported-token mapping distinct from embedded export
+  token numbering.
+- **Validation:** ARM and RISC-V builds passed. VPCD passed 35/35 class-form
+  APDUs and 3/3 interface-form APDUs. The official SDK 2.2.1 proxy decoded all
+  seven tested Java Card exceptions as their expected framework classes. On
+  physical D92, all seven exact reason responses passed; cleanup removed the
+  fixture and verified JCAlgTest remained installed. Logs:
+  `artifacts/logs/rmi-array-invoke-vpcd-20261023T085319Z.log`,
+  `artifacts/logs/rmi-client-official-vpcd-emulator-20261023T085436Z.log`,
+  `artifacts/logs/rmi-array-physical-20261023T085737Z.log`.
+- **Limit:** Other Java Card API exception types, unknown/custom framework
+  subclasses, and malformed class hierarchies still need coverage.
+
+## CryptoException reason was not preserved for Java RMI throws — 2026-10-23
+
+- **Symptom:** `javacard.security.CryptoException.throwIt(0x1234)` travels as a
+  Java exception object and cannot be handled by only mapping native
+  `Exceptions::CryptoException` values.
+- **Cause:** `CryptoException` is exported from the separate
+  `javacard.security` package (AID `A0000000620102`), rather than the
+  `javacard.framework` package. Its ROM-mask class view is at class offset 233.
+- **Viable fix:** During the RMI class-hierarchy walk, match the security
+  package's CryptoException class at offset 233, emit wire type `0x30`, and
+  read its inherited 16-bit reason from field slot 0.
+- **Validation:** ARM/RISC-V builds passed. VPCD returned `823012349000`;
+  official SDK 2.2.1 decoded `javacard.security.CryptoException`; physical D92
+  returned the same response and fixture cleanup plus JCAlgTest preservation
+  passed.
+- **Limit:** A custom CryptoException hierarchy with two applet-defined classes
+  before the API parent is covered by an exact-response test. Other
+  security-package exception types and longer inheritance chains remain
+  untested.
+
 ## Fresh host VPCD card-manager state looked preinstalled — 2026-10-22
 
 - **Symptom:** GPPro authenticated and listed a selectable JCAlgTest applet,
@@ -1075,13 +1122,13 @@ fix.
   `MessageDigest.doFinal()`, then the PC/SC reader becomes unavailable during
   subsequent repeated SHA calls. Clean attempts measured roughly 0.72 s for
   the first APDU; the run did not complete the operation.
-- **Status:** Open. Isolated fresh-session SHA-256 prepare/doFinal APDUs passed
-  (`AA9000`). The official physical static client failed again after cleanup
-  and Pico reboot, so stale scanner load is not the only cause. A serial
-  capture after a failed run showed `CHOUPI:WATCHDOG_RECOVERY ... cause=other`
-  and retained diagnostic fields; this alone does not prove a hardware
-  watchdog reset. Investigate APDU/CCID recovery and repeated SHA state on the
-  card. Do not count unsupported algorithms (`NO_SUCH_ALGORITHM`) as failures.
+- **Status:** Resolved for the current firmware/source. The caller-scoped JC305
+  interface-token fix below was built and flashed to Pico
+  `D92E743D5F640C0F`. The official static client completed the SHA-256
+  250-invocation `doFinal` and `update` measurements without reader loss or
+  runtime error. Keep the historical watchdog marker inconclusive: it does not
+  establish a hardware watchdog reset. The complete client catalog remains
+  bounded by a 900-second timeout; unsupported algorithms are expected.
 - **Evidence:** `artifacts/logs/jcalgtest-static-physical-clean-20261017.log`,
   `artifacts/logs/monitor-jcalgtest-static-reset-20261017.log`, and
   `artifacts/results/jcalgtest-static-physical-20261017/`.
@@ -3542,9 +3589,9 @@ fix.
   Keep the usual host USB gating for any actual USB, PC/SC, or physical-token
   operation.
 
-## JCDK 3.0.5 fixture converter omits int RMI signatures — 2026-10-22
+## JCDK 3.0.5 direct CAP output omits int RMI signatures — resolved 2026-10-23
 
-- **Symptom:** Added `int sumInts(int[])` and `int[] echoInts(int[])` to the
+- **Symptom:** Added `short sumInts(int[])` and `int[] echoInts(int[])` to the
   CAP 2.2 RMI fixture and invoked the JCDK converter with `-i`. Conversion
   succeeded and warned that the package requires int support, but the emitted
   `Class.cap` remote-method table omitted both methods. The CAP inspector still
@@ -3554,9 +3601,38 @@ fix.
   int type; the bundled `pro.javacard.ant.JavaCard` task does not expose that
   converter option. A direct converter invocation enabled `-i` but did not
   produce the expected remote signatures.
-- **Use:** Keep int-array RMI marked unverified. Inspect the CAP converter's
-  remote-method metadata generation or generate a valid CAP 2.2 fixture with a
-  toolchain that emits int signatures before adding expected APDU results.
+- **Resolution:** Ask Converter 3.0.5 for JCA only, then assemble that JCA with
+  `com.sun.javacard.jcasm.cap.Main` (`capgen`). The same JCA that produced a CAP
+  without int remote records produces all 18 records through capgen, including
+  `echoInts` hash `a336` signature `dd` and `sumInts` hash `bb6c` signature
+  `d4`. The fixture builder asserts both entries and the total record count.
+
+### Follow-up verification — 2026-10-22
+
+- The fixture builder now invokes Converter 3.0.5 directly with `-i`, because
+  the bundled Ant JavaCard task has no int-support option. The emitted CAP still
+  omits `echoInts(int[])` and `sumInts(int[])` from its remote-method table, even
+  after `sumInts` was changed to return `short` to isolate the array parameter.
+- `./tools/test-rmi-arrays-vpcd` passed through the approved elevated path:
+  23/23 class-form checks and 3/3 interface-form checks. The restricted run
+  failed before VPCD startup with the known loopback `Operation not permitted`
+  error. No USB or physical device access occurred.
+- JCRE 3.1 allows single-dimensional arrays of supported primitive types,
+  including `int[]`, when integer support is enabled. See the [Java Card VM
+  Specification 3.1](https://docs.oracle.com/en/java/javacard/3.1/jc-vm-spec/F12650_05.pdf).
+  A direct `-out CAP JCA` run confirms the generated JCA contains both methods
+  as remote interface methods and marks their `CounterImpl` implementations
+  `.remote`; the generated CAP Class component still has only 16 remote-method
+  records, excluding those two int-array methods. The CAP inspector now scans
+  every remote class entry. The VPCD fixture passes both int[] methods,
+  including 32-bit value round-trip, empty array, null array, and primitive
+  short result. Class-form coverage is 28/28 and interface-form coverage is
+  3/3. The bounded physical test also passes on D92 after current ARM firmware
+  was flashed: SELECT, `sumInts`, signed 32-bit `echoInts`, empty, and null
+  arrays all returned expected responses. It removed its temporary package and
+  verified JCAlgTest still selected. Logs are in
+  `artifacts/logs/rmi-array-physical-20261023T041218Z.log` and the matching
+  `cycle-choupi` / `pico-powerup-persistence` logs.
 
 ## RMI exported object retained through collection — validated 2026-10-22
 
@@ -3736,6 +3812,164 @@ fix.
   install persistence failure. The exact LOAD-assigned package ID must be used
   in the current CLI resume fixture; automatic registry discovery is still open.
 
+## JC305 interface-token remapping corrupted embedded ROM API calls — 2026-10-22
+
+- **Symptom:** AES-128 CBC-NOPAD `Cipher.init()` failed during the official
+  performance test, even though key creation and setting succeeded. Earlier
+  static SHA-256 runs also failed during repeated calls or lost the reader.
+- **Cause:** `bc_invokeinterface()` translated every external interface method
+  token as if the current bytecode came from a JC305 CAP. CHOUPI's own embedded
+  ROM-mask API bytecode already uses its embedded export order, so the extra
+  translation dispatched calls such as `Key.getSize()` to the wrong method.
+- **Viable fix:** Apply imported interface-method remapping only when the
+  caller package is dynamic and uses JC305 compatibility tokens. Keep the
+  package-specific AESKey interface/method maps for uploaded JC305 CAPs.
+- **Validation:** ARM and RISC-V builds passed. On physical Pico
+  `D92E743D5F640C0F`, AES-128 CBC-NOPAD `Cipher_doFinal()` measured
+  8.58 ms/op (250 invocations) and `Cipher.init()` 53.16 ms/op; all APDUs
+  returned `AA9000`. Official SHA-256 measurements were 4.04 ms/op for
+  `doFinal()` and 4.38 ms/op for `update()`, with 250 invocations each. The
+  official static client ran 900 seconds and stopped during RSA variants after
+  538 methods had started; the partial log contained no unexpected performance
+  APDU status or VM exception. A focused AES static probe passed again after
+  the timeout.
+- **Evidence:** `artifacts/logs/jcalgtest-performance-static-after-aes-remap-20261022.log`,
+  `artifacts/logs/jcalgtest-aes-cipher-static-physical-20261022.log`,
+  `artifacts/logs/jcalgtest-sha256-static-physical-20261022.log`, and
+  `artifacts/logs/jcalgtest-aes-cipher-static-post-full-run-physical-20261022.log`.
+
+## Current-source Crypto API deploy outcomes and constructor mapping — 2026-10-22
+
+- **Evidence:** The initial two-reader Crypto run at
+  `artifacts/results/deploy/current-source-two-reader-20261022/pico2.csv`
+  reported 18 `OK`, 444 `UNSUPPORTED_PER_SPEC`, two `SW_ERROR`, one
+  `EXC_CARDRUNTIME`, and one `WRONG_RESULT`.
+- **Viable fix:** JC305 imports `Cipher()` at constructor token 1, while the
+  embedded ROM export places it at token 2. Extending the existing package and
+  class scoped constructor remap fixed `Cipher()` on the freshly flashed D92
+  board: the exact-reader Crypto rerun no longer reports that row. Do not
+  broaden constructor remaps beyond verified package/class pairs.
+- **Open rows:** On the updated D92 board, `Signature()` still returned `6F00`;
+  AES CBC-NOPAD `Cipher.init(Key, mode, IV, offset, length)` surfaced
+  `CryptoException` reason `0x0005` (`ILLEGAL_USE`); empty `Cipher.doFinal`
+  returned zero where the test expected illegal use. The root causes and fixes
+  are recorded in the follow-up entry below.
+- **Updated result:** `artifacts/results/deploy/crypto-ctor-remap-d92-20261022.csv`
+  completed all 466 calls and cleanup: 19 `OK`, 444 `UNSUPPORTED_PER_SPEC`,
+  one `SW_ERROR`, one `EXC_CARDRUNTIME`, one `WRONG_RESULT`. SHA-256:
+  `780f91b12d90f815dc6840a6af8857e859598ea2543a2f1a7a49b4acd1b0d2e`.
+- **Related classification:** Security `Key.isInitialized()` wrong-result rows
+  follow failed transient AES-key construction and remain unsupported-feature
+  fallout, as documented above.
+- **Reader note:** Three firmware-running boards were USB visible and passed
+  serial checks, but SmartcardIO exposed two readers after ACL refresh, and
+  later only one. Avoid `pcsc_scan`; use the runner's SmartcardIO discovery.
+
+## Host USB helper rejected by restricted execution context — 2026-10-22
+
+- **Symptom:** Running the authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader`
+  helper from the default restricted command context failed with
+  `sudo: The "no new privileges" flag is set`.
+- **Viable solution:** Invoke USB/PCSC work through the approved elevated host
+  execution path from its first attempt. For repository wrappers include
+  `PICO2_HOST_USB_ACCESS=1`; for the helper itself, request elevated execution.
+  The helper then granted access to three USB nodes. Do not retry USB/PCSC from
+  the restricted context.
+
+## JC305 Signature virtual dispatch used the wrong embedded method — 2026-10-22
+
+- **Symptom:** The JCAlgTest 1.8.2 Crypto probe created a subclass of imported `javacard.security.Signature`, overrode `getAlgorithm()` to return a marker, then got `6F00` when calling it through a Signature reference.
+- **Cause:** JC305's exported Signature method tokens differ from CHOUPI's embedded API method order. The imported `getAlgorithm()` token resolved to a different embedded virtual method, despite constructor dispatch being corrected.
+- **Viable fix:** For the JC305 Security package AID and imported class token 15, translate the full verified virtual-method token table before resolving both ROM implementations and dynamic applet overrides. Keep the remap scoped to this package/class pair.
+- **Validation:** ARM and RISC-V builds passed; ARM was flashed to Pico `D92E743D5F640C0F`. A 20-second bounded serial monitor passed 20/20 runtime checks. The exact-reader Crypto area completed 466 calls and cleanup; the `Signature()` SW_ERROR disappeared. CSV: `artifacts/results/deploy/crypto-signature-vmap-d92-20261022.csv`.
+- **Remaining:** This does not resolve or characterize the separate AES IV-init card-runtime exception or zero-length `doFinal` result. No general Signature algorithms were implemented here.
+
+## JC305 CBC Cipher update must buffer partial blocks — 2026-10-22
+
+- **Symptom:** The AES CBC-NOPAD IV known-answer test returned
+  `CryptoException` reason `0x0005`. The earlier entry incorrectly called this
+  `ILLEGAL_VALUE`; in this API `CryptoException.ILLEGAL_USE` is reason 5.
+- **Cause:** The CAP supplied 32 bytes as a 20-byte `update()` followed by a
+  12-byte `doFinal()`. `SoftwareCipher.update()` required every call to be
+  block aligned and rejected the 20-byte chunk. Java Card permits partial input
+  in `update()` and requires `doFinal()` to complete the buffered block.
+- **Viable fix:** Buffer the trailing partial block, process complete blocks
+  during `update()`, and chain CBC IV state across calls. Let `doFinal()` join
+  the pending bytes with final input, reject a nonaligned final message, and
+  reset the cipher state after success. Preserve the allocation-free path for
+  already aligned input; allocating a temporary array for each aligned
+  `doFinal()` caused the 50-call static measurement to return `6400`. The
+  optimized aligned path passes the same measurement.
+- **Related semantic fix:** JC305 Cipher API documentation requires
+  `CryptoException.ILLEGAL_USE` when `doFinal()` receives no input and no data
+  has been supplied with `update()`. The old implementation returned zero.
+- **Validation:** Both architecture wrappers passed. ARM firmware was flashed
+  and verified on D92 `D92E743D5F640C0F`; the bounded runtime monitor passed.
+  The physical Crypto area completed 466 calls and cleanup with 22 `OK`, 444
+  `UNSUPPORTED_PER_SPEC`, and zero unexpected rows. The AES 50-call static
+  probe returned `AA9000` and `TEST:PASS`; final measurement APDU elapsed
+  4,114 ms (the five zero-repeat baselines were 1,229–1,250 ms each).
+- **Limit:** Full `ALG_PERFORMANCE_STATIC` was not rerun. PC/SC discovery
+  fluctuated between D92 and 2BED; the authorized reader helper restored both
+  readers before the final successful probes. Other cipher algorithms remain
+  intentionally unsupported.
+- **Artifacts:** Final Crypto CSV
+  `artifacts/results/deploy/crypto-stream-final-d92-20261022.csv`, SHA-256
+  `467e3c71f26c2a5a927c7e33e34766893899083e34668802d9df6198fd4f3683`;
+  successful static transcript
+  `artifacts/logs/aes-cipher-static-after-streaming-fix-retry-20261022.log`.
+
+## Physical JC305 Security follow-up rows depend on unsupported transient AES keys — 2026-10-22
+
+- **Observation:** Current-source Security run on D92 completed all 901 rows: 77 `OK`, 820 `UNSUPPORTED_PER_SPEC`, two skipped RSA-2048 keypair-generation cases, and two `WRONG_RESULT` `Key.isInitialized()` follow-ups.
+- **Cause:** The paired `KeyBuilder.buildKey()` calls for `TYPE_AES_TRANSIENT_DESELECT` and `TYPE_AES_TRANSIENT_RESET` all returned `NO_SUCH_ALGORITHM` (CryptoException reason 3). The later initialization checks therefore had no successfully created transient key to inspect.
+- **Classification:** Retain these as unsupported-feature fallout; this run provides no reproduction of transient-key clearing failure. Do not implement transient storage or additional crypto algorithms solely to reduce result counts.
+- **Related current-source hardware coverage:** Core completed 291 rows on 2BED (272 OK, 15 expected unsupported, four Ext applet methods unavailable after optional INSTALL returned `6A88` and rollback passed). Crypto completed 466 rows on D92 (22 OK, 444 expected unsupported, zero unexpected statuses). All area cleanup stages completed except the optional Ext install refusal, whose rollback succeeded.
+- **Artifacts:** `artifacts/results/deploy/current-source-sec-core-post-cipher-20261022/` and `artifacts/results/deploy/crypto-stream-final-d92-20261022.csv`.
+
+- **In-place CBC decrypt follow-up:** When input and output are the same array,
+  the native CBC routine can overwrite the last ciphertext block with plaintext.
+  Save that input block before the native call and use it as the next IV. The
+  final implementation was rebuilt for ARM/RISC-V, flashed to D92 and 2BED,
+  and passed a final 466-call physical Crypto run plus the AES 50-call static
+  probe. Final CSV SHA-256:
+  `aeafc4fddf95e785c062db87528ba2b090ce1ef1a7605da64828aef81741d4df`.
+
+## Transitive custom exception RMI mapping — 2026-10-23
+
+- **Observation:** Custom runtime and checked exceptions, each with one
+  applet-defined intermediate superclass, were returned over RMI as CAP 2.2
+  exception responses.
+- **Result:** Current-source VPCD retained the nearest API exception mapping:
+  runtime encoded as `830900009000` (`RuntimeException`) and checked as
+  `830500009000` (`Exception`). The existing superclass traversal handles
+  this depth for both branches.
+- **Validation:** `./tools/build-rmi-array-fixture` passed;
+  `./tools/test-rmi-arrays-vpcd` passed 28/28 class-form and 3/3
+  interface-form checks.
+- **Limit:** Longer inheritance chains, malformed hierarchy metadata, and
+  complete API reason-code coverage remain unverified. No hardware was used.
+
+## Preserve SystemException reasons in Java Card RMI — 2026-10-23
+
+- **Symptom:** An applet calling `SystemException.throwIt(0x1234)` returned
+  RMI exception type `java.lang.RuntimeException` with reason zero instead of
+  Java Card `SystemException` and its reason.
+- **Cause:** The RMI exception walk only recognized `java.lang` exception
+  classes. JC305 framework token 13 for `SystemException` maps to embedded
+  token 22. Its inherited reason is instance field slot 0.
+- **Viable fix:** Recognize the framework `SystemException` class by embedded
+  token 22 before continuing to `RuntimeException`, then read its reason from
+  field slot 0.
+- **Validation:** ARM/RISC-V builds passed. VPCD passed 29/29 class-form and
+  3/3 interface-form checks. Physical D92 returned exact `822512349000` after
+  the CHOUPI image was flashed; fixture cleanup and JCAlgTest preservation
+  passed.
+- **Limit:** Reason extraction was added for SystemException; other Java Card
+  API exception classes still need equivalent coverage. Use
+  `./tools/cycle choupi --serial <serial>` to flash the VM; `cycle arm` flashes
+  the smoke image.
+
 ## Service Dispatcher returns SW=6400 only on one physical token — 2026-10-23
 
 - **Symptom:** API 3.0.5 Service tests return 12 `SW_ERROR`/`CARD_ERROR` results (`SW=6400`) on Pico serial `D92E743D5F640C0F`; all 12 are `javacard.framework.service.Dispatcher` calls (`addService`, `removeService`, `dispatch`, `process`).
@@ -3767,6 +4001,16 @@ fix.
 - **Viable fix:** None known.
 - **Artifacts:** `artifacts/results/deploy/full-305-2BED26ED20556535-20261023.csv` and `artifacts/results/deploy/full-305-D92E743D5F640C0F-20261023.csv`.
 
+## JCAlgTest 1.8.2 cannot pass initialization in capability profiles — 2026-10-23
+
+- **Observation:** On Pico 2 serial `2BED26ED20556535`, exact-reader SELECT returns `9000`; GETVERSION on the all-enabled image returns `F103`, and on the 0/15 minimal image returns `6F00`. The same supplied `AlgTest_v1.8.2_jc305.cap` was freshly installed on the token. Both images pass finite runtime monitoring, so this is an applet initialization issue rather than a firmware boot failure.
+- **Impact:** Neither profile produced a valid `ALG_SUPPORT_EXTENDED` CSV. AES/SHA-256 profile differences remain unverified; the earlier partial minimal CSV contains errors and must not be compared to the expected profile CSV.
+- **Investigation:** JC305 and embedded security class exports have different class token assignments. The JC305 class map was corrected by matching names. Imported static-field resolution was extended to all primitive/reference static bytecodes. ARM and RISC-V builds passed; a fresh all-enabled hardware probe still returns `F103` (CryptoException reason 3 / `NO_SUCH_ALGORITHM`), so this is not yet the complete root cause. Minimal remains `6F00`.
+- **Viable fix:** None established. Do not infer the exact failing constructor/provider from the `F103` alone.
+- **Next:** Isolate delayed-allocation constructor stages or test imported security constant/method resolution with a small diagnostic CAP; then rerun current and minimal reports on the same exact reader and compare generated CSVs only after successful GETVERSION.
+- **Artifacts:** `artifacts/results/jcalgtest-capability-profile-20261023/physical-comparison.md` and its linked logs.
+
+
 ## Minimal JCAlgTest 6F00 caused by stale JC305 API class-token mappings — 2026-10-23
 
 - **Symptom:** With the 0/15 optional-capability profile, JCAlgTest package SELECT returned `9000` but GETVERSION returned `6F00` after a Java `CryptoException.NO_SUCH_ALGORITHM`.
@@ -3775,3 +4019,41 @@ fix.
 - **Remaining issue:** `F103` is still an applet initialization failure, not a valid support report. `AlgStorageTest` eagerly requests AES and DES ciphers/keys in its constructor, even when those Java Card capabilities are intentionally disabled.
 - **Next:** Make the JCAlgTest fixture’s eager allocations capability-tolerant (without advertising absent algorithms), then rerun complete 0/15 and 15/15 reports.
 - **Artifacts:** Session hardware output; all-enabled monitor `artifacts/logs/minimal-exception-translation-monitor-20261023.log` (ignored).
+
+## JCAlgTest base/current support profiles on Pico 2 — 2026-10-24
+
+- **Observation:** On physical Pico D92 (`D92E743D5F640C0F`), the base profile
+  completed the full JCAlgTest 1.8.2 extended support run with 4,525 result
+  rows, 10 `yes`, 4,515 `no`, and zero other row statuses. Current completed
+  the same run on the same token with 15 `yes`, 4,510 `no`, and zero other
+  statuses. Both generated-support comparisons passed.
+- **Cause/fix for the first seven-capability profile:** With OwnerPINBuilder
+  variants disabled, `OwnerPINBuilderProvider` correctly throws the documented
+  `SystemException.ILLEGAL_USE`. JCAlgTest's support probe catches only
+  `CryptoException`, so it wrote exception strings instead of `no` for those
+  three rows. The final base profile enables the three PIN providers so the
+  official report is strictly yes/no. It remains five capabilities smaller
+  than current: AES-192, AES-256, DES, DES3-2KEY, and SHA-256 are no.
+- **Cause/fix for duplicate CAP LOAD:** D92 already held package AID
+  `4A43416C6754657374` in persistent storage. LOAD block sequence and lengths
+  were valid; `finishLoad()` rejected the duplicate package, but the CCID
+  handler fell through to its generic `6D00` unsupported-instruction response.
+  The E8 failure path now checks APDU data bounds and returns `6A80`. A physical
+  duplicate LOAD returned `6A80`, and a follow-up GPPro LIST plus JCAlgTest
+  SELECT/GETVERSION/JCSystem probe confirmed the existing package remained
+  available.
+- **Shared JCSystem behavior:** Before every row, JCAlgTest sends `B0 E2` to
+  reset its cached objects. The applet calls `JCSystem.requestObjectDeletion()`
+  without catching its exception. The VM reports deletion unsupported and
+  correctly throws `SystemException.ILLEGAL_USE`; the uncaught applet exception
+  maps to `6F00`. This occurred 4,525 times per profile and did not change the
+  following support result. The profile comparator checks result rows, not
+  those reset-control APDUs. Revisit if JCAlgTest's reset behavior must also
+  return `9000`.
+- **Viable solutions:** Keep the three PIN capabilities enabled in `base` for
+  strict report validity; reject duplicate package LOAD with a data error; do
+  not count the documented unsupported-object-deletion exception as an
+  algorithm support result.
+- **Artifacts:** `artifacts/results/jcalgtest-profile-comparison-20261024.md`,
+  base/current result CSVs under `artifacts/results/jcalgtest-profile-*-20261024/`,
+  `artifacts/logs/base10-monitor-20261024.log`, and `/tmp/duplicate-load-base10.log`.

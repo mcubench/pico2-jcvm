@@ -32,6 +32,7 @@
 
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
 
 #ifndef PC_VERSION
 extern "C" void choupi_install_stage(uint8_t stage);
@@ -114,6 +115,23 @@ Class_Handler::docheckcast(const std::pair<Package, const uint8_t *> jtype_in,
     noexcept
 #endif
 {
+  const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
+  const bool trace_types = trace_setting != nullptr &&
+                           std::strcmp(trace_setting, "1") == 0;
+  if (trace_types) {
+    std::fprintf(stderr,
+                 "CHOUPI:CLASS_CAST_TYPES in_package=%u in_ptr=%p in_flags=%u "
+                 "in_kind=%u out_package=%u out_ptr=%p out_flags=%u "
+                 "out_kind=%u\n",
+                 static_cast<unsigned>(jtype_in.first.getPackageID()),
+                 static_cast<const void *>(jtype_in.second),
+                 static_cast<unsigned>(*jtype_in.second),
+                 IS_INTERFACE(jtype_in.second) ? 1u : 0u,
+                 static_cast<unsigned>(jtype_out.first.getPackageID()),
+                 static_cast<const void *>(jtype_out.second),
+                 static_cast<unsigned>(*jtype_out.second),
+                 IS_INTERFACE(jtype_out.second) ? 1u : 0u);
+  }
   // case 1: type_in is a class type
   if (IS_CLASS(jtype_in.second)) {
     auto jclass_in = std::make_pair(
@@ -143,17 +161,99 @@ Class_Handler::docheckcast(const std::pair<Package, const uint8_t *> jtype_in,
     }
     // case 1.2: type_out is an interface type
     else {
+      const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
+      const bool trace_interfaces = trace_setting != nullptr &&
+                                    std::strcmp(trace_setting, "1") == 0;
       if (jclass_in.second->interface_count == 0) {
         return FALSE;
       }
 
       for (uint8_t i = 0; i < jclass_in.second->interface_count; ++i) {
+        if (trace_interfaces) {
+          std::fprintf(stderr,
+                       "CHOUPI:INTERFACE_ENTRY package=%u index=%u count=%u\n",
+                       static_cast<unsigned>(jclass_in.first.getPackageID()),
+                       static_cast<unsigned>(i),
+                       static_cast<unsigned>(jclass_in.second->interface_count));
+        }
         auto implemented_interface = jclass_in.second->interfaces(i);
         ConstantPool_Handler cp(jclass_in.first);
-
-        if (Class_Handler::checkInterfaceCast(
-                cp.resolveClassref(implemented_interface.interface, true),
-                jtype_out) == TRUE) {
+        std::pair<Package, const uint8_t *> resolved_interface(
+            jclass_in.first, static_cast<const uint8_t *>(nullptr));
+        try {
+          resolved_interface =
+              cp.resolveClassref(implemented_interface.interface, true);
+          if (trace_interfaces) {
+            std::fprintf(stderr,
+                         "CHOUPI:INTERFACE_RESOLVED index=%u package=%u "
+                         "kind=%u ptr=%p\n",
+                         static_cast<unsigned>(i),
+                         static_cast<unsigned>(resolved_interface.first.getPackageID()),
+                         IS_INTERFACE(resolved_interface.second) ? 1u : 0u,
+                         static_cast<const void *>(resolved_interface.second));
+          }
+        } catch (Exceptions exception) {
+          if (trace_interfaces) {
+            const auto interface_ref = implemented_interface.interface;
+            std::fprintf(stderr,
+                         "CHOUPI:INTERFACE_RESOLVE_EXCEPTION package=%u "
+                         "entry=%u external=%u package_token=%u "
+                         "class_token=%u internal_token=%u code=%u\n",
+                         static_cast<unsigned>(jclass_in.first.getPackageID()),
+                         static_cast<unsigned>(i),
+                         interface_ref.isExternalClassRef() ? 1u : 0u,
+                         interface_ref.isExternalClassRef()
+                             ? static_cast<unsigned>(interface_ref.external_classref.package_token)
+                             : 0u,
+                         interface_ref.isExternalClassRef()
+                             ? static_cast<unsigned>(interface_ref.external_classref.class_token)
+                             : 0u,
+                         interface_ref.isExternalClassRef()
+                             ? 0u
+                             : static_cast<unsigned>(interface_ref.internal_classref),
+                         static_cast<unsigned>(exception));
+          }
+          throw;
+        }
+        bool matches = false;
+        try {
+          matches = Class_Handler::checkInterfaceCast(
+                        resolved_interface, jtype_out) == TRUE;
+        } catch (Exceptions exception) {
+          if (trace_interfaces) {
+            std::fprintf(stderr,
+                         "CHOUPI:INTERFACE_CHECK_EXCEPTION in_package=%u "
+                         "interface_ptr=%p interface_kind=%u "
+                         "target_package=%u target_ptr=%p target_kind=%u "
+                         "code=%u\n",
+                         static_cast<unsigned>(
+                             resolved_interface.first.getPackageID()),
+                         static_cast<const void *>(resolved_interface.second),
+                         IS_INTERFACE(resolved_interface.second) ? 1u : 0u,
+                         static_cast<unsigned>(jtype_out.first.getPackageID()),
+                         static_cast<const void *>(jtype_out.second),
+                         IS_INTERFACE(jtype_out.second) ? 1u : 0u,
+                         static_cast<unsigned>(exception));
+          }
+          throw;
+        }
+        if (trace_interfaces) {
+          std::fprintf(stderr,
+                       "CHOUPI:INTERFACE_CHECK in_package=%u in_class_ptr=%p "
+                       "interface_package=%u interface_ptr=%p interface_kind=%u "
+                       "target_package=%u target_ptr=%p target_kind=%u "
+                       "matches=%u\n",
+                       static_cast<unsigned>(jclass_in.first.getPackageID()),
+                       static_cast<const void *>(jclass_in.second),
+                       static_cast<unsigned>(resolved_interface.first.getPackageID()),
+                       static_cast<const void *>(resolved_interface.second),
+                       IS_INTERFACE(resolved_interface.second) ? 1u : 0u,
+                       static_cast<unsigned>(jtype_out.first.getPackageID()),
+                       static_cast<const void *>(jtype_out.second),
+                       IS_INTERFACE(jtype_out.second) ? 1u : 0u,
+                       matches ? 1u : 0u);
+        }
+        if (matches) {
           return TRUE;
         }
       }
