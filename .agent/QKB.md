@@ -4300,3 +4300,42 @@ fix.
   `asymm_crypto`; the symmetric ARM build no longer schedules RSA key code.
 - **Artifacts:** `/tmp/build-arm-symm-final.log`,
   `/tmp/build-arm-asymm.log`, and `/tmp/build-riscv-asymm.log`.
+
+## Stale persistent child tags block package deletion and reinstall — 2026-10-24
+
+- **Symptom:** On Pico `D92E743D5F640C0F`, GPPro package DELETE returned
+  `6581`. The overlay contained 4,775 records and 65,535/65,536 bytes; an
+  earlier JCAlgTest install had failed while writing a static array.
+- **Cause:** Older cleanup tombstoned parent tags before their compressed child
+  records. A child still existed in the overlay, but ordinary `find_overlay`
+  could no longer resolve it through its deleted parent. Reconstructing the
+  child's full tag and passing it back through `fs_erase` therefore failed.
+  Near capacity, deleting a small record first could also fail before a larger
+  payload had freed space.
+- **Viable solution:** Enumerate matching live records from their stored tag
+  encodings, erase by overlay slot while preserving the encoded key bytes,
+  process deeper tags before parents, and reclaim larger payloads before small
+  records. Keep the regression tests for an orphan child and a nearly-full
+  overlay. After applying this firmware, GPPro DELETE succeeded; `--list`
+  showed only the ISD, and unchanged upstream JCAlgTest v1.8.2 LOAD/INSTALL
+  returned `9000`.
+- **Validation:** `./tools/test-rp2350-fs-overlay` ended with
+  `TEST:SUMMARY fail=0`; physical post-install `--list` reported the applet as
+  `SELECTABLE`. Commits: `f771800`, `986b277`.
+- **Artifacts:** `artifacts/logs/gppro-empty-install-physical-20261024.log`,
+  `artifacts/logs/monitor-empty-firmware-physical-20261024.log`.
+
+## BOOTSEL ROM drops Pico runtime serial — 2026-10-24
+
+- **Symptom:** `picotool --ser D92E743D5F640C0F` reports no accessible device
+  after BOOTSEL enumeration (`2e8a:000f`); the ROM bootloader exposes no
+  runtime USB serial and has no CDC port.
+- **Cause:** Flashing code kept selecting by runtime serial after reset.
+- **Viable solution:** Capture the device's stable Linux sysfs USB port path
+  while it has the serial. After 1200-baud CDC reset, verify the same port and
+  select BOOTSEL with picotool `--bus`/`--address`. For a board already in
+  BOOTSEL, proceed only if exactly one BOOTSEL Pico is visible. USB operations
+  still require the elevated host-access execution path.
+- **Validation:** The updated flasher recovered this board, verified the
+  `pico2_choupi.uf2` write, and the final finite monitor passed.
+- **Commit:** `986b277`.

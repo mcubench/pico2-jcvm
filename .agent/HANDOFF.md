@@ -9547,3 +9547,45 @@ confirmed on hardware. The original investigation evidence remains in earlier
   paused; its uncommitted in-progress source changes are preserved in the
   worktree and must not be treated as validated or packaged.
 - Documentation/package commit: `31220622add7c273ccd27beda7afbdb72d1dc577`.
+
+## Current card state and empty-image install validation — 2026-10-24
+
+- User requested a CHOUPI image with no preinstalled JCAlgTest, then an install
+  using GPPro and the unchanged upstream `AlgTest_v1.8.2_jc305.cap`.
+- Fixed overlay cleanup. Older code had deleted parent tags before nested
+  children, leaving inaccessible child records that eventually filled the
+  65,536-byte persistent overlay. `fs_erase_prefix` now reconstructs stored
+  child paths and tombstones their original encoded slots; it deletes deepest
+  tags first and reclaims larger payloads first. Regression tests cover stale
+  child tags and a full overlay.
+- Fixed BOOTSEL flashing selection. Runtime PCSC/CDC is serial-addressable, but
+  RP2350 BOOTSEL `2e8a:000f` loses that serial. `tools/flash` pins the stable
+  sysfs USB port and switches to bus/address picotool selection after ROM
+  re-enumeration. A direct BOOTSEL target is accepted only if unique.
+- Physical board: `D92E743D5F640C0F`. The final ARM current-profile firmware is
+  `build/arm/pico2_choupi.uf2`, size 1,665,024 bytes, SHA-256
+  `43af89578ec5612643b75a8460c4743ef520bf6938d4659dccb443ef5ed166a8`.
+  This is a firmware image without a baked-in JCAlgTest CAP.
+- Card state now has the upstream JCAlgTest package installed. GPPro first
+  deleted the stale package; `--list` showed only ISD. GPPro
+  `--install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` then completed both
+  LOAD and INSTALL with `9000`. The CAP SHA-256 remains
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+  The final GPPro list reports applet `4A43416C675465737431` as `SELECTABLE`,
+  including after the final firmware flash.
+- Validation: filesystem overlay test passes (`TEST:SUMMARY fail=0`); PC,
+  ARM, and RISC-V builds pass. Final physical monitor passes
+  `TEST:SUMMARY pass=1 fail=0`. PC/SC sees the card after the approved helper.
+  GPPro transcript: `artifacts/logs/gppro-empty-install-physical-20261024.log`;
+  final monitor: `artifacts/logs/monitor-empty-firmware-physical-20261024.log`.
+- Reader naming: USB strings now identify `Pico2 JCVM CCID` and interface
+  `JCVM CCID`. This VM's PC/SC stack still prefixes the reader with its model
+  alias: `Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00`. Use this
+  exact name for Linux GPPro commands. Windows reader naming was not tested.
+- Commits: storage fix `f771800`; reader/flash workflow `986b277`.
+- Preserve other uncommitted changes, especially asymmetric RSA signature
+  work, support configuration, docs, and captured ALGTEST output. Do not stage
+  them while committing unrelated work.
+- Next: run the requested standard JCAlgTest client if continuing physical
+  functional testing. The applet has not been exercised with a full client run
+  as part of this empty-image/install validation.

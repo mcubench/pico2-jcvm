@@ -11192,3 +11192,52 @@
 - Decision: Give the package and `docs/symm-crypto-windows-test.md` to the user for Windows flashing and PC/SC validation; resume asymmetric development only when requested.
 - Commit: `31220622add7c273ccd27beda7afbdb72d1dc577`.
 - Artifacts/logs: `build/external-test/symm-crypto-windows-test.zip`, `build/external-test/symm-only-package/SHA256SUMS.txt`, `docs/symm-crypto-windows-test.md`.
+
+## 2026-10-24 — Recover stale package storage and install upstream JCAlgTest
+
+- Step/experiment: `empty-current-firmware-gppro-install-d92`
+- Change: Fixed persistent prefix deletion for child records whose parent tags
+  were already tombstoned by older firmware. Cleanup now reconstructs and
+  tombstones the child from its saved encoded key, deletes descendants before
+  parents, and frees larger payload records first when the overlay is full.
+  Added regression coverage for stale child tags and a 65,525/65,536-byte
+  overlay. The BOOTSEL flasher now follows the identified physical USB port and
+  uses bus/address selection after ROM drops the runtime serial.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with
+  `TEST:SUMMARY fail=0`; `./tools/build-pc`, ARM and RISC-V wrappers passed.
+  On Pico `D92E743D5F640C0F`, GPPro removed the stale package, `--list` showed
+  only the ISD, and `--install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`
+  completed LOAD and INSTALL with `9000`. The final post-flash GPPro list still
+  showed applet `4A43416C675465737431` as `SELECTABLE`; the 8-second monitor
+  passed with `TEST:SUMMARY pass=1 fail=0`. `git diff --check` and script syntax
+  checks passed.
+- Result: The `6581` delete failure came from orphaned compressed child tags
+  that lookup could no longer resolve through previously deleted parents.
+  The firmware image contains no preinstalled JCAlgTest applet; the card now
+  has the unchanged upstream CAP installed through GPPro.
+- Decision: Keep the upstream CAP unchanged. Run the official JCAlgTest client
+  against the installed applet when continuing its functional validation.
+- Commit: `f771800` (storage fix), `986b277` (reader/flash workflow).
+- Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2`, 1,665,024 bytes, SHA-256
+  `43af89578ec5612643b75a8460c4743ef520bf6938d4659dccb443ef5ed166a8`;
+  upstream CAP SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`;
+  GPPro transcript `artifacts/logs/gppro-empty-install-physical-20261024.log`;
+  final monitor `artifacts/logs/monitor-empty-firmware-physical-20261024.log`.
+
+## 2026-10-24 — Record current PC/SC alias behavior
+
+- Step/experiment: `jcvm-ccid-descriptor-physical-name`
+- Change: USB manufacturer/product/interface strings now identify `Pico2`,
+  `Pico2 JCVM CCID`, and `JCVM CCID`; repository reader matching accepts the
+  interface label across both Windows and this VM's PC/SC naming.
+- Validation: Physical `lsusb` descriptors and `pcsc_scan -r` were inspected
+  after final flashing. The current VM reports
+  `Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00`.
+- Result: The firmware product/interface strings are updated, while this
+  Linux PC/SC driver's model prefix remains `Pico 2 CHOUPI CCID`.
+- Decision: Use the exact observed PC/SC name in Linux commands; use the USB
+  product label shown by Windows on that external host. No host driver files
+  outside the repository were changed.
+- Commit: `986b277`.
+- Artifacts/logs: `artifacts/logs/monitor-empty-firmware-physical-20261024.log`.
