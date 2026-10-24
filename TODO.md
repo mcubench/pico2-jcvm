@@ -11,6 +11,18 @@ stale. This section is the current source of truth for open work. Missing
 algorithms and JCAlgTest `NO_SUCH_ALGORITHM` results are expected unless CHOUPI
 claims to support them; implementing every algorithm is not a goal.
 
+### Priority 0 — native Java Card API runtime boundary
+
+- [ ] Remove Java implementation bytecode from firmware ROM-mask output. The
+  current `tools/build-pc` / `choupi/CMakeLists.txt` path compiles Java Card
+  API `.java` sources into `.class` files and feeds those classes to the ROM
+  mask generator. The firmware has no `.java`/`.class` files under
+  `choupi/src`, but the generated ROM mask still contains Java-derived API
+  bytecode. Replace those implementations with native C++ API dispatch while
+  leaving installed CAP applets as the only Java Card application bytecode.
+  Do not add provider/adapter implementations in Java. Verify the final ARM
+  image and ROM mask contain no API implementation bytecode.
+
 ### Priority 1 — selectable Java Card firmware capabilities
 
 Make `config/javacard-support.json` the only user-edited capability selection

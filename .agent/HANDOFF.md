@@ -77,6 +77,23 @@
 
 # Handoff
 
+## Runtime boundary finding — 2026-10-24
+
+- The firmware native-source directory `choupi/src` contains zero `.java` or
+  `.class` files. However, the Pico build compiles Java Card API `.java`
+  sources into `.class` files, then ROM-mask generation packages Java-derived
+  API bytecode into `build/choupi-arm/flash` (and corresponding architecture
+  outputs). This was confirmed from `choupi/CMakeLists.txt` and
+  `tools/build-pc`; the existing PC build has 170 API `.class` outputs.
+- User's runtime boundary requires native C++ Java Card API dispatch and no
+  Java provider/adapter implementations in firmware. This means the current
+  API ROM-mask path is an architectural issue to resolve before accepting more
+  asymmetric Java-provider work. Root `TODO.md` now tracks this as Priority 0.
+- Do not treat the earlier RSA cipher/signature Java provider results as
+  compliant with that requirement. Preserve the native C++ primitives and
+  existing physical evidence, but route the API calls natively before further
+  profile acceptance. No CAP file was changed.
+
 ## Asymmetric crypto profile — SHA provider groundwork — 2026-10-24
 
 - User request: create `asymm_crypto` matching asymmetric support in

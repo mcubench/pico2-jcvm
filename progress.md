@@ -10935,3 +10935,23 @@
   `artifacts/logs/cycle-choupi-20261024T152252Z.log`,
   `artifacts/logs/cycle-choupi-20261024T152710Z.log`,
   `build/symm-crypto-probe/asymm-physical-vectors.tsv`.
+## 2026-10-24 — Identify Java-derived API bytecode in ROM mask
+
+- Step/experiment: `runtime-boundary-audit`
+- Change: Recorded a Priority 0 TODO and handoff finding. The firmware C++ source
+  tree has no `.java`/`.class` files, but the build compiles Java Card API
+  sources and packages their Java-derived bytecode into the ROM mask. The
+  required native-only API dispatch remains unimplemented.
+- Validation: Read-only inspection of `choupi/CMakeLists.txt`, `tools/build-pc`,
+  `tools/javacard-support.py`, and generated `build/choupi-pc/javacard-api`;
+  confirmed 170 `.class` outputs. No build or hardware test was run.
+- Result: The prior statement that no Java code exists under `choupi/src` is
+  accurate, but the generated ROM mask contains Java Card API bytecode. This
+  does not meet the user's requirement to keep application bytecode in CAPs
+  and implement Java Card API behavior natively.
+- Decision: Resolve the ROM-mask/API runtime boundary before considering the
+  asymmetric Java-provider implementation compliant. Preserve existing CAPs
+  and the measured native RSA primitives.
+- Commit: pending
+- Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`; no logs
+
