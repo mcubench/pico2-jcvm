@@ -126,9 +126,7 @@
 - Current ARM image SHA-256 is
   `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`
   (1,675,264 bytes). ARM and RISC-V `symm_crypto` build wrappers passed.
-- Separate issue to continue offline: the asymmetric VPCD vectors now fail at
-  the first applet APDU with `6F00` (`exception=29`, opcode `93`, PC
-  `C4AE2C6B`). Do not attribute this to the persistent-card state issue.
+- Asymmetric implementation remains paused as previously requested.
 
 ## Runtime format correction — 2026-10-24
 

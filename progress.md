@@ -11261,6 +11261,6 @@
 - Decision: Before the next physical install, remove applet AID
   `4A43416C675465737431`, then package AID `4A43416C6754657374`, and verify
   `gp --list` lists only the ISD. Keep the upstream CAP unchanged.
-- Commit: pending.
+- Commit: `7cd29e9`.
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261024T212248Z/`;
   ARM UF2 SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
