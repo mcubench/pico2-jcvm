@@ -48,7 +48,7 @@ class LibUSB:
         )
         if not self.handle:
             self.close()
-            raise RuntimeError("Pico 2 CHOUPI CCID (2E8A:0009) not found")
+            raise RuntimeError("Pico2 JCVM CCID (2E8A:0009) not found")
         self.lib.libusb_claim_interface.argtypes = [ctypes.c_void_p, ctypes.c_int]
         self.lib.libusb_claim_interface.restype = ctypes.c_int
         self._check(

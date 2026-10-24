@@ -22,7 +22,7 @@ for device in /sys/bus/usb/devices/*; do
 done
 
 if (( ${#matches[@]} == 0 || ${#matches[@]} > 3 )); then
-  printf 'Expected 1 to 3 Pico 2 CHOUPI CCID devices (2e8a:0009); found %s.\n' \
+  printf 'Expected 1 to 3 Pico2 JCVM CCID devices (2e8a:0009); found %s.\n' \
     "${#matches[@]}" >&2
   exit 1
 fi

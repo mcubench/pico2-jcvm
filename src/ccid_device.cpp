@@ -944,8 +944,8 @@ extern "C" const uint16_t *tud_descriptor_string_cb(uint8_t index,
     descriptor[2] = 0x0409;
     return descriptor;
   }
-  if (index == 1) value = "Raspberry Pi";
-  if (index == 2) value = "Pico 2 CHOUPI CCID";
+  if (index == 1) value = "Pico2";
+  if (index == 2) value = "Pico2 JCVM CCID";
   if (index == 3) {
     if (serial[0] == '\0') {
       pico_get_unique_board_id_string(serial, sizeof(serial));
@@ -953,7 +953,7 @@ extern "C" const uint16_t *tud_descriptor_string_cb(uint8_t index,
     value = serial;
   }
   if (index == 4) value = "CHOUPI CDC";
-  if (index == 5) value = "JCAlgTest CCID";
+  if (index == 5) value = "JCVM CCID";
   if (value == nullptr) return nullptr;
   size_t length = std::strlen(value);
   if (length > 31) length = 31;

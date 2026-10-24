@@ -31,7 +31,7 @@ def reader_names(java, javac):
     found = []
     for line in result.stdout.splitlines():
         index, sep, name = line.partition("\t")
-        if sep and "Pico 2 CHOUPI CCID" in name:
+        if sep and "JCVM CCID" in name:
             found.append((int(index), name))
     if len({name for _, name in found}) != len(found):
         raise SystemExit("PC/SC returned duplicate Pico reader names; refusing ambiguous routing")

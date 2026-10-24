@@ -18,7 +18,7 @@ apdu_timeout="${PICO2_APDU_TIMEOUT_SECONDS:-20}"
 [[ "${apdu_timeout}" =~ ^[1-9][0-9]*$ ]] || \
   die "PICO2_APDU_TIMEOUT_SECONDS must be a positive integer"
 
-reader_name="${1:-Pico 2 CHOUPI CCID [JCAlgTest CCID] (D92E743D5F640C0F) 00 00}"
+reader_name="${1:-Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00}"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 [[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
 

@@ -69,7 +69,7 @@ public final class JCAlgTestApduProbe {
     CardTerminal terminal = null;
     for (CardTerminal candidate : terminals) {
       if (requestedReader == null
-              ? candidate.getName().contains("Pico 2 CHOUPI CCID")
+              ? candidate.getName().contains("JCVM CCID")
               : candidate.getName().equals(requestedReader)) {
         terminal = candidate;
         break;
@@ -77,7 +77,7 @@ public final class JCAlgTestApduProbe {
     }
     if (terminal == null) {
       throw new IllegalStateException("PC/SC reader " +
-          (requestedReader == null ? "Pico 2 CHOUPI CCID" : requestedReader) +
+          (requestedReader == null ? "JCVM CCID" : requestedReader) +
           " not found");
     }
 

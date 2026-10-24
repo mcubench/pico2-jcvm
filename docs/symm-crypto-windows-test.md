@@ -26,7 +26,7 @@ JC305 artifact.
    certutil -scinfo
    ```
 
-   Confirm that a Pico 2 CHOUPI CCID reader appears. Use the exact reader name
+   Confirm that a Pico2 JCVM CCID reader appears. Use the exact reader name
    shown by Windows in the commands below. If `SCardSvr` was already running,
    skip `Start-Service`.
 
@@ -35,7 +35,7 @@ JC305 artifact.
 Replace the example reader value with the full name reported by Windows:
 
 ```powershell
-$reader = 'Pico 2 CHOUPI CCID'
+$reader = 'Pico2 JCVM CCID'
 java -jar .\tools\gp.jar --reader $reader --list
 java -jar .\tools\gp.jar --reader $reader --install .\applet\AlgTest_v1.8.2_jc305.cap
 java -jar .\tools\AlgTestJClient.jar -op ALG_SUPPORT_EXTENDED -fresh -cardname CHOUPI_symm_crypto -outpath .\results\symm_crypto

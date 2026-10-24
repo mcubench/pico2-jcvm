@@ -51,7 +51,7 @@ public final class JCSystemLiveMemoryProbe {
     for (CardTerminal terminal : terminals) {
       System.out.println("PCSC:READER " + terminal.getName());
       if (requestedReader == null
-          ? terminal.getName().contains("Pico 2 CHOUPI CCID")
+          ? terminal.getName().contains("JCVM CCID")
           : terminal.getName().equals(requestedReader)) {
         target = terminal;
       }

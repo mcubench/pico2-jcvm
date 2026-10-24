@@ -177,21 +177,21 @@ public final class GPGetDataApduProbe {
   }
 
   public static void main(String[] args) throws Exception {
-    String requestedReader = args.length == 0 ? "Pico 2 CHOUPI CCID" : args[0];
+    String requestedReader = args.length == 0 ? null : args[0];
     List<CardTerminal> terminals =
         TerminalFactory.getDefault().terminals().list();
     CardTerminal terminal = null;
     for (CardTerminal candidate : terminals) {
       System.out.println("PCSC:READER " + candidate.getName());
-      if (args.length == 0
-          ? candidate.getName().startsWith(requestedReader)
+      if (requestedReader == null
+          ? candidate.getName().contains("JCVM CCID")
           : candidate.getName().equals(requestedReader)) {
         terminal = candidate;
       }
     }
     if (terminal == null) {
       throw new IllegalStateException("requested PC/SC reader not found: " +
-          requestedReader);
+          requestedReader == null ? "JCVM CCID" : requestedReader);
     }
 
     Card card = terminal.connect("*");

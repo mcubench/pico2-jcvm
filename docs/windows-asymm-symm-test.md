@@ -26,7 +26,7 @@ run sheet. Check `SHA256SUMS.txt` before use.
    certutil -scinfo
    ```
 
-   Confirm that `Pico 2 CHOUPI CCID` appears. If other readers are present,
+   Confirm that `Pico2 JCVM CCID` appears. If other readers are present,
    note the Pico's index in the JCAlgTest client's reader list.
 
 ## Install upstream applet and run JCAlgTest
@@ -34,8 +34,8 @@ run sheet. Check `SHA256SUMS.txt` before use.
 From the extracted archive directory, run:
 
 ```powershell
-java -jar .\tools\gp.jar --reader "Pico 2 CHOUPI CCID" --list
-java -jar .\tools\gp.jar --reader "Pico 2 CHOUPI CCID" --install .\applet\AlgTest_v1.8.2_jc305.cap
+java -jar .\tools\gp.jar --reader "Pico2 JCVM CCID" --list
+java -jar .\tools\gp.jar --reader "Pico2 JCVM CCID" --install .\applet\AlgTest_v1.8.2_jc305.cap
 java -jar .\tools\AlgTestJClient.jar -op ALG_SUPPORT_EXTENDED -fresh -cardname "CHOUPI_symm_crypto" -outpath .\results\symm_crypto
 ```
 

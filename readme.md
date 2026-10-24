@@ -19,7 +19,7 @@ PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
 PICO2_HOST_USB_ACCESS=1 pcsc_scan -r
 
 # Use the exact Pico reader name printed above.
-reader_name='Pico 2 CHOUPI CCID [JCAlgTest CCID] (D92E743D5F640C0F) 00 00'
+reader_name='Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'
 
 # After powering/restarting the Pico, verify CAP/applet persistence and that
 # the JCAlgTest applet can still be selected and process JCSystem APDUs.
@@ -38,7 +38,7 @@ PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup "$reader_name"
 # Build and flash the all-enabled current profile to a second Pico, then run
 # the same JCAlgTest operation there for an apples-to-apples report comparison.
 PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --serial 2BED26ED20556535
-reader_name_current='Pico 2 CHOUPI CCID [JCAlgTest CCID] (2BED26ED20556535) 00 00'
+reader_name_current='Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'
 ./tools/run-jcalgtest --reader-name "$reader_name_current" \
   -op ALG_SUPPORT_EXTENDED -fresh \
   -outpath artifacts/results/current-alg-support
