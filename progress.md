@@ -11384,7 +11384,7 @@
 - Decision: Core JCSystem methods are behaving on the symmetric profile; next
   investigate OwnerPINx or continue the remaining `/deploy` API areas. Keep the
   physical card empty and continue failover if D92 disappears.
-- Commit: pending.
+- Commit: `575a4db`.
 - Artifacts/logs: `artifacts/results/deploy/symm_crypto-D92-20261025/core.csv`,
   `security.csv`, and `crypto.csv`; no new build/flash was required for this
   API-only validation step.
