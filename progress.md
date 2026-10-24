@@ -11130,3 +11130,19 @@
   `838a6798882a9b189457d87daf33318605628ba57605e79b70125a5d5b50f710`;
   final cycle log `artifacts/logs/cycle-choupi-20261024T171445Z.log`; ARM UF2
   SHA-256 `9e27d48a9b1e9f32cd239e73c816a815ea21195a26228290bbe33ffd5961a55b`.
+
+
+## 2026-10-24 — Make multi-board testing fail over immediately
+
+- Step/experiment: `multi-board-physical-test-failover-rule`
+- Change: Clarified `SKILL.md` and `.agent/SESSION_CONTINUITY.md` to make
+  available identified Pico 2 boards a failover pool. Record and bypass a
+  board that fails while continuing tests on other usable boards; maintain
+  separate per-board identity, image, result, and failure evidence.
+- Validation: Documentation review and whitespace check only. No build,
+  hardware access, or test was needed for this instruction update.
+- Result: The persistent workflow now explicitly says not to block progress on
+  the first malfunctioning device, including during parallel device runs.
+- Decision: Apply this rule to subsequent physical validation work.
+- Commit: pending.
+- Artifacts/logs: none.

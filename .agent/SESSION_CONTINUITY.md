@@ -13,10 +13,13 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
 - Do not claim hardware validation unless an attached Pico 2 was actually
   flashed and its finite serial log inspected. The Pico 2 is now connected;
   follow root `AGENTS.md` build gates before flashing and record bounded logs.
-- When multiple identified physical Pico 2 devices are available, continue
-  validation on another usable board if one becomes unavailable, fails to
-  enumerate, or stops responding. Record identity, image, and outcome per
-  board; preserve the failed board's logs and do not let it block the others.
+- Treat multiple identified physical Pico 2 devices as a failover pool. If one
+  becomes unavailable, fails to enumerate, or stops responding, record its
+  board-level failure and continue on another usable board without waiting for
+  recovery. Keep remaining workers active in parallel runs. Reconfirm identity
+  before flashing or attributing results, and preserve per-board image,
+  outcome, and failure logs. Retry the unavailable board only after access
+  returns.
 - Do not invoke compiler binaries directly. Use the repository build wrappers
   once available.
 - Keep `.agent/HANDOFF.md` current with completed work, blockers, and the next

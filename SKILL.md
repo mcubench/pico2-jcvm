@@ -48,11 +48,14 @@ native API implementation.
 ## Multi-board physical testing
 
 When multiple identified Pico 2 boards are attached and available for testing,
-keep testing on another board if one becomes unavailable, fails to enumerate,
-or stops responding after a flash. Do not let one malfunctioning board halt
-the whole test sequence. Record each board's identity, image, and result
-separately; retain the failure evidence for the unavailable board and continue
-with the next usable board.
+treat them as a failover pool. If a board becomes unavailable, fails to
+enumerate, or stops responding after a flash, record that board-level failure
+and move the next test to another available board without waiting for the first
+one to recover. For parallel runs, keep scheduling work on the remaining
+usable boards when one worker/device fails. Reconfirm each board's identity
+before flashing or attributing results; record identity, image, and outcome
+separately, and retain the failed board's logs. Resume the unavailable board
+only after it becomes accessible again.
 
 ## The two checks that catch the most
 

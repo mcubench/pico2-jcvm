@@ -9472,3 +9472,15 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Next: migrate RSA key getter/setter and cipher methods out of interpreted
   provider bodies into direct native C++ methods. Preserve public API signatures
   and use unchanged `/deploy` CAPs for physical tests.
+
+
+## Multi-board failover rule — 2026-10-24
+
+- Clarified `SKILL.md` and `.agent/SESSION_CONTINUITY.md` to treat available,
+  identified Pico 2 boards as a failover pool. Record and bypass a board that
+  stops responding while continuing on another usable board; keep remaining
+  workers active in parallel runs. Reconfirm board identity before flashing
+  and preserve per-board evidence. Return to an unavailable board only after
+  access is restored.
+- This is a documentation-only rule update. No device access or firmware
+  validation was performed for this step.
