@@ -11459,7 +11459,7 @@
 - Decision: Preserve this empty card. Next trace OwnerPINx interface dispatch
   without adding Java algorithm/provider implementations or editing upstream
   CAP files.
-- Commit: `f870980`; final registry recheck recorded in `HASH_PENDING`.
+- Commit: `f870980`; final registry recheck recorded in `ca06824`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T225805Z.log`;
   `artifacts/results/deploy/symm_crypto-D92-ownerpinx-repeat-20261025.csv`;
   image `build/arm/pico2_choupi.uf2` SHA-256
