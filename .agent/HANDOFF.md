@@ -9533,3 +9533,16 @@ confirmed on hardware. The original investigation evidence remains in earlier
   official client, expected profile CSVs, comparator, and instructions.
   Windows execution results remain pending; continue native RSA signatures,
   EC/ECDSA, key agreement and key generation per `TODO.md`.
+
+## Symmetric-only Windows test bundle — 2026-10-24
+
+- At user request, prepared a package containing only the `symm_crypto` ARM
+  UF2 (no asymmetric firmware), unchanged upstream JCAlgTest 1.8.2 CAP, GPPro,
+  official client, expected support CSV, comparator, and Windows setup guide.
+- Archive: `build/external-test/symm-crypto-windows-test.zip`, SHA-256
+  `3d25700c4cc56b5417af2e06b3aa84219a504eb31c5e2305eba1e0e24e097acc`.
+  UF2 SHA-256 is `e302de5a9e3e107ae50790293972e64b03c718194e43b1a16850e6e9177e69e3`.
+- Archive integrity and member checksums pass. It contains only the symmetric
+  image. No Windows host or physical card test was run. Asymmetric work is
+  paused; its uncommitted in-progress source changes are preserved in the
+  worktree and must not be treated as validated or packaged.

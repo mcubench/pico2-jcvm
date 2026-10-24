@@ -1157,6 +1157,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
 - [ ] Run the packaged Windows workflow in `docs/windows-asymm-symm-test.md`;
   archive each profile's JCAlgTest CSV and compare it with its generated
   expected-support CSV. The upstream CAP is included unchanged.
+- [ ] User-requested symmetric-only package is available at
+  `build/external-test/symm-crypto-windows-test.zip`; its Windows instructions
+  are in `docs/symm-crypto-windows-test.md`. Windows enumeration/client results
+  remain pending. The `asymm_crypto` implementation is paused at user request.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).
 - [ ] Complete deferred hardening and robustness work, including malformed CAP
