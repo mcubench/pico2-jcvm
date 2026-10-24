@@ -30,19 +30,45 @@ JC305 artifact.
    shown by Windows in the commands below. If `SCardSvr` was already running,
    skip `Start-Service`.
 
-## Install JCAlgTest and run the standard client
+## Ensure an empty card, then install JCAlgTest explicitly
 
-Replace the example reader value with the full name reported by Windows:
+Set `$reader` to the full name reported by Windows. Firmware updates preserve
+CAPs previously written to the card's persistent filesystem. These commands
+remove only the known JCAlgTest applet and package, then verify that no package
+or applet remains before the explicit install:
 
 ```powershell
 $reader = 'Pico2 JCVM CCID'
-java -jar .\tools\gp.jar --reader $reader --list
+$appletAid = '4A43416C675465737431'
+$packageAid = '4A43416C6754657374'
+$listed = & java -jar .\tools\gp.jar --reader $reader --list 2>&1
+if ($LASTEXITCODE -ne 0) { throw 'GPPro --list failed' }
+$listing = $listed | Out-String
+if ($listing -match "APP:\s+$appletAid") {
+  & java -jar .\tools\gp.jar --reader $reader --delete $appletAid
+  if ($LASTEXITCODE -ne 0) { throw 'Failed to delete the JCAlgTest applet' }
+}
+if ($listing -match "PKG:\s+$packageAid") {
+  & java -jar .\tools\gp.jar --reader $reader --delete $packageAid
+  if ($LASTEXITCODE -ne 0) { throw 'Failed to delete the JCAlgTest package' }
+}
+$listed = & java -jar .\tools\gp.jar --reader $reader --list 2>&1
+if ($LASTEXITCODE -ne 0) { throw 'GPPro --list failed after cleanup' }
+$listing = $listed | Out-String
+$listing
+if ($listing -match '(?m)^(APP|PKG):') {
+  throw 'Other applications/packages remain; review them before continuing'
+}
+
+# Upload the unchanged upstream CAP only after the empty-card check.
 java -jar .\tools\gp.jar --reader $reader --install .\applet\AlgTest_v1.8.2_jc305.cap
+if ($LASTEXITCODE -ne 0) { throw 'GPPro LOAD/INSTALL failed' }
 java -jar .\tools\AlgTestJClient.jar -op ALG_SUPPORT_EXTENDED -fresh -cardname CHOUPI_symm_crypto -outpath .\results\symm_crypto
+if ($LASTEXITCODE -ne 0) { throw 'JCAlgTest client failed' }
 ```
 
-At the client reader prompt, select the Pico entry. If the package is already
-installed, inspect `--list` output and skip the install command. Compare the
+At the client reader prompt, select the Pico entry. The applet is explicitly
+installed by the command above and is not part of the firmware. Compare the
 result CSV against the generated support list:
 
 ```powershell

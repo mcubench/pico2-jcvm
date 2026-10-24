@@ -88,9 +88,11 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   firmware upload; reflashing alone does not uninstall packages. The fresh
   blank-flash VPCD flow now proves `gp --list` shows only the ISD before
   `gp --install`, after which the unchanged applet becomes selectable. The
-  physical reader is currently absent from this VM, so the previously installed
-  physical applet still needs authenticated GP DELETE (applet first, then
-  package) before treating that card as empty.
+  symmetric-only Windows guide/archive now deletes only the known JCAlgTest
+  applet/package, verifies no application or package remains, and then runs an
+  explicit `gp --install`. The physical reader is currently absent from this
+  VM, so the previously installed physical applet still needs authenticated GP
+  DELETE (applet first, then package) before treating that card as empty.
 
 - [x] **AC4: refresh the physical support-results comparison after OwnerPINX.**
   On 2026-10-20 the official physical `ALG_SUPPORT_EXTENDED` run completed

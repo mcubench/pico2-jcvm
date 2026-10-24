@@ -11264,3 +11264,23 @@
 - Commit: `7cd29e9`.
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261024T212248Z/`;
   ARM UF2 SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
+
+## 2026-10-24 — Make Windows install flow start from an empty card
+
+- Step/experiment: `windows-clean-card-before-gppro-install`
+- Change: Updated both Windows run sheets to explain that a UF2 update preserves
+  installed CAPs, delete only the known JCAlgTest applet/package when present,
+  verify the registry has no app/package entries, and then explicitly run
+  GPPro `--install`. Refreshed the symmetric-only archive with the current
+  `symm_crypto` ARM image and updated README.
+- Validation: `unzip -t build/external-test/symm-crypto-windows-test.zip`
+  passed; all listed member hashes passed `sha256sum -c`. The archive image
+  hash matches `build/arm/pico2_choupi.uf2`.
+- Result: The Windows workflow no longer skips `--install` when the old CAP is
+  present; it removes that known package and proves the clean precondition.
+- Decision: Use the refreshed symmetric-only archive for external testing.
+  Physical cleanup remains pending until a Pico reader is visible here.
+- Commit: pending.
+- Artifacts/logs: `build/external-test/symm-crypto-windows-test.zip`;
+  UF2 SHA-256 `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`;
+  archive SHA-256 `f120aab7444689220d2c1e4359ef680b0f9921f86d213eccd1fad692f615802d`.

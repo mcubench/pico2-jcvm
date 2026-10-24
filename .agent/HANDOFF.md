@@ -127,6 +127,16 @@
   `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`
   (1,675,264 bytes). ARM and RISC-V `symm_crypto` build wrappers passed.
 - Asymmetric implementation remains paused as previously requested.
+- Updated `docs/symm-crypto-windows-test.md` and
+  `docs/windows-asymm-symm-test.md` so the Windows path first removes the known
+  JCAlgTest applet/package, verifies no app/package entries remain, and only
+  then explicitly uploads the upstream CAP. Refreshed
+  `build/external-test/symm-crypto-windows-test.zip` with the current UF2 and
+  updated instructions; `unzip -t` and all member hashes pass.
+- Physical cleanup is still pending because no Pico USB/PCSC device appeared
+  to this VM. The archive workflow prevents mistaking a persisted CAP for
+  firmware contents and prevents running the requested explicit install on an
+  already-populated card.
 
 ## Runtime format correction — 2026-10-24
 
