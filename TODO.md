@@ -94,6 +94,16 @@ cipher.
   `APPLET_NOT_INSTALLED` rows after its scenario CAP INSTALL returned 6A88.
   All `/deploy` CAPs were cleaned up; GPPro lists only the ISD. CSVs are in
   `artifacts/results/deploy/symm_crypto-D92-20261025/`.
+- [x] Fix and physically verify the OwnerPINx Core regression. The root cause
+  was ambiguous JC305 `checkcast` token resolution: a framework interface token
+  could also resolve to an unrelated class export with the same byte value.
+  Resolve class and interface export candidates independently and try the
+  interface candidate when the class candidate does not match. VPCD regression
+  passed 84/84, including positive and negative casts. Physical D92 Core now
+  reports 272 OK, 15 `UNSUPPORTED_PER_SPEC`, four optional Ext
+  `APPLET_NOT_INSTALLED`, and no runtime/wrong-result outcomes; all OwnerPINx
+  rows pass. CAP cleanup succeeded and GPPro lists only ISD. Source commit:
+  `fa15bfa`; evidence in `artifacts/results/deploy/symm_crypto-D92-ownerpinx-fixed-20261025.csv`.
 - [x] Complete the remaining `/deploy` 3.0.5 area checks on `symm_crypto`:
   `JavacardxSec` passed 84/84; `Service` completed 124 calls (78 OK, 35
   `EXC_RUNTIME`, 9 `SW_ERROR`, 2 `WRONG_RESULT`). `JavacardxExt`, `JavacardxInt`,

@@ -11464,3 +11464,30 @@
   `artifacts/results/deploy/symm_crypto-D92-ownerpinx-repeat-20261025.csv`;
   image `build/arm/pico2_choupi.uf2` SHA-256
   `ff043cac0a8a5fc4770aa8783232e7da61a37fd90d01573f990137bfbbbbdbf4`.
+
+## 2026-10-25 — Fix OwnerPINx imported-interface casts
+
+- Step/experiment: `ownerpinx-checkcast-interface-token-D92`
+- Change: Resolve `checkcast` class and interface export token namespaces
+  independently, then try the distinct interface candidate when the class
+  candidate is not assignable. Prevents numeric token collision from selecting
+  an unrelated class and rejecting an OwnerPINx object.
+- Validation: PC/VPCD full JCSystem/OwnerPINx suite passed 84/84. ARM and
+  RISC-V `symm_crypto` builds passed. Physical D92 `D92E743D5F640C0F` was
+  flashed and verified; bounded serial monitor passed repeatedly with
+  `CYCLE:PASS`. Physical API 3.0.5 Core completed 291 calls: 272 OK, 15
+  `UNSUPPORTED_PER_SPEC`, four optional Ext `APPLET_NOT_INSTALLED`; previous
+  17 OwnerPINx runtime errors and two wrong results are resolved. CAP cleanup
+  passed; GPPro lists only ISD `A000000151000000`.
+- Result: Class/interface token collisions at `checkcast` no longer break
+  OwnerPINBuilder-produced OwnerPINx values; negative cast cases also pass.
+  Optional Ext INSTALL refusal `6A88` remains rolled back and is not an OwnerPINx
+  failure.
+- Decision: Keep the fix in the VM bytecode layer; no Java provider or CAP was
+  changed. Continue with the next prioritized native VM task while preserving
+  the empty physical card registry.
+- Commit: `fa15bfa`.
+- Artifacts/logs: `artifacts/logs/jcsystem-ownerpinx-profile-fixed-full-vpcd-20261025.log`,
+  `artifacts/logs/cycle-choupi-20261024T232303Z.log`, and
+  `artifacts/results/deploy/symm_crypto-D92-ownerpinx-fixed-20261025.csv`; ARM
+  UF2 SHA-256 `3add9fdaac80f697e694d68ea1510952b3e9b156f676c966f3a763e875323fbf`.

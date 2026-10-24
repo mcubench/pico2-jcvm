@@ -4432,3 +4432,29 @@ fix.
   Results: `artifacts/results/deploy/symm_crypto-D92-20261025/`.
 - **Artifacts:** `artifacts/results/jcalgtest-symm-crypto-D92-20261024/`;
   `artifacts/logs/cycle-choupi-20261024T213745Z.log`.
+
+
+## JC305 `checkcast` class/interface token collision — 2026-10-25
+
+- **Symptom:** In physical API 3.0.5 Core tests, OwnerPINx Builder values
+  failed casts with `ClassCastException` (17 runtime errors and two wrong
+  results). Ordinary OwnerPIN worked.
+- **Cause:** A `checkcast` operand is a `Classref`, but in this imported-package
+  mapping the same numeric token may identify a class export and an interface
+  export. Resolving only the class namespace could succeed while selecting an
+  unrelated class record, so code never consulted the valid interface mapping.
+- **Viable fix:** In `Bytecodes::docheck`, resolve class and interface token
+  namespaces independently. Check assignability against the ordinary resolved
+  candidate first, then against the interface candidate if distinct and needed.
+  Preserve exception behavior if no interface mapping exists. Do not globally
+  reinterpret all class references as interfaces.
+- **Validation:** PC/VPCD full JCSystem/OwnerPINx suite passed 84/84, including
+  positive and negative casts. ARM and RISC-V `symm_crypto` builds passed; the
+  ARM image was flashed and its bounded monitor passed. Physical D92 API 3.0.5
+  Core completed all 291 calls: 272 OK, 15 `UNSUPPORTED_PER_SPEC`, four
+  optional Ext `APPLET_NOT_INSTALLED`; all OwnerPINx rows passed. CAP cleanup
+  passed and GPPro listed only ISD.
+- **Evidence:** `artifacts/logs/jcsystem-ownerpinx-profile-fixed-full-vpcd-20261025.log`,
+  `artifacts/logs/cycle-choupi-20261024T232303Z.log`, and
+  `artifacts/results/deploy/symm_crypto-D92-ownerpinx-fixed-20261025.csv`.
+  Source commit: `fa15bfa`.

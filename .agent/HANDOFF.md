@@ -1,3 +1,30 @@
+## OwnerPINx `checkcast` regression fixed and physically verified — 2026-10-25
+
+- The user reported Pico tokens in BOOTSEL. Rebuilt and flashed the identified
+  D92 `symm_crypto` board after the VM-side fix. ARM and RISC-V builds passed;
+  the ARM write and verify reached 100%, then the finite monitor repeatedly
+  reported `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, and
+  `CYCLE:PASS`.
+- Root cause was namespace ambiguity in `checkcast`: JC305 imported class and
+  interface export tokens can share a byte value. The old code resolved a
+  class candidate successfully even though it was unrelated, and did not try
+  the valid OwnerPINx interface candidate. `Bytecodes::docheck` now resolves
+  both independently and checks the interface if the distinct class candidate
+  does not match. Source commit: `fa15bfa`. No Java provider or CAP changes.
+- PC/VPCD full regression passed 84/84. On physical D92, the unchanged API 3.0.5
+  Core CAP completed 291 calls: 272 OK, 15 `UNSUPPORTED_PER_SPEC`, and four
+  unavailable optional Ext calls. All OwnerPINx cases pass; the previous 17
+  runtime errors and two wrong results are gone. Ext INSTALL refusal `6A88`
+  was rolled back. The runner removed its Core/Multi CAPs; final GPPro `--list`
+  contains only ISD `A000000151000000`. This card is empty of test applets.
+- Artifacts: `artifacts/logs/jcsystem-ownerpinx-profile-fixed-full-vpcd-20261025.log`,
+  `artifacts/logs/cycle-choupi-20261024T232303Z.log`, and
+  `artifacts/results/deploy/symm_crypto-D92-ownerpinx-fixed-20261025.csv`.
+  Image SHA-256: `3add9fdaac80f697e694d68ea1510952b3e9b156f676c966f3a763e875323fbf`.
+- Next: proceed with the prioritized native JCVM work / remaining TODO items.
+  Keep the physical registry empty unless a specific CAP test is requested;
+  firmware reflashing does not erase the persistent card filesystem.
+
 ## Latest physical run — empty `symm_crypto` image and OwnerPINx reproduction (2026-10-25)
 
 - User said the Pico tokens were available in BOOTSEL. The VM initially saw
