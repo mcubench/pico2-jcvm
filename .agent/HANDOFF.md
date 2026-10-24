@@ -9512,3 +9512,23 @@ confirmed on hardware. The original investigation evidence remains in earlier
   CAPs. Then run unchanged `/deploy` CAP coverage on available physical boards;
   fail over to another identified board if one becomes unavailable. Continue
   with RSA signatures, EC, key agreement, and key generation from `TODO.md`.
+
+## Dual-profile Windows test package — 2026-10-24
+
+- Fixed CMake source selection: both the root firmware and PC CHOUPI builds
+  exclude `native_rsa_key.cpp` from the source glob and add it only if an RSA
+  key capability is selected. The previous `symm_crypto` build failed because
+  that file referenced RSA metadata omitted from the symmetric ROM mask.
+- RSA cipher state/validation/buffering/padding/exponentiation methods now use
+  native C++ dispatch. `RSACipherProvider` has no Java cryptographic method
+  bodies. Support-generator tests pass 8/8; asymmetric VPCD passes 20/20.
+- ARM builds pass for `symm_crypto` and `asymm_crypto`. RISC-V wrapper builds
+  pass for both profiles and build the VM core only. No physical flash or
+  Windows PC/SC run was performed for this package.
+- External archive:
+  `build/external-test/pico2-jcvm-windows-test.zip`, SHA-256
+  `faac7e7a83389970d6cbe75942ee9e16c8f7574249c9692b474b44d4198bc5f3`.
+  It contains both ARM UF2s, unchanged upstream JCAlgTest 1.8.2 CAP, GPPro,
+  official client, expected profile CSVs, comparator, and instructions.
+  Windows execution results remain pending; continue native RSA signatures,
+  EC/ECDSA, key agreement and key generation per `TODO.md`.

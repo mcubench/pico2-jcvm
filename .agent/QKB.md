@@ -4285,3 +4285,18 @@ fix.
 - **Validation:** The successful flash/runtime evidence remains
   `artifacts/logs/cycle-choupi-20261024T163247Z.log`. The attempted deploy
   output was a no-reader error before worker start.
+
+## RSA key source leaked into profiles that disable RSA — 2026-10-24
+
+- **Symptom:** ARM `symm_crypto` builds attempted to compile
+  `native_rsa_key.cpp`, which references ROM class and field metadata absent
+  from that profile; compilation failed with undeclared RSA provider metadata.
+- **Cause:** The ARM and PC CHOUPI CMake source globs included
+  `native_rsa_key.cpp` unconditionally, before the profile-gated append logic.
+- **Viable solution:** Exclude `native_rsa_key.cpp` from both globs, then append
+  it only when an RSA key type or transient RSA key variant is enabled. Verify
+  with one RSA-disabled and one RSA-enabled profile.
+- **Validation:** ARM and RISC-V wrapper builds passed for `symm_crypto` and
+  `asymm_crypto`; the symmetric ARM build no longer schedules RSA key code.
+- **Artifacts:** `/tmp/build-arm-symm-final.log`,
+  `/tmp/build-arm-asymm.log`, and `/tmp/build-riscv-asymm.log`.

@@ -48,7 +48,7 @@ file(GLOB_RECURSE CHOUPI_VM_SOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/*.cpp")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX "/main(_arm|_pc)?\\.cpp$")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX
-  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mac|mbedtls_digest|rsa_cipher)\\.cpp$")
+  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mac|mbedtls_digest|rsa_cipher|rsa_key)\\.cpp$")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_random.cpp")
 endif()
@@ -101,6 +101,23 @@ if(JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA51
 endif()
 if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP)
   list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_rsa_cipher.cpp")
+endif()
+set(JC_SUPPORT_RSA_KEYS_ENABLED OFF)
+foreach(rsa_bits 512 736 768 896 1024 1280 1536 1984 2048 3072 4096)
+  foreach(rsa_kind PUBLIC PRIVATE CRT_PRIVATE)
+    if(JC_SUPPORT_KEY_RSA_${rsa_kind}_${rsa_bits})
+      set(JC_SUPPORT_RSA_KEYS_ENABLED ON)
+    endif()
+  endforeach()
+endforeach()
+if(JC_SUPPORT_KEY_RSA_PRIVATE_TRANSIENT_RESET OR
+   JC_SUPPORT_KEY_RSA_PRIVATE_TRANSIENT_DESELECT OR
+   JC_SUPPORT_KEY_RSA_CRT_PRIVATE_TRANSIENT_RESET OR
+   JC_SUPPORT_KEY_RSA_CRT_PRIVATE_TRANSIENT_DESELECT)
+  set(JC_SUPPORT_RSA_KEYS_ENABLED ON)
+endif()
+if(JC_SUPPORT_RSA_KEYS_ENABLED)
+  list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_rsa_key.cpp")
 endif()
 if(CHOUPI_VM_SOURCES)
   add_library(choupi_vm_core OBJECT ${CHOUPI_VM_SOURCES})

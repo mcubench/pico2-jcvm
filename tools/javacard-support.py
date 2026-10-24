@@ -248,10 +248,10 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     else:
         (java_dir / "SecureRandomData.java").unlink(missing_ok=True)
         (out_dir / "java/fr/gouv/ssi/nativeimpl/RandomDataNativeBridge.java").unlink(missing_ok=True)
+    rsa_key_enabled = any(key.startswith("key_rsa_") and enabled
+                         for key, enabled in config.items())
     key_provider = [
         "package javacard.security;",
-        "",
-        "import fr.gouv.ssi.nativeimpl.RSAKeyProvider;",
         "",
         "final class KeyBuilderProvider {",
         "  private KeyBuilderProvider() {}",
@@ -259,6 +259,10 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         "      throws CryptoException {",
         "    if (encrypted) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
     ]
+    if rsa_key_enabled:
+        key_provider[2:2] = [
+            "import fr.gouv.ssi.nativeimpl.RSAKeyProvider;", ""
+        ]
     aes_lengths = {
         "key_aes_128": "KeyBuilder.LENGTH_AES_128",
         "key_aes_192": "KeyBuilder.LENGTH_AES_192",
@@ -363,8 +367,6 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             key_base.read_text(encoding="utf-8"), encoding="utf-8"
         )
     rsa_key_provider = out_dir / "java/fr/gouv/ssi/nativeimpl/RSAKeyProvider.java"
-    rsa_key_enabled = any(key.startswith("key_rsa_") and enabled
-                          for key, enabled in config.items())
     (java_dir / "RSAKeyProvider.java").unlink(missing_ok=True)
     if rsa_key_enabled:
         rsa_key_provider.parent.mkdir(parents=True, exist_ok=True)
@@ -415,6 +417,11 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         "cipher_rsa_nopad": ("ALG_RSA_NOPAD", "PAD_NOPAD"),
         "cipher_rsa_oaep": ("ALG_RSA_PKCS1_OAEP", "PAD_PKCS1_OAEP"),
     }
+    rsa_cipher_enabled = any(config[key] for key in rsa_cipher_specs)
+    if rsa_cipher_enabled:
+        cipher_provider[3:3] = [
+            "import fr.gouv.ssi.nativeimpl.RSACipherProvider;", ""
+        ]
     for key, (alg, pad) in rsa_cipher_specs.items():
         if config[key]:
             cipher_provider.append(
@@ -469,21 +476,16 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         (cipher_dir / "SymmetricCipherProvider.java").unlink(missing_ok=True)
     for stale in ("AESCipherProvider.java", "DESCipherProvider.java", "CbcCipherProvider.java"):
         (cipher_dir / stale).unlink(missing_ok=True)
-    rsa_cipher_enabled = any(config[key] for key in rsa_cipher_specs)
-    rsa_cipher_provider = cipher_dir / "RSACipherProvider.java"
-    rsa_cipher_bridge = nativeimpl_dir / "RsaCipherNativeBridge.java"
+    rsa_cipher_provider = nativeimpl_dir / "RSACipherProvider.java"
+    (cipher_dir / "RSACipherProvider.java").unlink(missing_ok=True)
     if rsa_cipher_enabled:
         rsa_cipher_provider.write_text(
             (Path(__file__).resolve().parent / "java-support/RSACipherProvider.java").read_text(encoding="utf-8"),
             encoding="utf-8",
         )
-        rsa_cipher_bridge.write_text(
-            (Path(__file__).resolve().parent / "java-support/RsaCipherNativeBridge.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
     else:
         rsa_cipher_provider.unlink(missing_ok=True)
-        rsa_cipher_bridge.unlink(missing_ok=True)
+    (nativeimpl_dir / "RsaCipherNativeBridge.java").unlink(missing_ok=True)
     signature_specs = {
         "signature_des_mac8_nopad": ("ALG_DES_MAC8_NOPAD", "SIG_CIPHER_DES_MAC8", "PAD_NOPAD", 8, False),
         "signature_des_mac4_iso9797_m1": ("ALG_DES_MAC4_ISO9797_M1", "SIG_CIPHER_DES_MAC4", "PAD_ISO9797_M1", 4, False),

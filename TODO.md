@@ -1144,11 +1144,19 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `OK`, 286 `UNSUPPORTED_PER_SPEC`, 6 expected `EXC_CARDRUNTIME`, and zero
   wrong-result rows; three invalid one-shot signature cases now report reason
   5 as expected. RSA key getters/setters now dispatch to native C++. The
-  remaining native-only API gap is RSA cipher validation/buffering in the
-  interpreted provider; migrate that behavior to native dispatch and then
-  verify with unchanged upstream CAPs and `/deploy`. RSA signatures, EC
-  keys/ECDSA, key agreement, key generation, exact full-report comparison, and
-  full deploy acceptance remain.
+  RSA cipher provider now contains its state fields, constructor, and native
+  declarations; key validation, buffering, padding, and modular exponentiation
+  dispatch to C++. Support-generator tests pass 8/8, the asymmetric VPCD probe
+  passes 20/20, and ARM/RISC-V wrappers pass for both `symm_crypto` and
+  `asymm_crypto`. Separate ARM UF2s and expected support CSVs are packaged for
+  external Windows testing at
+  `build/external-test/pico2-jcvm-windows-test.zip`; Windows PC/SC and standard
+  client results remain pending. RSA signatures, EC keys/ECDSA, key agreement,
+  key generation, exact full-report comparison, and complete physical deploy
+  acceptance remain.
+- [ ] Run the packaged Windows workflow in `docs/windows-asymm-symm-test.md`;
+  archive each profile's JCAlgTest CSV and compare it with its generated
+  expected-support CSV. The upstream CAP is included unchanged.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).
 - [ ] Complete deferred hardening and robustness work, including malformed CAP

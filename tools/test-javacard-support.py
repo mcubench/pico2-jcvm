@@ -127,6 +127,9 @@ class JavaCardSupportTests(unittest.TestCase):
             result = self.run_named_profile("symm_crypto", out)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((out / "profile.txt").read_text(), "symm_crypto\n")
+            key_provider = (out / "java/javacard/security/KeyBuilderProvider.java").read_text()
+            self.assertNotIn("RSAKeyProvider", key_provider)
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/RSAKeyProvider.java").exists())
             with (out / "jcalgtest-supported.csv").open(newline="") as source:
                 rows = {tuple(row) for row in list(csv.reader(source, delimiter=";"))[1:]}
             symmetric = {
@@ -195,6 +198,17 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertIn("KeyBuilder.LENGTH_RSA_4096", key_provider)
             self.assertIn("KeyBuilder.TYPE_RSA_CRT_PRIVATE_TRANSIENT_DESELECT", key_provider)
             self.assertIn("new RSAKeyProvider(type, length)", key_provider)
+            rsa_cipher = out / "java/fr/gouv/ssi/nativeimpl/RSACipherProvider.java"
+            self.assertTrue(rsa_cipher.is_file())
+            rsa_cipher_source = rsa_cipher.read_text()
+            for declaration in (
+                    "public native void init(Key key, byte requestedMode)",
+                    "public native byte getAlgorithm()",
+                    "public native short update(byte[] input",
+                    "public native short doFinal(byte[] input"):
+                self.assertIn(declaration, rsa_cipher_source)
+            self.assertFalse((out / "java/javacardx/crypto/RSACipherProvider.java").exists())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/RsaCipherNativeBridge.java").exists())
             header = (out / "javacard-support.h").read_text()
             for capability in ("SHA1", "SHA224", "SHA384", "SHA512"):
                 self.assertIn(f"JC_SUPPORT_{capability} 1", header)

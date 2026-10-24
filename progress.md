@@ -11172,3 +11172,13 @@
 - Commit: `85930f4`
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`,
   `artifacts/logs/build-pc-rsa-validation.log`; no physical hardware log
+
+## 2026-10-24 — Complete native RSA cipher dispatch and prepare profile test images
+
+- Step/experiment: `native-rsa-cipher-dispatch-dual-profile-package`
+- Change: Moved RSA cipher API method bodies from the generated Java Card provider into native C++ dispatch. Fixed profile source selection so RSA key code is only compiled when an RSA key capability is enabled. Added Windows test instructions and prepared a portable bundle with separate `symm_crypto` and `asymm_crypto` ARM images, upstream AlgTest CAP/client, GPPro, generated expected CSVs, and comparator.
+- Validation: `./tools/env python3 tools/test-javacard-support.py` passed 8/8. `./tools/build arm --profile symm_crypto`, `./tools/build riscv --profile symm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. Elevated VPCD test `tools/tests/test_asymm_crypto_vpcd.py` passed 20/20; the restricted attempt failed before execution because localhost socket creation was denied. Archive integrity and every SHA256 manifest entry passed; `git diff --check` passed.
+- Result: Profile image SHA-256 values differ: symmetric `e302de5a9e3e107ae50790293972e64b03c718194e43b1a16850e6e9177e69e3`; asymmetric `f79117a20d8d78eea49a6e086a2083324b5e2e07b54dde83edf0cdd71b779290`. Bundle SHA-256 `faac7e7a83389970d6cbe75942ee9e16c8f7574249c9692b474b44d4198bc5f3`. No physical flash or Windows PC/SC/client run was performed in this step.
+- Decision: The external Windows test setup is ready at `build/external-test/pico2-jcvm-windows-test.zip`; keep Windows result comparison and full asymmetric algorithm implementation open in `TODO.md`.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `docs/windows-asymm-symm-test.md`, `build/external-test/pico2-jcvm-windows-test.zip`, `/tmp/build-arm-symm-final.log`, `/tmp/build-arm-asymm.log`, `/tmp/build-riscv-asymm.log`.
