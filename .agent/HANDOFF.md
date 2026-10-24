@@ -9522,6 +9522,7 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - RSA cipher state/validation/buffering/padding/exponentiation methods now use
   native C++ dispatch. `RSACipherProvider` has no Java cryptographic method
   bodies. Support-generator tests pass 8/8; asymmetric VPCD passes 20/20.
+- Implementation commit: `01fb41ac526f8537558753a834ad9d17faea4684`.
 - ARM builds pass for `symm_crypto` and `asymm_crypto`. RISC-V wrapper builds
   pass for both profiles and build the VM core only. No physical flash or
   Windows PC/SC run was performed for this package.
