@@ -11431,5 +11431,5 @@
 - Decision: The current firmware does not preload JCAlgTest; the tested card
   registry is empty after reflash. Install the upstream CAP explicitly only
   when beginning an applet test.
-- Commit: `<see follow-up record>`.
+- Commit: `432f6fd`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T224042Z.log`.
