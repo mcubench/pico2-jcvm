@@ -10753,3 +10753,18 @@
   `artifacts/logs/profile-native-modules-20261024.log`,
   `artifacts/logs/test-javacard-support-20261024.log`, and deploy logs listed
   in `.agent/HANDOFF.md`.
+
+## 2026-10-24 — Record selectable-profile acceptance commit
+
+- Step/experiment: `selectable-profiles-acceptance-20261024-commit-record`
+- Change: Recorded the commit SHA for the preceding selectable-profile
+  acceptance step; its first commit was created after retrying Git writes with
+  elevated host access.
+- Validation: The preceding step's six support-config checks and whitespace
+  validation passed. No additional build or hardware validation was run.
+- Result: Acceptance documentation and related source/config test updates are
+  committed; the original upstream JCAlgTest CAP remains unchanged.
+- Decision: Continue the still-open `/deploy` acceptance matrix on a fresh
+  physical card or VPCD; D92 has only 23 persistent bytes free.
+- Commit: `36c8abf` (preceding step); this record is committed separately.
+- Artifacts/logs: `artifacts/results/capability-profiles-acceptance-20261024/`.

@@ -90,8 +90,8 @@
   record free persistent memory before each stateful run. Then isolate the
   OwnerPINx Core behavior. No further physical tests were run after the 23-byte
   storage observation. `TODO.md` keeps this acceptance item open.
-- Commit attempt for the current documentation/source step was blocked:
-  `git add` could not create `.git/index.lock` because `.git` is read-only.
+- Acceptance/source changes were committed as `36c8abf`; Git writes required
+  elevated host access because `.git` is read-only in the default context.
 
 ## JCAlgTest base/current physical profile comparison — 2026-10-24
 
