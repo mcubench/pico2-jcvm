@@ -1,5 +1,22 @@
 # Project issue knowledge base
 
+## Pico storage durability depends on VM transaction state — 2026-10-24
+
+- **Source finding:** `src/choupi_pico2.cpp:fs_sync()` returns success without
+  flushing when `choupi_persistent_write_transaction_active()` is nonzero.
+  `FlashMemory_Handler::commitPersistentWriteTransaction()` clears that VM
+  flag and calls `fs_sync()` to make the overlay durable. Thus the lower
+  record-store interface depends on higher-level VM state, and successful
+  sync does not always mean persistence.
+- **Existing protections:** Filesystem snapshots, CAP metadata mirrors, and
+  the committed INSTALL recovery journal are present. Preserve them; this
+  finding does not establish that every interruption corrupts state.
+- **Open refactoring direction:** Make transaction/flush semantics explicit
+  and give LOAD/INSTALL/DELETE durability one coordinating owner, with portable
+  stores over a shared physical-flash backend. No implementation fix or new
+  power-cut experiment was performed in this documentation step.
+- **Analysis:** `FIRMWARE_JCVM_ARCHITECTURE.md`, findings L1/L5/L6.
+
 ## JC305 CardException was reported as ISOException through RMI — 2026-10-23
 
 - **Symptom:** RMI calls throwing `CardException` and a `UserException`

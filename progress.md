@@ -10991,3 +10991,28 @@
 - Artifacts/logs: `SKILL.md`, `.agent/SESSION_CONTINUITY.md`,
   `.agent/HANDOFF.md`; no logs
 
+## 2026-10-24 — Extend firmware architecture analysis by responsibility layer
+
+- Step/experiment: `firmware-layering-architecture-review`
+- Change: Extended `FIRMWARE_JCVM_ARCHITECTURE.md` to 4,217 words with seven
+  responsibility layers, ten source-backed boundary findings, dependency flow,
+  and a staged refactoring plan. Corrected PC-generated `runVPCD` startup and
+  stale cipher-provider navigation; documented native C++ API requirements,
+  existing recovery protections, and remaining storage coordination concerns.
+  Updated handoff and the issue knowledge base.
+- Validation: Inspected current build definitions, board/CCID code, host
+  transport, loader, CAP store, persistence, interpreter, API bindings, and
+  provider generator/templates. Documentation check passed: 16 local links
+  resolve, ten findings present, code fences balanced, and 4,217 words within
+  the requested approximate 5,000-word limit. Document whitespace check passed.
+- Result: Responsibilities and concrete refactoring seams are now described
+  separately from current implementation and existing recovery mechanisms.
+  No firmware source changed. Builds, hardware tests, and USB/PCSC operations
+  were intentionally skipped for this documentation-only step; no new runtime
+  or performance metric was measured.
+- Decision: Use the documented contracts and completion criteria to guide
+  native API, shared card-session, storage, and platform separation work.
+- Commit: this step's commit (`git log -1 --format=%H -- FIRMWARE_JCVM_ARCHITECTURE.md`).
+- Artifacts/logs: `FIRMWARE_JCVM_ARCHITECTURE.md`, `.agent/HANDOFF.md`,
+  `.agent/QKB.md`; no new runtime logs.
+

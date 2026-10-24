@@ -1,3 +1,28 @@
+## Architecture layering analysis — 2026-10-24
+
+- Extended `FIRMWARE_JCVM_ARCHITECTURE.md` to 4,217 words, distinguishing
+  hardware, HAL, native OS services, JCRE/card management, JCVM execution,
+  native APIs/crypto, and installed applets. Added ten source-backed layering
+  findings, a desired dependency flow, and staged refactoring criteria.
+- Corrected the boot description: Pico consumes the PC-generated ROM mask,
+  whose selected entry is the empty `Starter.runVPCD()`. Java `.class` files
+  remain build intermediates; the embedded executable representation is
+  Java Card CAP components. Existing interpreted API providers are documented
+  as debt against the required native C++ API boundary.
+- Recorded existing CAP metadata mirrors and the INSTALL recovery journal;
+  did not claim cross-store recovery is wholly absent. Key open boundaries:
+  duplicated CCID/VPCD card policy, board-owned storage semantics, VM-dependent
+  `fs_sync`, scattered service ABI/platform hooks, and host storage mismatch.
+- Validation was documentation/source inspection only: all 16 local Markdown
+  links resolve, ten findings are present, code fences balance, and document
+  whitespace checks pass. No build, flash, USB/PCSC access, or new runtime
+  measurement occurred. Existing uncommitted implementation changes remain
+  outside this documentation step.
+- Next implementation should establish explicit owners/contracts, share card
+  session policy across transports, coordinate durable storage, and move API
+  behavior into native dispatch while preserving upstream CAPs and recovery
+  mechanisms. See the document for ordering and acceptance conditions.
+
 ## RSA cipher providers and physical vectors — 2026-10-24
 
 - Added profile-gated RSA `ALG_RSA_PKCS1`, `ALG_RSA_NOPAD`, and SHA-1 OAEP
