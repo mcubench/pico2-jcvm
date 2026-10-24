@@ -9700,3 +9700,20 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Next: prioritize the OwnerPINx Core rows or continue remaining `/deploy`
   API areas. Leave the upstream JCAlgTest CAP unchanged and keep asymmetric
   implementation paused as directed.
+
+## Remaining `/deploy` 3.0.5 areas on `symm_crypto` — 2026-10-25
+
+- `JavacardxSec` passed all 84 calls. `Service` uploaded and ran 124 calls:
+  78 OK, 35 `EXC_RUNTIME`, 9 `SW_ERROR`, and 2 `WRONG_RESULT`; investigate only
+  if optional service/RMI APIs are in the next scope.
+- `JavacardxExt`, `JavacardxInt`, and `Biometry` uploaded but INSTALL returned
+  `6A88`; each was rolled back. `Javacardx` was skipped per the deploy README
+  for a 3.0.5 card without framework packages; `JavacardxSec` was run instead.
+- Final GPPro list showed only ISD `A000000151000000`; all successful area CAPs
+  were removed. Combined result CSVs remain under
+  `artifacts/results/deploy/symm_crypto-D92-20261025/`.
+- Current focus remains the JCVM core / JCSystem contract. In the Core 3.0.5
+  report, JCSystem was 37 OK plus the spec-permitted `requestObjectDeletion()`
+  `ILLEGAL_USE`; the broader Core failures are limited to OwnerPINx and the
+  unavailable Ext scenario applet. Do not spend time implementing algorithms
+  that the active profile does not claim to support.

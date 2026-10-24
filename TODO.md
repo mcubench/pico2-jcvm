@@ -94,6 +94,13 @@ cipher.
   `APPLET_NOT_INSTALLED` rows after its scenario CAP INSTALL returned 6A88.
   All `/deploy` CAPs were cleaned up; GPPro lists only the ISD. CSVs are in
   `artifacts/results/deploy/symm_crypto-D92-20261025/`.
+- [x] Complete the remaining `/deploy` 3.0.5 area checks on `symm_crypto`:
+  `JavacardxSec` passed 84/84; `Service` completed 124 calls (78 OK, 35
+  `EXC_RUNTIME`, 9 `SW_ERROR`, 2 `WRONG_RESULT`). `JavacardxExt`, `JavacardxInt`,
+  and `Biometry` each loaded the CAP but INSTALL returned `6A88`; the runner
+  rolled each back. Per the deploy README, `JavacardxSec` substitutes for
+  `Javacardx` on this 3.0.5 card without framework packages. The service
+  failures are optional API work, not missing crypto algorithms.
 - [x] Build and inspect all three capability profiles on physical Pico 2
   `D92E743D5F640C0F`: `current` (15 enabled), `no_aes` (10), and `minimal` (0).
   Build and finite-monitor results are recorded above; this checkbox covers

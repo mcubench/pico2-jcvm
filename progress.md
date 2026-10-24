@@ -11388,3 +11388,26 @@
 - Artifacts/logs: `artifacts/results/deploy/symm_crypto-D92-20261025/core.csv`,
   `security.csv`, and `crypto.csv`; no new build/flash was required for this
   API-only validation step.
+
+## 2026-10-25 — Finish optional `/deploy` 3.0.5 area checks
+
+- Step/experiment: `deploy-symm-crypto-optional-areas-D92`
+- Change: Ran the remaining isolated API areas from the unchanged
+  `/AlgTest_JavaCard/deploy` suite on physical D92 with the `symm_crypto` image.
+  Updated the profile status, handoff, and results tracker.
+- Validation: `JavacardxSec` upload/test/cleanup passed all 84 calls. Service
+  completed 124 calls (78 OK, 35 `EXC_RUNTIME`, 9 `SW_ERROR`, 2 `WRONG_RESULT`)
+  and cleanup passed. `JavacardxExt`, `JavacardxInt`, and Biometry each loaded
+  but INSTALL returned `6A88`; each package was rolled back. `Javacardx` was
+  replaced by `JavacardxSec` per the deploy README for this 3.0.5 card without
+  framework packages. Final GPPro `--list` contained only ISD
+  `A000000151000000`.
+- Result: Optional security features passed completely; Service/RMI has
+  execution defects if that optional package is in scope. Refused CAP installs
+  did not leave packages behind. The physical card remains empty.
+- Decision: Keep crypto `no` results classified as expected. Continue first
+  with JCVM core/OwnerPINx or required applet/JCSystem behavior; optional
+  Service work remains lower priority.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/deploy/symm_crypto-D92-20261025/javacardxsec.csv`,
+  `javacardxext.csv`, `javacardxint.csv`, and `service-biometry.csv`.
