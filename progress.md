@@ -11017,7 +11017,7 @@
 - Decision: Use this receiver ABI for direct native Java Card API methods.
   Replace the existing Java crypto providers with native API dispatch before
   treating their cryptographic behavior as compliant.
-- Commit: pending; ROM-mask submodule commit `7704b0b`
+- Commit: `a7c9fb6`; ROM-mask submodule commit `7704b0b`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T163247Z.log`;
   ARM UF2 SHA-256 `215de132afc30fff5f5cf35c639b559ead1465ccebee3b88da8fdbf748aefe67d`;
   PC ROM-mask SHA-256 `1e76a6cd532e54a5059855827e33f34cede704c3e79fa84d7ae17ea42d7ebbe9`.
