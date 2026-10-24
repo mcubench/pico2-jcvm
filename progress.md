@@ -11355,7 +11355,7 @@
   state.
 - Decision: Continue physical CAP testing on D92 or another board with
   confirmed runtime enumeration. Preserve the empty D92 card state.
-- Commit: pending.
+- Commit: `f01e4f2`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261024T220417Z.log`;
   `artifacts/logs/cycle-choupi-20261024T220800Z.log`;
   `artifacts/logs/cycle-choupi-20261024T221145Z.log`.
