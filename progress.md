@@ -11169,6 +11169,6 @@
 - Decision: Continue migrating the remaining RSA cipher provider behavior to
   native dispatch, then validate unchanged `/deploy` CAPs on available Pico 2
   devices using failover across identified boards.
-- Commit: pending
+- Commit: `85930f4`
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`,
   `artifacts/logs/build-pc-rsa-validation.log`; no physical hardware log

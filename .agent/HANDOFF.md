@@ -9502,6 +9502,7 @@ confirmed on hardware. The original investigation evidence remains in earlier
   setter/getter cases and cipher round trips. Log:
   `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`. No physical test was
   run for this step.
+- Source commit: `85930f4`.
 - Build-wrapper details: `tools/build` and `tools/build-pc` now regenerate ROM
   metadata and invalidate the source cache when Java support sources or the
   support generator changes. `tools/extract-rom-metadata.py` derives the
