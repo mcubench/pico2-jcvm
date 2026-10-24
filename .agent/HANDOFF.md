@@ -77,22 +77,22 @@
 
 # Handoff
 
-## Runtime boundary finding — 2026-10-24
+## Runtime format correction — 2026-10-24
 
-- The firmware native-source directory `choupi/src` contains zero `.java` or
-  `.class` files. However, the Pico build compiles Java Card API `.java`
-  sources into `.class` files, then ROM-mask generation packages Java-derived
-  API bytecode into `build/choupi-arm/flash` (and corresponding architecture
-  outputs). This was confirmed from `choupi/CMakeLists.txt` and
-  `tools/build-pc`; the existing PC build has 170 API `.class` outputs.
-- User's runtime boundary requires native C++ Java Card API dispatch and no
-  Java provider/adapter implementations in firmware. This means the current
-  API ROM-mask path is an architectural issue to resolve before accepting more
-  asymmetric Java-provider work. Root `TODO.md` now tracks this as Priority 0.
-- Do not treat the earlier RSA cipher/signature Java provider results as
-  compliant with that requirement. Preserve the native C++ primitives and
-  existing physical evidence, but route the API calls natively before further
-  profile acceptance. No CAP file was changed.
+- Correction to the previous handoff note: the host `.class` outputs are
+  intermediate only. The Java Card converter emits JCA, then the ROM-mask
+  generator converts each JCA package to CAP components before embedding it.
+  The Pico interprets Java Card CAP bytecode, not standard JVM bytecode. The
+  PC build has 170 intermediate `.class` files, 20 JCA files, and zero `.cap`
+  files written to disk; CAP components are generated in memory by
+  `JCAConverter.converter()`.
+- Therefore the build representation itself is not a JVM bytecode runtime
+  problem. The user's implementation constraint still applies: crypto
+  algorithms belong in native C++ API dispatch, not Java provider/adapter
+  method bodies or edited upstream applet CAPs.
+- The root TODO's earlier Priority 0 claim was removed and replaced with this
+  verified format description. Do not remove the ROM-mask API packages as a
+  response to the earlier mistaken interpretation.
 
 ## Asymmetric crypto profile — SHA provider groundwork — 2026-10-24
 

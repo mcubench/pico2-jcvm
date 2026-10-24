@@ -11,17 +11,13 @@ stale. This section is the current source of truth for open work. Missing
 algorithms and JCAlgTest `NO_SUCH_ALGORITHM` results are expected unless CHOUPI
 claims to support them; implementing every algorithm is not a goal.
 
-### Priority 0 — native Java Card API runtime boundary
-
-- [ ] Remove Java implementation bytecode from firmware ROM-mask output. The
-  current `tools/build-pc` / `choupi/CMakeLists.txt` path compiles Java Card
-  API `.java` sources into `.class` files and feeds those classes to the ROM
-  mask generator. The firmware has no `.java`/`.class` files under
-  `choupi/src`, but the generated ROM mask still contains Java-derived API
-  bytecode. Replace those implementations with native C++ API dispatch while
-  leaving installed CAP applets as the only Java Card application bytecode.
-  Do not add provider/adapter implementations in Java. Verify the final ARM
-  image and ROM mask contain no API implementation bytecode.
+Runtime representation (verified 2026-10-24): Java Card API `.java` sources
+are compiled on the host to `.class`, converted to JCA, then converted by the
+ROM-mask generator into CAP components. The Pico JCVM interprets Java Card CAP
+bytecode; the host `.class` files are not embedded or executed on-device. New
+cryptographic algorithms must still be implemented natively in C++ and
+dispatched through the Java Card API. Do not add Java crypto providers or
+adapters, and do not change upstream applet CAP files.
 
 ### Priority 1 — selectable Java Card firmware capabilities
 
@@ -1137,8 +1133,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   tests, both architecture builds, image and ROM-mask size checks, then run the
   complete relevant `/deploy` tests on identified physical Pico 2 cards.
   Progress (2026-10-24): SHA-1/224/256/384/512, RSA public/private/CRT key
-  storage for all requested sizes, and RSA PKCS#1/NoPad/OAEP ciphers now have
-  profile-gated providers. VPCD covers 20 vectors. Physical RSA ciphers passed
+  storage for all requested sizes, and RSA PKCS#1/NoPad/OAEP ciphers have
+  implementations and VPCD covers 20 vectors. The committed RSA cipher Java
+  provider is not compliant with the user's native-only implementation
+  instruction and must be replaced by native C++ API dispatch. Physical RSA ciphers passed
   18/18 vectors on Pico 2 `2BED26ED20556535`. RSA signatures, EC keys/ECDSA,
   key agreement, key generation, exact full-report comparison, and full deploy
   acceptance remain.

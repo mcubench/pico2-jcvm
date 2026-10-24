@@ -10955,3 +10955,21 @@
 - Commit: pending
 - Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`; no logs
 
+## 2026-10-24 — Correct ROM-mask bytecode format description
+
+- Step/experiment: `runtime-boundary-format-correction`
+- Change: Corrected the prior audit note in TODO and handoff. The Java Card API
+  `.class` files are host-side intermediate artifacts; the JC converter emits
+  JCA, and the ROM-mask generator converts JCA packages into CAP components.
+- Validation: Inspected the Ant `build-jca` converter invocation,
+  `rommask/Main.java` JCA input and `JCAConverter.converter()` CAP construction.
+  Current PC artifacts contain 170 `.class`, 20 `.jca`, and zero `.cap` files;
+  CAP components are constructed in memory and packed into the ROM mask.
+- Result: The Pico executes Java Card CAP bytecode, not standard JVM bytecode.
+  Crypto implementations must still be native C++ API dispatch; no applet CAP
+  files should be edited.
+- Decision: Removed the mistaken Priority 0 ROM-mask removal task. Continue
+  asymmetric implementation only through native C++ API dispatch.
+- Commit: pending
+- Artifacts/logs: `TODO.md`, `.agent/HANDOFF.md`; no logs
+
