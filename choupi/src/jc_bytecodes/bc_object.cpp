@@ -353,27 +353,30 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
     ConstantPool_Handler type_out_cp(source_package);
     auto [type_out_package, type_out_class] =
         type_out_cp.resolveClassref(type_out_classref);
-    // CHECKCAST class references can target either class or interface records.
-    // The class and interface export namespaces are distinct, so an unmapped
-    // interface token can otherwise resolve to a different interface that
-    // happens to occupy the same class export slot. When the first resolution
-    // is already an interface, prefer the explicit interface-token mapping.
-    if (IS_INTERFACE(type_out_class)) {
-      try {
-        ConstantPool_Handler interface_type_out_cp(source_package);
-        auto interface_candidate =
-            interface_type_out_cp.resolveClassref(type_out_classref, true);
-        if (IS_INTERFACE(interface_candidate.second)) {
-          type_out_package = interface_candidate.first;
-          type_out_class = interface_candidate.second;
-        }
-      } catch (Exceptions exception) {
-        // The same byte can be invalid in the interface namespace. Retain the
-        // successfully resolved interface candidate in that case.
-        if (exception != SecurityException) {
-          throw;
-        }
+    auto interface_candidate = std::make_pair(
+        source_package, static_cast<const uint8_t *>(nullptr));
+
+    // CHECKCAST's Classref does not say which export namespace its token uses.
+    // The class token can resolve successfully to an unrelated class that
+    // shares the numeric token with an imported interface (for example,
+    // OwnerPINx). Resolve the interface namespace independently and test both
+    // candidates against the runtime object below.
+    try {
+      ConstantPool_Handler interface_type_out_cp(source_package);
+      auto candidate =
+          interface_type_out_cp.resolveClassref(type_out_classref, true);
+      if (IS_INTERFACE(candidate.second)) {
+        interface_candidate = candidate;
       }
+    } catch (Exceptions exception) {
+      // Ordinary class references need not have a corresponding interface
+      // token in the imported package.
+      if (exception != SecurityException) {
+        throw;
+      }
+    }
+    if (IS_INTERFACE(type_out_class) && interface_candidate.second == nullptr) {
+      interface_candidate = std::make_pair(type_out_package, type_out_class);
     }
 
     // Java Card arrays are Object instances but do not inherit applet classes
@@ -394,9 +397,9 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
     auto type_in_ref = std::make_pair(
         type_in_package, reinterpret_cast<const uint8_t *>(type_in_class));
 
-    // CHECKCAST accepts both class and interface references. Keep the
-    // resolved CAP record untyped here; classref2class rejects interfaces
-    // before Class_Handler::docheckcast can apply the interface rules.
+    // CHECKCAST accepts class and interface references. The standard
+    // resolution supplies the class candidate; when that candidate does not
+    // match, also try the interface candidate from the independent token map.
     auto type_out_ref = std::make_pair(type_out_package, type_out_class);
     const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
     const bool trace_cast = trace_setting != nullptr &&
@@ -421,12 +424,23 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
                    IS_INTERFACE(type_out_class) ? 1u : 0u);
     }
     try {
-      const bool result = Class_Handler::docheckcast(type_in_ref, type_out_ref);
-      if (trace_cast) {
-        std::fprintf(stderr, "CHOUPI:CHECKCAST_RESULT cp=%u result=%u\n",
-                     static_cast<unsigned>(index), result ? 1u : 0u);
+      const bool class_result =
+          Class_Handler::docheckcast(type_in_ref, type_out_ref);
+      bool interface_result = false;
+      if (!class_result && interface_candidate.second != nullptr &&
+          (interface_candidate.first != type_out_package ||
+           interface_candidate.second != type_out_class)) {
+        interface_result =
+            Class_Handler::docheckcast(type_in_ref, interface_candidate);
       }
-      return result ? TRUE : FALSE;
+      if (trace_cast) {
+        std::fprintf(stderr,
+                     "CHOUPI:CHECKCAST_RESULT cp=%u class_result=%u "
+                     "interface_result=%u\n",
+                     static_cast<unsigned>(index), class_result ? 1u : 0u,
+                     interface_result ? 1u : 0u);
+      }
+      return (class_result || interface_result) ? TRUE : FALSE;
     } catch (Exceptions exception) {
       if (trace_cast) {
         std::fprintf(stderr,
