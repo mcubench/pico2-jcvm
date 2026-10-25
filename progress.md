@@ -11946,7 +11946,7 @@
   authenticated GET STATUS, selected every applet, and completed DELETE cleanup.
 - Decision: Automatic host VPCD registry discovery is complete. Physical
   multi-package power-cycle persistence and PC/SC-host GPPro remain unverified.
-- Commit: `3b45bd5` (implementation); documentation follow-up follows.
+- Commit: `3b45bd5` (implementation); documentation follow-up `796eb87`.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T070620Z.log`
   (SHA-256 `b26462a58b660dca73ea5619d4ba8724500427a910e03d1245307c980d2f33c2`);
   `artifacts/logs/host-vpcd-multipackage-restart-20261025T070620Z.log`

@@ -20,8 +20,7 @@
   SHA-256 `60ea3358a18ad638174ea4dd3be96dd6895392027eba016b0b8bcb90ccb264fc`.
 - Physical multi-package power-cycle persistence and PC/SC-host GPPro testing
   remain open. This step is host-only; no hardware was used. Implementation
-  commit: `3b45bd5`; progress/TODO/handoff documentation is being committed as
-  its required follow-up.
+  commit: `3b45bd5`; progress/TODO/handoff follow-up commit: `796eb87`.
 - Next: continue card-manager persistence and the remaining in-scope VM work;
   keep `asymm_crypto` paused.
 
