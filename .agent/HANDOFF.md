@@ -18,6 +18,15 @@
   GPPro now lists package `4A43416C6754657374` as `LOADED` and applet
   `4A43416C675465737431` as `SELECTABLE`. SELECT, GETVERSION
   (`1.8.2_jc305`), and JCSystem info probes all returned `9000`.
+- The official client then completed `ALG_SUPPORT_EXTENDED` over the physical
+  reader: 4,525 matched result rows, 73 `yes`, 4,452 `no`, and no other CHOUPI
+  statuses. Comparison with the archived jCardSim report and generated
+  `symm_crypto` manifest passed: 46 expected/actual capability identities,
+  zero unexpected and zero missing. Unsupported algorithms remain expected.
+- Support artifacts: `artifacts/results/jcalgtest-symm-crypto-D92-20261025/CHOUPI_symm_crypto_D92_ALGSUPPORT__3b_80_01_81.csv`
+  (SHA-256 `31a530948b195a5ce1a6f57d391b826a10ff8b51b92b0495c199b3cfefacfd1e`),
+  run log `artifacts/logs/jcalgtest-symm-crypto-D92-20261025.log`, comparator
+  log `artifacts/logs/jcalgtest-symm-crypto-compare-D92-20261025.log`.
 - **Current card state:** JCAlgTest is installed because the explicit install
   just succeeded. To return this card to empty, delete applet AID
   `4A43416C675465737431` first, then package AID `4A43416C6754657374`, and
@@ -27,8 +36,9 @@
   Cycle log: `artifacts/logs/cycle-choupi-20261025T002953Z.log`. Final GPPro
   and APDU evidence: `artifacts/logs/gppro-explicit-jcalgtest-D92-20261025.log`.
 - No source/CAP files changed. Previous dirty asymmetric-prototype files were
-  preserved. Next action: only run JCAlgTest tests the user requests; otherwise
-  continue the native JCVM backlog and keep the physical registry state explicit.
+  preserved. Next action: continue the native JCVM backlog and keep the
+  physical registry state explicit. User instruction excludes Windows checks
+  and Java-side crypto providers/adapters.
 
 ## Selectable-profile API matrix and OwnerPINx cross-profile verification — 2026-10-25
 

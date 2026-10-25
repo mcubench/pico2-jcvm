@@ -11595,3 +11595,28 @@
   `artifacts/logs/gppro-explicit-jcalgtest-D92-20261025.log`,
   `build/arm/pico2_choupi.uf2`; CAP SHA-256
   `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+
+## 2026-10-25 — Repeat full physical symmetric-profile support sweep
+
+- Step/experiment: `jcalgtest-symm-crypto-support-D92`
+- Change: Ran unchanged upstream JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` on the
+  explicitly installed applet using the physical `symm_crypto` Pico, then
+  compared its CSV with the archived jCardSim report and generated manifest.
+- Validation: Official client completed 4,525 result rows. CHOUPI returned 73
+  `yes`, 4,452 `no`, zero other statuses. Comparator passed with matching row
+  identities and exactly 46 expected/actual capability identities; unexpected
+  and missing were both zero. The jCardSim reference reports additional
+  capabilities and 121 non-yes/no statuses; these do not make CHOUPI fail.
+- Result: The latest physical image reports precisely the selected
+  `symm_crypto` capability set. Unsupported algorithms remain expected; no
+  algorithm implementations or CAP files were added or changed.
+- Decision: Continue with the highest remaining native JCVM backlog item; do
+  not resume the paused asymmetric profile or Windows workflow without user
+  direction.
+- Commit: pending.
+- Artifacts/logs: CSV
+  `artifacts/results/jcalgtest-symm-crypto-D92-20261025/CHOUPI_symm_crypto_D92_ALGSUPPORT__3b_80_01_81.csv`
+  SHA-256 `31a530948b195a5ce1a6f57d391b826a10ff8b51b92b0495c199b3cfefacfd1e`;
+  run log `artifacts/logs/jcalgtest-symm-crypto-D92-20261025.log`;
+  comparator log
+  `artifacts/logs/jcalgtest-symm-crypto-compare-D92-20261025.log`.
