@@ -12128,3 +12128,23 @@
   `22b2683699e41b585c1ce770da73d09a4609ee55abf4befd9b42c60a5d5abe3c`;
   final GPPro listing log SHA-256
   `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`.
+
+## 2026-10-25 — Verify SensitiveResult visibility across native Contexts
+
+- Step/experiment: `sensitive-result-cross-context-native-20261025`
+- Change: Extend the RMI registry native test to activate two `Context` objects
+  in turn and check that boolean, short, and object SensitiveResult values are
+  VM-wide. Check the shared object remains in root enumeration and that reset
+  rejects a stale assertion. No firmware implementation or CAP source changed.
+- Validation: `./tools/test-rmi-registry` passed:
+  `RMI_REGISTRY:PASS ids=32 roots=1 session_cleanup=1 sensitive_result_cross_context=1`.
+  Scoped `git diff --check -- tools/tests/rmi_registry/rmi_registry_test.cpp`
+  passed.
+- Result: VM-wide result sharing and object rooting are directly checked
+  across native Context instances. This does not prove Java-level SIO behavior;
+  cross-applet contexts are not implemented yet.
+- Decision: Keep the general SensitiveResult TODO open until multi-applet SIO
+  dispatch can be exercised; continue with the next concrete runtime gap.
+- Commit: pending.
+- Artifacts/logs: test executable `build/tests/rmi-registry/rmi_registry_test`;
+  no separate log.

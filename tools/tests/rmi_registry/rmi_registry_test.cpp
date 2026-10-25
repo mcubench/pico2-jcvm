@@ -30,10 +30,44 @@ bool contains(const VisitedReferences &visited, const jcvm::jref_t reference) {
   }
   return false;
 }
+
+void verify_sensitive_result_cross_context(jcvm::Context &producer,
+                                           jcvm::Context &consumer) {
+  const auto previous = jcvm::Context::setActiveContext(&producer);
+  jcvm::Context::getActiveContext().setSensitiveResultBoolean(true);
+  jcvm::Context::setActiveContext(&consumer);
+  jcvm::Context::getActiveContext().assertSensitiveResultBoolean(true);
+
+  jcvm::Context::getActiveContext().setSensitiveResultShort(-7);
+  jcvm::Context::setActiveContext(&producer);
+  jcvm::Context::getActiveContext().assertSensitiveResultShort(-7, 0);
+
+  const auto object = make_reference(7);
+  jcvm::Context::getActiveContext().setSensitiveResultObject(object);
+  jcvm::Context::setActiveContext(&consumer);
+  jcvm::Context::getActiveContext().assertSensitiveResultObject(object);
+  VisitedReferences roots;
+  jcvm::Context::getActiveContext().visitRootReferences(record_reference,
+                                                        &roots);
+  assert(contains(roots, object));
+
+  jcvm::Context::getActiveContext().resetSensitiveResult();
+  bool reset_rejected = false;
+  try {
+    jcvm::Context::getActiveContext().assertSensitiveResultObject(object);
+  } catch (...) {
+    reset_rejected = true;
+  }
+  assert(reset_rejected);
+  jcvm::Context::setActiveContext(previous);
+}
 } // namespace
 
 int main() {
   jcvm::Context context(1, 1);
+  jcvm::Context second_context(2, 1);
+  verify_sensitive_result_cross_context(context, second_context);
+
   const auto first = make_reference(1);
   const uint16_t first_id = context.exportRemoteObject(first);
   assert(first_id != 0xffff);
@@ -69,6 +103,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 session_cleanup=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 session_cleanup=1 sensitive_result_cross_context=1");
   return 0;
 }

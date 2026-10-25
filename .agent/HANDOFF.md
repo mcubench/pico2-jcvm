@@ -1,5 +1,18 @@
 # Latest validation — flash current profile and verify physical boot (2026-10-25)
 
+## Latest native API coverage — SensitiveResult across Context objects (2026-10-25)
+- `tools/tests/rmi_registry/rmi_registry_test.cpp` now switches the active
+  context between two native `Context` objects and verifies VM-wide boolean,
+  short, and object results remain visible. It also verifies the shared object
+  is enumerated as a GC root and `reset()` rejects stale assertions.
+- Validation: `./tools/test-rmi-registry` passed with
+  `RMI_REGISTRY:PASS ids=32 roots=1 session_cleanup=1 sensitive_result_cross_context=1`;
+  scoped diff check passed.
+- Limitation: this is native Context-level evidence, not Java applet SIO
+  dispatch. Cross-applet contexts and firewall behavior remain unimplemented.
+- Next: continue current source work in TODO's priority order. Keep
+  `asymm_crypto` paused; preserve unrelated staged/unstaged worktree content.
+
 - `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid
   2BED26ED20556535` passed both ARM and RISC-V builds, verified the ARM image
   write, and passed the finite 18-second monitor with repeated

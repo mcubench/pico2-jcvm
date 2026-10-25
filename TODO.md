@@ -564,9 +564,14 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   image was flashed. This is not a dependency on the separate Security test
   CAP.
 - [ ] **Complete general SensitiveResult coverage.** The result slot is VM-wide
-  and the same-context assertions pass. Add explicit visibility coverage
-  across a Shareable Interface Object context switch, then implement and test
-  remaining sensitive result producers outside the JavacardxSec deploy suite.
+  and the same-context assertions pass. A native two-`Context` regression now
+  verifies boolean, short, and object results survive switching the active
+  context, verifies the object remains GC-rooted, and verifies reset rejects
+  stale assertions. The VM still has one applet context and does not implement
+  cross-applet Shareable Interface Object dispatch, so Java-level SIO behavior
+  remains unverified. Implement true multi-applet contexts before claiming that
+  acceptance; then cover any remaining sensitive-result producers outside the
+  JavacardxSec deploy suite.
 - [x] **Fix remaining Core API failures found by physical deploy coverage.**
   Same-array overlapping-range behavior in `Util.arrayCopy` and
   `arrayCopyNonAtomic` and `OwnerPIN`/`PIN` dispatch pass on the physical Pico.
