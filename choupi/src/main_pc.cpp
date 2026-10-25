@@ -79,11 +79,13 @@ uint8_t vpcd_package_id = 63;
 uint16_t vpcd_applet_class_index = 0xffff;
 bool vpcd_configured = false;
 bool vpcd_install_requested = false;
+bool vpcd_registry_resume_requested = false;
 bool vpcd_package_loaded = false;
 std::vector<uint8_t> vpcd_install_parameters;
 std::vector<uint8_t> vpcd_stored_instance_aid;
 std::vector<uint8_t> vpcd_stored_applet_aid;
 uint16_t vpcd_stored_class_index = 0xffff;
+bool vpcd_restore_applet_requested = false;
 CapLoadSession vpcd_cap_load_session;
 Scp03Session vpcd_secure_channel;
 bool vpcd_get_status_first_seen = false;
@@ -448,6 +450,9 @@ bool cap_store_applet_class_index(uint16_t &class_index) noexcept {
   return true;
 }
 
+bool load_host_cap_registry(const uint8_t *package_bits,
+                            size_t package_bits_length);
+
 extern "C" uint8_t choupi_pc_initialize_storage(void) {
   if (host_rom_packages.empty()) return 1;
 
@@ -478,6 +483,42 @@ extern "C" uint8_t choupi_pc_initialize_storage(void) {
       fs_write(&package_list_tag, 1, package_bits, sizeof(package_bits)) != 0) {
     std::fprintf(stderr, "ERROR: unable to persist PC package list\n");
     return 1;
+  }
+  static bool cap_registry_initialized = false;
+  if (!cap_registry_initialized) {
+    if (host_cap_packages.empty() && !vpcd_restore_applet_requested &&
+        !load_host_cap_registry(package_bits, sizeof(package_bits))) {
+      return 1;
+    }
+    for (uint8_t package_id = 56; package_id <= 63; ++package_id) {
+      if ((package_bits[package_id / 8] & (1u << (package_id % 8))) != 0 &&
+          host_package_read(package_id) == nullptr) {
+        std::fprintf(stderr,
+                     "ERROR: package %u is enabled in saved VPCD memory but "
+                     "has no CAP registry entry\n",
+                     static_cast<unsigned>(package_id));
+        return 1;
+      }
+    }
+    if (vpcd_registry_resume_requested) {
+      uint8_t package_id = 0xff;
+      uint8_t applet_aid[16]{};
+      uint8_t applet_aid_length = 0;
+      uint16_t class_index = 0xffff;
+      if (!cap_store_find_instance(
+              vpcd_applet_aid.data(),
+              static_cast<uint8_t>(vpcd_applet_aid.size()), package_id,
+              applet_aid, applet_aid_length, class_index)) {
+        std::fprintf(stderr,
+                     "ERROR: --applet-aid is absent from the restored "
+                     "registry\n");
+        return 1;
+      }
+      vpcd_package_id = package_id;
+      vpcd_applet_class_index = class_index;
+      vpcd_package_loaded = true;
+    }
+    cap_registry_initialized = true;
   }
   return 0;
 }
@@ -543,6 +584,288 @@ bool cap_declares_applet(uint8_t package_id, const uint8_t *aid,
       return true;
   }
   return false;
+}
+
+uint32_t host_registry_crc32(const uint8_t *data, size_t length) {
+  uint32_t crc = 0xffffffffu;
+  for (size_t index = 0; index < length; ++index) {
+    crc ^= data[index];
+    for (unsigned int bit = 0; bit < 8; ++bit) {
+      const uint32_t mask = 0u - (crc & 1u);
+      crc = (crc >> 1) ^ (0xedb88320u & mask);
+    }
+  }
+  return ~crc;
+}
+
+void append_u16(std::vector<uint8_t> &data, uint16_t value) {
+  data.push_back(static_cast<uint8_t>(value >> 8));
+  data.push_back(static_cast<uint8_t>(value));
+}
+
+void append_u32(std::vector<uint8_t> &data, uint32_t value) {
+  data.push_back(static_cast<uint8_t>(value >> 24));
+  data.push_back(static_cast<uint8_t>(value >> 16));
+  data.push_back(static_cast<uint8_t>(value >> 8));
+  data.push_back(static_cast<uint8_t>(value));
+}
+
+bool read_u16(const std::vector<uint8_t> &data, size_t &offset,
+              uint16_t &value) {
+  if (offset > data.size() || data.size() - offset < 2) return false;
+  value = static_cast<uint16_t>(data[offset] << 8) | data[offset + 1];
+  offset += 2;
+  return true;
+}
+
+bool read_u32(const std::vector<uint8_t> &data, size_t &offset,
+              uint32_t &value) {
+  if (offset > data.size() || data.size() - offset < 4) return false;
+  value = (static_cast<uint32_t>(data[offset]) << 24) |
+          (static_cast<uint32_t>(data[offset + 1]) << 16) |
+          (static_cast<uint32_t>(data[offset + 2]) << 8) | data[offset + 3];
+  offset += 4;
+  return true;
+}
+
+bool read_aid(const std::vector<uint8_t> &data, size_t &offset,
+              std::vector<uint8_t> &aid) {
+  if (offset >= data.size()) return false;
+  const uint8_t length = data[offset++];
+  if (length < 5 || length > 16 || offset > data.size() ||
+      data.size() - offset < length)
+    return false;
+  aid.assign(data.begin() + offset, data.begin() + offset + length);
+  offset += length;
+  return true;
+}
+
+bool load_host_cap_registry(const uint8_t *package_bits,
+                            size_t package_bits_length) {
+  const std::string registry_path = flash_filename + ".cap-registry";
+  std::ifstream input(registry_path, std::ifstream::binary);
+  if (!input.is_open()) {
+    for (uint8_t package_id = 56; package_id <= 63; ++package_id) {
+      if (package_id / 8 < package_bits_length &&
+          (package_bits[package_id / 8] & (1u << (package_id % 8))) != 0 &&
+          host_package_read(package_id) == nullptr) {
+        std::fprintf(stderr,
+                     "ERROR: saved VPCD image has package %u but registry "
+                     "sidecar is missing; supply --restore-applet records\n",
+                     static_cast<unsigned>(package_id));
+        return false;
+      }
+    }
+    return true;
+  }
+
+  std::vector<uint8_t> data{std::istreambuf_iterator<char>(input),
+                            std::istreambuf_iterator<char>()};
+  constexpr size_t kMinimumRegistrySize = 14;
+  constexpr size_t kMaximumRegistrySize = 8 * (64 * 1024 + 40 * 36) + 64;
+  if (data.size() < kMinimumRegistrySize ||
+      data.size() > kMaximumRegistrySize ||
+      std::memcmp(data.data(), "VCR1", 4) != 0) {
+    std::fprintf(stderr, "ERROR: invalid VPCD CAP registry sidecar\n");
+    return false;
+  }
+  const size_t crc_offset = data.size() - 4;
+  size_t tail_offset = crc_offset;
+  uint32_t stored_crc = 0;
+  if (!read_u32(data, tail_offset, stored_crc) ||
+      stored_crc != host_registry_crc32(data.data(), crc_offset)) {
+    std::fprintf(stderr, "ERROR: VPCD CAP registry sidecar CRC mismatch\n");
+    return false;
+  }
+  size_t offset = 4;
+  if (data[offset++] != 1) {
+    std::fprintf(stderr, "ERROR: unsupported VPCD CAP registry version\n");
+    return false;
+  }
+  uint32_t image_crc = 0;
+  if (!read_u32(data, offset, image_crc) ||
+      image_crc != host_registry_crc32(flash, flash_length) ||
+      offset >= crc_offset) {
+    std::fprintf(stderr,
+                 "ERROR: VPCD CAP registry does not match saved memory image\n");
+    return false;
+  }
+  const uint8_t package_count = data[offset++];
+  if (package_count > 8) {
+    std::fprintf(stderr, "ERROR: VPCD CAP registry has too many packages\n");
+    return false;
+  }
+  std::vector<uint8_t> seen_package_ids;
+  for (uint8_t package_index = 0; package_index < package_count;
+       ++package_index) {
+    if (offset >= crc_offset) return false;
+    const uint8_t package_id = data[offset++];
+    std::vector<uint8_t> package_aid;
+    uint32_t code_length = 0;
+    if (package_id < 56 || package_id > 63 ||
+        std::find(seen_package_ids.begin(), seen_package_ids.end(),
+                  package_id) != seen_package_ids.end() ||
+        !read_aid(data, offset, package_aid) ||
+        !read_u32(data, offset, code_length) || code_length < 13 ||
+        code_length > 64 * 1024 || offset > crc_offset ||
+        code_length > crc_offset - offset) {
+      std::fprintf(stderr, "ERROR: malformed VPCD CAP package record\n");
+      return false;
+    }
+    std::vector<uint8_t> code(data.begin() + offset,
+                              data.begin() + offset + code_length);
+    offset += code_length;
+    uint8_t instance_count = 0;
+    if (offset >= crc_offset) return false;
+    instance_count = data[offset++];
+    if (instance_count > 40) {
+      std::fprintf(stderr, "ERROR: VPCD registry instance count exceeds 40\n");
+      return false;
+    }
+    const bool package_enabled = package_id / 8 < package_bits_length &&
+        (package_bits[package_id / 8] & (1u << (package_id % 8))) != 0;
+    if (package_enabled) {
+      const uint8_t header_aid_length = code[12];
+      const size_t header_length =
+          (static_cast<size_t>(code[1]) << 8) | code[2];
+      uint8_t existing_package_id = 0xff;
+      if (code[0] != 1 || header_length < 13 ||
+          header_length > code.size() - 3 || header_aid_length < 5 ||
+          header_aid_length > 16 || header_aid_length > header_length - 10 ||
+          package_aid.size() != header_aid_length ||
+          std::memcmp(code.data() + 13, package_aid.data(),
+                      header_aid_length) != 0 ||
+          (cap_store_find_package(
+               package_aid.data(), static_cast<uint8_t>(package_aid.size()),
+               existing_package_id) && existing_package_id != package_id)) {
+        std::fprintf(stderr, "ERROR: invalid VPCD CAP package data\n");
+        return false;
+      }
+      if (choupi_store_cap_package(
+              package_id, package_aid.data(),
+              static_cast<uint8_t>(package_aid.size()), code.data(),
+              static_cast<uint32_t>(code.size())) != 0) {
+        std::fprintf(stderr, "ERROR: unable to restore VPCD CAP package\n");
+        return false;
+      }
+    }
+    for (uint8_t instance_index = 0; instance_index < instance_count;
+         ++instance_index) {
+      std::vector<uint8_t> applet_aid;
+      std::vector<uint8_t> instance_aid;
+      uint16_t class_index = 0xffff;
+      if (!read_aid(data, offset, applet_aid) ||
+          !read_aid(data, offset, instance_aid) ||
+          !read_u16(data, offset, class_index) || class_index == 0xffff) {
+        std::fprintf(stderr, "ERROR: malformed VPCD applet registry record\n");
+        return false;
+      }
+      if (!package_enabled) continue;
+      uint8_t existing_package_id = 0xff;
+      uint8_t existing_applet_aid[16]{};
+      uint8_t existing_applet_aid_length = 0;
+      uint16_t existing_class_index = 0xffff;
+      if (!cap_declares_applet(package_id, applet_aid.data(),
+                               static_cast<uint8_t>(applet_aid.size())) ||
+          cap_store_find_instance(
+              instance_aid.data(), static_cast<uint8_t>(instance_aid.size()),
+              existing_package_id, existing_applet_aid,
+              existing_applet_aid_length, existing_class_index) ||
+          choupi_store_cap_instance(
+              package_id, applet_aid.data(),
+              static_cast<uint8_t>(applet_aid.size()), instance_aid.data(),
+              static_cast<uint8_t>(instance_aid.size()), class_index) != 0) {
+        std::fprintf(stderr, "ERROR: invalid or duplicate VPCD applet record\n");
+        return false;
+      }
+    }
+    seen_package_ids.push_back(package_id);
+  }
+  if (offset != crc_offset) {
+    std::fprintf(stderr, "ERROR: trailing data in VPCD CAP registry\n");
+    return false;
+  }
+  for (uint8_t package_id = 56; package_id <= 63; ++package_id) {
+    if (package_id / 8 < package_bits_length &&
+        (package_bits[package_id / 8] & (1u << (package_id % 8))) != 0 &&
+        host_package_read(package_id) == nullptr) {
+      std::fprintf(stderr,
+                   "ERROR: enabled package %u is absent from VPCD registry "
+                   "sidecar\n",
+                   static_cast<unsigned>(package_id));
+      return false;
+    }
+  }
+  size_t restored_instances = 0;
+  for (const HostCapPackage &package : host_cap_packages)
+    restored_instances += package.instances.size();
+  std::fprintf(stderr,
+               "VPCD:REGISTRY_AUTO_RESTORED packages=%zu instances=%zu\n",
+               host_cap_packages.size(), restored_instances);
+  return true;
+}
+
+bool save_host_cap_registry() {
+  const std::string path = flash_filename + ".cap-registry";
+  if (host_cap_packages.empty()) {
+    (void)std::remove(path.c_str());
+    return true;
+  }
+  if (host_cap_packages.size() > 8) {
+    std::fprintf(stderr, "ERROR: host CAP registry exceeds eight packages\n");
+    return false;
+  }
+  std::vector<uint8_t> data{'V', 'C', 'R', '1', 1};
+  append_u32(data, host_registry_crc32(flash, flash_length));
+  data.push_back(static_cast<uint8_t>(host_cap_packages.size()));
+  for (const HostCapPackage &package : host_cap_packages) {
+    if (package.package_id < 56 || package.package_id > 63 ||
+        package.package_aid.size() < 5 || package.package_aid.size() > 16 ||
+        package.code.size() < 13 || package.code.size() > 64 * 1024 ||
+        package.instances.size() > 40) {
+      std::fprintf(stderr, "ERROR: invalid host CAP registry state\n");
+      return false;
+    }
+    data.push_back(package.package_id);
+    data.push_back(static_cast<uint8_t>(package.package_aid.size()));
+    data.insert(data.end(), package.package_aid.begin(),
+                package.package_aid.end());
+    append_u32(data, static_cast<uint32_t>(package.code.size()));
+    data.insert(data.end(), package.code.begin(), package.code.end());
+    data.push_back(static_cast<uint8_t>(package.instances.size()));
+    for (const HostAppletInstance &instance : package.instances) {
+      if (instance.applet_aid.size() < 5 || instance.applet_aid.size() > 16 ||
+          instance.instance_aid.size() < 5 ||
+          instance.instance_aid.size() > 16 ||
+          instance.class_index == 0xffff) {
+        std::fprintf(stderr, "ERROR: invalid host applet registry state\n");
+        return false;
+      }
+      data.push_back(static_cast<uint8_t>(instance.applet_aid.size()));
+      data.insert(data.end(), instance.applet_aid.begin(),
+                  instance.applet_aid.end());
+      data.push_back(static_cast<uint8_t>(instance.instance_aid.size()));
+      data.insert(data.end(), instance.instance_aid.begin(),
+                  instance.instance_aid.end());
+      append_u16(data, instance.class_index);
+    }
+  }
+  append_u32(data, host_registry_crc32(data.data(), data.size()));
+  const std::string temporary_path = path + ".tmp";
+  std::ofstream output(temporary_path, std::ofstream::binary | std::ofstream::trunc);
+  if (!output.is_open()) return false;
+  output.write(reinterpret_cast<const char *>(data.data()),
+               static_cast<std::streamsize>(data.size()));
+  output.flush();
+  if (!output) return false;
+  output.close();
+  if (std::rename(temporary_path.c_str(), path.c_str()) != 0) {
+    (void)std::remove(temporary_path.c_str());
+    return false;
+  }
+  std::fprintf(stderr, "VPCD:CAP_REGISTRY_SAVED packages=%zu bytes=%zu\n",
+               host_cap_packages.size(), data.size());
+  return true;
 }
 
 void append_ber_length(std::vector<uint8_t> &data, size_t length) {
@@ -1188,7 +1511,10 @@ int main_pc(int argc, char *argv[]) {
       restore.class_index = static_cast<uint16_t>(class_index);
       restore.cap_code_filename = argv[arg + 5];
       restore_applets.push_back(std::move(restore));
+      vpcd_restore_applet_requested = true;
       arg += 5;
+    } else if (option == "--resume") {
+      vpcd_registry_resume_requested = true;
     } else if (option == "--rom-mask") {
       if (arg + 1 >= argc || argv[arg + 1][0] == '\0') {
         std::fprintf(stderr, "ERROR: --rom-mask requires a filename\n");
@@ -1221,6 +1547,7 @@ int main_pc(int argc, char *argv[]) {
                   "  --cap-code COMPONENTS_FILENAME (dynamic package only)\n"
                   "  --restore-applet ID CLASS APPLET_AID INSTANCE_AID "
                   "CAP_COMPONENTS (repeatable)\n"
+                  "  --resume (restore VPCD registry sidecar from --memory)\n"
                   "  --rom-mask ROMMASK_FILENAME\n"
                   "  --install --install-params HEX (requires --save)\n"
                   "  -h, --help\n",
@@ -1275,7 +1602,8 @@ int main_pc(int argc, char *argv[]) {
   }
   if ((vpcd_configured || vpcd_install_requested) &&
       vpcd_package_id >= 56 && vpcd_package_id <= 63 &&
-      cap_code_filename.empty() && restore_applets.empty()) {
+      cap_code_filename.empty() && restore_applets.empty() &&
+      !vpcd_registry_resume_requested) {
     std::fprintf(stderr,
                  "ERROR: dynamic package 63 requires --cap-code with the "
                  "contiguous CAP component image\n");
@@ -1283,10 +1611,19 @@ int main_pc(int argc, char *argv[]) {
   }
   if (!restore_applets.empty() &&
       (!vpcd_configured || vpcd_install_requested || package_id_present ||
-       class_index_present || !cap_code_filename.empty())) {
+       class_index_present || !cap_code_filename.empty() ||
+       vpcd_registry_resume_requested)) {
     std::fprintf(stderr,
                  "ERROR: --restore-applet requires VPCD resume mode and "
                  "cannot be combined with single-package metadata\n");
+    return EXIT_FAILURE;
+  }
+  if (vpcd_registry_resume_requested &&
+      (!vpcd_configured || vpcd_install_requested || package_id_present ||
+       class_index_present || !cap_code_filename.empty())) {
+    std::fprintf(stderr,
+                 "ERROR: --resume requires VPCD mode and cannot be combined "
+                 "with single-package metadata\n");
     return EXIT_FAILURE;
   }
   if (install_parameters_present && !vpcd_install_requested) {
@@ -1543,6 +1880,15 @@ int starting_jcre() {
     std::ostream_iterator<char> output(flash_memory_out);
     std::copy(flash, flash + flash_length, output);
     flash_memory_out.close();
+    if (!flash_memory_out) {
+      std::fprintf(stderr, "ERROR: unable to save memory image %s\n",
+                   flash_filename.c_str());
+      return 1;
+    }
+    if (!save_host_cap_registry()) {
+      std::fprintf(stderr, "ERROR: unable to save VPCD CAP registry sidecar\n");
+      return 1;
+    }
   }
 
   return installed ? 0 : 1;

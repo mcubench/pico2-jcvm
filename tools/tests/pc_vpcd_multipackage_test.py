@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import re
 import socket
 import subprocess
 import sys
@@ -255,8 +254,6 @@ def main() -> int:
         restart_log_path = root / (
             f"artifacts/logs/host-vpcd-multipackage-restart-{started_at}.log"
         )
-        core_code_path = memory.parent / "host-vpcd-multipackage-core.cap-components"
-        multi_code_path = memory.parent / "host-vpcd-multipackage-multi.cap-components"
         command = [
             str(root / "tools/env"), str(emulator), "-m", str(memory), "-s",
             "--vpcd", f"{host}:{port}", "--applet-aid",
@@ -344,41 +341,11 @@ def main() -> int:
                 raise RuntimeError(
                     f"first VPCD process exited with {process.returncode}"
                 )
-            log_text = log_path.read_text(errors="replace")
-            registry_records = {
-                bytes.fromhex(instance): (
-                    int(package_id), int(class_index), bytes.fromhex(applet),
-                    bytes.fromhex(instance),
-                )
-                for package_id, class_index, applet, instance in re.findall(
-                    r"VPCD:APPLET_INSTANCE package-id=(\d+) class-index=(\d+) "
-                    r"applet-aid=([0-9A-F]+) instance-aid=([0-9A-F]+)",
-                    log_text,
-                )
-            }
-            for aid in (core_applets[0], multi_applets[0], multi_applets[1]):
-                if aid not in registry_records:
-                    raise RuntimeError(
-                        f"missing saved registry metadata for {aid.hex()}"
-                    )
-            core_code_path.write_bytes(core_code)
-            multi_code_path.write_bytes(multi_code)
             restart_command = [
                 str(root / "tools/env"), str(emulator), "-m", str(memory), "-s",
                 "--vpcd", f"{host}:{port}", "--applet-aid",
-                core_applets[0].hex(), "--rom-mask", str(rom_mask),
+                core_applets[0].hex(), "--rom-mask", str(rom_mask), "--resume",
             ]
-            for aid, cap_path in (
-                (core_applets[0], core_code_path),
-                (multi_applets[0], multi_code_path),
-                (multi_applets[1], multi_code_path),
-            ):
-                package_id, class_index, applet_aid, instance_aid = \
-                    registry_records[aid]
-                restart_command.extend((
-                    "--restore-applet", str(package_id), str(class_index),
-                    applet_aid.hex(), instance_aid.hex(), str(cap_path),
-                ))
             with restart_log_path.open("wb") as restart_log:
                 process = subprocess.Popen(
                     restart_command, cwd=root, stdout=restart_log,
@@ -470,12 +437,15 @@ def main() -> int:
             if connection is not None:
                 connection.close()
             if process.poll() is None:
-                process.terminate()
                 try:
                     process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait()
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait()
             print(f"VPCD:LOG {log_path.relative_to(root)}")
             if restart_log_path.exists():
                 print(f"VPCD:RESTART_LOG {restart_log_path.relative_to(root)}")
