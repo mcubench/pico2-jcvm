@@ -11561,5 +11561,5 @@
   wrapper entry point. Default compiler parallelism remains two jobs per build.
 - Decision: Keep using repository wrappers; no other build paths need changes
   unless a future reproduction bypasses `tools/build`.
-- Commit: pending.
+- Commit: `47ef2f2`.
 - Artifacts/logs: `build/.tools-build.lock`; no separate build log archived.
