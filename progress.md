@@ -12099,3 +12099,32 @@
   CSV SHA-256 `447d8bdc81fb57c0d8b713d32973451befc391e1155dd28e12d2968465c3aafc`;
   cleanup listing `artifacts/logs/gppro-current-profile-2BED-after-security-crypto-20261025.log`
   (SHA-256 `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`).
+
+## 2026-10-25 — Validate current-profile Service and optional API areas on 2BED
+
+- Step/experiment: `current-service-optional-deploy-2BED-20261025`
+- Change: Run unchanged API 3.0.5 Service and optional extension CAPs against
+  the current-profile physical card. No firmware or CAP sources changed.
+- Validation: `PICO2_HOST_USB_ACCESS=1
+  ./AlgTest_JavaCard/deploy/run_api_test.sh --cardname current-2BED-20261025
+  --reader-name 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00'
+  --api 305 --areas JavacardxSec` passed all 84 calls and removed its CAP.
+  The same command with `--areas Service` passed all 124 calls and removed its
+  CAP. With `--areas JavacardxExt,Javacardx,JavacardxInt,Biometry`, each CAP
+  LOAD completed but INSTALL returned `6A88` (missing imported package); each
+  partial LOAD rollback passed. The deploy README identifies these package
+  absences as expected for this card. Final GPPro `--list` on the exact 2BED
+  reader returned only ISD `A000000151000000`.
+- Result: Current-profile Service and JavacardxSec complete without errors;
+  unavailable optional imports are refused and partial packages removed.
+- Decision: Continue with remaining JCVM acceptance gaps; do not implement
+  optional APIs whose packages are absent from the runtime profile. `asymm_crypto`
+  remains paused.
+- Commit: pending.
+- Artifacts/logs: JavacardxSec CSV SHA-256
+  `01dde4a24b966199ebd9e6a8b067684b6dc8bb7e7c4dccc308e645d4e39c406a`; Service
+  CSV SHA-256 `cb337f40cedbda61a0bd88c38f0cad509e68184731852dab8b4c261157fada97`;
+  optional-area CSV SHA-256
+  `22b2683699e41b585c1ce770da73d09a4609ee55abf4befd9b42c60a5d5abe3c`;
+  final GPPro listing log SHA-256
+  `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`.

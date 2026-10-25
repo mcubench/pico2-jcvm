@@ -350,9 +350,21 @@
   (SHA-256 `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`).
 - Security/Crypto validation record commit: `7c7fd11917e22246cdd026c9e82509ab9a555c25`.
 - Validation record commit: `9c652bfb317f4145bb89abf634eaba99f8e66d20`.
-- Next: run remaining useful unchanged `/deploy` areas on this identified
-  reader, then prioritize JCVM gaps from observed failures. Keep `asymm_crypto`
-  paused.
+- Current-profile `JavacardxSec` passed 84/84; Service passed 124/124. Both
+  cleanup operations passed. `Javacardx`, `JavacardxExt`, `JavacardxInt`, and
+  Biometry each returned INSTALL `6A88` for missing imports and were rolled
+  back. The final physical GPPro listing showed only ISD.
+- Artifacts: `javacardxsec.csv` SHA-256
+  `01dde4a24b966199ebd9e6a8b067684b6dc8bb7e7c4dccc308e645d4e39c406a`;
+  `service.csv` SHA-256
+  `cb337f40cedbda61a0bd88c38f0cad509e68184731852dab8b4c261157fada97`;
+  `optional-areas.csv` SHA-256
+  `22b2683699e41b585c1ce770da73d09a4609ee55abf4befd9b42c60a5d5abe3c`;
+  final listing log SHA-256
+  `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`.
+- Next: inspect current physical API coverage against the remaining TODO and
+  fix the highest-priority reproducible JCVM failure. Windows visibility and
+  true physical power-cycle persistence remain open. Keep `asymm_crypto` paused.
 
 ## Current continuation — D92 multi-package transaction-probe attempt (2026-10-25)
 

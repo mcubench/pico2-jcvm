@@ -1291,6 +1291,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `OK`, 444 `UNSUPPORTED_PER_SPEC`, no unexpected results. Both runners cleaned
   up their CAPs; final GPPro listing showed only ISD. Reports are in
   `artifacts/results/deploy/current-2BED-20261025/`.
+- [x] On 2026-10-25, current-profile `JavacardxSec` passed 84/84 and Service
+  passed 124/124 on 2BED. `Javacardx`, `JavacardxExt`, `JavacardxInt`, and
+  Biometry CAP installs returned `6A88` for missing imported packages; all
+  partial LOADs were rolled back. A final GPPro listing showed only ISD.
+  These install refusals match the deploy README's package availability notes.
 - [ ] Pass AC1–AC5 and the plan's clean-flash integration sequence three times.
 
 ## Expanded and required cryptographic profiles
