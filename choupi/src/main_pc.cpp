@@ -1141,8 +1141,8 @@ uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
                                        uint8_t instance_aid_length,
                                        const uint8_t *package_aid,
                                        uint8_t package_aid_length,
-                                       const uint8_t *module_aid,
-                                       uint8_t module_aid_length) {
+                                       const gp::ExecutableModuleAid *modules,
+                                       uint8_t module_count) {
         const uint8_t *match_aid = p1 == 0x40 ? instance_aid : package_aid;
         const uint8_t match_aid_length =
             p1 == 0x40 ? instance_aid_length : package_aid_length;
@@ -1159,12 +1159,17 @@ uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
                   response + output_length, capacity, entry_length,
                   instance_aid, instance_aid_length, package_aid,
                   package_aid_length, 0x07)
-            : gp::append_load_file_entry(
-                  response + output_length, capacity, entry_length,
-                  package_aid, package_aid_length, module_aid,
-                  module_aid_length, p1 == 0x10);
+            : p1 == 0x10
+                  ? gp::append_load_file_entry_modules(
+                        response + output_length, capacity, entry_length,
+                        package_aid, package_aid_length, modules,
+                        module_count)
+                  : gp::append_load_file_entry(
+                        response + output_length, capacity, entry_length,
+                        package_aid, package_aid_length, nullptr, 0, false);
         if (!appended) {
-          page_full = true;
+          if (output_length == 0) status = 0x6f00;
+          else page_full = true;
           return false;
         }
         output_length += entry_length;
@@ -1173,13 +1178,25 @@ uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
       };
 
       for (const HostCapPackage &package : host_cap_packages) {
-        uint8_t module_aid[16]{};
-        uint8_t module_aid_length = 0;
-        if (p1 == 0x10 &&
-            !choupi_cap_package_applet_aid(package.package_id, 0, module_aid,
-                                           &module_aid_length)) {
-          status = 0x6f00;
-          break;
+        gp::ExecutableModuleAid modules[127]{};
+        uint8_t module_count = 0;
+        if (p1 == 0x10) {
+          while (module_count < 127) {
+            if (!choupi_cap_package_applet_aid(
+                    package.package_id, module_count,
+                    modules[module_count].value,
+                    &modules[module_count].length)) break;
+            ++module_count;
+          }
+          if (module_count == 127) {
+            uint8_t extra_aid[16]{};
+            uint8_t extra_length = 0;
+            if (choupi_cap_package_applet_aid(package.package_id, 127,
+                                               extra_aid, &extra_length)) {
+              status = 0x6f00;
+              break;
+            }
+          }
         }
         uint8_t instance_aid[16]{};
         uint8_t applet_aid[16]{};
@@ -1199,12 +1216,12 @@ uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
             if (!append_matching(instance_aid, instance_aid_length,
                                  package.package_aid.data(),
                                  static_cast<uint8_t>(package.package_aid.size()),
-                                 module_aid, module_aid_length)) break;
+                                 modules, module_count)) break;
           }
         } else if (!append_matching(
                        nullptr, 0, package.package_aid.data(),
                        static_cast<uint8_t>(package.package_aid.size()),
-                       module_aid, module_aid_length)) {
+                       modules, module_count)) {
           // The failed append is retained for the next GET STATUS page.
         }
         if (status != 0x9000 || page_full) break;

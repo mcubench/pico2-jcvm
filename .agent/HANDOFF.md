@@ -1,5 +1,33 @@
 # Current continuation — JCSystem overlay lookup fixed; LED installed on attached Pico 2s (2026-10-25)
 
+## Latest continuation — GET STATUS module lists (2026-10-25)
+
+- User asked whether two Pico boards pulsing their LEDs means only two can be
+  active as PC/SC readers. It does not: the heartbeat reports firmware reader
+  idle state; PC/SC reader count is determined by USB enumeration, permissions,
+  and pcscd discovery. Do not infer a two-reader firmware limit from the LEDs.
+- Fixed GET STATUS `P1=10` representation in physical and PC VPCD paths: each
+  executable load file has one E3 entry with all its module AIDs in repeated
+  `84` TLVs. Extended BER lengths are supported. The VPCD multipackage test
+  checks both packages and all three applets before/after process restart.
+- Validation: `./tools/test-gp-registry` passed 50/50;
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 20/20;
+  `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed.
+  Physical D92 `D92E743D5F640C0F` was flashed with the instrumented image and
+  passed finite runtime monitor (`TEST:PASS choupi_runtime`, summary 1/0).
+  GPPro authenticated `--list` succeeded through ISD and executable load file
+  categories, then stalled after `84F21002`; this is not a physical GET STATUS
+  pass. Following timeout, `pcsc_scan -r` itself timed out. The approved helper
+  reported two USB nodes; that count is not a maximum reader capacity.
+- The final ARM/RISC-V outputs were rebuilt after removing temporary serial
+  tracing, but the clean final image was not reflashed. Current physical D92
+  still has the tracing build. PC/SC later stopped responding, so do not make
+  more hardware claims until it recovers or another exact reader is available.
+- Next: inspect the CCID/PCSC response path for the physical `P1=10` timeout,
+  preferably using another identified reader under the device failover rule.
+  Continue the selected GET DATA/GET STATUS TODO; keep physical result open.
+  Preserve unrelated profile/RSA/AlgTest changes.
+
 - `tools/run-deploy-parallel` defaults to one GPPro attempt, zero retry pause,
   and exposes `--gp-retries`, `--gp-pause`, and `--gp-timeout`. Zero pause is
   needed because the unchanged upstream runner sleeps after the final failed

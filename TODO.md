@@ -328,6 +328,18 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   multi-package testing remains unverified because this VM has no `Virtual
   PCD` reader registered with PC/SC; physical CCID multi-package testing did
   pass on 2BED as documented in the card-manager section below.
+  Module GET STATUS (`P1=10`) now emits one E3 entry per executable load file
+  with a repeated `84` TLV for each declared applet module. The VPCD regression
+  checks both package AIDs and all three module AIDs before and after restart;
+  the complete multipackage lifecycle passes 20/20, and the registry unit test
+  passes 50/50 including extended BER lengths. Physical D92 firmware cycling
+  passed its finite runtime monitor, but GPPro still stalled after sending
+  authenticated `84 F2 10 02`; this physical response path is not validated.
+  After the bounded GPPro process was killed, `pcsc_scan -r` also timed out
+  despite the approved helper granting access to two USB nodes. Keep this item
+  open until a physical module GET STATUS response and complete GPPro listing
+  succeed. The LED heartbeat does not impose a two-reader firmware limit;
+  observed reader count is a USB/PCSC enumeration result.
 - [ ] **Broaden garbage-collector root and persistence-alias coverage.** The
   physical static workload passed 2,262 transfers (heap stabilized at 83 array
   slots / 28 instance slots; one pass reclaimed 50 arrays). The focused

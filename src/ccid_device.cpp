@@ -191,35 +191,34 @@ uint16_t build_dynamic_get_status_page(
           ++declared_applet_count;
         }
       }
-      const uint8_t entry_count = p1 == 0x20
-                                      ? 1
-                                      : (declared_applet_count == 0
-                                             ? 1
-                                             : declared_applet_count);
-      for (uint8_t index = 0; index < entry_count; ++index) {
-        uint8_t applet_aid[16]{};
-        uint8_t applet_aid_length = 0;
-        if (p1 == 0x10 && declared_applet_count != 0 &&
-            !choupi_cap_package_applet_aid(
-                package_id, index, applet_aid, &applet_aid_length))
-          continue;
-        if (ordinal++ < get_status_cursor) continue;
-        const bool include_module = p1 == 0x10 && declared_applet_count != 0;
-        uint8_t entry[48]{};
-        size_t entry_length = 0;
-        if (!gp::append_load_file_entry(
-                entry, sizeof(entry), entry_length, package_aid,
-                package_aid_length, include_module ? applet_aid : nullptr,
-                include_module ? applet_aid_length : 0, include_module))
-          return 0x6f00;
-        if (entry_length > capacity - output_length) {
-          more_entries = true;
-          return 0x6310;
+      if (ordinal++ < get_status_cursor) continue;
+      uint8_t entry[256]{};
+      size_t entry_length = 0;
+      bool appended = false;
+      if (p1 == 0x10) {
+        if (declared_applet_count > 127) return 0x6f00;
+        gp::ExecutableModuleAid modules[127]{};
+        for (uint8_t index = 0; index < declared_applet_count; ++index) {
+          if (!choupi_cap_package_applet_aid(
+                  package_id, index, modules[index].value,
+                  &modules[index].length)) return 0x6f00;
         }
-        std::memcpy(output + output_length, entry, entry_length);
-        output_length += entry_length;
-        ++get_status_cursor;
+        appended = gp::append_load_file_entry_modules(
+            entry, sizeof(entry), entry_length, package_aid,
+            package_aid_length, modules, declared_applet_count);
+      } else {
+        appended = gp::append_load_file_entry(
+            entry, sizeof(entry), entry_length, package_aid,
+            package_aid_length, nullptr, 0, false);
       }
+      if (!appended) return 0x6f00;
+      if (entry_length > capacity - output_length) {
+        more_entries = output_length != 0;
+        return more_entries ? 0x6310 : 0x6f00;
+      }
+      std::memcpy(output + output_length, entry, entry_length);
+      output_length += entry_length;
+      ++get_status_cursor;
     }
   }
   return 0x9000;

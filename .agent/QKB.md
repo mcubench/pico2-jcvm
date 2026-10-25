@@ -1,5 +1,27 @@
 # Project issue knowledge base
 
+## PC/SC stopped responding after bounded GPPro GET STATUS timeout — 2026-10-25
+
+- **Symptom:** On Pico D92 (`D92E743D5F640C0F`), GPPro authenticated and
+  completed GET STATUS for P1=80, P1=40, and P1=20, then
+  stalled after sending `84 F2 10 02`. After the bounded Java process was
+  terminated, a later `pcsc_scan -r` also timed out without printing readers.
+- **Evidence:** The approved `pico2-pcsc-reader` helper reported access to two
+  USB nodes, while `pcsc_scan` did not return. The VPCD module-list regression
+  passes, and the physical CCID debug snapshot recorded the module GET STATUS
+  APDU as its last XfrBlock; exact card response bytes were not captured.
+- **Cause:** Unresolved. This does not prove a firmware limit of two readers,
+  and the available output cannot distinguish a card response issue from a
+  stuck pcscd/SmartcardIO transaction.
+- **Viable fix:** None established. The helper restores ACLs after
+  re-enumeration, but did not recover `pcsc_scan` in this occurrence. Keep
+  physical validation open; continue on a different identified Pico if it is
+  already accessible. Do not retry an unbounded GPPro command.
+- **Validation:** `./tools/build-pc`, `./tools/build arm`,
+  `./tools/build riscv`, registry test (50/50), and VPCD multipackage test
+  (20/20) passed. D92 finite runtime cycle passed, but physical module GET
+  STATUS did not.
+
 ## Firmware upload preserves installed CAP state; first flashed BOOTSEL board lost runtime enumeration — 2026-10-25
 
 - **Symptom:** After flashing, GPPro still listed previously installed JCAlgTest

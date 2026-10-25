@@ -123,6 +123,41 @@ int main() {
              output[output_length - sizeof(instance_aid) - 2] == 0x84,
          "load_file_module_tlv");
 
+  const gp::ExecutableModuleAid modules[] = {
+      {static_cast<uint8_t>(sizeof(instance_aid)),
+       {0x4a, 0x43, 0x41, 0x6c, 0x67, 0x54, 0x65, 0x73, 0x74, 0x31}},
+      {static_cast<uint8_t>(sizeof(instance_aid)),
+       {0x4a, 0x43, 0x41, 0x6c, 0x67, 0x54, 0x65, 0x73, 0x74, 0x32}},
+  };
+  constexpr std::array<uint8_t, 41> expected_multiple_modules = {
+      0xe3, 0x27, 0x4f, 0x09, 0x4a, 0x43, 0x41, 0x6c, 0x67, 0x54,
+      0x65, 0x73, 0x74, 0x9f, 0x70, 0x01, 0x01, 0x84, 0x0a, 0x4a,
+      0x43, 0x41, 0x6c, 0x67, 0x54, 0x65, 0x73, 0x74, 0x31, 0x84,
+      0x0a, 0x4a, 0x43, 0x41, 0x6c, 0x67, 0x54, 0x65, 0x73, 0x74,
+      0x32};
+  output_length = 0;
+  expect(gp::append_load_file_entry_modules(
+             output.data(), output.size(), output_length, package_aid,
+             sizeof(package_aid), modules, 2),
+         "build_single_load_file_entry_with_multiple_modules");
+  expect(output_length == expected_multiple_modules.size() &&
+             std::memcmp(output.data(), expected_multiple_modules.data(),
+                         expected_multiple_modules.size()) == 0,
+         "module_aids_are_repeated_tag84_in_one_entry");
+
+  gp::ExecutableModuleAid long_modules[7]{};
+  for (size_t index = 0; index < 7; ++index) {
+    long_modules[index].length = 16;
+  }
+  std::array<uint8_t, 160> long_output{};
+  output_length = 0;
+  expect(gp::append_load_file_entry_modules(
+             long_output.data(), long_output.size(), output_length, package_aid,
+             sizeof(package_aid), long_modules, 7) &&
+             long_output[0] == 0xe3 && long_output[1] == 0x81 &&
+             long_output[2] == 141,
+         "module_list_uses_ber_long_length_when_needed");
+
   gp::RegistryView registry{};
   registry.applet_installed = true;
   registry.instance_aid = instance_aid;

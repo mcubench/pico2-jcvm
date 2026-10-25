@@ -12629,3 +12629,13 @@
 - Decision: Retry reports are bounded by the configured GP timeout and no retry pause by default. Explicit different-reader failover remains manual.
 - Commit: pending.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Return every applet module in GET STATUS
+
+- Step/experiment: `gp-get-status-multiple-modules-20261025`
+- Change: Changed physical and VPCD GET STATUS P1=10 to emit one executable-load-file entry per package with repeated tag-84 module AIDs. Added extended BER length encoding and regressions that check both packages and all three modules before and after VPCD process restart. Updated TODO, QKB, and handoff with the implementation and unresolved physical result.
+- Validation: `./tools/test-gp-registry` passed 50/50; `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 20/20; `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. D92 (`D92E743D5F640C0F`) cycle passed runtime monitor (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). Bounded physical GPPro `--list` authenticated and completed P1=80/40/20, then timed out after P1=10. Subsequent `pcsc_scan -r` timed out after the Java process was terminated. Scoped `git diff --check` passed for this step's files; the whole-tree check still reports pre-existing trailing whitespace in `AGENTS.md`.
+- Result: PC VPCD reports both package AIDs and all three module AIDs, including after restart. Physical module GET STATUS response remains unverified. The approved helper reported two USB nodes; this is not evidence of a two-reader firmware limit.
+- Decision: Keep the selected GET DATA/GET STATUS TODO open. Investigate physical CCID/PCSC response behavior with another identified reader when available; do not treat VPCD or heartbeat results as physical reader validation.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T161044Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261025T161044Z.log`, `artifacts/logs/cycle-choupi-20261025T145305Z.log`; GPPro output was bounded and not saved to a file.

@@ -144,30 +144,47 @@ inline bool append_isd_registry_entry(uint8_t *output, size_t capacity,
 
 // Append an Executable Load File E3 entry. When include_modules is true, the
 // provided module AID is emitted as tag 84.
-inline bool append_load_file_entry(uint8_t *output, size_t capacity,
-                                   size_t &output_length,
-                                   const uint8_t *package_aid,
-                                   uint8_t package_aid_length,
-                                   const uint8_t *module_aid,
-                                   uint8_t module_aid_length,
-                                   bool include_modules) noexcept {
+struct ExecutableModuleAid {
+  uint8_t length = 0;
+  uint8_t value[16]{};
+};
+
+// P1=10 returns the Executable Load File once, followed by one tag-84 TLV
+// for every executable module belonging to that package.
+inline bool append_load_file_entry_modules(
+    uint8_t *output, size_t capacity, size_t &output_length,
+    const uint8_t *package_aid, uint8_t package_aid_length,
+    const ExecutableModuleAid *modules, uint8_t module_count) noexcept {
   output_length = 0;
   if (output == nullptr || package_aid == nullptr ||
       package_aid_length < 5 || package_aid_length > 16 ||
-      (include_modules &&
-       (module_aid == nullptr || module_aid_length < 5 ||
-        module_aid_length > 16))) {
+      module_count > 127 || (module_count != 0 && modules == nullptr)) {
     return false;
   }
 
-  const size_t value_length = static_cast<size_t>(package_aid_length) + 6 +
-                              (include_modules ? module_aid_length + 2 : 0);
-  const size_t entry_length = value_length + 2;
-  if (value_length > 0x7f || entry_length > capacity) return false;
+  size_t value_length = static_cast<size_t>(package_aid_length) + 6;
+  for (uint8_t index = 0; index < module_count; ++index) {
+    if (modules[index].length < 5 || modules[index].length > 16) return false;
+    value_length += static_cast<size_t>(modules[index].length) + 2;
+  }
+  if (value_length > 0xffff) return false;
+  const size_t encoded_length_size =
+      value_length < 0x80 ? 1 : (value_length <= 0xff ? 2 : 3);
+  const size_t entry_length = 1 + encoded_length_size + value_length;
+  if (entry_length > capacity) return false;
 
   size_t cursor = 0;
   output[cursor++] = 0xe3;
-  output[cursor++] = static_cast<uint8_t>(value_length);
+  if (value_length < 0x80) {
+    output[cursor++] = static_cast<uint8_t>(value_length);
+  } else if (value_length <= 0xff) {
+    output[cursor++] = 0x81;
+    output[cursor++] = static_cast<uint8_t>(value_length);
+  } else {
+    output[cursor++] = 0x82;
+    output[cursor++] = static_cast<uint8_t>(value_length >> 8);
+    output[cursor++] = static_cast<uint8_t>(value_length);
+  }
   output[cursor++] = 0x4f;
   output[cursor++] = package_aid_length;
   std::memcpy(output + cursor, package_aid, package_aid_length);
@@ -176,16 +193,40 @@ inline bool append_load_file_entry(uint8_t *output, size_t capacity,
   output[cursor++] = 0x70;
   output[cursor++] = 0x01;
   output[cursor++] = 0x01; // Executable Load File is LOADED.
-  if (include_modules) {
+  for (uint8_t index = 0; index < module_count; ++index) {
     output[cursor++] = 0x84;
-    output[cursor++] = module_aid_length;
-    std::memcpy(output + cursor, module_aid, module_aid_length);
-    cursor += module_aid_length;
+    output[cursor++] = modules[index].length;
+    std::memcpy(output + cursor, modules[index].value,
+                modules[index].length);
+    cursor += modules[index].length;
   }
 
   if (cursor != entry_length) return false;
   output_length = cursor;
   return true;
+}
+
+inline bool append_load_file_entry(uint8_t *output, size_t capacity,
+                                   size_t &output_length,
+                                   const uint8_t *package_aid,
+                                   uint8_t package_aid_length,
+                                   const uint8_t *module_aid,
+                                   uint8_t module_aid_length,
+                                   bool include_modules) noexcept {
+  if (include_modules &&
+      (module_aid == nullptr || module_aid_length < 5 ||
+       module_aid_length > 16)) {
+    output_length = 0;
+    return false;
+  }
+  ExecutableModuleAid module{};
+  if (include_modules) {
+    module.length = module_aid_length;
+    std::memcpy(module.value, module_aid, module_aid_length);
+  }
+  return append_load_file_entry_modules(
+      output, capacity, output_length, package_aid, package_aid_length,
+      include_modules ? &module : nullptr, include_modules ? 1 : 0);
 }
 
 struct RegistryView {

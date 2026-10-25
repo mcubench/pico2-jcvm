@@ -327,6 +327,7 @@ def main() -> int:
 
             packages = get_status(scp, 0x20)
             applets = get_status(scp, 0x40)
+            modules = get_status(scp, 0x10)
             for aid, label, registry in (
                 (core_package, "Core package", packages),
                 (multi_package, "Multi package", packages),
@@ -336,7 +337,20 @@ def main() -> int:
             ):
                 if aid not in registry:
                     raise RuntimeError(f"{label} absent from GET STATUS")
+            for aid, label in (
+                (core_package, "Core module package"),
+                (multi_package, "Multi module package"),
+                (core_applets[0], "Core module AID"),
+                (multi_applets[0], "Multi module AID A"),
+                (multi_applets[1], "Multi module AID B"),
+            ):
+                if aid not in modules:
+                    raise RuntimeError(
+                        f"{label} {aid.hex().upper()} absent from module GET STATUS; "
+                        f"response={modules.hex().upper()}"
+                    )
             print("TEST:PASS GET STATUS lists both packages and all 3 instances")
+            print("TEST:PASS module GET STATUS lists both packages and all 3 module AIDs")
 
             unknown_aid = bytes.fromhex("F000000001")
             unknown_select = (bytes((0x00, 0xA4, 0x04, 0x00, len(unknown_aid))) +
@@ -457,6 +471,7 @@ def main() -> int:
             print("TEST:PASS restart SCP03 authentication")
             packages = get_status(scp, 0x20)
             applets = get_status(scp, 0x40)
+            modules = get_status(scp, 0x10)
             for aid, label, registry in (
                 (core_package, "Core package after restart", packages),
                 (multi_package, "Multi package after restart", packages),
@@ -466,7 +481,20 @@ def main() -> int:
             ):
                 if aid not in registry:
                     raise RuntimeError(f"{label} absent from GET STATUS")
+            for aid, label in (
+                (core_package, "Core module package after restart"),
+                (multi_package, "Multi module package after restart"),
+                (core_applets[0], "Core module AID after restart"),
+                (multi_applets[0], "Multi module AID A after restart"),
+                (multi_applets[1], "Multi module AID B after restart"),
+            ):
+                if aid not in modules:
+                    raise RuntimeError(
+                        f"{label} {aid.hex().upper()} absent from module GET STATUS "
+                        f"after restart; response={modules.hex().upper()}"
+                    )
             print("TEST:PASS restart GET STATUS lists 2 packages and 3 instances")
+            print("TEST:PASS restart module GET STATUS lists both packages and all 3 module AIDs")
             for aid, label in (
                 (core_applets[0], "Core after restart"),
                 (multi_applets[0], "Multi A after restart"),
