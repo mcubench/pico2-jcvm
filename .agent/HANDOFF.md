@@ -10744,3 +10744,15 @@ confirmed on hardware. The original investigation evidence remains in earlier
   multiple BOOTSEL tokens. Continue on any additional board once it enumerates;
   do not attribute D92 results to another token.
 # Latest physical task — `symm_crypto` flash, explicit install, static benchmark
+# Latest continuation — verify native APDU outgoing mirror as GC root (2026-10-25)
+
+- Extended `choupi/test/jcarray_transient_test.cpp` to preserve and check the
+  native APDU outgoing buffer mirror separately from the Java APDU buffer.
+  Both APDU-held arrays and a cached static reference remain accessible after
+  `Heap::collectUnreachableFrom`; the unrelated array is reclaimed.
+- Validation: `./tools/test-jcarray` passed with
+  `TEST:PASS gc_retains_static_and_apdu_buffers` and
+  `TEST:PASS gc_reclaims_unrooted_array reclaimed=6`. Existing compiler warnings
+  in shared JCVM headers remain; no new test failure.
+- Next: broaden coverage to transient lifecycle roots and instance child graphs;
+  physical power-cycle validation remains open.

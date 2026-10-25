@@ -12729,3 +12729,13 @@
 - Decision: Continue the GC/persistence backlog.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Cover APDU outgoing mirror during collection
+
+- Step/experiment: `gc-apdu-outgoing-root-collection-20261025`
+- Change: Extended the jcarray collector regression to root the native APDU outgoing-buffer mirror independently from the Java APDU buffer. Updated the current backlog, issue note, and handoff to describe the added root source.
+- Validation: `./tools/test-jcarray` passed, including `TEST:PASS gc_retains_static_and_apdu_buffers` and `TEST:PASS gc_reclaims_unrooted_array reclaimed=6`; the build emitted existing shared-header warnings.
+- Result: Static, APDU Java buffer, and native outgoing mirror arrays all survive collection; six unrooted arrays are reclaimed.
+- Decision: Continue collection coverage for transient lifecycle roots and instance child graphs. Physical power-cycle validation remains open.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: none.

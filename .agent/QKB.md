@@ -15,8 +15,9 @@
   stubs for the two unused `JC_Instance` accessors and applet-selection query,
   and expect `SystemException` for the invalid event. Keep the stubs scoped to
   this host test target.
-- **Validation:** `./tools/test-jcarray` passed, including static/APDU buffer
-  root retention and reclamation of six unrooted arrays.
+- **Validation:** `./tools/test-jcarray` passed, including static/APDU Java
+  buffer and native APDU outgoing-buffer mirror root retention, plus
+  reclamation of six unrooted arrays.
 
 ## PC/SC stopped responding after bounded GPPro GET STATUS timeout — 2026-10-25
 

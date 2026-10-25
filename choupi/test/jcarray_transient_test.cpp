@@ -443,6 +443,12 @@ int main() {
   const auto apduBufferRef = heap.addArray(5, jcvm::JAVA_ARRAY_T_BYTE);
   const auto apduBuffer = heap.getArray(apduBufferRef);
   context.setAPDUJavaBuffer(apduBuffer);
+  context.setAPDUBufferRef(jcvm::jref_t{}, 0, 1, true);
+  (void)context.beginAPDUOutgoing(false);
+  context.setAPDUOutgoingLength(1);
+  const auto outgoingBufferRef = heap.addArray(5, jcvm::JAVA_ARRAY_T_BYTE);
+  const auto outgoingBuffer = heap.getArray(outgoingBufferRef);
+  context.setAPDUOutgoing(outgoingBuffer, 0, 1);
   heap.reserveStaticReferenceRoot(0, 9);
   heap.setStaticReferenceRoot(0, 9, bytesRef);
   const auto unrootedRef = heap.addArray(3, jcvm::JAVA_ARRAY_T_BYTE);
@@ -450,7 +456,8 @@ int main() {
       enumerate_context_roots, &context);
   if (!collection.complete || collection.arrays_reclaimed == 0 ||
       heap.getArray(bytesRef) != storedBytes ||
-      heap.getArray(apduBufferRef) != apduBuffer) {
+      heap.getArray(apduBufferRef) != apduBuffer ||
+      heap.getArray(outgoingBufferRef) != outgoingBuffer) {
     std::cerr << "collector failed to retain static/APDU roots or reclaim garbage\n";
     return 1;
   }
@@ -464,7 +471,7 @@ int main() {
     std::cerr << "collector retained an unrooted array handle\n";
     return 1;
   }
-  std::cout << "TEST:PASS gc_retains_static_and_apdu_java_buffer\n";
+  std::cout << "TEST:PASS gc_retains_static_and_apdu_buffers\n";
   std::cout << "TEST:PASS gc_reclaims_unrooted_array reclaimed="
             << collection.arrays_reclaimed << "\n";
   return 0;
