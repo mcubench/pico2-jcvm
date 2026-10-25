@@ -12789,3 +12789,13 @@
 - Decision: Continue instance field graph and transient root coverage.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Record typed-root collector test commit
+
+- Step/experiment: `gc-top-level-result-typing-20261025`
+- Change: Recorded the implementation commit SHA for typed top-level result retention and release coverage.
+- Validation: Confirmed `b57e03f` contains only the focused jcarray collector regression and tracking files.
+- Result: Typed root-result behavior is traceable to `b57e03f`.
+- Decision: Continue the GC/persistence backlog.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
