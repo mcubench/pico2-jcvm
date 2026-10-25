@@ -11719,3 +11719,18 @@
   `artifacts/logs/cycle-choupi-20261025T034755Z.log` (BOOTSEL unavailable),
   `build/arm/pico2_choupi.uf2` (1,676,800 bytes, SHA-256
   `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`).
+
+## 2026-10-25 — Put current transaction handoff at document top
+
+- Step/experiment: `handoff-latest-capacity-step`
+- Change: Moved the JCSystem capacity continuation summary to the first section
+  of `.agent/HANDOFF.md` so interrupted sessions see the current work before
+  historical physical-task notes.
+- Validation: Inspected the first 44 lines and confirmed the latest-step
+  heading occurs once at line 1; `git diff --check` passes for the handoff.
+- Result: The active implementation, validation, board visibility limitation,
+  and next physical action are now the first handoff content.
+- Decision: Continue physical validation only after the VM exposes a Pico USB
+  device; otherwise proceed with offline JCVM work.
+- Commit: `pending`
+- Artifacts/logs: none.
