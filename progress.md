@@ -11822,6 +11822,6 @@
   are removed.
 - Decision: Keep PC/SC GPPro multi-package validation and physical hardware
   validation open; retry once the boards enumerate in the VM.
-- Commit: pending; source SHA will be recorded in a follow-up metadata commit.
+- Commit: `c6a5f60` (OS submodule commit `5c07f44`).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T050904Z.log`
   SHA-256 `8123442ca2a86d4d1cdc24d77a73d8b0312c3207c3404c58a4836d81ef0ef829`.

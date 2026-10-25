@@ -20,7 +20,7 @@
   becomes visible; PC/SC GPPro integration remains open.
 - Multi-package process-restart reconstruction and package/class discovery
   remain open. Preserve unrelated asymmetric-profile changes in the worktree.
-- Source commit: pending; record SHA in the follow-up metadata commit.
+- Source commit: `c6a5f60`; OS submodule commit: `5c07f44`.
 
 # Previous implementation step — host VPCD multi-package registry (2026-10-25)
 
