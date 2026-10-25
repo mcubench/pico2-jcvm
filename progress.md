@@ -12303,7 +12303,7 @@
   bytes; Windows PC/SC and client execution remain unverified.
 - Decision: Deliver the symmetric-only package and retain Windows execution as
   an external acceptance item. Keep `asymm_crypto` paused.
-- Commit: pending
+- Commit: `0772135`
 - Artifacts/logs: archive
   `build/external-test/symm-crypto-windows-test.zip`, SHA-256
   `24adae30b893acffd1faccd7455b071ca88dbcf6c0cbfb01019a95ea3675818a`;
