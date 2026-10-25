@@ -11590,7 +11590,7 @@
 - Decision: Preserve this separation in external setup instructions: flash
   firmware first, verify only ISD, and install the unchanged CAP explicitly.
   Delete the applet before its package if an empty physical card is needed.
-- Commit: pending.
+- Commit: `fc0feaf`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T002953Z.log`,
   `artifacts/logs/gppro-explicit-jcalgtest-D92-20261025.log`,
   `build/arm/pico2_choupi.uf2`; CAP SHA-256
