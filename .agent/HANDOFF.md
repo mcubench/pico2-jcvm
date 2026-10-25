@@ -10812,3 +10812,16 @@ confirmed on hardware. The original investigation evidence remains in earlier
   object-graph, and reclamation checks passed as well.
 - Next: expand the host regression set around these changes and continue the
   remaining project priorities. Hardware power-cycle validation remains open.
+
+# Latest continuation — exercise RMI registry roots through the collector (2026-10-25)
+
+- Added an exported one-field instance and array child to the jcarray collector
+  regression. The real Context root enumerator and Heap collector preserve both
+  while the remote object is exported; after `unexportRemoteObject`, the next
+  collection reclaims the instance and child. This closes the prior test gap
+  where registry root enumeration was checked without actual collection.
+- Validation: `./tools/test-jcarray` passed with
+  `TEST:PASS gc_retains_exported_remote_graph` and
+  `TEST:PASS gc_reclaims_unexported_remote_graph`; other GC checks passed.
+- Next: continue remaining project acceptance work. No physical device was
+  used for this host collector regression.

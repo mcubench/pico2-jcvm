@@ -463,6 +463,16 @@ int main() {
   const auto instanceChildRef = heap.addArray(4, jcvm::JAVA_ARRAY_T_BYTE);
   auto instanceChild = heap.getArray(instanceChildRef);
   instanceRoot->setField_Reference(0, instanceChildRef);
+  const auto remoteInstanceRef = heap.addInstance(0, 1);
+  const auto remoteInstance = heap.getInstance(remoteInstanceRef);
+  const auto remoteChildRef = heap.addArray(4, jcvm::JAVA_ARRAY_T_BYTE);
+  const auto remoteChild = heap.getArray(remoteChildRef);
+  remoteInstance->setField_Reference(0, remoteChildRef);
+  const auto remoteObjectId = context.exportRemoteObject(remoteInstanceRef);
+  if (remoteObjectId == 0xFFFF) {
+    std::cerr << "remote instance could not be exported for GC test\n";
+    return 1;
+  }
   const auto unrootedInstanceRef = heap.addInstance(0, 1);
   const auto unrootedInstance = heap.getInstance(unrootedInstanceRef);
   const auto unrootedInstanceChildRef =
@@ -488,6 +498,8 @@ int main() {
       heap.getArray(graphChildRef) != graphChild ||
       heap.getArray(instanceChildRef) != instanceChild ||
       heap.getInstance(instanceRootRef) != instanceRoot ||
+      heap.getInstance(remoteInstanceRef) != remoteInstance ||
+      heap.getArray(remoteChildRef) != remoteChild ||
       heap.getArray(referenceResultRef) != referenceResult) {
     std::cerr << "collector failed to retain static/APDU roots or reclaim garbage\n";
     return 1;
@@ -534,6 +546,7 @@ int main() {
     std::cerr << "deselect did not clear the transient reference array\n";
     return 1;
   }
+  context.unexportRemoteObject(remoteInstanceRef);
   context.getStack().setRootReturnValue(42);
   const auto primitiveResultRef = heap.addArray(6, jcvm::JAVA_ARRAY_T_BYTE);
   const auto primitiveResultCollection = heap.collectUnreachableFrom(
@@ -550,15 +563,30 @@ int main() {
   } catch (jcvm::Exceptions error) {
     transient_child_reclaimed = error == jcvm::Exceptions::SecurityException;
   }
+  bool remote_instance_reclaimed = false;
+  try {
+    (void)heap.getInstance(remoteInstanceRef);
+  } catch (jcvm::Exceptions error) {
+    remote_instance_reclaimed = error == jcvm::Exceptions::SecurityException;
+  }
+  bool remote_child_reclaimed = false;
+  try {
+    (void)heap.getArray(remoteChildRef);
+  } catch (jcvm::Exceptions error) {
+    remote_child_reclaimed = error == jcvm::Exceptions::SecurityException;
+  }
   if (!primitiveResultCollection.complete || !primitive_result_reclaimed ||
-      !transient_child_reclaimed) {
-    std::cerr << "primitive or cleared transient root retained an array\n";
+      !transient_child_reclaimed || !remote_instance_reclaimed ||
+      !remote_child_reclaimed) {
+    std::cerr << "primitive, transient, or remote root retained an object\n";
     return 1;
   }
   std::cout << "TEST:PASS gc_retains_static_and_apdu_buffers\n";
   std::cout << "TEST:PASS gc_traces_reference_array_child\n";
   std::cout << "TEST:PASS gc_traces_instance_field_child\n";
   std::cout << "TEST:PASS gc_reclaims_unreachable_instance_graph\n";
+  std::cout << "TEST:PASS gc_retains_exported_remote_graph\n";
+  std::cout << "TEST:PASS gc_reclaims_unexported_remote_graph\n";
   std::cout << "TEST:PASS gc_tracks_reference_result_type\n";
   std::cout << "TEST:PASS gc_clears_transient_reference_graph_by_event\n";
   std::cout << "TEST:PASS gc_reclaims_unrooted_array reclaimed="

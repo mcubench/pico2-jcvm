@@ -12829,3 +12829,13 @@
 - Decision: Continue toward remaining project acceptance and correctness work.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Exercise exported RMI roots during collection
+
+- Step/experiment: `gc-rmi-registry-collection-20261025`
+- Change: Extended the jcarray collector regression with an exported one-field instance and child array. It checks retention while present in Context's remote-object registry, then unexports and checks both are reclaimed. Updated TODO, QKB, and handoff; this closes the prior test gap in remote-root collection coverage.
+- Validation: `./tools/test-jcarray` passed with `TEST:PASS gc_retains_exported_remote_graph` and `TEST:PASS gc_reclaims_unexported_remote_graph`, plus the reference-array, transient-event, typed-result, APDU/static, and other collector checks.
+- Result: A native RMI registry entry acts as a real collector root until unexport removes it.
+- Decision: Continue remaining JCVM acceptance and implementation gaps.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: none.

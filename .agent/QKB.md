@@ -22,7 +22,9 @@
   top-level reference result remains rooted, then is released when replaced by
   a primitive result. A `CLEAR_ON_DESELECT` reference array remains intact on
   reset, is cleared on deselect, and its formerly referenced child is reclaimed
-  by the next collection.
+  by the next collection. An exported instance and array child remain rooted
+  through collection; unexport clears the registry root and the next collection
+  reclaims both.
 - **Harness note:** The focused target needs test-only linker stubs for
   constant-pool/type-check and persistent-reference functions pulled in by the
   setter. The wildcard branch does not call these stubs; keep them scoped to

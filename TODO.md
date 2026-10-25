@@ -417,9 +417,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   and 32 bounded slots; ARM and host builds pass. The 16-object catalog case
   initially exposed that an applet's existing reference consumes capacity, so
   the table keeps headroom above the specified minimum. The current catalog
-  validates capacity/export/unexport calls; a focused host regression also
-  verifies registry root enumeration and session retention/cleanup, but it does
-  not force the collector to reclaim neighboring objects. `beginSelectionSession()`
+  validates capacity/export/unexport calls; a host collector regression now
+  exports an instance with an array child, verifies the registry keeps both
+  alive through GC, then unexports it and verifies both are reclaimed.
+  `beginSelectionSession()`
   activates the staged INS and retains the initial object; it now restores the
   initial object's transient export registration after applet restore.
   `RMIService.processCommand()` recognizes applet SELECT and returns FCI with
