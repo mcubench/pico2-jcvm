@@ -18,6 +18,9 @@ extern "C" const uint8_t choupi_rommask_end[] = {0};
 extern "C" uint8_t fs_sync(void);
 extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
                                     uint8_t prefix_length);
+extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
+    const uint8_t *tag, uint8_t tag_length, const uint8_t *data,
+    uint32_t length);
 
 namespace {
 std::array<uint8_t, 2 * 1024 * 1024> fake_flash;
@@ -218,6 +221,47 @@ int main() {
              fs_read(child_tag, sizeof(child_tag), actual, sizeof(actual)) == 0 &&
              actual[0] == second_value[0],
          "reuse_compressed_child_entry");
+
+  constexpr uint8_t deleted_parent_tag[] = {
+      0x02, 0x38, 0x00, 0x05, 0x05};
+  constexpr uint8_t child_of_deleted_parent_tag[] = {
+      0x02, 0x38, 0x00, 0x05, 0x05, 0xff, 0xff};
+  expect(fs_write(deleted_parent_tag, sizeof(deleted_parent_tag), first_value,
+                  sizeof(first_value)) == 0 &&
+             fs_erase(deleted_parent_tag, sizeof(deleted_parent_tag)) == 0 &&
+             fs_exists(deleted_parent_tag, sizeof(deleted_parent_tag)) == 0,
+         "delete_compressed_tag_parent");
+  expect(fs_write(child_of_deleted_parent_tag,
+                   sizeof(child_of_deleted_parent_tag), second_value,
+                   sizeof(second_value)) == 0 &&
+             fs_read(child_of_deleted_parent_tag,
+                     sizeof(child_of_deleted_parent_tag), actual,
+                     sizeof(actual)) == 0 &&
+             actual[0] == second_value[0],
+         "write_child_under_deleted_parent");
+
+  constexpr uint8_t legacy_parent_tag[] = {
+      0x02, 0x38, 0x00, 0x06, 0x06};
+  constexpr uint8_t legacy_child_tag[] = {
+      0x02, 0x38, 0x00, 0x06, 0x06, 0xff, 0xff};
+  constexpr uint8_t legacy_value[] = {0x31, 0x32, 0x33};
+  expect(fs_write(legacy_parent_tag, sizeof(legacy_parent_tag), first_value,
+                  sizeof(first_value)) == 0 &&
+             rp2350_fs_test_write_parent_encoded(
+                 legacy_child_tag, sizeof(legacy_child_tag), legacy_value,
+                 sizeof(legacy_value)) == 0 &&
+             fs_erase(legacy_child_tag, sizeof(legacy_child_tag)) == 0 &&
+             fs_erase(legacy_parent_tag, sizeof(legacy_parent_tag)) == 0,
+         "create_legacy_parent_encoded_tombstone");
+  expect(fs_write(legacy_child_tag, sizeof(legacy_child_tag), second_value,
+                  sizeof(second_value)) == 0 &&
+             fs_write(legacy_parent_tag, sizeof(legacy_parent_tag), first_value,
+                      sizeof(first_value)) == 0 &&
+             fs_read(legacy_child_tag, sizeof(legacy_child_tag), actual,
+                     sizeof(actual)) == 0 &&
+             actual[0] == second_value[0] && actual[1] == second_value[1] &&
+             actual[2] == second_value[2],
+         "live_record_wins_over_resurrected_legacy_tombstone");
 
   constexpr uint8_t namespace_prefix[] = {0x02, 0x14};
   constexpr uint8_t namespace_parent[] = {0x02, 0x14, 0x08};

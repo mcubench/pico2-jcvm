@@ -566,15 +566,14 @@ bool find_parent_slot(const uint8_t *tag, uint8_t tag_length,
   if (find_overlay(tag, tag_length - 2, &slot) == nullptr) {
     return false;
   }
+  if (!overlay_has_record(overlay[slot])) {
+    return false;
+  }
   *parent_slot = static_cast<uint16_t>(slot);
   return true;
 }
 
 uint8_t encoded_tag_length(const uint8_t *tag, uint8_t tag_length) {
-  uint16_t parent_slot = 0;
-  if (find_parent_slot(tag, tag_length, &parent_slot)) {
-    return 3;
-  }
   if (!is_compressible_tag(tag, tag_length)) {
     return tag_length;
   }
@@ -645,22 +644,40 @@ OverlayFile *find_overlay(const uint8_t *tag, uint8_t tag_length,
                           size_t *found_slot) {
   const uint16_t hash = hash_tag(tag, tag_length);
   size_t slot = hash % kMaxOverlayFiles;
+  OverlayFile *newest_live = nullptr;
+  OverlayFile *newest_tombstone = nullptr;
+  size_t newest_live_slot = 0;
+  size_t newest_tombstone_slot = 0;
   for (size_t probes = 0; probes < kMaxOverlayFiles; ++probes) {
     auto &file = overlay[slot];
     if (!overlay_is_used(file)) {
-      return nullptr;
+      break;
     }
     if (file.hash == hash && file.tag_length == tag_length &&
-        overlay_has_storage(file) &&
-        stored_tag_matches(file, tag, tag_length)) {
-      if (found_slot != nullptr) {
-        *found_slot = slot;
+        overlay_has_storage(file)) {
+      const bool matches = stored_tag_matches(file, tag, tag_length);
+      if (matches) {
+        if (overlay_has_record(file)) {
+          if (newest_live == nullptr || file.offset > newest_live->offset) {
+            newest_live = &file;
+            newest_live_slot = slot;
+          }
+        } else if (newest_tombstone == nullptr ||
+                   file.offset > newest_tombstone->offset) {
+          newest_tombstone = &file;
+          newest_tombstone_slot = slot;
+        }
       }
-      return &file;
     }
     slot = (slot + 1) % kMaxOverlayFiles;
   }
-  return nullptr;
+  OverlayFile *selected = newest_live != nullptr ? newest_live
+                                                  : newest_tombstone;
+  if (selected != nullptr && found_slot != nullptr) {
+    *found_slot = newest_live != nullptr ? newest_live_slot
+                                         : newest_tombstone_slot;
+  }
+  return selected;
 }
 
 OverlayFile *allocate_overlay(const uint8_t *tag, uint8_t tag_length) {
@@ -669,6 +686,12 @@ OverlayFile *allocate_overlay(const uint8_t *tag, uint8_t tag_length) {
     return nullptr;
   }
   if (auto *file = find_overlay(tag, tag_length)) {
+    if (!overlay_has_record(*file)) {
+      file->flags &= static_cast<uint8_t>(~kOverlayParentTag);
+      if (is_compressible_tag(tag, tag_length)) {
+        file->flags |= kOverlayCompressedTag;
+      }
+    }
     return file;
   }
   const uint16_t hash = hash_tag(tag, tag_length);
@@ -680,10 +703,7 @@ OverlayFile *allocate_overlay(const uint8_t *tag, uint8_t tag_length) {
       file.flags = kOverlayUsed;
       file.hash = hash;
       file.tag_length = tag_length;
-      uint16_t parent_slot = 0;
-      if (find_parent_slot(tag, tag_length, &parent_slot)) {
-        file.flags |= kOverlayParentTag;
-      } else if (is_compressible_tag(tag, tag_length)) {
+      if (is_compressible_tag(tag, tag_length)) {
         file.flags |= kOverlayCompressedTag;
       }
       ++overlay_file_count;
@@ -1073,6 +1093,21 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
   overlay_dirty = true;
   return 0;
 }
+
+#ifdef RP2350_FS_OVERLAY_TEST
+extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
+    const uint8_t *tag, uint8_t tag_length, const uint8_t *data,
+    uint32_t length) {
+  if (tag == nullptr || tag_length < 2) return 1;
+  auto *file = allocate_overlay(tag, tag_length);
+  if (file == nullptr) return 1;
+  file->flags &= static_cast<uint8_t>(~kOverlayCompressedTag);
+  file->flags |= kOverlayParentTag;
+  if (!append_overlay(*file, tag, data, length)) return 1;
+  overlay_dirty = true;
+  return 0;
+}
+#endif
 
 namespace {
 uint8_t erase_overlay_slot(uint16_t slot) {

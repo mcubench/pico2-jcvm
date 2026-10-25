@@ -51,15 +51,32 @@ public final class JCSystemTransactionPhysicalProbe {
     System.out.println("TEST:PASS " + description);
   }
 
+  private static void expectTransactionArrayLength(CardChannel channel,
+                                                  String description)
+      throws Exception {
+    byte[] data = probe(channel, 84);
+    long length = data.length == 2 ? u16(data, 0) : -1;
+    if (length != 32767) {
+      throw new IllegalStateException(description + ": expected=32767 got=" +
+          hex(data));
+    }
+    System.out.println("TEST:PASS " + description);
+  }
+
   public static void main(String[] args) throws Exception {
     boolean resetOnly = args.length == 3 && "--reset-only".equals(args[2]);
     boolean probeOnly = args.length == 4 && "--probe-only".equals(args[2]);
-    if ((args.length != 2 && !resetOnly && !probeOnly) ||
+    boolean preparePersistence = args.length == 3 &&
+        "--prepare-persistence".equals(args[2]);
+    boolean verifyPersistence = args.length == 3 &&
+        "--verify-persistence".equals(args[2]);
+    if ((args.length != 2 && !resetOnly && !probeOnly &&
+         !preparePersistence && !verifyPersistence) ||
         !"--reader".equals(args[0]) ||
         (probeOnly && (Integer.parseInt(args[3]) < 1 ||
                        Integer.parseInt(args[3]) > 255))) {
       throw new IllegalArgumentException(
-          "usage: JCSystemTransactionPhysicalProbe --reader <exact reader name> [--reset-only | --probe-only <P1>]");
+          "usage: JCSystemTransactionPhysicalProbe --reader <exact reader name> [--reset-only | --probe-only <P1> | --prepare-persistence | --verify-persistence]");
     }
     String requestedReader = args[1];
     List<CardTerminal> terminals =
@@ -90,6 +107,25 @@ public final class JCSystemTransactionPhysicalProbe {
         probe(channel, Integer.parseInt(args[3]));
         return;
       }
+      if (preparePersistence) {
+        expectByte(channel, 6, 0x33,
+            "persistent field committed before board cycle");
+        expectByte(channel, 7, 0x33,
+            "persistent field is readable before board cycle");
+        expectTransactionArrayLength(channel,
+            "large persistent array length is readable before board cycle");
+        System.out.println("TEST:PASS prepared_persistent_field_for_board_cycle");
+        return;
+      }
+      if (verifyPersistence) {
+        expectByte(channel, 7, 0x33,
+            "persistent field survived Pico firmware cycle");
+        expectTransactionArrayLength(channel,
+            "large persistent array length survived firmware cycle");
+        System.out.println(
+            "TEST:PASS physical_persistent_field_survived_firmware_cycle");
+        return;
+      }
 
       expectByte(channel, 5, 0x11,
           "abort restores persistent applet field");
@@ -99,6 +135,29 @@ public final class JCSystemTransactionPhysicalProbe {
           "commit preserves persistent applet field");
       expectByte(channel, 7, 0x33,
           "committed persistent field survives next APDU");
+      expectTransactionArrayLength(channel,
+          "large persistent array length is readable");
+
+      byte[] overflow = probe(channel, 83);
+      if (overflow.length != 2 || (overflow[0] & 0xff) != 3 ||
+          (overflow[1] & 0xff) != 0) {
+        throw new IllegalStateException(
+            "BUFFER_FULL must be catchable and leave the rejected array byte unchanged: " +
+            hex(overflow));
+      }
+      System.out.println(
+          "TEST:PASS physical_BUFFER_FULL_catchable_and_write_rejected");
+
+      card.disconnect(true);
+      card = target.connect("*");
+      System.out.println("PCSC:ATR_AFTER_RESET " + hex(card.getATR().getBytes()));
+      channel = card.getBasicChannel();
+      exchange(channel, "SELECT_AFTER_CCID_POWER_CYCLE",
+          new CommandAPDU(0x00, 0xA4, 0x04, 0x00, APPLET_AID, 256));
+      expectByte(channel, 7, 0x33,
+          "persistent field survived CCID card power cycle");
+      expectTransactionArrayLength(channel,
+          "large persistent array survives CCID card power cycle");
 
       byte[] capacity = probe(channel, 10);
       if (capacity.length != 24) {
@@ -115,16 +174,7 @@ public final class JCSystemTransactionPhysicalProbe {
             "persistent field update did not reduce the active commit budget");
       }
       System.out.println("TEST:PASS physical_commit_capacity_consumption");
-      byte[] overflow = probe(channel, 83);
-      if (overflow.length != 2 || (overflow[0] & 0xff) != 3 ||
-          (overflow[1] & 0xff) != 0) {
-        throw new IllegalStateException(
-            "BUFFER_FULL must be catchable and leave the rejected array byte unchanged: " +
-            hex(overflow));
-      }
-      System.out.println(
-          "TEST:PASS physical_BUFFER_FULL_catchable_and_write_rejected");
-      System.out.println("TEST:SUMMARY pass=6 fail=0");
+      System.out.println("TEST:SUMMARY pass=9 fail=0");
     } finally {
       card.disconnect(false);
     }

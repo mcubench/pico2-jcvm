@@ -12489,3 +12489,13 @@
 - Decision: Continue from the dangling static-array alias lifecycle diagnosis.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Fix persistent array lookup after transaction writes
+
+- Step/experiment: `jcsystem-overlay-live-record-selection-20261025`
+- Change: New overlay writes now use deterministic compressed tag encoding rather than parent-slot references. Parent-slot selection rejects deleted parents. Lookup resolves duplicate legacy keys by preferring the newest live record over stale tombstones. Added fake-flash regression for parent-encoded tombstone resurrection and physical probe coverage for the persistent array length.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `./tools/build arm` and `./tools/build riscv` passed. On 2BED `2BED26ED20556535`, the physical JCSystem probe passed 9/9: scalar transaction commit, array length `7FFF` before and after firmware cycle, array length after CCID reset, catchable `BUFFER_FULL`, and commit capacity. The final clean source ARM image was flashed and verified on 2BED and D92 `D92E743D5F640C0F`; the user reported all three attached Pico LEDs lit, while the third previously observed BOOTSEL chip ID could not be re-enumerated for wrapper verification. True power-off/on was not performed.
+- Result: The stale legacy parent-encoded tombstone no longer hides a newer live persistent array body. The physical transaction/soft-reset sequence succeeds; true power removal remains unverified.
+- Decision: Keep deterministic tag encoding and newest-live lookup. Preserve upstream CAP artifacts and unrelated crypto/profile work.
+- Commit: recorded in immediate follow-up progress entry.
+- Artifacts/logs: physical probe `artifacts/logs/jcsystem-transaction-physical-20261025T124715Z.log` (SHA-256 `9eef9644130c13ae7b76743a3e92c1231842f2ca2a5628fa92658ee2c43256d0`); cycle `artifacts/logs/cycle-choupi-20261025T125039Z.log` (SHA-256 `cb7db383ad49c5b60a107f2ce9a8386afd9d1f5f0a11bb6a81f0513714012428`); final ARM image `build/arm/pico2_choupi.uf2`, 1,668,608 bytes (SHA-256 `8fcdba1de93cf37a3e24bc7645ea99342a498538720da09d62a37091b89bd556`).

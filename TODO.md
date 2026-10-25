@@ -344,7 +344,9 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   field. Added a nested persistent graph through an object field containing an
   `Object[]` with two aliases to a byte array; process-restart restore and four
   GC-pressure rounds passed 38/38 checks. Physical power-cycle validation of
-  these alias scenarios remains open.
+  these alias scenarios remains open. A separate real-card transaction probe
+  now confirms its 32,767-byte persistent array remains readable after a scalar
+  transaction commit, CCID reset, and firmware cycle (9/9 assertions on 2BED).
 - [x] **Expose all three Pico 2 devices through PC/SC.** The installed helper
   granted all three USB nodes, and `pcsc_scan -r` listed readers
   D92E743D5F640C0F, E0E14525E64AF6ED, and 5CFC5328F5BDE437. A three-worker
@@ -1229,8 +1231,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   one emulator process, then starts a fresh process from its saved flash image
   and verifies `0x33`, static reference identity, persistent array-child
   identity, object-field aliasing, and restored array type. The restore phase
-  passed 7/7 checks; this models a process restart, not a physical power-off/on.
-  Hardware persistence still needs a true power cycle and PC/SC access.
+  passed 7/7 checks. On physical 2BED, a committed scalar field and a 32,767-
+  element persistent array also survived a CCID reset and complete firmware
+  cycle (9/9 assertions). These soft resets do not replace a true power-off/on,
+  which still needs validation.
 
 ## Card manager and host integration
 

@@ -951,6 +951,13 @@ public final class JCTransactionProbe extends Applet {
         length = 2;
         break;
       }
+      case 84: {
+        short arrayLength = (short)transactionCapacityArray.length;
+        buffer[0] = (byte)(arrayLength >> 8);
+        buffer[1] = (byte)arrayLength;
+        length = 2;
+        break;
+      }
       case 67: {
         byte reason = 0;
         try {

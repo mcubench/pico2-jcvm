@@ -4559,6 +4559,31 @@ fix.
   `pico2_choupi.uf2` write, and the final finite monitor passed.
 - **Commit:** `986b277`.
 
+## JCSystem persistent array body hidden by a resurrected overlay tombstone — 2026-10-25
+
+- **Symptom:** On physical Pico 2 `2BED26ED20556535`, a committed scalar
+  transaction appeared to make a 32,767-element persistent array unreadable;
+  its `length` access returned `6F00` (`IOException` during body lookup).
+- **Cause:** The persistent overlay could contain a legacy parent-slot-encoded
+  child tombstone and a newer live record for the same logical tag. When its
+  parent tag was later recreated, the old child tombstone became resolvable
+  again. `find_overlay()` returned the first matching record, allowing that
+  stale tombstone to mask the newer live array body.
+- **Viable solution:** New writes always use deterministic tag compression;
+  do not encode child tags through a parent slot. Ignore deleted parents when
+  choosing an encoding. For legacy duplicates, scan the complete hash probe
+  cluster and choose the newest live matching record by append offset; use the
+  newest tombstone only when no live record exists. Regression coverage builds
+  a parent-encoded child tombstone, deletes its parent, writes a newer live
+  compressed child, recreates the parent, and verifies the live bytes win.
+- **Validation:** `./tools/test-rp2350-fs-overlay` passed with
+  `TEST:SUMMARY fail=0`; ARM and RISC-V wrapper builds passed. Physical 2BED
+  returned array length `7FFF` after scalar commit, after firmware cycle, and
+  after CCID reset. The transaction probe ended `TEST:SUMMARY pass=9 fail=0`.
+  A physical power-off/on was not performed.
+- **Artifacts:** `artifacts/logs/jcsystem-transaction-physical-20261025T124715Z.log`;
+  cycle `artifacts/logs/cycle-choupi-20261025T125039Z.log`.
+
 ## Firmware reflash does not make a used card empty — 2026-10-24
 
 - **Symptom:** JCAlgTest remained selectable after uploading a new ARM UF2,
