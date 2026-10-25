@@ -38,7 +38,7 @@ remove only the known JCAlgTest applet and package, then verify that no package
 or applet remains before the explicit install:
 
 ```powershell
-$reader = 'Pico2 JCVM CCID'
+$reader = Read-Host 'Paste the exact Pico2 JCVM reader name shown by certutil -scinfo'
 $appletAid = '4A43416C675465737431'
 $packageAid = '4A43416C6754657374'
 $listed = & java -jar .\tools\gp.jar --reader $reader --list 2>&1
@@ -73,7 +73,8 @@ result CSV against the generated support list:
 
 ```powershell
 $csv = Get-ChildItem .\results\symm_crypto\*ALGSUPPORT*.csv | Select-Object -First 1
-py .\tools\compare-jcalgtest-support.py $csv.FullName --expected-support .\expected\expected-support-symm_crypto.csv
+$reference = '.\reference\jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv'
+py .\tools\compare-jcalgtest-support.py $csv.FullName $reference --expected-support .\expected\expected-support-symm_crypto.csv
 ```
 
 The expected CSV lists the 46 capabilities selected for this profile. A

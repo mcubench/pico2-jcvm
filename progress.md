@@ -12284,3 +12284,30 @@
   `4bb4b031aecbc31ac6c9104298a44959ab04b05c0ad818ec56e304f5b1427aa6`;
   final GPPro log SHA-256
   `1d8135e5686ea5121fd33178dd4929075b07f91d43cb4c498ea766789487971d`.
+
+## 2026-10-25 — Rebuild symmetric-only Windows test package
+
+- Step/experiment: `symm-crypto-windows-package-20261025`
+- Change: Added a repeatable package builder for the symmetric-only Windows
+  test bundle and corrected its README to request the exact PC/SC reader name
+  and supply the required jCardSim reference CSV to the comparator.
+- Validation: `bash -n tools/package-symm-crypto-windows-test` passed;
+  `./tools/package-symm-crypto-windows-test` passed the ARM and RISC-V wrapper
+  builds, CAP provenance check, ZIP integrity check, and all bundled SHA-256
+  checks. The physical 4,525-row symmetric JCAlgTest CSV comparison passed:
+  73 `yes`, 4,452 `no`, zero other statuses, 46 declared capabilities matched,
+  zero unexpected/missing declarations. No hardware operation was performed
+  during packaging.
+- Result: The distributable bundle is self-contained for Windows installation,
+  JCAlgTest execution, and report comparison. Its firmware image is 1,676,800
+  bytes; Windows PC/SC and client execution remain unverified.
+- Decision: Deliver the symmetric-only package and retain Windows execution as
+  an external acceptance item. Keep `asymm_crypto` paused.
+- Commit: pending
+- Artifacts/logs: archive
+  `build/external-test/symm-crypto-windows-test.zip`, SHA-256
+  `24adae30b893acffd1faccd7455b071ca88dbcf6c0cbfb01019a95ea3675818a`;
+  firmware SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`;
+  source physical CSV comparison input
+  `artifacts/results/jcalgtest-symm-crypto-D92-20261025/CHOUPI_symm_crypto_D92_ALGSUPPORT__3b_80_01_81.csv`.

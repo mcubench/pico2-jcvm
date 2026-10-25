@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -eq 0 ]] || die "usage: ./tools/package-symm-crypto-windows-test"
+require_command zip
+require_command unzip
+require_command sha256sum
+
+# Use the repository wrappers and the exact capability profile included in the
+# package. RISC-V is a build gate only; the archive contains the ARM image.
+"${repo_root}/tools/build" arm --profile symm_crypto
+"${repo_root}/tools/build" riscv --profile symm_crypto
+
+package_dir="${repo_root}/build/external-test/symm-only-package"
+archive="${repo_root}/build/external-test/symm-crypto-windows-test.zip"
+firmware="${repo_root}/build/arm/pico2_choupi.uf2"
+cap="${repo_root}/AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+client_jar="${repo_root}/build/algtest-client-1.8.2/AlgTestJClient.jar"
+expected_csv="${repo_root}/build/javacard-support/jcalgtest-supported.csv"
+reference_csv="${repo_root}/artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+
+for input in "${firmware}" "${cap}" "${gp_jar}" "${client_jar}" \
+             "${expected_csv}" "${reference_csv}" \
+             "${repo_root}/tools/compare-jcalgtest-support.py" \
+             "${repo_root}/docs/symm-crypto-windows-test.md"; do
+  [[ -s "${input}" ]] || die "required package input is missing: ${input}"
+done
+
+# Never edit the upstream CAP; verify its pinned identity before copying it.
+cap_hash="$(sha256sum "${cap}" | cut -d ' ' -f 1)"
+[[ "${cap_hash}" == "b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169" ]] || \
+  die "the supplied upstream JCAlgTest CAP hash changed: ${cap_hash}"
+
+rm -rf -- "${package_dir}"
+mkdir -p "${package_dir}/firmware" "${package_dir}/applet" \
+  "${package_dir}/tools" "${package_dir}/expected" \
+  "${package_dir}/reference"
+install -m 0644 "${firmware}" \
+  "${package_dir}/firmware/pico2_choupi_symm_crypto.uf2"
+install -m 0644 "${cap}" \
+  "${package_dir}/applet/AlgTest_v1.8.2_jc305.cap"
+install -m 0644 "${gp_jar}" "${package_dir}/tools/gp.jar"
+install -m 0644 "${client_jar}" \
+  "${package_dir}/tools/AlgTestJClient.jar"
+install -m 0644 "${repo_root}/tools/compare-jcalgtest-support.py" \
+  "${package_dir}/tools/compare-jcalgtest-support.py"
+install -m 0644 "${expected_csv}" \
+  "${package_dir}/expected/expected-support-symm_crypto.csv"
+install -m 0644 "${reference_csv}" \
+  "${package_dir}/reference/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+install -m 0644 "${repo_root}/docs/symm-crypto-windows-test.md" \
+  "${package_dir}/README.md"
+
+(cd "${package_dir}" && \
+  find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | \
+  xargs -0 sha256sum > SHA256SUMS.txt)
+
+mkdir -p "$(dirname "${archive}")"
+rm -f -- "${archive}"
+(cd "${package_dir}" && \
+  zip -q -X -r "${archive}" firmware applet tools expected reference \
+  README.md SHA256SUMS.txt)
+
+unzip -t "${archive}" >/dev/null
+(cd "${package_dir}" && sha256sum --check SHA256SUMS.txt >/dev/null)
+printf 'WINDOWS_PACKAGE:PASS profile=symm_crypto image_sha256=%s archive=%s archive_sha256=%s\n' \
+  "$(sha256sum "${firmware}" | cut -d ' ' -f 1)" \
+  "${archive#${repo_root}/}" \
+  "$(sha256sum "${archive}" | cut -d ' ' -f 1)"

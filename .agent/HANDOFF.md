@@ -1,3 +1,23 @@
+# Latest continuation — symmetric-only Windows package refreshed (2026-10-25)
+
+- Added `tools/package-symm-crypto-windows-test` and fixed
+  `docs/symm-crypto-windows-test.md` to prompt for the exact reader name and
+  pass both physical and jCardSim CSVs to the comparator.
+- `./tools/package-symm-crypto-windows-test` passed ARM and RISC-V wrapper
+  builds and produced
+  `build/external-test/symm-crypto-windows-test.zip` (SHA-256
+  `24adae30b893acffd1faccd7455b071ca88dbcf6c0cbfb01019a95ea3675818a`). Its
+  checksums and ZIP structure validate. The 4,525-row physical symmetric
+  report comparison passed with 73 `yes`, 4,452 `no`, no other statuses, and
+  zero mismatch against the 46 declared profile capabilities.
+- Firmware image: 1,676,800 bytes, SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
+  Windows enumeration and official client execution remain unverified; the
+  archive is ready to transfer. No hardware operation was performed here.
+- `asymm_crypto` remains paused. Preserve its unrelated dirty source/config
+  changes. Next: deliver the package path and continue other TODO work unless
+  Windows acceptance results arrive.
+
 # Latest physical API validation — Security and Crypto on current 2BED image (2026-10-25)
 
 - Ran the unchanged API 3.0.5 Security and Crypto CAPs/client on exact reader
