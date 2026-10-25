@@ -11734,3 +11734,22 @@
   device; otherwise proceed with offline JCVM work.
 - Commit: `aa941f8`
 - Artifacts/logs: none.
+
+## 2026-10-25 — Correct project status after unavailable USB passthrough
+
+- Step/experiment: `status-capacity-and-physical-state-refresh`
+- Change: Updated the high-level status and current TODO entry to distinguish
+  offline capacity validation from physical validation of the final image.
+  Recorded the known-good prior image separately from the unconfirmed current
+  card firmware and registry state.
+- Validation: Compared the status claims with the latest cycle log,
+  authorized `lsusb`, picotool result, build image hash, and VPCD/native test
+  output; `git diff --check` passed.
+- Result: The project status no longer claims the final capacity image is
+  running or the current physical registry is empty.
+- Decision: Resume hardware checks only after the VM enumerates a Pico; continue
+  with offline project work in the meantime.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T034755Z.log`;
+  `build/arm/pico2_choupi.uf2` SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.

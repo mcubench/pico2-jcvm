@@ -578,11 +578,13 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   catchable `TransactionException.BUFFER_FULL` before mutating the rejected
   record. Native persistent-transaction tests pass, and the 84-check VPCD
   suite confirms the short and extended getters plus a persistent update
-  reducing available capacity before abort. The physical runtime cycle passes,
-  but the Pico PC/SC APDU path still times out, so physical transaction and
-  power-cycle behavior remain unverified. A large-array VPCD overflow attempt
-  timed out before the APDU completed; Java-level catchability of
-  `BUFFER_FULL` on an overflowing applet write is not yet end-to-end verified.
+  reducing available capacity before abort. An earlier firmware runtime cycle
+  passed, but the exact final source was not flashed: the latest targeted cycle
+  could not enter BOOTSEL, and authorized host enumeration showed no Pico.
+  Physical transaction and power-cycle behavior remain unverified. A
+  large-array VPCD overflow attempt timed out before the APDU completed;
+  Java-level catchability of `BUFFER_FULL` on an overflowing applet write is
+  not yet end-to-end verified.
 - [ ] **Add extended APDUs only if required by the selected profile.** The
   transport rejects extended APDUs. `APDU.waitExtension()` enforces API state,
   but synchronous CCID processing cannot send actual T=1 WTX while a command

@@ -10,13 +10,26 @@ path and implements a tested subset of Java Card runtime behavior. It is **not
 a complete or Java Card certified VM**. Unsupported algorithms may correctly
 report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 The physical deployment target is ARM Cortex-M33. ARM, RISC-V, and PC build
-wrappers pass; RISC-V has not been tested on hardware. The identified physical
-D92 `D92E743D5F640C0F` is currently running the `symm_crypto` ARM profile,
-with its finite monitor passing and its card registry containing only the ISD.
-The firmware image has no preinstalled JCAlgTest applet; CAPs must be loaded
-explicitly after flashing.
+wrappers pass; RISC-V has not been tested on hardware. D92
+`D92E743D5F640C0F` last had a known-good `symm_crypto` runtime image, but the
+latest transaction-capacity image was not flashed: the cycle could not request
+BOOTSEL and authorized VM USB enumeration then showed only Linux root hubs.
+The physical firmware and persistent package registry therefore cannot be
+confirmed at this checkpoint. Firmware images do not preload JCAlgTest; CAPs
+must be explicitly loaded after flashing.
 
 ## Verified
+
+- **JCSystem commit capacity (2026-10-25):** The native transaction suite
+  passes, and the complete host VPCD JCSystem regression passes 84/84. It
+  reports maximum/unused capacity `0x7FFF` outside transactions and 32755
+  unused bytes after a persistent scalar update. ARM and RISC-V `symm_crypto`
+  builds pass; the final ARM image is 1,676,800 bytes with SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
+  Physical validation of this exact image is pending because no Pico USB device
+  was visible to the VM. An earlier large-array VPCD overflow attempt timed out
+  before completion, so Java-level `BUFFER_FULL` catchability at real capacity
+  exhaustion remains unverified. Details are in `progress.md`.
 
 - **Empty-card symmetric firmware flash (2026-10-25):** Built the ARM
   `symm_crypto` CHOUPI image, passed both ARM and RISC-V build gates, and
@@ -336,12 +349,13 @@ this does not test the new JCSystem behavior on hardware. See
 
 ## Next priorities
 
-1. Restore reliable consecutive APDUs through physical PC/SC, then rerun the
-   static matrix. The latest trace isolates the loss after SELECT: the Pico
-   answered `9000`, and the host did not send GETVERSION. The streamed
-   collector passed 544 rows without the earlier allocation failures; the
-   matrix remains incomplete. The direct VPCD bridge also needs an available
-   USB interface and a live VPCD endpoint.
+1. Restore Pico USB passthrough into the VM, confirm board identity, flash the
+   latest ARM image, and restore PC/SC APDU access. The previous PC/SC trace
+   stopped after SELECT (`9000`) without a host GETVERSION APDU; the latest
+   `lsusb` showed only Linux root hubs. The streamed collector passed 544 rows
+   without the earlier allocation failures, but its static matrix remains
+   incomplete. The direct VPCD bridge also needs an available USB interface
+   and a live VPCD endpoint.
 2. Define the supported Java Card version/profile, then audit runtime APIs,
    applet lifecycle, and firewall behavior against it.
 3. Expand power-cycle, CAP-validation, and host/physical regression coverage.
