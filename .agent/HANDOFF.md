@@ -1,5 +1,72 @@
 # Current implementation step — host VPCD multi-package DELETE (2026-10-25)
 
+## Empty `symm_crypto` image delivered and card registry cleaned — 2026-10-25
+
+- Built `symm_crypto` for ARM and RISC-V through `./tools/cycle`; both wrapper
+  builds passed. The first target, BOOTSEL board 8E
+  `8E464F4E2BBC0A19`, accepted a 100%-verified image write, but its runtime
+  serial did not enumerate and it was absent from PC/SC. Do not count 8E as a
+  runtime pass; cause is not established.
+- Used the healthy failover Pico 2 2BED `2BED26ED20556535`. Its ARM image
+  verified at 100%; the finite 18-second monitor repeatedly reported
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. The image was saved
+  as `artifacts/firmware/pico2-jcvm-symm_crypto-empty-card.uf2`, 1,676,800
+  bytes, SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
+- GPPro showed that 2BED retained the JCAlgTest and JavacardxSec CAP packages
+  after firmware upload. Deleted each listed applet before its package, then
+  verified `--list` showed only ISD `A000000151000000`. This is the required
+  empty card state; firmware upload alone preserves persistent applet storage.
+  No JCAlgTest CAP was reinstalled, so the card remains empty for the user's
+  separate Windows install test.
+- Evidence: failed 8E cycle
+  `artifacts/logs/cycle-choupi-20261025T061139Z.log` (SHA-256
+  `7783e8bd4f5529b98b44b4f924c4ad8a68c7cac6c5f2979c3e45757ee8af03b2`);
+  successful 2BED cycle
+  `artifacts/logs/cycle-choupi-20261025T061403Z.log` (SHA-256
+  `31e200ad94ee7a1888653f4fe4a4f88a65e88498a8d89ed9e456bb45ec837c84`);
+  GPPro final listing is saved at
+  `artifacts/logs/gppro-empty-symm-2BED-final-list-20261025.log`; the individual
+  delete command logs are in `artifacts/logs/gppro-empty-symm-2BED-delete-*`.
+- Next: share this UF2 and the existing Windows PC/SC/GPPro commands with the
+  user. If another device task is requested, use 2BED as currently responsive;
+  8E needs USB/runtime re-enumeration diagnosis before further use.
+
+## Physical PC/SC multi-package validation — 2026-10-25
+
+- Three boards enumerated: D92 `D92E743D5F640C0F`, 2BED
+  `2BED26ED20556535`, and reserve BOOTSEL board `8E464F4E2BBC0A19`.
+- Built/flashed the current ARM CHOUPI image to D92 and 2BED with the required
+  wrapper. Both cycles passed ARM/RISC-V builds, verified the flash, and showed
+  repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0` in the
+  finite monitor. Image SHA-256:
+  `cbd741c4f379b3738141af73b6a9a6c3b7f6c43b925a74c4f359d1bb789ac04e`.
+- D92 was visible to PC/SC but GPPro `--list` timed out, including after reader
+  helper refresh. No CAP writes were attempted on D92. Failover to 2BED worked:
+  GPPro listed its pre-test JCAlgTest and JavacardxSec packages, then the
+  official API 3.0.5 Core and Multi CAPs were loaded. Multi applet A and B were
+  installed/listed/selected; the second instance required `--install-only`
+  because another `--install` repeats LOAD and receives `6A80`.
+- Core API runner on 2BED completed 291 calls: 272 `OK`, 15
+  `UNSUPPORTED_PER_SPEC`, and four optional Ext `APPLET_NOT_INSTALLED`. The
+  four MultiSelectable methods report unsupported because logical-channel
+  opening returns `6D00`; ordinary AID SELECT for both Multi instances passed.
+- Cleanup deleted both Multi instances, the Core instance, and both packages.
+  Final GPPro `--list` exactly matched the pre-test state: ISD, JCAlgTest, and
+  JavacardxSec only. Reserve 8E remained BOOTSEL and was not used.
+- Evidence: cycles
+  `artifacts/logs/cycle-choupi-20261025T054429Z.log` (D92, SHA-256
+  `704355714f3dc157fc200dd2dcbbe9c3939ea126e4f60d6c1ba68af4b35cc974`) and
+  `artifacts/logs/cycle-choupi-20261025T054813Z.log` (2BED, SHA-256
+  `76625cc9f51df6df784a7cf8edbd154b78b4c4c06cb6ce12336edcbc3964d6de`);
+  power-up probe `artifacts/logs/pico-powerup-persistence-20261025T055009Z.log`;
+  runner CSV `artifacts/results/deploy/physical-multipackage-2BED-20261025/core-with-multi.csv`;
+  cleanup listing `artifacts/logs/gppro-final-list-2BED-multipackage-20261025.log`.
+- Next: close automatic package/class discovery and multi-package process
+  restart reconstruction in host VPCD; keep GET DATA and multi-entry
+  continuation open. Physical multi-package operation works on 2BED, but
+  physical power-cycle reconstruction was not tested.
+
 - Host VPCD DELETE used to panic because namespace prefix erasure called the
   host filesystem directly outside privileged syscall context. It now uses
   `FsErasePrefix`; the syscall checks namespace write permission and calls

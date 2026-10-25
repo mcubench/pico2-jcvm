@@ -92,6 +92,18 @@ cipher.
   runtime serial did not reappear in this VM, so it has no runtime pass.
   Continue on D92 or another identified reader rather than attributing results
   to 8E.
+- [x] Prepare and validate a named empty-card `symm_crypto` image on Pico 2
+  `2BED26ED20556535`. ARM and RISC-V wrapper builds passed; the verified ARM
+  UF2 completed its 18-second monitor with repeated `TEST:PASS choupi_runtime`
+  and `TEST:SUMMARY pass=1 fail=0`. GPPro initially listed persistent JCAlgTest
+  and JavacardxSec packages from earlier explicit installs. After deleting
+  those applets and packages, `--list` returned only ISD
+  `A000000151000000`. This confirms firmware upload does not clear the card's
+  persistent CAP store. UF2: `artifacts/firmware/pico2-jcvm-symm_crypto-empty-card.uf2`,
+  1,676,800 bytes, SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
+  The first BOOTSEL target 8E accepted a verified write but disappeared before
+  runtime serial/PCSC enumeration; 2BED was used as the verified failover.
 - [x] Run the upstream `/deploy` Core, Security, and Crypto 3.0.5 areas on
   physical D92 with the `symm_crypto` firmware. Security completed 901 calls
   (97 OK, 804 `UNSUPPORTED_PER_SPEC`); Crypto completed 466 calls (161 OK,
@@ -1197,8 +1209,17 @@ rollback and duplicate/invalid registration handling also remain unverified.
   package ID (56) and class index (148); GPPro listing plus SELECT, GETVERSION,
   and JCSystem all pass after restart. Automatic package/class registry
   discovery, multi-package process-restart reconstruction, GET DATA coverage
-  beyond GPPro's exercised commands, complete multi-entry continuation,
-  PC/SC GPPro integration, and physical CCID behavior remain open.
+  beyond GPPro's exercised commands, and complete multi-entry continuation
+  remain open. Physical CCID GPPro integration is now verified on Pico 2
+  `2BED26ED20556535`: unchanged upstream Core and Multi API 3.0.5 CAPs loaded,
+  three instances were listed and selected, and the Core runner completed 291
+  calls (272 OK, 15 `UNSUPPORTED_PER_SPEC`, four optional Ext
+  `APPLET_NOT_INSTALLED`). Cleanup removed both test packages and all their
+  instances; final GPPro listing returned to the pre-test state (ISD,
+  JCAlgTest, and JavacardxSec only). D92
+  `D92E743D5F640C0F` enumerated as a reader but GPPro `--list` timed out;
+  failover to 2BED succeeded. This does not validate multi-package
+  reconstruction across a physical power cycle.
 - [x] Integrate the PC-build vpcd frame transport with power controls, ATR,
   applet SELECT/DESELECT, and APDU dispatch through the VM lifecycle bridge.
   The PC target builds, the frame codec passes 14 checks, and a new session

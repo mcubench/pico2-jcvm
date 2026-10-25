@@ -1,5 +1,51 @@
 # Project issue knowledge base
 
+## Firmware upload preserves installed CAP state; first flashed BOOTSEL board lost runtime enumeration — 2026-10-25
+
+- **Symptom:** After flashing, GPPro still listed previously installed JCAlgTest
+  and JavacardxSec applets. A different BOOTSEL Pico (8E
+  `8E464F4E2BBC0A19`) accepted and verified the image, then did not enumerate
+  as runtime serial or PC/SC.
+- **Cause:** Firmware upload preserves the separate persistent CAP/filesystem
+  data, which was confirmed by GPPro. The 8E USB/runtime failure cause is not
+  known.
+- **Viable procedure:** Treat firmware image contents and persistent card
+  registry as separate state. Use GPPro to delete each listed applet then its
+  package when an empty card is required. For device failover, target an
+  identified board with a working CCID reader; 2BED
+  `2BED26ED20556535` accepted the same image and passed the finite runtime
+  monitor after 8E did not enumerate.
+- **Validation:** On 2BED, ARM/RISC-V builds passed, ARM flash verification
+  reached 100%, runtime monitor passed, and final GPPro `--list` showed only
+  ISD `A000000151000000`.
+
+## Physical GPPro multi-package install: use `--install-only` for later applets — 2026-10-25
+
+- **Symptom:** GPPro `--install CAP --applet B` returned `6A80` after applet A
+  had already been installed from the same CAP.
+- **Cause:** `--install` repeats package LOAD, so it cannot install a second
+  applet from an already loaded package.
+- **Viable fix:** Load and install the first instance with `--install CAP
+  --applet A`; install subsequent instances from that package with
+  `--install-only CAP --applet B`.
+- **Validation:** On Pico 2 `2BED26ED20556535`, both Multi 3.0.5 instances
+  listed and selected successfully. Logs are recorded in `.agent/HANDOFF.md`
+  under the 2026-10-25 physical multi-package validation.
+
+## Pico D92 PC/SC reader can enumerate while APDUs stall — 2026-10-25
+
+- **Symptom:** `pcsc_scan -r` listed D92
+  `D92E743D5F640C0F`, but GPPro `--list` timed out. Refreshing the authorized
+  reader access helper did not restore APDU response.
+- **Cause:** Not established. Runtime firmware passed its finite serial
+  monitor, while card-manager APDU exchange did not complete.
+- **Viable workaround:** Treat reader presence as insufficient proof of a
+  responsive card. Use the identified-device failover pool; 2BED
+  `2BED26ED20556535` responded to GPPro and the physical deploy runner.
+- **Validation:** On 2BED, GPPro listed packages, installed Core and Multi
+  upstream 3.0.5 CAPs, selected three applet instances, ran 291 Core API calls,
+  and cleaned all test packages. D92 was left untouched by CAP writes.
+
 ## Host VPCD DELETE prefix erase requires privileged filesystem syscall — 2026-10-25
 
 - **Symptom:** Authenticated raw SCP03 DELETE initially aborted the PC VPCD

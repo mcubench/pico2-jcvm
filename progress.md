@@ -11825,3 +11825,56 @@
 - Commit: `c6a5f60` (OS submodule commit `5c07f44`).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T050904Z.log`
   SHA-256 `8123442ca2a86d4d1cdc24d77a73d8b0312c3207c3404c58a4836d81ef0ef829`.
+
+## 2026-10-25 — Validate multi-package install on physical Pico 2
+
+- Step/experiment: `physical-multipackage-2BED-20261025`
+- Change: Recorded physical GPPro multi-package validation and the D92 PC/SC
+  timeout in TODO, QKB, and the session handoff. No source or CAP files changed.
+- Validation: Both `./tools/cycle choupi --profile current --chipid ...`
+  cycles had passed ARM/RISC-V builds, verified writes, and finite runtime
+  monitors. On 2BED, GPPro loaded unchanged Core/Multi API 3.0.5 CAPs, installed
+  three instances, and raw SELECT succeeded for both Multi instances. The Core
+  runner completed 291 calls (272 OK, 15 `UNSUPPORTED_PER_SPEC`, four optional
+  Ext `APPLET_NOT_INSTALLED`). GPPro cleanup restored the exact pre-test
+  registry. D92 enumeration succeeded but GPPro `--list` timed out; failover
+  validation on 2BED succeeded. `git diff --check` passed.
+- Result: Physical multi-package LOAD/INSTALL/SELECT/DELETE works on 2BED.
+  Logical channels remain unsupported (`6D00`); process-restart reconstruction
+  on a physical card was not tested. 8E remained BOOTSEL.
+- Decision: Continue offline with multi-package registry discovery and restart
+  reconstruction; keep GET DATA and full continuation open.
+- Commit: unavailable; `.git/index.lock` creation was rejected because `.git`
+  is mounted read-only in this environment.
+- Artifacts/logs: cycle logs
+  `artifacts/logs/cycle-choupi-20261025T054429Z.log` and
+  `artifacts/logs/cycle-choupi-20261025T054813Z.log`; runner CSV
+  `artifacts/results/deploy/physical-multipackage-2BED-20261025/core-with-multi.csv`;
+  final registry listing `artifacts/logs/gppro-final-list-2BED-multipackage-20261025.log`.
+
+## 2026-10-25 — Deliver empty-card symmetric-profile image
+
+- Step/experiment: `empty-symm-crypto-image-2BED-20261025`
+- Change: Built the `symm_crypto` profile, saved a named ARM UF2 artifact, and
+  removed previously installed JCAlgTest and JavacardxSec packages from 2BED
+  so the card is empty for the user's later explicit CAP upload.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile
+  symm_crypto --chipid 2BED26ED20556535` passed both ARM and RISC-V builds,
+  verified the ARM flash at 100%, and passed its finite monitor with repeated
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. GPPro final list
+  showed only ISD `A000000151000000`. UF2 and named copy are both 1,676,800
+  bytes with SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
+  `git diff --check` passed. An initial verified flash to BOOTSEL 8E
+  `8E464F4E2BBC0A19` did not return as runtime USB; failover to 2BED passed.
+- Result: The firmware image does not preload JCAlgTest. The apparent
+  preinstall was persistent card data from earlier GPPro installs. 2BED now
+  has no installed CAP packages or applets beyond its ISD.
+- Decision: Use the named UF2 for Windows testing and explicitly install the
+  upstream JCAlgTest CAP afterward. Diagnose 8E only if it is needed again.
+- Commit: unavailable; `.git/index.lock` creation was rejected because `.git`
+  is mounted read-only in this environment.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-symm_crypto-empty-card.uf2`;
+  successful cycle `artifacts/logs/cycle-choupi-20261025T061403Z.log`;
+  failed-runtime 8E cycle `artifacts/logs/cycle-choupi-20261025T061139Z.log`;
+  final listing `artifacts/logs/gppro-empty-symm-2BED-final-list-20261025.log`.
