@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+require_host_usb_access
+exec python3 "${repo_root}/tools/tests/pc_vpcd_multipackage_test.py" "$@"

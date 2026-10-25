@@ -247,10 +247,13 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   when backed by actual card data. Authenticated GET STATUS first/next pairs
   (`P2=02/03`) now pass for application, package, and module categories with
   one entry each. The host VPCD storage shim now indexes multiple packages and
-  applet instances and assembles GET STATUS pages across the registry. Its
-  single-applet, two-process regression passes, but multi-package GET STATUS
-  has not yet been exercised end to end because this VM currently has no
-  `Virtual PCD` reader registered with PC/SC.
+  applet instances and assembles GET STATUS pages across the registry. An
+  authenticated raw VPCD regression now loads the unchanged upstream Core and
+  Multi CAPs, installs three instances across two packages, checks GET STATUS,
+  rejects an unknown AID with `6A82`, and selects all three instances (9/9).
+  The PC/SC GPPro multi-package path remains unverified because this VM has no
+  `Virtual PCD` reader registered with PC/SC. Physical CCID behavior also
+  remains open.
 - [ ] **Broaden garbage-collector root and persistence-alias coverage.** The
   physical static workload passed 2,262 transfers (heap stabilized at 83 array
   slots / 28 instance slots; one pass reclaimed 50 arrays). The focused

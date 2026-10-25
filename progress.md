@@ -11780,3 +11780,26 @@
 - Commit: `5a7f079`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-registry-20261025.log`
   SHA-256 `dd28419d8c0846d79bd4fc12fce3df5f35b45c4d80fc2d0d4fe0a3dc5913ded3`.
+
+## 2026-10-25 — Exercise multi-package VPCD install and applet selection
+
+- Step/experiment: `host-vpcd-multipackage-apdu`
+- Change: Routed valid VPCD SELECT-by-AID requests through the dynamic
+  installed-instance registry, returning `6A82` for unknown AIDs. Added a raw
+  SCP03/VPCD regression wrapper and test using unchanged upstream Core and
+  Multi CAPs; updated TODO, QKB, and handoff.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-multipackage --timeout 180` passed `TEST:SUMMARY pass=9
+  fail=0`, including LOAD of two packages, three INSTALLs, GET STATUS,
+  unknown-AID rejection, and SELECT of all three instances. `git diff --check`
+  passed. Host-access USB check found no `2e8a:000f`; picotool reported no
+  accessible BOOTSEL devices, so no physical flash was run.
+- Result: Raw authenticated VPCD validates multiple package and instance
+  routing end to end. GPPro over PC/SC and physical CCID remain unverified.
+- Decision: Keep PC/SC and hardware acceptance open. When USB passthrough is
+  available to the VM, re-enumerate boards and separately validate GPPro and
+  physical install/SELECT behavior.
+- Commit: pending; SHA recorded in the follow-up metadata commit.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025.log`
+  SHA-256 `9fbf1ba9ea90b4a36a781c75614fcc84badb9b4625aa177897c14a2e597db9d9`.

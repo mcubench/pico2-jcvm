@@ -1,5 +1,30 @@
 # Current implementation step — host VPCD multi-package registry (2026-10-25)
 
+## Follow-up — raw authenticated multi-package VPCD test (2026-10-25)
+
+- Dynamic SELECT routing is now registry-based. The first test exposed that
+  `Session` only routed the initially configured AID; it now passes any valid
+  SELECT AID to the installed-instance restore callback and returns `6A82` for
+  unknown AIDs. Removed the now-unneeded initial AID from the session object.
+- Added `tools/test-vpcd-multipackage` and its Python harness. It speaks raw
+  VPCD, selects ISD, authenticates SCP03 with repository test keys, loads the
+  unchanged upstream API 3.0.5 Core and Multi CAPs, installs three applets
+  across two packages, checks GET STATUS paging, verifies unknown-AID rejection,
+  and selects all three instances.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. The test passed `TEST:SUMMARY pass=9 fail=0`.
+  Log: `artifacts/logs/host-vpcd-multipackage-apdu-20261025.log`, SHA-256
+  `9fbf1ba9ea90b4a36a781c75614fcc84badb9b4625aa177897c14a2e597db9d9`.
+- PC/SC GPPro integration and physical CCID are still unverified. Although the
+  user reported BOOTSEL tokens connected, host-access `lsusb -d 2e8a:000f`
+  returned no device and `picotool info -a` reported none accessible; no board
+  was flashed. Recheck USB passthrough only after VM enumeration changes.
+- The earlier 30/30 single-package/restart VPCD test remains evidence for that
+  separate path. Multi-package process-restart reconstruction and PC/SC GPPro
+  GET STATUS remain open. Existing user changes for asymmetric crypto stay
+  untouched.
+- Source commit: pending. Follow-up metadata commit will record the final SHA.
+
 - `choupi/src/main_pc.cpp` now mirrors the device package store with an
   in-process registry keyed by dynamic package ID. It supports multiple
   package AIDs/CAP images and multiple installed applet instances per package.

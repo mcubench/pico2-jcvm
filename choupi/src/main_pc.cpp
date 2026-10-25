@@ -971,7 +971,7 @@ int run_vpcd_transport() {
       nullptr, vpcd_clear_applet, vpcd_restore_applet, vpcd_select_applet,
       vpcd_deselect_applet, vpcd_process_apdu, vpcd_process_card_manager,
       vpcd_reset_card_manager};
-  choupi::vpcd::Session session(vpcd_applet_aid, callbacks);
+  choupi::vpcd::Session session(callbacks);
   std::vector<uint8_t> message;
   std::vector<uint8_t> response;
   int result = 0;

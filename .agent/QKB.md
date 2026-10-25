@@ -1,5 +1,23 @@
 # Project issue knowledge base
 
+## Raw VPCD multi-package APDU setup and dynamic SELECT routing — 2026-10-25
+
+- **Symptom:** The first raw SCP03 test received `6999` for INITIALIZE UPDATE;
+  after correcting setup, GET STATUS listed dynamically loaded instances but
+  selecting them returned `6A82`.
+- **Causes:** The test had not selected the default ISD, so the VPCD session
+  correctly routed card-manager APDUs as applet traffic. The VPCD router also
+  matched SELECT only against its one CLI-configured applet AID, despite the
+  host package registry containing more installed AIDs.
+- **Viable fix:** Select the default ISD before SCP03. Route every syntactically
+  valid SELECT-by-AID through the installed-instance restore callback; return
+  `6A82` when the registry has no matching applet. The CLI AID remains used
+  only for its optional resume/install configuration.
+- **Validation:** `./tools/test-vpcd-multipackage --timeout 180` passed 9/9:
+  two upstream packages loaded, three instances listed and selectable, unknown
+  AID rejected with `6A82`. `./tools/build-pc`, ARM and RISC-V wrappers passed.
+  Physical boards were not visible to the VM during the follow-up enumeration.
+
 ## Concurrent ARM/RISC-V builds collided in the shared ROM-mask tree — 2026-10-25
 
 - **Symptom:** Concurrent `./tools/build arm` and `./tools/build riscv`

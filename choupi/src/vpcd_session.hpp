@@ -31,7 +31,7 @@ enum class SessionResult { NoResponse, Response, ProtocolError };
 
 class Session {
 public:
-  Session(std::vector<uint8_t> applet_aid, CardCallbacks callbacks);
+  explicit Session(CardCallbacks callbacks);
 
   SessionResult handle_message(const uint8_t *message, size_t message_length,
                                std::vector<uint8_t> &response);
@@ -45,7 +45,6 @@ private:
   bool select_by_aid(const uint8_t *aid, size_t aid_length,
                      const uint8_t *command, size_t command_length) const;
 
-  std::vector<uint8_t> applet_aid_;
   CardCallbacks callbacks_;
   bool powered_ = false;
   bool selected_ = false;
