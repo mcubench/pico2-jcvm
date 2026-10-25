@@ -113,22 +113,22 @@ public final class JCAlgTestApduProbe {
       }
 
       if (probeArgs.size() == 1 &&
-          "--unsupported-rsa-oaep-sha224".equals(probeArgs.get(0))) {
+          "--unsupported-rsa-oaep-md5".equals(probeArgs.get(0))) {
         // Isolate the exact JCAlgTest ALG_SUPPORT_EXTENDED probe that lost its
-        // PC/SC transaction on D92. SHA-224/RSA/OAEP is unsupported by this
+        // PC/SC transaction on D92. MD5/RSA/OAEP is unsupported by this
         // firmware profile, so the applet should return class 0x26 and
         // NO_SUCH_ALGORITHM (0x03) in a normal 9000 response.
         ResponseAPDU response = transmit(channel,
-            "UNSUPPORTED_RSA_OAEP_SHA224",
+            "UNSUPPORTED_RSA_OAEP_MD5",
             new CommandAPDU(0xB0, 0x75, 0x26, 0x00,
-                new byte[] {0x03, 0x03, 0x09}, 256));
+                new byte[] {0x02, 0x03, 0x09}, 256));
         byte[] result = response.getData();
         if (result.length < 2 || result[0] != 0x26 || result[1] != 0x03) {
           throw new IllegalStateException(
-              "RSA OAEP SHA-224 should report class 0x26 / " +
+              "RSA OAEP MD5 should report class 0x26 / " +
               "NO_SUCH_ALGORITHM (0x03)");
         }
-        System.out.println("TEST:PASS unsupported_rsa_oaep_sha224_no_such_algorithm");
+        System.out.println("TEST:PASS unsupported_rsa_oaep_md5_no_such_algorithm");
         return;
       }
 

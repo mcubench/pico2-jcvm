@@ -20,21 +20,22 @@
   completed `--list`; details and exact bytes are in TODO and QKB. The D92
   runtime monitor passed after the ARM flash.
 - A subsequent full D92 `ALG_SUPPORT_EXTENDED` retry completed 1,393/4,525
-  rows, then PC/SC failed with `SCARD_E_NOT_TRANSACTED` on the SHA-224/RSA/OAEP
-  probe. The partial CSV is not valid acceptance evidence. Exact APDU
-  `B07526000303030900` returns expected unsupported (`2603...9000`) through
-  fresh current-source VPCD. A finite serial capture after the failure showed
+  rows, then PC/SC failed with `SCARD_E_NOT_TRANSACTED` on the
+  MD5/RSA/OAEP probe. The partial CSV is not valid acceptance evidence. The
+  exact APDU is `B07526000302030900`; its current-source VPCD replay returns
+  expected unsupported (`2603...9000`). A finite serial capture after the failure showed
   a board reset marker at opcode `8C`, instruction count 2,964, context
   `00020104`; reset cause is not identified. A host-side exact-replay option
-  `--unsupported-rsa-oaep-sha224` is ready in `tools/probe-jc-algtest`.
-- The exact SHA-224 APDU passes current-source VPCD with fresh erased flash.
-  `tools/tests/pc_vpcd_applet_test.py` now removes a stale CAP-registry sidecar
-  after replacing its flash copy; reuse of the same copy path passes twice
-  (`2603...9000`, `TEST:SUMMARY pass=3 fail=0`). Transcript:
-  `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-reuse-test-20261025.log`.
+  `--unsupported-rsa-oaep-md5` is ready in `tools/probe-jc-algtest`.
+- The exact MD5 APDU passes current-source VPCD with fresh erased flash.
+  `tools/tests/pc_vpcd_applet_test.py` also removes a stale CAP-registry sidecar
+  after replacing its flash copy; reuse of the same copy path passed. The exact
+  APDU replay passed ATR, SELECT, and APDU (`2603...9000`,
+  `TEST:SUMMARY pass=3 fail=0`); see the correction appended to `progress.md`.
 - Next: continue the remaining high-priority correctness work in TODO, starting
-  by replaying the SHA-224 probe on an exact Pico reader with a concurrent
-  serial capture when PC/SC returns. Then continue CAP installation/filesystem
+  by replaying the MD5 probe on an exact Pico reader with a concurrent serial
+  capture when PC/SC returns. The last bounded scan found USB nodes but no
+  PC/SC reader. Then continue CAP installation/filesystem
   atomicity and Service/RMI profile gaps. Do not use Windows.
 
 # Previous continuation — Physical GET STATUS host stall (resolved below)

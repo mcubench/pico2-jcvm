@@ -12997,3 +12997,13 @@
 - Decision: Check exact-reader availability; if unavailable, proceed with offline backlog work and retain the probe for the next physical opportunity.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-reuse-test-20261025.log`.
+
+## 2026-10-25 — Correct JCAlgTest failing APDU identification
+
+- Step/experiment: `jcalgtest-physical-md5-oaep-correction-20261025`
+- Change: Corrected the targeted probe and active handoff after comparing the failing physical transcript byte-for-byte with JCAlgTest 1.8.2 `AlgSupportTest`. The failed APDU is `B07526000302030900`: data bytes `02 03 09` mean MD5, RSA, OAEP. The preceding SHA-224 identification and `...03030900` probe in the earlier entry were incorrect; that payload selects RIPEMD-160, so it did not isolate the failure.
+- Validation: `./tools/env javac -d build/jc-algtest-apdu-probe tools/JCAlgTestApduProbe.java` passed. Exact APDU `B07526000302030900` passed current-source VPCD ATR, SELECT, and APDU checks, returning `2603...9000` with `TEST:SUMMARY pass=3 fail=0`. The restricted emulator launch first failed with `EPERM`; the same local VPCD run passed under the approved elevated process context without USB access. The approved PC/SC helper found two USB nodes, but `timeout 8s pcsc_scan -r` returned 124 with no reader output, so physical replay was unavailable.
+- Result: The test now correctly exercises unsupported MD5/RSA/OAEP. This confirms the APDU returns the expected unsupported result in VPCD; it does not explain the D92 physical PC/SC transaction loss.
+- Decision: When a Pico PC/SC reader returns, run `PICO2_HOST_USB_ACCESS=1 ./tools/probe-jc-algtest --reader '<exact reader>' --unsupported-rsa-oaep-md5` with a concurrent bounded serial capture. Treat the previous SHA-224 statement as superseded by this correction.
+- Commit: recorded in this correction's commit.
+- Artifacts/logs: `artifacts/logs/pc-jcalgtest-rsa-oaep-md5-test-20261025.log` and `artifacts/logs/pc-jcalgtest-rsa-oaep-md5-20261025.log`.

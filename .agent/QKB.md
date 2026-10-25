@@ -5030,16 +5030,16 @@ fix.
   test invocation.
 - **Validation:** First reuse attempt failed with
   `ERROR: VPCD CAP registry does not match saved memory image`. After the fix,
-  reusing the identical scratch path passed ATR, SELECT, and the exact SHA-224
-  RSA/OAEP support APDU (`2603...9000`, `TEST:SUMMARY pass=3 fail=0`). Transcript:
-  `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-reuse-test-20261025.log`.
+  reusing the identical scratch path passed ATR, SELECT, and an RSA/OAEP
+  support APDU (`2603...9000`, `TEST:SUMMARY pass=3 fail=0`). That first APDU
+  was later determined not to be the failing one; see the correction below.
 
-## D92 JCAlgTest support sweep loses PC/SC transaction on RSA OAEP SHA-224 — 2026-10-25
+## D92 JCAlgTest support sweep loses PC/SC transaction on MD5 RSA OAEP — 2026-10-25
 
 - **Symptom:** After the physical GET STATUS ZLP fix, a fresh official
   `ALG_SUPPORT_EXTENDED` run on D92 completed 1,393 of 4,525 rows, then
   `SCardTransmit` failed with `SCARD_E_NOT_TRANSACTED` on command
-  `B07526000303030900` (JCAlgTest class `0x26`, SHA-224, RSA, OAEP). The
+  `B07526000302030900` (JCAlgTest class `0x26`, MD5, RSA, OAEP). The
   partial CSV is not an acceptance result.
 - **Board evidence:** A subsequent finite serial capture showed runtime
   recovery marker `opcode=8C count=2964 stage=0 context=00020104 origin=0`
@@ -5047,16 +5047,16 @@ fix.
   failed session. `cause=other` means the RP watchdog did not report itself as
   the reset cause; the trigger remains unknown. The serial output was observed
   directly during the bounded monitor, not archived as a standalone log.
-- **Isolation:** Replayed the exact SHA-224 APDU against current-source VPCD
-  with fresh erased flash. It completed in 11.388 seconds and returned
-  `2603...9000`, the expected `NO_SUCH_ALGORITHM`; the neighboring SHA APDU
-  likewise passed. A repeated exact replay with a reused output image passed
-  after the stale-sidecar cleanup above. The supported algorithm result is expected; only the
+- **Isolation:** An earlier VPCD replay used the wrong parameters and did not
+  reproduce this command. A corrected replay of exact MD5 APDU
+  `B07526000302030900` against current-source VPCD with fresh erased flash
+  returned `2603...9000`, the expected `NO_SUCH_ALGORITHM`, with
+  `TEST:SUMMARY pass=3 fail=0`. The supported algorithm result is expected; only the
   physical transaction loss is a defect to investigate.
 - **Viable solution:** Not established. `tools/JCAlgTestApduProbe.java` now has
-  `--unsupported-rsa-oaep-sha224` for a short exact physical replay after PC/SC
+  `--unsupported-rsa-oaep-md5` for a short exact physical replay after PC/SC
   returns. Run it with the approved host-access path and capture serial at the
   same time. Preserve the unchanged upstream CAP.
 - **Evidence:** `artifacts/logs/jcalgtest-after-zlp-D92-20261025.log`, partial
   CSV under `artifacts/results/jcalgtest-after-zlp-D92-20261025/`, and
-  `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-20261025.log`.
+  `artifacts/logs/pc-jcalgtest-rsa-oaep-md5-20261025.log`.

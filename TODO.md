@@ -211,13 +211,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   `artifacts/logs/jcalgtest-current-2BED-compare-20261025.log` and
   `artifacts/results/jcalgtest-current-2BED-20261025/`.
   A post-CCID-ZLP repeat on D92 on 2026-10-25 stopped after 1,393 of 4,525
-  rows with `SCARD_E_NOT_TRANSACTED` during the RSA/OAEP/SHA-224 probe; do not
+  rows with `SCARD_E_NOT_TRANSACTED` during the MD5/RSA/OAEP probe; do not
   treat its partial CSV as a passing report. The exact APDU returns
   `NO_SUCH_ALGORITHM` with `9000` in current-source VPCD (3/3 ATR, SELECT, and
-  APDU checks). The VPCD applet test wrapper now discards a stale CAP-registry
+  APDU checks). The exact command was `B07526000302030900` (MD5, RSA, OAEP).
+  An earlier unrelated APDU was misidentified as SHA-224; see the correction
+  entry in `progress.md`. The VPCD applet test wrapper now discards a stale CAP-registry
   sidecar when replacing its flash copy, and a repeated run with the same
   output path passed. A host-side targeted physical probe is prepared in
-  `tools/probe-jc-algtest`; rerun when a Pico reader is stable and capture
+  `tools/probe-jc-algtest --unsupported-rsa-oaep-md5`; rerun when a Pico reader is stable and capture
   serial concurrently. The prior complete 2BED
   run above remains the AC3 evidence.
 - [x] **AC5: prove the installed applet survives a real power cycle.**
