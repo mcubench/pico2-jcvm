@@ -12363,7 +12363,7 @@
 - Decision: Keep the capacity implementation; next add a bounded exhaustion
   case or test power-cycle recovery without treating the timed-out large-array
   attempt as a pass.
-- Commit: pending
+- Commit: `68e3bea`
 - Artifacts/logs: physical log
   `artifacts/logs/jcsystem-transaction-physical-20261025T093140Z.log`, SHA-256
   `98f0834d5d960df830dc755212c177a2812761cc366d91a7476a1744d9939fb3`;
