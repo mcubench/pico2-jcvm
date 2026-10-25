@@ -12699,3 +12699,13 @@
 - Decision: Continue checking other VM-held root sources and collection behavior.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Record static-reference root test commit
+
+- Step/experiment: `gc-static-reference-root-enumeration-20261025`
+- Change: Recorded the implementation commit SHA for the cached static-reference root assertion.
+- Validation: Confirmed commit `187726f` contains only the focused root test and associated TODO/handoff/progress records.
+- Result: Static-reference enumeration coverage is traceable to commit `187726f`.
+- Decision: Continue root tracing and collection coverage.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
