@@ -247,6 +247,11 @@
   470/472 and `AlgTest_JavaCard/deploy/results/Pico2_CHOUPI_current_security_20261021.csv`
   setup rows 471/473. SDK implementation:
   `choupi/javacard-sdk/javacard-api/src/javacard/security/KeyBuilder.java`.
+- **Reconfirmed:** Physical current-profile Security run on Pico 2
+  `2BED26ED20556535` on 2026-10-25 reproduced the same two dependent rows;
+  the report's setup cases still show unsupported transient key types. Do not
+  treat these as a new `isInitialized()` or transient-clear regression.
+  Report: `artifacts/results/deploy/current-2BED-20261025/security.csv`.
 
 ## SDK JCRMI client SELECT with Le=7F — 2026-10-22
 

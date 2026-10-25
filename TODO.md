@@ -1274,15 +1274,23 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `A000000151000000` in `OP_READY`, confirming the freshly flashed card remains
   empty. The earlier repeated boot `6F00` failure did not recur. D92
   `D92E743D5F640C0F` is visible, but its read-only GPPro listing times out;
-  2BED is the working failover. Windows enumeration, current-image
-  install/select/process/delete, and true physical power-cycle persistence
-  remain unverified.
+  2BED is the working failover. On 2BED, unchanged upstream Core, Security,
+  and Crypto 3.0.5 CAPs completed; all test CAPs were cleaned up, and final
+  GPPro listing showed only ISD. Windows enumeration and true physical
+  power-cycle persistence remain unverified.
 - [x] On 2026-10-25, ran unchanged upstream API 3.0.5 Core area on the flashed
   2BED current-profile card: 291 calls (272 `OK`, 15 per-spec unsupported,
   four Ext scenario calls unavailable after expected `6A88` INSTALL refusal).
   JCSystem rows were 37 `OK` and one spec-permitted `requestObjectDeletion()`
   `ILLEGAL_USE`. Runner cleanup succeeded and final GPPro listing showed only
   ISD. CSV: `artifacts/results/deploy/current-2BED-20261025/core.csv`.
+- [x] On 2026-10-25, unchanged upstream Security and Crypto 3.0.5 areas
+  completed on current-profile 2BED. Security: 901 calls, 77 `OK`, 822
+  `UNSUPPORTED_PER_SPEC`, and two dependent transient-key `WRONG_RESULT` rows
+  whose setup was unsupported (see `.agent/QKB.md`). Crypto: 466 calls, 22
+  `OK`, 444 `UNSUPPORTED_PER_SPEC`, no unexpected results. Both runners cleaned
+  up their CAPs; final GPPro listing showed only ISD. Reports are in
+  `artifacts/results/deploy/current-2BED-20261025/`.
 - [ ] Pass AC1–AC5 and the plan's clean-flash integration sequence three times.
 
 ## Expanded and required cryptographic profiles

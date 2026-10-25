@@ -337,9 +337,21 @@
   `edfb7f6827b1051c837e468cd3db45db67f1fb88d00e7d9aca6d9a9f8c8afc9e`).
   Final card listing: `artifacts/logs/gppro-current-profile-2BED-after-core-20261025.log`
   (SHA-256 `d32b48744874e072169c2e981ba62ea900919fe3726cdf0dc3ac180c93deab6`).
+- Security completed 901 calls: 77 `OK`, 822 `UNSUPPORTED_PER_SPEC`, and two
+  `WRONG_RESULT` follow-ups after unsupported transient-key setup. The known
+  classification is documented in `.agent/QKB.md`; no transient-key clearing
+  defect was reproduced.
+- Crypto completed 466 calls: 22 `OK`, 444 `UNSUPPORTED_PER_SPEC`, no
+  unexpected results. The upstream-documented RSA-2048 keygen exclusion was
+  used. GPPro cleanup listing after both areas showed only ISD.
+- Security CSV SHA-256 `96c3ee05fdda77179075fa809f4be65cdc4bf8825fa6dd3cd829d8c5fd3eece4`;
+  Crypto CSV SHA-256 `447d8bdc81fb57c0d8b713d32973451befc391e1155dd28e12d2968465c3aafc`.
+  Final listing log: `artifacts/logs/gppro-current-profile-2BED-after-security-crypto-20261025.log`
+  (SHA-256 `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`).
 - Validation record commit: `9c652bfb317f4145bb89abf634eaba99f8e66d20`.
-- Next: run additional unchanged `/deploy` areas on this identified reader,
-  then prioritize JCVM gaps from observed failures. Keep `asymm_crypto` paused.
+- Next: run remaining useful unchanged `/deploy` areas on this identified
+  reader, then prioritize JCVM gaps from observed failures. Keep `asymm_crypto`
+  paused.
 
 ## Current continuation — D92 multi-package transaction-probe attempt (2026-10-25)
 
