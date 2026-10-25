@@ -11777,6 +11777,6 @@
 - Decision: Keep the card-manager multi-package acceptance item open until a
   PC/SC VPCD reader is available or a raw authenticated GP command harness is
   added.
-- Commit: `pending`
+- Commit: `5a7f079`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-registry-20261025.log`
   SHA-256 `dd28419d8c0846d79bd4fc12fce3df5f35b45c4d80fc2d0d4fe0a3dc5913ded3`.
