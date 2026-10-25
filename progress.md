@@ -12909,3 +12909,17 @@
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261025T190043Z.log`,
   `artifacts/logs/rmi-client-official-vpcd-emulator-20261025T190043Z.log`.
+
+## 2026-10-25 — Record official JC305 RMI client coverage commit
+
+- Step/experiment: `official-jc305-rmi-client-arrays-20261025`
+- Change: Recorded the source and tracking commit for the SDK 2.2.1 RMI array,
+  returned-interface, and fresh-VPCD-state coverage.
+- Validation: Confirmed commit `7f76560` contains the six intended source and
+  project-tracking files for this step.
+- Result: The official client interoperability work is traceable to
+  `7f76560`; its test outcome remains `pass=18 fail=0`.
+- Decision: Continue current-source Service/RMI work and retain physical GET
+  STATUS as an unresolved host diagnostic.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261025T190043Z.log`.
