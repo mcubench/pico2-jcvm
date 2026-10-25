@@ -89,6 +89,7 @@ public:
   const uint8_t *appletAid() const noexcept { return applet_aid_; }
   uint8_t appletAidLength() const noexcept { return applet_aid_length_; }
   bool appletClassIndex(uint16_t &class_index) const noexcept;
+  uint8_t packageId() const noexcept { return package_id_; }
 
 private:
   static constexpr size_t kMaxLoadTlvLength = 64 * 1024 + 1024;

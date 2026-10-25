@@ -63,6 +63,7 @@ def exchange(connection: socket.socket, command: bytes, label: str) -> bytes:
 def run_emulator(
     args: argparse.Namespace, memory: Path, pass_number: int,
     pre_restart: bool = False,
+    resume: bool = False,
 ) -> None:
     pass_started = time.monotonic()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
@@ -88,7 +89,7 @@ def run_emulator(
             "--rom-mask",
             str(args.rom_mask),
         ]
-        if args.verify_install_process_restart and not pre_restart:
+        if resume or (args.verify_install_process_restart and not pre_restart):
             command.extend(("--class-index", str(args.install_class_index)))
         else:
             command.extend(("--install", "-s"))
@@ -715,8 +716,28 @@ def main() -> int:
                 "TEST:PASS install process exited with pending journal "
                 f"package={args.package_id} class-index={args.install_class_index}"
             )
+        resume_installed = args.verify_install_process_restart
         for pass_number in range(1, args.passes + 1):
-            run_emulator(args, args.flash_copy, pass_number)
+            pass_log_start = args.log.stat().st_size if args.log.exists() else 0
+            run_emulator(args, args.flash_copy, pass_number,
+                         resume=resume_installed)
+            if not resume_installed:
+                with args.log.open("rb") as log:
+                    log.seek(pass_log_start)
+                    pass_log = log.read().decode("utf-8", errors="replace")
+                package_match = re.findall(
+                    r"VPCD:APPLET_INSTALLED package-id=(\d+) class-index=(\d+)",
+                    pass_log,
+                )
+                if not package_match:
+                    raise RuntimeError(
+                        "initial install did not report its resolved package ID "
+                        "and applet class index"
+                    )
+                args.package_id, args.install_class_index = map(
+                    int, package_match[-1]
+                )
+                resume_installed = True
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"TEST:FAIL {error}", file=sys.stderr)
         return 1

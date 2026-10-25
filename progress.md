@@ -11753,3 +11753,30 @@
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T034755Z.log`;
   `build/arm/pico2_choupi.uf2` SHA-256
   `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
+## 2026-10-25 — Add multi-package host VPCD registry
+
+- Step/experiment: `host-vpcd-multipackage-registry`
+- Change: Replaced the PC/VPCD single-package and single-instance store with a
+  package-ID indexed host registry; package/AID and instance operations now
+  span all loaded packages. VPCD restore uses the package ID resolved by
+  `CapLoadSession`. GET STATUS enumerates packages and instances and supports
+  `6310` response paging. Updated the persistence test harness to resume using
+  the package ID allocated during LOAD. Updated TODO/QKB/handoff.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. Raw VPCD test with
+  `--passes 2 --apdu-timeout 60` passed `TEST:SUMMARY pass=30 fail=0`; process
+  pass times were 57.868 s and 19.117 s. A default 20-second APDU bound timed
+  out at GETVERSION before the successful bounded retry. GPPro multi-package
+  test was attempted but `VpcdPresenceProbe` could not find `Virtual PCD 00 00`
+  in system PC/SC, before any CAP was uploaded. `git diff --check` passed.
+- Result: Host storage/restore implementation builds; one-package process
+  restart is verified. Multi-package GPPro GET STATUS, multiple-instance
+  listing/pagination, and multi-package process-restart reconstruction remain
+  unverified/open. No physical firmware was flashed because only PC/VPCD code
+  changed.
+- Decision: Keep the card-manager multi-package acceptance item open until a
+  PC/SC VPCD reader is available or a raw authenticated GP command harness is
+  added.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-registry-20261025.log`
+  SHA-256 `dd28419d8c0846d79bd4fc12fce3df5f35b45c4d80fc2d0d4fe0a3dc5913ded3`.

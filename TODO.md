@@ -246,8 +246,11 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   is no manufacturing data source for CPLC. Add required data objects only
   when backed by actual card data. Authenticated GET STATUS first/next pairs
   (`P2=02/03`) now pass for application, package, and module categories with
-  one entry each; multi-entry pagination still awaits multiple package and
-  instance support.
+  one entry each. The host VPCD storage shim now indexes multiple packages and
+  applet instances and assembles GET STATUS pages across the registry. Its
+  single-applet, two-process regression passes, but multi-package GET STATUS
+  has not yet been exercised end to end because this VM currently has no
+  `Virtual PCD` reader registered with PC/SC.
 - [ ] **Broaden garbage-collector root and persistence-alias coverage.** The
   physical static workload passed 2,262 transfers (heap stabilized at 83 array
   slots / 28 instance slots; one pass reclaimed 50 arrays). The focused

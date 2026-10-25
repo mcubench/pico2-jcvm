@@ -527,19 +527,42 @@
   hardware was not visible on 2026-10-21. Remember that the current host VPCD
   storage shim supports one package and one applet instance only.
 
-## PC VPCD storage shim is single-package — 2026-10-21
+## PC VPCD storage shim is single-package — 2026-10-21 (updated 2026-10-25)
 
 - **Symptom:** Host VPCD tests cannot exercise two distinct uploaded CAP
   packages, even though the Pico card manager has eight package slots.
 - **Cause:** `choupi/src/main_pc.cpp` owns one `vpcd_package_id`, one package
   AID, and one installed-instance record. Its package lookup and metadata
   callbacks reject other package IDs and do not maintain a package registry.
-- **Resolution / guidance:** None implemented. Treat PC VPCD as a single-CAP
-  method-execution harness only; do not use it to verify multi-package
-  install/select/delete. Verify that path on the physical Pico when reachable,
-  or implement an indexed host storage backend before claiming emulator parity.
-- **Validation:** Source inspection on 2026-10-21. Physical Pico was not
-  visible (`pico2-pcsc-reader` found 0; gated `lsusb -d 2e8a:` empty).
+- **Resolution:** The PC backend now stores CAP packages by ID and AID, keeps
+  multiple applet instances per package, and enumerates host packages and
+  instances in GET STATUS pages. The restore callback takes the resolved
+  package ID from `CapLoadSession`; do not use the CLI's initial package ID for
+  a package allocated by LOAD.
+- **Validation:** PC, ARM, and RISC-V builds pass. The JCAlgTest VPCD
+  two-process restore test passes 30/30 checks. Multi-package GPPro validation
+  is not yet complete: `VpcdPresenceProbe` reported that `Virtual PCD 00 00`
+  is not registered with system PC/SC, before any CAP was uploaded. The host
+  registry is process-local; multi-package process-restart reconstruction is
+  still open.
+
+## VPCD SmartcardIO reader absent; bound PC/SC probes — 2026-10-25
+
+- **Symptom:** A GPPro integration run stopped before card setup because
+  `VpcdPresenceProbe` could not find `Virtual PCD 00 00`. A subsequent
+  unbounded `pcsc_scan -r` attempt emitted repeated `SCardEstablishContext:
+  Access denied` / invalid-context messages until interrupted.
+- **Cause:** This VM currently has no registered virtual PCD reader in system
+  PC/SC; a raw VPCD socket test does not require that reader, but GPPro through
+  SmartcardIO does.
+- **Viable guidance:** Use the existing raw-socket VPCD harness for VM/APDU
+  checks when PC/SC has no virtual reader. Before running SmartcardIO tools,
+  require a bounded `VpcdPresenceProbe` to confirm the exact reader exists.
+  Keep any direct PC/SC diagnostic bounded and redirect its output to a log.
+- **Validation:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet
+  --passes 2 --log artifacts/logs/host-vpcd-multipackage-registry-20261025.log`
+  passed; the GPPro reader probe failed before LOAD. The noisy scan was
+  interrupted and is not evidence of card state.
 
 ## Util same-array overlapping copy — 2026-10-21
 

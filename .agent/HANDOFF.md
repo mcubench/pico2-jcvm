@@ -1,3 +1,34 @@
+# Current implementation step — host VPCD multi-package registry (2026-10-25)
+
+- `choupi/src/main_pc.cpp` now mirrors the device package store with an
+  in-process registry keyed by dynamic package ID. It supports multiple
+  package AIDs/CAP images and multiple installed applet instances per package.
+  Package lookup, CAP retrieval, instance lookup/removal, and GET STATUS
+  enumeration now use the registry.
+- `CapLoadSession` exposes its resolved package ID. The VPCD applet restore
+  callback uses that ID instead of the CLI's initial package ID, which fixed a
+  SELECT `6F00` caused by restoring a newly allocated package under ID 63.
+- GET STATUS now builds entries across all loaded host packages and applet
+  instances, with `6310` continuation when a page fills. The PCSC/GPPro
+  multi-package integration check remains unverified: this VM's PC/SC has no
+  `Virtual PCD 00 00` reader registered, so GPPro stopped before any CAP
+  upload. Do not claim multi-package end-to-end success yet.
+- Validation: `./tools/build-pc`, `./tools/build arm`, `./tools/build riscv`
+  passed. Final raw VPCD regression:
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet --passes 2
+  --apdu-timeout 60 --log
+  artifacts/logs/host-vpcd-multipackage-registry-20261025.log` passed 30/30.
+  Pass 1 took 57.868 s; pass 2 took 19.117 s. The same test at its default
+  20-second APDU bound timed out during GETVERSION; the bounded retry passed.
+- Host package registry is process-local. Reconstructing several dynamic CAP
+  images across emulator process restarts remains open. The firmware's native
+  package store was not changed, and no Pico was flashed because this is a
+  PC/VPCD-only change.
+- Next: enable or provide a registered PC/SC VPCD reader (or add a raw
+  authenticated GP command harness), then validate two packages and two
+  instances through GPPro GET STATUS, pagination, SELECT, and DELETE. Continue
+  to preserve the unrelated asymmetric-profile worktree changes.
+
 # Latest implementation step — JCSystem transaction commit capacity (2026-10-25)
 
 - Implemented `getMaxCommitCapacity()` / `getUnusedCommitCapacity()` with the

@@ -88,9 +88,52 @@ CapLoadSession vpcd_cap_load_session;
 Scp03Session vpcd_secure_channel;
 bool vpcd_get_status_first_seen = false;
 uint16_t vpcd_get_status_cursor = 0;
+uint8_t vpcd_get_status_p1 = 0;
+std::vector<uint8_t> vpcd_get_status_search_data;
 std::vector<choupi::pc::RomPackage> host_rom_packages;
 std::vector<const uint8_t *> host_rom_package_data;
 constexpr uint32_t kHostFlashLength = 0x80000;
+
+struct HostAppletInstance {
+  std::vector<uint8_t> applet_aid;
+  std::vector<uint8_t> instance_aid;
+  uint16_t class_index = 0xffff;
+};
+
+struct HostCapPackage {
+  uint8_t package_id = 0xff;
+  std::vector<uint8_t> package_aid;
+  std::vector<uint8_t> code;
+  std::vector<HostAppletInstance> instances;
+};
+
+// The device filesystem has a package-indexed CAP store. Keep the PC/VPCD
+// backend equivalent so independent CAP LOAD commands in one process can
+// coexist rather than replacing the last package that was loaded.
+std::vector<HostCapPackage> host_cap_packages;
+
+HostCapPackage *host_package(uint8_t package_id) noexcept {
+  for (auto &package : host_cap_packages)
+    if (package.package_id == package_id) return &package;
+  return nullptr;
+}
+
+const HostCapPackage *host_package_read(uint8_t package_id) noexcept {
+  for (const auto &package : host_cap_packages)
+    if (package.package_id == package_id) return &package;
+  return nullptr;
+}
+
+HostAppletInstance *host_instance(HostCapPackage &package,
+                                  const uint8_t *aid,
+                                  uint8_t aid_length) noexcept {
+  if (aid == nullptr) return nullptr;
+  for (auto &instance : package.instances)
+    if (instance.instance_aid.size() == aid_length &&
+        std::memcmp(instance.instance_aid.data(), aid, aid_length) == 0)
+      return &instance;
+  return nullptr;
+}
 
 extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                              uint16_t class_index,
@@ -121,11 +164,11 @@ extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length) {
 
 extern "C" const uint8_t *choupi_cap_store_data_for_package(
     uint8_t package_id, uint32_t *length) {
-  if (length == nullptr || !vpcd_package_loaded ||
-      package_id != vpcd_package_id ||
-      vpcd_cap_code.empty()) return nullptr;
-  *length = static_cast<uint32_t>(vpcd_cap_code.size());
-  return vpcd_cap_code.data();
+  const HostCapPackage *package = host_package_read(package_id);
+  if (length == nullptr || package == nullptr || package->code.empty())
+    return nullptr;
+  *length = static_cast<uint32_t>(package->code.size());
+  return package->code.data();
 }
 
 extern "C" const uint8_t *choupi_pc_rom_package_data(uint8_t package_id,
@@ -149,10 +192,20 @@ extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
       length == 0 || length > 64 * 1024) {
     return 1;
   }
-  vpcd_package_id = package_id;
-  vpcd_package_aid.assign(package_aid, package_aid + package_aid_length);
-  vpcd_cap_code.assign(data, data + length);
-  vpcd_package_loaded = true;
+  HostCapPackage *stored = host_package(package_id);
+  if (stored != nullptr) {
+    if (stored->package_aid.size() != package_aid_length ||
+        std::memcmp(stored->package_aid.data(), package_aid,
+                    package_aid_length) != 0)
+      return 1;
+    stored->code.assign(data, data + length);
+    return 0;
+  }
+  HostCapPackage package;
+  package.package_id = package_id;
+  package.package_aid.assign(package_aid, package_aid + package_aid_length);
+  package.code.assign(data, data + length);
+  host_cap_packages.push_back(std::move(package));
   return 0;
 }
 
@@ -182,29 +235,39 @@ extern "C" uint8_t choupi_store_cap_instance(uint8_t package_id,
                  static_cast<unsigned>(package_id));
     return 0;
   }
-  if (package_id != vpcd_package_id || applet_aid == nullptr ||
+  HostCapPackage *package = host_package(package_id);
+  if (package == nullptr || applet_aid == nullptr ||
       applet_aid_length < 5 || applet_aid_length > 16 ||
       instance_aid == nullptr || instance_aid_length < 5 ||
       instance_aid_length > 16 ||
       applet_class_index == 0xffff) {
     return 1;
   }
-  vpcd_stored_applet_aid.assign(applet_aid,
-                                applet_aid + applet_aid_length);
-  vpcd_stored_instance_aid.assign(instance_aid,
-                                  instance_aid + instance_aid_length);
-  vpcd_stored_class_index = applet_class_index;
+  HostAppletInstance *stored = host_instance(*package, instance_aid,
+                                             instance_aid_length);
+  if (stored == nullptr) {
+    if (package->instances.size() >= 0xff) return 1;
+    package->instances.emplace_back();
+    stored = &package->instances.back();
+  }
+  stored->applet_aid.assign(applet_aid, applet_aid + applet_aid_length);
+  stored->instance_aid.assign(instance_aid, instance_aid + instance_aid_length);
+  stored->class_index = applet_class_index;
   return 0;
 }
 
 bool cap_store_find_package(const uint8_t *aid, uint8_t aid_length,
                             uint8_t &package_id) noexcept {
-  if (!vpcd_package_loaded || aid == nullptr ||
-      aid_length != vpcd_package_aid.size() ||
-      vpcd_package_aid.empty() ||
-      std::memcmp(aid, vpcd_package_aid.data(), aid_length) != 0) return false;
-  package_id = vpcd_package_id;
-  return true;
+  if (aid == nullptr) return false;
+  for (const auto &package : host_cap_packages) {
+    if (package.package_aid.size() == aid_length &&
+        !package.package_aid.empty() &&
+        std::memcmp(aid, package.package_aid.data(), aid_length) == 0) {
+      package_id = package.package_id;
+      return true;
+    }
+  }
+  return false;
 }
 
 bool cap_store_write_package(uint8_t package_id, const uint8_t *aid,
@@ -215,13 +278,21 @@ bool cap_store_write_package(uint8_t package_id, const uint8_t *aid,
 }
 
 bool cap_store_delete_package(uint8_t package_id) noexcept {
-  if (package_id != vpcd_package_id) return false;
-  vpcd_package_loaded = false;
-  vpcd_cap_code.clear();
-  vpcd_package_aid.clear();
-  vpcd_stored_applet_aid.clear();
-  vpcd_stored_instance_aid.clear();
-  vpcd_stored_class_index = 0xffff;
+  const auto found = std::find_if(host_cap_packages.begin(),
+                                  host_cap_packages.end(),
+                                  [package_id](const HostCapPackage &item) {
+                                    return item.package_id == package_id;
+                                  });
+  if (found == host_cap_packages.end()) return false;
+  host_cap_packages.erase(found);
+  if (package_id == vpcd_package_id) {
+    vpcd_package_loaded = false;
+    vpcd_cap_code.clear();
+    vpcd_package_aid.clear();
+    vpcd_stored_applet_aid.clear();
+    vpcd_stored_instance_aid.clear();
+    vpcd_stored_class_index = 0xffff;
+  }
   return true;
 }
 
@@ -232,10 +303,11 @@ const uint8_t *cap_store_data_for_package(uint8_t package_id,
 
 bool cap_store_package_aid(uint8_t package_id, uint8_t *aid,
                            uint8_t &aid_length) noexcept {
-  if (package_id != vpcd_package_id || aid == nullptr ||
-      vpcd_package_aid.empty()) return false;
-  aid_length = static_cast<uint8_t>(vpcd_package_aid.size());
-  std::copy(vpcd_package_aid.begin(), vpcd_package_aid.end(), aid);
+  const HostCapPackage *package = host_package_read(package_id);
+  if (package == nullptr || aid == nullptr || package->package_aid.empty())
+    return false;
+  aid_length = static_cast<uint8_t>(package->package_aid.size());
+  std::copy(package->package_aid.begin(), package->package_aid.end(), aid);
   return true;
 }
 
@@ -252,13 +324,23 @@ bool cap_store_mark_package_installed(uint8_t package_id, const uint8_t *aid,
 bool cap_store_remove_package_instance(uint8_t package_id,
                                        const uint8_t *aid,
                                        uint8_t aid_length) noexcept {
-  if (package_id != vpcd_package_id || aid == nullptr ||
-      aid_length != vpcd_stored_instance_aid.size() ||
-      std::memcmp(aid, vpcd_stored_instance_aid.data(), aid_length) != 0)
-    return false;
-  vpcd_stored_instance_aid.clear();
-  vpcd_stored_applet_aid.clear();
-  vpcd_stored_class_index = 0xffff;
+  HostCapPackage *package = host_package(package_id);
+  if (package == nullptr || aid == nullptr) return false;
+  const auto found = std::find_if(
+      package->instances.begin(), package->instances.end(),
+      [aid, aid_length](const HostAppletInstance &instance) {
+        return instance.instance_aid.size() == aid_length &&
+               std::memcmp(instance.instance_aid.data(), aid, aid_length) == 0;
+      });
+  if (found == package->instances.end()) return false;
+  package->instances.erase(found);
+  if (package_id == vpcd_package_id &&
+      vpcd_stored_instance_aid.size() == aid_length &&
+      std::memcmp(vpcd_stored_instance_aid.data(), aid, aid_length) == 0) {
+    vpcd_stored_instance_aid.clear();
+    vpcd_stored_applet_aid.clear();
+    vpcd_stored_class_index = 0xffff;
+  }
   return true;
 }
 
@@ -266,22 +348,28 @@ bool cap_store_find_instance(const uint8_t *aid, uint8_t aid_length,
                              uint8_t &package_id, uint8_t *applet_aid,
                              uint8_t &applet_aid_length,
                              uint16_t &class_index) noexcept {
-  if (aid == nullptr || applet_aid == nullptr ||
-      aid_length != vpcd_stored_instance_aid.size() ||
-      vpcd_stored_instance_aid.empty() ||
-      std::memcmp(aid, vpcd_stored_instance_aid.data(), aid_length) != 0 ||
-      vpcd_stored_class_index == 0xffff) return false;
-  package_id = vpcd_package_id;
-  applet_aid_length = static_cast<uint8_t>(vpcd_stored_applet_aid.size());
-  std::copy(vpcd_stored_applet_aid.begin(), vpcd_stored_applet_aid.end(),
-            applet_aid);
-  class_index = vpcd_stored_class_index;
-  return true;
+  if (aid == nullptr || applet_aid == nullptr) return false;
+  for (const auto &package : host_cap_packages) {
+    for (const auto &instance : package.instances) {
+      if (instance.instance_aid.size() == aid_length &&
+          !instance.instance_aid.empty() &&
+          std::memcmp(aid, instance.instance_aid.data(), aid_length) == 0 &&
+          instance.class_index != 0xffff) {
+        package_id = package.package_id;
+        applet_aid_length = static_cast<uint8_t>(instance.applet_aid.size());
+        std::copy(instance.applet_aid.begin(), instance.applet_aid.end(),
+                  applet_aid);
+        class_index = instance.class_index;
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 uint8_t cap_store_package_instance_count(uint8_t package_id) noexcept {
-  return package_id == vpcd_package_id &&
-                 !vpcd_stored_instance_aid.empty() ? 1 : 0;
+  const HostCapPackage *package = host_package_read(package_id);
+  return package == nullptr ? 0 : static_cast<uint8_t>(package->instances.size());
 }
 
 bool cap_store_package_instance_at(uint8_t package_id, uint8_t index,
@@ -290,19 +378,22 @@ bool cap_store_package_instance_at(uint8_t package_id, uint8_t index,
                                    uint8_t *instance_aid,
                                    uint8_t &instance_aid_length,
                                    uint16_t &class_index) noexcept {
-  if (index != 0 || cap_store_package_instance_count(package_id) == 0 ||
+  const HostCapPackage *package = host_package_read(package_id);
+  if (package == nullptr || index >= package->instances.size() ||
       applet_aid == nullptr || instance_aid == nullptr) return false;
-  applet_aid_length = static_cast<uint8_t>(vpcd_stored_applet_aid.size());
-  instance_aid_length = static_cast<uint8_t>(vpcd_stored_instance_aid.size());
-  std::copy(vpcd_stored_applet_aid.begin(), vpcd_stored_applet_aid.end(),
-            applet_aid);
-  std::copy(vpcd_stored_instance_aid.begin(),
-            vpcd_stored_instance_aid.end(), instance_aid);
-  class_index = vpcd_stored_class_index;
+  const HostAppletInstance &instance = package->instances[index];
+  applet_aid_length = static_cast<uint8_t>(instance.applet_aid.size());
+  instance_aid_length = static_cast<uint8_t>(instance.instance_aid.size());
+  std::copy(instance.applet_aid.begin(), instance.applet_aid.end(), applet_aid);
+  std::copy(instance.instance_aid.begin(), instance.instance_aid.end(),
+            instance_aid);
+  class_index = instance.class_index;
   return true;
 }
 
-bool cap_store_initialize() noexcept { return !vpcd_cap_code.empty(); }
+bool cap_store_initialize() noexcept {
+  return !host_cap_packages.empty() || !vpcd_cap_code.empty();
+}
 
 bool cap_store_write(const uint8_t *data, size_t length) noexcept {
   return data != nullptr && length != 0 && length <= 64 * 1024 &&
@@ -319,6 +410,8 @@ bool cap_store_mark_installed(const uint8_t *aid, uint8_t aid_length,
 }
 
 const uint8_t *cap_store_data(uint32_t *length) noexcept {
+  if (vpcd_package_loaded)
+    return choupi_cap_store_data_for_package(vpcd_package_id, length);
   return choupi_cap_store_data(length);
 }
 
@@ -477,6 +570,7 @@ bool install_vpcd_applet() {
     std::fprintf(stderr, "ERROR: PC applet install omitted class index\n");
     return false;
   }
+  vpcd_package_id = vpcd_cap_load_session.packageId();
   std::fprintf(stderr,
                "VPCD:APPLET_INSTALLED package-id=%u class-index=%u\n",
                static_cast<unsigned>(vpcd_package_id),
@@ -566,6 +660,7 @@ uint8_t vpcd_restore_applet(void *, const uint8_t *aid, uint8_t aid_length) {
   if (!vpcd_cap_load_session.restoreInstalledForAid(aid, aid_length)) return 1;
   uint16_t class_index = 0xffff;
   if (!vpcd_cap_load_session.appletClassIndex(class_index)) return 1;
+  vpcd_package_id = vpcd_cap_load_session.packageId();
   vpcd_applet_class_index = class_index;
   return choupi_vm_restore_applet(vpcd_package_id, class_index, aid,
                                   aid_length);
@@ -581,6 +676,7 @@ void vpcd_reset_card_manager(void *) {
   vpcd_secure_channel.reset();
   vpcd_get_status_first_seen = false;
   vpcd_get_status_cursor = 0;
+  vpcd_get_status_search_data.clear();
   vpcd_cap_load_session.abortTransfer();
 }
 
@@ -609,6 +705,16 @@ uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
   if (p2 == 0x02) {
     vpcd_get_status_first_seen = false;
     vpcd_get_status_cursor = 0;
+    vpcd_get_status_p1 = p1;
+    if (search_length == 0) {
+      vpcd_get_status_search_data.clear();
+    } else if (search_data != nullptr) {
+      vpcd_get_status_search_data.assign(search_data,
+                                         search_data + search_length);
+    } else {
+      return vpcd_card_manager_status(0x6a80, response, response_capacity,
+                                      response_length);
+    }
   } else {
     const uint16_t next_status = gp::validate_get_status_next(
         vpcd_get_status_first_seen, p1, search_data, search_length);
@@ -616,6 +722,14 @@ uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
       return vpcd_card_manager_status(next_status, response,
                                       response_capacity, response_length);
     }
+    if (p1 != vpcd_get_status_p1 ||
+        search_length != vpcd_get_status_search_data.size() ||
+        (search_length != 0 &&
+         (search_data == nullptr ||
+          std::memcmp(search_data, vpcd_get_status_search_data.data(),
+                      search_length) != 0)))
+      return vpcd_card_manager_status(0x6985, response, response_capacity,
+                                      response_length);
   }
 
   if (response == nullptr || response_length == nullptr ||
@@ -624,77 +738,99 @@ uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
   }
   size_t output_length = 0;
   uint16_t status = 0x9000;
-  if (p2 == 0x02) {
-    if (p1 == 0x80) {
-      gp::RegistryView empty{};
-      status = gp::build_get_status_first_response(
-          p1, search_data, search_length, empty, response,
-          response_capacity - 2, output_length);
-      if (status == 0x9000) vpcd_get_status_cursor = 1;
-    } else if (p1 == 0x40 || p1 == 0x20 || p1 == 0x10) {
-      gp::AidSearch search;
-      if (!gp::parse_aid_search(search_data, search_length, search)) {
-        status = 0x6a80;
-      } else {
-        uint32_t code_length = 0;
-        const bool package_loaded =
-            cap_store_data_for_package(vpcd_package_id, &code_length) !=
-            nullptr;
-        uint8_t package_aid[16]{};
-        uint8_t package_aid_length = 0;
-        const bool has_package =
-            package_loaded && cap_store_package_aid(
-                                  vpcd_package_id, package_aid,
-                                  package_aid_length);
-        gp::RegistryView registry{};
-        registry.package_loaded = has_package;
-        registry.package_aid = package_aid;
-        registry.package_aid_length = package_aid_length;
-        uint8_t applet_aid[16]{};
-        uint8_t applet_aid_length = 0;
-        uint8_t instance_aid[16]{};
-        uint8_t instance_aid_length = 0;
-        uint16_t class_index = 0xffff;
-        registry.applet_installed = has_package &&
-            cap_store_package_instance_count(vpcd_package_id) != 0 &&
-            cap_store_package_instance_at(
-                vpcd_package_id, 0, applet_aid, applet_aid_length,
-                instance_aid, instance_aid_length, class_index);
-        registry.instance_aid = instance_aid;
-        registry.instance_aid_length = instance_aid_length;
-        if (p1 == 0x10 && has_package &&
-            choupi_cap_package_applet_aid(vpcd_package_id, 0, applet_aid,
-                                          &applet_aid_length)) {
-          registry.module_aid = applet_aid;
-          registry.module_aid_length = applet_aid_length;
-        }
-        const uint16_t entry_count = p1 == 0x40
-            ? static_cast<uint16_t>(cap_store_package_instance_count(
-                  vpcd_package_id))
-            : (has_package ? 1 : 0);
-        if (entry_count != 0 &&
-            (p1 != 0x40 || gp::aid_matches_search(
-                               search, instance_aid,
-                               instance_aid_length)) &&
-            (p1 == 0x40 || gp::aid_matches_search(
-                               search, package_aid,
-                               package_aid_length))) {
-          if (vpcd_get_status_cursor == 0) {
-            status = gp::build_get_status_first_response(
-                p1, search_data, search_length, registry, response,
-                response_capacity - 2, output_length);
-            if (status == 0x9000 && output_length != 0) {
-              vpcd_get_status_cursor = 1;
-            }
-          }
-        }
-      }
+  if (p1 == 0x80) {
+    gp::RegistryView empty{};
+    status = gp::build_get_status_first_response(
+        p1, search_data, search_length, empty, response,
+        response_capacity - 2, output_length);
+    vpcd_get_status_cursor = status == 0x9000 ? 1 : 0;
+  } else if (p1 == 0x40 || p1 == 0x20 || p1 == 0x10) {
+    gp::AidSearch search;
+    if (!gp::parse_aid_search(search_data, search_length, search)) {
+      status = 0x6a80;
     } else {
-      status = 0x6a86;
+      size_t match_index = 0;
+      bool page_full = false;
+      const auto append_matching = [&](const uint8_t *instance_aid,
+                                       uint8_t instance_aid_length,
+                                       const uint8_t *package_aid,
+                                       uint8_t package_aid_length,
+                                       const uint8_t *module_aid,
+                                       uint8_t module_aid_length) {
+        const uint8_t *match_aid = p1 == 0x40 ? instance_aid : package_aid;
+        const uint8_t match_aid_length =
+            p1 == 0x40 ? instance_aid_length : package_aid_length;
+        if (!gp::aid_matches_search(search, match_aid, match_aid_length))
+          return true;
+        if (match_index < vpcd_get_status_cursor) {
+          ++match_index;
+          return true;
+        }
+        size_t entry_length = 0;
+        const size_t capacity = response_capacity - 2 - output_length;
+        const bool appended = p1 == 0x40
+            ? gp::append_registry_entry(
+                  response + output_length, capacity, entry_length,
+                  instance_aid, instance_aid_length, package_aid,
+                  package_aid_length, 0x07)
+            : gp::append_load_file_entry(
+                  response + output_length, capacity, entry_length,
+                  package_aid, package_aid_length, module_aid,
+                  module_aid_length, p1 == 0x10);
+        if (!appended) {
+          page_full = true;
+          return false;
+        }
+        output_length += entry_length;
+        ++match_index;
+        return true;
+      };
+
+      for (const HostCapPackage &package : host_cap_packages) {
+        uint8_t module_aid[16]{};
+        uint8_t module_aid_length = 0;
+        if (p1 == 0x10 &&
+            !choupi_cap_package_applet_aid(package.package_id, 0, module_aid,
+                                           &module_aid_length)) {
+          status = 0x6f00;
+          break;
+        }
+        uint8_t instance_aid[16]{};
+        uint8_t applet_aid[16]{};
+        uint8_t instance_aid_length = 0;
+        uint8_t applet_aid_length = 0;
+        uint16_t class_index = 0xffff;
+        const uint8_t count = cap_store_package_instance_count(package.package_id);
+        if (p1 == 0x40) {
+          for (uint8_t index = 0; index < count; ++index) {
+            if (!cap_store_package_instance_at(
+                    package.package_id, index, applet_aid,
+                    applet_aid_length, instance_aid,
+                    instance_aid_length, class_index)) {
+              status = 0x6f00;
+              break;
+            }
+            if (!append_matching(instance_aid, instance_aid_length,
+                                 package.package_aid.data(),
+                                 static_cast<uint8_t>(package.package_aid.size()),
+                                 module_aid, module_aid_length)) break;
+          }
+        } else if (!append_matching(
+                       nullptr, 0, package.package_aid.data(),
+                       static_cast<uint8_t>(package.package_aid.size()),
+                       module_aid, module_aid_length)) {
+          // The failed append is retained for the next GET STATUS page.
+        }
+        if (status != 0x9000 || page_full) break;
+      }
+      vpcd_get_status_cursor = static_cast<uint16_t>(match_index);
+      if (status == 0x9000 && page_full) status = 0x6310;
     }
+  } else {
+    status = 0x6a86;
   }
 
-  if (status != 0x9000) {
+  if (status != 0x9000 && status != 0x6310) {
     return vpcd_card_manager_status(status, response, response_capacity,
                                     response_length);
   }
@@ -702,11 +838,11 @@ uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
     return vpcd_card_manager_status(0x6f00, response, response_capacity,
                                     response_length);
   }
-  response[output_length] = 0x90;
-  response[output_length + 1] = 0x00;
+  response[output_length] = static_cast<uint8_t>(status >> 8);
+  response[output_length + 1] = static_cast<uint8_t>(status);
   *response_length = static_cast<uint16_t>(output_length + 2);
   vpcd_get_status_first_seen = true;
-  return 0x9000;
+  return status;
 }
 
 uint16_t vpcd_process_card_manager(
@@ -1192,9 +1328,26 @@ int main_pc(int argc, char *argv[]) {
       // The PC VPCD host registry is process-local. Reconstruct the common
       // single-instance resume record from the explicit applet metadata so
       // GET STATUS continues to report the installed applet after restart.
+      if (choupi_store_cap_package(
+              vpcd_package_id, vpcd_package_aid.data(),
+              static_cast<uint8_t>(vpcd_package_aid.size()),
+              vpcd_cap_code.data(),
+              static_cast<uint32_t>(vpcd_cap_code.size())) != 0) {
+        std::fprintf(stderr, "ERROR: unable to restore VPCD package record\n");
+        return EXIT_FAILURE;
+      }
       vpcd_stored_applet_aid = vpcd_applet_aid;
       vpcd_stored_instance_aid = vpcd_applet_aid;
       vpcd_stored_class_index = vpcd_applet_class_index;
+      if (choupi_store_cap_instance(
+              vpcd_package_id, vpcd_stored_applet_aid.data(),
+              static_cast<uint8_t>(vpcd_stored_applet_aid.size()),
+              vpcd_stored_instance_aid.data(),
+              static_cast<uint8_t>(vpcd_stored_instance_aid.size()),
+              vpcd_stored_class_index) != 0) {
+        std::fprintf(stderr, "ERROR: unable to restore VPCD applet record\n");
+        return EXIT_FAILURE;
+      }
     }
   }
 
