@@ -19,8 +19,10 @@
   enumerated; PC/SC listed D92 only. Do not claim a wrapper-verified third
   flash.
 - LED behavior is committed as `202b072` (`df5956a` logs its commit ID).
-- Current implementation/test/doc changes for this persistence fix are
-  uncommitted. Preserve unrelated capability-profile, RSA, and AlgTest changes.
+- Persistence implementation, focused tests, QKB/TODO updates, and the main
+  progress record are committed as `8050f5b`. The progress commit-ID follow-up
+  is being recorded now. Preserve unrelated capability-profile, RSA, and
+  AlgTest changes.
 - Next: finish the progress record, then commit only the filesystem overlay
   fix, its regression, and JCSystem probe changes. If continuing physical
   persistence work, test a true power-off/on separately; do not alter upstream
