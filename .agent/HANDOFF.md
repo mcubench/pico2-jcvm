@@ -1,5 +1,35 @@
 # Latest physical task — `symm_crypto` flash, explicit install, static benchmark
 
+## Current continuation — D92 multi-package transaction-probe attempt (2026-10-25)
+
+- Rebuilt ARM and RISC-V with `symm_crypto`; both wrappers passed. Flashed ARM
+  to D92 `D92E743D5F640C0F` using the required host-access cycle. Image
+  write/verify passed and the 18-second serial monitor repeatedly reported
+  `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`.
+- D92 already had the explicitly installed upstream JCAlgTest CAP. To avoid
+  replacing it, built a transaction-probe CAP with a distinct package AID
+  `F01234567890` and applet AID `F0123456789001`. GPPro completed LOAD but did
+  not return from INSTALL after about one minute; the command was interrupted.
+  Do not claim the probe applet is installed or deleted. The previous JCAlgTest
+  package was not intentionally removed.
+- After a second full flash/reboot recovery, serial runtime still passed, but
+  bounded GPPro list/raw APDU and SmartcardIO probes continued to time out.
+  PC/SC listed the reader and recognized an inserted card with ATR `3B800181`.
+  CCID monitoring showed repeated GetSlotStatus requests; refreshing ACLs and
+  restarting pcscd via the authorized helper did not restore APDU access. No
+  BOOTSEL failover board was visible to picotool. See `.agent/QKB.md` issue
+  “D92 PC/SC APDU path stalled after second-package load attempt”.
+- This does not establish a passing physical transaction test or a clean
+  package registry. Preserve current persistent card data. Before another
+  physical package write, restore working PC/SC access and inspect GET STATUS.
+  Continue offline with native JCSystem/transaction work; do not modify
+  upstream CAPs or add Java crypto/provider code.
+- Image SHA-256:
+  `666028ffdf62cf0038ed4e082efefdce8e3954882d3278cb7903d8a6374d51f2`.
+  Cycle logs: `artifacts/logs/cycle-choupi-20261025T025305Z.log` and
+  `artifacts/logs/cycle-choupi-20261025T025904Z.log`. Transaction-probe CAP
+  SHA-256 `d12675f53b2ec96657cd51d0ea8392735a6aeb3a32383caf1911e50562d2addc`.
+
 - Both `./tools/build arm --profile symm_crypto` and
   `./tools/build riscv --profile symm_crypto` passed. The ARM image is
   `build/arm/pico2_choupi.uf2`, 1,675,776 bytes, SHA-256

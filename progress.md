@@ -11663,3 +11663,29 @@
   (SHA-256 `d2275b427981dc3541bd6b72acb8b8c287c741d4a5a20a3f4fd7e68af4eba120`);
   health probe `artifacts/logs/jcalgtest-post-static-timeout-D92-20261025.log`
   (SHA-256 `9996361b93e759a8eb0143e3560e52c7d455aaf649c6d102c3663bd44e438bd3`).
+
+## 2026-10-25 — Physical D92 multi-package transaction probe stalled
+
+- Step/experiment: `transaction-probe-multi-package-D92`
+- Change: Rebuilt both required architectures and reflashed the ARM
+  `symm_crypto` image to D92. Built a one-off transaction-probe CAP with a
+  distinct package/applet AID so the existing JCAlgTest package would remain
+  untouched. GPPro LOAD completed; INSTALL did not return, so the command was
+  interrupted and the probe's final registry state is unknown.
+- Validation: ARM and RISC-V wrappers passed. Two full ARM flash cycles
+  verified the UF2 and passed 18-second serial monitors with repeated
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. PC/SC listed the
+  reader and ATR `3B800181`, but bounded GPPro `--list`, raw APDU, and Java
+  SmartcardIO attempts timed out after INSTALL. `pcsc_scan -r` listed D92;
+  `picotool info` found no BOOTSEL failover devices. Refreshing USB ACLs and
+  restarting pcscd through the authorized helper did not restore APDU access.
+- Result: This is not a passing physical transaction test. The existing
+  JCAlgTest package was not intentionally removed. The second CAP LOAD
+  succeeded, while INSTALL/cleanup state remains unknown. CCID logs showed
+  repeated GetSlotStatus requests and a prior GET STATUS command; see QKB.
+- Decision: Preserve card storage and do not issue more package writes until
+  PC/SC APDU access is restored. Continue native JCSystem work offline.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T025305Z.log`,
+  `artifacts/logs/cycle-choupi-20261025T025904Z.log`; one-off CAP SHA-256
+  `d12675f53b2ec96657cd51d0ea8392735a6aeb3a32383caf1911e50562d2addc`.

@@ -2699,6 +2699,31 @@ fix.
   `artifacts/logs/monitor-gc-stream-roots-recovery-probe-20261018.log`, and
   `artifacts/logs/physical-gc-stream-roots-recovery-final-20261018.log`.
 
+## D92 PC/SC APDU path stalled after second-package load attempt — 2026-10-25
+
+- **Symptom:** After flashing `symm_crypto` to Pico D92
+  (`D92E743D5F640C0F`), PC/SC listed the reader and `pcsc_scan` reported card
+  inserted with ATR `3B800181`, but bounded GPPro `--list`, raw `--apdu`, and
+  Java SmartcardIO attempts timed out. The authorized helper refreshed USB
+  ACLs and restarted `pcscd.service`; this did not restore APDU access.
+- **Trigger/evidence:** D92 already had the explicitly installed upstream
+  JCAlgTest package. A second, uniquely identified transaction-probe CAP
+  completed LOAD (`F01234567890`) but GPPro INSTALL did not return within about
+  one minute and was interrupted. After firmware recovery/reflash, serial
+  monitoring continued to pass runtime checks. CCID diagnostics showed
+  repeated `PC_to_RDR_GetSlotStatus` (`msg=65`) while PC/SC clients stalled;
+  one capture also showed GET STATUS APDU `84F210020A`. The second CAP's final
+  installed state is unknown; do not claim it was installed or removed.
+- **Recovery status:** A second full ARM cycle passed flashing, verification,
+  and finite runtime monitoring. It did not restore GPPro/SmartcardIO access.
+  Only D92 appeared in PC/SC; `picotool info` found no BOOTSEL boards, so no
+  visible physical failover target was available. Keep USB/PCSC operations
+  bounded and inspect the CCID trace before retrying package writes. No robust
+  solution for this instance is established yet.
+- **Artifacts:**
+  `artifacts/logs/cycle-choupi-20261025T025305Z.log` and
+  `artifacts/logs/cycle-choupi-20261025T025904Z.log`.
+
 ## Pico power-up check sees USB device but no PC/SC reader — 2026-10-19
 
 - **Symptom:** `tools/test-pico-powerup` found USB VID/PID `2e8a:0009` and the
