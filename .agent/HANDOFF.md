@@ -8,6 +8,7 @@
 - Validation: `./tools/test-rmi-registry` passed with
   `RMI_REGISTRY:PASS ids=32 roots=1 session_cleanup=1 sensitive_result_cross_context=1`;
   scoped diff check passed.
+- Commit: `85ab7d2b070b55f804288fb150d24babaea1726f`.
 - Limitation: this is native Context-level evidence, not Java applet SIO
   dispatch. Cross-applet contexts and firewall behavior remain unimplemented.
 - Next: continue current source work in TODO's priority order. Keep

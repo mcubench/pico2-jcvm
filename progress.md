@@ -12145,6 +12145,6 @@
   cross-applet contexts are not implemented yet.
 - Decision: Keep the general SensitiveResult TODO open until multi-applet SIO
   dispatch can be exercised; continue with the next concrete runtime gap.
-- Commit: pending.
+- Commit: `85ab7d2b070b55f804288fb150d24babaea1726f`.
 - Artifacts/logs: test executable `build/tests/rmi-registry/rmi_registry_test`;
   no separate log.
