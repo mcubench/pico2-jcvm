@@ -12444,3 +12444,36 @@
   `45953aeac26bdd6826257145ef71414c3bf694fef68767ab6fbf477a00d4437f`; Core
   CSV `artifacts/results/led-applet-apdu-2BED-final2-20261025.csv`, SHA-256
   `906519e78c88195821085db2826fbf1846c63bcf0d85fe8f4d3ef46ebddf90a6`.
+
+## 2026-10-25 — Diagnose dangling persistent array alias on applet restore
+
+- Step/experiment: `jcsystem-static-array-alias-restore-diagnostic-20261025`
+- Change: Added bounded restore-failure diagnostics reporting package, class,
+  field, restore stage, exception, and exact persistent field tag. Updated
+  `.agent/QKB.md` and `.agent/HANDOFF.md` with the physical failure and a
+  rejected workaround. No CAP was modified.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. The
+  `./tools/cycle choupi --profile current --chipid 2BED26ED20556535` wrapper
+  passed both build gates, flashed and verified the ARM image, and reported
+  repeated `TEST:SUMMARY pass=1 fail=0`. The physical probe installed its CAP,
+  then SELECT returned `6F00`; its cleanup trap passed. The serial trace
+  reports root `03003800FF`, field `03003800FF0505`, restore stage 1, and
+  `IOException` id 5. A detailed prior serial trace showed the array alias
+  target `0238000505FFFF` missing. The attempted body-recreation workaround
+  was reverted because the restored array handle cannot read its size from a
+  missing body and GPPro INSTALL then failed with `6A80`.
+- Result: The failure is narrowed to a dangling persistent array alias whose
+  package-static target body has been erased. The source-matching image is
+  restored on 2BED and the probe package cleanup succeeded. Root cause in
+  package/static cleanup or array identity lifecycle remains unresolved.
+- Decision: Next inspect package deletion/static-field cleanup and alias
+  identity writes; do not recreate a missing body from the persistent handle.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: image `build/arm/pico2_choupi.uf2`, 1,668,608 bytes, SHA-256
+  `62a7d7082d82708e2494cf66fd59f89e912c7292d95b9ff302e07182ae28f739`; cycle
+  `artifacts/logs/cycle-choupi-20261025T112220Z.log`, SHA-256
+  `a18b6476e01b667132f9625f32d623c1e559a38c1917581887c6072ff4e0f131`;
+  physical probe `artifacts/logs/jcsystem-transaction-physical-20261025T112451Z.log`,
+  SHA-256 `fe64cf32b68ca298ffbe7425ac453cefc28b73e326e655e5cf41dbe0de654098`;
+  serial `artifacts/logs/jcsystem-restore-current-serial.log`, SHA-256
+  `1d6f581225540be80555d896e9b450e49afdb67bffe2021e091cb29d2e2593f3`.

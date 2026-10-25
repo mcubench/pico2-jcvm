@@ -1,4 +1,35 @@
-# Current continuation — Pico reader LED implemented and validated (2026-10-25)
+# Current continuation — JCSystem persistent array alias restore failure (2026-10-25)
+
+- The reader LED request is complete and committed as `202b072` (the
+  `progress.md` commit-ID follow-up is `df5956a`). LED behavior and physical
+  validation are recorded below.
+- Current open issue: repeated physical JCSystem probe installs on 2BED
+  `2BED26ED20556535` succeed, but selecting AID
+  `4A43416C675465737431` returns `6F00`. The latest serial log is
+  `artifacts/logs/jcsystem-restore-current-serial.log`; it records root tag
+  `03003800FF` and field 5 tag `03003800FF0505`, followed by `IOException`
+  (`id=5`) during stored type lookup. An earlier detailed capture showed the
+  field as an array alias to missing body tag `0238000505FFFF` (`fs_exists=0`,
+  `fs_length` missing). The applet/package cleanup trap succeeds after the
+  failed SELECT.
+- A tentative fix that tried to rewrite a missing persistent array body was
+  rejected and reverted: the persistent handle gets its size from that missing
+  body, so attempting to materialize it throws `IOException` and turns a
+  successful install into GPPro INSTALL `6A80`. Do not restore that fallback.
+  The lifecycle bug that leaves an alias to a deleted package-static array body
+  is still unresolved.
+- Diagnostic source changes in `choupi/src/context.cpp` and
+  `choupi/src/jc_types/jc_instance.cpp` print restore stage and exact failed
+  field tag. ARM/RISC-V builds pass. The current source-matching ARM image was
+  flashed to 2BED and passed bounded runtime checks; the physical transaction
+  probe reproduced the failure and cleanup passed. Latest image hash:
+  `62a7d7082d82708e2494cf66fd59f89e912c7292d95b9ff302e07182ae28f739`.
+  Cycle log: `artifacts/logs/cycle-choupi-20261025T112220Z.log`.
+- Next: inspect package deletion/static-field cleanup and persistent array
+  identity assignment so stale aliases cannot survive their body. Preserve the
+  existing uncommitted physical-probe modes and all asymmetric-crypto changes.
+
+## Previous continuation — Pico reader LED implemented and validated (2026-10-25)
 
 - Added a non-blocking Pico 2 GPIO 25 PWM heartbeat: 1.6-second smooth
   brighten/fade every 10 seconds while CCID is active. Applet APDUs trigger a

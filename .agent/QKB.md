@@ -4784,3 +4784,33 @@ fix.
 - **Validation:** Focused cases 5 and 83 passed `4/4`; the full
   `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --timeout 120`
   run passed `TEST:SUMMARY pass=85 fail=0`.
+
+## JCSystem applet SELECT can fail on a dangling persistent array alias — 2026-10-25
+
+- **Symptom:** On physical 2BED (`2BED26ED20556535`), GPPro installs the
+  transaction probe successfully, but the first SELECT returns `6F00`. Serial
+  identifies applet instance root `03003800FF`; persistent field 5 exists as
+  `03003800FF0505`, but restoring its serialized type throws `IOException`
+  (`id=5`, restore stage 1). A detailed serial capture showed this field is an
+  array alias to package-static tag `0238000505FFFF`, for which `fs_exists`
+  was false and `fs_length` reported missing.
+- **Interpretation:** The failing record is a dangling alias: the instance
+  field survives while the package-static array body it names has been erased.
+  Firmware reflashing preserves filesystem state, so reflashing alone cannot
+  clean up this condition.
+- **Rejected workaround:** Recreating the body through the restored array
+  handle is not viable. `JC_Array::size()` reads the missing body header, so
+  this attempt throws `IOException` and makes the otherwise successful GPPro
+  install fail with `6A80`. The attempt was reverted.
+- **Recovery:** The physical runner's cleanup trap successfully deletes the
+  probe package after SELECT fails. A full bounded firmware cycle also
+  restores runtime responsiveness; the source-matching image currently passes
+  `TEST:SUMMARY pass=1 fail=0`.
+- **Next fix:** Review package deletion's static-field prefix cleanup and
+  persistent array identity/alias serialization. Ensure no instance alias is
+  committed unless its target body remains valid, and test delete/reinstall
+  without altering upstream CAP files.
+- **Evidence:** `artifacts/logs/jcsystem-restore-current-serial.log`,
+  `artifacts/logs/jcsystem-transaction-physical-20261025T111649Z.log` (failed
+  fallback experiment; cleanup passed), and
+  `artifacts/logs/cycle-choupi-20261025T112220Z.log`.

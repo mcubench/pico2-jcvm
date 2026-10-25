@@ -667,6 +667,17 @@ auto JC_Instance::getFields() const -> decltype(fields) {
           this->packageID, this->claz, index,
           static_cast<uint8_t>(field.type), 1,
           static_cast<uint8_t>(exception));
+      std::printf("CHOUPI:RESTORE_FIELD_TAG package=%u class=%04X field=%u "
+                  "exists=%u tag=",
+                  static_cast<unsigned>(this->packageID),
+                  static_cast<unsigned>(this->claz),
+                  static_cast<unsigned>(index),
+                  static_cast<unsigned>(fs_exists(field_tag.value,
+                                                  field_tag.len)));
+      for (uint8_t tag_index = 0; tag_index < field_tag.len; ++tag_index) {
+        std::printf("%02X", field_tag.value[tag_index]);
+      }
+      std::printf(" exception=%u\r\n", static_cast<unsigned>(exception));
 #endif
       throw;
     }

@@ -34,6 +34,13 @@
 #include <cstdio>
 #include <utility>
 
+#ifndef PC_VERSION
+extern "C" void choupi_vm_persistent_restore_failure_state(
+    uint8_t *recorded, uint16_t *package_id, uint16_t *class_index,
+    uint16_t *field_index, uint8_t *field_type, uint8_t *stage,
+    uint8_t *exception_id);
+#endif
+
 namespace jcvm {
 
 namespace {
@@ -180,6 +187,28 @@ bool Context::restoreAppletInstance(const jpackage_ID_t package_id,
   } catch (Exceptions exception) {
     std::printf("CHOUPI:RESTORE_EXCEPTION id=%u\r\n",
                 static_cast<unsigned>(exception));
+#ifndef PC_VERSION
+    uint8_t recorded = 0;
+    uint16_t failed_package = 0;
+    uint16_t failed_class = 0;
+    uint16_t failed_field = 0;
+    uint8_t failed_type = 0;
+    uint8_t failed_stage = 0;
+    uint8_t failed_exception = 0;
+    choupi_vm_persistent_restore_failure_state(
+        &recorded, &failed_package, &failed_class, &failed_field,
+        &failed_type, &failed_stage, &failed_exception);
+    if (recorded != 0) {
+      std::printf("CHOUPI:RESTORE_FIELD_FAIL package=%u class=%04X field=%u "
+                  "type=%u stage=%u exception=%u\r\n",
+                  static_cast<unsigned>(failed_package),
+                  static_cast<unsigned>(failed_class),
+                  static_cast<unsigned>(failed_field),
+                  static_cast<unsigned>(failed_type),
+                  static_cast<unsigned>(failed_stage),
+                  static_cast<unsigned>(failed_exception));
+    }
+#endif
     std::fflush(stdout);
     return false;
   } catch (...) {
