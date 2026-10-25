@@ -11877,3 +11877,24 @@
   successful cycle `artifacts/logs/cycle-choupi-20261025T061403Z.log`;
   failed-runtime 8E cycle `artifacts/logs/cycle-choupi-20261025T061139Z.log`;
   final listing `artifacts/logs/gppro-empty-symm-2BED-final-list-20261025.log`.
+
+## 2026-10-25 — Revalidate current-source multi-package lifecycle
+
+- Step/experiment: `host-vpcd-multipackage-revalidation-20261025`
+- Change: Updated TODO and handoff with a fresh regression run against the
+  current worktree. No source files were changed or staged.
+- Validation: `./tools/build-pc` passed; ROM-mask generation completed. The
+  build emitted existing Java converter/Maven and packed-member warnings.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 180`
+  passed `TEST:SUMMARY pass=13 fail=0` over authenticated VPCD, including
+  package/instance DELETE semantics and final registry cleanup.
+- Result: Current host build and multi-package lifecycle behavior remain
+  operational with the pending package-loader changes present in the worktree.
+  This does not validate PC/SC, process-restart reconstruction, or physical
+  hardware.
+- Decision: Keep multi-package restart reconstruction and physical validation
+  open; continue with the next unblocked VM backlog item.
+- Commit: `pending`.
+- Artifacts/logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261025T063857Z.log`, SHA-256
+  `ef41bfa1d1f859dccec8fd8266dc639e4769d456aed147ad242e6ea82ad351d2`.

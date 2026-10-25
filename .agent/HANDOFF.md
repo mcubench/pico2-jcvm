@@ -1,4 +1,21 @@
-# Current implementation step — host VPCD multi-package DELETE (2026-10-25)
+# Latest validation — host VPCD multi-package lifecycle (2026-10-25)
+
+- `./tools/build-pc` passed against the current worktree. The build emitted
+  existing converter, Maven, and packed-member warnings; ROM-mask generation
+  completed successfully.
+- `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 180`
+  passed all 13 authenticated SCP03 lifecycle checks: two packages, three
+  instances, GET STATUS, SELECT, unknown-AID rejection, instance deletion,
+  refusal to delete a package with live instances, cascade deletion, and an
+  empty final registry. Log:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261025T063857Z.log` (SHA-256
+  `ef41bfa1d1f859dccec8fd8266dc639e4769d456aed147ad242e6ea82ad351d2`).
+- The source changes being validated belong to the pre-existing worktree and
+  remain uncommitted; only documentation for this validation is being recorded.
+- Next: continue the open GET STATUS continuation and persisted multi-package
+  process-restart work. Do not resume the paused `asymm_crypto` implementation.
+
+# Previous implementation step — host VPCD multi-package DELETE (2026-10-25)
 
 ## Empty `symm_crypto` image delivered and card registry cleaned — 2026-10-25
 

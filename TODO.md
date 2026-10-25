@@ -262,7 +262,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   applet instances and assembles GET STATUS pages across the registry. An
   authenticated raw VPCD regression now loads the unchanged upstream Core and
   Multi CAPs, installs three instances across two packages, checks GET STATUS,
-  rejects an unknown AID with `6A82`, and selects all three instances (9/9).
+  rejects an unknown AID with `6A82`, and selects all three instances. The
+  latest current-source regression also verifies instance DELETE, package
+  DELETE refusal while instances remain, cascade deletion, and an empty final
+  registry (`TEST:SUMMARY pass=13 fail=0`).
   The PC/SC GPPro multi-package path remains unverified because this VM has no
   `Virtual PCD` reader registered with PC/SC. Physical CCID behavior also
   remains open.
