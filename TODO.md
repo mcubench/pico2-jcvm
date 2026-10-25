@@ -296,7 +296,7 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   scratch emulator reported both the package as loaded and its applet as
   selectable. Full persistent registry enumeration and physical CCID behavior
   remain open; see the card-manager section below.
-- [ ] **Complete the selected GlobalPlatform GET DATA / GET STATUS profile.**
+- [x] **Complete the selected GlobalPlatform GET DATA / GET STATUS profile.**
   GPPro `--info` confirms Card Recognition Data (`0066`) is returned correctly;
   CPLC (`9F7F`), Card Capabilities (`0067`), Key Info Template (`00E0`), and
   unknown data objects return `6A88`, which GPPro accepts as unavailable. There
@@ -356,8 +356,17 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   query and the board reported a completed CCID IN transfer for
   `84F210020A`, with a 54-byte APDU response and `9000`; GPPro still timed out
   without displaying that response. A retained response-byte trace is now in
-  the ARM image, but post-flash PC/SC enumeration alternated between D92 and
-  only the Virtual PCD readers, so no post-flash GET STATUS bytes were captured.
+  the ARM image. On 2026-10-25, physical D92 testing confirmed the cause:
+  the 54-byte APDU response plus 10-byte CCID header exactly filled one 64-byte
+  USB packet, but the bulk-IN transfer lacked the terminating zero-length
+  packet. `send_response()` now submits a ZLP after exact-multiple bulk-IN
+  transfers and rearms OUT only after it completes. ARM and RISC-V builds
+  passed; the ARM image was flashed to D92 and its finite monitor passed.
+  GPPro then received the full module response (`52` data bytes plus `9000`),
+  continued to the next page, and completed `--list`, showing the ISD, JCAlgTest
+  package/applet, and second package. Repeated captured log:
+  `artifacts/logs/gppro-get-status-zlp-D92-20261025.log`; cycle log:
+  `artifacts/logs/cycle-choupi-20261025T191520Z.log`.
 - [ ] **Broaden garbage-collector root and persistence-alias coverage.** The
   physical static workload passed 2,262 transfers (heap stabilized at 83 array
   slots / 28 instance slots; one pass reclaimed 50 arrays). The focused

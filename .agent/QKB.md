@@ -4957,7 +4957,7 @@ fix.
   automatically reassign a failed area to another reader; start a targeted run
   on a different exact reader after confirming it is usable. This does not
   repair PC/SC or prove the failure is fixed.
-# Physical GET STATUS response reaches CCID IN but GPPro stalls — 2026-10-25
+# Physical GET STATUS stalls on exact-packet CCID response — fixed 2026-10-25
 
 - **Observation:** D92 `D92E743D5F640C0F` and one other Pico USB node were visible
   after the authorized PC/SC helper. `lsusb -t` showed the CCID interface as
@@ -4982,17 +4982,25 @@ fix.
   D92 and passed the finite monitor at
   `artifacts/logs/cycle-choupi-20261025T182059Z.log`. A subsequent bounded Java
   reader listing timed out; no post-flash GPPro command reached the card.
-- **Interpretation:** The card manager builds the expected success-shaped
-  response and TinyUSB completes its IN transfer, but host delivery/parsing is
-  not confirmed. Do not claim GET STATUS is fixed or attribute the stall to the
-  TLV until the exact bytes are observed by a host APDU client. Heartbeat LEDs
-  and USB-node count do not establish how many PC/SC readers are usable.
-- **Next:** When D92 (or another identified Pico) is listed by Java SmartcardIO,
-  start `tools/monitor --serial <serial> --seconds 12` before bounded GPPro
-  `--debug --list`. If GET STATUS still stalls, use the retained response hex
-  and CCID counters to distinguish malformed response bytes from host-side
-  transport behavior. Avoid unbounded `pcsc_scan` and do not restart system
-  services outside the approved helper.
+- **Root cause:** The 54-byte APDU response plus the 10-byte CCID header was
+  exactly 64 bytes, one full USB bulk-IN packet. TinyUSB's low-level endpoint
+  transfer does not add class-specific framing; the CCID driver returned
+  directly to listening without sending the terminating zero-length packet.
+  The host therefore waited for more data even though the RP2350 endpoint
+  transfer had completed. The response TLV was well-formed.
+- **Viable solution:** After any nonempty CCID bulk-IN response whose total
+  length is a multiple of the 64-byte endpoint packet size, submit a zero-byte
+  IN transfer. Do not rearm bulk OUT until the ZLP completion callback. The
+  implementation also clears pending-ZLP state on endpoint errors and reset.
+- **Validation:** Both architecture wrappers passed. The ARM image was flashed
+  and passed finite monitor on D92 `D92E743D5F640C0F`. GPPro then received the
+  P1=10 response (52 data bytes plus `9000`), issued P1=20, and completed
+  `--list` with both packages and the applet. Durable log:
+  `artifacts/logs/gppro-get-status-zlp-D92-20261025.log`; cycle log:
+  `artifacts/logs/cycle-choupi-20261025T191520Z.log`.
+- **Follow-up:** Apply the same exact-multiple framing rule to any future bulk
+  CCID response path. A bounded listing completed twice after flash; no other
+  reader-count conclusion follows from this fix.
 
 ## Stale VPCD flash image prevents clean RMI client startup — 2026-10-25
 

@@ -45,6 +45,12 @@ constexpr uint16_t kEndpointSize = 64;
 constexpr size_t kMaxMessage = 320;
 constexpr size_t kMaxCcidMessage = 300;
 constexpr uint8_t kAtr[] = {0x3b, 0x80, 0x01, 0x81};
+constexpr bool response_requires_zlp(size_t transfer_length) noexcept {
+  return transfer_length != 0 && transfer_length % kEndpointSize == 0;
+}
+static_assert(response_requires_zlp(64));
+static_assert(!response_requires_zlp(63));
+static_assert(!response_requires_zlp(0));
 
 bool is_select_by_aid(const uint8_t *apdu, size_t apdu_length) {
   if (apdu == nullptr || apdu_length < 5 || apdu[0] != 0x00 ||
@@ -89,6 +95,7 @@ uint8_t slot_state = 1; // present, inactive
 uint8_t ep_out = 0;
 uint8_t ep_in = 0;
 volatile bool message_pending = false;
+volatile bool tx_zlp_pending = false;
 uint8_t pending_rhport = 0;
 volatile uint8_t debug_stage = 0;
 volatile uint8_t debug_endpoint = 0;
@@ -294,8 +301,13 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   }
   rx_length = 0;
   rx_expected = 0;
-  if (!usbd_edpt_xfer(rhport, ep_in, tx_buffer,
-                      static_cast<uint16_t>(payload_length + 10))) {
+  const uint16_t transfer_length = static_cast<uint16_t>(payload_length + 10);
+  // Bulk IN transfers ending on a full packet need a terminating ZLP so the
+  // host can distinguish completion from a longer CCID response. TinyUSB's
+  // low-level endpoint API leaves this class-specific framing to the driver.
+  tx_zlp_pending = response_requires_zlp(transfer_length);
+  if (!usbd_edpt_xfer(rhport, ep_in, tx_buffer, transfer_length)) {
+    tx_zlp_pending = false;
     ++debug_in_submit_errors;
   }
 }
@@ -713,6 +725,7 @@ void driver_init() {
   rx_length = 0;
   rx_expected = 0;
   message_pending = false;
+  tx_zlp_pending = false;
   slot_state = 1;
   ep_out = 0;
   ep_in = 0;
@@ -731,6 +744,7 @@ void driver_reset(uint8_t) {
   rx_length = 0;
   rx_expected = 0;
   message_pending = false;
+  tx_zlp_pending = false;
   slot_state = 1;
   get_status_first_seen = false;
   ep_out = 0;
@@ -807,10 +821,20 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     rx_length = 0;
     rx_expected = 0;
     message_pending = false;
+    tx_zlp_pending = false;
     queue_out(rhport);
     return true;
   }
   if (endpoint == ep_in) {
+    if (tx_zlp_pending) {
+      tx_zlp_pending = false;
+      if (!usbd_edpt_xfer(rhport, ep_in, nullptr, 0)) {
+        ++debug_in_submit_errors;
+        debug_stage = 7;
+        queue_out(rhport);
+      }
+      return true;
+    }
     debug_stage = 7;
     queue_out(rhport);
     return true;

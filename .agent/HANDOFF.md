@@ -14,12 +14,16 @@
 - Updated official client probe changes are host-side test code and CAP-fixture
   coverage only; Pico firmware still interprets CAP bytecode through native
   JCVM code.
-- Next: continue remaining current-source Service/RMI gaps in TODO. Physical
-  GET STATUS host stall remains unresolved; when a Pico appears in Java
-  SmartcardIO, capture `CHOUPI:CCID_RESPONSE_DATA` during bounded GPPro
-  `--debug --list`. Do not use Windows.
+- Physical module GET STATUS is now fixed and validated on D92. The 54-byte
+  APDU plus CCID header exactly filled one 64-byte bulk-IN packet; the driver
+  now sends a terminating ZLP. GPPro received P1=10, continued to P1=20, and
+  completed `--list`; details and exact bytes are in TODO and QKB. The D92
+  runtime monitor passed after the ARM flash.
+- Next: continue the remaining high-priority correctness work in TODO, starting
+  with CAP installation/filesystem atomicity and physical power-cut validation
+  where feasible. Then continue Service/RMI profile gaps. Do not use Windows.
 
-# Previous continuation — Physical GET STATUS host stall (2026-10-25)
+# Previous continuation — Physical GET STATUS host stall (resolved below)
 
 - Built ARM and RISC-V with repository wrappers and passed `./tools/test-gp-registry` (50/50).
 - Diagnostic implementation and tracking update are committed as `0a14ba8` (`Trace physical GET STATUS response bytes`).

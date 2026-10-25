@@ -12923,3 +12923,25 @@
   STATUS as an unresolved host diagnostic.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261025T190043Z.log`.
+
+## 2026-10-25 — Terminate exact-packet CCID bulk-IN responses
+
+- Step/experiment: `ccid-exact-packet-zlp-20261025`
+- Change: Added class-level CCID bulk-IN termination: when the 10-byte CCID
+  header plus payload exactly fills 64-byte endpoint packets, submit a ZLP and
+  defer OUT rearming until the ZLP completes. Reset and transfer-error paths
+  clear the pending state. The failing module GET STATUS response was 54 APDU
+  bytes, making a 64-byte CCID transfer.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid D92E743D5F640C0F`
+  flashed and verified ARM firmware and passed finite runtime monitor
+  (`TEST:SUMMARY pass=1 fail=0`). Bounded GPPro `--debug --list` passed twice;
+  the durable run received the P1=10 response (`52` data bytes plus `9000`),
+  then P1=20, and listed the ISD, JCAlgTest applet/package, and second package.
+- Result: Missing bulk-IN ZLP caused the physical GET STATUS stall. Adding it
+  resolves the captured D92 path. Firmware and reader remain source-matched.
+- Decision: Close the selected physical GET STATUS item; continue CAP
+  transaction/power-cut and remaining service profile work.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T191520Z.log`,
+  `artifacts/logs/gppro-get-status-zlp-D92-20261025.log`.
