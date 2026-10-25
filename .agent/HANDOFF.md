@@ -1,6 +1,7 @@
 # Current continuation — Physical GET STATUS host stall (2026-10-25)
 
 - Built ARM and RISC-V with repository wrappers and passed `./tools/test-gp-registry` (50/50).
+- Diagnostic implementation and tracking update are committed as `0a14ba8` (`Trace physical GET STATUS response bytes`).
 - Added serial capture of the module GET STATUS response bytes (up to 64 bytes). Both builds pass. Flashed the full ARM image to D92 `D92E743D5F640C0F` using `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid D92E743D5F640C0F`; the latest cycle passed with `TEST:SUMMARY pass=1 fail=0` (`artifacts/logs/cycle-choupi-20261025T182059Z.log`).
 - Prior image physical evidence: GPPro received `9000` for ISD/app/package status then hung after authenticated module query `84F210020A`. Firmware reported `len=54 sw=9000`, completed IN endpoint stage 7, no CCID transfer errors. The exact response data was not visible in that host attempt.
 - Following diagnostic flash, PC/SC enumeration is intermittent. Java reader list sometimes shows D92 as reader 3; some attempts time out before GPPro connects and firmware sees only GetSlotStatus. The new response hex trace remains uncaptured.

@@ -12879,3 +12879,13 @@
 - Decision: Retry with concurrent serial monitor only when Java SmartcardIO lists a physical reader; continue offline work when PC/SC is unavailable.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T182059Z.log`.
+
+## 2026-10-25 — Record retained CCID response trace commit
+
+- Step/experiment: `physical-get-status-response-bytes-20261025`
+- Change: Recorded the implementation commit for the retained GET STATUS response-byte diagnostic.
+- Validation: Verified commit `0a14ba8` contains only `src/ccid_device.cpp`, `src/choupi_pico2.cpp`, and the associated TODO, QKB, handoff, and progress updates.
+- Result: The latest D92 diagnostic firmware and its bounded runtime cycle are traceable to `0a14ba8`.
+- Decision: Continue physical GET STATUS capture after PC/SC stabilizes; pursue an offline priority task in the meantime.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T182059Z.log`.
