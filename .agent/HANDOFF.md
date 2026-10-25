@@ -19,9 +19,23 @@
   now sends a terminating ZLP. GPPro received P1=10, continued to P1=20, and
   completed `--list`; details and exact bytes are in TODO and QKB. The D92
   runtime monitor passed after the ARM flash.
+- A subsequent full D92 `ALG_SUPPORT_EXTENDED` retry completed 1,393/4,525
+  rows, then PC/SC failed with `SCARD_E_NOT_TRANSACTED` on the SHA-224/RSA/OAEP
+  probe. The partial CSV is not valid acceptance evidence. Exact APDU
+  `B07526000303030900` returns expected unsupported (`2603...9000`) through
+  fresh current-source VPCD. A finite serial capture after the failure showed
+  a board reset marker at opcode `8C`, instruction count 2,964, context
+  `00020104`; reset cause is not identified. A host-side exact-replay option
+  `--unsupported-rsa-oaep-sha224` is ready in `tools/probe-jc-algtest`.
+- The exact SHA-224 APDU passes current-source VPCD with fresh erased flash.
+  `tools/tests/pc_vpcd_applet_test.py` now removes a stale CAP-registry sidecar
+  after replacing its flash copy; reuse of the same copy path passes twice
+  (`2603...9000`, `TEST:SUMMARY pass=3 fail=0`). Transcript:
+  `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-reuse-test-20261025.log`.
 - Next: continue the remaining high-priority correctness work in TODO, starting
-  with CAP installation/filesystem atomicity and physical power-cut validation
-  where feasible. Then continue Service/RMI profile gaps. Do not use Windows.
+  by replaying the SHA-224 probe on an exact Pico reader with a concurrent
+  serial capture when PC/SC returns. Then continue CAP installation/filesystem
+  atomicity and Service/RMI profile gaps. Do not use Windows.
 
 # Previous continuation — Physical GET STATUS host stall (resolved below)
 

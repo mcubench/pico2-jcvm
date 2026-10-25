@@ -12959,3 +12959,31 @@
   physical atomic-install recovery boundaries.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/gppro-get-status-zlp-D92-20261025.log`.
+
+## 2026-10-25 — Isolate interrupted physical JCAlgTest support sweep
+
+- Step/experiment: `jcalgtest-physical-sha224-transport-20261025`
+- Change: Repeated the unchanged official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED`
+  run on D92 after fixing CCID exact-packet framing. Added a host-only targeted
+  APDU probe option for the failing SHA-224/RSA/OAEP row; no CAP was modified.
+  Fixed the PC VPCD applet test wrapper to delete an outdated registry sidecar
+  when replacing its flash-copy image.
+- Validation: The physical run wrote 1,393 of 4,525 rows, then exited on
+  `SCARD_E_NOT_TRANSACTED` while transmitting `B07526000303030900`. A bounded
+  serial capture afterward showed a reset marker (`opcode=8C`, count 2964,
+  context `00020104`, `cause=other`). The same exact APDU passed current-source
+  VPCD with response `2603...9000` (`TEST:SUMMARY pass=3 fail=0`). The same
+  emulator output path passed again after the sidecar cleanup. The new host
+  probe compiles via `./tools/env javac`; Python wrapper syntax checks pass.
+- Result: The unsupported RSA OAEP SHA-224 capability correctly reports
+  `NO_SUCH_ALGORITHM` in VPCD. The physical transaction loss is unresolved;
+  this partial support CSV is not acceptance evidence and does not replace the
+  earlier complete 2BED result.
+- Decision: When an exact Pico reader is stable, run
+  `PICO2_HOST_USB_ACCESS=1 ./tools/probe-jc-algtest --reader '<exact D92 reader>'
+  --unsupported-rsa-oaep-sha224` with a concurrent finite monitor. Investigate
+  the physical reset before claiming the repeat sweep is reliable.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/jcalgtest-after-zlp-D92-20261025.log`,
+  `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-reuse-test-20261025.log`, and
+  partial CSV in `artifacts/results/jcalgtest-after-zlp-D92-20261025/`.

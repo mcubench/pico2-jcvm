@@ -600,6 +600,10 @@ def main() -> int:
             return 1
     recovery_log_start = args.log.stat().st_size if args.log.exists() else 0
     shutil.copyfile(args.memory, args.flash_copy)
+    # A prior emulator run may have left a CAP-registry sidecar next to this
+    # scratch copy. It belongs to the old flash bytes, not the freshly copied
+    # image, and must not be used to resume the new test state.
+    Path(f"{args.flash_copy}.cap-registry").unlink(missing_ok=True)
     try:
         if args.verify_install_journal_clear_restart:
             install_command = [

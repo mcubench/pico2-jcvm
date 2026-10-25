@@ -5010,8 +5010,53 @@ fix.
   VPCD startup failed before the official SDK client connected.
 - **Viable solution:** The RMI wrapper now writes a fresh raw 512 KiB all-`FF`
   flash image for each run under `build/rmi-client-vpcd/flash-<timestamp>.bin`.
-  Do not assume this fixes other emulator wrappers unless they are updated too.
+  The PC VPCD applet wrapper also removes `<flash-copy>.cap-registry` before
+  copying its fresh input image. A sidecar is bound to the flash checksum and
+  must not be reused after the image changes.
 - **Validation:** `./tools/test-rmi-client-vpcd` passed with exit status 0,
   `JCRMI_CLIENT:SUMMARY pass=18 fail=0`, and emulator `VPCD:DISCONNECTED
   result=0`. Client transcript:
   `artifacts/logs/rmi-client-official-vpcd-client-20261025T190043Z.log`.
+
+## Reused PC VPCD flash copy retained stale registry sidecar — fixed 2026-10-25
+
+- **Symptom:** Re-running `tools/test-pc-vpcd-applet` with the same
+  `--flash-copy` path copied fresh bytes over the old image but kept the old
+  `<flash-copy>.cap-registry`. The emulator rejected startup because the
+  sidecar checksum described the previous image.
+- **Viable solution:** The test wrapper now unlinks the sidecar immediately
+  after copying the selected input image to its writable test image. Runtime
+  resume sidecars are still preserved between emulator processes within one
+  test invocation.
+- **Validation:** First reuse attempt failed with
+  `ERROR: VPCD CAP registry does not match saved memory image`. After the fix,
+  reusing the identical scratch path passed ATR, SELECT, and the exact SHA-224
+  RSA/OAEP support APDU (`2603...9000`, `TEST:SUMMARY pass=3 fail=0`). Transcript:
+  `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-reuse-test-20261025.log`.
+
+## D92 JCAlgTest support sweep loses PC/SC transaction on RSA OAEP SHA-224 — 2026-10-25
+
+- **Symptom:** After the physical GET STATUS ZLP fix, a fresh official
+  `ALG_SUPPORT_EXTENDED` run on D92 completed 1,393 of 4,525 rows, then
+  `SCardTransmit` failed with `SCARD_E_NOT_TRANSACTED` on command
+  `B07526000303030900` (JCAlgTest class `0x26`, SHA-224, RSA, OAEP). The
+  partial CSV is not an acceptance result.
+- **Board evidence:** A subsequent finite serial capture showed runtime
+  recovery marker `opcode=8C count=2964 stage=0 context=00020104 origin=0`
+  and a fresh CCID event count, indicating the board had reset during the
+  failed session. `cause=other` means the RP watchdog did not report itself as
+  the reset cause; the trigger remains unknown. The serial output was observed
+  directly during the bounded monitor, not archived as a standalone log.
+- **Isolation:** Replayed the exact SHA-224 APDU against current-source VPCD
+  with fresh erased flash. It completed in 11.388 seconds and returned
+  `2603...9000`, the expected `NO_SUCH_ALGORITHM`; the neighboring SHA APDU
+  likewise passed. A repeated exact replay with a reused output image passed
+  after the stale-sidecar cleanup above. The supported algorithm result is expected; only the
+  physical transaction loss is a defect to investigate.
+- **Viable solution:** Not established. `tools/JCAlgTestApduProbe.java` now has
+  `--unsupported-rsa-oaep-sha224` for a short exact physical replay after PC/SC
+  returns. Run it with the approved host-access path and capture serial at the
+  same time. Preserve the unchanged upstream CAP.
+- **Evidence:** `artifacts/logs/jcalgtest-after-zlp-D92-20261025.log`, partial
+  CSV under `artifacts/results/jcalgtest-after-zlp-D92-20261025/`, and
+  `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-20261025.log`.
