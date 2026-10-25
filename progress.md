@@ -12437,7 +12437,7 @@
 - Decision: Keep the PWM heartbeat and timer-bounded activity pulse. No further
   LED firmware change is needed unless physical visual feedback reports a
   board-specific brightness or polarity issue.
-- Commit: pending
+- Commit: `202b072`
 - Artifacts/logs: image `build/arm/pico2_choupi.uf2`, 1,668,608 bytes, SHA-256
   `42d0aa887aecf9e1a9f164ebdac8161edff8c773e172a99a7ac2741ceadda219`; cycle
   log `artifacts/logs/cycle-choupi-20261025T104118Z.log`, SHA-256
