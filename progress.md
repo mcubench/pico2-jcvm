@@ -12539,3 +12539,13 @@
 - Decision: Continue source work and use any exact Pico reader that reappears in PC/SC as the physical failover target.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: bounded PC/SC output was inspected directly; no output file was created.
+
+## 2026-10-25 — Record LED and PC/SC follow-up commit ID
+
+- Step/experiment: `pico-three-board-led-pcsc-followup-20261025`
+- Change: Recorded documentation commit `adac765` in the preceding progress entry.
+- Validation: Confirmed `adac765` contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md` for the observed board/reader state.
+- Result: The LED observation and current one-reader PC/SC result are traceable to commit `adac765`.
+- Decision: Continue with the next open implementation priority; physical testing can resume on any Pico reader that becomes visible.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
