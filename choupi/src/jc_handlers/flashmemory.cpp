@@ -35,6 +35,7 @@
 #include "ffi.h"
 
 #include <cassert>
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -46,6 +47,7 @@ extern "C" void choupi_vm_record_array_write_failure(
     uint8_t stage, uint16_t index, uint16_t size, uint16_t ref,
     uint8_t type, uint8_t exception_id);
 #endif
+extern "C" void choupi_record_transaction_buffer_full(void);
 
 extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length);
 extern "C" const uint8_t *choupi_cap_store_data_for_package(
@@ -66,6 +68,9 @@ namespace {
 constexpr uint8_t kPersistentObjectAlias = 0xFE;
 constexpr uint8_t kPersistentArrayAlias = 0xFD;
 constexpr size_t kMaxPersistentObjectDepth = TAG_MAX_LENGTH / 2 + 1;
+constexpr uint16_t kMaxCommitCapacity = 0x7fff;
+// Per-entry metadata is one tag-length byte plus a two-byte payload length.
+constexpr uint32_t kCommitEntryMetadataOverhead = 3;
 
 struct PersistentObjectFrame {
   const JC_Instance *instance = nullptr;
@@ -78,10 +83,13 @@ struct PersistentWriteSnapshot {
   fs::Tag tag;
   bool existed = false;
   std::vector<uint8_t> data;
+  uint32_t charged_bytes = 0;
 };
 
 std::vector<PersistentWriteSnapshot> persistent_write_snapshots;
 bool persistent_write_transaction_active = false;
+bool persistent_write_capacity_enforced = false;
+uint32_t persistent_write_transaction_used_bytes = 0;
 uint32_t persistent_write_rollback_generation = 0;
 
 bool tags_equal(const fs::Tag &left, const fs::Tag &right) noexcept {
@@ -100,12 +108,31 @@ bool legacy_applet_tag(const fs::Tag &tag, fs::Tag &legacy) noexcept {
   return true;
 }
 
+void charge_persistent_snapshot(PersistentWriteSnapshot &snapshot) {
+  if (!persistent_write_capacity_enforced) return;
+  // Rollback stores the previous record. New records need only an erase
+  // marker, so their new payload does not occupy snapshot payload capacity.
+  const uint64_t payload_bytes = snapshot.existed ? snapshot.data.size() : 0;
+  const uint64_t new_charge = payload_bytes + snapshot.tag.len +
+                              kCommitEntryMetadataOverhead;
+  const uint32_t old_charge = snapshot.charged_bytes;
+  const uint64_t next_used = persistent_write_transaction_used_bytes -
+                             old_charge + new_charge;
+  if (next_used > kMaxCommitCapacity) {
+    choupi_record_transaction_buffer_full();
+    throw Exceptions::TransactionException;
+  }
+  snapshot.charged_bytes = static_cast<uint32_t>(new_charge);
+  persistent_write_transaction_used_bytes = static_cast<uint32_t>(next_used);
+}
+
 void snapshot_persistent_tag(const fs::Tag &tag) {
   if (!persistent_write_transaction_active) {
     return;
   }
-  for (const auto &snapshot : persistent_write_snapshots) {
+  for (auto &snapshot : persistent_write_snapshots) {
     if (tags_equal(snapshot.tag, tag)) {
+      charge_persistent_snapshot(snapshot);
       return;
     }
   }
@@ -123,6 +150,7 @@ void snapshot_persistent_tag(const fs::Tag &tag) {
       throw Exceptions::IOException;
     }
   }
+  charge_persistent_snapshot(snapshot);
   persistent_write_snapshots.push_back(std::move(snapshot));
 }
 
@@ -163,6 +191,8 @@ bool rollback_persistent_writes() noexcept {
     }
   }
   persistent_write_transaction_active = false;
+  persistent_write_capacity_enforced = false;
+  persistent_write_transaction_used_bytes = 0;
   if (fs_sync() != 0) {
     success = false;
   }
@@ -252,11 +282,14 @@ extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
   return persistent_write_transaction_active ? 1u : 0u;
 }
 
-bool FlashMemory_Handler::beginPersistentWriteTransaction() noexcept {
+bool FlashMemory_Handler::beginPersistentWriteTransaction(
+    const bool enforce_commit_capacity) noexcept {
   if (persistent_write_transaction_active) {
     return false;
   }
   persistent_write_snapshots.clear();
+  persistent_write_capacity_enforced = enforce_commit_capacity;
+  persistent_write_transaction_used_bytes = 0;
   persistent_write_transaction_active = true;
   return true;
 }
@@ -277,6 +310,8 @@ bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
     return false;
   }
   persistent_write_snapshots.clear();
+  persistent_write_capacity_enforced = false;
+  persistent_write_transaction_used_bytes = 0;
   return true;
 }
 
@@ -295,6 +330,19 @@ bool FlashMemory_Handler::rollbackPersistentWriteTransaction() noexcept {
 
 bool FlashMemory_Handler::persistentWriteTransactionActive() noexcept {
   return persistent_write_transaction_active;
+}
+
+uint16_t FlashMemory_Handler::maxCommitCapacity() noexcept {
+  return kMaxCommitCapacity;
+}
+
+uint16_t FlashMemory_Handler::unusedCommitCapacity() noexcept {
+  if (!persistent_write_transaction_active ||
+      !persistent_write_capacity_enforced) {
+    return kMaxCommitCapacity;
+  }
+  return static_cast<uint16_t>(kMaxCommitCapacity -
+                               persistent_write_transaction_used_bytes);
 }
 
 uint32_t FlashMemory_Handler::persistentWriteRollbackGeneration() noexcept {

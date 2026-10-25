@@ -131,10 +131,15 @@ public:
 
   /// Group persistent writes into an installation transaction. Rollback
   /// restores overwritten values and erases records created by the transaction.
-  static bool beginPersistentWriteTransaction() noexcept;
+  static bool beginPersistentWriteTransaction(
+      bool enforce_commit_capacity = false) noexcept;
   static bool commitPersistentWriteTransaction() noexcept;
   static bool rollbackPersistentWriteTransaction() noexcept;
   static bool persistentWriteTransactionActive() noexcept;
+  /// Java Card commit buffer size, saturated at the positive short limit.
+  static uint16_t maxCommitCapacity() noexcept;
+  /// Remaining budget for persistent payload snapshots and journal metadata.
+  static uint16_t unusedCommitCapacity() noexcept;
   /// Generation incremented after rollback so live persistent caches reload.
   static uint32_t persistentWriteRollbackGeneration() noexcept;
   /// Read or replace an opaque persistent record using transaction snapshots.

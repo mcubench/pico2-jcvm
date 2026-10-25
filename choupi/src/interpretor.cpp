@@ -515,6 +515,9 @@ uint16_t Interpretor::run() noexcept {
         this->last_exception_reason = context.pendingSystemExceptionReason();
       } else if (e == Exceptions::APDUException) {
         this->last_exception_reason = 1; // APDUException.ILLEGAL_USE
+      } else if (e == Exceptions::TransactionException) {
+        this->last_exception_reason =
+            context.pendingTransactionExceptionReason();
       }
       try {
         if (bytecodes.dispatchJavaException(e)) {

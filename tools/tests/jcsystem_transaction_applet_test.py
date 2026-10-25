@@ -187,7 +187,7 @@ def main() -> int:
                     ),
                     (
                         10,
-                        bytes(22),
+                        None,
                         "JCSystem scalar/extended memory overloads and commit capacity",
                     ),
                     (11, b"\x03", "unsupported initialized digest reports NO_SUCH_ALGORITHM"),
@@ -466,6 +466,23 @@ def main() -> int:
                         bytes((0x80, 0x00, p1, 0x00, 0x00)),
                         label,
                     )
+                    if p1 == 10:
+                        if len(data) != 24 or data[:22] != (
+                            bytes(18) + bytes.fromhex("7FFF7FFF")
+                        ):
+                            raise RuntimeError(
+                                f"{label}: malformed report {data.hex().upper()}"
+                            )
+                        active_unused = int.from_bytes(data[22:24], "big")
+                        if active_unused >= 0x7FFF:
+                            raise RuntimeError(
+                                f"{label}: persistent write did not consume commit capacity: "
+                                f"unused={active_unused}"
+                            )
+                        print(
+                            f"TEST:PASS {label} active_unused={active_unused}"
+                        )
+                        continue
                     if data != expected:
                         raise RuntimeError(
                             f"{label}: expected {expected.hex().upper()}, got {data.hex().upper()}"

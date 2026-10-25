@@ -216,6 +216,12 @@ public final class JCTransactionProbe extends Applet {
         buffer[offset++] = (byte)maxCommit;
         buffer[offset++] = (byte)(unusedCommit >> 8);
         buffer[offset++] = (byte)unusedCommit;
+        JCSystem.beginTransaction();
+        value++;
+        short activeUnusedCommit = JCSystem.getUnusedCommitCapacity();
+        JCSystem.abortTransaction();
+        buffer[offset++] = (byte)(activeUnusedCommit >> 8);
+        buffer[offset++] = (byte)activeUnusedCommit;
         length = offset;
         break;
       }

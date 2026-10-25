@@ -569,14 +569,20 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   but general context switching, cross-applet shareable lookup and ownership
   checks, cross-applet AID lookup, and logical channels are not implemented.
   Assigned channel is basic channel 0.
-- [ ] **Make commit-capacity reporting consistent with transactions.**
+- [x] **Make commit-capacity reporting consistent with transactions.**
   `beginTransaction` / commit / abort now pass the full 80-check JCSystem VPCD
   suite. Abort advances a rollback generation so live persistent field caches
-  reload the restored flash snapshots. The native persistent-transaction tests
-  also pass. `getMaxCommitCapacity()` and `getUnusedCommitCapacity()` still
-  return zero; record zero as a deliberate capability or implement capacity
-  accounting and tests. Physical transaction/power-cycle behavior remains
-  unverified.
+  reload the restored flash snapshots. The commit budget saturates at
+  `0x7FFF`; each distinct persistent snapshot charges its old payload size,
+  encoded tag, and three journal-length bytes. A full buffer throws a
+  catchable `TransactionException.BUFFER_FULL` before mutating the rejected
+  record. Native persistent-transaction tests pass, and the 84-check VPCD
+  suite confirms the short and extended getters plus a persistent update
+  reducing available capacity before abort. The physical runtime cycle passes,
+  but the Pico PC/SC APDU path still times out, so physical transaction and
+  power-cycle behavior remain unverified. A large-array VPCD overflow attempt
+  timed out before the APDU completed; Java-level catchability of
+  `BUFFER_FULL` on an overflowing applet write is not yet end-to-end verified.
 - [ ] **Add extended APDUs only if required by the selected profile.** The
   transport rejects extended APDUs. `APDU.waitExtension()` enforces API state,
   but synchronous CCID processing cannot send actual T=1 WTX while a command
@@ -600,8 +606,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   The measured DES and AES `Cipher_init` timings scaled with key size: DES / 2-key
   3DES / 3-key 3DES at 39.0 / 47.8 / 56.0 ms/op, and AES-128/192/256 at
   59.4–60.9 / 68.2–68.8 / 76.7–77.5 ms/op. Follow-up SELECT, GETVERSION, and
-  JCSystem info all returned `9000`. JCSystem still reports
-  `getMaxCommitCapacity() = 0B`, matching the open capacity-accounting item.
+  JCSystem info all returned `9000`. That pre-capacity firmware reported
+  `getMaxCommitCapacity() = 0B`; the later host VPCD implementation now reports
+  and accounts commit capacity, while physical APDU reconfirmation remains
+  blocked by the D92 reader timeout.
   Artifacts are in `artifacts/logs/jcalgtest-symm-crypto-static-D92-20261025-final.log`,
   `artifacts/results/jcalgtest-symm-crypto-static-D92-20261025-final/`, and
   `artifacts/logs/jcalgtest-post-static-timeout-D92-20261025.log`.
@@ -804,9 +812,11 @@ Next actions:
 1. [x] Add golden applet assertions for both `getAvailableMemory` forms and
    commit-capacity queries. The JCSystem transaction VPCD probe now exercises
    both overloads for persistent, reset, and deselect memory and checks that
-   commit capacities remain zero; it passed 13/13 on the desktop backend. The
-   separate physical live-memory probe confirms Pico scalar/extended
-   consistency and nonzero persistent/transient values.
+   max and unused commit capacity are `0x7FFF` outside a transaction and that
+   a persistent byte-field update consumes snapshot/header capacity inside a
+   transaction before abort. The full probe passes 84/84 on the desktop
+   backend. The separate physical live-memory probe confirms Pico
+   scalar/extended consistency and nonzero persistent/transient values.
 2. [partial] Golden applet and applet callback checks now cover same-AID
    reselect, rejected SELECT cleanup, and reset callbacks. `Applet.reSelectingApplet()`
    reports true only during same-AID reselection; the full 69-check VPCD
@@ -882,16 +892,17 @@ with an explicit ptrace error. `./tools/build-pc` passed, and a bounded nested
 `strace` check verified `EPERM` is reported and the child reaped. This does not
 resolve the separate direct host VPCD startup timeout; that remains open.
 
-JCSystem transaction calls now use the existing persistent-write snapshot
-backend: begin/commit/abort update transaction depth, and the Java wrappers
-throw `TransactionException` for nested begin, commit/abort outside a
-transaction, or rollback failure. `Util.arrayCopy`, `arrayFill`, and `setShort`
-now start and commit only when needed, and validate inputs before opening a
-transaction. The snapshot rollback test passes 30 checks; ARM and RISC-V builds
-pass. A Java Card transaction probe applet now verifies nested begin, commit
-and abort reason codes, persistent rollback, and post-commit state over host
-VPCD (10/10 assertions). Remaining transaction gaps: commit-capacity queries
-still report zero, and physical transaction behavior remains unverified. On RP2350, `fs_sync` now defers persistence while
+JCSystem transaction calls use the existing persistent-write snapshot backend:
+begin/commit/abort update transaction depth, and the Java wrappers throw
+`TransactionException` for nested begin, commit/abort outside a transaction,
+buffer-capacity exhaustion, or rollback failure. `Util.arrayCopy`,
+`arrayFill`, and `setShort` start and commit only when needed, and validate
+inputs before opening a transaction. Commit capacity saturates at `0x7FFF`,
+charges each old record snapshot plus its tag and journal-length metadata, and
+the native persistent-transaction tests pass. The full JCSystem VPCD probe
+passes 84/84, including the active transaction capacity decrease and abort.
+Physical transaction behavior remains unverified because the D92 PC/SC APDU
+path times out after a successful flash/runtime cycle. On RP2350, `fs_sync` now defers persistence while
 a JCSystem write transaction is active; commit flushes the two-slot,
 CRC-protected snapshot, and abort flushes the restored state. The host overlay
 test passes 1,000 randomized mutation cut-points across a two-record snapshot

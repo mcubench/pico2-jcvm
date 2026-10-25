@@ -541,6 +541,17 @@ uint16_t Context::consumePendingCryptoExceptionReason() noexcept {
   return reason;
 }
 
+void Context::setPendingTransactionExceptionReason(
+    const uint16_t reason) noexcept {
+  this->pending_transaction_exception_reason = reason;
+}
+
+uint16_t Context::consumePendingTransactionExceptionReason() noexcept {
+  const uint16_t reason = this->pending_transaction_exception_reason;
+  this->pending_transaction_exception_reason = 4;
+  return reason;
+}
+
 void Context::appendRootReferences(
     std::vector<jref_t> &references) const {
   const auto append_reference = [](const jref_t reference, void *opaque) {

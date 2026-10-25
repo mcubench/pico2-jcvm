@@ -14,6 +14,11 @@ bool dynamic_cap_present[8]{};
 const uint8_t dynamic_cap_code[] = {0x01};
 } // namespace persistent_transaction_test
 
+uint16_t persistent_transaction_test_pending_reason = 0;
+extern "C" void choupi_record_transaction_buffer_full(void) {
+  persistent_transaction_test_pending_reason = 3;
+}
+
 extern "C" void path_applet_field(uint8_t applet, uint8_t package,
                                    uint8_t class_index, uint8_t field,
                                    uint8_t (*tag)[128], uint8_t *length) {

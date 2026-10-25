@@ -11689,3 +11689,33 @@
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T025305Z.log`,
   `artifacts/logs/cycle-choupi-20261025T025904Z.log`; one-off CAP SHA-256
   `d12675f53b2ec96657cd51d0ea8392735a6aeb3a32383caf1911e50562d2addc`.
+
+## 2026-10-25 — JCSystem transaction commit capacity accounting
+
+- Step/experiment: `jcsystem-transaction-commit-capacity`
+- Change: Implemented saturated `0x7FFF` maximum and remaining commit capacity.
+  Persistent snapshots charge the old payload (if any), encoded tag, and
+  journal metadata once per record. Capacity overflow sets
+  `TransactionException.BUFFER_FULL` and rejects the write before mutation.
+- Validation: `./tools/build-pc` passed; `./tools/test-persistent-transaction`
+  passed with `TEST:SUMMARY fail=0`; the full host VPCD JCSystem applet suite
+  passed `TEST:SUMMARY pass=84 fail=0`. Both `./tools/build arm --profile
+  symm_crypto` and `./tools/build riscv --profile symm_crypto` passed. VPCD
+  observed max/unused `32767` outside transactions and active unused `32755`
+  after a persistent scalar update. Final hardware cycle was attempted after
+  the build gates but failed before flashing: D92 did not enter BOOTSEL, and
+  authorized USB enumeration then showed only Linux root hubs. No package
+  writes were attempted.
+- Result: Native snapshot overflow/rollback coverage passes. The 84 VPCD cases
+  pass. An earlier large-array VPCD overflow probe timed out before APDU
+  completion, so Java-level `BUFFER_FULL` catchability at real capacity
+  exhaustion remains unverified. The final image was built but not flashed.
+- Decision: Keep the implementation; resume physical validation when a Pico is
+  actually passed through to this VM. Preserve current card storage and do not
+  issue package writes until PC/SC is responsive and registry state is known.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/jcsystem-transaction-capacity-final-vpcd-20261025.log`
+  (SHA-256 `6cd03edd0d7b7e6a823c16c5f7671637b7f0ed2deb2f3208d5da16cad649f138`),
+  `artifacts/logs/cycle-choupi-20261025T034755Z.log` (BOOTSEL unavailable),
+  `build/arm/pico2_choupi.uf2` (1,676,800 bytes, SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`).

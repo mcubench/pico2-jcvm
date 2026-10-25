@@ -22,6 +22,7 @@ unsigned int tracked_array_allocations = 0;
 unsigned int tracked_array_deallocations = 0;
 extern bool dynamic_cap_present[8];
 }
+extern uint16_t persistent_transaction_test_pending_reason;
 
 void *operator new[](const std::size_t size) {
   if (void *memory = std::malloc(size == 0 ? 1 : size)) {
@@ -74,6 +75,11 @@ int main() {
   using jcvm::FlashMemory_Handler;
   using persistent_transaction_test::read;
   using persistent_transaction_test::seed;
+
+  expect(FlashMemory_Handler::maxCommitCapacity() == 32767,
+         "max_commit_capacity_is_saturated_java_card_short");
+  expect(FlashMemory_Handler::unusedCommitCapacity() == 32767,
+         "unused_commit_capacity_is_full_outside_transaction");
 
   // A stale package-list bit must not cause import lookup to parse a dynamic
   // CAP slot that has already been removed.
@@ -145,6 +151,51 @@ int main() {
       FlashMemory_Handler::commitPersistentWriteTransaction() &&
       read(journal_tag.value, journal_tag.len).empty();
   expect(journal_cleanup, "opaque_install_journal_cleanup_commits");
+
+  const auto capacity_record = make_tag(0x71);
+  const std::vector<uint8_t> capacity_payload(30000, 0xa5);
+  const std::vector<uint8_t> capacity_update(30000, 0x3c);
+  const std::vector<uint8_t> capacity_second_update(30000, 0x7e);
+  const auto new_capacity_record = make_tag(0x73);
+  const bool new_record_capacity =
+      FlashMemory_Handler::beginPersistentWriteTransaction(true) &&
+      FlashMemory_Handler::writePersistentRecord(
+          new_capacity_record, capacity_payload.data(), capacity_payload.size()) &&
+      FlashMemory_Handler::unusedCommitCapacity() == 32761 &&
+      FlashMemory_Handler::rollbackPersistentWriteTransaction() &&
+      read(new_capacity_record.value, new_capacity_record.len).empty();
+  expect(new_record_capacity,
+         "new_record_capacity_charges_erase_journal_not_payload");
+
+  const auto rejected_capacity_record = make_tag(0x72);
+  const std::vector<uint8_t> over_capacity_payload(3000, 0x5a);
+  const std::vector<uint8_t> rejected_capacity_update(3000, 0xc3);
+  seed(capacity_record.value, capacity_record.len, capacity_payload);
+  seed(rejected_capacity_record.value, rejected_capacity_record.len,
+       over_capacity_payload);
+  persistent_transaction_test_pending_reason = 0;
+  bool capacity_accounting =
+      FlashMemory_Handler::beginPersistentWriteTransaction(true) &&
+      FlashMemory_Handler::unusedCommitCapacity() == 32767 &&
+      FlashMemory_Handler::writePersistentRecord(
+          capacity_record, capacity_update.data(), capacity_update.size()) &&
+      FlashMemory_Handler::unusedCommitCapacity() == 2761 &&
+      FlashMemory_Handler::writePersistentRecord(
+          capacity_record, capacity_second_update.data(),
+          capacity_second_update.size()) &&
+      FlashMemory_Handler::unusedCommitCapacity() == 2761 &&
+      !FlashMemory_Handler::writePersistentRecord(
+          rejected_capacity_record, rejected_capacity_update.data(),
+          rejected_capacity_update.size()) &&
+      persistent_transaction_test_pending_reason == 3 &&
+      FlashMemory_Handler::unusedCommitCapacity() == 2761 &&
+      FlashMemory_Handler::rollbackPersistentWriteTransaction() &&
+      FlashMemory_Handler::unusedCommitCapacity() == 32767 &&
+      read(capacity_record.value, capacity_record.len) == capacity_payload &&
+      read(rejected_capacity_record.value,
+           rejected_capacity_record.len) == over_capacity_payload;
+  expect(capacity_accounting,
+         "transaction_commit_capacity_is_accounted_and_overflow_rolls_back");
 
   const auto scalar = make_tag(6);
   seed(scalar.value, scalar.len,

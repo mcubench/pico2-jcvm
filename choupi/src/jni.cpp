@@ -1711,7 +1711,7 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAID() {
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_beginTransaction() {
-  return FlashMemory_Handler::beginPersistentWriteTransaction() ? 0 : 1;
+  return FlashMemory_Handler::beginPersistentWriteTransaction(true) ? 0 : 1;
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_abortTransaction() {
@@ -1729,13 +1729,15 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getTransactionDepth() {
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getUnusedCommitCapacity() {
-  // No commit buffer is available until transactional persistence is added.
-  return 0;
+  return static_cast<jshort_t>(FlashMemory_Handler::unusedCommitCapacity());
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_getMaxCommitCapacity() {
-  // Report the absence of a transaction commit buffer to capability probes.
-  return 0;
+  return static_cast<jshort_t>(FlashMemory_Handler::maxCommitCapacity());
+}
+
+extern "C" void choupi_record_transaction_buffer_full(void) {
+  Context::getActiveContext().setPendingTransactionExceptionReason(3);
 }
 
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getPreviousContextAID() {

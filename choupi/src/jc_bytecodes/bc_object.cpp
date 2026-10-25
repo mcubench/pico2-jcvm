@@ -209,6 +209,11 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
     exception_package_aid_length = sizeof(javacard_framework_aid);
     class_token = 13;
     break;
+  case Exceptions::TransactionException:
+    exception_package_aid = javacard_framework_aid;
+    exception_package_aid_length = sizeof(javacard_framework_aid);
+    class_token = 23;
+    break;
   case Exceptions::CryptoException: {
     const jref_t reference = runtimeCryptoExceptionReference(this->context);
     const uint16_t reason =
@@ -232,6 +237,11 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
       class_token);
   if (exception == Exceptions::SystemException) {
     const auto reason = this->context.consumePendingSystemExceptionReason();
+    this->context.getHeap().getInstance(reference)->setField_Short(
+        0, static_cast<jshort_t>(reason));
+  } else if (exception == Exceptions::TransactionException) {
+    const auto reason =
+        this->context.consumePendingTransactionExceptionReason();
     this->context.getHeap().getInstance(reference)->setField_Short(
         0, static_cast<jshort_t>(reason));
   } else if (exception == Exceptions::APDUException) {

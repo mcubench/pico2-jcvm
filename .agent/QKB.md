@@ -2720,9 +2720,57 @@ fix.
   visible physical failover target was available. Keep USB/PCSC operations
   bounded and inspect the CCID trace before retrying package writes. No robust
   solution for this instance is established yet.
+- **Latest retest:** After the user reported tokens in BOOTSEL, the VM still
+  exposed only runtime D92 (`2e8a:0009`). The repository cycle requested
+  BOOTSEL by the unique CDC serial, flashed and verified the ARM image, then
+  passed the 18-second `TEST:SUMMARY pass=1 fail=0` monitor. The ACL helper and
+  `pcsc_scan` again listed D92 with inserted-card ATR `3B800181`, but a bounded
+  read-only GPPro `--list` still timed out after 8 seconds. No package write was
+  retried, and no second physical board was visible to the VM. The applet
+  registry state therefore remains unknown.
 - **Artifacts:**
   `artifacts/logs/cycle-choupi-20261025T025305Z.log` and
-  `artifacts/logs/cycle-choupi-20261025T025904Z.log`.
+  `artifacts/logs/cycle-choupi-20261025T025904Z.log`,
+  `artifacts/logs/cycle-choupi-20261025T032241Z.log`, and
+  `artifacts/logs/pico-powerup-persistence-20261025T032441Z.log`.
+
+## Host VPCD timed out while updating a 20 KB persistent byte array — 2026-10-25
+
+- **Symptom:** A local `JCTransactionProbe` APDU created two persistent
+  20,000-byte arrays, began a transaction, and attempted to modify each so the
+  snapshots would exceed commit capacity. The VPCD client selected the applet,
+  but the first persistent byte-array write did not return within the 90-second
+  APDU timeout.
+- **Cause:** Not established. The emulator log reaches the first
+  `PERSIST_BYTE_WRITE` diagnostic and then stops; the timeout alone does not
+  distinguish persistent-store latency/failure from JCVM execution failure.
+- **Viable workaround:** Use the native persistent-transaction test to verify
+  `BUFFER_FULL`, capacity preservation, and rollback, and use the VPCD applet
+  for bounded small-field accounting. Do not retry large-array VPCD probes
+  without adding scoped timing/phase diagnostics first.
+- **Limit:** This leaves catchability of a real Java `BUFFER_FULL` during a
+  large persistent-array update unverified. It does not invalidate the native
+  overflow result or the VPCD commit-capacity getter checks.
+- **Evidence:**
+  `artifacts/logs/jcsystem-transaction-large-array-overflow-vpcd-20261025.log`.
+
+## VM lost Pico USB passthrough during final transaction-capacity flash — 2026-10-25
+
+- **Symptom:** The user reported Pico tokens in BOOTSEL. The final cycle targeted
+  D92 `D92E743D5F640C0F`, but picotool could not find its reset interface. The
+  1200-baud CDC fallback, three picotool reboot requests, and bounded BOOTSEL
+  waits did not expose a board to the VM.
+- **Observed host state:** Authorized `lsusb` listed only Linux root hubs;
+  authorized `picotool info -a` reported no accessible RP-series devices in
+  BOOTSEL. This is consistent with USB passthrough being absent; it does not
+  establish a board hardware failure.
+- **Viable next action:** Reattach/passthrough any BOOTSEL Pico to this VM, then
+  use the identified chip ID or another enumerated board from the failover
+  pool. Confirm identity and run the repository cycle only once a device is
+  visible. The offline builds and VPCD checks can proceed without the board.
+- **Result:** No final transaction-capacity image was flashed; card registry
+  state is unknown. No package writes were attempted.
+- **Evidence:** `artifacts/logs/cycle-choupi-20261025T034755Z.log`.
 
 ## Pico power-up check sees USB device but no PC/SC reader — 2026-10-19
 

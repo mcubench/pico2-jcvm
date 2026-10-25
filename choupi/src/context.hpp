@@ -90,6 +90,8 @@ private:
   uint16_t pending_system_exception_reason = 1;
   /// Reason code for the next VM-raised CryptoException.
   uint16_t pending_crypto_exception_reason = 1;
+  /// Reason code for the next VM-raised TransactionException.
+  uint16_t pending_transaction_exception_reason = 4;
   // SensitiveResult is VM-wide and survives Java Card context switches.
   static SensitiveResultKind sensitive_result_kind;
   static bool sensitive_result_boolean;
@@ -178,8 +180,13 @@ public:
   uint16_t consumePendingSystemExceptionReason() noexcept;
   void setPendingCryptoExceptionReason(uint16_t reason) noexcept;
   uint16_t consumePendingCryptoExceptionReason() noexcept;
+  void setPendingTransactionExceptionReason(uint16_t reason) noexcept;
+  uint16_t consumePendingTransactionExceptionReason() noexcept;
   uint16_t pendingSystemExceptionReason() const noexcept {
     return pending_system_exception_reason;
+  }
+  uint16_t pendingTransactionExceptionReason() const noexcept {
+    return pending_transaction_exception_reason;
   }
   /// Append context and heap-owned Java references for root tracing.
   void appendRootReferences(std::vector<jref_t> &references) const;

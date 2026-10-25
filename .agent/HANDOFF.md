@@ -9984,3 +9984,38 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Only one Pico CCID reader was visible to this VM despite the report of
   multiple BOOTSEL tokens. Continue on any additional board once it enumerates;
   do not attribute D92 results to another token.
+# Latest implementation step — JCSystem transaction commit capacity (2026-10-25)
+
+- Implemented `getMaxCommitCapacity()` / `getUnusedCommitCapacity()` with the
+  Java Card short ceiling `0x7FFF`. Capacity accounts the pre-write snapshot
+  payload for existing persistent records, encoded tag, and journal metadata;
+  newly created records charge only their erase journal. Repeated writes to one
+  tag do not double-charge. Overflow raises the VM `TransactionException` with
+  reason `BUFFER_FULL` before mutating the rejected record.
+- Validation passed: native persistent-transaction suite (`fail=0`), full host
+  VPCD JCSystem applet regression (`84/84`), PC build, and ARM/RISC-V
+  `symm_crypto` builds. VPCD verified max and unused capacity `0x7FFF` outside
+  a transaction and active unused capacity `32755` after one persistent scalar
+  write.
+- Final physical validation remains incomplete. The cycle rebuilt both
+  architectures, but D92 `D92E743D5F640C0F` did not enter BOOTSEL after the
+  reset-interface and CDC fallback attempts. The subsequent authorized host
+  enumeration showed only Linux root hubs, and picotool found no accessible
+  BOOTSEL board. No final image was flashed in this attempt. When a Pico is
+  passed through to the VM again, verify identity and rerun
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile symm_crypto
+  --chipid D92E743D5F640C0F` with host access. PC/SC transaction behavior has
+  not been validated; bounded large-array overflow probe previously timed out,
+  so Java-level catchability at actual capacity exhaustion remains open.
+- Current card storage/registry is unknown. Do not issue package writes until
+  PC/SC responds and GET STATUS can be read. Preserve existing card data.
+- Final ARM image built: `build/arm/pico2_choupi.uf2`, 1,676,800 bytes,
+  SHA-256 `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
+  VPCD log: `artifacts/logs/jcsystem-transaction-capacity-final-vpcd-20261025.log`.
+  Failed final flash attempt:
+  `artifacts/logs/cycle-choupi-20261025T034755Z.log`.
+- Source/docs commit for this step is recorded in the matching latest
+  `progress.md` entry. Unrelated asymmetric-profile changes remain in the
+  worktree; stage only the transaction-capacity files and this step's docs/logs.
+
+# Latest physical task — `symm_crypto` flash, explicit install, static benchmark
