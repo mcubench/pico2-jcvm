@@ -17,14 +17,17 @@
   this host test target.
 - **Validation:** `./tools/test-jcarray` passed, including static/APDU Java
   buffer and native APDU outgoing-buffer mirror root retention, plus
-  reclamation of six unrooted arrays. The regression also traces a child array
+  reclamation of seven unrooted arrays. The regression also traces a child array
   through a rooted wildcard reference array using `setReferenceEntry`. A
   top-level reference result remains rooted, then is released when replaced by
   a primitive result.
 - **Harness note:** The focused target needs test-only linker stubs for
   constant-pool/type-check and persistent-reference functions pulled in by the
   setter. The wildcard branch does not call these stubs; keep them scoped to
-  this host test.
+  this host test. For instance-edge coverage it creates a one-field
+  `JC_Instance` fixture and writes the normal object/array field encodings;
+  this checks Heap traversal but does not substitute for CAP-driven lifecycle
+  validation.
 
 ## PC/SC stopped responding after bounded GPPro GET STATUS timeout — 2026-10-25
 

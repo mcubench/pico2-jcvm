@@ -12799,3 +12799,13 @@
 - Decision: Continue the GC/persistence backlog.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Trace and reclaim instance field graphs
+
+- Step/experiment: `gc-instance-field-tracing-20261025`
+- Change: Extended the jcarray heap test with controlled one-field instance fixtures. It verifies a rooted instance retains its array field child and that an unrooted instance plus its child array are reclaimed. Updated TODO, QKB, and handoff with the test scope.
+- Validation: `./tools/test-jcarray` passed with `TEST:PASS gc_traces_instance_field_child`, `TEST:PASS gc_reclaims_unreachable_instance_graph`, and `TEST:PASS gc_reclaims_unrooted_array reclaimed=7`.
+- Result: Heap traversal follows instance reference fields and reclaims unreachable instance graphs. Test-only constructors/accessors do not validate CAP-driven instance lifecycle or persistence.
+- Decision: Continue GC transient-root lifecycle coverage and full host regression checks.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: none.

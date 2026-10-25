@@ -359,10 +359,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   `tools/test-jcarray` also exercises collection itself: the static-root array,
   APDU Java buffer, and native APDU outgoing-buffer mirror survive collection.
   It also confirms that a rooted wildcard reference array retains its byte-array
-  child through the normal reference-array setter, while six unrelated arrays
-  are reclaimed. A top-level reference result is retained by collection; after
+  child through the normal reference-array setter, while unrelated arrays are
+  reclaimed. A top-level reference result is retained by collection; after
   replacing it with a primitive result, an otherwise-unreachable array is
-  reclaimed, checking the result's runtime type handling.
+  reclaimed, checking the result's runtime type handling. A rooted instance
+  keeps its array field alive, while an unreachable instance and its child are
+  reclaimed (seven arrays and one instance in the focused run). The jcarray
+  harness supplies test-only one-field instance construction/accessors, so this
+  covers the real heap traversal over the instance field representation, not a
+  CAP-driven instance lifecycle.
   The transaction probe now runs eight VPCD rounds of 256
   short-lived arrays and 256 objects per batch, then checks static-root identity,
   persistent array/object aliases, and restored array type (54/54 focused

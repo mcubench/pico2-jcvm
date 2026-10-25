@@ -17,11 +17,24 @@ extern "C" uint8_t fs_read_1b_at(const uint8_t *, uint8_t, uint32_t,
 namespace jcvm {
 Package::Package(jpackage_ID_t packageID) noexcept : ID(packageID) {}
 
+JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
+                         const jclass_index_t claz_index)
+    : JC_Object(owner, false), packageID(packageID), claz(claz_index),
+      fields(new JCVMArray<jc_field_t>(claz_index)) {}
+
+JC_Instance::~JC_Instance() noexcept { delete this->fields; }
+
 bool JC_Instance::hasPersistentTag() const noexcept { return false; }
 jpackage_ID_t JC_Instance::getPackageID() const noexcept { return 0; }
 jclass_index_t JC_Instance::getClassIndex() const noexcept { return 0; }
 
 auto JC_Instance::getFields() const -> decltype(fields) { return fields; }
+
+void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
+  this->fields->at(index).type = ref.isArray() ? FIELD_TYPE_ARRAY_OBJECT
+                                                : FIELD_TYPE_OBJECT;
+  this->fields->at(index).value = ref.compact();
+}
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"

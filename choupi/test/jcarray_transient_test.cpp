@@ -455,10 +455,22 @@ int main() {
   const auto graphChildRef = heap.addArray(4, jcvm::JAVA_ARRAY_T_BYTE);
   auto graphChild = heap.getArray(graphChildRef);
   graphRoot->setReferenceEntry(0, graphChildRef, context);
+  const auto instanceRootRef = heap.addInstance(0, 1);
+  const auto instanceRoot = heap.getInstance(instanceRootRef);
+  const auto instanceChildRef = heap.addArray(4, jcvm::JAVA_ARRAY_T_BYTE);
+  auto instanceChild = heap.getArray(instanceChildRef);
+  instanceRoot->setField_Reference(0, instanceChildRef);
+  const auto unrootedInstanceRef = heap.addInstance(0, 1);
+  const auto unrootedInstance = heap.getInstance(unrootedInstanceRef);
+  const auto unrootedInstanceChildRef =
+      heap.addArray(4, jcvm::JAVA_ARRAY_T_BYTE);
+  unrootedInstance->setField_Reference(0, unrootedInstanceChildRef);
   heap.reserveStaticReferenceRoot(0, 9);
   heap.setStaticReferenceRoot(0, 9, bytesRef);
   heap.reserveStaticReferenceRoot(0, 10);
   heap.setStaticReferenceRoot(0, 10, graphRootRef);
+  heap.reserveStaticReferenceRoot(0, 11);
+  heap.setStaticReferenceRoot(0, 11, instanceRootRef);
   const auto referenceResultRef = heap.addArray(6, jcvm::JAVA_ARRAY_T_BYTE);
   auto referenceResult = heap.getArray(referenceResultRef);
   context.getStack().setRootReferenceReturnValue(referenceResultRef);
@@ -471,6 +483,8 @@ int main() {
       heap.getArray(outgoingBufferRef) != outgoingBuffer ||
       heap.getArray(graphRootRef) != graphRoot ||
       heap.getArray(graphChildRef) != graphChild ||
+      heap.getArray(instanceChildRef) != instanceChild ||
+      heap.getInstance(instanceRootRef) != instanceRoot ||
       heap.getArray(referenceResultRef) != referenceResult) {
     std::cerr << "collector failed to retain static/APDU roots or reclaim garbage\n";
     return 1;
@@ -483,6 +497,26 @@ int main() {
   }
   if (!unrooted_reclaimed) {
     std::cerr << "collector retained an unrooted array handle\n";
+    return 1;
+  }
+  bool unrooted_instance_reclaimed = false;
+  try {
+    (void)heap.getInstance(unrootedInstanceRef);
+  } catch (jcvm::Exceptions error) {
+    unrooted_instance_reclaimed =
+        error == jcvm::Exceptions::SecurityException;
+  }
+  bool unrooted_instance_child_reclaimed = false;
+  try {
+    (void)heap.getArray(unrootedInstanceChildRef);
+  } catch (jcvm::Exceptions error) {
+    unrooted_instance_child_reclaimed =
+        error == jcvm::Exceptions::SecurityException;
+  }
+  if (!unrooted_instance_reclaimed ||
+      !unrooted_instance_child_reclaimed ||
+      collection.instances_reclaimed == 0) {
+    std::cerr << "collector retained unreachable instance graph\n";
     return 1;
   }
   context.getStack().setRootReturnValue(42);
@@ -501,6 +535,8 @@ int main() {
   }
   std::cout << "TEST:PASS gc_retains_static_and_apdu_buffers\n";
   std::cout << "TEST:PASS gc_traces_reference_array_child\n";
+  std::cout << "TEST:PASS gc_traces_instance_field_child\n";
+  std::cout << "TEST:PASS gc_reclaims_unreachable_instance_graph\n";
   std::cout << "TEST:PASS gc_tracks_reference_result_type\n";
   std::cout << "TEST:PASS gc_reclaims_unrooted_array reclaimed="
             << collection.arrays_reclaimed << "\n";

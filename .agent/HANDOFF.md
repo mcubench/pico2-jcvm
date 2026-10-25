@@ -10783,3 +10783,20 @@ confirmed on hardware. The original investigation evidence remains in earlier
   six unrelated arrays were reclaimed in the primary collection.
 - Next: continue object-instance field graph and transient-root collection
   coverage. No physical power-cycle validation was run.
+
+# Latest continuation — traverse and reclaim instance field graphs (2026-10-25)
+
+- Expanded the focused heap test with one-field `JC_Instance` fixtures. A
+  static-rooted instance retains its array child; an unrooted instance and its
+  child array are reclaimed. The test uses the real `Heap` collector and its
+  `JC_Instance::getFields()` traversal, with test-only construction/accessor
+  stubs for the narrow host target.
+- Validation: `./tools/test-jcarray` passed with
+  `TEST:PASS gc_traces_instance_field_child` and
+  `TEST:PASS gc_reclaims_unreachable_instance_graph`; primary collection
+  reclaimed seven arrays and at least one instance.
+- Scope: this validates heap graph marking over the instance field encoding;
+  it does not prove CAP-driven instance lifecycle or persistence recovery.
+- Next: cover transient reference roots/lifecycle behavior, then expand the
+  focused suite to the full broader test set. Physical power-cycle validation
+  remains open.
