@@ -11620,3 +11620,29 @@
   run log `artifacts/logs/jcalgtest-symm-crypto-D92-20261025.log`;
   comparator log
   `artifacts/logs/jcalgtest-symm-crypto-compare-D92-20261025.log`.
+
+## 2026-10-25 — Reflash symmetric image and explicitly install upstream CAP
+
+- Step/experiment: `symm_crypto-empty-image-gppro-install-D92`
+- Change: Rebuilt and flashed the ARM `symm_crypto` firmware, confirmed the
+  card registry was empty after deleting its prior persistent JCAlgTest
+  package, then installed the unchanged upstream JCAlgTest 1.8.2 CAP through
+  GPPro.
+- Validation: `./tools/build arm --profile symm_crypto` and
+  `./tools/build riscv --profile symm_crypto` passed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile symm_crypto
+  --chipid D92E743D5F640C0F` passed; the 18-second monitor repeatedly reported
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. GPPro `--list`
+  showed only ISD before install; GPPro `--install` succeeded and final
+  `--list` showed package `4A43416C6754657374` as `LOADED` and applet
+  `4A43416C675465737431` as `SELECTABLE`.
+- Result: Firmware does not preload JCAlgTest. The old applet survived earlier
+  firmware reflashes because CAP storage is persistent; deleting the applet and
+  package restored the empty registry. The requested explicit upstream CAP
+  install then succeeded. UF2 size: 1,675,776 bytes; SHA-256:
+  `666028ffdf62cf0038ed4e082efefdce8e3954882d3278cb7903d8a6374d51f2`. CAP
+  SHA-256:
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+- Decision: Keep firmware and persistent applet storage as separate setup steps. Users wanting a fresh card must remove existing applets/packages via GPPro; a UF2 reflash alone cannot empty card storage. Physical Windows validation is still outstanding.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T013632Z.log`; `artifacts/logs/gppro-empty-install-D92-20261025.log`; `build/arm/pico2_choupi.uf2`.

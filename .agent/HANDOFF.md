@@ -1,3 +1,35 @@
+# Current active run — `symm_crypto` empty-image and GPPro explicit install
+
+- Both `./tools/build arm --profile symm_crypto` and
+  `./tools/build riscv --profile symm_crypto` passed. The ARM image is
+  `build/arm/pico2_choupi.uf2`, 1,675,776 bytes, SHA-256
+  `666028ffdf62cf0038ed4e082efefdce8e3954882d3278cb7903d8a6374d51f2`.
+- The repository cycle flashed identified Pico 2 D92
+  `D92E743D5F640C0F`; it passed the 18-second monitor with repeated
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0` lines. The initial
+  BOOTSEL selector attempt failed because the reset interface was absent; the
+  cycle recovered using the board's unique CDC serial and 1200-baud fallback,
+  then completed a verified 100% flash. Log:
+  `artifacts/logs/cycle-choupi-20261025T013632Z.log`.
+- Refreshed PC/SC and used GPPro to delete the old JCAlgTest applet and package.
+  `--list` then showed only ISD `A000000151000000`. GPPro explicitly loaded and
+  installed the unchanged upstream CAP (SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`); final
+  listing shows package `4A43416C6754657374` `LOADED` and applet
+  `4A43416C675465737431` `SELECTABLE`. This confirms no CAP is embedded in the
+  image. Current card state: applet installed by the explicit request.
+  Evidence: `artifacts/logs/gppro-empty-install-D92-20261025.log`.
+- A complete physical `ALG_PERFORMANCE_STATIC` retry is now running with a
+  3,600-second timeout under session 64634. Log:
+  `artifacts/logs/jcalgtest-symm-crypto-static-D92-20261025-final.log`; output
+  directory: `artifacts/results/jcalgtest-symm-crypto-static-D92-20261025-final/`.
+  Poll that session, then inspect the final CSV and exit status. Earlier runs
+  were interrupted by the launcher's 900-second limit / task switch and must
+  not be reported as full results.
+- The working tree still has unrelated asymmetric-prototype and other
+  pre-existing dirty files. Preserve them; stage only the progress, handoff,
+  and TODO record for this hardware step. Windows testing remains out of scope.
+
 # Latest physical firmware and explicit CAP installation — 2026-10-25
 
 - The user said Pico 2 tokens were available in BOOTSEL. In this VM only one

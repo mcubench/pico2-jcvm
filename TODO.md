@@ -140,7 +140,7 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
 
 ### Priority 1 — close acceptance criteria AC1–AC5
 
-- [ ] Keep the physical card state empty until the requested GPPro install.
+- [x] Keep the physical card state empty until the requested GPPro install.
   JCAlgTest is not embedded in the ARM UF2 or ROM mask. A successful earlier
   `gp --install` wrote the CAP to persistent card storage, which survives a
   firmware upload; reflashing alone does not uninstall packages. The fresh
@@ -148,10 +148,16 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   `gp --install`, after which the unchanged applet becomes selectable. The
   symmetric-only Windows guide/archive now deletes only the known JCAlgTest
   applet/package, verifies no application or package remains, and then runs an
-  explicit `gp --install`. As of 2026-10-25, physical D92
-  `D92E743D5F640C0F` is reachable by PC/SC; after the current and minimal
-  profile tests, GPPro lists only ISD `A000000151000000`. The test registry is
-  empty. The external Windows GPPro workflow remains unverified.
+  explicit `gp --install`. On 2026-10-25, D92
+  `D92E743D5F640C0F` was physically flashed with the 1,675,776-byte
+  `symm_crypto` UF2, and GPPro verified only ISD before explicitly installing
+  the unchanged upstream CAP. GPPro then listed the JCAlgTest package as
+  `LOADED` and applet as `SELECTABLE`. This physical sequence proves that the
+  firmware image does not preload the applet; reflashing preserves any CAPs
+  previously written to persistent storage. Evidence:
+  `artifacts/logs/gppro-empty-install-D92-20261025.log` and
+  `artifacts/logs/cycle-choupi-20261025T013632Z.log`. The external Windows
+  GPPro workflow remains unverified.
 
 - [x] **AC4: refresh the physical support-results comparison after OwnerPINX.**
   On 2026-10-20 the official physical `ALG_SUPPORT_EXTENDED` run completed
