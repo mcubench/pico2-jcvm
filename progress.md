@@ -12945,3 +12945,17 @@
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T191520Z.log`,
   `artifacts/logs/gppro-get-status-zlp-D92-20261025.log`.
+
+## 2026-10-25 — Record physical CCID response framing fix commit
+
+- Step/experiment: `ccid-exact-packet-zlp-20261025`
+- Change: Recorded the implementation commit SHA for the exact-packet bulk-IN
+  terminator and physical GET STATUS validation.
+- Validation: Confirmed commit `534932b` contains the CCID driver and associated
+  TODO, QKB, handoff, and implementation progress updates.
+- Result: The response framing correction is traceable to `534932b`; D92 GPPro
+  listing completed past P1=10 and P1=20 after the change.
+- Decision: Continue remaining correctness items, including simulated versus
+  physical atomic-install recovery boundaries.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: `artifacts/logs/gppro-get-status-zlp-D92-20261025.log`.
