@@ -11713,7 +11713,7 @@
 - Decision: Keep the implementation; resume physical validation when a Pico is
   actually passed through to this VM. Preserve current card storage and do not
   issue package writes until PC/SC is responsive and registry state is known.
-- Commit: `pending`
+- Commit: `78115dc`
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-capacity-final-vpcd-20261025.log`
   (SHA-256 `6cd03edd0d7b7e6a823c16c5f7671637b7f0ed2deb2f3208d5da16cad649f138`),
   `artifacts/logs/cycle-choupi-20261025T034755Z.log` (BOOTSEL unavailable),

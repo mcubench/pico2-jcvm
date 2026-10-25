@@ -10014,8 +10014,7 @@ confirmed on hardware. The original investigation evidence remains in earlier
   VPCD log: `artifacts/logs/jcsystem-transaction-capacity-final-vpcd-20261025.log`.
   Failed final flash attempt:
   `artifacts/logs/cycle-choupi-20261025T034755Z.log`.
-- Source/docs commit for this step is recorded in the matching latest
-  `progress.md` entry. Unrelated asymmetric-profile changes remain in the
-  worktree; stage only the transaction-capacity files and this step's docs/logs.
+- Source/docs commit: `78115dc`. Unrelated asymmetric-profile changes remain
+  in the worktree; do not stage them as part of the transaction-capacity step.
 
 # Latest physical task — `symm_crypto` flash, explicit install, static benchmark
