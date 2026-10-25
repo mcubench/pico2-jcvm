@@ -12809,3 +12809,13 @@
 - Decision: Continue GC transient-root lifecycle coverage and full host regression checks.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Validate transient reference graph lifecycle under GC
+
+- Step/experiment: `gc-transient-reference-graph-lifecycle-20261025`
+- Change: Converted the collector's reference-array graph to a `CLEAR_ON_DESELECT` transient array. The regression checks child retention through GC, no clearing on reset, edge clearing on deselect, and reclamation of the now-unreachable child by a subsequent collection. Updated TODO, QKB, and handoff.
+- Validation: `./tools/test-jcarray` passed with `TEST:PASS gc_clears_transient_reference_graph_by_event`, plus instance graph, typed return root, static/APDU roots, and seven-array reclamation checks.
+- Result: Transient clear-event behavior and collector graph tracing agree across lifecycle transitions.
+- Decision: Continue broader GC and persistence coverage.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: none.

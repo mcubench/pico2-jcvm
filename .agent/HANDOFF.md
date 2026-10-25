@@ -10800,3 +10800,15 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Next: cover transient reference roots/lifecycle behavior, then expand the
   focused suite to the full broader test set. Physical power-cycle validation
   remains open.
+
+# Latest continuation — validate transient reference graph lifecycle (2026-10-25)
+
+- Changed the collector test's rooted wildcard `Object[]` to a transient array
+  with `CLEAR_ON_DESELECT`. It retains its child through the first collection;
+  `CLEAR_ON_RESET` leaves it intact; deselect clears the edge; the next
+  collection reclaims that child.
+- Validation: `./tools/test-jcarray` passed with
+  `TEST:PASS gc_clears_transient_reference_graph_by_event`; all earlier root,
+  object-graph, and reclamation checks passed as well.
+- Next: expand the host regression set around these changes and continue the
+  remaining project priorities. Hardware power-cycle validation remains open.

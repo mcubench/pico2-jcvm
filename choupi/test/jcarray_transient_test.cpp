@@ -449,8 +449,11 @@ int main() {
   const auto outgoingBufferRef = heap.addArray(5, jcvm::JAVA_ARRAY_T_BYTE);
   const auto outgoingBuffer = heap.getArray(outgoingBufferRef);
   context.setAPDUOutgoing(outgoingBuffer, 0, 1);
-  const auto graphRootRef = heap.addArray(
-      2, jcvm::JAVA_ARRAY_T_REFERENCE, static_cast<jcvm::jc_cp_offset_t>(0xFFFF));
+  jcvm::JC_Array graphRootArray(
+      heap, 2, jcvm::JAVA_ARRAY_T_REFERENCE,
+      static_cast<jcvm::jc_cp_offset_t>(0xFFFF), true,
+      jcvm::CLEAR_ON_DESELECT);
+  const auto graphRootRef = heap.addArray(graphRootArray);
   auto graphRoot = heap.getArray(graphRootRef);
   const auto graphChildRef = heap.addArray(4, jcvm::JAVA_ARRAY_T_BYTE);
   auto graphChild = heap.getArray(graphChildRef);
@@ -519,6 +522,18 @@ int main() {
     std::cerr << "collector retained unreachable instance graph\n";
     return 1;
   }
+  heap.clearTransientArrays(jcvm::CLEAR_ON_RESET);
+  if (graphRoot->getReferenceEntry(0) != graphChildRef) {
+    std::cerr << "reset cleared a deselect-only transient array\n";
+    return 1;
+  }
+  heap.clearTransientArrays(jcvm::CLEAR_ON_DESELECT);
+  if (!graphRoot->isTransientArray() ||
+      graphRoot->getClearEvent() != jcvm::CLEAR_ON_DESELECT ||
+      !graphRoot->getReferenceEntry(0).isNullPointer()) {
+    std::cerr << "deselect did not clear the transient reference array\n";
+    return 1;
+  }
   context.getStack().setRootReturnValue(42);
   const auto primitiveResultRef = heap.addArray(6, jcvm::JAVA_ARRAY_T_BYTE);
   const auto primitiveResultCollection = heap.collectUnreachableFrom(
@@ -529,8 +544,15 @@ int main() {
   } catch (jcvm::Exceptions error) {
     primitive_result_reclaimed = error == jcvm::Exceptions::SecurityException;
   }
-  if (!primitiveResultCollection.complete || !primitive_result_reclaimed) {
-    std::cerr << "primitive root result incorrectly retained an array\n";
+  bool transient_child_reclaimed = false;
+  try {
+    (void)heap.getArray(graphChildRef);
+  } catch (jcvm::Exceptions error) {
+    transient_child_reclaimed = error == jcvm::Exceptions::SecurityException;
+  }
+  if (!primitiveResultCollection.complete || !primitive_result_reclaimed ||
+      !transient_child_reclaimed) {
+    std::cerr << "primitive or cleared transient root retained an array\n";
     return 1;
   }
   std::cout << "TEST:PASS gc_retains_static_and_apdu_buffers\n";
@@ -538,6 +560,7 @@ int main() {
   std::cout << "TEST:PASS gc_traces_instance_field_child\n";
   std::cout << "TEST:PASS gc_reclaims_unreachable_instance_graph\n";
   std::cout << "TEST:PASS gc_tracks_reference_result_type\n";
+  std::cout << "TEST:PASS gc_clears_transient_reference_graph_by_event\n";
   std::cout << "TEST:PASS gc_reclaims_unrooted_array reclaimed="
             << collection.arrays_reclaimed << "\n";
   return 0;

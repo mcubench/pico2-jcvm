@@ -367,7 +367,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   reclaimed (seven arrays and one instance in the focused run). The jcarray
   harness supplies test-only one-field instance construction/accessors, so this
   covers the real heap traversal over the instance field representation, not a
-  CAP-driven instance lifecycle.
+  CAP-driven instance lifecycle. A rooted transient reference array retains
+  its child through collection, ignores `CLEAR_ON_RESET` when configured for
+  `CLEAR_ON_DESELECT`, then clears the edge and permits child reclamation on the
+  next collection.
   The transaction probe now runs eight VPCD rounds of 256
   short-lived arrays and 256 objects per batch, then checks static-root identity,
   persistent array/object aliases, and restored array type (54/54 focused
