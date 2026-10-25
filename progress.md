@@ -11970,7 +11970,7 @@
   restores two packages and three instances.
 - Decision: Keep fail-closed sidecar validation; continue to the next open
   card-manager/JCVM requirement. Physical power-cycle persistence remains open.
-- Commit: `1072e25` (test implementation); documentation follow-up follows.
+- Commit: `1072e25` (test implementation); documentation follow-up `5308aae`.
 - Artifacts/logs: run log `artifacts/logs/host-vpcd-multipackage-apdu-20261025T071147Z.log`
   (SHA-256 `5cf2768c7b9655b2f9d11b3452bd1254997bc91f12880ec00ae86267dca0cce0`),
   restart log `artifacts/logs/host-vpcd-multipackage-restart-20261025T071147Z.log`

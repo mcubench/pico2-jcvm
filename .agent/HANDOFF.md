@@ -17,8 +17,8 @@
   `90549b210782ea964a950e453a4410546a43364d16936767574b11421c38e5d2`;
   missing-sidecar rejection log SHA-256
   `a2c1b3453c55e31fa83aed1f09de841fd9969d4e843701b4f4a30a6b8bc2ab99`.
-- Test implementation commit: `1072e25`; progress/TODO/handoff commit follows.
-  Next: proceed with remaining card-manager and JCVM gaps in
+- Test implementation commit: `1072e25`; progress/TODO/handoff commit:
+  `5308aae`. Next: proceed with remaining card-manager and JCVM gaps in
   TODO; keep `asymm_crypto` paused.
 
 # Previous implementation step — automatic VPCD registry sidecar (2026-10-25)
