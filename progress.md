@@ -13007,3 +13007,13 @@
 - Decision: When a Pico PC/SC reader returns, run `PICO2_HOST_USB_ACCESS=1 ./tools/probe-jc-algtest --reader '<exact reader>' --unsupported-rsa-oaep-md5` with a concurrent bounded serial capture. Treat the previous SHA-224 statement as superseded by this correction.
 - Commit: recorded in this correction's commit.
 - Artifacts/logs: `artifacts/logs/pc-jcalgtest-rsa-oaep-md5-test-20261025.log` and `artifacts/logs/pc-jcalgtest-rsa-oaep-md5-20261025.log`.
+
+## 2026-10-25 — Record APDU correction commit
+
+- Step/experiment: `jcalgtest-physical-md5-oaep-correction-20261025`
+- Change: Recorded the dedicated correction commit for the JCAlgTest MD5/RSA/OAEP APDU probe.
+- Validation: `git diff --cached --check` passed before commit; only the probe, active tracking notes, and progress records were included.
+- Result: Commit `5137910` supersedes the earlier inaccurate SHA-224 label in the active docs.
+- Decision: Await a visible Pico PC/SC reader for exact physical replay; continue with offline correctness work while none is available.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: `artifacts/logs/pc-jcalgtest-rsa-oaep-md5-test-20261025.log`.
