@@ -23,7 +23,7 @@
   separate path. Multi-package process-restart reconstruction and PC/SC GPPro
   GET STATUS remain open. Existing user changes for asymmetric crypto stay
   untouched.
-- Source commit: pending. Follow-up metadata commit will record the final SHA.
+- Source commit: `e05fec0`. Follow-up metadata commit will record the final SHA.
 
 - `choupi/src/main_pc.cpp` now mirrors the device package store with an
   in-process registry keyed by dynamic package ID. It supports multiple

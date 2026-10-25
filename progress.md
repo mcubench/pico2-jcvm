@@ -11800,6 +11800,6 @@
 - Decision: Keep PC/SC and hardware acceptance open. When USB passthrough is
   available to the VM, re-enumerate boards and separately validate GPPro and
   physical install/SELECT behavior.
-- Commit: pending; SHA recorded in the follow-up metadata commit.
+- Commit: `e05fec0` (metadata commit records this SHA).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025.log`
   SHA-256 `9fbf1ba9ea90b4a36a781c75614fcc84badb9b4625aa177897c14a2e597db9d9`.
