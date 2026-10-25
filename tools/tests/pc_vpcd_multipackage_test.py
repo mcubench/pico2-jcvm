@@ -7,6 +7,7 @@ import argparse
 import socket
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from zipfile import ZipFile
@@ -222,6 +223,28 @@ def delete_object(scp: Scp03, aid: bytes, related: bool, label: str,
                        label, expected_statuses)
 
 
+def accept_vpcd(listener: socket.socket, process: subprocess.Popen[bytes],
+                timeout: float, log_path: Path, phase: str
+                ) -> tuple[socket.socket, object]:
+    deadline = time.monotonic() + timeout
+    while True:
+        return_code = process.poll()
+        if return_code is not None:
+            tail = log_path.read_text(errors="replace")[-2000:]
+            raise RuntimeError(
+                f"{phase} emulator exited with {return_code} before VPCD "
+                f"connect; log tail:\n{tail}"
+            )
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise socket.timeout(f"timed out waiting for {phase} VPCD connect")
+        listener.settimeout(min(remaining, 0.25))
+        try:
+            return listener.accept()
+        except socket.timeout:
+            continue
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path,
@@ -248,6 +271,7 @@ def main() -> int:
         memory = root / "artifacts/results/host-vpcd-multipackage-test.bin"
         memory.parent.mkdir(parents=True, exist_ok=True)
         memory.write_bytes(b"")
+        Path(f"{memory}.cap-registry").unlink(missing_ok=True)
         started_at = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         log_path = root / f"artifacts/logs/host-vpcd-multipackage-apdu-{started_at}.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -266,7 +290,9 @@ def main() -> int:
                                        stderr=log, start_new_session=True)
         connection = None
         try:
-            connection, _ = listener.accept()
+            connection, _ = accept_vpcd(
+                listener, process, args.timeout, log_path, "initial"
+            )
             connection.settimeout(args.timeout)
             send_message(connection, b"\x01")
             send_message(connection, b"\x04")
@@ -374,12 +400,16 @@ def main() -> int:
                 probe_output = probe_log.read_text(errors="replace")
                 probe_registry.unlink(missing_ok=True)
                 probe_memory.unlink(missing_ok=True)
-                if expected not in probe_output:
+                if (expected not in probe_output or
+                        "PC storage initialization failed; refusing to start card service"
+                        not in probe_output or
+                        "VPCD:CONNECTED endpoint=" in probe_output or
+                        "ERROR: connecting to vpcd endpoint" in probe_output):
                     raise RuntimeError(
                         f"{label} resume did not report {expected!r}; "
                         f"exit={result.returncode}, log={probe_log}"
                     )
-                print(f"TEST:PASS {label} sidecar rejected before resume")
+                print(f"TEST:PASS {label} sidecar aborted card startup")
 
             damaged_registry = bytearray(registry_bytes)
             damaged_registry[-1] ^= 0x01
@@ -402,7 +432,9 @@ def main() -> int:
                     restart_command, cwd=root, stdout=restart_log,
                     stderr=restart_log, start_new_session=True,
                 )
-            connection, _ = listener.accept()
+            connection, _ = accept_vpcd(
+                listener, process, args.timeout, restart_log_path, "restart"
+            )
             connection.settimeout(args.timeout)
             send_message(connection, b"\x01")
             send_message(connection, b"\x04")

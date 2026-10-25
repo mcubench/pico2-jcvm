@@ -80,6 +80,7 @@ uint16_t vpcd_applet_class_index = 0xffff;
 bool vpcd_configured = false;
 bool vpcd_install_requested = false;
 bool vpcd_registry_resume_requested = false;
+bool pc_storage_initialization_failed = false;
 bool vpcd_package_loaded = false;
 std::vector<uint8_t> vpcd_install_parameters;
 std::vector<uint8_t> vpcd_stored_instance_aid;
@@ -454,7 +455,10 @@ bool load_host_cap_registry(const uint8_t *package_bits,
                             size_t package_bits_length);
 
 extern "C" uint8_t choupi_pc_initialize_storage(void) {
-  if (host_rom_packages.empty()) return 1;
+  if (host_rom_packages.empty()) {
+    pc_storage_initialization_failed = true;
+    return 1;
+  }
 
   uint8_t package_list_tag = 0x00;
   uint8_t package_bits[JCVM_MAX_PACKAGES / 8]{};
@@ -465,6 +469,7 @@ extern "C" uint8_t choupi_pc_initialize_storage(void) {
         existing_length != sizeof(package_bits) ||
         fs_read(&package_list_tag, 1, package_bits, sizeof(package_bits)) != 0) {
       std::fprintf(stderr, "ERROR: invalid PC package-list record\n");
+      pc_storage_initialization_failed = true;
       return 1;
     }
   }
@@ -482,12 +487,14 @@ extern "C" uint8_t choupi_pc_initialize_storage(void) {
   if (write_package_list &&
       fs_write(&package_list_tag, 1, package_bits, sizeof(package_bits)) != 0) {
     std::fprintf(stderr, "ERROR: unable to persist PC package list\n");
+    pc_storage_initialization_failed = true;
     return 1;
   }
   static bool cap_registry_initialized = false;
   if (!cap_registry_initialized) {
     if (host_cap_packages.empty() && !vpcd_restore_applet_requested &&
         !load_host_cap_registry(package_bits, sizeof(package_bits))) {
+      pc_storage_initialization_failed = true;
       return 1;
     }
     for (uint8_t package_id = 56; package_id <= 63; ++package_id) {
@@ -497,6 +504,7 @@ extern "C" uint8_t choupi_pc_initialize_storage(void) {
                      "ERROR: package %u is enabled in saved VPCD memory but "
                      "has no CAP registry entry\n",
                      static_cast<unsigned>(package_id));
+        pc_storage_initialization_failed = true;
         return 1;
       }
     }
@@ -512,6 +520,7 @@ extern "C" uint8_t choupi_pc_initialize_storage(void) {
         std::fprintf(stderr,
                      "ERROR: --applet-aid is absent from the restored "
                      "registry\n");
+        pc_storage_initialization_failed = true;
         return 1;
       }
       vpcd_package_id = package_id;
@@ -1844,7 +1853,7 @@ int main_pc(int argc, char *argv[]) {
   // running emulator
   run_emulator();
 
-  return 0;
+  return pc_storage_initialization_failed ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 #ifdef __cplusplus
@@ -1860,6 +1869,13 @@ int starting_jcre() {
   uint32_t arg = (STARTING_JAVACARD_PACKAGE << 16) |
                  (STARTING_JAVACARD_CLASS << 8) | (STARTING_JAVACARD_METHOD);
   remote_call(2, arg, 0);
+
+  if (pc_storage_initialization_failed) {
+    std::fprintf(stderr,
+                 "ERROR: PC storage initialization failed; refusing to "
+                 "start card service\n");
+    return 1;
+  }
 
   bool installed = true;
   if (vpcd_install_requested) {
