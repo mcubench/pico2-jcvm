@@ -12749,3 +12749,13 @@
 - Decision: Continue the GC/persistence backlog.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Record APDU outgoing-root progress commit
+
+- Step/experiment: `gc-apdu-outgoing-root-collection-20261025`
+- Change: Recorded the progress-record commit SHA for APDU outgoing-mirror retention coverage.
+- Validation: Confirmed `9311677` contains only this append-only progress entry.
+- Result: The tracking chain for implementation commit `145d02d` is complete.
+- Decision: Continue the GC/persistence backlog.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
