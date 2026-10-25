@@ -11514,7 +11514,7 @@
   with `6A88` and rolls back.
 - Decision: Keep the physical registry empty. Continue the non-profile-specific
   Java Card runtime and card-manager backlog; do not run JCAlgTest on minimal.
-- Commit: `fa15bfa` (validated fix); matrix record commit follows.
+- Commit: source fix `fa15bfa`; matrix validation record `8690a84`.
 - Artifacts/logs: `artifacts/results/deploy/current-D92-core-ownerpinx-fixed-20261025.csv`,
   `current-D92-security-20261025.csv`, `current-D92-crypto-20261025.csv`,
   `minimal-D92-crypto-20261025.csv`,
