@@ -13047,3 +13047,13 @@
 - Decision: Keep the atomicity and GC TODOs open for physical validation. Continue direct native API dispatch work for the asymmetric profile; the in-progress Java provider adapter remains disallowed.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261025T200233Z.log` and `artifacts/logs/vpcd-persistence-restore-20261025T200233Z.log`; the other two test wrappers did not save standalone logs.
+
+## 2026-10-25 — Record filesystem recovery rerun commit
+
+- Step/experiment: `filesystem-persistence-revalidation-20261025`
+- Change: Recorded the documentation/test-evidence commit for the recovery and persistence suite rerun.
+- Validation: `git diff --cached --check` passed; only TODO, HANDOFF, and progress evidence were committed.
+- Result: Commit `3c2084f` preserves the latest offline validation while leaving physical recovery requirements open.
+- Decision: Continue native-only implementation work; preserve all unrelated dirty asymmetric and profile changes.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261025T200233Z.log` and `artifacts/logs/vpcd-persistence-restore-20261025T200233Z.log`.
