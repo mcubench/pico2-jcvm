@@ -12639,3 +12639,13 @@
 - Decision: Keep the selected GET DATA/GET STATUS TODO open. Investigate physical CCID/PCSC response behavior with another identified reader when available; do not treat VPCD or heartbeat results as physical reader validation.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T161044Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261025T161044Z.log`, `artifacts/logs/cycle-choupi-20261025T145305Z.log`; GPPro output was bounded and not saved to a file.
+
+## 2026-10-25 — Record GET STATUS module-list commit
+
+- Step/experiment: `gp-get-status-multiple-modules-20261025`
+- Change: Recorded the implementation commit for multi-module GET STATUS encoding and tests.
+- Validation: Confirmed commit `20bc9ec` contains only the GET STATUS implementation, its focused tests, TODO/QKB/handoff updates, and the preceding progress record.
+- Result: The source and VPCD regression are traceable to commit `20bc9ec`; physical P1=10 behavior remains unresolved.
+- Decision: Continue physical diagnosis only when PC/SC responds or another identified Pico reader is available.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
