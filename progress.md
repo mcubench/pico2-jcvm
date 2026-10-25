@@ -12579,3 +12579,13 @@
 - Decision: Keep the host interface binding issue open and continue source work; use the D92 reader only if PC/SC transport responds.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: command output inspected directly; deploy failure artifacts remain `artifacts/results/deploy/parallel-20261025-142230/`.
+
+## 2026-10-25 — Record USB interface finding commit ID
+
+- Step/experiment: `pico-usb-pcsc-interface-enumeration-20261025`
+- Change: Recorded documentation commit `a212144` in the preceding progress entry.
+- Validation: Confirmed `a212144` contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md`.
+- Result: The D92/2BED USB-versus-PC/SC discrepancy is traceable to commit `a212144`.
+- Decision: Continue project work; retry 2BED PC/SC only after its CCID interface is registered.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
