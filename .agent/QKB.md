@@ -4993,3 +4993,17 @@ fix.
   and CCID counters to distinguish malformed response bytes from host-side
   transport behavior. Avoid unbounded `pcsc_scan` and do not restart system
   services outside the approved helper.
+
+## Stale VPCD flash image prevents clean RMI client startup — 2026-10-25
+
+- **Symptom:** `tools/test-rmi-client-vpcd` used the shared historical
+  `build/algtest-v182-empty-flash.bin` image. It was only 81,920 bytes and had
+  serialized dynamic-package state without the matching registry sidecar, so
+  VPCD startup failed before the official SDK client connected.
+- **Viable solution:** The RMI wrapper now writes a fresh raw 512 KiB all-`FF`
+  flash image for each run under `build/rmi-client-vpcd/flash-<timestamp>.bin`.
+  Do not assume this fixes other emulator wrappers unless they are updated too.
+- **Validation:** `./tools/test-rmi-client-vpcd` passed with exit status 0,
+  `JCRMI_CLIENT:SUMMARY pass=18 fail=0`, and emulator `VPCD:DISCONNECTED
+  result=0`. Client transcript:
+  `artifacts/logs/rmi-client-official-vpcd-client-20261025T190043Z.log`.

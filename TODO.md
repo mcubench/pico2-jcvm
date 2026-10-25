@@ -499,9 +499,16 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   The converter-built fixture is loaded and exercised through current-source
   VPCD for SELECT, primitive INVOKE, primitive-array INVOKE, and protocol-error
   responses. The supplied Service CAP is format 2.1 and cannot validate the
-  CAP 2.2 remote metadata path. External JCRMI interoperability passed the
-  tested SDK 2.2.1 subset; broader client and RMI profile coverage remains
-  open.
+  CAP 2.2 remote metadata path. External JCRMI interoperability now passes the
+  SDK 2.2.1 client probe over current-source VPCD for primitive `short`,
+  byte/short/boolean/int arrays (including null values), returned remote-
+  interface invocation, sensitive-result checks, custom runtime/checked
+  exceptions, and nine framework exception classes/reasons (18 checks total).
+  The wrapper creates a fresh erased 512 KiB VPCD flash image per run to avoid
+  stale serialized package state. Log:
+  `artifacts/logs/rmi-client-official-vpcd-client-20261025T190043Z.log`.
+  This remains a focused interop subset; broader client and RMI profile
+  coverage remains open.
   Physical Service results are from existing firmware and do not validate
   current source.
 

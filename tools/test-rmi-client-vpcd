@@ -7,8 +7,20 @@ log_dir="${repo_root}/artifacts/logs"
 client_jar="${repo_root}/choupi/javacard-sdk/rommask/capmap-free/javacard/jcdk/2.2.1/libs/jcrmiclientframework.jar"
 api_jar="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit/lib/api_classic.jar"
 fixture_classes="${repo_root}/build/rmi-array-fixture/classes"
+memory_dir="${repo_root}/build/rmi-client-vpcd"
+memory="${memory_dir}/flash-${timestamp}.bin"
+client_log="${log_dir}/rmi-client-official-vpcd-client-${timestamp}.log"
 
 mkdir -p "${log_dir}"
+mkdir -p "${memory_dir}"
+python3 - "${memory}" <<'PY'
+from pathlib import Path
+import sys
+
+# Use a new raw flash image for each run. The historical shared image can
+# contain dynamic-package bits from an earlier emulator save.
+Path(sys.argv[1]).write_bytes(b"\xff" * 0x80000)
+PY
 "${repo_root}/tools/build-pc" > "${log_dir}/build-pc-rmi-client-${timestamp}.log" 2>&1
 "${repo_root}/tools/build-rmi-array-fixture"
 
@@ -16,7 +28,8 @@ java \
   --class-path "${client_jar}:${api_jar}:${fixture_classes}" \
   "${repo_root}/tools/tests/rmi_client_probe/RmiClientProbe.java" \
   "${repo_root}/build/choupi-pc/choupi" \
-  "${repo_root}/build/algtest-v182-empty-flash.bin" \
+  "${memory}" \
   "${repo_root}/build/rmi-array-fixture/rmi-fixture-load-code.bin" \
   "${repo_root}/build/choupi-pc/flash" \
-  "${log_dir}/rmi-client-official-vpcd-emulator-${timestamp}.log"
+  "${log_dir}/rmi-client-official-vpcd-emulator-${timestamp}.log" \
+  | tee "${client_log}"

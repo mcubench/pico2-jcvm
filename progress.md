@@ -12889,3 +12889,23 @@
 - Decision: Continue physical GET STATUS capture after PC/SC stabilizes; pursue an offline priority task in the meantime.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T182059Z.log`.
+
+## 2026-10-25 — Extend official JC305 RMI client interoperability
+
+- Step/experiment: `official-jc305-rmi-client-arrays-20261025`
+- Change: Extended the SDK 2.2.1 client probe to exercise byte, short, boolean,
+  and int arrays (including null values) and invocation of a returned remote
+  interface. Added an explicit completion summary. The VPCD wrapper now uses
+  a per-run erased 512 KiB flash image instead of stale shared emulator state.
+- Validation: `./tools/test-rmi-client-vpcd` exited 0. Fixture generation
+  passed; the official SDK client reported `JCRMI_CLIENT:SUMMARY pass=18
+  fail=0`; emulator ended with `VPCD:DISCONNECTED result=0`.
+- Result: Official client interoperability covers 18 focused calls/assertion
+  groups across primitive dispatch, all supported array types, returned remote
+  objects, and exception mapping. This is current-source VPCD evidence, not a
+  physical card result; broader RMI profile coverage remains open.
+- Decision: Continue the remaining JC305 Service/RMI TODO. Physical GET STATUS
+  host delivery remains unresolved while PC/SC reader discovery is intermittent.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261025T190043Z.log`,
+  `artifacts/logs/rmi-client-official-vpcd-emulator-20261025T190043Z.log`.

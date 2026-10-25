@@ -1,4 +1,25 @@
-# Current continuation — Physical GET STATUS host stall (2026-10-25)
+# Current continuation — JC305 RMI official client coverage (2026-10-25)
+
+- The official JC305 SDK 2.2.1 `JCCardProxyFactory` probe now passes all 18
+  focused VPCD checks against current source: primitive short invocation,
+  byte/short/boolean/int array values and nulls, returned remote-interface
+  calls, sensitive-result checks, custom runtime/checked exceptions, and nine
+  framework exception classes/reasons. Final run exited 0 with
+  `JCRMI_CLIENT:SUMMARY pass=18 fail=0` and emulator `VPCD:DISCONNECTED
+  result=0`; client log:
+  `artifacts/logs/rmi-client-official-vpcd-client-20261025T190043Z.log`.
+- The RMI test wrapper now creates fresh raw 512 KiB erased flash for every
+  emulator run. This avoids stale serialized package bits in the old shared
+  81,920-byte scratch image. See the QKB entry for scope and evidence.
+- Updated official client probe changes are host-side test code and CAP-fixture
+  coverage only; Pico firmware still interprets CAP bytecode through native
+  JCVM code.
+- Next: continue remaining current-source Service/RMI gaps in TODO. Physical
+  GET STATUS host stall remains unresolved; when a Pico appears in Java
+  SmartcardIO, capture `CHOUPI:CCID_RESPONSE_DATA` during bounded GPPro
+  `--debug --list`. Do not use Windows.
+
+# Previous continuation — Physical GET STATUS host stall (2026-10-25)
 
 - Built ARM and RISC-V with repository wrappers and passed `./tools/test-gp-registry` (50/50).
 - Diagnostic implementation and tracking update are committed as `0a14ba8` (`Trace physical GET STATUS response bytes`).

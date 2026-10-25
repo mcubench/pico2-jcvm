@@ -14,6 +14,7 @@ import java.net.Socket;
 import java.nio.file.Path;
 import java.rmi.Remote;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /** Interoperability probe using the Java Card SDK's official RMI client. */
@@ -128,7 +129,9 @@ public final class RmiClientProbe {
 
     try (ServerSocket listener = new ServerSocket(
              0, 1, InetAddress.getByName("127.0.0.1"))) {
-      listener.setSoTimeout(10_000);
+      // First-run ROM/APDU initialization currently takes about 12 seconds.
+      // Leave bounded headroom so the client does not fail before VPCD connects.
+      listener.setSoTimeout(60_000);
       String endpoint = "127.0.0.1:" + listener.getLocalPort();
       Process emulatorProcess = new ProcessBuilder(
           emulator.toString(), "-m", memory.toString(), "-s", "--vpcd", endpoint,
@@ -153,6 +156,43 @@ public final class RmiClientProbe {
         short result = counter.add((short) 3);
         if (result != 3) throw new AssertionError("add returned " + result);
         System.out.println("JCRMI_CLIENT:PASS add(short)=" + result);
+
+        byte[] bytes = {0, 1, -1, 127};
+        if (!Arrays.equals(bytes, counter.echoBytes(bytes)) ||
+            counter.echoBytes(null) != null ||
+            counter.sumBytes(bytes) != 127) {
+          throw new AssertionError("byte[] RMI marshalling mismatch");
+        }
+        System.out.println("JCRMI_CLIENT:PASS byte[] parameter/return/null");
+
+        short[] shorts = {0, 1, -1, 32767};
+        if (!Arrays.equals(shorts, counter.echoShorts(shorts)) ||
+            counter.echoShorts(null) != null) {
+          throw new AssertionError("short[] RMI marshalling mismatch");
+        }
+        System.out.println("JCRMI_CLIENT:PASS short[] parameter/return/null");
+
+        boolean[] flags = {true, false, false, true};
+        if (!Arrays.equals(new boolean[] {false, true, true, false},
+                           counter.invert(flags)) ||
+            counter.invert(null) != null) {
+          throw new AssertionError("boolean[] RMI marshalling mismatch");
+        }
+        System.out.println("JCRMI_CLIENT:PASS boolean[] parameter/return/null");
+
+        int[] ints = {1, -2, 0x12345678};
+        if (!Arrays.equals(ints, counter.echoInts(ints)) ||
+            counter.echoInts(null) != null ||
+            counter.sumInts(ints) != (short)(1 - 2 + 0x5678)) {
+          throw new AssertionError("int[] RMI marshalling mismatch");
+        }
+        System.out.println("JCRMI_CLIENT:PASS int[] parameter/return/null");
+
+        Counter child = counter.child();
+        if (child == null || child.add((short) 7) != 7 || child.value() != 7) {
+          throw new AssertionError("remote-interface return invocation mismatch");
+        }
+        System.out.println("JCRMI_CLIENT:PASS returned remote interface invocation");
 
         if (!counter.verifySensitiveResult()) {
           throw new AssertionError("SensitiveResult checks returned false");
@@ -184,6 +224,7 @@ public final class RmiClientProbe {
         expectRemoteException("user", counter::throwUserReason);
         expectRemoteException("crypto", counter::throwCryptoReason);
         expectRemoteException("customCrypto", counter::throwCustomCryptoReason);
+        System.out.println("JCRMI_CLIENT:SUMMARY pass=18 fail=0");
       } finally {
         if (emulatorProcess.isAlive()) {
           emulatorProcess.destroy();
