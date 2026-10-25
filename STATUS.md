@@ -11,10 +11,22 @@ a complete or Java Card certified VM**. Unsupported algorithms may correctly
 report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 The physical deployment target is ARM Cortex-M33. ARM, RISC-V, and PC build
 wrappers pass; RISC-V has not been tested on hardware. The identified physical
-D92 `D92E743D5F640C0F` is currently running the `no_aes` ARM profile, with its
-finite monitor passing and its card registry empty of test applets.
+D92 `D92E743D5F640C0F` is currently running the `symm_crypto` ARM profile,
+with its finite monitor passing and its card registry containing only the ISD.
+The firmware image has no preinstalled JCAlgTest applet; CAPs must be loaded
+explicitly after flashing.
 
 ## Verified
+
+- **Empty-card symmetric firmware flash (2026-10-25):** Built the ARM
+  `symm_crypto` CHOUPI image, passed both ARM and RISC-V build gates, and
+  flashed physical D92 `D92E743D5F640C0F`. Its finite monitor reported repeated
+  `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, and `CYCLE:PASS`.
+  GPPro `--list` afterward showed only ISD `A000000151000000`; no JCAlgTest
+  package or applet is installed. Image:
+  `build/arm/pico2_choupi.uf2` (1,675,776 bytes, SHA-256
+  `666028ffdf62cf0038ed4e082efefdce8e3954882d3278cb7903d8a6374d51f2`).
+  Cycle log: `artifacts/logs/cycle-choupi-20261025T001428Z.log`.
 
 - **Selectable capability profile acceptance (2026-10-24):** Current (15),
   no-AES (10), and minimal (0) each passed ARM and RISC-V build wrappers;

@@ -11521,3 +11521,26 @@
   `no-aes-D92-core-ownerpinx-fixed-20261025.csv`;
   `artifacts/logs/cycle-choupi-20261024T235250Z.log`,
   `artifacts/logs/cycle-choupi-20261025T000109Z.log`.
+## 2026-10-25 — Verify empty symmetric-profile flash on Pico D92
+
+- Step/experiment: `symm-crypto-empty-card-D92`
+- Change: Rebuilt and flashed the `symm_crypto` ARM CHOUPI firmware to physical
+  D92 `D92E743D5F640C0F`; no CAP or applet source was embedded or modified.
+- Validation: Sequential `./tools/build arm --profile symm_crypto` and
+  `./tools/build riscv --profile symm_crypto` passed. The authorized
+  `./tools/cycle choupi --profile symm_crypto --chipid D92E743D5F640C0F`
+  cycle passed its flash verification and 18-second serial monitor with
+  repeated `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`, and
+  `CYCLE:PASS`. Pinned GPPro `--list` returned only ISD
+  `A000000151000000`.
+- Result: The current image has no preinstalled JCAlgTest applet/package, and
+  the physical card registry is empty except for the ISD. CAP installation
+  remains an explicit GPPro action after flash. Image size is 1,675,776 bytes;
+  SHA-256 is
+  `666028ffdf62cf0038ed4e082efefdce8e3954882d3278cb7903d8a6374d51f2`.
+- Decision: Leave D92 empty and provide this UF2 for external loading. A
+  transient watchdog recovery marker appeared once during the monitor, while
+  all repeated runtime checks passed; track separately if it recurs.
+- Commit: pending.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`;
+  `artifacts/logs/cycle-choupi-20261025T001428Z.log`.

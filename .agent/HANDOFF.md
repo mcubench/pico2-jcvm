@@ -193,6 +193,30 @@
   issue if the evidence identifies one. Afterward restore three-reader PC/SC
   enumeration and rerun coverage if available. Do not run `pcsc_scan`.
 
+## Empty `symm_crypto` card confirmed on Pico D92 — 2026-10-25
+
+- User reported Pico tokens available in BOOTSEL. Host discovery showed only
+  physical D92 `D92E743D5F640C0F`, initially in runtime CCID mode; the cycle
+  wrapper entered BOOTSEL using its CDC 1200-baud recovery path.
+- Both architecture build gates passed sequentially. ARM and RISC-V
+  `symm_crypto` builds passed; the first concurrent attempt was invalidated by
+  contention in the shared ROM-mask build tree, and a later sequential cycle
+  reran the gates before flashing.
+- Flashed and verified the ARM CHOUPI image on D92. Its 18-second monitor
+  reported repeated `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`; cycle returned `CYCLE:PASS`. One
+  `WATCHDOG_RECOVERY cause=other` marker appeared once and did not recur.
+- Refreshed PC/SC ACL and ran GlobalPlatformPro `--list` pinned to D92. The
+  only listed registry entry is ISD `A000000151000000`; the JCAlgTest package
+  and applet are absent. The built firmware does not preload the JCAlgTest
+  CAP; any test applet must be installed explicitly after flashing.
+- Image: `build/arm/pico2_choupi.uf2`, 1,675,776 bytes, SHA-256
+  `666028ffdf62cf0038ed4e082efefdce8e3954882d3278cb7903d8a6374d51f2`.
+  Log: `artifacts/logs/cycle-choupi-20261025T001428Z.log`.
+- Next: preserve the empty physical registry. Continue native JCVM backlog
+  separately; do not extend the dirty Java-side RSA provider experiment,
+  which conflicts with the user's native-C++/CAP-only architecture rule.
+
 # Handoff
 
 ## Empty-card state clarification — 2026-10-24
