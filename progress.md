@@ -11541,6 +11541,6 @@
 - Decision: Leave D92 empty and provide this UF2 for external loading. A
   transient watchdog recovery marker appeared once during the monitor, while
   all repeated runtime checks passed; track separately if it recurs.
-- Commit: pending.
+- Commit: `4da6c6d`.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`;
   `artifacts/logs/cycle-choupi-20261025T001428Z.log`.
