@@ -12330,7 +12330,7 @@
   card state is empty again after cleanup.
 - Decision: Keep the package ready for Windows validation and continue the
   remaining implementation backlog. Windows PC/SC behavior remains unverified.
-- Commit: pending
+- Commit: `caedc2f`
 - Artifacts/logs: CSV SHA-256
   `19bcb6a8be3ee67c1d1656b54760654a8875396914c553137670889cb3850b0f`; client
   log SHA-256
