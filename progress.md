@@ -12739,3 +12739,13 @@
 - Decision: Continue collection coverage for transient lifecycle roots and instance child graphs. Physical power-cycle validation remains open.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Record APDU outgoing-root test commit
+
+- Step/experiment: `gc-apdu-outgoing-root-collection-20261025`
+- Change: Recorded the implementation commit SHA for native APDU outgoing-buffer mirror retention coverage.
+- Validation: Confirmed `145d02d` contains only the focused collector regression and its TODO/QKB/handoff/progress records.
+- Result: APDU outgoing-mirror retention assertions are traceable to `145d02d`.
+- Decision: Continue the GC/persistence backlog.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
