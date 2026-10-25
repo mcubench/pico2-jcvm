@@ -12609,3 +12609,13 @@
 - Decision: Continue with the open persistence and runtime priorities; do not treat retry control as a PC/SC transport repair.
 - Commit: pending.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Remove final retry delay and clarify deploy failover
+
+- Step/experiment: `parallel-deploy-gppro-final-pause-20261025`
+- Change: Added `--gp-pause` (default 0) and forwarded it to the upstream runner. Corrected CLI and handoff wording: the coordinator does not dynamically transfer an area after reader failure; a different-reader run must be started explicitly.
+- Validation: `python3 -m py_compile tools/run-deploy-parallel` passed; CLI help lists all three GPPro controls; invalid `--gp-pause -1` is rejected before host access; focused `git diff --check` passed.
+- Result: A single failed GPPro attempt no longer inherits the upstream 20-second post-failure sleep. No USB/PCSC commands or physical tests were run.
+- Decision: Retry reports are bounded by the configured GP timeout and no retry pause by default. Explicit different-reader failover remains manual.
+- Commit: pending.
+- Artifacts/logs: none.

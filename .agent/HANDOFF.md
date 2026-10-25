@@ -1,9 +1,10 @@
 # Current continuation — JCSystem overlay lookup fixed; LED installed on attached Pico 2s (2026-10-25)
 
-- `tools/run-deploy-parallel` now defaults to one GPPro attempt per operation
-  and exposes `--gp-retries` / `--gp-timeout`. Python syntax and CLI help
-  validation pass; a physical rerun is intentionally deferred because the
-  current D92 APDU path previously stalled for about 201 seconds. This is a
+- `tools/run-deploy-parallel` defaults to one GPPro attempt, zero retry pause,
+  and exposes `--gp-retries`, `--gp-pause`, and `--gp-timeout`. Zero pause is
+  needed because the unchanged upstream runner sleeps after the final failed
+  attempt too. This coordinator does not dynamically move a failed area to a
+  different reader; failover currently requires a new targeted run. This is a
   time-loss mitigation, not a fix for the USB/PCSC transport problem.
 - Next: continue the unresolved Priority 2 persistence/transport work in
   `TODO.md`. For the current dangling persistent-array alias issue, first

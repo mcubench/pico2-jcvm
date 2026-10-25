@@ -4871,10 +4871,12 @@ fix.
   but a subsequent bounded PC/SC scan still listed only D92. The 2BED interface
   binding is the next host-side diagnostic; the evidence does not establish a
   maximum number of simultaneous readers.
-- **Retry mitigation:** `tools/run-deploy-parallel` now defaults its GPPro
-  attempts to one (`--gp-retries` overrides it; `--gp-timeout` sets each
-  operation's timeout). The prior run spent about 201 seconds retrying the
-  failed INSTALL four times and never reached API calls. One attempt per
-  operation avoids repeating a possibly partial LOAD/INSTALL on the same
-  unhealthy reader. This does not repair PC/SC or prove the failure is fixed;
-  physical validation is pending a responsive reader.
+- **Retry mitigation:** `tools/run-deploy-parallel` defaults to one GPPro
+  attempt and zero pause (`--gp-retries`, `--gp-pause`, and `--gp-timeout` are
+  configurable). The upstream runner sleeps after the final failed attempt,
+  so leaving its default 20-second pause would delay fail reporting even with
+  one attempt. The prior run spent about 201 seconds retrying the failed
+  INSTALL four times and never reached API calls. This coordinator does not
+  automatically reassign a failed area to another reader; start a targeted run
+  on a different exact reader after confirming it is usable. This does not
+  repair PC/SC or prove the failure is fixed.

@@ -78,9 +78,12 @@ def main():
     parser.add_argument("--javac", default="javac")
     parser.add_argument(
         "--gp-retries", type=int, default=1,
-        help=("GPPro attempts per operation (default: 1; after a transport "
-              "failure, use another visible reader instead of repeating a "
-              "possibly partial LOAD/INSTALL)")
+        help=("GPPro attempts per operation (default: 1; avoids retrying "
+              "possibly partial LOAD/INSTALL traffic on the same reader)")
+    )
+    parser.add_argument(
+        "--gp-pause", type=int, default=0,
+        help="seconds between GPPro attempts (default: 0; upstream sleeps after the final failure too)"
     )
     parser.add_argument(
         "--gp-timeout", type=int, default=240,
@@ -95,6 +98,8 @@ def main():
         parser.error("--min-devices cannot exceed --max-devices")
     if args.gp_retries < 1:
         parser.error("--gp-retries must be at least 1")
+    if args.gp_pause < 0:
+        parser.error("--gp-pause cannot be negative")
     if args.gp_timeout < 1:
         parser.error("--gp-timeout must be at least 1 second")
     require_host_access(parser)
@@ -144,6 +149,7 @@ def main():
                    "--areas", ",".join(assigned), "--out", str(csv_path),
                    "--exclude", args.exclude,
                    "--retries", str(args.gp_retries),
+                   "--pause", str(args.gp_pause),
                    "--gp-timeout", str(args.gp_timeout)]
         log = open(log_path, "w", encoding="utf-8")
         process = subprocess.Popen(command, cwd=ROOT, stdout=log,
