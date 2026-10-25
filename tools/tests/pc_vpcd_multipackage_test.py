@@ -254,6 +254,7 @@ def main() -> int:
         restart_log_path = root / (
             f"artifacts/logs/host-vpcd-multipackage-restart-{started_at}.log"
         )
+        rejected_logs = []
         command = [
             str(root / "tools/env"), str(emulator), "-m", str(memory), "-s",
             "--vpcd", f"{host}:{port}", "--applet-aid",
@@ -341,6 +342,56 @@ def main() -> int:
                 raise RuntimeError(
                     f"first VPCD process exited with {process.returncode}"
                 )
+
+            registry_path = Path(f"{memory}.cap-registry")
+            registry_bytes = registry_path.read_bytes()
+
+            def expect_resume_rejected(label: str, sidecar: bytes | None,
+                                       expected: str) -> None:
+                probe_memory = memory.with_name(
+                    f"{memory.stem}-{label}{memory.suffix}"
+                )
+                probe_memory.write_bytes(memory.read_bytes())
+                probe_registry = Path(f"{probe_memory}.cap-registry")
+                probe_log = root / (
+                    f"artifacts/logs/host-vpcd-multipackage-{label}-"
+                    f"{started_at}.log"
+                )
+                rejected_logs.append(probe_log)
+                if sidecar is not None:
+                    probe_registry.write_bytes(sidecar)
+                probe_command = [
+                    str(root / "tools/env"), str(emulator), "-m",
+                    str(probe_memory), "--vpcd", "127.0.0.1:9",
+                    "--applet-aid", core_applets[0].hex(), "--rom-mask",
+                    str(rom_mask), "--resume",
+                ]
+                with probe_log.open("wb") as output:
+                    result = subprocess.run(
+                        probe_command, cwd=root, stdout=output,
+                        stderr=subprocess.STDOUT, timeout=20, check=False,
+                    )
+                probe_output = probe_log.read_text(errors="replace")
+                probe_registry.unlink(missing_ok=True)
+                probe_memory.unlink(missing_ok=True)
+                if expected not in probe_output:
+                    raise RuntimeError(
+                        f"{label} resume did not report {expected!r}; "
+                        f"exit={result.returncode}, log={probe_log}"
+                    )
+                print(f"TEST:PASS {label} sidecar rejected before resume")
+
+            damaged_registry = bytearray(registry_bytes)
+            damaged_registry[-1] ^= 0x01
+            expect_resume_rejected(
+                "corrupt-sidecar", bytes(damaged_registry),
+                "VPCD CAP registry sidecar CRC mismatch",
+            )
+            expect_resume_rejected(
+                "missing-sidecar", None,
+                "saved VPCD image has package 56 but registry sidecar is missing",
+            )
+
             restart_command = [
                 str(root / "tools/env"), str(emulator), "-m", str(memory), "-s",
                 "--vpcd", f"{host}:{port}", "--applet-aid",
@@ -431,7 +482,7 @@ def main() -> int:
             if get_status(scp, 0x20) or get_status(scp, 0x40):
                 raise RuntimeError("registry is not empty after deleting Core")
             print("TEST:PASS DELETE leaves registry empty")
-            print("TEST:SUMMARY pass=18 fail=0")
+            print("TEST:SUMMARY pass=20 fail=0")
             return 0
         finally:
             if connection is not None:
@@ -449,6 +500,8 @@ def main() -> int:
             print(f"VPCD:LOG {log_path.relative_to(root)}")
             if restart_log_path.exists():
                 print(f"VPCD:RESTART_LOG {restart_log_path.relative_to(root)}")
+            for rejected_log in rejected_logs:
+                print(f"VPCD:REJECT_LOG {rejected_log.relative_to(root)}")
 
 
 if __name__ == "__main__":
