@@ -36,6 +36,10 @@
   two Virtual PCD readers. Treat the third boards' LED status as user-observed;
   no three-reader PC/SC test is currently available. Continue source work and
   use any Pico that reappears in PC/SC as the hardware failover target.
+- A single-reader upstream Service deploy run was attempted on D92. GPPro
+  `--install` failed `UPLOAD_NO_CONNECT` after four retries; the final report
+  includes `SCARD_E_NOT_TRANSACTED` after about 201 seconds. No API calls ran.
+  Result: `artifacts/results/deploy/parallel-20261025-142230/pico1.csv`.
 - Next: continue the remaining TODO in priority order. The three-run
   clean-flash/power-cycle criterion and true power-off/on persistence remain
   open. Preserve the upstream CAP and unrelated working-tree changes.

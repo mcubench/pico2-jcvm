@@ -4856,3 +4856,11 @@ fix.
 - **Validation:** `sudo -n /usr/local/sbin/pico2-pcsc-reader` returned
   `PCSC:ACCESS_GRANTED count=2`; `timeout 8s pcsc_scan -r` exited 0 and listed
   Virtual PCD 00 00, Virtual PCD 00 01, and D92.
+- **Follow-up:** The upstream API 3.0.5 Service deploy runner pinned to D92
+  failed before test execution: GPPro INSTALL ended `UPLOAD_NO_CONNECT` after
+  four attempts, with `SCARD_E_NOT_TRANSACTED` reported after roughly 201
+  seconds. The CSV has only the failed UPLOAD stage and zero API calls. This
+  confirms reader enumeration and ACL access are insufficient to establish a
+  working APDU path; it does not indicate a two-device firmware limit.
+- **Evidence:** `artifacts/results/deploy/parallel-20261025-142230/pico1.csv`
+  and `pico1.log`.

@@ -12549,3 +12549,13 @@
 - Decision: Continue with the next open implementation priority; physical testing can resume on any Pico reader that becomes visible.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Diagnose the single-reader Service deploy failure
+
+- Step/experiment: `pico-single-reader-service-transport-20261025`
+- Change: Recorded the result in the session handoff and QKB, distinguishing user-observed LED activity and reader enumeration from successful PC/SC APDU transport.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/run-deploy-parallel --areas Service --max-devices 1 --min-devices 1` found D92, then GPPro INSTALL failed `UPLOAD_NO_CONNECT` after four attempts. The final detail reported `SCARD_E_NOT_TRANSACTED` at approximately 201 seconds. No Service API calls started.
+- Result: The observed behavior is a transport failure on the only PC/SC-visible Pico, not evidence of a two-reader firmware limit. No successful install or cleanup was claimed.
+- Decision: Keep the PC/SC/APDU issue open; use a different exact Pico reader if one becomes available. Continue offline source work.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/results/deploy/parallel-20261025-142230/pico1.csv`, `pico1.log`.
