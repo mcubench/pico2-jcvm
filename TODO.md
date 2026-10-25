@@ -356,6 +356,8 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   registered applet, APDU buffer/object, and top-level reference return; it
   also verifies a primitive return is not treated as a reference root. It now
   checks a cached static-field reference alongside those five lifecycle roots.
+  `tools/test-jcarray` also exercises collection itself: the static-root array
+  and APDU Java buffer survive while six unrelated arrays are reclaimed.
   The transaction probe now runs eight VPCD rounds of 256
   short-lived arrays and 256 objects per batch, then checks static-root identity,
   persistent array/object aliases, and restored array type (54/54 focused

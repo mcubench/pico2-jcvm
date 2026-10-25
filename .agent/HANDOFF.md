@@ -1,5 +1,20 @@
 # Current continuation — JCSystem overlay lookup fixed; LED installed on attached Pico 2s (2026-10-25)
 
+## Follow-up — verify GC keeps static and APDU buffer arrays (2026-10-25)
+
+- Extended `choupi/test/jcarray_transient_test.cpp` to run the context root
+  enumerator through `Heap::collectUnreachableFrom`. The cached static array
+  and APDU Java buffer survive; an unrooted test array is rejected after
+  collection. Result: `TEST:PASS gc_retains_static_and_apdu_java_buffer` and
+  `TEST:PASS gc_reclaims_unrooted_array reclaimed=6`.
+- Repaired `tools/tests/jcarray/CMakeLists.txt` to include the generated token
+  map directory and added test-only stubs for unused instance persistence and
+  applet-selection dependencies. Corrected a stale assertion: invalid
+  transient clear events raise `SystemException` in the current implementation.
+  `./tools/test-jcarray` now passes all checks.
+- Next: continue collection/root coverage for instance graphs and transient
+  lifecycle; physical GET STATUS stays open until PC/SC exposes a Pico reader.
+
 ## Follow-up — include cached static references in root visitor test (2026-10-25)
 
 - Extended the focused RMI/root test to register a heap cached static-field

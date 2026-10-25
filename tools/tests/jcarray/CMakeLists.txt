@@ -31,6 +31,7 @@ target_include_directories(jcarray_transient_test PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/../short_apdu"
   "${CHOUPI_SOURCE_DIR}"
   "${REPO_ROOT}/src"
+  "${REPO_ROOT}/build/javacard-support"
   "${MBEDTLS_INCLUDE_DIR}"
   "${MBEDTLS_INCLUDE_DIR}/mbedtls")
 target_link_options(jcarray_transient_test PRIVATE

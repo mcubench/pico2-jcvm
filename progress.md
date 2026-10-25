@@ -12709,3 +12709,13 @@
 - Decision: Continue root tracing and collection coverage.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Exercise root retention through the collector
+
+- Step/experiment: `gc-static-apdu-root-collection-20261025`
+- Change: Extended the jcarray host test to run `Heap::collectUnreachableFrom` with the real Context root enumerator. It roots one array through a cached static field and one through the APDU Java buffer mirror, then verifies both survive and an unrelated array is reclaimed. Repaired the jcarray test target generated-header path and added test-scoped stubs needed when linking collector entry points. Updated one stale invalid-clear-event expectation from SecurityException to SystemException, matching the current native function.
+- Validation: `./tools/test-jcarray` passed, including `TEST:PASS gc_retains_static_and_apdu_java_buffer` and `TEST:PASS gc_reclaims_unrooted_array reclaimed=6`. Scoped `git diff --check` passed.
+- Result: Static and APDU Java buffer roots are now validated by actual mark-and-sweep behavior, not just visitor enumeration. Six unrelated array slots were reclaimed.
+- Decision: Continue GC coverage for transient lifecycle and instance child graphs; physical power-cycle checks remain open.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: none.

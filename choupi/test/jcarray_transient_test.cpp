@@ -17,7 +17,7 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
     jref_t, jshort_t, std::shared_ptr<JC_Array>, jshort_t);
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(jref_t);
-jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet();
+jbool_t fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet(jref_t);
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAssignedChannel();
 jbool_t
 fr_gouv_ssi_nativeimpl_NativeImplementation_isIntegritySensitiveArraysSupported();
@@ -44,6 +44,14 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
     jshort_t, jbyte_t);
 }
 
+namespace {
+void enumerate_context_roots(jcvm::Heap::ReferenceVisitor visitor,
+                             void *visitor_context, void *context) {
+  static_cast<const jcvm::Context *>(context)->visitRootReferences(
+      visitor, visitor_context);
+}
+} // namespace
+
 int main() {
   jcvm::Context context(0, 0);
   jcvm::Context::setActiveContext(&context);
@@ -69,7 +77,8 @@ int main() {
     std::cerr << "valid applet instance AID could not be restored\n";
     return 1;
   }
-  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet() !=
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_selectingApplet(
+          jcvm::jref_t{}) !=
       jcvm::FALSE) {
     std::cerr << "selectingApplet reported a pending selection without a JCRE\n";
     return 1;
@@ -200,7 +209,7 @@ int main() {
     std::cerr << "invalid transient clear event was accepted\n";
     return 1;
   } catch (jcvm::Exceptions error) {
-    if (error != jcvm::Exceptions::SecurityException) {
+    if (error != jcvm::Exceptions::SystemException) {
       std::cerr << "invalid clear event raised wrong exception\n";
       return 1;
     }
@@ -428,5 +437,35 @@ int main() {
     }
   }
   std::cout << "TEST:PASS jni_available_memory_validation\n";
+
+  // Exercise collection as well as enumeration: cached static and APDU Java
+  // buffer references must survive while an unrelated array is reclaimed.
+  const auto apduBufferRef = heap.addArray(5, jcvm::JAVA_ARRAY_T_BYTE);
+  const auto apduBuffer = heap.getArray(apduBufferRef);
+  context.setAPDUJavaBuffer(apduBuffer);
+  heap.reserveStaticReferenceRoot(0, 9);
+  heap.setStaticReferenceRoot(0, 9, bytesRef);
+  const auto unrootedRef = heap.addArray(3, jcvm::JAVA_ARRAY_T_BYTE);
+  const auto collection = heap.collectUnreachableFrom(
+      enumerate_context_roots, &context);
+  if (!collection.complete || collection.arrays_reclaimed == 0 ||
+      heap.getArray(bytesRef) != storedBytes ||
+      heap.getArray(apduBufferRef) != apduBuffer) {
+    std::cerr << "collector failed to retain static/APDU roots or reclaim garbage\n";
+    return 1;
+  }
+  bool unrooted_reclaimed = false;
+  try {
+    (void)heap.getArray(unrootedRef);
+  } catch (jcvm::Exceptions error) {
+    unrooted_reclaimed = error == jcvm::Exceptions::SecurityException;
+  }
+  if (!unrooted_reclaimed) {
+    std::cerr << "collector retained an unrooted array handle\n";
+    return 1;
+  }
+  std::cout << "TEST:PASS gc_retains_static_and_apdu_java_buffer\n";
+  std::cout << "TEST:PASS gc_reclaims_unrooted_array reclaimed="
+            << collection.arrays_reclaimed << "\n";
   return 0;
 }

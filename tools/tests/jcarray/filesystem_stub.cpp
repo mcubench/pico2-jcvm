@@ -1,8 +1,11 @@
 #include "jc_handlers/flashmemory.hpp"
+#include "jc_types/jc_instance.hpp"
 
 #include <cstdint>
 
 extern "C" int fs_length(const uint8_t *, uint8_t, uint32_t *) { return 0; }
+
+extern "C" uint8_t choupi_vm_is_selecting_applet(void) { return 0; }
 
 extern "C" uint8_t fs_read_1b_at(const uint8_t *, uint8_t, uint32_t,
                                  uint8_t *) {
@@ -10,6 +13,10 @@ extern "C" uint8_t fs_read_1b_at(const uint8_t *, uint8_t, uint32_t,
 }
 
 namespace jcvm {
+bool JC_Instance::hasPersistentTag() const noexcept { return false; }
+
+auto JC_Instance::getFields() const -> decltype(fields) { return fields; }
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
 const jbyte_t FlashMemory_Handler::getPersistentField_Array_Byte(

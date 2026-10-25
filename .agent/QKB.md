@@ -1,5 +1,23 @@
 # Project issue knowledge base
 
+## jcarray test target lacked generated headers and collector stubs — 2026-10-25
+
+- **Symptom:** `./tools/test-jcarray` could not compile `jni.cpp` because the
+  target omitted `build/javacard-support` from its include path. After fixing
+  that, linking GC entry points retained instance-field visitor references
+  that the test target did not link. The existing test also expected
+  `SecurityException` for an invalid transient clear event.
+- **Cause:** The target compiled shared JNI/heap source without the generated
+  include directory and without test-only instance persistence/JCRE
+  dependencies. The expected status was stale: `getTransientClearEvent`
+  currently raises `SystemException`.
+- **Viable fix:** Add the generated support include path, provide test-only
+  stubs for the two unused `JC_Instance` accessors and applet-selection query,
+  and expect `SystemException` for the invalid event. Keep the stubs scoped to
+  this host test target.
+- **Validation:** `./tools/test-jcarray` passed, including static/APDU buffer
+  root retention and reclamation of six unrooted arrays.
+
 ## PC/SC stopped responding after bounded GPPro GET STATUS timeout — 2026-10-25
 
 - **Symptom:** On Pico D92 (`D92E743D5F640C0F`), GPPro authenticated and
