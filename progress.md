@@ -12689,3 +12689,13 @@
 - Decision: Continue the remaining GC and persistence-alias coverage.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Assert cached static references are GC roots
+
+- Step/experiment: `gc-static-reference-root-enumeration-20261025`
+- Change: Extended the root visitor test with a cached static-field reference registered in the context heap; the visitor must receive it along with lifecycle and stack roots. Updated TODO and handoff.
+- Validation: `./tools/test-rmi-registry` passed with `RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1`.
+- Result: Static cached references and six context/static roots now have direct enumeration assertions; runtime behavior is unchanged.
+- Decision: Continue checking other VM-held root sources and collection behavior.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: none.

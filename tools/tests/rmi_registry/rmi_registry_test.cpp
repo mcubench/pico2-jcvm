@@ -101,11 +101,14 @@ int main() {
   const auto apdu_buffer = make_reference(5);
   const auto apdu_object = make_reference(6);
   const auto root_return = make_reference(7);
+  const auto static_reference = make_reference(8);
   context.setAppletAIDObjectRef(applet_aid_object);
   context.markAppletRegistered(registered_applet);
   context.setAPDUBufferRef(apdu_buffer, 0, 0, false);
   context.setAPDUObjectRef(apdu_object);
   context.getStack().setRootReferenceReturnValue(root_return);
+  context.getHeap().reserveStaticReferenceRoot(2, 9);
+  context.getHeap().setStaticReferenceRoot(2, 9, static_reference);
 
   VisitedReferences lifecycle_roots;
   context.visitRootReferences(record_reference, &lifecycle_roots);
@@ -114,6 +117,7 @@ int main() {
   assert(contains(lifecycle_roots, apdu_buffer));
   assert(contains(lifecycle_roots, apdu_object));
   assert(contains(lifecycle_roots, root_return));
+  assert(contains(lifecycle_roots, static_reference));
 
   context.getStack().setRootReturnValue(0x1234);
   VisitedReferences primitive_return_roots;
@@ -127,6 +131,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=5 session_cleanup=1 sensitive_result_cross_context=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1");
   return 0;
 }

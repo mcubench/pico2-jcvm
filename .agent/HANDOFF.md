@@ -1,5 +1,15 @@
 # Current continuation — JCSystem overlay lookup fixed; LED installed on attached Pico 2s (2026-10-25)
 
+## Follow-up — include cached static references in root visitor test (2026-10-25)
+
+- Extended the focused RMI/root test to register a heap cached static-field
+  reference and assert `Context::visitRootReferences` forwards it to the GC
+  visitor. The test now reports `lifecycle_roots=6` and passes. This covers
+  enumeration of static roots in addition to the five context/stack roots in
+  the preceding commit; it does not change runtime behavior.
+- Next: continue the remaining GC/persistence checks. Physical validation is
+  still blocked until a Pico reader appears in PC/SC.
+
 ## Newest continuation — directly assert VM lifecycle GC roots (2026-10-25)
 
 - Extended `tools/tests/rmi_registry/rmi_registry_test.cpp` to assert that root

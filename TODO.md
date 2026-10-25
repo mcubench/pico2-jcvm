@@ -354,8 +354,9 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   `./tools/test-rmi-registry` covers exported/native-held reference root
   enumeration and now directly asserts roots for the applet-AID object,
   registered applet, APDU buffer/object, and top-level reference return; it
-  also verifies a primitive return is not treated as a reference root. The
-  transaction probe now runs eight VPCD rounds of 256
+  also verifies a primitive return is not treated as a reference root. It now
+  checks a cached static-field reference alongside those five lifecycle roots.
+  The transaction probe now runs eight VPCD rounds of 256
   short-lived arrays and 256 objects per batch, then checks static-root identity,
   persistent array/object aliases, and restored array type (54/54 focused
   checks). The converter-built RMI fixture now exports a child, allocates 256
