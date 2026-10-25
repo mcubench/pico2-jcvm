@@ -19,14 +19,21 @@
   enumerated; PC/SC listed D92 only. Do not claim a wrapper-verified third
   flash.
 - LED behavior is committed as `202b072` (`df5956a` logs its commit ID).
-- Persistence implementation, focused tests, QKB/TODO updates, and the main
-  progress record are committed as `8050f5b`. The progress commit-ID follow-up
-  is being recorded now. Preserve unrelated capability-profile, RSA, and
-  AlgTest changes.
-- Next: finish the progress record, then commit only the filesystem overlay
-  fix, its regression, and JCSystem probe changes. If continuing physical
-  persistence work, test a true power-off/on separately; do not alter upstream
-  CAPs.
+- Persistence implementation, focused tests, QKB/TODO updates, and progress
+  are committed as `8050f5b`; the commit-ID follow-up is `8f230e5`. Preserve
+  unrelated capability-profile, RSA, and AlgTest changes.
+- The current/no-AES/minimal `/deploy` Core, Security, and Crypto matrix has
+  complete runs recorded in TODO and its cited CSV artifacts. JCAlgTest stays
+  intentionally skipped on minimal, and its no-AES `F103` startup is an
+  upstream applet limitation. The old unchecked TODO marker is being reconciled
+  against those artifacts now.
+- User confirmed LEDs on all three physical Pico 2s. Tool-verified flash writes
+  completed on 2BED and D92; the third BOOTSEL identity `8e464f4e2bbc0a19`
+  disappeared before the wrapper verified its write. Last USB enumeration had
+  two runtime devices; do not attribute a third tool-verified flash.
+- Next: continue the remaining TODO in priority order. The three-run
+  clean-flash/power-cycle criterion and true power-off/on persistence remain
+  open. Preserve the upstream CAP and unrelated working-tree changes.
 
 ## Previous continuation — Pico reader LED implemented and validated (2026-10-25)
 
@@ -1225,8 +1232,9 @@
   generated support comparison: 4,525 rows, 15 yes, 4,510 no. No-AES's
   unchanged JCAlgTest fails startup with `F103` because it eagerly requests
   crypto disabled by that profile.
-- `/deploy` Core ran on all three profiles; Security and Crypto ran on no-AES;
-  Security ran on minimal. Results and per-run artifacts are in
+- `/deploy` Core, Security, and Crypto ran on all three profiles; later runs
+  after the OwnerPINx cast fix are documented in the root TODO and progress.
+  Results and per-run artifacts are in
   `artifacts/results/capability-profiles-acceptance-20261024/`. Core's
   current/no-AES OwnerPINx rows have 17 runtime exceptions and 2 wrong results;
   minimal's disabled OwnerPINx variants return 8 `ILLEGAL_USE` exceptions.
@@ -1243,11 +1251,11 @@
 - Code changes awaiting this acceptance commit: dynamic ISOException ROM offset
   for profile-dependent ROM layouts; optional JCSYSTEM probe flag; corrected
   base-profile config test. The original CAP and submodule trees are untouched.
-- Next: finish the `/deploy` matrix: current Security/Crypto, minimal Crypto,
-  and remaining areas where relevant. Use VPCD or a fresh physical card and
-  record free persistent memory before each stateful run. Then isolate the
-  OwnerPINx Core behavior. No further physical tests were run after the 23-byte
-  storage observation. `TODO.md` keeps this acceptance item open.
+- The `/deploy` Core/Security/Crypto profile matrix is complete. The original
+  minimal Crypto INSTALL `6F00` was storage-limited and later did not reproduce
+  after cleanup; the successful 466-call rerun and cleanup are recorded in the
+  root TODO. No-AES JCAlgTest startup and minimal JCAlgTest are excluded as
+  described above.
 - Acceptance/source changes were committed as `36c8abf`; Git writes required
   elevated host access because `.git` is read-only in the default context.
 

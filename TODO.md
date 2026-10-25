@@ -47,7 +47,7 @@ cipher.
 - [x] Generate the expected JCAlgTest support CSV from the same JSON. Update
   `tools/compare-jcalgtest-support.py` to accept an empty expected set and fail
   for unexpected yes, missing yes, or any result outside `yes`/`no`.
-- [ ] Finish the `/deploy` physical acceptance matrix for all three capability
+- [x] Finish the `/deploy` physical acceptance matrix for all three capability
   profiles on identified Pico 2 `D92E743D5F640C0F`. Completed so far: current,
   no-AES, and minimal ARM/RISC-V wrappers passed; each ARM cycle passed finite
   monitoring; upstream JCAlgTest CAP (unchanged) completed the current-profile
@@ -55,8 +55,15 @@ cipher.
   Security and Crypto on no-AES, and Security on minimal. Per user direction,
   minimal is not tested with JCAlgTest; the unchanged upstream CAP returns
   `F103` on no-AES startup because it eagerly requests disabled crypto. No
-  modified JCAlgTest CAP is valid evidence. The missing Core/Security/Crypto
-  area runs are now complete on all three profiles using unchanged 3.0.5 CAPs.
+  modified JCAlgTest CAP is valid evidence. Core, Security, and Crypto runs are
+  now complete on all three profiles using unchanged 3.0.5 CAPs. Current
+  Core/Security/Crypto results are in
+  `artifacts/results/deploy/current-2BED-20261025/`; no-AES Core and
+  Security/Crypto are in
+  `artifacts/results/capability-profiles-acceptance-20261024/no_aes/`; minimal
+  Core/Security are in the corresponding `minimal/` directory, and its
+  successful fresh Crypto rerun is
+  `artifacts/results/deploy/minimal-D92-crypto-20261025.csv`.
   Current Security: 901 calls (77 OK, 822 `UNSUPPORTED_PER_SPEC`, two
   transient-key follow-up `WRONG_RESULT` rows whose setup was unsupported);
   current Crypto: 466 calls (22 OK, 444 `UNSUPPORTED_PER_SPEC`). After the
