@@ -12649,3 +12649,13 @@
 - Decision: Continue physical diagnosis only when PC/SC responds or another identified Pico reader is available.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Move GET STATUS module scratch off the Pico stack
+
+- Step/experiment: `gp-get-status-static-module-scratch-20261025`
+- Change: Moved the physical GET STATUS P1=10 127-entry module-AID scratch buffer from the main stack to static storage. The local array occupied about 2.1 KiB, a credible stack-overflow risk in this embedded path. Updated TODO, QKB, and handoff; cause remains unconfirmed.
+- Validation: `./tools/test-gp-registry` passed 50/50; `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Flashed clean ARM image to D92 (`D92E743D5F640C0F`); finite monitor passed `TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`. After flash, approved helper reported two USB nodes and `lsusb -d 2e8a:0009` showed devices 080 and 086, but line-buffered `pcsc_scan -r` timed out without any Pico reader. Physical GPPro recheck was therefore unavailable.
+- Result: Main-stack use no longer includes the 2.1 KiB maximum module list. This reduces overflow risk but has not demonstrated a fix for the earlier physical GPPro stall on `84 F2 10 02`.
+- Decision: Keep physical GET STATUS open and retry on an exact PC/SC-visible Pico, failing over to another identified device if needed.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T162018Z.log`.

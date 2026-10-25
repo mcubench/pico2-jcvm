@@ -22,6 +22,21 @@
   (20/20) passed. D92 finite runtime cycle passed, but physical module GET
   STATUS did not.
 
+## Pico runtime USB devices absent from PC/SC after clean firmware cycle — 2026-10-25
+
+- **Symptom:** After D92 was reflashed with the clean static-buffer build and
+  passed finite serial monitoring, the approved helper granted access to two
+  USB nodes and `lsusb -d 2e8a:0009` showed two Pico JCVM devices, but
+  `pcsc_scan -r` did not list any Pico reader before its 8-second timeout.
+- **Cause:** Unknown. USB enumeration confirms both devices are connected; it
+  does not identify why pcscd lacks a reader entry. No firmware reader-count
+  limit is established.
+- **Viable fix:** None established for this occurrence. The approved helper
+  applied permissions but did not restore PC/SC enumeration. Continue on any
+  other exact reader that becomes available; keep physical APDU testing open.
+- **Validation:** Helper reported `count=2`; `lsusb` listed bus 001 devices 080
+  and 086; line-buffered `pcsc_scan -r` timed out without Pico readers.
+
 ## Firmware upload preserves installed CAP state; first flashed BOOTSEL board lost runtime enumeration — 2026-10-25
 
 - **Symptom:** After flashing, GPPro still listed previously installed JCAlgTest

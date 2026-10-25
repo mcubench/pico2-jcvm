@@ -114,6 +114,10 @@ Scp03Session secure_channel;
 CapLoadSession cap_load_session;
 bool get_status_first_seen = false;
 uint16_t get_status_cursor = 0;
+// GET STATUS is handled synchronously by the single CCID task. Keep the
+// maximum module-AID scratch list out of the Pico main stack (127 entries use
+// over 2 KiB by themselves).
+gp::ExecutableModuleAid get_status_modules[127]{};
 
 uint32_t read_le32(const uint8_t *p) {
   return static_cast<uint32_t>(p[0]) |
@@ -197,15 +201,15 @@ uint16_t build_dynamic_get_status_page(
       bool appended = false;
       if (p1 == 0x10) {
         if (declared_applet_count > 127) return 0x6f00;
-        gp::ExecutableModuleAid modules[127]{};
         for (uint8_t index = 0; index < declared_applet_count; ++index) {
           if (!choupi_cap_package_applet_aid(
-                  package_id, index, modules[index].value,
-                  &modules[index].length)) return 0x6f00;
+                  package_id, index, get_status_modules[index].value,
+                  &get_status_modules[index].length)) return 0x6f00;
         }
         appended = gp::append_load_file_entry_modules(
             entry, sizeof(entry), entry_length, package_aid,
-            package_aid_length, modules, declared_applet_count);
+            package_aid_length, get_status_modules,
+            declared_applet_count);
       } else {
         appended = gp::append_load_file_entry(
             entry, sizeof(entry), entry_length, package_aid,

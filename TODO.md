@@ -340,6 +340,11 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   open until a physical module GET STATUS response and complete GPPro listing
   succeed. The LED heartbeat does not impose a two-reader firmware limit;
   observed reader count is a USB/PCSC enumeration result.
+  The physical GET STATUS builder's 127-entry module-AID scratch array was
+  moved from the main stack to static storage (the former local array alone
+  occupied about 2.1 KiB). This removes a concrete stack-overflow risk but is
+  not yet proven to fix the physical stall: after the clean reflash D92 passed
+  runtime, yet the host saw two `2e8a:0009` USB devices and no Pico PC/SC reader.
 - [ ] **Broaden garbage-collector root and persistence-alias coverage.** The
   physical static workload passed 2,262 transfers (heap stabilized at 83 array
   slots / 28 instance slots; one pass reclaimed 50 arrays). The focused

@@ -1,5 +1,29 @@
 # Current continuation — JCSystem overlay lookup fixed; LED installed on attached Pico 2s (2026-10-25)
 
+## Newest continuation — move module scratch off the Pico stack (2026-10-25)
+
+- Follow-up to `20bc9ec`: the physical GET STATUS P1=10 path had a local
+  `ExecutableModuleAid[127]`, about 2.1 KiB, in addition to other locals on
+  the Pico main stack. Moved it to one static scratch array because the CCID
+  card-manager task processes APDUs synchronously. This is a resource-safety
+  fix and a plausible explanation for physical-only behavior; it is not yet a
+  confirmed fix for the GPPro stall.
+- Validation after change: `./tools/test-gp-registry` 50/50;
+  `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed.
+  D92 `D92E743D5F640C0F` was reflashed with the clean image and finite runtime
+  cycle passed (`TEST:SUMMARY pass=1 fail=0`, log
+  `artifacts/logs/cycle-choupi-20261025T162018Z.log`).
+- Physical PC/SC is still unavailable after that cycle: the approved helper
+  granted access to two USB nodes; `lsusb -d 2e8a:0009` showed D92 and another
+  Pico, but line-buffered `pcsc_scan -r` timed out without listing either.
+  Therefore no post-fix GPPro run was possible. The previous GPPro run stalled
+  on `84 F2 10 02`; the reader count is host enumeration, not a firmware
+  two-reader limit.
+- Next: resume physical GET STATUS testing when an exact Pico reader appears
+  in PC/SC, using another identified board first if D92 remains unavailable.
+  Run bounded GPPro `--list`, and capture the actual APDU response. Keep the
+  selected GET DATA/GET STATUS TODO open; preserve unrelated worktree changes.
+
 ## Latest continuation — GET STATUS module lists (2026-10-25)
 
 - User asked whether two Pico boards pulsing their LEDs means only two can be
