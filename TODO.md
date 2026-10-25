@@ -352,7 +352,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   array-child identity, object-field aliasing/mutation, and restored array type
   across fresh-process restoration (`./tools/test-vpcd-persistence`, 7/7).
   `./tools/test-rmi-registry` covers exported/native-held reference root
-  enumeration. The transaction probe now runs eight VPCD rounds of 256
+  enumeration and now directly asserts roots for the applet-AID object,
+  registered applet, APDU buffer/object, and top-level reference return; it
+  also verifies a primitive return is not treated as a reference root. The
+  transaction probe now runs eight VPCD rounds of 256
   short-lived arrays and 256 objects per batch, then checks static-root identity,
   persistent array/object aliases, and restored array type (54/54 focused
   checks). The converter-built RMI fixture now exports a child, allocates 256

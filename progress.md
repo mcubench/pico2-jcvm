@@ -12669,3 +12669,13 @@
 - Decision: Retry physical P1=10 only when a Pico reader is available through PC/SC.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Assert VM lifecycle reference roots
+
+- Step/experiment: `gc-lifecycle-root-enumeration-20261025`
+- Change: Expanded the RMI registry unit test to assert GC root visitation for the applet-AID object, registered applet, APDU buffer, APDU object, and top-level reference return. Added the negative check that a primitive top-level return is not reported as a reference root. Updated TODO and handoff.
+- Validation: `./tools/test-rmi-registry` passed with `RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=5 session_cleanup=1 sensitive_result_cross_context=1`.
+- Result: These five lifecycle references are now directly covered by root visitor assertions; runtime behavior is unchanged.
+- Decision: Continue GC root and persistence-alias coverage; physical power-cycle validation remains open.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: none.

@@ -1,5 +1,17 @@
 # Current continuation — JCSystem overlay lookup fixed; LED installed on attached Pico 2s (2026-10-25)
 
+## Newest continuation — directly assert VM lifecycle GC roots (2026-10-25)
+
+- Extended `tools/tests/rmi_registry/rmi_registry_test.cpp` to assert that root
+  traversal visits the applet-AID object, the applet reference recorded during
+  install, APDU buffer and APDU object references, and a top-level reference
+  return. A primitive top-level return is confirmed not to be retained as a
+  reference. `./tools/test-rmi-registry` passes with `lifecycle_roots=5`.
+- This is coverage only; no runtime behavior changed. Broader GC and
+  persistence-alias tests and physical power-cycle validation remain open.
+- Next: continue the GC/persistence backlog in TODO; after the current USB
+  enumeration issue recovers, retry physical GET STATUS on an exact reader.
+
 ## Newest continuation — move module scratch off the Pico stack (2026-10-25)
 
 - Follow-up to `20bc9ec`: the physical GET STATUS P1=10 path had a local

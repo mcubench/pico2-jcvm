@@ -96,6 +96,30 @@ int main() {
   assert(!context.remoteObject(retained_id, resolved));
   assert(context.remoteObjectId(retained) == 0xffff);
 
+  const auto applet_aid_object = make_reference(3);
+  const auto registered_applet = make_reference(4);
+  const auto apdu_buffer = make_reference(5);
+  const auto apdu_object = make_reference(6);
+  const auto root_return = make_reference(7);
+  context.setAppletAIDObjectRef(applet_aid_object);
+  context.markAppletRegistered(registered_applet);
+  context.setAPDUBufferRef(apdu_buffer, 0, 0, false);
+  context.setAPDUObjectRef(apdu_object);
+  context.getStack().setRootReferenceReturnValue(root_return);
+
+  VisitedReferences lifecycle_roots;
+  context.visitRootReferences(record_reference, &lifecycle_roots);
+  assert(contains(lifecycle_roots, applet_aid_object));
+  assert(contains(lifecycle_roots, registered_applet));
+  assert(contains(lifecycle_roots, apdu_buffer));
+  assert(contains(lifecycle_roots, apdu_object));
+  assert(contains(lifecycle_roots, root_return));
+
+  context.getStack().setRootReturnValue(0x1234);
+  VisitedReferences primitive_return_roots;
+  context.visitRootReferences(record_reference, &primitive_return_roots);
+  assert(!contains(primitive_return_roots, root_return));
+
   std::array<uint16_t, 32> ids{};
   for (uint16_t index = 0; index < ids.size(); ++index) {
     ids[index] = context.exportRemoteObject(make_reference(index + 10));
@@ -103,6 +127,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 session_cleanup=1 sensitive_result_cross_context=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=5 session_cleanup=1 sensitive_result_cross_context=1");
   return 0;
 }
