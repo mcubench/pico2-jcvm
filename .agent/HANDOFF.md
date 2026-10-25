@@ -1,3 +1,25 @@
+# Latest physical validation — empty `symm_crypto` card on 2BED (2026-10-25)
+
+- Refreshed PC/SC access after reboot and confirmed 2BED
+  `2BED26ED20556535` was responsive. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle
+  choupi --profile symm_crypto --chipid 2BED26ED20556535` passed ARM and RISC-V
+  wrapper builds, flashed ARM with 100% verification, and passed the finite
+  18-second monitor (`TEST:SUMMARY pass=1 fail=0` repeatedly). Initial GPPro
+  inspection found a persistently stored JCAlgTest applet/package. Deleted the
+  applet first and package second; final GPPro listing contains only ISD.
+- The exact UF2 remains
+  `artifacts/firmware/pico2-jcvm-symm_crypto-empty-card.uf2` (1,676,800 bytes,
+  SHA-256 `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`).
+  Cycle log SHA-256 `4bb4b031aecbc31ac6c9104298a44959ab04b05c0ad818ec56e304f5b1427aa6`;
+  final GPPro transcript SHA-256
+  `1d8135e5686ea5121fd33178dd4929075b07f91d43cb4c498ea766789487971d`.
+- D92 enumerates with a card-present ATR but its GPPro APDU requests timed out;
+  failover to 2BED was successful. After firmware re-enumeration, refresh the
+  approved PC/SC helper and bind GPPro's optional reader as
+  `--reader='exact reader name'` to avoid selecting another Pico.
+- Next: continue project TODO in priority order. Keep the unrelated asymmetric
+  profile worktree changes untouched.
+
 # Latest validation — fresh-card explicit GPPro install regression (2026-10-25)
 
 - Added `tools/test-gppro-empty-install-vpcd`, a bounded test that starts a

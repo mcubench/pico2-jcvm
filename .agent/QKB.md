@@ -19,6 +19,24 @@
   reached 100%, runtime monitor passed, and final GPPro `--list` showed only
   ISD `A000000151000000`.
 
+## GPPro reader state after Pico runtime re-enumeration — 2026-10-25
+
+- **Symptom:** After the 2BED firmware cycle, `pcsc_scan -r` listed both Pico
+  readers and ATRs, but a GPPro command could stall before or during reader
+  selection. With multiple readers, a separate optional `--reader` argument
+  also selected the first Pico instead of the requested 2BED reader.
+- **Cause:** The reader/ACL state appeared stale after runtime re-enumeration;
+  a root cause below the observed PC/SC state was not established.
+- **Viable procedure:** Run the approved
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper after re-enumeration, then
+  bind the optional argument as `--reader='exact reader name'`. Bound the GPPro
+  command with `timeout` and inspect its `SCardConnect` trace to confirm board
+  identity before any write.
+- **Validation:** After the helper refresh, GPPro connected to exact reader
+  `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00`; package DELETE and
+  the final ISD-only listing completed. D92 still timed out and was not
+  modified.
+
 ## Physical GPPro multi-package install: use `--install-only` for later applets — 2026-10-25
 
 - **Symptom:** GPPro `--install CAP --applet B` returned `6A80` after applet A

@@ -104,6 +104,12 @@ cipher.
   `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
   The first BOOTSEL target 8E accepted a verified write but disappeared before
   runtime serial/PCSC enumeration; 2BED was used as the verified failover.
+  Repeated on 2026-10-25 08:45 UTC using the identified 2BED chip ID: both
+  architecture builds passed, ARM flash verify reached 100%, and the finite
+  monitor passed. GPPro exposed the persisted JCAlgTest applet/package from an
+  earlier install; deleting the applet and then package left only ISD. Cycle
+  log `artifacts/logs/cycle-choupi-20261025T084539Z.log`; final listing
+  `artifacts/logs/gppro-symm-empty-card-2BED-20261025.log`.
 - [x] Run the upstream `/deploy` Core, Security, and Crypto 3.0.5 areas on
   physical D92 with the `symm_crypto` firmware. Security completed 901 calls
   (97 OK, 804 `UNSUPPORTED_PER_SPEC`); Crypto completed 466 calls (161 OK,
@@ -173,7 +179,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   ./tools/test-gppro-empty-install-vpcd`; it verifies only ISD before explicit
   upstream CAP install and package/applet visibility afterward. Latest run:
   `artifacts/results/gppro-empty-install-vpcd-20261025T083218Z/`. The external
-  Windows GPPro workflow remains unverified.
+  Windows GPPro workflow remains unverified. Latest physical reset: flashed
+  2BED `2BED26ED20556535` with the same ARM image, deleted the persistent
+  JCAlgTest applet and package, and verified ISD-only using
+  `artifacts/logs/gppro-symm-empty-card-2BED-20261025.log`.
 
 - [x] **AC4: compare physical support results to the generated manifest and
   jCardSim row set.** The 2026-10-25 2BED current-profile run matched all 4,525

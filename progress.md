@@ -12208,3 +12208,28 @@
   before-list SHA-256 `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`;
   install SHA-256 `fbf01704b262c6ffa9bf18b9ec2b01a83c390bb50f4e96e8c683da09dfb7ce5a`;
   after-list SHA-256 `00df9b0b17d246684706058d183d7e4e5bc187b9bd973630b5c1b387befdeeb5`.
+
+## 2026-10-25 — Reflash symm profile and leave 2BED card empty
+
+- Step/experiment: `symm-empty-2BED-20261025T084539Z`
+- Change: Rebuilt the requested `symm_crypto` profile, reflashed identified
+  Pico 2 2BED, and removed its previously installed JCAlgTest applet/package
+  from persistent card storage so the user can install the unchanged CAP later.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile
+  symm_crypto --chipid 2BED26ED20556535` passed ARM and RISC-V wrapper builds,
+  ARM image verification at 100%, and finite 18-second monitoring with
+  repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. GPPro
+  deleted applet `4A43416C675465737431`, then package `4A43416C6754657374`;
+  final `--list` showed only ISD. D92 did not respond to bounded GPPro APDUs
+  and was not modified.
+- Result: The flashed firmware does not preload JCAlgTest. Previous GPPro
+  installs persist across reflash; 2BED now has no test applet/package.
+- Decision: Leave 2BED ready for explicit GPPro installation. Windows
+  acceptance and repeated clean-flash/power-cycle runs remain open.
+- Commit: pending
+- Artifacts/logs: UF2 1,676,800 bytes, SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`;
+  cycle log SHA-256
+  `4bb4b031aecbc31ac6c9104298a44959ab04b05c0ad818ec56e304f5b1427aa6`;
+  final GPPro log SHA-256
+  `1d8135e5686ea5121fd33178dd4929075b07f91d43cb4c498ea766789487971d`.

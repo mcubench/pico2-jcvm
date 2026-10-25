@@ -10,15 +10,28 @@ path and implements a tested subset of Java Card runtime behavior. It is **not
 a complete or Java Card certified VM**. Unsupported algorithms may correctly
 report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 The physical deployment target is ARM Cortex-M33. ARM, RISC-V, and PC build
-wrappers pass; RISC-V has not been tested on hardware. D92
-`D92E743D5F640C0F` last had a known-good `symm_crypto` runtime image, but the
-latest transaction-capacity image was not flashed: the cycle could not request
-BOOTSEL and authorized VM USB enumeration then showed only Linux root hubs.
-The physical firmware and persistent package registry therefore cannot be
-confirmed at this checkpoint. Firmware images do not preload JCAlgTest; CAPs
-must be explicitly loaded after flashing.
+wrappers pass; RISC-V has not been tested on hardware. Pico 2
+`2BED26ED20556535` currently runs the `symm_crypto` ARM image and GPPro lists
+only ISD `A000000151000000`; the JCAlgTest applet and package were explicitly
+deleted after flashing. D92 `D92E743D5F640C0F` enumerates as a reader but its
+APDU requests currently stall. Firmware images do not preload JCAlgTest, and
+reflashing preserves the separate persistent CAP store; install CAPs explicitly
+with GPPro after confirming the card registry is empty.
 
 ## Verified
+
+- **Empty-card `symm_crypto` reflash and physical registry check (2026-10-25):**
+  Rebuilt ARM and RISC-V with `./tools/cycle choupi --profile symm_crypto`
+  and flashed 2BED `2BED26ED20556535`. The write verified at 100%; the finite
+  18-second monitor repeatedly reported `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. GPPro first found the persistent JCAlgTest
+  applet/package from an earlier explicit installation. Deleted the applet
+  AID, then its package AID, and verified the final list contains only ISD.
+  Image: `artifacts/firmware/pico2-jcvm-symm_crypto-empty-card.uf2`, 1,676,800
+  bytes, SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
+  Cycle log: `artifacts/logs/cycle-choupi-20261025T084539Z.log`; final GPPro
+  transcript: `artifacts/logs/gppro-symm-empty-card-2BED-20261025.log`.
 
 - **JCSystem commit capacity (2026-10-25):** The native transaction suite
   passes, and the complete host VPCD JCSystem regression passes 84/84. It
