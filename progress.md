@@ -1055,7 +1055,7 @@
 - Validation: `systemctl is-active pcscd.service` reports `active`; `lsusb -d 2e8a:0009` sees the Pico 2 CHOUPI CCID at bus 001/device 023; `timeout 8s pcsc_scan -r` reports `No reader found`. The current device node is `/dev/bus/usb/001/023`; the prior node ACL did not follow re-enumeration. No source/build/flash change in this step.
 - Result: USB device is present and firmware runtime passes, but pcscd cannot enumerate it under the current USB-node permissions. No GPPro/APDU probe was run.
 - Decision: Grant user `pcscd` read/write access to `/dev/bus/usb/001/023`, restart `pcscd.service`, and rerun `pcsc_scan -r`; then continue with GPPro/APDU validation.
-- Commit: pending
+- Commit: `3f8a4c2`
 - Artifacts/logs: none
 
 ## 2026-10-11 — Stage narrow passwordless PC/SC recovery helper
