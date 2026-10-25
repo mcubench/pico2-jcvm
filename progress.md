@@ -12779,3 +12779,13 @@
 - Decision: Continue with instance-field child traversal and transient root tests.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Validate typed top-level results as collection roots
+
+- Step/experiment: `gc-top-level-result-typing-20261025`
+- Change: Extended the jcarray collector test to retain a returned array through the top-level reference-result slot, then replace it with a primitive result and verify an otherwise-unreachable array is reclaimed. Updated TODO, QKB, and handoff.
+- Validation: `./tools/test-jcarray` passed with `TEST:PASS gc_tracks_reference_result_type`, along with static/APDU roots, reference-array child tracing, and six-array reclamation. Existing shared-header warnings remain.
+- Result: Collector behavior follows the runtime result type and drops stale reference roots after a primitive return replaces them.
+- Decision: Continue instance field graph and transient root coverage.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: none.

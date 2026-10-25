@@ -360,7 +360,9 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   APDU Java buffer, and native APDU outgoing-buffer mirror survive collection.
   It also confirms that a rooted wildcard reference array retains its byte-array
   child through the normal reference-array setter, while six unrelated arrays
-  are reclaimed.
+  are reclaimed. A top-level reference result is retained by collection; after
+  replacing it with a primitive result, an otherwise-unreachable array is
+  reclaimed, checking the result's runtime type handling.
   The transaction probe now runs eight VPCD rounds of 256
   short-lived arrays and 256 objects per batch, then checks static-root identity,
   persistent array/object aliases, and restored array type (54/54 focused

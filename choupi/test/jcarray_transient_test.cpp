@@ -459,6 +459,9 @@ int main() {
   heap.setStaticReferenceRoot(0, 9, bytesRef);
   heap.reserveStaticReferenceRoot(0, 10);
   heap.setStaticReferenceRoot(0, 10, graphRootRef);
+  const auto referenceResultRef = heap.addArray(6, jcvm::JAVA_ARRAY_T_BYTE);
+  auto referenceResult = heap.getArray(referenceResultRef);
+  context.getStack().setRootReferenceReturnValue(referenceResultRef);
   const auto unrootedRef = heap.addArray(3, jcvm::JAVA_ARRAY_T_BYTE);
   const auto collection = heap.collectUnreachableFrom(
       enumerate_context_roots, &context);
@@ -467,7 +470,8 @@ int main() {
       heap.getArray(apduBufferRef) != apduBuffer ||
       heap.getArray(outgoingBufferRef) != outgoingBuffer ||
       heap.getArray(graphRootRef) != graphRoot ||
-      heap.getArray(graphChildRef) != graphChild) {
+      heap.getArray(graphChildRef) != graphChild ||
+      heap.getArray(referenceResultRef) != referenceResult) {
     std::cerr << "collector failed to retain static/APDU roots or reclaim garbage\n";
     return 1;
   }
@@ -481,8 +485,23 @@ int main() {
     std::cerr << "collector retained an unrooted array handle\n";
     return 1;
   }
+  context.getStack().setRootReturnValue(42);
+  const auto primitiveResultRef = heap.addArray(6, jcvm::JAVA_ARRAY_T_BYTE);
+  const auto primitiveResultCollection = heap.collectUnreachableFrom(
+      enumerate_context_roots, &context);
+  bool primitive_result_reclaimed = false;
+  try {
+    (void)heap.getArray(primitiveResultRef);
+  } catch (jcvm::Exceptions error) {
+    primitive_result_reclaimed = error == jcvm::Exceptions::SecurityException;
+  }
+  if (!primitiveResultCollection.complete || !primitive_result_reclaimed) {
+    std::cerr << "primitive root result incorrectly retained an array\n";
+    return 1;
+  }
   std::cout << "TEST:PASS gc_retains_static_and_apdu_buffers\n";
   std::cout << "TEST:PASS gc_traces_reference_array_child\n";
+  std::cout << "TEST:PASS gc_tracks_reference_result_type\n";
   std::cout << "TEST:PASS gc_reclaims_unrooted_array reclaimed="
             << collection.arrays_reclaimed << "\n";
   return 0;

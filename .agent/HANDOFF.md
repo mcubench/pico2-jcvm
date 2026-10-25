@@ -10771,3 +10771,15 @@ confirmed on hardware. The original investigation evidence remains in earlier
   warnings remain.
 - Next: test object-instance field child traversal and transient-array roots;
   physical power-cycle validation remains open.
+
+# Latest continuation — collect typed top-level results correctly (2026-10-25)
+
+- Extended the jcarray collector regression to keep an array through the
+  top-level reference return slot, then set a primitive return and verify a
+  newly unreachable array is collected. The run also preserves the existing
+  static/APDU roots and reference-array child graph.
+- Validation: `./tools/test-jcarray` passed with
+  `TEST:PASS gc_tracks_reference_result_type` and all earlier collector checks;
+  six unrelated arrays were reclaimed in the primary collection.
+- Next: continue object-instance field graph and transient-root collection
+  coverage. No physical power-cycle validation was run.
