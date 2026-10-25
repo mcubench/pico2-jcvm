@@ -1035,7 +1035,7 @@
 - Validation: `./tools/env ./tools/cycle choupi` passed ARM and RISC-V builds. The sandboxed attempt could not initialize libusb; with user-authorized device access, picotool saw the CDC device, but force-load could not locate its reset interface. The wrapper's CDC 1200-baud fallback entered BOOTSEL after 2 seconds, and normal UF2 load reached 100%. The bounded capture completed with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` was present. Post-flash picotool saw the re-enumerated RP2350 CDC device at bus 1/address 21.
 - Result: The board is running the updated CHOUPI image. The flashing recovery sequence worked end-to-end through its CDC fallback. PC/SC currently reports no reader; no APDU or GPPro probe was made after this flash.
 - Decision: Restore the PC/SC daemon/reader for the re-enumerated node, then continue with interpreter-backed applet lifecycle and APDU dispatch. The static registry lookup is not yet used for SELECT or install.
-- Commit: `8991b87`
+- Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T111329Z.log` (SHA-256 `354482ef6091f85a04b5192fea4a17574600f2523042b465a6410f72768b8009`); flashed ARM UF2 SHA-256 `ec437a81244d1729c4d6713825d50c79daec6252cb22041b009819cbca8b8a45`
 
 ## 2026-10-11 — Short-circuit known Pico reset failures
@@ -11644,7 +11644,7 @@
   SHA-256:
   `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
 - Decision: Keep firmware and persistent applet storage as separate setup steps. Users wanting a fresh card must remove existing applets/packages via GPPro; a UF2 reflash alone cannot empty card storage. Physical Windows validation is still outstanding.
-- Commit: pending
+- Commit: `8991b87`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T013632Z.log`; `artifacts/logs/gppro-empty-install-D92-20261025.log`; `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-25 — Physical symmetric-profile static benchmark
@@ -11654,7 +11654,7 @@
 - Validation: The official client was allowed 3,600 seconds and exited 124 at that configured limit while running the DES MAC matrix. The partial CSV has 3,127 rows / 675 methods: 540 `NO_SUCH_ALGORITHM`, 67 `CANT_BE_MEASURED`, and 68 measured outcomes. No unexpected SW, `6F00`, Java exception, `TEST:FAIL`, or `FAULT` was found. A follow-up physical SELECT, GETVERSION, and JCSystem info probe returned `9000` for all three APDUs.
 - Result: SHA-256 measured 3.48 ms/op (`doFinal`), 4.08 (`update`), and 5.67 (`reset`) at 256 bytes / 250 iterations. Secure random measured 1.74 ms/op (`generateData`) and 2.79 (`setSeed`). Completed DES cipher-init samples were 39.0 / 47.8 / 56.0 ms/op for DES / 2-key 3DES / 3-key 3DES. AES cipher-init samples were 59.4–60.9 / 68.2–68.8 / 76.7–77.5 ms/op for 128 / 192 / 256-bit keys. These are partial-suite results; the client has no algorithm-family filter and the full RSA/method matrix did not finish within one hour. JCSystem reports `getMaxCommitCapacity() = 0B`, matching the open capacity-accounting item. No fix was indicated by the measured SHA or cipher results.
 - Decision: Treat unsupported algorithms as expected and retain the existing commit-capacity question for a separate native JCSystem task. Do not label this full static matrix complete.
-- Commit: pending
+- Commit: `cad11dc`
 - Artifacts/logs: log
   `artifacts/logs/jcalgtest-symm-crypto-static-D92-20261025-final.log`
   (SHA-256 `bb565b3ffdb7f3c91a6ed86d8654a0668f524a4b3e9a6f2cb790f50752761d52`);
