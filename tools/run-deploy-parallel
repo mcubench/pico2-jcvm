@@ -76,6 +76,16 @@ def main():
                         help="result directory (default: timestamped under artifacts/results/deploy)")
     parser.add_argument("--java", default="java")
     parser.add_argument("--javac", default="javac")
+    parser.add_argument(
+        "--gp-retries", type=int, default=1,
+        help=("GPPro attempts per operation (default: 1; after a transport "
+              "failure, use another visible reader instead of repeating a "
+              "possibly partial LOAD/INSTALL)")
+    )
+    parser.add_argument(
+        "--gp-timeout", type=int, default=240,
+        help="seconds before terminating each GPPro operation (default: 240)"
+    )
     parser.add_argument("--dry-run", action="store_true", help="show reader/area assignments without card writes")
     args = parser.parse_args()
     areas = [area.strip() for area in args.areas.split(",") if area.strip()]
@@ -83,6 +93,10 @@ def main():
         parser.error("--areas must contain at least one unique area")
     if args.min_devices > args.max_devices:
         parser.error("--min-devices cannot exceed --max-devices")
+    if args.gp_retries < 1:
+        parser.error("--gp-retries must be at least 1")
+    if args.gp_timeout < 1:
+        parser.error("--gp-timeout must be at least 1 second")
     require_host_access(parser)
 
     discovered = reader_names(args.java, args.javac)
@@ -128,7 +142,9 @@ def main():
                    "--gp", str(DEPLOY / "gp.jar"),
                    "--client", str(DEPLOY / "client" / "AlgTestJClient.jar"),
                    "--areas", ",".join(assigned), "--out", str(csv_path),
-                   "--exclude", args.exclude]
+                   "--exclude", args.exclude,
+                   "--retries", str(args.gp_retries),
+                   "--gp-timeout", str(args.gp_timeout)]
         log = open(log_path, "w", encoding="utf-8")
         process = subprocess.Popen(command, cwd=ROOT, stdout=log,
                                    stderr=subprocess.STDOUT, text=True)

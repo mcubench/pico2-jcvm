@@ -1,5 +1,16 @@
 # Current continuation — JCSystem overlay lookup fixed; LED installed on attached Pico 2s (2026-10-25)
 
+- `tools/run-deploy-parallel` now defaults to one GPPro attempt per operation
+  and exposes `--gp-retries` / `--gp-timeout`. Python syntax and CLI help
+  validation pass; a physical rerun is intentionally deferred because the
+  current D92 APDU path previously stalled for about 201 seconds. This is a
+  time-loss mitigation, not a fix for the USB/PCSC transport problem.
+- Next: continue the unresolved Priority 2 persistence/transport work in
+  `TODO.md`. For the current dangling persistent-array alias issue, first
+  inspect package deletion's static-tag cleanup and serialization consistency,
+  then design a focused host regression before changing behavior. Keep
+  `asymm_crypto` work and all existing unrelated changes untouched.
+
 - The persistent array lookup failure is fixed. Legacy parent-slot child
   tombstones could become resolvable after parent recreation and mask a newer
   live body. New records use deterministic compressed tags; lookups select the

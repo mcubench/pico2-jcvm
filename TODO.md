@@ -786,7 +786,11 @@ prioritized backlog above for present status.
   the reader appeared in PC/SC but the bounded probe timed out before SELECT;
   serial reported `xfr=0`, so no command reached firmware. Physical APDUs and a
   true power-cycle persistence check remain unverified. See `.agent/QKB.md` and
-  `artifacts/logs/physical-jcsystem-active-retry-20261019.log`.
+  `artifacts/logs/physical-jcsystem-active-retry-20261019.log`. The parallel
+  `/deploy` coordinator now defaults to one GPPro attempt per operation to
+  avoid repeating potentially partial LOAD/INSTALL traffic; retries and timeout
+  are configurable. This limits wasted retry time but does not resolve the
+  underlying transport fault.
 
 - [x] Add a committed install journal to recover CAP registry publication and
   VM filesystem state together. VPCD process-restart cases cover skipped and

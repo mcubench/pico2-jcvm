@@ -12589,3 +12589,13 @@
 - Decision: Continue project work; retry 2BED PC/SC only after its CCID interface is registered.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Bound GPPro retries in parallel deploy coordinator
+
+- Step/experiment: `parallel-deploy-gppro-retry-control-20261025`
+- Change: Added `--gp-retries` and `--gp-timeout` to `tools/run-deploy-parallel`; default GPPro retries are now one so an unhealthy reader does not consume several minutes repeating a potentially partial LOAD/INSTALL operation. Updated TODO, QKB, and handoff to record this as a mitigation, not a transport fix.
+- Validation: `python3 -m py_compile tools/run-deploy-parallel` passed; `./tools/run-deploy-parallel --help` showed both options and their defaults. Confirmed `api_card_runner.py` accepts `--retries` and `--gp-timeout`. No physical run was made because the only PC/SC-visible Pico had previously stalled during GPPro INSTALL.
+- Result: Retry count and per-operation timeout are configurable, while the coordinator's default avoids the previously observed four-attempt/approximately 201-second retry sequence.
+- Decision: Use this safer default when physical `/deploy` testing resumes; continue diagnosing the root PC/SC/APDU issue independently.
+- Commit: pending.
+- Artifacts/logs: none.
