@@ -12093,7 +12093,7 @@
 - Decision: Continue useful remaining API areas and investigate only failures
   that reproduce with supported setup. Windows enumeration and true physical
   power-cycle persistence remain open; `asymm_crypto` stays paused.
-- Commit: pending.
+- Commit: `7c7fd11917e22246cdd026c9e82509ab9a555c25`.
 - Artifacts/logs: Security CSV SHA-256
   `96c3ee05fdda77179075fa809f4be65cdc4bf8825fa6dd3cd829d8c5fd3eece4`; Crypto
   CSV SHA-256 `447d8bdc81fb57c0d8b713d32973451befc391e1155dd28e12d2968465c3aafc`;

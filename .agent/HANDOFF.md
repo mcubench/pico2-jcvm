@@ -348,6 +348,7 @@
   Crypto CSV SHA-256 `447d8bdc81fb57c0d8b713d32973451befc391e1155dd28e12d2968465c3aafc`.
   Final listing log: `artifacts/logs/gppro-current-profile-2BED-after-security-crypto-20261025.log`
   (SHA-256 `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`).
+- Security/Crypto validation record commit: `7c7fd11917e22246cdd026c9e82509ab9a555c25`.
 - Validation record commit: `9c652bfb317f4145bb89abf634eaba99f8e66d20`.
 - Next: run remaining useful unchanged `/deploy` areas on this identified
   reader, then prioritize JCVM gaps from observed failures. Keep `asymm_crypto`
