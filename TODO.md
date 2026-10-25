@@ -79,7 +79,11 @@ cipher.
   the full 4,525-row `ALG_SUPPORT_EXTENDED` sweep after the latest flash and
   explicit unchanged-CAP installation: 73 `yes`, 4,452 `no`, and zero other
   CHOUPI statuses; the manifest comparison passed again (46/46). CSV and logs
-  are recorded in `.agent/HANDOFF.md` and `progress.md`.
+  are recorded in `.agent/HANDOFF.md` and `progress.md`. The same explicit
+  install, full sweep, comparator, and cleanup sequence passed on 2BED
+  `2BED26ED20556535` using the packaged `symm_crypto` image: 4,525 rows,
+  73 `yes`, 4,452 `no`, zero other; manifest 46/46, no extra/missing. The
+  upstream CAP remained unchanged, and final GPPro listing showed only ISD.
 - [x] Ensure the current physical D92 card is empty before leaving the
   symmetric-profile test session: GPPro deleted applet AID
   `4A43416C675465737431` and package AID `4A43416C6754657374`; a subsequent

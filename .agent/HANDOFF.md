@@ -1,3 +1,32 @@
+# Latest physical validation — symmetric profile JCAlgTest on 2BED (2026-10-25)
+
+- Starting state: the 2BED `2BED26ED20556535` card had only the ISD installed
+  and was running the packaged `symm_crypto` ARM image (1,676,800 bytes, SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`).
+- Explicitly loaded/installed unchanged upstream CAP
+  `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` (SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`). The
+  official client selected exact reader
+  `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00` (index 4), SELECT
+  returned `9000`, and GETVERSION returned `1.8.2_jc305`.
+- The complete 4,525-row `ALG_SUPPORT_EXTENDED` run passed: 73 `yes`, 4,452
+  `no`, zero other statuses. Comparator matched all row identities and the 46
+  configured capability identities, with no unexpected or missing support.
+  After deleting the applet then package, GPPro listed only ISD. Firmware was
+  not reflashed during this step.
+- Artifacts: CSV
+  `artifacts/results/jcalgtest-symm-crypto-2BED-20261025/CHOUPI_symm_crypto_2BED_ALGSUPPORT__3b_80_01_81.csv`
+  (SHA-256 `19bcb6a8be3ee67c1d1656b54760654a8875396914c553137670889cb3850b0f`);
+  client log SHA-256
+  `daa5a8019092e88881182e8b64afcd01be37e34eaccc531040ad42f046f0ceaf`;
+  comparator log SHA-256
+  `679cb172d3ffcefc671eb57d27debfbba723ef081d931a50989ce4dff06cf54b`;
+  post-cleanup GPPro log SHA-256
+  `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`.
+- Next: resume current TODO outside the paused `asymm_crypto` work; Windows
+  PC/SC/client acceptance and the three-pass physical integration sequence are
+  still open.
+
 # Latest continuation — symmetric-only Windows package refreshed (2026-10-25)
 
 - Added `tools/package-symm-crypto-windows-test` and fixed

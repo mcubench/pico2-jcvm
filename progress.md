@@ -12311,3 +12311,33 @@
   `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`;
   source physical CSV comparison input
   `artifacts/results/jcalgtest-symm-crypto-D92-20261025/CHOUPI_symm_crypto_D92_ALGSUPPORT__3b_80_01_81.csv`.
+
+## 2026-10-25 — Run symmetric-profile JCAlgTest on 2BED
+
+- Step/experiment: `symm-jcalgtest-2BED-20261025`
+- Change: Explicitly installed the unchanged upstream JCAlgTest 1.8.2 JC305
+  CAP onto the empty, already-flashed `symm_crypto` card, ran the official
+  `ALG_SUPPORT_EXTENDED` client, compared its CSV with jCardSim and the
+  generated profile manifest, then deleted the applet and package.
+- Validation: The exact 2BED reader selected at SmartcardIO index 4; SELECT
+  and GETVERSION returned `9000` / `1.8.2_jc305`. The run completed all 4,525
+  rows: 73 `yes`, 4,452 `no`, zero other statuses. Comparator matched all row
+  identities and all 46 declared capability identities, with zero unexpected
+  or missing capabilities. Final GPPro list showed only ISD. No firmware was
+  flashed during this step.
+- Result: The packaged symmetric image runs the unchanged upstream applet
+  after explicit installation and reports exactly the configured support set;
+  card state is empty again after cleanup.
+- Decision: Keep the package ready for Windows validation and continue the
+  remaining implementation backlog. Windows PC/SC behavior remains unverified.
+- Commit: pending
+- Artifacts/logs: CSV SHA-256
+  `19bcb6a8be3ee67c1d1656b54760654a8875396914c553137670889cb3850b0f`; client
+  log SHA-256
+  `daa5a8019092e88881182e8b64afcd01be37e34eaccc531040ad42f046f0ceaf`;
+  comparator log SHA-256
+  `679cb172d3ffcefc671eb57d27debfbba723ef081d931a50989ce4dff06cf54b`;
+  final GPPro listing SHA-256
+  `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`;
+  image SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
