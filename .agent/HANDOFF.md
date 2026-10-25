@@ -1,4 +1,27 @@
-# Latest physical validation — JCSystem commit capacity on 2BED (2026-10-25)
+# Current continuation — JCSystem BUFFER_FULL verified on 2BED (2026-10-25)
+
+- Physical 2BED `2BED26ED20556535` now passes the JCSystem exhaustion case.
+  The focused probe reported `0300` (`TransactionException.BUFFER_FULL`,
+  reason 3; unchanged persistent array byte), and all six physical assertions
+  passed. GPPro cleanup succeeded and the final registry contains only ISD.
+- The complete host VPCD JCSystem regression passed 85/85, including case 83.
+  ARM and RISC-V `symm_crypto` builds passed; a full `choupi` cycle flashed
+  ARM image SHA-256
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22` and the
+  finite runtime monitor passed. Focused VPCD cases 5 and 83 passed 4/4.
+- A previous first overflow attempt returned `6F00`; PC/SC reset alone did not
+  restore cleanup. Reflashing/rebooting the same firmware image reset the
+  runtime and allowed applet/package deletion. Preserve the failed log and
+  recovery observations in `.agent/QKB.md`.
+- Artifacts: physical log
+  `artifacts/logs/jcsystem-transaction-physical-20261025T095547Z.log`;
+  cycle log `artifacts/logs/cycle-choupi-20261025T095236Z.log`; VPCD log
+  `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261025T095818Z.log`.
+- Next: verify persistent applet state across a full power cycle, then continue
+  the highest-priority non-asymmetric items in `TODO.md`. `asymm_crypto`
+  remains paused; preserve its dirty worktree changes.
+
+# Previous physical validation — JCSystem commit capacity on 2BED (2026-10-25)
 
 - Added `tools/JCSystemTransactionPhysicalProbe.java` and
   `tools/test-jcsystem-transaction-physical` to exercise the existing JCSystem

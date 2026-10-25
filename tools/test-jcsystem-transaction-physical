@@ -23,6 +23,7 @@ timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 log="${repo_root}/artifacts/logs/jcsystem-transaction-physical-${timestamp}.log"
 list_log="${repo_root}/build/jcsystem-transaction-probe/physical-gp-list-${timestamp}.log"
 install_log="${repo_root}/build/jcsystem-transaction-probe/physical-install-${timestamp}.log"
+installed_list_log="${repo_root}/build/jcsystem-transaction-probe/physical-installed-list-${timestamp}.log"
 delete_applet_log="${repo_root}/build/jcsystem-transaction-probe/physical-delete-applet-${timestamp}.log"
 delete_package_log="${repo_root}/build/jcsystem-transaction-probe/physical-delete-package-${timestamp}.log"
 gp=("${repo_root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
@@ -81,6 +82,10 @@ fi
 installed=1
 timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${cap}" \
   >"${install_log}" 2>&1 || die "transaction-probe install failed; see ${install_log}"
+timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
+  >"${installed_list_log}" 2>&1 || die "GPPro list after install failed; see ${installed_list_log}"
+grep -Fq "APP: ${applet_aid} " "${installed_list_log}" || \
+  die "GPPro did not report transaction-probe applet installed; see ${installed_list_log}"
 printf 'JC_SYSTEM_PHYSICAL:INSTALL package=%s applet=%s result=PASS\n' \
   "${package_aid}" "${applet_aid}"
 timeout --signal=TERM --kill-after=5s 90s \

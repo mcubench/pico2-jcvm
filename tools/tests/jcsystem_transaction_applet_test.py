@@ -50,7 +50,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 83),
+        "--case", type=int, action="append", choices=range(1, 84),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -98,7 +98,11 @@ def main() -> int:
             )
     else:
         memory.write_bytes(b"")
-    log_path = args.log or (repo / "artifacts/logs/jcsystem-transaction-apdu-vpcd-20261016.log")
+        Path(f"{memory}.cap-registry").unlink(missing_ok=True)
+    timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    log_path = args.log or (
+        repo / f"artifacts/logs/jcsystem-transaction-apdu-vpcd-{timestamp}.log"
+    )
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
@@ -266,6 +270,7 @@ def main() -> int:
                     (80, b"\x01", "clear one static alias so GC can reclaim its persistent array"),
                     (81, b"\x01", "unread static alias restores the reclaimed persistent array from flash"),
                     (82, b"\x01", "nested persistent array aliases and leaf identity survive restore"),
+                    (83, bytes((3, 0)), "persistent write capacity overflow is catchable and does not mutate the array"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

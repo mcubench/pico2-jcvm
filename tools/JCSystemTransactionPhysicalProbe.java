@@ -52,9 +52,14 @@ public final class JCSystemTransactionPhysicalProbe {
   }
 
   public static void main(String[] args) throws Exception {
-    if (args.length != 2 || !"--reader".equals(args[0])) {
+    boolean resetOnly = args.length == 3 && "--reset-only".equals(args[2]);
+    boolean probeOnly = args.length == 4 && "--probe-only".equals(args[2]);
+    if ((args.length != 2 && !resetOnly && !probeOnly) ||
+        !"--reader".equals(args[0]) ||
+        (probeOnly && (Integer.parseInt(args[3]) < 1 ||
+                       Integer.parseInt(args[3]) > 255))) {
       throw new IllegalArgumentException(
-          "usage: JCSystemTransactionPhysicalProbe --reader <exact reader name>");
+          "usage: JCSystemTransactionPhysicalProbe --reader <exact reader name> [--reset-only | --probe-only <P1>]");
     }
     String requestedReader = args[1];
     List<CardTerminal> terminals =
@@ -70,11 +75,21 @@ public final class JCSystemTransactionPhysicalProbe {
     }
 
     Card card = target.connect("*");
+    if (resetOnly) {
+      System.out.println("PCSC:ATR " + hex(card.getATR().getBytes()));
+      card.disconnect(true);
+      System.out.println("PCSC:RESET_PASS reader=" + requestedReader);
+      return;
+    }
     try {
       System.out.println("PCSC:ATR " + hex(card.getATR().getBytes()));
       CardChannel channel = card.getBasicChannel();
       exchange(channel, "SELECT_TRANSACTION_PROBE",
           new CommandAPDU(0x00, 0xA4, 0x04, 0x00, APPLET_AID, 256));
+      if (probeOnly) {
+        probe(channel, Integer.parseInt(args[3]));
+        return;
+      }
 
       expectByte(channel, 5, 0x11,
           "abort restores persistent applet field");
@@ -100,7 +115,16 @@ public final class JCSystemTransactionPhysicalProbe {
             "persistent field update did not reduce the active commit budget");
       }
       System.out.println("TEST:PASS physical_commit_capacity_consumption");
-      System.out.println("TEST:SUMMARY pass=5 fail=0");
+      byte[] overflow = probe(channel, 83);
+      if (overflow.length != 2 || (overflow[0] & 0xff) != 3 ||
+          (overflow[1] & 0xff) != 0) {
+        throw new IllegalStateException(
+            "BUFFER_FULL must be catchable and leave the rejected array byte unchanged: " +
+            hex(overflow));
+      }
+      System.out.println(
+          "TEST:PASS physical_BUFFER_FULL_catchable_and_write_rejected");
+      System.out.println("TEST:SUMMARY pass=6 fail=0");
     } finally {
       card.disconnect(false);
     }

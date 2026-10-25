@@ -46,6 +46,7 @@ public final class JCTransactionProbe extends Applet {
   private byte[] transientDeselectArray;
   private final byte[] shaInput = {0x61, 0x62, 0x63};
   private final byte[] shaDigest = new byte[32];
+  private final byte[] transactionCapacityArray = new byte[32767];
 
   private JCTransactionProbe() {
     this(null, (short)0, (byte)0, false);
@@ -171,6 +172,7 @@ public final class JCTransactionProbe extends Applet {
         length = 2;
         break;
       case 5:
+        value = 0x11;
         JCSystem.beginTransaction();
         value = 0x22;
         JCSystem.abortTransaction();
@@ -933,6 +935,20 @@ public final class JCTransactionProbe extends Applet {
         firstLeaf[0] = 0x6b;
         buffer[0] = graphValid && aliasMutationVisible ? (byte)1 : (byte)0;
         length = 1;
+        break;
+      }
+      case 83: {
+        byte reason = 0;
+        JCSystem.beginTransaction();
+        try {
+          transactionCapacityArray[0] = 0x5a;
+        } catch (TransactionException expected) {
+          reason = (byte)expected.getReason();
+        }
+        JCSystem.abortTransaction();
+        buffer[0] = reason;
+        buffer[1] = transactionCapacityArray[0];
+        length = 2;
         break;
       }
       case 67: {

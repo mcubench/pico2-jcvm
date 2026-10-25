@@ -4749,3 +4749,38 @@ fix.
   `no-aes-D92-core-ownerpinx-fixed-20261025.csv`; cycle logs
   `artifacts/logs/cycle-choupi-20261024T235250Z.log` and
   `artifacts/logs/cycle-choupi-20261025T000109Z.log`.
+## Physical JCSystem BUFFER_FULL probe can leave the runtime wedged — 2026-10-25
+
+- **Symptom:** The first physical attempt to trigger Java-catchable
+  `TransactionException.BUFFER_FULL` returned `6F00`. A PC/SC `disconnect(true)`
+  and GPPro DELETE then returned `6581` (Memory failure), although the applet
+  and package still appeared in GET STATUS.
+- **Recovery:** Rebuild ARM and RISC-V with the intended `symm_crypto` profile,
+  then use the gated `./tools/cycle choupi --profile symm_crypto --chipid
+  2BED26ED20556535`. After refreshing PC/SC access, GPPro DELETE of the test
+  applet and package succeeded. The same image hash was flashed; the full
+  six-assertion physical probe then passed and its cleanup left only ISD.
+- **Guidance:** A PC/SC reset may not reset the VM's transaction/flash runtime
+  state after an uncaught exception. If a bounded APDU returns `6F00` and
+  cleanup fails, capture serial diagnostics, stop repeating writes, perform a
+  full known-good firmware reboot through the repository cycle wrapper, then
+  verify and clean the exact test AID. Do not call the first failed attempt a
+  passing capacity test.
+- **Validation:** Physical success log
+  `artifacts/logs/jcsystem-transaction-physical-20261025T095547Z.log`; failed
+  attempt log `artifacts/logs/jcsystem-transaction-physical-20261025T094330Z.log`;
+  recovery cycle log `artifacts/logs/cycle-choupi-20261025T095236Z.log`.
+
+## JCSystem VPCD runner must clear its registry sidecar for a fresh image — 2026-10-25
+
+- **Symptom:** Focused VPCD tests failed before connection with
+  `VPCD CAP registry does not match saved memory image` after the test fixture
+  CAP changed, because the runner truncated its memory image but retained the
+  old `.cap-registry` sidecar.
+- **Viable fix:** For non-resume runs, remove the sidecar whenever the harness
+  initializes an empty memory image. The JCSystem harness now does this and
+  writes default logs to unique UTC timestamped paths so it cannot overwrite a
+  historical tracked log.
+- **Validation:** Focused cases 5 and 83 passed `4/4`; the full
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --timeout 120`
+  run passed `TEST:SUMMARY pass=85 fail=0`.

@@ -645,19 +645,24 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   `0x7FFF`; each distinct persistent snapshot charges its old payload size,
   encoded tag, and three journal-length bytes. A full buffer throws a
   catchable `TransactionException.BUFFER_FULL` before mutating the rejected
-  record. Native persistent-transaction tests pass, and the 84-check VPCD
+  record. Native persistent-transaction tests pass, and the 85-check VPCD
   suite confirms the short and extended getters plus a persistent update
-  reducing available capacity before abort. Physical current-image Core 3.0.5
+  reducing available capacity before abort. The full host VPCD probe now passes
+  85/85 including the exhaustion catch case. Physical current-image Core 3.0.5
   on 2BED completed 291 calls (272 OK, 15 allowed unsupported, four optional
   Ext scenario rows unavailable); 47 JCSystem rows were OK and the one
   `requestObjectDeletion()` row was unsupported per spec. The card returned
   `0x7FFF` maximum and unused capacity outside a transaction, and begin/depth/
   capacity/commit and begin/abort probes passed. A bounded physical test CAP
   run on 2BED confirmed active unused capacity fell to `32755` after a
-  persistent scalar update; abort and commit restoration passed. Cleanup left
-  only ISD. True power-cycle recovery and Java-level catchability of
-  `BUFFER_FULL` at exhaustion remain unverified. A large-array VPCD overflow
-  attempt timed out before the APDU completed; do not count that as evidence.
+  persistent scalar update; abort and commit restoration passed. A focused
+  physical CAP then caught `TransactionException.BUFFER_FULL` at exhaustion
+  (reason `3`) and confirmed the rejected array byte remained `00`; all six
+  physical assertions passed and cleanup left only ISD. Focused VPCD cases for
+  abort initialization and overflow passed. ARM and RISC-V `symm_crypto`
+  wrappers passed, and the exact ARM image was flashed and passed the finite
+  runtime monitor. True persistent data recovery across a power cycle remains
+  unverified. An earlier large-array VPCD attempt timed out and is not counted.
 - [ ] **Add extended APDUs only if required by the selected profile.** The
   transport rejects extended APDUs. `APDU.waitExtension()` enforces API state,
   but synchronous CCID processing cannot send actual T=1 WTX while a command

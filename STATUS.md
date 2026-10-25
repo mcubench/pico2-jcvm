@@ -41,7 +41,7 @@ with GPPro after confirming the card registry is empty.
   successfully and a final GPPro listing showed only ISD. See `progress.md`.
 
 - **JCSystem commit capacity (2026-10-25):** The native transaction suite
-  passes, and the complete host VPCD JCSystem regression passes 84/84. It
+  passes, and the complete host VPCD JCSystem regression passes 85/85. It
   reports maximum/unused capacity `0x7FFF` outside transactions and 32755
   unused bytes after a persistent scalar update. ARM and RISC-V `symm_crypto`
   builds pass; the final ARM image is 1,676,800 bytes with SHA-256
@@ -53,10 +53,15 @@ with GPPro after confirming the card registry is empty.
   capacity probes returned `0x7FFF` outside a transaction and transaction
   commit/abort probes passed. A focused physical transaction CAP test then
   measured `32755` unused bytes after one persistent scalar update and
-  confirmed abort/commit restoration; cleanup left only ISD. True power-cycle
-  recovery and Java-level `BUFFER_FULL` catchability at exhaustion remain
-  unverified. An earlier large-array VPCD overflow attempt timed out. Details
-  are in `progress.md`.
+  confirmed abort/commit restoration. A dedicated physical CAP caught
+  `TransactionException.BUFFER_FULL` (reason `3`) at full capacity and verified
+  the rejected byte remained unchanged; all six assertions passed, and cleanup
+  left only ISD. Focused VPCD abort/overflow cases passed. ARM and RISC-V
+  `symm_crypto` builds passed; the matching ARM image was flashed to 2BED and
+  passed its finite runtime monitor. A prior overflow attempt left the runtime
+  unresponsive to APDUs; a full firmware reboot recovered it, while PC/SC reset
+  alone did not. Persistent transaction recovery across a power cycle remains
+  open. Details and recovery steps are in `progress.md` and `.agent/QKB.md`.
 
 - **Empty-card symmetric firmware flash (2026-10-25):** Built the ARM
   `symm_crypto` CHOUPI image, passed both ARM and RISC-V build gates, and

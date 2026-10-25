@@ -12371,3 +12371,45 @@
   `build/jcsystem-transaction-probe/physical-gp-list-20261025T093140Z.log`;
   test CAP SHA-256
   `738164ec01573f5e101aca46c56e08065bbe0df8c5ab008f466e286363e31ac6`.
+## 2026-10-25 — Verify JCSystem BUFFER_FULL catchability at physical capacity
+
+- Step/experiment: `jcsystem-buffer-full-physical-2BED-20261025`
+- Change: Extended the repository-owned JCSystem probe CAP with a 32,767-byte
+  persistent array and APDU case 83. The test requires a catchable
+  `TransactionException.BUFFER_FULL` and verifies abort leaves the rejected
+  byte unchanged. Made the abort test establish its persistent baseline
+  explicitly. Hardened the physical runner with a post-install GPPro registry
+  check, added reset/probe-only modes to its SmartcardIO client, and fixed the
+  VPCD harness to clear stale sidecars for fresh images and use unique log
+  filenames. The upstream AlgTest CAP remains unchanged.
+- Validation: `./tools/build arm --profile symm_crypto` and
+  `./tools/build riscv --profile symm_crypto` passed. The full VPCD JCSystem
+  suite passed `TEST:SUMMARY pass=85 fail=0` (81.080 s); focused cases 5 and
+  83 passed `4/4`. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile
+  symm_crypto --chipid 2BED26ED20556535` passed both build gates, flash
+  verification, and finite runtime monitor (`TEST:SUMMARY pass=1 fail=0`). The
+  physical JCSystem runner then passed all six assertions on 2BED: abort
+  restored `0x11`, commit retained `0x33`, active capacity fell from `32767`
+  to `32755`, and overflow returned `03 00` with the array byte unchanged.
+  GPPro cleanup succeeded; final listing contained only ISD. `bash -n`, Python
+  bytecode compilation, and scoped `git diff --check` passed.
+- Result: Physical exception delivery and write rejection match VPCD/native
+  behavior at actual `BUFFER_FULL`. A first hardware attempt returned `6F00`
+  and left cleanup returning `6581`; PC/SC reset alone did not recover. A full
+  reboot via the repository cycle wrapper recovered the runtime and cleanup.
+  The build/flash image hash was
+  `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
+- Decision: Mark Java-level catchability verified. Keep persistent applet data
+  recovery across power cycle open. QKB records the observed full-reboot
+  recovery and the safe test-runner procedure.
+- Commit: pending follow-up metadata commit.
+- Artifacts/logs: physical log
+  `artifacts/logs/jcsystem-transaction-physical-20261025T095547Z.log`, SHA-256
+  `3a3c4a7365de3b4f961efd99a0568bcab29e203e9bf4f2dc4ffb4b1157cb92ca`;
+  cycle log `artifacts/logs/cycle-choupi-20261025T095236Z.log`, SHA-256
+  `58ff6c830cbe6039f62711622f13d44797c65298336d77e7397378c3997ce6aa`;
+  full VPCD log
+  `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261025T100129Z.log`,
+  SHA-256 `a9965f8f60852c07856f873d9786840108433cfdf1085c4d3785c8e16f7e6320`;
+  test CAP SHA-256
+  `fc5ffad90b5dce08875acfe5b519faef5b0feb3be4d0c7cfae3deb38277a310b`.
