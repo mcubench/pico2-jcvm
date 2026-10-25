@@ -1,3 +1,33 @@
+## Selectable-profile API matrix and OwnerPINx cross-profile verification — 2026-10-25
+
+- The user said tokens were in BOOTSEL. VM USB discovery showed only the
+  identified D92 board, which had already returned to runtime after prior work.
+  Repository cycle wrappers automatically re-entered BOOTSEL and flashed it.
+- Current profile Core after the checkcast fix: 291 calls, 272 OK, 15
+  `UNSUPPORTED_PER_SPEC`, four optional Ext `APPLET_NOT_INSTALLED`; all
+  OwnerPINx rows pass. Cleanup passed. Current Security: 901 calls, 77 OK,
+  822 unsupported, two dependent transient-key `Key.isInitialized()` wrong
+  results (setup key types unsupported). Current Crypto: 466 calls, 22 OK, 444
+  unsupported. Both cleanup stages passed.
+- No-AES profile Core after the fix: 291 calls, 272 OK, 15 unsupported, four
+  optional Ext calls unavailable; all OwnerPINx rows pass. Cleanup passed.
+  Both architecture builds passed and the ARM cycle monitor passed.
+- Minimal profile was flashed with both architecture gates passing. Its Crypto
+  CAP uploaded, ran all 466 calls (4 OK, 462 `UNSUPPORTED_PER_SPEC`), and
+  cleaned up. The earlier `6F00` INSTALL failure did not reproduce.
+- GPPro was checked after test cleanup; only ISD `A000000151000000` is present.
+  The card is empty of test applets/packages. D92 is currently running `no_aes`.
+- Evidence CSVs: `artifacts/results/deploy/current-D92-core-ownerpinx-fixed-20261025.csv`,
+  `current-D92-security-20261025.csv`, `current-D92-crypto-20261025.csv`,
+  `minimal-D92-crypto-20261025.csv`,
+  `no-aes-D92-core-ownerpinx-fixed-20261025.csv`. Cycle logs include
+  `artifacts/logs/cycle-choupi-20261024T235250Z.log` (current) and
+  `artifacts/logs/cycle-choupi-20261025T000109Z.log` (no-AES).
+- Next: continue the remaining API/runtime backlog. JCAlgTest 1.8.2 is not to be
+  run on minimal, and its no-AES eager-startup `F103` is an upstream CAP/profile
+  incompatibility. Preserve the empty physical registry; firmware flash alone
+  does not uninstall applets.
+
 ## OwnerPINx `checkcast` regression fixed and physically verified — 2026-10-25
 
 - The user reported Pico tokens in BOOTSEL. Rebuilt and flashed the identified

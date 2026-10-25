@@ -55,13 +55,18 @@ cipher.
   Security and Crypto on no-AES, and Security on minimal. Per user direction,
   minimal is not tested with JCAlgTest; the unchanged upstream CAP returns
   `F103` on no-AES startup because it eagerly requests disabled crypto. No
-  modified JCAlgTest CAP is valid evidence. Still missing: minimal Crypto and
-  remaining Security/Crypto runs on current, plus other `/deploy` areas as
-  required. The physical card now has only 23 persistent bytes free and later
-  CAP installs returned `6F00`; continue this matrix on a fresh card or VPCD.
-  Current Core has 17 `EXC_RUNTIME` and two OwnerPINx `WRONG_RESULT` rows;
-  minimal reports eight disabled-OwnerPINx `ILLEGAL_USE` outcomes. These API
-  findings are tracked separately and do not change JCAlgTest support matching.
+  modified JCAlgTest CAP is valid evidence. The missing Core/Security/Crypto
+  area runs are now complete on all three profiles using unchanged 3.0.5 CAPs.
+  Current Security: 901 calls (77 OK, 822 `UNSUPPORTED_PER_SPEC`, two
+  transient-key follow-up `WRONG_RESULT` rows whose setup was unsupported);
+  current Crypto: 466 calls (22 OK, 444 `UNSUPPORTED_PER_SPEC`). After the
+  `checkcast` fix, current and no-AES Core each completed 291 calls (272 OK,
+  15 `UNSUPPORTED_PER_SPEC`, four optional Ext `APPLET_NOT_INSTALLED`) with
+  every OwnerPINx row OK. Minimal Crypto installed and completed 466 calls
+  (4 OK, 462 `UNSUPPORTED_PER_SPEC`) with cleanup. Its earlier `6F00` INSTALL
+  failure was not reproduced after Core/Security/Crypto cleanup. The no-AES
+  JCAlgTest startup limitation and user's instruction to skip JCAlgTest on
+  minimal remain. These are API results, independent of support comparison.
 - [x] Compare the `symm_crypto` generated support manifest with the official
   JCAlgTest `ALG_SUPPORT_EXTENDED` CSV. A real D92 run completed all 4,525 rows
   with 73 `yes`, 4,452 `no`, and no other statuses. The CSV contains legacy
@@ -139,9 +144,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   `gp --install`, after which the unchanged applet becomes selectable. The
   symmetric-only Windows guide/archive now deletes only the known JCAlgTest
   applet/package, verifies no application or package remains, and then runs an
-  explicit `gp --install`. The physical reader is currently absent from this
-  VM, so the previously installed physical applet still needs authenticated GP
-  DELETE (applet first, then package) before treating that card as empty.
+  explicit `gp --install`. As of 2026-10-25, physical D92
+  `D92E743D5F640C0F` is reachable by PC/SC; after the current and minimal
+  profile tests, GPPro lists only ISD `A000000151000000`. The test registry is
+  empty. The external Windows GPPro workflow remains unverified.
 
 - [x] **AC4: refresh the physical support-results comparison after OwnerPINX.**
   On 2026-10-20 the official physical `ALG_SUPPORT_EXTENDED` run completed

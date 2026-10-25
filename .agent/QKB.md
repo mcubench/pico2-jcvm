@@ -4458,3 +4458,32 @@ fix.
   `artifacts/logs/cycle-choupi-20261024T232303Z.log`, and
   `artifacts/results/deploy/symm_crypto-D92-ownerpinx-fixed-20261025.csv`.
   Source commit: `fa15bfa`.
+
+
+## Capability-profile physical Core/Security/Crypto follow-up — 2026-10-25
+
+- **OwnerPINx fix cross-profile result:** The `checkcast` namespace fix passed
+  the upstream API 3.0.5 Core area on physical D92 under both `current` and
+  `no_aes`. Each run completed 291 calls: 272 OK, 15 per-spec unsupported,
+  and four optional Ext calls unavailable after INSTALL returned `6A88` and was
+  rolled back. All nine OwnerPINx/OwnerPINxWithPredecrement report rows were OK
+  in both profiles. The previous 17 runtime errors and two wrong results are
+  gone in these profiles too.
+- **Minimal Crypto:** After minimal firmware flash, the unchanged Crypto CAP
+  uploaded and ran all 466 calls: 4 OK and 462 `UNSUPPORTED_PER_SPEC`, with no
+  other statuses. Cleanup passed. The earlier minimal Crypto INSTALL `6F00`
+  failure was not reproduced after the preceding test packages had been
+  cleaned up; its original cause remains unconfirmed.
+- **Current Security/Crypto:** Current Security completed 901 calls (77 OK,
+  822 `UNSUPPORTED_PER_SPEC`, and two dependent transient AES-key
+  `Key.isInitialized()` `WRONG_RESULT` rows; the key construction cases were
+  unsupported). Current Crypto completed 466 calls (22 OK, 444
+  `UNSUPPORTED_PER_SPEC`) without unexpected statuses. Both cleanups passed.
+- **Card state:** After each profile batch, GPPro listed only ISD
+  `A000000151000000`; no test CAP remained. D92 was left running `no_aes`.
+- **Evidence:** `artifacts/results/deploy/current-D92-core-ownerpinx-fixed-20261025.csv`,
+  `current-D92-security-20261025.csv`, `current-D92-crypto-20261025.csv`,
+  `minimal-D92-crypto-20261025.csv`,
+  `no-aes-D92-core-ownerpinx-fixed-20261025.csv`; cycle logs
+  `artifacts/logs/cycle-choupi-20261024T235250Z.log` and
+  `artifacts/logs/cycle-choupi-20261025T000109Z.log`.

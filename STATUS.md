@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-24
+Updated: 2026-10-25
 
 ## Summary
 
@@ -10,9 +10,9 @@ path and implements a tested subset of Java Card runtime behavior. It is **not
 a complete or Java Card certified VM**. Unsupported algorithms may correctly
 report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 The physical deployment target is ARM Cortex-M33. ARM, RISC-V, and PC build
-wrappers pass; RISC-V has not been tested on hardware. On 2026-10-22, the
-current-source ARM image was flashed to D92 and 2BED and validated with
-physical Crypto, Security, and Core deploy areas; details follow.
+wrappers pass; RISC-V has not been tested on hardware. The identified physical
+D92 `D92E743D5F640C0F` is currently running the `no_aes` ARM profile, with its
+finite monitor passing and its card registry empty of test applets.
 
 ## Verified
 
@@ -24,12 +24,16 @@ physical Crypto, Security, and Core deploy areas; details follow.
   Its full current-profile report matched 15 yes / 4,510 no across 4,525 rows.
   The upstream applet returns `F103` on no-AES startup; per user direction,
   minimal was not run through JCAlgTest. Profile behavior was checked with
-  `/deploy` CAPs: Core ran on all profiles; Security and Crypto ran on no-AES;
-  Security ran on minimal. Minimal Crypto INSTALL returned `6F00`; repeated
-  CAP testing later left only 23 persistent bytes free, so physical installation
-  testing stopped. Deploy Core exposed unresolved OwnerPINx outcomes on current
-  and no-AES. These are documented in `.agent/QKB.md` and the dated entry in
-  `.agent/HANDOFF.md`; they are not JCAlgTest support-report results.
+  `/deploy` CAPs: Core, Security, and Crypto have now run on all profiles.
+  After the `checkcast` fix, Core on current and no-AES each completed 291 calls
+  with 272 OK, 15 per-spec unsupported, four optional Ext calls unavailable,
+  and all OwnerPINx calls passing. Current Security completed 901 calls (77
+  OK, 822 unsupported, two dependent transient-key follow-up wrong-result rows);
+  current Crypto completed 466 calls (22 OK, 444 unsupported); minimal Crypto
+  completed 466 calls (4 OK, 462 unsupported). Its earlier `6F00` install
+  failure was not reproduced after cleanup. Every completed test cleaned up;
+  final GPPro list showed only the ISD. Minimal was not tested with JCAlgTest,
+  per user direction. Details are in `progress.md` and `.agent/HANDOFF.md`.
   Active ROM masks are 36,574 / 36,169 / 32,491 bytes and UF2 images are
   1,658,880 / 1,656,832 / 1,633,280 bytes for current / no-AES / minimal.
 

@@ -11491,3 +11491,33 @@
   `artifacts/logs/cycle-choupi-20261024T232303Z.log`, and
   `artifacts/results/deploy/symm_crypto-D92-ownerpinx-fixed-20261025.csv`; ARM
   UF2 SHA-256 `3add9fdaac80f697e694d68ea1510952b3e9b156f676c966f3a763e875323fbf`.
+
+## 2026-10-25 — Close profile Core and Crypto physical gaps
+
+- Step/experiment: `deploy-profile-core-crypto-followup-D92`
+- Change: Rebuilt and exercised the selectable `current`, `no_aes`, and
+  `minimal` profile images on physical D92 to close outstanding Core/Security/
+  Crypto matrix entries and retest OwnerPINx after the VM cast fix. No applet CAP
+  or implementation code changed in this step.
+- Validation: Current and no-AES Core each completed 291 calls: 272 OK, 15
+  `UNSUPPORTED_PER_SPEC`, four optional Ext `APPLET_NOT_INSTALLED`; all
+  OwnerPINx rows returned OK. Current Security completed 901 calls: 77 OK,
+  822 unsupported, and two follow-up `WRONG_RESULT` rows whose transient-key
+  setup was unsupported. Current Crypto completed 466 calls: 22 OK, 444
+  unsupported. Minimal Crypto completed 466 calls: 4 OK, 462 unsupported. All
+  successful CAP cleanups passed. ARM/RISC-V builds and finite ARM monitors
+  passed for the profiles flashed. Final GPPro lists showed only ISD.
+- Result: The OwnerPINx cast regression is resolved on current and no-AES, not
+  just `symm_crypto`. Minimal Crypto INSTALL succeeded on a cleaned card; the
+  previously reported `6F00` was not reproduced. Remaining unsupported results
+  match unselected profile capabilities; optional Ext INSTALL still refuses
+  with `6A88` and rolls back.
+- Decision: Keep the physical registry empty. Continue the non-profile-specific
+  Java Card runtime and card-manager backlog; do not run JCAlgTest on minimal.
+- Commit: `fa15bfa` (validated fix); matrix record commit follows.
+- Artifacts/logs: `artifacts/results/deploy/current-D92-core-ownerpinx-fixed-20261025.csv`,
+  `current-D92-security-20261025.csv`, `current-D92-crypto-20261025.csv`,
+  `minimal-D92-crypto-20261025.csv`,
+  `no-aes-D92-core-ownerpinx-fixed-20261025.csv`;
+  `artifacts/logs/cycle-choupi-20261024T235250Z.log`,
+  `artifacts/logs/cycle-choupi-20261025T000109Z.log`.
