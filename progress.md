@@ -11894,7 +11894,7 @@
   hardware.
 - Decision: Keep multi-package restart reconstruction and physical validation
   open; continue with the next unblocked VM backlog item.
-- Commit: `pending`.
+- Commit: `3a8d823`.
 - Artifacts/logs:
   `artifacts/logs/host-vpcd-multipackage-apdu-20261025T063857Z.log`, SHA-256
   `ef41bfa1d1f859dccec8fd8266dc639e4769d456aed147ad242e6ea82ad351d2`.
