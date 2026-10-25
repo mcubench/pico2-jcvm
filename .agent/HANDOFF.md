@@ -1,4 +1,28 @@
-# Latest implementation step — abort VPCD on invalid saved registry (2026-10-25)
+# Latest validation — flash current profile and verify physical boot (2026-10-25)
+
+- `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid
+  2BED26ED20556535` passed both ARM and RISC-V builds, verified the ARM image
+  write, and passed the finite 18-second monitor with repeated
+  `TEST:SUMMARY pass=1 fail=0`. Image `build/arm/pico2_choupi.uf2` is 1,666,048
+  bytes, SHA-256
+  `cbd741c4f379b3738141af73b6a9a6c3b7f6c43b925a74c4f359d1bb789ac04e`.
+- After the reboot, GPPro 26.06.04 `--debug --list` succeeded on exact reader
+  `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00`. Only ISD
+  `A000000151000000` is installed; the card remains empty. Transcript:
+  `artifacts/logs/gppro-current-profile-2BED-20261025.log` (SHA-256
+  `74310a82da5307c0a7104efcb92b7580566e8d99f5d3b857d20c144233796517`).
+- USB showed D92 `D92E743D5F640C0F` and 2BED. ACL refresh enabled both; 2BED
+  GPPro succeeded after refresh. D92 remained unresponsive to a bounded
+  read-only GPPro `--list`, so no writes were attempted there. Do not treat
+  enumeration alone as card health; use 2BED for the next physical test.
+- Cycle log: `artifacts/logs/cycle-choupi-20261025T073359Z.log` (SHA-256
+  `c3996c0e39ec67f69e61237dd58427e0aaf20212f08e1e4b68a21f29c480c166`). The
+  firmware cycle’s pre-flash gate covered both architectures.
+- Windows workflow, physical CAP install/select/delete on this exact image,
+  and true applet-state power-cycle persistence remain open. Next: exercise a
+  reversible current-image CAP flow on 2BED, then continue the open TODO items.
+
+# Previous implementation step — abort VPCD on invalid saved registry (2026-10-25)
 
 - Fixed startup handling so a PC persistent-storage initialization error is
   latched and `starting_jcre()` refuses to start applet/card service. The VPCD

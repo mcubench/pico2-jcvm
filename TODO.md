@@ -1267,14 +1267,16 @@ rollback and duplicate/invalid registration handling also remain unverified.
   archived. Cross-comparison against a CHOUPI card result is still pending.
 - [ ] Compare the CHOUPI supported-algorithms CSV against the jCardSim
   reference and CHOUPI's declared supported-algorithm list.
-- [ ] Complete hardware integration: an earlier ARM image passed its finite
-  runtime check, and GPPro `--debug --list` previously listed ISD
-  `A000000151000000` in `OP_READY`. The later snapshot image currently emits
-  repeated boot `6F00` failures; runtime exception diagnostics are now built
-  into ARM but need a permitted flash/serial run to identify the cause. Current
-  PC/SC access is unavailable. Windows enumeration, current-image
-  install/select/process/delete, and physical power-cycle persistence remain
-  unverified.
+- [ ] Complete hardware integration: the current ARM `current` profile was
+  rebuilt with both ARM/RISC-V wrappers, flashed and verified on Pico 2 2BED
+  `2BED26ED20556535`, and passed an 18-second monitor with repeated
+  `TEST:SUMMARY pass=1 fail=0`. GPPro `--debug --list` then returned ISD
+  `A000000151000000` in `OP_READY`, confirming the freshly flashed card remains
+  empty. The earlier repeated boot `6F00` failure did not recur. D92
+  `D92E743D5F640C0F` is visible, but its read-only GPPro listing times out;
+  2BED is the working failover. Windows enumeration, current-image
+  install/select/process/delete, and true physical power-cycle persistence
+  remain unverified.
 - [ ] Pass AC1–AC5 and the plan's clean-flash integration sequence three times.
 
 ## Expanded and required cryptographic profiles

@@ -12006,3 +12006,31 @@
   `c6d142b529c8991d6b27f79b4fae38dc7764f1254bf3992d140a8133a2f842ed`), and
   missing rejection (SHA-256
   `41f9ae7d0e683b8a2f77f57e651871f4c4ddf501dba118751ae90c413063c086`).
+
+## 2026-10-25 — Flash and verify current profile on physical Pico 2
+
+- Step/experiment: `current-profile-physical-2BED-20261025`
+- Change: Rebuilt and flashed the repository's current ARM profile to Pico 2
+  `2BED26ED20556535`, then checked finite runtime and the card registry. No
+  firmware source or CAP files changed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current
+  --chipid 2BED26ED20556535` passed ARM and RISC-V wrapper builds, flash
+  verification, and an 18-second monitor with repeated `TEST:PASS
+  choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. After ACL refresh,
+  `PICO2_HOST_USB_ACCESS=1 ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar
+  --reader 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00' --debug
+  --list` passed and listed only ISD `A000000151000000`. Read-only GPPro
+  listing on D92 timed out; no D92 card writes were attempted.
+- Result: The current ARM image boots and enumerates through PC/SC on 2BED; its
+  persistent applet registry is empty. The earlier boot `6F00` failure did not
+  recur. D92 remains visible but its GPPro health is unresolved.
+- Decision: Use 2BED for the next physical CAP install/select/delete test.
+  Windows acceptance and true physical applet persistence across power-off/on
+  remain open.
+- Commit: pending.
+- Artifacts/logs: cycle log `artifacts/logs/cycle-choupi-20261025T073359Z.log`
+  (SHA-256 `c3996c0e39ec67f69e61237dd58427e0aaf20212f08e1e4b68a21f29c480c166`);
+  GPPro 2BED listing `artifacts/logs/gppro-current-profile-2BED-20261025.log`
+  (SHA-256 `74310a82da5307c0a7104efcb92b7580566e8d99f5d3b857d20c144233796517`);
+  UF2 `build/arm/pico2_choupi.uf2` is 1,666,048 bytes, SHA-256
+  `cbd741c4f379b3738141af73b6a9a6c3b7f6c43b925a74c4f359d1bb789ac04e`.

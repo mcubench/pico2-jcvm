@@ -4677,6 +4677,28 @@ fix.
   of waiting for the full listener timeout.
 
 
+## Pico reader ACL refresh and GPPro timeout failover — 2026-10-25
+
+- **Symptom:** USB enumeration and `pcsc_scan -r` listed D92 and 2BED, but
+  GPPro `--list` timed out on both immediately after the device inventory
+  changed. After refreshing the approved reader ACL helper, 2BED answered
+  GPPro normally. D92 still timed out during its read-only listing and was not
+  modified.
+- **Viable recovery:** Run the authorized
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper through the host-access
+  path after device re-enumeration, then fail over to another enumerated board
+  if GPPro still stalls. Do not infer reader health from `lsusb` or
+  `pcsc_scan` alone.
+- **Validation:** The helper granted access to two USB nodes. GPPro 26.06.04
+  listed 2BED as ISD-only after its current-profile firmware cycle. A bounded
+  GPPro query to D92 did not complete; no writes were attempted there.
+- **Evidence:**
+  `artifacts/logs/cycle-choupi-20261025T073359Z.log` and
+  `artifacts/logs/gppro-current-profile-2BED-20261025.log`. D92 timeout logs
+  under `artifacts/logs/gppro-current-profile-D92-timeout-20261025*` are partial
+  because output buffering hid the APDU progress on timeout.
+
+
 ## Capability-profile physical Core/Security/Crypto follow-up — 2026-10-25
 
 - **OwnerPINx fix cross-profile result:** The `checkcast` namespace fix passed
