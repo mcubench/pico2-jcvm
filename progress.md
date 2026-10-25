@@ -11563,3 +11563,35 @@
   unless a future reproduction bypasses `tools/build`.
 - Commit: `47ef2f2`.
 - Artifacts/logs: `build/.tools-build.lock`; no separate build log archived.
+
+## 2026-10-25 — Flash empty symmetric image and explicitly install JCAlgTest
+
+- Step/experiment: `symm-crypto-empty-flash-explicit-gppro-D92`
+- Change: Rebuilt and flashed the `symm_crypto` ARM CHOUPI image. No source or
+  CAP files changed. Verified the physical registry before explicitly
+  installing the unchanged upstream JCAlgTest 1.8.2 JC305 CAP via GPPro.
+- Validation: `./tools/build arm --profile symm_crypto` and
+  `./tools/build riscv --profile symm_crypto` passed. Authorized
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile symm_crypto` passed
+  flash verification and finite serial monitoring on D92
+  `D92E743D5F640C0F`; repeated `TEST:PASS choupi_runtime`,
+  `TEST:SUMMARY pass=1 fail=0`, and `CYCLE:PASS`. Before CAP installation,
+  GPPro listed only ISD `A000000151000000`. Explicit `--install` then loaded
+  the package and applet; the final registry showed package
+  `4A43416C6754657374` `LOADED` and applet `4A43416C675465737431`
+  `SELECTABLE`. APDU SELECT, GETVERSION (`1.8.2_jc305`), and JCSystem info
+  each returned `9000`.
+- Result: The UF2 does not contain a preinstalled JCAlgTest CAP. The physical
+  card was empty immediately after the firmware flash; it is now populated
+  because the requested explicit GPPro install succeeded. Reflashing alone
+  does not clear the card's persistent package store. UF2 size is 1,675,776
+  bytes; SHA-256 is
+  `666028ffdf62cf0038ed4e082efefdce8e3954882d3278cb7903d8a6374d51f2`.
+- Decision: Preserve this separation in external setup instructions: flash
+  firmware first, verify only ISD, and install the unchanged CAP explicitly.
+  Delete the applet before its package if an empty physical card is needed.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T002953Z.log`,
+  `artifacts/logs/gppro-explicit-jcalgtest-D92-20261025.log`,
+  `build/arm/pico2_choupi.uf2`; CAP SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.

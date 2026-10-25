@@ -1,3 +1,35 @@
+# Latest physical firmware and explicit CAP installation — 2026-10-25
+
+- The user said Pico 2 tokens were available in BOOTSEL. In this VM only one
+  device was visible (`2e8a:0009`), runtime serial D92
+  `D92E743D5F640C0F`. The repository cycle automatically requested BOOTSEL;
+  it flashed and verified the `symm_crypto` ARM image at 100%.
+- ARM and RISC-V `symm_crypto` builds passed. The 18-second physical monitor
+  repeatedly reported `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`; cycle result was `CYCLE:PASS`.
+- GPPro `--list` immediately after the flash showed only ISD
+  `A000000151000000`. This proves the image did not preload JCAlgTest. It also
+  confirms the earlier apparent preinstallation was persistent CAP storage
+  from a previous explicit install; reflashing firmware does not erase that
+  store.
+- As requested, then explicitly installed the unchanged upstream
+  `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` using GPPro. SHA-256:
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+  GPPro now lists package `4A43416C6754657374` as `LOADED` and applet
+  `4A43416C675465737431` as `SELECTABLE`. SELECT, GETVERSION
+  (`1.8.2_jc305`), and JCSystem info probes all returned `9000`.
+- **Current card state:** JCAlgTest is installed because the explicit install
+  just succeeded. To return this card to empty, delete applet AID
+  `4A43416C675465737431` first, then package AID `4A43416C6754657374`, and
+  confirm `gp --list` shows only ISD.
+- UF2: `build/arm/pico2_choupi.uf2`, 1,675,776 bytes, SHA-256
+  `666028ffdf62cf0038ed4e082efefdce8e3954882d3278cb7903d8a6374d51f2`.
+  Cycle log: `artifacts/logs/cycle-choupi-20261025T002953Z.log`. Final GPPro
+  and APDU evidence: `artifacts/logs/gppro-explicit-jcalgtest-D92-20261025.log`.
+- No source/CAP files changed. Previous dirty asymmetric-prototype files were
+  preserved. Next action: only run JCAlgTest tests the user requests; otherwise
+  continue the native JCVM backlog and keep the physical registry state explicit.
+
 ## Selectable-profile API matrix and OwnerPINx cross-profile verification — 2026-10-25
 
 - The user said tokens were in BOOTSEL. VM USB discovery showed only the
