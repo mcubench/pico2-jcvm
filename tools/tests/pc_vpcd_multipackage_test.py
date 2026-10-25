@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import socket
 import subprocess
 import sys
@@ -251,6 +252,11 @@ def main() -> int:
         started_at = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         log_path = root / f"artifacts/logs/host-vpcd-multipackage-apdu-{started_at}.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
+        restart_log_path = root / (
+            f"artifacts/logs/host-vpcd-multipackage-restart-{started_at}.log"
+        )
+        core_code_path = memory.parent / "host-vpcd-multipackage-core.cap-components"
+        multi_code_path = memory.parent / "host-vpcd-multipackage-multi.cap-components"
         command = [
             str(root / "tools/env"), str(emulator), "-m", str(memory), "-s",
             "--vpcd", f"{host}:{port}", "--applet-aid",
@@ -329,6 +335,103 @@ def main() -> int:
                     raise RuntimeError(f"SELECT {label} failed: {response.hex().upper()}")
                 print(f"TEST:PASS SELECT {label}")
 
+            # Exit the first process cleanly so it saves VM state, then resume
+            # the saved card with all CAP packages and instance records.
+            connection.close()
+            connection = None
+            process.wait(timeout=args.timeout)
+            if process.returncode != 0:
+                raise RuntimeError(
+                    f"first VPCD process exited with {process.returncode}"
+                )
+            log_text = log_path.read_text(errors="replace")
+            registry_records = {
+                bytes.fromhex(instance): (
+                    int(package_id), int(class_index), bytes.fromhex(applet),
+                    bytes.fromhex(instance),
+                )
+                for package_id, class_index, applet, instance in re.findall(
+                    r"VPCD:APPLET_INSTANCE package-id=(\d+) class-index=(\d+) "
+                    r"applet-aid=([0-9A-F]+) instance-aid=([0-9A-F]+)",
+                    log_text,
+                )
+            }
+            for aid in (core_applets[0], multi_applets[0], multi_applets[1]):
+                if aid not in registry_records:
+                    raise RuntimeError(
+                        f"missing saved registry metadata for {aid.hex()}"
+                    )
+            core_code_path.write_bytes(core_code)
+            multi_code_path.write_bytes(multi_code)
+            restart_command = [
+                str(root / "tools/env"), str(emulator), "-m", str(memory), "-s",
+                "--vpcd", f"{host}:{port}", "--applet-aid",
+                core_applets[0].hex(), "--rom-mask", str(rom_mask),
+            ]
+            for aid, cap_path in (
+                (core_applets[0], core_code_path),
+                (multi_applets[0], multi_code_path),
+                (multi_applets[1], multi_code_path),
+            ):
+                package_id, class_index, applet_aid, instance_aid = \
+                    registry_records[aid]
+                restart_command.extend((
+                    "--restore-applet", str(package_id), str(class_index),
+                    applet_aid.hex(), instance_aid.hex(), str(cap_path),
+                ))
+            with restart_log_path.open("wb") as restart_log:
+                process = subprocess.Popen(
+                    restart_command, cwd=root, stdout=restart_log,
+                    stderr=restart_log, start_new_session=True,
+                )
+            connection, _ = listener.accept()
+            connection.settimeout(args.timeout)
+            send_message(connection, b"\x01")
+            send_message(connection, b"\x04")
+            atr = receive_message(connection)
+            if atr != bytes.fromhex("3B800181"):
+                raise RuntimeError(
+                    f"restart returned unexpected VPCD ATR: {atr.hex().upper()}"
+                )
+            print("TEST:PASS fresh VPCD process restored saved VM image")
+            select_isd = exchange(
+                connection, bytes.fromhex("00A4040000"),
+                "restart SELECT default ISD",
+            )
+            if select_isd[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    f"restart SELECT ISD failed: {select_isd.hex().upper()}"
+                )
+            scp = Scp03(connection)
+            scp.authenticate()
+            print("TEST:PASS restart SCP03 authentication")
+            packages = get_status(scp, 0x20)
+            applets = get_status(scp, 0x40)
+            for aid, label, registry in (
+                (core_package, "Core package after restart", packages),
+                (multi_package, "Multi package after restart", packages),
+                (core_applets[0], "Core applet after restart", applets),
+                (multi_applets[0], "Multi applet A after restart", applets),
+                (multi_applets[1], "Multi applet B after restart", applets),
+            ):
+                if aid not in registry:
+                    raise RuntimeError(f"{label} absent from GET STATUS")
+            print("TEST:PASS restart GET STATUS lists 2 packages and 3 instances")
+            for aid, label in (
+                (core_applets[0], "Core after restart"),
+                (multi_applets[0], "Multi A after restart"),
+                (multi_applets[1], "Multi B after restart"),
+            ):
+                command_apdu = (
+                    bytes((0x00, 0xA4, 0x04, 0x00, len(aid))) + aid + b"\x00"
+                )
+                response = exchange(connection, command_apdu, f"SELECT {label}")
+                if response[-2:] != b"\x90\x00":
+                    raise RuntimeError(
+                        f"{label} failed: {response.hex().upper()}"
+                    )
+            print("TEST:PASS restart SELECT routes all 3 applets")
+
             exchange(connection, bytes.fromhex("00A4040000"), "reselect ISD")
             delete_object(scp, multi_applets[0], False,
                           "DELETE Multi A instance")
@@ -361,7 +464,7 @@ def main() -> int:
             if get_status(scp, 0x20) or get_status(scp, 0x40):
                 raise RuntimeError("registry is not empty after deleting Core")
             print("TEST:PASS DELETE leaves registry empty")
-            print("TEST:SUMMARY pass=13 fail=0")
+            print("TEST:SUMMARY pass=18 fail=0")
             return 0
         finally:
             if connection is not None:
@@ -374,6 +477,8 @@ def main() -> int:
                     process.kill()
                     process.wait()
             print(f"VPCD:LOG {log_path.relative_to(root)}")
+            if restart_log_path.exists():
+                print(f"VPCD:RESTART_LOG {restart_log_path.relative_to(root)}")
 
 
 if __name__ == "__main__":

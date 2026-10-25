@@ -107,6 +107,14 @@ struct HostCapPackage {
   std::vector<HostAppletInstance> instances;
 };
 
+struct VpcdRestoreApplet {
+  uint8_t package_id = 0xff;
+  uint16_t class_index = 0xffff;
+  std::vector<uint8_t> applet_aid;
+  std::vector<uint8_t> instance_aid;
+  std::string cap_code_filename;
+};
+
 // The device filesystem has a package-indexed CAP store. Keep the PC/VPCD
 // backend equivalent so independent CAP LOAD commands in one process can
 // coexist rather than replacing the last package that was loaded.
@@ -253,6 +261,17 @@ extern "C" uint8_t choupi_store_cap_instance(uint8_t package_id,
   stored->applet_aid.assign(applet_aid, applet_aid + applet_aid_length);
   stored->instance_aid.assign(instance_aid, instance_aid + instance_aid_length);
   stored->class_index = applet_class_index;
+  std::fprintf(stderr,
+               "VPCD:APPLET_INSTANCE package-id=%u class-index=%u "
+               "applet-aid=",
+               static_cast<unsigned>(package_id),
+               static_cast<unsigned>(applet_class_index));
+  for (uint8_t index = 0; index < applet_aid_length; ++index)
+    std::fprintf(stderr, "%02X", applet_aid[index]);
+  std::fprintf(stderr, " instance-aid=");
+  for (uint8_t index = 0; index < instance_aid_length; ++index)
+    std::fprintf(stderr, "%02X", instance_aid[index]);
+  std::fprintf(stderr, "\n");
   return 0;
 }
 
@@ -489,6 +508,41 @@ bool parse_unsigned(const std::string &text, unsigned int maximum,
                                       value, 10);
   return !text.empty() && result.ec == std::errc{} &&
          result.ptr == text.data() + text.size() && value <= maximum;
+}
+
+bool read_cap_components(const std::string &filename,
+                         std::vector<uint8_t> &code,
+                         std::vector<uint8_t> &package_aid) {
+  std::ifstream input(filename, std::ifstream::binary);
+  if (!input.is_open()) return false;
+  code.assign(std::istreambuf_iterator<char>(input),
+              std::istreambuf_iterator<char>());
+  if (code.size() < 13 || code.size() > 64 * 1024 || code[0] != 1)
+    return false;
+  const size_t header_length =
+      (static_cast<size_t>(code[1]) << 8) | code[2];
+  if (header_length < 13 || header_length > code.size() - 3 ||
+      code[12] < 5 || code[12] > 16 || code[12] > header_length - 10)
+    return false;
+  package_aid.assign(code.begin() + 13,
+                     code.begin() + 13 + code[12]);
+  return true;
+}
+
+bool cap_declares_applet(uint8_t package_id, const uint8_t *aid,
+                         uint8_t aid_length) {
+  if (aid == nullptr) return false;
+  for (uint8_t index = 0; index < 0xff; ++index) {
+    uint8_t declared_aid[16]{};
+    uint8_t declared_length = 0;
+    if (!choupi_cap_package_applet_aid(package_id, index, declared_aid,
+                                       &declared_length))
+      return false;
+    if (declared_length == aid_length &&
+        std::memcmp(declared_aid, aid, aid_length) == 0)
+      return true;
+  }
+  return false;
 }
 
 void append_ber_length(std::vector<uint8_t> &data, size_t length) {
@@ -1042,6 +1096,7 @@ int main_pc(int argc, char *argv[]) {
   bool class_index_present = false;
   std::string cap_code_filename;
   std::string rom_mask_filename = "build/choupi-pc/flash";
+  std::vector<VpcdRestoreApplet> restore_applets;
   for (int arg = 1; arg < argc; ++arg) {
     const std::string option(argv[arg]);
     if (option == "-m" || option == "--memory") {
@@ -1109,6 +1164,31 @@ int main_pc(int argc, char *argv[]) {
         return EXIT_FAILURE;
       }
       cap_code_filename = argv[++arg];
+    } else if (option == "--restore-applet") {
+      if (arg + 5 >= argc) {
+        std::fprintf(stderr,
+                     "ERROR: --restore-applet requires ID CLASS APPLET_AID "
+                     "INSTANCE_AID CAP_COMPONENTS\n");
+        return EXIT_FAILURE;
+      }
+      unsigned int package_id = 0;
+      unsigned int class_index = 0;
+      VpcdRestoreApplet restore;
+      if (!parse_unsigned(argv[arg + 1], 63, package_id) || package_id < 56 ||
+          !parse_unsigned(argv[arg + 2], 0xfffe, class_index) ||
+          !parse_hex(argv[arg + 3], restore.applet_aid) ||
+          restore.applet_aid.size() < 5 || restore.applet_aid.size() > 16 ||
+          !parse_hex(argv[arg + 4], restore.instance_aid) ||
+          restore.instance_aid.size() < 5 ||
+          restore.instance_aid.size() > 16 || argv[arg + 5][0] == '\0') {
+        std::fprintf(stderr, "ERROR: invalid --restore-applet arguments\n");
+        return EXIT_FAILURE;
+      }
+      restore.package_id = static_cast<uint8_t>(package_id);
+      restore.class_index = static_cast<uint16_t>(class_index);
+      restore.cap_code_filename = argv[arg + 5];
+      restore_applets.push_back(std::move(restore));
+      arg += 5;
     } else if (option == "--rom-mask") {
       if (arg + 1 >= argc || argv[arg + 1][0] == '\0') {
         std::fprintf(stderr, "ERROR: --rom-mask requires a filename\n");
@@ -1139,6 +1219,8 @@ int main_pc(int argc, char *argv[]) {
                   "  --vpcd-idle-timeout SECONDS (clean save on idle)\n"
                   "  --applet-aid HEX --package-id N --class-index N\n"
                   "  --cap-code COMPONENTS_FILENAME (dynamic package only)\n"
+                  "  --restore-applet ID CLASS APPLET_AID INSTANCE_AID "
+                  "CAP_COMPONENTS (repeatable)\n"
                   "  --rom-mask ROMMASK_FILENAME\n"
                   "  --install --install-params HEX (requires --save)\n"
                   "  -h, --help\n",
@@ -1193,10 +1275,18 @@ int main_pc(int argc, char *argv[]) {
   }
   if ((vpcd_configured || vpcd_install_requested) &&
       vpcd_package_id >= 56 && vpcd_package_id <= 63 &&
-      cap_code_filename.empty()) {
+      cap_code_filename.empty() && restore_applets.empty()) {
     std::fprintf(stderr,
                  "ERROR: dynamic package 63 requires --cap-code with the "
                  "contiguous CAP component image\n");
+    return EXIT_FAILURE;
+  }
+  if (!restore_applets.empty() &&
+      (!vpcd_configured || vpcd_install_requested || package_id_present ||
+       class_index_present || !cap_code_filename.empty())) {
+    std::fprintf(stderr,
+                 "ERROR: --restore-applet requires VPCD resume mode and "
+                 "cannot be combined with single-package metadata\n");
     return EXIT_FAILURE;
   }
   if (install_parameters_present && !vpcd_install_requested) {
@@ -1294,33 +1384,96 @@ int main_pc(int argc, char *argv[]) {
                host_rom_packages.size(),
                static_cast<unsigned>(STARTING_JAVACARD_PACKAGE));
 
+  for (const VpcdRestoreApplet &restore : restore_applets) {
+    std::vector<uint8_t> code;
+    std::vector<uint8_t> package_aid;
+    if (!read_cap_components(restore.cap_code_filename, code, package_aid)) {
+      std::fprintf(stderr,
+                   "ERROR: invalid CAP component image for restored package "
+                   "%u: %s\n",
+                   static_cast<unsigned>(restore.package_id),
+                   restore.cap_code_filename.c_str());
+      return EXIT_FAILURE;
+    }
+    uint8_t existing_id = 0xff;
+    if (cap_store_find_package(package_aid.data(),
+                               static_cast<uint8_t>(package_aid.size()),
+                               existing_id) &&
+        existing_id != restore.package_id) {
+      std::fprintf(stderr,
+                   "ERROR: restored package AID is assigned to a different "
+                   "package ID\n");
+      return EXIT_FAILURE;
+    }
+    const HostCapPackage *existing = host_package_read(restore.package_id);
+    if (existing != nullptr &&
+        (existing->package_aid != package_aid || existing->code != code)) {
+      std::fprintf(stderr,
+                   "ERROR: conflicting CAP images for restored package %u\n",
+                   static_cast<unsigned>(restore.package_id));
+      return EXIT_FAILURE;
+    }
+    if (choupi_store_cap_package(
+            restore.package_id, package_aid.data(),
+            static_cast<uint8_t>(package_aid.size()), code.data(),
+            static_cast<uint32_t>(code.size())) != 0 ||
+        !cap_declares_applet(restore.package_id, restore.applet_aid.data(),
+                             static_cast<uint8_t>(restore.applet_aid.size()))) {
+      std::fprintf(stderr,
+                   "ERROR: restored applet AID is not declared by package "
+                   "%u\n",
+                   static_cast<unsigned>(restore.package_id));
+      return EXIT_FAILURE;
+    }
+    uint8_t duplicate_package = 0xff;
+    uint8_t duplicate_applet_aid[16]{};
+    uint8_t duplicate_applet_aid_length = 0;
+    uint16_t duplicate_class_index = 0xffff;
+    if (cap_store_find_instance(
+            restore.instance_aid.data(),
+            static_cast<uint8_t>(restore.instance_aid.size()),
+            duplicate_package, duplicate_applet_aid,
+            duplicate_applet_aid_length, duplicate_class_index) ||
+        choupi_store_cap_instance(
+            restore.package_id, restore.applet_aid.data(),
+            static_cast<uint8_t>(restore.applet_aid.size()),
+            restore.instance_aid.data(),
+            static_cast<uint8_t>(restore.instance_aid.size()),
+            restore.class_index) != 0) {
+      std::fprintf(stderr,
+                   "ERROR: duplicate or invalid restored applet instance\n");
+      return EXIT_FAILURE;
+    }
+  }
+  if (!restore_applets.empty()) {
+    uint8_t restored_package_id = 0xff;
+    uint8_t restored_applet_aid[16]{};
+    uint8_t restored_applet_aid_length = 0;
+    uint16_t restored_class_index = 0xffff;
+    if (!cap_store_find_instance(
+            vpcd_applet_aid.data(),
+            static_cast<uint8_t>(vpcd_applet_aid.size()),
+            restored_package_id, restored_applet_aid,
+            restored_applet_aid_length, restored_class_index)) {
+      std::fprintf(stderr,
+                   "ERROR: --applet-aid must identify an instance in the "
+                   "restored registry\n");
+      return EXIT_FAILURE;
+    }
+    vpcd_package_id = restored_package_id;
+    vpcd_applet_class_index = restored_class_index;
+    vpcd_package_loaded = true;
+    std::fprintf(stderr, "VPCD:REGISTRY_RESTORED packages=%zu instances=%zu\n",
+                 host_cap_packages.size(), restore_applets.size());
+  }
+
   if (!cap_code_filename.empty()) {
-    std::ifstream cap_code_in(cap_code_filename, std::ifstream::binary);
-    if (!cap_code_in.is_open()) {
-      std::fprintf(stderr, "ERROR: unable to open CAP code %s\n",
+    if (!read_cap_components(cap_code_filename, vpcd_cap_code,
+                             vpcd_package_aid)) {
+      std::fprintf(stderr, "ERROR: invalid CAP component image %s\n",
                    cap_code_filename.c_str());
       return EXIT_FAILURE;
     }
-    vpcd_cap_code.assign(std::istreambuf_iterator<char>(cap_code_in),
-                         std::istreambuf_iterator<char>());
-    if (vpcd_cap_code.size() < 13 || vpcd_cap_code.size() > 64 * 1024 ||
-        vpcd_cap_code[0] != 1) {
-      std::fprintf(stderr,
-                   "ERROR: CAP component image must start with a valid header\n");
-      return EXIT_FAILURE;
-    }
-    const size_t header_length =
-        (static_cast<size_t>(vpcd_cap_code[1]) << 8) | vpcd_cap_code[2];
-    if (header_length < 13 || header_length > vpcd_cap_code.size() - 3 ||
-        vpcd_cap_code[3 + 9] < 5 || vpcd_cap_code[3 + 9] > 16 ||
-        vpcd_cap_code[3 + 9] > header_length - 10) {
-      std::fprintf(stderr, "ERROR: CAP header has invalid package AID\n");
-      return EXIT_FAILURE;
-    }
-    const uint8_t package_aid_length = vpcd_cap_code[3 + 9];
-    vpcd_package_aid.assign(vpcd_cap_code.begin() + 3 + 10,
-                            vpcd_cap_code.begin() + 3 + 10 +
-                                package_aid_length);
     // An install must first register the package through CAP LOAD. In resume
     // mode the caller supplies the already-installed CAP image explicitly.
     vpcd_package_loaded = !vpcd_install_requested && class_index_present;

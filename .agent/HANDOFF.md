@@ -1,4 +1,29 @@
-# Latest validation — host VPCD multi-package lifecycle (2026-10-25)
+# Latest implementation step — multi-package VPCD process resume (2026-10-25)
+
+- Added repeatable `--restore-applet ID CLASS APPLET_AID INSTANCE_AID
+  CAP_COMPONENTS` CLI records. Resume validates each component image, checks
+  package and applet AIDs against its CAP, rejects conflicting package IDs or
+  duplicate instances, reconstructs package-instance registry entries, and
+  requires `--applet-aid` to identify a restored instance.
+- Expanded `tools/test-vpcd-multipackage` to close and save the first emulator,
+  start a fresh process, restore Core and Multi packages with three instances,
+  verify authenticated GET STATUS, select every restored applet, and then run
+  DELETE cleanup. It passes `TEST:SUMMARY pass=18 fail=0`.
+- Build: `./tools/build-pc` passed and ROM-mask generation completed. The SDK,
+  ROM-mask tools, Rust OS, and existing packed CAP structures emit legacy
+  warnings; no new warning from the restore code was observed.
+- Run log:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261025T064820Z.log`, SHA-256
+  `9ff04323f8b1ff59e6aedf4360b12ccb4ec61dbd8f2fb3786e90d073539c8578`;
+  restart log:
+  `artifacts/logs/host-vpcd-multipackage-restart-20261025T064820Z.log`, SHA-256
+  `e741d7d3488c759198e4ae78f7f51b7620a2c6468480a9e2cba105ca2d6deee1`.
+- Remaining: automatic CAP/package/class discovery from saved PC VPCD storage
+  and hardware power-cycle validation remain open. This emulator option takes
+  CAP component images and instance metadata explicitly. Do not resume paused
+  `asymm_crypto` work.
+
+# Previous validation — host VPCD multi-package lifecycle (2026-10-25)
 
 - `./tools/build-pc` passed against the current worktree. The build emitted
   existing converter, Maven, and packed-member warnings; ROM-mask generation

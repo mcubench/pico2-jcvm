@@ -265,10 +265,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   rejects an unknown AID with `6A82`, and selects all three instances. The
   latest current-source regression also verifies instance DELETE, package
   DELETE refusal while instances remain, cascade deletion, and an empty final
-  registry (`TEST:SUMMARY pass=13 fail=0`).
-  The PC/SC GPPro multi-package path remains unverified because this VM has no
-  `Virtual PCD` reader registered with PC/SC. Physical CCID behavior also
-  remains open.
+  registry (`TEST:SUMMARY pass=13 fail=0`). It also saves and closes the first
+  emulator process, then starts a fresh process from the saved VM image with
+  two packages and three applet records supplied through repeatable
+  `--restore-applet` arguments. GET STATUS and SELECT pass for all restored
+  records; the complete lifecycle reports `TEST:SUMMARY pass=18 fail=0`.
+  Automatic host registry discovery remains open. Host PC/SC GPPro
+  multi-package testing remains unverified because this VM has no `Virtual
+  PCD` reader registered with PC/SC; physical CCID multi-package testing did
+  pass on 2BED as documented in the card-manager section below.
 - [ ] **Broaden garbage-collector root and persistence-alias coverage.** The
   physical static workload passed 2,262 transfers (heap stabilized at 83 array
   slots / 28 instance slots; one pass reclaimed 50 arrays). The focused
@@ -1194,10 +1199,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   and reserved CAP-slot erase for package deletion. The parser passes 11 checks;
   ARM and PC builds pass, and the rebuilt host VPCD applet regression passes
   11/11. GPPro authenticated package DELETE, CAP reinstall, GET STATUS listing,
-  and process-restart listing now pass. Host VPCD resume currently reconstructs
-  its single instance record from the supplied `--applet-aid` and
-  `--class-index`; omitting `--class-index` starts an empty registry, and CAP
-  bytes are not exposed as loaded until GP LOAD commits them. GPPro 20.01.23
+  and process-restart listing now pass. Host VPCD resume supports repeatable
+  `--restore-applet` records carrying each package ID, class index, applet AID,
+  instance AID, and CAP component image. The fresh-process regression restores
+  two packages and three instances, verifies GET STATUS, and successfully
+  selects each applet (`18/18` full lifecycle checks). The legacy single-applet
+  resume still uses `--applet-aid`, `--package-id`, `--class-index`, and
+  `--cap-code`; omitting `--class-index` starts an empty registry. Automatic
+  package/class discovery from persisted metadata remains open. GPPro 20.01.23
   fresh-state SCP03, JC305 LOAD/INSTALL, instance DELETE, package DELETE, and
   final ISD-only GET STATUS pass on VPCD. Persistent metadata is not yet
   enumerated from storage. The host VPCD registry now supports multiple
@@ -1211,9 +1220,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   native `--install` and GPPro LOAD/INSTALL when resumed with the allocated
   package ID (56) and class index (148); GPPro listing plus SELECT, GETVERSION,
   and JCSystem all pass after restart. Automatic package/class registry
-  discovery, multi-package process-restart reconstruction, GET DATA coverage
-  beyond GPPro's exercised commands, and complete multi-entry continuation
-  remain open. Physical CCID GPPro integration is now verified on Pico 2
+  discovery, GET DATA coverage beyond GPPro's exercised commands, and complete
+  multi-entry continuation remain open. Physical CCID GPPro integration is
+  now verified on Pico 2
   `2BED26ED20556535`: unchanged upstream Core and Multi API 3.0.5 CAPs loaded,
   three instances were listed and selected, and the Core runner completed 291
   calls (272 OK, 15 `UNSUPPORTED_PER_SPEC`, four optional Ext

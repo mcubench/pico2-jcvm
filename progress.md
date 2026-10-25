@@ -11898,3 +11898,31 @@
 - Artifacts/logs:
   `artifacts/logs/host-vpcd-multipackage-apdu-20261025T063857Z.log`, SHA-256
   `ef41bfa1d1f859dccec8fd8266dc639e4769d456aed147ad242e6ea82ad351d2`.
+
+## 2026-10-25 — Restore multi-package VPCD registry after process restart
+
+- Step/experiment: `vpcd-multipackage-process-resume-20261025`
+- Change: Added repeatable `--restore-applet` inputs to reconstruct each host
+  VPCD package and installed instance from explicit CAP component images and
+  registry metadata. Resume validates package and applet AIDs, package IDs,
+  CAP consistency, and duplicate instance AIDs. Extended the raw authenticated
+  VPCD regression to restart the emulator with two packages and three applets.
+- Validation: `./tools/build-pc` passed and ROM-mask generation completed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 180`
+  passed `TEST:SUMMARY pass=18 fail=0`, including fresh-process GET STATUS,
+  SELECT of all three restored applets, and package/instance DELETE cleanup.
+  `git diff --check -- choupi/src/main_pc.cpp
+  tools/tests/pc_vpcd_multipackage_test.py` passed. Existing SDK/Maven, Rust OS,
+  and packed-structure warnings remain; physical testing was not run.
+- Result: Host VPCD now resumes a multi-package card after the emulator process
+  restarts when each package CAP and installed-instance metadata are supplied.
+  Test IDs: Core package 56/class 265; Multi package 57/classes 33 and 43.
+- Decision: Keep automatic package/class discovery and physical power-cycle
+  validation open. Continue with automatic registry recovery from saved host
+  storage and remaining card-manager behavior.
+- Commit: `pending`.
+- Artifacts/logs: initial process
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261025T064820Z.log` (SHA-256
+  `9ff04323f8b1ff59e6aedf4360b12ccb4ec61dbd8f2fb3786e90d073539c8578`); resumed
+  process `artifacts/logs/host-vpcd-multipackage-restart-20261025T064820Z.log`
+  (SHA-256 `e741d7d3488c759198e4ae78f7f51b7620a2c6468480a9e2cba105ca2d6deee1`).
