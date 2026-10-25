@@ -20,8 +20,8 @@
   `c6d142b529c8991d6b27f79b4fae38dc7764f1254bf3992d140a8133a2f842ed`;
   missing rejection SHA-256
   `41f9ae7d0e683b8a2f77f57e651871f4c4ddf501dba118751ae90c413063c086`.
-- Implementation commit: `1b02284`; progress/QKB/TODO/handoff follow-up commit
-  is pending. Next: continue remaining card-manager and JCVM work in TODO; keep
+- Implementation commit: `1b02284`; progress/QKB/TODO/handoff follow-up commit:
+  `abe8acc`. Next: continue remaining card-manager and JCVM work in TODO; keep
   `asymm_crypto` paused.
 
 # Previous implementation step — VPCD sidecar failure tests (2026-10-25)

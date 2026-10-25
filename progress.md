@@ -11997,7 +11997,7 @@
   refused, and never opens VPCD. Valid process resume is unchanged.
 - Decision: Keep registry validation fail-closed and continue with remaining
   card-manager and JCVM gaps; physical power-cycle persistence is still open.
-- Commit: `1b02284` (implementation); documentation follow-up follows.
+- Commit: `1b02284` (implementation); documentation follow-up `abe8acc`.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T072710Z.log`
   (SHA-256 `cc3a33fa97298ba1fb0bc51c2024e7fb7f139fb379bb8e1c3ad80a7f903dec1b`),
   restart `artifacts/logs/host-vpcd-multipackage-restart-20261025T072710Z.log`
