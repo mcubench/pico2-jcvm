@@ -345,6 +345,12 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   occupied about 2.1 KiB). This removes a concrete stack-overflow risk but is
   not yet proven to fix the physical stall: after the clean reflash D92 passed
   runtime, yet the host saw two `2e8a:0009` USB devices and no Pico PC/SC reader.
+  A response diagnostic now records the APDU associated with the last CCID
+  response, its payload length, and status word. ARM/RISC-V builds and a full
+  CHOUPI D92 cycle pass. The bounded GPPro retry did not reach the card because
+  PC/SC exposed only virtual readers; after the approved helper, two Pico USB
+  nodes (devices 080 and 090) remained visible but `pcsc_scan -r` timed out.
+  Fresh response telemetry therefore remains pending a working PC/SC session.
 - [ ] **Broaden garbage-collector root and persistence-alias coverage.** The
   physical static workload passed 2,262 transfers (heap stabilized at 83 array
   slots / 28 instance slots; one pass reclaimed 50 arrays). The focused

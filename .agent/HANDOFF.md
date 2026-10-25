@@ -10825,3 +10825,23 @@ confirmed on hardware. The original investigation evidence remains in earlier
   `TEST:PASS gc_reclaims_unexported_remote_graph`; other GC checks passed.
 - Next: continue remaining project acceptance work. No physical device was
   used for this host collector regression.
+
+# Latest physical diagnostic — GPPro module GET STATUS and reader loss (2026-10-25)
+
+- A read-only, bounded GPPro `--list` on D92 again authenticated and completed
+  ISD select plus GET STATUS P1=80/40/20, then timed out at `84F21002`.
+  `./tools/monitor --serial D92E743D5F640C0F --seconds 8` showed the last
+  XfrBlock header was the module query, but the old trace could not distinguish
+  whether its response was submitted.
+- Added serial diagnostics for the APDU header associated with the most recent
+  CCID response, response payload length, and status word. ARM/RISC-V builds
+  passed. The first `cycle arm` command targets smoke firmware; `cycle choupi`
+  was then used to restore the full image to D92 and passed its finite runtime
+  monitor (`TEST:SUMMARY pass=1 fail=0`).
+- Post-flash PC/SC exposed only Virtual PCD readers, so GPPro did not transmit.
+  The approved helper then reported two USB nodes; `lsusb` showed Pico devices
+  080 and 090, but bounded `pcsc_scan -r` timed out without readers. The new
+  response telemetry has not yet captured a fresh module query.
+- Next: retry on an exact physical reader after PC/SC enumeration returns;
+  use the response APDU snapshot to determine if the firmware submitted P1=10.
+  The physical module status path remains unverified.

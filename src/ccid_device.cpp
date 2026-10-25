@@ -99,6 +99,9 @@ volatile uint8_t debug_last_apdu_header[5] = {};
 volatile uint8_t debug_last_message_type = 0;
 volatile uint8_t debug_last_payload_length = 0;
 volatile uint16_t debug_xfr_block_count = 0;
+volatile uint16_t debug_last_response_length = 0;
+volatile uint16_t debug_last_response_status = 0;
+volatile uint8_t debug_last_response_apdu[5] = {};
 volatile uint16_t debug_out_xfer_errors = 0;
 volatile uint16_t debug_in_xfer_errors = 0;
 volatile uint16_t debug_out_rearm_errors = 0;
@@ -255,6 +258,17 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   tx_buffer[7] = status;
   tx_buffer[8] = error;
   tx_buffer[9] = specific;
+  debug_last_response_length = static_cast<uint16_t>(payload_length);
+  debug_last_response_status =
+      payload != nullptr && payload_length >= 2
+          ? static_cast<uint16_t>(
+                (static_cast<uint16_t>(payload[payload_length - 2]) << 8) |
+                payload[payload_length - 1])
+          : 0;
+  for (uint8_t index = 0; index < sizeof(debug_last_response_apdu); ++index) {
+    debug_last_response_apdu[index] =
+        rx_buffer[0] == 0x6f && rx_expected >= 15 ? rx_buffer[10 + index] : 0;
+  }
   debug_stage = 6;
   if (payload_length != 0) {
     std::memcpy(tx_buffer + 10, payload, payload_length);
@@ -892,6 +906,22 @@ extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,
   }
   if (last_xfer_result != nullptr) {
     *last_xfer_result = debug_last_xfer_result;
+  }
+}
+
+extern "C" void choupi_ccid_debug_response(uint8_t *apdu_header,
+                                            uint16_t *response_length,
+                                            uint16_t *status_word) {
+  if (apdu_header != nullptr) {
+    for (uint8_t index = 0; index < sizeof(debug_last_response_apdu); ++index) {
+      apdu_header[index] = debug_last_response_apdu[index];
+    }
+  }
+  if (response_length != nullptr) {
+    *response_length = debug_last_response_length;
+  }
+  if (status_word != nullptr) {
+    *status_word = debug_last_response_status;
   }
 }
 

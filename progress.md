@@ -12849,3 +12849,13 @@
 - Decision: Continue project completion work.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Add CCID response trace for physical GET STATUS diagnosis
+
+- Step/experiment: `physical-get-status-response-trace-20261025`
+- Change: Added a serial snapshot pairing the last CCID response with the originating APDU header, response payload length, and trailing status word. Updated TODO, QKB, and handoff with the repeated D92 stall and subsequent PC/SC loss.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed; `./tools/test-gp-registry` passed 50/50; `./tools/test-jcarray` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid D92E743D5F640C0F` flashed and verified the full ARM image and passed `TEST:SUMMARY pass=1 fail=0`. A bounded GPPro retry could not connect after reflash because PC/SC listed only virtual readers. The approved helper found two Pico USB nodes (080/090); bounded `pcsc_scan -r` timed out without listing them.
+- Result: Firmware is restored to full CHOUPI on D92 and includes response tracing. This physical run did not capture a new P1=10 response; the PC/SC visibility issue prevented transmission after reflash.
+- Decision: Keep physical GET STATUS unresolved; retry on an exact Pico reader when PC/SC enumeration returns and inspect the response snapshot.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T174621Z.log` and `artifacts/logs/cycle-arm-20261025T174459Z.log`.

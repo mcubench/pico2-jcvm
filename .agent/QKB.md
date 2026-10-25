@@ -69,6 +69,13 @@
   other exact reader that becomes available; keep physical APDU testing open.
 - **Validation:** Helper reported `count=2`; `lsusb` listed bus 001 devices 080
   and 086; line-buffered `pcsc_scan -r` timed out without Pico readers.
+- **Latest reproduction:** After a fresh D92 GPPro timeout, the diagnostic
+  firmware was built for ARM/RISC-V and ARM was flashed with a passing CHOUPI
+  runtime cycle. GPPro then saw only the two Virtual PCD readers. The approved
+  helper reported two USB nodes (`/dev/bus/usb/001/090` and `/dev/bus/usb/001/080`);
+  `lsusb` confirmed both are Pico JCVM readers, but `pcsc_scan -r` timed out
+  without listing them. The new firmware reports last response APDU, length,
+  and status in serial diagnostics, but no fresh card command could be sent.
 
 ## Firmware upload preserves installed CAP state; first flashed BOOTSEL board lost runtime enumeration — 2026-10-25
 

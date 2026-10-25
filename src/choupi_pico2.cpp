@@ -75,6 +75,9 @@ extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,
                                          uint16_t *in_submit_errors,
                                          uint16_t *invalid_messages,
                                          uint8_t *last_xfer_result);
+extern "C" void choupi_ccid_debug_response(uint8_t *apdu_header,
+                                             uint16_t *response_length,
+                                             uint16_t *status_word);
 extern "C" void choupi_ccid_debug_unknown(uint8_t *last_message,
                                             uint16_t *message_count);
 extern "C" void choupi_ccid_debug_recent(uint8_t *commands,
@@ -1499,6 +1502,9 @@ int main_arm(void) {
       uint16_t unknown_message_count = 0;
       uint8_t recent_commands[12] = {};
       uint16_t command_count = 0;
+      uint8_t response_apdu_header[5] = {};
+      uint16_t response_length = 0;
+      uint16_t response_status = 0;
       choupi_ccid_debug_state(&ccid_stage, &ccid_endpoint, &ccid_rx_events,
                               &ccid_task_count, &last_apdu_length,
                               last_apdu_header, &last_message_type,
@@ -1506,6 +1512,8 @@ int main_arm(void) {
                               &out_xfer_errors, &in_xfer_errors,
                               &out_rearm_errors, &in_submit_errors,
                               &invalid_messages, &last_xfer_result);
+      choupi_ccid_debug_response(response_apdu_header, &response_length,
+                                 &response_status);
       choupi_ccid_debug_unknown(&last_unknown_message,
                                 &unknown_message_count);
       choupi_ccid_debug_recent(recent_commands, sizeof(recent_commands),
@@ -1533,6 +1541,11 @@ int main_arm(void) {
                static_cast<unsigned>(invalid_messages),
                static_cast<unsigned>(last_xfer_result));
       }
+      printf("CHOUPI:CCID_RESPONSE apdu=%02X%02X%02X%02X%02X len=%u sw=%04X\r\n",
+             response_apdu_header[0], response_apdu_header[1],
+             response_apdu_header[2], response_apdu_header[3],
+             response_apdu_header[4], static_cast<unsigned>(response_length),
+             static_cast<unsigned>(response_status));
       if (unknown_message_count != 0) {
         printf("CHOUPI:CCID_UNKNOWN last=%02X count=%u\r\n",
                static_cast<unsigned>(last_unknown_message),
