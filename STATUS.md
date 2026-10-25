@@ -39,10 +39,16 @@ with GPPro after confirming the card registry is empty.
   unused bytes after a persistent scalar update. ARM and RISC-V `symm_crypto`
   builds pass; the final ARM image is 1,676,800 bytes with SHA-256
   `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
-  Physical validation of this exact image is pending because no Pico USB device
-  was visible to the VM. An earlier large-array VPCD overflow attempt timed out
-  before completion, so Java-level `BUFFER_FULL` catchability at real capacity
-  exhaustion remains unverified. Details are in `progress.md`.
+  After flashing this exact image to 2BED, upstream Core 3.0.5 passed 291
+  calls (272 OK, 15 allowed unsupported, four unavailable optional Ext
+  scenario calls). Its physical JCSystem subset had 47 OK and one
+  spec-permitted `requestObjectDeletion()` unsupported result; the commit
+  capacity probes returned `0x7FFF` outside a transaction and transaction
+  commit/abort probes passed. Cleanup left only ISD. Physical capacity reduction
+  after a persistent write, power-cycle recovery, and Java-level
+  `BUFFER_FULL` catchability at real capacity exhaustion remain unverified; an
+  earlier large-array VPCD overflow attempt timed out. Details are in
+  `progress.md`.
 
 - **Empty-card symmetric firmware flash (2026-10-25):** Built the ARM
   `symm_crypto` CHOUPI image, passed both ARM and RISC-V build gates, and

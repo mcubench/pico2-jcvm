@@ -637,11 +637,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   catchable `TransactionException.BUFFER_FULL` before mutating the rejected
   record. Native persistent-transaction tests pass, and the 84-check VPCD
   suite confirms the short and extended getters plus a persistent update
-  reducing available capacity before abort. An earlier firmware runtime cycle
-  passed, but the exact final source was not flashed: the latest targeted cycle
-  could not enter BOOTSEL, and authorized host enumeration showed no Pico.
-  Physical transaction and power-cycle behavior remain unverified. A
-  large-array VPCD overflow attempt timed out before the APDU completed;
+  reducing available capacity before abort. Physical current-image Core 3.0.5
+  on 2BED completed 291 calls (272 OK, 15 allowed unsupported, four optional
+  Ext scenario rows unavailable); 47 JCSystem rows were OK and the one
+  `requestObjectDeletion()` row was unsupported per spec. The card returned
+  `0x7FFF` maximum and unused capacity outside a transaction, and begin/depth/
+  capacity/commit and begin/abort probes passed. Runner cleanup succeeded and
+  GPPro showed only ISD. This does not cover physical capacity consumption
+  after a persistent write or power-cycle recovery. A large-array VPCD overflow
+  attempt timed out before the APDU completed;
   Java-level catchability of `BUFFER_FULL` on an overflowing applet write is
   not yet end-to-end verified.
 - [ ] **Add extended APDUs only if required by the selected profile.** The

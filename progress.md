@@ -12209,6 +12209,34 @@
   install SHA-256 `fbf01704b262c6ffa9bf18b9ec2b01a83c390bb50f4e96e8c683da09dfb7ce5a`;
   after-list SHA-256 `00df9b0b17d246684706058d183d7e4e5bc187b9bd973630b5c1b387befdeeb5`.
 
+## 2026-10-25 — Validate physical JCSystem transaction probes on 2BED
+
+- Step/experiment: `current-core-jcsystem-2BED-20261025`
+- Change: Ran the unchanged Java Card API 3.0.5 Core CAP/client against the
+  current `symm_crypto` image to validate JCSystem commit-capacity reporting,
+  transaction lifecycle, and memory-query forms on hardware.
+- Validation: The deploy runner completed all 291 Core calls: 272 `OK`, 15
+  `UNSUPPORTED_PER_SPEC`, and four optional Ext scenario calls unavailable
+  after INSTALL `6A88` and rollback. JCSystem had 47 `OK` and one
+  spec-permitted `requestObjectDeletion()` unsupported result. Max/unused
+  commit capacity were `32767` outside a transaction; begin/depth/capacity/
+  commit and begin/abort probes passed. Runner cleanup passed; final GPPro list
+  showed only ISD. The exact identified reader was 2BED
+  `2BED26ED20556535`.
+- Result: Physical transaction lifecycle and commit-capacity query behavior
+  pass on the current image. Physical capacity reduction after a persistent
+  write, true power-cycle recovery, and Java-level `BUFFER_FULL` catchability
+  at real exhaustion remain unverified.
+- Decision: Keep 2BED empty and continue remaining JCSystem/power-cycle and
+  profile acceptance items.
+- Commit: pending
+- Artifacts/logs: CSV SHA-256
+  `c94e1435068c81e66ccd14f2e9bf339d1f13abd804009e9d2637f9f5bee63a72`;
+  runner log SHA-256
+  `941f40d409228e8a6fb9634c482b472d0a7097dfcd73dd3229961b975b9360c2`;
+  post-cleanup GPPro log SHA-256
+  `5fab190e1ac1f63c4a7a0ea97e8d00e20dc728ab519b230d13617bbad9c12cd6`.
+
 ## 2026-10-25 — Reflash symm profile and leave 2BED card empty
 
 - Step/experiment: `symm-empty-2BED-20261025T084539Z`

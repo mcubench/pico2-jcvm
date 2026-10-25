@@ -1,3 +1,27 @@
+# Latest physical API validation — JCSystem transaction probes on 2BED (2026-10-25)
+
+- Ran the unchanged API 3.0.5 Core CAP/client on the current `symm_crypto` ARM
+  image via exact reader `Pico 2 CHOUPI CCID [JCVM CCID]
+  (2BED26ED20556535) 01 00`. Core completed 291 calls: 272 `OK`, 15
+  `UNSUPPORTED_PER_SPEC`, and four optional Ext scenario calls unavailable
+  after expected INSTALL `6A88` and rollback. All 47 supported JCSystem rows
+  passed; `requestObjectDeletion()` was the sole spec-allowed unsupported row.
+- Physical capacity calls returned max/unused `32767` outside transactions;
+  the begin/depth/capacity/commit probe returned `01 7f ff 00`, and begin/abort
+  passed. Short and extended `getAvailableMemory` forms returned `OK`. This
+  does not yet test capacity consumption after physical persistent writes or
+  power-cycle recovery. The runner removed Core and Multi CAPs; Ext rollback
+  succeeded. A final GPPro list contained only ISD.
+- CSV SHA-256
+  `c94e1435068c81e66ccd14f2e9bf339d1f13abd804009e9d2637f9f5bee63a72`;
+  runner log SHA-256
+  `941f40d409228e8a6fb9634c482b472d0a7097dfcd73dd3229961b975b9360c2`;
+  post-cleanup GPPro log SHA-256
+  `5fab190e1ac1f63c4a7a0ea97e8d00e20dc728ab519b230d13617bbad9c12cd6`.
+- Next: continue the open physical transaction/power-cycle acceptance and other
+  TODO priorities; leave the card ISD-only and preserve unrelated worktree
+  changes.
+
 # Latest physical validation — empty `symm_crypto` card on 2BED (2026-10-25)
 
 - Refreshed PC/SC access after reboot and confirmed 2BED
