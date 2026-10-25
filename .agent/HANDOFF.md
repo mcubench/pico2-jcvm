@@ -1,4 +1,30 @@
-# Latest implementation step — VPCD sidecar failure tests (2026-10-25)
+# Latest implementation step — abort VPCD on invalid saved registry (2026-10-25)
+
+- Fixed startup handling so a PC persistent-storage initialization error is
+  latched and `starting_jcre()` refuses to start applet/card service. The VPCD
+  regression now requires the expected error and verifies no VPCD connection
+  occurs for corrupt or missing sidecar cases.
+- Hardened the test fixture: remove a stale `.cap-registry` when creating an
+  empty image, and poll emulator process exit while accepting VPCD so startup
+  failures surface promptly rather than timing out.
+- `./tools/build-pc` passed, including ROM-mask regeneration.
+  `python3 -m py_compile tools/tests/pc_vpcd_multipackage_test.py` and scoped
+  `git diff --check` passed. The gated full VPCD test passes `20/20` for invalid
+  sidecar rejection and valid resume/cleanup. No physical hardware was used.
+- This issue and its fix are in `.agent/QKB.md`. Logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261025T072710Z.log`, SHA-256
+  `cc3a33fa97298ba1fb0bc51c2024e7fb7f139fb379bb8e1c3ad80a7f903dec1b`;
+  restart log SHA-256
+  `0aa116a45589b0fe1fab43730cedf2e47e58778df7397c2f520e6de60048a256`;
+  corrupt rejection SHA-256
+  `c6d142b529c8991d6b27f79b4fae38dc7764f1254bf3992d140a8133a2f842ed`;
+  missing rejection SHA-256
+  `41f9ae7d0e683b8a2f77f57e651871f4c4ddf501dba118751ae90c413063c086`.
+- Implementation commit: `1b02284`; progress/QKB/TODO/handoff follow-up commit
+  is pending. Next: continue remaining card-manager and JCVM work in TODO; keep
+  `asymm_crypto` paused.
+
+# Previous implementation step — VPCD sidecar failure tests (2026-10-25)
 
 - Extended `tools/test-vpcd-multipackage` with corrupted-CRC and missing-sidecar
   restart attempts against copies of the saved image. Both attempts emit their

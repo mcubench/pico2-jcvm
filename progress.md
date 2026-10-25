@@ -11979,3 +11979,30 @@
   (SHA-256 `90549b210782ea964a950e453a4410546a43364d16936767574b11421c38e5d2`),
   missing rejection `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261025T071147Z.log`
   (SHA-256 `a2c1b3453c55e31fa83aed1f09de841fd9969d4e843701b4f4a30a6b8bc2ab99`).
+
+## 2026-10-25 — Abort VPCD startup on invalid persistent registry
+
+- Step/experiment: `vpcd-registry-startup-failure-20261025`
+- Change: Latch PC storage initialization failures and stop before VPCD card
+  service starts. Harden the negative restart tests so they check the startup
+  abort, clear stale sidecars from the empty test fixture, and detect an
+  emulator exiting before a VPCD connection.
+- Validation: `./tools/build-pc` passed with ROM-mask generation.
+  `python3 -m py_compile tools/tests/pc_vpcd_multipackage_test.py` and scoped
+  `git diff --check` passed. The gated `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-multipackage --timeout 180` passed `TEST:SUMMARY pass=20
+  fail=0`, covering corrupted and missing sidecars plus successful two-package
+  restore, GET STATUS, SELECT, and cleanup. Hardware was not used.
+- Result: Invalid registry data emits the precise error, logs that startup is
+  refused, and never opens VPCD. Valid process resume is unchanged.
+- Decision: Keep registry validation fail-closed and continue with remaining
+  card-manager and JCVM gaps; physical power-cycle persistence is still open.
+- Commit: `1b02284` (implementation); documentation follow-up follows.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T072710Z.log`
+  (SHA-256 `cc3a33fa97298ba1fb0bc51c2024e7fb7f139fb379bb8e1c3ad80a7f903dec1b`),
+  restart `artifacts/logs/host-vpcd-multipackage-restart-20261025T072710Z.log`
+  (SHA-256 `0aa116a45589b0fe1fab43730cedf2e47e58778df7397c2f520e6de60048a256`),
+  corrupt rejection (SHA-256
+  `c6d142b529c8991d6b27f79b4fae38dc7764f1254bf3992d140a8133a2f842ed`), and
+  missing rejection (SHA-256
+  `41f9ae7d0e683b8a2f77f57e651871f4c4ddf501dba118751ae90c413063c086`).

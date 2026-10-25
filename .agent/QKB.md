@@ -4656,6 +4656,27 @@ fix.
   Source commit: `fa15bfa`.
 
 
+## VPCD registry restore failure must stop card service — 2026-10-25
+
+- **Symptom:** Corrupt or missing `.cap-registry` metadata produced a clear
+  storage initialization error, but `starting_jcre()` still proceeded to open
+  the VPCD transport. An invalid restored registry could therefore appear to
+  start as a usable card.
+- **Cause:** `choupi_pc_initialize_storage()` returned an error through the
+  syscall, but the host startup callback did not retain that result across the
+  JCRE startup call.
+- **Viable fix:** Latch PC storage initialization failures in the host process
+  and make `starting_jcre()` return before applet installation or VPCD service.
+  Test the diagnostic and assert that no VPCD connection is established.
+- **Validation:** The complete multipackage VPCD regression passes 20/20.
+  Corrupted CRC and missing-sidecar cases both log the failure and never emit
+  `VPCD:CONNECTED`; valid sidecar restore and applet cleanup still pass.
+- **Test-harness note:** Reused test memory paths must remove their prior
+  `.cap-registry` sidecars when starting from an empty image. Poll child status
+  while awaiting VPCD accept so failed startup is reported immediately instead
+  of waiting for the full listener timeout.
+
+
 ## Capability-profile physical Core/Security/Crypto follow-up — 2026-10-25
 
 - **OwnerPINx fix cross-profile result:** The `checkcast` namespace fix passed
