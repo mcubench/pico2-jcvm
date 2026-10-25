@@ -12987,3 +12987,13 @@
 - Artifacts/logs: `artifacts/logs/jcalgtest-after-zlp-D92-20261025.log`,
   `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-reuse-test-20261025.log`, and
   partial CSV in `artifacts/results/jcalgtest-after-zlp-D92-20261025/`.
+
+## 2026-10-25 — Record JCAlgTest probe commit
+
+- Step/experiment: `jcalgtest-physical-sha224-transport-20261025`
+- Change: Recorded the commit for the targeted probe and VPCD registry-sidecar cleanup step.
+- Validation: `git diff --cached --check` passed before commit; commit contains only the six intended source, test, and continuity files.
+- Result: Commit `a5c79af` records the unresolved physical transaction failure and reproducible VPCD evidence.
+- Decision: Check exact-reader availability; if unavailable, proceed with offline backlog work and retain the probe for the next physical opportunity.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: `artifacts/logs/pc-jcalgtest-rsa-oaep-sha224-reuse-test-20261025.log`.
