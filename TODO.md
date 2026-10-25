@@ -351,6 +351,13 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   PC/SC exposed only virtual readers; after the approved helper, two Pico USB
   nodes (devices 080 and 090) remained visible but `pcsc_scan -r` timed out.
   Fresh response telemetry therefore remains pending a working PC/SC session.
+  Follow-up on 2026-10-25 with Java SmartcardIO found D92 intermittently
+  enumerable (reader 3). Before the latest reflash, GPPro reached the module
+  query and the board reported a completed CCID IN transfer for
+  `84F210020A`, with a 54-byte APDU response and `9000`; GPPro still timed out
+  without displaying that response. A retained response-byte trace is now in
+  the ARM image, but post-flash PC/SC enumeration alternated between D92 and
+  only the Virtual PCD readers, so no post-flash GET STATUS bytes were captured.
 - [ ] **Broaden garbage-collector root and persistence-alias coverage.** The
   physical static workload passed 2,262 transfers (heap stabilized at 83 array
   slots / 28 instance slots; one pass reclaimed 50 arrays). The focused

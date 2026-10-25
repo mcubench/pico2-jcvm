@@ -4957,3 +4957,39 @@ fix.
   automatically reassign a failed area to another reader; start a targeted run
   on a different exact reader after confirming it is usable. This does not
   repair PC/SC or prove the failure is fixed.
+# Physical GET STATUS response reaches CCID IN but GPPro stalls — 2026-10-25
+
+- **Observation:** D92 `D92E743D5F640C0F` and one other Pico USB node were visible
+  after the authorized PC/SC helper. `lsusb -t` showed the CCID interface as
+  `Driver=[none]`, expected for libusb-backed libccid. Java SmartcardIO reader
+  listing intermittently returned D92 as reader 3; other bounded attempts
+  timed out or listed only Virtual PCD readers. The approved helper reported
+  two nodes (`/dev/bus/usb/001/096` and `/dev/bus/usb/001/080`) on the latest
+  check.
+- **Card-side evidence:** Before the latest diagnostic reflash, GPPro
+  authenticated and received `9000` for ISD, package, and applet GET STATUS,
+  then stalled after sending authenticated `84F21002`. Firmware telemetry
+  recorded `84F210020A`, APDU response length 54, SW `9000`, and CCID transfer
+  completion (`stage=7`, endpoint `03`); no CCID transfer error was printed.
+  The 54-byte response makes the module entry exactly 52 data bytes plus SW.
+- **Follow-up change:** Added a retained, serially printed snapshot of the
+  latest XfrBlock response bytes (up to 64). Both architecture wrappers build;
+  registry tests pass 50/50; full ARM CHOUPI cycle on D92 passes
+  `TEST:SUMMARY pass=1 fail=0`. Post-flash GPPro attempts either timed out
+  before connecting or PC/SC exposed only Virtual PCD readers, so the new raw
+  response bytes have not yet been captured.
+- **Current image:** The latest refined diagnostic build was cycle-flashed to
+  D92 and passed the finite monitor at
+  `artifacts/logs/cycle-choupi-20261025T182059Z.log`. A subsequent bounded Java
+  reader listing timed out; no post-flash GPPro command reached the card.
+- **Interpretation:** The card manager builds the expected success-shaped
+  response and TinyUSB completes its IN transfer, but host delivery/parsing is
+  not confirmed. Do not claim GET STATUS is fixed or attribute the stall to the
+  TLV until the exact bytes are observed by a host APDU client. Heartbeat LEDs
+  and USB-node count do not establish how many PC/SC readers are usable.
+- **Next:** When D92 (or another identified Pico) is listed by Java SmartcardIO,
+  start `tools/monitor --serial <serial> --seconds 12` before bounded GPPro
+  `--debug --list`. If GET STATUS still stalls, use the retained response hex
+  and CCID counters to distinguish malformed response bytes from host-side
+  transport behavior. Avoid unbounded `pcsc_scan` and do not restart system
+  services outside the approved helper.

@@ -12869,3 +12869,13 @@
 - Decision: Continue project acceptance work; retry P1=10 after PC/SC exposes a Pico reader.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T174621Z.log`.
+
+## 2026-10-25 — Retain CCID response bytes for GET STATUS diagnosis
+
+- Step/experiment: `physical-get-status-response-bytes-20261025`
+- Change: Added a retained serial snapshot of up to 64 bytes from the most recent CCID XfrBlock response, so the module GET STATUS payload can be inspected after a host timeout. Updated the open GET STATUS note, QKB, and handoff with current USB/PCSC evidence.
+- Validation: `./tools/build arm`, `./tools/build riscv`, and `./tools/test-gp-registry` passed (50/50). `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid D92E743D5F640C0F` flashed/verified the full ARM image and passed `TEST:SUMMARY pass=1 fail=0` (`artifacts/logs/cycle-choupi-20261025T182059Z.log`). Bounded Java SmartcardIO enumeration alternated between D92 reader 3 and timeout/virtual-only results. GPPro reached `84F210020A` on the previous image and timed out after firmware recorded a 54-byte response ending `9000` and completed IN transfer; post-flash retries did not reliably connect, so the new response bytes were not captured.
+- Result: The exact physical module GET STATUS bytes and host parse remain unknown; no fix is claimed. D92 currently has the latest diagnostic firmware.
+- Decision: Retry with concurrent serial monitor only when Java SmartcardIO lists a physical reader; continue offline work when PC/SC is unavailable.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T182059Z.log`.

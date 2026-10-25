@@ -102,6 +102,9 @@ volatile uint16_t debug_xfr_block_count = 0;
 volatile uint16_t debug_last_response_length = 0;
 volatile uint16_t debug_last_response_status = 0;
 volatile uint8_t debug_last_response_apdu[5] = {};
+volatile uint8_t debug_last_response_data[64] = {};
+volatile uint8_t debug_last_response_data_length = 0;
+volatile bool debug_response_data_available = false;
 volatile uint16_t debug_out_xfer_errors = 0;
 volatile uint16_t debug_in_xfer_errors = 0;
 volatile uint16_t debug_out_rearm_errors = 0;
@@ -268,6 +271,22 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   for (uint8_t index = 0; index < sizeof(debug_last_response_apdu); ++index) {
     debug_last_response_apdu[index] =
         rx_buffer[0] == 0x6f && rx_expected >= 15 ? rx_buffer[10 + index] : 0;
+  }
+  if (rx_buffer[0] == 0x6f) {
+    debug_response_data_available = false;
+  }
+  if (rx_buffer[0] == 0x6f && rx_expected >= 15 &&
+      rx_buffer[11] == 0xf2 && rx_buffer[12] == 0x10) {
+    const size_t debug_data_length =
+        payload_length < sizeof(debug_last_response_data)
+            ? payload_length
+            : sizeof(debug_last_response_data);
+    debug_last_response_data_length = static_cast<uint8_t>(debug_data_length);
+    for (size_t index = 0; index < sizeof(debug_last_response_data); ++index) {
+      debug_last_response_data[index] =
+          payload != nullptr && index < debug_data_length ? payload[index] : 0;
+    }
+    debug_response_data_available = true;
   }
   debug_stage = 6;
   if (payload_length != 0) {
@@ -923,6 +942,22 @@ extern "C" void choupi_ccid_debug_response(uint8_t *apdu_header,
   if (status_word != nullptr) {
     *status_word = debug_last_response_status;
   }
+}
+
+extern "C" bool choupi_ccid_debug_take_response_data(uint8_t *data,
+                                                        uint8_t capacity,
+                                                        uint8_t *length) {
+  if (!debug_response_data_available) return false;
+  const uint8_t copied = debug_last_response_data_length < capacity
+                            ? debug_last_response_data_length
+                            : capacity;
+  if (data != nullptr) {
+    for (uint8_t index = 0; index < copied; ++index) {
+      data[index] = debug_last_response_data[index];
+    }
+  }
+  if (length != nullptr) *length = copied;
+  return true;
 }
 
 extern "C" void choupi_ccid_debug_unknown(uint8_t *last_message,

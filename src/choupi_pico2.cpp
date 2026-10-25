@@ -78,6 +78,9 @@ extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,
 extern "C" void choupi_ccid_debug_response(uint8_t *apdu_header,
                                              uint16_t *response_length,
                                              uint16_t *status_word);
+extern "C" bool choupi_ccid_debug_take_response_data(uint8_t *data,
+                                                        uint8_t capacity,
+                                                        uint8_t *length);
 extern "C" void choupi_ccid_debug_unknown(uint8_t *last_message,
                                             uint16_t *message_count);
 extern "C" void choupi_ccid_debug_recent(uint8_t *commands,
@@ -1546,6 +1549,17 @@ int main_arm(void) {
              response_apdu_header[2], response_apdu_header[3],
              response_apdu_header[4], static_cast<unsigned>(response_length),
              static_cast<unsigned>(response_status));
+      uint8_t response_data[64] = {};
+      uint8_t response_data_length = 0;
+      if (choupi_ccid_debug_take_response_data(
+              response_data, sizeof(response_data), &response_data_length)) {
+        printf("CHOUPI:CCID_RESPONSE_DATA len=%u hex=",
+               static_cast<unsigned>(response_data_length));
+        for (uint8_t index = 0; index < response_data_length; ++index) {
+          printf("%02X", response_data[index]);
+        }
+        printf("\r\n");
+      }
       if (unknown_message_count != 0) {
         printf("CHOUPI:CCID_UNKNOWN last=%02X count=%u\r\n",
                static_cast<unsigned>(last_unknown_message),
