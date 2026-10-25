@@ -12719,3 +12719,13 @@
 - Decision: Continue GC coverage for transient lifecycle and instance child graphs; physical power-cycle checks remain open.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Record GC collection coverage commit
+
+- Step/experiment: `gc-static-apdu-root-collection-20261025`
+- Change: Recorded the implementation commit SHA for collector-level static/APDU root coverage and jcarray test-harness repairs.
+- Validation: Confirmed commit `f327b21` contains only the collector regression, scoped test support changes, and corresponding TODO/QKB/handoff/progress records.
+- Result: Actual static/APDU retention and six-array reclamation checks are traceable to commit `f327b21`.
+- Decision: Continue the GC/persistence backlog.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
