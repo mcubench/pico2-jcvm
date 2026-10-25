@@ -12759,3 +12759,13 @@
 - Decision: Continue the GC/persistence backlog.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Trace reference-array child objects during collection
+
+- Step/experiment: `gc-reference-array-child-tracing-20261025`
+- Change: Expanded the jcarray collector regression with a cached-static-rooted wildcard reference array containing a byte-array child. Added test-target-only linker stubs needed by `setReferenceEntry`'s unused type-resolution and persistence branches. Updated TODO, QKB, and handoff.
+- Validation: `./tools/test-jcarray` passed with `TEST:PASS gc_traces_reference_array_child`; the static/APDU retention and six-array reclamation assertions also passed. Existing shared-header warnings remain.
+- Result: Mark-and-sweep follows a real `JC_Array::setReferenceEntry` child edge from a rooted reference array.
+- Decision: Continue with instance-field child traversal and transient roots.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: none.

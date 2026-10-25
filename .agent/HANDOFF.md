@@ -10756,3 +10756,18 @@ confirmed on hardware. The original investigation evidence remains in earlier
   in shared JCVM headers remain; no new test failure.
 - Next: broaden coverage to transient lifecycle roots and instance child graphs;
   physical power-cycle validation remains open.
+
+# Latest continuation — verify collector traces reference-array children (2026-10-25)
+
+- Extended `choupi/test/jcarray_transient_test.cpp` with a static-rooted
+  wildcard `Object[]` containing a byte-array reference. After collection, both
+  parent and child remain accessible; the collector also reclaims six unrelated
+  arrays. The test uses `JC_Array::setReferenceEntry` and therefore exercises
+  normal reference storage rather than manually writing encoded handles.
+- The small host test target now has scoped linker stubs for type-resolution and
+  persistent-reference calls retained by that setter; the wildcard array path
+  does not invoke them.
+- Validation: `./tools/test-jcarray` passed. Existing JCVM shared-header
+  warnings remain.
+- Next: test object-instance field child traversal and transient-array roots;
+  physical power-cycle validation remains open.

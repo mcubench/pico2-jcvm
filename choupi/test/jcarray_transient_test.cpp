@@ -449,15 +449,25 @@ int main() {
   const auto outgoingBufferRef = heap.addArray(5, jcvm::JAVA_ARRAY_T_BYTE);
   const auto outgoingBuffer = heap.getArray(outgoingBufferRef);
   context.setAPDUOutgoing(outgoingBuffer, 0, 1);
+  const auto graphRootRef = heap.addArray(
+      2, jcvm::JAVA_ARRAY_T_REFERENCE, static_cast<jcvm::jc_cp_offset_t>(0xFFFF));
+  auto graphRoot = heap.getArray(graphRootRef);
+  const auto graphChildRef = heap.addArray(4, jcvm::JAVA_ARRAY_T_BYTE);
+  auto graphChild = heap.getArray(graphChildRef);
+  graphRoot->setReferenceEntry(0, graphChildRef, context);
   heap.reserveStaticReferenceRoot(0, 9);
   heap.setStaticReferenceRoot(0, 9, bytesRef);
+  heap.reserveStaticReferenceRoot(0, 10);
+  heap.setStaticReferenceRoot(0, 10, graphRootRef);
   const auto unrootedRef = heap.addArray(3, jcvm::JAVA_ARRAY_T_BYTE);
   const auto collection = heap.collectUnreachableFrom(
       enumerate_context_roots, &context);
   if (!collection.complete || collection.arrays_reclaimed == 0 ||
       heap.getArray(bytesRef) != storedBytes ||
       heap.getArray(apduBufferRef) != apduBuffer ||
-      heap.getArray(outgoingBufferRef) != outgoingBuffer) {
+      heap.getArray(outgoingBufferRef) != outgoingBuffer ||
+      heap.getArray(graphRootRef) != graphRoot ||
+      heap.getArray(graphChildRef) != graphChild) {
     std::cerr << "collector failed to retain static/APDU roots or reclaim garbage\n";
     return 1;
   }
@@ -472,6 +482,7 @@ int main() {
     return 1;
   }
   std::cout << "TEST:PASS gc_retains_static_and_apdu_buffers\n";
+  std::cout << "TEST:PASS gc_traces_reference_array_child\n";
   std::cout << "TEST:PASS gc_reclaims_unrooted_array reclaimed="
             << collection.arrays_reclaimed << "\n";
   return 0;
