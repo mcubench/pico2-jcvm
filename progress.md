@@ -12607,6 +12607,16 @@
 - Validation: Confirmed `561ba3e` contains only the coordinator, TODO, QKB, handoff, and progress changes for this step.
 - Result: The default single-attempt behavior and its rationale are traceable to commit `561ba3e`.
 - Decision: Continue with the open persistence and runtime priorities; do not treat retry control as a PC/SC transport repair.
+- Commit: `6dcd85f`
+- Artifacts/logs: none.
+
+## 2026-10-25 — Record retry-delay correction commit
+
+- Step/experiment: `parallel-deploy-gppro-final-pause-20261025`
+- Change: Recorded the retry-delay correction commit SHA.
+- Validation: Confirmed `6dcd85f` contains the runner controls and associated TODO, QKB, handoff, and progress updates.
+- Result: The coordinator's zero-pause default and manual failover limitation are traceable to commit `6dcd85f`.
+- Decision: Continue offline project work while PC/SC transport is unhealthy.
 - Commit: pending.
 - Artifacts/logs: none.
 
