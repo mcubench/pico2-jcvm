@@ -11732,5 +11732,5 @@
   and next physical action are now the first handoff content.
 - Decision: Continue physical validation only after the VM exposes a Pico USB
   device; otherwise proceed with offline JCVM work.
-- Commit: `pending`
+- Commit: `aa941f8`
 - Artifacts/logs: none.
