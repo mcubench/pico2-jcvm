@@ -12597,5 +12597,15 @@
 - Validation: `python3 -m py_compile tools/run-deploy-parallel` passed; `./tools/run-deploy-parallel --help` showed both options and their defaults. Confirmed `api_card_runner.py` accepts `--retries` and `--gp-timeout`. No physical run was made because the only PC/SC-visible Pico had previously stalled during GPPro INSTALL.
 - Result: Retry count and per-operation timeout are configurable, while the coordinator's default avoids the previously observed four-attempt/approximately 201-second retry sequence.
 - Decision: Use this safer default when physical `/deploy` testing resumes; continue diagnosing the root PC/SC/APDU issue independently.
+- Commit: `561ba3e`
+- Artifacts/logs: none.
+
+## 2026-10-25 — Record GPPro retry-control commit
+
+- Step/experiment: `parallel-deploy-gppro-retry-control-20261025`
+- Change: Recorded the implementation commit for the coordinator retry controls.
+- Validation: Confirmed `561ba3e` contains only the coordinator, TODO, QKB, handoff, and progress changes for this step.
+- Result: The default single-attempt behavior and its rationale are traceable to commit `561ba3e`.
+- Decision: Continue with the open persistence and runtime priorities; do not treat retry control as a PC/SC transport repair.
 - Commit: pending.
 - Artifacts/logs: none.
