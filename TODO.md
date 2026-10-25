@@ -171,16 +171,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   `artifacts/logs/cycle-choupi-20261025T013632Z.log`. The external Windows
   GPPro workflow remains unverified.
 
-- [x] **AC4: refresh the physical support-results comparison after OwnerPINX.**
-  On 2026-10-20 the official physical `ALG_SUPPORT_EXTENDED` run completed
-  4,525 rows: 15 `yes`, 4,510 `no`, and no other CHOUPI statuses. The
-  comparator matched all row identities and the declared support list
-  (15/15; no unexpected or missing entries). jCardSim's additional 1,454
-  supported results are capability differences, not CHOUPI failures. Logs and
-  CSV: `artifacts/logs/jcalgtest-alg-support-ownerpinx-20261020.log`,
-  `artifacts/logs/monitor-alg-support-ownerpinx-20261020.log`,
-  `artifacts/logs/jcalgtest-support-compare-ownerpinx-20261020.log`, and
-  `artifacts/results/physical-alg-support-ownerpinx-20261020/`.
+- [x] **AC4: compare physical support results to the generated manifest and
+  jCardSim row set.** The 2026-10-25 2BED current-profile run matched all 4,525
+  row identities; CHOUPI reported 15 `yes`, 4,510 `no`, and zero other. The
+  generated current manifest matched 15/15 with no unexpected or missing
+  capabilities. jCardSim reports 1,469 yes and 121 other; its 1,454 additional
+  yes results are differences in implementation support, not CHOUPI failures.
+  Comparator log and CSV:
+  `artifacts/logs/jcalgtest-current-2BED-compare-20261025.log` and
+  `artifacts/results/jcalgtest-current-2BED-20261025/`.
 - [x] **AC5: prove the installed applet survives a real power cycle.**
   After a reported five-second disconnect/reconnect on 2026-10-20, the same
   physical Pico reader returned. `tools/test-pico-powerup` confirmed the
@@ -211,6 +210,13 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   `artifacts/logs/gppro-clean-install-load-install-20261020.log`, and
   `artifacts/logs/pico-powerup-persistence-20261020T135329Z.log`. Package
   deletion requires deleting its registered applet instance first; see QKB.
+- [x] **AC3: run JCAlgTest 1.8.2 supported-algorithms mode on the current
+  profile.** On Pico 2 `2BED26ED20556535`, the unchanged upstream CAP and
+  official client completed all 4,525 rows without transport or result-status
+  errors: 15 `yes`, 4,510 `no`, zero other. The client selected the exact reader
+  by name (SmartcardIO index 4). The applet and package were explicitly deleted
+  afterward; final GPPro listing showed only ISD. Client log and CSV are under
+  `artifacts/results/jcalgtest-current-2BED-20261025/`.
 - [ ] **AC1–AC5: run the plan's clean-flash integration sequence three times.**
   For each run, install the CAP, complete supported-algorithms mode, compare
   its CSV, power-cycle, and repeat. Record each run separately; `plan.md`

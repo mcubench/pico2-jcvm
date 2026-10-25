@@ -1,5 +1,27 @@
 # Latest validation — flash current profile and verify physical boot (2026-10-25)
 
+## Latest official current-profile JCAlgTest run — 2BED (2026-10-25)
+- Confirmed 2BED `2BED26ED20556535` was running the `current` ARM image and
+  the registry was ISD-only. GPPro explicitly loaded the unchanged upstream
+  `AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap` (SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`).
+- The exact PC/SC reader was selected by name, resolving to SmartcardIO index
+  4. Official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` completed all 4,525 rows:
+  15 `yes`, 4,510 `no`, zero other status values.
+- Comparator: all 4,525 row identities matched jCardSim. The generated current
+  manifest matched all 15 supported results (zero extra or missing). The
+  reference's 1,454 additional `yes` results are unsupported capabilities in
+  this firmware profile; jCardSim also reports 121 non-yes/no outcomes.
+- Deleted applet `4A43416C675465737431`, then package `4A43416C6754657374`.
+  Final read-only GPPro listing showed only ISD `A000000151000000`.
+- Client CSV SHA-256 `9cdf7e31124f7cc9f73e4a244cbb9bc184d9027052b7b75362ab1cc08b99e78`;
+  result log SHA-256 `cd4a6882fb9b6b28a948d2d4b0486575a410ceea43220437d79564ecb38d2512`;
+  comparator log SHA-256 `945b10b7ea4c29aa50805bc94a4f88caf8169f6bb3de5f518d033cbc2fe1b882`.
+  Final card listing:
+  `artifacts/logs/gppro-current-profile-2BED-after-jcalgtest-cleanup-20261025.log`.
+- Next: AC1 Windows acceptance and three complete clean-flash/power-cycle runs
+  remain open. No firmware or CAP implementation was changed in this run.
+
 ## Latest native API coverage — SensitiveResult across Context objects (2026-10-25)
 - `tools/tests/rmi_registry/rmi_registry_test.cpp` now switches the active
   context between two native `Context` objects and verifies VM-wide boolean,
@@ -33,9 +55,11 @@
   `artifacts/logs/cycle-choupi-20261025T073359Z.log` (SHA-256
   `c3996c0e39ec67f69e61237dd58427e0aaf20212f08e1e4b68a21f29c480c166`). The
   firmware cycle’s pre-flash gate covered both architectures.
-- Windows workflow, physical CAP install/select/delete on this exact image,
-  and true applet-state power-cycle persistence remain open. Next: exercise a
-  reversible current-image CAP flow on 2BED, then continue the open TODO items.
+- Windows workflow and true applet-state power-cycle persistence on the latest
+  image remain open. Physical current-image CAP install, select, processing,
+  and deletion are now verified by the `/deploy` and JCAlgTest runs above.
+  Complete the requested repeatable clean-flash/power-cycle sequence after the
+  external Windows pass is available.
 
 # Previous implementation step — abort VPCD on invalid saved registry (2026-10-25)
 

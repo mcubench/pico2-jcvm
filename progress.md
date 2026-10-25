@@ -12129,6 +12129,45 @@
   final GPPro listing log SHA-256
   `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`.
 
+## 2026-10-25 — Run official JCAlgTest support sweep on current 2BED image
+
+- Step/experiment: `current-jcalgtest-2BED-20261025`
+- Change: Explicitly install the unchanged upstream JCAlgTest 1.8.2 JC305 CAP,
+  run the official supported-algorithms client against current profile, compare
+  to the generated manifest and jCardSim row set, then delete the applet and
+  package. No firmware or CAP implementation changed.
+- Validation: GPPro `--install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap`
+  succeeded on exact reader `Pico 2 CHOUPI CCID [JCVM CCID]
+  (2BED26ED20556535) 01 00`; CAP SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI
+  CCID [JCVM CCID] (2BED26ED20556535) 01 00' -op ALG_SUPPORT_EXTENDED -fresh
+  -outpath artifacts/results/jcalgtest-current-2BED-20261025` passed all 4,525
+  rows: 15 `yes`, 4,510 `no`, zero other. `python3
+  tools/compare-jcalgtest-support.py
+  'artifacts/results/jcalgtest-current-2BED-20261025/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_01_00_ALGSUPPORT__3b_80_01_81.csv'
+  artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv` passed:
+  4,525 rows matched; generated current support was 15/15, no extra or missing.
+  Deleted applet `4A43416C675465737431`, then package `4A43416C6754657374`;
+  final exact-reader GPPro listing showed only ISD.
+- Result: The current ARM image completes the full official supported-mode
+  sweep without a transport or result-status error and reports exactly its
+  declared support. The reference simulator has 1,454 additional yes rows and
+  121 non-yes/no outcomes; those are simulator/profile differences.
+- Decision: AC3 and the current-profile portion of AC4 are verified on 2BED.
+  Windows acceptance and three complete clean-flash/power-cycle repetitions
+  remain open.
+- Commit: pending.
+- Artifacts/logs: client CSV SHA-256
+  `9cdf7e31124f7cc9f73e4a244cbb9bc184d9027052b7b75362ab1cc08b99e78`; raw
+  client log SHA-256 `cd4a6882fb9b6b28a948d2d4b0486575a410ceea43220437d79564ecb38d2512`;
+  generated current manifest SHA-256
+  `024fa70c6869061f113ce4d40e04bf1c6f165555b349c48ab45439d6037a0e34`;
+  comparator log SHA-256
+  `945b10b7ea4c29aa50805bc94a4f88caf8169f6bb3de5f518d033cbc2fe1b882`;
+  final registry log SHA-256
+  `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`.
+
 ## 2026-10-25 — Verify SensitiveResult visibility across native Contexts
 
 - Step/experiment: `sensitive-result-cross-context-native-20261025`
