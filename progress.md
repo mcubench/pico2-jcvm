@@ -12859,3 +12859,13 @@
 - Decision: Keep physical GET STATUS unresolved; retry on an exact Pico reader when PC/SC enumeration returns and inspect the response snapshot.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T174621Z.log` and `artifacts/logs/cycle-arm-20261025T174459Z.log`.
+
+## 2026-10-25 — Record CCID response trace commit
+
+- Step/experiment: `physical-get-status-response-trace-20261025`
+- Change: Recorded the implementation commit SHA for the CCID response snapshot diagnostics.
+- Validation: Confirmed `3b7de4c` contains only the response-trace code and associated tracking records.
+- Result: Physical GET STATUS diagnostic firmware is traceable to `3b7de4c`.
+- Decision: Continue project acceptance work; retry P1=10 after PC/SC exposes a Pico reader.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T174621Z.log`.
