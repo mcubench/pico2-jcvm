@@ -11844,8 +11844,8 @@
   on a physical card was not tested. 8E remained BOOTSEL.
 - Decision: Continue offline with multi-package registry discovery and restart
   reconstruction; keep GET DATA and full continuation open.
-- Commit: unavailable; `.git/index.lock` creation was rejected because `.git`
-  is mounted read-only in this environment.
+- Commit: `fc2996c` (also includes the empty `symm_crypto` image validation
+  record below).
 - Artifacts/logs: cycle logs
   `artifacts/logs/cycle-choupi-20261025T054429Z.log` and
   `artifacts/logs/cycle-choupi-20261025T054813Z.log`; runner CSV
@@ -11872,8 +11872,7 @@
   has no installed CAP packages or applets beyond its ISD.
 - Decision: Use the named UF2 for Windows testing and explicitly install the
   upstream JCAlgTest CAP afterward. Diagnose 8E only if it is needed again.
-- Commit: unavailable; `.git/index.lock` creation was rejected because `.git`
-  is mounted read-only in this environment.
+- Commit: `fc2996c`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-symm_crypto-empty-card.uf2`;
   successful cycle `artifacts/logs/cycle-choupi-20261025T061403Z.log`;
   failed-runtime 8E cycle `artifacts/logs/cycle-choupi-20261025T061139Z.log`;

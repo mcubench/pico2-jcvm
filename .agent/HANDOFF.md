@@ -31,6 +31,7 @@
 - Next: share this UF2 and the existing Windows PC/SC/GPPro commands with the
   user. If another device task is requested, use 2BED as currently responsive;
   8E needs USB/runtime re-enumeration diagnosis before further use.
+- Documentation, firmware artifact, and progress record commit: `fc2996c`.
 
 ## Physical PC/SC multi-package validation — 2026-10-25
 
