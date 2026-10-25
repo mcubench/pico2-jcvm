@@ -15,7 +15,8 @@
   GPPro succeeded after refresh. D92 remained unresponsive to a bounded
   read-only GPPro `--list`, so no writes were attempted there. Do not treat
   enumeration alone as card health; use 2BED for the next physical test.
-- Cycle log: `artifacts/logs/cycle-choupi-20261025T073359Z.log` (SHA-256
+- Validation-record commit: `0e5cfad`. Cycle log:
+  `artifacts/logs/cycle-choupi-20261025T073359Z.log` (SHA-256
   `c3996c0e39ec67f69e61237dd58427e0aaf20212f08e1e4b68a21f29c480c166`). The
   firmware cycle’s pre-flash gate covered both architectures.
 - Windows workflow, physical CAP install/select/delete on this exact image,

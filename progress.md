@@ -12027,7 +12027,7 @@
 - Decision: Use 2BED for the next physical CAP install/select/delete test.
   Windows acceptance and true physical applet persistence across power-off/on
   remain open.
-- Commit: pending.
+- Commit: `0e5cfad` (physical validation record).
 - Artifacts/logs: cycle log `artifacts/logs/cycle-choupi-20261025T073359Z.log`
   (SHA-256 `c3996c0e39ec67f69e61237dd58427e0aaf20212f08e1e4b68a21f29c480c166`);
   GPPro 2BED listing `artifacts/logs/gppro-current-profile-2BED-20261025.log`
