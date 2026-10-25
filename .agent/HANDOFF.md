@@ -22,6 +22,7 @@
   and hardware power-cycle validation remain open. This emulator option takes
   CAP component images and instance metadata explicitly. Do not resume paused
   `asymm_crypto` work.
+- Source and validation commit: `9dc0fe9`.
 
 # Previous validation — host VPCD multi-package lifecycle (2026-10-25)
 

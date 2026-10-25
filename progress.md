@@ -11920,7 +11920,7 @@
 - Decision: Keep automatic package/class discovery and physical power-cycle
   validation open. Continue with automatic registry recovery from saved host
   storage and remaining card-manager behavior.
-- Commit: `pending`.
+- Commit: `9dc0fe9`.
 - Artifacts/logs: initial process
   `artifacts/logs/host-vpcd-multipackage-apdu-20261025T064820Z.log` (SHA-256
   `9ff04323f8b1ff59e6aedf4360b12ccb4ec61dbd8f2fb3786e90d073539c8578`); resumed
