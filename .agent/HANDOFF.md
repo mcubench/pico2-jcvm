@@ -1,4 +1,27 @@
-# Latest implementation step — automatic VPCD registry sidecar (2026-10-25)
+# Latest implementation step — VPCD sidecar failure tests (2026-10-25)
+
+- Extended `tools/test-vpcd-multipackage` with corrupted-CRC and missing-sidecar
+  restart attempts against copies of the saved image. Both attempts emit their
+  expected rejection before connection to the intentionally unused VPCD port;
+  the valid two-package/three-instance restore and cleanup still pass.
+- Python bytecode compilation and scoped whitespace check pass. The full test
+  reports `TEST:SUMMARY pass=20 fail=0`. PC build from the immediately preceding
+  implementation commit is unchanged; no firmware build or hardware run was
+  needed for this Python-only regression extension.
+- Logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261025T071147Z.log`, SHA-256
+  `5cf2768c7b9655b2f9d11b3452bd1254997bc91f12880ec00ae86267dca0cce0`;
+  restart log `artifacts/logs/host-vpcd-multipackage-restart-20261025T071147Z.log`,
+  SHA-256 `c5ceb67ddddfc384a0d4cdb89448624d28e326537b68363538aa17123c2c3b3e`;
+  corrupt-sidecar rejection log SHA-256
+  `90549b210782ea964a950e453a4410546a43364d16936767574b11421c38e5d2`;
+  missing-sidecar rejection log SHA-256
+  `a2c1b3453c55e31fa83aed1f09de841fd9969d4e843701b4f4a30a6b8bc2ab99`.
+- Test implementation commit: `1072e25`; progress/TODO/handoff commit follows.
+  Next: proceed with remaining card-manager and JCVM gaps in
+  TODO; keep `asymm_crypto` paused.
+
+# Previous implementation step — automatic VPCD registry sidecar (2026-10-25)
 
 - `./tools/build-pc` passes, including ROM-mask generation. The build has
   existing converter/Maven, Rust OS, and packed-structure warnings.

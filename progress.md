@@ -11951,3 +11951,31 @@
   (SHA-256 `b26462a58b660dca73ea5619d4ba8724500427a910e03d1245307c980d2f33c2`);
   `artifacts/logs/host-vpcd-multipackage-restart-20261025T070620Z.log`
   (SHA-256 `60ea3358a18ad638174ea4dd3be96dd6895392027eba016b0b8bcb90ccb264fc`).
+
+## 2026-10-25 — Test VPCD registry sidecar rejection paths
+
+- Step/experiment: `vpcd-cap-registry-rejection-20261025`
+- Change: Extend the multipackage restart regression to corrupt the sidecar
+  checksum and to omit the sidecar while the saved image still contains
+  installed dynamic packages. Each case runs on a copy of the image so the
+  valid-resume fixture remains intact.
+- Validation: `python3 -m py_compile
+  tools/tests/pc_vpcd_multipackage_test.py` and scoped `git diff --check` passed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 180`
+  passed `TEST:SUMMARY pass=20 fail=0`, including both expected rejection
+  diagnostics and the successful full restart/cleanup flow. Existing PC build
+  remains valid; no source firmware or hardware change was made.
+- Result: A corrupt sidecar reports CRC mismatch; a missing sidecar reports
+  that installed package 56 has no registry metadata. The valid sidecar still
+  restores two packages and three instances.
+- Decision: Keep fail-closed sidecar validation; continue to the next open
+  card-manager/JCVM requirement. Physical power-cycle persistence remains open.
+- Commit: `1072e25` (test implementation); documentation follow-up follows.
+- Artifacts/logs: run log `artifacts/logs/host-vpcd-multipackage-apdu-20261025T071147Z.log`
+  (SHA-256 `5cf2768c7b9655b2f9d11b3452bd1254997bc91f12880ec00ae86267dca0cce0`),
+  restart log `artifacts/logs/host-vpcd-multipackage-restart-20261025T071147Z.log`
+  (SHA-256 `c5ceb67ddddfc384a0d4cdb89448624d28e326537b68363538aa17123c2c3b3e`),
+  corrupt rejection `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261025T071147Z.log`
+  (SHA-256 `90549b210782ea964a950e453a4410546a43364d16936767574b11421c38e5d2`),
+  missing rejection `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261025T071147Z.log`
+  (SHA-256 `a2c1b3453c55e31fa83aed1f09de841fd9969d4e843701b4f4a30a6b8bc2ab99`).

@@ -275,7 +275,9 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   `--memory` on clean save. `--resume` validates the sidecar against the image
   checksum and package bitmap, then reconstructs CAP bytes and applet/class
   records automatically; the fresh-process regression passes all 18 checks.
-  Corrupt/missing sidecars fail closed when dynamic packages are present.
+  Corrupt/missing sidecars fail closed when dynamic packages are present; the
+  regression now mutates the sidecar CRC and removes the sidecar from copied
+  installed-package images, confirming both rejection paths.
   Host PC/SC GPPro
   multi-package testing remains unverified because this VM has no `Virtual
   PCD` reader registered with PC/SC; physical CCID multi-package testing did
