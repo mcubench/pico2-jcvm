@@ -5060,3 +5060,24 @@ fix.
 - **Evidence:** `artifacts/logs/jcalgtest-after-zlp-D92-20261025.log`, partial
   CSV under `artifacts/results/jcalgtest-after-zlp-D92-20261025/`, and
   `artifacts/logs/pc-jcalgtest-rsa-oaep-md5-20261025.log`.
+
+## Asymmetric signature profile currently adds a Java ROM-mask provider — unresolved architecture violation (2026-10-25)
+
+- **Finding:** The pending `signature_rsa_sha_pkcs1` changes add
+  `tools/java-support/RSASignatureProvider.java`; `tools/javacard-support.py`
+  copies it into the generated `fr.gouv.ssi.nativeimpl` API sources and emits
+  Java `SignatureProvider` factory branches. `tools/build-pc` compiles these
+  sources into the ROM mask. Although the cryptographic routines in
+  `choupi/src/native_rsa_signature.cpp` are C++, the adapter/provider bytecode
+  still runs on the Pico. This violates the user's explicit instruction to
+  implement Java Card API behavior through native C++ dispatch and not add Java
+  provider/adapter implementations to firmware.
+- **Disposition:** Do not build/package this asymmetric profile state or treat
+  it as implementation evidence. Preserve the uncommitted files while replacing
+  the Java provider/factory path with direct native dispatch. Audit the older
+  RSA key/cipher provider classes under the same requirement; do not infer
+  compliance merely because their crypto operations are native.
+- **Baseline validation:** `./tools/build arm` passed with profile `current`,
+  15 capabilities. This excludes RSA signature and does not validate the
+  asymmetric profile. Source inspection confirmed the RSA signature module is
+  conditionally included only when that profile capability is enabled.

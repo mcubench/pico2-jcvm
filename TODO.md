@@ -1486,8 +1486,16 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `build/external-test/symm-crypto-windows-test.zip`; its Windows instructions
   are in `docs/symm-crypto-windows-test.md`. Both architecture wrapper builds,
   package checksums, and the 4,525-row physical symmetric CSV comparison pass.
-  Windows enumeration/client results remain pending. The `asymm_crypto`
-  implementation is paused at user request.
+  Windows enumeration/client results remain pending. The project-wide
+  objective has resumed asymmetric implementation. Continue that profile only
+  through native C++ Java Card API dispatch: do not add Java provider or
+  adapter classes to the ROM mask. The current uncommitted RSA signature
+  attempt adds `tools/java-support/RSASignatureProvider.java` and generated
+  `SignatureProvider` factory dispatch, so it does not meet that boundary;
+  replace it with direct native API dispatch before building or packaging the
+  profile. The existing RSA key/cipher provider architecture also needs an
+  audit against the same rule before claiming the asymmetric profile complete.
+  See the 2026-10-25 entry in `progress.md` and `.agent/HANDOFF.md`.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).
 - [ ] Complete deferred hardening and robustness work, including malformed CAP

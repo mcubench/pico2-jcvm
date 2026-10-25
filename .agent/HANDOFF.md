@@ -1,5 +1,19 @@
 # Current continuation — JC305 RMI official client coverage (2026-10-25)
 
+- The `asymm_crypto` profile work has resumed under the project-wide objective.
+  A source audit found the current uncommitted RSA signature attempt adds
+  `tools/java-support/RSASignatureProvider.java` and generated Java factory
+  dispatch into the ROM mask. That violates the user's explicit requirement
+  for native C++ API dispatch without Java provider/adapter classes. Do not
+  build/package the asymmetric profile from this state. Replace the adapter
+  with direct native API dispatch, and audit the previously implemented RSA
+  key/cipher provider code under the same rule. The native RSA signature code
+  is still uncommitted and unvalidated; preserve it while determining whether
+  its implementation can be reused behind direct dispatch.
+- Baseline check in this continuation: `./tools/build arm` passed for profile
+  `current` (15 enabled capabilities); it did not compile the RSA signature
+  module and is not asymmetric-profile validation.
+
 - The official JC305 SDK 2.2.1 `JCCardProxyFactory` probe now passes all 18
   focused VPCD checks against current source: primitive short invocation,
   byte/short/boolean/int array values and nulls, returned remote-interface

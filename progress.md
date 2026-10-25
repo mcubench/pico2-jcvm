@@ -13017,3 +13017,13 @@
 - Decision: Await a visible Pico PC/SC reader for exact physical replay; continue with offline correctness work while none is available.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/pc-jcalgtest-rsa-oaep-md5-test-20261025.log`.
+
+## 2026-10-25 — Audit asymmetric work against native-only runtime boundary
+
+- Step/experiment: `asymm-native-dispatch-boundary-audit-20261025`
+- Change: Inspected the dirty asymmetric-profile implementation and build source generation. Recorded that the new RSA signature attempt emits a Java provider and factory into the ROM mask, which violates the user's explicit native-only API implementation requirement. Updated TODO, QKB, and handoff to require replacement with direct native dispatch and an audit of existing RSA key/cipher providers.
+- Validation: `./tools/build arm` passed with profile `current` (15 capabilities). This did not compile or validate the asymmetric module. Static inspection of `tools/javacard-support.py`, `tools/java-support/RSASignatureProvider.java`, and CMake conditionals confirms the adapter is copied into generated API sources and compiled only when `signature_rsa_sha_pkcs1` is enabled. No asymmetric build or firmware flash was performed.
+- Result: The asymmetric RSA signature attempt is not acceptable to build/package as-is; the pending native C++ routines may be reusable after removing the Java provider dispatch layer.
+- Decision: Implement RSA signature through the existing Java Card `Signature` API's direct native method dispatch, without generating a provider/adapter class. Then test asymm_crypto and continue the requested asymmetric capability list.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: none; build artifacts are ignored under `build/`.
