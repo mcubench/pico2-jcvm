@@ -168,8 +168,12 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   firmware image does not preload the applet; reflashing preserves any CAPs
   previously written to persistent storage. Evidence:
   `artifacts/logs/gppro-empty-install-D92-20261025.log` and
-  `artifacts/logs/cycle-choupi-20261025T013632Z.log`. The external Windows
-  GPPro workflow remains unverified.
+  `artifacts/logs/cycle-choupi-20261025T013632Z.log`. The repeatable blank-card
+  VPCD acceptance is `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-gppro-empty-install-vpcd`; it verifies only ISD before explicit
+  upstream CAP install and package/applet visibility afterward. Latest run:
+  `artifacts/results/gppro-empty-install-vpcd-20261025T083218Z/`. The external
+  Windows GPPro workflow remains unverified.
 
 - [x] **AC4: compare physical support results to the generated manifest and
   jCardSim row set.** The 2026-10-25 2BED current-profile run matched all 4,525

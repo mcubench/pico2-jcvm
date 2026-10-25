@@ -12187,3 +12187,24 @@
 - Commit: `85ab7d2b070b55f804288fb150d24babaea1726f`.
 - Artifacts/logs: test executable `build/tests/rmi-registry/rmi_registry_test`;
   no separate log.
+
+## 2026-10-25 — Retain clean-card explicit GPPro install regression
+
+- Step/experiment: `gppro-empty-install-vpcd-20261025`
+- Change: Added a bounded VPCD workflow proving a blank card has no JCAlgTest
+  package before explicit GPPro LOAD/INSTALL and exposes the package and applet
+  afterward. It uses the unchanged upstream CAP.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd`
+  passed. GPPro listed only ISD before installation, then package `LOADED` and
+  applet `SELECTABLE`. No physical device was used in this run.
+- Result: The test reproduces the intended empty-card-before-install flow on a
+  fresh persistent image. It does not erase packages stored by earlier GPPro
+  installs on a physical card.
+- Decision: Keep the explicit install workflow as a regression; continue with
+  the remaining TODO, including the unverified Windows acceptance path.
+- Commit: `236586d`
+- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261025T083218Z/`;
+  script SHA-256 `adbbbe784fef53f4111e5135ac6a00a966a68fb60a2b2e5f42149990243f449b`;
+  before-list SHA-256 `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`;
+  install SHA-256 `fbf01704b262c6ffa9bf18b9ec2b01a83c390bb50f4e96e8c683da09dfb7ce5a`;
+  after-list SHA-256 `00df9b0b17d246684706058d183d7e4e5bc187b9bd973630b5c1b387befdeeb5`.

@@ -1,3 +1,21 @@
+# Latest validation — fresh-card explicit GPPro install regression (2026-10-25)
+
+- Added `tools/test-gppro-empty-install-vpcd`, a bounded test that starts a
+  genuinely blank VPCD flash image, confirms GPPro lists only ISD, explicitly
+  installs the unchanged JCAlgTest 1.8.2 JC305 CAP, and confirms package
+  `LOADED` plus applet `SELECTABLE`.
+- Validation: `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-gppro-empty-install-vpcd` passed. Artifacts are under
+  `artifacts/results/gppro-empty-install-vpcd-20261025T083218Z/`. This is VPCD
+  evidence; physical empty-card and install behavior was previously verified
+  on D92, and reflashing alone still does not remove CAPs already in persistent
+  card storage.
+- Script commit: `236586d`. Script SHA-256:
+  `adbbbe784fef53f4111e5135ac6a00a966a68fb60a2b2e5f42149990243f449b`.
+- Next: resume project TODO in priority order. Physical testing is currently
+  unavailable because authorized BOOTSEL enumeration found no Pico in this VM.
+  Keep the unrelated asymmetric-profile worktree changes untouched.
+
 # Latest validation — flash current profile and verify physical boot (2026-10-25)
 
 ## Latest official current-profile JCAlgTest run — 2BED (2026-10-25)
