@@ -51,11 +51,12 @@ with GPPro after confirming the card registry is empty.
   scenario calls). Its physical JCSystem subset had 47 OK and one
   spec-permitted `requestObjectDeletion()` unsupported result; the commit
   capacity probes returned `0x7FFF` outside a transaction and transaction
-  commit/abort probes passed. Cleanup left only ISD. Physical capacity reduction
-  after a persistent write, power-cycle recovery, and Java-level
-  `BUFFER_FULL` catchability at real capacity exhaustion remain unverified; an
-  earlier large-array VPCD overflow attempt timed out. Details are in
-  `progress.md`.
+  commit/abort probes passed. A focused physical transaction CAP test then
+  measured `32755` unused bytes after one persistent scalar update and
+  confirmed abort/commit restoration; cleanup left only ISD. True power-cycle
+  recovery and Java-level `BUFFER_FULL` catchability at exhaustion remain
+  unverified. An earlier large-array VPCD overflow attempt timed out. Details
+  are in `progress.md`.
 
 - **Empty-card symmetric firmware flash (2026-10-25):** Built the ARM
   `symm_crypto` CHOUPI image, passed both ARM and RISC-V build gates, and

@@ -12341,3 +12341,33 @@
   `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`;
   image SHA-256
   `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
+
+## 2026-10-25 — Verify physical JCSystem commit-capacity consumption
+
+- Step/experiment: `jcsystem-transaction-capacity-physical-2BED-20261025`
+- Change: Added a host-side SmartcardIO probe and bounded runner for the
+  existing JCSystem transaction test CAP. The runner pins the exact reader,
+  refuses to replace an existing package with the fixture AID, installs it,
+  checks abort/commit restoration and active commit capacity, then removes the
+  applet/package and verifies cleanup.
+- Validation: `bash -n tools/test-jcsystem-transaction-physical` and scoped
+  `git diff --check` passed. The physical probe compiled with the repository
+  environment wrapper. On 2BED `2BED26ED20556535`, test SELECT and all five
+  assertions passed: abort restored `0x11`, commit retained `0x33`, and
+  `getUnusedCommitCapacity()` fell from `32767` to `32755` during a persistent
+  scalar update. GPPro cleanup completed and the final listing showed only
+  ISD. No firmware was rebuilt or flashed; this changes host test tooling only.
+- Result: Physical capacity accounting matches the VPCD observation for this
+  persistent update. The fixture card state is empty again. Power-cycle
+  recovery and Java-catchable `BUFFER_FULL` at real exhaustion are still open.
+- Decision: Keep the capacity implementation; next add a bounded exhaustion
+  case or test power-cycle recovery without treating the timed-out large-array
+  attempt as a pass.
+- Commit: pending
+- Artifacts/logs: physical log
+  `artifacts/logs/jcsystem-transaction-physical-20261025T093140Z.log`, SHA-256
+  `98f0834d5d960df830dc755212c177a2812761cc366d91a7476a1744d9939fb3`;
+  final GPPro list
+  `build/jcsystem-transaction-probe/physical-gp-list-20261025T093140Z.log`;
+  test CAP SHA-256
+  `738164ec01573f5e101aca46c56e08065bbe0df8c5ab008f466e286363e31ac6`.

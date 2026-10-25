@@ -1,3 +1,23 @@
+# Latest physical validation — JCSystem commit capacity on 2BED (2026-10-25)
+
+- Added `tools/JCSystemTransactionPhysicalProbe.java` and
+  `tools/test-jcsystem-transaction-physical` to exercise the existing JCSystem
+  test CAP against an exact PC/SC reader. The script checks the package AID
+  before install, uses bounded GPPro/APDU commands, and deletes the fixture
+  applet/package in its cleanup trap.
+- Physical 2BED `2BED26ED20556535` run passed five assertions: rollback
+  restored field `0x11`, commit retained `0x33`, and max/unused commit capacity
+  was `32767` outside a transaction versus `32755` while a persistent scalar
+  update was active. The package was removed afterward; final GPPro list showed
+  only ISD. No firmware build/flash occurred.
+- Log `artifacts/logs/jcsystem-transaction-physical-20261025T093140Z.log`,
+  SHA-256 `98f0834d5d960df830dc755212c177a2812761cc366d91a7476a1744d9939fb3`.
+  The probe CAP SHA-256 is
+  `738164ec01573f5e101aca46c56e08065bbe0df8c5ab008f466e286363e31ac6`.
+- Remaining: validate power-cycle recovery and catchable `BUFFER_FULL` at real
+  capacity exhaustion. The earlier timed-out large-array VPCD attempt is not a
+  pass. Preserve unrelated dirty asymmetric changes.
+
 # Latest physical validation — symmetric profile JCAlgTest on 2BED (2026-10-25)
 
 - Starting state: the 2BED `2BED26ED20556535` card had only the ISD installed

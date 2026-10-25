@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-physical 'exact reader name'"
+require_command timeout
+reader_name="$1"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+cap="${repo_root}/build/jcsystem-transaction-probe/output/JCTransactionProbe.cap"
+java_build="${repo_root}/build/jcsystem-transaction-probe/physical-client"
+package_aid="4A43416C6754657374"
+applet_aid="4A43416C675465737431"
+[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
+
+"${repo_root}/tools/build-jcsystem-transaction-probe"
+[[ -s "${cap}" ]] || die "transaction probe CAP not found: ${cap}"
+mkdir -p "${java_build}" "${repo_root}/artifacts/logs"
+"${repo_root}/tools/env" javac -d "${java_build}" \
+  "${repo_root}/tools/JCSystemTransactionPhysicalProbe.java"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log="${repo_root}/artifacts/logs/jcsystem-transaction-physical-${timestamp}.log"
+list_log="${repo_root}/build/jcsystem-transaction-probe/physical-gp-list-${timestamp}.log"
+install_log="${repo_root}/build/jcsystem-transaction-probe/physical-install-${timestamp}.log"
+delete_applet_log="${repo_root}/build/jcsystem-transaction-probe/physical-delete-applet-${timestamp}.log"
+delete_package_log="${repo_root}/build/jcsystem-transaction-probe/physical-delete-package-${timestamp}.log"
+gp=("${repo_root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
+installed=0
+
+cleanup() {
+  local status=$?
+  trap - EXIT
+  if [[ "${installed}" == 1 ]]; then
+    local clean_status=0
+    if timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
+        >"${list_log}" 2>&1; then
+      if grep -Fq "APP: ${applet_aid} " "${list_log}"; then
+        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+          --delete "${applet_aid}" >"${delete_applet_log}" 2>&1 || clean_status=1
+      fi
+      if (( clean_status == 0 )) && grep -Fq "PKG: ${package_aid} " "${list_log}"; then
+        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+          --delete "${package_aid}" >"${delete_package_log}" 2>&1 || clean_status=1
+      fi
+      if (( clean_status == 0 )) && timeout --signal=TERM --kill-after=5s 30s \
+          "${gp[@]}" --list >"${list_log}" 2>&1; then
+        if grep -Fq "APP: ${applet_aid} " "${list_log}" || \
+           grep -Fq "PKG: ${package_aid} " "${list_log}"; then
+          clean_status=1
+        fi
+      else
+        clean_status=1
+      fi
+    else
+      clean_status=1
+    fi
+    if (( clean_status != 0 )); then
+      printf 'JC_SYSTEM_PHYSICAL:CLEANUP_FAIL package=%s log=%s\n' \
+        "${package_aid}" "${list_log}" | tee -a "${log}"
+      status=1
+    else
+      printf 'JC_SYSTEM_PHYSICAL:CLEANUP_PASS package=%s\n' \
+        "${package_aid}" | tee -a "${log}"
+    fi
+  fi
+  exit "${status}"
+}
+trap cleanup EXIT
+
+exec > >(tee -a "${log}") 2>&1
+printf 'JC_SYSTEM_PHYSICAL:START reader=%s\n' "${reader_name}"
+PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
+  >"${list_log}" 2>&1 || die "GPPro list failed; see ${list_log}"
+if grep -Fq "APP: ${applet_aid} " "${list_log}" || \
+   grep -Fq "PKG: ${package_aid} " "${list_log}"; then
+  die "transaction-probe AID is already present; refusing to replace it"
+fi
+
+installed=1
+timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${cap}" \
+  >"${install_log}" 2>&1 || die "transaction-probe install failed; see ${install_log}"
+printf 'JC_SYSTEM_PHYSICAL:INSTALL package=%s applet=%s result=PASS\n' \
+  "${package_aid}" "${applet_aid}"
+timeout --signal=TERM --kill-after=5s 90s \
+  "${repo_root}/tools/env" java -cp "${java_build}" \
+  JCSystemTransactionPhysicalProbe --reader "${reader_name}"
+printf 'JC_SYSTEM_PHYSICAL:PASS log=%s\n' "${log#${repo_root}/}"

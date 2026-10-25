@@ -652,12 +652,12 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   Ext scenario rows unavailable); 47 JCSystem rows were OK and the one
   `requestObjectDeletion()` row was unsupported per spec. The card returned
   `0x7FFF` maximum and unused capacity outside a transaction, and begin/depth/
-  capacity/commit and begin/abort probes passed. Runner cleanup succeeded and
-  GPPro showed only ISD. This does not cover physical capacity consumption
-  after a persistent write or power-cycle recovery. A large-array VPCD overflow
-  attempt timed out before the APDU completed;
-  Java-level catchability of `BUFFER_FULL` on an overflowing applet write is
-  not yet end-to-end verified.
+  capacity/commit and begin/abort probes passed. A bounded physical test CAP
+  run on 2BED confirmed active unused capacity fell to `32755` after a
+  persistent scalar update; abort and commit restoration passed. Cleanup left
+  only ISD. True power-cycle recovery and Java-level catchability of
+  `BUFFER_FULL` at exhaustion remain unverified. A large-array VPCD overflow
+  attempt timed out before the APDU completed; do not count that as evidence.
 - [ ] **Add extended APDUs only if required by the selected profile.** The
   transport rejects extended APDUs. `APDU.waitExtension()` enforces API state,
   but synchronous CCID processing cannot send actual T=1 WTX while a command
