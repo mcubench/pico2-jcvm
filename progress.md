@@ -12559,3 +12559,13 @@
 - Decision: Keep the PC/SC/APDU issue open; use a different exact Pico reader if one becomes available. Continue offline source work.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: `artifacts/results/deploy/parallel-20261025-142230/pico1.csv`, `pico1.log`.
+
+## 2026-10-25 — Record single-reader transport finding commit ID
+
+- Step/experiment: `pico-single-reader-service-transport-20261025`
+- Change: Recorded documentation commit `00f7a23` in the preceding progress entry.
+- Validation: Confirmed `00f7a23` contains only `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md`.
+- Result: The D92 transport failure and its no-calls outcome are traceable to commit `00f7a23`.
+- Decision: Continue source work and retry physical APDUs only when a Pico is responsive through PC/SC.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
