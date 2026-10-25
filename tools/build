@@ -27,6 +27,13 @@ require_command cmake
 require_command ninja
 require_command picotool
 require_command sha256sum
+require_command flock
+mkdir -p "${repo_root}/build"
+build_lock_file="${repo_root}/build/.tools-build.lock"
+exec 9>"${build_lock_file}"
+printf 'BUILD:LOCK waiting arch=%s profile=%s\n' "${arch}" "${support_profile}"
+flock -x 9
+printf 'BUILD:LOCK acquired arch=%s profile=%s\n' "${arch}" "${support_profile}"
 build_jobs="${PICO_BUILD_JOBS:-2}"
 [[ "${build_jobs}" =~ ^[1-9][0-9]*$ ]] || \
   die "PICO_BUILD_JOBS must be a positive integer"

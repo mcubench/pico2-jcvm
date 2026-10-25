@@ -193,6 +193,22 @@
   issue if the evidence identifies one. Afterward restore three-reader PC/SC
   enumeration and rerun coverage if available. Do not run `pcsc_scan`.
 
+## Build-wrapper lock prevents shared ROM-mask races — 2026-10-25
+
+- A simultaneous ARM/RISC-V build attempt raced on the shared
+  `build/choupi-pc` ROM-mask directory; one LTO link failed with a bus error.
+  The final sequential builds passed and the validated ARM image was flashed
+  to D92.
+- `tools/build` now serializes complete wrapper invocations through
+  `build/.tools-build.lock` using `flock`. A concurrent post-change validation
+  showed one architecture waiting while the other held the lock; both
+  `symm_crypto` builds then exited 0. This changes host build orchestration
+  only, not firmware bits; no second physical flash was performed.
+- See `.agent/QKB.md` for the observed failure and repeatable workaround.
+- Next: trace a native-only API dispatch path for the remaining asymmetric
+  algorithms; preserve the dirty provider experiment and do not extend it until
+  it matches the user's architecture rule. Keep D92's registry empty.
+
 ## Empty `symm_crypto` card confirmed on Pico D92 — 2026-10-25
 
 - User reported Pico tokens available in BOOTSEL. Host discovery showed only

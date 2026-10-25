@@ -1,5 +1,24 @@
 # Project issue knowledge base
 
+## Concurrent ARM/RISC-V builds collided in the shared ROM-mask tree — 2026-10-25
+
+- **Symptom:** Concurrent `./tools/build arm` and `./tools/build riscv`
+  invocations both regenerated and consumed shared `build/choupi-pc` artifacts.
+  One wrapper completed while the other failed at LTO with an internal
+  compiler bus error (exit 2).
+- **Cause:** The wrappers share the PC API/ROM-mask generation directory and
+  support metadata; there was no cross-process build lock. The LTO bus error
+  occurred only during this concurrent run, so resource/contention causality
+  is likely but not independently proven.
+- **Viable fix:** `tools/build` now holds an exclusive `flock` on
+  `build/.tools-build.lock` through each complete architecture build. Keep the
+  existing wrapper default at two compile jobs; concurrent requests now wait
+  rather than racing generated files or multiplying compiler load.
+- **Validation:** Launched ARM and RISC-V `symm_crypto` wrappers concurrently
+  after the change. RISC-V acquired the lock first; ARM logged `waiting` until
+  RISC-V exited, then acquired it. Both exited 0 and reported `BUILD:PASS`.
+  No physical flash was needed for this host build-orchestration-only change.
+
 ## ROM class token differs from runtime class index — 2026-10-24
 
 - **Symptom:** Native RSA key methods initially threw `SecurityException`

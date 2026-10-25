@@ -11544,3 +11544,22 @@
 - Commit: `4da6c6d`.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`;
   `artifacts/logs/cycle-choupi-20261025T001428Z.log`.
+
+## 2026-10-25 — Serialize shared architecture builds
+
+- Step/experiment: `build-wrapper-rommask-lock`
+- Change: Added an exclusive file lock to `tools/build` around shared
+  ROM-mask generation and architecture compilation. Parallel ARM/RISC-V
+  requests now queue instead of competing for `build/choupi-pc` artifacts.
+- Validation: Launched `./tools/build arm --profile symm_crypto` and
+  `./tools/build riscv --profile symm_crypto` concurrently. RISC-V acquired
+  the lock first; ARM waited, then acquired it after RISC-V completed. Both
+  exited 0 with `BUILD:PASS`. An earlier unlocked concurrent attempt failed
+  at LTO with a bus error. The firmware output was unchanged; physical flashing
+  was intentionally not repeated for this host-only orchestration change.
+- Result: The cross-architecture race is guarded by a lock at the repository
+  wrapper entry point. Default compiler parallelism remains two jobs per build.
+- Decision: Keep using repository wrappers; no other build paths need changes
+  unless a future reproduction bypasses `tools/build`.
+- Commit: pending.
+- Artifacts/logs: `build/.tools-build.lock`; no separate build log archived.
