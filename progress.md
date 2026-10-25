@@ -11646,3 +11646,20 @@
 - Decision: Keep firmware and persistent applet storage as separate setup steps. Users wanting a fresh card must remove existing applets/packages via GPPro; a UF2 reflash alone cannot empty card storage. Physical Windows validation is still outstanding.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T013632Z.log`; `artifacts/logs/gppro-empty-install-D92-20261025.log`; `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-25 — Physical symmetric-profile static benchmark
+
+- Step/experiment: `jcalgtest-symm-crypto-static-D92`
+- Change: Ran the unchanged JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` mode on D92 `D92E743D5F640C0F` after the `symm_crypto` image flash and explicit upstream CAP installation.
+- Validation: The official client was allowed 3,600 seconds and exited 124 at that configured limit while running the DES MAC matrix. The partial CSV has 3,127 rows / 675 methods: 540 `NO_SUCH_ALGORITHM`, 67 `CANT_BE_MEASURED`, and 68 measured outcomes. No unexpected SW, `6F00`, Java exception, `TEST:FAIL`, or `FAULT` was found. A follow-up physical SELECT, GETVERSION, and JCSystem info probe returned `9000` for all three APDUs.
+- Result: SHA-256 measured 3.48 ms/op (`doFinal`), 4.08 (`update`), and 5.67 (`reset`) at 256 bytes / 250 iterations. Secure random measured 1.74 ms/op (`generateData`) and 2.79 (`setSeed`). Completed DES cipher-init samples were 39.0 / 47.8 / 56.0 ms/op for DES / 2-key 3DES / 3-key 3DES. AES cipher-init samples were 59.4–60.9 / 68.2–68.8 / 76.7–77.5 ms/op for 128 / 192 / 256-bit keys. These are partial-suite results; the client has no algorithm-family filter and the full RSA/method matrix did not finish within one hour. JCSystem reports `getMaxCommitCapacity() = 0B`, matching the open capacity-accounting item. No fix was indicated by the measured SHA or cipher results.
+- Decision: Treat unsupported algorithms as expected and retain the existing commit-capacity question for a separate native JCSystem task. Do not label this full static matrix complete.
+- Commit: pending
+- Artifacts/logs: log
+  `artifacts/logs/jcalgtest-symm-crypto-static-D92-20261025-final.log`
+  (SHA-256 `bb565b3ffdb7f3c91a6ed86d8654a0668f524a4b3e9a6f2cb790f50752761d52`);
+  CSV
+  `artifacts/results/jcalgtest-symm-crypto-static-D92-20261025-final/CHOUPI_symm_crypto_D92____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_1792892534007__3b_80_01_81.csv`
+  (SHA-256 `d2275b427981dc3541bd6b72acb8b8c287c741d4a5a20a3f4fd7e68af4eba120`);
+  health probe `artifacts/logs/jcalgtest-post-static-timeout-D92-20261025.log`
+  (SHA-256 `9996361b93e759a8eb0143e3560e52c7d455aaf649c6d102c3663bd44e438bd3`).

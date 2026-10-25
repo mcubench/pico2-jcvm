@@ -1,4 +1,4 @@
-# Current active run — `symm_crypto` empty-image and GPPro explicit install
+# Latest physical task — `symm_crypto` flash, explicit install, static benchmark
 
 - Both `./tools/build arm --profile symm_crypto` and
   `./tools/build riscv --profile symm_crypto` passed. The ARM image is
@@ -19,13 +19,27 @@
   `4A43416C675465737431` `SELECTABLE`. This confirms no CAP is embedded in the
   image. Current card state: applet installed by the explicit request.
   Evidence: `artifacts/logs/gppro-empty-install-D92-20261025.log`.
-- A complete physical `ALG_PERFORMANCE_STATIC` retry is now running with a
-  3,600-second timeout under session 64634. Log:
-  `artifacts/logs/jcalgtest-symm-crypto-static-D92-20261025-final.log`; output
-  directory: `artifacts/results/jcalgtest-symm-crypto-static-D92-20261025-final/`.
-  Poll that session, then inspect the final CSV and exit status. Earlier runs
-  were interrupted by the launcher's 900-second limit / task switch and must
-  not be reported as full results.
+- The physical official `ALG_PERFORMANCE_STATIC` run on that image used a
+  3,600-second timeout and exited 124 at the configured limit while the client
+  was measuring DES MAC. Its partial CSV has 3,127 rows / 675 methods: 540
+  `NO_SUCH_ALGORITHM`, 67 `CANT_BE_MEASURED`, 68 measured outcomes. There were
+  no unexpected SWs, `6F00`, Java exceptions, `TEST:FAIL`, or `FAULT`. SHA-256
+  completed at 3.48 ms/op (`doFinal`), 4.08 (`update`), and 5.67 (`reset`), at
+  256 bytes / 250 iterations. Secure random measured 1.74 ms/op (`generateData`)
+  and 2.79 (`setSeed`). Measured DES `Cipher_init` cases were 39.0, 47.8, and
+  56.0 ms/op for DES / 2-key 3DES / 3-key 3DES. AES `Cipher_init` was 59.4–60.9,
+  68.2–68.8, and 76.7–77.5 ms/op for 128/192/256-bit keys. Partial log:
+  `artifacts/logs/jcalgtest-symm-crypto-static-D92-20261025-final.log`; CSV:
+  `artifacts/results/jcalgtest-symm-crypto-static-D92-20261025-final/CHOUPI_symm_crypto_D92____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_1792892534007__3b_80_01_81.csv`.
+- After the timeout, the physical SELECT, GETVERSION, and JCSystem info probe
+  passed (`9000` for all three APDUs), confirming the applet/card remained
+  responsive. Log: `artifacts/logs/jcalgtest-post-static-timeout-D92-20261025.log`.
+- Current card state remains JCAlgTest explicitly installed. The full
+  `ALG_PERFORMANCE_STATIC` suite is not complete: there is no JCAlgTest option
+  to filter a subset, and the full RSA/method matrix exceeded one hour. Do not
+  call this a complete run. The focused SHA-256 result is sensible; no source
+  fix is indicated by this measurement. The earlier completed full static run
+  recorded in TODO remains historical evidence for its earlier image.
 - The working tree still has unrelated asymmetric-prototype and other
   pre-existing dirty files. Preserve them; stage only the progress, handoff,
   and TODO record for this hardware step. Windows testing remains out of scope.

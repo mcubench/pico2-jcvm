@@ -590,6 +590,21 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   no panic or GC traversal error; expected totals were 1,772
   `NO_SUCH_ALGORITHM` and 95 `CANT_BE_MEASURED`. SHA-256 256-byte timings were
   3.10 ms/op (`doFinal`), 3.34 ms/op (`update`), and 6.11 ms/op (`reset`).
+- A fresh D92 `symm_crypto` run on 2026-10-25 was bounded at 3,600 seconds and
+  exited 124 at the configured timeout during DES MAC; do not call it a
+  complete suite. Partial output has 3,127 CSV rows / 675 methods, 540
+  `NO_SUCH_ALGORITHM`, 67 expected `CANT_BE_MEASURED`, 68 measured outcomes,
+  and no unexpected SWs, `6F00`, Java exception, or runtime fault. The complete
+  SHA-256 256-byte metrics were 3.48 ms/op (`doFinal`), 4.08 (`update`), and
+  5.67 (`reset`). Secure random was 1.74 (`generateData`) and 2.79 (`setSeed`).
+  The measured DES and AES `Cipher_init` timings scaled with key size: DES / 2-key
+  3DES / 3-key 3DES at 39.0 / 47.8 / 56.0 ms/op, and AES-128/192/256 at
+  59.4–60.9 / 68.2–68.8 / 76.7–77.5 ms/op. Follow-up SELECT, GETVERSION, and
+  JCSystem info all returned `9000`. JCSystem still reports
+  `getMaxCommitCapacity() = 0B`, matching the open capacity-accounting item.
+  Artifacts are in `artifacts/logs/jcalgtest-symm-crypto-static-D92-20261025-final.log`,
+  `artifacts/results/jcalgtest-symm-crypto-static-D92-20261025-final/`, and
+  `artifacts/logs/jcalgtest-post-static-timeout-D92-20261025.log`.
 - SCP03, basic GlobalPlatform listing/loading/selection, SHA-256 execution,
   short-response chaining, applet registration/selection/reselection, tested
   JCSystem methods, transaction rollback, and VPCD process-restart persistence
