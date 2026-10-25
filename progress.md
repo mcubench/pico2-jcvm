@@ -12413,3 +12413,34 @@
   SHA-256 `a9965f8f60852c07856f873d9786840108433cfdf1085c4d3785c8e16f7e6320`;
   test CAP SHA-256
   `fc5ffad90b5dce08875acfe5b519faef5b0feb3be4d0c7cfae3deb38277a310b`.
+
+## 2026-10-25 — Add reader idle and applet activity LED
+
+- Step/experiment: `pico2-reader-led-activity-20261025`
+- Change: Added PWM control of the Pico 2 onboard LED (GPIO 25). While the CCID
+  interface is in reader mode it smoothly brightens and fades over 1.6 seconds
+  every 10 seconds. Each APDU dispatched to an applet sets full brightness for
+  120 ms; a hardware alarm turns it off on time even while the VM is executing
+  applet bytecode. Card-manager traffic and reader polling do not flash it.
+- Validation: `./tools/cycle choupi --profile current --chipid
+  2BED26ED20556535` passed ARM and RISC-V build gates, flashed the ARM image
+  with 100% verification, and passed the finite runtime monitor with repeated
+  `TEST:SUMMARY pass=1 fail=0`. On the exact final image, the upstream API
+  3.0.5 Core applet completed 291 physical calls (272 `OK`, 11
+  `UNSUPPORTED_PER_SPEC`, 8 optional `APPLET_NOT_INSTALLED`). Cleanup passed;
+  final GPPro listing showed only ISD. Scoped `git diff --check` passed.
+- Result: CCID reader-mode and actual applet APDU paths ran on physical 2BED
+  `2BED26ED20556535`. Flashing initially needed the wrapper's CDC-to-BOOTSEL
+  recovery after the reset interface was unavailable; image load and verify
+  then succeeded. The physical light intensity/timing was not independently
+  measured with optical equipment.
+- Decision: Keep the PWM heartbeat and timer-bounded activity pulse. No further
+  LED firmware change is needed unless physical visual feedback reports a
+  board-specific brightness or polarity issue.
+- Commit: pending
+- Artifacts/logs: image `build/arm/pico2_choupi.uf2`, 1,668,608 bytes, SHA-256
+  `42d0aa887aecf9e1a9f164ebdac8161edff8c773e172a99a7ac2741ceadda219`; cycle
+  log `artifacts/logs/cycle-choupi-20261025T104118Z.log`, SHA-256
+  `45953aeac26bdd6826257145ef71414c3bf694fef68767ab6fbf477a00d4437f`; Core
+  CSV `artifacts/results/led-applet-apdu-2BED-final2-20261025.csv`, SHA-256
+  `906519e78c88195821085db2826fbf1846c63bcf0d85fe8f4d3ef46ebddf90a6`.

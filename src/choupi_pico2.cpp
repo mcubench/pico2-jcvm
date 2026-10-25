@@ -21,6 +21,7 @@
 #include "cap_store.hpp"
 #include "flash_layout.hpp"
 #include "jc_handlers/flashmemory.hpp"
+#include "reader_led.hpp"
 
 extern "C" char __StackLimit;
 
@@ -1368,6 +1369,7 @@ extern "C" void path_applet_field16(uint8_t applet, uint8_t package,
 }
 
 int main_arm(void) {
+  choupi_reader_led_init();
   // A stalled VM can stop servicing USB requests. Preserve and report its last
   // INSTALL opcode after a reset, even if BOOTROM/USB recovery replaced the
   // original watchdog reset-cause flag before this image started.
@@ -1440,6 +1442,7 @@ int main_arm(void) {
     // that owns usbd endpoint state.
     tud_task();
     choupi_ccid_task();
+    choupi_reader_led_task();
     watchdog_update();
     if (time_reached(next_report)) {
       uint8_t ccid_stage = 0;

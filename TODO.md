@@ -252,6 +252,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
 
 ### Priority 2 — close correctness and reliability gaps
 
+- [x] **Add Pico reader LED idle and applet-activity indication.** In CCID
+  reader mode, GPIO 25 now produces a smooth 1.6-second breathe every 10
+  seconds. Each APDU delivered to an applet triggers a 120 ms full-brightness
+  pulse; a hardware timer ends the pulse even if applet execution blocks the
+  main loop. Reader polling and card-manager-only commands do not trigger the
+  activity pulse. ARM/RISC-V build gates, a physical 2BED flash/runtime cycle,
+  and the upstream API 3.0.5 Core applet APDU run passed. The LED waveform was
+  not independently measured with optical equipment.
+
 - [ ] **Make CAP installation and filesystem updates recover atomically.** CAP
   metadata uses alternating copy-on-write headers, and install now commits a
   CRC-protected intent record alongside applet persistent state before

@@ -1,4 +1,30 @@
-# Current continuation — JCSystem BUFFER_FULL verified on 2BED (2026-10-25)
+# Current continuation — Pico reader LED implemented and validated (2026-10-25)
+
+- Added a non-blocking Pico 2 GPIO 25 PWM heartbeat: 1.6-second smooth
+  brighten/fade every 10 seconds while CCID is active. Applet APDUs trigger a
+  full-brightness 120 ms pulse. A hardware timer ends it even during long VM
+  calls; manager traffic and reader polling are excluded. ARM/RISC-V build
+  gates passed. Final image was flashed and verified on 2BED
+  `2BED26ED20556535`; its bounded monitor passed. Upstream API 3.0.5 Core ran
+  291 physical calls (272 OK, 11 spec-allowed unsupported, 8 optional
+  `APPLET_NOT_INSTALLED`) and cleanup succeeded; final GPPro list was ISD-only.
+  The LED output was not observed with an optical sensor.
+- Final image `build/arm/pico2_choupi.uf2`: 1,668,608 bytes, SHA-256
+  `42d0aa887aecf9e1a9f164ebdac8161edff8c773e172a99a7ac2741ceadda219`.
+  Cycle log `artifacts/logs/cycle-choupi-20261025T104118Z.log`, SHA-256
+  `45953aeac26bdd6826257145ef71414c3bf694fef68767ab6fbf477a00d4437f`.
+  Physical Core CSV `artifacts/results/led-applet-apdu-2BED-final2-20261025.csv`,
+  SHA-256 `906519e78c88195821085db2826fbf1846c63bcf0d85fe8f4d3ef46ebddf90a6`.
+- Outstanding work: resume physical JCSystem state-across-power-cycle
+  investigation. Uncommitted edits in `tools/JCSystemTransactionPhysicalProbe.java`
+  and `tools/test-jcsystem-transaction-physical` add reset/persistence modes;
+  repeated attempts after the earlier passing BUFFER_FULL test intermittently
+  returned `6F00` on initial applet SELECT. Do not count those attempts as
+  passes. The latest failure log is
+  `artifacts/logs/jcsystem-transaction-physical-20261025T101807Z.log`.
+  Preserve all unrelated asymmetric crypto dirty files.
+
+## Previous continuation — JCSystem BUFFER_FULL verified on 2BED (2026-10-25)
 
 - Physical 2BED `2BED26ED20556535` now passes the JCSystem exhaustion case.
   The focused probe reported `0300` (`TransactionException.BUFFER_FULL`,

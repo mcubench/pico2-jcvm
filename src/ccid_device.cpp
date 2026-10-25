@@ -13,6 +13,7 @@
 #include "gp_delete.hpp"
 #include "gp_get_data.hpp"
 #include "cap_store.hpp"
+#include "reader_led.hpp"
 
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
@@ -604,6 +605,10 @@ void process_message(uint8_t rhport) {
           }
         if (!select_failed) {
             uint16_t applet_response_length = 0;
+            // SELECT itself is delivered to the applet, as is each later
+            // command. Flash once per incoming applet APDU, not for reader
+            // polling or card-manager traffic.
+            choupi_reader_led_activity();
             std::printf("CHOUPI:SELECT process=begin\r\n");
             std::fflush(stdout);
             const uint16_t process_status = choupi_vm_process_applet(
@@ -640,6 +645,7 @@ void process_message(uint8_t rhport) {
       }
     } else if (apdu_length <= UINT16_MAX) {
       uint16_t applet_response_length = 0;
+      choupi_reader_led_activity();
       const uint16_t status = choupi_vm_process_applet(
           apdu, static_cast<uint16_t>(apdu_length), response,
           static_cast<uint16_t>(sizeof(response)), &applet_response_length);
@@ -676,9 +682,13 @@ void driver_init() {
   ep_in = 0;
   secure_channel.reset();
   cap_load_session.reset();
+  choupi_reader_led_set_reader_mode(false);
 }
 
-bool driver_deinit() { return true; }
+bool driver_deinit() {
+  choupi_reader_led_set_reader_mode(false);
+  return true;
+}
 
 void driver_reset(uint8_t) {
   choupi_vm_clear_selected_applet();
@@ -691,6 +701,7 @@ void driver_reset(uint8_t) {
   ep_in = 0;
   secure_channel.reset();
   cap_load_session.abortTransfer();
+  choupi_reader_led_set_reader_mode(false);
 }
 
 uint16_t driver_open(uint8_t rhport,
@@ -725,6 +736,7 @@ uint16_t driver_open(uint8_t rhport,
     return 0;
   }
   debug_stage = 2;
+  choupi_reader_led_set_reader_mode(true);
   queue_out(rhport);
   return consumed;
 }

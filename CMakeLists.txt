@@ -166,6 +166,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     choupi/src/main.cpp
     src/choupi_pico2.cpp
     src/ccid_device.cpp
+    src/reader_led.cpp
     src/cap_load.cpp
     src/cap_store.cpp
     src/scp03.cpp
@@ -207,6 +208,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   # pico_rand also supplies SCP03 host challenge randomness, so it remains a
   # mandatory card-management dependency even when Java Card RandomData is off.
   target_link_libraries(pico2_choupi PRIVATE pico_stdlib pico_rand pico_flash
+    hardware_pwm
     pico_mbedtls_headers)
   if(JC_SUPPORT_SHA256)
     target_link_libraries(pico2_choupi PRIVATE pico_sha256)

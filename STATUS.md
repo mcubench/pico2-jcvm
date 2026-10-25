@@ -33,6 +33,15 @@ with GPPro after confirming the card registry is empty.
   Cycle log: `artifacts/logs/cycle-choupi-20261025T084539Z.log`; final GPPro
   transcript: `artifacts/logs/gppro-symm-empty-card-2BED-20261025.log`.
 
+- **Reader LED indication (2026-10-25):** The ARM firmware now breathes the
+  Pico 2 onboard GPIO 25 LED for 1.6 seconds every 10 seconds while the CCID
+  reader interface is active. Applet APDUs produce a 120 ms full-brightness
+  pulse, timed by a hardware alarm so long VM execution cannot stretch it.
+  ARM/RISC-V build gates and a physical 2BED flash/runtime cycle passed. The
+  upstream API 3.0.5 Core CAP completed 291 physical calls and was removed;
+  GPPro then listed only ISD. The firmware/log hashes and exact validation are
+  in `progress.md`. The actual light waveform was not instrumented optically.
+
 - **Current-image symmetric API coverage (2026-10-25):** On the same 2BED ARM
   image, upstream API 3.0.5 Security completed 901 calls (97 `OK`, 802
   `UNSUPPORTED_PER_SPEC`, two deliberately excluded reader-risky RSA-2048
