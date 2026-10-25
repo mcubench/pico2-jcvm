@@ -12819,3 +12819,13 @@
 - Decision: Continue broader GC and persistence coverage.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Record transient graph collector test commit
+
+- Step/experiment: `gc-transient-reference-graph-lifecycle-20261025`
+- Change: Recorded the implementation commit SHA for transient reference-array lifecycle coverage under collection.
+- Validation: Confirmed `81fab00` contains only the transient graph regression and its project tracking updates.
+- Result: Transient lifecycle regression is traceable to `81fab00`.
+- Decision: Continue toward remaining project acceptance and correctness work.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
