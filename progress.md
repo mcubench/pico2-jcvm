@@ -13027,3 +13027,13 @@
 - Decision: Implement RSA signature through the existing Java Card `Signature` API's direct native method dispatch, without generating a provider/adapter class. Then test asymm_crypto and continue the requested asymmetric capability list.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: none; build artifacts are ignored under `build/`.
+
+## 2026-10-25 — Record native dispatch audit commit
+
+- Step/experiment: `asymm-native-dispatch-boundary-audit-20261025`
+- Change: Recorded the architecture-audit commit for the asymmetric-profile work.
+- Validation: `git diff --cached --check` passed; the commit includes only the audit, project TODO, handoff, QKB, and progress notes.
+- Result: Commit `ee5ab79` prevents the current provider-based RSA signature path from being mistaken for native-only implementation.
+- Decision: Continue with direct native API dispatch; preserve all pre-existing asymmetric implementation work until it can be safely reused or removed as part of that refactor.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
