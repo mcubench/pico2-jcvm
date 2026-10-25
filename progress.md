@@ -12679,3 +12679,13 @@
 - Decision: Continue GC root and persistence-alias coverage; physical power-cycle validation remains open.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Record lifecycle GC-root test commit
+
+- Step/experiment: `gc-lifecycle-root-enumeration-20261025`
+- Change: Recorded the implementation commit SHA for lifecycle root enumeration coverage.
+- Validation: Confirmed commit `380b956` contains only the focused root test, TODO/handoff updates, and its progress record.
+- Result: The new root assertions are traceable to commit `380b956`.
+- Decision: Continue the remaining GC and persistence-alias coverage.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
