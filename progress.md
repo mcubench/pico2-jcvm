@@ -11926,3 +11926,28 @@
   `9ff04323f8b1ff59e6aedf4360b12ccb4ec61dbd8f2fb3786e90d073539c8578`); resumed
   process `artifacts/logs/host-vpcd-multipackage-restart-20261025T064820Z.log`
   (SHA-256 `e741d7d3488c759198e4ae78f7f51b7620a2c6468480a9e2cba105ca2d6deee1`).
+
+## 2026-10-25 — Automatically restore host VPCD package registry
+
+- Step/experiment: `vpcd-cap-registry-sidecar-20261025`
+- Change: Save VPCD CAP bytes and applet/class records in an atomic checksummed
+  sidecar adjacent to the saved PC memory image. `--resume` restores the
+  registry automatically and verifies the sidecar against the image checksum
+  and enabled package bitmap. Missing registry metadata for installed dynamic
+  packages fails closed. Updated the multipackage restart regression to use
+  auto-discovery without explicit CAP/class records.
+- Validation: `./tools/build-pc` passed, including ROM-mask generation.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 180`
+  passed `TEST:SUMMARY pass=18 fail=0`. Python bytecode compilation and scoped
+  `git diff --check` passed. Existing SDK, Maven, Rust OS, and packed-member
+  warnings remain. Hardware was not used because this step changes PC-only VPCD
+  support.
+- Result: A clean process restart restored 2 packages and 3 applets, passed
+  authenticated GET STATUS, selected every applet, and completed DELETE cleanup.
+- Decision: Automatic host VPCD registry discovery is complete. Physical
+  multi-package power-cycle persistence and PC/SC-host GPPro remain unverified.
+- Commit: `3b45bd5` (implementation); documentation follow-up follows.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T070620Z.log`
+  (SHA-256 `b26462a58b660dca73ea5619d4ba8724500427a910e03d1245307c980d2f33c2`);
+  `artifacts/logs/host-vpcd-multipackage-restart-20261025T070620Z.log`
+  (SHA-256 `60ea3358a18ad638174ea4dd3be96dd6895392027eba016b0b8bcb90ccb264fc`).

@@ -267,10 +267,16 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   DELETE refusal while instances remain, cascade deletion, and an empty final
   registry (`TEST:SUMMARY pass=13 fail=0`). It also saves and closes the first
   emulator process, then starts a fresh process from the saved VM image with
-  two packages and three applet records supplied through repeatable
-  `--restore-applet` arguments. GET STATUS and SELECT pass for all restored
-  records; the complete lifecycle reports `TEST:SUMMARY pass=18 fail=0`.
-  Automatic host registry discovery remains open. Host PC/SC GPPro
+  two packages and three applet records. The explicit `--restore-applet` mode
+  remains available; the follow-up `--resume` mode now discovers these records
+  from its sidecar. GET STATUS and SELECT pass for all restored records; the
+  complete lifecycle reports `TEST:SUMMARY pass=18 fail=0`.
+  Host VPCD now writes an atomic checksummed CAP-registry sidecar alongside
+  `--memory` on clean save. `--resume` validates the sidecar against the image
+  checksum and package bitmap, then reconstructs CAP bytes and applet/class
+  records automatically; the fresh-process regression passes all 18 checks.
+  Corrupt/missing sidecars fail closed when dynamic packages are present.
+  Host PC/SC GPPro
   multi-package testing remains unverified because this VM has no `Virtual
   PCD` reader registered with PC/SC; physical CCID multi-package testing did
   pass on 2BED as documented in the card-manager section below.
@@ -1219,8 +1225,8 @@ rollback and duplicate/invalid registration handling also remain unverified.
   restart now passes for both
   native `--install` and GPPro LOAD/INSTALL when resumed with the allocated
   package ID (56) and class index (148); GPPro listing plus SELECT, GETVERSION,
-  and JCSystem all pass after restart. Automatic package/class registry
-  discovery, GET DATA coverage beyond GPPro's exercised commands, and complete
+  and JCSystem all pass after restart. Automatic VPCD registry discovery is
+  implemented; GET DATA coverage beyond GPPro's exercised commands and complete
   multi-entry continuation remain open. Physical CCID GPPro integration is
   now verified on Pico 2
   `2BED26ED20556535`: unchanged upstream Core and Multi API 3.0.5 CAPs loaded,

@@ -1,4 +1,31 @@
-# Latest implementation step — multi-package VPCD process resume (2026-10-25)
+# Latest implementation step — automatic VPCD registry sidecar (2026-10-25)
+
+- `./tools/build-pc` passes, including ROM-mask generation. The build has
+  existing converter/Maven, Rust OS, and packed-structure warnings.
+- `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 180`
+  passes `TEST:SUMMARY pass=18 fail=0`. It saves a two-package/three-instance
+  registry, exits the first host process, and starts a fresh process with
+  `--resume` and no explicit CAP/class restore records. Restored applets pass
+  authenticated GET STATUS and SELECT, then cleanup empties the registry.
+- The host now stores VPCD CAP bytes and applet/class mappings in an atomic
+  `.cap-registry` sidecar adjacent to `--memory`. `--resume` validates its CRC,
+  saved-image checksum, package bitmap, CAP package/applet AIDs, and duplicate
+  instances. A missing or invalid sidecar is rejected when dynamic packages
+  remain installed. The explicit repeatable `--restore-applet` mode remains
+  available as a fallback.
+- Logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261025T070620Z.log`, SHA-256
+  `b26462a58b660dca73ea5619d4ba8724500427a910e03d1245307c980d2f33c2`;
+  restart log `artifacts/logs/host-vpcd-multipackage-restart-20261025T070620Z.log`,
+  SHA-256 `60ea3358a18ad638174ea4dd3be96dd6895392027eba016b0b8bcb90ccb264fc`.
+- Physical multi-package power-cycle persistence and PC/SC-host GPPro testing
+  remain open. This step is host-only; no hardware was used. Implementation
+  commit: `3b45bd5`; progress/TODO/handoff documentation is being committed as
+  its required follow-up.
+- Next: continue card-manager persistence and the remaining in-scope VM work;
+  keep `asymm_crypto` paused.
+
+# Previous implementation step — multi-package VPCD process resume (2026-10-25)
 
 - Added repeatable `--restore-applet ID CLASS APPLET_AID INSTANCE_AID
   CAP_COMPONENTS` CLI records. Resume validates each component image, checks
