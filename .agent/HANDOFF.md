@@ -337,6 +337,7 @@
   `edfb7f6827b1051c837e468cd3db45db67f1fb88d00e7d9aca6d9a9f8c8afc9e`).
   Final card listing: `artifacts/logs/gppro-current-profile-2BED-after-core-20261025.log`
   (SHA-256 `d32b48744874e072169c2e981ba62ea900919fe3726cdf0dc3ac180c93deab6`).
+- Validation record commit: `9c652bfb317f4145bb89abf634eaba99f8e66d20`.
 - Next: run additional unchanged `/deploy` areas on this identified reader,
   then prioritize JCVM gaps from observed failures. Keep `asymm_crypto` paused.
 

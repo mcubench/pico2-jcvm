@@ -12057,7 +12057,7 @@
   empty.
 - Decision: Use the exact 2BED reader for further `/deploy` checks; preserve
   the upstream CAPs and keep `asymm_crypto` paused.
-- Commit: pending.
+- Commit: `9c652bfb317f4145bb89abf634eaba99f8e66d20`.
 - Artifacts/logs: CSV `artifacts/results/deploy/current-2BED-20261025/core.csv`
   (SHA-256 `edfb7f6827b1051c837e468cd3db45db67f1fb88d00e7d9aca6d9a9f8c8afc9e`);
   final GPPro listing `artifacts/logs/gppro-current-profile-2BED-after-core-20261025.log`
