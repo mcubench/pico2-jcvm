@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -eq 0 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd"
+require_host_usb_access
+require_command timeout
+require_command grep
+
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+cap="${repo_root}/AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
+load_code="${repo_root}/build/algtest-v182-load-code.bin"
+emulator="${repo_root}/build/choupi-pc/choupi"
+rom_mask="${repo_root}/build/choupi-pc/flash"
+reader="Virtual PCD 00 00"
+applet_aid="4A43416C675465737431"
+
+for input in "${gp_jar}" "${cap}" "${load_code}" "${emulator}" "${rom_mask}"; do
+  [[ -s "${input}" ]] || die "required input is missing: ${input}"
+done
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+out_dir="${repo_root}/artifacts/results/gppro-empty-install-vpcd-${timestamp}"
+mkdir -p "${out_dir}"
+flash_image="${out_dir}/empty-card.bin"
+: > "${flash_image}"
+
+"${repo_root}/tools/env" java "${repo_root}/tools/VpcdPresenceProbe.java" \
+  "${reader}" 1000 > "${out_dir}/reader-before.log"
+if grep -Fq 'present=true' "${out_dir}/reader-before.log"; then
+  die "${reader} already has a card; refusing to use a non-empty VPCD slot"
+fi
+
+"${repo_root}/tools/env" "${emulator}" -m "${flash_image}" -s \
+  --vpcd 127.0.0.1:35963 --vpcd-idle-timeout 20 \
+  --applet-aid "${applet_aid}" --package-id 63 --cap-code "${load_code}" \
+  --rom-mask "${rom_mask}" > "${out_dir}/emulator.log" 2>&1 &
+emulator_pid=$!
+cleanup() {
+  if kill -0 "${emulator_pid}" 2>/dev/null; then
+    kill -TERM "${emulator_pid}" 2>/dev/null || true
+    wait "${emulator_pid}" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT INT TERM
+
+card_ready=0
+for attempt in $(seq 1 20); do
+  if ! kill -0 "${emulator_pid}" 2>/dev/null; then
+    cat "${out_dir}/emulator.log" >&2
+    die "VPCD emulator exited before connecting"
+  fi
+  if timeout --signal=TERM --kill-after=2s 5s \
+      "${repo_root}/tools/env" java \
+      "${repo_root}/tools/VpcdPresenceProbe.java" "${reader}" 1000 \
+      --require-present > "${out_dir}/reader-ready.log" 2>&1; then
+    card_ready=1
+    break
+  fi
+  sleep 0.25
+done
+[[ "${card_ready}" == 1 ]] || {
+  cat "${out_dir}/emulator.log" >&2
+  cat "${out_dir}/reader-ready.log" >&2
+  die "emulator did not make the clean VPCD card present"
+}
+
+run_gp() {
+  timeout --signal=TERM --kill-after=5s 120s \
+    "${repo_root}/tools/env" java -jar "${gp_jar}" \
+    --reader "${reader}" "$@"
+}
+
+run_gp --list > "${out_dir}/list-before.log" 2>&1 || {
+  cat "${out_dir}/list-before.log" >&2
+  die "GPPro could not list the empty card"
+}
+if grep -Fq 'PKG: 4A43416C6754657374 ' "${out_dir}/list-before.log" ||
+   grep -Fq 'APP: 4A43416C675465737431 ' "${out_dir}/list-before.log"; then
+  cat "${out_dir}/list-before.log" >&2
+  die "fresh VPCD image unexpectedly contains JCAlgTest"
+fi
+
+run_gp --install "${cap}" > "${out_dir}/install.log" 2>&1 || {
+  cat "${out_dir}/install.log" >&2
+  die "GPPro LOAD/INSTALL failed; see ${out_dir}"
+}
+run_gp --list > "${out_dir}/list-after.log" 2>&1 || {
+  cat "${out_dir}/list-after.log" >&2
+  die "GPPro could not list the card after installation"
+}
+grep -Fq 'PKG: 4A43416C6754657374 (LOADED)' "${out_dir}/list-after.log" || {
+  cat "${out_dir}/list-after.log" >&2
+  die "JCAlgTest package is not listed as loaded"
+}
+grep -Fq 'APP: 4A43416C675465737431 (SELECTABLE)' "${out_dir}/list-after.log" || {
+  cat "${out_dir}/list-after.log" >&2
+  die "JCAlgTest applet is not listed as selectable"
+}
+
+printf 'GPPRO_EMPTY_INSTALL:PASS reader=%s applet=%s artifacts=%s\n' \
+  "${reader}" "${applet_aid}" "${out_dir#${repo_root}/}"
