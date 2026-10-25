@@ -31,6 +31,11 @@
   completed on 2BED and D92; the third BOOTSEL identity `8e464f4e2bbc0a19`
   disappeared before the wrapper verified its write. Last USB enumeration had
   two runtime devices; do not attribute a third tool-verified flash.
+- Follow-up after the user's LED confirmation: the approved PC/SC helper granted
+  access to two USB nodes, while bounded `pcsc_scan -r` listed only D92 plus the
+  two Virtual PCD readers. Treat the third boards' LED status as user-observed;
+  no three-reader PC/SC test is currently available. Continue source work and
+  use any Pico that reappears in PC/SC as the hardware failover target.
 - Next: continue the remaining TODO in priority order. The three-run
   clean-flash/power-cycle criterion and true power-off/on persistence remain
   open. Preserve the upstream CAP and unrelated working-tree changes.

@@ -4839,3 +4839,20 @@ fix.
   `artifacts/logs/jcsystem-transaction-physical-20261025T111649Z.log` (failed
   fallback experiment; cleanup passed), and
   `artifacts/logs/cycle-choupi-20261025T112220Z.log`.
+
+## Three LEDs active while PC/SC exposes only one Pico — 2026-10-25
+
+- **Symptom:** The user reports all three physical Pico 2 devices show the
+  firmware LED indication. The approved reader helper granted access to two USB
+  nodes, but a bounded `pcsc_scan -r` listed only D92
+  (`D92E743D5F640C0F`) and the two Virtual PCD readers.
+- **Interpretation:** LED activity confirms user-observed firmware behavior but
+  does not establish PC/SC enumeration or APDU access. The two USB nodes do not
+  identify three active smart-card readers.
+- **Viable solution:** None established for this occurrence. Continue source
+  work and use any exact Pico reader that PC/SC exposes; retry other boards only
+  after they appear as readers. Do not infer a firmware or applet failure from
+  missing PC/SC enumeration alone.
+- **Validation:** `sudo -n /usr/local/sbin/pico2-pcsc-reader` returned
+  `PCSC:ACCESS_GRANTED count=2`; `timeout 8s pcsc_scan -r` exited 0 and listed
+  Virtual PCD 00 00, Virtual PCD 00 01, and D92.

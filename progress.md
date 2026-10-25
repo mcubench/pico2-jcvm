@@ -12529,3 +12529,13 @@
 - Decision: Continue with the next implementation priority in TODO.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Record three-board LED and PC/SC visibility follow-up
+
+- Step/experiment: `pico-three-board-led-pcsc-followup-20261025`
+- Change: Recorded the user's observation that all three device LEDs are active and distinguished it from the current PC/SC reader list in the handoff and QKB.
+- Validation: Through the approved host-access path, `sudo -n /usr/local/sbin/pico2-pcsc-reader` granted access to two USB nodes; bounded `timeout 8s pcsc_scan -r` exited 0 and listed two Virtual PCD readers plus D92 only. No applet APDU test was available on the other boards.
+- Result: User-observed LED status is positive for all three; PC/SC currently exposes one physical Pico reader. Do not claim three-reader availability or third-board flash verification.
+- Decision: Continue source work and use any exact Pico reader that reappears in PC/SC as the physical failover target.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: bounded PC/SC output was inspected directly; no output file was created.
