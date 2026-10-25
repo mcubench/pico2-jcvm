@@ -12839,3 +12839,13 @@
 - Decision: Continue remaining JCVM acceptance and implementation gaps.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Record RMI registry collector test commit
+
+- Step/experiment: `gc-rmi-registry-collection-20261025`
+- Change: Recorded the implementation commit SHA for actual exported-object retention and post-unexport reclamation coverage.
+- Validation: Confirmed `683d435` contains only the focused GC regression and its tracking files.
+- Result: RMI registry root behavior is traceable to `683d435`.
+- Decision: Continue project completion work.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
