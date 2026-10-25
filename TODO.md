@@ -420,8 +420,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   persistent array body now has a stable tag separate from either reference
   field. Added a nested persistent graph through an object field containing an
   `Object[]` with two aliases to a byte array; process-restart restore and four
-  GC-pressure rounds passed 38/38 checks. Physical power-cycle validation of
-  these alias scenarios remains open. A separate real-card transaction probe
+  GC-pressure rounds passed 38/38 checks. A fresh rerun on 2026-10-25 completed
+  `./tools/test-vpcd-persistence` with `TEST:SUMMARY pass=38 fail=0`, including
+  four GC-pressure rounds after emulator-process restart. Physical power-cycle
+  validation of these alias scenarios remains open. A separate real-card transaction probe
   now confirms its 32,767-byte persistent array remains readable after a scalar
   transaction commit, CCID reset, and firmware cycle (9/9 assertions on 2BED).
 - [x] **Expose all three Pico 2 devices through PC/SC.** The installed helper

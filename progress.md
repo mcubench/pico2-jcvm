@@ -13037,3 +13037,13 @@
 - Decision: Continue with direct native API dispatch; preserve all pre-existing asymmetric implementation work until it can be safely reused or removed as part of that refactor.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Rerun filesystem recovery and persistent GC suites
+
+- Step/experiment: `filesystem-persistence-revalidation-20261025`
+- Change: Revalidated the existing atomic-install/filesystem recovery and persistent-reference/GC pressure suites after resuming the project objective; updated TODO and HANDOFF with the fresh results.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including 1,000 randomized cuts each during journal clear, journal creation, and registry-header publication. `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`). `./tools/test-vpcd-persistence` passed after running through the approved elevated local-process path because the restricted launch hit loopback `EPERM`; its fresh-process restore and four GC pressure rounds report `TEST:SUMMARY pass=38 fail=0`.
+- Result: Host simulations and process-restart persistence are passing. Physical power-cut and physical persistent-alias validation remain incomplete; this rerun does not close those requirements.
+- Decision: Keep the atomicity and GC TODOs open for physical validation. Continue direct native API dispatch work for the asymmetric profile; the in-progress Java provider adapter remains disallowed.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261025T200233Z.log` and `artifacts/logs/vpcd-persistence-restore-20261025T200233Z.log`; the other two test wrappers did not save standalone logs.

@@ -1,5 +1,15 @@
 # Current continuation — JC305 RMI official client coverage (2026-10-25)
 
+- Fresh local persistence validation on 2026-10-25: `./tools/test-rp2350-fs-overlay`
+  passed all assertions including 1,000 randomized cuts for journal clear,
+  journal creation, and registry-header publication (`TEST:SUMMARY fail=0`);
+  `./tools/test-persistent-transaction` passed all assertions; and
+  `./tools/test-vpcd-persistence` completed fresh-process restore plus four GC
+  pressure rounds (`TEST:SUMMARY pass=38 fail=0`). Physical power-cut and
+  physical persistent-alias tests remain open. Logs for the VPCD run:
+  `artifacts/logs/vpcd-persistence-commit-20261025T200233Z.log` and
+  `artifacts/logs/vpcd-persistence-restore-20261025T200233Z.log`.
+
 - The `asymm_crypto` profile work has resumed under the project-wide objective.
   A source audit found the current uncommitted RSA signature attempt adds
   `tools/java-support/RSASignatureProvider.java` and generated Java factory
