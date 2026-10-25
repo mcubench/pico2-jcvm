@@ -325,6 +325,21 @@
 
 # Latest physical task — `symm_crypto` flash, explicit install, static benchmark
 
+## Latest physical API validation — current-profile Core deploy run (2026-10-25)
+- On Pico 2 `2BED26ED20556535`, the unchanged API 3.0.5 Core area completed
+  291 calls: 272 `OK`, 15 `UNSUPPORTED_PER_SPEC`, and four Ext scenario rows
+  unavailable after the expected Ext CAP INSTALL refusal (`6A88`).
+- JCSystem subset: 37 `OK`; one spec-permitted `requestObjectDeletion()`
+  `ILLEGAL_USE`. No JCSystem wrong-result/runtime-error rows.
+- The runner deleted the installed Core and Multi CAPs. Final GPPro listing
+  showed only ISD, leaving the card empty. No firmware source or CAP was edited.
+- CSV: `artifacts/results/deploy/current-2BED-20261025/core.csv` (SHA-256
+  `edfb7f6827b1051c837e468cd3db45db67f1fb88d00e7d9aca6d9a9f8c8afc9e`).
+  Final card listing: `artifacts/logs/gppro-current-profile-2BED-after-core-20261025.log`
+  (SHA-256 `d32b48744874e072169c2e981ba62ea900919fe3726cdf0dc3ac180c93deab6`).
+- Next: run additional unchanged `/deploy` areas on this identified reader,
+  then prioritize JCVM gaps from observed failures. Keep `asymm_crypto` paused.
+
 ## Current continuation — D92 multi-package transaction-probe attempt (2026-10-25)
 
 - Rebuilt ARM and RISC-V with `symm_crypto`; both wrappers passed. Flashed ARM

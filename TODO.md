@@ -1277,6 +1277,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   2BED is the working failover. Windows enumeration, current-image
   install/select/process/delete, and true physical power-cycle persistence
   remain unverified.
+- [x] On 2026-10-25, ran unchanged upstream API 3.0.5 Core area on the flashed
+  2BED current-profile card: 291 calls (272 `OK`, 15 per-spec unsupported,
+  four Ext scenario calls unavailable after expected `6A88` INSTALL refusal).
+  JCSystem rows were 37 `OK` and one spec-permitted `requestObjectDeletion()`
+  `ILLEGAL_USE`. Runner cleanup succeeded and final GPPro listing showed only
+  ISD. CSV: `artifacts/results/deploy/current-2BED-20261025/core.csv`.
 - [ ] Pass AC1–AC5 and the plan's clean-flash integration sequence three times.
 
 ## Expanded and required cryptographic profiles

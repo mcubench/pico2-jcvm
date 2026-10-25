@@ -12034,3 +12034,31 @@
   (SHA-256 `74310a82da5307c0a7104efcb92b7580566e8d99f5d3b857d20c144233796517`);
   UF2 `build/arm/pico2_choupi.uf2` is 1,666,048 bytes, SHA-256
   `cbd741c4f379b3738141af73b6a9a6c3b7f6c43b925a74c4f359d1bb789ac04e`.
+
+## 2026-10-25 — Run upstream API 3.0.5 Core area on current 2BED image
+
+- Step/experiment: `current-core-deploy-2BED-20261025`
+- Change: Exercise the unchanged upstream Core and Multi CAPs from
+  `AlgTest_JavaCard/deploy` against the current-profile Pico 2 image. No CAP or
+  firmware implementation changes.
+- Validation: `PICO2_HOST_USB_ACCESS=1
+  ./AlgTest_JavaCard/deploy/run_api_test.sh --cardname current-2BED-20261025
+  --reader-name 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00'
+  --api 305 --areas Core --out
+  /home/claude/Projects/pico2-jcvm/artifacts/results/deploy/current-2BED-20261025/core.csv
+  --dump-dir
+  /home/claude/Projects/pico2-jcvm/artifacts/results/deploy/current-2BED-20261025/core-dump`
+  passed. 291 calls: 272 `OK`, 15 `UNSUPPORTED_PER_SPEC`, four
+  `APPLET_NOT_INSTALLED` after optional Ext scenario INSTALL was refused with
+  `6A88`. JCSystem: 37 `OK`, one spec-permitted
+  `requestObjectDeletion()` `ILLEGAL_USE`. Final GPPro list showed only ISD.
+- Result: The supported Core and JCSystem calls completed; Ext scenario CAP
+  installation is unavailable on this runtime. Runner cleanup left the card
+  empty.
+- Decision: Use the exact 2BED reader for further `/deploy` checks; preserve
+  the upstream CAPs and keep `asymm_crypto` paused.
+- Commit: pending.
+- Artifacts/logs: CSV `artifacts/results/deploy/current-2BED-20261025/core.csv`
+  (SHA-256 `edfb7f6827b1051c837e468cd3db45db67f1fb88d00e7d9aca6d9a9f8c8afc9e`);
+  final GPPro listing `artifacts/logs/gppro-current-profile-2BED-after-core-20261025.log`
+  (SHA-256 `d32b48744874e072169c2e981ba62ea900919fe3726cdf0dc3ac180c93deab6`).
