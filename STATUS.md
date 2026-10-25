@@ -33,6 +33,13 @@ with GPPro after confirming the card registry is empty.
   Cycle log: `artifacts/logs/cycle-choupi-20261025T084539Z.log`; final GPPro
   transcript: `artifacts/logs/gppro-symm-empty-card-2BED-20261025.log`.
 
+- **Current-image symmetric API coverage (2026-10-25):** On the same 2BED ARM
+  image, upstream API 3.0.5 Security completed 901 calls (97 `OK`, 802
+  `UNSUPPORTED_PER_SPEC`, two deliberately excluded reader-risky RSA-2048
+  generation cases); Crypto completed 466 calls (161 `OK`, 305
+  `UNSUPPORTED_PER_SPEC`). No unexpected status occurred. Both CAPs cleaned up
+  successfully and a final GPPro listing showed only ISD. See `progress.md`.
+
 - **JCSystem commit capacity (2026-10-25):** The native transaction suite
   passes, and the complete host VPCD JCSystem regression passes 84/84. It
   reports maximum/unused capacity `0x7FFF` outside transactions and 32755

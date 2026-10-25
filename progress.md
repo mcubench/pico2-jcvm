@@ -12237,6 +12237,29 @@
   post-cleanup GPPro log SHA-256
   `5fab190e1ac1f63c4a7a0ea97e8d00e20dc728ab519b230d13617bbad9c12cd6`.
 
+## 2026-10-25 — Validate current-image Security and Crypto API coverage
+
+- Step/experiment: `current-security-crypto-2BED-20261025`
+- Change: Ran unchanged API 3.0.5 Security and Crypto deploy CAPs on the latest
+  physical 2BED `symm_crypto` ARM image. The official runner cleaned both CAPs
+  after their areas.
+- Validation: Security completed 901 calls (97 `OK`, 802
+  `UNSUPPORTED_PER_SPEC`, two `SKIPPED_BY_USER` RSA-2048 generation cases per
+  the documented reader-risk exclusion). Crypto completed 466 calls (161
+  `OK`, 305 `UNSUPPORTED_PER_SPEC`). There were no other statuses. Upload and
+  cleanup stages passed for both areas. Final GPPro listing showed only ISD.
+- Result: Current-image symmetric API operations and their expected unsupported
+  responses completed without transport or runtime failures; the test card
+  remains empty.
+- Decision: Keep `asymm_crypto` paused; continue with remaining TODO items.
+- Commit: pending
+- Artifacts/logs: CSV SHA-256
+  `7ba137393626a1d314eb17d2e842d32a76e389f9c3d19190924b388be77df2e5`;
+  runner log SHA-256
+  `01a4f74f714abd686893cb93878fe7b1f3f1da78fe11fdfce92e49f37deab2ab`;
+  post-cleanup GPPro log SHA-256
+  `94a5b9f45e961b8d8ce93ba7f9bf4bff20e75d63a5805a108ba78ed0c51555e0`.
+
 ## 2026-10-25 — Reflash symm profile and leave 2BED card empty
 
 - Step/experiment: `symm-empty-2BED-20261025T084539Z`

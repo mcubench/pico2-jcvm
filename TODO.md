@@ -121,6 +121,12 @@ cipher.
   `APPLET_NOT_INSTALLED` rows after its scenario CAP INSTALL returned 6A88.
   All `/deploy` CAPs were cleaned up; GPPro lists only the ISD. CSVs are in
   `artifacts/results/deploy/symm_crypto-D92-20261025/`.
+  Latest exact-image validation on 2BED ran Security and Crypto after the
+  current ARM `symm_crypto` reflash: Security 901 calls (97 OK, 802
+  `UNSUPPORTED_PER_SPEC`, two intentionally skipped reader-risky RSA-2048
+  generation cases); Crypto 466 calls (161 OK, 305 `UNSUPPORTED_PER_SPEC`).
+  Both CAP cleanups passed and final GPPro listed only ISD. CSV:
+  `artifacts/results/deploy/current-2BED-20261025/security-crypto-current-image.csv`.
 - [x] Fix and physically verify the OwnerPINx Core regression. The root cause
   was ambiguous JC305 `checkcast` token resolution: a framework interface token
   could also resolve to an unrelated class export with the same byte value.

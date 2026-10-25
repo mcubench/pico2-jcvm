@@ -1,3 +1,20 @@
+# Latest physical API validation — Security and Crypto on current 2BED image (2026-10-25)
+
+- Ran the unchanged API 3.0.5 Security and Crypto CAPs/client on exact reader
+  `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00`. Security completed
+  901 calls: 97 `OK`, 802 `UNSUPPORTED_PER_SPEC`, and two skipped RSA-2048
+  generation cases per the deploy README's reader-risk precaution. Crypto
+  completed 466 calls: 161 `OK`, 305 `UNSUPPORTED_PER_SPEC`, no other statuses.
+- Both CAP uploads and cleanup succeeded. Final GPPro listing shows only ISD;
+  the test card remains empty. CSV SHA-256
+  `7ba137393626a1d314eb17d2e842d32a76e389f9c3d19190924b388be77df2e5`;
+  runner log SHA-256
+  `01a4f74f714abd686893cb93878fe7b1f3f1da78fe11fdfce92e49f37deab2ab`;
+  post-cleanup GPPro SHA-256
+  `94a5b9f45e961b8d8ce93ba7f9bf4bff20e75d63a5805a108ba78ed0c51555e0`.
+- Next: retain the no-CAP card state and continue the remaining TODO. Do not
+  interpret unsupported algorithm rows as VM failures.
+
 # Latest physical API validation — JCSystem transaction probes on 2BED (2026-10-25)
 
 - Ran the unchanged API 3.0.5 Core CAP/client on the current `symm_crypto` ARM
