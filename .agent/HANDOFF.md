@@ -1,4 +1,28 @@
-# Current implementation step — host VPCD multi-package registry (2026-10-25)
+# Current implementation step — host VPCD multi-package DELETE (2026-10-25)
+
+- Host VPCD DELETE used to panic because namespace prefix erasure called the
+  host filesystem directly outside privileged syscall context. It now uses
+  `FsErasePrefix`; the syscall checks namespace write permission and calls
+  `FileSystem::erase_prefix`.
+- The raw authenticated SCP03 multi-package test passes 13/13. It loads the
+  upstream Core and Multi CAPs, installs three applets, checks GET STATUS and
+  dynamic SELECT, deletes one instance, confirms package DELETE is refused
+  while an instance remains, cascades deletion of Multi, and deletes Core so
+  the registry ends empty.
+- `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` pass.
+  Regression command:
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 180`.
+  Log: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T050904Z.log`,
+  SHA-256 `8123442ca2a86d4d1cdc24d77a73d8b0312c3207c3404c58a4836d81ef0ef829`.
+- Hardware status: despite the report that tokens are in BOOTSEL, authorized
+  host-access `lsusb -d 2e8a:000f` and `picotool info -a` found no device in
+  this VM. No physical flash was attempted. Recheck after USB passthrough
+  becomes visible; PC/SC GPPro integration remains open.
+- Multi-package process-restart reconstruction and package/class discovery
+  remain open. Preserve unrelated asymmetric-profile changes in the worktree.
+- Source commit: pending; record SHA in the follow-up metadata commit.
+
+# Previous implementation step — host VPCD multi-package registry (2026-10-25)
 
 ## Follow-up — raw authenticated multi-package VPCD test (2026-10-25)
 

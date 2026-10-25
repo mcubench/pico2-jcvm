@@ -1,5 +1,22 @@
 # Project issue knowledge base
 
+## Host VPCD DELETE prefix erase requires privileged filesystem syscall — 2026-10-25
+
+- **Symptom:** Authenticated raw SCP03 DELETE initially aborted the PC VPCD
+  emulator with an assertion in the host flash backend:
+  `locked() && privilege::is_privileged()`.
+- **Cause:** Card-manager DELETE reached the filesystem prefix-erasure helper
+  directly from VPCD dispatch, outside the trusted OS syscall context.
+- **Viable fix:** Expose prefix erase as `FsErasePrefix` and have the host
+  bridge invoke it through the trusted syscall dispatcher. The handler checks
+  namespace write permission and delegates to `FileSystem::erase_prefix`.
+- **Validation:** PC, ARM, and RISC-V builds pass. The authenticated raw VPCD
+  multi-package regression passes 13/13, including applet DELETE, refused
+  package DELETE with a live applet, cascade DELETE, and final empty registry.
+  Current log: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T050904Z.log`
+  SHA-256 `8123442ca2a86d4d1cdc24d77a73d8b0312c3207c3404c58a4836d81ef0ef829`.
+  Physical boards were not visible to this VM during authorized BOOTSEL checks.
+
 ## Raw VPCD multi-package APDU setup and dynamic SELECT routing — 2026-10-25
 
 - **Symptom:** The first raw SCP03 test received `6999` for INITIALIZE UPDATE;

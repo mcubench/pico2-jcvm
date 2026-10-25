@@ -7,6 +7,7 @@ import argparse
 import socket
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -108,7 +109,8 @@ class Scp03:
         self.session_mac = session_mac
 
     def command(self, ins: int, p1: int, p2: int, data: bytes,
-                label: str) -> bytes:
+                label: str,
+                expected_statuses: tuple[int, ...] = (0x9000, 0x6310)) -> bytes:
         if len(data) > 239:
             raise ValueError("short SCP03 command data exceeds one block")
         cla = 0x84
@@ -119,7 +121,8 @@ class Scp03:
         self.chaining_value = full_mac
         response = exchange(self.connection, header + data + full_mac[:8] + b"\x00",
                             label)
-        if response[-2:] not in (b"\x90\x00", b"\x63\x10"):
+        status = int.from_bytes(response[-2:], "big")
+        if status not in expected_statuses:
             raise RuntimeError(f"{label} failed: {response.hex().upper()}")
         return response
 
@@ -212,6 +215,13 @@ def get_status(scp: Scp03, p1: int) -> bytes:
     return bytes(page)
 
 
+def delete_object(scp: Scp03, aid: bytes, related: bool, label: str,
+                  expected_statuses: tuple[int, ...] = (0x9000,)) -> bytes:
+    data = bytes((0x4f, len(aid))) + aid
+    return scp.command(0xE4, 0x00, 0x80 if related else 0x00, data,
+                       label, expected_statuses)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path,
@@ -238,7 +248,8 @@ def main() -> int:
         memory = root / "artifacts/results/host-vpcd-multipackage-test.bin"
         memory.parent.mkdir(parents=True, exist_ok=True)
         memory.write_bytes(b"")
-        log_path = root / "artifacts/logs/host-vpcd-multipackage-apdu-20261025.log"
+        started_at = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        log_path = root / f"artifacts/logs/host-vpcd-multipackage-apdu-{started_at}.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
         command = [
             str(root / "tools/env"), str(emulator), "-m", str(memory), "-s",
@@ -317,7 +328,40 @@ def main() -> int:
                 if response[-2:] != b"\x90\x00":
                     raise RuntimeError(f"SELECT {label} failed: {response.hex().upper()}")
                 print(f"TEST:PASS SELECT {label}")
-            print("TEST:SUMMARY pass=9 fail=0")
+
+            exchange(connection, bytes.fromhex("00A4040000"), "reselect ISD")
+            delete_object(scp, multi_applets[0], False,
+                          "DELETE Multi A instance")
+            applets = get_status(scp, 0x40)
+            if multi_applets[0] in applets or multi_applets[1] not in applets:
+                raise RuntimeError("instance DELETE changed the wrong registry entries")
+            print("TEST:PASS DELETE removes one instance only")
+
+            refused = delete_object(
+                scp, multi_package, False, "DELETE Multi package without cascade",
+                (0x6985,),
+            )
+            if refused[-2:] != b"\x69\x85":
+                raise RuntimeError(
+                    f"package DELETE should refuse installed instance: {refused.hex().upper()}"
+                )
+            print("TEST:PASS package DELETE refuses live instances")
+            delete_object(scp, multi_package, True,
+                          "DELETE Multi package with cascade")
+            packages = get_status(scp, 0x20)
+            applets = get_status(scp, 0x40)
+            if multi_package in packages or any(aid in applets for aid in multi_applets):
+                raise RuntimeError("cascade DELETE left Multi registry entries")
+            if core_package not in packages or core_applets[0] not in applets:
+                raise RuntimeError("cascade DELETE removed unrelated Core entries")
+            print("TEST:PASS cascade DELETE removes Multi only")
+
+            delete_object(scp, core_applets[0], False, "DELETE Core instance")
+            delete_object(scp, core_package, False, "DELETE Core package")
+            if get_status(scp, 0x20) or get_status(scp, 0x40):
+                raise RuntimeError("registry is not empty after deleting Core")
+            print("TEST:PASS DELETE leaves registry empty")
+            print("TEST:SUMMARY pass=13 fail=0")
             return 0
         finally:
             if connection is not None:

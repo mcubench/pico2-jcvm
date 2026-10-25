@@ -11803,3 +11803,25 @@
 - Commit: `e05fec0` (metadata commit records this SHA).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025.log`
   SHA-256 `9fbf1ba9ea90b4a36a781c75614fcc84badb9b4625aa177897c14a2e597db9d9`.
+
+## 2026-10-25 — Exercise multi-package VPCD DELETE and privilege boundary
+
+- Step/experiment: `host-vpcd-multipackage-delete`
+- Change: Routed host VPCD namespace prefix erasure through the trusted
+  `FsErasePrefix` syscall, with namespace write authorization. Expanded the raw
+  SCP03 harness to test instance DELETE, package DELETE refusal with a live
+  applet, cascade DELETE, and cleanup of the final package and instance. Updated
+  TODO, QKB, and handoff.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and
+  `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-multipackage --timeout 180` passed
+  `TEST:SUMMARY pass=13 fail=0`. `git diff --check` passed. Authorized USB
+  enumeration found no BOOTSEL board in the VM; physical flash was skipped.
+- Result: Host VPCD DELETE completes without the prior unprivileged flash
+  assertion, and the test confirms the registry ends empty after both packages
+  are removed.
+- Decision: Keep PC/SC GPPro multi-package validation and physical hardware
+  validation open; retry once the boards enumerate in the VM.
+- Commit: pending; source SHA will be recorded in a follow-up metadata commit.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261025T050904Z.log`
+  SHA-256 `8123442ca2a86d4d1cdc24d77a73d8b0312c3207c3404c58a4836d81ef0ef829`.

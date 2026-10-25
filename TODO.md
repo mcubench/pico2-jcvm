@@ -1185,14 +1185,20 @@ rollback and duplicate/invalid registration handling also remain unverified.
   bytes are not exposed as loaded until GP LOAD commits them. GPPro 20.01.23
   fresh-state SCP03, JC305 LOAD/INSTALL, instance DELETE, package DELETE, and
   final ISD-only GET STATUS pass on VPCD. Persistent metadata is not yet
-  enumerated from storage, and PC VPCD still models only one dynamic package
-  and one instance. A clean two-process PC VPCD restart now passes for both
+  enumerated from storage. The host VPCD registry now supports multiple
+  packages and applet instances in one process. The raw authenticated SCP03
+  regression loads upstream Core and Multi CAPs, installs three instances,
+  verifies GET STATUS and SELECT routing, then checks instance DELETE, refusal
+  to delete a package with live instances, cascade DELETE, and an empty final
+  registry (`TEST:SUMMARY pass=13 fail=0`). Host deletion routes prefix erasure
+  through the privileged filesystem syscall. A clean two-process PC VPCD
+  restart now passes for both
   native `--install` and GPPro LOAD/INSTALL when resumed with the allocated
   package ID (56) and class index (148); GPPro listing plus SELECT, GETVERSION,
   and JCSystem all pass after restart. Automatic package/class registry
-  discovery, multiple PC VPCD packages/instances, GET DATA coverage beyond
-  GPPro's exercised commands, multi-entry continuation, and physical hardware
-  behavior remain open.
+  discovery, multi-package process-restart reconstruction, GET DATA coverage
+  beyond GPPro's exercised commands, complete multi-entry continuation,
+  PC/SC GPPro integration, and physical CCID behavior remain open.
 - [x] Integrate the PC-build vpcd frame transport with power controls, ATR,
   applet SELECT/DESELECT, and APDU dispatch through the VM lifecycle bridge.
   The PC target builds, the frame codec passes 14 checks, and a new session
