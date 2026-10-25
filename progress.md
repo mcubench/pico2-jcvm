@@ -11749,7 +11749,7 @@
   running or the current physical registry is empty.
 - Decision: Resume hardware checks only after the VM enumerates a Pico; continue
   with offline project work in the meantime.
-- Commit: `pending`
+- Commit: `aed01fa`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T034755Z.log`;
   `build/arm/pico2_choupi.uf2` SHA-256
   `44962baba1fa0e494bc1ed660566a3100396f6304f8dc2286536248967f55c22`.
