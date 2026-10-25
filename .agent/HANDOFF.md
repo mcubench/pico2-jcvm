@@ -19,6 +19,7 @@
   comparator log SHA-256 `945b10b7ea4c29aa50805bc94a4f88caf8169f6bb3de5f518d033cbc2fe1b882`.
   Final card listing:
   `artifacts/logs/gppro-current-profile-2BED-after-jcalgtest-cleanup-20261025.log`.
+- Validation record commit: `da0c43ed18962b53d7b4a282629933bb72a6520b`.
 - Next: AC1 Windows acceptance and three complete clean-flash/power-cycle runs
   remain open. No firmware or CAP implementation was changed in this run.
 

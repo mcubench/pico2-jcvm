@@ -12157,7 +12157,7 @@
 - Decision: AC3 and the current-profile portion of AC4 are verified on 2BED.
   Windows acceptance and three complete clean-flash/power-cycle repetitions
   remain open.
-- Commit: pending.
+- Commit: `da0c43ed18962b53d7b4a282629933bb72a6520b`.
 - Artifacts/logs: client CSV SHA-256
   `9cdf7e31124f7cc9f73e4a244cbb9bc184d9027052b7b75362ab1cc08b99e78`; raw
   client log SHA-256 `cd4a6882fb9b6b28a948d2d4b0486575a410ceea43220437d79564ecb38d2512`;
