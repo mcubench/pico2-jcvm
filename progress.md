@@ -12477,3 +12477,15 @@
   SHA-256 `fe64cf32b68ca298ffbe7425ac453cefc28b73e326e655e5cf41dbe0de654098`;
   serial `artifacts/logs/jcsystem-restore-current-serial.log`, SHA-256
   `1d6f581225540be80555d896e9b450e49afdb67bffe2021e091cb29d2e2593f3`.
+
+## 2026-10-25 — Record JCSystem restore diagnostic commit ID
+
+- Step/experiment: `jcsystem-static-array-alias-restore-diagnostic-20261025`
+- Change: Recorded the implementation/documentation commit SHA in the
+  preceding progress entry, as required by the session log format.
+- Validation: Confirmed commit `f785ba6` contains only the JCSystem restore
+  diagnostics, `.agent/HANDOFF.md`, `.agent/QKB.md`, and `progress.md`.
+- Result: The prior investigation step is traceable to commit `f785ba6`.
+- Decision: Continue from the dangling static-array alias lifecycle diagnosis.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
