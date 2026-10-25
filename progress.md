@@ -12659,3 +12659,13 @@
 - Decision: Keep physical GET STATUS open and retry on an exact PC/SC-visible Pico, failing over to another identified device if needed.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T162018Z.log`.
+
+## 2026-10-25 — Record static scratch mitigation commit
+
+- Step/experiment: `gp-get-status-static-module-scratch-20261025`
+- Change: Recorded the implementation commit SHA for the off-stack GET STATUS module scratch buffer.
+- Validation: Confirmed commit `9801dc1` contains only `src/ccid_device.cpp` and its TODO/QKB/handoff/progress records.
+- Result: The stack-risk mitigation and its explicitly inconclusive physical result are traceable to `9801dc1`.
+- Decision: Retry physical P1=10 only when a Pico reader is available through PC/SC.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
