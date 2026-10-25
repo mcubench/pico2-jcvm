@@ -12517,5 +12517,15 @@
 - Validation: Audited the per-profile CSV stage summaries in `artifacts/results/capability-profiles-acceptance-20261024/`, the post-OwnerPINx-fix Core/Security/Crypto CSVs under `artifacts/results/deploy/`, and the successful minimal Crypto rerun. Current/no-AES/minimal builds and relevant physical runs are already recorded in the preceding progress entries; this audit ran no new card tests.
 - Result: All three selected profiles have physical Core, Security, and Crypto outcomes recorded. Minimal JCAlgTest remains intentionally skipped; no-AES upstream JCAlgTest startup `F103` remains an applet limitation. Minimal Crypto's earlier storage-related INSTALL `6F00` was superseded by a successful 466-call rerun with cleanup.
 - Decision: Continue to the next open TODO priority; keep true power-off/on persistence and the three-consecutive-run acceptance open.
-- Commit: recorded in immediate follow-up progress entry.
+- Commit: `5f472c4`
 - Artifacts/logs: `artifacts/results/capability-profiles-acceptance-20261024/{current,no_aes,minimal}/`; `artifacts/results/deploy/current-2BED-20261025/`; `artifacts/results/deploy/no-aes-D92-core-ownerpinx-fixed-20261025.csv`; `artifacts/results/deploy/minimal-D92-crypto-20261025.csv`.
+
+## 2026-10-25 — Record deploy matrix audit commit
+
+- Step/experiment: `selectable-profile-deploy-matrix-audit-20261025`
+- Change: Recorded the artifact-audit commit `5f472c4` in the preceding progress entry.
+- Validation: Confirmed the commit contains only TODO, handoff, and progress updates for the verified three-profile Core/Security/Crypto matrix.
+- Result: The stale matrix checkbox is closed with evidence references; physical power-off/on acceptance remains open.
+- Decision: Continue with the next implementation priority in TODO.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
