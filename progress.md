@@ -11685,7 +11685,7 @@
   repeated GetSlotStatus requests and a prior GET STATUS command; see QKB.
 - Decision: Preserve card storage and do not issue more package writes until
   PC/SC APDU access is restored. Continue native JCSystem work offline.
-- Commit: `pending`
+- Commit: `3f705ce`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261025T025305Z.log`,
   `artifacts/logs/cycle-choupi-20261025T025904Z.log`; one-off CAP SHA-256
   `d12675f53b2ec96657cd51d0ea8392735a6aeb3a32383caf1911e50562d2addc`.
