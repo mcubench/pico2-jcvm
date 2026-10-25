@@ -12402,7 +12402,7 @@
 - Decision: Mark Java-level catchability verified. Keep persistent applet data
   recovery across power cycle open. QKB records the observed full-reboot
   recovery and the safe test-runner procedure.
-- Commit: pending follow-up metadata commit.
+- Commit: `395c421`
 - Artifacts/logs: physical log
   `artifacts/logs/jcsystem-transaction-physical-20261025T095547Z.log`, SHA-256
   `3a3c4a7365de3b4f961efd99a0568bcab29e203e9bf4f2dc4ffb4b1157cb92ca`;
