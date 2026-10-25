@@ -362,6 +362,7 @@
   `22b2683699e41b585c1ce770da73d09a4609ee55abf4befd9b42c60a5d5abe3c`;
   final listing log SHA-256
   `168bcb2ab02f8e0b23e974a906f8d0261cb5a33944c491a1d59c21f0bc900878`.
+- Service/optional-area validation record commit: `2450cc5e66f09fd75e3e09cf754423637b9c9a2e`.
 - Next: inspect current physical API coverage against the remaining TODO and
   fix the highest-priority reproducible JCVM failure. Windows visibility and
   true physical power-cycle persistence remain open. Keep `asymm_crypto` paused.

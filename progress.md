@@ -12120,7 +12120,7 @@
 - Decision: Continue with remaining JCVM acceptance gaps; do not implement
   optional APIs whose packages are absent from the runtime profile. `asymm_crypto`
   remains paused.
-- Commit: pending.
+- Commit: `2450cc5e66f09fd75e3e09cf754423637b9c9a2e`.
 - Artifacts/logs: JavacardxSec CSV SHA-256
   `01dde4a24b966199ebd9e6a8b067684b6dc8bb7e7c4dccc308e645d4e39c406a`; Service
   CSV SHA-256 `cb337f40cedbda61a0bd88c38f0cad509e68184731852dab8b4c261157fada97`;
