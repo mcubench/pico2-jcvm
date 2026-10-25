@@ -40,6 +40,12 @@
   `--install` failed `UPLOAD_NO_CONNECT` after four retries; the final report
   includes `SCARD_E_NOT_TRANSACTED` after about 201 seconds. No API calls ran.
   Result: `artifacts/results/deploy/parallel-20261025-142230/pico1.csv`.
+- USB inspection found two runtime devices, serials D92 and 2BED. `lsusb -t`
+  showed D92's CCID interface on `usbfs`, while 2BED's CCID interface showed
+  `[none]`. After the helper granted both nodes and restarted pcscd, a separate
+  bounded `pcsc_scan -r` still listed only D92. This points to per-interface
+  PC/SC/USB attachment, not a firmware limit; cause of the `[none]` binding is
+  unresolved.
 - Next: continue the remaining TODO in priority order. The three-run
   clean-flash/power-cycle criterion and true power-off/on persistence remain
   open. Preserve the upstream CAP and unrelated working-tree changes.

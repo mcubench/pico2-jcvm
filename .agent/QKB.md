@@ -4864,3 +4864,10 @@ fix.
   working APDU path; it does not indicate a two-device firmware limit.
 - **Evidence:** `artifacts/results/deploy/parallel-20261025-142230/pico1.csv`
   and `pico1.log`.
+- **USB/driver follow-up:** `lsusb -d 2e8a:0009` found two distinct serials,
+  `D92E743D5F640C0F` and `2BED26ED20556535`. `lsusb -t` showed the D92 CCID
+  interface as `Driver=usbfs` and the 2BED CCID interface as `Driver=[none]`.
+  The approved helper granted access to both USB nodes and restarted pcscd,
+  but a subsequent bounded PC/SC scan still listed only D92. The 2BED interface
+  binding is the next host-side diagnostic; the evidence does not establish a
+  maximum number of simultaneous readers.

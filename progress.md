@@ -12569,3 +12569,13 @@
 - Decision: Continue source work and retry physical APDUs only when a Pico is responsive through PC/SC.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Identify the second USB-visible Pico interface state
+
+- Step/experiment: `pico-usb-pcsc-interface-enumeration-20261025`
+- Change: Added USB serial/interface binding findings to the QKB and session handoff.
+- Validation: Through the approved host-access path, `lsusb -d 2e8a:0009` found D92 and 2BED. `lsusb -v` confirmed distinct serial numbers and identical CCID interface descriptors. `lsusb -t` showed D92 CCID `Driver=usbfs` and 2BED CCID `Driver=[none]`. The helper granted both USB nodes; a follow-up `timeout 8s pcsc_scan -r` still listed only D92.
+- Result: Two devices are in reader firmware mode and attached to the guest USB bus, but only one CCID interface is registered through PC/SC. No two-reader firmware limit is indicated; the cause of the unbound interface remains unknown.
+- Decision: Keep the host interface binding issue open and continue source work; use the D92 reader only if PC/SC transport responds.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: command output inspected directly; deploy failure artifacts remain `artifacts/results/deploy/parallel-20261025-142230/`.
