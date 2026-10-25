@@ -12769,3 +12769,13 @@
 - Decision: Continue with instance-field child traversal and transient roots.
 - Commit: recorded in the immediate follow-up progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-25 — Record reference-array child tracing commit
+
+- Step/experiment: `gc-reference-array-child-tracing-20261025`
+- Change: Recorded the implementation commit SHA for reference-array child traversal coverage.
+- Validation: Confirmed `4c9296a` contains only the jcarray regression, target-scoped stubs, and associated tracking files.
+- Result: Reference-array parent/child collection coverage is traceable to `4c9296a`.
+- Decision: Continue with instance-field child traversal and transient root tests.
+- Commit: recorded in this follow-up entry's commit.
+- Artifacts/logs: none.
