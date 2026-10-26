@@ -1494,7 +1494,17 @@ rollback and duplicate/invalid registration handling also remain unverified.
   checks pass 73/73, and ARM/RISC-V wrapper builds pass. Physical validation is
   pending: the VM currently enumerates no physical Pico despite the user's
   report that tokens are plugged in. Next: retry physical access when a reader
-  appears, then implement ECDSA and remaining EC operations.
+  appears, then implement ECDSA and remaining EC operations. Progress
+  (2026-10-26): implemented native ECDSA SHA-1/224/256/384/512 signing and
+  verification using Mbed TLS, gated by the five profile capabilities. Added
+  EC FP public-key storage and a JC305 `ECPublicKey` token map. The first VPCD
+  ECDSA call exposed the missing token map as an uncaught `NullPointerException`;
+  after adding it, the complete VPCD suite passes 78/78 and support checks
+  pass 9/9. ARM full-firmware and RISC-V VM-core builds pass. Physical testing
+  remains pending because the approved reader helper currently finds zero
+  physical devices. Remaining work includes EC agreement/generation, exact
+  full-report comparison, physical `/deploy` acceptance, and private-operation
+  hardening.
 - [ ] Run the packaged Windows workflow in `docs/windows-asymm-symm-test.md`;
   archive each profile's JCAlgTest CSV and compare it with its generated
   expected-support CSV. The upstream CAP is included unchanged.

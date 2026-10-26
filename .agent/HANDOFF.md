@@ -11197,3 +11197,27 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Next: migrate RSA key construction and key state onto native Java Card API
   methods, then RSA Cipher factory/operations, preserving the VPCD vectors.
   Extend RSA Signature algorithms only after those foundations and hardening.
+# Current continuation — native ECDSA SHA signatures (2026-10-26)
+
+- Implemented native C++ ECDSA SHA-1/224/256/384/512 `Signature` dispatch and
+  arithmetic using Mbed TLS. Added profile selection, EC FP public-key
+  storage, ASN.1 DER signature encoding/decoding, curve/domain validation,
+  and test-only sign/verify APDUs. Upstream CAP files remain unchanged.
+- The first ECDSA VPCD run failed on APDU 19 with an uncaught
+  `NullPointerException`. Root cause was a missing JC305 `ECPublicKey` method
+  token translation (interface token 19); mapping it with the EC token sequence
+  fixed the failure. Details are recorded in `.agent/QKB.md`.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9;
+  `./tools/build-pc --profile asymm_crypto` passed; elevated
+  `./tools/env python3 tools/tests/test_asymm_crypto_vpcd.py` passed 78/78
+  (76 custom APDUs plus ATR and SELECT); ARM full-firmware and RISC-V VM-core
+  wrapper builds passed. The approved helper
+  `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` found
+  zero physical Pico readers, so no flash or hardware test was attempted.
+- ARM image: `build/arm/pico2_choupi.uf2` (1,980,928 bytes), binary end
+  address `0x100f1b08`; generated PC ROM mask `build/choupi-pc/flash`
+  (524,300 bytes).
+- Remaining asymmetric work: EC key agreement and key generation, exact full
+  support-report comparison, physical `/deploy` acceptance, and private RSA
+  hardening. Retest the five ECDSA algorithms on an identified Pico as soon as
+  it enumerates through the approved host-access path.

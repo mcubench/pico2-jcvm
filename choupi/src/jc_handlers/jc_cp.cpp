@@ -435,6 +435,17 @@ uint8_t remap_imported_interface_method_token(
       method_token < sizeof(security_ec_private_key_interface_methods)) {
     return security_ec_private_key_interface_methods[method_token];
   }
+  // JC305's ECPublicKey has the same ECKey prefix as ECPrivateKey, then
+  // declares setW/getW before copyDomainParametersFrom. The embedded ROM
+  // export puts copyDomainParametersFrom before setW/getW, so translate the
+  // full interface token sequence just as for ECPrivateKey.
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 19 &&
+      method_token < sizeof(security_ec_private_key_interface_methods)) {
+    return security_ec_private_key_interface_methods[method_token];
+  }
   // The reference JC305 export orders OwnerPINx.check before
   // getTriesRemaining, while this API's generated interface order follows
   // PIN and places getTriesRemaining first. Remap both related interfaces.

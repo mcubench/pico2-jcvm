@@ -67,6 +67,11 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "signature_rsa_sha_512_pkcs1_pss": (
         "javacard.security.Signature", "ALG_RSA_SHA_512_PKCS1_PSS"
     ),
+    "signature_ecdsa_sha": ("javacard.security.Signature", "ALG_ECDSA_SHA"),
+    "signature_ecdsa_sha_224": ("javacard.security.Signature", "ALG_ECDSA_SHA_224"),
+    "signature_ecdsa_sha_256": ("javacard.security.Signature", "ALG_ECDSA_SHA_256"),
+    "signature_ecdsa_sha_384": ("javacard.security.Signature", "ALG_ECDSA_SHA_384"),
+    "signature_ecdsa_sha_512": ("javacard.security.Signature", "ALG_ECDSA_SHA_512"),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
@@ -212,6 +217,15 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     ))
     if rsa_signature and (not rsa_public or not rsa_private):
         raise ValueError(f"{path}: RSA signatures require enabled public and private RSA key capabilities")
+    ecdsa_signature = any(value[key] for key in (
+        "signature_ecdsa_sha", "signature_ecdsa_sha_224",
+        "signature_ecdsa_sha_256", "signature_ecdsa_sha_384",
+        "signature_ecdsa_sha_512",
+    ))
+    if ecdsa_signature and not any(
+        value[f"key_ec_fp_private_{bits}"] for bits in _ec_fp_lengths
+    ):
+        raise ValueError(f"{path}: ECDSA signatures require an enabled prime-field EC key length")
     ec_fp_length_enabled = any(
         value[f"key_ec_fp_private_{bits}"] for bits in _ec_fp_lengths
     )
@@ -224,6 +238,11 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
             value["signature_rsa_sha_pkcs1"]) and not value["sha1"]:
         raise ValueError(f"{path}: RSA OAEP and SHA-1 signatures require SHA-1 support")
     for capability, digest in (
+        ("signature_ecdsa_sha", "sha1"),
+        ("signature_ecdsa_sha_224", "sha224"),
+        ("signature_ecdsa_sha_256", "sha256"),
+        ("signature_ecdsa_sha_384", "sha384"),
+        ("signature_ecdsa_sha_512", "sha512"),
         ("signature_rsa_sha_iso9796_mr", "sha1"),
         ("signature_rsa_sha_224_pkcs1", "sha224"),
         ("signature_rsa_sha_256_pkcs1", "sha256"),

@@ -5290,3 +5290,20 @@ fix.
   clear, and 256/521-bit persistent/transient key variants. PC, ARM, and
   RISC-V builds pass. Physical validation could not run because the VM
   currently sees only two virtual readers and no Pico USB device.
+
+# JC305 ECPublicKey interface methods also need token remapping (2026-10-26)
+
+- **Symptom:** The first ECDSA VPCD APDU returned `6F00` with an uncaught
+  `NullPointerException`, while the EC private-key storage vectors passed.
+- **Cause:** JC305 assigns `ECPublicKey` interface token 19 and declares
+  `setW/getW` before `copyDomainParametersFrom`; the embedded ROM API puts
+  `copyDomainParametersFrom` before `setW/getW`. Calls through the missing
+  interface map resolved incorrectly and faulted during public-key setup.
+- **Viable fix:** Apply the EC interface method-token map to imported class
+  token 19 as well as token 18. Verify method order against the exact JC305
+  export file at
+  `choupi/javacard-sdk/javacard-api/sdks/jc305u1_kit/api_export_files/javacard/security/javacard/security.jca`.
+- **Validation:** After adding the map, VPCD passes all 78 checks, including
+  ECDSA sign/verify for SHA-1/224/256/384/512; both architecture wrappers
+  build. Physical testing is pending because the host helper currently finds
+  zero Pico readers.

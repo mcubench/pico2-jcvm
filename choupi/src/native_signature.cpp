@@ -33,6 +33,20 @@ std::vector<unsigned char> computeSymmetricMac(
     const std::vector<unsigned char> &message);
 #endif
 
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+void initializeEcdsaSignature(JC_Instance &signature, jref_t key, uint8_t mode);
+jshort_t ecdsaSignatureLength(JC_Instance &signature);
+jshort_t ecdsaSignatureSign(JC_Instance &signature,
+    const std::shared_ptr<JC_Array> &input, jshort_t offset, jshort_t length,
+    const std::shared_ptr<JC_Array> &output, jshort_t outputOffset);
+jbool_t ecdsaSignatureVerify(JC_Instance &signature,
+    const std::shared_ptr<JC_Array> &input, jshort_t offset, jshort_t length,
+    const std::shared_ptr<JC_Array> &expected, jshort_t expectedOffset,
+    jshort_t expectedLength);
+#endif
+
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
 void initializeRsaSignature(JC_Instance &signature, jref_t key,
                             uint8_t mode, jshort_t saltLength = -1);
@@ -234,6 +248,21 @@ uint16_t resultLength(const uint8_t algorithm) {
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_512_PKCS1_PSS
   case 46: return 0;
 #endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA
+  case 17: return 0;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_224
+  case 37: return 0;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_256
+  case 33: return 0;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_384
+  case 34: return 0;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  case 38: return 0;
+#endif
   default:
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   }
@@ -316,6 +345,21 @@ bool supportedAlgorithm(const uint8_t algorithm) {
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_512_PKCS1_PSS
   case 46: return true;
 #endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA
+  case 17: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_224
+  case 37: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_256
+  case 33: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_384
+  case 34: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  case 38: return true;
+#endif
   default: return false;
   }
 }
@@ -360,6 +404,21 @@ bool tupleForAlgorithm(uint8_t algorithm, uint8_t &digest, uint8_t &cipher,
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_512_PKCS1_PSS
   case 46: digest = 6; cipher = kSignatureCipherRsa; padding = kPaddingPkcs1Pss; break;
 #endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA
+  case 17: digest = 1; cipher = 5; padding = 0; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_224
+  case 37: digest = 7; cipher = 5; padding = 0; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_256
+  case 33: digest = 4; cipher = 5; padding = 0; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_384
+  case 34: digest = 5; cipher = 5; padding = 0; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  case 38: digest = 6; cipher = 5; padding = 0; break;
+#endif
   case 2: cipher = kSignatureCipherDesMac8; padding = kPaddingNoPad; break;
   case 3: cipher = kSignatureCipherDesMac4; padding = kPaddingIso9797M1; break;
   case 4: cipher = kSignatureCipherDesMac8; padding = kPaddingIso9797M1; break;
@@ -390,7 +449,9 @@ uint8_t algorithmForTuple(uint8_t digest, uint8_t cipher, uint8_t padding) {
                             uint8_t(41), uint8_t(42), uint8_t(47), uint8_t(48),
                             uint8_t(49), uint8_t(10), uint8_t(21),
                             uint8_t(43), uint8_t(44), uint8_t(45),
-                            uint8_t(46), uint8_t(9), uint8_t(30)}) {
+                            uint8_t(46), uint8_t(9), uint8_t(30),
+                            uint8_t(17), uint8_t(37), uint8_t(33),
+                            uint8_t(34), uint8_t(38)}) {
     uint8_t candidateDigest = 0, candidateCipher = 0, candidatePadding = 0;
     if (tupleForAlgorithm(algorithm, candidateDigest, candidateCipher,
                           candidatePadding) &&
@@ -406,6 +467,15 @@ bool isRsaSignatureAlgorithm(uint8_t algorithm) {
   return tupleForAlgorithm(algorithm, digest, cipher, padding) &&
          cipher == kSignatureCipherRsa;
 }
+
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+bool isEcdsaSignatureAlgorithm(uint8_t algorithm) {
+  return algorithm == 17 || algorithm == 33 || algorithm == 34 ||
+         algorithm == 37 || algorithm == 38;
+}
+#endif
 
 jref_t createSignature(uint8_t algorithm, uint8_t digest, uint8_t cipher,
                        uint8_t padding, jbool_t externalAccess) {
@@ -637,6 +707,16 @@ jref_t javacard_security_Signature_getInstance(
 void javacard_security_Signature_init(jref_t receiver, jref_t key,
                                       jbyte_t mode) {
   auto signature = signatureInstance(receiver);
+  const uint8_t algorithm = static_cast<uint8_t>(signature->getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  if (isEcdsaSignatureAlgorithm(algorithm)) {
+    initializeEcdsaSignature(*signature, key, static_cast<uint8_t>(mode));
+    return;
+  }
+#endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM)))) {
@@ -654,6 +734,12 @@ void javacard_security_Signature_init(
   if (!parameters) throw Exceptions::NullPointerException;
   const uint8_t algorithm = static_cast<uint8_t>(signature->getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  if (isEcdsaSignatureAlgorithm(algorithm))
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+#endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   if (isRsaSignatureAlgorithm(algorithm)) {
     checkRange(parameters, offset, length);
@@ -706,6 +792,13 @@ jshort_t javacard_security_Signature_getLength(jref_t receiver) {
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
     return rsaSignatureLength(*signature);
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  if (isEcdsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
+    return ecdsaSignatureLength(*signature);
 #endif
   auto key = keyInstance(signature->getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
@@ -794,6 +887,14 @@ jshort_t javacard_security_Signature_sign(
   }
 #endif
   checkRange(output, outputOffset, resultSize);
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  if (isEcdsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
+    return ecdsaSignatureSign(*signature, input, offset, length, output,
+                              outputOffset);
+#endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
@@ -854,6 +955,14 @@ jbool_t javacard_security_Signature_verify(
   if (isMessageRecoverySignature(*signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   checkRange(expected, expectedOffset, expectedLength);
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  if (isEcdsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
+    return ecdsaSignatureVerify(*signature, input, offset, length, expected,
+                                expectedOffset, expectedLength);
+#endif
   const jshort_t resultSize = signature->getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY

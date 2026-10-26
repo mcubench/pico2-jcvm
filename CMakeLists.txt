@@ -48,7 +48,7 @@ file(GLOB_RECURSE CHOUPI_VM_SOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/*.cpp")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX "/main(_arm|_pc)?\\.cpp$")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX
-  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mac|mbedtls_digest|rsa_cipher|rsa_key|rsa_signature|key)\\.cpp$")
+  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mac|mbedtls_digest|rsa_cipher|rsa_key|rsa_signature|ecdsa_signature|key)\\.cpp$")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_random.cpp")
 endif()
@@ -93,6 +93,11 @@ if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPH
 endif()
 if(JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY)
   list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_rsa_signature.cpp")
+endif()
+if(JC_SUPPORT_SIGNATURE_ECDSA_SHA OR JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 OR
+   JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 OR JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 OR
+   JC_SUPPORT_SIGNATURE_ECDSA_SHA_512)
+  list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_ecdsa_signature.cpp")
 endif()
 set(JC_SUPPORT_RSA_KEYS_ENABLED OFF)
 foreach(rsa_bits 512 736 768 896 1024 1280 1536 1984 2048 3072 4096)
@@ -209,11 +214,27 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
       "${PICO_SDK_PATH}/lib/mbedtls/library/sha256.c"
       "${PICO_SDK_PATH}/lib/mbedtls/library/sha512.c")
   endif()
-  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP OR JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY)
+  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP OR JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY OR
+     JC_SUPPORT_SIGNATURE_ECDSA_SHA OR JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 OR
+     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 OR JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 OR
+     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512)
     target_sources(pico2_choupi PRIVATE
       "${PICO_SDK_PATH}/lib/mbedtls/library/bignum.c"
       "${PICO_SDK_PATH}/lib/mbedtls/library/bignum_core.c"
       "${PICO_SDK_PATH}/lib/mbedtls/library/constant_time.c")
+  endif()
+  if(JC_SUPPORT_SIGNATURE_ECDSA_SHA OR JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 OR
+     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 OR JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 OR
+     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512)
+    target_sources(pico2_choupi PRIVATE
+      "${PICO_SDK_PATH}/lib/mbedtls/library/ecp.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/ecp_curves.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/ecdsa.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/md.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/md5.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/hmac_drbg.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/asn1parse.c"
+      "${PICO_SDK_PATH}/lib/mbedtls/library/asn1write.c")
   endif()
   if(CHOUPI_DEBUG_HEAP_GC)
     target_compile_definitions(choupi_vm_core PRIVATE CHOUPI_DEBUG_HEAP_GC=1)

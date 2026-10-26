@@ -29,6 +29,7 @@ constexpr uint8_t kRsaPrivateTransientDeselect = 23;
 constexpr uint8_t kRsaCrtTransientReset = 24;
 constexpr uint8_t kRsaCrtTransientDeselect = 25;
 constexpr uint8_t kEcFpPrivate = 12;
+constexpr uint8_t kEcFpPublic = 11;
 constexpr uint8_t kEcFpPrivateTransientReset = 30;
 constexpr uint8_t kEcFpPrivateTransientDeselect = 31;
 constexpr uint8_t kMemoryPersistent = 0;
@@ -105,7 +106,7 @@ bool ecPrivate(uint8_t type) {
   return type == kEcFpPrivate || type == kEcFpPrivateTransientReset ||
          type == kEcFpPrivateTransientDeselect;
 }
-bool ecFpType(uint8_t type) { return ecPrivate(type); }
+bool ecFpType(uint8_t type) { return ecPrivate(type) || type == kEcFpPublic; }
 bool transientType(uint8_t type) {
   return type == kDesTransientReset || type == kDesTransientDeselect ||
          type == kAesTransientReset || type == kAesTransientDeselect ||
@@ -237,7 +238,7 @@ uint8_t typeForAlgorithm(uint8_t algorithm, uint8_t memory) {
   } else if (algorithm == 11 && memory == kMemoryPersistent) return kRsaPublic;
   else if (algorithm == 12 && memory == kMemoryPersistent) return kRsaPrivate;
   else if (algorithm == 13 && memory == kMemoryPersistent) return kRsaCrtPrivate;
-  else if (algorithm == 7 && memory == kMemoryPersistent) return 11;
+  else if (algorithm == 7 && memory == kMemoryPersistent) return kEcFpPublic;
   else if (algorithm == 8 && memory == kMemoryPersistent) return kEcFpPrivate;
   else if (algorithm == 8 && memory == kMemoryTransientReset) return kEcFpPrivateTransientReset;
   else if (algorithm == 8 && memory == kMemoryTransientDeselect) return kEcFpPrivateTransientDeselect;
@@ -420,8 +421,10 @@ jbool_t javacard_security_NativeKey_isInitialized(jref_t receiver) {
   }
   if (ecFpType(type)) {
     const auto lengths = ecLengthsArray(*key);
-    for (uint16_t i : {0, 1, 2, 3, 4, 6})
+    for (uint16_t i : {0, 1, 2, 3, 4})
       if (lengths->getShortEntry(i) <= 0) return FALSE;
+    if (lengths->getShortEntry(type == kEcFpPublic ? 5 : 6) <= 0)
+      return FALSE;
     return key->getField_Short(
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK) > 0
         ? TRUE : FALSE;

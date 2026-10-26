@@ -13274,3 +13274,31 @@
 - Commit: root `db529cf`; API submodule `953fcb6`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
   `build/arm/pico2_choupi.uf2`; `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-10-26 — Native ECDSA SHA signatures
+
+- Step/experiment: `asymm-crypto-ecdsa-signature`
+- Change: Added profile-gated native ECDSA SHA-1/224/256/384/512 signing and
+  verification, EC FP public-key storage, DER signature handling, domain
+  validation, and a test-only CAP probe. Added the JC305 `ECPublicKey`
+  interface token map after the first emulator case exposed its missing map.
+  The upstream JCAlgTest CAP remains unchanged.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9;
+  `./tools/build-pc --profile asymm_crypto` passed; elevated
+  `./tools/env python3 tools/tests/test_asymm_crypto_vpcd.py` passed 78/78
+  (76 APDUs plus ATR and SELECT); `./tools/build arm --profile asymm_crypto`
+  passed with full firmware image end address `0x100f1b08`; and
+  `./tools/build riscv --profile asymm_crypto` passed. The approved
+  `pico2-pcsc-reader` helper found zero physical devices, so physical flashing
+  and testing were not attempted.
+- Result: All five ECDSA sign/verify probe vectors pass in VPCD. The ARM UF2 is
+  1,980,928 bytes and the generated PC ROM mask is 524,300 bytes. Initial failure
+  was an uncaught `NullPointerException` caused by JC305 ECPublicKey token
+  ordering; the exact cause and viable fix are in `.agent/QKB.md`.
+- Decision: Keep the five algorithms enabled in `asymm_crypto`. Continue with
+  EC agreement/generation and the remaining support comparison; repeat these
+  calls on an identified Pico when the VM enumerates one.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
+  ARM image `build/arm/pico2_choupi.uf2`; PC ROM mask `build/choupi-pc/flash`;
+  no physical log.

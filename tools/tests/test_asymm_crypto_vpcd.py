@@ -37,6 +37,11 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
         command = bytes((0x80, 0x16, selector, 0, 0))
         results.append((command, b"\x01\x90\x00",
                         f"EC prime-field private key selector={selector}"))
+    for algorithm in (17, 37, 33, 34, 38):
+        message = b"ecdsa test"
+        command = bytes((0x80, 0x17, algorithm, 0, len(message))) + message + b"\x00"
+        results.append((command, b"\x01\x90\x00",
+                        f"ECDSA algorithm={algorithm} sign/verify"))
     rsa = _rsa_512_fixture()
     messages = {
         10: b"JCVM RSA PKCS1",
@@ -304,7 +309,8 @@ def main() -> int:
     if completed.returncode:
         return completed.returncode
     rsa_signature_vectors = sum("RSA SHA" in label for _, _, label in cases)
-    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 ec_key_builder_vectors=3 rsa_signature_vectors={rsa_signature_vectors} fail=0")
+    ecdsa_vectors = sum("ECDSA algorithm=" in label for _, _, label in cases)
+    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 ec_key_builder_vectors=3 ecdsa_vectors={ecdsa_vectors} rsa_signature_vectors={rsa_signature_vectors} fail=0")
     print(f"TEST:LOG {log}")
     return 0
 

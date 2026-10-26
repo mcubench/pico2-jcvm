@@ -115,7 +115,12 @@
       "key_ec_fp_private_512": false,
       "key_ec_fp_private_521": false,
       "key_ec_fp_private_transient_reset": false,
-      "key_ec_fp_private_transient_deselect": false
+      "key_ec_fp_private_transient_deselect": false,
+      "signature_ecdsa_sha": false,
+      "signature_ecdsa_sha_224": false,
+      "signature_ecdsa_sha_256": false,
+      "signature_ecdsa_sha_384": false,
+      "signature_ecdsa_sha_512": false
     },
     "base": {
       "owner_pin": true,
@@ -231,7 +236,12 @@
       "key_ec_fp_private_512": false,
       "key_ec_fp_private_521": false,
       "key_ec_fp_private_transient_reset": false,
-      "key_ec_fp_private_transient_deselect": false
+      "key_ec_fp_private_transient_deselect": false,
+      "signature_ecdsa_sha": false,
+      "signature_ecdsa_sha_224": false,
+      "signature_ecdsa_sha_256": false,
+      "signature_ecdsa_sha_384": false,
+      "signature_ecdsa_sha_512": false
     },
     "no_aes": {
       "owner_pin": true,
@@ -347,7 +357,12 @@
       "key_ec_fp_private_512": false,
       "key_ec_fp_private_521": false,
       "key_ec_fp_private_transient_reset": false,
-      "key_ec_fp_private_transient_deselect": false
+      "key_ec_fp_private_transient_deselect": false,
+      "signature_ecdsa_sha": false,
+      "signature_ecdsa_sha_224": false,
+      "signature_ecdsa_sha_256": false,
+      "signature_ecdsa_sha_384": false,
+      "signature_ecdsa_sha_512": false
     },
     "minimal": {
       "owner_pin": false,
@@ -463,7 +478,12 @@
       "key_ec_fp_private_512": false,
       "key_ec_fp_private_521": false,
       "key_ec_fp_private_transient_reset": false,
-      "key_ec_fp_private_transient_deselect": false
+      "key_ec_fp_private_transient_deselect": false,
+      "signature_ecdsa_sha": false,
+      "signature_ecdsa_sha_224": false,
+      "signature_ecdsa_sha_256": false,
+      "signature_ecdsa_sha_384": false,
+      "signature_ecdsa_sha_512": false
     },
     "symm_crypto": {
       "owner_pin": true,
@@ -579,7 +599,12 @@
       "key_ec_fp_private_512": false,
       "key_ec_fp_private_521": false,
       "key_ec_fp_private_transient_reset": false,
-      "key_ec_fp_private_transient_deselect": false
+      "key_ec_fp_private_transient_deselect": false,
+      "signature_ecdsa_sha": false,
+      "signature_ecdsa_sha_224": false,
+      "signature_ecdsa_sha_256": false,
+      "signature_ecdsa_sha_384": false,
+      "signature_ecdsa_sha_512": false
     },
     "asymm_crypto": {
       "owner_pin": true,
@@ -695,7 +720,12 @@
       "key_ec_fp_private_512": true,
       "key_ec_fp_private_521": true,
       "key_ec_fp_private_transient_reset": true,
-      "key_ec_fp_private_transient_deselect": true
+      "key_ec_fp_private_transient_deselect": true,
+      "signature_ecdsa_sha": true,
+      "signature_ecdsa_sha_224": true,
+      "signature_ecdsa_sha_256": true,
+      "signature_ecdsa_sha_384": true,
+      "signature_ecdsa_sha_512": true
     }
   }
 }
