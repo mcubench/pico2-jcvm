@@ -13095,5 +13095,5 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Exact PC/VPCD run from this implementation step passed SHA-256 prepare/final, static-performance calls, and the full 15-check set (`TEST:SUMMARY pass=15 fail=0`). Physical flash was intentionally skipped; hardware behavior is not claimed.
 - Result: Supported MessageDigest calls use native API dispatch with no generated digest provider classes. The PC/VPCD hang from persistent scratch writes is fixed by transient allocation.
 - Decision: Continue migrating asymmetric and symmetric MAC providers directly onto API-declared native methods; keep Java provider classes out of firmware.
-- Commit: pending.
-- Artifacts/logs: `artifacts/logs/message-digest-native-vpcd-final2-20261026.log`; submodule commits `4cc1cf4` (javacard-api), `4932ee0` (rommask).
+- Commit: `4e71873` (root); submodule commits `4cc1cf4` (javacard-api), `4932ee0` (rommask).
+- Artifacts/logs: `artifacts/logs/message-digest-native-vpcd-final2-20261026.log`.
