@@ -11008,3 +11008,27 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Next: retry on an exact physical reader after PC/SC enumeration returns;
   use the response APDU snapshot to determine if the firmware submitted P1=10.
   The physical module status path remains unverified.
+
+# Current continuation — partial native RSA Signature slice (2026-10-26)
+
+- Added direct native `Signature` API dispatch for `ALG_RSA_SHA_PKCS1` (ID 10),
+  covering factory selection, initialization, message/precomputed-hash sign and
+  verify, and signature length. Removed generated RSA Signature provider output.
+  The test applet invokes only Java Card APIs; host-generated RSA vectors check
+  known signatures, altered-signature rejection, precomputed hashes, and the
+  out-of-range signature equal to the modulus.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9; PC, ARM, and
+  RISC-V builds for `asymm_crypto` passed (the final PC build was necessary
+  because architecture builds do not refresh the emulator binary); VPCD passed
+  26/26 checks, including all 6 RSA Signature vectors. The equal-to-modulus
+  vector initially failed against a stale PC executable, then passed after
+  rebuilding PC. No physical device was used: the user intentionally unplugged
+  the token.
+- This is not a completed native-only asymmetric profile. RSA Signature still
+  consumes `RSAKeyProvider` objects. RSA key construction and RSA Cipher retain
+  generated Java provider paths, and the signature implementation has not been
+  audited for private-operation blinding/side-channel resistance or tested on
+  hardware. Do not package/claim `asymm_crypto` as compliant yet.
+- Next: migrate RSA key construction and key state onto native Java Card API
+  methods, then RSA Cipher factory/operations, preserving the VPCD vectors.
+  Extend RSA Signature algorithms only after those foundations and hardening.

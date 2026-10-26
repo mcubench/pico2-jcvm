@@ -45,6 +45,35 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
         command = bytes((0x80, 0x14, algorithm, 0, len(data))) + data + b"\x00"
         results.append((command, message + b"\x90\x00",
                         f"RSA cipher algorithm={algorithm} bytes={len(message)}"))
+    n, d, e = rsa
+    message = b"JCVM RSA SHA1 PKCS1"
+    digest = hashlib.sha1(message).digest()
+    digest_info = bytes.fromhex("3021300906052b0e03021a05000414") + digest
+    encoded = b"\x00\x01" + b"\xff" * (64 - len(digest_info) - 3) + b"\x00" + digest_info
+    expected_signature = pow(int.from_bytes(encoded, "big"), d, n).to_bytes(64, "big")
+    modulus = n.to_bytes(64, "big")
+    private_exponent = d.to_bytes(64, "big")
+    public_exponent = e.to_bytes(3, "big")
+    sign_data = modulus + private_exponent + message
+    results.append((bytes((0x80, 0x15, 10, 0, len(sign_data))) + sign_data + b"\x00",
+                    expected_signature + b"\x90\x00", "RSA SHA1 PKCS1 sign"))
+    verify_data = modulus + bytes((len(public_exponent),)) + public_exponent + message + expected_signature
+    results.append((bytes((0x80, 0x15, 10, 1, len(verify_data))) + verify_data + b"\x00",
+                    b"\x01\x90\x00", "RSA SHA1 PKCS1 verify"))
+    rejected_signature = bytearray(expected_signature)
+    rejected_signature[-1] ^= 1
+    verify_bad = modulus + bytes((len(public_exponent),)) + public_exponent + message + rejected_signature
+    results.append((bytes((0x80, 0x15, 10, 1, len(verify_bad))) + verify_bad + b"\x00",
+                    b"\x00\x90\x00", "RSA SHA1 PKCS1 reject bad signature"))
+    verify_out_of_range = modulus + bytes((len(public_exponent),)) + public_exponent + message + modulus
+    results.append((bytes((0x80, 0x15, 10, 1, len(verify_out_of_range))) + verify_out_of_range + b"\x00",
+                    b"\x00\x90\x00", "RSA SHA1 PKCS1 reject signature equal to modulus"))
+    prehash_sign = modulus + private_exponent + digest
+    results.append((bytes((0x80, 0x15, 10, 2, len(prehash_sign))) + prehash_sign + b"\x00",
+                    expected_signature + b"\x90\x00", "RSA SHA1 PKCS1 precomputed sign"))
+    prehash_verify = modulus + bytes((len(public_exponent),)) + public_exponent + digest + expected_signature
+    results.append((bytes((0x80, 0x15, 10, 3, len(prehash_verify))) + prehash_verify + b"\x00",
+                    b"\x01\x90\x00", "RSA SHA1 PKCS1 precomputed verify"))
     return results
 
 
@@ -94,7 +123,7 @@ def main() -> int:
         str(ROOT / "tools/env"), "python3",
         str(ROOT / "tools/tests/pc_vpcd_applet_test.py"),
         "--emulator", str(ROOT / "build/choupi-pc/choupi"),
-        "--memory", str(ROOT / "build/algtest-v182-empty-flash.bin"),
+        "--memory", str(ROOT / "build/algtest-v182-current-empty-flash.bin"),
         "--cap-code", str(ROOT / "build/symm-crypto-probe/load-code.bin"),
         "--rom-mask", str(ROOT / "build/choupi-pc/flash"),
         "--applet-aid", APPLET_AID, "--package-id", "56", "--passes", "1",
@@ -107,7 +136,7 @@ def main() -> int:
     completed = subprocess.run(command, cwd=ROOT, check=False)
     if completed.returncode:
         return completed.returncode
-    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 fail=0")
+    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 rsa_signature_vectors=6 fail=0")
     print(f"TEST:LOG {log}")
     return 0
 

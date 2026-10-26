@@ -45,6 +45,9 @@ public final class SymmCryptoProbe extends Applet {
     } else if (instruction == (byte)0x14) {
       output = new byte[(short)64];
       outputLength = runRsaCipher(algorithm, input, output);
+    } else if (instruction == (byte)0x15) {
+      output = new byte[(short)64];
+      outputLength = runRsaSignature(algorithm, operation, input, output);
     } else if (instruction == (byte)0x10) {
       output = operation == 1 && !isNoPadCipher(algorithm) &&
           !isIso9797M1(algorithm)
@@ -161,6 +164,71 @@ public final class SymmCryptoProbe extends Applet {
       if (left[(short)(leftOffset + i)] != right[(short)(rightOffset + i)])
         return false;
     return true;
+  }
+
+  private static short runRsaSignature(byte algorithm, byte operation,
+                                       byte[] parameters, byte[] output) {
+    if (algorithm != Signature.ALG_RSA_SHA_PKCS1)
+      ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+    boolean signing = operation == 0 || operation == 2;
+    boolean precomputed = operation == 2 || operation == 3;
+    Key key;
+    byte[] message;
+    byte[] expected = null;
+    if (signing) {
+      if (parameters.length < 128 + (precomputed ? (short)20 : (short)0))
+        ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      RSAPrivateKey privateKey = (RSAPrivateKey)KeyBuilder.buildKey(
+          KeyBuilder.TYPE_RSA_PRIVATE, KeyBuilder.LENGTH_RSA_512, false);
+      privateKey.setModulus(parameters, (short)0, (short)64);
+      privateKey.setExponent(parameters, (short)64, (short)64);
+      key = privateKey;
+      short messageOffset = (short)128;
+      short messageLength = (short)(parameters.length - messageOffset);
+      if (precomputed && messageLength != 20)
+        ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      message = new byte[messageLength];
+      for (short i = 0; i < messageLength; i++)
+        message[i] = parameters[(short)(messageOffset + i)];
+    } else {
+      if (parameters.length < 68 + 64 + (precomputed ? (short)20 : (short)0))
+        ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      short exponentLength = (short)(parameters[64] & 0xff);
+      if (exponentLength == 0 || exponentLength > 8)
+        ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      short messageOffset = (short)(65 + exponentLength);
+      short signatureOffset = (short)(parameters.length - 64);
+      short messageLength = (short)(signatureOffset - messageOffset);
+      if (messageLength < 0 || (precomputed && messageLength != 20))
+        ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      RSAPublicKey publicKey = (RSAPublicKey)KeyBuilder.buildKey(
+          KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_512, false);
+      publicKey.setModulus(parameters, (short)0, (short)64);
+      publicKey.setExponent(parameters, (short)65, exponentLength);
+      key = publicKey;
+      message = new byte[messageLength];
+      for (short i = 0; i < messageLength; i++)
+        message[i] = parameters[(short)(messageOffset + i)];
+      expected = new byte[(short)64];
+      for (short i = 0; i < 64; i++)
+        expected[i] = parameters[(short)(signatureOffset + i)];
+    }
+    Signature signature = Signature.getInstance(algorithm, false);
+    signature.init(key, signing ? Signature.MODE_SIGN : Signature.MODE_VERIFY);
+    if (signing) {
+      if (precomputed)
+        return signature.signPreComputedHash(message, (short)0,
+            (short)message.length, output, (short)0);
+      return signature.sign(message, (short)0, (short)message.length,
+          output, (short)0);
+    }
+    boolean valid = precomputed
+        ? signature.verifyPreComputedHash(message, (short)0,
+            (short)message.length, expected, (short)0, (short)expected.length)
+        : signature.verify(message, (short)0, (short)message.length,
+            expected, (short)0, (short)expected.length);
+    output[0] = valid ? (byte)1 : (byte)0;
+    return (short)1;
   }
 
   private static short runCipher(byte algorithm, byte operation, byte[] input,

@@ -1491,12 +1491,13 @@ rollback and duplicate/invalid registration handling also remain unverified.
   Windows enumeration/client results remain pending. The project-wide
   objective has resumed asymmetric implementation. Continue that profile only
   through native C++ Java Card API dispatch: do not add Java provider or
-  adapter classes to the ROM mask. The current uncommitted RSA signature
-  attempt adds `tools/java-support/RSASignatureProvider.java` and generated
-  `SignatureProvider` factory dispatch, so it does not meet that boundary;
-  replace it with direct native API dispatch before building or packaging the
-  profile. The existing RSA key/cipher provider architecture also needs an
-  audit against the same rule before claiming the asymmetric profile complete.
+  adapter classes to the ROM mask. The RSA SHA-1 PKCS#1 Signature factory and
+  operations now dispatch directly from native methods on the Java Card
+  `Signature` API class, with no generated RSA Signature provider. This is a
+  partial migration only: the native code still consumes RSAKeyProvider
+  objects, while RSA key construction and Cipher still use generated provider
+  classes. The asymmetric profile therefore remains noncompliant with the
+  native-only boundary and is not complete.
   Native-dispatch design inspected on 2026-10-26: the VM routes API-declared
   native methods through `callJCNativeMethod`, and `Heap::addInstance` can
   allocate an object directly from its ROM package/class index. The intended
@@ -1512,10 +1513,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `progress.md` and `.agent/HANDOFF.md` entries for the symmetric validation.
   Apply the same native API boundary to RSA key and cipher APIs; do not
   introduce generated Java implementation classes.
-  The support test now rejects generation of `SignatureProvider`,
-  `SymmetricMacProvider`, and `MacNativeBridge`, and checks the native
-  `Signature` method manifest. RSA key/cipher provider assertions remain and
-  must be replaced during their migration.
+  The support tests reject generation of `SignatureProvider`,
+  `SymmetricMacProvider`, `MacNativeBridge`, and the RSA Signature provider;
+  they check the native `Signature` method manifest. RSA key/cipher provider
+  assertions remain and must be replaced during their migration. RSA Signature
+  PC/VPCD known-answer and malformed-input vectors pass; physical validation
+  remains open.
   See the 2026-10-25 entry in `progress.md` and `.agent/HANDOFF.md`.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).

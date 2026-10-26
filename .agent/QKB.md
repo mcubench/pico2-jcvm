@@ -5156,3 +5156,17 @@ fix.
   new physical test. RSA Signature and RSA key/cipher provider paths still
   need migration; the asymmetric profile is not yet native-only.
 
+
+# PC emulator can remain stale after target builds (2026-10-26)
+
+- **Symptom:** A new RSA signature boundary vector (signature representative
+  equal to the modulus) returned `6F00` after rebuilding ARM and RISC-V.
+- **Cause:** `./tools/build arm` and `./tools/build riscv` do not refresh an
+  already-built `build/choupi-pc/choupi`; the VPCD harness was still executing
+  an older PC binary. This mimicked a source regression.
+- **Viable fix:** After any source changes under PC/VPCD test, run
+  `./tools/build-pc --profile <profile>` before launching the VPCD test. Then
+  rerun the test through the documented host-access execution path (loopback
+  VPCD sockets are restricted in the default sandbox).
+- **Validation:** Rebuilt with `./tools/build-pc --profile asymm_crypto`; the
+  full VPCD test then passed 26/26, including equal-to-modulus rejection.

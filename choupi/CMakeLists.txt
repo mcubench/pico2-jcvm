@@ -342,7 +342,7 @@ file(GLOB_RECURSE JCVM_CORE_SOURCES_FILES
      CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 list(FILTER JCVM_CORE_SOURCES_FILES EXCLUDE REGEX
-  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mbedtls_digest|rsa_cipher|rsa_key)\\.cpp$")
+  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mbedtls_digest|rsa_cipher|rsa_key|rsa_signature)\\.cpp$")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_random.cpp")
 endif()
@@ -383,6 +383,9 @@ endif()
 if(JC_SUPPORT_RSA_KEYS_ENABLED)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_rsa_key.cpp")
 endif()
+if(JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1)
+  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_rsa_signature.cpp")
+endif()
 
 if(CHOUPI_TARGET_PC)
 
@@ -392,7 +395,7 @@ if(CHOUPI_TARGET_PC)
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/aes.c"
                         "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/platform_util.c")
 
-  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP)
+  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP OR JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1)
     target_sources(choupi PRIVATE
       "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/bignum.c"
       "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/bignum_core.c"
@@ -417,7 +420,7 @@ if(CHOUPI_TARGET_PC)
   if(JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512)
     target_sources(choupi PRIVATE "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/sha512.c")
   endif()
-  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP)
+  if(JC_SUPPORT_CIPHER_RSA_PKCS1 OR JC_SUPPORT_CIPHER_RSA_NOPAD OR JC_SUPPORT_CIPHER_RSA_OAEP OR JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1)
     target_sources(choupi PRIVATE
       "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/bignum.c"
       "$ENV{PICO_SDK_PATH}/lib/mbedtls/library/bignum_core.c"

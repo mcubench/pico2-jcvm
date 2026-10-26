@@ -31,6 +31,9 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "cipher_rsa_pkcs1": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1"),
     "cipher_rsa_nopad": ("javacardx.crypto.Cipher", "ALG_RSA_NOPAD"),
     "cipher_rsa_oaep": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1_OAEP"),
+    "signature_rsa_sha_pkcs1": (
+        "javacard.security.Signature", "ALG_RSA_SHA_PKCS1"
+    ),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
@@ -153,8 +156,11 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     rsa_private = any(value[f"key_rsa_private_{bits}"] for bits in _rsa_lengths)
     if rsa_cipher and (not rsa_public or not rsa_private):
         raise ValueError(f"{path}: RSA ciphers require enabled public and private RSA key capabilities")
-    if value["cipher_rsa_oaep"] and not value["sha1"]:
-        raise ValueError(f"{path}: RSA OAEP requires SHA-1 support")
+    rsa_signature = value["signature_rsa_sha_pkcs1"]
+    if rsa_signature and (not rsa_public or not rsa_private):
+        raise ValueError(f"{path}: RSA signatures require enabled public and private RSA key capabilities")
+    if (value["cipher_rsa_oaep"] or rsa_signature) and not value["sha1"]:
+        raise ValueError(f"{path}: RSA OAEP and SHA-1 signatures require SHA-1 support")
     return value
 
 
@@ -515,6 +521,8 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     for filename in ("SignatureProvider.java", "SymmetricMacProvider.java"):
         (signature_dir / filename).unlink(missing_ok=True)
     (nativeimpl_dir / "MacNativeBridge.java").unlink(missing_ok=True)
+    rsa_signature_provider = nativeimpl_dir / "RSASignatureProvider.java"
+    rsa_signature_provider.unlink(missing_ok=True)
     for generated_digest_class in (
         java_dir / "MessageDigestProvider.java",
         java_dir / "Sha256DigestProvider.java",

@@ -214,6 +214,8 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertIn("KeyBuilder.LENGTH_RSA_4096", key_provider)
             self.assertIn("KeyBuilder.TYPE_RSA_CRT_PRIVATE_TRANSIENT_DESELECT", key_provider)
             self.assertIn("new RSAKeyProvider(type, length)", key_provider)
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/RSASignatureProvider.java").exists())
+            self.assertFalse((out / "java/javacard/security/SignatureProvider.java").exists())
             rsa_cipher = out / "java/fr/gouv/ssi/nativeimpl/RSACipherProvider.java"
             self.assertTrue(rsa_cipher.is_file())
             rsa_cipher_source = rsa_cipher.read_text()
