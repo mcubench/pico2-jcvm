@@ -1,8 +1,8 @@
 # Current continuation — descriptor-specific native method overrides (2026-10-26)
 
-- ROM-mask native override keys now include each method's complete JCA descriptor. This avoids collisions between overloaded Java Card API methods and permits both Signature.getInstance forms to become native independently.
+- ROM-mask native override keys now include each method's complete JCA descriptor. A direct ROM-mask probe accepted both Signature.getInstance forms and emitted two C++ overload declarations; the manifest key includes the method name in both its class/method fields and descriptor string.
 - Validation: support tests 9/9; PC, ARM, and RISC-V builds passed. The PC/VPCD MessageDigest regression passed all 15 checks (TEST:SUMMARY pass=15 fail=0).
-- Rommask submodule commit: dfd7f3f; root commit 713519f.
+- Rommask submodule commit: dfd7f3f; root commit 713519f. Final PC, ARM, and RISC-V builds passed after the parser diagnostic was removed.
 - Next: migrate symmetric MAC Signature behavior to direct native API dispatch using descriptor-qualified factory overrides; preserve symm_crypto behavior. Then move RSA signature and key/cipher implementations off Java provider classes.
 
 # Current continuation — native MessageDigest dispatch (2026-10-26)

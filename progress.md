@@ -13103,7 +13103,7 @@
 
 - Step/experiment: native-method-override-descriptors
 - Change: Changed the ROM-mask override manifest to identify methods by full Java Card descriptor, including parameter and return types. Updated MessageDigest entries so future overloaded factories can be selected independently.
-- Validation: python3 tools/test-javacard-support.py passed 9/9; ./tools/build-pc, ./tools/build arm, and ./tools/build riscv passed. Generated JNI declarations retained expected native MessageDigest symbols. PC/VPCD full regression passed 15/15, including SHA-256 operations and static performance.
+- Validation: python3 tools/test-javacard-support.py passed 9/9; ./tools/build-pc, ./tools/build arm, and ./tools/build riscv passed. Generated JNI declarations retained expected native MessageDigest symbols. A direct ROM-mask probe accepted both Signature factory descriptors and emitted both C++ overload declarations. PC/VPCD full regression passed 15/15, including SHA-256 operations and static performance.
 - Result: ROM-mask native overrides now match exact API overloads rather than method names alone; MessageDigest behavior remains intact.
 - Decision: Use descriptor-qualified manifest records for both Signature.getInstance overloads in the next migration step.
 - Commit: 713519f (root); rommask submodule commit dfd7f3f.
