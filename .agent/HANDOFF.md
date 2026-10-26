@@ -19,6 +19,7 @@
   `artifacts/logs/asymm-crypto-pcsc-20261026T185432Z.log`, and
   `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (VPCD log reused by
   the existing harness; SHA-256 `5d9e8f2bafb8c9929502210664bd55e2f2485cdb95ba6df7f9176232d7a7bc2f`).
+- Implementation and validation record commit: `f00ab2f`.
 - Asymmetric profile remains incomplete. Remaining tasks include RSA ISO9796,
   EC keys/ECDSA, key agreement/generation, exact report comparison, complete
   `/deploy` acceptance, and validation/hardening of private RSA operations.

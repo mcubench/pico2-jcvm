@@ -13074,7 +13074,7 @@
 - Validation: Inspected `choupi/javacard-sdk/rommask/src/main/java/fr/gouv/ssi/rommask/jcaparser/mask/JCNativeFunctions.java` and `choupi/src/heap.cpp`. No test or build was run; this was code inspection.
 - Result: Native factory reference returns and allocation of the API ROM class appear feasible. Full migration must move signature factory, RSA operations, and symmetric MAC state/operations together; RSA key and cipher API provider objects also remain to migrate.
 - Decision: Next build a focused ROM-mask/native-factory fixture, then implement native API methods as one coherent change. Continue to exclude generated Java provider classes from accepted firmware.
-- Commit: pending.
+- Commit: `f00ab2f`.
 - Artifacts/logs: None.
 
 ## 2026-10-26 — Audit asymmetric support-generator test expectations
