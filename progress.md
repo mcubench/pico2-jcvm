@@ -13145,5 +13145,5 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. Elevated VPCD run passed `TEST:SUMMARY pass=26 fail=0`, including 6 RSA Signature vectors. The equal-to-modulus vector failed against a stale PC executable before the PC rebuild, then passed. Physical validation was skipped because the token was unplugged by the user.
 - Result: This covers one RSA signature algorithm through native `Signature` methods. RSA key construction still relies on generated provider objects, RSA Cipher still uses generated provider classes, and private-operation blinding/hardening is not validated. The asymmetric profile remains incomplete and must not be called native-only.
 - Decision: Continue offline by migrating RSA key APIs and RSA Cipher; keep the upstream CAP unchanged.
-- Commit: pending.
+- Commit: `c40a965`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`; VPCD result `TEST:SUMMARY pass=26 fail=0`.

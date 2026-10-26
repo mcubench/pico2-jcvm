@@ -11028,7 +11028,8 @@ confirmed on hardware. The original investigation evidence remains in earlier
   consumes `RSAKeyProvider` objects. RSA key construction and RSA Cipher retain
   generated Java provider paths, and the signature implementation has not been
   audited for private-operation blinding/side-channel resistance or tested on
-  hardware. Do not package/claim `asymm_crypto` as compliant yet.
+  hardware. Do not package/claim `asymm_crypto` as compliant yet. Implementation
+  commit: `c40a965`.
 - Next: migrate RSA key construction and key state onto native Java Card API
   methods, then RSA Cipher factory/operations, preserving the VPCD vectors.
   Extend RSA Signature algorithms only after those foundations and hardening.
