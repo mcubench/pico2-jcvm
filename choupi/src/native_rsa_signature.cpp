@@ -8,14 +8,22 @@
 #include "native_crypto_exception.hpp"
 
 #include "mbedtls/bignum.h"
+#if JC_SUPPORT_SHA1
 #include "mbedtls/sha1.h"
+#endif
+#if JC_SUPPORT_SHA224 || JC_SUPPORT_SHA256
+#include "mbedtls/sha256.h"
+#endif
+#if JC_SUPPORT_SHA384 || JC_SUPPORT_SHA512
+#include "mbedtls/sha512.h"
+#endif
 
 #include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <vector>
 
-#if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
 namespace jcvm {
 namespace {
 constexpr uint8_t kRsaPublic = 4;
@@ -69,7 +77,6 @@ std::vector<unsigned char> readArray(JC_Array &array, uint16_t offset,
 }
 
 uint16_t keyModulusLength(JC_Instance &key);
-std::vector<unsigned char> sha1(const std::vector<unsigned char> &message);
 
 std::shared_ptr<JC_Array> keyComponentArray(JC_Instance &key,
                                             uint16_t component) {
@@ -177,12 +184,88 @@ void clearMessage(JC_Instance &signature) {
   signature.setField_Short(countField, 0);
 }
 
-std::vector<unsigned char> digestInfoFromHash(const unsigned char *digest) {
-  static constexpr unsigned char prefix[] = {
+uint8_t signatureDigestAlgorithm(JC_Instance &signature) {
+  return static_cast<uint8_t>(signature.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM));
+}
+
+uint16_t digestLength(uint8_t algorithm) {
+  switch (algorithm) {
+#if JC_SUPPORT_SHA1
+  case 1: return 20;
+#endif
+#if JC_SUPPORT_SHA224
+  case 7: return 28;
+#endif
+#if JC_SUPPORT_SHA256
+  case 4: return 32;
+#endif
+#if JC_SUPPORT_SHA384
+  case 5: return 48;
+#endif
+#if JC_SUPPORT_SHA512
+  case 6: return 64;
+#endif
+  default: throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+  }
+}
+
+std::vector<unsigned char> digestMessage(JC_Instance &signature,
+                                         const std::vector<unsigned char> &message) {
+  const uint8_t algorithm = signatureDigestAlgorithm(signature);
+  std::vector<unsigned char> digest(digestLength(algorithm));
+  int result = -1;
+  switch (algorithm) {
+#if JC_SUPPORT_SHA1
+  case 1: result = mbedtls_sha1(message.data(), message.size(), digest.data()); break;
+#endif
+#if JC_SUPPORT_SHA224
+  case 7: result = mbedtls_sha256(message.data(), message.size(), digest.data(), 1); break;
+#endif
+#if JC_SUPPORT_SHA256
+  case 4: result = mbedtls_sha256(message.data(), message.size(), digest.data(), 0); break;
+#endif
+#if JC_SUPPORT_SHA384
+  case 5: result = mbedtls_sha512(message.data(), message.size(), digest.data(), 1); break;
+#endif
+#if JC_SUPPORT_SHA512
+  case 6: result = mbedtls_sha512(message.data(), message.size(), digest.data(), 0); break;
+#endif
+  default: break;
+  }
+  if (result != 0) throwCryptoException(CryptoExceptionReason::IllegalUse);
+  return digest;
+}
+
+std::vector<unsigned char> digestInfoFromHash(uint8_t algorithm,
+                                              const unsigned char *digest) {
+  const unsigned char *prefix = nullptr;
+  size_t prefixLength = 0;
+  static constexpr unsigned char sha1Prefix[] = {
       0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e,
       0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14};
-  std::vector<unsigned char> result(std::begin(prefix), std::end(prefix));
-  result.insert(result.end(), digest, digest + 20);
+  static constexpr unsigned char sha224Prefix[] = {
+      0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
+      0x65, 0x03, 0x04, 0x02, 0x04, 0x05, 0x00, 0x04, 0x1c};
+  static constexpr unsigned char sha256Prefix[] = {
+      0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
+      0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
+  static constexpr unsigned char sha384Prefix[] = {
+      0x30, 0x41, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
+      0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30};
+  static constexpr unsigned char sha512Prefix[] = {
+      0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
+      0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40};
+  switch (algorithm) {
+  case 1: prefix = sha1Prefix; prefixLength = sizeof(sha1Prefix); break;
+  case 7: prefix = sha224Prefix; prefixLength = sizeof(sha224Prefix); break;
+  case 4: prefix = sha256Prefix; prefixLength = sizeof(sha256Prefix); break;
+  case 5: prefix = sha384Prefix; prefixLength = sizeof(sha384Prefix); break;
+  case 6: prefix = sha512Prefix; prefixLength = sizeof(sha512Prefix); break;
+  default: throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+  }
+  std::vector<unsigned char> result(prefix, prefix + prefixLength);
+  result.insert(result.end(), digest, digest + digestLength(algorithm));
   return result;
 }
 
@@ -224,8 +307,10 @@ std::vector<unsigned char> modExp(const std::vector<unsigned char> &modulus,
 
 std::vector<unsigned char> transform(JC_Instance &signature,
                                      const std::vector<unsigned char> &hash) {
-  if (hash.size() != 20) throwCryptoException(CryptoExceptionReason::IllegalValue);
-  auto digestInfo = digestInfoFromHash(hash.data());
+  const uint8_t algorithm = signatureDigestAlgorithm(signature);
+  if (hash.size() != digestLength(algorithm))
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  auto digestInfo = digestInfoFromHash(algorithm, hash.data());
   const auto modulus = keyComponent(signature, 0);
   const auto exponent = keyComponent(signature, 1);
   const uint16_t length = static_cast<uint16_t>(signature.getField_Short(
@@ -237,7 +322,7 @@ std::vector<unsigned char> transform(JC_Instance &signature,
 
 std::vector<unsigned char> transformMessage(
     JC_Instance &signature, const std::vector<unsigned char> &message) {
-  const auto hash = sha1(message);
+  const auto hash = digestMessage(signature, message);
   return transform(signature, hash);
 }
 
@@ -245,13 +330,14 @@ bool verify(JC_Instance &signature, const std::vector<unsigned char> &hash,
             const std::vector<unsigned char> &value) {
   const uint16_t length = static_cast<uint16_t>(signature.getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH));
-  if (value.size() != length || hash.size() != 20) return false;
+  const uint8_t algorithm = signatureDigestAlgorithm(signature);
+  if (value.size() != length || hash.size() != digestLength(algorithm)) return false;
   const auto modulus = keyComponent(signature, 0);
   const auto exponent = keyComponent(signature, 1);
   if (!std::lexicographical_compare(value.begin(), value.end(),
                                     modulus.begin(), modulus.end()))
     return false;
-  const auto expected = encodedMessage(digestInfoFromHash(hash.data()), length);
+  const auto expected = encodedMessage(digestInfoFromHash(algorithm, hash.data()), length);
   const auto actual = modExp(modulus, exponent, value);
   uint8_t difference = 0;
   for (size_t i = 0; i < expected.size(); ++i)
@@ -259,12 +345,6 @@ bool verify(JC_Instance &signature, const std::vector<unsigned char> &hash,
   return difference == 0;
 }
 
-std::vector<unsigned char> sha1(const std::vector<unsigned char> &message) {
-  unsigned char digest[20];
-  if (mbedtls_sha1(message.data(), message.size(), digest) != 0)
-    throwCryptoException(CryptoExceptionReason::IllegalUse);
-  return {digest, digest + sizeof(digest)};
-}
 } // namespace
 
 void initializeRsaSignature(JC_Instance &signature, jref_t keyReference,
@@ -334,8 +414,10 @@ jshort_t rsaSignatureSignHash(JC_Instance &signature,
                               const std::shared_ptr<JC_Array> &output,
                               jshort_t outputOffset) {
   checkRange(hash, offset, length);
-  if (length != 20) throwCryptoException(CryptoExceptionReason::IllegalValue);
-  const auto value = transform(signature, readArray(*hash, offset, 20));
+  if (length != digestLength(signatureDigestAlgorithm(signature)))
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  const auto value = transform(signature, readArray(*hash, offset,
+      static_cast<uint16_t>(length)));
   checkRange(output, outputOffset, static_cast<jshort_t>(value.size()));
   for (size_t i = 0; i < value.size(); ++i)
     output->setByteEntry(static_cast<uint16_t>(outputOffset + i), value[i]);
@@ -350,7 +432,7 @@ jbool_t rsaSignatureVerify(JC_Instance &signature,
   append(signature, input, offset, length);
   checkRange(expected, expectedOffset, expectedLength);
   const auto message = bufferedData(signature);
-  const auto hash = sha1(message);
+  const auto hash = digestMessage(signature, message);
   const auto value = readArray(*expected, expectedOffset, expectedLength);
   const bool valid = verify(signature, hash, value);
   clearMessage(signature);
@@ -364,8 +446,10 @@ jbool_t rsaSignatureVerifyHash(JC_Instance &signature,
                                jshort_t expectedOffset, jshort_t expectedLength) {
   checkRange(hash, hashOffset, hashLength);
   checkRange(expected, expectedOffset, expectedLength);
-  if (hashLength != 20) throwCryptoException(CryptoExceptionReason::IllegalValue);
-  return verify(signature, readArray(*hash, hashOffset, 20),
+  if (hashLength != digestLength(signatureDigestAlgorithm(signature)))
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  return verify(signature, readArray(*hash, hashOffset,
+                                     static_cast<uint16_t>(hashLength)),
       readArray(*expected, expectedOffset, expectedLength)) ? TRUE : FALSE;
 }
 } // namespace jcvm

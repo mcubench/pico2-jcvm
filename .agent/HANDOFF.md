@@ -1,3 +1,25 @@
+# Current continuation — physical RSA SHA-2 response sizing (2026-10-26)
+
+- Found the physical-only cause of RSA SHA-2 signature APDUs returning `6F00`:
+  `src/ccid_device.cpp` allocated a 96-byte response buffer, so an RSA-768
+  signature (96 bytes) plus the two-byte APDU status exceeded the VM response
+  capacity. The VM completed normally; the CCID wrapper substituted `6F00`.
+- Increased APDU response storage to 1024 bytes and CCID transmit storage to
+  1034 bytes. USB bulk transfers are already submitted at full size and
+  packetized by the endpoint driver.
+- Validation: ARM and RISC-V `asymm_crypto` builds passed. Physical
+  `./tools/cycle choupi --profile asymm_crypto --chipid 2BED26ED20556535`
+  flashed and verified the image; finite serial output reported
+  `TEST:SUMMARY pass=1 fail=0`. The physical RSA test passed all 24 SHA-1,
+  SHA-224, SHA-256, SHA-384, and SHA-512 signing/verification vectors and
+  removed its temporary package: `artifacts/logs/asymm-crypto-pcsc-20261026T181526Z.log`.
+- Board tested: `2BED26ED20556535`. Another reader (`D92E743D5F640C0F`) was also
+  enumerated and remains available as failover. The upstream JCAlgTest CAP was
+  not modified.
+- Next: continue native RSA API and asymmetric-profile acceptance; the full
+  asymmetric profile is not complete. Preserve all unrelated uncommitted
+  changes in the worktree.
+
 # Current continuation — native Cipher API dispatch (2026-10-26)
 
 - Migrated Cipher factories, state, init, getters, update, and doFinal to

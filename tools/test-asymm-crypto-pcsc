@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+require_command timeout
+[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-pcsc '<exact PC/SC reader name>'"
+
+reader_name="$1"
+repo_log_dir="${repo_root}/artifacts/logs"
+build_dir="${repo_root}/build/symm-crypto-probe"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+cap="${build_dir}/output/symm-crypto-probe.cap"
+package_aid="A000000151000201"
+applet_aid="A00000015100020101"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log="${repo_log_dir}/asymm-crypto-pcsc-${timestamp}.log"
+vectors="${build_dir}/asymm-crypto-physical-vectors.tsv"
+client_build="${build_dir}/physical-client"
+gp=("${repo_root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
+installed_here=0
+
+[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
+[[ -s "${cap}" ]] || die "probe CAP missing; run ./tools/build-symm-crypto-probe"
+mkdir -p "${repo_log_dir}" "${client_build}"
+
+cleanup() {
+  local status=$?
+  local cleanup_status=0
+  trap - EXIT
+  if (( installed_here )); then
+    local list="${build_dir}/physical-gp-cleanup-${timestamp}.log"
+    if timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list >"${list}" 2>&1; then
+      if grep -Fq "APP: ${applet_aid} " "${list}"; then
+        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+          --delete "${applet_aid}" >>"${log}" 2>&1 || cleanup_status=1
+      fi
+      if grep -Fq "PKG: ${package_aid} " "${list}"; then
+        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+          --delete "${package_aid}" >>"${log}" 2>&1 || cleanup_status=1
+      fi
+    else
+      cleanup_status=1
+    fi
+    if (( cleanup_status == 0 )); then
+      printf 'PHYSICAL:CLEANUP_PASS package=%s\n' "${package_aid}" | tee -a "${log}"
+    else
+      status=1
+      printf 'PHYSICAL:CLEANUP_FAIL package=%s list=%s\n' \
+        "${package_aid}" "${list}" | tee -a "${log}"
+    fi
+  fi
+  exit "${status}"
+}
+trap cleanup EXIT
+
+exec > >(tee -a "${log}") 2>&1
+printf 'PHYSICAL:START reader=%s profile=asymm_crypto\n' "${reader_name}"
+PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+list="${build_dir}/physical-gp-list-${timestamp}.log"
+timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list >"${list}" 2>&1 || \
+  die "GPPro list failed; see ${list}"
+if grep -Fq "APP: ${applet_aid} " "${list}" || grep -Fq "PKG: ${package_aid} " "${list}"; then
+  die "probe package AID is already present; refusing to replace existing data"
+fi
+
+python3 - "${repo_root}" "${vectors}" <<'PY'
+import importlib.util
+import sys
+from pathlib import Path
+
+root, output = Path(sys.argv[1]), Path(sys.argv[2])
+source = root / "tools/tests/test_asymm_crypto_vpcd.py"
+spec = importlib.util.spec_from_file_location("asymm_vectors", source)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+vectors = [case for case in module.vectors()
+           if case[2].startswith(("RSA SHA1", "RSA SHA-sha224",
+                                  "RSA SHA-sha256", "RSA SHA-sha384",
+                                  "RSA SHA-sha512"))]
+with output.open("w", encoding="ascii") as stream:
+    for command, expected, label in vectors:
+        stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
+if len(vectors) != 24:
+    raise SystemExit(f"expected 24 RSA SHA-1/SHA-2 vectors, got {len(vectors)}")
+print(f"VECTORS:PASS count={len(vectors)} file={output}")
+PY
+
+installed_here=1
+timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${cap}" \
+  >"${build_dir}/physical-install-${timestamp}.log" 2>&1 || \
+  die "GPPro install failed; see ${build_dir}/physical-install-${timestamp}.log"
+"${repo_root}/tools/env" javac -d "${client_build}" \
+  "${repo_root}/tools/tests/SymmCryptoPcscProbe.java"
+timeout --signal=TERM --kill-after=5s 180s "${repo_root}/tools/env" java \
+  -cp "${client_build}" SymmCryptoPcscProbe "${reader_name}" "${vectors}"
+printf 'PHYSICAL:PASS log=%s\n' "${log#${repo_root}/}"

@@ -74,11 +74,52 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
     prehash_verify = modulus + bytes((len(public_exponent),)) + public_exponent + digest + expected_signature
     results.append((bytes((0x80, 0x15, 10, 3, len(prehash_verify))) + prehash_verify + b"\x00",
                     b"\x01\x90\x00", "RSA SHA1 PKCS1 precomputed verify"))
+    rsa768 = _rsa_fixture(768)
+    n, d, e = rsa768
+    modulus = n.to_bytes(96, "big")
+    private_exponent = d.to_bytes(96, "big")
+    public_exponent = e.to_bytes(3, "big")
+    signature_algorithms = {
+        39: (hashlib.sha224, "302d300d06096086480165030402040500041c"),
+        40: (hashlib.sha256, "3031300d060960864801650304020105000420"),
+        41: (hashlib.sha384, "3041300d060960864801650304020205000430"),
+        42: (hashlib.sha512, "3051300d060960864801650304020305000440"),
+    }
+    for algorithm, (digest_function, prefix_hex) in signature_algorithms.items():
+        message = f"JCVM RSA SHA{algorithm} PKCS1".encode("ascii")
+        digest = digest_function(message).digest()
+        digest_info = bytes.fromhex(prefix_hex) + digest
+        encoded = b"\x00\x01" + b"\xff" * (96 - len(digest_info) - 3) + b"\x00" + digest_info
+        expected_signature = pow(int.from_bytes(encoded, "big"), d, n).to_bytes(96, "big")
+        sign_data = modulus + private_exponent + message
+        results.append((bytes((0x80, 0x15, algorithm, 0, len(sign_data))) + sign_data + b"\x00",
+                        expected_signature + b"\x90\x00", f"RSA SHA-{digest_function().name} PKCS1 sign"))
+        verify_data = modulus + bytes((len(public_exponent),)) + public_exponent + message + expected_signature
+        results.append((bytes((0x80, 0x15, algorithm, 1, len(verify_data))) + verify_data + b"\x00",
+                        b"\x01\x90\x00", f"RSA SHA-{digest_function().name} PKCS1 verify"))
+        invalid_signature = bytearray(expected_signature)
+        invalid_signature[-1] ^= 1
+        verify_bad = modulus + bytes((len(public_exponent),)) + public_exponent + message + invalid_signature
+        results.append((bytes((0x80, 0x15, algorithm, 1, len(verify_bad))) + verify_bad + b"\x00",
+                        b"\x00\x90\x00", f"RSA SHA-{digest_function().name} reject bad signature"))
+        # Short APDUs cap the data field at 255 bytes. A 768-bit RSA key plus
+        # SHA-512 hash and signature takes 256 bytes before APDU metadata.
+        if algorithm != 42:
+            prehash_sign = modulus + private_exponent + digest
+            results.append((bytes((0x80, 0x15, algorithm, 2, len(prehash_sign))) + prehash_sign + b"\x00",
+                            expected_signature + b"\x90\x00", f"RSA SHA-{digest_function().name} precomputed sign"))
+            prehash_verify = modulus + bytes((len(public_exponent),)) + public_exponent + digest + expected_signature
+            results.append((bytes((0x80, 0x15, algorithm, 3, len(prehash_verify))) + prehash_verify + b"\x00",
+                            b"\x01\x90\x00", f"RSA SHA-{digest_function().name} precomputed verify"))
     return results
 
 
 def _rsa_512_fixture() -> tuple[int, int, int]:
-    rng = random.Random(0x52434152)
+    return _rsa_fixture(512)
+
+
+def _rsa_fixture(bits: int) -> tuple[int, int, int]:
+    rng = random.Random(0x52434152 + bits)
     small_primes = (3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47)
 
     def probable_prime(candidate: int) -> bool:
@@ -103,7 +144,8 @@ def _rsa_512_fixture() -> tuple[int, int, int]:
 
     def next_prime() -> int:
         while True:
-            candidate = rng.getrandbits(256) | (1 << 255) | 1
+            prime_bits = bits // 2
+            candidate = rng.getrandbits(prime_bits) | (1 << (prime_bits - 1)) | 1
             if probable_prime(candidate):
                 return candidate
 
@@ -113,7 +155,7 @@ def _rsa_512_fixture() -> tuple[int, int, int]:
         phi = (p - 1) * (q - 1)
         if p != q and math.gcd(e, phi) == 1:
             n = p * q
-            if n.bit_length() == 512:
+            if n.bit_length() == bits:
                 return n, pow(e, -1, phi), e
 
 
@@ -136,7 +178,7 @@ def main() -> int:
     completed = subprocess.run(command, cwd=ROOT, check=False)
     if completed.returncode:
         return completed.returncode
-    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 rsa_signature_vectors=6 fail=0")
+    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 rsa_signature_vectors=24 fail=0")
     print(f"TEST:LOG {log}")
     return 0
 

@@ -92,7 +92,11 @@
       "cipher_rsa_pkcs1": false,
       "cipher_rsa_nopad": false,
       "cipher_rsa_oaep": false,
-      "signature_rsa_sha_pkcs1": false
+      "signature_rsa_sha_pkcs1": false,
+      "signature_rsa_sha_224_pkcs1": false,
+      "signature_rsa_sha_256_pkcs1": false,
+      "signature_rsa_sha_384_pkcs1": false,
+      "signature_rsa_sha_512_pkcs1": false
     },
     "base": {
       "owner_pin": true,
@@ -185,7 +189,11 @@
       "cipher_rsa_pkcs1": false,
       "cipher_rsa_nopad": false,
       "cipher_rsa_oaep": false,
-      "signature_rsa_sha_pkcs1": false
+      "signature_rsa_sha_pkcs1": false,
+      "signature_rsa_sha_224_pkcs1": false,
+      "signature_rsa_sha_256_pkcs1": false,
+      "signature_rsa_sha_384_pkcs1": false,
+      "signature_rsa_sha_512_pkcs1": false
     },
     "no_aes": {
       "owner_pin": true,
@@ -278,7 +286,11 @@
       "cipher_rsa_pkcs1": false,
       "cipher_rsa_nopad": false,
       "cipher_rsa_oaep": false,
-      "signature_rsa_sha_pkcs1": false
+      "signature_rsa_sha_pkcs1": false,
+      "signature_rsa_sha_224_pkcs1": false,
+      "signature_rsa_sha_256_pkcs1": false,
+      "signature_rsa_sha_384_pkcs1": false,
+      "signature_rsa_sha_512_pkcs1": false
     },
     "minimal": {
       "owner_pin": false,
@@ -371,7 +383,11 @@
       "cipher_rsa_pkcs1": false,
       "cipher_rsa_nopad": false,
       "cipher_rsa_oaep": false,
-      "signature_rsa_sha_pkcs1": false
+      "signature_rsa_sha_pkcs1": false,
+      "signature_rsa_sha_224_pkcs1": false,
+      "signature_rsa_sha_256_pkcs1": false,
+      "signature_rsa_sha_384_pkcs1": false,
+      "signature_rsa_sha_512_pkcs1": false
     },
     "symm_crypto": {
       "owner_pin": true,
@@ -464,7 +480,11 @@
       "cipher_rsa_pkcs1": false,
       "cipher_rsa_nopad": false,
       "cipher_rsa_oaep": false,
-      "signature_rsa_sha_pkcs1": false
+      "signature_rsa_sha_pkcs1": false,
+      "signature_rsa_sha_224_pkcs1": false,
+      "signature_rsa_sha_256_pkcs1": false,
+      "signature_rsa_sha_384_pkcs1": false,
+      "signature_rsa_sha_512_pkcs1": false
     },
     "asymm_crypto": {
       "owner_pin": true,
@@ -557,7 +577,11 @@
       "cipher_rsa_pkcs1": true,
       "cipher_rsa_nopad": true,
       "cipher_rsa_oaep": true,
-      "signature_rsa_sha_pkcs1": true
+      "signature_rsa_sha_pkcs1": true,
+      "signature_rsa_sha_224_pkcs1": true,
+      "signature_rsa_sha_256_pkcs1": true,
+      "signature_rsa_sha_384_pkcs1": true,
+      "signature_rsa_sha_512_pkcs1": true
     }
   }
 }

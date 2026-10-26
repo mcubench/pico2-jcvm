@@ -5189,6 +5189,27 @@ fix.
   full VPCD test then passed 26/26, including equal-to-modulus rejection.
 
 
+# CCID response buffer must fit full APDU response (2026-10-26)
+
+- **Symptom:** On physical Pico 2, RSA SHA-1 signature responses (64 bytes for
+  the RSA-512 test key) succeeded, while RSA SHA-2 with a 768-bit key returned
+  `6F00` for signing/precomputed signing. Verification calls still completed.
+- **Cause:** `src/ccid_device.cpp` allocated 96 bytes for the APDU response.
+  The VM correctly produced a 96-byte RSA signature plus the two-byte status
+  word, but `choupi/src/main.cpp` rejected the 98-byte result as larger than
+  the caller capacity and mapped it to `6F00`. This was a CCID response-capacity
+  issue, not a cryptographic algorithm failure.
+- **Viable fix:** Keep the CCID receive limit independent; allocate response
+  storage that covers the largest supported algorithm result, with the CCID
+  header included in transmit storage. The current 1024-byte APDU response
+  buffer supports RSA signatures through 4096 bits (512 bytes) and fits in the
+  1034-byte CCID transmit buffer.
+- **Validation:** ARM/RISC-V `asymm_crypto` builds passed. Physical Pico 2
+  `2BED26ED20556535` flashed successfully and passed finite runtime checks; the
+  physical RSA suite passed 24/24 vectors across SHA-1/224/256/384/512,
+  including complete signatures returned over CCID. Log:
+  `artifacts/logs/asymm-crypto-pcsc-20261026T181526Z.log`.
+
 # JCAlgTest static workloads exceeded the applet-call time guard (2026-10-26)
 
 - **Symptom:** Physical JCAlgTest AES CBC-NOPAD preparation and zero-repeat baselines returned `AA9000`, but the 50-call `Cipher.doFinal` performance request returned `6400` after about 6.36 seconds.

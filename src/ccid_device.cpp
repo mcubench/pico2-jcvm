@@ -44,6 +44,10 @@ constexpr uint8_t kEndpointIn = 0x83;
 constexpr uint16_t kEndpointSize = 64;
 constexpr size_t kMaxMessage = 320;
 constexpr size_t kMaxCcidMessage = 300;
+// A 4096-bit RSA signature is 512 bytes; include room for the APDU status
+// word and CCID header so valid algorithm responses are not converted to 6F00.
+constexpr size_t kMaxApduResponse = 1024;
+constexpr size_t kMaxCcidResponse = kMaxApduResponse + 10;
 constexpr uint8_t kAtr[] = {0x3b, 0x80, 0x01, 0x81};
 constexpr bool response_requires_zlp(size_t transfer_length) noexcept {
   return transfer_length != 0 && transfer_length % kEndpointSize == 0;
@@ -88,7 +92,7 @@ static_assert(sizeof(kConfiguration) == kConfigLength,
               "USB configuration descriptor length is inconsistent");
 
 uint8_t rx_buffer[kMaxMessage];
-uint8_t tx_buffer[kMaxMessage];
+uint8_t tx_buffer[kMaxCcidResponse];
 size_t rx_length = 0;
 size_t rx_expected = 0;
 uint8_t slot_state = 1; // present, inactive
@@ -356,7 +360,7 @@ void process_message(uint8_t rhport) {
       debug_last_apdu_header[index] =
           index < debug_last_apdu_length ? apdu[index] : 0;
     }
-    uint8_t response[96] = {0x6d, 0x00}; // instruction not supported
+    uint8_t response[kMaxApduResponse] = {0x6d, 0x00}; // instruction not supported
     size_t response_length = 2;
     if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
       std::printf("CHOUPI:SELECT_RX len=%u bytes=",

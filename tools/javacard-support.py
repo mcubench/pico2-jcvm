@@ -34,6 +34,18 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "signature_rsa_sha_pkcs1": (
         "javacard.security.Signature", "ALG_RSA_SHA_PKCS1"
     ),
+    "signature_rsa_sha_224_pkcs1": (
+        "javacard.security.Signature", "ALG_RSA_SHA_224_PKCS1"
+    ),
+    "signature_rsa_sha_256_pkcs1": (
+        "javacard.security.Signature", "ALG_RSA_SHA_256_PKCS1"
+    ),
+    "signature_rsa_sha_384_pkcs1": (
+        "javacard.security.Signature", "ALG_RSA_SHA_384_PKCS1"
+    ),
+    "signature_rsa_sha_512_pkcs1": (
+        "javacard.security.Signature", "ALG_RSA_SHA_512_PKCS1"
+    ),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
@@ -156,11 +168,23 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     rsa_private = any(value[f"key_rsa_private_{bits}"] for bits in _rsa_lengths)
     if rsa_cipher and (not rsa_public or not rsa_private):
         raise ValueError(f"{path}: RSA ciphers require enabled public and private RSA key capabilities")
-    rsa_signature = value["signature_rsa_sha_pkcs1"]
+    rsa_signature = any(value[key] for key in (
+        "signature_rsa_sha_pkcs1", "signature_rsa_sha_224_pkcs1",
+        "signature_rsa_sha_256_pkcs1", "signature_rsa_sha_384_pkcs1",
+        "signature_rsa_sha_512_pkcs1",
+    ))
     if rsa_signature and (not rsa_public or not rsa_private):
         raise ValueError(f"{path}: RSA signatures require enabled public and private RSA key capabilities")
-    if (value["cipher_rsa_oaep"] or rsa_signature) and not value["sha1"]:
+    if (value["cipher_rsa_oaep"] or value["signature_rsa_sha_pkcs1"]) and not value["sha1"]:
         raise ValueError(f"{path}: RSA OAEP and SHA-1 signatures require SHA-1 support")
+    for capability, digest in (
+        ("signature_rsa_sha_224_pkcs1", "sha224"),
+        ("signature_rsa_sha_256_pkcs1", "sha256"),
+        ("signature_rsa_sha_384_pkcs1", "sha384"),
+        ("signature_rsa_sha_512_pkcs1", "sha512"),
+    ):
+        if value[capability] and not value[digest]:
+            raise ValueError(f"{path}: {capability} requires {digest} support")
     return value
 
 
@@ -221,6 +245,17 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     for key, enabled in config.items():
         cmake.append(f"set(JC_SUPPORT_{key.upper()} {'ON' if enabled else 'OFF'})")
         header.append(f"#define JC_SUPPORT_{key.upper()} {1 if enabled else 0}")
+    rsa_signature_enabled = any(config[key] for key in (
+        "signature_rsa_sha_pkcs1", "signature_rsa_sha_224_pkcs1",
+        "signature_rsa_sha_256_pkcs1", "signature_rsa_sha_384_pkcs1",
+        "signature_rsa_sha_512_pkcs1",
+    ))
+    cmake.append(
+        f"set(JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY {'ON' if rsa_signature_enabled else 'OFF'})"
+    )
+    header.append(
+        f"#define JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY {1 if rsa_signature_enabled else 0}"
+    )
     (out_dir / "javacard-support.cmake").write_text("\n".join(cmake) + "\n", encoding="utf-8")
     (out_dir / "javacard-support.h").write_text("\n".join(header) + "\n", encoding="utf-8")
     (out_dir / "javacard-support.json").write_text(
