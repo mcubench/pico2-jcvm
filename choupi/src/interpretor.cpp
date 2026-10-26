@@ -372,6 +372,8 @@ uint16_t Interpretor::run() noexcept {
 #endif
 #ifndef PC_VERSION
   const uint32_t install_start_time_us = choupi_time_us_32();
+  const uint32_t applet_execution_budget_us =
+      this->installMethodEntry ? 5000000u : 15000000u;
 #endif
   while (stack.frameDepth() > this->entryFrameDepth) {
 #ifndef PC_VERSION
@@ -393,11 +395,13 @@ uint16_t Interpretor::run() noexcept {
           static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc)),
           bytecode, instruction_count);
     }
-    // An INSTALL APDU is handled inside the USB CCID callback. Bound this
-    // synchronous entry so a bad CAP loop cannot starve USB/PCSC indefinitely.
+    // This synchronous entry is handled inside the USB CCID callback. Keep a
+    // hard wall-clock bound so a bad CAP loop cannot starve USB/PCSC; allow
+    // normal applet calls more time than installation for finite crypto
+    // performance workloads (for example JCAlgTest's 50-call doFinal tests).
     if (this->startsAtMethodOffset && (instruction_count & 0xffu) == 0 &&
         static_cast<uint32_t>(choupi_time_us_32() - install_start_time_us) >=
-            5000000u) {
+            applet_execution_budget_us) {
       this->last_exception_id = Exceptions::RuntimeException;
       this->last_exception_opcode = bytecode;
       this->last_exception_pc =

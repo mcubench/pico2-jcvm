@@ -13157,3 +13157,14 @@
 - Decision: Continue with RSA Cipher native API dispatch; keep physical testing paused until a board is available.
 - Commit: root `b311fa4`; Java Card API submodule `6857bb0`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (VPCD run appended; filename predates this run); generated mask `build/choupi-pc/flash` and JNI header `build/choupi-pc/jni.hpp`.
+
+
+## 2026-10-26 — Move Cipher and RSA Cipher to native API dispatch
+
+- Step/experiment: `native-cipher-api-dispatch`
+- Change: Moved Cipher factories, state, `init`, getters, `update`, and `doFinal` to native methods declared on the Java Card `Cipher` API class. AES/DES key validation, buffering, IV handling, and padding plus RSA Cipher operations run in native C++. Removed generated Cipher provider and bridge templates and updated ROM-mask generation/tests. Kept the applet-entry runtime bound at five seconds for INSTALL while setting a hard 15-second bound for normal applet calls after JCAlgTest's finite 50-call measurement exceeded the old limit.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc --profile asymm_crypto` passed; elevated VPCD asymmetric suite passed 26/26; elevated VPCD symmetric cipher/MAC suite passed 73/73; ARM and RISC-V `asymm_crypto` wrappers passed. Full ARM cycle passed on Pico 2 `2BED26ED20556535`, including verified UF2 flash and finite serial `TEST:SUMMARY pass=1 fail=0`. On a clean install of the unchanged upstream JCAlgTest 1.8.2 CAP, AES CBC-NOPAD 50-call `doFinal` returned `AA9000` in 3,067 ms; DES CBC-NOPAD preparation returned `AA9000`.
+- Result: Native Cipher dispatch passes PC/VPCD vectors and focused hardware calls. The first physical 50-call request returned `6400` at 6.36 seconds, exposing the overly short shared applet-call cutoff; after separating INSTALL and normal-call budgets, the clean-card workload passed. An older installed applet returned `FF01` after reflash; its cause is unknown.
+- Decision: Cipher provider bytecode is removed from the generated ROM-mask source path. Continue the remaining asymmetric profile work (RSA signature variants, EC APIs, key generation, report comparison and full `/deploy` acceptance); the profile is not complete.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261026T172320Z.log` (SHA-256 `1b14f81ad60df2c99722c383a381668630765377d2fb3a90f3e95adbec24bb7b`); `build/arm/pico2_choupi.uf2` (1,815,040 bytes; SHA-256 `3195bc0fde9c0a97f4e12da8aa15e8184caed2a1970cc7266220f727e5ea7a0a`).

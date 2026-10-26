@@ -1510,19 +1510,20 @@ rollback and duplicate/invalid registration handling also remain unverified.
   the `Signature` API factory and operations are direct ROM-mask native calls,
   and supported MAC algorithms run in native C++. RSA key construction and key
   operations have now moved to direct native methods on the Java Card API
-  `KeyBuilder` and `NativeKey` classes. VPCD passes all 5 RSA key-builder cases
-  and the 6 RSA SHA-1 signature cases; native key object allocation uses the
-  resolved exported class offset. RSA Cipher still uses a generated provider,
-  so the asymmetric profile remains incomplete. See the latest `progress.md`
-  and `.agent/HANDOFF.md` entries for validation details. Continue migrating
-  RSA Cipher to native API dispatch; do not introduce generated Java
-  implementation classes.
+  `KeyBuilder` and `NativeKey` classes. RSA Cipher factories and operations
+  have also moved to native methods on the Java Card `Cipher` API class. The
+  PC/VPCD asymmetric suite passes 26/26 and the symmetric cipher/MAC suite
+  passes 73/73 after this migration. The asymmetric profile remains incomplete:
+  RSA Signature coverage is limited to SHA-1 PKCS#1, while SHA-2/PSS/ISO9796,
+  EC keys/signatures/agreement, key generation, full report comparison, and
+  physical acceptance remain. See the latest `progress.md` and
+  `.agent/HANDOFF.md` entries for validation details.
   The support tests reject generation of `SignatureProvider`,
   `SymmetricMacProvider`, `MacNativeBridge`, and the RSA Signature provider;
-  they check the native `Signature` method manifest. RSA key/cipher provider
-  assertions remain and must be replaced during their migration. RSA Signature
-  PC/VPCD known-answer and malformed-input vectors pass; physical validation
-  remains open.
+  they check native `Signature`, `KeyBuilder`, `NativeKey`, and `Cipher` method
+  manifests and reject their removed provider classes. RSA Signature and
+  Cipher PC/VPCD known-answer and malformed-input vectors pass; physical
+  validation remains open.
   See the 2026-10-25 entry in `progress.md` and `.agent/HANDOFF.md`.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).

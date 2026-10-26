@@ -5187,3 +5187,12 @@ fix.
   VPCD sockets are restricted in the default sandbox).
 - **Validation:** Rebuilt with `./tools/build-pc --profile asymm_crypto`; the
   full VPCD test then passed 26/26, including equal-to-modulus rejection.
+
+
+# JCAlgTest static workloads exceeded the applet-call time guard (2026-10-26)
+
+- **Symptom:** Physical JCAlgTest AES CBC-NOPAD preparation and zero-repeat baselines returned `AA9000`, but the 50-call `Cipher.doFinal` performance request returned `6400` after about 6.36 seconds.
+- **Cause:** `Interpretor::run` applied a five-second wall-clock limit to every applet method call, although its comment described INSTALL-only protection. Finite crypto performance workloads were incorrectly terminated.
+- **Viable fix:** Preserve the five-second INSTALL-method limit and use a hard 15-second limit for normal applet calls. This keeps synchronous applet work bounded while permitting finite JCAlgTest static measurements.
+- **Validation:** ARM and RISC-V wrappers passed; a full ARM image cycle passed on Pico 2 `2BED26ED20556535`. On a clean installation of the unchanged upstream JCAlgTest 1.8.2 CAP, AES CBC-NOPAD 50-call `doFinal` returned `AA9000` in 3.067 seconds; DES CBC-NOPAD preparation returned `AA9000`. Runtime serial checks passed.
+- **Caveat:** An older token with existing applet state returned `FF01` for AES preparation after the timeout/reflash sequence. A clean install on the second board passed; whether the old token's persistent applet state caused its result is not proven. Use a clean CAP installation when reproducing this regression.

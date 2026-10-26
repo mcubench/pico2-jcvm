@@ -60,6 +60,8 @@ class JavaCardSupportTests(unittest.TestCase):
             native_methods = (out / "javacard-native-methods.txt").read_text()
             self.assertIn("javacard/security|KeyBuilder|KeyBuilder/buildKey(BSZ)Ljavacard/security/Key;|static", native_methods)
             self.assertIn("javacard/security|NativeKey|NativeKey/setModulus([BSS)V|instance", native_methods)
+            self.assertIn("javacardx/crypto|Cipher|Cipher/getInstance(BZ)Ljavacardx/crypto/Cipher;|static", native_methods)
+            self.assertIn("javacardx/crypto|Cipher|Cipher/doFinal([BSS[BS)S|instance", native_methods)
             for implementation in (
                     "MessageDigestProvider.java", "Sha256DigestProvider.java",
                     "MbedTlsDigestProvider.java"):
@@ -69,8 +71,10 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertFalse((out / "java/javacard/security/SignatureProvider.java").exists())
             self.assertFalse((out / "java/javacard/security/SymmetricMacProvider.java").exists())
             self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/MacNativeBridge.java").exists())
-            self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/CbcCipherNativeBridge.java").is_file())
-            self.assertTrue((out / "java/javacardx/crypto/SymmetricCipherProvider.java").is_file())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/CbcCipherNativeBridge.java").exists())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/RSACipherProvider.java").exists())
+            self.assertFalse((out / "java/javacardx/crypto/CipherProvider.java").exists())
+            self.assertFalse((out / "java/javacardx/crypto/SymmetricCipherProvider.java").exists())
             self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/RandomDataNativeBridge.java").is_file())
             self.assertTrue((out / "java/javacard/framework/OwnerPINxBase.java").is_file())
             self.assertTrue((out / "java/javacard/framework/OwnerPINxImpl.java").is_file())
@@ -137,10 +141,10 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertFalse((java_dir / "DESKeyProvider.java").exists())
             self.assertFalse((java_dir / "KeyBuilderProvider.java").exists())
             cipher_dir = out / "java/javacardx/crypto"
-            self.assertTrue((cipher_dir / "SymmetricCipherProvider.java").is_file())
-            provider = (cipher_dir / "CipherProvider.java").read_text()
-            self.assertIn("Cipher.ALG_DES_CBC_NOPAD", provider)
-            self.assertNotIn("Cipher.ALG_AES_BLOCK_128_CBC_NOPAD", provider)
+            self.assertFalse((cipher_dir / "CipherProvider.java").exists())
+            self.assertFalse((cipher_dir / "SymmetricCipherProvider.java").exists())
+            native_methods = (out / "javacard-native-methods.txt").read_text()
+            self.assertIn("javacardx/crypto|Cipher|Cipher/init(Ljavacard/security/Key;B)V|instance", native_methods)
 
     def test_symm_crypto_generates_reference_symmetric_capabilities(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -216,17 +220,12 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertIn("javacard/security|NativeKey|NativeKey/getModulus([BS)S|instance", native_methods)
             self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/RSASignatureProvider.java").exists())
             self.assertFalse((out / "java/javacard/security/SignatureProvider.java").exists())
-            rsa_cipher = out / "java/fr/gouv/ssi/nativeimpl/RSACipherProvider.java"
-            self.assertTrue(rsa_cipher.is_file())
-            rsa_cipher_source = rsa_cipher.read_text()
-            for declaration in (
-                    "public native void init(Key key, byte requestedMode)",
-                    "public native byte getAlgorithm()",
-                    "public native short update(byte[] input",
-                    "public native short doFinal(byte[] input"):
-                self.assertIn(declaration, rsa_cipher_source)
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/RSACipherProvider.java").exists())
             self.assertFalse((out / "java/javacardx/crypto/RSACipherProvider.java").exists())
             self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/RsaCipherNativeBridge.java").exists())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/CbcCipherNativeBridge.java").exists())
+            self.assertFalse((out / "java/javacardx/crypto/CipherProvider.java").exists())
+            self.assertFalse((out / "java/javacardx/crypto/SymmetricCipherProvider.java").exists())
             header = (out / "javacard-support.h").read_text()
             for capability in ("SHA1", "SHA224", "SHA384", "SHA512"):
                 self.assertIn(f"JC_SUPPORT_{capability} 1", header)

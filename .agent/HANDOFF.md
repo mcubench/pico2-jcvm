@@ -1,25 +1,19 @@
-# Current continuation — native RSA key API dispatch (2026-10-26)
+# Current continuation — native Cipher API dispatch (2026-10-26)
 
-- Migrated key construction and operations off generated provider classes.
-  Native `KeyBuilder.buildKey` overloads allocate `NativeKey`; NativeKey
-  symmetric and RSA component methods dispatch to C++. RSA Cipher and Signature
-  now read the same NativeKey fields. ROM-mask generation removes stale legacy
-  provider source outputs when regenerating reused output directories.
-- The first VPCD run failed at RSA key-builder APDU 11 with `6F00` / uncaught
-  `SecurityException` 29. Cause: `NativeKey` was package-private and its native
-  allocation/check used the ROM class token instead of a runtime class offset.
-  Making the class exportable and resolving its export token fixed this.
-- Validation after the fix: support-generator tests 9/9; PC build passed;
-  elevated VPCD regression passed 26/26 (10 digest, 5 key-builder, 3 cipher,
-  6 signature vectors, plus ATR/SELECT); ARM and RISC-V wrappers passed for
-  `asymm_crypto`. Generated ROM/JNI files contain no legacy key provider names.
-  Existing upstream Java Card converter/Maven and packed-member compiler
-  warnings remain. No hardware test was run because the user unplugged the Pico.
-- API submodule commit: `6857bb0`; root implementation commit: `b311fa4`.
-  The commit-ID record correction is a separate documentation commit.
-- Remaining: migrate RSA Cipher factory/state/operations from
-  `RSACipherProvider` to direct native Java Card API dispatch, then continue
-  the asymmetric profile roadmap. Do not claim native-only `asymm_crypto` yet.
+- Migrated Cipher factories, state, init, getters, update, and doFinal to
+  direct native methods on the Java Card `Cipher` API class. Cipher objects are
+  allocated from the API ROM class; AES/DES buffering, IV handling, and
+  padding, plus RSA dispatch, remain in native C++. Removed generated Cipher
+  provider and bridge sources and updated generator assertions.
+- Validation: support-generator tests 9/9; PC `asymm_crypto` build passed;
+  VPCD asymmetric suite passed 26/26 and symmetric cipher/MAC suite passed
+  73/73; ARM and RISC-V wrappers passed for `asymm_crypto`. Full ARM image
+  cycle passed on Pico 2 `2BED26ED20556535` (`artifacts/logs/cycle-choupi-20261026T172320Z.log`), with `TEST:SUMMARY pass=1 fail=0`. On its clean install of the unchanged upstream JCAlgTest v1.8.2 CAP, the AES CBC-NOPAD 50-call `doFinal` measurement returned `AA9000` in 3.067 seconds and DES CBC-NOPAD preparation returned `AA9000`.
+- Hardware finding: a prior 50-call AES request returned `6400` at about 6.36 seconds because the interpreter applied its five-second applet execution cutoff to normal APDU calls as well as INSTALL. INSTALL keeps its five-second cap; normal applet calls now have a hard 15-second cap. A different older token returned `FF01` for AES preparation after reflash; stale persistent applet state is possible but not proven.
+- API submodule and root commit IDs are pending this step's commits. Existing converter/Maven and packed-member warnings remain.
+- Remaining asymmetric work: implement RSA SHA-2/PSS/ISO9796 signatures, EC
+  APIs, key generation, full report comparison, then physical `/deploy`
+  acceptance. The profile is not complete.
 
 # Previous continuation — native symmetric Signature API dispatch (2026-10-26)
 

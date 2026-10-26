@@ -258,22 +258,9 @@ constexpr uint8_t kRsaPrivateTransientDeselect = 23;
 constexpr uint8_t kModeDecrypt = 1;
 constexpr uint8_t kModeEncrypt = 2;
 
-std::shared_ptr<JC_Instance> rsaCipherInstance(const jref_t reference) {
-  if (reference.isNullPointer()) throw Exceptions::NullPointerException;
-  auto instance = Context::getActiveContext().getHeap().getInstance(reference);
-  const uint16_t expectedClass = HTONS(
-      Export_Handler(Package(ROM_PACKAGE_INDEX_FR_GOUV_SSI_NATIVEIMPL))
-          .getExportedClassOffset(
-              ROM_CLASS_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER));
-  if (!instance || instance->getPackageID() !=
-                       ROM_PACKAGE_INDEX_FR_GOUV_SSI_NATIVEIMPL ||
-      instance->getClassIndex() != expectedClass)
-    throw Exceptions::SecurityException;
-  return instance;
-}
-
 std::shared_ptr<JC_Instance> rsaKeyInstance(const jref_t reference) {
-  if (reference.isNullPointer()) throw Exceptions::NullPointerException;
+  if (reference.isNullPointer() || reference.isArray())
+    throw Exceptions::NullPointerException;
   auto instance = Context::getActiveContext().getHeap().getInstance(reference);
   const uint16_t expectedClass = HTONS(
       Export_Handler(Package(ROM_PACKAGE_INDEX_JAVACARD_SECURITY))
@@ -317,18 +304,18 @@ void checkArray(const std::shared_ptr<JC_Array> &array, const jshort_t offset,
     throw Exceptions::ArrayIndexOutOfBoundsException;
 }
 
-void allocateProviderArray(JC_Instance &instance, const uint16_t field,
-                           const uint16_t length) {
+void allocateCipherArray(JC_Instance &cipher, const uint16_t field,
+                         const uint16_t length) {
   Heap &heap = Context::getActiveContext().getHeap();
-  instance.setField_Reference(field,
-                              heap.addArray(length, JAVA_ARRAY_T_BYTE));
+  cipher.setField_Reference(field,
+      heap.addArray(length, JAVA_ARRAY_T_BYTE));
 }
 
 void loadKeyComponent(const JC_Instance &key, const uint16_t valueField,
                       const uint16_t lengthField, JC_Array &destination) {
   auto value = getByteArray(const_cast<JC_Instance &>(key), valueField);
   auto lengths = getShortArray(const_cast<JC_Instance &>(key),
-                               ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS);
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS);
   const jshort_t componentLength = lengths->getShortEntry(lengthField);
   if (componentLength <= 0)
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
@@ -342,30 +329,26 @@ void loadKeyComponent(const JC_Instance &key, const uint16_t valueField,
     destination.setByteEntry(i, 0);
   for (uint16_t i = 0; i < static_cast<uint16_t>(componentLength); ++i)
     destination.setByteEntry(static_cast<uint16_t>(dstStart + i),
-                             value->getByteEntry(
-                                 static_cast<uint16_t>(srcStart + i)));
+        value->getByteEntry(static_cast<uint16_t>(srcStart + i)));
 }
 
 void appendInput(JC_Instance &cipher, const std::shared_ptr<JC_Array> &input,
                  const jshort_t offset, const jshort_t length) {
-  auto current = getByteArray(
-      cipher,
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFERED);
+  auto current = getByteArray(cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED);
   const jshort_t oldLength = cipher.getField_Short(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFEREDLENGTH);
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH);
   const jshort_t maxLength = cipher.getField_Short(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_MODULUSLENGTH);
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH);
   const int32_t wanted = static_cast<int32_t>(oldLength) + length;
   if (wanted < 0 || wanted > maxLength)
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (wanted > static_cast<int32_t>(current->size())) {
-    allocateProviderArray(
-        cipher,
-        ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFERED,
+    allocateCipherArray(cipher,
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED,
         static_cast<uint16_t>(wanted));
-    auto expanded = getByteArray(
-        cipher,
-        ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFERED);
+    auto expanded = getByteArray(cipher,
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED);
     for (jshort_t i = 0; i < oldLength; ++i)
       expanded->setByteEntry(static_cast<uint16_t>(i),
                              current->getByteEntry(static_cast<uint16_t>(i)));
@@ -373,37 +356,32 @@ void appendInput(JC_Instance &cipher, const std::shared_ptr<JC_Array> &input,
   }
   for (jshort_t i = 0; i < length; ++i)
     current->setByteEntry(static_cast<uint16_t>(oldLength + i),
-                          input->getByteEntry(static_cast<uint16_t>(offset + i)));
+        input->getByteEntry(static_cast<uint16_t>(offset + i)));
   cipher.setField_Short(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFEREDLENGTH,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH,
       static_cast<jshort_t>(wanted));
 }
 
 void clearInput(JC_Instance &cipher) {
-  auto buffered = getByteArray(
-      cipher,
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFERED);
+  auto buffered = getByteArray(cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED);
   const jshort_t length = cipher.getField_Short(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFEREDLENGTH);
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH);
   for (jshort_t i = 0; i < length; ++i)
     buffered->setByteEntry(static_cast<uint16_t>(i), 0);
   cipher.setField_Short(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFEREDLENGTH,
-      0);
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH, 0);
 }
 } // namespace
 
-void fr_gouv_ssi_nativeimpl_RSACipherProvider_init(jref_t receiver,
-                                                   jref_t keyReference,
-                                                   jbyte_t requestedMode) {
+void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
+                         jref_t keyReference, jbyte_t requestedMode) {
   if (keyReference.isNullPointer()) throw Exceptions::NullPointerException;
-  auto cipher = rsaCipherInstance(receiver);
   const uint8_t mode = static_cast<uint8_t>(requestedMode);
   if (mode != kModeEncrypt && mode != kModeDecrypt)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   auto key = rsaKeyInstance(keyReference);
-  auto lengths = getShortArray(
-      *key,
+  auto lengths = getShortArray(*key,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS);
   if (lengths->getShortEntry(0) == 0 || lengths->getShortEntry(1) == 0)
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
@@ -420,84 +398,46 @@ void fr_gouv_ssi_nativeimpl_RSACipherProvider_init(jref_t receiver,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE);
   if (keyBits <= 0) throwCryptoException(CryptoExceptionReason::IllegalValue);
   const uint16_t keyLength = static_cast<uint16_t>((keyBits + 7) / 8);
-  allocateProviderArray(
-      *cipher,
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_MODULUS,
-      keyLength);
-  allocateProviderArray(
-      *cipher,
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_EXPONENT,
-      keyLength);
-  allocateProviderArray(
-      *cipher,
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFERED,
-      0);
-  loadKeyComponent(
-      *key,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_MODULUS,
-      0,
-      *getByteArray(*cipher,
-                    ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_MODULUS));
-  loadKeyComponent(
-      *key,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_EXPONENT,
-      1,
-      *getByteArray(*cipher,
-                    ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_EXPONENT));
+  allocateCipherArray(*cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS, keyLength);
+  allocateCipherArray(*cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT, keyLength);
+  allocateCipherArray(*cipher,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED, 0);
+  loadKeyComponent(*key,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_MODULUS, 0,
+      *getByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS));
+  loadKeyComponent(*key,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_EXPONENT, 1,
+      *getByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT));
   cipher->setField_Short(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFEREDLENGTH,
-      0);
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH, 0);
   cipher->setField_Short(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_MODULUSLENGTH,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH,
       static_cast<jshort_t>(keyLength));
   cipher->setField_Byte(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_MODE,
-      requestedMode);
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE, requestedMode);
   cipher->setField_Byte(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_PRIVATEOPERATION,
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION,
       privateKey ? 1 : 0);
   cipher->setField_Byte(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_INITIALIZED,
-      1);
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED, 1);
 }
 
-void fr_gouv_ssi_nativeimpl_RSACipherProvider_init(
-    jref_t receiver, jref_t key, jbyte_t mode,
-    std::shared_ptr<JC_Array> parameters, jshort_t offset, jshort_t length) {
-  auto cipher = rsaCipherInstance(receiver);
-  (void)key;
-  (void)mode;
-  (void)parameters;
-  (void)offset;
-  (void)length;
+void rejectRsaCipherParameters(std::shared_ptr<JC_Instance> cipher,
+                               jref_t key, jbyte_t mode,
+                               std::shared_ptr<JC_Array> parameters,
+                               jshort_t offset, jshort_t length) {
+  (void)cipher; (void)key; (void)mode; (void)parameters; (void)offset; (void)length;
   throwCryptoException(CryptoExceptionReason::IllegalValue);
 }
 
-jbyte_t fr_gouv_ssi_nativeimpl_RSACipherProvider_getAlgorithm(
-    jref_t receiver) {
-  return rsaCipherInstance(receiver)->getField_Byte(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_ALGORITHM);
-}
-
-jbyte_t fr_gouv_ssi_nativeimpl_RSACipherProvider_getCipherAlgorithm(
-    jref_t receiver) {
-  (void)rsaCipherInstance(receiver);
-  return 7;
-}
-
-jbyte_t fr_gouv_ssi_nativeimpl_RSACipherProvider_getPaddingAlgorithm(
-    jref_t receiver) {
-  return rsaCipherInstance(receiver)->getField_Byte(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_PADDING);
-}
-
-jshort_t fr_gouv_ssi_nativeimpl_RSACipherProvider_update(
-    jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t inputOffset,
-    jshort_t inputLength, std::shared_ptr<JC_Array> output,
-    jshort_t outputOffset) {
-  auto cipher = rsaCipherInstance(receiver);
+jshort_t updateRsaCipher(std::shared_ptr<JC_Instance> cipher,
+                         std::shared_ptr<JC_Array> input, jshort_t inputOffset,
+                         jshort_t inputLength, std::shared_ptr<JC_Array> output,
+                         jshort_t outputOffset) {
   if (!cipher->getField_Byte(
-          ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_INITIALIZED))
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED))
     throwCryptoException(CryptoExceptionReason::InvalidInit);
   checkArray(input, inputOffset, inputLength);
   checkArray(output, outputOffset, 0);
@@ -505,39 +445,34 @@ jshort_t fr_gouv_ssi_nativeimpl_RSACipherProvider_update(
   return 0;
 }
 
-jshort_t fr_gouv_ssi_nativeimpl_RSACipherProvider_doFinal(
-    jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t inputOffset,
-    jshort_t inputLength, std::shared_ptr<JC_Array> output,
-    jshort_t outputOffset) {
-  auto cipher = rsaCipherInstance(receiver);
+jshort_t doFinalRsaCipher(std::shared_ptr<JC_Instance> cipher,
+                          std::shared_ptr<JC_Array> input, jshort_t inputOffset,
+                          jshort_t inputLength, std::shared_ptr<JC_Array> output,
+                          jshort_t outputOffset) {
   if (!cipher->getField_Byte(
-          ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_INITIALIZED))
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIZED))
     throwCryptoException(CryptoExceptionReason::InvalidInit);
   checkArray(input, inputOffset, inputLength);
   checkArray(output, outputOffset, 0);
   appendInput(*cipher, input, inputOffset, inputLength);
   const jshort_t modulusLength = cipher->getField_Short(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_MODULUSLENGTH);
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH);
   Heap &heap = Context::getActiveContext().getHeap();
-  auto resultReference = heap.addArray(
+  const jref_t resultReference = heap.addArray(
       static_cast<uint16_t>(modulusLength), JAVA_ARRAY_T_BYTE);
   auto result = heap.getArray(resultReference);
   const bool privateOperation = cipher->getField_Byte(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_PRIVATEOPERATION) != 0;
-  const jshort_t resultLength =
-      transformRsa(
-          cipher->getField_Byte(
-              ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_PADDING),
-          privateOperation ? TRUE : FALSE,
-          getByteArray(*cipher,
-                       ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_MODULUS),
-          getByteArray(*cipher,
-                       ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_EXPONENT),
-          getByteArray(*cipher,
-                       ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFERED),
-          cipher->getField_Short(
-              ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_BUFFEREDLENGTH),
-          result);
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PRIVATEOPERATION) != 0;
+  const jshort_t resultLength = transformRsa(
+      cipher->getField_Byte(
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PADDINGALGORITHM),
+      privateOperation ? TRUE : FALSE,
+      getByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS),
+      getByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT),
+      getByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED),
+      cipher->getField_Short(
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH),
+      result);
   checkArray(output, outputOffset, resultLength);
   for (jshort_t i = 0; i < resultLength; ++i)
     output->setByteEntry(static_cast<uint16_t>(outputOffset + i),

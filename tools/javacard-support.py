@@ -271,6 +271,15 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacard/security|NativeKey|NativeKey/getDQ1([BS)S|instance",
             "javacard/security|NativeKey|NativeKey/setPQ([BSS)V|instance",
             "javacard/security|NativeKey|NativeKey/getPQ([BS)S|instance",
+            "javacardx/crypto|Cipher|Cipher/getInstance(BZ)Ljavacardx/crypto/Cipher;|static",
+            "javacardx/crypto|Cipher|Cipher/getInstance(BBZ)Ljavacardx/crypto/Cipher;|static",
+            "javacardx/crypto|Cipher|Cipher/init(Ljavacard/security/Key;B)V|instance",
+            "javacardx/crypto|Cipher|Cipher/init(Ljavacard/security/Key;B[BSS)V|instance",
+            "javacardx/crypto|Cipher|Cipher/getAlgorithm()B|instance",
+            "javacardx/crypto|Cipher|Cipher/getCipherAlgorithm()B|instance",
+            "javacardx/crypto|Cipher|Cipher/getPaddingAlgorithm()B|instance",
+            "javacardx/crypto|Cipher|Cipher/update([BSS[BS)S|instance",
+            "javacardx/crypto|Cipher|Cipher/doFinal([BSS[BS)S|instance",
         )) + "\n", encoding="utf-8"
     )
     (out_dir / "profile.txt").write_text(profile + "\n", encoding="utf-8")
@@ -312,115 +321,13 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         (java_dir / "SecureRandomData.java").unlink(missing_ok=True)
         (out_dir / "java/fr/gouv/ssi/nativeimpl/RandomDataNativeBridge.java").unlink(missing_ok=True)
     cipher_dir = out_dir / "java/javacardx/crypto"
-    cipher_dir.mkdir(parents=True, exist_ok=True)
-    cipher_provider = [
-        "package javacardx.crypto;",
-        "",
-        "import javacard.security.CryptoException;",
-        "",
-        "final class CipherProvider {",
-        "  private CipherProvider() {}",
-        "  static Cipher getInstance(byte algorithm, boolean externalAccess)",
-        "      throws CryptoException {",
-        "    if (externalAccess) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-    ]
-    cipher_specs = {
-        "cipher_des_cbc_nopad": ("ALG_DES_CBC_NOPAD", "CIPHER_DES_CBC", "PAD_NOPAD", False, True),
-        "cipher_des_cbc_iso9797_m1": ("ALG_DES_CBC_ISO9797_M1", "CIPHER_DES_CBC", "PAD_ISO9797_M1", False, True),
-        "cipher_des_cbc_iso9797_m2": ("ALG_DES_CBC_ISO9797_M2", "CIPHER_DES_CBC", "PAD_ISO9797_M2", False, True),
-        "cipher_des_cbc_pkcs5": ("ALG_DES_CBC_PKCS5", "CIPHER_DES_CBC", "PAD_PKCS5", False, True),
-        "cipher_des_ecb_nopad": ("ALG_DES_ECB_NOPAD", "CIPHER_DES_ECB", "PAD_NOPAD", False, False),
-        "cipher_des_ecb_iso9797_m1": ("ALG_DES_ECB_ISO9797_M1", "CIPHER_DES_ECB", "PAD_ISO9797_M1", False, False),
-        "cipher_des_ecb_iso9797_m2": ("ALG_DES_ECB_ISO9797_M2", "CIPHER_DES_ECB", "PAD_ISO9797_M2", False, False),
-        "cipher_des_ecb_pkcs5": ("ALG_DES_ECB_PKCS5", "CIPHER_DES_ECB", "PAD_PKCS5", False, False),
-        "cipher_aes_cbc_nopad": ("ALG_AES_BLOCK_128_CBC_NOPAD", "CIPHER_AES_CBC", "PAD_NOPAD", True, True),
-        "cipher_aes_ecb_nopad": ("ALG_AES_BLOCK_128_ECB_NOPAD", "CIPHER_AES_ECB", "PAD_NOPAD", True, False),
-        "cipher_aes_cbc_iso9797_m1": ("ALG_AES_CBC_ISO9797_M1", "CIPHER_AES_CBC", "PAD_ISO9797_M1", True, True),
-        "cipher_aes_cbc_iso9797_m2": ("ALG_AES_CBC_ISO9797_M2", "CIPHER_AES_CBC", "PAD_ISO9797_M2", True, True),
-        "cipher_aes_cbc_pkcs5": ("ALG_AES_CBC_PKCS5", "CIPHER_AES_CBC", "PAD_PKCS5", True, True),
-        "cipher_aes_ecb_iso9797_m1": ("ALG_AES_ECB_ISO9797_M1", "CIPHER_AES_ECB", "PAD_ISO9797_M1", True, False),
-        "cipher_aes_ecb_iso9797_m2": ("ALG_AES_ECB_ISO9797_M2", "CIPHER_AES_ECB", "PAD_ISO9797_M2", True, False),
-        "cipher_aes_ecb_pkcs5": ("ALG_AES_ECB_PKCS5", "CIPHER_AES_ECB", "PAD_PKCS5", True, False),
-    }
-    for key, (alg, cipher, pad, aes, cbc) in cipher_specs.items():
-        if config[key]:
-            cipher_provider.append(
-                f"    if (algorithm == Cipher.{alg}) return new SymmetricCipherProvider(Cipher.{alg}, Cipher.{cipher}, Cipher.{pad}, {str(aes).lower()}, {str(cbc).lower()});"
-            )
-    rsa_cipher_specs = {
-        "cipher_rsa_pkcs1": ("ALG_RSA_PKCS1", "PAD_PKCS1"),
-        "cipher_rsa_nopad": ("ALG_RSA_NOPAD", "PAD_NOPAD"),
-        "cipher_rsa_oaep": ("ALG_RSA_PKCS1_OAEP", "PAD_PKCS1_OAEP"),
-    }
-    rsa_cipher_enabled = any(config[key] for key in rsa_cipher_specs)
-    if rsa_cipher_enabled:
-        cipher_provider[3:3] = [
-            "import fr.gouv.ssi.nativeimpl.RSACipherProvider;", ""
-        ]
-    for key, (alg, pad) in rsa_cipher_specs.items():
-        if config[key]:
-            cipher_provider.append(
-                f"    if (algorithm == Cipher.{alg}) return new RSACipherProvider(Cipher.{alg}, Cipher.{pad});"
-            )
-    cipher_provider.extend([
-        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-        "    return null;",
-        "  }",
-        "  static Cipher getInstance(byte cipherAlgorithm, byte paddingAlgorithm,",
-        "                            boolean externalAccess) throws CryptoException {",
-        "    if (externalAccess) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-    ])
-    for key, (alg, cipher, pad, aes, cbc) in cipher_specs.items():
-        getinstance = (
-            config["cipher_getinstance_aes_cbc_nopad"] if aes
-            else config["cipher_getinstance_des_cbc_nopad"]
-        ) if key.endswith("_nopad") and cbc else config[key]
-        if getinstance:
-            cipher_provider.append(
-                f"      if (cipherAlgorithm == Cipher.{cipher} && paddingAlgorithm == Cipher.{pad}) return new SymmetricCipherProvider(Cipher.{alg}, Cipher.{cipher}, Cipher.{pad}, {str(aes).lower()}, {str(cbc).lower()});"
-            )
-    for key, (alg, pad) in rsa_cipher_specs.items():
-        if config[key]:
-            cipher_provider.append(
-                f"      if (cipherAlgorithm == Cipher.CIPHER_RSA && paddingAlgorithm == Cipher.{pad}) return new RSACipherProvider(Cipher.{alg}, Cipher.{pad});"
-            )
-    cipher_provider.extend([
-        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-        "    return null;",
-        "  }",
-        "}",
-    ])
-    (cipher_dir / "CipherProvider.java").write_text(
-        "\n".join(cipher_provider) + "\n", encoding="utf-8"
-    )
-    cipher_enabled = any(config[key] for key in cipher_specs) or any(config[key] for key in (
-        "cipher_getinstance_aes_cbc_nopad", "cipher_getinstance_des_cbc_nopad"))
-    if cipher_enabled:
-        (nativeimpl_dir / "CbcCipherNativeBridge.java").write_text(
-            (Path(__file__).resolve().parent / "java-support/CbcCipherNativeBridge.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-    else:
-        (nativeimpl_dir / "CbcCipherNativeBridge.java").unlink(missing_ok=True)
-    if cipher_enabled:
-        (cipher_dir / "SymmetricCipherProvider.java").write_text(
-            (Path(__file__).resolve().parent / "java-support/SymmetricCipherProvider.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-    else:
-        (cipher_dir / "SymmetricCipherProvider.java").unlink(missing_ok=True)
-    for stale in ("AESCipherProvider.java", "DESCipherProvider.java", "CbcCipherProvider.java"):
-        (cipher_dir / stale).unlink(missing_ok=True)
-    rsa_cipher_provider = nativeimpl_dir / "RSACipherProvider.java"
-    (cipher_dir / "RSACipherProvider.java").unlink(missing_ok=True)
-    if rsa_cipher_enabled:
-        rsa_cipher_provider.write_text(
-            (Path(__file__).resolve().parent / "java-support/RSACipherProvider.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-    else:
-        rsa_cipher_provider.unlink(missing_ok=True)
-    (nativeimpl_dir / "RsaCipherNativeBridge.java").unlink(missing_ok=True)
+    nativeimpl_dir = out_dir / "java/fr/gouv/ssi/nativeimpl"
+    for filename in ("CipherProvider.java", "SymmetricCipherProvider.java",
+                     "RSACipherProvider.java"):
+        (cipher_dir / filename).unlink(missing_ok=True)
+    for filename in ("CbcCipherNativeBridge.java", "RsaCipherNativeBridge.java",
+                     "RSACipherProvider.java"):
+        (nativeimpl_dir / filename).unlink(missing_ok=True)
     signature_dir = out_dir / "java/javacard/security"
     for filename in ("SignatureProvider.java", "SymmetricMacProvider.java"):
         (signature_dir / filename).unlink(missing_ok=True)
