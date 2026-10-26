@@ -23,6 +23,13 @@
 - The implementation is committed as root `e120363`; the API state/factory
   source change is submodule commit `d0a1658`. See the latest progress record
   for artifact paths and hashes.
+- The Pico was intentionally unplugged by the user. Do not wait for it or
+  treat its absence as a firmware failure; continue offline with VPCD until
+  physical testing is explicitly resumed.
+- The current uncommitted RSA/profile changes are incomplete and include a
+  generated Java provider path. Preserve them, but do not commit or treat that
+  provider as acceptable firmware; the next implementation step is native RSA
+  `Signature` dispatch without generated provider bytecode.
 - Next: implement direct native RSA `Signature` factory/operations without
   adding Java providers, then migrate `KeyBuilder`/key and `Cipher` RSA provider
   paths. Keep the upstream JCAlgTest CAP unchanged and continue using VPCD

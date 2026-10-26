@@ -13135,5 +13135,5 @@
 - Validation: Inspected `git show --stat e120363` and `git -C choupi/javacard-sdk/javacard-api show --stat d0a1658`; no additional build or runtime validation was needed for this documentation-only correction.
 - Result: The direct native Signature implementation and its API source state are traceable to root commit `e120363` and submodule commit `d0a1658`.
 - Decision: Continue with direct native RSA Signature dispatch; the asymmetric RSA key/cipher API providers also remain to migrate.
-- Commit: pending documentation follow-up.
+- Commit: `d5f124a`.
 - Artifacts/logs: Same VPCD/build artifacts listed in the preceding implementation record.
