@@ -13106,5 +13106,5 @@
 - Validation: python3 tools/test-javacard-support.py passed 9/9; ./tools/build-pc, ./tools/build arm, and ./tools/build riscv passed. Generated JNI declarations retained expected native MessageDigest symbols. PC/VPCD full regression passed 15/15, including SHA-256 operations and static performance.
 - Result: ROM-mask native overrides now match exact API overloads rather than method names alone; MessageDigest behavior remains intact.
 - Decision: Use descriptor-qualified manifest records for both Signature.getInstance overloads in the next migration step.
-- Commit: pending.
-- Artifacts/logs: artifacts/logs/message-digest-native-vpcd-descriptor-20261026.log; rommask submodule commit dfd7f3f.
+- Commit: 713519f (root); rommask submodule commit dfd7f3f.
+- Artifacts/logs: artifacts/logs/message-digest-native-vpcd-descriptor-20261026.log.
