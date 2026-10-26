@@ -20,8 +20,9 @@
   the test now uses the clean 512 KiB current-empty image and unique output
   path. Physical testing was intentionally skipped because the user had
   unplugged the token; this is not a firmware failure.
-- Native API sources and generator changes are awaiting the logical root
-  commit. See the latest progress record for artifact paths and hashes.
+- The implementation is committed as root `e120363`; the API state/factory
+  source change is submodule commit `d0a1658`. See the latest progress record
+  for artifact paths and hashes.
 - Next: implement direct native RSA `Signature` factory/operations without
   adding Java providers, then migrate `KeyBuilder`/key and `Cipher` RSA provider
   paths. Keep the upstream JCAlgTest CAP unchanged and continue using VPCD

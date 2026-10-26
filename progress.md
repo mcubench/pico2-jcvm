@@ -13125,5 +13125,15 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9. `./tools/build-pc --profile symm_crypto` passed. `python3 tools/tests/test_symm_crypto_vpcd.py` passed with `TEST:SUMMARY pass=73 fail=0` (32 cipher vectors, 13 MAC sign vectors, 26 MAC verify vectors, plus ATR/SELECT). `./tools/build arm --profile symm_crypto` passed and produced the full `build/arm/pico2_choupi.uf2` (1,703,936 bytes). `./tools/build riscv --profile symm_crypto` passed its VM-core/smoke build. Targeted `git diff --check` passed. A broad check reports pre-existing trailing whitespace in the user-modified `AGENTS.md` line 52; that file was not changed for this step. Physical testing was intentionally skipped because the user had unplugged the token.
 - Result: Symmetric MAC algorithm calls continue to match all existing known-answer vectors through direct native `Signature` API dispatch. The first VPCD run exposed that the old 80 KiB `algtest-v182-empty-flash.bin` held stale package metadata; switching to the clean 512 KiB current-empty image and a unique writable copy resolved the harness startup error. PC ROM-mask image is 524,300 bytes (SHA-256 `890ab282818f52bec0d5544cdf1cea1f5ef75334f2df5232b4d20a00ca77b338`); ARM full image SHA-256 is `752bcc5dd28f964e9ab336f05107e2fee81a384c86c7a40ee038ad4fb28ec1db`.
 - Decision: Symmetric MAC dispatch is migrated and offline-validated. RSA Signature and existing RSA key/cipher Java provider paths still need native API migration; no native-only claim is made for `asymm_crypto`. The unplugged Pico is an intentional hardware-test skip, not a device or firmware failure.
-- Commit: pending implementation commit; SHA will be recorded in the follow-up progress entry.
+- Commit: root `e120363`; Java Card API submodule `d0a1658`.
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261026.log` (SHA-256 `a7b887c6b54f65d09a4f71e8c7042a9f4427b4e22e8733976e6de28196d80627`); generated JNI declarations `build/choupi-pc/jni.hpp`.
+
+## 2026-10-26 — Record native Signature dispatch commit IDs
+
+- Step/experiment: `native-symmetric-signature-api-dispatch-record`
+- Change: Replaced the pending commit notation in the implementation record and handoff with the completed root and Java Card API submodule commit IDs.
+- Validation: Inspected `git show --stat e120363` and `git -C choupi/javacard-sdk/javacard-api show --stat d0a1658`; no additional build or runtime validation was needed for this documentation-only correction.
+- Result: The direct native Signature implementation and its API source state are traceable to root commit `e120363` and submodule commit `d0a1658`.
+- Decision: Continue with direct native RSA Signature dispatch; the asymmetric RSA key/cipher API providers also remain to migrate.
+- Commit: pending documentation follow-up.
+- Artifacts/logs: Same VPCD/build artifacts listed in the preceding implementation record.
