@@ -13057,3 +13057,13 @@
 - Decision: Continue native-only implementation work; preserve all unrelated dirty asymmetric and profile changes.
 - Commit: recorded in this follow-up entry's commit.
 - Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261025T200233Z.log` and `artifacts/logs/vpcd-persistence-restore-20261025T200233Z.log`.
+## 2026-10-26 — Map adapter-free Java Card Signature dispatch
+
+- Step/experiment: `asymm-native-api-dispatch-design`
+- Change: Recorded the native-dispatch route for replacing Java provider subclasses: API-declared native methods dispatch through `callJCNativeMethod`, while `Heap::addInstance` can allocate the corresponding ROM API class directly. Updated TODO, QKB, and handoff with the unverified assumptions and migration scope.
+- Validation: Source inspection of `choupi/src/jc_bytecodes/bc_others.cpp`, `choupi/src/heap.cpp`, and the Java Card `Signature` API. No build or runtime test was run because this step only records architecture findings; implementation remains pending.
+- Result: A native-only path is identified, but ROM-mask support for making API classes concrete and native reference-return behavior still needs a focused validation.
+- Decision: Preserve the pending Java-provider changes without treating them as valid asymmetric implementation. Next verify ROM-mask handling, then migrate one API factory and operation path without adding Java implementation classes.
+- Commit: `f43354ce3a90ffa84cb4499b4144d9f223e5f337` (documentation); this progress record is committed separately.
+- Artifacts/logs: None.
+
