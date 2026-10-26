@@ -12617,7 +12617,7 @@
 - Validation: Confirmed `6dcd85f` contains the runner controls and associated TODO, QKB, handoff, and progress updates.
 - Result: The coordinator's zero-pause default and manual failover limitation are traceable to commit `6dcd85f`.
 - Decision: Continue offline project work while PC/SC transport is unhealthy.
-- Commit: pending.
+- Commit: `ec4de15bee501947355b34c8a5fec1758be0d5f5`; preceding investigation commits are `f43354ce3a90ffa84cb4499b4144d9f223e5f337`, `bb520e01b7957dfd10fe09132b0b933d0f7cf4ea`, and `27844bd`.
 - Artifacts/logs: none.
 
 ## 2026-10-25 — Remove final retry delay and clarify deploy failover
