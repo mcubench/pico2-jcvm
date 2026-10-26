@@ -12627,7 +12627,7 @@
 - Validation: `python3 -m py_compile tools/run-deploy-parallel` passed; CLI help lists all three GPPro controls; invalid `--gp-pause -1` is rejected before host access; focused `git diff --check` passed.
 - Result: A single failed GPPro attempt no longer inherits the upstream 20-second post-failure sleep. No USB/PCSC commands or physical tests were run.
 - Decision: Retry reports are bounded by the configured GP timeout and no retry pause by default. Explicit different-reader failover remains manual.
-- Commit: pending.
+- Commit: `79ab8e30cee768646b9996a6cafc24e9c2ade275`.
 - Artifacts/logs: none.
 
 ## 2026-10-25 — Return every applet module in GET STATUS
