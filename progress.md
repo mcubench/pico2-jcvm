@@ -13177,5 +13177,5 @@
 - Validation: Inspected root commit `6ef15a7` and API submodule commit `d3d7e44`; no additional build or runtime validation was needed for this documentation-only correction.
 - Result: The native Cipher implementation and API source state are traceable to their commits.
 - Decision: Continue the remaining asymmetric profile roadmap; keep native API dispatch and upstream CAP boundary.
-- Commit: pending.
+- Commit: `a1e5f44`.
 - Artifacts/logs: Same build, VPCD, and physical artifacts listed in the preceding implementation record.
