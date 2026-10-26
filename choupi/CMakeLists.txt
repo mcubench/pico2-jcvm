@@ -276,6 +276,7 @@ list(APPEND CHOUPI_ROMMASK_INPUTS "${CHOUPI_ROMMASK_ROOT}/Makefile")
 list(APPEND CHOUPI_ROMMASK_INPUTS
   "${CMAKE_SOURCE_DIR}/../config/javacard-support.json"
   "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake"
+  "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-native-methods.txt"
   "${CMAKE_SOURCE_DIR}/../tools/extract-rom-metadata.py")
 
 if(CHOUPI_TARGET_PC)
@@ -294,6 +295,7 @@ if(CHOUPI_TARGET_PC)
       java -jar "${CMAKE_BINARY_DIR}/rommask/rommask.jar"
       "${CMAKE_BINARY_DIR}/javacard-api" "${CMAKE_BINARY_DIR}/flash"
       "${CMAKE_BINARY_DIR}/jni.hpp" fr.gouv.ssi.starter.Starter.runVPCD
+      --native-methods "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-native-methods.txt"
     COMMAND python3 "${CMAKE_SOURCE_DIR}/../tools/extract-rom-metadata.py"
       --jni-header "${CMAKE_BINARY_DIR}/jni.hpp"
       --output "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-rom-metadata.h"
@@ -323,6 +325,7 @@ elseif(CHOUPI_TARGET_STM32)
       java -jar "${CMAKE_BINARY_DIR}/rommask/rommask.jar" --compactHex 08020000
       "${CMAKE_BINARY_DIR}/javacard-api" "${CMAKE_BINARY_DIR}/flash.hex"
       "${CMAKE_BINARY_DIR}/jni.hpp" fr.gouv.ssi.starter.Starter.run
+      --native-methods "${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-native-methods.txt"
     COMMAND ${CMAKE_COMMAND} -E touch "${CHOUPI_ROMMASK_STAMP}"
     DEPENDS "${CHOUPI_JAVACARD_API_STAMP}" ${CHOUPI_ROMMASK_INPUTS}
     BYPRODUCTS "${CMAKE_BINARY_DIR}/rommask/rommask.jar"

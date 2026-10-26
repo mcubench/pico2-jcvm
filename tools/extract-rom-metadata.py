@@ -15,7 +15,7 @@ def main() -> int:
     args = parser.parse_args()
     header = args.jni_header.read_text(encoding="utf-8")
     definitions = re.findall(
-        r"^#define ROM_(?:PACKAGE|CLASS|FIELD)_INDEX_[A-Z0-9_]+ 0x[0-9A-Fa-f]+$",
+        r"^#define ROM_(?:PACKAGE_INDEX|CLASS_INDEX|CLASS_EXPORT_TOKEN|FIELD_INDEX)_[A-Z0-9_]+ 0x[0-9A-Fa-f]+$",
         header,
         flags=re.MULTILINE,
     )

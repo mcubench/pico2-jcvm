@@ -47,11 +47,18 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertEqual(len(rows) - 1, 15)
             self.assertEqual(sum(CONFIG.values()), 15)
             self.assertIn("#define JC_SUPPORT_SHA256 1", (out / "javacard-support.h").read_text())
+            native_methods = (out / "javacard-native-methods.txt").read_text().splitlines()
+            self.assertIn("javacard/security|MessageDigest|MessageDigest/getInstance|static", native_methods)
+            self.assertIn("javacard/security|MessageDigest|MessageDigest/doFinal|instance", native_methods)
             self.assertTrue((out / "java/javacard/security/SecureRandomData.java").is_file())
             self.assertTrue((out / "java/javacard/security/AESKeyProvider.java").is_file())
             self.assertTrue((out / "java/javacard/security/DESKeyProvider.java").is_file())
-            self.assertTrue((out / "java/javacard/security/Sha256DigestProvider.java").is_file())
-            self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/Sha256NativeBridge.java").is_file())
+            for implementation in (
+                    "MessageDigestProvider.java", "Sha256DigestProvider.java",
+                    "MbedTlsDigestProvider.java"):
+                self.assertFalse((out / "java/javacard/security" / implementation).exists())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/Sha256NativeBridge.java").exists())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/MbedTlsDigestNativeBridge.java").exists())
             self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/CbcCipherNativeBridge.java").is_file())
             self.assertTrue((out / "java/javacardx/crypto/SymmetricCipherProvider.java").is_file())
             self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/RandomDataNativeBridge.java").is_file())
@@ -71,7 +78,10 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertFalse((out / "java/javacard/security/AESKeyProvider.java").exists())
             self.assertFalse((out / "java/javacard/security/DESKeyProvider.java").exists())
             self.assertFalse((out / "java/javacard/security/Sha256DigestProvider.java").exists())
+            self.assertFalse((out / "java/javacard/security/MessageDigestProvider.java").exists())
+            self.assertFalse((out / "java/javacard/security/MbedTlsDigestProvider.java").exists())
             self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/Sha256NativeBridge.java").exists())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/MbedTlsDigestNativeBridge.java").exists())
             self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/CbcCipherNativeBridge.java").exists())
             self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/RandomDataNativeBridge.java").exists())
             self.assertFalse((out / "java/javacard/framework/OwnerPINxBase.java").exists())
@@ -177,17 +187,18 @@ class JavaCardSupportTests(unittest.TestCase):
             }}
             self.assertEqual(actual, expected)
 
-    def test_asymm_crypto_emits_sha_digest_dependencies(self):
+    def test_asymm_crypto_selects_native_digest_without_java_provider(self):
         with tempfile.TemporaryDirectory() as temporary:
             out = Path(temporary) / "generated"
             result = self.run_named_profile("asymm_crypto", out)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((out / "profile.txt").read_text(), "asymm_crypto\n")
-            generated = (out / "java/javacard/security/MessageDigestProvider.java").read_text()
-            for algorithm in ("ALG_SHA", "ALG_SHA_224", "ALG_SHA_384", "ALG_SHA_512"):
-                self.assertIn(f"MessageDigest.{algorithm}", generated)
-            self.assertTrue((out / "java/javacard/security/MbedTlsDigestProvider.java").is_file())
-            self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/MbedTlsDigestNativeBridge.java").is_file())
+            for generated_class in (
+                    "MessageDigestProvider.java", "Sha256DigestProvider.java",
+                    "MbedTlsDigestProvider.java"):
+                self.assertFalse((out / "java/javacard/security" / generated_class).exists())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/Sha256NativeBridge.java").exists())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/MbedTlsDigestNativeBridge.java").exists())
             rsa_provider = out / "java/fr/gouv/ssi/nativeimpl/RSAKeyProvider.java"
             self.assertTrue(rsa_provider.is_file())
             rsa_source = rsa_provider.read_text()

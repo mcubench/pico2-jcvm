@@ -1,3 +1,12 @@
+# Current continuation — native MessageDigest dispatch (2026-10-26)
+
+- Replaced generated Java digest providers with direct native C++ methods on the Java Card `MessageDigest` API class. The ROM-mask build applies configured native-method overrides, emits exported class-token metadata, and maps the API class export token to the class index used by `Heap::addInstance`.
+- The API object carries algorithm, transient input-buffer reference, and input length. `doFinal` dispatches SHA-256 to the RP2350 SHA accelerator and selected other digests to mbedTLS; `reset`/`doFinal` clear transient scratch. This avoids slow persistent byte writes when the digest object is retained.
+- Validation: support generator 9/9; PC build, ARM build, and RISC-V build passed on 2026-10-26. Exact PC/VPCD test passed earlier in this implementation step with `TEST:SUMMARY pass=15 fail=0`, including SHA-256 and performance calls. No physical flash/test was run in this continuation.
+- Submodule commits: Java Card API `4cc1cf4`; rommask `4932ee0`. Root commit is recorded in progress follow-up.
+- Preserve unrelated uncommitted asymmetric/provider/profile and physical-diagnostic work. `tools/javacard-support.py` still has uncommitted RSA provider changes; they remain disallowed for accepted firmware.
+- Next: continue the native-only asymmetric migration from the direct `Signature` API factory/operations and migrate RSA key/cipher and MAC provider classes without Java provider bytecode. The focused native reference-return path is now exercised by MessageDigest factory calls; use existing VPCD and real-board testing after implementation slices.
+
 # Current continuation — JC305 RMI official client coverage (2026-10-25)
 
 ## Newest update — adapter-free Signature dispatch design (2026-10-26)

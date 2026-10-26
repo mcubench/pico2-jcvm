@@ -99,53 +99,9 @@ static void computeSha256(
 #endif
 }
 
-jbool_t fr_gouv_ssi_nativeimpl_Sha256NativeBridge_update(
-    std::shared_ptr<JC_Array> state, std::shared_ptr<JC_Array> input,
-    const jshort_t inputOffset, const jshort_t inputLength) {
-  constexpr uint16_t state_capacity = 2048;
-  constexpr uint16_t max_input_length = state_capacity - 2;
-  if (!state || !input) {
-    throw Exceptions::NullPointerException;
-  }
-  if (state->getType() != JAVA_ARRAY_T_BYTE ||
-      input->getType() != JAVA_ARRAY_T_BYTE) {
-    throw Exceptions::ArrayStoreException;
-  }
-  if (inputOffset < 0 || inputLength < 0) {
-    throw Exceptions::ArrayIndexOutOfBoundsException;
-  }
-  checkArrayRange(*state, 0, state_capacity);
-  checkArrayRange(*input, inputOffset, inputLength);
-
-  const uint16_t current_length = static_cast<uint16_t>(
-      (static_cast<uint8_t>(state->getByteEntry(max_input_length)) << 8) |
-      static_cast<uint8_t>(state->getByteEntry(max_input_length + 1)));
-  if (current_length > max_input_length ||
-      static_cast<uint32_t>(current_length) +
-              static_cast<uint16_t>(inputLength) >
-          max_input_length) {
-    return FALSE;
-  }
-  for (uint16_t index = 0; index < static_cast<uint16_t>(inputLength);
-       ++index) {
-    state->setByteEntry(
-        static_cast<uint16_t>(current_length + index),
-        input->getByteEntry(static_cast<uint16_t>(inputOffset + index)));
-  }
-  const uint16_t updated_length = static_cast<uint16_t>(
-      current_length + static_cast<uint16_t>(inputLength));
-  state->setByteEntry(max_input_length,
-                      static_cast<jbyte_t>(updated_length >> 8));
-  state->setByteEntry(max_input_length + 1,
-                      static_cast<jbyte_t>(updated_length));
-  return TRUE;
-}
-
 void fr_gouv_ssi_nativeimpl_Sha256NativeBridge_doFinal(
-    std::shared_ptr<JC_Array> state, std::shared_ptr<JC_Array> output,
-    const jshort_t outputOffset) {
-  constexpr uint16_t state_capacity = 2048;
-  constexpr uint16_t max_input_length = state_capacity - 2;
+    std::shared_ptr<JC_Array> state, const jshort_t inputLength,
+    std::shared_ptr<JC_Array> output, const jshort_t outputOffset) {
   if (!state || !output) {
     throw Exceptions::NullPointerException;
   }
@@ -153,47 +109,12 @@ void fr_gouv_ssi_nativeimpl_Sha256NativeBridge_doFinal(
       output->getType() != JAVA_ARRAY_T_BYTE) {
     throw Exceptions::ArrayStoreException;
   }
-  if (outputOffset < 0) {
+  if (inputLength < 0 || outputOffset < 0) {
     throw Exceptions::ArrayIndexOutOfBoundsException;
   }
-  checkArrayRange(*state, 0, state_capacity);
+  checkArrayRange(*state, 0, inputLength);
   checkArrayRange(*output, outputOffset, 32);
-  const uint16_t input_length = static_cast<uint16_t>(
-      (static_cast<uint8_t>(state->getByteEntry(max_input_length)) << 8) |
-      static_cast<uint8_t>(state->getByteEntry(max_input_length + 1)));
-  if (input_length > max_input_length) {
-    throw Exceptions::ArrayIndexOutOfBoundsException;
-  }
-  computeSha256(
-      state, 0, static_cast<jshort_t>(input_length), output, outputOffset);
-  for (uint16_t index = 0; index < input_length; ++index) {
-    state->setByteEntry(index, 0);
-  }
-  state->setByteEntry(max_input_length, 0);
-  state->setByteEntry(max_input_length + 1, 0);
-}
-
-void fr_gouv_ssi_nativeimpl_Sha256NativeBridge_reset(
-    std::shared_ptr<JC_Array> state) {
-  constexpr uint16_t state_capacity = 2048;
-  constexpr uint16_t max_input_length = state_capacity - 2;
-  if (!state) {
-    throw Exceptions::NullPointerException;
-  }
-  if (state->getType() != JAVA_ARRAY_T_BYTE) {
-    throw Exceptions::ArrayStoreException;
-  }
-  checkArrayRange(*state, 0, state_capacity);
-  const uint16_t input_length = static_cast<uint16_t>(
-      (static_cast<uint8_t>(state->getByteEntry(max_input_length)) << 8) |
-      static_cast<uint8_t>(state->getByteEntry(max_input_length + 1)));
-  if (input_length <= max_input_length) {
-    for (uint16_t index = 0; index < input_length; ++index) {
-      state->setByteEntry(index, 0);
-    }
-  }
-  state->setByteEntry(max_input_length, 0);
-  state->setByteEntry(max_input_length + 1, 0);
+  computeSha256(state, 0, inputLength, output, outputOffset);
 }
 
 #endif // JC_SUPPORT_SHA256

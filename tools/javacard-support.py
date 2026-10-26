@@ -210,6 +210,16 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     (out_dir / "javacard-support.json").write_text(
         json.dumps(config, indent=2) + "\n", encoding="utf-8"
     )
+    (out_dir / "javacard-native-methods.txt").write_text(
+        "\n".join((
+            "javacard/security|MessageDigest|MessageDigest/getInstance|static",
+            "javacard/security|MessageDigest|MessageDigest/getAlgorithm|instance",
+            "javacard/security|MessageDigest|MessageDigest/getLength|instance",
+            "javacard/security|MessageDigest|MessageDigest/doFinal|instance",
+            "javacard/security|MessageDigest|MessageDigest/update|instance",
+            "javacard/security|MessageDigest|MessageDigest/reset|instance",
+        )) + "\n", encoding="utf-8"
+    )
     (out_dir / "profile.txt").write_text(profile + "\n", encoding="utf-8")
     java_dir = out_dir / "java/javacard/security"
     java_dir.mkdir(parents=True, exist_ok=True)
@@ -538,67 +548,14 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         mac_bridge.write_text((Path(__file__).resolve().parent / "java-support/MacNativeBridge.java").read_text(encoding="utf-8"), encoding="utf-8")
     else:
         mac_bridge.unlink(missing_ok=True)
-    digest_provider = [
-        "package javacard.security;",
-        "",
-        "final class MessageDigestProvider {",
-        "  private MessageDigestProvider() {}",
-        "  static MessageDigest getInstance(byte algorithm, boolean externalAccess)",
-        "      throws CryptoException {",
-        "    if (externalAccess) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-    ]
-    if config["sha256"]:
-        digest_provider.extend([
-            "    if (algorithm == MessageDigest.ALG_SHA_256)",
-            "      return new Sha256DigestProvider();",
-        ])
-    generic_digests = {
-        "sha1": "ALG_SHA",
-        "sha224": "ALG_SHA_224",
-        "sha384": "ALG_SHA_384",
-        "sha512": "ALG_SHA_512",
-    }
-    for key, algorithm in generic_digests.items():
-        if config[key]:
-            digest_provider.extend([
-                f"    if (algorithm == MessageDigest.{algorithm})",
-                f"      return new MbedTlsDigestProvider(MessageDigest.{algorithm});",
-            ])
-    digest_provider.extend([
-        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-        "    return null;",
-        "  }",
-        "}",
-    ])
-    (java_dir / "MessageDigestProvider.java").write_text(
-        "\n".join(digest_provider) + "\n", encoding="utf-8"
-    )
-    digest_path = java_dir / "Sha256DigestProvider.java"
-    if config["sha256"]:
-        digest_path.write_text(
-            (Path(__file__).resolve().parent / "java-support/Sha256DigestProvider.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-        (nativeimpl_dir / "Sha256NativeBridge.java").write_text(
-            (Path(__file__).resolve().parent / "java-support/Sha256NativeBridge.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-    else:
-        digest_path.unlink(missing_ok=True)
-        (nativeimpl_dir / "Sha256NativeBridge.java").unlink(missing_ok=True)
-    generic_digest_path = java_dir / "MbedTlsDigestProvider.java"
-    if any(config[key] for key in generic_digests):
-        generic_digest_path.write_text(
-            (Path(__file__).resolve().parent / "java-support/MbedTlsDigestProvider.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-        (nativeimpl_dir / "MbedTlsDigestNativeBridge.java").write_text(
-            (Path(__file__).resolve().parent / "java-support/MbedTlsDigestNativeBridge.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-    else:
-        generic_digest_path.unlink(missing_ok=True)
-        (nativeimpl_dir / "MbedTlsDigestNativeBridge.java").unlink(missing_ok=True)
+    for generated_digest_class in (
+        java_dir / "MessageDigestProvider.java",
+        java_dir / "Sha256DigestProvider.java",
+        java_dir / "MbedTlsDigestProvider.java",
+        nativeimpl_dir / "Sha256NativeBridge.java",
+        nativeimpl_dir / "MbedTlsDigestNativeBridge.java",
+    ):
+        generated_digest_class.unlink(missing_ok=True)
     framework_dir = out_dir / "java/javacard/framework"
     framework_dir.mkdir(parents=True, exist_ok=True)
     pin_provider = [

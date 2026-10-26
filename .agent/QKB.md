@@ -5106,3 +5106,12 @@ fix.
   MAC Java provider classes. This pass is not evidence of compliance with the
   native-only requirement. Replace the provider-presence expectations after
   the direct API implementation exists.
+
+
+## MessageDigest native buffer must be transient — fixed (2026-10-26)
+
+- **Symptom:** A JCAlgTest SHA-256 call stalled during digest reset, producing repeated persistent byte-write diagnostics and timing out when the digest object was retained by the applet.
+- **Cause:** The native implementation kept message bytes in an ordinary heap byte array referenced from a persistent `MessageDigest` object. Clearing the data on `doFinal` therefore routed each byte write through persistent storage. The first implementation also encoded input length in the tail of the SHA scratch buffer, coupling digest state to the SHA bridge.
+- **Viable fix:** Allocate the digest input as a `JC_Array` with `ClearEvent::CLEAR_ON_RESET`, keep `inputLength` in a native-owned API instance field, and pass the length explicitly into the SHA implementation. Keep reset/doFinal clearing limited to transient bytes.
+- **Validation:** `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. A prior exact PC/VPCD run passed 15 checks (`TEST:SUMMARY pass=15 fail=0`), including SHA-256 prepare/final and static-performance calls. No physical flash was performed for this step.
+- **Reuse:** Apply this rule to other persistent API objects that maintain ephemeral operation buffers: use transient arrays or native state with a reset lifecycle, never bytewise persistent writes for scratch state.
