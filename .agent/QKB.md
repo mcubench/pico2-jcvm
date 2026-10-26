@@ -5081,3 +5081,20 @@ fix.
   15 capabilities. This excludes RSA signature and does not validate the
   asymmetric profile. Source inspection confirmed the RSA signature module is
   conditionally included only when that profile capability is enabled.
+
+## Native Java Card API dispatch can allocate API objects directly — design finding (2026-10-26)
+
+- **Finding:** Native methods declared in the Java Card API are dispatched by
+  the VM's `callJCNativeMethod` path. `Heap::addInstance(packageID,
+  classIndex)` can allocate a class instance without executing a Java
+  constructor. These are the core primitives needed to replace factory
+  provider subclasses with API-declared native factory and operation methods.
+- **Viable direction:** Put implementation state on the API object and have
+  native `getInstance` validate the requested algorithm, then allocate the
+  API-class ROM object. Keep algorithm selection and all key/cipher/signature
+  behavior in C++. Apply the same rule to `Signature`, `KeyBuilder`/key APIs,
+  `Cipher`, and symmetric MACs; no generated provider or adapter classes.
+- **Limitations:** This was a source-path inspection only. It has not yet
+  verified that ROM-mask generation accepts the necessary non-abstract API
+  class/native declarations, nor that native return/reference stack handling
+  works for this factory. Test those before migrating provider implementations.

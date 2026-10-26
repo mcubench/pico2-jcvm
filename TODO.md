@@ -1497,6 +1497,16 @@ rollback and duplicate/invalid registration handling also remain unverified.
   replace it with direct native API dispatch before building or packaging the
   profile. The existing RSA key/cipher provider architecture also needs an
   audit against the same rule before claiming the asymmetric profile complete.
+  Native-dispatch design inspected on 2026-10-26: the VM routes API-declared
+  native methods through `callJCNativeMethod`, and `Heap::addInstance` can
+  allocate an object directly from its ROM package/class index. The intended
+  adapter-free path is for the Java Card `Signature` API class itself to own
+  the state fields and expose native factory/operation methods; native factory
+  dispatch chooses the supported algorithm and allocates that API object.
+  This requires making the API class instantiable for VM-native allocation and
+  replacing its provider-based Java factory/method bodies. Apply the same
+  native API boundary to RSA key and cipher APIs and symmetric MACs; do not
+  introduce generated Java implementation classes.
   See the 2026-10-25 entry in `progress.md` and `.agent/HANDOFF.md`.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).

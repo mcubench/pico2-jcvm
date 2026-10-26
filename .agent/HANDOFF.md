@@ -1,5 +1,24 @@
 # Current continuation — JC305 RMI official client coverage (2026-10-25)
 
+## Newest update — adapter-free Signature dispatch design (2026-10-26)
+
+- Resumed native-only `asymm_crypto` work. Source inspection confirms the VM
+  invokes API-declared native methods through `callJCNativeMethod`, and
+  `Heap::addInstance(packageID, classIndex)` can allocate a ROM API class
+  object directly. This is the likely route for native `Signature.getInstance`
+  and signature operations without Java provider subclasses.
+- No implementation/build has been made in this step. The current pending
+  `RSASignatureProvider.java`/`SignatureProvider` changes remain prohibited;
+  RSA key/cipher and symmetric MAC provider classes also need migration to
+  native methods on the Java Card API classes. Preserve current uncommitted
+  worktree changes and the API submodule pointer. Test ROM-mask support for a
+  concrete API class with native methods and native reference returns before
+  converting the implementation.
+- TODO and QKB record the design direction and its unverified assumptions.
+- Next: build a focused throwaway ROM-mask fixture or inspect the existing ROM
+  generator's handling of abstract API classes/native reference returns, then
+  implement one end-to-end native API factory/method slice with a VPCD test.
+
 - Fresh local persistence validation on 2026-10-25: `./tools/test-rp2350-fs-overlay`
   passed all assertions including 1,000 randomized cuts for journal clear,
   journal creation, and registry-header publication (`TEST:SUMMARY fail=0`);
