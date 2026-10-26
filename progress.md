@@ -13298,7 +13298,7 @@
 - Decision: Keep the five algorithms enabled in `asymm_crypto`. Continue with
   EC agreement/generation and the remaining support comparison; repeat these
   calls on an identified Pico when the VM enumerates one.
-- Commit: pending.
+- Commit: `ae9728c`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
   ARM image `build/arm/pico2_choupi.uf2`; PC ROM mask `build/choupi-pc/flash`;
   no physical log.
