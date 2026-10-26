@@ -13166,5 +13166,16 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc --profile asymm_crypto` passed; elevated VPCD asymmetric suite passed 26/26; elevated VPCD symmetric cipher/MAC suite passed 73/73; ARM and RISC-V `asymm_crypto` wrappers passed. Full ARM cycle passed on Pico 2 `2BED26ED20556535`, including verified UF2 flash and finite serial `TEST:SUMMARY pass=1 fail=0`. On a clean install of the unchanged upstream JCAlgTest 1.8.2 CAP, AES CBC-NOPAD 50-call `doFinal` returned `AA9000` in 3,067 ms; DES CBC-NOPAD preparation returned `AA9000`.
 - Result: Native Cipher dispatch passes PC/VPCD vectors and focused hardware calls. The first physical 50-call request returned `6400` at 6.36 seconds, exposing the overly short shared applet-call cutoff; after separating INSTALL and normal-call budgets, the clean-card workload passed. An older installed applet returned `FF01` after reflash; its cause is unknown.
 - Decision: Cipher provider bytecode is removed from the generated ROM-mask source path. Continue the remaining asymmetric profile work (RSA signature variants, EC APIs, key generation, report comparison and full `/deploy` acceptance); the profile is not complete.
-- Commit: pending.
+- Commit: root `6ef15a7`; Java Card API submodule `d3d7e44`.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261026T172320Z.log` (SHA-256 `1b14f81ad60df2c99722c383a381668630765377d2fb3a90f3e95adbec24bb7b`); `build/arm/pico2_choupi.uf2` (1,815,040 bytes; SHA-256 `3195bc0fde9c0a97f4e12da8aa15e8184caed2a1970cc7266220f727e5ea7a0a`).
+
+
+## 2026-10-26 — Record native Cipher commit IDs
+
+- Step/experiment: `native-cipher-api-dispatch-record`
+- Change: Replaced the pending commit notation in the Cipher implementation record and handoff with the completed root and Java Card API submodule commit IDs.
+- Validation: Inspected root commit `6ef15a7` and API submodule commit `d3d7e44`; no additional build or runtime validation was needed for this documentation-only correction.
+- Result: The native Cipher implementation and API source state are traceable to their commits.
+- Decision: Continue the remaining asymmetric profile roadmap; keep native API dispatch and upstream CAP boundary.
+- Commit: pending.
+- Artifacts/logs: Same build, VPCD, and physical artifacts listed in the preceding implementation record.

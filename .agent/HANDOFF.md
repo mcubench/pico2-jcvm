@@ -10,7 +10,7 @@
   73/73; ARM and RISC-V wrappers passed for `asymm_crypto`. Full ARM image
   cycle passed on Pico 2 `2BED26ED20556535` (`artifacts/logs/cycle-choupi-20261026T172320Z.log`), with `TEST:SUMMARY pass=1 fail=0`. On its clean install of the unchanged upstream JCAlgTest v1.8.2 CAP, the AES CBC-NOPAD 50-call `doFinal` measurement returned `AA9000` in 3.067 seconds and DES CBC-NOPAD preparation returned `AA9000`.
 - Hardware finding: a prior 50-call AES request returned `6400` at about 6.36 seconds because the interpreter applied its five-second applet execution cutoff to normal APDU calls as well as INSTALL. INSTALL keeps its five-second cap; normal applet calls now have a hard 15-second cap. A different older token returned `FF01` for AES preparation after reflash; stale persistent applet state is possible but not proven.
-- API submodule and root commit IDs are pending this step's commits. Existing converter/Maven and packed-member warnings remain.
+- API submodule commit: `d3d7e44`; root implementation commit: `6ef15a7`. Existing converter/Maven and packed-member warnings remain.
 - Remaining asymmetric work: implement RSA SHA-2/PSS/ISO9796 signatures, EC
   APIs, key generation, full report comparison, then physical `/deploy`
   acceptance. The profile is not complete.
