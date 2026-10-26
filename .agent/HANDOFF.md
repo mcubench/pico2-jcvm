@@ -1,3 +1,32 @@
+# Current continuation — native symmetric Signature API dispatch (2026-10-26)
+
+- Moved all 13 declared `symm_crypto` Signature MAC implementations onto
+  direct native methods on the Java Card `Signature` API. The ROM-mask native
+  method manifest now uses exact descriptors for both factories and all
+  instance calls. Generated `SignatureProvider`, `SymmetricMacProvider`, and
+  `MacNativeBridge` classes are absent; native MAC code no longer exports the
+  obsolete Java bridge entry point.
+- The API object stores its algorithm and operation state. MAC key access is
+  revalidated at operation time, message/IV scratch is `CLEAR_ON_RESET`, and
+  `sign`/`verify` reset the MAC state per the API contract. Public method
+  descriptors remain unchanged. RSA Signature plus existing RSA key/cipher
+  Java provider paths remain to migrate; do not build/package asymm_crypto as
+  native-only until those are removed.
+- Validation: support generator tests 9/9; PC `symm_crypto` ROM-mask/emulator
+  build passed; VPCD regression passed 73/73 (32 symmetric cipher vectors,
+  13 MAC sign vectors, and 26 MAC verify vectors); ARM and RISC-V
+  `symm_crypto` builds passed. A first VPCD attempt used an 80 KiB old saved
+  image despite its `empty` filename and failed on stale package metadata;
+  the test now uses the clean 512 KiB current-empty image and unique output
+  path. Physical testing was intentionally skipped because the user had
+  unplugged the token; this is not a firmware failure.
+- Native API sources and generator changes are awaiting the logical root
+  commit. See the latest progress record for artifact paths and hashes.
+- Next: implement direct native RSA `Signature` factory/operations without
+  adding Java providers, then migrate `KeyBuilder`/key and `Cipher` RSA provider
+  paths. Keep the upstream JCAlgTest CAP unchanged and continue using VPCD
+  while no physical Pico is attached.
+
 # Current continuation — native MessageDigest hardware verification (2026-10-26)
 
 - ARM and RISC-V wrappers pass for profile `current` after removing temporary factory tracing.

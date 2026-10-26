@@ -50,6 +50,8 @@ class JavaCardSupportTests(unittest.TestCase):
             native_methods = (out / "javacard-native-methods.txt").read_text().splitlines()
             self.assertIn("javacard/security|MessageDigest|MessageDigest/getInstance(BZ)Ljavacard/security/MessageDigest;|static", native_methods)
             self.assertIn("javacard/security|MessageDigest|MessageDigest/doFinal([BSS[BS)S|instance", native_methods)
+            self.assertIn("javacard/security|Signature|Signature/getInstance(BZ)Ljavacard/security/Signature;|static", native_methods)
+            self.assertIn("javacard/security|Signature|Signature/sign([BSS[BS)S|instance", native_methods)
             self.assertTrue((out / "java/javacard/security/SecureRandomData.java").is_file())
             self.assertTrue((out / "java/javacard/security/AESKeyProvider.java").is_file())
             self.assertTrue((out / "java/javacard/security/DESKeyProvider.java").is_file())
@@ -59,6 +61,9 @@ class JavaCardSupportTests(unittest.TestCase):
                 self.assertFalse((out / "java/javacard/security" / implementation).exists())
             self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/Sha256NativeBridge.java").exists())
             self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/MbedTlsDigestNativeBridge.java").exists())
+            self.assertFalse((out / "java/javacard/security/SignatureProvider.java").exists())
+            self.assertFalse((out / "java/javacard/security/SymmetricMacProvider.java").exists())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/MacNativeBridge.java").exists())
             self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/CbcCipherNativeBridge.java").is_file())
             self.assertTrue((out / "java/javacardx/crypto/SymmetricCipherProvider.java").is_file())
             self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/RandomDataNativeBridge.java").is_file())
@@ -155,8 +160,8 @@ class JavaCardSupportTests(unittest.TestCase):
                 ("javacard.security.KeyBuilder", "TYPE_DES_TRANSIENT_RESET"),
                 ("javacard.security.KeyBuilder", "TYPE_DES_TRANSIENT_DESELECT"),
             }.issubset(symmetric))
-            self.assertTrue((out / "java/javacard/security/SymmetricMacProvider.java").is_file())
-            self.assertTrue((out / "java/fr/gouv/ssi/nativeimpl/MacNativeBridge.java").is_file())
+            self.assertFalse((out / "java/javacard/security/SymmetricMacProvider.java").exists())
+            self.assertFalse((out / "java/fr/gouv/ssi/nativeimpl/MacNativeBridge.java").exists())
 
             expected = set()
             with REFERENCE.open(newline="", encoding="utf-8") as source:

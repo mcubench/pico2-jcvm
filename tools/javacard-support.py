@@ -218,6 +218,21 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacard/security|MessageDigest|MessageDigest/doFinal([BSS[BS)S|instance",
             "javacard/security|MessageDigest|MessageDigest/update([BSS)V|instance",
             "javacard/security|MessageDigest|MessageDigest/reset()V|instance",
+            "javacard/security|Signature|Signature/getInstance(BZ)Ljavacard/security/Signature;|static",
+            "javacard/security|Signature|Signature/getInstance(BBBZ)Ljavacard/security/Signature;|static",
+            "javacard/security|Signature|Signature/init(Ljavacard/security/Key;B)V|instance",
+            "javacard/security|Signature|Signature/init(Ljavacard/security/Key;B[BSS)V|instance",
+            "javacard/security|Signature|Signature/setInitialDigest([BSS[BSS)V|instance",
+            "javacard/security|Signature|Signature/getAlgorithm()B|instance",
+            "javacard/security|Signature|Signature/getMessageDigestAlgorithm()B|instance",
+            "javacard/security|Signature|Signature/getCipherAlgorithm()B|instance",
+            "javacard/security|Signature|Signature/getPaddingAlgorithm()B|instance",
+            "javacard/security|Signature|Signature/getLength()S|instance",
+            "javacard/security|Signature|Signature/update([BSS)V|instance",
+            "javacard/security|Signature|Signature/sign([BSS[BS)S|instance",
+            "javacard/security|Signature|Signature/signPreComputedHash([BSS[BS)S|instance",
+            "javacard/security|Signature|Signature/verify([BSS[BSS)Z|instance",
+            "javacard/security|Signature|Signature/verifyPreComputedHash([BSS[BSS)Z|instance",
         )) + "\n", encoding="utf-8"
     )
     (out_dir / "profile.txt").write_text(profile + "\n", encoding="utf-8")
@@ -496,58 +511,10 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     else:
         rsa_cipher_provider.unlink(missing_ok=True)
     (nativeimpl_dir / "RsaCipherNativeBridge.java").unlink(missing_ok=True)
-    signature_specs = {
-        "signature_des_mac8_nopad": ("ALG_DES_MAC8_NOPAD", "SIG_CIPHER_DES_MAC8", "PAD_NOPAD", 8, False),
-        "signature_des_mac4_iso9797_m1": ("ALG_DES_MAC4_ISO9797_M1", "SIG_CIPHER_DES_MAC4", "PAD_ISO9797_M1", 4, False),
-        "signature_des_mac8_iso9797_m1": ("ALG_DES_MAC8_ISO9797_M1", "SIG_CIPHER_DES_MAC8", "PAD_ISO9797_M1", 8, False),
-        "signature_des_mac4_iso9797_m2": ("ALG_DES_MAC4_ISO9797_M2", "SIG_CIPHER_DES_MAC4", "PAD_ISO9797_M2", 4, False),
-        "signature_des_mac8_iso9797_m2": ("ALG_DES_MAC8_ISO9797_M2", "SIG_CIPHER_DES_MAC8", "PAD_ISO9797_M2", 8, False),
-        "signature_des_mac4_pkcs5": ("ALG_DES_MAC4_PKCS5", "SIG_CIPHER_DES_MAC4", "PAD_PKCS5", 4, False),
-        "signature_des_mac8_pkcs5": ("ALG_DES_MAC8_PKCS5", "SIG_CIPHER_DES_MAC8", "PAD_PKCS5", 8, False),
-        "signature_aes_mac_128_nopad": ("ALG_AES_MAC_128_NOPAD", "SIG_CIPHER_AES_MAC128", "PAD_NOPAD", 16, True),
-        "signature_des_mac4_iso9797_1_m2_alg3": ("ALG_DES_MAC4_ISO9797_1_M2_ALG3", "SIG_CIPHER_DES_MAC4", "PAD_ISO9797_1_M2_ALG3", 4, False),
-        "signature_des_mac8_iso9797_1_m2_alg3": ("ALG_DES_MAC8_ISO9797_1_M2_ALG3", "SIG_CIPHER_DES_MAC8", "PAD_ISO9797_1_M2_ALG3", 8, False),
-        "signature_des_mac4_iso9797_1_m1_alg3": ("ALG_DES_MAC4_ISO9797_1_M1_ALG3", "SIG_CIPHER_DES_MAC4", "PAD_ISO9797_1_M1_ALG3", 4, False),
-        "signature_des_mac8_iso9797_1_m1_alg3": ("ALG_DES_MAC8_ISO9797_1_M1_ALG3", "SIG_CIPHER_DES_MAC8", "PAD_ISO9797_1_M1_ALG3", 8, False),
-        "signature_aes_cmac_128": ("ALG_AES_CMAC_128", "SIG_CIPHER_AES_CMAC128", "PAD_ISO9797_M2", 16, True),
-    }
     signature_dir = out_dir / "java/javacard/security"
-    signature_provider = [
-        "package javacard.security;", "", "final class SignatureProvider {",
-        "  private SignatureProvider() {}",
-        "  static Signature getInstance(byte algorithm, boolean externalAccess) throws CryptoException {",
-        "    if (externalAccess) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-    ]
-    for key, (alg, cipher, pad, length, aes) in signature_specs.items():
-        if config[key]:
-            signature_provider.append(
-                f"    if (algorithm == Signature.{alg}) return new SymmetricMacProvider(Signature.{alg}, Signature.{cipher}, javacardx.crypto.Cipher.{pad}, (short){length}, {str(aes).lower()});"
-            )
-    signature_provider.extend([
-        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);", "    return null;", "  }",
-        "  static Signature getInstance(byte digest, byte cipher, byte padding, boolean externalAccess) throws CryptoException {",
-        "    if (externalAccess || digest != MessageDigest.ALG_NULL) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-    ])
-    for key, (alg, cipher, pad, length, aes) in signature_specs.items():
-        if config[key]:
-            signature_provider.append(
-                f"    if (cipher == Signature.{cipher} && padding == javacardx.crypto.Cipher.{pad}) return new SymmetricMacProvider(Signature.{alg}, Signature.{cipher}, javacardx.crypto.Cipher.{pad}, (short){length}, {str(aes).lower()});"
-            )
-    signature_provider.extend([
-        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);", "    return null;", "  }", "}",
-    ])
-    (signature_dir / "SignatureProvider.java").write_text("\n".join(signature_provider) + "\n", encoding="utf-8")
-    for filename in ("SymmetricMacProvider.java",):
-        path = signature_dir / filename
-        if any(config[key] for key in signature_specs):
-            path.write_text((Path(__file__).resolve().parent / "java-support" / filename).read_text(encoding="utf-8"), encoding="utf-8")
-        else:
-            path.unlink(missing_ok=True)
-    mac_bridge = nativeimpl_dir / "MacNativeBridge.java"
-    if any(config[key] for key in signature_specs):
-        mac_bridge.write_text((Path(__file__).resolve().parent / "java-support/MacNativeBridge.java").read_text(encoding="utf-8"), encoding="utf-8")
-    else:
-        mac_bridge.unlink(missing_ok=True)
+    for filename in ("SignatureProvider.java", "SymmetricMacProvider.java"):
+        (signature_dir / filename).unlink(missing_ok=True)
+    (nativeimpl_dir / "MacNativeBridge.java").unlink(missing_ok=True)
     for generated_digest_class in (
         java_dir / "MessageDigestProvider.java",
         java_dir / "Sha256DigestProvider.java",

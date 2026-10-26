@@ -134,15 +134,15 @@ def mac_vectors() -> list[tuple[bytes, bytes, str]]:
 
 def main() -> int:
     vectors = cipher_vectors() + mac_vectors()
-    log = ROOT / "artifacts/logs/symm-crypto-kat-vpcd-20261024.log"
+    log = ROOT / "artifacts/logs/symm-crypto-kat-vpcd-20261026.log"
     command = [
         sys.executable, str(ROOT / "tools/tests/pc_vpcd_applet_test.py"),
         "--emulator", str(ROOT / "build/choupi-pc/choupi"),
-        "--memory", str(ROOT / "build/algtest-v182-empty-flash.bin"),
+        "--memory", str(ROOT / "build/algtest-v182-current-empty-flash.bin"),
         "--cap-code", str(ROOT / "build/symm-crypto-probe/load-code.bin"),
         "--rom-mask", str(ROOT / "build/choupi-pc/flash"),
         "--applet-aid", APPLET_AID, "--package-id", "56", "--passes", "1",
-        "--flash-copy", str(ROOT / "build/symm-crypto-probe/flash-vpcd.bin"),
+        "--flash-copy", str(ROOT / "build/symm-crypto-probe/flash-vpcd-current.bin"),
         "--log", str(log),
     ]
     for apdu, expected, _label in vectors:

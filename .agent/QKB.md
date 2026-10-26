@@ -5131,3 +5131,28 @@ fix.
 - **Extended run:** The official `ALG_SUPPORT_EXTENDED` run reached 1,897 rows and the SHA-256 yes row. The user intentionally unplugged the card; the resulting missing PC/SC transaction is an interrupted run, not evidence of a firmware fault. The partial CSV and client log are under `artifacts/results/jcalgtest-real-d92-msgdigest-20261026/` and must not be treated as a complete acceptance report.
 - **Viable solution:** For the earlier `FF05`, reflashing and rebooting resulted in a passing repeat, but the causal mechanism is unknown. Preserve this as a useful recovery experiment, not a confirmed fix. Do not modify upstream CAP files.
 
+# Symmetric Signature MAC path migrated to native API dispatch (2026-10-26)
+
+- **Finding:** The previous `symm_crypto` generator emitted
+  `SignatureProvider`, `SymmetricMacProvider`, and `MacNativeBridge` Java
+  classes into the Java Card ROM mask. This was incompatible with the required
+  native API boundary.
+- **Viable fix:** Route both `Signature.getInstance` overloads and all
+  `Signature` instance operations through exact-descriptor ROM-mask native
+  overrides. Allocate the API `Signature` class directly in C++, keep MAC
+  computation native, and use reset-cleared transient arrays for IV/message
+  scratch. Revalidate key initialization when getting length or computing a
+  MAC.
+- **Validation:** PC, ARM, and RISC-V `symm_crypto` builds passed. The VPCD
+  known-answer harness passed all 73 checks (32 cipher, 13 MAC-sign, 26
+  MAC-verify APDUs, plus ATR/SELECT). Generator tests pass 9/9 and assert the
+  symmetric Java provider/bridge classes are not generated.
+- **Harness note:** `build/algtest-v182-empty-flash.bin` was an 80 KiB stale
+  image with installed-package bits despite its filename. The VPCD runner
+  refused to start without its missing registry sidecar. Use the clean
+  512 KiB `build/algtest-v182-current-empty-flash.bin` as the source and a
+  unique writable `--flash-copy` for this suite.
+- **Limit:** The real token was intentionally unplugged, so this slice has no
+  new physical test. RSA Signature and RSA key/cipher provider paths still
+  need migration; the asymmetric profile is not yet native-only.
+

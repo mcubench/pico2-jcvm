@@ -1505,16 +1505,17 @@ rollback and duplicate/invalid registration handling also remain unverified.
   dispatch chooses the supported algorithm and allocates that API object.
   The ROM-mask generator emits `stack.push_Reference(ret)` for native
   reference returns, and `Heap::addInstance` bypasses the abstract-class flag.
-  This still needs an end-to-end generated/compiled native factory check.
-  Replace the provider-based factory/method bodies together with RSA and
-  symmetric MAC operations so the `symm_crypto` profile remains functional.
+  The symmetric MAC portion has now been implemented and exercised end to end:
+  the `Signature` API factory and operations are direct ROM-mask native calls,
+  and supported MAC algorithms run in native C++. RSA signatures and the RSA
+  key/cipher API provider paths still need the same migration. See the latest
+  `progress.md` and `.agent/HANDOFF.md` entries for the symmetric validation.
   Apply the same native API boundary to RSA key and cipher APIs; do not
   introduce generated Java implementation classes.
-  The existing `tools/test-javacard-support.py` passes 9/9, but its RSA
-  coverage explicitly asserts generation of `RSAKeyProvider` and
-  `RSACipherProvider`, while signature coverage expects `SymmetricMacProvider`.
-  Replace those assertions with checks that only API-declared native methods
-  and native C++ modules are selected, once the migration is implemented.
+  The support test now rejects generation of `SignatureProvider`,
+  `SymmetricMacProvider`, and `MacNativeBridge`, and checks the native
+  `Signature` method manifest. RSA key/cipher provider assertions remain and
+  must be replaced during their migration.
   See the 2026-10-25 entry in `progress.md` and `.agent/HANDOFF.md`.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).

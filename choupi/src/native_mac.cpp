@@ -1,11 +1,9 @@
 #include "exceptions.hpp"
 #include "javacard-support.h"
-#include "jc_types/jc_array.hpp"
 #include "native_crypto_exception.hpp"
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
 #include <vector>
 
 #if JC_SUPPORT_SIGNATURE_DES_MAC8_NOPAD || JC_SUPPORT_SIGNATURE_DES_MAC4_ISO9797_M1 || \
@@ -111,37 +109,17 @@ std::vector<unsigned char> mac(bool aes, uint8_t algorithm,
   return state;
 }
 
-void checkRange(const JC_Array& array, jshort_t offset, jshort_t length) {
-  if (offset < 0 || length < 0 || static_cast<uint32_t>(offset) + static_cast<uint32_t>(length) > array.size())
-    throw Exceptions::ArrayIndexOutOfBoundsException;
-}
 }
 
-void fr_gouv_ssi_nativeimpl_MacNativeBridge_computeMac(
-    jbyte_t algorithm, std::shared_ptr<JC_Array> key, std::shared_ptr<JC_Array> iv,
-    std::shared_ptr<JC_Array> message, jshort_t messageLength,
-    std::shared_ptr<JC_Array> output) {
-  if (!key || !iv || !message || !output) throw Exceptions::NullPointerException;
-  if (key->getType() != JAVA_ARRAY_T_BYTE || iv->getType() != JAVA_ARRAY_T_BYTE ||
-      message->getType() != JAVA_ARRAY_T_BYTE || output->getType() != JAVA_ARRAY_T_BYTE)
-    throw Exceptions::ArrayStoreException;
-  checkRange(*key, 0, static_cast<jshort_t>(key->size()));
-  checkRange(*iv, 0, static_cast<jshort_t>(iv->size()));
-  checkRange(*message, 0, messageLength); checkRange(*output, 0, 16);
-  const uint8_t alg = static_cast<uint8_t>(algorithm);
-  const bool aes = alg == 18 || alg == 49;
+std::vector<unsigned char> computeSymmetricMac(
+    const uint8_t algorithm, std::vector<unsigned char>& key,
+    const std::vector<unsigned char>& iv,
+    const std::vector<unsigned char>& message) {
+  const bool aes = algorithm == 18 || algorithm == 49;
 #if !JC_SUPPORT_SIGNATURE_AES_MAC_128_NOPAD && !JC_SUPPORT_SIGNATURE_AES_CMAC_128
-  if (aes)
-    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+  if (aes) throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
 #endif
-  if (!aes && key->size() != 8 && key->size() != 16 && key->size() != 24)
-    throwCryptoException(CryptoExceptionReason::IllegalValue);
-  std::vector<unsigned char> keyBytes(key->size()), ivBytes(iv->size()), data(static_cast<size_t>(messageLength));
-  for (uint16_t i = 0; i < key->size(); ++i) keyBytes[i] = static_cast<uint8_t>(key->getByteEntry(i));
-  for (uint16_t i = 0; i < iv->size(); ++i) ivBytes[i] = static_cast<uint8_t>(iv->getByteEntry(i));
-  for (jshort_t i = 0; i < messageLength; ++i) data[static_cast<size_t>(i)] = static_cast<uint8_t>(message->getByteEntry(static_cast<uint16_t>(i)));
-  const auto result = mac(aes, alg, keyBytes, ivBytes, data);
-  for (uint16_t i = 0; i < result.size(); ++i) output->setByteEntry(i, static_cast<jbyte_t>(result[i]));
+  return mac(aes, algorithm, key, iv, message);
 }
 } // namespace jcvm
 #endif
