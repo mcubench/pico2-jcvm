@@ -13116,5 +13116,5 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid D92E743D5F640C0F` flashed and verified the ARM image; finite runtime passed (`TEST:SUMMARY pass=1 fail=0`). On D92, `--sha256-support-only` returned `1500...9000`, and `--sha256-dofinal-only` returned `AA9000` for prepare and measurement (`TEST:PASS sha256_dofinal_only`). The official JCAlgTest extended support run reported `ALG_SHA_256;yes`.
 - Result: Native MessageDigest factory allocation and SHA-256 execution work on the physical RP2350 after a firmware reboot. An earlier `FF05` support attempt passed after reflashing; its cause remains unknown. The extended run reached 1,897 rows before the user intentionally unplugged the device; the partial report is not complete acceptance evidence and the disconnect is not a firmware failure.
 - Decision: Keep the focused probes for regression use. Continue native `Signature` API migration; do not add Java providers or modify upstream CAPs.
-- Commit: pending documentation follow-up.
+- Commit: 5d87d47.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261026T044038Z.log`; partial JCAlgTest CSV and log in `artifacts/results/jcalgtest-real-d92-msgdigest-20261026/`.
