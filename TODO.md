@@ -1459,7 +1459,7 @@ rollback and duplicate/invalid registration handling also remain unverified.
   providers, exact expected-support CSV comparison, emulator known-answer
   tests, both architecture builds, image and ROM-mask size checks, then run the
   complete relevant `/deploy` tests on identified physical Pico 2 cards.
-  Progress (2026-10-24): SHA-1/224/256/384/512, RSA public/private/CRT key
+  Progress (2026-10-26): SHA-1/224/256/384/512, RSA public/private/CRT key
   storage for all requested sizes, and RSA PKCS#1/NoPad/OAEP ciphers have
   implementations. RSA key component storage now uses native C++ getters and
   setters; the VPCD probe passes 20 harness checks (10 digest, 5 key storage,
@@ -1471,16 +1471,22 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `OK`, 286 `UNSUPPORTED_PER_SPEC`, 6 expected `EXC_CARDRUNTIME`, and zero
   wrong-result rows; three invalid one-shot signature cases now report reason
   5 as expected. RSA key getters/setters now dispatch to native C++. The
-  RSA cipher provider now contains its state fields, constructor, and native
-  declarations; key validation, buffering, padding, and modular exponentiation
-  dispatch to C++. Support-generator tests pass 8/8, the asymmetric VPCD probe
-  passes 20/20, and ARM/RISC-V wrappers pass for both `symm_crypto` and
-  `asymm_crypto`. Separate ARM UF2s and expected support CSVs are packaged for
-  external Windows testing at
-  `build/external-test/pico2-jcvm-windows-test.zip`; Windows PC/SC and standard
-  client results remain pending. RSA signatures, EC keys/ECDSA, key agreement,
-  key generation, exact full-report comparison, and complete physical deploy
-  acceptance remain.
+  RSA key getters/setters and Cipher dispatch use native methods on the Java
+  Card API classes. RSA Signature supports native PKCS#1 v1.5 and PSS for
+  SHA-1/224/256/384/512. PSS supports default digest-size salts and explicit
+  salt lengths through `Signature.init` parameters. Support-generator tests
+  pass 9/9; the VPCD asymmetric suite passes 59/59, including 39 RSA signature
+  vectors. ARM and RISC-V wrappers pass, and the ARM image was flashed to Pico
+  2 `D92E743D5F640C0F`; its finite runtime monitor and physical RSA signature
+  suite passed (`TEST:SUMMARY pass=1 fail=0` and 39/39 vectors). The temporary
+  physical test package was removed afterward. The current image is 1,826,304
+  bytes. Remaining asymmetric work includes RSA ISO9796, EC keys/ECDSA, key
+  agreement and generation, exact full-report comparison, and complete
+  physical `/deploy` acceptance. RSA private-operation blinding and broader
+  cryptographic hardening remain unvalidated. Separate ARM UF2s and expected
+  support CSVs are packaged for external Windows testing at
+  `build/external-test/pico2-jcvm-windows-test.zip`; Windows results remain
+  pending.
 - [ ] Run the packaged Windows workflow in `docs/windows-asymm-symm-test.md`;
   archive each profile's JCAlgTest CSV and compare it with its generated
   expected-support CSV. The upstream CAP is included unchanged.
@@ -1494,10 +1500,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   adapter classes to the ROM mask. The RSA SHA-1 PKCS#1 Signature factory and
   operations now dispatch directly from native methods on the Java Card
   `Signature` API class, with no generated RSA Signature provider. This is a
-  partial migration only: the native code still consumes RSAKeyProvider
-  objects, while RSA key construction and Cipher still use generated provider
-  classes. The asymmetric profile therefore remains noncompliant with the
-  native-only boundary and is not complete.
+  The native-only migration now covers symmetric MAC, RSA keys, RSA Cipher,
+  RSA PKCS#1 v1.5, and RSA-PSS directly on Java Card API classes. No Java
+  provider or adapter implementation is used by the Pico firmware for these
+  operations. RSA ISO9796, EC APIs, key agreement/generation, complete report
+  comparison, physical `/deploy` coverage, and private-operation hardening
+  remain open.
   Native-dispatch design inspected on 2026-10-26: the VM routes API-declared
   native methods through `callJCNativeMethod`, and `Heap::addInstance` can
   allocate an object directly from its ROM package/class index. The intended
@@ -1512,19 +1520,19 @@ rollback and duplicate/invalid registration handling also remain unverified.
   operations have now moved to direct native methods on the Java Card API
   `KeyBuilder` and `NativeKey` classes. RSA Cipher factories and operations
   have also moved to native methods on the Java Card `Cipher` API class. The
-  PC/VPCD asymmetric suite passes 26/26 and the symmetric cipher/MAC suite
-  passes 73/73 after this migration. The asymmetric profile remains incomplete:
-  RSA Signature coverage is limited to SHA-1 PKCS#1, while SHA-2/PSS/ISO9796,
-  EC keys/signatures/agreement, key generation, full report comparison, and
-  physical acceptance remain. See the latest `progress.md` and
-  `.agent/HANDOFF.md` entries for validation details.
+  PC/VPCD asymmetric suite passes 59/59 (including 39 RSA signature vectors)
+  and the symmetric cipher/MAC suite passes 73/73. Physical RSA PKCS#1/PSS
+  validation passed 39/39 on D92. RSA ISO9796, EC keys/signatures/agreement,
+  key generation, full report comparison, and complete physical acceptance
+  remain. See the latest `progress.md` and `.agent/HANDOFF.md` entries.
   The support tests reject generation of `SignatureProvider`,
   `SymmetricMacProvider`, `MacNativeBridge`, and the RSA Signature provider;
   they check native `Signature`, `KeyBuilder`, `NativeKey`, and `Cipher` method
   manifests and reject their removed provider classes. RSA Signature and
-  Cipher PC/VPCD known-answer and malformed-input vectors pass; physical
-  validation remains open.
-  See the 2026-10-25 entry in `progress.md` and `.agent/HANDOFF.md`.
+  Cipher PC/VPCD known-answer and malformed-input vectors pass; RSA Signature
+  PKCS#1/PSS also passed physical validation on 2026-10-26. Wider profile
+  acceptance remains open; see the 2026-10-26 entries in `progress.md` and
+  `.agent/HANDOFF.md`.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).
 - [ ] Complete deferred hardening and robustness work, including malformed CAP

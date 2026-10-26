@@ -5217,3 +5217,10 @@ fix.
 - **Viable fix:** Preserve the five-second INSTALL-method limit and use a hard 15-second limit for normal applet calls. This keeps synchronous applet work bounded while permitting finite JCAlgTest static measurements.
 - **Validation:** ARM and RISC-V wrappers passed; a full ARM image cycle passed on Pico 2 `2BED26ED20556535`. On a clean installation of the unchanged upstream JCAlgTest 1.8.2 CAP, AES CBC-NOPAD 50-call `doFinal` returned `AA9000` in 3.067 seconds; DES CBC-NOPAD preparation returned `AA9000`. Runtime serial checks passed.
 - **Caveat:** An older token with existing applet state returned `FF01` for AES preparation after the timeout/reflash sequence. A clean install on the second board passed; whether the old token's persistent applet state caused its result is not proven. Use a clean CAP installation when reproducing this regression.
+
+# RSA-PSS known-vector harness must distinguish explicit salt parameters (2026-10-26)
+
+- **Symptom:** RSA-PSS generated signatures passed card-side self-verification, but an externally generated known signature returned false on the card.
+- **Cause:** The test applet reserves operation-code bit `0x04` to select the parameterized `Signature.init` overload with an explicit two-byte salt length. A vector using that flag with a digest-length salt was accidentally verified with salt length zero.
+- **Viable fix:** Use the default-init operation when the vector salt length equals the digest length; use the parameterized operation only for a non-default salt (including zero). For SHA-512's short-APDU precomputed-hash case, keep the explicit zero-salt operation and prehashed verify code.
+- **Validation:** The current VPCD suite passed 59/59 checks. Physical Pico 2 `D92E743D5F640C0F` passed all 39 RSA SHA/PSS vectors, including default and explicit zero-salt verification; the test applet package was removed afterward. See `artifacts/logs/asymm-crypto-pcsc-20261026T185432Z.log`.

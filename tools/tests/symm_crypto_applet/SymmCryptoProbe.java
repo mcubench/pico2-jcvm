@@ -168,17 +168,34 @@ public final class SymmCryptoProbe extends Applet {
 
   private static short runRsaSignature(byte algorithm, byte operation,
                                        byte[] parameters, byte[] output) {
-    short keyLength = (short)(algorithm == Signature.ALG_RSA_SHA_PKCS1
-        ? 64 : 96);
-    short hashLength = (short)(algorithm == Signature.ALG_RSA_SHA_PKCS1 ? 20 :
-        algorithm == Signature.ALG_RSA_SHA_224_PKCS1 ? 28 :
-        algorithm == Signature.ALG_RSA_SHA_256_PKCS1 ? 32 :
-        algorithm == Signature.ALG_RSA_SHA_384_PKCS1 ? 48 :
-        algorithm == Signature.ALG_RSA_SHA_512_PKCS1 ? 64 : 0);
+    boolean pss = algorithm == Signature.ALG_RSA_SHA_PKCS1_PSS ||
+        algorithm == Signature.ALG_RSA_SHA_224_PKCS1_PSS ||
+        algorithm == Signature.ALG_RSA_SHA_256_PKCS1_PSS ||
+        algorithm == Signature.ALG_RSA_SHA_384_PKCS1_PSS ||
+        algorithm == Signature.ALG_RSA_SHA_512_PKCS1_PSS;
+    short keyLength = (short)(algorithm == Signature.ALG_RSA_SHA_PKCS1 ||
+        algorithm == Signature.ALG_RSA_SHA_PKCS1_PSS ? 64 :
+        algorithm == Signature.ALG_RSA_SHA_512_PKCS1_PSS && (operation & 4) != 0
+            ? 92 : algorithm == Signature.ALG_RSA_SHA_384_PKCS1_PSS ? 112 : 96);
+    short hashLength = (short)(algorithm == Signature.ALG_RSA_SHA_PKCS1 ||
+        algorithm == Signature.ALG_RSA_SHA_PKCS1_PSS ? 20 :
+        algorithm == Signature.ALG_RSA_SHA_224_PKCS1 ||
+        algorithm == Signature.ALG_RSA_SHA_224_PKCS1_PSS ? 28 :
+        algorithm == Signature.ALG_RSA_SHA_256_PKCS1 ||
+        algorithm == Signature.ALG_RSA_SHA_256_PKCS1_PSS ? 32 :
+        algorithm == Signature.ALG_RSA_SHA_384_PKCS1 ||
+        algorithm == Signature.ALG_RSA_SHA_384_PKCS1_PSS ? 48 :
+        algorithm == Signature.ALG_RSA_SHA_512_PKCS1 ||
+        algorithm == Signature.ALG_RSA_SHA_512_PKCS1_PSS ? 64 : 0);
     if (hashLength == 0)
       ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
-    boolean signing = operation == 0 || operation == 2;
-    boolean precomputed = operation == 2 || operation == 3;
+    byte baseOperation = (byte)(operation & 3);
+    boolean parameterized = (operation & 4) != 0;
+    boolean signing = baseOperation == 0 || baseOperation == 2;
+    boolean precomputed = baseOperation == 2 || baseOperation == 3;
+    short keyTypeLength = keyLength == 64 ? KeyBuilder.LENGTH_RSA_512 :
+        keyLength == 92 ? KeyBuilder.LENGTH_RSA_736 :
+        keyLength == 112 ? KeyBuilder.LENGTH_RSA_896 : KeyBuilder.LENGTH_RSA_768;
     Key key;
     byte[] message;
     byte[] expected = null;
@@ -186,8 +203,7 @@ public final class SymmCryptoProbe extends Applet {
       if (parameters.length < 2 * keyLength + (precomputed ? hashLength : (short)0))
         ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
       RSAPrivateKey privateKey = (RSAPrivateKey)KeyBuilder.buildKey(
-          KeyBuilder.TYPE_RSA_PRIVATE,
-          keyLength == 64 ? KeyBuilder.LENGTH_RSA_512 : KeyBuilder.LENGTH_RSA_768, false);
+          KeyBuilder.TYPE_RSA_PRIVATE, keyTypeLength, false);
       privateKey.setModulus(parameters, (short)0, keyLength);
       privateKey.setExponent(parameters, keyLength, keyLength);
       key = privateKey;
@@ -211,8 +227,7 @@ public final class SymmCryptoProbe extends Applet {
       if (messageLength < 0 || (precomputed && messageLength != hashLength))
         ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
       RSAPublicKey publicKey = (RSAPublicKey)KeyBuilder.buildKey(
-          KeyBuilder.TYPE_RSA_PUBLIC,
-          keyLength == 64 ? KeyBuilder.LENGTH_RSA_512 : KeyBuilder.LENGTH_RSA_768, false);
+          KeyBuilder.TYPE_RSA_PUBLIC, keyTypeLength, false);
       publicKey.setModulus(parameters, (short)0, keyLength);
       publicKey.setExponent(parameters, (short)(keyLength + 1), exponentLength);
       key = publicKey;
@@ -224,13 +239,49 @@ public final class SymmCryptoProbe extends Applet {
         expected[i] = parameters[(short)(signatureOffset + i)];
     }
     Signature signature = Signature.getInstance(algorithm, false);
-    signature.init(key, signing ? Signature.MODE_SIGN : Signature.MODE_VERIFY);
+    if (parameterized) {
+      if (!pss) ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+      byte[] pssParameters = {(byte)0, (byte)0};
+      signature.init(key, signing ? Signature.MODE_SIGN : Signature.MODE_VERIFY,
+          pssParameters, (short)0, (short)2);
+    } else {
+      signature.init(key, signing ? Signature.MODE_SIGN : Signature.MODE_VERIFY);
+    }
     if (signing) {
-      if (precomputed)
-        return signature.signPreComputedHash(message, (short)0,
+      if (!pss) {
+        if (precomputed)
+          return signature.signPreComputedHash(message, (short)0,
+              (short)message.length, output, (short)0);
+        return signature.sign(message, (short)0, (short)message.length,
+            output, (short)0);
+      }
+      short signatureLength;
+      if (precomputed) {
+        signatureLength = signature.signPreComputedHash(message, (short)0,
             (short)message.length, output, (short)0);
-      return signature.sign(message, (short)0, (short)message.length,
-          output, (short)0);
+      } else {
+        signatureLength = signature.sign(message, (short)0,
+            (short)message.length, output, (short)0);
+      }
+      RSAPublicKey publicKey = (RSAPublicKey)KeyBuilder.buildKey(
+          KeyBuilder.TYPE_RSA_PUBLIC, keyTypeLength, false);
+      publicKey.setModulus(parameters, (short)0, keyLength);
+      byte[] publicExponent = {(byte)1, (byte)0, (byte)1};
+      publicKey.setExponent(publicExponent, (short)0, (short)3);
+      if (parameterized) {
+        byte[] pssParameters = {(byte)0, (byte)0};
+        signature.init(publicKey, Signature.MODE_VERIFY, pssParameters,
+            (short)0, (short)2);
+      } else {
+        signature.init(publicKey, Signature.MODE_VERIFY);
+      }
+      boolean valid = precomputed
+          ? signature.verifyPreComputedHash(message, (short)0,
+              (short)message.length, output, (short)0, signatureLength)
+          : signature.verify(message, (short)0, (short)message.length,
+              output, (short)0, signatureLength);
+      output[0] = valid ? (byte)1 : (byte)0;
+      return (short)1;
     }
     boolean valid = precomputed
         ? signature.verifyPreComputedHash(message, (short)0,

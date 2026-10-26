@@ -96,7 +96,12 @@
       "signature_rsa_sha_224_pkcs1": false,
       "signature_rsa_sha_256_pkcs1": false,
       "signature_rsa_sha_384_pkcs1": false,
-      "signature_rsa_sha_512_pkcs1": false
+      "signature_rsa_sha_512_pkcs1": false,
+      "signature_rsa_sha_pkcs1_pss": false,
+      "signature_rsa_sha_224_pkcs1_pss": false,
+      "signature_rsa_sha_256_pkcs1_pss": false,
+      "signature_rsa_sha_384_pkcs1_pss": false,
+      "signature_rsa_sha_512_pkcs1_pss": false
     },
     "base": {
       "owner_pin": true,
@@ -193,7 +198,12 @@
       "signature_rsa_sha_224_pkcs1": false,
       "signature_rsa_sha_256_pkcs1": false,
       "signature_rsa_sha_384_pkcs1": false,
-      "signature_rsa_sha_512_pkcs1": false
+      "signature_rsa_sha_512_pkcs1": false,
+      "signature_rsa_sha_pkcs1_pss": false,
+      "signature_rsa_sha_224_pkcs1_pss": false,
+      "signature_rsa_sha_256_pkcs1_pss": false,
+      "signature_rsa_sha_384_pkcs1_pss": false,
+      "signature_rsa_sha_512_pkcs1_pss": false
     },
     "no_aes": {
       "owner_pin": true,
@@ -290,7 +300,12 @@
       "signature_rsa_sha_224_pkcs1": false,
       "signature_rsa_sha_256_pkcs1": false,
       "signature_rsa_sha_384_pkcs1": false,
-      "signature_rsa_sha_512_pkcs1": false
+      "signature_rsa_sha_512_pkcs1": false,
+      "signature_rsa_sha_pkcs1_pss": false,
+      "signature_rsa_sha_224_pkcs1_pss": false,
+      "signature_rsa_sha_256_pkcs1_pss": false,
+      "signature_rsa_sha_384_pkcs1_pss": false,
+      "signature_rsa_sha_512_pkcs1_pss": false
     },
     "minimal": {
       "owner_pin": false,
@@ -387,7 +402,12 @@
       "signature_rsa_sha_224_pkcs1": false,
       "signature_rsa_sha_256_pkcs1": false,
       "signature_rsa_sha_384_pkcs1": false,
-      "signature_rsa_sha_512_pkcs1": false
+      "signature_rsa_sha_512_pkcs1": false,
+      "signature_rsa_sha_pkcs1_pss": false,
+      "signature_rsa_sha_224_pkcs1_pss": false,
+      "signature_rsa_sha_256_pkcs1_pss": false,
+      "signature_rsa_sha_384_pkcs1_pss": false,
+      "signature_rsa_sha_512_pkcs1_pss": false
     },
     "symm_crypto": {
       "owner_pin": true,
@@ -484,7 +504,12 @@
       "signature_rsa_sha_224_pkcs1": false,
       "signature_rsa_sha_256_pkcs1": false,
       "signature_rsa_sha_384_pkcs1": false,
-      "signature_rsa_sha_512_pkcs1": false
+      "signature_rsa_sha_512_pkcs1": false,
+      "signature_rsa_sha_pkcs1_pss": false,
+      "signature_rsa_sha_224_pkcs1_pss": false,
+      "signature_rsa_sha_256_pkcs1_pss": false,
+      "signature_rsa_sha_384_pkcs1_pss": false,
+      "signature_rsa_sha_512_pkcs1_pss": false
     },
     "asymm_crypto": {
       "owner_pin": true,
@@ -581,7 +606,12 @@
       "signature_rsa_sha_224_pkcs1": true,
       "signature_rsa_sha_256_pkcs1": true,
       "signature_rsa_sha_384_pkcs1": true,
-      "signature_rsa_sha_512_pkcs1": true
+      "signature_rsa_sha_512_pkcs1": true,
+      "signature_rsa_sha_pkcs1_pss": true,
+      "signature_rsa_sha_224_pkcs1_pss": true,
+      "signature_rsa_sha_256_pkcs1_pss": true,
+      "signature_rsa_sha_384_pkcs1_pss": true,
+      "signature_rsa_sha_512_pkcs1_pss": true
     }
   }
 }

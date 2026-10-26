@@ -35,7 +35,7 @@ std::vector<unsigned char> computeSymmetricMac(
 
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
 void initializeRsaSignature(JC_Instance &signature, jref_t key,
-                            uint8_t mode);
+                            uint8_t mode, jshort_t saltLength = -1);
 jshort_t rsaSignatureLength(JC_Instance &signature);
 jshort_t rsaSignatureSign(JC_Instance &signature,
                           const std::shared_ptr<JC_Array> &input,
@@ -79,6 +79,7 @@ constexpr uint8_t kPaddingIso9797M2 = 3;
 constexpr uint8_t kPaddingIso9797M1Alg3 = 4;
 constexpr uint8_t kPaddingIso9797M2Alg3 = 5;
 constexpr uint8_t kPaddingPkcs5 = 6;
+constexpr uint8_t kPaddingPkcs1Pss = 8;
 
 uint16_t signatureClassIndex() {
   const uint16_t offset =
@@ -154,6 +155,21 @@ uint16_t resultLength(const uint8_t algorithm) {
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_512_PKCS1
   case 42: return 0;
 #endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_PSS
+  case 21: return 0;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_224_PKCS1_PSS
+  case 43: return 0;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_256_PKCS1_PSS
+  case 44: return 0;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_384_PKCS1_PSS
+  case 45: return 0;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_512_PKCS1_PSS
+  case 46: return 0;
+#endif
   default:
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   }
@@ -215,6 +231,21 @@ bool supportedAlgorithm(const uint8_t algorithm) {
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_512_PKCS1
   case 42: return true;
 #endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_PSS
+  case 21: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_224_PKCS1_PSS
+  case 43: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_256_PKCS1_PSS
+  case 44: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_384_PKCS1_PSS
+  case 45: return true;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_512_PKCS1_PSS
+  case 46: return true;
+#endif
   default: return false;
   }
 }
@@ -237,6 +268,21 @@ bool tupleForAlgorithm(uint8_t algorithm, uint8_t &digest, uint8_t &cipher,
 #endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_512_PKCS1
   case 42: digest = 6; cipher = kSignatureCipherRsa; padding = 7; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_PSS
+  case 21: digest = 1; cipher = kSignatureCipherRsa; padding = kPaddingPkcs1Pss; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_224_PKCS1_PSS
+  case 43: digest = 7; cipher = kSignatureCipherRsa; padding = kPaddingPkcs1Pss; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_256_PKCS1_PSS
+  case 44: digest = 4; cipher = kSignatureCipherRsa; padding = kPaddingPkcs1Pss; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_384_PKCS1_PSS
+  case 45: digest = 5; cipher = kSignatureCipherRsa; padding = kPaddingPkcs1Pss; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_512_PKCS1_PSS
+  case 46: digest = 6; cipher = kSignatureCipherRsa; padding = kPaddingPkcs1Pss; break;
 #endif
   case 2: cipher = kSignatureCipherDesMac8; padding = kPaddingNoPad; break;
   case 3: cipher = kSignatureCipherDesMac4; padding = kPaddingIso9797M1; break;
@@ -266,7 +312,9 @@ uint8_t algorithmForTuple(uint8_t digest, uint8_t cipher, uint8_t padding) {
                             uint8_t(6), uint8_t(7), uint8_t(8), uint8_t(18),
                             uint8_t(19), uint8_t(20), uint8_t(39), uint8_t(40),
                             uint8_t(41), uint8_t(42), uint8_t(47), uint8_t(48),
-                            uint8_t(49), uint8_t(10)}) {
+                            uint8_t(49), uint8_t(10), uint8_t(21),
+                            uint8_t(43), uint8_t(44), uint8_t(45),
+                            uint8_t(46)}) {
     uint8_t candidateDigest = 0, candidateCipher = 0, candidatePadding = 0;
     if (tupleForAlgorithm(algorithm, candidateDigest, candidateCipher,
                           candidatePadding) &&
@@ -543,9 +591,19 @@ void javacard_security_Signature_init(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   if (isRsaSignatureAlgorithm(algorithm)) {
-    if (!parameters) throw Exceptions::NullPointerException;
     checkRange(parameters, offset, length);
-    throwCryptoException(CryptoExceptionReason::IllegalValue);
+    if (signature->getField_Byte(
+            ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_PADDINGALGORITHM)
+        != kPaddingPkcs1Pss || length != 2)
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
+    const uint16_t saltLength =
+        (static_cast<uint16_t>(static_cast<uint8_t>(parameters->getByteEntry(offset))) << 8) |
+        static_cast<uint8_t>(parameters->getByteEntry(offset + 1));
+    if (saltLength > 32767)
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
+    initializeRsaSignature(*signature, key, static_cast<uint8_t>(mode),
+                           static_cast<jshort_t>(saltLength));
+    return;
   }
 #endif
   const uint16_t blockLength = (algorithm == 18 || algorithm == 49) ? 16 : 8;
@@ -611,8 +669,14 @@ jshort_t javacard_security_Signature_sign(
     jshort_t length, std::shared_ptr<JC_Array> output, jshort_t outputOffset) {
   auto signature = signatureInstance(receiver);
   requireInitialized(*signature, kModeSign);
-  const jshort_t resultSize = signature->getField_Short(
+  jshort_t resultSize = signature->getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH);
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
+  if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM)))) {
+    resultSize = rsaSignatureLength(*signature);
+  }
+#endif
   checkRange(output, outputOffset, resultSize);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
@@ -637,8 +701,7 @@ jshort_t javacard_security_Signature_signPreComputedHash(
   requireInitialized(*signature, kModeSign);
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM)))) {
-    const jshort_t resultSize = signature->getField_Short(
-        ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH);
+    const jshort_t resultSize = rsaSignatureLength(*signature);
     checkRange(output, outputOffset, resultSize);
     return rsaSignatureSignHash(*signature, hash, offset, length, output,
                                 outputOffset);

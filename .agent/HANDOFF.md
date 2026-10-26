@@ -1,3 +1,30 @@
+# Current continuation — native RSA-PSS support and physical validation (2026-10-26)
+
+- Added direct native Java Card `Signature` API support for RSA-PSS with
+  SHA-1/224/256/384/512, default digest-length salts, and explicit salt lengths
+  through the `init(key, mode, parameters, offset, length)` overload. PSS uses
+  native MGF1/encoding/verification and the Pico SDK entropy source for salts.
+- A test-fixture refactor briefly made old RSA PKCS#1 vectors return empty
+  responses. Native tracing showed the C++ signer returned 64 bytes; restoring
+  the PKCS#1 fixture's direct-return path fixed it. Additional fixture fixes
+  selected correct PSS test-key sizes and distinguished default salts from
+  explicit zero-salt parameters.
+- Validation: support generator 9/9; PC VPCD `asymm_crypto` suite 59/59,
+  including 39 RSA signature vectors. ARM and RISC-V wrapper builds passed.
+  D92 (`D92E743D5F640C0F`) was flashed and finite monitor passed
+  `TEST:SUMMARY pass=1 fail=0`. Physical PKCS#1/PSS suite passed 39/39; its
+  temporary package cleanup passed. The ARM UF2 is 1,826,304 bytes, SHA-256
+  `0fc6b186c936cd34dc460df493672f7e1868144dae3ad5112ee0ddf443a690f2`.
+- Logs: `artifacts/logs/cycle-choupi-20261026T185249Z.log`,
+  `artifacts/logs/asymm-crypto-pcsc-20261026T185432Z.log`, and
+  `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (VPCD log reused by
+  the existing harness; SHA-256 `5d9e8f2bafb8c9929502210664bd55e2f2485cdb95ba6df7f9176232d7a7bc2f`).
+- Asymmetric profile remains incomplete. Remaining tasks include RSA ISO9796,
+  EC keys/ECDSA, key agreement/generation, exact report comparison, complete
+  `/deploy` acceptance, and validation/hardening of private RSA operations.
+  Continue on another enumerated board if D92 becomes unavailable; 2BED
+  (`2BED26ED20556535`) was also visible during this session.
+
 # Current continuation — physical RSA SHA-2 response sizing (2026-10-26)
 
 - Found the physical-only cause of RSA SHA-2 signature APDUs returning `6F00`:

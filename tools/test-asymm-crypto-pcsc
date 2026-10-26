@@ -75,14 +75,12 @@ spec = importlib.util.spec_from_file_location("asymm_vectors", source)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 vectors = [case for case in module.vectors()
-           if case[2].startswith(("RSA SHA1", "RSA SHA-sha224",
-                                  "RSA SHA-sha256", "RSA SHA-sha384",
-                                  "RSA SHA-sha512"))]
+           if case[2].startswith(("RSA SHA1", "RSA SHA-"))]
 with output.open("w", encoding="ascii") as stream:
     for command, expected, label in vectors:
         stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
-if len(vectors) != 24:
-    raise SystemExit(f"expected 24 RSA SHA-1/SHA-2 vectors, got {len(vectors)}")
+if len(vectors) != 39:
+    raise SystemExit(f"expected 39 RSA SHA-1/SHA-2 PKCS1 and PSS vectors, got {len(vectors)}")
 print(f"VECTORS:PASS count={len(vectors)} file={output}")
 PY
 

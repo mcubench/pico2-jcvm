@@ -111,6 +111,75 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
             prehash_verify = modulus + bytes((len(public_exponent),)) + public_exponent + digest + expected_signature
             results.append((bytes((0x80, 0x15, algorithm, 3, len(prehash_verify))) + prehash_verify + b"\x00",
                             b"\x01\x90\x00", f"RSA SHA-{digest_function().name} precomputed verify"))
+    pss_algorithms = {
+        21: (hashlib.sha1, 512, 20),
+        43: (hashlib.sha224, 768, 0),
+        44: (hashlib.sha256, 768, 0),
+        45: (hashlib.sha384, 896, 0),
+        46: (hashlib.sha512, 736, 0),
+    }
+    for algorithm, (digest_function, bits, parameter_salt_length) in pss_algorithms.items():
+        n, d, e = _rsa_fixture(bits)
+        key_length = (bits + 7) // 8
+        modulus = n.to_bytes(key_length, "big")
+        private_exponent = d.to_bytes(key_length, "big")
+        public_exponent = e.to_bytes(3, "big")
+        message = f"JCVM PSS algorithm={algorithm}".encode("ascii")
+
+        # Exercise signing with each algorithm's default salt length where the
+        # short APDU can carry the fixture key; SHA-512 uses a zero-salt
+        # parameterized precomputed-hash case to fit the short APDU limit.
+        if algorithm != 46:
+            sign_data = modulus + private_exponent + message
+            command = bytes((0x80, 0x15, algorithm, 0, len(sign_data))) + sign_data + b"\x00"
+            results.append((command, b"\x01\x90\x00",
+                            f"RSA SHA-{digest_function().name} PSS default-salt sign/verify"))
+
+        digest = digest_function(message).digest()
+        salt = bytes(range(parameter_salt_length))
+        em_bits = bits - 1
+        em_length = (em_bits + 7) // 8
+        db_length = em_length - len(digest) - 1
+        h = digest_function(bytes(8) + digest + salt).digest()
+        db = bytes(db_length - len(salt) - 1) + b"\x01" + salt
+        mask_input = h
+        mask = bytearray()
+        counter = 0
+        while len(mask) < db_length:
+            mask.extend(digest_function(mask_input + counter.to_bytes(4, "big")).digest())
+            counter += 1
+        masked_db = bytearray(a ^ b for a, b in zip(db, mask[:db_length]))
+        unused_bits = 8 * em_length - em_bits
+        masked_db[0] &= 0xff >> unused_bits
+        encoded = bytes(masked_db) + h + b"\xbc"
+        encoded = encoded.rjust(key_length, b"\x00")
+        signature_value = pow(int.from_bytes(encoded, "big"), d, n).to_bytes(key_length, "big")
+
+        if algorithm == 46:
+            # PSS init parameters are a two-byte Java Card short. Zero salt
+            # keeps the 736-bit SHA-512 vector below short-APDU Lc=256.
+            sign_data = modulus + private_exponent + digest
+            command = bytes((0x80, 0x15, algorithm, 6, len(sign_data))) + sign_data + b"\x00"
+            results.append((command, b"\x01\x90\x00", "RSA SHA-512 PSS precomputed sign, salt=0"))
+            verify_data = modulus + bytes((len(public_exponent),)) + public_exponent + digest + signature_value
+            command = bytes((0x80, 0x15, algorithm, 7, len(verify_data))) + verify_data + b"\x00"
+        else:
+            verify_data = modulus + bytes((len(public_exponent),)) + public_exponent + message + signature_value
+            verify_operation = 1 if parameter_salt_length == len(digest) else 5
+            command = bytes((0x80, 0x15, algorithm, verify_operation, len(verify_data))) + verify_data + b"\x00"
+        results.append((command, b"\x01\x90\x00",
+                        f"RSA SHA-{digest_function().name} PSS known signature, salt={parameter_salt_length}"))
+        invalid_signature = bytearray(signature_value)
+        invalid_signature[-1] ^= 1
+        if algorithm == 46:
+            invalid_data = modulus + bytes((len(public_exponent),)) + public_exponent + digest + invalid_signature
+            operation = 7
+        else:
+            invalid_data = modulus + bytes((len(public_exponent),)) + public_exponent + message + invalid_signature
+            operation = verify_operation
+        command = bytes((0x80, 0x15, algorithm, operation, len(invalid_data))) + invalid_data + b"\x00"
+        results.append((command, b"\x00\x90\x00",
+                        f"RSA SHA-{digest_function().name} PSS reject modified signature"))
     return results
 
 
@@ -178,7 +247,8 @@ def main() -> int:
     completed = subprocess.run(command, cwd=ROOT, check=False)
     if completed.returncode:
         return completed.returncode
-    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 rsa_signature_vectors=24 fail=0")
+    rsa_signature_vectors = sum("RSA SHA" in label for _, _, label in cases)
+    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 rsa_signature_vectors={rsa_signature_vectors} fail=0")
     print(f"TEST:LOG {log}")
     return 0
 

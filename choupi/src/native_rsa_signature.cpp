@@ -21,7 +21,12 @@
 #include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <random>
 #include <vector>
+
+#ifndef PC_VERSION
+#include "pico/rand.h"
+#endif
 
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
 namespace jcvm {
@@ -282,6 +287,132 @@ std::vector<unsigned char> encodedMessage(
   return encoded;
 }
 
+bool isPss(JC_Instance &signature) {
+  return signature.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_PADDINGALGORITHM) == 8;
+}
+
+uint8_t randomByte() {
+#ifdef PC_VERSION
+  static std::random_device source;
+  return static_cast<uint8_t>(source());
+#else
+  static uint32_t word = 0;
+  static uint8_t remaining = 0;
+  if (remaining == 0) {
+    word = get_rand_32();
+    remaining = 4;
+  }
+  const uint8_t value = static_cast<uint8_t>(word);
+  word >>= 8;
+  --remaining;
+  return value;
+#endif
+}
+
+std::vector<unsigned char> mgf1(JC_Instance &signature,
+                                const std::vector<unsigned char> &seed,
+                                size_t maskLength) {
+  std::vector<unsigned char> mask(maskLength);
+  std::vector<unsigned char> input(seed.size() + 4);
+  std::copy(seed.begin(), seed.end(), input.begin());
+  size_t produced = 0;
+  uint32_t counter = 0;
+  while (produced < maskLength) {
+    const size_t offset = seed.size();
+    input[offset] = static_cast<unsigned char>(counter >> 24);
+    input[offset + 1] = static_cast<unsigned char>(counter >> 16);
+    input[offset + 2] = static_cast<unsigned char>(counter >> 8);
+    input[offset + 3] = static_cast<unsigned char>(counter);
+    const auto digest = digestMessage(signature, input);
+    const size_t count = std::min(maskLength - produced, digest.size());
+    std::copy_n(digest.begin(), count, mask.begin() + produced);
+    produced += count;
+    ++counter;
+  }
+  return mask;
+}
+
+std::vector<unsigned char> encodedPss(JC_Instance &signature,
+                                     const std::vector<unsigned char> &hash,
+                                     uint16_t modulusLength,
+                                     uint16_t modulusBits) {
+  const size_t hashLength = digestLength(signatureDigestAlgorithm(signature));
+  const jshort_t configuredSaltLength = signature.getField_Short(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH);
+  if (configuredSaltLength < 0)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  const size_t saltLength = static_cast<size_t>(configuredSaltLength);
+  const size_t encodedLength = (static_cast<size_t>(modulusBits - 1) + 7) / 8;
+  if (hash.size() != hashLength || encodedLength < hashLength + saltLength + 2)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+
+  std::vector<unsigned char> salt(saltLength);
+  for (auto &byte : salt) byte = randomByte();
+  std::vector<unsigned char> hashInput(8, 0);
+  hashInput.insert(hashInput.end(), hash.begin(), hash.end());
+  hashInput.insert(hashInput.end(), salt.begin(), salt.end());
+  const auto h = digestMessage(signature, hashInput);
+  const size_t dbLength = encodedLength - hashLength - 1;
+  std::vector<unsigned char> db(dbLength, 0);
+  db[dbLength - saltLength - 1] = 1;
+  std::copy(salt.begin(), salt.end(), db.end() - saltLength);
+  const auto mask = mgf1(signature, h, dbLength);
+  for (size_t i = 0; i < dbLength; ++i) db[i] ^= mask[i];
+  const uint8_t unusedBits = static_cast<uint8_t>(8 * encodedLength - (modulusBits - 1));
+  if (unusedBits != 0)
+    db[0] &= static_cast<unsigned char>(0xffu >> unusedBits);
+
+  std::vector<unsigned char> encoded(modulusLength, 0);
+  const size_t leading = modulusLength - encodedLength;
+  std::copy(db.begin(), db.end(), encoded.begin() + leading);
+  std::copy(h.begin(), h.end(), encoded.begin() + leading + dbLength);
+  encoded.back() = 0xbc;
+  return encoded;
+}
+
+bool verifyPss(JC_Instance &signature, const std::vector<unsigned char> &hash,
+               const std::vector<unsigned char> &encoded,
+               uint16_t modulusLength, uint16_t modulusBits) {
+  const size_t hashLength = digestLength(signatureDigestAlgorithm(signature));
+  const jshort_t configuredSaltLength = signature.getField_Short(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH);
+  if (configuredSaltLength < 0 || hash.size() != hashLength ||
+      encoded.size() != modulusLength || encoded.back() != 0xbc)
+    return false;
+  const size_t saltLength = static_cast<size_t>(configuredSaltLength);
+  const size_t encodedLength = (static_cast<size_t>(modulusBits - 1) + 7) / 8;
+  if (encodedLength < hashLength + saltLength + 2 || encodedLength > encoded.size())
+    return false;
+  const size_t leading = encoded.size() - encodedLength;
+  const size_t dbLength = encodedLength - hashLength - 1;
+  const uint8_t unusedBits = static_cast<uint8_t>(8 * encodedLength - (modulusBits - 1));
+  const unsigned char *maskedDb = encoded.data() + leading;
+  const unsigned char *h = maskedDb + dbLength;
+  if (unusedBits != 0 && (maskedDb[0] & static_cast<unsigned char>(0xffu << (8 - unusedBits))))
+    return false;
+
+  std::vector<unsigned char> hVector(h, h + hashLength);
+  const auto mask = mgf1(signature, hVector, dbLength);
+  std::vector<unsigned char> db(dbLength);
+  for (size_t i = 0; i < dbLength; ++i) db[i] = maskedDb[i] ^ mask[i];
+  if (unusedBits != 0)
+    db[0] &= static_cast<unsigned char>(0xffu >> unusedBits);
+  const size_t delimiter = dbLength - saltLength - 1;
+  uint8_t difference = 0;
+  for (size_t i = 0; i < delimiter; ++i) difference |= db[i];
+  difference |= static_cast<uint8_t>(db[delimiter] ^ 1);
+  if (difference != 0) return false;
+
+  std::vector<unsigned char> hashInput(8, 0);
+  hashInput.insert(hashInput.end(), hash.begin(), hash.end());
+  hashInput.insert(hashInput.end(), db.begin() + delimiter + 1, db.end());
+  const auto expectedH = digestMessage(signature, hashInput);
+  difference = 0;
+  for (size_t i = 0; i < hashLength; ++i) difference |= expectedH[i] ^ h[i];
+  return difference == 0;
+}
+
 std::vector<unsigned char> modExp(const std::vector<unsigned char> &modulus,
                                   const std::vector<unsigned char> &exponent,
                                   const std::vector<unsigned char> &input) {
@@ -313,10 +444,17 @@ std::vector<unsigned char> transform(JC_Instance &signature,
   auto digestInfo = digestInfoFromHash(algorithm, hash.data());
   const auto modulus = keyComponent(signature, 0);
   const auto exponent = keyComponent(signature, 1);
-  const uint16_t length = static_cast<uint16_t>(signature.getField_Short(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH));
+  const uint16_t length = static_cast<uint16_t>(modulus.size());
   if (modulus.size() != length)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
+  if (isPss(signature)) {
+    const auto key = rsaKeyInstance(signature.getField_Reference(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
+    const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
+    return modExp(modulus, exponent,
+                  encodedPss(signature, hash, length, bits));
+  }
   return modExp(modulus, exponent, encodedMessage(digestInfo, length));
 }
 
@@ -328,8 +466,9 @@ std::vector<unsigned char> transformMessage(
 
 bool verify(JC_Instance &signature, const std::vector<unsigned char> &hash,
             const std::vector<unsigned char> &value) {
-  const uint16_t length = static_cast<uint16_t>(signature.getField_Short(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH));
+  const auto key = rsaKeyInstance(signature.getField_Reference(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
+  const uint16_t length = keyModulusLength(*key);
   const uint8_t algorithm = signatureDigestAlgorithm(signature);
   if (value.size() != length || hash.size() != digestLength(algorithm)) return false;
   const auto modulus = keyComponent(signature, 0);
@@ -337,8 +476,13 @@ bool verify(JC_Instance &signature, const std::vector<unsigned char> &hash,
   if (!std::lexicographical_compare(value.begin(), value.end(),
                                     modulus.begin(), modulus.end()))
     return false;
-  const auto expected = encodedMessage(digestInfoFromHash(algorithm, hash.data()), length);
   const auto actual = modExp(modulus, exponent, value);
+  if (isPss(signature)) {
+    const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
+    return verifyPss(signature, hash, actual, length, bits);
+  }
+  const auto expected = encodedMessage(digestInfoFromHash(algorithm, hash.data()), length);
   uint8_t difference = 0;
   for (size_t i = 0; i < expected.size(); ++i)
     difference |= static_cast<uint8_t>(expected[i] ^ actual[i]);
@@ -348,7 +492,7 @@ bool verify(JC_Instance &signature, const std::vector<unsigned char> &hash,
 } // namespace
 
 void initializeRsaSignature(JC_Instance &signature, jref_t keyReference,
-                            uint8_t mode) {
+                            uint8_t mode, jshort_t saltLength) {
   if (mode != kModeSign && mode != kModeVerify)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   auto key = rsaKeyInstance(keyReference);
@@ -361,6 +505,17 @@ void initializeRsaSignature(JC_Instance &signature, jref_t keyReference,
   if ((mode == kModeSign && !privateKey) || (mode == kModeVerify && !publicKey))
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   const uint16_t length = keyModulusLength(*key);
+  if (isPss(signature)) {
+    if (saltLength < 0)
+      saltLength = static_cast<jshort_t>(digestLength(
+          signatureDigestAlgorithm(signature)));
+    const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
+    const size_t encodedLength = (static_cast<size_t>(bits - 1) + 7) / 8;
+    const size_t hashLength = digestLength(signatureDigestAlgorithm(signature));
+    if (encodedLength < hashLength + static_cast<uint16_t>(saltLength) + 2)
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
+  }
   // Read both components now so init reports an uninitialized key before the
   // operation begins. They are re-read on each operation to honor clearKey.
   const jref_t lengthRef = key->getField_Reference(
@@ -372,7 +527,7 @@ void initializeRsaSignature(JC_Instance &signature, jref_t keyReference,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY, keyReference);
   signature.setField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH,
-      static_cast<jshort_t>(length));
+      isPss(signature) ? saltLength : static_cast<jshort_t>(length));
   signature.setField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH, 0);
   signature.setField_Byte(
