@@ -1,3 +1,33 @@
+# Current continuation — native EC key agreement (2026-10-27)
+
+- Added native C++ `KeyAgreement` factory and operation dispatch for six
+  profile capabilities: EC SVDP-DH/DHC, plain DH/DHC, PACE-GM, and full
+  uncompressed XY. The Java Card API object holds only algorithm/key state;
+  all arithmetic is native. The test-only CAP uses the standard API only.
+- Known-answer tests use P-256 private scalar 1 and peer point G: DH/DHC
+  return SHA-1(Gx), plain variants return Gx, PACE-GM returns 2G, and XY
+  returns uncompressed G. Test vectors pass. DH allows absent cofactor K;
+  DHC returns `UNINITIALIZED_KEY` if K is missing. Named curves supported in
+  this implementation are P-192, P-224, P-256, P-384, and P-521. Arbitrary
+  curves, key generation, full target report comparison, and physical
+  validation remain open.
+- Validation: support generator 9/9; PC build passed; VPCD 86/86 (84 APDUs,
+  ATR, SELECT), including DH without K and DHC's reason-2 missing-K result;
+  ARM and RISC-V wrappers passed. ARM UF2 is 1,992,192 bytes;
+  PC ROM mask is 524,300 bytes. The user reports tokens plugged in, but
+  elevated `pico2-pcsc-reader` found 0, `lsusb -d 2e8a:0009` found none, and
+  `pcsc_scan -r` showed only Virtual PCD readers. No hardware flash/test.
+- Commits: API submodule `b6e8af6`; implementation `48eabe3`; edge tests
+  `34808e6`; validation record is a follow-up documentation commit.
+- Preserve unrelated worktree edits: `AGENTS.md`, `src/cap_load.cpp`,
+  `tools/test-jcsystem-transaction-physical`, the ROM-mask submodule, and
+  supplied AlgTest logs/CSV/measurement lists. The API submodule also has
+  untracked `sdks/`; preserve it.
+- Next: implement EC/RSA key generation and arbitrary EC domain support as
+  required by the target CSV. Then add invalid-input/cofactor regressions,
+  compare a complete physical ALG_SUPPORT report, and complete `/deploy`
+  physical acceptance once a Pico enumerates through the VM.
+
 # Current continuation — native EC prime-field private key storage (2026-10-26)
 
 - Implemented native `KeyBuilder` and `NativeKey` storage for EC FP private

@@ -1529,6 +1529,21 @@ rollback and duplicate/invalid registration handling also remain unverified.
   validation remains pending because no Pico currently enumerates inside this
   VM. EC APIs, key agreement/generation, complete report comparison, physical
   `/deploy` coverage, and private-operation hardening remain open.
+  Progress (2026-10-27): added native C++ `KeyAgreement` dispatch and six
+  `asymm_crypto` capabilities for EC SVDP-DH/DHC, their plain variants,
+  PACE-GM, and uncompressed XY output. The API object stores its algorithm and
+  initialized private-key reference; the test-only CAP invokes only Java Card
+  APIs. P-256 known-answer vectors passed for all six algorithms. DH permits
+  keys with no cofactor; DHC reports `UNINITIALIZED_KEY` when K is absent.
+  VPCD passed 86/86 checks (including DH without K and DHC without K), support
+  generation passed 9/9, and PC, ARM, and
+  RISC-V builds passed. Hardware remains untested: although the user reports
+  tokens plugged in, the approved helper found zero Pico devices, `lsusb`
+  found no `2e8a:0009`, and PC/SC showed only virtual readers. Implementations
+  currently accept the standard named prime-field curves P-192, P-224, P-256,
+  P-384, and P-521; arbitrary EC domains and EC/RSA key generation are still
+  open, as are exact physical support-report comparison and deployment
+  acceptance.
   Native-dispatch design inspected on 2026-10-26: the VM routes API-declared
   native methods through `callJCNativeMethod`, and `Heap::addInstance` can
   allocate an object directly from its ROM package/class index. The intended

@@ -13302,3 +13302,31 @@
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
   ARM image `build/arm/pico2_choupi.uf2`; PC ROM mask `build/choupi-pc/flash`;
   no physical log.
+
+## 2026-10-27 — Native EC key agreement
+
+- Step/experiment: `asymm-crypto-ec-key-agreement`
+- Change: Added profile-gated native `KeyAgreement` support for EC SVDP-DH,
+  DHC, plain DH/DHC, PACE-GM, and uncompressed XY output. Added API-object
+  state fields, native dispatch, and test-only CAP calls. DH does not require
+  cofactor K; DHC rejects a missing K with `UNINITIALIZED_KEY`.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9;
+  `./tools/build-pc --profile asymm_crypto` passed; elevated VPCD passed 86/86
+  (84 APDUs plus ATR and SELECT), including six P-256 agreement known-answer
+  vectors and checks for DH/DHC with no cofactor; `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` passed. ARM UF2 is 1,992,192
+  bytes; PC ROM mask is 524,300 bytes. No physical test: the approved helper
+  found zero Pico devices; `lsusb` found no `2e8a:0009`, and `pcsc_scan -r`
+  showed only virtual readers.
+- Result: All six implemented agreement methods return the expected P-256
+  values in the emulator. DH succeeds without K; DHC returns reason 2
+  (`UNINITIALIZED_KEY`) without K. Arbitrary EC domains and key generation remain
+  unimplemented; physical validation is pending guest USB enumeration.
+- Decision: Continue remaining asymmetric profile work; do not claim full
+  target CSV coverage based on these vectors alone.
+- Commit: implementation `48eabe3` (API submodule `b6e8af6`), edge regressions
+  `34808e6`; this record is committed separately.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`,
+  `build/choupi-pc/flash`, VPCD log
+  `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (runner reuses this
+  fixed filename); no physical log.
