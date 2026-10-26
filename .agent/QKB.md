@@ -5123,3 +5123,11 @@ fix.
 - Viable fix: Key each override using the JCA method descriptor (name(params)return) plus static/instance status. The ROM-mask parser consumes JCAClassMethodSignature.getFullName() and still rejects entries that do not match any API method.
 - Validation: Native MessageDigest descriptors matched the generated JCA exports; PC/ARM/RISC-V builds passed and PC/VPCD regression passed 15/15.
 - Use: Add one manifest record per overloaded Signature.getInstance descriptor when migrating that API.
+# Physical SHA-256 validation after native MessageDigest dispatch (2026-10-26)
+
+- **Finding:** On Pico 2 D92 (`D92E743D5F640C0F`), an initial isolated SHA-256 support probe returned `FF05` after a fresh JCAlgTest installation. After reflashing the clean ARM image (which rebooted the board), the same support probe passed and the official SHA-256 `doFinal` prepare/measurement also passed. No MessageDigest source correction was needed; the factory's class resolution, object allocation, and transient buffer allocation completed on-device. The initial `FF05` cause is not established.
+- **Reproduction tools:** `tools/probe-jc-algtest --sha256-support-only` and `--sha256-dofinal-only` isolate these calls against the installed upstream JCAlgTest 1.8.2 CAP. Use the exact Pico reader name and host-access wrapper requirements.
+- **Physical evidence:** The support probe returned data beginning `1500` with SW `9000`; the official JCAlgTest CSV recorded `ALG_SHA_256;yes`. The doFinal prepare and measurement each returned `AA9000`, followed by `TEST:PASS sha256_dofinal_only`. `./tools/cycle choupi --chipid D92E743D5F640C0F` passed with `TEST:SUMMARY pass=1 fail=0` at `artifacts/logs/cycle-choupi-20261026T044038Z.log`.
+- **Extended run:** The official `ALG_SUPPORT_EXTENDED` run reached 1,897 rows and the SHA-256 yes row. The user intentionally unplugged the card; the resulting missing PC/SC transaction is an interrupted run, not evidence of a firmware fault. The partial CSV and client log are under `artifacts/results/jcalgtest-real-d92-msgdigest-20261026/` and must not be treated as a complete acceptance report.
+- **Viable solution:** For the earlier `FF05`, reflashing and rebooting resulted in a passing repeat, but the causal mechanism is unknown. Preserve this as a useful recovery experiment, not a confirmed fix. Do not modify upstream CAP files.
+

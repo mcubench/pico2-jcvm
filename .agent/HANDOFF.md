@@ -1,3 +1,13 @@
+# Current continuation — native MessageDigest hardware verification (2026-10-26)
+
+- ARM and RISC-V wrappers pass for profile `current` after removing temporary factory tracing.
+- D92 (`D92E743D5F640C0F`) was flashed with the clean ARM image by `./tools/cycle choupi --chipid D92E743D5F640C0F`; finite runtime passed (`TEST:SUMMARY pass=1 fail=0`, `artifacts/logs/cycle-choupi-20261026T044038Z.log`).
+- On the real card, the isolated SHA-256 support APDU passed (`1500...9000`), and SHA-256 `doFinal` prepare and measurement both returned `AA9000`. The official JCAlgTest CSV recorded `ALG_SHA_256;yes`.
+- The official `ALG_SUPPORT_EXTENDED` run reached 1,897 rows. The user intentionally unplugged the device, interrupting the run; do not classify the ensuing PC/SC transaction loss as a firmware defect. Partial artifacts: `artifacts/results/jcalgtest-real-d92-msgdigest-20261026/`; this is not a complete report.
+- An earlier isolated support attempt returned `FF05`; it passed after the firmware was reflashed and rebooted. Root cause is unknown, and there was no MessageDigest source fix in this step.
+- Focused probe switches `--sha256-support-only` and `--sha256-dofinal-only` are in `tools/JCAlgTestApduProbe.java`.
+- Worktree contains unrelated pre-existing RSA/profile/API changes; preserve them. Next implementation priority remains direct native `Signature` factory/operations for MAC, then native RSA API dispatch. Do not add Java provider/adapter bytecode.
+
 # Current continuation — descriptor-specific native method overrides (2026-10-26)
 
 - ROM-mask native override keys now include each method's complete JCA descriptor. A direct ROM-mask probe accepted both Signature.getInstance forms and emitted two C++ overload declarations; the manifest key includes the method name in both its class/method fields and descriptor string.

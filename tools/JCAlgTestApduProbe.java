@@ -261,6 +261,33 @@ public final class JCAlgTestApduProbe {
         return;
       }
 
+      if (probeArgs.size() == 1 && "--sha256-dofinal-only".equals(probeArgs.get(0))) {
+        byte[] sha256Settings = fromHex(
+            "0015 0004 FFFF FFFF FFFF 0006 0001 FFFF FFFF 0001 0001");
+        transmit(channel, "SHA256_DOFINAL_ONLY_PREPARE",
+            new CommandAPDU(0xB0, 0x34, 0x00, 0x00, sha256Settings, 256));
+        ResponseAPDU response = transmit(channel, "SHA256_DOFINAL_ONLY",
+            new CommandAPDU(0xB0, 0x41, 0x00, 0x00, sha256Settings, 256));
+        byte[] data = response.getData();
+        if (data.length < 1 || data[0] != (byte) 0xAA) {
+          throw new IllegalStateException("SHA-256 doFinal did not report success");
+        }
+        System.out.println("TEST:PASS sha256_dofinal_only");
+        return;
+      }
+
+      if (probeArgs.size() == 1 && "--sha256-support-only".equals(probeArgs.get(0))) {
+        ResponseAPDU response = transmit(channel, "SHA256_SUPPORT_ONLY",
+            new CommandAPDU(0xB0, 0x75, 0x15, 0x00,
+                new byte[] {0x04, 0x00, 0x00}, 256));
+        byte[] data = response.getData();
+        if (data.length < 2 || data[0] != 0x15 || data[1] != 0x00) {
+          throw new IllegalStateException("SHA-256 support APDU did not report yes");
+        }
+        System.out.println("TEST:PASS sha256_support_only");
+        return;
+      }
+
       // Reproduce the official ALG_PERFORMANCE_STATIC SHA-256 prelude:
       // prepare once with the measured settings, collect five zero-repeat
       // baseline samples, then submit the 50-call measurement twice.

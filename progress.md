@@ -13108,3 +13108,13 @@
 - Decision: Use descriptor-qualified manifest records for both Signature.getInstance overloads in the next migration step.
 - Commit: 713519f (root); rommask submodule commit dfd7f3f.
 - Artifacts/logs: artifacts/logs/message-digest-native-vpcd-descriptor-20261026.log.
+
+## 2026-10-26 — Verify native SHA-256 on Pico 2
+
+- Step/experiment: `native-message-digest-real-d92`
+- Change: Added isolated host probes for JCAlgTest SHA-256 support and the official static `doFinal` prepare/measurement sequence. No firmware source change was needed; temporary factory tracing was removed before final validation.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid D92E743D5F640C0F` flashed and verified the ARM image; finite runtime passed (`TEST:SUMMARY pass=1 fail=0`). On D92, `--sha256-support-only` returned `1500...9000`, and `--sha256-dofinal-only` returned `AA9000` for prepare and measurement (`TEST:PASS sha256_dofinal_only`). The official JCAlgTest extended support run reported `ALG_SHA_256;yes`.
+- Result: Native MessageDigest factory allocation and SHA-256 execution work on the physical RP2350 after a firmware reboot. An earlier `FF05` support attempt passed after reflashing; its cause remains unknown. The extended run reached 1,897 rows before the user intentionally unplugged the device; the partial report is not complete acceptance evidence and the disconnect is not a firmware failure.
+- Decision: Keep the focused probes for regression use. Continue native `Signature` API migration; do not add Java providers or modify upstream CAPs.
+- Commit: pending documentation follow-up.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261026T044038Z.log`; partial JCAlgTest CSV and log in `artifacts/results/jcalgtest-real-d92-msgdigest-20261026/`.
