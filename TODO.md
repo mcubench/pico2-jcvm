@@ -1510,6 +1510,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   symmetric MAC operations so the `symm_crypto` profile remains functional.
   Apply the same native API boundary to RSA key and cipher APIs; do not
   introduce generated Java implementation classes.
+  The existing `tools/test-javacard-support.py` passes 9/9, but its RSA
+  coverage explicitly asserts generation of `RSAKeyProvider` and
+  `RSACipherProvider`, while signature coverage expects `SymmetricMacProvider`.
+  Replace those assertions with checks that only API-declared native methods
+  and native C++ modules are selected, once the migration is implemented.
   See the 2026-10-25 entry in `progress.md` and `.agent/HANDOFF.md`.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
   each with known-answer tests (plan WP8).

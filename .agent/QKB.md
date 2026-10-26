@@ -5101,3 +5101,8 @@ fix.
   reference return has not been compiled or executed. Existing symmetric MAC
   behavior must move with the factory to avoid regressing the `symm_crypto`
   profile.
+- **Test-suite caveat:** `python3 tools/test-javacard-support.py` passes 9/9,
+  but current assertions require generation of RSA key/cipher and symmetric
+  MAC Java provider classes. This pass is not evidence of compliance with the
+  native-only requirement. Replace the provider-presence expectations after
+  the direct API implementation exists.

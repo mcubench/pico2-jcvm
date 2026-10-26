@@ -16,6 +16,10 @@
   worktree changes and the API submodule pointer. Test ROM-mask support for a
   native factory with a reference return has not yet been built or run.
 - TODO and QKB record the design direction and its unverified assumptions.
+- `python3 tools/test-javacard-support.py` passed 9/9. Its current tests
+  explicitly require generated `RSAKeyProvider`, `RSACipherProvider`, and
+  `SymmetricMacProvider` classes, so that pass only documents the existing
+  behavior; replace those expectations when native API dispatch is migrated.
 - Next: build a focused ROM-mask/native factory fixture. Then migrate the
   `Signature` factory, state, RSA operations, and MAC operations as a coherent
   slice so `symm_crypto` remains intact; subsequently migrate RSA key/cipher

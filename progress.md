@@ -13077,3 +13077,13 @@
 - Commit: pending.
 - Artifacts/logs: None.
 
+## 2026-10-26 — Audit asymmetric support-generator test expectations
+
+- Step/experiment: `asymm-provider-test-audit`
+- Change: Recorded that the current generator suite encodes the prohibited provider architecture and must be rewritten alongside the native API migration.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9. Inspection of the test assertions confirmed they require generated `RSAKeyProvider`, `RSACipherProvider`, and `SymmetricMacProvider` classes; this is not native-only acceptance evidence.
+- Result: Existing test suite protects provider generation and will need replacement after direct native API dispatch is implemented.
+- Decision: Do not weaken or change the assertions before the implementation changes; use them as a migration checklist.
+- Commit: pending.
+- Artifacts/logs: Test output was transient; no log retained.
+
