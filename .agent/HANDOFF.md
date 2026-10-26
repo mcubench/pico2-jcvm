@@ -15,8 +15,8 @@
   `asymm_crypto`. Generated ROM/JNI files contain no legacy key provider names.
   Existing upstream Java Card converter/Maven and packed-member compiler
   warnings remain. No hardware test was run because the user unplugged the Pico.
-- API submodule commit: `6857bb0`; root implementation and progress commits
-  are recorded in `progress.md` after commit completion.
+- API submodule commit: `6857bb0`; root implementation commit: `b311fa4`.
+  The commit-ID record correction is a separate documentation commit.
 - Remaining: migrate RSA Cipher factory/state/operations from
   `RSACipherProvider` to direct native Java Card API dispatch, then continue
   the asymmetric profile roadmap. Do not claim native-only `asymm_crypto` yet.

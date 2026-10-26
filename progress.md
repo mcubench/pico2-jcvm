@@ -13155,5 +13155,5 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc --profile asymm_crypto` passed; elevated `./tools/env python3 tools/tests/test_asymm_crypto_vpcd.py` passed 26/26 (10 digest, 5 key-builder, 3 cipher, 6 RSA SHA-1 Signature vectors, ATR and SELECT); `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. Generated PC ROM/JNI outputs contained no `KeyBuilderProvider`, `RSAKeyProvider`, `AESKeyProvider`, `DESKeyProvider`, or `KeyProviderBase` strings. Hardware testing was skipped because the Pico was unplugged.
 - Result: Native key object construction and operations pass current VPCD vectors. RSA Cipher still uses a generated provider, so `asymm_crypto` is not yet native-only or complete. Firmware/image size was not measured. Existing upstream converter/Maven and packed-member warnings remain.
 - Decision: Continue with RSA Cipher native API dispatch; keep physical testing paused until a board is available.
-- Commit: pending root implementation commit; API source commit `6857bb0`.
+- Commit: root `b311fa4`; Java Card API submodule `6857bb0`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (VPCD run appended; filename predates this run); generated mask `build/choupi-pc/flash` and JNI header `build/choupi-pc/jni.hpp`.
