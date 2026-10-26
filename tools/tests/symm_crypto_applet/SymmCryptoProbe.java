@@ -173,11 +173,13 @@ public final class SymmCryptoProbe extends Applet {
         algorithm == Signature.ALG_RSA_SHA_256_PKCS1_PSS ||
         algorithm == Signature.ALG_RSA_SHA_384_PKCS1_PSS ||
         algorithm == Signature.ALG_RSA_SHA_512_PKCS1_PSS;
-    short keyLength = (short)(algorithm == Signature.ALG_RSA_SHA_PKCS1 ||
+    short keyLength = (short)(algorithm == Signature.ALG_RSA_SHA_ISO9796 ||
+        algorithm == Signature.ALG_RSA_SHA_PKCS1 ||
         algorithm == Signature.ALG_RSA_SHA_PKCS1_PSS ? 64 :
         algorithm == Signature.ALG_RSA_SHA_512_PKCS1_PSS && (operation & 4) != 0
             ? 92 : algorithm == Signature.ALG_RSA_SHA_384_PKCS1_PSS ? 112 : 96);
-    short hashLength = (short)(algorithm == Signature.ALG_RSA_SHA_PKCS1 ||
+    short hashLength = (short)(algorithm == Signature.ALG_RSA_SHA_ISO9796 ||
+        algorithm == Signature.ALG_RSA_SHA_PKCS1 ||
         algorithm == Signature.ALG_RSA_SHA_PKCS1_PSS ? 20 :
         algorithm == Signature.ALG_RSA_SHA_224_PKCS1 ||
         algorithm == Signature.ALG_RSA_SHA_224_PKCS1_PSS ? 28 :

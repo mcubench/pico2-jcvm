@@ -1499,13 +1499,16 @@ rollback and duplicate/invalid registration handling also remain unverified.
   through native C++ Java Card API dispatch: do not add Java provider or
   adapter classes to the ROM mask. The RSA SHA-1 PKCS#1 Signature factory and
   operations now dispatch directly from native methods on the Java Card
-  `Signature` API class, with no generated RSA Signature provider. This is a
-  The native-only migration now covers symmetric MAC, RSA keys, RSA Cipher,
+  `Signature` API class, with no generated RSA Signature provider. The
+  native-only migration now covers symmetric MAC, RSA keys, RSA Cipher,
   RSA PKCS#1 v1.5, and RSA-PSS directly on Java Card API classes. No Java
   provider or adapter implementation is used by the Pico firmware for these
-  operations. RSA ISO9796, EC APIs, key agreement/generation, complete report
-  comparison, physical `/deploy` coverage, and private-operation hardening
-  remain open.
+  operations. RSA ISO9796-2 scheme 1 (`ALG_RSA_SHA_ISO9796`) is now profile-
+  gated and implemented natively. Independent full and partial-recovery
+  vectors pass on VPCD and physical D92; the remaining signature recovery
+  interface algorithm (`ALG_RSA_SHA_ISO9796_MR`), EC APIs, key
+  agreement/generation, complete report comparison, physical `/deploy`
+  coverage, and private-operation hardening remain open.
   Native-dispatch design inspected on 2026-10-26: the VM routes API-declared
   native methods through `callJCNativeMethod`, and `Heap::addInstance` can
   allocate an object directly from its ROM package/class index. The intended
@@ -1522,9 +1525,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   have also moved to native methods on the Java Card `Cipher` API class. The
   PC/VPCD asymmetric suite passes 59/59 (including 39 RSA signature vectors)
   and the symmetric cipher/MAC suite passes 73/73. Physical RSA PKCS#1/PSS
-  validation passed 39/39 on D92. RSA ISO9796, EC keys/signatures/agreement,
-  key generation, full report comparison, and complete physical acceptance
-  remain. See the latest `progress.md` and `.agent/HANDOFF.md` entries.
+  validation passed 39/39 on D92. ISO9796-2 passed a further 6/6 VPCD checks
+  and 6/6 physical checks for signing, full/partial-message verification, and
+  altered-message rejection. The remaining MR API, EC keys/signatures/
+  agreement, key generation, full report comparison, and complete physical
+  acceptance remain. See the latest `progress.md` and `.agent/HANDOFF.md`
+  entries.
   The support tests reject generation of `SignatureProvider`,
   `SymmetricMacProvider`, `MacNativeBridge`, and the RSA Signature provider;
   they check native `Signature`, `KeyBuilder`, `NativeKey`, and `Cipher` method

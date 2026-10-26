@@ -180,6 +180,45 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
         command = bytes((0x80, 0x15, algorithm, operation, len(invalid_data))) + invalid_data + b"\x00"
         results.append((command, b"\x00\x90\x00",
                         f"RSA SHA-{digest_function().name} PSS reject modified signature"))
+
+    # ISO 9796-2 scheme 1 with an implicit trailer. Build reference blocks
+    # independently, covering both full and partial message recovery.
+    n, d, e = _rsa_fixture(512)
+    modulus = n.to_bytes(64, "big")
+    private_exponent = d.to_bytes(64, "big")
+    public_exponent = e.to_bytes(3, "big")
+    for message in (b"JCVM ISO9796-2", bytes(range(70))):
+        digest = hashlib.sha1(message).digest()
+        delta = 64 - len(digest) - 1
+        excess_bits = (len(digest) + len(message)) * 8 + 8 + 4 - 512
+        recovered_length = (len(message) - ((excess_bits + 7) // 8)
+                            if excess_bits > 0 else len(message))
+        block = bytearray(64)
+        block[delta:delta + len(digest)] = digest
+        message_offset = delta - recovered_length
+        block[message_offset:message_offset + recovered_length] = message[:recovered_length]
+        if message_offset > 1:
+            block[1:message_offset] = b"\xbb" * (message_offset - 1)
+            block[message_offset - 1] ^= 1
+            block[0] = 0x6b if excess_bits > 0 else 0x4b
+        else:
+            block[0] = 0x6a if excess_bits > 0 else 0x4a
+        block[-1] = 0xbc
+        signature_value = pow(int.from_bytes(block, "big"), d, n).to_bytes(64, "big")
+        sign_data = modulus + private_exponent + message
+        results.append((bytes((0x80, 0x15, 9, 0, len(sign_data))) + sign_data + b"\x00",
+                        signature_value + b"\x90\x00",
+                        f"RSA SHA1 ISO9796-2 sign bytes={len(message)}"))
+        verify_data = modulus + bytes((len(public_exponent),)) + public_exponent + message + signature_value
+        results.append((bytes((0x80, 0x15, 9, 1, len(verify_data))) + verify_data + b"\x00",
+                        b"\x01\x90\x00",
+                        f"RSA SHA1 ISO9796-2 verify bytes={len(message)}"))
+        altered = bytearray(message)
+        altered[-1] ^= 1
+        invalid_data = modulus + bytes((len(public_exponent),)) + public_exponent + altered + signature_value
+        results.append((bytes((0x80, 0x15, 9, 1, len(invalid_data))) + invalid_data + b"\x00",
+                        b"\x00\x90\x00",
+                        f"RSA SHA1 ISO9796-2 reject altered message bytes={len(message)}"))
     return results
 
 

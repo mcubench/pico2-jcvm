@@ -1,3 +1,13 @@
+## 2026-10-26 — Native RSA ISO9796-2 scheme 1
+
+- Step/experiment: `asymm-crypto-rsa-iso9796`
+- Change: Added the selectable `signature_rsa_sha_iso9796` capability and native C++ SHA-1/ISO9796-2 encoding, RSA signing, and verification. Added independent full/partial-recovery and modified-message vectors, support-generator coverage, and physical test-runner coverage. The upstream JCAlgTest CAP is unchanged.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9; PC `asymm_crypto` build passed; `PICO2_HOST_USB_ACCESS=1 ./tools/env python3 tools/tests/test_asymm_crypto_vpcd.py` passed 65/65; `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. Before the final precomputed-hash guard adjustment, physical D92 cycle passed `TEST:SUMMARY pass=1 fail=0`, and `./tools/test-asymm-crypto-pcsc` passed 45/45 RSA vectors, including all 6 ISO9796 checks. After the guard adjustment, ARM/RISC-V builds and VPCD passed again; image flash and verification succeeded on D92, but finite monitor failed because no USB serial device appeared. Elevated `lsusb` showed no Pico, `pcsc_scan -r` showed only virtual readers, and the authorized reader helper found 0 physical readers.
+- Result: ISO9796 known signatures matched exactly on emulator and in the previous physical run; full and partial message recovery verified, and altered messages were rejected. The latest reflashed D92 disappeared from guest USB enumeration before runtime monitoring, so the post-guard hardware cycle is incomplete. 2BED previously had the same unknown USB disappearance behavior. The first physical command with a shortened reader label exited before installation; using the exact PC/SC name including `00 00` succeeded.
+- Decision: Keep `ALG_RSA_SHA_ISO9796` enabled in `asymm_crypto`. Continue with `ALG_RSA_SHA_ISO9796_MR`, which needs native `SignatureMessageRecovery` interface dispatch; preserve the native-only firmware boundary.
+- Commit: `pending implementation and validation record commits`
+- Artifacts/logs: `artifacts/logs/asymm-crypto-pcsc-20261026T193337Z.log`, `artifacts/logs/cycle-choupi-20261026T193202Z.log`, `artifacts/logs/cycle-choupi-20261026T194306Z.log`, `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
+
 ## 2026-10-09 — Development environment diagnostics
 
 - Step/experiment: `wp1-host-diagnostics`

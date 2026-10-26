@@ -292,6 +292,97 @@ bool isPss(JC_Instance &signature) {
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_PADDINGALGORITHM) == 8;
 }
 
+bool isIso9796(JC_Instance &signature) {
+  return signature.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_PADDINGALGORITHM) == 10;
+}
+
+std::vector<unsigned char> digestMessageForIso9796(
+    const std::vector<unsigned char> &message) {
+  std::vector<unsigned char> digest(20);
+  if (mbedtls_sha1(message.data(), message.size(), digest.data()) != 0)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  return digest;
+}
+
+std::vector<unsigned char> encodedIso9796(
+    const std::vector<unsigned char> &message,
+    const std::vector<unsigned char> &hash, uint16_t modulusLength,
+    uint16_t modulusBits) {
+  constexpr size_t digestSize = 20;
+  constexpr size_t trailerBits = 8;
+  if (hash.size() != digestSize || modulusLength < digestSize + 2 ||
+      message.size() > 32767)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  const int32_t excessBits = static_cast<int32_t>((digestSize + message.size()) * 8 +
+      trailerBits + 4) - modulusBits;
+  const size_t recoverableLength = excessBits > 0
+      ? (message.size() > static_cast<size_t>((excessBits + 7) / 8)
+             ? message.size() - static_cast<size_t>((excessBits + 7) / 8) : 0)
+      : message.size();
+  const size_t digestOffset = modulusLength - digestSize - 1;
+  if (recoverableLength == 0 || recoverableLength > digestOffset)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  const size_t messageOffset = digestOffset - recoverableLength;
+  std::vector<unsigned char> encoded(modulusLength, 0);
+  std::copy(hash.begin(), hash.end(), encoded.begin() + digestOffset);
+  std::copy_n(message.begin(), recoverableLength,
+              encoded.begin() + messageOffset);
+  if (messageOffset > 1) {
+    std::fill(encoded.begin() + 1, encoded.begin() + messageOffset, 0xbb);
+    encoded[messageOffset - 1] ^= 1;
+    encoded[0] = static_cast<unsigned char>(excessBits > 0 ? 0x6b : 0x4b);
+  } else {
+    encoded[0] = static_cast<unsigned char>(excessBits > 0 ? 0x6a : 0x4a);
+  }
+  encoded.back() = 0xbc;
+  return encoded;
+}
+
+bool verifyIso9796(const std::vector<unsigned char> &message,
+                   const std::vector<unsigned char> &hash,
+                   const std::vector<unsigned char> &encoded) {
+  constexpr size_t digestSize = 20;
+  if (encoded.size() < digestSize + 2 || hash.size() != digestSize ||
+      encoded.back() != 0xbc || (encoded[0] & 0xc0) != 0x40)
+    return false;
+  const bool partial = (encoded[0] & 0x20) != 0;
+  const uint8_t fullHeader = partial ? 0x6b : 0x4b;
+  const uint8_t shortHeader = partial ? 0x6a : 0x4a;
+  const bool shortHeaderUsed = encoded[0] == shortHeader;
+  if (!shortHeaderUsed && encoded[0] != fullHeader) return false;
+  size_t messageStart = 0;
+  if (shortHeaderUsed) {
+    messageStart = 1;
+  } else {
+    messageStart = 1;
+    while (messageStart < encoded.size() &&
+           (encoded[messageStart] & 0x0f) != 0x0a)
+      ++messageStart;
+    if (messageStart == encoded.size() || encoded[messageStart] != 0xba)
+      return false;
+    for (size_t i = 1; i < messageStart; ++i)
+      if (i + 1 < messageStart && encoded[i] != 0xbb) return false;
+    ++messageStart;
+  }
+  const size_t digestOffset = encoded.size() - digestSize - 1;
+  if (messageStart >= digestOffset) return false;
+  const size_t recoveredLength = digestOffset - messageStart;
+  if (recoveredLength > message.size() ||
+      !std::equal(encoded.begin() + messageStart,
+                  encoded.begin() + digestOffset, message.begin()))
+    return false;
+  std::vector<unsigned char> digestToCheck = hash;
+  if (!partial) {
+    if (recoveredLength != message.size()) return false;
+    digestToCheck = digestMessageForIso9796(message);
+  }
+  uint8_t difference = 0;
+  for (size_t i = 0; i < digestSize; ++i)
+    difference |= static_cast<uint8_t>(encoded[digestOffset + i] ^ digestToCheck[i]);
+  return difference == 0;
+}
+
 uint8_t randomByte() {
 #ifdef PC_VERSION
   static std::random_device source;
@@ -455,17 +546,30 @@ std::vector<unsigned char> transform(JC_Instance &signature,
     return modExp(modulus, exponent,
                   encodedPss(signature, hash, length, bits));
   }
+  if (isIso9796(signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   return modExp(modulus, exponent, encodedMessage(digestInfo, length));
 }
 
 std::vector<unsigned char> transformMessage(
     JC_Instance &signature, const std::vector<unsigned char> &message) {
   const auto hash = digestMessage(signature, message);
+  if (isIso9796(signature)) {
+    const auto key = rsaKeyInstance(signature.getField_Reference(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
+    const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
+    const auto modulus = keyComponent(signature, 0);
+    const auto exponent = keyComponent(signature, 1);
+    return modExp(modulus, exponent,
+                  encodedIso9796(message, hash, modulus.size(), bits));
+  }
   return transform(signature, hash);
 }
 
 bool verify(JC_Instance &signature, const std::vector<unsigned char> &hash,
-            const std::vector<unsigned char> &value) {
+            const std::vector<unsigned char> &value,
+            const std::vector<unsigned char> *message = nullptr) {
   const auto key = rsaKeyInstance(signature.getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
   const uint16_t length = keyModulusLength(*key);
@@ -477,6 +581,8 @@ bool verify(JC_Instance &signature, const std::vector<unsigned char> &hash,
                                     modulus.begin(), modulus.end()))
     return false;
   const auto actual = modExp(modulus, exponent, value);
+  if (isIso9796(signature))
+    return message && verifyIso9796(*message, hash, actual);
   if (isPss(signature)) {
     const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
@@ -569,6 +675,8 @@ jshort_t rsaSignatureSignHash(JC_Instance &signature,
                               const std::shared_ptr<JC_Array> &output,
                               jshort_t outputOffset) {
   checkRange(hash, offset, length);
+  if (isIso9796(signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (length != digestLength(signatureDigestAlgorithm(signature)))
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   const auto value = transform(signature, readArray(*hash, offset,
@@ -589,7 +697,7 @@ jbool_t rsaSignatureVerify(JC_Instance &signature,
   const auto message = bufferedData(signature);
   const auto hash = digestMessage(signature, message);
   const auto value = readArray(*expected, expectedOffset, expectedLength);
-  const bool valid = verify(signature, hash, value);
+  const bool valid = verify(signature, hash, value, &message);
   clearMessage(signature);
   return valid ? TRUE : FALSE;
 }
@@ -601,6 +709,8 @@ jbool_t rsaSignatureVerifyHash(JC_Instance &signature,
                                jshort_t expectedOffset, jshort_t expectedLength) {
   checkRange(hash, hashOffset, hashLength);
   checkRange(expected, expectedOffset, expectedLength);
+  if (isIso9796(signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (hashLength != digestLength(signatureDigestAlgorithm(signature)))
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   return verify(signature, readArray(*hash, hashOffset,

@@ -1,3 +1,32 @@
+# Physical Pico 2 USB interface disappeared after successful flash (2026-10-26)
+
+- **Symptom:** Pico 2 `2BED26ED20556535` accepted a verified CHOUPI image flash,
+  but the following finite serial monitor could not find its USB serial device;
+  subsequent USB/PCSC enumeration showed only `D92E743D5F640C0F`.
+- **Cause:** Unknown. Do not attribute the disappearance to the new RSA
+  implementation without further evidence.
+- **Viable continuation:** Treat identified boards as a failover pool. Re-run
+  the bounded USB/PCSC enumeration, choose another currently enumerated Pico,
+  confirm its chip ID, and continue the same build/flash/test there. D92 passed
+  the runtime monitor and all 45 RSA physical vectors after the same image was
+  flashed. Retry 2BED only after it re-enumerates.
+- **Related host detail:** The PCSC test client requires the exact reader name,
+  including its `00 00` interface suffix; a shortened label fails before card
+  installation and is not a firmware/card result.
+
+## Guest VM loses all Pico USB devices after D92 flash (2026-10-26)
+
+- **Symptom:** D92 (`D92E743D5F640C0F`) flashed and verified successfully, but
+  `tools/monitor` found no USB serial device. Subsequent elevated `lsusb`
+  showed no Pico USB devices; `pcsc_scan -r` listed only `Virtual PCD 00 00`
+  and `Virtual PCD 00 01`; the authorized reader helper found 0 CHOUPI readers.
+- **Cause:** Unknown; guest USB passthrough/enumeration is a likely possibility,
+  but is not established. The firmware flash itself completed and verified.
+- **Viable continuation:** Do not attribute this to firmware without evidence
+  or repeatedly wait on this missing device. Continue offline; when devices
+  reappear, select another enumerated board and confirm its chip ID before
+  hardware testing.
+
 # Project issue knowledge base
 
 ## NativeKey ROM class identity mismatch — 2026-10-26

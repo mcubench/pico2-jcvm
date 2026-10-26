@@ -80,6 +80,7 @@ constexpr uint8_t kPaddingIso9797M1Alg3 = 4;
 constexpr uint8_t kPaddingIso9797M2Alg3 = 5;
 constexpr uint8_t kPaddingPkcs5 = 6;
 constexpr uint8_t kPaddingPkcs1Pss = 8;
+constexpr uint8_t kPaddingIso9796 = 10;
 
 uint16_t signatureClassIndex() {
   const uint16_t offset =
@@ -142,6 +143,9 @@ uint16_t resultLength(const uint8_t algorithm) {
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   case 10:
     return 0;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796
+  case 9: return 0;
 #endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_224_PKCS1
   case 39: return 0;
@@ -219,6 +223,9 @@ bool supportedAlgorithm(const uint8_t algorithm) {
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   case 10: return true;
 #endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796
+  case 9: return true;
+#endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_224_PKCS1
   case 39: return true;
 #endif
@@ -254,6 +261,9 @@ bool tupleForAlgorithm(uint8_t algorithm, uint8_t &digest, uint8_t &cipher,
                        uint8_t &padding) {
   digest = 0;
   switch (algorithm) {
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796
+  case 9: digest = 1; cipher = kSignatureCipherRsa; padding = kPaddingIso9796; break;
+#endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   case 10: digest = 1; cipher = kSignatureCipherRsa; padding = 7; break;
 #endif
@@ -314,7 +324,7 @@ uint8_t algorithmForTuple(uint8_t digest, uint8_t cipher, uint8_t padding) {
                             uint8_t(41), uint8_t(42), uint8_t(47), uint8_t(48),
                             uint8_t(49), uint8_t(10), uint8_t(21),
                             uint8_t(43), uint8_t(44), uint8_t(45),
-                            uint8_t(46)}) {
+                            uint8_t(46), uint8_t(9)}) {
     uint8_t candidateDigest = 0, candidateCipher = 0, candidatePadding = 0;
     if (tupleForAlgorithm(algorithm, candidateDigest, candidateCipher,
                           candidatePadding) &&

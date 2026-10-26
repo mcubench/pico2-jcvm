@@ -34,6 +34,9 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "signature_rsa_sha_pkcs1": (
         "javacard.security.Signature", "ALG_RSA_SHA_PKCS1"
     ),
+    "signature_rsa_sha_iso9796": (
+        "javacard.security.Signature", "ALG_RSA_SHA_ISO9796"
+    ),
     "signature_rsa_sha_224_pkcs1": (
         "javacard.security.Signature", "ALG_RSA_SHA_224_PKCS1"
     ),
@@ -184,7 +187,7 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     if rsa_cipher and (not rsa_public or not rsa_private):
         raise ValueError(f"{path}: RSA ciphers require enabled public and private RSA key capabilities")
     rsa_signature = any(value[key] for key in (
-        "signature_rsa_sha_pkcs1", "signature_rsa_sha_224_pkcs1",
+        "signature_rsa_sha_iso9796", "signature_rsa_sha_pkcs1", "signature_rsa_sha_224_pkcs1",
         "signature_rsa_sha_256_pkcs1", "signature_rsa_sha_384_pkcs1",
         "signature_rsa_sha_512_pkcs1",
         "signature_rsa_sha_pkcs1_pss", "signature_rsa_sha_224_pkcs1_pss",
@@ -193,7 +196,8 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     ))
     if rsa_signature and (not rsa_public or not rsa_private):
         raise ValueError(f"{path}: RSA signatures require enabled public and private RSA key capabilities")
-    if (value["cipher_rsa_oaep"] or value["signature_rsa_sha_pkcs1"]) and not value["sha1"]:
+    if (value["cipher_rsa_oaep"] or value["signature_rsa_sha_iso9796"] or
+            value["signature_rsa_sha_pkcs1"]) and not value["sha1"]:
         raise ValueError(f"{path}: RSA OAEP and SHA-1 signatures require SHA-1 support")
     for capability, digest in (
         ("signature_rsa_sha_224_pkcs1", "sha224"),
@@ -269,7 +273,7 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
         cmake.append(f"set(JC_SUPPORT_{key.upper()} {'ON' if enabled else 'OFF'})")
         header.append(f"#define JC_SUPPORT_{key.upper()} {1 if enabled else 0}")
     rsa_signature_enabled = any(config[key] for key in (
-        "signature_rsa_sha_pkcs1", "signature_rsa_sha_224_pkcs1",
+        "signature_rsa_sha_iso9796", "signature_rsa_sha_pkcs1", "signature_rsa_sha_224_pkcs1",
         "signature_rsa_sha_256_pkcs1", "signature_rsa_sha_384_pkcs1",
         "signature_rsa_sha_512_pkcs1",
         "signature_rsa_sha_pkcs1_pss", "signature_rsa_sha_224_pkcs1_pss",

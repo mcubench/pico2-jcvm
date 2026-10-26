@@ -229,6 +229,8 @@ class JavaCardSupportTests(unittest.TestCase):
             header = (out / "javacard-support.h").read_text()
             for capability in ("SHA1", "SHA224", "SHA384", "SHA512"):
                 self.assertIn(f"JC_SUPPORT_{capability} 1", header)
+            self.assertIn("javacard.security.Signature;ALG_RSA_SHA_ISO9796",
+                          (out / "jcalgtest-supported.csv").read_text())
 
     def test_rejects_unknown_missing_non_boolean_and_orphan_cipher(self):
         variants = []

@@ -1,3 +1,36 @@
+# Current continuation — native RSA ISO9796-2 scheme 1 (2026-10-26)
+
+- Added profile capability `signature_rsa_sha_iso9796`, enabled only in
+  `asymm_crypto`, and direct native Java Card `Signature` API dispatch for
+  RSA/SHA-1 ISO9796-2 scheme 1. Signing matches independently generated known
+  signatures. Verification covers complete-message and partial-message
+  recovery, rejects changed messages, validates header/padding/trailer, and
+  rejects messages too long to recover at least one byte. Precomputed-hash
+  calls are rejected for this scheme.
+- Validation: support generator 9/9; PC VPCD suite 65/65; ARM and RISC-V
+  wrapper builds passed. Before the final precomputed-hash guard adjustment,
+  D92 (`D92E743D5F640C0F`) passed the ARM runtime cycle and physical RSA
+  PKCS#1/PSS/ISO9796 suite (45/45); log:
+  `artifacts/logs/asymm-crypto-pcsc-20261026T193337Z.log`. After the guard
+  adjustment, both architecture builds and VPCD passed again, and the image
+  flashed and verified on D92. The monitor could not find a USB serial device;
+  follow-up USB enumeration found no Pico devices and PC/SC listed only the two
+  virtual readers. The authorized reader helper found zero physical devices.
+- Board 2BED (`2BED26ED20556535`) accepted a verified image flash but its USB
+  serial/PCSC interfaces disappeared before finite monitoring. Cause unknown.
+  Followed session continuity guidance and completed validation on already
+  enumerated failover board D92. The physical runner requires the exact PC/SC
+  reader string including interface suffix `00 00`.
+- Implementation and validation are recorded in `progress.md`; this current
+  feature slice still needs committing. The worktree also contains unrelated pre-existing edits to
+  `AGENTS.md`, `src/cap_load.cpp`, `tools/test-jcsystem-transaction-physical`,
+  dependency submodule pointers, logs, measurement lists, and the provided
+  target CSV; preserve them.
+- Asymmetric profile remains incomplete. Next priority: native
+  `SignatureMessageRecovery` support for `ALG_RSA_SHA_ISO9796_MR`, followed by
+  EC key storage/ECDSA, agreement and generation, exact report comparison,
+  private RSA hardening, and full `/deploy` acceptance.
+
 # Current continuation — native RSA-PSS support and physical validation (2026-10-26)
 
 - Added direct native Java Card `Signature` API support for RSA-PSS with

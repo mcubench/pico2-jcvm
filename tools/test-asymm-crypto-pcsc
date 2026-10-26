@@ -79,8 +79,8 @@ vectors = [case for case in module.vectors()
 with output.open("w", encoding="ascii") as stream:
     for command, expected, label in vectors:
         stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
-if len(vectors) != 39:
-    raise SystemExit(f"expected 39 RSA SHA-1/SHA-2 PKCS1 and PSS vectors, got {len(vectors)}")
+if len(vectors) != 45:
+    raise SystemExit(f"expected 45 RSA SHA-1/SHA-2 PKCS1, PSS, and ISO9796 vectors, got {len(vectors)}")
 print(f"VECTORS:PASS count={len(vectors)} file={output}")
 PY
 
