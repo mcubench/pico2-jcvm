@@ -17,11 +17,13 @@
   VM currently enumerates no Pico (`lsusb -d 2e8a:0009` found none; `pcsc_scan
   -r` showed only Virtual PCD 00 00/01; approved helper found 0). Do not claim
   physical validation or flash until a board is visible through the host path.
+- Implementation is committed as root `db529cf`; the Java Card API submodule
+  change is committed as `953fcb6`. Its `sdks/` directory remains untracked and
+  must be preserved.
 - Worktree includes unrelated changes; preserve them: user edits to `AGENTS.md`,
   `src/cap_load.cpp`, `tools/test-jcsystem-transaction-physical`, modified
   submodule state, the untracked ROM-mask submodule, provided CSV, and existing
-  AlgTest logs/measurement lists. Root source changes for this EC step remain
-  uncommitted; API submodule change to `NativeKey.java` remains uncommitted.
+  AlgTest logs/measurement lists.
 - Next: when an identified PC/SC Pico reader appears, flash/test this image and
   run `tools/test-asymm-crypto-pcsc` with the exact reader name; then implement
   native ECDSA, EC agreement/generation, exact support comparison, and full

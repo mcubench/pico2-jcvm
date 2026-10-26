@@ -13271,6 +13271,6 @@
 - Decision: Retain the exact JC305 interface translation and native-only API
   boundary. Retry hardware testing when a physical PC/SC reader is visible;
   continue with ECDSA and the remaining asymmetric profile work.
-- Commit: API submodule `953fcb6`; root commit pending.
+- Commit: root `db529cf`; API submodule `953fcb6`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
   `build/arm/pico2_choupi.uf2`; `build/riscv/pico2_jcvm_smoke.uf2`.
