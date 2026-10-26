@@ -212,12 +212,12 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     )
     (out_dir / "javacard-native-methods.txt").write_text(
         "\n".join((
-            "javacard/security|MessageDigest|MessageDigest/getInstance|static",
-            "javacard/security|MessageDigest|MessageDigest/getAlgorithm|instance",
-            "javacard/security|MessageDigest|MessageDigest/getLength|instance",
-            "javacard/security|MessageDigest|MessageDigest/doFinal|instance",
-            "javacard/security|MessageDigest|MessageDigest/update|instance",
-            "javacard/security|MessageDigest|MessageDigest/reset|instance",
+            "javacard/security|MessageDigest|MessageDigest/getInstance(BZ)Ljavacard/security/MessageDigest;|static",
+            "javacard/security|MessageDigest|MessageDigest/getAlgorithm()B|instance",
+            "javacard/security|MessageDigest|MessageDigest/getLength()B|instance",
+            "javacard/security|MessageDigest|MessageDigest/doFinal([BSS[BS)S|instance",
+            "javacard/security|MessageDigest|MessageDigest/update([BSS)V|instance",
+            "javacard/security|MessageDigest|MessageDigest/reset()V|instance",
         )) + "\n", encoding="utf-8"
     )
     (out_dir / "profile.txt").write_text(profile + "\n", encoding="utf-8")

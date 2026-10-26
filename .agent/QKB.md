@@ -5115,3 +5115,11 @@ fix.
 - **Viable fix:** Allocate the digest input as a `JC_Array` with `ClearEvent::CLEAR_ON_RESET`, keep `inputLength` in a native-owned API instance field, and pass the length explicitly into the SHA implementation. Keep reset/doFinal clearing limited to transient bytes.
 - **Validation:** `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. A prior exact PC/VPCD run passed 15 checks (`TEST:SUMMARY pass=15 fail=0`), including SHA-256 prepare/final and static-performance calls. No physical flash was performed for this step.
 - **Reuse:** Apply this rule to other persistent API objects that maintain ephemeral operation buffers: use transient arrays or native state with a reset lifecycle, never bytewise persistent writes for scratch state.
+
+
+## Native method override manifests need full Java Card descriptors — fixed (2026-10-26)
+
+- Symptom: A manifest keyed by package, class, method name, and static/instance status cannot distinguish overloaded API methods such as the two Signature.getInstance factories.
+- Viable fix: Key each override using the JCA method descriptor (name(params)return) plus static/instance status. The ROM-mask parser consumes JCAClassMethodSignature.getFullName() and still rejects entries that do not match any API method.
+- Validation: Native MessageDigest descriptors matched the generated JCA exports; PC/ARM/RISC-V builds passed and PC/VPCD regression passed 15/15.
+- Use: Add one manifest record per overloaded Signature.getInstance descriptor when migrating that API.

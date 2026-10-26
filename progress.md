@@ -13097,3 +13097,14 @@
 - Decision: Continue migrating asymmetric and symmetric MAC providers directly onto API-declared native methods; keep Java provider classes out of firmware.
 - Commit: `4e71873` (root); submodule commits `4cc1cf4` (javacard-api), `4932ee0` (rommask).
 - Artifacts/logs: `artifacts/logs/message-digest-native-vpcd-final2-20261026.log`.
+
+
+## 2026-10-26 — Match native ROM overrides by full method descriptor
+
+- Step/experiment: native-method-override-descriptors
+- Change: Changed the ROM-mask override manifest to identify methods by full Java Card descriptor, including parameter and return types. Updated MessageDigest entries so future overloaded factories can be selected independently.
+- Validation: python3 tools/test-javacard-support.py passed 9/9; ./tools/build-pc, ./tools/build arm, and ./tools/build riscv passed. Generated JNI declarations retained expected native MessageDigest symbols. PC/VPCD full regression passed 15/15, including SHA-256 operations and static performance.
+- Result: ROM-mask native overrides now match exact API overloads rather than method names alone; MessageDigest behavior remains intact.
+- Decision: Use descriptor-qualified manifest records for both Signature.getInstance overloads in the next migration step.
+- Commit: pending.
+- Artifacts/logs: artifacts/logs/message-digest-native-vpcd-descriptor-20261026.log; rommask submodule commit dfd7f3f.
