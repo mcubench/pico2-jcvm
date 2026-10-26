@@ -13,6 +13,7 @@ import javacard.security.RSAPrivateCrtKey;
 import javacard.security.RSAPrivateKey;
 import javacard.security.RSAPublicKey;
 import javacard.security.Signature;
+import javacard.security.SignatureMessageRecovery;
 import javacardx.crypto.Cipher;
 
 /** Test applet that exposes one deterministic cipher or MAC operation per APDU. */
@@ -168,6 +169,8 @@ public final class SymmCryptoProbe extends Applet {
 
   private static short runRsaSignature(byte algorithm, byte operation,
                                        byte[] parameters, byte[] output) {
+    if (algorithm == Signature.ALG_RSA_SHA_ISO9796_MR)
+      return runRsaMessageRecovery(operation, parameters, output);
     boolean pss = algorithm == Signature.ALG_RSA_SHA_PKCS1_PSS ||
         algorithm == Signature.ALG_RSA_SHA_224_PKCS1_PSS ||
         algorithm == Signature.ALG_RSA_SHA_256_PKCS1_PSS ||
@@ -292,6 +295,67 @@ public final class SymmCryptoProbe extends Applet {
             expected, (short)0, (short)expected.length);
     output[0] = valid ? (byte)1 : (byte)0;
     return (short)1;
+  }
+
+  private static short runRsaMessageRecovery(byte operation, byte[] parameters,
+                                             byte[] output) {
+    final short keyLength = 64;
+    final short messageOffset = 68;
+    if (operation == 0) {
+      if (parameters.length < 2 * keyLength)
+        ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      RSAPrivateKey privateKey = (RSAPrivateKey)KeyBuilder.buildKey(
+          KeyBuilder.TYPE_RSA_PRIVATE, KeyBuilder.LENGTH_RSA_512, false);
+      privateKey.setModulus(parameters, (short)0, keyLength);
+      privateKey.setExponent(parameters, keyLength, keyLength);
+      SignatureMessageRecovery signature = (SignatureMessageRecovery)
+          Signature.getInstance(Signature.ALG_RSA_SHA_ISO9796_MR, false);
+      signature.init(privateKey, Signature.MODE_SIGN);
+      short messageLength = (short)(parameters.length - 2 * keyLength);
+      short[] recoveredLength = new short[1];
+      short resultLength = signature.sign(parameters, (short)(2 * keyLength),
+          messageLength, output, (short)0, recoveredLength, (short)0);
+      output[resultLength] = (byte)(recoveredLength[0] >> 8);
+      output[(short)(resultLength + 1)] = (byte)recoveredLength[0];
+      return (short)(resultLength + 2);
+    }
+    if (operation != 1 && operation != 2)
+      ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+    if (parameters.length < messageOffset + keyLength)
+      ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+    short exponentLength = (short)(parameters[keyLength] & 0xff);
+    if (exponentLength == 0 || parameters.length < keyLength + 1 + exponentLength + keyLength)
+      ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+    short messageOffsetActual = (short)(keyLength + 1 + exponentLength);
+    short signatureOffset = (short)(parameters.length - keyLength);
+    short messageLength = (short)(signatureOffset - messageOffsetActual);
+    RSAPublicKey publicKey = (RSAPublicKey)KeyBuilder.buildKey(
+        KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_512, false);
+    publicKey.setModulus(parameters, (short)0, keyLength);
+    publicKey.setExponent(parameters, (short)(keyLength + 1), exponentLength);
+    byte[] signatureData = new byte[keyLength];
+    for (short i = 0; i < keyLength; i++)
+      signatureData[i] = parameters[(short)(signatureOffset + i)];
+    SignatureMessageRecovery signature = (SignatureMessageRecovery)
+        Signature.getInstance(Signature.ALG_RSA_SHA_ISO9796_MR, false);
+    signature.init(publicKey, Signature.MODE_VERIFY);
+    short recoveredLength = signature.beginVerify(signatureData, (short)0,
+        keyLength);
+    if (recoveredLength < 0 || recoveredLength > messageLength)
+      ISOException.throwIt(ISO7816.SW_UNKNOWN);
+    for (short i = 0; i < recoveredLength; i++)
+      if (signatureData[i] != parameters[(short)(messageOffsetActual + i)])
+        ISOException.throwIt(ISO7816.SW_UNKNOWN);
+    short suffixOffset = (short)(messageOffsetActual + recoveredLength);
+    short suffixLength = (short)(messageLength - recoveredLength);
+    if (operation == 2 && suffixLength > 0)
+      parameters[suffixOffset] ^= 1;
+    signature.update(parameters, suffixOffset, suffixLength);
+    output[0] = signature.verify(new byte[0], (short)0, (short)0)
+        ? (byte)1 : (byte)0;
+    output[1] = (byte)(recoveredLength >> 8);
+    output[2] = (byte)recoveredLength;
+    return (short)3;
   }
 
   private static short runCipher(byte algorithm, byte operation, byte[] input,

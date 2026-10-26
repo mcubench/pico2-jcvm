@@ -42,6 +42,19 @@ jshort_t rsaSignatureSign(JC_Instance &signature,
                           jshort_t offset, jshort_t length,
                           const std::shared_ptr<JC_Array> &output,
                           jshort_t outputOffset);
+jshort_t rsaSignatureSignRecovery(
+    JC_Instance &signature, const std::shared_ptr<JC_Array> &input,
+    jshort_t offset, jshort_t length,
+    const std::shared_ptr<JC_Array> &output, jshort_t outputOffset,
+    const std::shared_ptr<JC_Array> &recoveredLength,
+    jshort_t recoveredLengthOffset);
+jshort_t rsaSignatureBeginVerify(
+    JC_Instance &signature, const std::shared_ptr<JC_Array> &signatureData,
+    jshort_t offset, jshort_t length, std::vector<unsigned char> &recovered,
+    std::vector<unsigned char> &hash, bool &partial);
+bool rsaSignatureVerifyRecoveredMessage(
+    JC_Instance &signature, const std::vector<unsigned char> &message,
+    const std::vector<unsigned char> &hash);
 jshort_t rsaSignatureSignHash(JC_Instance &signature,
                               const std::shared_ptr<JC_Array> &hash,
                               jshort_t offset, jshort_t length,
@@ -81,6 +94,7 @@ constexpr uint8_t kPaddingIso9797M2Alg3 = 5;
 constexpr uint8_t kPaddingPkcs5 = 6;
 constexpr uint8_t kPaddingPkcs1Pss = 8;
 constexpr uint8_t kPaddingIso9796 = 10;
+constexpr uint8_t kPaddingIso9796Mr = 11;
 
 uint16_t signatureClassIndex() {
   const uint16_t offset =
@@ -121,6 +135,49 @@ void checkRange(const std::shared_ptr<JC_Array> &array, jshort_t offset,
     throw Exceptions::ArrayIndexOutOfBoundsException;
 }
 
+bool isMessageRecoverySignature(JC_Instance &signature) {
+  return static_cast<uint8_t>(signature.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM)) == 30;
+}
+
+std::vector<unsigned char> readBytes(JC_Array &array, uint16_t offset,
+                                     uint16_t length) {
+  std::vector<unsigned char> result(length);
+  for (uint16_t index = 0; index < length; ++index)
+    result[index] = static_cast<uint8_t>(array.getByteEntry(offset + index));
+  return result;
+}
+
+void appendBytes(JC_Instance &signature, const unsigned char *bytes,
+                 uint16_t length) {
+  const uint16_t messageField =
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER;
+  const uint16_t countField =
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH;
+  auto message = byteArray(signature, messageField);
+  const jshort_t oldLength = signature.getField_Short(countField);
+  const uint32_t required = static_cast<uint32_t>(oldLength) + length;
+  if (oldLength < 0 || required > 32767)
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  if (required > message->size()) {
+    uint32_t capacity = std::max<uint16_t>(message->size(), 64);
+    while (capacity < required) capacity *= 2;
+    capacity = std::min<uint32_t>(capacity, 32767);
+    const jref_t expandedReference = Context::getActiveContext().getHeap()
+        .addArray(static_cast<uint16_t>(capacity), JAVA_ARRAY_T_BYTE,
+                  ClearEvent::CLEAR_ON_RESET);
+    auto expanded = Context::getActiveContext().getHeap().getArray(expandedReference);
+    for (jshort_t index = 0; index < oldLength; ++index)
+      expanded->setByteEntry(static_cast<uint16_t>(index),
+                             message->getByteEntry(static_cast<uint16_t>(index)));
+    signature.setField_Reference(messageField, expandedReference);
+    message = expanded;
+  }
+  for (uint16_t index = 0; index < length; ++index)
+    message->setByteEntry(static_cast<uint16_t>(oldLength + index), bytes[index]);
+  signature.setField_Short(countField, static_cast<jshort_t>(required));
+}
+
 uint16_t resultLength(const uint8_t algorithm) {
   switch (algorithm) {
   case 1:
@@ -146,6 +203,9 @@ uint16_t resultLength(const uint8_t algorithm) {
 #endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796
   case 9: return 0;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796_MR
+  case 30: return 0;
 #endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_224_PKCS1
   case 39: return 0;
@@ -226,6 +286,9 @@ bool supportedAlgorithm(const uint8_t algorithm) {
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796
   case 9: return true;
 #endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796_MR
+  case 30: return true;
+#endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_224_PKCS1
   case 39: return true;
 #endif
@@ -263,6 +326,9 @@ bool tupleForAlgorithm(uint8_t algorithm, uint8_t &digest, uint8_t &cipher,
   switch (algorithm) {
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796
   case 9: digest = 1; cipher = kSignatureCipherRsa; padding = kPaddingIso9796; break;
+#endif
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796_MR
+  case 30: digest = 1; cipher = kSignatureCipherRsa; padding = kPaddingIso9796Mr; break;
 #endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   case 10: digest = 1; cipher = kSignatureCipherRsa; padding = 7; break;
@@ -324,7 +390,7 @@ uint8_t algorithmForTuple(uint8_t digest, uint8_t cipher, uint8_t padding) {
                             uint8_t(41), uint8_t(42), uint8_t(47), uint8_t(48),
                             uint8_t(49), uint8_t(10), uint8_t(21),
                             uint8_t(43), uint8_t(44), uint8_t(45),
-                            uint8_t(46), uint8_t(9)}) {
+                            uint8_t(46), uint8_t(9), uint8_t(30)}) {
     uint8_t candidateDigest = 0, candidateCipher = 0, candidatePadding = 0;
     if (tupleForAlgorithm(algorithm, candidateDigest, candidateCipher,
                           candidatePadding) &&
@@ -380,6 +446,11 @@ jref_t createSignature(uint8_t algorithm, uint8_t digest, uint8_t cipher,
   instance->setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER,
       heap.addArray(64, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
+  instance->setField_Reference(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH,
+      heap.addArray(20, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
+  instance->setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
   return reference;
 }
 
@@ -448,6 +519,8 @@ void initializeMac(JC_Instance &signature, jref_t keyReference, uint8_t mode) {
   signature.setField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH, 0);
   signature.setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
+  signature.setField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MODE,
       static_cast<jbyte_t>(mode));
   signature.setField_Byte(
@@ -458,33 +531,9 @@ void appendMessage(JC_Instance &signature,
                    const std::shared_ptr<JC_Array> &input,
                    jshort_t offset, jshort_t length) {
   checkRange(input, offset, length);
-  const uint16_t messageField =
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER;
-  const uint16_t countField =
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH;
-  auto message = byteArray(signature, messageField);
-  const jshort_t oldLength = signature.getField_Short(countField);
-  const int32_t required = static_cast<int32_t>(oldLength) + length;
-  if (oldLength < 0 || required > 32767)
-    throw Exceptions::ArrayIndexOutOfBoundsException;
-  if (required > message->size()) {
-    uint32_t capacity = std::max<uint16_t>(message->size(), 64);
-    while (capacity < static_cast<uint32_t>(required)) capacity *= 2;
-    capacity = std::min<uint32_t>(capacity, 32767);
-    const jref_t expandedReference = Context::getActiveContext().getHeap()
-        .addArray(static_cast<uint16_t>(capacity), JAVA_ARRAY_T_BYTE,
-                  ClearEvent::CLEAR_ON_RESET);
-    auto expanded = Context::getActiveContext().getHeap().getArray(expandedReference);
-    for (jshort_t i = 0; i < oldLength; ++i)
-      expanded->setByteEntry(static_cast<uint16_t>(i),
-                             message->getByteEntry(static_cast<uint16_t>(i)));
-    signature.setField_Reference(messageField, expandedReference);
-    message = expanded;
-  }
-  for (jshort_t i = 0; i < length; ++i)
-    message->setByteEntry(static_cast<uint16_t>(oldLength + i),
-        input->getByteEntry(static_cast<uint16_t>(offset + i)));
-  signature.setField_Short(countField, static_cast<jshort_t>(required));
+  const auto bytes = readBytes(*input, static_cast<uint16_t>(offset),
+                               static_cast<uint16_t>(length));
+  appendBytes(signature, bytes.data(), static_cast<uint16_t>(bytes.size()));
 }
 
 void clearMessage(JC_Instance &signature) {
@@ -498,6 +547,12 @@ void clearMessage(JC_Instance &signature) {
   for (jshort_t i = 0; i < length; ++i)
     message->setByteEntry(static_cast<uint16_t>(i), 0);
   signature.setField_Short(countField, 0);
+  signature.setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
+  auto recoveryHash = byteArray(signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
+  for (uint16_t i = 0; i < recoveryHash->size(); ++i)
+    recoveryHash->setByteEntry(i, 0);
 }
 
 void requireInitialized(JC_Instance &signature, uint8_t mode = 0) {
@@ -672,13 +727,64 @@ void javacard_security_Signature_update(
     jshort_t length) {
   auto signature = signatureInstance(receiver);
   requireInitialized(*signature);
+  if (isMessageRecoverySignature(*signature)) {
+    const uint8_t state = static_cast<uint8_t>(signature->getField_Byte(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE));
+    const uint8_t mode = static_cast<uint8_t>(signature->getField_Byte(
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MODE));
+    if (mode == kModeVerify && state == 0)
+      throwCryptoException(CryptoExceptionReason::IllegalUse);
+    if (state == 1 && length != 0)
+      throwCryptoException(CryptoExceptionReason::IllegalUse);
+  }
   appendMessage(*signature, input, offset, length);
+}
+
+jshort_t javacard_security_Signature_beginVerify(
+    jref_t receiver, std::shared_ptr<JC_Array> signatureData,
+    jshort_t offset, jshort_t length) {
+  auto signature = signatureInstance(receiver);
+  requireInitialized(*signature, kModeVerify);
+  if (!isMessageRecoverySignature(*signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  clearMessage(*signature);
+  std::vector<unsigned char> recovered;
+  std::vector<unsigned char> hash;
+  bool partial = false;
+  jshort_t recoveredLength = 0;
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796_MR
+  recoveredLength = rsaSignatureBeginVerify(
+      *signature, signatureData, offset, length, recovered, hash, partial);
+#else
+  (void)signatureData; (void)offset; (void)length;
+  throwCryptoException(CryptoExceptionReason::IllegalUse);
+#endif
+  if (hash.size() != 20 || recovered.size() !=
+          static_cast<size_t>(recoveredLength))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  appendBytes(*signature, recovered.data(), static_cast<uint16_t>(recovered.size()));
+  auto recoveryHash = byteArray(*signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
+  if (recoveryHash->size() != hash.size())
+    throw Exceptions::ArrayStoreException;
+  for (uint16_t index = 0; index < recoveryHash->size(); ++index)
+    recoveryHash->setByteEntry(index, hash[index]);
+  signature->setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE,
+      static_cast<jbyte_t>(partial ? 2 : 1));
+  checkRange(signatureData, offset, recoveredLength);
+  for (jshort_t index = 0; index < recoveredLength; ++index)
+    signatureData->setByteEntry(static_cast<uint16_t>(offset + index),
+                                recovered[static_cast<size_t>(index)]);
+  return recoveredLength;
 }
 jshort_t javacard_security_Signature_sign(
     jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t offset,
     jshort_t length, std::shared_ptr<JC_Array> output, jshort_t outputOffset) {
   auto signature = signatureInstance(receiver);
   requireInitialized(*signature, kModeSign);
+  if (isMessageRecoverySignature(*signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   jshort_t resultSize = signature->getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
@@ -703,6 +809,25 @@ jshort_t javacard_security_Signature_sign(
   resetIv(*signature);
   return resultSize;
 }
+
+jshort_t javacard_security_Signature_sign(
+    jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t offset,
+    jshort_t length, std::shared_ptr<JC_Array> output, jshort_t outputOffset,
+    std::shared_ptr<JC_Array> recoveredLength, jshort_t recoveredLengthOffset) {
+  auto signature = signatureInstance(receiver);
+  requireInitialized(*signature, kModeSign);
+  if (!isMessageRecoverySignature(*signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796_MR
+  return rsaSignatureSignRecovery(*signature, input, offset, length, output,
+                                  outputOffset, recoveredLength,
+                                  recoveredLengthOffset);
+#else
+  (void)input; (void)offset; (void)length; (void)output; (void)outputOffset;
+  (void)recoveredLength; (void)recoveredLengthOffset;
+  throwCryptoException(CryptoExceptionReason::IllegalUse);
+#endif
+}
 jshort_t javacard_security_Signature_signPreComputedHash(
     jref_t receiver, std::shared_ptr<JC_Array> hash, jshort_t offset,
     jshort_t length, std::shared_ptr<JC_Array> output, jshort_t outputOffset) {
@@ -726,6 +851,8 @@ jbool_t javacard_security_Signature_verify(
     jshort_t expectedLength) {
   auto signature = signatureInstance(receiver);
   requireInitialized(*signature, kModeVerify);
+  if (isMessageRecoverySignature(*signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   checkRange(expected, expectedOffset, expectedLength);
   const jshort_t resultSize = signature->getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH);
@@ -746,6 +873,41 @@ jbool_t javacard_security_Signature_verify(
   clearMessage(*signature);
   resetIv(*signature);
   return difference == 0 ? TRUE : FALSE;
+}
+
+jbool_t javacard_security_Signature_verify(
+    jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t offset,
+    jshort_t length) {
+  auto signature = signatureInstance(receiver);
+  requireInitialized(*signature, kModeVerify);
+  if (!isMessageRecoverySignature(*signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  const uint8_t state = static_cast<uint8_t>(signature->getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE));
+  if (state == 0)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  checkRange(input, offset, length);
+  if (state == 1 && length != 0)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  appendMessage(*signature, input, offset, length);
+  const jshort_t messageLength = signature->getField_Short(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH);
+  auto messageBuffer = byteArray(*signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER);
+  const auto message = readBytes(*messageBuffer, 0,
+                                 static_cast<uint16_t>(messageLength));
+  auto recoveryHash = byteArray(*signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
+  const auto hash = readBytes(*recoveryHash, 0,
+                              static_cast<uint16_t>(recoveryHash->size()));
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796_MR
+  const bool valid = rsaSignatureVerifyRecoveredMessage(
+      *signature, message, hash);
+#else
+  const bool valid = false;
+#endif
+  clearMessage(*signature);
+  return valid ? TRUE : FALSE;
 }
 jbool_t javacard_security_Signature_verifyPreComputedHash(
     jref_t receiver, std::shared_ptr<JC_Array> hash, jshort_t hashOffset,

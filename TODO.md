@@ -1506,9 +1506,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   operations. RSA ISO9796-2 scheme 1 (`ALG_RSA_SHA_ISO9796`) is now profile-
   gated and implemented natively. Independent full and partial-recovery
   vectors pass on VPCD and physical D92; the remaining signature recovery
-  interface algorithm (`ALG_RSA_SHA_ISO9796_MR`), EC APIs, key
-  agreement/generation, complete report comparison, physical `/deploy`
-  coverage, and private-operation hardening remain open.
+  interface algorithm (`ALG_RSA_SHA_ISO9796_MR`) is implemented and passes
+  full/partial message-recovery and altered-suffix checks on VPCD. Its physical
+  validation remains pending because no Pico currently enumerates inside this
+  VM. EC APIs, key agreement/generation, complete report comparison, physical
+  `/deploy` coverage, and private-operation hardening remain open.
   Native-dispatch design inspected on 2026-10-26: the VM routes API-declared
   native methods through `callJCNativeMethod`, and `Heap::addInstance` can
   allocate an object directly from its ROM package/class index. The intended

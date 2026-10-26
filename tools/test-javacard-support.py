@@ -52,6 +52,9 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertIn("javacard/security|MessageDigest|MessageDigest/doFinal([BSS[BS)S|instance", native_methods)
             self.assertIn("javacard/security|Signature|Signature/getInstance(BZ)Ljavacard/security/Signature;|static", native_methods)
             self.assertIn("javacard/security|Signature|Signature/sign([BSS[BS)S|instance", native_methods)
+            self.assertIn("javacard/security|Signature|Signature/beginVerify([BSS)S|instance", native_methods)
+            self.assertIn("javacard/security|Signature|Signature/sign([BSS[BS[SS)S|instance", native_methods)
+            self.assertIn("javacard/security|Signature|Signature/verify([BSS)Z|instance", native_methods)
             self.assertTrue((out / "java/javacard/security/SecureRandomData.java").is_file())
             self.assertFalse((out / "java/javacard/security/KeyBuilderProvider.java").exists())
             self.assertFalse((out / "java/javacard/security/AESKeyProvider.java").exists())
@@ -230,6 +233,8 @@ class JavaCardSupportTests(unittest.TestCase):
             for capability in ("SHA1", "SHA224", "SHA384", "SHA512"):
                 self.assertIn(f"JC_SUPPORT_{capability} 1", header)
             self.assertIn("javacard.security.Signature;ALG_RSA_SHA_ISO9796",
+                          (out / "jcalgtest-supported.csv").read_text())
+            self.assertIn("javacard.security.Signature;ALG_RSA_SHA_ISO9796_MR",
                           (out / "jcalgtest-supported.csv").read_text())
 
     def test_rejects_unknown_missing_non_boolean_and_orphan_cipher(self):

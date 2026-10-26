@@ -219,6 +219,19 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
         results.append((bytes((0x80, 0x15, 9, 1, len(invalid_data))) + invalid_data + b"\x00",
                         b"\x00\x90\x00",
                         f"RSA SHA1 ISO9796-2 reject altered message bytes={len(message)}"))
+        sign_data = modulus + private_exponent + message
+        results.append((bytes((0x80, 0x15, 30, 0, len(sign_data))) + sign_data + b"\x00",
+                        signature_value + recovered_length.to_bytes(2, "big") + b"\x90\x00",
+                        f"RSA SHA1 ISO9796-2 MR sign bytes={len(message)}"))
+        suffix = message[recovered_length:]
+        mr_verify_data = modulus + bytes((len(public_exponent),)) + public_exponent + message + signature_value
+        results.append((bytes((0x80, 0x15, 30, 1, len(mr_verify_data))) + mr_verify_data + b"\x00",
+                        b"\x01" + recovered_length.to_bytes(2, "big") + b"\x90\x00",
+                        f"RSA SHA1 ISO9796-2 MR verify bytes={len(message)} recovered={recovered_length}"))
+        if suffix:
+            results.append((bytes((0x80, 0x15, 30, 2, len(mr_verify_data))) + mr_verify_data + b"\x00",
+                            b"\x00" + recovered_length.to_bytes(2, "big") + b"\x90\x00",
+                            f"RSA SHA1 ISO9796-2 MR reject altered suffix bytes={len(message)}"))
     return results
 
 

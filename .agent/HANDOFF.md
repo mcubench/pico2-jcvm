@@ -1,3 +1,36 @@
+# Current continuation — native RSA SHA-1 ISO9796-2 message recovery (2026-10-26)
+
+- Added profile capability `signature_rsa_sha_iso9796_mr`, enabled only in
+  `asymm_crypto`, and native `SignatureMessageRecovery` methods for algorithm
+  30. Signing returns the ISO9796-2 signature and recovered-prefix length;
+  verification recovers the prefix, hashes it with any suffix supplied through
+  `update`/`verify`, and checks the embedded SHA-1 digest. Full and partial
+  recovery plus altered-suffix rejection are covered by independent VPCD
+  vectors. Existing `Signature` API method order is preserved by appending new
+  methods after the upstream methods; this prevents shifts in CAP method
+  tokens. The API submodule change is committed as `15df6fc`.
+- Validation: support tests passed 9/9; the rebuilt test-only CAP and
+  `asymm_crypto` VPCD suite passed 70/70 total checks (68 APDUs plus ATR and
+  SELECT); ARM full-firmware and RISC-V VM-core wrapper builds passed. The
+  first native ARM build found an unused decoder local under `-Werror`; it was
+  removed and both builds then passed. Do not run the raw Python VPCD test
+  against a stale probe CAP: use `./tools/build-symm-crypto-probe` before
+  `tools/tests/test_asymm_crypto_vpcd.py`, or use
+  `./tools/test-asymm-crypto-vpcd` when its full wrapper is suitable.
+- Hardware: the user reported tokens plugged in, but this VM currently sees no
+  Pico USB devices (`lsusb` only shows hubs and the VirtualBox tablet), and
+  PC/SC shows only `Virtual PCD 00 00` and `Virtual PCD 00 01`. The authorized
+  helper found zero CHOUPI readers. No physical flash or test was attempted;
+  resume hardware validation after a Pico enumerates in the VM.
+- The worktree has unrelated prior edits to `AGENTS.md`, `src/cap_load.cpp`,
+  `tools/test-jcsystem-transaction-physical`, submodule state, logs, measured
+  lists, and the supplied target CSV. Preserve those. Root implementation
+  commit is pending this continuation's progress entry and commit.
+- Next asymmetric priority: native EC key storage and ECDSA, then EC key
+  agreement/generation, exact report comparison, private RSA hardening, and
+  physical `/deploy` acceptance. Keep crypto in native C++ API dispatch and
+  keep upstream CAP files unchanged.
+
 # Current continuation — native RSA ISO9796-2 scheme 1 (2026-10-26)
 
 - Added profile capability `signature_rsa_sha_iso9796`, enabled only in

@@ -29,6 +29,21 @@
 
 # Project issue knowledge base
 
+## Pico USB devices absent from the guest VM despite being plugged in (2026-10-26)
+
+- **Symptom:** The user reported physical Pico 2 tokens connected. Elevated
+  `lsusb` listed only the VirtualBox tablet and Linux root hubs; `pcsc_scan -r`
+  listed only two virtual readers; the authorized `pico2-pcsc-reader` helper
+  reported zero `2e8a:0009` CHOUPI devices.
+- **Cause:** Unknown. The guest currently receives no Pico USB enumeration;
+  device failure is not established.
+- **Viable continuation:** Do not flash or attribute this to firmware. Continue
+  offline, and retry bounded enumeration after the VM receives a Pico device.
+  If several enumerate, confirm chip IDs and use another identified board if
+  one becomes unavailable.
+- **Validation:** Two elevated USB/PCSC enumeration checks during this turn
+  returned the same result. No hardware operation was attempted.
+
 ## NativeKey ROM class identity mismatch — 2026-10-26
 
 - **Symptom:** VPCD `asymm_crypto` APDU 11, the first RSA `KeyBuilder.buildKey`

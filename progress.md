@@ -13213,3 +13213,30 @@
 - Decision: RSA SHA-1/224/256/384/512 PKCS#1/PSS now has VPCD and physical coverage. Continue with remaining RSA signature algorithms and EC/key agreement/key generation; profile comparison and full physical `/deploy` acceptance remain incomplete. Private-operation blinding/hardening is not validated.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261026T185249Z.log` (SHA-256 `876e27ca1d25ec5c3f13aa00c1fe258b4d72f9497f55c46a4e7da745b93af999`); `artifacts/logs/asymm-crypto-pcsc-20261026T185432Z.log` (SHA-256 `4930590e86124f73e2c69d4cc59adf1f5505c75b61c1bb6ff6769e3d52692231`); `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (SHA-256 `5d9e8f2bafb8c9929502210664bd55e2f2485cdb95ba6df7f9176232d7a7bc2f`).
+## 2026-10-26 — Native RSA SHA-1 ISO9796-2 message recovery
+
+- Step/experiment: `asymm-crypto-rsa-iso9796-message-recovery`
+- Change: Added the `signature_rsa_sha_iso9796_mr` capability for
+  `asymm_crypto`, native algorithm-30 `SignatureMessageRecovery` dispatch,
+  ISO9796-2 message-prefix recovery and verification, and independent
+  test-only CAP vectors for full/partial recovery and changed suffix rejection.
+  New API methods were appended after existing methods to preserve upstream
+  CAP method-token positions. Java Card API submodule commit: `15df6fc`.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9;
+  `./tools/build-pc --profile asymm_crypto` passed; after rebuilding the probe
+  CAP, the elevated VPCD suite passed 70/70 total checks (68 custom APDUs plus
+  ATR and SELECT). `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` passed. A first ARM build
+  identified an unused decoder variable under `-Werror`; removing it resolved
+  the build failure. Elevated `lsusb` and `pcsc_scan -r` found no physical Pico
+  in this VM, so physical flash and testing were not attempted.
+- Result: RSA/SHA-1 ISO9796-2 message-recovery signing and verification pass
+  the VPCD suite for complete and partial recovery, including a negative case
+  with an altered unrecovered suffix. Hardware validation remains pending.
+- Decision: Keep algorithm 30 enabled only in `asymm_crypto`; continue next
+  with native EC key storage/ECDSA, then EC agreement/generation and the
+  remaining asymmetric-profile acceptance work.
+- Commit: pending root implementation commit.
+- Artifacts/logs: `build/choupi-pc/flash`, `build/arm/pico2_choupi.uf2`,
+  `build/riscv/pico2_jcvm_smoke.uf2`, and
+  `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
