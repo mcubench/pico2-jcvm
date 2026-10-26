@@ -18,7 +18,7 @@
   elevated `pico2-pcsc-reader` found 0, `lsusb -d 2e8a:0009` found none, and
   `pcsc_scan -r` showed only Virtual PCD readers. No hardware flash/test.
 - Commits: API submodule `b6e8af6`; implementation `48eabe3`; edge tests
-  `34808e6`; validation record is a follow-up documentation commit.
+  `34808e6`; validation record `95470ac`.
 - Preserve unrelated worktree edits: `AGENTS.md`, `src/cap_load.cpp`,
   `tools/test-jcsystem-transaction-physical`, the ROM-mask submodule, and
   supplied AlgTest logs/CSV/measurement lists. The API submodule also has

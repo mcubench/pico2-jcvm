@@ -13325,7 +13325,7 @@
 - Decision: Continue remaining asymmetric profile work; do not claim full
   target CSV coverage based on these vectors alone.
 - Commit: implementation `48eabe3` (API submodule `b6e8af6`), edge regressions
-  `34808e6`; this record is committed separately.
+  `34808e6`; this record is in documentation commit `95470ac`.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`,
   `build/choupi-pc/flash`, VPCD log
   `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (runner reuses this
