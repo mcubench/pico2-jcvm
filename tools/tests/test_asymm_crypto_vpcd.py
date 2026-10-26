@@ -65,6 +65,11 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
         command = bytes((0x80, 0x18, algorithm, 0, 0))
         results.append((command, expected + b"\x90\x00",
                         f"EC key agreement algorithm={algorithm}"))
+    results.append((bytes((0x80, 0x18, 1, 0, 1, 1, 0)),
+                    hashlib.sha1(generator_x).digest() + b"\x90\x00",
+                    "EC DH accepts a key without cofactor"))
+    results.append((bytes((0x80, 0x18, 2, 0, 1, 1, 0)), b"\x02\x90\x00",
+                    "EC DHC rejects an uninitialized cofactor"))
     rsa = _rsa_512_fixture()
     messages = {
         10: b"JCVM RSA PKCS1",
@@ -333,7 +338,10 @@ def main() -> int:
         return completed.returncode
     rsa_signature_vectors = sum("RSA SHA" in label for _, _, label in cases)
     ecdsa_vectors = sum("ECDSA algorithm=" in label for _, _, label in cases)
-    agreement_vectors = sum("EC key agreement algorithm=" in label for _, _, label in cases)
+    agreement_vectors = sum(
+        label.startswith(("EC key agreement", "EC DH ", "EC DHC "))
+        for _, _, label in cases
+    )
     print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 ec_key_builder_vectors=3 ecdsa_vectors={ecdsa_vectors} ec_key_agreement_vectors={agreement_vectors} rsa_signature_vectors={rsa_signature_vectors} fail=0")
     print(f"TEST:LOG {log}")
     return 0

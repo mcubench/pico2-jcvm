@@ -29,6 +29,21 @@
 
 # Project issue knowledge base
 
+## VPCD command-case framing for no-input APDUs (2026-10-27)
+
+- **Symptom:** The new KeyAgreement vector returned `6700` before entering the
+  applet method.
+- **Cause:** The test encoded a six-byte command with both `Lc=0` and `Le=0`.
+  A short case-2 APDU with no command data is five bytes: `CLA INS P1 P2 Le`.
+  A later edge vector used P2 as an option, which also made it the Le byte and
+  truncated the response.
+- **Viable fix:** Encode no-input response APDUs with five bytes. When the test
+  needs an option and a response, send it as one command-data byte in a case-4
+  APDU (`CLA INS P1 P2 Lc data Le`).
+- **Validation:** Correct framing made the six agreement known-answer vectors
+  and DH/DHC missing-cofactor checks pass; the complete VPCD suite passed
+  86/86 checks.
+
 ## Pico USB devices absent from the guest VM despite being plugged in (2026-10-26)
 
 - **Symptom:** The user reported physical Pico 2 tokens connected. Elevated

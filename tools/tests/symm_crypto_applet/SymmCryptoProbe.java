@@ -8,6 +8,7 @@ import javacard.security.AESKey;
 import javacard.security.DESKey;
 import javacard.security.ECPrivateKey;
 import javacard.security.ECPublicKey;
+import javacard.security.CryptoException;
 import javacard.security.Key;
 import javacard.security.KeyBuilder;
 import javacard.security.KeyAgreement;
@@ -62,7 +63,8 @@ public final class SymmCryptoProbe extends Applet {
       outputLength = (short)1;
     } else if (instruction == (byte)0x18) {
       output = new byte[(short)133];
-      outputLength = runKeyAgreement(algorithm, output);
+      byte options = inputLength > 0 ? input[0] : operation;
+      outputLength = runKeyAgreement(algorithm, options, output);
     } else if (instruction == (byte)0x10) {
       output = operation == 1 && !isNoPadCipher(algorithm) &&
           !isIso9797M1(algorithm)
@@ -156,12 +158,17 @@ public final class SymmCryptoProbe extends Applet {
 
   private static void setEcDomain(ECPrivateKey key, byte[] p, byte[] a,
       byte[] b, byte[] g, byte[] n) {
+    setEcDomain(key, p, a, b, g, n, true);
+  }
+
+  private static void setEcDomain(ECPrivateKey key, byte[] p, byte[] a,
+      byte[] b, byte[] g, byte[] n, boolean initializeCofactor) {
     key.setFieldFP(p, (short)0, (short)p.length);
     key.setA(a, (short)0, (short)a.length);
     key.setB(b, (short)0, (short)b.length);
     key.setG(g, (short)0, (short)g.length);
     key.setR(n, (short)0, (short)n.length);
-    key.setK((short)1);
+    if (initializeCofactor) key.setK((short)1);
   }
 
   private static void setEcDomain(ECPublicKey key, byte[] p, byte[] a,
@@ -174,7 +181,8 @@ public final class SymmCryptoProbe extends Applet {
     key.setK((short)1);
   }
 
-  private static short runKeyAgreement(byte algorithm, byte[] output) {
+  private static short runKeyAgreement(byte algorithm, byte options,
+                                       byte[] output) {
     byte[] p = {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff};
     byte[] a = {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xfc};
     byte[] b = {(byte)0x5a,(byte)0xc6,0x35,(byte)0xd8,(byte)0xaa,0x3a,(byte)0x93,(byte)0xe7,(byte)0xb3,(byte)0xeb,(byte)0xbd,0x55,0x76,(byte)0x98,(byte)0x86,(byte)0xbc,0x65,0x1d,0x06,(byte)0xb0,(byte)0xcc,0x53,(byte)0xb0,(byte)0xf6,0x3b,(byte)0xce,0x3c,0x3e,0x27,(byte)0xd2,0x60,0x4b};
@@ -182,11 +190,19 @@ public final class SymmCryptoProbe extends Applet {
     byte[] n = {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,0,0,0,0,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xbc,(byte)0xe6,(byte)0xfa,(byte)0xad,(byte)0xa7,0x17,(byte)0x9e,(byte)0x84,(byte)0xf3,(byte)0xb9,(byte)0xca,(byte)0xc2,(byte)0xfc,0x63,0x25,0x51};
     ECPrivateKey privateKey = (ECPrivateKey)KeyBuilder.buildKey(
         KeyBuilder.TYPE_EC_FP_PRIVATE, KeyBuilder.LENGTH_EC_FP_256, false);
-    setEcDomain(privateKey, p, a, b, g, n);
+    setEcDomain(privateKey, p, a, b, g, n, options == 0);
     byte[] scalar = {1};
     privateKey.setS(scalar, (short)0, (short)1);
     KeyAgreement agreement = KeyAgreement.getInstance(algorithm, false);
-    agreement.init(privateKey);
+    try {
+      agreement.init(privateKey);
+    } catch (CryptoException exception) {
+      if (options != 0) {
+        output[0] = (byte)exception.getReason();
+        return (short)1;
+      }
+      throw exception;
+    }
     return agreement.generateSecret(g, (short)0, (short)g.length, output,
         (short)0);
   }
