@@ -25,7 +25,7 @@
 - The worktree has unrelated prior edits to `AGENTS.md`, `src/cap_load.cpp`,
   `tools/test-jcsystem-transaction-physical`, submodule state, logs, measured
   lists, and the supplied target CSV. Preserve those. Root implementation
-  commit is pending this continuation's progress entry and commit.
+  commit: `1b60dda`.
 - Next asymmetric priority: native EC key storage and ECDSA, then EC key
   agreement/generation, exact report comparison, private RSA hardening, and
   physical `/deploy` acceptance. Keep crypto in native C++ API dispatch and

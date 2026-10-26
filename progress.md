@@ -13236,7 +13236,7 @@
 - Decision: Keep algorithm 30 enabled only in `asymm_crypto`; continue next
   with native EC key storage/ECDSA, then EC agreement/generation and the
   remaining asymmetric-profile acceptance work.
-- Commit: pending root implementation commit.
+- Commit: root `1b60dda`; Java Card API submodule `15df6fc`.
 - Artifacts/logs: `build/choupi-pc/flash`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`, and
   `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
