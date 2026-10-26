@@ -13187,5 +13187,5 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9; `./tools/build-pc --profile asymm_crypto` passed; `./tools/env python3 tools/tests/test_asymm_crypto_vpcd.py` passed 44/44; `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid 2BED26ED20556535` passed flash verification and finite serial (`TEST:SUMMARY pass=1 fail=0`). Physical suite on `2BED26ED20556535` passed all 24 vectors (RSA SHA-1/224/256/384/512 sign, verify, bad-signature rejection, and precomputed-hash paths where short APDU permits); temporary package cleanup passed.
 - Result: The prior SHA-2 `6F00` signing responses were caused by the undersized CCID response buffer, not RSA arithmetic. The expanded buffer returns full 96-byte signatures on the physical card. Physical log: `artifacts/logs/asymm-crypto-pcsc-20261026T181526Z.log`; cycle log: `artifacts/logs/cycle-choupi-20261026T181352Z.log`.
 - Decision: Retain the buffer sizing fix and continue native-only asymmetric API work. This does not complete the asymmetric profile.
-- Commit: pending
+- Commit: `71c1ab8`
 - Artifacts/logs: `artifacts/logs/asymm-crypto-pcsc-20261026T181526Z.log`; `artifacts/logs/cycle-choupi-20261026T181352Z.log`
