@@ -21,8 +21,8 @@
   Followed session continuity guidance and completed validation on already
   enumerated failover board D92. The physical runner requires the exact PC/SC
   reader string including interface suffix `00 00`.
-- Implementation and validation are recorded in `progress.md`; this current
-  feature slice still needs committing. The worktree also contains unrelated pre-existing edits to
+- Implementation commit: `50b39a7`; current validation details are recorded in
+  `progress.md`. The worktree also contains unrelated pre-existing edits to
   `AGENTS.md`, `src/cap_load.cpp`, `tools/test-jcsystem-transaction-physical`,
   dependency submodule pointers, logs, measurement lists, and the provided
   target CSV; preserve them.
