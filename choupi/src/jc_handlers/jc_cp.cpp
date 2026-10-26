@@ -420,6 +420,21 @@ uint8_t remap_imported_interface_method_token(
       method_token < sizeof(security_rsa_crt_interface_methods)) {
     return security_rsa_crt_interface_methods[method_token];
   }
+  // JC305 ECPrivateKey orders its inherited Key methods as clearKey,
+  // getSize, getType, isInitialized, and places copyDomainParametersFrom
+  // after the private scalar accessors. The embedded API uses the Key order
+  // isInitialized, clearKey, getType, getSize, and puts copyDomainParameters
+  // before setS/getS.
+  static constexpr uint8_t security_ec_private_key_interface_methods[] = {
+      1, 3, 2, 0, 4, 5, 6, 7, 8, 9, 10,
+      11, 12, 13, 14, 15, 16, 17, 19, 20, 18};
+  if (package_info.AID_length == 7 &&
+      std::memcmp(package_info.AID,
+                  "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
+      class_token == 18 &&
+      method_token < sizeof(security_ec_private_key_interface_methods)) {
+    return security_ec_private_key_interface_methods[method_token];
+  }
   // The reference JC305 export orders OwnerPINx.check before
   // getTriesRemaining, while this API's generated interface order follows
   // PIN and places getTriesRemaining first. Remap both related interfaces.

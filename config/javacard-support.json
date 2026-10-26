@@ -103,7 +103,19 @@
       "signature_rsa_sha_224_pkcs1_pss": false,
       "signature_rsa_sha_256_pkcs1_pss": false,
       "signature_rsa_sha_384_pkcs1_pss": false,
-      "signature_rsa_sha_512_pkcs1_pss": false
+      "signature_rsa_sha_512_pkcs1_pss": false,
+      "key_ec_fp_private_112": false,
+      "key_ec_fp_private_128": false,
+      "key_ec_fp_private_160": false,
+      "key_ec_fp_private_192": false,
+      "key_ec_fp_private_224": false,
+      "key_ec_fp_private_256": false,
+      "key_ec_fp_private_320": false,
+      "key_ec_fp_private_384": false,
+      "key_ec_fp_private_512": false,
+      "key_ec_fp_private_521": false,
+      "key_ec_fp_private_transient_reset": false,
+      "key_ec_fp_private_transient_deselect": false
     },
     "base": {
       "owner_pin": true,
@@ -207,7 +219,19 @@
       "signature_rsa_sha_224_pkcs1_pss": false,
       "signature_rsa_sha_256_pkcs1_pss": false,
       "signature_rsa_sha_384_pkcs1_pss": false,
-      "signature_rsa_sha_512_pkcs1_pss": false
+      "signature_rsa_sha_512_pkcs1_pss": false,
+      "key_ec_fp_private_112": false,
+      "key_ec_fp_private_128": false,
+      "key_ec_fp_private_160": false,
+      "key_ec_fp_private_192": false,
+      "key_ec_fp_private_224": false,
+      "key_ec_fp_private_256": false,
+      "key_ec_fp_private_320": false,
+      "key_ec_fp_private_384": false,
+      "key_ec_fp_private_512": false,
+      "key_ec_fp_private_521": false,
+      "key_ec_fp_private_transient_reset": false,
+      "key_ec_fp_private_transient_deselect": false
     },
     "no_aes": {
       "owner_pin": true,
@@ -311,7 +335,19 @@
       "signature_rsa_sha_224_pkcs1_pss": false,
       "signature_rsa_sha_256_pkcs1_pss": false,
       "signature_rsa_sha_384_pkcs1_pss": false,
-      "signature_rsa_sha_512_pkcs1_pss": false
+      "signature_rsa_sha_512_pkcs1_pss": false,
+      "key_ec_fp_private_112": false,
+      "key_ec_fp_private_128": false,
+      "key_ec_fp_private_160": false,
+      "key_ec_fp_private_192": false,
+      "key_ec_fp_private_224": false,
+      "key_ec_fp_private_256": false,
+      "key_ec_fp_private_320": false,
+      "key_ec_fp_private_384": false,
+      "key_ec_fp_private_512": false,
+      "key_ec_fp_private_521": false,
+      "key_ec_fp_private_transient_reset": false,
+      "key_ec_fp_private_transient_deselect": false
     },
     "minimal": {
       "owner_pin": false,
@@ -415,7 +451,19 @@
       "signature_rsa_sha_224_pkcs1_pss": false,
       "signature_rsa_sha_256_pkcs1_pss": false,
       "signature_rsa_sha_384_pkcs1_pss": false,
-      "signature_rsa_sha_512_pkcs1_pss": false
+      "signature_rsa_sha_512_pkcs1_pss": false,
+      "key_ec_fp_private_112": false,
+      "key_ec_fp_private_128": false,
+      "key_ec_fp_private_160": false,
+      "key_ec_fp_private_192": false,
+      "key_ec_fp_private_224": false,
+      "key_ec_fp_private_256": false,
+      "key_ec_fp_private_320": false,
+      "key_ec_fp_private_384": false,
+      "key_ec_fp_private_512": false,
+      "key_ec_fp_private_521": false,
+      "key_ec_fp_private_transient_reset": false,
+      "key_ec_fp_private_transient_deselect": false
     },
     "symm_crypto": {
       "owner_pin": true,
@@ -519,7 +567,19 @@
       "signature_rsa_sha_224_pkcs1_pss": false,
       "signature_rsa_sha_256_pkcs1_pss": false,
       "signature_rsa_sha_384_pkcs1_pss": false,
-      "signature_rsa_sha_512_pkcs1_pss": false
+      "signature_rsa_sha_512_pkcs1_pss": false,
+      "key_ec_fp_private_112": false,
+      "key_ec_fp_private_128": false,
+      "key_ec_fp_private_160": false,
+      "key_ec_fp_private_192": false,
+      "key_ec_fp_private_224": false,
+      "key_ec_fp_private_256": false,
+      "key_ec_fp_private_320": false,
+      "key_ec_fp_private_384": false,
+      "key_ec_fp_private_512": false,
+      "key_ec_fp_private_521": false,
+      "key_ec_fp_private_transient_reset": false,
+      "key_ec_fp_private_transient_deselect": false
     },
     "asymm_crypto": {
       "owner_pin": true,
@@ -623,7 +683,19 @@
       "signature_rsa_sha_224_pkcs1_pss": true,
       "signature_rsa_sha_256_pkcs1_pss": true,
       "signature_rsa_sha_384_pkcs1_pss": true,
-      "signature_rsa_sha_512_pkcs1_pss": true
+      "signature_rsa_sha_512_pkcs1_pss": true,
+      "key_ec_fp_private_112": false,
+      "key_ec_fp_private_128": true,
+      "key_ec_fp_private_160": true,
+      "key_ec_fp_private_192": true,
+      "key_ec_fp_private_224": true,
+      "key_ec_fp_private_256": true,
+      "key_ec_fp_private_320": true,
+      "key_ec_fp_private_384": true,
+      "key_ec_fp_private_512": true,
+      "key_ec_fp_private_521": true,
+      "key_ec_fp_private_transient_reset": true,
+      "key_ec_fp_private_transient_deselect": true
     }
   }
 }

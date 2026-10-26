@@ -210,6 +210,11 @@ class JavaCardSupportTests(unittest.TestCase):
             result = self.run_named_profile("asymm_crypto", out)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((out / "profile.txt").read_text(), "asymm_crypto\n")
+            profile = json.loads((out / "javacard-support.json").read_text())
+            self.assertTrue(profile["key_ec_fp_private_transient_reset"])
+            self.assertTrue(profile["key_ec_fp_private_transient_deselect"])
+            for bits in (128, 160, 192, 224, 256, 320, 384, 512, 521):
+                self.assertTrue(profile[f"key_ec_fp_private_{bits}"])
             for generated_class in (
                     "MessageDigestProvider.java", "Sha256DigestProvider.java",
                     "MbedTlsDigestProvider.java"):

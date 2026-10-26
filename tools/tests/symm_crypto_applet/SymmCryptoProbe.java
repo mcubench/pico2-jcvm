@@ -6,6 +6,7 @@ import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.security.AESKey;
 import javacard.security.DESKey;
+import javacard.security.ECPrivateKey;
 import javacard.security.Key;
 import javacard.security.KeyBuilder;
 import javacard.security.MessageDigest;
@@ -49,6 +50,10 @@ public final class SymmCryptoProbe extends Applet {
     } else if (instruction == (byte)0x15) {
       output = new byte[(short)128];
       outputLength = runRsaSignature(algorithm, operation, input, output);
+    } else if (instruction == (byte)0x16) {
+      output = new byte[(short)1];
+      output[0] = runEcKey(algorithm);
+      outputLength = (short)1;
     } else if (instruction == (byte)0x10) {
       output = operation == 1 && !isNoPadCipher(algorithm) &&
           !isIso9797M1(algorithm)
@@ -61,6 +66,58 @@ public final class SymmCryptoProbe extends Applet {
     apdu.setOutgoing();
     apdu.setOutgoingLength(outputLength);
     apdu.sendBytesLong(output, (short)0, outputLength);
+  }
+
+  private static byte runEcKey(byte selector) {
+    short length = selector == 0 ? KeyBuilder.LENGTH_EC_FP_256 :
+        KeyBuilder.LENGTH_EC_FP_521;
+    byte type = selector == 1 ? KeyBuilder.TYPE_EC_FP_PRIVATE_TRANSIENT_RESET :
+        selector == 2 ? KeyBuilder.TYPE_EC_FP_PRIVATE_TRANSIENT_DESELECT :
+        KeyBuilder.TYPE_EC_FP_PRIVATE;
+    ECPrivateKey key = (ECPrivateKey)KeyBuilder.buildKey(type, length, false);
+    if (key.isInitialized()) return (byte)10;
+    short bytes = (short)((length + 7) / 8);
+    byte[] field = new byte[bytes];
+    byte[] a = new byte[bytes];
+    byte[] b = new byte[bytes];
+    byte[] generator = new byte[(short)(1 + 2 * bytes)];
+    byte[] order = new byte[bytes];
+    byte[] scalar = new byte[bytes];
+    for (short i = 0; i < bytes; i++) {
+      field[i] = (byte)(0x11 + i);
+      a[i] = (byte)(0x22 + i);
+      b[i] = (byte)(0x33 + i);
+      order[i] = (byte)(0x44 + i);
+      scalar[i] = (byte)(0x55 + i);
+    }
+    generator[0] = 4;
+    for (short i = 1; i < generator.length; i++) generator[i] = (byte)(0x66 + i);
+    key.setFieldFP(field, (short)0, bytes);
+    key.setA(a, (short)0, bytes);
+    key.setB(b, (short)0, bytes);
+    key.setG(generator, (short)0, (short)generator.length);
+    key.setR(order, (short)0, bytes);
+    key.setK((short)1);
+    key.setS(scalar, (short)0, bytes);
+    if (!key.isInitialized() || key.getK() != 1) return (byte)20;
+    byte[] result = new byte[(short)133];
+    if (key.getField(result, (short)0) != bytes || !equal(field, result, bytes)) return (byte)31;
+    if (key.getA(result, (short)0) != bytes || !equal(a, result, bytes)) return (byte)32;
+    if (key.getB(result, (short)0) != bytes || !equal(b, result, bytes)) return (byte)33;
+    if (key.getG(result, (short)0) != generator.length ||
+        !equal(generator, result, (short)generator.length)) return (byte)34;
+    if (key.getR(result, (short)0) != bytes || !equal(order, result, bytes)) return (byte)35;
+    if (key.getS(result, (short)0) != bytes || !equal(scalar, result, bytes)) return (byte)36;
+    ECPrivateKey copy = (ECPrivateKey)KeyBuilder.buildKey(
+        KeyBuilder.TYPE_EC_FP_PRIVATE, length, false);
+    copy.copyDomainParametersFrom(key);
+    boolean copied = copy.getK() == 1 && copy.getField(result, (short)0) == bytes &&
+        equal(field, result, bytes) && copy.getG(result, (short)0) == generator.length &&
+        equal(generator, result, (short)generator.length) && !copy.isInitialized();
+    key.clearKey();
+    if (!copied) return (byte)40;
+    if (key.isInitialized()) return (byte)41;
+    return 1;
   }
 
   private static short runDigest(byte algorithm, byte[] input,

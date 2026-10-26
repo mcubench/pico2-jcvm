@@ -13240,3 +13240,37 @@
 - Artifacts/logs: `build/choupi-pc/flash`, `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`, and
   `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
+## 2026-10-26 — Native EC prime-field private key storage
+
+- Step/experiment: `asymm-crypto-ec-private-key-storage`
+- Change: Added profile capabilities for EC FP private key lengths 112–521 bits
+  and transient reset/deselect lifetimes. Implemented native `KeyBuilder` and
+  `NativeKey` allocation, field/A/B/G/R/W/S and cofactor access, initialization
+  state, clear, and domain-parameter copy. Added test-only CAP vectors; the
+  upstream JCAlgTest CAP is unchanged. Fixed the JC305 `ECPrivateKey`
+  interface token map after finding that its `isInitialized()` token otherwise
+  dispatched to `getSize()`. Java Card API submodule commit: `953fcb6`.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9;
+  `./tools/build-pc --profile asymm_crypto` passed;
+  `./tools/build-symm-crypto-probe` passed; elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/env python3
+  tools/tests/test_asymm_crypto_vpcd.py` passed with
+  `TEST:SUMMARY pass=73 fail=0` (71 APDUs plus ATR and SELECT);
+  `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` passed. Physical access check:
+  `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` found 0
+  Pico devices; elevated `lsusb -d 2e8a:0009` found none; elevated
+  `pcsc_scan -r` showed only Virtual PCD 00 00 and 00 01. No flash or physical
+  test was attempted.
+- Result: Selected-size EC private key storage and API calls pass emulator
+  vectors for persistent 256-bit, transient-reset 256-bit, and
+  transient-deselect 521-bit keys. The support suite also verifies configured
+  EC length/lifetime selections. ECDSA arithmetic, public EC keys, agreement,
+  and generation are not implemented in this step. The VM currently cannot see
+  the user-reported plugged-in physical tokens.
+- Decision: Retain the exact JC305 interface translation and native-only API
+  boundary. Retry hardware testing when a physical PC/SC reader is visible;
+  continue with ECDSA and the remaining asymmetric profile work.
+- Commit: API submodule `953fcb6`; root commit pending.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`;
+  `build/arm/pico2_choupi.uf2`; `build/riscv/pico2_jcvm_smoke.uf2`.

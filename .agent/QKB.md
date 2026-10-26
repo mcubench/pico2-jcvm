@@ -5268,3 +5268,25 @@ fix.
 - **Cause:** The test applet reserves operation-code bit `0x04` to select the parameterized `Signature.init` overload with an explicit two-byte salt length. A vector using that flag with a digest-length salt was accidentally verified with salt length zero.
 - **Viable fix:** Use the default-init operation when the vector salt length equals the digest length; use the parameterized operation only for a non-default salt (including zero). For SHA-512's short-APDU precomputed-hash case, keep the explicit zero-salt operation and prehashed verify code.
 - **Validation:** The current VPCD suite passed 59/59 checks. Physical Pico 2 `D92E743D5F640C0F` passed all 39 RSA SHA/PSS vectors, including default and explicit zero-salt verification; the test applet package was removed afterward. See `artifacts/logs/asymm-crypto-pcsc-20261026T185432Z.log`.
+
+# JC305 ECPrivateKey interface methods need token remapping (2026-10-26)
+
+- **Symptom:** A freshly built EC private key reported `isInitialized() == true`,
+  while `getField()` correctly threw `UNINITIALIZED_KEY` before any setters ran.
+- **Cause:** The JC305 export assigns `ECPrivateKey` class token 18 and orders
+  inherited methods as `clearKey`, `getSize`, `getType`, `isInitialized`. The
+  embedded ROM API orders them as `isInitialized`, `clearKey`, `getType`,
+  `getSize`, and puts `copyDomainParametersFrom` before `setS/getS`. Without an
+  explicit interface token map, `isInitialized()` dispatched to `getSize()`;
+  its nonzero result made every fresh EC key appear initialized.
+- **Viable fix:** Decode the exact upstream export (the kit provides
+  `com.sun.javacard.converter.Exp2Text`) and map all 21 JC305 ECPrivateKey
+  method tokens to their embedded interface positions in
+  `remap_imported_interface_method_token`. Preserve this map when adding more
+  EC API calls; check the external export's class/method token order rather
+  than assuming it matches the ROM API.
+- **Validation:** The independent VPCD suite passes 73/73 checks, including
+  fresh/uninitialized state, field getters/setters, domain parameter copy,
+  clear, and 256/521-bit persistent/transient key variants. PC, ARM, and
+  RISC-V builds pass. Physical validation could not run because the VM
+  currently sees only two virtual readers and no Pico USB device.

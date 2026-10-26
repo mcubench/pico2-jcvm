@@ -149,6 +149,18 @@ for _key_type, _row_type in (
             "javacard.security.KeyBuilder", f"TYPE_{_row_type}_{_suffix}"
         )
 
+_ec_fp_lengths = (112, 128, 160, 192, 224, 256, 320, 384, 512, 521)
+for _bits in _ec_fp_lengths:
+    CAPABILITIES[f"key_ec_fp_private_{_bits}"] = (
+        "javacard.security.KeyBuilder",
+        f"TYPE_EC_FP_PRIVATE LENGTH_EC_FP_{_bits}",
+    )
+for _lifetime in ("transient_reset", "transient_deselect"):
+    CAPABILITIES[f"key_ec_fp_private_{_lifetime}"] = (
+        "javacard.security.KeyBuilder",
+        f"TYPE_EC_FP_PRIVATE_{_lifetime.upper()}",
+    )
+
 
 def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     if not isinstance(value, dict):
@@ -200,6 +212,13 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     ))
     if rsa_signature and (not rsa_public or not rsa_private):
         raise ValueError(f"{path}: RSA signatures require enabled public and private RSA key capabilities")
+    ec_fp_length_enabled = any(
+        value[f"key_ec_fp_private_{bits}"] for bits in _ec_fp_lengths
+    )
+    if ((value["key_ec_fp_private_transient_reset"] or
+         value["key_ec_fp_private_transient_deselect"]) and
+            not ec_fp_length_enabled):
+        raise ValueError(f"{path}: transient EC private keys require an enabled prime-field EC key length")
     if (value["cipher_rsa_oaep"] or value["signature_rsa_sha_iso9796"] or
             value["signature_rsa_sha_iso9796_mr"] or
             value["signature_rsa_sha_pkcs1"]) and not value["sha1"]:
@@ -346,6 +365,25 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacard/security|NativeKey|NativeKey/getDQ1([BS)S|instance",
             "javacard/security|NativeKey|NativeKey/setPQ([BSS)V|instance",
             "javacard/security|NativeKey|NativeKey/getPQ([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/setFieldFP([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/setFieldF2M(S)V|instance",
+            "javacard/security|NativeKey|NativeKey/setFieldF2M(SSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/setA([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/setB([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/setG([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/setR([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/setK(S)V|instance",
+            "javacard/security|NativeKey|NativeKey/getField([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/getA([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/getB([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/getG([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/getR([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/getK()S|instance",
+            "javacard/security|NativeKey|NativeKey/copyDomainParametersFrom(Ljavacard/security/ECKey;)V|instance",
+            "javacard/security|NativeKey|NativeKey/setW([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/getW([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/setS([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/getS([BS)S|instance",
             "javacardx/crypto|Cipher|Cipher/getInstance(BZ)Ljavacardx/crypto/Cipher;|static",
             "javacardx/crypto|Cipher|Cipher/getInstance(BBZ)Ljavacardx/crypto/Cipher;|static",
             "javacardx/crypto|Cipher|Cipher/init(Ljavacard/security/Key;B)V|instance",

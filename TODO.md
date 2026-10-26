@@ -1486,7 +1486,15 @@ rollback and duplicate/invalid registration handling also remain unverified.
   cryptographic hardening remain unvalidated. Separate ARM UF2s and expected
   support CSVs are packaged for external Windows testing at
   `build/external-test/pico2-jcvm-windows-test.zip`; Windows results remain
-  pending.
+  pending. Native EC prime-field private key storage is now implemented for
+  supported lengths 128–521 bits, including transient reset/deselect storage,
+  component setters/getters, key initialization/clear, and domain-parameter
+  copying. JC 3.0.5 `ECPrivateKey` interface tokens are explicitly translated
+  to the ROM API order. Support-generator tests pass 9/9, VPCD asymmetric
+  checks pass 73/73, and ARM/RISC-V wrapper builds pass. Physical validation is
+  pending: the VM currently enumerates no physical Pico despite the user's
+  report that tokens are plugged in. Next: retry physical access when a reader
+  appears, then implement ECDSA and remaining EC operations.
 - [ ] Run the packaged Windows workflow in `docs/windows-asymm-symm-test.md`;
   archive each profile's JCAlgTest CSV and compare it with its generated
   expected-support CSV. The upstream CAP is included unchanged.

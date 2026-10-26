@@ -1,3 +1,32 @@
+# Current continuation — native EC prime-field private key storage (2026-10-26)
+
+- Implemented native `KeyBuilder` and `NativeKey` storage for EC FP private
+  keys at enabled sizes 128, 160, 192, 224, 256, 320, 384, 512, and 521 bits.
+  Added component handling for field, A, B, G, R, W, S, and cofactor; persistent,
+  CLEAR_ON_RESET, and CLEAR_ON_DESELECT allocation; initialization checks,
+  clear, and domain-parameter copying. No EC arithmetic/ECDSA is implemented
+  yet.
+- Fixed JC305 `ECPrivateKey` interface token mapping in `jc_cp.cpp`. Upstream
+  class token 18 has a different inherited method order; without translation,
+  `isInitialized()` called `getSize()` and falsely reported fresh keys as
+  initialized. Exact export inspection is recorded in `.agent/QKB.md`.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9;
+  `./tools/build-pc --profile asymm_crypto` passed; after rebuilding the probe
+  CAP, elevated VPCD passed 73/73 checks (71 APDUs plus ATR/SELECT); ARM and
+  RISC-V wrappers passed. The user's tokens are reported plugged in, but this
+  VM currently enumerates no Pico (`lsusb -d 2e8a:0009` found none; `pcsc_scan
+  -r` showed only Virtual PCD 00 00/01; approved helper found 0). Do not claim
+  physical validation or flash until a board is visible through the host path.
+- Worktree includes unrelated changes; preserve them: user edits to `AGENTS.md`,
+  `src/cap_load.cpp`, `tools/test-jcsystem-transaction-physical`, modified
+  submodule state, the untracked ROM-mask submodule, provided CSV, and existing
+  AlgTest logs/measurement lists. Root source changes for this EC step remain
+  uncommitted; API submodule change to `NativeKey.java` remains uncommitted.
+- Next: when an identified PC/SC Pico reader appears, flash/test this image and
+  run `tools/test-asymm-crypto-pcsc` with the exact reader name; then implement
+  native ECDSA, EC agreement/generation, exact support comparison, and full
+  physical `/deploy` acceptance. Preserve upstream CAP files unchanged.
+
 # Current continuation — native RSA SHA-1 ISO9796-2 message recovery (2026-10-26)
 
 - Added profile capability `signature_rsa_sha_iso9796_mr`, enabled only in
