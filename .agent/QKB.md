@@ -5087,14 +5087,17 @@ fix.
 - **Finding:** Native methods declared in the Java Card API are dispatched by
   the VM's `callJCNativeMethod` path. `Heap::addInstance(packageID,
   classIndex)` can allocate a class instance without executing a Java
-  constructor. These are the core primitives needed to replace factory
+  constructor or checking the abstract-class flag. The ROM-mask JNI generator
+  emits `stack.push_Reference(ret)` for a native method with a `REFERENCE`
+  return type. These are the core primitives needed to replace factory
   provider subclasses with API-declared native factory and operation methods.
 - **Viable direction:** Put implementation state on the API object and have
   native `getInstance` validate the requested algorithm, then allocate the
   API-class ROM object. Keep algorithm selection and all key/cipher/signature
   behavior in C++. Apply the same rule to `Signature`, `KeyBuilder`/key APIs,
   `Cipher`, and symmetric MACs; no generated provider or adapter classes.
-- **Limitations:** This was a source-path inspection only. It has not yet
-  verified that ROM-mask generation accepts the necessary non-abstract API
-  class/native declarations, nor that native return/reference stack handling
-  works for this factory. Test those before migrating provider implementations.
+- **Limitations:** The generator mechanics are verified by source inspection,
+  not a built fixture or runtime call. An end-to-end native factory with
+  reference return has not been compiled or executed. Existing symmetric MAC
+  behavior must move with the factory to avoid regressing the `symm_crypto`
+  profile.

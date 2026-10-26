@@ -1503,9 +1503,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   adapter-free path is for the Java Card `Signature` API class itself to own
   the state fields and expose native factory/operation methods; native factory
   dispatch chooses the supported algorithm and allocates that API object.
-  This requires making the API class instantiable for VM-native allocation and
-  replacing its provider-based Java factory/method bodies. Apply the same
-  native API boundary to RSA key and cipher APIs and symmetric MACs; do not
+  The ROM-mask generator emits `stack.push_Reference(ret)` for native
+  reference returns, and `Heap::addInstance` bypasses the abstract-class flag.
+  This still needs an end-to-end generated/compiled native factory check.
+  Replace the provider-based factory/method bodies together with RSA and
+  symmetric MAC operations so the `symm_crypto` profile remains functional.
+  Apply the same native API boundary to RSA key and cipher APIs; do not
   introduce generated Java implementation classes.
   See the 2026-10-25 entry in `progress.md` and `.agent/HANDOFF.md`.
 - [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,

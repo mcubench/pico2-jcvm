@@ -5,19 +5,22 @@
 - Resumed native-only `asymm_crypto` work. Source inspection confirms the VM
   invokes API-declared native methods through `callJCNativeMethod`, and
   `Heap::addInstance(packageID, classIndex)` can allocate a ROM API class
-  object directly. This is the likely route for native `Signature.getInstance`
-  and signature operations without Java provider subclasses.
+  object directly without checking the abstract-class flag. ROM-mask JNI
+  generation also handles a `REFERENCE` return by pushing `jref_t` onto the
+  operand stack. This supports native `Signature.getInstance` and operations
+  without Java provider subclasses in principle.
 - No implementation/build has been made in this step. The current pending
   `RSASignatureProvider.java`/`SignatureProvider` changes remain prohibited;
   RSA key/cipher and symmetric MAC provider classes also need migration to
   native methods on the Java Card API classes. Preserve current uncommitted
   worktree changes and the API submodule pointer. Test ROM-mask support for a
-  concrete API class with native methods and native reference returns before
-  converting the implementation.
+  native factory with a reference return has not yet been built or run.
 - TODO and QKB record the design direction and its unverified assumptions.
-- Next: build a focused throwaway ROM-mask fixture or inspect the existing ROM
-  generator's handling of abstract API classes/native reference returns, then
-  implement one end-to-end native API factory/method slice with a VPCD test.
+- Next: build a focused ROM-mask/native factory fixture. Then migrate the
+  `Signature` factory, state, RSA operations, and MAC operations as a coherent
+  slice so `symm_crypto` remains intact; subsequently migrate RSA key/cipher
+  APIs. Do not build/package `asymm_crypto` while generated provider classes
+  remain in the ROM mask.
 
 - Fresh local persistence validation on 2026-10-25: `./tools/test-rp2350-fs-overlay`
   passed all assertions including 1,000 randomized cuts for journal clear,

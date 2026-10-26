@@ -13064,6 +13064,16 @@
 - Validation: Source inspection of `choupi/src/jc_bytecodes/bc_others.cpp`, `choupi/src/heap.cpp`, and the Java Card `Signature` API. No build or runtime test was run because this step only records architecture findings; implementation remains pending.
 - Result: A native-only path is identified, but ROM-mask support for making API classes concrete and native reference-return behavior still needs a focused validation.
 - Decision: Preserve the pending Java-provider changes without treating them as valid asymmetric implementation. Next verify ROM-mask handling, then migrate one API factory and operation path without adding Java implementation classes.
-- Commit: `f43354ce3a90ffa84cb4499b4144d9f223e5f337` (documentation); `bb520e01b7957dfd10fe09132b0b933d0f7cf4ea` (progress record).
+- Commit: `f43354ce3a90ffa84cb4499b4144d9f223e5f337` (documentation); `bb520e01b7957dfd10fe09132b0b933d0f7cf4ea` (progress record); `27844bd` (commit-id follow-up).
+- Artifacts/logs: None.
+
+## 2026-10-26 — Confirm ROM-mask native reference-return mechanics
+
+- Step/experiment: `asymm-native-reference-return-inspection`
+- Change: Corrected the earlier dispatch note with generator evidence: native `REFERENCE` returns emit `stack.push_Reference(ret)`, and direct heap allocation bypasses the abstract-class flag. Updated TODO, QKB, and handoff to state that the mechanics are source-verified but no end-to-end fixture exists.
+- Validation: Inspected `choupi/javacard-sdk/rommask/src/main/java/fr/gouv/ssi/rommask/jcaparser/mask/JCNativeFunctions.java` and `choupi/src/heap.cpp`. No test or build was run; this was code inspection.
+- Result: Native factory reference returns and allocation of the API ROM class appear feasible. Full migration must move signature factory, RSA operations, and symmetric MAC state/operations together; RSA key and cipher API provider objects also remain to migrate.
+- Decision: Next build a focused ROM-mask/native-factory fixture, then implement native API methods as one coherent change. Continue to exclude generated Java provider classes from accepted firmware.
+- Commit: pending.
 - Artifacts/logs: None.
 
