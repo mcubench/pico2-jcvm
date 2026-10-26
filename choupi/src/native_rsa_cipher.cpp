@@ -276,11 +276,11 @@ std::shared_ptr<JC_Instance> rsaKeyInstance(const jref_t reference) {
   if (reference.isNullPointer()) throw Exceptions::NullPointerException;
   auto instance = Context::getActiveContext().getHeap().getInstance(reference);
   const uint16_t expectedClass = HTONS(
-      Export_Handler(Package(ROM_PACKAGE_INDEX_FR_GOUV_SSI_NATIVEIMPL))
+      Export_Handler(Package(ROM_PACKAGE_INDEX_JAVACARD_SECURITY))
           .getExportedClassOffset(
-              ROM_CLASS_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER));
+              ROM_CLASS_EXPORT_TOKEN_JAVACARD_SECURITY_NATIVEKEY));
   if (!instance || instance->getPackageID() !=
-                       ROM_PACKAGE_INDEX_FR_GOUV_SSI_NATIVEIMPL ||
+                       ROM_PACKAGE_INDEX_JAVACARD_SECURITY ||
       instance->getClassIndex() != expectedClass)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   return instance;
@@ -328,7 +328,7 @@ void loadKeyComponent(const JC_Instance &key, const uint16_t valueField,
                       const uint16_t lengthField, JC_Array &destination) {
   auto value = getByteArray(const_cast<JC_Instance &>(key), valueField);
   auto lengths = getShortArray(const_cast<JC_Instance &>(key),
-                               ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_LENGTHS);
+                               ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS);
   const jshort_t componentLength = lengths->getShortEntry(lengthField);
   if (componentLength <= 0)
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
@@ -404,11 +404,11 @@ void fr_gouv_ssi_nativeimpl_RSACipherProvider_init(jref_t receiver,
   auto key = rsaKeyInstance(keyReference);
   auto lengths = getShortArray(
       *key,
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_LENGTHS);
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS);
   if (lengths->getShortEntry(0) == 0 || lengths->getShortEntry(1) == 0)
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
   const uint8_t type = static_cast<uint8_t>(key->getField_Byte(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_TYPE));
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
   const bool publicKey = type == kRsaPublic;
   const bool privateKey = type == kRsaPrivate ||
                           type == kRsaPrivateTransientReset ||
@@ -417,7 +417,7 @@ void fr_gouv_ssi_nativeimpl_RSACipherProvider_init(jref_t receiver,
         (privateKey && mode == kModeDecrypt)))
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   const jshort_t keyBits = key->getField_Short(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_SIZE);
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE);
   if (keyBits <= 0) throwCryptoException(CryptoExceptionReason::IllegalValue);
   const uint16_t keyLength = static_cast<uint16_t>((keyBits + 7) / 8);
   allocateProviderArray(
@@ -434,13 +434,13 @@ void fr_gouv_ssi_nativeimpl_RSACipherProvider_init(jref_t receiver,
       0);
   loadKeyComponent(
       *key,
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_MODULUS,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_MODULUS,
       0,
       *getByteArray(*cipher,
                     ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_MODULUS));
   loadKeyComponent(
       *key,
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_EXPONENT,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_EXPONENT,
       1,
       *getByteArray(*cipher,
                     ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSACIPHERPROVIDER_RSACIPHERPROVIDER_EXPONENT));

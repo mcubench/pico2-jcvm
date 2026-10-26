@@ -197,6 +197,16 @@ def load_config(path: Path, requested_profile: str | None = None) -> tuple[str, 
 
 def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
+    # Generated Java support is an input tree to the API converter. Remove
+    # legacy key provider files left by older profiles before emitting outputs.
+    for stale in (
+        out_dir / "java/javacard/security/KeyBuilderProvider.java",
+        out_dir / "java/javacard/security/KeyProviderBase.java",
+        out_dir / "java/javacard/security/AESKeyProvider.java",
+        out_dir / "java/javacard/security/DESKeyProvider.java",
+        out_dir / "java/fr/gouv/ssi/nativeimpl/RSAKeyProvider.java",
+    ):
+        stale.unlink(missing_ok=True)
     with (out_dir / "jcalgtest-supported.csv").open("w", newline="", encoding="utf-8") as output:
         writer = csv.writer(output, delimiter=";", lineterminator="\n")
         writer.writerow(("section", "algorithm_name"))
@@ -239,6 +249,28 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacard/security|Signature|Signature/signPreComputedHash([BSS[BS)S|instance",
             "javacard/security|Signature|Signature/verify([BSS[BSS)Z|instance",
             "javacard/security|Signature|Signature/verifyPreComputedHash([BSS[BSS)Z|instance",
+            "javacard/security|KeyBuilder|KeyBuilder/buildKey(BSZ)Ljavacard/security/Key;|static",
+            "javacard/security|KeyBuilder|KeyBuilder/buildKey(BBSZ)Ljavacard/security/Key;|static",
+            "javacard/security|NativeKey|NativeKey/isInitialized()Z|instance",
+            "javacard/security|NativeKey|NativeKey/clearKey()V|instance",
+            "javacard/security|NativeKey|NativeKey/getType()B|instance",
+            "javacard/security|NativeKey|NativeKey/getSize()S|instance",
+            "javacard/security|NativeKey|NativeKey/setKey([BS)V|instance",
+            "javacard/security|NativeKey|NativeKey/getKey([BS)B|instance",
+            "javacard/security|NativeKey|NativeKey/setModulus([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/getModulus([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/setExponent([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/getExponent([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/setP([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/getP([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/setQ([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/getQ([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/setDP1([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/getDP1([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/setDQ1([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/getDQ1([BS)S|instance",
+            "javacard/security|NativeKey|NativeKey/setPQ([BSS)V|instance",
+            "javacard/security|NativeKey|NativeKey/getPQ([BS)S|instance",
         )) + "\n", encoding="utf-8"
     )
     (out_dir / "profile.txt").write_text(profile + "\n", encoding="utf-8")
@@ -279,134 +311,6 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     else:
         (java_dir / "SecureRandomData.java").unlink(missing_ok=True)
         (out_dir / "java/fr/gouv/ssi/nativeimpl/RandomDataNativeBridge.java").unlink(missing_ok=True)
-    rsa_key_enabled = any(key.startswith("key_rsa_") and enabled
-                         for key, enabled in config.items())
-    key_provider = [
-        "package javacard.security;",
-        "",
-        "final class KeyBuilderProvider {",
-        "  private KeyBuilderProvider() {}",
-        "  static Key buildKey(byte type, short length, boolean encrypted)",
-        "      throws CryptoException {",
-        "    if (encrypted) CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-    ]
-    if rsa_key_enabled:
-        key_provider[2:2] = [
-            "import fr.gouv.ssi.nativeimpl.RSAKeyProvider;", ""
-        ]
-    aes_lengths = {
-        "key_aes_128": "KeyBuilder.LENGTH_AES_128",
-        "key_aes_192": "KeyBuilder.LENGTH_AES_192",
-        "key_aes_256": "KeyBuilder.LENGTH_AES_256",
-    }
-    des_lengths = {
-        "key_des": "KeyBuilder.LENGTH_DES",
-        "key_des3_2key": "KeyBuilder.LENGTH_DES3_2KEY",
-        "key_des3_3key": "KeyBuilder.LENGTH_DES3_3KEY",
-    }
-    aes_types = {
-        "key_aes_128": ("KeyBuilder.TYPE_AES", "KeyBuilder.LENGTH_AES_128"),
-        "key_aes_192": ("KeyBuilder.TYPE_AES", "KeyBuilder.LENGTH_AES_192"),
-        "key_aes_256": ("KeyBuilder.TYPE_AES", "KeyBuilder.LENGTH_AES_256"),
-    }
-    des_types = {
-        "key_des": ("KeyBuilder.TYPE_DES", "KeyBuilder.LENGTH_DES"),
-        "key_des3_2key": ("KeyBuilder.TYPE_DES", "KeyBuilder.LENGTH_DES3_2KEY"),
-        "key_des3_3key": ("KeyBuilder.TYPE_DES", "KeyBuilder.LENGTH_DES3_3KEY"),
-    }
-    for family, length_rows, types in (("AES", aes_lengths, aes_types),
-                                       ("DES", des_lengths, des_types)):
-        transient_rows = {
-            "key_" + family.lower() + "_transient_reset":
-                f"KeyBuilder.TYPE_{family}_TRANSIENT_RESET",
-            "key_" + family.lower() + "_transient_deselect":
-                f"KeyBuilder.TYPE_{family}_TRANSIENT_DESELECT",
-        }
-        for key, memory_type in transient_rows.items():
-            if config[key]:
-                for length_key, (_, length) in types.items():
-                    if config[length_key]:
-                        key_provider.extend([
-                            f"    if (type == {memory_type} && length == {length})",
-                            f"      return new {family}KeyProvider(type, length);",
-                        ])
-        for key, (memory_type, length) in types.items():
-            if config[key]:
-                key_provider.extend([
-                    f"    if (type == {memory_type} && length == {length})",
-                    f"      return new {family}KeyProvider(type, length);",
-                ])
-    for kind, type_name in (
-        ("public", "TYPE_RSA_PUBLIC"),
-        ("private", "TYPE_RSA_PRIVATE"),
-        ("crt_private", "TYPE_RSA_CRT_PRIVATE"),
-    ):
-        for bits in _rsa_lengths:
-            key = f"key_rsa_{kind}_{bits}"
-            if config[key]:
-                key_provider.extend([
-                    f"    if (type == KeyBuilder.{type_name} && length == KeyBuilder.LENGTH_RSA_{bits})",
-                    "      return new RSAKeyProvider(type, length);",
-                ])
-    for kind, type_name in (
-        ("private", "TYPE_RSA_PRIVATE"),
-        ("crt_private", "TYPE_RSA_CRT_PRIVATE"),
-    ):
-        for life, suffix in (("transient_reset", "TRANSIENT_RESET"),
-                             ("transient_deselect", "TRANSIENT_DESELECT")):
-            capability = f"key_rsa_{kind}_{life}"
-            if not config[capability]:
-                continue
-            transient_type = f"{type_name}_{suffix}"
-            for bits in _rsa_lengths:
-                if config[f"key_rsa_{kind}_{bits}"]:
-                    key_provider.extend([
-                        f"    if (type == KeyBuilder.{transient_type} && length == KeyBuilder.LENGTH_RSA_{bits})",
-                        "      return new RSAKeyProvider(type, length);",
-                    ])
-    key_provider.extend([
-        "    CryptoException.throwIt(CryptoException.NO_SUCH_ALGORITHM);",
-        "    return null;",
-        "  }",
-        "}",
-    ])
-    (java_dir / "KeyBuilderProvider.java").write_text(
-        "\n".join(key_provider) + "\n", encoding="utf-8"
-    )
-    key_base = Path(__file__).resolve().parent / "java-support/KeyProviderBase.java"
-    (java_dir / "KeyProviderBase.java").unlink(missing_ok=True)
-    (java_dir / "AESKeyProvider.java").unlink(missing_ok=True)
-    (java_dir / "DESKeyProvider.java").unlink(missing_ok=True)
-    if any(config[key] for key in (*aes_lengths, "key_aes_transient_reset",
-                                    "key_aes_transient_deselect")):
-        (java_dir / "AESKeyProvider.java").write_text(
-            (Path(__file__).resolve().parent / "java-support/AESKeyProvider.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-    if any(config[key] for key in (*des_lengths, "key_des_transient_reset",
-                                    "key_des_transient_deselect")):
-        (java_dir / "DESKeyProvider.java").write_text(
-            (Path(__file__).resolve().parent / "java-support/DESKeyProvider.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-    if any(config[key] for key in (*aes_lengths, *des_lengths,
-                                   "key_aes_transient_reset",
-                                   "key_aes_transient_deselect",
-                                   "key_des_transient_reset",
-                                   "key_des_transient_deselect")):
-        (java_dir / "KeyProviderBase.java").write_text(
-            key_base.read_text(encoding="utf-8"), encoding="utf-8"
-        )
-    rsa_key_provider = out_dir / "java/fr/gouv/ssi/nativeimpl/RSAKeyProvider.java"
-    (java_dir / "RSAKeyProvider.java").unlink(missing_ok=True)
-    if rsa_key_enabled:
-        rsa_key_provider.parent.mkdir(parents=True, exist_ok=True)
-        rsa_key_provider.write_text(
-            (Path(__file__).resolve().parent / "java-support/RSAKeyProvider.java").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-    else:
-        rsa_key_provider.unlink(missing_ok=True)
     cipher_dir = out_dir / "java/javacardx/crypto"
     cipher_dir.mkdir(parents=True, exist_ok=True)
     cipher_provider = [

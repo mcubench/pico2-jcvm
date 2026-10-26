@@ -1,4 +1,27 @@
-# Current continuation — native symmetric Signature API dispatch (2026-10-26)
+# Current continuation — native RSA key API dispatch (2026-10-26)
+
+- Migrated key construction and operations off generated provider classes.
+  Native `KeyBuilder.buildKey` overloads allocate `NativeKey`; NativeKey
+  symmetric and RSA component methods dispatch to C++. RSA Cipher and Signature
+  now read the same NativeKey fields. ROM-mask generation removes stale legacy
+  provider source outputs when regenerating reused output directories.
+- The first VPCD run failed at RSA key-builder APDU 11 with `6F00` / uncaught
+  `SecurityException` 29. Cause: `NativeKey` was package-private and its native
+  allocation/check used the ROM class token instead of a runtime class offset.
+  Making the class exportable and resolving its export token fixed this.
+- Validation after the fix: support-generator tests 9/9; PC build passed;
+  elevated VPCD regression passed 26/26 (10 digest, 5 key-builder, 3 cipher,
+  6 signature vectors, plus ATR/SELECT); ARM and RISC-V wrappers passed for
+  `asymm_crypto`. Generated ROM/JNI files contain no legacy key provider names.
+  Existing upstream Java Card converter/Maven and packed-member compiler
+  warnings remain. No hardware test was run because the user unplugged the Pico.
+- API submodule commit: `6857bb0`; root implementation and progress commits
+  are recorded in `progress.md` after commit completion.
+- Remaining: migrate RSA Cipher factory/state/operations from
+  `RSACipherProvider` to direct native Java Card API dispatch, then continue
+  the asymmetric profile roadmap. Do not claim native-only `asymm_crypto` yet.
+
+# Previous continuation — native symmetric Signature API dispatch (2026-10-26)
 
 - Moved all 13 declared `symm_crypto` Signature MAC implementations onto
   direct native methods on the Java Card `Signature` API. The ROM-mask native

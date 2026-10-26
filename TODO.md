@@ -1508,11 +1508,15 @@ rollback and duplicate/invalid registration handling also remain unverified.
   reference returns, and `Heap::addInstance` bypasses the abstract-class flag.
   The symmetric MAC portion has now been implemented and exercised end to end:
   the `Signature` API factory and operations are direct ROM-mask native calls,
-  and supported MAC algorithms run in native C++. RSA signatures and the RSA
-  key/cipher API provider paths still need the same migration. See the latest
-  `progress.md` and `.agent/HANDOFF.md` entries for the symmetric validation.
-  Apply the same native API boundary to RSA key and cipher APIs; do not
-  introduce generated Java implementation classes.
+  and supported MAC algorithms run in native C++. RSA key construction and key
+  operations have now moved to direct native methods on the Java Card API
+  `KeyBuilder` and `NativeKey` classes. VPCD passes all 5 RSA key-builder cases
+  and the 6 RSA SHA-1 signature cases; native key object allocation uses the
+  resolved exported class offset. RSA Cipher still uses a generated provider,
+  so the asymmetric profile remains incomplete. See the latest `progress.md`
+  and `.agent/HANDOFF.md` entries for validation details. Continue migrating
+  RSA Cipher to native API dispatch; do not introduce generated Java
+  implementation classes.
   The support tests reject generation of `SignatureProvider`,
   `SymmetricMacProvider`, `MacNativeBridge`, and the RSA Signature provider;
   they check the native `Signature` method manifest. RSA key/cipher provider

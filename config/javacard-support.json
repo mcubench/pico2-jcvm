@@ -91,7 +91,8 @@
       "key_rsa_crt_private_transient_deselect": false,
       "cipher_rsa_pkcs1": false,
       "cipher_rsa_nopad": false,
-      "cipher_rsa_oaep": false
+      "cipher_rsa_oaep": false,
+      "signature_rsa_sha_pkcs1": false
     },
     "base": {
       "owner_pin": true,
@@ -183,7 +184,8 @@
       "key_rsa_crt_private_transient_deselect": false,
       "cipher_rsa_pkcs1": false,
       "cipher_rsa_nopad": false,
-      "cipher_rsa_oaep": false
+      "cipher_rsa_oaep": false,
+      "signature_rsa_sha_pkcs1": false
     },
     "no_aes": {
       "owner_pin": true,
@@ -275,7 +277,8 @@
       "key_rsa_crt_private_transient_deselect": false,
       "cipher_rsa_pkcs1": false,
       "cipher_rsa_nopad": false,
-      "cipher_rsa_oaep": false
+      "cipher_rsa_oaep": false,
+      "signature_rsa_sha_pkcs1": false
     },
     "minimal": {
       "owner_pin": false,
@@ -367,7 +370,8 @@
       "key_rsa_crt_private_transient_deselect": false,
       "cipher_rsa_pkcs1": false,
       "cipher_rsa_nopad": false,
-      "cipher_rsa_oaep": false
+      "cipher_rsa_oaep": false,
+      "signature_rsa_sha_pkcs1": false
     },
     "symm_crypto": {
       "owner_pin": true,
@@ -459,7 +463,8 @@
       "key_rsa_crt_private_transient_deselect": false,
       "cipher_rsa_pkcs1": false,
       "cipher_rsa_nopad": false,
-      "cipher_rsa_oaep": false
+      "cipher_rsa_oaep": false,
+      "signature_rsa_sha_pkcs1": false
     },
     "asymm_crypto": {
       "owner_pin": true,
@@ -551,7 +556,8 @@
       "key_rsa_crt_private_transient_deselect": true,
       "cipher_rsa_pkcs1": true,
       "cipher_rsa_nopad": true,
-      "cipher_rsa_oaep": true
+      "cipher_rsa_oaep": true,
+      "signature_rsa_sha_pkcs1": true
     }
   }
 }

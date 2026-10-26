@@ -294,16 +294,16 @@ std::shared_ptr<JC_Instance> keyInstance(jref_t keyReference) {
 
 std::shared_ptr<JC_Array> keyBytes(JC_Instance &key) {
   const jref_t keyDataReference = key.getField_Reference(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPROVIDERBASE_KEYPROVIDERBASE_KEYDATA);
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA);
   if (keyDataReference.isNullPointer())
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
   auto data = Context::getActiveContext().getHeap().getArray(keyDataReference);
   if (!data || data->getType() != JAVA_ARRAY_T_BYTE)
     throw Exceptions::ArrayStoreException;
   const jref_t transientReference = key.getField_Reference(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPROVIDERBASE_KEYPROVIDERBASE_TRANSIENTINITIALIZED);
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TRANSIENTINITIALIZED);
   bool initialized = key.getField_Byte(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPROVIDERBASE_KEYPROVIDERBASE_PERSISTENTINITIALIZED) != 0;
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_PERSISTENTINITIALIZED) != 0;
   if (!transientReference.isNullPointer()) {
     auto flag = Context::getActiveContext().getHeap().getArray(transientReference);
     if (!flag || flag->getType() != JAVA_ARRAY_T_BYTE || flag->size() < 1)
@@ -319,9 +319,9 @@ void initializeMac(JC_Instance &signature, jref_t keyReference, uint8_t mode) {
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   auto key = keyInstance(keyReference);
   const uint8_t keyType = static_cast<uint8_t>(key->getField_Byte(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPROVIDERBASE_KEYPROVIDERBASE_TYPE));
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
   const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_KEYPROVIDERBASE_KEYPROVIDERBASE_SIZE));
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
   const uint8_t algorithm = static_cast<uint8_t>(signature.getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
   const bool aes = algorithm == 18 || algorithm == 49;

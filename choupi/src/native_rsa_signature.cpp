@@ -30,11 +30,11 @@ std::shared_ptr<JC_Instance> rsaKeyInstance(const jref_t reference) {
     throw Exceptions::NullPointerException;
   auto instance = Context::getActiveContext().getHeap().getInstance(reference);
   const uint16_t expectedClass = HTONS(
-      Export_Handler(Package(ROM_PACKAGE_INDEX_FR_GOUV_SSI_NATIVEIMPL))
+      Export_Handler(Package(ROM_PACKAGE_INDEX_JAVACARD_SECURITY))
           .getExportedClassOffset(
-              ROM_CLASS_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER));
+              ROM_CLASS_EXPORT_TOKEN_JAVACARD_SECURITY_NATIVEKEY));
   if (!instance || instance->getPackageID() !=
-                       ROM_PACKAGE_INDEX_FR_GOUV_SSI_NATIVEIMPL ||
+                       ROM_PACKAGE_INDEX_JAVACARD_SECURITY ||
       instance->getClassIndex() != expectedClass)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   return instance;
@@ -74,15 +74,15 @@ std::vector<unsigned char> sha1(const std::vector<unsigned char> &message);
 std::shared_ptr<JC_Array> keyComponentArray(JC_Instance &key,
                                             uint16_t component) {
   const uint16_t fields[] = {
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_MODULUS,
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_EXPONENT};
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_MODULUS,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_EXPONENT};
   if (component >= 2) throwCryptoException(CryptoExceptionReason::IllegalValue);
   return byteArray(key, fields[component]);
 }
 
 jshort_t keyComponentLength(JC_Instance &key, uint16_t component) {
   const jref_t reference = key.getField_Reference(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_LENGTHS);
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS);
   if (reference.isNullPointer()) throw Exceptions::NullPointerException;
   auto lengths = Context::getActiveContext().getHeap().getArray(reference);
   if (!lengths || lengths->getType() != JAVA_ARRAY_T_SHORT ||
@@ -114,7 +114,7 @@ std::vector<unsigned char> keyComponent(JC_Instance &signature,
 
 uint16_t keyModulusLength(JC_Instance &key) {
   const jshort_t bits = key.getField_Short(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_SIZE);
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE);
   if (bits < 512 || bits > 4096)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   return static_cast<uint16_t>((bits + 7) / 8);
@@ -273,7 +273,7 @@ void initializeRsaSignature(JC_Instance &signature, jref_t keyReference,
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   auto key = rsaKeyInstance(keyReference);
   const uint8_t type = static_cast<uint8_t>(key->getField_Byte(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_TYPE));
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
   const bool privateKey = type == kRsaPrivate ||
                           type == kRsaPrivateTransientReset ||
                           type == kRsaPrivateTransientDeselect;
@@ -284,7 +284,7 @@ void initializeRsaSignature(JC_Instance &signature, jref_t keyReference,
   // Read both components now so init reports an uninitialized key before the
   // operation begins. They are re-read on each operation to honor clearKey.
   const jref_t lengthRef = key->getField_Reference(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_LENGTHS);
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS);
   auto lengths = Context::getActiveContext().getHeap().getArray(lengthRef);
   if (!lengths || lengths->getShortEntry(0) <= 0 || lengths->getShortEntry(1) <= 0)
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
@@ -306,7 +306,7 @@ jshort_t rsaSignatureLength(JC_Instance &signature) {
   auto key = rsaKeyInstance(signature.getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
   const jref_t lengthsRef = key->getField_Reference(
-      ROM_FIELD_INDEX_FR_GOUV_SSI_NATIVEIMPL_RSAKEYPROVIDER_RSAKEYPROVIDER_LENGTHS);
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS);
   auto lengths = Context::getActiveContext().getHeap().getArray(lengthsRef);
   if (!lengths || lengths->getShortEntry(0) <= 0 || lengths->getShortEntry(1) <= 0)
     throwCryptoException(CryptoExceptionReason::UninitializedKey);

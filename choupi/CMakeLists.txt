@@ -342,7 +342,7 @@ file(GLOB_RECURSE JCVM_CORE_SOURCES_FILES
      CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 list(FILTER JCVM_CORE_SOURCES_FILES EXCLUDE REGEX
-  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mbedtls_digest|rsa_cipher|rsa_key|rsa_signature)\\.cpp$")
+  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mbedtls_digest|rsa_cipher|rsa_key|rsa_signature|key)\\.cpp$")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_random.cpp")
 endif()
@@ -380,9 +380,7 @@ if(JC_SUPPORT_KEY_RSA_PRIVATE_TRANSIENT_RESET OR
    JC_SUPPORT_KEY_RSA_CRT_PRIVATE_TRANSIENT_DESELECT)
   set(JC_SUPPORT_RSA_KEYS_ENABLED ON)
 endif()
-if(JC_SUPPORT_RSA_KEYS_ENABLED)
-  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_rsa_key.cpp")
-endif()
+list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_key.cpp")
 if(JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_rsa_signature.cpp")
 endif()

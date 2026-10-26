@@ -1,5 +1,22 @@
 # Project issue knowledge base
 
+## NativeKey ROM class identity mismatch — 2026-10-26
+
+- **Symptom:** VPCD `asymm_crypto` APDU 11, the first RSA `KeyBuilder.buildKey`
+  call, returned `6F00` with an uncaught `SecurityException` (reason 29).
+- **Cause:** `NativeKey` was package-private, had no ROM export token, and the
+  native factory allocated/validated it using `ROM_CLASS_INDEX`, which is a
+  ROM token rather than the runtime class-component offset.
+- **Viable fix:** Make the VM-owned API class exportable and resolve its class
+  offset with `Export_Handler(Package(...)).getExportedClassOffset(...)` for
+  both `Heap::addInstance` and runtime receiver validation. Apply the same
+  resolver in RSA Cipher and Signature key checks.
+- **Validation:** PC `asymm_crypto` build and elevated VPCD regression passed;
+  all 26 checks succeeded, including all 5 RSA key-builder vectors and 6 RSA
+  SHA-1 Signature vectors. ARM and RISC-V wrappers also passed. This fixes
+  class identity resolution; it does not complete RSA Cipher's Java-provider
+  migration.
+
 ## jcarray test target lacked generated headers and collector stubs — 2026-10-25
 
 - **Symptom:** `./tools/test-jcarray` could not compile `jni.cpp` because the
