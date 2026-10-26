@@ -42,6 +42,29 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
         command = bytes((0x80, 0x17, algorithm, 0, len(message))) + message + b"\x00"
         results.append((command, b"\x01\x90\x00",
                         f"ECDSA algorithm={algorithm} sign/verify"))
+    generator_x = bytes.fromhex(
+        "6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"
+    )
+    generator = bytes.fromhex(
+        "046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"
+        "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"
+    )
+    twice_generator = bytes.fromhex(
+        "047cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978"
+        "07775510db8ed040293d9ac69f7430dbba7dade63ce982299e04b79d227873d1"
+    )
+    agreement_results = {
+        1: hashlib.sha1(generator_x).digest(),
+        2: hashlib.sha1(generator_x).digest(),
+        3: generator_x,
+        4: generator_x,
+        5: twice_generator,
+        6: generator,
+    }
+    for algorithm, expected in agreement_results.items():
+        command = bytes((0x80, 0x18, algorithm, 0, 0))
+        results.append((command, expected + b"\x90\x00",
+                        f"EC key agreement algorithm={algorithm}"))
     rsa = _rsa_512_fixture()
     messages = {
         10: b"JCVM RSA PKCS1",
@@ -310,7 +333,8 @@ def main() -> int:
         return completed.returncode
     rsa_signature_vectors = sum("RSA SHA" in label for _, _, label in cases)
     ecdsa_vectors = sum("ECDSA algorithm=" in label for _, _, label in cases)
-    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 ec_key_builder_vectors=3 ecdsa_vectors={ecdsa_vectors} rsa_signature_vectors={rsa_signature_vectors} fail=0")
+    agreement_vectors = sum("EC key agreement algorithm=" in label for _, _, label in cases)
+    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 ec_key_builder_vectors=3 ecdsa_vectors={ecdsa_vectors} ec_key_agreement_vectors={agreement_vectors} rsa_signature_vectors={rsa_signature_vectors} fail=0")
     print(f"TEST:LOG {log}")
     return 0
 

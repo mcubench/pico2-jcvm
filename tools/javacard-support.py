@@ -72,6 +72,24 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "signature_ecdsa_sha_256": ("javacard.security.Signature", "ALG_ECDSA_SHA_256"),
     "signature_ecdsa_sha_384": ("javacard.security.Signature", "ALG_ECDSA_SHA_384"),
     "signature_ecdsa_sha_512": ("javacard.security.Signature", "ALG_ECDSA_SHA_512"),
+    "key_agreement_ec_svdp_dh": (
+        "javacard.security.KeyAgreement", "ALG_EC_SVDP_DH"
+    ),
+    "key_agreement_ec_svdp_dhc": (
+        "javacard.security.KeyAgreement", "ALG_EC_SVDP_DHC"
+    ),
+    "key_agreement_ec_svdp_dh_plain": (
+        "javacard.security.KeyAgreement", "ALG_EC_SVDP_DH_PLAIN"
+    ),
+    "key_agreement_ec_svdp_dhc_plain": (
+        "javacard.security.KeyAgreement", "ALG_EC_SVDP_DHC_PLAIN"
+    ),
+    "key_agreement_ec_pace_gm": (
+        "javacard.security.KeyAgreement", "ALG_EC_PACE_GM"
+    ),
+    "key_agreement_ec_svdp_dh_plain_xy": (
+        "javacard.security.KeyAgreement", "ALG_EC_SVDP_DH_PLAIN_XY"
+    ),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
@@ -222,6 +240,18 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
         "signature_ecdsa_sha_256", "signature_ecdsa_sha_384",
         "signature_ecdsa_sha_512",
     ))
+    ec_key_agreement = any(value[key] for key in (
+        "key_agreement_ec_svdp_dh", "key_agreement_ec_svdp_dhc",
+        "key_agreement_ec_svdp_dh_plain", "key_agreement_ec_svdp_dhc_plain",
+        "key_agreement_ec_pace_gm", "key_agreement_ec_svdp_dh_plain_xy",
+    ))
+    if ec_key_agreement and not any(
+        value[f"key_ec_fp_private_{bits}"] for bits in _ec_fp_lengths
+    ):
+        raise ValueError(f"{path}: EC key agreement requires an enabled prime-field EC key length")
+    if ((value["key_agreement_ec_svdp_dh"] or
+         value["key_agreement_ec_svdp_dhc"]) and not value["sha1"]):
+        raise ValueError(f"{path}: EC SVDP-DH and DHC require SHA-1 support")
     if ecdsa_signature and not any(
         value[f"key_ec_fp_private_{bits}"] for bits in _ec_fp_lengths
     ):
@@ -403,6 +433,10 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacard/security|NativeKey|NativeKey/getW([BS)S|instance",
             "javacard/security|NativeKey|NativeKey/setS([BSS)V|instance",
             "javacard/security|NativeKey|NativeKey/getS([BS)S|instance",
+            "javacard/security|KeyAgreement|KeyAgreement/getInstance(BZ)Ljavacard/security/KeyAgreement;|static",
+            "javacard/security|KeyAgreement|KeyAgreement/init(Ljavacard/security/PrivateKey;)V|instance",
+            "javacard/security|KeyAgreement|KeyAgreement/getAlgorithm()B|instance",
+            "javacard/security|KeyAgreement|KeyAgreement/generateSecret([BSS[BS)S|instance",
             "javacardx/crypto|Cipher|Cipher/getInstance(BZ)Ljavacardx/crypto/Cipher;|static",
             "javacardx/crypto|Cipher|Cipher/getInstance(BBZ)Ljavacardx/crypto/Cipher;|static",
             "javacardx/crypto|Cipher|Cipher/init(Ljavacard/security/Key;B)V|instance",

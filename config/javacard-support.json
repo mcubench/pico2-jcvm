@@ -120,7 +120,13 @@
       "signature_ecdsa_sha_224": false,
       "signature_ecdsa_sha_256": false,
       "signature_ecdsa_sha_384": false,
-      "signature_ecdsa_sha_512": false
+      "signature_ecdsa_sha_512": false,
+      "key_agreement_ec_svdp_dh": false,
+      "key_agreement_ec_svdp_dhc": false,
+      "key_agreement_ec_svdp_dh_plain": false,
+      "key_agreement_ec_svdp_dhc_plain": false,
+      "key_agreement_ec_pace_gm": false,
+      "key_agreement_ec_svdp_dh_plain_xy": false
     },
     "base": {
       "owner_pin": true,
@@ -241,7 +247,13 @@
       "signature_ecdsa_sha_224": false,
       "signature_ecdsa_sha_256": false,
       "signature_ecdsa_sha_384": false,
-      "signature_ecdsa_sha_512": false
+      "signature_ecdsa_sha_512": false,
+      "key_agreement_ec_svdp_dh": false,
+      "key_agreement_ec_svdp_dhc": false,
+      "key_agreement_ec_svdp_dh_plain": false,
+      "key_agreement_ec_svdp_dhc_plain": false,
+      "key_agreement_ec_pace_gm": false,
+      "key_agreement_ec_svdp_dh_plain_xy": false
     },
     "no_aes": {
       "owner_pin": true,
@@ -362,7 +374,13 @@
       "signature_ecdsa_sha_224": false,
       "signature_ecdsa_sha_256": false,
       "signature_ecdsa_sha_384": false,
-      "signature_ecdsa_sha_512": false
+      "signature_ecdsa_sha_512": false,
+      "key_agreement_ec_svdp_dh": false,
+      "key_agreement_ec_svdp_dhc": false,
+      "key_agreement_ec_svdp_dh_plain": false,
+      "key_agreement_ec_svdp_dhc_plain": false,
+      "key_agreement_ec_pace_gm": false,
+      "key_agreement_ec_svdp_dh_plain_xy": false
     },
     "minimal": {
       "owner_pin": false,
@@ -483,7 +501,13 @@
       "signature_ecdsa_sha_224": false,
       "signature_ecdsa_sha_256": false,
       "signature_ecdsa_sha_384": false,
-      "signature_ecdsa_sha_512": false
+      "signature_ecdsa_sha_512": false,
+      "key_agreement_ec_svdp_dh": false,
+      "key_agreement_ec_svdp_dhc": false,
+      "key_agreement_ec_svdp_dh_plain": false,
+      "key_agreement_ec_svdp_dhc_plain": false,
+      "key_agreement_ec_pace_gm": false,
+      "key_agreement_ec_svdp_dh_plain_xy": false
     },
     "symm_crypto": {
       "owner_pin": true,
@@ -604,7 +628,13 @@
       "signature_ecdsa_sha_224": false,
       "signature_ecdsa_sha_256": false,
       "signature_ecdsa_sha_384": false,
-      "signature_ecdsa_sha_512": false
+      "signature_ecdsa_sha_512": false,
+      "key_agreement_ec_svdp_dh": false,
+      "key_agreement_ec_svdp_dhc": false,
+      "key_agreement_ec_svdp_dh_plain": false,
+      "key_agreement_ec_svdp_dhc_plain": false,
+      "key_agreement_ec_pace_gm": false,
+      "key_agreement_ec_svdp_dh_plain_xy": false
     },
     "asymm_crypto": {
       "owner_pin": true,
@@ -725,7 +755,13 @@
       "signature_ecdsa_sha_224": true,
       "signature_ecdsa_sha_256": true,
       "signature_ecdsa_sha_384": true,
-      "signature_ecdsa_sha_512": true
+      "signature_ecdsa_sha_512": true,
+      "key_agreement_ec_svdp_dh": true,
+      "key_agreement_ec_svdp_dhc": true,
+      "key_agreement_ec_svdp_dh_plain": true,
+      "key_agreement_ec_svdp_dhc_plain": true,
+      "key_agreement_ec_pace_gm": true,
+      "key_agreement_ec_svdp_dh_plain_xy": true
     }
   }
 }
