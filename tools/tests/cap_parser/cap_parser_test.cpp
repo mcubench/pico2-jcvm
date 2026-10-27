@@ -33,6 +33,40 @@ bool parses(const uint8_t *bytes, uint16_t length) {
   }
 }
 
+bool parses_with_payload_validation(const uint8_t *bytes, uint16_t length,
+                                    const bool validate_payloads) {
+  try {
+    const jcvm::JC_Cap parsed(length, bytes, validate_payloads);
+    (void)parsed;
+    return true;
+  } catch (jcvm::Exceptions) {
+    return false;
+  }
+}
+
+void test_trusted_rom_payload_validation_boundary() {
+  // This Descriptor has a valid frame but an invalid serialized type nibble.
+  // ROM-mask payloads may be prelinked native structures, so only this payload
+  // check is bypassed for that trusted path.
+  const std::array<uint8_t, 8> malformed_descriptor = {
+      11, 0, 5, 0, 0, 0, 1, 0x90};
+  expect(!parses(malformed_descriptor.data(), malformed_descriptor.size()),
+         "dynamic_malformed_descriptor_rejected");
+  expect(parses_with_payload_validation(malformed_descriptor.data(),
+                                       malformed_descriptor.size(), false),
+         "rom_payload_bypass_accepts_prelinked_payload");
+
+  const std::array<uint8_t, 7> truncated_frame = {11, 0, 5, 0, 0, 0, 1};
+  expect(!parses_with_payload_validation(truncated_frame.data(),
+                                         truncated_frame.size(), false),
+         "rom_payload_bypass_keeps_frame_bounds");
+
+  const std::array<uint8_t, 8> duplicate_frame = {7, 0, 1, 0, 7, 0, 1, 0};
+  expect(!parses_with_payload_validation(duplicate_frame.data(),
+                                         duplicate_frame.size(), false),
+         "rom_payload_bypass_keeps_duplicate_component_check");
+}
+
 void expect_payload_mutation_rejected(const std::vector<uint8_t> &cap,
                                       const size_t component_offset,
                                       const size_t payload_offset,
@@ -327,6 +361,7 @@ int main(int argc, char **argv) {
                                                    7, 0, 1, 0};
   expect(!parses(duplicate_method.data(), duplicate_method.size()),
          "duplicate_component_rejected");
+  test_trusted_rom_payload_validation_boundary();
   test_compact_descriptor_counts();
   test_class_component_21();
   test_type_descriptor_grammar();
