@@ -5512,3 +5512,24 @@ fix.
   in the 48 upstream deploy CAPs matched parsed record boundaries. The
   ASan/UBSan harness passes 4,156 checks, including a synthetic mid-record
   reference rejection; ARM/RISC-V wrappers and VPCD GPPro install/list pass.
+
+## CAP Descriptor type nibble grammar and padding (2026-10-27)
+
+- **Symptom:** Descriptor type records were only length-bounded. Reserved
+  nibble values, truncated class references, malformed odd-nibble padding,
+  and a `void` type before later signature types could pass structural checks.
+- **Cause:** CAP 2.1 type descriptors encode primitive/reference/array type
+  codes as nibbles; reference and reference-array types consume four more
+  nibbles for `class_ref`. Odd-length sequences store a zero pad nibble outside
+  the declared nibble count. Method signatures concatenate parameter types
+  and the return type, which is last.
+- **Viable fix:** Validate nibble codes as they are walked, consume the full
+  four-nibble class reference after reference codes, require `void` only at
+  the end, and require a zero low-nibble pad for odd counts. Keep separate work
+  for proving every field/method/constant-pool type offset resolves to a
+  type-descriptor record start.
+- **Validation:** The ASan/UBSan corpus passes 4,165 checks across 48 upstream
+  deploy CAPs and 100,000 randomized inputs, including valid primitive,
+  reference, array, method-signature and malformed nibble examples. ARM/RISC-V
+  builds pass. First VPCD install attempt did not observe card presence and
+  timed out at 20 seconds; retry passed the GPPro LOAD/INSTALL/list flow.

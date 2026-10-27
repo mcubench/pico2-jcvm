@@ -13728,3 +13728,30 @@
   `artifacts/results/gppro-empty-install-vpcd-20261027T040102Z/`;
   test output `TEST:PASS cap_parser_framing checks=4156 fuzz_inputs=100000
   corpus_files=48`.
+
+## 2026-10-27 — Validate CAP Descriptor type nibble grammar
+
+- Step/experiment: `wp9-cap-type-nibble-validation`
+- Change: Parse each bounded type descriptor's nibble sequence. Reject
+  reserved codes, incomplete 2-byte class references, nonzero odd-count pad
+  nibbles, and `void` before the last type in a method signature. Added valid
+  and malformed synthetic type records.
+- Validation: `./tools/test-cap-parser` passed 4,165 ASan/UBSan checks across
+  all 48 supplied deploy CAPs and 100,000 randomized inputs. ARM and RISC-V
+  wrappers passed for `asymm_crypto`. VPCD GPPro empty-card LOAD/INSTALL/list
+  passed on retry.
+- Result: ARM UF2 2,027,008 bytes, SHA-256
+  `caca34996bebc0a18040a3259c84fc138d9bb80d57fb7a99b548af1355818277`;
+  RISC-V smoke UF2 79,360 bytes, SHA-256
+  `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`.
+  First VPCD run timed out before observing card presence; the immediate retry
+  passed. No physical Pico was visible, so hardware testing was not performed.
+- Decision: Keep nibble-level validation. Validating Descriptor field/method/
+  constant-pool offsets against type record starts remains open, as do newer
+  CAP format Class layouts.
+- Commit: `5f046ba`
+- Artifacts/logs:
+  `artifacts/results/gppro-empty-install-vpcd-20261027T040937Z/` (pass);
+  failed first attempt `artifacts/results/gppro-empty-install-vpcd-20261027T040739Z/`;
+  test output `TEST:PASS cap_parser_framing checks=4165 fuzz_inputs=100000
+  corpus_files=48`.

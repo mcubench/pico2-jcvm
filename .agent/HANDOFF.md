@@ -6,6 +6,32 @@
 
 # Current continuation — CAP 2.1 Descriptor/Class cross-reference (2026-10-27)
 
+# Current continuation — validate CAP type nibble grammar (2026-10-27)
+
+- Added syntax validation for CAP 2.1 type-descriptor nibble sequences:
+  recognized primitive/reference/array codes, consumed all four class-reference
+  nibbles after reference types, enforced zero padding for odd nibble counts,
+  and allowed `void` only as the final signature type. The 3.0.5 Java Card VM
+  spec defines these codes and confirms `void` is the method return type at
+  the end of the signature.
+- `./tools/test-cap-parser` passes 4,165 ASan/UBSan checks across all 48
+  unchanged `/deploy` CAPs and 100,000 random buffers, including synthetic
+  valid and invalid nibble sequences. ARM/RISC-V wrappers pass. VPCD GPPro
+  LOAD/INSTALL/list passed on retry; first attempt timed out before card
+  presence (20-second idle timeout). Pass logs:
+  `artifacts/results/gppro-empty-install-vpcd-20261027T040937Z/`.
+- ARM UF2: 2,027,008 bytes, SHA-256
+  `caca34996bebc0a18040a3259c84fc138d9bb80d57fb7a99b548af1355818277`;
+  RISC-V smoke UF2: 79,360 bytes, SHA-256
+  `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`.
+- Implementation commit: `5f046ba`; progress/QKB/TODO/handoff metadata follows
+  separately. Physical board enumeration still fails through VM passthrough.
+- Next: validate each Descriptor field/method/constant-pool type offset against
+  actual type-descriptor starts without introducing unbounded CPU or stack
+  cost. Then continue interrupted persistent-write recovery tests.
+
+# Prior continuation — CAP 2.1 Descriptor/Class cross-reference (2026-10-27)
+
 - Descriptor `this_class_ref` values are now checked against the Class record
   start offsets, and the descriptor class count must match the number of
   interface/class records. This is applied only to CAP 2.1 after format-aware
