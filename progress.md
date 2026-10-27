@@ -13391,7 +13391,7 @@
   physical `/deploy` acceptance once an identified Pico enumerates in the VM.
   Arbitrary curves, RSA key generation, and private-operation hardening remain
   open.
-- Commit: assigned after validation and staging.
+- Commit: `0bada8a`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`
   (the runner appends to its fixed-name log); ARM image
   `build/arm/pico2_choupi.uf2`; PC ROM mask `build/choupi-pc/flash`; no
