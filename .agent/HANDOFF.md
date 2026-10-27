@@ -1,3 +1,33 @@
+# Current continuation — VPCD install and ROM-mask CAP validation (2026-10-27)
+
+- Fixed the validation boundary: dynamic CAP packages retain complete payload
+  validation; trusted static ROM-mask packages still get outer component-frame
+  checks but skip Descriptor payload interpretation because ROMMASK stores
+  prelinked native structures. The JCAlgTest 1.8.2 GPPro VPCD flow now passes
+  LOAD, INSTALL, and applet listing after this change.
+- Fixed the VPCD test startup order by initializing PC/SC with `pcsc_scan -r`
+  before emulator startup, using reader `Virtual PCD 00 01` / endpoint
+  `127.0.0.1:35964`, then waiting for the card before invoking GPPro.
+- Validation: `./tools/test-cap-parser` passed 4,179 checks and 100,000 fuzz
+  inputs; ARM and RISC-V `asymm_crypto` builds passed; the cleaned PC build and
+  VPCD GPPro integration passed. Latest pass artifacts:
+  `artifacts/results/gppro-empty-install-vpcd-20261027T064212Z/`.
+- Images: ARM UF2 2,029,568 bytes, SHA-256
+  `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`;
+  RISC-V smoke UF2 79,360 bytes, SHA-256
+  `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`.
+  PC ROM mask 524,300 bytes, SHA-256
+  `112eee482fd3f2a049bec6bbb6994740f3e3f086e364cd0f3da0e9e1054ed44d`.
+- Physical access: the approved reader helper found zero Pico CCID devices even
+  after the user reported reconnecting them. No physical flash/test was done.
+- Implementation commit: `5b8ceb9`. Metadata and continuity update follows.
+- Preserve all unrelated modified and untracked files, including user changes
+  in `src/cap_load.cpp`, `AGENTS.md`, `tools/test-jcsystem-transaction-physical`,
+  generated JCAlgTest logs/lists, and the supplied profile CSV.
+- Next action: continue offline from `plan.md` while periodically checking the
+  approved host-access reader path; flash only after both architecture builds
+  pass and a physical Pico enumerates.
+
 # Current continuation — CAP 2.2 Class component extents (2026-10-27)
 
 - Added a bounded CAP 2.2 Class payload walk: type descriptor signature-pool

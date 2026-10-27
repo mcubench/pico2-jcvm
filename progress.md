@@ -13812,3 +13812,13 @@
 - Decision: Retain the bounded CAP 2.2 parser. Semantic cross-reference validation for remote metadata and CAP 2.3+ Class layouts remain open.
 - Commit: `a7d15cd`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; sanitizer output `TEST:PASS cap_parser_framing checks=4179 fuzz_inputs=100000 corpus_files=48`.
+
+## 2026-10-27 — Fix ROM CAP validation and VPCD install setup
+
+- Step/experiment: `wp9-rommask-cap-validation-vpcd-install`
+- Change: Skip serialized payload validation only for trusted static ROM-mask packages, where Descriptor data contains prelinked native structures. Preserve outer component framing checks and full validation of dynamically uploaded CAP files. Initialize PC/SC before starting the VPCD emulator and wait for card presence before GPPro.
+- Validation: `./tools/test-cap-parser` passed 4,179 checks over 48 CAP files and 100,000 fuzz inputs. `./tools/build arm --profile asymm_crypto`, `./tools/build riscv --profile asymm_crypto`, and `./tools/build-pc --profile asymm_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed twice; final clean-build artifact: `artifacts/results/gppro-empty-install-vpcd-20261027T064212Z/`. `git -c core.whitespace=cr-at-eol diff --check` passed for implementation files.
+- Result: ARM UF2 is 2,029,568 bytes (SHA-256 `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`); RISC-V smoke UF2 is 79,360 bytes (SHA-256 `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`); PC ROM mask is 524,300 bytes (SHA-256 `112eee482fd3f2a049bec6bbb6994740f3e3f086e364cd0f3da0e9e1054ed44d`). The approved PC/SC helper found zero physical readers, so no flash or hardware test was performed.
+- Decision: Keep strict parsing for uploaded CAPs and use emulator GPPro integration for this regression until a physical board enumerates.
+- Commit: `5b8ceb9`
+- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T064212Z/`; implementation commit `5b8ceb9`.

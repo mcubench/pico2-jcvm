@@ -5573,3 +5573,17 @@ fix.
 - **Validation:** The latest retry timed out at
   `artifacts/results/gppro-empty-install-vpcd-20261027T050759Z/`; two earlier
   attempts with card presence loaded the CAP but received INSTALL `0x6F00`.
+
+## ROM-mask CAP payloads are prelinked and fail standard Descriptor validation (2026-10-27)
+
+- **Symptom:** During dynamic CAP import resolution, scanning resident ROM packages throws `SecurityException` on Descriptor component payloads (tag 11), blocking GPPro INSTALL with `6F00`.
+- **Cause:** ROMMASK Descriptor tables are prelinked native structures, not serialized CAP Descriptor payloads in standard CAP byte order. Running the strict uploaded-CAP payload parser over them produces false rejections.
+- **Viable fix:** Keep outer component frame, length, and duplicate-component checks for every package. Skip only the serialized payload parser for trusted static ROM-mask packages. Keep full payload validation enabled for every dynamically loaded CAP path.
+- **Validation:** Parser suite passes 4,179 checks and 100,000 fuzz inputs; ARM, RISC-V, and PC builds pass. GPPro 1.8.2 loads and installs the unchanged upstream CAP and lists its applet under VPCD at `artifacts/results/gppro-empty-install-vpcd-20261027T064212Z/`. Physical reader access was unavailable, so no hardware claim is made.
+
+## VPCD PC/SC service startup race (2026-10-27)
+
+- **Symptom:** The emulator's one-shot TCP connection to the virtual reader can fail with `ECONNREFUSED`, or reader presence probes can remain absent despite the emulator connecting.
+- **Cause:** The PC/SC/VPCD reader service was not initialized before the emulator connected; starting a presence wait too early can also leave that reader instance stuck absent.
+- **Viable fix:** Run `pcsc_scan -r` first and verify the selected virtual reader exists. Start the emulator on its matching endpoint, allow one second for its VPCD master connection, then issue a bounded presence probe before GPPro. Current tested pair: `Virtual PCD 00 01` / `127.0.0.1:35964`.
+- **Validation:** The repository VPCD GPPro integration passed twice after this sequence; final clean-build log is `artifacts/results/gppro-empty-install-vpcd-20261027T064212Z/`.
