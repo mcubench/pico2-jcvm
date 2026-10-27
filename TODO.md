@@ -1514,10 +1514,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   passed 53/53 physical API known-answer checks on Pico 2
   `D92E743D5F640C0F`: 50 RSA signature cases (PKCS#1, PSS, ISO9796-2 and
   message recovery) plus three EC private-key storage cases. GPPro removed the
-  temporary package afterward. This closes physical evidence for those
-  selected operations, not complete `asymm_crypto` acceptance. Remaining work
-  includes EC signatures, key agreement and generation vectors, exact full-
-  report comparison, and complete physical `/deploy` acceptance. RSA private-
+  temporary package afterward. On the same image, the 71-case symmetric
+  physical known-answer suite also passed on D92. Its temporary test package
+  was removed; a post-test GPPro listing confirmed the pre-existing JCAlgTest
+  applet/package and F01234567890 package remained while the temporary probe
+  AID was absent. This closes physical evidence for these selected operations,
+  not complete `asymm_crypto` acceptance. Remaining work includes EC
+  signatures, key agreement and generation vectors, exact full-report
+  comparison, and complete physical `/deploy` acceptance. RSA private-
   operation blinding and broader cryptographic hardening remain unvalidated.
   Separate ARM UF2s and expected
   support CSVs are packaged for external Windows testing at

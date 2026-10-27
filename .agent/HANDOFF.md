@@ -1,3 +1,23 @@
+# Current continuation — validate symmetric KATs on the combined profile (2026-10-27)
+
+- The combined `asymm_crypto` image on D92
+  `D92E743D5F640C0F` passed the physical 71-vector symmetric KAT suite via
+  `tools/test-symm-crypto-pcsc`: `TEST:SUMMARY pass=71 fail=0`. GPPro LOAD and
+  INSTALL succeeded for temporary probe package `A000000151000201`; cleanup
+  succeeded afterward.
+- A second Pico reader was visible as 2BED. With both readers connected,
+  D92's exact PC/SC name changed from a prior `00 00` suffix to `01 00`.
+  Re-ran `pcsc_scan -r`, matched the name by embedded D92 chip ID, and directed
+  all commands to that exact reader. Do this again after any reader hotplug.
+- Final GPPro listing confirmed the temporary A000 test package was absent;
+  existing JCAlgTest AID `4A43416C6754657374` and package F01234567890 remained
+  installed and untouched. Listing log:
+  `artifacts/logs/gppro-post-symm-probe-D92-20261027.log`. KAT log:
+  `artifacts/logs/symm-crypto-kat-pcsc-20261027T195919Z.log`.
+- Next: continue physical EC ECDSA/key-agreement coverage and the full
+  asymmetric report/deploy acceptance. Do not infer full profile completion
+  from these focused vector suites.
+
 # Current continuation — validate the combined asymmetric profile on D92 (2026-10-27)
 
 - Confirmed one physical PC/SC reader after the prior two-device BOOTSEL state.

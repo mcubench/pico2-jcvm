@@ -12,9 +12,10 @@ report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
 The physical deployment target is ARM Cortex-M33. ARM, RISC-V, and PC build
 wrappers pass; RISC-V has not been tested on hardware. On 2026-10-27, D92
 `D92E743D5F640C0F` was flashed with the combined `asymm_crypto` ARM image and
-passed the finite runtime monitor plus 53/53 selected RSA-signature and EC-key
-storage vectors over PC/SC. This is focused crypto evidence, not complete
-asymmetric-profile or `/deploy` acceptance. Pico 2 `2BED26ED20556535` was last
+passed the finite runtime monitor, 53/53 selected RSA-signature and EC-key
+storage vectors, and 71/71 symmetric crypto known-answer vectors over PC/SC.
+This is focused crypto evidence, not complete asymmetric-profile or `/deploy`
+acceptance. Pico 2 `2BED26ED20556535` was last
 confirmed running `symm_crypto` with an ISD-only GPPro listing on 2026-10-25.
 Firmware images do not preload JCAlgTest, and reflashing preserves the separate
 persistent CAP store; install CAPs explicitly with GPPro after confirming the
@@ -28,8 +29,12 @@ card registry is empty.
   PC/SC known-answer probe passed 53/53: RSA PKCS#1/PSS/ISO9796-2 signing and
   verification, message-recovery cases, malformed-signature rejection, and
   three EC private-key storage checks. GPPro cleanup removed the temporary
-  probe package. Log:
-  `artifacts/logs/asymm-crypto-pcsc-20261027T080334Z.log`. This does not cover
+  probe package. The same image passed a separate 71/71 symmetric KAT suite;
+  GPPro cleanup and a post-test listing confirmed the temporary A000 package
+  was removed and pre-existing JCAlgTest/F01234567890 entries were preserved.
+  Logs: `artifacts/logs/asymm-crypto-pcsc-20261027T080334Z.log`,
+  `artifacts/logs/symm-crypto-kat-pcsc-20261027T195919Z.log`, and
+  `artifacts/logs/gppro-post-symm-probe-D92-20261027.log`. This does not cover
   the entire profile, full JCAlgTest support report, or `/deploy` suite.
 
 - **Empty-card `symm_crypto` reflash and physical registry check (2026-10-25):**

@@ -13905,3 +13905,14 @@
 - Decision: Keep `asymm_crypto` acceptance open for ECDSA, key agreement/generation vector coverage, full report comparison, broader deploy runs, and private-operation hardening. Continue using D92 while it remains visible.
 - Commit: `a577ac7`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-pcsc-20261027T080334Z.log` and `build/symm-crypto-probe/asymm-crypto-physical-vectors.tsv`.
+
+## 2026-10-27 — Run symmetric vectors on combined asymmetric firmware (716 minutes actual runtime)
+
+- Step/experiment: `asymm-profile-symmetric-physical-vectors`
+- When: '2026-10-27 08:06 UTC' - '2026-10-27 20:02 UTC'
+- Change: No firmware code change. Used the existing API-only symmetric probe CAP to validate that the combined `asymm_crypto` firmware retains its symmetric crypto behavior; the unchanged upstream JCAlgTest CAP was not modified.
+- Validation: The first GPPro attempt used D92's stale reader suffix `00 00` and failed before card mutation because a second Pico was now present. `pcsc_scan -r` identified D92 as the full reader name ending `01 00` and 2BED as `00 00`. GPPro LOAD/INSTALL then succeeded on D92; `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-pcsc '<exact D92 reader name>'` passed all 71 cipher/MAC KATs. GPPro cleanup ran, and a post-test `--list` confirmed the temporary A000 package was absent.
+- Result: D92 passed `TEST:SUMMARY pass=71 fail=0` on the combined profile. Existing JCAlgTest applet/package and package `F01234567890` remained installed; no pre-existing card data was removed. The image's full support report and `/deploy` matrix remain open.
+- Decision: Record the reader-name renumbering as a host procedure issue; always re-enumerate and match the reader's embedded chip ID after device hotplug. Continue with physical ECDSA/key-agreement coverage and full profile acceptance.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/symm-crypto-kat-pcsc-20261027T195919Z.log`, `artifacts/logs/gppro-post-symm-probe-D92-20261027.log`, and `build/symm-crypto-probe/physical-vectors.tsv`.

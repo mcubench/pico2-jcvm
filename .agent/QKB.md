@@ -14,6 +14,24 @@
   including its `00 00` interface suffix; a shortened label fails before card
   installation and is not a firmware/card result.
 
+## PC/SC reader suffix changes when a second Pico is present — 2026-10-27
+
+- **Symptom:** A GPPro test addressed D92 with its previously observed reader
+  name ending in `00 00`, but GPPro no longer found that reader. With two Pico
+  readers attached, it listed D92 as interface `01 00` and 2BED as `00 00`.
+- **Cause:** PC/SC reader numbering/interface suffix is assigned from the
+  current set of enumerated readers and can change when another Pico appears.
+  A remembered suffix or list index is not a stable board identity.
+- **Viable fix:** Run `pcsc_scan -r` and inspect the exact reader strings after
+  every insertion/removal. Select the entry whose name contains the confirmed
+  RP2350 chip ID; pass its full current name including interface suffix to
+  GPPro and SmartcardIO. Do not infer the board from reader index.
+- **Validation:** On the combined `asymm_crypto` image, D92 under its current
+  `01 00` reader name passed the 71-vector symmetric suite. The temporary
+  package was removed and the final GPPro listing retained existing applets.
+  Evidence: `artifacts/logs/symm-crypto-kat-pcsc-20261027T195919Z.log` and
+  `artifacts/logs/gppro-post-symm-probe-D92-20261027.log`.
+
 ## Asymmetric physical probe vector assertion stale after suite expansion — 2026-10-27
 
 - **Symptom:** `tools/test-asymm-crypto-pcsc` exited before installing its
