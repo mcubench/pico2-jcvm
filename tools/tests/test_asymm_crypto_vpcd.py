@@ -70,6 +70,10 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
                     "EC DH accepts a key without cofactor"))
     results.append((bytes((0x80, 0x18, 2, 0, 1, 1, 0)), b"\x02\x90\x00",
                     "EC DHC rejects an uninitialized cofactor"))
+    for selector, bits in enumerate((192, 224, 256, 384, 521)):
+        command = bytes((0x80, 0x19, selector, 0, 0))
+        results.append((command, b"\x01\x90\x00",
+                        f"EC KeyPair generation {bits}-bit sign/verify"))
     rsa = _rsa_512_fixture()
     messages = {
         10: b"JCVM RSA PKCS1",
@@ -342,7 +346,9 @@ def main() -> int:
         label.startswith(("EC key agreement", "EC DH ", "EC DHC "))
         for _, _, label in cases
     )
-    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 ec_key_builder_vectors=3 ecdsa_vectors={ecdsa_vectors} ec_key_agreement_vectors={agreement_vectors} rsa_signature_vectors={rsa_signature_vectors} fail=0")
+    keypair_vectors = sum("EC KeyPair generation" in label
+                          for _, _, label in cases)
+    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 ec_key_builder_vectors=3 ecdsa_vectors={ecdsa_vectors} ec_key_agreement_vectors={agreement_vectors} ec_keypair_vectors={keypair_vectors} rsa_signature_vectors={rsa_signature_vectors} fail=0")
     print(f"TEST:LOG {log}")
     return 0
 

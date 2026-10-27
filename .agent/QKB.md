@@ -5322,3 +5322,22 @@ fix.
   ECDSA sign/verify for SHA-1/224/256/384/512; both architecture wrappers
   build. Physical testing is pending because the host helper currently finds
   zero Pico readers.
+
+
+## JC305 KeyPair getter token order and qualified constructor JNI name (2026-10-27)
+
+- **Symptom:** Native EC KeyPair generation initially produced keys, but a
+  sign/verify probe selected the public key for signing. The ROM-mask JNI
+  generator also emitted an invalid C++ identifier for the qualified
+  `KeyPair/<init>` method signature.
+- **Cause:** The imported JC305 method-token mapping resolves `getPublic()` and
+  `getPrivate()` to the opposite generated native selectors compared with the
+  embedded API declaration. Separately, constructor normalization only handled
+  the exact method name `<init>`, not a fully qualified name containing it.
+- **Viable fix:** Keep Java Card API behavior stable by returning the key fields
+  from the native selectors according to the verified imported CAP token mapping;
+  test both returned key types through actual ECDSA sign/verify. In ROM-mask
+  generation, normalize `<init>` anywhere in the qualified name to `init` for
+  both declaration and dispatch generation.
+- **Validation:** VPCD passed five EC KeyPair generation and ECDSA sign/verify
+  vectors (P-192/224/256/384/521); PC, ARM, and RISC-V wrapper builds passed.

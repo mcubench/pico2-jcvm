@@ -128,7 +128,9 @@ void loadAndValidateGroup(JC_Instance &key, mbedtls_ecp_group &group,
   mbedtls_mpi_free(&supplied);
   if (rc != 0 || key.getField_Short(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK) != 1)
+  {
     throwCryptoException(CryptoExceptionReason::IllegalValue);
+  }
   mbedtls_mpi gx, gy;
   mbedtls_mpi_init(&gx); mbedtls_mpi_init(&gy);
   rc = mbedtls_mpi_read_binary(&gx, g.data() + 1, width);
@@ -136,7 +138,9 @@ void loadAndValidateGroup(JC_Instance &key, mbedtls_ecp_group &group,
   if (rc == 0 && (mbedtls_mpi_cmp_mpi(&gx, &group.G.MBEDTLS_PRIVATE(X)) != 0 ||
                   mbedtls_mpi_cmp_mpi(&gy, &group.G.MBEDTLS_PRIVATE(Y)) != 0)) rc = -1;
   mbedtls_mpi_free(&gx); mbedtls_mpi_free(&gy);
-  if (rc != 0) throwCryptoException(CryptoExceptionReason::IllegalValue);
+  if (rc != 0) {
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  }
 }
 
 int randomBytes(void *, unsigned char *output, size_t length) {
@@ -301,8 +305,9 @@ void initializeEcdsaSignature(JC_Instance &signature, jref_t keyRef,
   const uint8_t type = static_cast<uint8_t>(key->getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
   const bool signing = type == kEcFpPrivate;
-  if ((mode == kSign && !signing) || (mode == kVerify && type != kEcFpPublic))
+  if ((mode == kSign && !signing) || (mode == kVerify && type != kEcFpPublic)) {
     throwCryptoException(CryptoExceptionReason::IllegalValue);
+  }
   const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
   ScopedGroup group;
@@ -328,7 +333,9 @@ void initializeEcdsaSignature(JC_Instance &signature, jref_t keyRef,
     if (rc == 0) rc = mbedtls_ecp_check_pubkey(&group.value, &publicKey);
     mbedtls_ecp_point_free(&publicKey);
   }
-  if (rc != 0) throwCryptoException(CryptoExceptionReason::IllegalValue);
+  if (rc != 0) {
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  }
   signature.setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY, keyRef);
   signature.setField_Short(

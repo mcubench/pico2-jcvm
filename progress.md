@@ -13330,3 +13330,37 @@
   `build/choupi-pc/flash`, VPCD log
   `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log` (runner reuses this
   fixed filename); no physical log.
+
+
+## 2026-10-27 — Native EC KeyPair generation
+
+- Step/experiment: `asymm-crypto-ec-keypair`
+- Change: Added profile-gated native `KeyPair` construction, key generation, and
+  public/private key access for EC FP. Generation stores the curve domain and
+  generated key material in native Java Card key objects. Added five VPCD
+  sign/verify vectors for P-192, P-224, P-256, P-384, and P-521. Fixed ROM-mask
+  JNI naming for qualified `<init>` signatures and retained stable public API
+  signatures.
+- Validation: `python3 tools/test-javacard-support.py` passed 9/9;
+  `./tools/build-pc --profile asymm_crypto` passed; elevated VPCD passed 91/91
+  (89 asymmetric APDUs plus ATR and SELECT), including all five KeyPair vectors;
+  `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` passed. ARM full firmware is
+  1,997,824 bytes (SHA-256
+  `b7e57bf46b286477d6d13e0ea840f0d0566fe47d86950eb4ec8a8477958a40c3`); PC ROM
+  mask is 524,300 bytes; RISC-V VM-core smoke image is 79,360 bytes. Physical
+  reader helper found zero boards; elevated `lsusb` found no `2e8a:0009`, and
+  PC/SC listed only Virtual PCD readers. No flash or hardware test was attempted.
+- Result: EC KeyPair generation and ECDSA sign/verify work in VPCD for five
+  named curves. The target profile's 128- and 160-bit key-pair generation,
+  exact report comparison, and physical validation remain open. Existing packed
+  CAP metadata warnings appear during compilation; the new sources compile
+  without their own warnings.
+- Decision: Continue by implementing and validating the missing 128/160-bit EC
+  curve generation, then audit all advertised asymm profile claims against the
+  target CSV before physical testing.
+- Commit: API submodule `869cb8a`; ROM-mask submodule `5297c51`; root commit
+  recorded in this entry after creation.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`
+  (runner uses a fixed name); `build/arm/pico2_choupi.uf2`;
+  `build/choupi-pc/flash`; no physical log.

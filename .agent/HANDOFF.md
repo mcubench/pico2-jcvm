@@ -1,3 +1,27 @@
+# Current continuation — native EC KeyPair generation (2026-10-27)
+
+- Added profile-gated native `KeyPair` constructor, generation, and getters for
+  EC FP. VPCD generates P-192, P-224, P-256, P-384, and P-521 keypairs and then
+  passes ECDSA sign/verify. API submodule commit `869cb8a`; ROM-mask submodule
+  constructor-name fix `5297c51`; root commit is recorded in `progress.md`.
+- Validation: support generator 9/9; PC `asymm_crypto` build; VPCD 91/91 (89
+  asymmetric APDUs plus ATR/SELECT); ARM and RISC-V wrappers passed. ARM full
+  firmware is 1,997,824 bytes, SHA-256
+  `b7e57bf46b286477d6d13e0ea840f0d0566fe47d86950eb4ec8a8477958a40c3`; PC ROM
+  mask 524,300 bytes; RISC-V smoke image 79,360 bytes.
+- Physical hardware: user reports tokens plugged in, but elevated authorized
+  reader helper found 0, `lsusb -d 2e8a:0009` found none, and PC/SC listed only
+  Virtual PCD 00 00/01. No flash/test attempted. Recheck enumeration when
+  continuing, then use any available identified board.
+- Remaining: implement EC KeyPair generation for reported 128/160-bit sizes;
+  audit all `asymm_crypto` yes results against the target CSV, compare a full
+  physical support report, complete `/deploy` hardware checks, and harden private
+  RSA operations. Keep upstream CAPs unchanged and all crypto in native C++.
+- Preserve unrelated worktree edits: `AGENTS.md`, `src/cap_load.cpp`,
+  `tools/test-jcsystem-transaction-physical`, `tools/tests/symm_crypto_applet/`,
+  supplied target CSV/logs/measurement lists, ROM-mask `capmap-free`/`target/`,
+  API submodule `sdks/`, and other pre-existing submodule changes.
+
 # Current continuation — native EC key agreement (2026-10-27)
 
 - Added native C++ `KeyAgreement` factory and operation dispatch for six

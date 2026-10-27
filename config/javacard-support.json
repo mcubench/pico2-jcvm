@@ -126,7 +126,8 @@
       "key_agreement_ec_svdp_dh_plain": false,
       "key_agreement_ec_svdp_dhc_plain": false,
       "key_agreement_ec_pace_gm": false,
-      "key_agreement_ec_svdp_dh_plain_xy": false
+      "key_agreement_ec_svdp_dh_plain_xy": false,
+      "keypair_ec_fp": false
     },
     "base": {
       "owner_pin": true,
@@ -253,7 +254,8 @@
       "key_agreement_ec_svdp_dh_plain": false,
       "key_agreement_ec_svdp_dhc_plain": false,
       "key_agreement_ec_pace_gm": false,
-      "key_agreement_ec_svdp_dh_plain_xy": false
+      "key_agreement_ec_svdp_dh_plain_xy": false,
+      "keypair_ec_fp": false
     },
     "no_aes": {
       "owner_pin": true,
@@ -380,7 +382,8 @@
       "key_agreement_ec_svdp_dh_plain": false,
       "key_agreement_ec_svdp_dhc_plain": false,
       "key_agreement_ec_pace_gm": false,
-      "key_agreement_ec_svdp_dh_plain_xy": false
+      "key_agreement_ec_svdp_dh_plain_xy": false,
+      "keypair_ec_fp": false
     },
     "minimal": {
       "owner_pin": false,
@@ -507,7 +510,8 @@
       "key_agreement_ec_svdp_dh_plain": false,
       "key_agreement_ec_svdp_dhc_plain": false,
       "key_agreement_ec_pace_gm": false,
-      "key_agreement_ec_svdp_dh_plain_xy": false
+      "key_agreement_ec_svdp_dh_plain_xy": false,
+      "keypair_ec_fp": false
     },
     "symm_crypto": {
       "owner_pin": true,
@@ -634,7 +638,8 @@
       "key_agreement_ec_svdp_dh_plain": false,
       "key_agreement_ec_svdp_dhc_plain": false,
       "key_agreement_ec_pace_gm": false,
-      "key_agreement_ec_svdp_dh_plain_xy": false
+      "key_agreement_ec_svdp_dh_plain_xy": false,
+      "keypair_ec_fp": false
     },
     "asymm_crypto": {
       "owner_pin": true,
@@ -761,7 +766,8 @@
       "key_agreement_ec_svdp_dh_plain": true,
       "key_agreement_ec_svdp_dhc_plain": true,
       "key_agreement_ec_pace_gm": true,
-      "key_agreement_ec_svdp_dh_plain_xy": true
+      "key_agreement_ec_svdp_dh_plain_xy": true,
+      "keypair_ec_fp": true
     }
   }
 }

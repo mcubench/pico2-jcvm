@@ -90,6 +90,7 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "key_agreement_ec_svdp_dh_plain_xy": (
         "javacard.security.KeyAgreement", "ALG_EC_SVDP_DH_PLAIN_XY"
     ),
+    "keypair_ec_fp": ("javacard.security.KeyPair", "ALG_EC_FP"),
     "secure_random": ("javacard.security.RandomData", "ALG_SECURE_RANDOM"),
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
@@ -249,6 +250,10 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
         value[f"key_ec_fp_private_{bits}"] for bits in _ec_fp_lengths
     ):
         raise ValueError(f"{path}: EC key agreement requires an enabled prime-field EC key length")
+    if value["keypair_ec_fp"] and not any(
+        value[f"key_ec_fp_private_{bits}"] for bits in _ec_fp_lengths
+    ):
+        raise ValueError(f"{path}: EC key-pair generation requires an enabled prime-field EC key length")
     if ((value["key_agreement_ec_svdp_dh"] or
          value["key_agreement_ec_svdp_dhc"]) and not value["sha1"]):
         raise ValueError(f"{path}: EC SVDP-DH and DHC require SHA-1 support")
@@ -437,6 +442,10 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
             "javacard/security|KeyAgreement|KeyAgreement/init(Ljavacard/security/PrivateKey;)V|instance",
             "javacard/security|KeyAgreement|KeyAgreement/getAlgorithm()B|instance",
             "javacard/security|KeyAgreement|KeyAgreement/generateSecret([BSS[BS)S|instance",
+            "javacard/security|KeyPair|KeyPair/<init>(BS)V|instance",
+            "javacard/security|KeyPair|KeyPair/genKeyPair()V|instance",
+            "javacard/security|KeyPair|KeyPair/getPublic()Ljavacard/security/PublicKey;|instance",
+            "javacard/security|KeyPair|KeyPair/getPrivate()Ljavacard/security/PrivateKey;|instance",
             "javacardx/crypto|Cipher|Cipher/getInstance(BZ)Ljavacardx/crypto/Cipher;|static",
             "javacardx/crypto|Cipher|Cipher/getInstance(BBZ)Ljavacardx/crypto/Cipher;|static",
             "javacardx/crypto|Cipher|Cipher/init(Ljavacard/security/Key;B)V|instance",
