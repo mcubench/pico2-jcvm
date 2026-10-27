@@ -12,6 +12,8 @@
   still ran the host OS build/relink and wrapper hashing. VPCD asymmetric
   vectors passed 99/99 before this build-only change. No physical board was
   visible to this VM; no flash was attempted.
+- Implementation commit: `587763e`; progress and continuity metadata follows
+  in a separate commit.
 - Next: resume the open Java Card runtime/API backlog offline. Retry physical
   acceptance only when a Pico enumerates through host access.
 
