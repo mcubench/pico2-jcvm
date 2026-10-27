@@ -5408,3 +5408,11 @@ fix.
   sign/verify and public-encrypt/private-decrypt round trips, plus 3072-bit
   generation. PC, ARM, and RISC-V wrapper builds passed. The VM saw no physical
   Pico or BOOTSEL device, so hardware verification remains pending.
+
+- **Hardening follow-up (2026-10-27):** Use independent random 224-bit
+  exponent blinders for the P and Q exponentiation branches. A shared blinder
+  could correlate the two branch traces; independent values avoid that direct
+  correlation. This does not provide input blinding or a public-exponent
+  result check, and is not a complete side-channel or fault-resistance audit.
+  VPCD passes 99/99, and ARM/RISC-V wrappers pass; physical validation remains
+  pending when a board is visible to the VM.

@@ -1608,7 +1608,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   PKCS#1/PSS also passed physical validation on 2026-10-26. Wider profile
   acceptance remains open; see the 2026-10-26 entries in `progress.md` and
   `.agent/HANDOFF.md`.
-- [ ] Add RP2350 TRNG and SHA-256 support, then additional mbedTLS algorithms,
-  each with known-answer tests (plan WP8).
+- [x] Implement RP2350 entropy-backed `SecureRandom` and native SHA-256 with
+  known-answer coverage; the RP2350 RNG path uses the pinned Pico SDK's
+  `get_rand_32()` source, which mixes RP2350 TRNG entropy into its PRNG, and
+  SHA-256 uses the on-chip accelerator when building for Pico 2. Other
+  Mbed-TLS digest/signature algorithms have also been added under
+  `asymm_crypto`. This does not claim Java Card `RandomData.ALG_TRNG` support:
+  JCAlgTest correctly reports that separate algorithm unsupported.
 - [ ] Complete deferred hardening and robustness work, including malformed CAP
   and APDU fuzzing and interrupted persistent-write recovery (plan WP9).

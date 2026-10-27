@@ -13559,3 +13559,27 @@
 - Commit: `c64ec3f`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   ARM image `build/arm/pico2_choupi.uf2`; no physical log.
+
+## 2026-10-27 — Use independent RSA-CRT exponent blinders
+
+- Step/experiment: `asymm-crypto-rsa-crt-independent-blinders`
+- Change: Generate independent 224-bit random blinders for the P and Q CRT
+  exponentiation branches. This reduces correlation between the two private
+  operation traces; input blinding and fault verification remain unresolved.
+- Validation: `./tools/test-asymm-crypto-vpcd` passed 99/99, including RSA-CRT
+  sign/verify and encrypt/decrypt vectors. `./tools/build arm --profile
+  asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. The
+  legacy target comparator passed exact parity for 136 comparable positive
+  identities. Physical testing was skipped because the approved reader helper
+  found zero devices and elevated `lsusb` found neither Pico runtime nor
+  BOOTSEL IDs.
+- Result: ARM UF2 2,023,936 bytes, SHA-256
+  `c6398c6e2d42e7e3b86e2a0e27ca254a35b0358c6ff22af1c28d55e4a65673a9`;
+  RISC-V smoke UF2 79,360 bytes; PC ROM mask 524,300 bytes. Existing upstream
+  converter warnings and packed-member warnings remain unchanged.
+- Decision: Keep the independent branch blinders. Do not mark physical
+  asymmetric acceptance complete; resume once USB passthrough exposes an
+  identified Pico.
+- Commit: `fd5a91d` (implementation); metadata commit recorded separately.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
+  generated images under `build/arm/` and `build/riscv/`.

@@ -1,3 +1,28 @@
+# Current continuation — independent RSA-CRT exponent blinders (2026-10-27)
+
+- Replaced the shared CRT exponent blinder with independent random 224-bit
+  blinders for the P and Q exponentiation branches. This reduces correlation
+  between the two private-operation traces. It remains exponent blinding only;
+  input blinding and fault verification are still unresolved.
+- Validation: `./tools/test-asymm-crypto-vpcd` passed 99/99, including CRT
+  sign/verify and encrypt/decrypt. `./tools/build arm --profile asymm_crypto`
+  and `./tools/build riscv --profile asymm_crypto` passed. ARM UF2 is
+  2,023,936 bytes (SHA-256
+  `c6398c6e2d42e7e3b86e2a0e27ca254a35b0358c6ff22af1c28d55e4a65673a9`);
+  RISC-V smoke UF2 is 79,360 bytes; PC ROM mask is 524,300 bytes.
+- The legacy JCAlgTest comparison remains exact for the 136 comparable
+  positive identities (`python3 tools/compare-jcalgtest-legacy-target.py`).
+- User reports tokens connected, but the approved PC/SC helper found zero and
+  elevated `lsusb` found neither `2e8a:0009` nor BOOTSEL `2e8a:000f`. No flash
+  or physical test was attempted. Restore VM USB passthrough and retry using an
+  identified board.
+- Implementation commit: `fd5a91d`. Progress record and QKB update follow in a
+  separate metadata commit.
+- Preserve unrelated worktree changes: `AGENTS.md`, `src/cap_load.cpp`,
+  `tools/test-jcsystem-transaction-physical`, dirty API/ROM-mask submodules,
+  four AlgTest logs, two performance measurement lists, and the supplied
+  target CSV.
+
 # Current continuation — native RSA/RSA-CRT KeyPair generation (2026-10-27)
 
 - Added selectable per-size `ALG_RSA` and `ALG_RSA_CRT` KeyPair generation for
