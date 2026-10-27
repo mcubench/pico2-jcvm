@@ -13504,6 +13504,6 @@
 - Decision: Use this command alongside the standard 1.8.2 comparator when a
   new physical report is available; physical asymmetric and `/deploy` tests
   remain pending until a board enumerates in the VM.
-- Commit: pending.
+- Commit: `e1abde8`.
 - Artifacts/logs: `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT*.csv`;
   `build/javacard-support/jcalgtest-supported.csv`; no hardware log.
