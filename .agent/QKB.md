@@ -5394,11 +5394,17 @@ fix.
   `mbedtls_mpi_exp_mod()` selects its secret-exponent path. The exponentiation
   core processes the allocated exponent width and uses a constant-time table
   lookup. This establishes the core's constant-time handling of the exponent,
-  not the complete RSA operation. The surrounding CRT code has not received a
-  full side-channel audit, does not blind the input, and does not verify the
-  private result with a public exponent; CRT fault resistance remains
-  unresolved.
+  not the complete RSA operation. CRT private operations now add a fresh
+  224-bit exponent blinder: `DP' = DP + r(P-1)` and
+  `DQ' = DQ + r(Q-1)`. They import the blinded exponents at `N`-width plus the
+  fixed blinder width, so loop width does not follow private exponent values
+  or factor encodings. On RP2350 the entropy callback uses Pico SDK `get_rand_32`;
+  the pinned SDK enables its TRNG entropy source by default when RP2350 TRNG is
+  available, mixed into its PRNG. This is exponent blinding only. The complete
+  CRT operation remains unaudited; it does not blind the input or verify the
+  private result with a public exponent, so CRT fault resistance remains
+  unresolved. Hardware validation of the random/blinded path is still needed.
 - **Validation:** VPCD passed 99/99 checks, including RSA-CRT 512- and 1024-bit
   sign/verify and public-encrypt/private-decrypt round trips, plus 3072-bit
   generation. PC, ARM, and RISC-V wrapper builds passed. The VM saw no physical
-  Pico, so hardware verification remains pending.
+  Pico or BOOTSEL device, so hardware verification remains pending.

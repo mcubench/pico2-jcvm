@@ -34,13 +34,23 @@
   and encrypt/decrypt at 512 and 1024 bits. Full VPCD passed 99/99; PC, ARM,
   and RISC-V builds passed. ARM UF2 is 2,022,912 bytes, SHA-256
   `4b60ab143091ca404aace01569b3c5fe00b2dbb45beb5531445a28c52c236a1b`.
+- CRT private operations now add a fresh 224-bit exponent blinder using
+  `DP' = DP + r(P-1)` and `DQ' = DQ + r(Q-1)`. Blinded exponents are imported
+  at public modulus width plus the fixed blinding width; the serialized secret
+  exponent bytes are zeroized. PC/VPCD passes 99/99, and exact-source ARM and
+  RISC-V wrapper builds pass. Updated ARM UF2: 2,023,936 bytes, SHA-256
+  `5f50d74a348b20ea160d1a5569d8a430b8f80fba745d0db7da9d25bd39a541f5`; PC ROM
+  mask: 524,300 bytes; RISC-V smoke UF2: 79,360 bytes. On RP2350 the callback
+  uses Pico SDK `get_rand_32`, whose pinned SDK config enables TRNG entropy by
+  default when supported by the chip. This is exponent blinding only; input
+  blinding, a full side-channel audit, and a fault check with a public exponent
+  remain unresolved.
 - Current hardware check: the user reports tokens plugged in, but the approved
-  reader helper found 0 devices and elevated `lsusb` showed only VM hubs/tablet
-  and the VirtualBox tablet. No flash or physical test was performed. Mbed TLS
+  reader helper found 0 devices and elevated `lsusb` showed only VM hubs and
+  the VirtualBox tablet, with no Pico or BOOTSEL device. No flash or physical
+  test was performed. Mbed TLS
   source audit confirms its normal MPI exponentiation uses a fixed-width,
-  constant-time exponent path and table lookup. The surrounding CRT operation
-  is not fully audited, has no input blinding or post-operation public-exponent
-  check, and remains open to hardening review.
+  constant-time exponent path and table lookup.
 - Next: restore USB passthrough so an identified board enumerates; then run
   physical asymmetric and `/deploy` acceptance. Continue offline review of
   RSA CRT input blinding and fault checks meanwhile.

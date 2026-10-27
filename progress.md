@@ -13528,3 +13528,34 @@
   including input blinding and CRT fault resistance.
 - Commit: `a02e5c2`.
 - Artifacts/logs: source files listed above; no hardware log.
+
+## 2026-10-27 — Add exponent blinding to native RSA-CRT operations
+
+- Step/experiment: `asymm-crypto-rsa-crt-exponent-blinding`
+- Change: Added fresh 224-bit exponent blinding to the shared native CRT
+  operation: `DP' = DP + r(P-1)` and `DQ' = DQ + r(Q-1)`. Blinded exponents
+  are re-imported at a fixed width derived only from the public modulus plus
+  the fixed blinding margin, including for unbalanced CRT factors. The
+  serialized exponent bytes are securely zeroized after import. Pico builds
+  obtain random data through the Pico SDK; its pinned RP2350 configuration
+  enables TRNG entropy by default when present. The PC simulator uses
+  `std::random_device`.
+- Validation: `./tools/test-asymm-crypto-vpcd` passed 99/99 (97 APDUs plus ATR
+  and SELECT), including CRT signing/verification and public-encrypt/private-
+  decrypt round trips. `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` both passed on the final source.
+  ARM UF2: 2,023,936 bytes, SHA-256
+  `5f50d74a348b20ea160d1a5569d8a430b8f80fba745d0db7da9d25bd39a541f5`; PC ROM
+  mask: 524,300 bytes; RISC-V smoke UF2: 79,360 bytes. After the builds, the
+  approved reader helper found 0 devices and elevated `lsusb` showed no Pico or
+  BOOTSEL device; no flash or physical test was performed.
+- Result: CRT private operations now receive per-call exponent blinding and
+  maintain fixed-width secret exponentiation, subject to the platform RNG
+  entropy configuration. This does not input-blind the RSA representative or
+  detect CRT faults.
+- Decision: Keep full CRT side-channel review, input blinding, fault checks,
+  and physical validation on the remaining list; restore guest USB passthrough
+  before attempting hardware tests.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
+  ARM image `build/arm/pico2_choupi.uf2`; no physical log.

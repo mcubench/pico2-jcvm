@@ -1562,8 +1562,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   RSA/RSA-CRT sizes through 3072 bits and seven EC sizes. Physical validation,
   private RSA hardening, and `/deploy` acceptance remain open. Source review
   confirms bundled Mbed TLS `mbedtls_mpi_exp_mod()` uses fixed-width,
-  constant-time exponentiation; full CRT timing behavior, input blinding, and
-  post-operation fault checking still need review/implementation.
+  constant-time exponentiation. CRT operations now apply fresh 224-bit
+  exponent blinding with an `N`-width-derived fixed exponent loop. Remaining
+  security work: audit the full operation, assess input blinding despite CRT
+  keys not exposing E, and add a post-operation fault check when the public
+  exponent is available. Hardware validation of this path is also pending.
   Reproduce the offline positive-set audit with
   `python3 tools/compare-jcalgtest-legacy-target.py`; the tool understands the
   supplied 1.7.9 schema and compares its shared asymmetric/symmetric-crypto
