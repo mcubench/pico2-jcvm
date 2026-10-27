@@ -82,18 +82,19 @@ def run_emulator(
             f"{host}:{port}",
             "--applet-aid",
             args.applet_aid.hex(),
-            "--package-id",
-            str(args.package_id),
-            "--cap-code",
-            str(args.cap_code),
             "--rom-mask",
             str(args.rom_mask),
         ]
-        if resume or (args.verify_install_process_restart and not pre_restart):
-            command.extend(("--class-index", str(args.install_class_index)))
+        if resume:
+            # Resume from the emulator's persisted CAP registry and flash image.
+            # Explicit --class-index reconstructs an instance outside the
+            # journal path and would mask a failed install-recovery replay.
+            command.append("--resume")
         else:
-            command.extend(("--install", "-s"))
-        if args.install_params is not None:
+            command.extend(("--package-id", str(args.package_id),
+                            "--cap-code", str(args.cap_code),
+                            "--install", "-s"))
+        if args.install_params is not None and not resume:
             command.extend(("--install-params", args.install_params))
             print(
                 "VPCD:INSTALL_PARAMETERS "
@@ -111,7 +112,7 @@ def run_emulator(
             child_env["CHOUPI_TEST_LEAVE_INSTALL_JOURNAL_ONCE"] = "1"
         if pre_restart:
             child_env["CHOUPI_TEST_SKIP_INSTALL_RECOVERY_ONCE"] = "1"
-        if args.install_params is not None:
+        if args.install_params is not None and not resume:
             child_env["CHOUPI_EXPECT_INSTALL_PARAMS"] = args.install_params
         with args.log.open("ab") as log:
             log.write(f"\n--- VPCD pass {pass_number} ---\n".encode())
@@ -151,12 +152,16 @@ def run_emulator(
                     select += args.applet_aid + b"\x00"
                     send_message(connection, select)
                     skipped_select = receive_message(connection)
-                    if skipped_select[-2:] != b"\x6f\x00":
+                    if skipped_select[-2:] != b"\x6a\x82":
                         raise RuntimeError(
-                            "injected pre-restart restore should fail SELECT "
-                            f"with 6F00, got {skipped_select.hex().upper()}"
+                            "applet should remain unregistered until install "
+                            "journal recovery; expected SELECT 6A82, got "
+                            f"{skipped_select.hex().upper()}"
                         )
-                    print("TEST:PASS pre-restart restore callback was skipped")
+                    print(
+                        "TEST:PASS pre-recovery SELECT reports applet not "
+                        "registered (6A82)"
+                    )
                     return
 
                 select = bytes((0x00, 0xA4, 0x04, args.select_p2,
@@ -339,7 +344,7 @@ def run_emulator(
                 raise RuntimeError(
                     f"PC emulator exited with status {return_code}; inspect {args.log}"
                 )
-            if args.install_params is not None:
+            if args.install_params is not None and not resume:
                 with args.log.open("rb") as captured_log:
                     captured_log.seek(log_start)
                     run_log = captured_log.read().decode(
@@ -397,8 +402,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--emulator", type=Path, default=repo / "build/choupi-pc/choupi"
     )
-    default_memory = repo / "build/algtest-v182-empty-flash.bin"
-    parser.add_argument("--memory", type=Path, default=default_memory)
+    default_memory = repo / "build/algtest-v182-vpcd-empty-input.bin"
+    parser.add_argument(
+        "--memory", type=Path, default=None,
+        help=("input flash image; by default the test creates a fresh blank "
+              "image at " + str(default_memory)),
+    )
     parser.add_argument(
         "--cap-code", type=Path, default=repo / "build/algtest-v182-load-code.bin"
     )
@@ -519,6 +528,9 @@ def parse_args() -> argparse.Namespace:
         default=repo / "artifacts/logs/host-vpcd-jcalgtest-20261014.log",
     )
     args = parser.parse_args()
+    args.uses_generated_empty_memory = args.memory is None
+    if args.memory is None:
+        args.memory = default_memory
     if args.apdu_timeout <= 0:
         parser.error("--apdu-timeout must be positive")
     if args.install_params is not None:
@@ -554,6 +566,9 @@ def parse_args() -> argparse.Namespace:
     args.repo = args.repo.resolve()
     for name in ("emulator", "memory", "cap_code", "rom_mask"):
         setattr(args, name, getattr(args, name).resolve())
+        if name == "memory" and args.uses_generated_empty_memory:
+            args.memory.parent.mkdir(parents=True, exist_ok=True)
+            args.memory.write_bytes(b"")
         if not getattr(args, name).is_file():
             parser.error(f"--{name.replace('_', '-')} not found: {getattr(args, name)}")
     if args.flash_copy is None:
@@ -705,7 +720,8 @@ def main() -> int:
                     f"pre-restart install markers missing: {missing}; inspect {args.log}"
                 )
             class_match = re.findall(
-                r"VPCD:APPLET_INSTALLED class-index=(\d+)", install_log
+                r"VPCD:APPLET_INSTALLED(?: package-id=\d+)? class-index=(\d+)",
+                install_log,
             )
             package_match = re.findall(
                 r"VPCD:TEST_LEFT_INSTALL_JOURNAL package=(\d+)", install_log

@@ -509,6 +509,12 @@ extern "C" uint8_t choupi_pc_initialize_storage(void) {
       }
     }
     if (vpcd_registry_resume_requested) {
+      if (!vpcd_cap_load_session.recoverPendingInstalls()) {
+        std::fprintf(stderr,
+                     "ERROR: unable to recover pending VPCD CAP installs\n");
+        pc_storage_initialization_failed = true;
+        return 1;
+      }
       uint8_t package_id = 0xff;
       uint8_t applet_aid[16]{};
       uint8_t applet_aid_length = 0;
