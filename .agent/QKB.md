@@ -5434,3 +5434,21 @@ fix.
   and processed 100,000 randomized input buffers without sanitizer findings.
   The VPCD GPPro empty-card install/select integration also passed. This checks
   outer framing; variable-length payload structures still need deeper checks.
+
+## CAP component payload tables need internal count bounds (2026-10-27)
+
+- **Symptom:** A component's outer frame can fit the CAP while a variable-length
+  table inside it declares more AIDs, handlers, array values, or exports than
+  the component payload contains. Some later component accessors trust these
+  counts.
+- **Viable fix:** Before storing component views, validate Header package AID
+  and name lengths; Directory custom entries; Applet and Import AID records;
+  Constant Pool count; Method exception-handler extent; Static Field initializer
+  records and values; Reference Location table extents; Export records; and
+  minimum Descriptor fixed-prefix space. Use explicit byte decoding and
+  remaining-length checks before every count-based advance.
+- **Validation:** ASan/UBSan corpus accepts 48 supplied deploy CAPs, rejects
+  targeted impossible counts and outer-frame truncations, and processes
+  100,000 randomized byte strings. VPCD GPPro install/select passes. Class
+  component and nested Descriptor record traversal remain unresolved, so this
+  is partial structural validation rather than a complete CAP verifier.

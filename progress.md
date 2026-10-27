@@ -13626,3 +13626,29 @@
   fuzzing. Physical acceptance remains incomplete.
 - Commit: `00ae634` (harness); metadata commit recorded separately.
 - Artifacts/logs: sanitizer test output `TEST:PASS apdu_parser_fuzz inputs=250000`.
+
+## 2026-10-27 — Validate variable CAP component payloads
+
+- Step/experiment: `wp9-cap-payload-bounds`
+- Change: Validate counted payload structure before retaining component views:
+  Header AID/name lengths, Directory custom records, Applet and Import AID
+  records, Constant Pool entries, Method exception handlers, Static Field array
+  initializers, Reference Location tables, Export records, and Descriptor
+  fixed-prefix space. Extended the sanitizer harness with targeted impossible
+  count mutations.
+- Validation: `./tools/test-cap-parser` passed 4,038 checks with ASan/UBSan:
+  all 48 supplied deploy CAPs parsed, malformed counts/truncations/oversized
+  lengths were rejected, and 100,000 randomized buffers completed without a
+  sanitizer finding. ARM and RISC-V wrappers passed. The VPCD GPPro
+  empty-install/LOAD/INSTALL/SELECT integration passed.
+- Result: ARM UF2 2,025,472 bytes, SHA-256
+  `abedadff14abd16ff42ee940ef6ac149041e3a966635b7ef2664db146729306f`;
+  RISC-V smoke UF2 79,360 bytes. Imported-header compiler warnings persist.
+  No physical board enumerated, so no hardware validation was done.
+- Decision: Keep the count checks. Class component and nested Descriptor
+  records still need a verified full traversal; the CAP parser is not yet a
+  complete structural verifier.
+- Commit: `b5f1123` (implementation); metadata commit recorded separately.
+- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T032756Z/`;
+  sanitizer test output `TEST:PASS cap_parser_framing checks=4038
+  fuzz_inputs=100000 corpus_files=48`.

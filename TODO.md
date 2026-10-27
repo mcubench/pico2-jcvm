@@ -1616,12 +1616,15 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `asymm_crypto`. This does not claim Java Card `RandomData.ALG_TRNG` support:
   JCAlgTest correctly reports that separate algorithm unsupported.
 - [ ] Complete deferred hardening and robustness work (plan WP9). CAP
-  component framing now checks the 3-byte header and bounds the declared
-  component size before creating views or advancing. The sanitizer-backed
-  corpus harness accepts all 48 supplied deploy CAPs and checks truncations,
-  forged lengths, and 100,000 randomized inputs. Remaining here: fuzz the APDU
-  parser, validate CAP component payload structures beyond outer framing, and
-  continue interrupted persistent-write recovery / fuzzing. The short APDU
-  parser now passes a separate ASan/UBSan harness over 250,000 randomized
-  inputs, checking acceptance and decoded lengths against the ISO 7816 short
-  APDU case rules; no parser bug surfaced.
+  component framing validates the full 3-byte header and declared component
+  length before creating views or advancing. Payload checks cover header AIDs,
+  directory custom records, applet/import AID records, constant-pool counts,
+  method handlers, static-field initializers, reference locations, exports,
+  and Descriptor minimum prefixes. The sanitizer corpus accepts all 48
+  supplied deploy CAPs, mutates counted fields, checks truncations/forged
+  lengths, and processes 100,000 randomized inputs. Class and nested
+  Descriptor table walks remain open. The short APDU parser passes a separate
+  ASan/UBSan harness over 250,000 randomized inputs, comparing results and
+  decoded lengths to ISO 7816 short APDU case rules; no bug surfaced. Remaining
+  here: full CAP nested-table validation and fuzzing, plus interrupted
+  persistent-write recovery / fuzzing.

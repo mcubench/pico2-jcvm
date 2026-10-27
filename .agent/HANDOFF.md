@@ -1,3 +1,26 @@
+# Current continuation — validate counted CAP component payloads (2026-10-27)
+
+- Extended the CAP parser's pre-view validation to Header AID/package-name
+  lengths, Directory custom-component entries, Applet AID records, Import
+  package records, Constant Pool entry counts, Method exception-handler table
+  extent, Static Field array/value lengths, Reference Location tables, Export
+  records, and minimum Descriptor fixed-prefix space. Class and nested
+  Descriptor record walks remain incomplete; do not call all CAP structure
+  validation complete.
+- The ASan/UBSan corpus now passes 4,038 checks across all 48 unchanged
+  `/deploy` CAPs. It mutates selected counted fields to impossible sizes,
+  checks truncated/oversized outer frames, and processes 100,000 randomized
+  buffers. VPCD GPPro LOAD/INSTALL/SELECT passes after the checks.
+- ARM and RISC-V wrappers pass. ARM UF2 is 2,025,472 bytes, SHA-256
+  `abedadff14abd16ff42ee940ef6ac149041e3a966635b7ef2664db146729306f`;
+  RISC-V smoke UF2 is 79,360 bytes. The host cannot currently see plugged
+  physical tokens; no hardware operation was performed.
+- Implementation commit: `b5f1123`; progress/QKB/TODO metadata follow in a
+  separate commit.
+- Next: verify the exact JC CAP class/descriptor record walk, then continue
+  interrupted persistent-write recovery and full physical acceptance. Preserve
+  unrelated edits enumerated in the next handoff section.
+
 # Current continuation — sanitizer fuzzing for the short APDU parser (2026-10-27)
 
 - Added `tools/test-apdu-parser-fuzz`, which runs the short APDU parser under
