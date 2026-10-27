@@ -27,6 +27,7 @@
 
 #include "jc_cap.hpp"
 #include "../exceptions.hpp"
+#include <cstddef>
 #include <utility>
 
 namespace jcvm {
@@ -51,10 +52,32 @@ namespace jcvm {
  * @param[cap_file] A pointer to the CAP file data
  */
 JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
+  if (cap_file == nullptr) {
+    if (length != 0) {
+      throw Exceptions::SecurityException;
+    }
+    return;
+  }
+
   const uint8_t *component = cap_file;
   const uint8_t *cap_file_end = cap_file + length;
 
   while (component < cap_file_end) {
+    const size_t remaining = static_cast<size_t>(cap_file_end - component);
+    constexpr size_t component_header_size = sizeof(uint8_t) + sizeof(uint16_t);
+    if (remaining < component_header_size) {
+      throw Exceptions::SecurityException;
+    }
+
+    // Decode the length from bytes so an unaligned CAP buffer is safe, then
+    // validate the complete frame before any component view is constructed.
+    const uint16_t payload_size = static_cast<uint16_t>(
+        (static_cast<uint16_t>(component[1]) << 8) | component[2]);
+    if (payload_size > remaining - component_header_size) {
+      throw Exceptions::SecurityException;
+    }
+    const uint8_t *next_component =
+        component + component_header_size + payload_size;
 
     uint8_t component_tag = *component;
 
@@ -66,10 +89,6 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
       this->header_comp =
           reinterpret_cast<const jc_cap_header_component *>(component);
-      component += sizeof(this->header_comp->tag) +
-                   sizeof(this->header_comp->size) +
-                   HTONS(this->header_comp->size);
-
       break;
 
     case CAP_COMPONENT_DIRECTORY:
@@ -79,9 +98,6 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
       this->directory_comp =
           reinterpret_cast<const jc_cap_directory_component *>(component);
-      component += sizeof(this->directory_comp->tag) +
-                   sizeof(this->directory_comp->size) +
-                   HTONS(this->directory_comp->size);
       break;
 
     case CAP_COMPONENT_APPLET:
@@ -91,9 +107,6 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
       this->applet_comp =
           reinterpret_cast<const jc_cap_applet_component *>(component);
-      component += sizeof(this->applet_comp->tag) +
-                   sizeof(this->applet_comp->size) +
-                   HTONS(this->applet_comp->size);
       break;
 
     case CAP_COMPONENT_IMPORT:
@@ -103,9 +116,6 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
       this->import_comp =
           reinterpret_cast<const jc_cap_import_component *>(component);
-      component += sizeof(this->import_comp->tag) +
-                   sizeof(this->import_comp->size) +
-                   HTONS(this->import_comp->size);
       break;
 
     case CAP_COMPONENT_CONSTANT_POOL:
@@ -115,9 +125,6 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
       this->constantPool_comp =
           reinterpret_cast<const jc_cap_constant_pool_component *>(component);
-      component += sizeof(this->constantPool_comp->tag) +
-                   sizeof(this->constantPool_comp->size) +
-                   HTONS(this->constantPool_comp->size);
       break;
 
     case CAP_COMPONENT_CLASS:
@@ -127,9 +134,6 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
       this->class_comp =
           reinterpret_cast<const jc_cap_class_component *>(component);
-      component += sizeof(this->class_comp->tag) +
-                   sizeof(this->class_comp->size) +
-                   HTONS(this->class_comp->size);
       break;
 
     case CAP_COMPONENT_METHOD:
@@ -139,9 +143,6 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
       this->method_comp =
           reinterpret_cast<const jc_cap_method_component *>(component);
-      component += sizeof(this->method_comp->tag) +
-                   sizeof(this->method_comp->size) +
-                   HTONS(this->method_comp->size);
       break;
 
     case CAP_COMPONENT_STATIC_FIELD:
@@ -151,9 +152,6 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
       this->staticField_comp =
           reinterpret_cast<const jc_cap_static_field_component *>(component);
-      component += sizeof(this->staticField_comp->tag) +
-                   sizeof(this->staticField_comp->size) +
-                   HTONS(this->staticField_comp->size);
       break;
 
     case CAP_COMPONENT_REFERENCE_LOCATION:
@@ -164,9 +162,6 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
       this->referenceLocation_comp =
           reinterpret_cast<const jc_cap_reference_location_component *>(
               component);
-      component += sizeof(this->referenceLocation_comp->tag) +
-                   sizeof(this->referenceLocation_comp->size) +
-                   HTONS(this->referenceLocation_comp->size);
       break;
 
     case CAP_COMPONENT_EXPORT:
@@ -176,9 +171,6 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
       this->export_comp =
           reinterpret_cast<const jc_cap_export_component *>(component);
-      component += sizeof(this->export_comp->tag) +
-                   sizeof(this->export_comp->size) +
-                   HTONS(this->export_comp->size);
       break;
 
     case CAP_COMPONENT_DESCRIPTOR:
@@ -188,14 +180,13 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
       this->descriptor_comp =
           reinterpret_cast<const jc_cap_descriptor_component *>(component);
-      component += sizeof(this->descriptor_comp->tag) +
-                   sizeof(this->descriptor_comp->size) +
-                   HTONS(this->descriptor_comp->size);
       break;
 
     default: // byte unknown value
       throw Exceptions::SecurityException;
     }
+
+    component = next_component;
   }
 
   return;

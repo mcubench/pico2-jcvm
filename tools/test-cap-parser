@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+build_dir="${repo_root}/build/tests/cap-parser"
+
+"${repo_root}/tools/env" cmake -S "${repo_root}/tools/tests/cap_parser" \
+  -B "${build_dir}"
+"${repo_root}/tools/env" cmake --build "${build_dir}" --target cap_parser_test
+"${repo_root}/tools/env" python3 \
+  "${repo_root}/tools/tests/cap_parser/prepare_corpus.py" \
+  "${build_dir}/cap_parser_test" \
+  "${repo_root}"/AlgTest_JavaCard/deploy/caps/*.cap
