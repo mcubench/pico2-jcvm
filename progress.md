@@ -13870,5 +13870,5 @@
 - Validation: Read-only audit of `native_rsa_math.hpp`, the RSA Cipher and Signature call sites, and the Java Card CRT key API. No code tests or builds were run because implementation did not change. Physical access check used the approved elevated helper and found zero PC/SC Pico readers; elevated `lsusb` showed only VirtualBox devices.
 - Result: Existing exponent blinding does not verify the computed result. A recombination-only check would not catch a faulty exponentiation branch and is not recorded as a complete mitigation.
 - Decision: Keep hardware validation pending and avoid a misleading partial fault check. An implementation requires public-exponent association; continue with independent offline backlog items.
-- Commit: pending metadata follow-up.
+- Commit: `8fc28ff` (audit/documentation); exact progress reference is in the following metadata commit.
 - Artifacts/logs: none.
