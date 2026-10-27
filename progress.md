@@ -13359,8 +13359,7 @@
 - Decision: Continue by implementing and validating the missing 128/160-bit EC
   curve generation, then audit all advertised asymm profile claims against the
   target CSV before physical testing.
-- Commit: API submodule `869cb8a`; ROM-mask submodule `5297c51`; root commit
-  recorded in this entry after creation.
+- Commit: API submodule `869cb8a`; ROM-mask submodule `5297c51`; root `f17df07`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`
   (runner uses a fixed name); `build/arm/pico2_choupi.uf2`;
   `build/choupi-pc/flash`; no physical log.

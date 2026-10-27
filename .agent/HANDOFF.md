@@ -3,7 +3,7 @@
 - Added profile-gated native `KeyPair` constructor, generation, and getters for
   EC FP. VPCD generates P-192, P-224, P-256, P-384, and P-521 keypairs and then
   passes ECDSA sign/verify. API submodule commit `869cb8a`; ROM-mask submodule
-  constructor-name fix `5297c51`; root commit is recorded in `progress.md`.
+  constructor-name fix `5297c51`; root implementation commit `f17df07`.
 - Validation: support generator 9/9; PC `asymm_crypto` build; VPCD 91/91 (89
   asymmetric APDUs plus ATR/SELECT); ARM and RISC-V wrappers passed. ARM full
   firmware is 1,997,824 bytes, SHA-256
