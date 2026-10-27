@@ -25,6 +25,9 @@
 - The VPCD runner uses a bounded 180-second APDU deadline so variable-time
   3072-bit key generation fits; firmware timeout policy is unchanged. Issue
   details are in `.agent/QKB.md`.
+- The legacy target audit is now reproducible:
+  `python3 tools/compare-jcalgtest-legacy-target.py` reports exact parity for
+  136 comparable positive identities and lists the seven EC generation sizes.
 - RSA-CRT private operations are now implemented in native Signature and
   Cipher dispatch. CRT keys carry P/Q/DP1/DQ1/PQ only; N is derived from P×Q
   and the product is checked before exponentiation. VPCD verifies sign/verify
@@ -35,8 +38,7 @@
   helper found 0 devices and elevated `lsusb` showed only VM hubs/tablet. No
   flash or physical test was performed. CRT timing/blinding hardening remains
   unvalidated.
-- Next: add a reproducible comparison/conversion path for the older full target
-  CSV, continue private RSA operation hardening, and run physical asymmetric
+- Next: continue private RSA operation hardening and run physical asymmetric
   and `/deploy` acceptance when a board enumerates.
 - Implementation commit: `65664b3`. Preserve unrelated worktree changes listed
   below.

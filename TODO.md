@@ -1557,10 +1557,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   VPCD calls. No physical Pico was visible to the VM, so hardware validation
   remains open. RSA key-pair generation for the selected sizes is no longer an
   implementation gap. An offline comparison against the supplied 1.7.9 target
-  CSV found exact parity for all 113 comparable supported algorithm/key
+  CSV found exact parity for all 136 comparable supported algorithm/key
   identities; its 27 positive key-generation cases also match the implemented
   RSA/RSA-CRT sizes through 3072 bits and seven EC sizes. Physical validation,
   private RSA hardening, and `/deploy` acceptance remain open.
+  Reproduce the offline positive-set audit with
+  `python3 tools/compare-jcalgtest-legacy-target.py`; the tool understands the
+  supplied 1.7.9 schema and compares its shared asymmetric/symmetric-crypto
+  sections with the current generated profile.
   Progress (2026-10-27): added native RSA-CRT private operations for Signature
   and Cipher. CRT keys are accepted for signing/decryption, N is derived from
   P×Q when needed, and generated CRT private keys do not cache N. The probe

@@ -13483,3 +13483,27 @@
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   focused CRT log `artifacts/logs/asymm-crypto-crt-debug-vpcd.log`; ARM UF2
   `build/arm/pico2_choupi.uf2`; no physical log.
+
+## 2026-10-27 — Add reproducible legacy target profile comparison
+
+- Step/experiment: `asymm-crypto-legacy-target-comparator`
+- Change: Added `tools/compare-jcalgtest-legacy-target.py` for the supplied
+  JCAlgTest 1.7.9 CSV schema. It normalizes the old Signature package name,
+  KeyAgreement KDF aliases, Cipher factory rows, and per-size KeyPair
+  generation rows before comparing positive identities with the current
+  generated support CSV. Updated TODO and handoff with the repeatable command.
+- Validation: `python3 tools/compare-jcalgtest-legacy-target.py` reports
+  `TARGET_COMPARE:PASS exact_positive_support_set`: 136 comparable target
+  identities match the generated profile. It also reports EC generation sizes
+  128, 160, 192, 224, 256, 384, and 521 bits. Python bytecode compilation and
+  scoped `git diff --check` passed.
+- Result: The offline declaration audit is reproducible across the old target
+  CSV format. It compares only the support sections shared with the asymmetric
+  crypto profile; it is not a physical-device result and does not compare a
+  newly collected 1.8.2 device report.
+- Decision: Use this command alongside the standard 1.8.2 comparator when a
+  new physical report is available; physical asymmetric and `/deploy` tests
+  remain pending until a board enumerates in the VM.
+- Commit: pending.
+- Artifacts/logs: `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT*.csv`;
+  `build/javacard-support/jcalgtest-supported.csv`; no hardware log.
