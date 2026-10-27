@@ -12,6 +12,7 @@
   PSS, ISO9796-2 full/partial message recovery, malformed signature rejection,
   and EC private-key storage. The temporary GPPro package was removed.
   Log: `artifacts/logs/asymm-crypto-pcsc-20261027T080334Z.log`.
+- Commit: `a577ac7`.
 - Updated TODO, STATUS, and QKB with this evidence. The broader `asymm_crypto`
   profile is still open: ECDSA/key-agreement/generation vectors, complete
   support-report comparison, full physical `/deploy` acceptance, and RSA

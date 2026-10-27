@@ -13903,5 +13903,5 @@
 - Validation: The first physical probe attempt exited before CAP installation because it found 53 vectors while expecting 48. After the guard fix, `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-pcsc 'Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'` passed 53/53 on physical D92. Coverage includes PKCS#1, PSS, ISO9796-2 full and partial message recovery, malformed-signature rejection, and three EC key-storage checks. GPPro cleanup passed. `bash -n tools/test-asymm-crypto-pcsc` and `git diff --check` passed.
 - Result: The combined `asymm_crypto` image responds to the 53 selected crypto API vectors on D92; no `TEST:FAIL` occurred. This does not establish full profile support-report parity or complete `/deploy` acceptance.
 - Decision: Keep `asymm_crypto` acceptance open for ECDSA, key agreement/generation vector coverage, full report comparison, broader deploy runs, and private-operation hardening. Continue using D92 while it remains visible.
-- Commit: pending.
+- Commit: `a577ac7`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-pcsc-20261027T080334Z.log` and `build/symm-crypto-probe/asymm-crypto-physical-vectors.tsv`.
