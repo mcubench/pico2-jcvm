@@ -13526,5 +13526,5 @@
   established constant-time with a scoped statement backed by bundled source.
 - Decision: Keep hardware checks pending. Continue a full private-RSA audit,
   including input blinding and CRT fault resistance.
-- Commit: pending.
+- Commit: `a02e5c2`.
 - Artifacts/logs: source files listed above; no hardware log.
