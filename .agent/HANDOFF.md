@@ -4,6 +4,33 @@
 
 # Current continuation — CAP 2.1 Class component bounds (2026-10-27)
 
+# Current continuation — CAP 2.1 Descriptor/Class cross-reference (2026-10-27)
+
+- Descriptor `this_class_ref` values are now checked against the Class record
+  start offsets, and the descriptor class count must match the number of
+  interface/class records. This is applied only to CAP 2.1 after format-aware
+  Class record traversal. The prior speculative attempt failed because its
+  assumed Class record sizing was wrong; the current walk was audited against
+  all 48 supplied CAPs before enabling this check.
+- Offline audit: all 956 internal Descriptor class refs matched record starts.
+  `./tools/test-cap-parser` passes 4,156 checks under ASan/UBSan, including
+  synthetic mid-record reference rejection and 100,000 randomized buffers.
+  ARM/RISC-V wrappers pass. VPCD GPPro install/list passes; artifacts:
+  `artifacts/results/gppro-empty-install-vpcd-20261027T040102Z/`.
+- ARM UF2 2,027,008 bytes, SHA-256
+  `e4d67d25c15e4c94151a71d5e0dd3b8b5b2a3f4411d157a90e3b1b6aa913f75c`;
+  RISC-V smoke UF2 79,360 bytes, SHA-256
+  `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`.
+- Implementation commit: `8b4d6e7`; progress/QKB/TODO/handoff update follows
+  separately. Physical hardware remains unavailable to this VM despite the
+  user's report of plugged tokens (`pico2-pcsc-reader`: 0; `lsusb`: only VM
+  root hubs and VirtualBox tablet).
+- Next: verify CAP 2.1 type-descriptor grammar and nibble encodings; retain
+  explicit non-validation for CAP 2.2+ layouts until version-specific parsing
+  exists. Then continue interrupted persistence-write recovery testing.
+
+# Prior continuation — CAP 2.1 Class component bounds (2026-10-27)
+
 - Added format 2.1 Class component traversal: leading interface records,
   compact class prefixes, public/package virtual-method tables, implemented
   interfaces, and method token maps are all checked against the payload bounds.

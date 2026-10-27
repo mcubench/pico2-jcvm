@@ -1625,8 +1625,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   CAP encoding. The sanitizer corpus accepts all 48 supplied deploy CAPs,
   mutates counted fields, checks truncations/forged lengths, and processes
   100,000 randomized inputs. Class component extents are now walked for CAP
-  format 2.1; class-reference consistency, CAP 2.2+ Class layouts, and semantic
-  validation of descriptor type nibbles remain open. The short APDU parser
+  format 2.1, and Descriptor class references must resolve to those Class
+  record boundaries; CAP 2.2+ Class layouts and semantic validation of
+  descriptor type nibbles remain open. The short APDU parser
   passes a separate
   ASan/UBSan harness over 250,000 randomized inputs, comparing results and
   decoded lengths to ISO 7816 short APDU case rules; no bug surfaced. Remaining

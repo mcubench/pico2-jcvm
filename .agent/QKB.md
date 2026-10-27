@@ -5494,3 +5494,21 @@ fix.
   plus 100,000 random buffers. Synthetic interface/class payloads and
   impossible method/interface counts are rejected. ARM and RISC-V wrappers and
   VPCD GPPro LOAD/INSTALL/list pass. No physical Pico is visible to the VM.
+
+## Descriptor `this_class_ref` must point to a Class record start (2026-10-27)
+
+- **Symptom:** Bounded Descriptor and Class records can still disagree: a
+  Descriptor `this_class_ref` may point into the middle of another Class
+  record while both component-local tables remain in bounds.
+- **Cause:** `this_class_ref` is a byte offset into the Class component info
+  and must identify the corresponding `interface_info` or compact
+  `class_info` record. The field is not an ordinal class index.
+- **Viable fix:** For CAP 2.1, collect the ordered Class record start offsets
+  during a bounded Class walk, then require each internal Descriptor
+  `this_class_ref` to match one of those starts. Confirm descriptor record
+  count matches the number of Class records. Newer format layouts must retain
+  their own parser before applying this cross-check.
+- **Validation:** Offline audit found all 956 internal Descriptor class refs
+  in the 48 upstream deploy CAPs matched parsed record boundaries. The
+  ASan/UBSan harness passes 4,156 checks, including a synthetic mid-record
+  reference rejection; ARM/RISC-V wrappers and VPCD GPPro install/list pass.

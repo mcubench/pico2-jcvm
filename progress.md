@@ -13704,3 +13704,27 @@
   `artifacts/results/gppro-empty-install-vpcd-20261027T035353Z/`;
   test output `TEST:PASS cap_parser_framing checks=4154 fuzz_inputs=100000
   corpus_files=48`.
+
+## 2026-10-27 — Validate CAP 2.1 Descriptor class references
+
+- Step/experiment: `wp9-cap-descriptor-class-reference-bounds`
+- Change: Require each Descriptor `this_class_ref` to resolve to an actual
+  interface/class record start in the already validated CAP 2.1 Class
+  component. Class and Descriptor record counts must match. Added a synthetic
+  case that points one reference into the middle of a Class record.
+- Validation: `./tools/test-cap-parser` passed 4,156 ASan/UBSan checks across
+  48 supplied deploy CAPs and 100,000 random inputs. An independent offline
+  audit matched all 956 internal Descriptor class references to parsed record
+  boundaries. ARM/RISC-V wrappers and gated VPCD GPPro LOAD/INSTALL/list pass.
+- Result: ARM UF2 2,027,008 bytes, SHA-256
+  `e4d67d25c15e4c94151a71d5e0dd3b8b5b2a3f4411d157a90e3b1b6aa913f75c`;
+  RISC-V smoke UF2 79,360 bytes, SHA-256
+  `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`.
+  No Pico was visible through host USB, so physical validation was not done.
+- Decision: Keep the boundary check for CAP 2.1. Cross-reference validation
+  for later CAP formats and Descriptor type semantic validation remain open.
+- Commit: `8b4d6e7`
+- Artifacts/logs:
+  `artifacts/results/gppro-empty-install-vpcd-20261027T040102Z/`;
+  test output `TEST:PASS cap_parser_framing checks=4156 fuzz_inputs=100000
+  corpus_files=48`.
