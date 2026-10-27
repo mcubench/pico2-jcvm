@@ -13783,3 +13783,21 @@
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T045732Z/`,
   `artifacts/results/gppro-empty-install-vpcd-20261027T045907Z/`; no passing
   integration artifact for this step.
+
+## 2026-10-27 — Retry VPCD installation after offset validation
+
+- Step/experiment: `wp9-vpcd-retry-after-type-offset-validation`
+- Change: No source changes. Rechecked physical USB enumeration and retried the
+  VPCD GPPro integration after confirming the VPCD listener ports were open.
+- Validation: Reader helper still reports zero physical Pico CCID devices.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` connected
+  the emulator to port 35963, but PC/SC never reported the card present; the
+  emulator idle timeout disconnected after 20 seconds. Two prior attempts with
+  card presence completed CAP LOAD and then failed applet INSTALL with `0x6F00`.
+- Result: No physical validation; VPCD integration remains unresolved.
+- Decision: Keep parser tests/build results; diagnose VPCD card-presence and
+  applet-install failures independently.
+- Commit: `f7bd4af` (no implementation change; this observation is recorded
+  in the following metadata commit).
+- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T050759Z/`
+  (listener connected, card not reported present).

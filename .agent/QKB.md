@@ -5555,3 +5555,21 @@ fix.
   pass. VPCD package LOAD succeeds, but the following applet INSTALL returns
   `0x6F00` on two attempts; investigate that separately before claiming full
   installation acceptance. No physical Pico was visible to the VM.
+
+
+## VPCD emulator can connect while PC/SC still reports no card (2026-10-27)
+
+- **Symptom:** The emulator logs `VPCD:CONNECTED endpoint=127.0.0.1:35963`,
+  but the PC/SC presence probe still reports no inserted card until the
+  emulator's 20-second idle timeout. In other runs, the card becomes present,
+  GPPro LOAD completes, then applet INSTALL returns `0x6F00`.
+- **Cause:** Not yet established. The virtual reader names and listening ports
+  alone do not prove that the card is present or that APDUs are reaching the
+  emulator.
+- **Viable fix:** None confirmed. Use the presence probe before GPPro, preserve
+  the per-run emulator/reader/GPPro logs, and distinguish no-card timeouts from
+  INSTALL status failures. Do not treat an open TCP port or `VPCD:CONNECTED` as
+  an end-to-end pass.
+- **Validation:** The latest retry timed out at
+  `artifacts/results/gppro-empty-install-vpcd-20261027T050759Z/`; two earlier
+  attempts with card presence loaded the CAP but received INSTALL `0x6F00`.
