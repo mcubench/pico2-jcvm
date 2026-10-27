@@ -172,6 +172,84 @@ void test_type_descriptor_grammar() {
          "void_parameter_type_rejected");
 }
 
+void test_type_descriptor_offsets() {
+  const auto wrap_descriptor = [](std::vector<uint8_t> payload) {
+    std::vector<uint8_t> cap = {
+        11, static_cast<uint8_t>(payload.size() >> 8),
+        static_cast<uint8_t>(payload.size())};
+    cap.insert(cap.end(), payload.begin(), payload.end());
+    return cap;
+  };
+
+  std::vector<uint8_t> method_payload(26, 0);
+  method_payload[0] = 1;
+  method_payload[9] = 1;  // One method descriptor.
+  method_payload[15] = 2; // Offset from the type_descriptor_info start.
+  method_payload[24] = 1; // Return type: void.
+  method_payload[25] = 0x10;
+  auto valid_method = wrap_descriptor(method_payload);
+  expect(parses(valid_method.data(), valid_method.size()),
+         "method_type_offset_at_record_start_parses");
+  method_payload[15] = 0; // Also accept offsets based at constant_pool_types.
+  auto valid_method_array_base = wrap_descriptor(method_payload);
+  expect(parses(valid_method_array_base.data(), valid_method_array_base.size()),
+         "method_type_offset_at_array_base_parses");
+  method_payload[15] = 1;
+  auto invalid_method = wrap_descriptor(method_payload);
+  expect(!parses(invalid_method.data(), invalid_method.size()),
+         "method_type_offset_inside_record_rejected");
+
+  std::vector<uint8_t> cp_payload(28, 0);
+  cp_payload[0] = 1;
+  cp_payload[9] = 1;
+  cp_payload[15] = 4;
+  cp_payload[23] = 1; // One constant-pool type offset.
+  cp_payload[25] = 4; // Offset from the type_descriptor_info start.
+  cp_payload[26] = 1;
+  cp_payload[27] = 0x10;
+  auto valid_cp_type = wrap_descriptor(cp_payload);
+  expect(parses(valid_cp_type.data(), valid_cp_type.size()),
+         "constant_pool_type_offset_at_record_start_parses");
+  cp_payload[15] = 2;
+  cp_payload[25] = 2; // Also accept offsets based at constant_pool_types.
+  auto valid_cp_array_base = wrap_descriptor(cp_payload);
+  expect(parses(valid_cp_array_base.data(), valid_cp_array_base.size()),
+         "constant_pool_type_offset_at_array_base_parses");
+  cp_payload[15] = 4;
+  cp_payload[25] = 3;
+  auto invalid_cp_type = wrap_descriptor(cp_payload);
+  expect(!parses(invalid_cp_type.data(), invalid_cp_type.size()),
+         "constant_pool_type_offset_inside_record_rejected");
+
+  std::vector<uint8_t> field_payload(21, 0);
+  field_payload[0] = 1;
+  field_payload[7] = 1; // One field descriptor.
+  field_payload[16] = 2; // Offset from the type_descriptor_info start.
+  field_payload[19] = 1;
+  field_payload[20] = 0x20;
+  auto valid_field = wrap_descriptor(field_payload);
+  expect(parses(valid_field.data(), valid_field.size()),
+         "field_type_offset_at_record_start_parses");
+  field_payload[16] = 0; // Also accept offsets based at constant_pool_types.
+  auto valid_field_array_base = wrap_descriptor(field_payload);
+  expect(parses(valid_field_array_base.data(), valid_field_array_base.size()),
+         "field_type_offset_at_array_base_parses");
+  field_payload[16] = 1;
+  auto invalid_field = wrap_descriptor(field_payload);
+  expect(!parses(invalid_field.data(), invalid_field.size()),
+         "field_type_offset_inside_record_rejected");
+
+  auto shifted_base_descriptor = wrap_descriptor({
+      0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03,
+      0x00, 0x81, 0x00, 0x01, 0x00, 0x04, 0x00, 0x05, 0x00, 0x00,
+      0x00, 0x00, 0x01, 0x09, 0x00, 0x08, 0x00, 0x04, 0x00, 0x05,
+      0x00, 0x00, 0x00, 0x00, 0x02, 0x09, 0x00, 0x0f, 0x00, 0x04,
+      0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x04,
+      0x00, 0x06, 0x01, 0x10, 0x05, 0x68, 0x10, 0xb0});
+  expect(parses(shifted_base_descriptor.data(), shifted_base_descriptor.size()),
+         "shifted_constant_pool_type_base_parses");
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -197,6 +275,7 @@ int main(int argc, char **argv) {
   test_compact_descriptor_counts();
   test_class_component_21();
   test_type_descriptor_grammar();
+  test_type_descriptor_offsets();
 
   std::mt19937 generator(0x4a43564d);
   std::uniform_int_distribution<unsigned> byte_distribution(0, 255);

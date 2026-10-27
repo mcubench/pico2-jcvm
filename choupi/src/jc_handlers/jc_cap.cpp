@@ -172,6 +172,86 @@ bool validate_type_descriptor(const uint8_t *type, const size_t nibble_count) {
   return (nibble_count & 1) == 0 || (nibble_at(nibble_count) == 0);
 }
 
+bool validate_descriptor_type_offsets(const uint8_t *descriptor,
+                                      const size_t descriptor_size,
+                                      const size_t class_count,
+                                      const size_t constant_pool_count_offset,
+                                      const size_t constant_pool_count,
+                                      const size_t type_offset_base,
+                                      const size_t type_descriptors_offset) {
+  constexpr size_t offset_limit = 1u << 15;
+  constexpr size_t chunk_bits = 4096;
+  constexpr size_t bitmap_bytes = chunk_bits / 8;
+  const size_t constant_pool_types_offset = constant_pool_count_offset + 2;
+
+  for (size_t chunk_start = 0; chunk_start < offset_limit;
+       chunk_start += chunk_bits) {
+    uint8_t starts[bitmap_bytes] = {};
+    size_t type_offset = type_descriptors_offset;
+    while (type_offset < descriptor_size) {
+      const size_t relative_offset = type_offset - type_offset_base;
+      if (relative_offset >= chunk_start &&
+          relative_offset - chunk_start < chunk_bits) {
+        const size_t bit = relative_offset - chunk_start;
+        starts[bit / 8] |= static_cast<uint8_t>(1u << (bit & 7));
+      }
+      const size_t nibble_count = descriptor[type_offset];
+      type_offset += 1 + (nibble_count + 1) / 2;
+    }
+
+    const auto offset_is_type_start = [&](const size_t value) {
+      if (value < chunk_start || value - chunk_start >= chunk_bits) return true;
+      const size_t bit = value - chunk_start;
+      return (starts[bit / 8] & static_cast<uint8_t>(1u << (bit & 7))) != 0;
+    };
+
+    size_t class_offset = 1;
+    for (size_t class_index = 0; class_index < class_count; ++class_index) {
+      if (descriptor_size - class_offset < 9) return false;
+      const size_t interfaces = descriptor[class_offset + 4];
+      const size_t fields = read_be16(descriptor + class_offset + 5);
+      const size_t methods = read_be16(descriptor + class_offset + 7);
+      const size_t fields_offset = class_offset + 9 + interfaces * 2;
+      const size_t methods_offset = fields_offset + fields * 7;
+
+      for (size_t field = 0; field < fields; ++field) {
+        const uint16_t field_type =
+            read_be16(descriptor + fields_offset + field * 7 + 5);
+        if ((field_type & 0x8000) != 0) {
+          const uint16_t primitive = field_type & 0x7fff;
+          if (primitive < 2 || primitive > 5) return false;
+        } else if (!offset_is_type_start(field_type)) {
+          return false;
+        }
+      }
+
+      for (size_t method = 0; method < methods; ++method) {
+        const uint16_t method_type =
+            read_be16(descriptor + methods_offset + method * 12 + 4);
+        if ((method_type & 0x8000) != 0 ||
+            !offset_is_type_start(method_type)) {
+          return false;
+        }
+      }
+
+      const size_t record_size =
+          9 + interfaces * 2 + fields * 7 + methods * 12;
+      if (record_size > descriptor_size - class_offset) return false;
+      class_offset += record_size;
+    }
+
+    for (size_t index = 0; index < constant_pool_count; ++index) {
+      const uint16_t cp_type = read_be16(
+          descriptor + constant_pool_types_offset + index * 2);
+      if (cp_type == 0xffff) continue;
+      if ((cp_type & 0x8000) != 0 || !offset_is_type_start(cp_type))
+        return false;
+    }
+  }
+
+  return true;
+}
+
 bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
                                 const size_t size, const uint8_t cap_major,
                                 const uint8_t cap_minor,
@@ -308,6 +388,7 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
       offset += record_size;
     }
     if (size - offset < sizeof(uint16_t)) return false;
+    const size_t constant_pool_count_offset = offset;
     const size_t constant_pool_count = read_be16(payload + offset);
     offset += sizeof(uint16_t);
     if (constant_pool_count > (size - offset) / sizeof(uint16_t))
@@ -322,7 +403,17 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
       }
       offset += descriptor_bytes;
     }
-    if (offset != size) return false;
+    if (offset != size ||
+        (!validate_descriptor_type_offsets(
+             payload, size, count, constant_pool_count_offset,
+             constant_pool_count, constant_pool_count_offset,
+             constant_pool_count_offset + 2 + constant_pool_count * 2) &&
+         !validate_descriptor_type_offsets(
+             payload, size, count, constant_pool_count_offset,
+             constant_pool_count, constant_pool_count_offset + 2,
+             constant_pool_count_offset + 2 + constant_pool_count * 2))) {
+      return false;
+    }
     return cap_major != 2 || cap_minor != 1 || class_payload == nullptr ||
            descriptor_class_refs_match_class_component_21(
                payload, size, class_payload, class_payload_size);
