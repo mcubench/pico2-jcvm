@@ -66,7 +66,7 @@ inline std::vector<unsigned char> rsaCrtModExp(
   // recombination formula m = m2 + q * (((m1 - m2) * qInv) mod p).
   constexpr size_t kExponentBlindingBytes = 28;
   mbedtls_mpi n, p, q, dp, dq, qInv, input, product, m1, m2, h, result;
-  mbedtls_mpi pMinusOne, qMinusOne, blind, blindedDp, blindedDq;
+  mbedtls_mpi pMinusOne, qMinusOne, blindP, blindQ, blindedDp, blindedDq;
   mbedtls_mpi_init(&n);
   mbedtls_mpi_init(&p);
   mbedtls_mpi_init(&q);
@@ -81,7 +81,8 @@ inline std::vector<unsigned char> rsaCrtModExp(
   mbedtls_mpi_init(&result);
   mbedtls_mpi_init(&pMinusOne);
   mbedtls_mpi_init(&qMinusOne);
-  mbedtls_mpi_init(&blind);
+  mbedtls_mpi_init(&blindP);
+  mbedtls_mpi_init(&blindQ);
   mbedtls_mpi_init(&blindedDp);
   mbedtls_mpi_init(&blindedDq);
 
@@ -105,20 +106,25 @@ inline std::vector<unsigned char> rsaCrtModExp(
     rc = -1;
   if (rc == 0) rc |= mbedtls_mpi_mul_mpi(&product, &p, &q);
   if (rc == 0 && mbedtls_mpi_cmp_mpi(&product, &n) != 0) rc = -1;
-  // Blind each CRT exponent with r*(p-1) or r*(q-1). This is possible for
-  // Java Card CRT keys, which do not expose the public exponent required for
-  // conventional input blinding. Re-importing at modulus width keeps the
-  // exponentiation loop length independent of the secret exponent value.
+  // Blind each CRT exponent with an independent rP*(p-1) or rQ*(q-1). This
+  // works for Java Card CRT keys, which do not expose the public exponent
+  // required for conventional input blinding. Re-importing at modulus width
+  // keeps the loop length independent of the secret exponent value.
   if (rc == 0) rc |= mbedtls_mpi_sub_int(&pMinusOne, &p, 1);
   if (rc == 0) rc |= mbedtls_mpi_sub_int(&qMinusOne, &q, 1);
   if (rc == 0)
-    rc |= mbedtls_mpi_fill_random(&blind, kExponentBlindingBytes,
+    rc |= mbedtls_mpi_fill_random(&blindP, kExponentBlindingBytes,
                                   rsaCrtRandomBytes, nullptr);
-  if (rc == 0 && mbedtls_mpi_cmp_int(&blind, 0) == 0)
-    rc |= mbedtls_mpi_lset(&blind, 1);
-  if (rc == 0) rc |= mbedtls_mpi_mul_mpi(&blindedDp, &pMinusOne, &blind);
+  if (rc == 0 && mbedtls_mpi_cmp_int(&blindP, 0) == 0)
+    rc |= mbedtls_mpi_lset(&blindP, 1);
+  if (rc == 0)
+    rc |= mbedtls_mpi_fill_random(&blindQ, kExponentBlindingBytes,
+                                  rsaCrtRandomBytes, nullptr);
+  if (rc == 0 && mbedtls_mpi_cmp_int(&blindQ, 0) == 0)
+    rc |= mbedtls_mpi_lset(&blindQ, 1);
+  if (rc == 0) rc |= mbedtls_mpi_mul_mpi(&blindedDp, &pMinusOne, &blindP);
   if (rc == 0) rc |= mbedtls_mpi_add_mpi(&blindedDp, &blindedDp, &dp);
-  if (rc == 0) rc |= mbedtls_mpi_mul_mpi(&blindedDq, &qMinusOne, &blind);
+  if (rc == 0) rc |= mbedtls_mpi_mul_mpi(&blindedDq, &qMinusOne, &blindQ);
   if (rc == 0) rc |= mbedtls_mpi_add_mpi(&blindedDq, &blindedDq, &dq);
   // N's width is public. Adding the blinding width covers even unbalanced
   // valid CRT factors and keeps loop length independent of all private values.
@@ -156,7 +162,8 @@ inline std::vector<unsigned char> rsaCrtModExp(
   mbedtls_mpi_free(&result);
   mbedtls_mpi_free(&blindedDq);
   mbedtls_mpi_free(&blindedDp);
-  mbedtls_mpi_free(&blind);
+  mbedtls_mpi_free(&blindQ);
+  mbedtls_mpi_free(&blindP);
   mbedtls_mpi_free(&qMinusOne);
   mbedtls_mpi_free(&pMinusOne);
   mbedtls_mpi_free(&h);
