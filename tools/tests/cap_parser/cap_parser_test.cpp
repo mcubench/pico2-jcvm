@@ -55,6 +55,36 @@ void expect_payload_mutation_rejected(const std::vector<uint8_t> &cap,
   }
 }
 
+void expect_descriptor_counts_rejected(const std::vector<uint8_t> &cap,
+                                       const size_t component_offset) {
+  const size_t payload_size =
+      (static_cast<size_t>(cap[component_offset + 1]) << 8) |
+      cap[component_offset + 2];
+  const size_t payload = component_offset + 3;
+  if (payload_size < 10 || cap[payload] == 0) return;
+
+  for (const size_t count_offset : {size_t{5}, size_t{6}, size_t{8}}) {
+    if (count_offset == 5 && payload_size >= 10 + 255 * 2) continue;
+    std::vector<uint8_t> mutated = cap;
+    mutated[payload + count_offset] = 0xff;
+    if (count_offset != 4) mutated[payload + count_offset + 1] = 0xff;
+    expect(!parses(mutated.data(), static_cast<uint16_t>(mutated.size())),
+           "descriptor_count_exceeding_component_rejected");
+  }
+}
+
+void test_compact_descriptor_counts() {
+  std::array<uint8_t, 15> descriptor = {11, 0, 12, 1};
+  expect(parses(descriptor.data(), descriptor.size()),
+         "empty_compact_descriptor_parses");
+  for (const size_t count_offset : {size_t{5}, size_t{6}, size_t{8}}) {
+    auto mutated = descriptor;
+    mutated[3 + count_offset] = 1;
+    expect(!parses(mutated.data(), mutated.size()),
+           "compact_descriptor_count_overrun_rejected");
+  }
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -77,6 +107,7 @@ int main(int argc, char **argv) {
                                                    7, 0, 1, 0};
   expect(!parses(duplicate_method.data(), duplicate_method.size()),
          "duplicate_component_rejected");
+  test_compact_descriptor_counts();
 
   std::mt19937 generator(0x4a43564d);
   std::uniform_int_distribution<unsigned> byte_distribution(0, 255);
@@ -158,6 +189,9 @@ int main(int argc, char **argv) {
         break;
       case 9:
         expect_payload_mutation_rejected(cap, offset, 0, 0xff);
+        break;
+      case 11:
+        expect_descriptor_counts_rejected(cap, offset);
         break;
       default:
         break;

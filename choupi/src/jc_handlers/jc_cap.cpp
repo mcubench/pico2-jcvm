@@ -155,12 +155,32 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
     }
     return offset == size;
   }
-  case 11: { // Descriptor
+  case 11: { // Compact Descriptor
     if (size < 1) return false;
     const uint8_t count = payload[offset++];
-    // Require the fixed record prefixes and the trailing type-descriptor
-    // count to fit. Full nested descriptor-table traversal remains separate.
-    return 1 + static_cast<size_t>(count) * 9 + sizeof(uint16_t) <= size;
+    for (uint16_t index = 0; index < count; ++index) {
+      if (size - offset < 9) return false;
+      const size_t interfaces = payload[offset + 4];
+      const size_t fields = read_be16(payload + offset + 5);
+      const size_t methods = read_be16(payload + offset + 7);
+      const size_t record_size =
+          9 + interfaces * 2 + fields * 7 + methods * 12;
+      if (record_size > size - offset) return false;
+      offset += record_size;
+    }
+    if (size - offset < sizeof(uint16_t)) return false;
+    const size_t constant_pool_count = read_be16(payload + offset);
+    offset += sizeof(uint16_t);
+    if (constant_pool_count > (size - offset) / sizeof(uint16_t))
+      return false;
+    offset += constant_pool_count * sizeof(uint16_t);
+    while (offset < size) {
+      const size_t nibble_count = payload[offset++];
+      const size_t descriptor_bytes = (nibble_count + 1) / 2;
+      if (descriptor_bytes > size - offset) return false;
+      offset += descriptor_bytes;
+    }
+    return offset == size;
   }
   default:
     return false;

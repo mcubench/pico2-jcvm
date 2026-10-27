@@ -46,7 +46,7 @@ struct __attribute__((__packed__)) jc_cap_field_descriptor_info {
   /// Token of this field
   uint8_t token;
   /// Describe the access permission to and properties of this field
-  uint16_t access_flags;
+  uint8_t access_flags;
   /// Reference to this field
   union {
     jc_cap_static_field_ref static_field;
