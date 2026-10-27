@@ -319,6 +319,8 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   two-process install/restart run passes 30/30. The test now creates a fresh
   blank default image, avoiding a stale generated fixture with package bits.
   All tests include applet SELECT, GETVERSION, JCSystem, and SHA-256 probes.
+  The resume-path change also preserves the multi-package lifecycle: the
+  two-package/three-instance VPCD test passed 20/20 after fresh-process resume.
   Full physical power-cut testing remains open. See
   `.agent/QKB.md`.
 - [x] **Verify authenticated GlobalPlatform DELETE and reinstall lifecycle.**

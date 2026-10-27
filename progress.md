@@ -13842,3 +13842,13 @@
 - Decision: Keep physical power-loss testing open; continue with remaining acceptance/API work while the board is not reachable.
 - Commit: `662896e`
 - Artifacts/logs: `artifacts/logs/install-recovery-gap-audit-current.log`, `artifacts/logs/install-recovery-publication-fixed.log`, `artifacts/logs/install-recovery-metadata-error-fixed.log`, `artifacts/logs/install-recovery-clear-fixed.log`, `artifacts/logs/install-recovery-normal-two-pass.log`.
+
+## 2026-10-27 — Revalidate multi-package resume after journal recovery changes
+
+- Step/experiment: `wp9-vpcd-multipackage-resume-regression`
+- Change: No source changes. Re-ran the full multi-package VPCD lifecycle after changing single-applet recovery tests to use persisted `--resume` and startup journal replay.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 20/20. It restored two loaded packages and three applet instances in a fresh process, then passed SCP03, GET STATUS for packages/instances/modules, all three SELECTs, unknown-AID rejection, instance deletion, package-delete refusal with live instances, cascade deletion, and an empty final registry. The approved helper still found zero physical Pico readers.
+- Result: The new pending-journal replay gate does not break clean multi-package resume or deletion behavior.
+- Decision: Keep VPCD multi-package lifecycle coverage green; physical PC/SC multi-package behavior remains unverified in this VM.
+- Commit: Metadata-only validation follows the install-recovery implementation commit `662896e`.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261027T070811Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261027T070811Z.log`, and corrupt/missing-sidecar rejection logs with the same timestamp.

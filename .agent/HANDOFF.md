@@ -17,7 +17,10 @@
   logs `VPCD:INSTALL_JOURNAL_RECOVERED package=56` and SELECT plus GETVERSION,
   JCSystem, and SHA-256 probes pass. The filesystem overlay suite also passed
   all randomized 1,000-cut cases for filesystem updates, journal creation,
-  registry publication, and journal clear.
+  registry publication, and journal clear. After the PC startup changes,
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` also passed 20/20,
+  restoring two packages and three instances across a fresh process, followed
+  by GET STATUS, SELECT, and DELETE checks.
 - These are VPCD and simulated-flash results; no physical reader is visible
   through the approved VM host-access helper, and no real flash power cut was
   tested. Physical power-loss validation remains open.
@@ -27,7 +30,8 @@
   `artifacts/logs/install-recovery-publication-fixed.log`,
   `artifacts/logs/install-recovery-metadata-error-fixed.log`,
   `artifacts/logs/install-recovery-clear-fixed.log`, and
-  `artifacts/logs/install-recovery-normal-two-pass.log`.
+  `artifacts/logs/install-recovery-normal-two-pass.log`; multi-package log:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261027T070811Z.log`.
 - Next: continue with the remaining project acceptance and VM API backlog; keep
   the physical power-cut item open until an identified Pico is reachable.
 
