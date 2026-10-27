@@ -1,3 +1,28 @@
+# Current continuation — CAP Descriptor type-offset targets (2026-10-27)
+
+- Added a bounded type-offset validator for Descriptor constant-pool entries,
+  fields, and methods. It checks offsets against the starts of validated
+  length-prefixed type records, with an eight-window 512-byte bitmap. One
+  compact system Descriptor uses offsets relative to `constant_pool_types`
+  (after the count); the parser accepts that base as a compatibility fallback
+  to the specified `type_descriptor_info` base.
+- `./tools/test-cap-parser` passes 4,175 checks over all 48 `/deploy` CAPs and
+  100,000 fuzz buffers. The exact JCAlgTest CAP passes 111 checks and 100,000
+  fuzz buffers. ARM, RISC-V and PC builds pass. ARM image is 2,028,544 bytes
+  (`44d6f31694c4689858c0fa6e814b722750df3ee0b3d258b0ba874fdf07a8314f`);
+  RISC-V smoke image is 79,360 bytes
+  (`ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`).
+- VPCD GPPro LOAD succeeds, but INSTALL returns `0x6F00` on two attempts.
+  The parser harness accepts the same upstream CAP; investigate applet install
+  execution separately. The host-access reader helper reports zero physical
+  Pico devices, despite the user's report that tokens are connected. Do not
+  claim physical validation.
+- Implementation commit: `f7bd4af`; progress/QKB/TODO/handoff metadata commit
+  follows separately. Existing unrelated worktree edits are preserved.
+- Next: investigate the VPCD INSTALL `0x6F00` without changing the upstream
+  CAP; then continue CAP 2.2+ format-aware parsing and interrupted persistent
+  write recovery.
+
 # Current continuation — validate counted CAP component payloads (2026-10-27)
 
 # Current continuation — compact CAP Descriptor bounds (2026-10-27)

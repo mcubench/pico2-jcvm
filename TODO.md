@@ -1627,7 +1627,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   100,000 randomized inputs. Class component extents are now walked for CAP
   format 2.1, and Descriptor class references must resolve to those Class
   record boundaries. Descriptor type-nibble syntax and odd-nibble padding are
-  checked; CP/type-offset consistency and CAP 2.2+ Class layouts remain open.
+  checked. Field, method, and constant-pool type offsets are checked against
+  type-record starts, using the CAP `type_descriptor_info` base with a
+  compatibility fallback for compact constant-pool-array-relative offsets.
+  CAP 2.2+ Class layouts remain open.
   The short APDU parser
   passes a separate
   ASan/UBSan harness over 250,000 randomized inputs, comparing results and

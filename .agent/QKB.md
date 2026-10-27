@@ -5533,3 +5533,25 @@ fix.
   reference, array, method-signature and malformed nibble examples. ARM/RISC-V
   builds pass. First VPCD install attempt did not observe card presence and
   timed out at 20 seconds; retry passed the GPPro LOAD/INSTALL/list flow.
+
+
+## CAP Descriptor type-offset base compatibility (2026-10-27)
+
+- **Symptom:** A strict type-offset boundary check rejected a valid compact
+  58-byte Descriptor while the full JCAlgTest CAP and deploy corpus appeared
+  to use a different base. This caused an uncaught VM `SecurityException`
+  during emulator startup.
+- **Cause:** CAP type offsets normally resolve relative to the start of
+  `type_descriptor_info`, as described by the VM spec. One compact system
+  Descriptor encodes offsets relative to the start of the
+  `constant_pool_types` array, two bytes after that structure start.
+- **Viable fix:** Build type-record start bits using bounded 4,096-offset
+  windows and accept either consistent base. Validate CP, field, and method
+  references against the same candidate base; retain `0xFFFF` only for CP
+  class/interface entries and validate primitive field encodings separately.
+- **Validation:** The sanitizer harness passes 4,175 checks over 48 upstream
+  deploy CAPs and 100,000 random inputs, plus the exact JCAlgTest CAP. A
+  captured 58-byte Descriptor regression now parses. ARM, RISC-V, and PC builds
+  pass. VPCD package LOAD succeeds, but the following applet INSTALL returns
+  `0x6F00` on two attempts; investigate that separately before claiming full
+  installation acceptance. No physical Pico was visible to the VM.

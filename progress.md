@@ -13755,3 +13755,31 @@
   failed first attempt `artifacts/results/gppro-empty-install-vpcd-20261027T040739Z/`;
   test output `TEST:PASS cap_parser_framing checks=4165 fuzz_inputs=100000
   corpus_files=48`.
+
+## 2026-10-27 — Validate CAP Descriptor type offsets
+
+- Step/experiment: `wp9-cap-descriptor-type-offset-targets`
+- Change: Validate field, method, and constant-pool type offsets against
+  length-bounded type descriptor record starts. Use a bounded 512-byte bitmap
+  in eight 4,096-offset windows. Accept the specified `type_descriptor_info`
+  base and a compact constant-pool-array-relative base used by an existing
+  58-byte system Descriptor; reject offsets landing inside records.
+- Validation: `./tools/test-cap-parser` passed 4,175 ASan/UBSan checks over all
+  48 deploy CAPs and 100,000 randomized inputs. The exact JCAlgTest CAP also
+  passed (111 checks, 100,000 randomized inputs). ARM and RISC-V
+  `asymm_crypto` builds passed; the PC ROM-mask/emulator build passed.
+- Result: ARM UF2 is 2,028,544 bytes, SHA-256
+  `44d6f31694c4689858c0fa6e814b722750df3ee0b3d258b0ba874fdf07a8314f`;
+  RISC-V smoke UF2 is 79,360 bytes, SHA-256
+  `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`.
+  VPCD GPPro LOAD succeeded, but applet INSTALL returned `0x6F00` on two
+  attempts, so end-to-end installation is not passing. Physical reader helper
+  reported zero `2e8a:0009` devices; no hardware test was performed.
+- Decision: Keep the bounded offset validator and compatibility base because
+  both observed Descriptor layouts pass while misaligned interior offsets are
+  rejected. Investigate the VPCD applet INSTALL `0x6F00` separately.
+- Commit: `f7bd4af` (implementation; this progress/knowledge update follows
+  in a metadata commit).
+- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T045732Z/`,
+  `artifacts/results/gppro-empty-install-vpcd-20261027T045907Z/`; no passing
+  integration artifact for this step.
