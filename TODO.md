@@ -1630,7 +1630,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   checked. Field, method, and constant-pool type offsets are checked against
   type-record starts, using the CAP `type_descriptor_info` base with a
   compatibility fallback for compact constant-pool-array-relative offsets.
-  CAP 2.2+ Class layouts remain open.
+  CAP 2.2 Class payload extents now also walk the signature-pool descriptors,
+  interface records/names, compact class records, method tables, interface
+  method maps, and remote metadata lengths. Synthetic tests cover valid mixed
+  records plus malformed signatures and truncated remote fields; the supplied
+  deploy corpus is all CAP 2.1. Semantic cross-reference checks for CAP 2.2
+  remote metadata and CAP 2.3+ Class layouts remain open.
   The short APDU parser
   passes a separate
   ASan/UBSan harness over 250,000 randomized inputs, comparing results and

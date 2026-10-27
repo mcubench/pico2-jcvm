@@ -1,29 +1,23 @@
-# Current continuation — CAP Descriptor type-offset targets (2026-10-27)
+# Current continuation — CAP 2.2 Class component extents (2026-10-27)
 
-- Added a bounded type-offset validator for Descriptor constant-pool entries,
-  fields, and methods. It checks offsets against the starts of validated
-  length-prefixed type records, with an eight-window 512-byte bitmap. One
-  compact system Descriptor uses offsets relative to `constant_pool_types`
-  (after the count); the parser accepts that base as a compatibility fallback
-  to the specified `type_descriptor_info` base.
-- `./tools/test-cap-parser` passes 4,175 checks over all 48 `/deploy` CAPs and
-  100,000 fuzz buffers. The exact JCAlgTest CAP passes 111 checks and 100,000
-  fuzz buffers. ARM, RISC-V and PC builds pass. ARM image is 2,028,544 bytes
-  (`44d6f31694c4689858c0fa6e814b722750df3ee0b3d258b0ba874fdf07a8314f`);
-  RISC-V smoke image is 79,360 bytes
-  (`ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`).
-- VPCD is still flaky. Two attempts observed the card and completed CAP LOAD,
-  then applet INSTALL returned `0x6F00`. A later retry logged
-  `VPCD:CONNECTED` but never reported card presence before its 20-second idle
-  timeout. The parser harness accepts the upstream CAP. Diagnose card presence
-  and applet installation separately. The host-access reader helper reports
-  zero physical Pico devices despite the user's report that tokens are
-  connected; do not claim physical validation.
-- Implementation commit: `f7bd4af`; primary metadata commit: `3c5f740`;
-  VPCD retry observation is committed separately. Existing unrelated worktree edits are preserved.
-- Next: investigate the VPCD INSTALL `0x6F00` without changing the upstream
-  CAP; then continue CAP 2.2+ format-aware parsing and interrupted persistent
-  write recovery.
+- Added a bounded CAP 2.2 Class payload walk: type descriptor signature-pool
+  records, interface names, compact class method tables, implemented-interface
+  method maps, and optional remote metadata. Synthetic valid/malformed cases
+  pass. Supplied deploy CAPs remain all format 2.1, so no real CAP 2.2 artifact
+  was available in the corpus.
+- Validation: `./tools/test-cap-parser` passed 4,179 checks across 48 CAPs and
+  100,000 fuzz inputs; ARM and RISC-V `asymm_crypto` wrapper builds passed. ARM
+  UF2 is 2,029,568 bytes (`a22b5a25cd48c380e1bc490c97f618f7c5b54d7cd30e24fb303bfd5ce13f9a07`);
+  RISC-V smoke UF2 is 79,360 bytes (`ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`).
+- Physical access check: the approved PC/SC helper found zero Pico smartcard
+  readers; elevated `lsusb` checks found neither `2e8a:0009` nor `2e8a:000f`.
+  No flash/hardware test was attempted. VPCD has prior LOAD success but flaky
+  applet INSTALL (`0x6F00`) and reader-presence timeouts; see prior notes below.
+- Open: semantic cross-reference validation for CAP 2.2 remote metadata, CAP
+  2.3+ Class formats, and interrupted persistent-write recovery.
+- Next: review/commit only `jc_cap.cpp` and the parser test as the implementation
+  step; then commit progress/TODO/handoff metadata separately. Preserve all
+  unrelated dirty files.
 
 # Current continuation — validate counted CAP component payloads (2026-10-27)
 
