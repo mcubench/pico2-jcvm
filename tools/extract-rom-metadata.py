@@ -22,12 +22,14 @@ def main() -> int:
     if not definitions:
         parser.error(f"no ROM metadata macros found in {args.jni_header}")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
+    generated = (
         "/* Generated from the ROM-mask JNI header; do not edit. */\n#pragma once\n"
         + "\n".join(definitions)
-        + "\n",
-        encoding="utf-8",
+        + "\n"
     )
+    encoded = generated.encode("utf-8")
+    if not args.output.is_file() or args.output.read_bytes() != encoded:
+        args.output.write_bytes(encoded)
     return 0
 
 

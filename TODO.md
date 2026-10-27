@@ -271,6 +271,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
 
 ### Priority 2 — close correctness and reliability gaps
 
+- [x] Preserve timestamps of unchanged generated build inputs. The Java Card
+  support, class-token, and ROM-metadata generators now write output files only
+  when their bytes change, preventing repeated Java Card API and ROM-mask
+  regeneration and unnecessary C++ recompilation. `python3
+  tools/test-javacard-support.py` passes 11/11, and PC, ARM, and RISC-V
+  `asymm_crypto` wrapper builds pass. On an unchanged repeat, the PC wrapper
+  skipped Java Card API and ROM-mask generation and compiled no C++ objects;
+  host OS build/relink and wrapper checks remain in its steady-state time.
+
 - [x] **Keep ROM-mask payload bypass isolated from dynamic CAP validation.**
   A regression test constructs a structurally framed but malformed Descriptor:
   strict parsing rejects it, while the trusted ROM payload mode accepts it.

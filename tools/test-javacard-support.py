@@ -3,6 +3,7 @@
 
 import csv
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -82,6 +83,33 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertTrue((out / "java/javacard/framework/OwnerPINxBase.java").is_file())
             self.assertTrue((out / "java/javacard/framework/OwnerPINxImpl.java").is_file())
             self.assertTrue((out / "java/javacard/framework/OwnerPINxWithPredecrementImpl.java").is_file())
+
+    def test_regenerating_same_profile_preserves_generated_input_timestamps(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / "generated"
+            first = self.run_named_profile("asymm_crypto", out)
+            self.assertEqual(first.returncode, 0, first.stderr)
+            generated_inputs = (
+                out / "javacard-support.cmake",
+                out / "javacard-support.h",
+                out / "javacard-support.json",
+                out / "javacard-native-methods.txt",
+                out / "profile.txt",
+                out / "jcalgtest-supported.csv",
+                out / "java/javacard/security/RandomDataProvider.java",
+            )
+            for path in generated_inputs:
+                self.assertTrue(path.is_file(), path)
+                stat = path.stat()
+                os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns - 2_000_000_000))
+            original_mtimes = {path: path.stat().st_mtime_ns for path in generated_inputs}
+
+            second = self.run_named_profile("asymm_crypto", out)
+            self.assertEqual(second.returncode, 0, second.stderr)
+            self.assertEqual(
+                {path: path.stat().st_mtime_ns for path in generated_inputs},
+                original_mtimes,
+            )
 
     def test_minimal_config_generates_empty_supported_set(self):
         with tempfile.TemporaryDirectory() as temporary:

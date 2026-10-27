@@ -13872,3 +13872,14 @@
 - Decision: Keep hardware validation pending and avoid a misleading partial fault check. An implementation requires public-exponent association; continue with independent offline backlog items.
 - Commit: `8fc28ff` (audit/documentation); exact progress reference is in the following metadata commit.
 - Artifacts/logs: none.
+
+## 2026-10-27 — Preserve timestamps of unchanged build inputs (13 minutes)
+
+- Step/experiment: `content-aware-generated-build-inputs`
+- When: '2026-10-27 07:25 UTC' - '2026-10-27 07:38 UTC'
+- Change: Updated the Java Card capability, class-token, and ROM-metadata generators to write output only when bytes differ. Added a regression asserting repeated profile generation preserves timestamps on generated build inputs.
+- Validation: `python3 -m py_compile tools/javacard-support.py tools/javacard-class-tokens.py tools/extract-rom-metadata.py tools/test-javacard-support.py` passed. `python3 tools/test-javacard-support.py` passed 11/11. `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. Three timed PC builds took 96.45 s (first rebuild after generator edits), 20.88 s (C++ refresh), and 32.84 s (unchanged); the last run skipped Java Card API and ROM-mask generation and compiled no C++ objects. Host OS build/relink and manifest checks still run. The existing VPCD asymmetric suite passed 99/99 before this build-only change. No flash was attempted because no physical reader was visible.
+- Result: Repeated builds no longer invalidate Java Card API, ROM-mask, or C++ compilation inputs when generated contents are unchanged. Runtime for the host OS build/relink remains in the steady-state wrapper path.
+- Decision: Keep the generator regression and continue through the open runtime/API backlog; retry physical acceptance when a Pico enumerates.
+- Commit: pending.
+- Artifacts/logs: PC build logs in `/tmp/pico2-build-pc-incremental-first.log`, `/tmp/pico2-build-pc-incremental-second.log`, and `/tmp/pico2-build-pc-incremental-third.log` (temporary, not committed); generated ARM UF2 `build/arm/pico2_choupi.uf2` and RISC-V smoke UF2 `build/riscv/pico2_jcvm_smoke.uf2`.

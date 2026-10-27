@@ -118,7 +118,10 @@ def generate(source_root: Path, target_root: Path, output: Path) -> None:
         arrays.append("")
     arrays.extend(("} // namespace jcvm", ""))
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text("\n".join(arrays), encoding="utf-8")
+    generated = "\n".join(arrays)
+    encoded = generated.encode("utf-8")
+    if not output.is_file() or output.read_bytes() != encoded:
+        output.write_bytes(encoded)
 
 
 def main() -> int:
