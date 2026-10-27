@@ -13652,3 +13652,29 @@
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T032756Z/`;
   sanitizer test output `TEST:PASS cap_parser_framing checks=4038
   fuzz_inputs=100000 corpus_files=48`.
+
+## 2026-10-27 — Validate compact CAP Descriptor records
+
+- Step/experiment: `wp9-cap-compact-descriptor-bounds`
+- Change: Walk compact Descriptor class records, interface references, field
+  and method descriptors, constant-pool type offsets, and length-prefixed type
+  descriptors before retaining the component view. Corrected the packed field
+  descriptor access-flags member to one byte. Added synthetic and corpus-based
+  malformed interface/field/method-count tests.
+- Validation: `./tools/test-cap-parser` passed 4,147 ASan/UBSan checks across
+  all 48 supplied deploy CAPs and 100,000 random inputs. ARM and RISC-V
+  wrappers passed for `asymm_crypto`. The host-access-gated VPCD GPPro
+  empty-card LOAD/INSTALL/list regression passed.
+- Result: ARM UF2 2,025,472 bytes, SHA-256
+  `cee4e5b98a63dd61c95ef54610661a6b6939c56908755754e95fef584b67c465`;
+  RISC-V smoke UF2 79,360 bytes, SHA-256
+  `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`.
+  Existing imported-header warnings remain. No physical device enumerated, so
+  hardware testing was not performed.
+- Decision: Retain compact Descriptor structural checks. Class component
+  record traversal and type-nibble semantic validation remain open.
+- Commit: `891117e`
+- Artifacts/logs:
+  `artifacts/results/gppro-empty-install-vpcd-20261027T034258Z/`;
+  test output `TEST:PASS cap_parser_framing checks=4147 fuzz_inputs=100000
+  corpus_files=48`.

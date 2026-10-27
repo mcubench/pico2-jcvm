@@ -1620,10 +1620,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   length before creating views or advancing. Payload checks cover header AIDs,
   directory custom records, applet/import AID records, constant-pool counts,
   method handlers, static-field initializers, reference locations, exports,
-  and Descriptor minimum prefixes. The sanitizer corpus accepts all 48
-  supplied deploy CAPs, mutates counted fields, checks truncations/forged
-  lengths, and processes 100,000 randomized inputs. Class and nested
-  Descriptor table walks remain open. The short APDU parser passes a separate
+  and compact Descriptor class/field/method records plus type-descriptor
+  extents. The Descriptor field access-flags width now matches its one-byte
+  CAP encoding. The sanitizer corpus accepts all 48 supplied deploy CAPs,
+  mutates counted fields, checks truncations/forged lengths, and processes
+  100,000 randomized inputs. Class component record traversal and semantic
+  validation of descriptor type nibbles remain open. The short APDU parser passes a separate
   ASan/UBSan harness over 250,000 randomized inputs, comparing results and
   decoded lengths to ISO 7816 short APDU case rules; no bug surfaced. Remaining
   here: full CAP nested-table validation and fuzzing, plus interrupted

@@ -5452,3 +5452,24 @@ fix.
   100,000 randomized byte strings. VPCD GPPro install/select passes. Class
   component and nested Descriptor record traversal remain unresolved, so this
   is partial structural validation rather than a complete CAP verifier.
+
+## Compact Descriptor records require seven-byte field entries (2026-10-27)
+
+- **Symptom:** Descriptor parsing checked only a fixed prefix, and the packed
+  `field_descriptor_info` declared its access-flags member as two bytes. This
+  shifted subsequent fields and method records from compact CAP offsets.
+- **Cause:** A compact field descriptor contains a one-byte token, one-byte
+  access flags, three-byte field reference, and two-byte type (seven bytes).
+  Counted class/interface records, field descriptors, method descriptors, and
+  trailing type-descriptor records were not walked before retaining the view.
+- **Viable fix:** Decode Descriptor counts explicitly and bound records using
+  compact sizes: nine-byte class prefix, two-byte interface reference,
+  seven-byte field, and twelve-byte method. Then bound the constant-pool type
+  offsets and each length-prefixed type descriptor. Keep `access_flags` one
+  byte. Do not infer Class component offsets from Descriptor class references
+  until the format/version-specific layout is independently verified.
+- **Validation:** ASan/UBSan passes 4,147 checks across all 48 supplied deploy
+  CAPs and 100,000 randomized buffers, including synthetic Descriptor records
+  and impossible interface/field/method counts. ARM and RISC-V wrappers and
+  VPCD GPPro LOAD/INSTALL/SELECT pass. No physical Pico enumerated, so hardware
+  validation was not performed.

@@ -1,5 +1,36 @@
 # Current continuation — validate counted CAP component payloads (2026-10-27)
 
+# Current continuation — compact CAP Descriptor bounds (2026-10-27)
+
+- Implemented compact Descriptor structural validation. The parser now walks
+  each 9-byte class descriptor prefix, its counted 2-byte interfaces,
+  7-byte field descriptors and 12-byte method descriptors; checks constant
+  pool type offsets; then bounds each length-prefixed type descriptor. Fixed
+  the packed `field_descriptor_info.access_flags` width from two bytes to one.
+- Added malformed-count tests for interface, field, and method tables plus a
+  minimal synthetic Descriptor. `./tools/test-cap-parser` passes 4,147 checks
+  across all 48 supplied `/deploy` CAPs and 100,000 random buffers under
+  ASan/UBSan. `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` pass. The host-access-gated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passes GPPro
+  LOAD/INSTALL/list. Logs: `artifacts/results/gppro-empty-install-vpcd-20261027T034258Z/`.
+- The user reports tokens are plugged in, but this VM still sees zero devices:
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported found 0; `lsusb -d
+  2e8a:0009` and `lsusb -d 2e8a:000f` found no matching runtime/BOOTSEL
+  hardware. No flash or hardware test was attempted.
+- ARM image: 2,025,472 bytes, SHA-256
+  `cee4e5b98a63dd61c95ef54610661a6b6939c56908755754e95fef584b67c465`;
+  RISC-V smoke image: 79,360 bytes, SHA-256
+  `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`.
+- Implementation commit: `891117e`; progress/QKB/TODO/handoff metadata follows
+  in its own commit.
+- Next: recheck physical enumeration using the approved host-access path. If
+  absent, continue offline with Java Card format/version-aware Class component
+  bounds; keep semantic Descriptor type-nibble validation separate until
+  encoding details are verified. Preserve all unrelated worktree changes.
+
+# Prior continuation — validate counted CAP component payloads (2026-10-27)
+
 - Extended the CAP parser's pre-view validation to Header AID/package-name
   lengths, Directory custom-component entries, Applet AID records, Import
   package records, Constant Pool entry counts, Method exception-handler table
