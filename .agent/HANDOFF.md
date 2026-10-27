@@ -20,6 +20,7 @@
   `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`).
   The asymmetric profile is the symmetric capability set plus asymmetric
   support. The profile builds do not preload JCAlgTest.
+- Commit: `3c1dc03`.
 - Next: hand over these two files and hashes for the Windows validation. Keep
   working-tree changes from the user untouched; only `native_signature.cpp`,
   this handoff, and its progress entry belong to the current commit.
