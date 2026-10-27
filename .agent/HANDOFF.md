@@ -1,3 +1,29 @@
+# Current continuation — prepare symmetric and combined-crypto Windows UF2s (2026-10-27)
+
+- The user asked for a quick real-board flash and externally testable ARM UF2s
+  for `symm_crypto` and `asymm_crypto`. Two RP2350 BOOTSEL devices enumerated.
+  `D92E743D5F640C0F` was explicitly selected; the other board was untouched.
+- `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto
+  --chipid d92e743d5f640c0f` passed after both ARM and RISC-V builds. Flash
+  verification passed; the finite serial monitor logged repeated
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. Log:
+  `artifacts/logs/cycle-choupi-20261027T075044Z.log`.
+- The `symm_crypto` ARM build exposed two disabled-RSA unused-symbol errors in
+  `native_signature.cpp`. Guarded the RSA helper and ECDSA-only local variable;
+  ARM and RISC-V builds now pass for `symm_crypto`. ARM and RISC-V
+  `asymm_crypto` builds also passed after the source edit.
+- Current external-validation binaries are in ignored build outputs:
+  `build/external-test/firmware/pico2_choupi_symm_crypto.uf2` (1,779,712 bytes,
+  SHA-256 `3b08470b555ac899a01058df8ab46753290f52dacc28a9e9c7e49e51adbe8d69`)
+  and `build/external-test/firmware/pico2_choupi_asymm_crypto.uf2`
+  (2,029,568 bytes, SHA-256
+  `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`).
+  The asymmetric profile is the symmetric capability set plus asymmetric
+  support. The profile builds do not preload JCAlgTest.
+- Next: hand over these two files and hashes for the Windows validation. Keep
+  working-tree changes from the user untouched; only `native_signature.cpp`,
+  this handoff, and its progress entry belong to the current commit.
+
 # Current continuation — preserve generated build input timestamps (2026-10-27)
 
 - Changed capability, Java Card class-token, and ROM-metadata generators to

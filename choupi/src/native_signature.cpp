@@ -462,11 +462,13 @@ uint8_t algorithmForTuple(uint8_t digest, uint8_t cipher, uint8_t padding) {
   throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
 }
 
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
 bool isRsaSignatureAlgorithm(uint8_t algorithm) {
   uint8_t digest = 0, cipher = 0, padding = 0;
   return tupleForAlgorithm(algorithm, digest, cipher, padding) &&
          cipher == kSignatureCipherRsa;
 }
+#endif
 
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
@@ -707,11 +709,11 @@ jref_t javacard_security_Signature_getInstance(
 void javacard_security_Signature_init(jref_t receiver, jref_t key,
                                       jbyte_t mode) {
   auto signature = signatureInstance(receiver);
-  const uint8_t algorithm = static_cast<uint8_t>(signature->getField_Byte(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  const uint8_t algorithm = static_cast<uint8_t>(signature->getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
   if (isEcdsaSignatureAlgorithm(algorithm)) {
     initializeEcdsaSignature(*signature, key, static_cast<uint8_t>(mode));
     return;

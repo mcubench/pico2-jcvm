@@ -13883,3 +13883,14 @@
 - Decision: Keep the generator regression and continue through the open runtime/API backlog; retry physical acceptance when a Pico enumerates.
 - Commit: pending.
 - Artifacts/logs: PC build logs in `/tmp/pico2-build-pc-incremental-first.log`, `/tmp/pico2-build-pc-incremental-second.log`, and `/tmp/pico2-build-pc-incremental-third.log` (temporary, not committed); generated ARM UF2 `build/arm/pico2_choupi.uf2` and RISC-V smoke UF2 `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-10-27 — Build profile UF2s and flash one Pico 2 (18 minutes)
+
+- Step/experiment: `external-profile-uf2-and-hardware-smoke`
+- When: '2026-10-27 07:41 UTC' - '2026-10-27 07:59 UTC'
+- Change: Guarded an RSA-only Signature helper and an ECDSA-only local variable so `symm_crypto` compiles with RSA/ECDSA providers excluded. Built ARM UF2s for `symm_crypto` and `asymm_crypto`; the latter includes both symmetric and asymmetric selections.
+- Validation: `./tools/build arm --profile symm_crypto`, `./tools/build riscv --profile symm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid d92e743d5f640c0f` passed both architecture builds, verified the flash, and captured a finite serial monitor with repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. No JCAlgTest CAP was installed or changed.
+- Result: Chip `D92E743D5F640C0F` boots the combined `asymm_crypto` firmware. The second enumerated BOOTSEL board was not touched. `symm_crypto` UF2 is 1,779,712 bytes (SHA-256 `3b08470b555ac899a01058df8ab46753290f52dacc28a9e9c7e49e51adbe8d69`); `asymm_crypto` UF2 is 2,029,568 bytes (SHA-256 `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`).
+- Decision: Provide both profile-specific ARM UF2s for external Windows testing. The physical smoke cycle was for `asymm_crypto`; symmetric algorithm report parity still requires the user's external JCAlgTest run.
+- Commit: pending.
+- Artifacts/logs: `build/external-test/firmware/pico2_choupi_symm_crypto.uf2`, `build/external-test/firmware/pico2_choupi_asymm_crypto.uf2`, and `artifacts/logs/cycle-choupi-20261027T075044Z.log`.
