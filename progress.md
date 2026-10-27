@@ -13862,3 +13862,13 @@
 - Decision: Keep complete report comparison, current-image `/deploy` hardware tests, and Windows workflow open.
 - Commit: Metadata-only validation follows the existing `asymm_crypto` implementation commits.
 - Artifacts/logs: Comparator and unit-test stdout only; no files generated.
+
+## 2026-10-27 — Audit RSA-CRT result verification limits
+
+- Step/experiment: `rsa-crt-public-exponent-audit`
+- Change: Recorded that Java Card CRT private keys and the current native key state expose no matching public exponent, so native code cannot perform a complete post-operation RSA check. Updated TODO, QKB, and handoff to require an explicit key association/API design before claiming CRT fault verification.
+- Validation: Read-only audit of `native_rsa_math.hpp`, the RSA Cipher and Signature call sites, and the Java Card CRT key API. No code tests or builds were run because implementation did not change. Physical access check used the approved elevated helper and found zero PC/SC Pico readers; elevated `lsusb` showed only VirtualBox devices.
+- Result: Existing exponent blinding does not verify the computed result. A recombination-only check would not catch a faulty exponentiation branch and is not recorded as a complete mitigation.
+- Decision: Keep hardware validation pending and avoid a misleading partial fault check. An implementation requires public-exponent association; continue with independent offline backlog items.
+- Commit: pending metadata follow-up.
+- Artifacts/logs: none.

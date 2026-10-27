@@ -1585,9 +1585,13 @@ rollback and duplicate/invalid registration handling also remain unverified.
   confirms bundled Mbed TLS `mbedtls_mpi_exp_mod()` uses fixed-width,
   constant-time exponentiation. CRT operations now apply fresh 224-bit
   exponent blinding with an `N`-width-derived fixed exponent loop. Remaining
-  security work: audit the full operation, assess input blinding despite CRT
-  keys not exposing E, and add a post-operation fault check when the public
-  exponent is available. Hardware validation of this path is also pending.
+  security work: audit the full operation and assess input blinding despite CRT
+  keys not exposing E. Java Card CRT keys expose P, Q, DP1, DQ1, and PQ, but no
+  public exponent; the native API does not associate a public key with the
+  private key. Therefore a complete CRT result check needs an explicit key
+  association/API design change. Do not treat exponent blinding or a CRT
+  recombination check as a substitute for checking with the public exponent.
+  Hardware validation of this path is also pending.
   Reproduce the offline positive-set audit with
   `python3 tools/compare-jcalgtest-legacy-target.py`; the tool understands the
   supplied 1.7.9 schema and compares its shared asymmetric/symmetric-crypto

@@ -1,4 +1,22 @@
-# Current continuation — recheck asymmetric-profile target support set (2026-10-27)
+# Current continuation — RSA-CRT hardening boundary and physical access check (2026-10-27)
+
+- The user reported that Pico tokens are plugged in. The approved host-access
+  helper `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`
+  found zero readers, and elevated `lsusb` showed only VirtualBox devices. No
+  board is currently attached to this VM; do not flash until one enumerates.
+- Audited `choupi/src/native_rsa_math.hpp` and the native RSA Cipher/Signature
+  callers. CRT exponent blinding uses independent random 224-bit values for
+  DP and DQ and imports both blinded exponents at a fixed N-derived width.
+  Java Card CRT key state exposes P, Q, DP1, DQ1, and PQ, but has no public
+  exponent or association to a matching public key. Therefore a full
+  post-operation RSA result verification cannot be implemented from the
+  current CRT API state. Do not add a recombination-only check and describe it
+  as CRT fault protection; it cannot detect a faulty exponentiation branch.
+- Updated TODO/QKB to record this boundary. This audit-only step has no source
+  change; next continue offline with remaining asymmetric implementation and
+  validation backlog, retrying physical access when a Pico is enumerated.
+
+# Previous continuation — recheck asymmetric-profile target support set (2026-10-27)
 
 - Re-ran the offline positive-set comparison for the checked-in
   `asymm_crypto` profile against the supplied 1.7.9 target CSV. It reports
