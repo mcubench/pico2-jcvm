@@ -2009,7 +2009,12 @@ JC_Cap FlashMemory_Handler::getCap(const jpackage_ID_t packageID) {
   auto &tag = FlashMemory_Handler::getCapTag(packageID);
   auto cap = getDataInPlaceFromTag(tag);
 
-  return JC_Cap(cap.first, cap.second);
+  // ROM-mask CAP payloads are prelinked structures generated from JCA files;
+  // their Descriptor tables are not serialized in standard CAP byte order.
+  // The outer framing remains checked by JC_Cap, while loaded dynamic CAPs
+  // continue to receive full payload validation above.
+  return JC_Cap(cap.first, cap.second,
+                FlashMemory_Handler::isDynamicPackageID(packageID));
 }
 
 } // namespace jcvm

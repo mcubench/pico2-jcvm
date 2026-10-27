@@ -71,7 +71,11 @@ private:
 
 public:
   /// default constructor
-  JC_Cap(uint16_t length, const uint8_t *cap_file);
+  // `validate_payloads` is false only for trusted ROM-mask package images.
+  // Their payloads are prelinked native structures rather than CAP-file
+  // serialized tables, though their outer component framing is still checked.
+  JC_Cap(uint16_t length, const uint8_t *cap_file,
+         bool validate_payloads = true);
   JC_Cap(const JC_Cap &cap) noexcept = default;
   /// Copy assignment operator
   JC_Cap &operator=(const JC_Cap &cap) noexcept;

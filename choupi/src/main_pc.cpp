@@ -1336,11 +1336,30 @@ uint16_t vpcd_process_card_manager(
                                : 0x6a80);
   }
   if (instruction == 0xe6 && p1 == 0x0c && p2 == 0x00) {
-    return status_response(
-        vpcd_cap_load_session.installAndMakeSelectable(data,
-                                                       command_data_length)
-            ? 0x9000
-            : vpcd_cap_load_session.installFailureStatusWord());
+    if (!vpcd_cap_load_session.installAndMakeSelectable(
+            data, command_data_length)) {
+      std::fprintf(stderr,
+                   "VPCD:INSTALL_FAIL stage=%u sw=%04X vm=%04X exc=%u "
+                   "opcode=%02X pc=%08X prefix=%08X operand=%04X "
+                   "stack=%u op_history=%08X depth_history=%08X "
+                   "debug_stage=%u debug_context=%08X\n",
+                   vpcd_cap_load_session.installFailureStage(),
+                   vpcd_cap_load_session.installFailureStatusWord(),
+                   vpcd_cap_load_session.installVmStatus(),
+                   vpcd_cap_load_session.installVmExceptionId(),
+                   vpcd_cap_load_session.installVmExceptionOpcode(),
+                   vpcd_cap_load_session.installVmExceptionPc(),
+                   vpcd_cap_load_session.installVmExceptionPrefix(),
+                   vpcd_cap_load_session.installVmExceptionOperand(),
+                   vpcd_cap_load_session.installVmExceptionStackDepth(),
+                   vpcd_cap_load_session.installVmExceptionOpcodeHistory(),
+                   vpcd_cap_load_session.installVmExceptionDepthHistory(),
+                   vpcd_cap_load_session.installVmDebugStage(),
+                   vpcd_cap_load_session.installVmDebugContext());
+      return status_response(
+          vpcd_cap_load_session.installFailureStatusWord());
+    }
+    return status_response(0x9000);
   }
   if (instruction == 0xca) {
     size_t output_length = 0;

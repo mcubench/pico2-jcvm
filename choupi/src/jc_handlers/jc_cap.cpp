@@ -544,7 +544,8 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
  * @param[length] CAP file length
  * @param[cap_file] A pointer to the CAP file data
  */
-JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
+JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file,
+               const bool validate_payloads) {
   if (cap_file == nullptr) {
     if (length != 0) {
       throw Exceptions::SecurityException;
@@ -574,7 +575,8 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
       throw Exceptions::SecurityException;
     }
     const uint8_t *payload = component + component_header_size;
-    if (!validate_component_payload(component[0], payload, payload_size,
+    if (validate_payloads &&
+        !validate_component_payload(component[0], payload, payload_size,
                                     cap_major, cap_minor, class_payload,
                                     class_payload_size)) {
       throw Exceptions::SecurityException;

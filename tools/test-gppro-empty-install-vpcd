@@ -6,13 +6,15 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 require_host_usb_access
 require_command timeout
 require_command grep
+require_command pcsc_scan
 
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 cap="${repo_root}/AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
 load_code="${repo_root}/build/algtest-v182-load-code.bin"
 emulator="${repo_root}/build/choupi-pc/choupi"
 rom_mask="${repo_root}/build/choupi-pc/flash"
-reader="Virtual PCD 00 00"
+reader="Virtual PCD 00 01"
+endpoint="127.0.0.1:35964"
 applet_aid="4A43416C675465737431"
 
 for input in "${gp_jar}" "${cap}" "${load_code}" "${emulator}" "${rom_mask}"; do
@@ -25,14 +27,17 @@ mkdir -p "${out_dir}"
 flash_image="${out_dir}/empty-card.bin"
 : > "${flash_image}"
 
-"${repo_root}/tools/env" java "${repo_root}/tools/VpcdPresenceProbe.java" \
-  "${reader}" 1000 > "${out_dir}/reader-before.log"
-if grep -Fq 'present=true' "${out_dir}/reader-before.log"; then
-  die "${reader} already has a card; refusing to use a non-empty VPCD slot"
-fi
+# Start/refresh pcscd and the vpcd reader service before the emulator makes
+# its one-shot TCP connection. Without this, pcscd's auto-exit startup race can
+# make the first emulator connect fail with ECONNREFUSED.
+"${repo_root}/tools/env" pcsc_scan -r > "${out_dir}/reader-inventory.log" 2>&1
+grep -Fq "${reader}" "${out_dir}/reader-inventory.log" || {
+  cat "${out_dir}/reader-inventory.log" >&2
+  die "configured VPCD reader is not available"
+}
 
 "${repo_root}/tools/env" "${emulator}" -m "${flash_image}" -s \
-  --vpcd 127.0.0.1:35963 --vpcd-idle-timeout 20 \
+  --vpcd "${endpoint}" --vpcd-idle-timeout 20 \
   --applet-aid "${applet_aid}" --package-id 63 --cap-code "${load_code}" \
   --rom-mask "${rom_mask}" > "${out_dir}/emulator.log" 2>&1 &
 emulator_pid=$!
@@ -44,26 +49,19 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-card_ready=0
-for attempt in $(seq 1 20); do
-  if ! kill -0 "${emulator_pid}" 2>/dev/null; then
-    cat "${out_dir}/emulator.log" >&2
-    die "VPCD emulator exited before connecting"
-  fi
-  if timeout --signal=TERM --kill-after=2s 5s \
-      "${repo_root}/tools/env" java \
-      "${repo_root}/tools/VpcdPresenceProbe.java" "${reader}" 1000 \
-      --require-present > "${out_dir}/reader-ready.log" 2>&1; then
-    card_ready=1
-    break
-  fi
-  sleep 0.25
-done
-[[ "${card_ready}" == 1 ]] || {
+# Let the VPCD master connect before asking PC/SC to poll its reader. Starting
+# waitForCardPresent before that connection can leave this driver instance
+# stuck in the absent state until the master disconnects.
+sleep 1
+
+if ! timeout --signal=TERM --kill-after=2s 8s \
+    "${repo_root}/tools/env" java \
+    "${repo_root}/tools/VpcdPresenceProbe.java" "${reader}" 5000 \
+    --require-present > "${out_dir}/reader-ready.log" 2>&1; then
   cat "${out_dir}/emulator.log" >&2
   cat "${out_dir}/reader-ready.log" >&2
   die "emulator did not make the clean VPCD card present"
-}
+fi
 
 run_gp() {
   timeout --signal=TERM --kill-after=5s 120s \
