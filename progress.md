@@ -13094,7 +13094,7 @@
 - Validation: `python3 tools/test-javacard-support.py` passed 9/9. Inspection of the test assertions confirmed they require generated `RSAKeyProvider`, `RSACipherProvider`, and `SymmetricMacProvider` classes; this is not native-only acceptance evidence.
 - Result: Existing test suite protects provider generation and will need replacement after direct native API dispatch is implemented.
 - Decision: Do not weaken or change the assertions before the implementation changes; use them as a migration checklist.
-- Commit: pending.
+- Commit: `e669594`.
 - Artifacts/logs: Test output was transient; no log retained.
 
 
