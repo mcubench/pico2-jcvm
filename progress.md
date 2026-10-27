@@ -13556,6 +13556,6 @@
 - Decision: Keep full CRT side-channel review, input blinding, fault checks,
   and physical validation on the remaining list; restore guest USB passthrough
   before attempting hardware tests.
-- Commit: pending.
+- Commit: `c64ec3f`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   ARM image `build/arm/pico2_choupi.uf2`; no physical log.
