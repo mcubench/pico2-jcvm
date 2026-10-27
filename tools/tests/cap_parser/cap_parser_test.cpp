@@ -121,6 +121,17 @@ void test_class_component_21() {
   bad_method_map_count[16] = 0xff;
   expect(!parses(bad_method_map_count.data(), bad_method_map_count.size()),
          "class_component_interface_method_map_overrun_rejected");
+
+  const std::array<uint8_t, 28> matching_descriptor = {
+      6, 0, 10, 0, 0xff, 0xff, 0, 0xff, 0, 0, 0, 0, 0,
+      11, 0, 12, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  expect(parses(matching_descriptor.data(), matching_descriptor.size()),
+         "descriptor_class_reference_boundary_parses");
+  auto invalid_class_reference = matching_descriptor;
+  invalid_class_reference[20] = 1;
+  expect(!parses(invalid_class_reference.data(),
+                 invalid_class_reference.size()),
+         "descriptor_class_reference_not_at_record_boundary_rejected");
 }
 
 } // namespace

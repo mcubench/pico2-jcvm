@@ -27,6 +27,7 @@
 
 #include "jc_cap.hpp"
 #include "../exceptions.hpp"
+#include <array>
 #include <cstddef>
 #include <utility>
 
@@ -39,12 +40,25 @@ uint16_t read_be16(const uint8_t *bytes) {
                                bytes[1]);
 }
 
-bool validate_class_component_21(const uint8_t *payload, const size_t size) {
+bool validate_class_component_21(const uint8_t *payload, const size_t size,
+                                 uint16_t *info_offsets = nullptr,
+                                 const size_t info_capacity = 0,
+                                 size_t *info_count = nullptr) {
   size_t offset = 0;
+  size_t record_count = 0;
+  const auto record_starts_here = [&]() {
+    if (info_offsets != nullptr) {
+      if (record_count >= info_capacity || offset > UINT16_MAX) return false;
+      info_offsets[record_count] = static_cast<uint16_t>(offset);
+    }
+    ++record_count;
+    return true;
+  };
 
   // Interface records precede class records. Their flag occupies the high
   // nibble and ACC_INTERFACE is the highest bit of the first byte.
   while (offset < size && (payload[offset] & 0x80) != 0) {
+    if (!record_starts_here()) return false;
     const uint8_t flags = payload[offset] >> 4;
     const size_t interfaces = payload[offset] & 0x0f;
     if ((flags & 0x02) != 0 || interfaces > 14) return false;
@@ -54,6 +68,7 @@ bool validate_class_component_21(const uint8_t *payload, const size_t size) {
   }
 
   while (offset < size) {
+    if (!record_starts_here()) return false;
     constexpr size_t class_prefix_size = 10;
     if (size - offset < class_prefix_size ||
         (payload[offset] & 0x80) != 0) {
@@ -81,12 +96,60 @@ bool validate_class_component_21(const uint8_t *payload, const size_t size) {
     }
   }
 
-  return offset == size;
+  if (offset != size) return false;
+  if (info_count != nullptr) *info_count = record_count;
+  return true;
+}
+
+bool descriptor_class_refs_match_class_component_21(
+    const uint8_t *descriptor, const size_t descriptor_size,
+    const uint8_t *class_component, const size_t class_component_size) {
+  if (descriptor_size == 0) return false;
+  const size_t descriptor_class_count = descriptor[0];
+  std::array<uint16_t, 255> class_info_offsets{};
+  size_t class_info_count = 0;
+  if (!validate_class_component_21(
+          class_component, class_component_size, class_info_offsets.data(),
+          class_info_offsets.size(), &class_info_count) ||
+      class_info_count != descriptor_class_count) {
+    return false;
+  }
+
+  size_t offset = 1;
+  for (size_t index = 0; index < descriptor_class_count; ++index) {
+    if (descriptor_size - offset < 9) return false;
+    const uint16_t class_ref = read_be16(descriptor + offset + 2);
+    if ((class_ref & 0x8000) != 0) return false;
+    size_t lower = 0;
+    size_t upper = class_info_count;
+    while (lower < upper) {
+      const size_t middle = lower + (upper - lower) / 2;
+      if (class_info_offsets[middle] < class_ref) {
+        lower = middle + 1;
+      } else {
+        upper = middle;
+      }
+    }
+    if (lower == class_info_count || class_info_offsets[lower] != class_ref)
+      return false;
+
+    const size_t interfaces = descriptor[offset + 4];
+    const size_t fields = read_be16(descriptor + offset + 5);
+    const size_t methods = read_be16(descriptor + offset + 7);
+    const size_t record_size =
+        9 + interfaces * 2 + fields * 7 + methods * 12;
+    if (record_size > descriptor_size - offset) return false;
+    offset += record_size;
+  }
+
+  return true;
 }
 
 bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
                                 const size_t size, const uint8_t cap_major,
-                                const uint8_t cap_minor) {
+                                const uint8_t cap_minor,
+                                const uint8_t *class_payload,
+                                const size_t class_payload_size) {
   size_t offset = 0;
   switch (tag) {
   case 1: { // Header
@@ -229,7 +292,10 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
       if (descriptor_bytes > size - offset) return false;
       offset += descriptor_bytes;
     }
-    return offset == size;
+    if (offset != size) return false;
+    return cap_major != 2 || cap_minor != 1 || class_payload == nullptr ||
+           descriptor_class_refs_match_class_component_21(
+               payload, size, class_payload, class_payload_size);
   }
   default:
     return false;
@@ -269,6 +335,8 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
   const uint8_t *cap_file_end = cap_file + length;
   uint8_t cap_major = 2;
   uint8_t cap_minor = 1;
+  const uint8_t *class_payload = nullptr;
+  size_t class_payload_size = 0;
 
   while (component < cap_file_end) {
     const size_t remaining = static_cast<size_t>(cap_file_end - component);
@@ -286,8 +354,13 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
     }
     const uint8_t *payload = component + component_header_size;
     if (!validate_component_payload(component[0], payload, payload_size,
-                                    cap_major, cap_minor)) {
+                                    cap_major, cap_minor, class_payload,
+                                    class_payload_size)) {
       throw Exceptions::SecurityException;
+    }
+    if (component[0] == CAP_COMPONENT_CLASS) {
+      class_payload = payload;
+      class_payload_size = payload_size;
     }
     if (component[0] == CAP_COMPONENT_HEADER && payload_size >= 6) {
       cap_minor = payload[4];
