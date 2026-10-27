@@ -13914,5 +13914,5 @@
 - Validation: The first GPPro attempt used D92's stale reader suffix `00 00` and failed before card mutation because a second Pico was now present. `pcsc_scan -r` identified D92 as the full reader name ending `01 00` and 2BED as `00 00`. GPPro LOAD/INSTALL then succeeded on D92; `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-pcsc '<exact D92 reader name>'` passed all 71 cipher/MAC KATs. GPPro cleanup ran, and a post-test `--list` confirmed the temporary A000 package was absent.
 - Result: D92 passed `TEST:SUMMARY pass=71 fail=0` on the combined profile. Existing JCAlgTest applet/package and package `F01234567890` remained installed; no pre-existing card data was removed. The image's full support report and `/deploy` matrix remain open.
 - Decision: Record the reader-name renumbering as a host procedure issue; always re-enumerate and match the reader's embedded chip ID after device hotplug. Continue with physical ECDSA/key-agreement coverage and full profile acceptance.
-- Commit: pending.
+- Commit: `54b2ccf`.
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-pcsc-20261027T195919Z.log`, `artifacts/logs/gppro-post-symm-probe-D92-20261027.log`, and `build/symm-crypto-probe/physical-vectors.tsv`.

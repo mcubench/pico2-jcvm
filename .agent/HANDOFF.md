@@ -14,6 +14,7 @@
   installed and untouched. Listing log:
   `artifacts/logs/gppro-post-symm-probe-D92-20261027.log`. KAT log:
   `artifacts/logs/symm-crypto-kat-pcsc-20261027T195919Z.log`.
+- Commit: `54b2ccf`.
 - Next: continue physical EC ECDSA/key-agreement coverage and the full
   asymmetric report/deploy acceptance. Do not infer full profile completion
   from these focused vector suites.
