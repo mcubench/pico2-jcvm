@@ -250,6 +250,61 @@ void test_type_descriptor_offsets() {
          "shifted_constant_pool_type_base_parses");
 }
 
+void test_class_component_22() {
+  const auto append_component = [](std::vector<uint8_t> &cap, uint8_t tag,
+                                   const std::vector<uint8_t> &payload) {
+    cap.push_back(tag);
+    cap.push_back(static_cast<uint8_t>(payload.size() >> 8));
+    cap.push_back(static_cast<uint8_t>(payload.size()));
+    cap.insert(cap.end(), payload.begin(), payload.end());
+  };
+  const auto make_cap = [&](std::vector<uint8_t> class_payload) {
+    std::vector<uint8_t> cap;
+    std::vector<uint8_t> header(16, 0);
+    header[4] = 2; // CAP format minor version.
+    header[5] = 2; // CAP format major version.
+    header[9] = 5; // Package AID length.
+    header[10] = 0xf0;
+    header[11] = 0x00;
+    header[12] = 0x00;
+    header[13] = 0x00;
+    header[14] = 0x01;
+    header[15] = 0; // Empty CAP 2.2 package name.
+    append_component(cap, 1, header);
+    append_component(cap, 6, class_payload);
+    return cap;
+  };
+
+  std::vector<uint8_t> class_payload = {
+      0x00, 0x02, 0x01, 0x10, // Signature pool: one ()V descriptor.
+      0x80,                   // Non-remote interface.
+      0xa0, 0x01, 'I',        // Remote interface with a one-byte name.
+      0x00, 0xff, 0xff, 0x01, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x20, 0xff, 0xff, 0x01, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x01, 'C', 0x00};
+  auto valid = make_cap(class_payload);
+  expect(parses(valid.data(), valid.size()),
+         "class_component_22_signature_and_remote_records_parse");
+
+  class_payload[3] = 0x00;
+  auto invalid_signature = make_cap(class_payload);
+  expect(!parses(invalid_signature.data(), invalid_signature.size()),
+         "class_component_22_invalid_signature_rejected");
+
+  class_payload[3] = 0x10;
+  class_payload[6] = 0x05; // Remote interface name exceeds remaining bytes.
+  auto truncated_remote_interface = make_cap(class_payload);
+  expect(!parses(truncated_remote_interface.data(),
+                 truncated_remote_interface.size()),
+         "class_component_22_truncated_remote_interface_rejected");
+
+  class_payload[6] = 0x01;
+  class_payload.pop_back(); // Truncate remote class metadata.
+  auto truncated_remote_class = make_cap(class_payload);
+  expect(!parses(truncated_remote_class.data(), truncated_remote_class.size()),
+         "class_component_22_truncated_remote_class_rejected");
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -276,6 +331,7 @@ int main(int argc, char **argv) {
   test_class_component_21();
   test_type_descriptor_grammar();
   test_type_descriptor_offsets();
+  test_class_component_22();
 
   std::mt19937 generator(0x4a43564d);
   std::uniform_int_distribution<unsigned> byte_distribution(0, 255);

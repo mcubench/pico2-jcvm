@@ -172,6 +172,104 @@ bool validate_type_descriptor(const uint8_t *type, const size_t nibble_count) {
   return (nibble_count & 1) == 0 || (nibble_at(nibble_count) == 0);
 }
 
+bool validate_type_descriptor_sequence(const uint8_t *data,
+                                      const size_t size) {
+  size_t offset = 0;
+  while (offset < size) {
+    const size_t nibble_count = data[offset++];
+    const size_t descriptor_bytes = (nibble_count + 1) / 2;
+    if (descriptor_bytes > size - offset ||
+        !validate_type_descriptor(data + offset, nibble_count)) {
+      return false;
+    }
+    offset += descriptor_bytes;
+  }
+  return offset == size;
+}
+
+bool validate_remote_interface_info(const uint8_t *payload,
+                                    const size_t size, size_t &offset) {
+  if (offset >= size) return false;
+  const size_t remote_methods = payload[offset++];
+  const size_t remote_method_bytes = remote_methods * 5;
+  if (remote_method_bytes > size - offset) return false;
+  offset += remote_method_bytes;
+
+  if (offset >= size) return false;
+  const size_t hash_modifier_bytes = payload[offset++];
+  if (hash_modifier_bytes > size - offset) return false;
+  offset += hash_modifier_bytes;
+
+  if (offset >= size) return false;
+  const size_t class_name_bytes = payload[offset++];
+  if (class_name_bytes > size - offset) return false;
+  offset += class_name_bytes;
+
+  if (offset >= size) return false;
+  const size_t remote_interfaces = payload[offset++];
+  const size_t remote_interface_bytes = remote_interfaces * 2;
+  if (remote_interface_bytes > size - offset) return false;
+  offset += remote_interface_bytes;
+  return true;
+}
+
+bool validate_class_component_22(const uint8_t *payload, const size_t size) {
+  if (size < 2) return false;
+  const size_t signature_pool_length = read_be16(payload);
+  if (signature_pool_length > size - 2 ||
+      !validate_type_descriptor_sequence(payload + 2,
+                                         signature_pool_length)) {
+    return false;
+  }
+
+  size_t offset = 2 + signature_pool_length;
+  size_t record_count = 0;
+  while (offset < size) {
+    const uint8_t flags = payload[offset] >> 4;
+    const size_t interfaces = payload[offset] & 0x0f;
+    if ((flags & 0x01) != 0) return false;
+
+    if ((flags & 0x08) != 0) {
+      const size_t superinterface_bytes = interfaces * 2;
+      if (superinterface_bytes > size - offset - 1) return false;
+      offset += 1 + superinterface_bytes;
+      if ((flags & 0x02) != 0) {
+        if (offset >= size) return false;
+        const size_t name_bytes = payload[offset++];
+        if (name_bytes > size - offset) return false;
+        offset += name_bytes;
+      }
+    } else {
+      constexpr size_t class_prefix_size = 10;
+      if (size - offset < class_prefix_size) return false;
+      const size_t public_methods = payload[offset + 7];
+      const size_t package_methods = payload[offset + 9];
+      offset += class_prefix_size;
+
+      const size_t method_table_bytes =
+          (public_methods + package_methods) * 2;
+      if (method_table_bytes > size - offset) return false;
+      offset += method_table_bytes;
+
+      for (size_t index = 0; index < interfaces; ++index) {
+        if (size - offset < 3) return false;
+        const size_t method_map_bytes = payload[offset + 2];
+        const size_t record_bytes = 3 + method_map_bytes;
+        if (record_bytes > size - offset) return false;
+        offset += record_bytes;
+      }
+
+      if ((flags & 0x02) != 0 &&
+          !validate_remote_interface_info(payload, size, offset)) {
+        return false;
+      }
+    }
+    ++record_count;
+  }
+
+  return offset == size && record_count != 0;
+}
+
 bool validate_descriptor_type_offsets(const uint8_t *descriptor,
                                       const size_t descriptor_size,
                                       const size_t class_count,
@@ -324,10 +422,12 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
            (size - sizeof(uint16_t)) % 4 == 0;
   }
   case 6: // Class
-    // CAP format 2.1 has neither the signature pool prefix nor remote-info
-    // tails. Newer layouts remain accepted but need their own versioned walk.
-    return cap_major != 2 || cap_minor != 1 ||
-           validate_class_component_21(payload, size);
+    if (cap_major == 2 && cap_minor == 1)
+      return validate_class_component_21(payload, size);
+    if (cap_major == 2 && cap_minor == 2)
+      return validate_class_component_22(payload, size);
+    // CAP format 2.3+ adds extended method blocks and remote class tables.
+    return true;
   case 7: { // Method: exception handler table precedes method data.
     if (size < 1) return false;
     const size_t handler_bytes = static_cast<size_t>(payload[0]) * 8;

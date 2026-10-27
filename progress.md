@@ -13801,3 +13801,14 @@
   in the following metadata commit).
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T050759Z/`
   (listener connected, card not reported present).
+
+
+## 2026-10-27 — Bound CAP 2.2 Class component records
+
+- Step/experiment: `wp9-cap-22-class-extents`
+- Change: Added a version-specific bounded Class component walk for CAP 2.2. It validates the length-prefixed signature pool and its descriptor grammar, interface records and optional names, compact class prefixes and method tables, implemented-interface method maps, and variable-length remote class metadata. Added synthetic valid and malformed inputs.
+- Validation: `./tools/test-cap-parser` passed 4,179 checks over all 48 supplied deploy CAPs and 100,000 randomized buffers. `./tools/build arm --profile asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed. `git -c core.whitespace=cr-at-eol diff --check -- choupi/src/jc_handlers/jc_cap.cpp tools/tests/cap_parser/cap_parser_test.cpp` passed.
+- Result: ARM UF2 is 2,029,568 bytes, SHA-256 `a22b5a25cd48c380e1bc490c97f618f7c5b54d7cd30e24fb303bfd5ce13f9a07`; RISC-V smoke UF2 is 79,360 bytes, SHA-256 `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`. The supplied CAP corpus is entirely format 2.1, so the 2.2 path is validated synthetically. The approved PC/SC helper and elevated USB-ID checks found no physical Pico in either CHOUPI or BOOTSEL mode; no flash or hardware test was performed.
+- Decision: Retain the bounded CAP 2.2 parser. Semantic cross-reference validation for remote metadata and CAP 2.3+ Class layouts remain open.
+- Commit: pending
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`; sanitizer output `TEST:PASS cap_parser_framing checks=4179 fuzz_inputs=100000 corpus_files=48`.
