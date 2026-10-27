@@ -5389,9 +5389,15 @@ fix.
   `m = m2 + Q * (((m1 - m2) * PQ) mod P)`. Derive N from P×Q for CRT Cipher
   and Signature operations, and verify P×Q matches N before exponentiation.
   Cipher state packs the five components into its existing native scratch
-  array; no Java API provider or new API field is needed. Keep side-channel
-  hardening as a separate unresolved concern: current MPI exponentiation has
-  not been established as constant-time and is not blinded.
+  array; no Java API provider or new API field is needed.
+- **Security audit correction (2026-10-27):** The bundled Mbed TLS
+  `mbedtls_mpi_exp_mod()` selects its secret-exponent path. The exponentiation
+  core processes the allocated exponent width and uses a constant-time table
+  lookup. This establishes the core's constant-time handling of the exponent,
+  not the complete RSA operation. The surrounding CRT code has not received a
+  full side-channel audit, does not blind the input, and does not verify the
+  private result with a public exponent; CRT fault resistance remains
+  unresolved.
 - **Validation:** VPCD passed 99/99 checks, including RSA-CRT 512- and 1024-bit
   sign/verify and public-encrypt/private-decrypt round trips, plus 3072-bit
   generation. PC, ARM, and RISC-V wrapper builds passed. The VM saw no physical

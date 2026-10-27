@@ -34,12 +34,16 @@
   and encrypt/decrypt at 512 and 1024 bits. Full VPCD passed 99/99; PC, ARM,
   and RISC-V builds passed. ARM UF2 is 2,022,912 bytes, SHA-256
   `4b60ab143091ca404aace01569b3c5fe00b2dbb45beb5531445a28c52c236a1b`.
-- Current hardware check: after both architecture builds, the approved reader
-  helper found 0 devices and elevated `lsusb` showed only VM hubs/tablet. No
-  flash or physical test was performed. CRT timing/blinding hardening remains
-  unvalidated.
-- Next: continue private RSA operation hardening and run physical asymmetric
-  and `/deploy` acceptance when a board enumerates.
+- Current hardware check: the user reports tokens plugged in, but the approved
+  reader helper found 0 devices and elevated `lsusb` showed only VM hubs/tablet
+  and the VirtualBox tablet. No flash or physical test was performed. Mbed TLS
+  source audit confirms its normal MPI exponentiation uses a fixed-width,
+  constant-time exponent path and table lookup. The surrounding CRT operation
+  is not fully audited, has no input blinding or post-operation public-exponent
+  check, and remains open to hardening review.
+- Next: restore USB passthrough so an identified board enumerates; then run
+  physical asymmetric and `/deploy` acceptance. Continue offline review of
+  RSA CRT input blinding and fault checks meanwhile.
 - Implementation commit: `65664b3`. Preserve unrelated worktree changes listed
   below.
 

@@ -1560,7 +1560,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   CSV found exact parity for all 136 comparable supported algorithm/key
   identities; its 27 positive key-generation cases also match the implemented
   RSA/RSA-CRT sizes through 3072 bits and seven EC sizes. Physical validation,
-  private RSA hardening, and `/deploy` acceptance remain open.
+  private RSA hardening, and `/deploy` acceptance remain open. Source review
+  confirms bundled Mbed TLS `mbedtls_mpi_exp_mod()` uses fixed-width,
+  constant-time exponentiation; full CRT timing behavior, input blinding, and
+  post-operation fault checking still need review/implementation.
   Reproduce the offline positive-set audit with
   `python3 tools/compare-jcalgtest-legacy-target.py`; the tool understands the
   supplied 1.7.9 schema and compares its shared asymmetric/symmetric-crypto

@@ -13507,3 +13507,24 @@
 - Commit: `e1abde8`.
 - Artifacts/logs: `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT*.csv`;
   `build/javacard-support/jcalgtest-supported.csv`; no hardware log.
+
+## 2026-10-27 — Audit RSA-CRT exponentiation security notes
+
+- Step/experiment: `asymm-crypto-crt-mbedtls-source-audit`
+- Change: Inspected the bundled Mbed TLS MPI exponentiation implementation and
+  corrected QKB, TODO, and handoff language. `mbedtls_mpi_exp_mod()` selects the
+  secret-exponent core, which processes the allocated exponent width and uses
+  constant-time table lookup. This statement is limited to exponent handling
+  in that core; it is not a full RSA timing audit. CRT input blinding and a
+  post-operation fault check remain absent.
+- Validation: Source inspection of
+  `.local-toolchain/sdk/lib/mbedtls/library/bignum.c` and
+  `bignum_core.c`; scoped `git diff --check` passed. The authorized reader
+  helper returned 0 devices; elevated `lsusb` showed only VM hubs and the
+  VirtualBox tablet. No physical test was possible.
+- Result: Replaced the inaccurate claim that MPI exponentiation had not been
+  established constant-time with a scoped statement backed by bundled source.
+- Decision: Keep hardware checks pending. Continue a full private-RSA audit,
+  including input blinding and CRT fault resistance.
+- Commit: pending.
+- Artifacts/logs: source files listed above; no hardware log.
