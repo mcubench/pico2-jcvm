@@ -211,6 +211,16 @@ class JavaCardSupportTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((out / "profile.txt").read_text(), "asymm_crypto\n")
             profile = json.loads((out / "javacard-support.json").read_text())
+            for bits in (512, 736, 768, 896, 1024, 1280, 1536, 1984, 2048, 3072):
+                self.assertTrue(profile[f"keypair_rsa_{bits}"])
+                self.assertTrue(profile[f"keypair_rsa_crt_{bits}"])
+            self.assertFalse(profile["keypair_rsa_4096"])
+            self.assertFalse(profile["keypair_rsa_crt_4096"])
+            with (out / "jcalgtest-supported.csv").open(newline="") as source:
+                generated = {tuple(row) for row in list(csv.reader(source, delimiter=";"))[1:]}
+            for bits in (512, 736, 768, 896, 1024, 1280, 1536, 1984, 2048, 3072):
+                self.assertIn(("javacard.security.KeyPair", f"ALG_RSA LENGTH_RSA_{bits}"), generated)
+                self.assertIn(("javacard.security.KeyPair", f"ALG_RSA_CRT LENGTH_RSA_{bits}"), generated)
             self.assertTrue(profile["key_ec_fp_private_transient_reset"])
             self.assertTrue(profile["key_ec_fp_private_transient_deselect"])
             for bits in (128, 160, 192, 224, 256, 320, 384, 512, 521):
@@ -241,6 +251,15 @@ class JavaCardSupportTests(unittest.TestCase):
                           (out / "jcalgtest-supported.csv").read_text())
             self.assertIn("javacard.security.Signature;ALG_RSA_SHA_ISO9796_MR",
                           (out / "jcalgtest-supported.csv").read_text())
+
+    def test_rsa_keypair_capability_requires_matching_key_capabilities(self):
+        invalid = {key: False for key in CONFIG}
+        invalid["keypair_rsa_512"] = True
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / "generated"
+            result = self.run_generator(invalid, out)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("requires matching public and private RSA keys", result.stderr)
 
     def test_rejects_unknown_missing_non_boolean_and_orphan_cipher(self):
         variants = []

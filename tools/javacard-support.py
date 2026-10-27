@@ -185,6 +185,15 @@ for _lifetime in ("transient_reset", "transient_deselect"):
         f"TYPE_EC_FP_PRIVATE_{_lifetime.upper()}",
     )
 
+_rsa_keypair_lengths = (512, 736, 768, 896, 1024, 1280, 1536, 1984, 2048, 3072, 4096)
+for _bits in _rsa_keypair_lengths:
+    CAPABILITIES[f"keypair_rsa_{_bits}"] = (
+        "javacard.security.KeyPair", f"ALG_RSA LENGTH_RSA_{_bits}"
+    )
+    CAPABILITIES[f"keypair_rsa_crt_{_bits}"] = (
+        "javacard.security.KeyPair", f"ALG_RSA_CRT LENGTH_RSA_{_bits}"
+    )
+
 
 def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
     if not isinstance(value, dict):
@@ -254,6 +263,15 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
         value[f"key_ec_fp_private_{bits}"] for bits in _ec_fp_lengths
     ):
         raise ValueError(f"{path}: EC key-pair generation requires an enabled prime-field EC key length")
+    for bits in _rsa_keypair_lengths:
+        if value[f"keypair_rsa_{bits}"] and not (
+            value[f"key_rsa_public_{bits}"] and value[f"key_rsa_private_{bits}"]
+        ):
+            raise ValueError(f"{path}: RSA key-pair generation at {bits} bits requires matching public and private RSA keys")
+        if value[f"keypair_rsa_crt_{bits}"] and not (
+            value[f"key_rsa_public_{bits}"] and value[f"key_rsa_crt_private_{bits}"]
+        ):
+            raise ValueError(f"{path}: RSA-CRT key-pair generation at {bits} bits requires matching public and CRT private RSA keys")
     if ((value["key_agreement_ec_svdp_dh"] or
          value["key_agreement_ec_svdp_dhc"]) and not value["sha1"]):
         raise ValueError(f"{path}: EC SVDP-DH and DHC require SHA-1 support")
@@ -365,6 +383,16 @@ def emit(config: dict[str, bool], out_dir: Path, profile: str) -> None:
     )
     header.append(
         f"#define JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY {1 if rsa_signature_enabled else 0}"
+    )
+    rsa_keypair_enabled = any(
+        config[f"keypair_rsa_{bits}"] or config[f"keypair_rsa_crt_{bits}"]
+        for bits in _rsa_keypair_lengths
+    )
+    cmake.append(
+        f"set(JC_SUPPORT_KEYPAIR_RSA_ANY {'ON' if rsa_keypair_enabled else 'OFF'})"
+    )
+    header.append(
+        f"#define JC_SUPPORT_KEYPAIR_RSA_ANY {1 if rsa_keypair_enabled else 0}"
     )
     (out_dir / "javacard-support.cmake").write_text("\n".join(cmake) + "\n", encoding="utf-8")
     (out_dir / "javacard-support.h").write_text("\n".join(header) + "\n", encoding="utf-8")

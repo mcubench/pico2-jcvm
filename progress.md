@@ -13396,3 +13396,34 @@
   (the runner appends to its fixed-name log); ARM image
   `build/arm/pico2_choupi.uf2`; PC ROM mask `build/choupi-pc/flash`; no
   physical log.
+
+## 2026-10-27 — Native RSA and RSA-CRT KeyPair generation
+
+- Step/experiment: `asymm-crypto-rsa-keypair`
+- Change: Added per-size support selectors for RSA and RSA-CRT KeyPair
+  generation from 512 through 3072 bits in `asymm_crypto`; 4096-bit
+  generation remains disabled. Native C++ now generates prime factors and
+  fills the existing RSA NativeKey components. The upstream JCAlgTest CAP was
+  not modified; the test-only probe CAP calls only Java Card APIs. Increased
+  the VPCD test harness APDU deadline to 180 seconds for variable-time 3072-bit
+  prime generation.
+- Validation: `python3 tools/test-javacard-support.py` passed 10/10;
+  `./tools/build-pc --profile asymm_crypto` and the probe CAP build passed;
+  elevated VPCD passed 99/99 (97 asymmetric APDUs plus ATR/SELECT), including
+  512/1024-bit RSA sign/verify and CRT components, and both 3072-bit
+  generation paths. Isolated 3072-bit calls returned `9000` in 31.280s (RSA)
+  and 8.805s (RSA-CRT). `./tools/build arm --profile asymm_crypto` and
+  `./tools/build riscv --profile asymm_crypto` passed. Hardware enumeration was
+  checked through the approved host path; 0 physical Pico readers were visible,
+  so no flash/physical validation was attempted.
+- Result: All selected KeyPair generation sizes are supported by the native
+  implementation and the 3072-bit operations complete within a finite,
+  extended test deadline. Their actual performance and execution on Pico 2
+  hardware are not yet measured.
+- Decision: Continue with private RSA operation hardening, full target-report
+  comparison, and physical `/deploy` acceptance when a board enumerates.
+- Commit: recorded in the documentation follow-up commit.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
+  ARM UF2 `build/arm/pico2_choupi.uf2`, 2,016,768 bytes,
+  SHA-256 `29a838cc7c3654c0c6c88887f08c78233dda19ea1a777efa78cc96babccdaab8`;
+  PC ROM mask `build/choupi-pc/flash`, 524,300 bytes; no physical log.

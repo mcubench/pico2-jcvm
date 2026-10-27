@@ -1547,6 +1547,18 @@ rollback and duplicate/invalid registration handling also remain unverified.
   sign/verify passed for each; PC, ARM, and RISC-V builds passed. Exact
   support-report comparison, physical hardware validation, private RSA
   hardening, and deployment acceptance remain open.
+  Progress (2026-10-27): added native `KeyPair` generation for RSA and
+  RSA-CRT at 512 through 3072 bits, selected per-size capabilities, and left
+  4096-bit generation disabled. The API-only test CAP verifies RSA key
+  components and PKCS#1 signing or CRT component initialization. Support tests
+  passed 10/10; the asymmetric VPCD suite passed 99/99, including both 3072-bit
+  variants; PC, ARM, and RISC-V builds passed. Generation took 31.280 seconds
+  for the measured RSA-3072 case and 8.805 seconds for RSA-CRT-3072 in isolated
+  VPCD calls. No physical Pico was visible to the VM, so hardware validation
+  remains open. RSA key-pair generation for the selected sizes is no longer an
+  implementation gap; remaining priorities are private RSA hardening, exact
+  comparison against the complete target report, and physical `/deploy`
+  acceptance.
   Native-dispatch design inspected on 2026-10-26: the VM routes API-declared
   native methods through `callJCNativeMethod`, and `Heap::addInstance` can
   allocate an object directly from its ROM package/class index. The intended

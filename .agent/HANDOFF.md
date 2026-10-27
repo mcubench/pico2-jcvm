@@ -1,4 +1,29 @@
-# Current continuation — native 128/160-bit EC generation (2026-10-27)
+# Current continuation — native RSA/RSA-CRT KeyPair generation (2026-10-27)
+
+- Added selectable per-size `ALG_RSA` and `ALG_RSA_CRT` KeyPair generation for
+  512 through 3072 bits in `asymm_crypto`; 4096-bit generation remains
+  disabled. Native C++ uses Mbed TLS MPI prime generation and writes N/E/D or
+  N/P/Q/DP/DQ/PQ into the existing NativeKey storage. The unchanged API-only
+  probe CAP checks 512/1024-bit RSA sign/verify and CRT component
+  initialization, plus both 3072-bit keygen paths.
+- Validation: support generator tests passed 10/10; PC/VPCD passed 99/99
+  (97 asymmetric APDUs plus ATR/SELECT), with isolated RSA-3072 and
+  RSA-CRT-3072 APDUs returning `9000` in 31.280s and 8.805s. PC, ARM, and
+  RISC-V wrappers passed. ARM UF2: 2,016,768 bytes, SHA-256
+  `29a838cc7c3654c0c6c88887f08c78233dda19ea1a777efa78cc96babccdaab8`; PC
+  ROM mask: 524,300 bytes.
+- Physical hardware: user reports tokens plugged in, but the authorized reader
+  helper still finds zero devices; `lsusb -d 2e8a:0009` finds none, and PC/SC
+  shows only Virtual PCD readers. No flash or physical test was attempted.
+- The VPCD runner uses a bounded 180-second APDU deadline so variable-time
+  3072-bit key generation fits; firmware timeout policy is unchanged. Issue
+  details are in `.agent/QKB.md`.
+- Next: continue private RSA operation hardening, exact full target support
+  report comparison, and physical `/deploy` acceptance when a board enumerates.
+- Current implementation source and progress entry are pending commit; preserve
+  unrelated worktree changes listed below.
+
+# Previous continuation — native 128/160-bit EC generation (2026-10-27)
 
 - Added native SEC2 secp128r1 and secp160r1 groups shared by KeyPair, ECDSA,
   and EC agreement validation. EC `R` storage now accounts for subgroup order

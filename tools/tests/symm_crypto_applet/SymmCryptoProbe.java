@@ -70,6 +70,10 @@ public final class SymmCryptoProbe extends Applet {
       output = new byte[(short)1];
       output[0] = runEcKeyPair(algorithm);
       outputLength = (short)1;
+    } else if (instruction == (byte)0x1a) {
+      output = new byte[(short)1];
+      output[0] = runRsaKeyPair(algorithm);
+      outputLength = (short)1;
     } else if (instruction == (byte)0x10) {
       output = operation == 1 && !isNoPadCipher(algorithm) &&
           !isIso9797M1(algorithm)
@@ -283,6 +287,78 @@ public final class SymmCryptoProbe extends Applet {
     } catch (Exception exception) {
       return (byte)0x4f;
     }
+  }
+
+  private static byte runRsaKeyPair(byte selector) {
+    byte algorithm;
+    short size;
+    switch (selector) {
+    case 0: algorithm = KeyPair.ALG_RSA; size = KeyBuilder.LENGTH_RSA_512; break;
+    case 1: algorithm = KeyPair.ALG_RSA_CRT; size = KeyBuilder.LENGTH_RSA_512; break;
+    case 2: algorithm = KeyPair.ALG_RSA; size = KeyBuilder.LENGTH_RSA_1024; break;
+    case 3: algorithm = KeyPair.ALG_RSA_CRT; size = KeyBuilder.LENGTH_RSA_1024; break;
+    case 4: algorithm = KeyPair.ALG_RSA; size = KeyBuilder.LENGTH_RSA_3072; break;
+    case 5: algorithm = KeyPair.ALG_RSA_CRT; size = KeyBuilder.LENGTH_RSA_3072; break;
+    default: return (byte)0xff;
+    }
+    KeyPair pair;
+    try {
+      pair = new KeyPair(algorithm, size);
+      pair.genKeyPair();
+    } catch (CryptoException exception) {
+      return (byte)(0x10 | exception.getReason());
+    } catch (Exception exception) {
+      return (byte)0x1f;
+    }
+    RSAPublicKey publicKey;
+    Key privateKey;
+    try {
+      publicKey = (RSAPublicKey)pair.getPublic();
+      privateKey = (Key)pair.getPrivate();
+      if (!publicKey.isInitialized() || !privateKey.isInitialized()) return (byte)0x20;
+      byte[] modulus = new byte[(short)(size / 8)];
+      publicKey.getModulus(modulus, (short)0);
+      byte[] exponent = new byte[(short)(size / 8)];
+      publicKey.getExponent(exponent, (short)0);
+      if (!containsNonzero(modulus) || exponent[(short)(exponent.length - 1)] != 1 ||
+          exponent[(short)(exponent.length - 2)] != 0 ||
+          exponent[(short)(exponent.length - 3)] != 1) return (byte)0x21;
+      if (algorithm == KeyPair.ALG_RSA) {
+        RSAPrivateKey rsaPrivate = (RSAPrivateKey)privateKey;
+        byte[] privateExponent = new byte[(short)(size / 8)];
+        rsaPrivate.getExponent(privateExponent, (short)0);
+        if (!containsNonzero(privateExponent)) return (byte)0x22;
+        Signature signature = Signature.getInstance(Signature.ALG_RSA_SHA_PKCS1,
+            false);
+        byte[] message = {(byte)0x4a,(byte)0x43,(byte)0x56,(byte)0x4d};
+        byte[] signed = new byte[(short)(size / 8)];
+        signature.init(rsaPrivate, Signature.MODE_SIGN);
+        short signedLength = signature.sign(message, (short)0,
+            (short)message.length, signed, (short)0);
+        signature.init(publicKey, Signature.MODE_VERIFY);
+        if (!signature.verify(message, (short)0, (short)message.length, signed,
+            (short)0, signedLength)) return (byte)0x23;
+      } else {
+        RSAPrivateCrtKey crt = (RSAPrivateCrtKey)privateKey;
+        byte[] part = new byte[(short)(size / 16)];
+        if (crt.getP(part, (short)0) <= 0 || !containsNonzero(part) ||
+            crt.getQ(part, (short)0) <= 0 || !containsNonzero(part) ||
+            crt.getDP1(part, (short)0) <= 0 || !containsNonzero(part) ||
+            crt.getDQ1(part, (short)0) <= 0 || !containsNonzero(part) ||
+            crt.getPQ(part, (short)0) <= 0 || !containsNonzero(part)) return (byte)0x24;
+      }
+    } catch (CryptoException exception) {
+      return (byte)(0x30 | exception.getReason());
+    } catch (Exception exception) {
+      return (byte)0x3f;
+    }
+    return 1;
+  }
+
+  private static boolean containsNonzero(byte[] value) {
+    byte aggregate = 0;
+    for (short i = 0; i < value.length; i++) aggregate |= value[i];
+    return aggregate != 0;
   }
 
   private static short runDigest(byte algorithm, byte[] input,

@@ -74,6 +74,15 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
         command = bytes((0x80, 0x19, selector, 0, 0))
         results.append((command, b"\x01\x90\x00",
                         f"EC KeyPair generation {bits}-bit sign/verify"))
+    for selector, label in enumerate((
+            "RSA 512-bit generation and signature",
+            "RSA-CRT 512-bit generation and components",
+            "RSA 1024-bit generation and signature",
+            "RSA-CRT 1024-bit generation and components",
+            "RSA 3072-bit generation and signature",
+            "RSA-CRT 3072-bit generation and components")):
+        command = bytes((0x80, 0x1a, selector, 0, 0))
+        results.append((command, b"\x01\x90\x00", label))
     rsa = _rsa_512_fixture()
     messages = {
         10: b"JCVM RSA PKCS1",
@@ -322,7 +331,7 @@ def _rsa_fixture(bits: int) -> tuple[int, int, int]:
 
 
 def main() -> int:
-    log = ROOT / "artifacts/logs/asymm-crypto-digest-vpcd-20261024.log"
+    log = ROOT / "artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log"
     command = [
         str(ROOT / "tools/env"), "python3",
         str(ROOT / "tools/tests/pc_vpcd_applet_test.py"),
@@ -332,7 +341,7 @@ def main() -> int:
         "--rom-mask", str(ROOT / "build/choupi-pc/flash"),
         "--applet-aid", APPLET_AID, "--package-id", "56", "--passes", "1",
         "--flash-copy", str(ROOT / "build/symm-crypto-probe/flash-asymm-vpcd.bin"),
-        "--log", str(log),
+        "--log", str(log), "--apdu-timeout", "180",
     ]
     cases = vectors()
     for apdu, expected, _label in cases:
@@ -348,7 +357,9 @@ def main() -> int:
     )
     keypair_vectors = sum("EC KeyPair generation" in label
                           for _, _, label in cases)
-    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 ec_key_builder_vectors=3 ecdsa_vectors={ecdsa_vectors} ec_key_agreement_vectors={agreement_vectors} ec_keypair_vectors={keypair_vectors} rsa_signature_vectors={rsa_signature_vectors} fail=0")
+    rsa_keypair_vectors = sum("RSA" in label and "generation" in label
+                              for _, _, label in cases)
+    print(f"TEST:SUMMARY asymmetric_vectors={len(cases)} sha_vectors=10 rsa_key_builder_vectors=5 ec_key_builder_vectors=3 ecdsa_vectors={ecdsa_vectors} ec_key_agreement_vectors={agreement_vectors} ec_keypair_vectors={keypair_vectors} rsa_keypair_vectors={rsa_keypair_vectors} rsa_signature_vectors={rsa_signature_vectors} fail=0")
     print(f"TEST:LOG {log}")
     return 0
 

@@ -29,6 +29,21 @@
 
 # Project issue knowledge base
 
+## Long RSA-3072 KeyPair generation exceeded default VPCD deadline (2026-10-27)
+
+- **Symptom:** The asymmetric VPCD suite failed on its RSA-3072 generation
+  APDU under the default 20-second response deadline; one measured RSA run took
+  31.280 seconds. This was a test-harness timeout, not a crypto result.
+- **Cause:** Mbed TLS prime generation time varies with random candidate count;
+  3072-bit key generation can exceed the VPCD harness default.
+- **Viable fix:** The asymmetric VPCD runner now uses a 180-second bounded
+  APDU timeout, allowing slow large-key generation while retaining a finite
+  bound. An isolated RSA-CRT-3072 call completed in 8.805 seconds. The complete
+  suite passed 99/99 checks with both algorithms enabled.
+- **Validation:** `PICO2_HOST_USB_ACCESS=1 ./tools/env python3
+  tools/tests/test_asymm_crypto_vpcd.py` passed after the timeout adjustment.
+  The timeout is test-only; firmware call limits were not changed.
+
 ## VPCD command-case framing for no-input APDUs (2026-10-27)
 
 - **Symptom:** The new KeyAgreement vector returned `6700` before entering the
