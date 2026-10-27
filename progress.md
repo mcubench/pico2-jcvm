@@ -13852,3 +13852,13 @@
 - Decision: Keep VPCD multi-package lifecycle coverage green; physical PC/SC multi-package behavior remains unverified in this VM.
 - Commit: Metadata-only validation follows the install-recovery implementation commit `662896e`.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261027T070811Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261027T070811Z.log`, and corrupt/missing-sidecar rejection logs with the same timestamp.
+
+## 2026-10-27 — Recheck asymmetric-profile target support set
+
+- Step/experiment: `asymm-profile-legacy-positive-set-audit`
+- Change: No source changes. Re-ran the offline algorithm/key support-set comparator and capability-manifest unit tests against the current `asymm_crypto` profile.
+- Validation: `python3 tools/compare-jcalgtest-legacy-target.py` passed exact positive support parity for all 136 identities comparable to the supplied JCAlgTest 1.7.9 target CSV; current profile has 145 identities, nine not present in that older schema. `python3 tools/test-javacard-support.py` passed 10/10. `build/javacard-support/profile.txt` confirms the built manifest is `asymm_crypto`. The script lacks executable permission, so it was invoked with Python.
+- Result: The shared asymmetric/symmetric positive support set matches the older reference exactly; this does not establish complete full-report parity or physical acceptance.
+- Decision: Keep complete report comparison, current-image `/deploy` hardware tests, and Windows workflow open.
+- Commit: Metadata-only validation follows the existing `asymm_crypto` implementation commits.
+- Artifacts/logs: Comparator and unit-test stdout only; no files generated.

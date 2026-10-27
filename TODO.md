@@ -1591,7 +1591,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   Reproduce the offline positive-set audit with
   `python3 tools/compare-jcalgtest-legacy-target.py`; the tool understands the
   supplied 1.7.9 schema and compares its shared asymmetric/symmetric-crypto
-  sections with the current generated profile.
+  sections with the current generated profile. Re-run on 2026-10-27 passed
+  against the checked-in `asymm_crypto` build manifest: 136 comparable
+  algorithm/key identities matched the reference positive set exactly, with
+  145 total profile identities (nine are absent from the older target schema).
+  `python3 tools/test-javacard-support.py` also passed all 10 checks. This does
+  not close full report, physical, or `/deploy` acceptance.
   Progress (2026-10-27): added native RSA-CRT private operations for Signature
   and Cipher. CRT keys are accepted for signing/decryption, N is derived from
   P×Q when needed, and generated CRT private keys do not cache N. The probe

@@ -1,3 +1,21 @@
+# Current continuation — recheck asymmetric-profile target support set (2026-10-27)
+
+- Re-ran the offline positive-set comparison for the checked-in
+  `asymm_crypto` profile against the supplied 1.7.9 target CSV. It reports
+  136 comparable algorithm/key identities, all matching exactly; the current
+  profile has 145 identities total, with nine absent from the older target
+  schema. Confirmed `build/javacard-support/profile.txt` is `asymm_crypto`.
+- `python3 tools/test-javacard-support.py` passed 10/10. The script is not
+  executable in this checkout, so invoke it with `python3`.
+- This is a positive-set metadata audit only. Complete report comparison,
+  current-image physical asymmetric `/deploy` coverage, and Windows validation
+  remain open. The approved Pico reader helper still finds zero devices.
+- Evidence: command output from
+  `python3 tools/compare-jcalgtest-legacy-target.py` and
+  `python3 tools/test-javacard-support.py`; no new artifacts were generated.
+- Next: continue offline through the remaining asymmetric or VM API gaps and
+  retry hardware when a Pico enumerates.
+
 # Current continuation — exercise install journal recovery through true VPCD resume (2026-10-27)
 
 - Fixed the PC emulator resume test to use `--resume` with the saved VPCD CAP
