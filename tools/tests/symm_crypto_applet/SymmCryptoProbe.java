@@ -346,6 +346,65 @@ public final class SymmCryptoProbe extends Applet {
             crt.getDP1(part, (short)0) <= 0 || !containsNonzero(part) ||
             crt.getDQ1(part, (short)0) <= 0 || !containsNonzero(part) ||
             crt.getPQ(part, (short)0) <= 0 || !containsNonzero(part)) return (byte)0x24;
+        if (size <= KeyBuilder.LENGTH_RSA_1024) {
+          byte[] message = {(byte)0x43,(byte)0x52,(byte)0x54,(byte)0x21};
+          byte[] signed = new byte[(short)(size / 8)];
+          Signature signature = Signature.getInstance(
+              Signature.ALG_RSA_SHA_PKCS1, false);
+          try {
+            signature.init(crt, Signature.MODE_SIGN);
+          } catch (CryptoException exception) {
+            return (byte)(0x40 | exception.getReason());
+          }
+          short signedLength;
+          try {
+            signedLength = signature.sign(message, (short)0,
+                (short)message.length, signed, (short)0);
+          } catch (CryptoException exception) {
+            return (byte)(0x50 | exception.getReason());
+          }
+          try {
+            signature.init(publicKey, Signature.MODE_VERIFY);
+          } catch (CryptoException exception) {
+            return (byte)(0x70 | exception.getReason());
+          }
+          try {
+            if (!signature.verify(message, (short)0, (short)message.length,
+                signed, (short)0, signedLength)) return (byte)0x25;
+          } catch (CryptoException exception) {
+            return (byte)(0x80 | exception.getReason());
+          }
+
+          byte[] ciphertext = new byte[(short)(size / 8)];
+          Cipher cipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1, false);
+          try {
+            cipher.init(publicKey, Cipher.MODE_ENCRYPT);
+          } catch (CryptoException exception) {
+            return (byte)(0x90 | exception.getReason());
+          }
+          short ciphertextLength;
+          try {
+            ciphertextLength = cipher.doFinal(message, (short)0,
+                (short)message.length, ciphertext, (short)0);
+          } catch (CryptoException exception) {
+            return (byte)(0xa0 | exception.getReason());
+          }
+          byte[] recovered = new byte[(short)(size / 8)];
+          try {
+            cipher.init(crt, Cipher.MODE_DECRYPT);
+          } catch (CryptoException exception) {
+            return (byte)(0x60 | exception.getReason());
+          }
+          short recoveredLength;
+          try {
+            recoveredLength = cipher.doFinal(ciphertext, (short)0,
+                ciphertextLength, recovered, (short)0);
+          } catch (CryptoException exception) {
+            return (byte)(0xb0 | exception.getReason());
+          }
+          if (recoveredLength != message.length ||
+              !equal(message, recovered, recoveredLength)) return (byte)0x26;
+        }
       }
     } catch (CryptoException exception) {
       return (byte)(0x30 | exception.getReason());

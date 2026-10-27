@@ -5373,3 +5373,26 @@ fix.
 - **Validation:** VPCD generation and ECDSA sign/verify pass for both secp128r1
   and secp160r1, as well as P-192/224/256/384/521; the full VPCD suite passed
   93/93. ARM and RISC-V wrappers passed.
+
+## Native RSA-CRT KeyPair keys were not usable by private Cipher/Signature (2026-10-27)
+
+- **Symptom:** `KeyPair.ALG_RSA_CRT` generation and the five component getters
+  passed, but native `Signature.init` and `Cipher.init` accepted only ordinary
+  RSA private key types. The advertised CRT key support therefore did not
+  provide working private operations.
+- **Cause:** Java Card `RSAPrivateCrtKey` exposes P, Q, DP1, DQ1, and PQ, not a
+  private exponent D. The native private-operation dispatch only read the
+  ordinary RSA modulus/exponent slots, and generated CRT keys unnecessarily
+  cached N in a private-only field.
+- **Viable fix:** Recognize persistent and transient CRT key types. Compute
+  private results with `m1 = x^DP1 mod P`, `m2 = x^DQ1 mod Q`, then
+  `m = m2 + Q * (((m1 - m2) * PQ) mod P)`. Derive N from P×Q for CRT Cipher
+  and Signature operations, and verify P×Q matches N before exponentiation.
+  Cipher state packs the five components into its existing native scratch
+  array; no Java API provider or new API field is needed. Keep side-channel
+  hardening as a separate unresolved concern: current MPI exponentiation has
+  not been established as constant-time and is not blinded.
+- **Validation:** VPCD passed 99/99 checks, including RSA-CRT 512- and 1024-bit
+  sign/verify and public-encrypt/private-decrypt round trips, plus 3072-bit
+  generation. PC, ARM, and RISC-V wrapper builds passed. The VM saw no physical
+  Pico, so hardware verification remains pending.

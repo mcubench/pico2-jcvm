@@ -25,6 +25,16 @@
 - The VPCD runner uses a bounded 180-second APDU deadline so variable-time
   3072-bit key generation fits; firmware timeout policy is unchanged. Issue
   details are in `.agent/QKB.md`.
+- RSA-CRT private operations are now implemented in native Signature and
+  Cipher dispatch. CRT keys carry P/Q/DP1/DQ1/PQ only; N is derived from P×Q
+  and the product is checked before exponentiation. VPCD verifies sign/verify
+  and encrypt/decrypt at 512 and 1024 bits. Full VPCD passed 99/99; PC, ARM,
+  and RISC-V builds passed. ARM UF2 is 2,022,912 bytes, SHA-256
+  `4b60ab143091ca404aace01569b3c5fe00b2dbb45beb5531445a28c52c236a1b`.
+- Current hardware check: after both architecture builds, the approved reader
+  helper found 0 devices and elevated `lsusb` showed only VM hubs/tablet. No
+  flash or physical test was performed. CRT timing/blinding hardening remains
+  unvalidated.
 - Next: add a reproducible comparison/conversion path for the older full target
   CSV, continue private RSA operation hardening, and run physical asymmetric
   and `/deploy` acceptance when a board enumerates.

@@ -175,9 +175,9 @@ void generateRsaPair(jref_t publicRef, jref_t privateRef, uint16_t bits) {
   if (!publicKey || !privateKey) throw Exceptions::RuntimeException;
   putRsaComponent(publicKey, 0, rsaMpiBytes(values.n, width));
   putRsaComponent(publicKey, 1, rsaMpiBytes(values.e, width));
-  putRsaComponent(privateKey, 0, rsaMpiBytes(values.n, width));
   if (static_cast<uint8_t>(privateKey->getField_Byte(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE)) == kTypeRsaPrivate) {
+    putRsaComponent(privateKey, 0, rsaMpiBytes(values.n, width));
     putRsaComponent(privateKey, 1, rsaMpiBytes(values.d, width));
   } else {
     putRsaComponent(privateKey, 2, rsaMpiBytes(values.p, (width + 1U) / 2U));

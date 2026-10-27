@@ -6,6 +6,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_rsa_math.hpp"
 
 #include "mbedtls/bignum.h"
 #if JC_SUPPORT_SHA1
@@ -19,6 +20,7 @@
 #endif
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <random>
@@ -35,6 +37,9 @@ constexpr uint8_t kRsaPublic = 4;
 constexpr uint8_t kRsaPrivate = 5;
 constexpr uint8_t kRsaPrivateTransientReset = 22;
 constexpr uint8_t kRsaPrivateTransientDeselect = 23;
+constexpr uint8_t kRsaCrtPrivate = 6;
+constexpr uint8_t kRsaCrtTransientReset = 24;
+constexpr uint8_t kRsaCrtTransientDeselect = 25;
 constexpr uint8_t kModeSign = 1;
 constexpr uint8_t kModeVerify = 2;
 
@@ -87,9 +92,22 @@ std::shared_ptr<JC_Array> keyComponentArray(JC_Instance &key,
                                             uint16_t component) {
   const uint16_t fields[] = {
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_MODULUS,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_EXPONENT};
-  if (component >= 2) throwCryptoException(CryptoExceptionReason::IllegalValue);
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_EXPONENT,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_P,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_Q,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_DP,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_DQ,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_PQ};
+  if (component >= std::size(fields))
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
   return byteArray(key, fields[component]);
+}
+
+bool rsaCrtKey(JC_Instance &key) {
+  const uint8_t type = static_cast<uint8_t>(key.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
+  return type == kRsaCrtPrivate || type == kRsaCrtTransientReset ||
+         type == kRsaCrtTransientDeselect;
 }
 
 jshort_t keyComponentLength(JC_Instance &key, uint16_t component) {
@@ -109,7 +127,14 @@ std::vector<unsigned char> keyComponent(JC_Instance &signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
   auto storage = keyComponentArray(*key, component);
   const jshort_t length = keyComponentLength(*key, component);
-  if (length <= 0) throwCryptoException(CryptoExceptionReason::UninitializedKey);
+  if (length <= 0) {
+    if (component == 0 && length == 0 && rsaCrtKey(*key)) {
+      const auto p = keyComponent(signature, 2);
+      const auto q = keyComponent(signature, 3);
+      return rsaCrtModulus(p, q, keyModulusLength(*key));
+    }
+    throwCryptoException(CryptoExceptionReason::UninitializedKey);
+  }
   if (static_cast<uint16_t>(length) > storage->size())
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   auto result = readArray(*storage,
@@ -554,6 +579,19 @@ std::vector<unsigned char> modExp(const std::vector<unsigned char> &modulus,
   return result;
 }
 
+std::vector<unsigned char> privateModExp(
+    JC_Instance &signature, const std::vector<unsigned char> &modulus,
+    const std::vector<unsigned char> &input) {
+  if (rsaCrtKey(*rsaKeyInstance(signature.getField_Reference(
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY)))) {
+    std::array<std::vector<unsigned char>, 5> components;
+    for (uint16_t i = 0; i < components.size(); ++i)
+      components[i] = keyComponent(signature, static_cast<uint16_t>(i + 2));
+    return rsaCrtModExp(modulus, components, input);
+  }
+  return modExp(modulus, keyComponent(signature, 1), input);
+}
+
 std::vector<unsigned char> transform(JC_Instance &signature,
                                      const std::vector<unsigned char> &hash) {
   const uint8_t algorithm = signatureDigestAlgorithm(signature);
@@ -561,7 +599,6 @@ std::vector<unsigned char> transform(JC_Instance &signature,
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   auto digestInfo = digestInfoFromHash(algorithm, hash.data());
   const auto modulus = keyComponent(signature, 0);
-  const auto exponent = keyComponent(signature, 1);
   const uint16_t length = static_cast<uint16_t>(modulus.size());
   if (modulus.size() != length)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
@@ -570,12 +607,13 @@ std::vector<unsigned char> transform(JC_Instance &signature,
         ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
     const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
-    return modExp(modulus, exponent,
-                  encodedPss(signature, hash, length, bits));
+    return privateModExp(signature, modulus,
+                         encodedPss(signature, hash, length, bits));
   }
   if (isIso9796(signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
-  return modExp(modulus, exponent, encodedMessage(digestInfo, length));
+  return privateModExp(signature, modulus,
+                       encodedMessage(digestInfo, length));
 }
 
 std::vector<unsigned char> transformMessage(
@@ -588,10 +626,9 @@ std::vector<unsigned char> transformMessage(
     const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
     const auto modulus = keyComponent(signature, 0);
-    const auto exponent = keyComponent(signature, 1);
-    return modExp(modulus, exponent,
-                  encodedIso9796(message, hash, modulus.size(), bits,
-                                 recoverableLength));
+    return privateModExp(signature, modulus,
+                         encodedIso9796(message, hash, modulus.size(), bits,
+                                        recoverableLength));
   }
   return transform(signature, hash);
 }
@@ -635,7 +672,7 @@ void initializeRsaSignature(JC_Instance &signature, jref_t keyReference,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
   const bool privateKey = type == kRsaPrivate ||
                           type == kRsaPrivateTransientReset ||
-                          type == kRsaPrivateTransientDeselect;
+                          type == kRsaPrivateTransientDeselect || rsaCrtKey(*key);
   const bool publicKey = type == kRsaPublic;
   if ((mode == kModeSign && !privateKey) || (mode == kModeVerify && !publicKey))
     throwCryptoException(CryptoExceptionReason::IllegalValue);
@@ -656,7 +693,15 @@ void initializeRsaSignature(JC_Instance &signature, jref_t keyReference,
   const jref_t lengthRef = key->getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS);
   auto lengths = Context::getActiveContext().getHeap().getArray(lengthRef);
-  if (!lengths || lengths->getShortEntry(0) <= 0 || lengths->getShortEntry(1) <= 0)
+  if (!lengths || lengths->size() < 7 || lengths->getShortEntry(0) < 0 ||
+      (rsaCrtKey(*key)
+           ? (lengths->getShortEntry(2) <= 0 ||
+              lengths->getShortEntry(3) <= 0 ||
+              lengths->getShortEntry(4) <= 0 ||
+              lengths->getShortEntry(5) <= 0 ||
+              lengths->getShortEntry(6) <= 0)
+           : (lengths->getShortEntry(0) <= 0 ||
+              lengths->getShortEntry(1) <= 0)))
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
   signature.setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY, keyReference);
@@ -684,7 +729,15 @@ jshort_t rsaSignatureLength(JC_Instance &signature) {
   const jref_t lengthsRef = key->getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS);
   auto lengths = Context::getActiveContext().getHeap().getArray(lengthsRef);
-  if (!lengths || lengths->getShortEntry(0) <= 0 || lengths->getShortEntry(1) <= 0)
+  if (!lengths || lengths->size() < 7 ||
+      (rsaCrtKey(*key)
+           ? (lengths->getShortEntry(2) <= 0 ||
+              lengths->getShortEntry(3) <= 0 ||
+              lengths->getShortEntry(4) <= 0 ||
+              lengths->getShortEntry(5) <= 0 ||
+              lengths->getShortEntry(6) <= 0)
+           : (lengths->getShortEntry(0) <= 0 ||
+              lengths->getShortEntry(1) <= 0)))
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
   return static_cast<jshort_t>(keyModulusLength(*key));
 }

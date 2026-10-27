@@ -76,9 +76,9 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
                         f"EC KeyPair generation {bits}-bit sign/verify"))
     for selector, label in enumerate((
             "RSA 512-bit generation and signature",
-            "RSA-CRT 512-bit generation and components",
+            "RSA-CRT 512-bit generation, signature, and cipher",
             "RSA 1024-bit generation and signature",
-            "RSA-CRT 1024-bit generation and components",
+            "RSA-CRT 1024-bit generation, signature, and cipher",
             "RSA 3072-bit generation and signature",
             "RSA-CRT 3072-bit generation and components")):
         command = bytes((0x80, 0x1a, selector, 0, 0))

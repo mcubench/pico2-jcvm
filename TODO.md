@@ -1561,6 +1561,13 @@ rollback and duplicate/invalid registration handling also remain unverified.
   identities; its 27 positive key-generation cases also match the implemented
   RSA/RSA-CRT sizes through 3072 bits and seven EC sizes. Physical validation,
   private RSA hardening, and `/deploy` acceptance remain open.
+  Progress (2026-10-27): added native RSA-CRT private operations for Signature
+  and Cipher. CRT keys are accepted for signing/decryption, N is derived from
+  P×Q when needed, and generated CRT private keys do not cache N. The probe
+  verifies sign/verify and encrypt/decrypt for 512- and 1024-bit CRT keys.
+  The full asymmetric VPCD suite passes 99/99; PC, ARM, and RISC-V wrapper
+  builds pass. The VM sees no plugged Pico USB device, so physical validation
+  remains pending. Constant-time/private-operation hardening is still open.
   Native-dispatch design inspected on 2026-10-26: the VM routes API-declared
   native methods through `callJCNativeMethod`, and `Heap::addInstance` can
   allocate an object directly from its ROM package/class index. The intended

@@ -13452,3 +13452,34 @@
   after a Pico enumerates through the VM.
 - Commit: pending.
 - Artifacts/logs: supplied target CSV above; no hardware log.
+
+## 2026-10-27 — Implement RSA-CRT private Cipher and Signature operations
+
+- Step/experiment: `asymm-crypto-rsa-crt-private-operations`
+- Change: Added native CRT private exponentiation for the Java Card Signature
+  and Cipher APIs. Persistent and transient CRT key types are accepted; the
+  operation reads P, Q, DP1, DQ1, and PQ, verifies P×Q against N, and uses the
+  PKCS#1 CRT recombination formula. Cipher stores the CRT values in its existing
+  native scratch array. CRT private KeyPair generation no longer caches N;
+  Cipher and Signature derive it from P×Q. The API-only probe now checks
+  CRT sign/verify and encrypt/decrypt for 512- and 1024-bit keys. No upstream
+  CAP or Java firmware provider was changed.
+- Validation: `./tools/build-pc --profile asymm_crypto` passed;
+  `./tools/build-symm-crypto-probe` passed; the bounded VPCD asymmetric suite
+  passed 99/99 checks (97 APDUs plus ATR and SELECT), including both CRT
+  round-trips and 3072-bit key generation. `./tools/build arm --profile
+  asymm_crypto` and `./tools/build riscv --profile asymm_crypto` passed.
+  ARM UF2: 2,022,912 bytes, SHA-256
+  `4b60ab143091ca404aace01569b3c5fe00b2dbb45beb5531445a28c52c236a1b`; PC ROM
+  mask: 524,300 bytes; RISC-V VM-core smoke UF2: 79,360 bytes.
+- Result: Generated CRT private keys now perform real private operations. The
+  absence of cached N is covered in the VPCD test, forcing modulus derivation.
+  No board was visible: the authorized helper found 0 readers and elevated
+  `lsusb` showed only VM hubs/tablet. No flash or physical validation occurred.
+- Decision: Keep physical asymmetric and `/deploy` checks pending. Continue
+  private RSA side-channel hardening; current exponentiation has not been
+  established as constant-time and is not blinded.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
+  focused CRT log `artifacts/logs/asymm-crypto-crt-debug-vpcd.log`; ARM UF2
+  `build/arm/pico2_choupi.uf2`; no physical log.
