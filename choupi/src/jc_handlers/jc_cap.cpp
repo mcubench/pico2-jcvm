@@ -39,8 +39,54 @@ uint16_t read_be16(const uint8_t *bytes) {
                                bytes[1]);
 }
 
+bool validate_class_component_21(const uint8_t *payload, const size_t size) {
+  size_t offset = 0;
+
+  // Interface records precede class records. Their flag occupies the high
+  // nibble and ACC_INTERFACE is the highest bit of the first byte.
+  while (offset < size && (payload[offset] & 0x80) != 0) {
+    const uint8_t flags = payload[offset] >> 4;
+    const size_t interfaces = payload[offset] & 0x0f;
+    if ((flags & 0x02) != 0 || interfaces > 14) return false;
+    const size_t record_size = 1 + interfaces * sizeof(jc_cap_class_ref);
+    if (record_size > size - offset) return false;
+    offset += record_size;
+  }
+
+  while (offset < size) {
+    constexpr size_t class_prefix_size = 10;
+    if (size - offset < class_prefix_size ||
+        (payload[offset] & 0x80) != 0) {
+      return false;
+    }
+    const uint8_t flags = payload[offset] >> 4;
+    if ((flags & 0x02) != 0) return false;
+
+    const size_t implemented_interfaces = payload[offset] & 0x0f;
+    const size_t public_methods = payload[offset + 7];
+    const size_t package_methods = payload[offset + 9];
+    offset += class_prefix_size;
+
+    const size_t method_bytes =
+        (public_methods + package_methods) * sizeof(uint16_t);
+    if (method_bytes > size - offset) return false;
+    offset += method_bytes;
+
+    for (size_t index = 0; index < implemented_interfaces; ++index) {
+      if (size - offset < 3) return false;
+      const size_t method_map_size = payload[offset + 2];
+      const size_t record_size = 3 + method_map_size;
+      if (record_size > size - offset) return false;
+      offset += record_size;
+    }
+  }
+
+  return offset == size;
+}
+
 bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
-                                const size_t size) {
+                                const size_t size, const uint8_t cap_major,
+                                const uint8_t cap_minor) {
   size_t offset = 0;
   switch (tag) {
   case 1: { // Header
@@ -107,8 +153,11 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
     return entries == (size - sizeof(uint16_t)) / 4 &&
            (size - sizeof(uint16_t)) % 4 == 0;
   }
-  case 6: // Class: nested class/interface records need format-aware traversal.
-    return true;
+  case 6: // Class
+    // CAP format 2.1 has neither the signature pool prefix nor remote-info
+    // tails. Newer layouts remain accepted but need their own versioned walk.
+    return cap_major != 2 || cap_minor != 1 ||
+           validate_class_component_21(payload, size);
   case 7: { // Method: exception handler table precedes method data.
     if (size < 1) return false;
     const size_t handler_bytes = static_cast<size_t>(payload[0]) * 8;
@@ -218,6 +267,8 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
 
   const uint8_t *component = cap_file;
   const uint8_t *cap_file_end = cap_file + length;
+  uint8_t cap_major = 2;
+  uint8_t cap_minor = 1;
 
   while (component < cap_file_end) {
     const size_t remaining = static_cast<size_t>(cap_file_end - component);
@@ -233,9 +284,14 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
     if (payload_size > remaining - component_header_size) {
       throw Exceptions::SecurityException;
     }
-    if (!validate_component_payload(
-            component[0], component + component_header_size, payload_size)) {
+    const uint8_t *payload = component + component_header_size;
+    if (!validate_component_payload(component[0], payload, payload_size,
+                                    cap_major, cap_minor)) {
       throw Exceptions::SecurityException;
+    }
+    if (component[0] == CAP_COMPONENT_HEADER && payload_size >= 6) {
+      cap_minor = payload[4];
+      cap_major = payload[5];
     }
     const uint8_t *next_component =
         component + component_header_size + payload_size;

@@ -85,6 +85,44 @@ void test_compact_descriptor_counts() {
   }
 }
 
+void test_class_component_21() {
+  const std::array<uint8_t, 14> class_component = {
+      6, 0, 11, 0x80, 0, 0xff, 0xff, 0, 0xff, 0, 0, 0, 0, 0};
+  expect(parses(class_component.data(), class_component.size()),
+         "minimal_class_component_parses");
+
+  auto bad_interface_count = class_component;
+  bad_interface_count[3] = 0x8f;
+  expect(!parses(bad_interface_count.data(), bad_interface_count.size()),
+         "class_component_superinterface_count_overrun_rejected");
+
+  auto bad_public_method_count = class_component;
+  bad_public_method_count[11] = 1;
+  expect(!parses(bad_public_method_count.data(),
+                 bad_public_method_count.size()),
+         "class_component_public_method_count_overrun_rejected");
+
+  auto bad_package_method_count = class_component;
+  bad_package_method_count[13] = 1;
+  expect(!parses(bad_package_method_count.data(), bad_package_method_count.size()),
+         "class_component_package_method_count_overrun_rejected");
+
+  auto bad_implemented_interface_count = class_component;
+  bad_implemented_interface_count[4] = 0x0f;
+  expect(!parses(bad_implemented_interface_count.data(),
+                 bad_implemented_interface_count.size()),
+         "class_component_implemented_interface_count_overrun_rejected");
+
+  const std::array<uint8_t, 17> implemented_interface = {
+      6, 0, 14, 0x80, 0x01, 0xff, 0xff, 0, 0xff, 0, 0, 0, 0, 0, 0, 0, 0};
+  expect(parses(implemented_interface.data(), implemented_interface.size()),
+         "class_component_implemented_interface_parses");
+  auto bad_method_map_count = implemented_interface;
+  bad_method_map_count[16] = 0xff;
+  expect(!parses(bad_method_map_count.data(), bad_method_map_count.size()),
+         "class_component_interface_method_map_overrun_rejected");
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -108,6 +146,7 @@ int main(int argc, char **argv) {
   expect(!parses(duplicate_method.data(), duplicate_method.size()),
          "duplicate_component_rejected");
   test_compact_descriptor_counts();
+  test_class_component_21();
 
   std::mt19937 generator(0x4a43564d);
   std::uniform_int_distribution<unsigned> byte_distribution(0, 255);
