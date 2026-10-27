@@ -13427,3 +13427,28 @@
   ARM UF2 `build/arm/pico2_choupi.uf2`, 2,016,768 bytes,
   SHA-256 `29a838cc7c3654c0c6c88887f08c78233dda19ea1a777efa78cc96babccdaab8`;
   PC ROM mask `build/choupi-pc/flash`, 524,300 bytes; no physical log.
+
+## 2026-10-27 — Audit asymmetric profile against target support CSV
+
+- Step/experiment: `asymm-crypto-target-report-audit`
+- Change: Audited the profile's selected support against the provided NXP JCOP4
+  AlgTest 1.7.9 CSV (SHA-256
+  `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`).
+  Canonicalized the older `javacard.crypto.Signature` section and KeyAgreement
+  KDF aliases to the current identities. Updated the asymmetric TODO and
+  session handoff with the result and hardware availability.
+- Validation: A bounded Python CSV audit found exact set parity for all 113
+  comparable positive algorithm/key identities. The target's 27 positive
+  KeyPair-generation rows are RSA and RSA-CRT at 512–3072 bits, plus EC FP at
+  128, 160, 192, 224, 256, 384, and 521 bits. Elevated
+  `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` found 0
+  boards; elevated `lsusb` showed only VM root hubs and the VirtualBox tablet.
+- Result: The current profile's declared yes-set matches the supplied target
+  over the comparable identities. This is an offline comparison: the 1.7.9
+  target schema is not accepted by the 1.8.2 result comparator, and no physical
+  board was visible, flashed, or tested.
+- Decision: Build a reproducible conversion/comparison path for legacy target
+  CSVs, continue RSA private-operation hardening, and retry physical checks
+  after a Pico enumerates through the VM.
+- Commit: pending.
+- Artifacts/logs: supplied target CSV above; no hardware log.

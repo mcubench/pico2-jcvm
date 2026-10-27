@@ -1556,9 +1556,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   for the measured RSA-3072 case and 8.805 seconds for RSA-CRT-3072 in isolated
   VPCD calls. No physical Pico was visible to the VM, so hardware validation
   remains open. RSA key-pair generation for the selected sizes is no longer an
-  implementation gap; remaining priorities are private RSA hardening, exact
-  comparison against the complete target report, and physical `/deploy`
-  acceptance.
+  implementation gap. An offline comparison against the supplied 1.7.9 target
+  CSV found exact parity for all 113 comparable supported algorithm/key
+  identities; its 27 positive key-generation cases also match the implemented
+  RSA/RSA-CRT sizes through 3072 bits and seven EC sizes. Physical validation,
+  private RSA hardening, and `/deploy` acceptance remain open.
   Native-dispatch design inspected on 2026-10-26: the VM routes API-declared
   native methods through `callJCNativeMethod`, and `Heap::addInstance` can
   allocate an object directly from its ROM package/class index. The intended

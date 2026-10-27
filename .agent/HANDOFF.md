@@ -12,14 +12,22 @@
   RISC-V wrappers passed. ARM UF2: 2,016,768 bytes, SHA-256
   `29a838cc7c3654c0c6c88887f08c78233dda19ea1a777efa78cc96babccdaab8`; PC
   ROM mask: 524,300 bytes.
+- Target-report audit (2026-10-27): parsed the supplied AlgTest 1.7.9 CSV and
+  matched all 113 comparable supported algorithm/key identities against the
+  current generated profile. Its 27 positive KeyPair-generation cases match
+  RSA and RSA-CRT through 3072 bits and EC at 128, 160, 192, 224, 256, 384,
+  and 521 bits. The target is an older schema, so the 1.8.2 report comparator
+  cannot load it directly; this was an offline normalized identity comparison.
 - Physical hardware: user reports tokens plugged in, but the authorized reader
-  helper still finds zero devices; `lsusb -d 2e8a:0009` finds none, and PC/SC
-  shows only Virtual PCD readers. No flash or physical test was attempted.
+  helper still finds zero devices; elevated `lsusb` lists only VM root hubs and
+  the VirtualBox tablet, and PC/SC shows no readers. No flash or physical test
+  was attempted.
 - The VPCD runner uses a bounded 180-second APDU deadline so variable-time
   3072-bit key generation fits; firmware timeout policy is unchanged. Issue
   details are in `.agent/QKB.md`.
-- Next: continue private RSA operation hardening, exact full target support
-  report comparison, and physical `/deploy` acceptance when a board enumerates.
+- Next: add a reproducible comparison/conversion path for the older full target
+  CSV, continue private RSA operation hardening, and run physical asymmetric
+  and `/deploy` acceptance when a board enumerates.
 - Implementation commit: `65664b3`. Preserve unrelated worktree changes listed
   below.
 
