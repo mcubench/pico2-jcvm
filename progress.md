@@ -13916,3 +13916,14 @@
 - Decision: Record the reader-name renumbering as a host procedure issue; always re-enumerate and match the reader's embedded chip ID after device hotplug. Continue with physical ECDSA/key-agreement coverage and full profile acceptance.
 - Commit: `54b2ccf`.
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-pcsc-20261027T195919Z.log`, `artifacts/logs/gppro-post-symm-probe-D92-20261027.log`, and `build/symm-crypto-probe/physical-vectors.tsv`.
+
+## 2026-10-27 — Quick flash check on a connected Pico 2 (4 minutes)
+
+- Step/experiment: `asymm-profile-quick-physical-flash`
+- When: '2026-10-27 20:02 UTC' - '2026-10-27 20:06 UTC'
+- Change: No firmware source changes. Rebuilt and flashed the existing `asymm_crypto` ARM firmware to the identified Pico 2 `D92E743D5F640C0F`.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid d92e743d5f640c0f` passed. Both ARM and RISC-V builds passed, flash verification passed, and the finite 18-second monitor reported repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The log also contained one `CHOUPI:WATCHDOG_RECOVERY ... cause=other` record before subsequent passing iterations. No PC/SC or applet test was run.
+- Result: The combined-profile image boots and the smoke check passes on D92. The other connected token was not touched. Image size: 2,029,568 bytes; SHA-256 `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`.
+- Decision: Physical flash path is operational. Inspect the watchdog recovery marker if it appears again during a clean power-up; continue remaining asymmetric coverage.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261027T200454Z.log`; image `build/arm/pico2_choupi.uf2`.

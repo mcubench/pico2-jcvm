@@ -1,3 +1,24 @@
+# Current continuation — quick physical flash check (2026-10-27)
+
+- The user reported the Pico 2 tokens connected and asked for a quick flash.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto
+  --chipid d92e743d5f640c0f` rebuilt ARM and RISC-V successfully, then selected
+  only D92 by RP2350 chip ID. The first reset-interface lookup failed, so the
+  wrapper entered BOOTSEL via CDC and flashed the ARM image; full flash verify
+  passed.
+- The 18-second serial monitor passed repeatedly with
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. It also logged one
+  `CHOUPI:WATCHDOG_RECOVERY ... cause=other` record before subsequent passing
+  runtime iterations. This should be inspected separately; it did not fail
+  the wrapper's defined acceptance check. No applet installation or PC/SC test
+  was attempted. The other connected Pico was not touched.
+- Image: `build/arm/pico2_choupi.uf2`, 2,029,568 bytes, SHA-256
+  `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`.
+  Log: `artifacts/logs/cycle-choupi-20261027T200454Z.log`.
+- Commit: recorded in `progress.md` metadata follow-up.
+- Next: continue pending asymmetric coverage; investigate the recorded watchdog
+  recovery marker if it recurs during a clean power-up.
+
 # Current continuation — validate symmetric KATs on the combined profile (2026-10-27)
 
 - The combined `asymm_crypto` image on D92
