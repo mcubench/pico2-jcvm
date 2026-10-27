@@ -13479,7 +13479,7 @@
 - Decision: Keep physical asymmetric and `/deploy` checks pending. Continue
   private RSA side-channel hardening; current exponentiation has not been
   established as constant-time and is not blinded.
-- Commit: pending.
+- Commit: `2848988`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   focused CRT log `artifacts/logs/asymm-crypto-crt-debug-vpcd.log`; ARM UF2
   `build/arm/pico2_choupi.uf2`; no physical log.
