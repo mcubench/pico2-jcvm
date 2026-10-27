@@ -13422,7 +13422,7 @@
   hardware are not yet measured.
 - Decision: Continue with private RSA operation hardening, full target-report
   comparison, and physical `/deploy` acceptance when a board enumerates.
-- Commit: recorded in the documentation follow-up commit.
+- Commit: `65664b3` (this record was finalized in the documentation follow-up).
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   ARM UF2 `build/arm/pico2_choupi.uf2`, 2,016,768 bytes,
   SHA-256 `29a838cc7c3654c0c6c88887f08c78233dda19ea1a777efa78cc96babccdaab8`;

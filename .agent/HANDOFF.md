@@ -20,8 +20,8 @@
   details are in `.agent/QKB.md`.
 - Next: continue private RSA operation hardening, exact full target support
   report comparison, and physical `/deploy` acceptance when a board enumerates.
-- Current implementation source and progress entry are pending commit; preserve
-  unrelated worktree changes listed below.
+- Implementation commit: `65664b3`. Preserve unrelated worktree changes listed
+  below.
 
 # Previous continuation — native 128/160-bit EC generation (2026-10-27)
 
