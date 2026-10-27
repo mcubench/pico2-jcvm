@@ -13678,3 +13678,29 @@
   `artifacts/results/gppro-empty-install-vpcd-20261027T034258Z/`;
   test output `TEST:PASS cap_parser_framing checks=4147 fuzz_inputs=100000
   corpus_files=48`.
+
+## 2026-10-27 — Bound CAP 2.1 Class component records
+
+- Step/experiment: `wp9-cap-class-record-bounds-21`
+- Change: Added CAP format 2.1 Class payload traversal for leading interface
+  records and compact class records. Bounds checks now cover superinterface
+  references, class method tables, implemented-interface records, and their
+  method maps. Added synthetic malformed-count regressions.
+- Validation: `./tools/test-cap-parser` passed 4,154 ASan/UBSan checks across
+  all 48 supplied deploy CAPs and 100,000 randomized buffers. ARM and RISC-V
+  wrappers passed for `asymm_crypto`. The gated VPCD GPPro LOAD/INSTALL/list
+  test passed.
+- Result: ARM UF2 2,025,984 bytes, SHA-256
+  `63b5153dd469ff36fd680697449453d935ed79e294b3c5e0f4d1b2d945d7d1dc`;
+  RISC-V smoke UF2 79,360 bytes, SHA-256
+  `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`.
+  Existing warnings from upstream packed CAP views persist in the sanitizer
+  harness. No physical Pico was visible; hardware testing was not performed.
+- Decision: Retain the format 2.1 structural checks. Class-reference
+  consistency, format 2.2+ Class payloads, and Descriptor type-nibble semantics
+  still need separate validation.
+- Commit: `583f272`
+- Artifacts/logs:
+  `artifacts/results/gppro-empty-install-vpcd-20261027T035353Z/`;
+  test output `TEST:PASS cap_parser_framing checks=4154 fuzz_inputs=100000
+  corpus_files=48`.

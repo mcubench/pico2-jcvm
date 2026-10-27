@@ -2,6 +2,35 @@
 
 # Current continuation — compact CAP Descriptor bounds (2026-10-27)
 
+# Current continuation — CAP 2.1 Class component bounds (2026-10-27)
+
+- Added format 2.1 Class component traversal: leading interface records,
+  compact class prefixes, public/package virtual-method tables, implemented
+  interfaces, and method token maps are all checked against the payload bounds.
+  The parser skips newer Class formats pending their explicit versioned
+  layout checks. The spec distinguishes `interface_info` and compact class
+  records by the ACC_INTERFACE high bit and documents their variable tables.
+- `./tools/test-cap-parser` passes 4,154 ASan/UBSan checks over 48 unchanged
+  deploy CAPs plus 100,000 random buffers. Synthetic malformed count cases
+  reject as expected. ARM/RISC-V `asymm_crypto` wrapper builds pass. VPCD GPPro
+  LOAD/INSTALL/list passes; logs:
+  `artifacts/results/gppro-empty-install-vpcd-20261027T035353Z/`.
+- Rechecked after the user reported plugged tokens: `sudo -n
+  /usr/local/sbin/pico2-pcsc-reader` still reports zero. `lsusb` shows only VM
+  root hubs and the VirtualBox tablet. No flash/hardware testing.
+- ARM UF2 2,025,984 bytes, SHA-256
+  `63b5153dd469ff36fd680697449453d935ed79e294b3c5e0f4d1b2d945d7d1dc`;
+  RISC-V smoke UF2 79,360 bytes, SHA-256
+  `ef4d6410bdf99363e1833df9f8a9770cf5ccb46ada794056bea3dbf7badb1fdb`.
+- Implementation commit: `583f272`; progress/TODO/QKB/handoff update follows
+  in its own commit.
+- Next: independently verify Descriptor class-reference offsets against parsed
+  2.1 Class record boundaries, then add type-nibble semantic validation. For
+  physical acceptance, retry only after the VM sees a Pico through host USB.
+  Preserve all unrelated worktree edits.
+
+# Prior continuation — compact CAP Descriptor bounds (2026-10-27)
+
 - Implemented compact Descriptor structural validation. The parser now walks
   each 9-byte class descriptor prefix, its counted 2-byte interfaces,
   7-byte field descriptors and 12-byte method descriptors; checks constant

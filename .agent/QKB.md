@@ -5473,3 +5473,24 @@ fix.
   and impossible interface/field/method counts. ARM and RISC-V wrappers and
   VPCD GPPro LOAD/INSTALL/SELECT pass. No physical Pico enumerated, so hardware
   validation was not performed.
+
+## CAP 2.1 Class records are variable-length and ordered by kind (2026-10-27)
+
+- **Symptom:** The Class component payload had no nested-bound validation even
+  though later VM accessors trust its class/interface counts and method tables.
+- **Cause:** Format 2.1 stores all interface records first, distinguished by
+  `ACC_INTERFACE` in the high nibble, followed by variable-length class
+  records. A class includes public/package method tables and length-counted
+  implemented-interface method maps. Treating the component as an opaque blob
+  leaves later accessors vulnerable to forged counts.
+- **Viable fix:** For CAP 2.1, walk leading interface records, then compact
+  class records; bound each superinterface reference list, fixed class prefix,
+  public/package method table, implemented-interface record, and method map
+  against remaining component bytes. Keep CAP 2.2+ signature pools, remote
+  metadata, and CAP 2.3 extended records out of this parser until their own
+  format-specific traversal is implemented. Do not resolve class references
+  from Descriptor into Class offsets based on inferred layout alone.
+- **Validation:** ASan/UBSan passes 4,154 checks on all 48 supplied deploy CAPs
+  plus 100,000 random buffers. Synthetic interface/class payloads and
+  impossible method/interface counts are rejected. ARM and RISC-V wrappers and
+  VPCD GPPro LOAD/INSTALL/list pass. No physical Pico is visible to the VM.
