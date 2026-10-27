@@ -77,12 +77,17 @@ spec.loader.exec_module(module)
 vectors = [case for case in module.vectors()
            if case[2].startswith(("RSA SHA1", "RSA SHA-",
                                   "EC prime-field private key"))]
+ec_vectors = sum(case[2].startswith("EC prime-field private key")
+                 for case in vectors)
+rsa_vectors = len(vectors) - ec_vectors
 with output.open("w", encoding="ascii") as stream:
     for command, expected, label in vectors:
         stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
-if len(vectors) != 48:
-    raise SystemExit(f"expected 45 RSA signature and 3 EC key-storage vectors, got {len(vectors)}")
-print(f"VECTORS:PASS count={len(vectors)} file={output}")
+if rsa_vectors != 50 or ec_vectors != 3:
+    raise SystemExit(
+        "expected 50 RSA signature and 3 EC key-storage vectors, "
+        f"got {rsa_vectors} RSA and {ec_vectors} EC")
+print(f"VECTORS:PASS rsa={rsa_vectors} ec={ec_vectors} total={len(vectors)} file={output}")
 PY
 
 installed_here=1

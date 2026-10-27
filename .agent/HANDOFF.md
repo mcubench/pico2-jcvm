@@ -1,3 +1,28 @@
+# Current continuation — validate the combined asymmetric profile on D92 (2026-10-27)
+
+- Confirmed one physical PC/SC reader after the prior two-device BOOTSEL state.
+  Reader: `Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00`.
+- The just-built ARM `asymm_crypto` UF2 was flashed to D92 after ARM and
+  RISC-V profile builds passed. Flash verification and the finite runtime
+  monitor passed (`TEST:PASS choupi_runtime`, summary `pass=1 fail=0`).
+- `tools/test-asymm-crypto-pcsc` initially stopped before installing its test
+  CAP because the vector suite had grown to 53 while its assertion still
+  expected 48. Updated the script's exact expected breakdown to 50 RSA plus
+  three EC storage vectors. The rerun passed all 53 physical checks: PKCS#1,
+  PSS, ISO9796-2 full/partial message recovery, malformed signature rejection,
+  and EC private-key storage. The temporary GPPro package was removed.
+  Log: `artifacts/logs/asymm-crypto-pcsc-20261027T080334Z.log`.
+- Updated TODO, STATUS, and QKB with this evidence. The broader `asymm_crypto`
+  profile is still open: ECDSA/key-agreement/generation vectors, complete
+  support-report comparison, full physical `/deploy` acceptance, and RSA
+  private-operation hardening remain.
+- Current ARM images for external testing remain in
+  `build/external-test/firmware/`; see the continuation below for sizes and
+  hashes.
+- Next: continue with the remaining asymmetric-profile acceptance, preferably
+  starting with physical symmetric vectors against the combined profile and
+  then focused EC ECDSA/key-agreement coverage when feasible.
+
 # Current continuation — prepare symmetric and combined-crypto Windows UF2s (2026-10-27)
 
 - The user asked for a quick real-board flash and externally testable ARM UF2s

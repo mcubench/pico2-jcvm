@@ -1510,10 +1510,16 @@ rollback and duplicate/invalid registration handling also remain unverified.
   2 `D92E743D5F640C0F`; its finite runtime monitor and physical RSA signature
   suite passed (`TEST:SUMMARY pass=1 fail=0` and 39/39 vectors). The temporary
   physical test package was removed afterward. The current image is 1,826,304
-  bytes. Remaining asymmetric work includes RSA ISO9796, EC keys/ECDSA, key
-  agreement and generation, exact full-report comparison, and complete
-  physical `/deploy` acceptance. RSA private-operation blinding and broader
-  cryptographic hardening remain unvalidated. Separate ARM UF2s and expected
+  bytes. On 2026-10-27, the freshly built combined `asymm_crypto` ARM image
+  passed 53/53 physical API known-answer checks on Pico 2
+  `D92E743D5F640C0F`: 50 RSA signature cases (PKCS#1, PSS, ISO9796-2 and
+  message recovery) plus three EC private-key storage cases. GPPro removed the
+  temporary package afterward. This closes physical evidence for those
+  selected operations, not complete `asymm_crypto` acceptance. Remaining work
+  includes EC signatures, key agreement and generation vectors, exact full-
+  report comparison, and complete physical `/deploy` acceptance. RSA private-
+  operation blinding and broader cryptographic hardening remain unvalidated.
+  Separate ARM UF2s and expected
   support CSVs are packaged for external Windows testing at
   `build/external-test/pico2-jcvm-windows-test.zip`; Windows results remain
   pending. Native EC prime-field private key storage is now implemented for

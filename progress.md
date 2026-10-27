@@ -13894,3 +13894,14 @@
 - Decision: Provide both profile-specific ARM UF2s for external Windows testing. The physical smoke cycle was for `asymm_crypto`; symmetric algorithm report parity still requires the user's external JCAlgTest run.
 - Commit: `3c1dc03`.
 - Artifacts/logs: `build/external-test/firmware/pico2_choupi_symm_crypto.uf2`, `build/external-test/firmware/pico2_choupi_asymm_crypto.uf2`, and `artifacts/logs/cycle-choupi-20261027T075044Z.log`.
+
+## 2026-10-27 — Run asymmetric known-answer vectors on Pico 2 (6 minutes)
+
+- Step/experiment: `asymm-crypto-physical-vectors-current-image`
+- When: '2026-10-27 08:00 UTC' - '2026-10-27 08:06 UTC'
+- Change: Corrected `tools/test-asymm-crypto-pcsc`'s stale vector-count guard from 45 RSA plus three EC cases to the current 50 RSA plus three EC cases; the script now reports category counts.
+- Validation: The first physical probe attempt exited before CAP installation because it found 53 vectors while expecting 48. After the guard fix, `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-pcsc 'Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'` passed 53/53 on physical D92. Coverage includes PKCS#1, PSS, ISO9796-2 full and partial message recovery, malformed-signature rejection, and three EC key-storage checks. GPPro cleanup passed. `bash -n tools/test-asymm-crypto-pcsc` and `git diff --check` passed.
+- Result: The combined `asymm_crypto` image responds to the 53 selected crypto API vectors on D92; no `TEST:FAIL` occurred. This does not establish full profile support-report parity or complete `/deploy` acceptance.
+- Decision: Keep `asymm_crypto` acceptance open for ECDSA, key agreement/generation vector coverage, full report comparison, broader deploy runs, and private-operation hardening. Continue using D92 while it remains visible.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-pcsc-20261027T080334Z.log` and `build/symm-crypto-probe/asymm-crypto-physical-vectors.tsv`.

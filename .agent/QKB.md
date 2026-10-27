@@ -14,6 +14,20 @@
   including its `00 00` interface suffix; a shortened label fails before card
   installation and is not a firmware/card result.
 
+## Asymmetric physical probe vector assertion stale after suite expansion — 2026-10-27
+
+- **Symptom:** `tools/test-asymm-crypto-pcsc` exited before installing its
+  temporary CAP with a stale expected vector count (48 expected, 53 generated).
+- **Cause:** The VPCD vector source had been extended with RSA SHA-2/PSS and
+  ISO9796-2/message-recovery cases, but the physical wrapper still expected
+  45 RSA plus three EC storage vectors.
+- **Viable fix:** Keep an exact category count in the wrapper and update it
+  when intended vector coverage changes. The current guard requires 50 RSA
+  signature and three EC key-storage vectors. Rerun with the exact Pico PC/SC
+  reader name; the failed run exited before installation.
+- **Validation:** D92 physical run passed 53/53 and removed the temporary
+  package. Log: `artifacts/logs/asymm-crypto-pcsc-20261027T080334Z.log`.
+
 ## Guest VM loses all Pico USB devices after D92 flash (2026-10-26)
 
 - **Symptom:** D92 (`D92E743D5F640C0F`) flashed and verified successfully, but
