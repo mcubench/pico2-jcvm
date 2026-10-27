@@ -13610,3 +13610,19 @@
 - Commit: `28e5e47` (implementation); metadata commit recorded separately.
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T031635Z/`;
   sanitizer corpus is generated in a temporary directory by the wrapper.
+
+## 2026-10-27 — Fuzz short APDU parser under sanitizers
+
+- Step/experiment: `wp9-short-apdu-fuzz`
+- Change: Added `tools/test-apdu-parser-fuzz` with ASan/UBSan and a deterministic
+  randomized input campaign. Every parser decision and decoded Lc/Le value is
+  compared with short APDU case 1/2S/3S/4S rules.
+- Validation: `./tools/test-apdu-parser-fuzz` passed 250,000 input cases.
+  `./tools/test-short-apdu` passed all short APDU and APDU context regressions.
+- Result: No short APDU parser bug surfaced; output decoding matches the
+  reference rules for all generated inputs.
+- Decision: Keep the parser unchanged. WP9 still requires structural CAP
+  payload validation, interrupted persistent-write fault testing, and broader
+  fuzzing. Physical acceptance remains incomplete.
+- Commit: `00ae634` (harness); metadata commit recorded separately.
+- Artifacts/logs: sanitizer test output `TEST:PASS apdu_parser_fuzz inputs=250000`.

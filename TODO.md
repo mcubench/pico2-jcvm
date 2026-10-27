@@ -1621,4 +1621,7 @@ rollback and duplicate/invalid registration handling also remain unverified.
   corpus harness accepts all 48 supplied deploy CAPs and checks truncations,
   forged lengths, and 100,000 randomized inputs. Remaining here: fuzz the APDU
   parser, validate CAP component payload structures beyond outer framing, and
-  continue interrupted persistent-write recovery / fuzzing.
+  continue interrupted persistent-write recovery / fuzzing. The short APDU
+  parser now passes a separate ASan/UBSan harness over 250,000 randomized
+  inputs, checking acceptance and decoded lengths against the ISO 7816 short
+  APDU case rules; no parser bug surfaced.

@@ -1,3 +1,17 @@
+# Current continuation — sanitizer fuzzing for the short APDU parser (2026-10-27)
+
+- Added `tools/test-apdu-parser-fuzz`, which runs the short APDU parser under
+  ASan/UBSan on 250,000 deterministic randomized byte strings. Each acceptance
+  decision and decoded Lc/Le value is compared with an independent reference
+  for ISO 7816 short cases 1, 2S, 3S, and 4S. Result:
+  `TEST:PASS apdu_parser_fuzz inputs=250000`.
+- Existing `./tools/test-short-apdu` also passed its parser and APDU-context
+  regression cases. No APDU parser bug surfaced.
+- Implementation commit: `00ae634`; progress/TODO metadata follow separately.
+- Next: validate variable-length CAP component payload structures beyond the
+  newly added outer frame check, then continue WP9 persistent-write fault
+  testing. Hardware visibility remains unresolved as described below.
+
 # Current continuation — bound CAP component parser reads (2026-10-27)
 
 - Fixed a CAP parser out-of-bounds risk: it previously read component tag/size
