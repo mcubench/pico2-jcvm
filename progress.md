@@ -13583,3 +13583,30 @@
 - Commit: `fd5a91d` (implementation); metadata commit recorded separately.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   generated images under `build/arm/` and `build/riscv/`.
+
+## 2026-10-27 — Bound CAP component parsing
+
+- Step/experiment: `wp9-cap-component-framing`
+- Change: Validate the complete 3-byte CAP component header and declared payload
+  against the remaining input before constructing component views or advancing
+  the parser. Reject a null pointer with a nonzero input length. Added
+  `tools/test-cap-parser`, which extracts supplied CAP component streams and
+  fuzzes the framing parser under ASan/UBSan.
+- Validation: `./tools/test-cap-parser` passed: 3,268 checks, 48 supplied
+  deploy CAP archives accepted, truncation and forged sizes rejected, and
+  100,000 randomized buffers processed with no ASan/UBSan finding. The test
+  emitted only existing imported-header compiler warnings. ARM and RISC-V
+  wrappers passed. `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-gppro-empty-install-vpcd` passed, including GPPro CAP LOAD,
+  INSTALL, and SELECT. Physical validation was not attempted because no Pico
+  enumerated in the VM.
+- Result: ARM UF2 2,023,936 bytes, SHA-256
+  `d3450ae66905730b825ff8bffcf2c1d9650080f66344c76a349832b95f1c4957`;
+  RISC-V smoke UF2 79,360 bytes. VPCD integration artifacts are in
+  `artifacts/results/gppro-empty-install-vpcd-20261027T031635Z/`.
+- Decision: Keep the framing bounds checks. Continue with APDU parser fuzzing
+  and structural validation inside variable-length CAP component payloads;
+  full WP9 and physical acceptance remain incomplete.
+- Commit: `28e5e47` (implementation); metadata commit recorded separately.
+- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T031635Z/`;
+  sanitizer corpus is generated in a temporary directory by the wrapper.

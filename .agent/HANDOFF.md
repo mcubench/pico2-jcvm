@@ -1,3 +1,31 @@
+# Current continuation — bound CAP component parser reads (2026-10-27)
+
+- Fixed a CAP parser out-of-bounds risk: it previously read component tag/size
+  without first ensuring three bytes remained and advanced by the untrusted
+  declared size without checking it fit the input. The parser now validates
+  every complete component frame before constructing a view; null/nonempty
+  input is rejected, while null/empty remains accepted.
+- Added `tools/test-cap-parser`, a PC ASan/UBSan harness. It extracts the
+  unchanged component streams from all 48 supplied `/deploy` CAP archives,
+  verifies each parses, tests truncation and forged lengths at component
+  boundaries, and exercises 100,000 randomized byte strings. Result:
+  `TEST:PASS cap_parser_framing checks=3268 fuzz_inputs=100000 corpus_files=48`.
+- Validation: ARM and RISC-V wrappers pass; the ARM UF2 is 2,023,936 bytes,
+  SHA-256 `d3450ae66905730b825ff8bffcf2c1d9650080f66344c76a349832b95f1c4957`.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed and
+  explicitly installed/selected the upstream JCAlgTest applet on VPCD. The
+  test uses a temporary emulator; no physical board was accessed.
+- Existing warnings in imported CAP headers (`ignored-qualifiers` and
+  `address-of-packed-member`) are emitted by the standalone harness build;
+  ASan/UBSan reported no issue. LeakSanitizer is disabled because it aborts in
+  this VM's ptrace-constrained execution environment.
+- Implementation commit: `28e5e47`; progress/QKB metadata follow separately.
+- Remaining: deeper component payload validation, APDU parser fuzzing, broader
+  interrupted persistent-write fault injection, and unavailable physical
+  acceptance. Preserve unrelated worktree changes: `AGENTS.md`,
+  `src/cap_load.cpp`, `tools/test-jcsystem-transaction-physical`, dirty
+  API/ROM-mask submodules, supplied test logs/lists, and target CSV.
+
 # Current continuation — independent RSA-CRT exponent blinders (2026-10-27)
 
 - Replaced the shared CRT exponent blinder with independent random 224-bit

@@ -5416,3 +5416,21 @@ fix.
   result check, and is not a complete side-channel or fault-resistance audit.
   VPCD passes 99/99, and ARM/RISC-V wrappers pass; physical validation remains
   pending when a board is visible to the VM.
+
+## CAP component framing accepted truncated or oversized lengths (2026-10-27)
+
+- **Symptom:** The CAP parser read a component's tag and 16-bit length without
+  first checking that the three-byte component header was present. It then
+  advanced by the declared payload length without confirming the payload fit
+  the supplied CAP buffer. Malformed or truncated CAP data could therefore
+  cause out-of-bounds reads.
+- **Viable fix:** Before each component view, require at least three bytes,
+  decode the payload size from the two input bytes, and require that size to be
+  no greater than the remaining bytes after the header. Reject null pointers
+  when the supplied length is nonzero. Keep the empty null input case valid for
+  existing callers.
+- **Validation:** The ASan/UBSan test corpus accepted all 48 upstream deploy
+  CAP component streams, rejected truncated and oversized component frames,
+  and processed 100,000 randomized input buffers without sanitizer findings.
+  The VPCD GPPro empty-card install/select integration also passed. This checks
+  outer framing; variable-length payload structures still need deeper checks.

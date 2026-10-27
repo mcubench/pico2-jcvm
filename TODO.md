@@ -1615,5 +1615,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   Mbed-TLS digest/signature algorithms have also been added under
   `asymm_crypto`. This does not claim Java Card `RandomData.ALG_TRNG` support:
   JCAlgTest correctly reports that separate algorithm unsupported.
-- [ ] Complete deferred hardening and robustness work, including malformed CAP
-  and APDU fuzzing and interrupted persistent-write recovery (plan WP9).
+- [ ] Complete deferred hardening and robustness work (plan WP9). CAP
+  component framing now checks the 3-byte header and bounds the declared
+  component size before creating views or advancing. The sanitizer-backed
+  corpus harness accepts all 48 supplied deploy CAPs and checks truncations,
+  forged lengths, and 100,000 randomized inputs. Remaining here: fuzz the APDU
+  parser, validate CAP component payload structures beyond outer framing, and
+  continue interrupted persistent-write recovery / fuzzing.
