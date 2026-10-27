@@ -1,3 +1,23 @@
+# Current continuation — test ROM payload-validation boundary (2026-10-27)
+
+- Added a focused parser regression for the trusted-ROM validation flag. A
+  framed Descriptor with invalid serialized type grammar is rejected by the
+  strict dynamic-CAP parser and accepted when only payload validation is
+  bypassed. Truncated frames and duplicate component tags remain rejected in
+  bypass mode.
+- Validation: `./tools/test-cap-parser` passes 4,183 checks over all 48
+  supplied deploy CAPs and 100,000 fuzz inputs. Existing compiler warnings in
+  packed CAP headers remain; this test change added no firmware code.
+- Test commit: `4cafe6c`; progress/TODO/handoff metadata follows separately.
+- Physical reader helper again found zero Pico devices; no flash/test was
+  attempted. The prior VPCD GPPro flow and ARM/RISC-V builds are recorded
+  immediately below.
+- Next: continue against the open high-priority acceptance items. Windows
+  GPPro validation and three physical clean-flash/power-cycle acceptance runs
+  still require a reachable external reader/Windows system. Offline, inspect
+  the atomic CAP-install recovery implementation and its simulated power-cut
+  coverage for any missing invariants.
+
 # Current continuation — VPCD install and ROM-mask CAP validation (2026-10-27)
 
 - Fixed the validation boundary: dynamic CAP packages retain complete payload

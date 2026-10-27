@@ -13822,3 +13822,13 @@
 - Decision: Keep strict parsing for uploaded CAPs and use emulator GPPro integration for this regression until a physical board enumerates.
 - Commit: `5b8ceb9`
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261027T064212Z/`; implementation commit `5b8ceb9`.
+
+## 2026-10-27 — Test ROM payload-validation boundary
+
+- Step/experiment: `wp9-rommask-validation-boundary-regression`
+- Change: Added a focused test proving the validation mode boundary: strict parsing rejects a framed Descriptor with invalid serialized type grammar; trusted ROM mode skips that payload grammar only; truncated component frames and duplicate tags remain rejected in ROM mode.
+- Validation: `./tools/test-cap-parser` passed 4,183 checks over the 48 supplied deploy CAPs and 100,000 fuzz inputs. Existing warnings in packed CAP headers remain; the test change adds no firmware code. Physical reader helper found zero Pico devices; no flash was attempted.
+- Result: The bypass is explicitly constrained to component payload interpretation and does not disable outer frame or duplicate-tag checks.
+- Decision: Keep the strict dynamic-CAP path; next audit the open atomic CAP-install recovery and simulated power-cut matrix.
+- Commit: `4cafe6c`
+- Artifacts/logs: `build/tests/cap-parser/cap_parser_test`; stdout `TEST:PASS cap_parser_framing checks=4183 fuzz_inputs=100000 corpus_files=48`.

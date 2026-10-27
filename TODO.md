@@ -271,6 +271,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
 
 ### Priority 2 — close correctness and reliability gaps
 
+- [x] **Keep ROM-mask payload bypass isolated from dynamic CAP validation.**
+  A regression test constructs a structurally framed but malformed Descriptor:
+  strict parsing rejects it, while the trusted ROM payload mode accepts it.
+  The same bypass still rejects truncated component frames and duplicate tags.
+  `./tools/test-cap-parser` passes 4,183 checks over 48 supplied CAPs and
+  100,000 fuzz inputs. GPPro VPCD LOAD/INSTALL/list and both architecture
+  builds passed in the preceding implementation step. No Pico was visible to
+  the VM for physical validation.
+
 - [x] **Add Pico reader LED idle and applet-activity indication.** In CCID
   reader mode, GPIO 25 now produces a smooth 1.6-second breathe every 10
   seconds. Each APDU delivered to an applet triggers a 120 ms full-brightness
