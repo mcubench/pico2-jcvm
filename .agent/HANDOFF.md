@@ -1,3 +1,28 @@
+# Current continuation — native 128/160-bit EC generation (2026-10-27)
+
+- Added native SEC2 secp128r1 and secp160r1 groups shared by KeyPair, ECDSA,
+  and EC agreement validation. EC `R` storage now accounts for subgroup order
+  values one bit wider than the field (secp160r1 has a 161-bit order). The
+  test-only CAP checks KeyPair generation and ECDSA sign/verify for 128, 160,
+  192, 224, 256, 384, and 521 bits.
+- Validation: PC profile build and probe CAP build passed; VPCD passed 93/93
+  (91 asymmetric APDUs plus ATR/SELECT); ARM and RISC-V wrappers passed. ARM
+  UF2: 2,002,944 bytes, SHA-256
+  `474cb12cb6a70bf6399a8d0ab72c765f5a41ff733f9a0a95e6d2b6479bde4f90`; PC ROM
+  mask: 524,300 bytes; RISC-V VM-core smoke image: 79,360 bytes.
+- Physical hardware: user reports tokens plugged in, but after the builds the
+  authorized reader helper found 0, `lsusb -d 2e8a:0009` found none, and PC/SC
+  listed only Virtual PCD 00 00/01. No flash/test attempted.
+- Remaining: exact support-report comparison, arbitrary EC domains, RSA key
+  generation, private RSA hardening, and physical `/deploy` acceptance. Recheck
+  reader enumeration on continuation and use any identified available board.
+- Commits: native KeyPair milestone root `f17df07`, API submodule `869cb8a`,
+  ROM-mask submodule `5297c51`; this small-curve step is pending commit.
+- Preserve unrelated changes: `AGENTS.md`, `src/cap_load.cpp`,
+  `tools/test-jcsystem-transaction-physical`, existing logs/measurement lists,
+  supplied target CSV, and dirty/untracked contents in the API/ROM-mask
+  submodules.
+
 # Current continuation — native EC KeyPair generation (2026-10-27)
 
 - Added profile-gated native `KeyPair` constructor, generation, and getters for

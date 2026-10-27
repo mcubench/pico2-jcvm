@@ -12,6 +12,7 @@ import javacard.security.CryptoException;
 import javacard.security.Key;
 import javacard.security.KeyBuilder;
 import javacard.security.KeyAgreement;
+import javacard.security.KeyPair;
 import javacard.security.MessageDigest;
 import javacard.security.RSAPrivateCrtKey;
 import javacard.security.RSAPrivateKey;
@@ -65,6 +66,10 @@ public final class SymmCryptoProbe extends Applet {
       output = new byte[(short)133];
       byte options = inputLength > 0 ? input[0] : operation;
       outputLength = runKeyAgreement(algorithm, options, output);
+    } else if (instruction == (byte)0x19) {
+      output = new byte[(short)1];
+      output[0] = runEcKeyPair(algorithm);
+      outputLength = (short)1;
     } else if (instruction == (byte)0x10) {
       output = operation == 1 && !isNoPadCipher(algorithm) &&
           !isIso9797M1(algorithm)
@@ -205,6 +210,79 @@ public final class SymmCryptoProbe extends Applet {
     }
     return agreement.generateSecret(g, (short)0, (short)g.length, output,
         (short)0);
+  }
+
+  private static byte runEcKeyPair(byte selector) {
+    short size;
+    switch (selector) {
+    case 0: size = KeyBuilder.LENGTH_EC_FP_192; break;
+    case 1: size = KeyBuilder.LENGTH_EC_FP_224; break;
+    case 2: size = KeyBuilder.LENGTH_EC_FP_256; break;
+    case 3: size = KeyBuilder.LENGTH_EC_FP_384; break;
+    case 4: size = KeyBuilder.LENGTH_EC_FP_521; break;
+    case 5: size = KeyBuilder.LENGTH_EC_FP_128; break;
+    case 6: size = KeyBuilder.LENGTH_EC_FP_160; break;
+    default: return (byte)0xff;
+    }
+    KeyPair pair;
+    try {
+      pair = new KeyPair(KeyPair.ALG_EC_FP, size);
+    } catch (CryptoException exception) {
+      return (byte)(0x10 | exception.getReason());
+    } catch (Exception exception) {
+      return (byte)0x1f;
+    }
+    try {
+      pair.genKeyPair();
+    } catch (CryptoException exception) {
+      return (byte)(0x20 | exception.getReason());
+    } catch (Exception exception) {
+      return (byte)0x2f;
+    }
+    ECPrivateKey privateKey;
+    ECPublicKey publicKey;
+    try {
+      privateKey = (ECPrivateKey)pair.getPrivate();
+      publicKey = (ECPublicKey)pair.getPublic();
+      if (!privateKey.isInitialized() || !publicKey.isInitialized()) return (byte)0x30;
+    } catch (CryptoException exception) {
+      return (byte)(0x30 | exception.getReason());
+    } catch (Exception exception) {
+      return (byte)0x3f;
+    }
+    try {
+      byte[] message = {(byte)0x4a,(byte)0x43,(byte)0x56,(byte)0x4d};
+      Signature signature = Signature.getInstance(Signature.ALG_ECDSA_SHA_256,
+          false);
+      try {
+        signature.init(privateKey, Signature.MODE_SIGN);
+      } catch (CryptoException exception) {
+        return (byte)(0x50 | exception.getReason());
+      }
+      byte[] signed = new byte[(short)160];
+      short signedLength;
+      try {
+        signedLength = signature.sign(message, (short)0, (short)message.length,
+            signed, (short)0);
+      } catch (CryptoException exception) {
+        return (byte)(0x60 | exception.getReason());
+      }
+      try {
+        signature.init(publicKey, Signature.MODE_VERIFY);
+      } catch (CryptoException exception) {
+        return (byte)(0x70 | exception.getReason());
+      }
+      try {
+        return signature.verify(message, (short)0, (short)message.length, signed,
+            (short)0, signedLength) ? (byte)1 : (byte)0;
+      } catch (CryptoException exception) {
+        return (byte)(0x80 | exception.getReason());
+      }
+    } catch (CryptoException exception) {
+      return (byte)(0x40 | exception.getReason());
+    } catch (Exception exception) {
+      return (byte)0x4f;
+    }
   }
 
   private static short runDigest(byte algorithm, byte[] input,

@@ -70,7 +70,7 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
                     "EC DH accepts a key without cofactor"))
     results.append((bytes((0x80, 0x18, 2, 0, 1, 1, 0)), b"\x02\x90\x00",
                     "EC DHC rejects an uninitialized cofactor"))
-    for selector, bits in enumerate((192, 224, 256, 384, 521)):
+    for selector, bits in enumerate((192, 224, 256, 384, 521, 128, 160)):
         command = bytes((0x80, 0x19, selector, 0, 0))
         results.append((command, b"\x01\x90\x00",
                         f"EC KeyPair generation {bits}-bit sign/verify"))

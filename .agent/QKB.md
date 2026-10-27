@@ -5341,3 +5341,20 @@ fix.
   both declaration and dispatch generation.
 - **Validation:** VPCD passed five EC KeyPair generation and ECDSA sign/verify
   vectors (P-192/224/256/384/521); PC, ARM, and RISC-V wrapper builds passed.
+
+
+## EC subgroup order can exceed the field bit width (2026-10-27)
+
+- **Symptom:** Native secp160r1 KeyPair generation returned CryptoException
+  reason 5 (`ILLEGAL_USE`) after Mbed TLS generation.
+- **Cause:** The subgroup order `n` for secp160r1 has 161 bits and serializes to
+  21 bytes although the field size is 160 bits (20 bytes). The native key
+  component buffer for `R` and the KeyPair serializer both assumed field-width
+  storage, so writing `n` at 20 bytes failed.
+- **Viable fix:** Allocate EC `R` storage with one byte beyond field width,
+  serialize `R` at `(bitlen(n)+7)/8`, and allow the native ECDSA/agreement
+  domain validation to read that encoding while still checking its exact value
+  against the selected curve.
+- **Validation:** VPCD generation and ECDSA sign/verify pass for both secp128r1
+  and secp160r1, as well as P-192/224/256/384/521; the full VPCD suite passed
+  93/93. ARM and RISC-V wrappers passed.

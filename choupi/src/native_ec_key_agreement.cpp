@@ -6,6 +6,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_ec_group.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -121,20 +122,9 @@ std::vector<unsigned char> component(JC_Instance &key, uint16_t slot) {
   return result;
 }
 
-mbedtls_ecp_group_id curveForBits(uint16_t bits) {
-  switch (bits) {
-  case 192: return MBEDTLS_ECP_DP_SECP192R1;
-  case 224: return MBEDTLS_ECP_DP_SECP224R1;
-  case 256: return MBEDTLS_ECP_DP_SECP256R1;
-  case 384: return MBEDTLS_ECP_DP_SECP384R1;
-  case 521: return MBEDTLS_ECP_DP_SECP521R1;
-  default: throwCryptoException(CryptoExceptionReason::IllegalValue);
-  }
-}
-
 void loadGroup(JC_Instance &key, mbedtls_ecp_group &group, uint16_t bits,
                bool requireCofactor) {
-  if (mbedtls_ecp_group_load(&group, curveForBits(bits)) != 0)
+  if (native_ec::loadGroupForBits(group, bits) != 0)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   const auto p = component(key, 0);
   const auto a = component(key, 1);
@@ -144,7 +134,7 @@ void loadGroup(JC_Instance &key, mbedtls_ecp_group &group, uint16_t bits,
   const uint16_t width = static_cast<uint16_t>((bits + 7) / 8);
   const size_t encodedPointLength = 1U + 2U * width;
   if (p.size() != width || a.size() != width || b.size() != width ||
-      n.size() != width || g.size() != encodedPointLength || g[0] != 4)
+      n.size() > width + 1U || g.size() != encodedPointLength || g[0] != 4)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   mbedtls_mpi supplied, expectedA, gx, gy;
   mbedtls_mpi_init(&supplied); mbedtls_mpi_init(&expectedA);

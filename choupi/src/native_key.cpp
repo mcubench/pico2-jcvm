@@ -265,7 +265,8 @@ jref_t buildNativeKey(uint8_t type, uint16_t bits, bool encrypted) {
     const uint16_t bytes = static_cast<uint16_t>((bits + 7) / 8);
     for (uint16_t i = 0; i < kEcComponentCount; ++i) {
       const uint16_t capacity = i == 3 || i == 5
-          ? static_cast<uint16_t>(1 + 2 * bytes) : bytes;
+          ? static_cast<uint16_t>(1 + 2 * bytes)
+          : (i == 4 ? static_cast<uint16_t>(bytes + 1) : bytes);
       const jref_t componentRef =
           allocateArray(heap, capacity, JAVA_ARRAY_T_BYTE, transient, event);
       instance->setField_Reference(kEcComponentFields[i], componentRef);

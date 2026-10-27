@@ -6,6 +6,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_ec_group.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -44,17 +45,6 @@ std::shared_ptr<JC_Instance> keyPairInstance(jref_t reference) {
 }
 
 #if JC_SUPPORT_KEYPAIR_EC_FP
-mbedtls_ecp_group_id curveForBits(uint16_t bits) {
-  switch (bits) {
-  case 192: return MBEDTLS_ECP_DP_SECP192R1;
-  case 224: return MBEDTLS_ECP_DP_SECP224R1;
-  case 256: return MBEDTLS_ECP_DP_SECP256R1;
-  case 384: return MBEDTLS_ECP_DP_SECP384R1;
-  case 521: return MBEDTLS_ECP_DP_SECP521R1;
-  default: throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
-  }
-}
-
 struct ScopedGroup {
   mbedtls_ecp_group value;
   ScopedGroup() { mbedtls_ecp_group_init(&value); }
@@ -137,7 +127,7 @@ std::vector<unsigned char> pointBytes(const mbedtls_ecp_group &group,
 
 void generateEcPair(jref_t publicRef, jref_t privateRef, uint16_t bits) {
   ScopedGroup group;
-  if (mbedtls_ecp_group_load(&group.value, curveForBits(bits)) != 0)
+  if (native_ec::loadGroupForBits(group.value, bits) != 0)
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   ScopedKeyPair pair;
   if (mbedtls_ecp_gen_keypair(&group.value, &pair.privateValue,
@@ -157,7 +147,8 @@ void generateEcPair(jref_t publicRef, jref_t privateRef, uint16_t bits) {
   mbedtls_mpi_free(&curveA);
   const auto b = mpiBytes(group.value.B, width);
   const auto g = pointBytes(group.value, group.value.G, width);
-  const auto order = mpiBytes(group.value.N, width);
+  const size_t orderWidth = (mbedtls_mpi_bitlen(&group.value.N) + 7U) / 8U;
+  const auto order = mpiBytes(group.value.N, orderWidth);
   const auto w = pointBytes(group.value, pair.publicValue, width);
   const auto s = mpiBytes(pair.privateValue, width);
 
@@ -191,7 +182,8 @@ void javacard_security_KeyPair_init(jref_t receiver, jbyte_t algorithm,
   if (static_cast<uint8_t>(algorithm) != kAlgorithmEcFp || keyLength <= 0)
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   const uint16_t bits = static_cast<uint16_t>(keyLength);
-  (void)curveForBits(bits);
+  if (!native_ec::supportsBits(bits))
+    throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   const jref_t publicKey = javacard_security_KeyBuilder_buildKey(
       static_cast<jbyte_t>(kTypeEcFpPublic), keyLength, FALSE);
   const jref_t privateKey = javacard_security_KeyBuilder_buildKey(

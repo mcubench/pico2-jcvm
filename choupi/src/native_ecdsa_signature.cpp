@@ -5,6 +5,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_ec_group.hpp"
 
 #include "mbedtls/ecdsa.h"
 #include "mbedtls/sha1.h"
@@ -81,24 +82,13 @@ std::vector<unsigned char> component(JC_Instance &key, uint16_t index) {
   return bytes;
 }
 
-mbedtls_ecp_group_id curveForBits(uint16_t bits) {
-  switch (bits) {
-  case 192: return MBEDTLS_ECP_DP_SECP192R1;
-  case 224: return MBEDTLS_ECP_DP_SECP224R1;
-  case 256: return MBEDTLS_ECP_DP_SECP256R1;
-  case 384: return MBEDTLS_ECP_DP_SECP384R1;
-  case 521: return MBEDTLS_ECP_DP_SECP521R1;
-  default: throwCryptoException(CryptoExceptionReason::IllegalValue);
-  }
-}
-
 int readMpi(mbedtls_mpi &out, const std::vector<unsigned char> &input) {
   return mbedtls_mpi_read_binary(&out, input.data(), input.size());
 }
 
 void loadAndValidateGroup(JC_Instance &key, mbedtls_ecp_group &group,
                           uint16_t bits) {
-  if (mbedtls_ecp_group_load(&group, curveForBits(bits)) != 0)
+  if (native_ec::loadGroupForBits(group, bits) != 0)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   const auto p = component(key, 0);
   const auto a = component(key, 1);
@@ -106,7 +96,7 @@ void loadAndValidateGroup(JC_Instance &key, mbedtls_ecp_group &group,
   const auto g = component(key, 3);
   const auto n = component(key, 4);
   const uint16_t width = static_cast<uint16_t>((bits + 7) / 8);
-  if (p.size() != width || b.size() > width || n.size() > width ||
+  if (p.size() != width || b.size() > width || n.size() > width + 1U ||
       g.size() != static_cast<size_t>(1 + 2 * width) || g[0] != 4)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   mbedtls_mpi supplied;

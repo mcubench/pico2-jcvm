@@ -1540,13 +1540,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   RISC-V builds passed. Hardware remains untested: although the user reports
   tokens plugged in, the approved helper found zero Pico devices, `lsusb`
   found no `2e8a:0009`, and PC/SC showed only virtual readers. Implementations
-  currently accept the standard named prime-field curves P-192, P-224, P-256,
-  P-384, and P-521; arbitrary EC domains and RSA key generation remain open.
-  Progress (2026-10-27): native `KeyPair` construction/generation and getters
-  now work for EC FP. VPCD generation plus ECDSA sign/verify passed for the five
-  named curves above; PC, ARM, and RISC-V builds passed. The target card also
-  reports 128- and 160-bit EC key-pair generation, which is still unsupported.
-  Exact support-report comparison, physical hardware validation, private RSA
+  now accept SEC2 secp128r1/secp160r1 plus the standard named prime-field curves
+  P-192, P-224, P-256, P-384, and P-521; arbitrary EC domains and RSA key
+  generation remain open. Progress (2026-10-27): native `KeyPair` generation
+  and getters work for these seven EC FP sizes. VPCD generation plus ECDSA
+  sign/verify passed for each; PC, ARM, and RISC-V builds passed. Exact
+  support-report comparison, physical hardware validation, private RSA
   hardening, and deployment acceptance remain open.
   Native-dispatch design inspected on 2026-10-26: the VM routes API-declared
   native methods through `callJCNativeMethod`, and `Heap::addInstance` can

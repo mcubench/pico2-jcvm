@@ -13363,3 +13363,36 @@
 - Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`
   (runner uses a fixed name); `build/arm/pico2_choupi.uf2`;
   `build/choupi-pc/flash`; no physical log.
+
+
+## 2026-10-27 — Support 128/160-bit EC key generation
+
+- Step/experiment: `asymm-crypto-ec-small-curves`
+- Change: Added SEC2 secp128r1 and secp160r1 as dynamically loaded native
+  Mbed TLS groups and routed KeyPair, ECDSA, and EC agreement validation
+  through a shared curve loader. The 160-bit subgroup order is 161 bits, so
+  native EC keys now allocate one extra byte for `R` and serialize that order
+  using its actual length. Expanded the test CAP to generate and ECDSA-verify
+  both sizes; upstream CAP files remain unchanged.
+- Validation: `./tools/build-pc --profile asymm_crypto` and
+  `./tools/build-symm-crypto-probe` passed; elevated VPCD passed 93/93 (91
+  asymmetric APDUs plus ATR/SELECT), including generation and ECDSA
+  sign/verify at 128, 160, 192, 224, 256, 384, and 521 bits. ARM and RISC-V
+  wrappers passed. ARM UF2 is 2,002,944 bytes, SHA-256
+  `474cb12cb6a70bf6399a8d0ab72c765f5a41ff733f9a0a95e6d2b6479bde4f90`; PC
+  ROM mask is 524,300 bytes; RISC-V smoke image is 79,360 bytes. After both
+  builds, the approved reader helper still found 0 Pico devices, `lsusb -d
+  2e8a:0009` found none, and PC/SC listed only Virtual PCD readers. No physical
+  flash/test was attempted.
+- Result: The target’s 128/160-bit EC KeyPair sizes now pass VPCD end-to-end.
+  The original 160-bit failure was a truncated subgroup-order serialization
+  reported as CryptoException reason 5; the SEC2 order requires 21 bytes.
+- Decision: Continue with exact `asymm_crypto` support-report comparison and
+  physical `/deploy` acceptance once an identified Pico enumerates in the VM.
+  Arbitrary curves, RSA key generation, and private-operation hardening remain
+  open.
+- Commit: assigned after validation and staging.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`
+  (the runner appends to its fixed-name log); ARM image
+  `build/arm/pico2_choupi.uf2`; PC ROM mask `build/choupi-pc/flash`; no
+  physical log.
