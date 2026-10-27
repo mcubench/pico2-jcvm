@@ -13832,3 +13832,13 @@
 - Decision: Keep the strict dynamic-CAP path; next audit the open atomic CAP-install recovery and simulated power-cut matrix.
 - Commit: `4cafe6c`
 - Artifacts/logs: `build/tests/cap-parser/cap_parser_test`; stdout `TEST:PASS cap_parser_framing checks=4183 fuzz_inputs=100000 corpus_files=48`.
+
+## 2026-10-27 — Exercise install journal recovery through persisted VPCD resume
+
+- Step/experiment: `wp9-cap-install-recovery-resume-path`
+- Change: Make host VPCD `--resume` load the persisted CAP registry and replay pending install journals before checking the requested instance. Update restart tests to use this path instead of manually recreating the applet registry with `--class-index`. Generate a blank default emulator image for each run and assert the pre-recovery SELECT response is `6A82` while no instance is registered.
+- Validation: `./tools/build-pc --profile asymm_crypto` passed. `./tools/test-rp2350-fs-overlay` passed, including 1,000 randomized cuts each across filesystem update, install journal clear, journal creation, and registry publication. Host restart tests passed: skipped registry publication 17/17; already-published registry 17/17; CAP metadata store failure 15/15; journal-clear sync failure 17/17; ordinary two-process install/restart 30/30. All recovered applets passed SELECT, GETVERSION, JCSystem, and SHA-256. `python3 -m py_compile tools/tests/pc_vpcd_applet_test.py` and `git diff --check` passed. Physical reader helper found zero Pico devices, so no hardware or real power-cut test was performed.
+- Result: Fresh-process tests now prove journal replay itself publishes a missing instance, recognizes an already-published entry, and recovers after metadata and cleanup errors. The previously reported host test pass had used an explicit class-index restore and did not prove the missing-instance recovery path.
+- Decision: Keep physical power-loss testing open; continue with remaining acceptance/API work while the board is not reachable.
+- Commit: `662896e`
+- Artifacts/logs: `artifacts/logs/install-recovery-gap-audit-current.log`, `artifacts/logs/install-recovery-publication-fixed.log`, `artifacts/logs/install-recovery-metadata-error-fixed.log`, `artifacts/logs/install-recovery-clear-fixed.log`, `artifacts/logs/install-recovery-normal-two-pass.log`.

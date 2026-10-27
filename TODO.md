@@ -309,7 +309,17 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   both complete or neither. A combined case persists the journal, injects
   1,000 cuts during CAP instance-header publication, and verifies recovery
   republishes the instance and clears the journal. These are simulated cuts;
-  full physical power-cut testing remains open. See
+  full physical power-cut testing remains open. On 2026-10-27, the host VPCD
+  harness was corrected to resume from its persisted registry sidecar rather
+  than reconstructing an applet entry from a supplied class index (which had
+  masked journal replay). Pending journals are now replayed before `--resume`
+  validates the applet registry. Fresh-process tests pass for skipped registry
+  publication (17/17), publication already complete (17/17), CAP metadata
+  write failure (15/15), and journal-clear sync failure (17/17); the ordinary
+  two-process install/restart run passes 30/30. The test now creates a fresh
+  blank default image, avoiding a stale generated fixture with package bits.
+  All tests include applet SELECT, GETVERSION, JCSystem, and SHA-256 probes.
+  Full physical power-cut testing remains open. See
   `.agent/QKB.md`.
 - [x] **Verify authenticated GlobalPlatform DELETE and reinstall lifecycle.**
   GPPro 20.01.23 completed authenticated package DELETE, CAP reinstall, GET

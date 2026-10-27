@@ -1,3 +1,36 @@
+# Current continuation — exercise install journal recovery through true VPCD resume (2026-10-27)
+
+- Fixed the PC emulator resume test to use `--resume` with the saved VPCD CAP
+  registry sidecar. Previously it passed `--class-index`, which manually
+  re-created the CAP instance before startup and therefore could mask a broken
+  journal replay. VPCD startup now replays pending journals before checking
+  that the requested applet exists in the registry; failed replay aborts
+  storage initialization. The test now expects `6A82` when SELECT occurs before
+  journal recovery, because the applet is correctly not registered yet.
+- The default VPCD input image is regenerated as a zero-byte blank image for
+  each run. This avoids reusing an old `algtest-v182-empty-flash.bin` that had
+  dynamic package bits but lacked its matching registry sidecar.
+- Validation: PC build passed. Four fresh-process failure-injection paths
+  passed: skipped registry publication (17/17), already-published registry
+  (17/17), CAP metadata write error (15/15), and journal-clear sync failure
+  (17/17). Normal two-pass install/restart passed 30/30. The restarted process
+  logs `VPCD:INSTALL_JOURNAL_RECOVERED package=56` and SELECT plus GETVERSION,
+  JCSystem, and SHA-256 probes pass. The filesystem overlay suite also passed
+  all randomized 1,000-cut cases for filesystem updates, journal creation,
+  registry publication, and journal clear.
+- These are VPCD and simulated-flash results; no physical reader is visible
+  through the approved VM host-access helper, and no real flash power cut was
+  tested. Physical power-loss validation remains open.
+- Implementation commit: `662896e`; progress and final metadata are recorded
+  in the following metadata commit.
+- Artifacts: `artifacts/logs/install-recovery-gap-audit-current.log`,
+  `artifacts/logs/install-recovery-publication-fixed.log`,
+  `artifacts/logs/install-recovery-metadata-error-fixed.log`,
+  `artifacts/logs/install-recovery-clear-fixed.log`, and
+  `artifacts/logs/install-recovery-normal-two-pass.log`.
+- Next: continue with the remaining project acceptance and VM API backlog; keep
+  the physical power-cut item open until an identified Pico is reachable.
+
 # Current continuation — test ROM payload-validation boundary (2026-10-27)
 
 - Added a focused parser regression for the trusted-ROM validation flag. A
