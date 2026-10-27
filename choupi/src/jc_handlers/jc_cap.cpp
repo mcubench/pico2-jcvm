@@ -145,6 +145,33 @@ bool descriptor_class_refs_match_class_component_21(
   return true;
 }
 
+bool validate_type_descriptor(const uint8_t *type, const size_t nibble_count) {
+  if (type == nullptr || nibble_count == 0) return false;
+  const auto nibble_at = [type](const size_t index) {
+    const uint8_t byte = type[index / 2];
+    return static_cast<uint8_t>((index & 1) == 0 ? byte >> 4 : byte & 0x0f);
+  };
+
+  size_t index = 0;
+  while (index < nibble_count) {
+    const uint8_t value = nibble_at(index++);
+    if (value == 0x1) {
+      // void is only valid as the final method return type.
+      if (index != nibble_count) return false;
+    } else if ((value >= 0x2 && value <= 0x5) ||
+               (value >= 0x0a && value <= 0x0d)) {
+      continue;
+    } else if (value == 0x6 || value == 0x0e) {
+      if (nibble_count - index < 4) return false;
+      index += 4;
+    } else {
+      return false;
+    }
+  }
+
+  return (nibble_count & 1) == 0 || (nibble_at(nibble_count) == 0);
+}
+
 bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
                                 const size_t size, const uint8_t cap_major,
                                 const uint8_t cap_minor,
@@ -289,7 +316,10 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
     while (offset < size) {
       const size_t nibble_count = payload[offset++];
       const size_t descriptor_bytes = (nibble_count + 1) / 2;
-      if (descriptor_bytes > size - offset) return false;
+      if (descriptor_bytes > size - offset ||
+          !validate_type_descriptor(payload + offset, nibble_count)) {
+        return false;
+      }
       offset += descriptor_bytes;
     }
     if (offset != size) return false;

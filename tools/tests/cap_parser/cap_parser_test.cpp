@@ -134,6 +134,44 @@ void test_class_component_21() {
          "descriptor_class_reference_not_at_record_boundary_rejected");
 }
 
+void test_type_descriptor_grammar() {
+  const auto descriptor_component = [](const std::vector<uint8_t> &type) {
+    std::vector<uint8_t> cap = {11, 0,
+                                static_cast<uint8_t>(3 + type.size()),
+                                0, 0, 0};
+    cap.insert(cap.end(), type.begin(), type.end());
+    return cap;
+  };
+  const auto check = [&descriptor_component](const std::vector<uint8_t> &type,
+                                             const bool expected,
+                                             const char *label) {
+    const std::vector<uint8_t> cap = descriptor_component(type);
+    expect(parses(cap.data(), static_cast<uint16_t>(cap.size())) == expected,
+           label);
+  };
+
+  check({1, 0x20}, true, "primitive_type_descriptor_parses");
+  check({1, 0xb0}, true, "primitive_array_descriptor_parses");
+  check({5, 0x60, 0x00, 0x00}, true,
+        "class_reference_type_descriptor_parses");
+  check({1, 0x10}, true, "void_method_return_descriptor_parses");
+  check({6, 0x60, 0x00, 0x04}, true,
+        "method_parameter_and_return_descriptor_parses");
+
+  const auto invalid_code = descriptor_component({1, 0x90});
+  expect(!parses(invalid_code.data(), invalid_code.size()),
+         "reserved_type_nibble_rejected");
+  const auto missing_class_ref = descriptor_component({4, 0x60, 0x00});
+  expect(!parses(missing_class_ref.data(), missing_class_ref.size()),
+         "truncated_type_class_reference_rejected");
+  const auto bad_padding = descriptor_component({1, 0x21});
+  expect(!parses(bad_padding.data(), bad_padding.size()),
+         "nonzero_type_descriptor_padding_rejected");
+  const auto misplaced_void = descriptor_component({2, 0x12});
+  expect(!parses(misplaced_void.data(), misplaced_void.size()),
+         "void_parameter_type_rejected");
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -158,6 +196,7 @@ int main(int argc, char **argv) {
          "duplicate_component_rejected");
   test_compact_descriptor_counts();
   test_class_component_21();
+  test_type_descriptor_grammar();
 
   std::mt19937 generator(0x4a43564d);
   std::uniform_int_distribution<unsigned> byte_distribution(0, 255);
