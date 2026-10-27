@@ -32,6 +32,143 @@
 
 namespace jcvm {
 
+namespace {
+
+uint16_t read_be16(const uint8_t *bytes) {
+  return static_cast<uint16_t>((static_cast<uint16_t>(bytes[0]) << 8) |
+                               bytes[1]);
+}
+
+bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
+                                const size_t size) {
+  size_t offset = 0;
+  switch (tag) {
+  case 1: { // Header
+    // Fixed header (magic/version/flags) and package version/AID length.
+    if (size < 10 || payload[9] < 5 || payload[9] > 16 ||
+        static_cast<size_t>(payload[9]) > size - 10) {
+      return false;
+    }
+    const size_t name_offset = 10 + payload[9];
+    if (payload[4] >= 2) {
+      if (name_offset >= size ||
+          payload[name_offset] > size - name_offset - 1) {
+        return false;
+      }
+    }
+    return true;
+  }
+  case 2: { // Directory
+    constexpr size_t fixed_size = 11 * sizeof(uint16_t) + 6 + 3;
+    if (size < fixed_size) return false;
+    const uint8_t custom_count = payload[fixed_size - 1];
+    offset = fixed_size;
+    for (uint16_t index = 0; index < custom_count; ++index) {
+      if (size - offset < 4 || payload[offset] < 0x80) return false;
+      const uint8_t aid_length = payload[offset + 3];
+      if (aid_length < 5 || aid_length > 16 ||
+          aid_length > size - offset - 4) {
+        return false;
+      }
+      offset += 4 + aid_length;
+    }
+    return offset == size;
+  }
+  case 3: { // Applet
+    if (size < 1) return false;
+    const uint8_t count = payload[offset++];
+    for (uint16_t index = 0; index < count; ++index) {
+      if (offset >= size) return false;
+      const uint8_t aid_length = payload[offset];
+      const size_t record_size = 1u + aid_length + 2u;
+      if (aid_length < 5 || aid_length > 16 || record_size > size - offset)
+        return false;
+      offset += record_size;
+    }
+    return offset == size;
+  }
+  case 4: { // Import
+    if (size < 1) return false;
+    const uint8_t count = payload[offset++];
+    for (uint16_t index = 0; index < count; ++index) {
+      if (size - offset < 3) return false;
+      const uint8_t aid_length = payload[offset + 2];
+      if (aid_length < 5 || aid_length > 16 ||
+          aid_length > size - offset - 3) {
+        return false;
+      }
+      offset += 3 + aid_length;
+    }
+    return offset == size;
+  }
+  case 5: { // Constant Pool
+    if (size < sizeof(uint16_t)) return false;
+    const size_t entries = read_be16(payload);
+    return entries == (size - sizeof(uint16_t)) / 4 &&
+           (size - sizeof(uint16_t)) % 4 == 0;
+  }
+  case 6: // Class: nested class/interface records need format-aware traversal.
+    return true;
+  case 7: { // Method: exception handler table precedes method data.
+    if (size < 1) return false;
+    const size_t handler_bytes = static_cast<size_t>(payload[0]) * 8;
+    return handler_bytes <= size - 1;
+  }
+  case 8: { // Static Field
+    if (size < 10) return false;
+    const uint16_t image_size = read_be16(payload);
+    const uint16_t array_count = read_be16(payload + 4);
+    offset = 6;
+    for (uint16_t index = 0; index < array_count; ++index) {
+      if (size - offset < 3) return false;
+      const size_t value_size = read_be16(payload + offset + 1);
+      if (value_size > size - offset - 3) return false;
+      offset += 3 + value_size;
+    }
+    if (size - offset < 4) return false;
+    const uint16_t default_count = read_be16(payload + offset);
+    const uint16_t non_default_count = read_be16(payload + offset + 2);
+    offset += 4;
+    return default_count <= image_size &&
+           non_default_count == size - offset;
+  }
+  case 9: { // Reference Location
+    if (size < 4) return false;
+    const size_t byte_offsets = read_be16(payload);
+    offset = 2 + byte_offsets;
+    if (offset > size || size - offset < 2) return false;
+    const size_t word_offsets = read_be16(payload + offset);
+    offset += 2;
+    return word_offsets == size - offset;
+  }
+  case 10: { // Export
+    if (size < 1) return false;
+    const uint8_t count = payload[offset++];
+    for (uint16_t index = 0; index < count; ++index) {
+      if (size - offset < 4) return false;
+      const size_t fields = payload[offset + 2];
+      const size_t methods = payload[offset + 3];
+      const size_t entries = (fields + methods) * sizeof(uint16_t);
+      offset += 4;
+      if (entries > size - offset) return false;
+      offset += entries;
+    }
+    return offset == size;
+  }
+  case 11: { // Descriptor
+    if (size < 1) return false;
+    const uint8_t count = payload[offset++];
+    // Require the fixed record prefixes and the trailing type-descriptor
+    // count to fit. Full nested descriptor-table traversal remains separate.
+    return 1 + static_cast<size_t>(count) * 9 + sizeof(uint16_t) <= size;
+  }
+  default:
+    return false;
+  }
+}
+
+} // namespace
+
 /// CAP File component tag values
 #define CAP_COMPONENT_HEADER (uint8_t)1
 #define CAP_COMPONENT_DIRECTORY (uint8_t)2
@@ -74,6 +211,10 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file) {
     const uint16_t payload_size = static_cast<uint16_t>(
         (static_cast<uint16_t>(component[1]) << 8) | component[2]);
     if (payload_size > remaining - component_header_size) {
+      throw Exceptions::SecurityException;
+    }
+    if (!validate_component_payload(
+            component[0], component + component_header_size, payload_size)) {
       throw Exceptions::SecurityException;
     }
     const uint8_t *next_component =

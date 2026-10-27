@@ -33,13 +33,35 @@ bool parses(const uint8_t *bytes, uint16_t length) {
   }
 }
 
+void expect_payload_mutation_rejected(const std::vector<uint8_t> &cap,
+                                      const size_t component_offset,
+                                      const size_t payload_offset,
+                                      const uint8_t value) {
+  std::vector<uint8_t> mutated = cap;
+  mutated[component_offset + 3 + payload_offset] = value;
+  expect(mutated[component_offset + 3 + payload_offset] !=
+             cap[component_offset + 3 + payload_offset],
+         "payload_mutation_changes_byte");
+  ++checks;
+  if (parses(mutated.data(), static_cast<uint16_t>(mutated.size()))) {
+    std::fprintf(stderr,
+                 "TEST:FAIL malformed_payload_accepted tag=%u offset=%zu "
+                 "value=%u component_size=%u\n",
+                 cap[component_offset], payload_offset,
+                 mutated[component_offset + 3 + payload_offset],
+                 static_cast<unsigned>((cap[component_offset + 1] << 8) |
+                                       cap[component_offset + 2]));
+    std::exit(1);
+  }
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
   expect(parses(nullptr, 0), "empty_null_input");
   expect(!parses(nullptr, 1), "null_nonempty_input_rejected");
 
-  const std::array<uint8_t, 6> framed_method = {7, 0, 3, 0x11, 0x22, 0x33};
+  const std::array<uint8_t, 4> framed_method = {7, 0, 1, 0};
   expect(parses(framed_method.data(), framed_method.size()),
          "complete_component_frame");
   for (uint16_t prefix = 1; prefix < framed_method.size(); ++prefix) {
@@ -51,7 +73,8 @@ int main(int argc, char **argv) {
   expect(!parses(oversized_frame.data(), oversized_frame.size()),
          "oversized_component_rejected");
 
-  const std::array<uint8_t, 6> duplicate_method = {7, 0, 0, 7, 0, 0};
+  const std::array<uint8_t, 8> duplicate_method = {7, 0, 1, 0,
+                                                   7, 0, 1, 0};
   expect(!parses(duplicate_method.data(), duplicate_method.size()),
          "duplicate_component_rejected");
 
@@ -77,8 +100,12 @@ int main(int argc, char **argv) {
                              std::istreambuf_iterator<char>());
     expect(!cap.empty() && cap.size() <= UINT16_MAX,
            "corpus_file_length_valid");
-    expect(parses(cap.data(), static_cast<uint16_t>(cap.size())),
-           "upstream_cap_parses");
+    if (!parses(cap.data(), static_cast<uint16_t>(cap.size()))) {
+      std::fprintf(stderr, "TEST:FAIL upstream_cap_parses path=%s\n",
+                   argv[argument]);
+      return 1;
+    }
+    ++checks;
     ++corpus_files;
 
     size_t offset = 0;
@@ -102,6 +129,38 @@ int main(int argc, char **argv) {
       if (payload_size != 0) {
         expect(!parses(cap.data(), static_cast<uint16_t>(offset + frame_size - 1)),
                "truncated_component_payload_rejected");
+      }
+      switch (cap[offset]) {
+      case 1:
+        expect_payload_mutation_rejected(cap, offset, 9, 0xff);
+        break;
+      case 2:
+        expect_payload_mutation_rejected(cap, offset, 30, 0xff);
+        break;
+      case 3:
+      case 4:
+      case 10:
+        expect_payload_mutation_rejected(cap, offset, 0, 0xff);
+        break;
+      case 5:
+        expect_payload_mutation_rejected(cap, offset, 0, 0xff);
+        break;
+      case 7: {
+        const size_t impossible_count = (payload_size - 1) / 8 + 1;
+        if (impossible_count <= 255) {
+          expect_payload_mutation_rejected(
+              cap, offset, 0, static_cast<uint8_t>(impossible_count));
+        }
+        break;
+      }
+      case 8:
+        expect_payload_mutation_rejected(cap, offset, 4, 0xff);
+        break;
+      case 9:
+        expect_payload_mutation_rejected(cap, offset, 0, 0xff);
+        break;
+      default:
+        break;
       }
       offset += frame_size;
     }
