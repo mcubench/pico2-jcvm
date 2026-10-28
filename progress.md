@@ -13997,3 +13997,37 @@
 - Decision: Keep the token map fix. Restore PC/SC discovery, isolate the RSA public 4096 KeyBuilder call, and capture serial output at failure before claiming full Security coverage.
 - Commit: `746517a`.
 - Artifacts/logs: `AlgTest_JavaCard/deploy/results/keypair-constructor-physical-20261028/all-keypair-constructors.csv`; `.../keypair-generation.csv`; `.../security-full.csv`; `artifacts/logs/cycle-choupi-20261028T204343Z.log`.
+## 2026-10-28 — Refine JC305 key marker `instanceof` behavior (28 minutes)
+
+- Step/experiment: `jc305-native-key-marker-instanceof`
+- When: '2026-10-28 21:59 UTC' - '2026-10-28 22:27 UTC'
+- Change: Added type-aware JC305 security marker-interface checks for native
+  `NativeKey` instances. ROM class metadata unions interfaces across key
+  families, so checks now use the instance's stored key type. Null
+  `instanceof` returns false and pushes a byte boolean. Generated named JC305
+  source-interface tokens; no API source or CAP was changed.
+- Validation: Existing focused VPCD Security run completed 901 calls: 11
+  supported marker checks `OK`, eight unsupported cases
+  `UNSUPPORTED_PER_SPEC`, 882 filtered, all cleanup stages passed. Final-source
+  `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile
+  asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. A
+  D92 physical cycle flashed the type-aware mapping before the final null
+  stack-width correction and passed finite serial monitoring. After the final
+  correction, a new cycle timed out requesting BOOTSEL; elevated `lsusb` then
+  showed only root hubs. The final source was not flashed or physically
+  retested. Final-source VPCD rerun did not establish an emulator session and
+  stopped at `TEST_NO_APPLET`; this is not a VM behavior result.
+- Result: The type-aware fix passes the focused VPCD cases. The byte-stack
+  correction compiles for PC, ARM, and RISC-V but still needs the focused test
+  on the final image. Nonfatal existing packed-member/Rust warnings appeared
+  during wrapper builds; no new warning was identified in the changed source.
+- Decision: Retry the final-source focused Security marker tests when a Pico is
+  enumerated; then continue API 3.0.5 `ECKey.getK()`, null
+  `copyDomainParametersFrom`, and Crypto failure triage.
+- Commit: recorded in the following metadata commit.
+- Artifacts/logs: VPCD
+  `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware4/`;
+  final attempted VPCD
+  `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware6/`;
+  physical cycles `artifacts/logs/cycle-choupi-20261028T220129Z.log` and
+  `artifacts/logs/cycle-choupi-20261028T220351Z.log`.

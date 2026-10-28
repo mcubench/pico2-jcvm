@@ -25,11 +25,17 @@ out explicitly.
   42, the `TYPE_RSA_PUBLIC, LENGTH_RSA_4096` probe produced a PC/SC transport
   failure and the reader disappeared; subsequent serial monitor still passed.
   Retry this boundary case and complete Security after PC/SC recovers.
-- [ ] Correct native Java Card marker-interface invocation semantics:
-  Security tests for `SecretKey`, `PrivateKey`, and `PublicKey` returned
-  native key type IDs (`0003`, `000f`, `0005`, etc.) where the deploy client
-  expects boolean. Inspect invokeinterface/return-value handling; do not
-  change API or CAP sources.
+- [x] Correct native Java Card marker-interface checks for JC305 Security:
+  the ROM represents multiple concrete key types with one `NativeKey` class,
+  so class-level interface metadata alone over-reported assignability. The
+  `instanceof` path now refines JC305 security-interface checks using the
+  stored native key type; null references return false and the result is
+  pushed as a Java Card boolean byte. Unchanged Security CAP VPCD run:
+  11 supported marker cases `OK`, eight unsupported cases
+  `UNSUPPORTED_PER_SPEC`, zero failed calls. PC/ARM/RISC-V builds pass. A
+  later VPCD rerun after the byte-stack correction could not establish its
+  emulator session, and no physical token was enumerated for retest; retest
+  the final image on hardware when a Pico is available.
 - [ ] Triage remaining physical 3.0.5 failures: one `ECKey.getK()` returned
   zero instead of the uninitialized-key exception; null
   `ECKey.copyDomainParametersFrom` raised a VM runtime exception; Crypto

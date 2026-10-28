@@ -5706,6 +5706,35 @@ fix.
   applied yet; do not claim these paths pass.
 
 
+## JC305 NativeKey marker-interface checks must use the key type (2026-10-28)
+
+- **Symptom:** Focused API 3.0.5 Security tests for `SecretKey`, `PrivateKey`,
+  `PublicKey`, and concrete key marker interfaces returned `WRONG_RESULT` on
+  the native VM despite the corresponding object types being correct.
+- **Cause:** The ROM models key instances with one `NativeKey` class. That
+  class declares a union of interfaces used by several key families, while
+  Java Card assignability depends on the stored key type. Applying the ROM
+  class metadata directly therefore reported AES/DES/RSA/EC interfaces too
+  broadly. JC305 interface tokens also differ from the embedded API's token
+  numbers, so matching must use the source interface token only for CAPs
+  importing the JC305 security package AID.
+- **Viable fix:** `Bytecodes::docheck()` now refines known JC305 security
+  interface checks against the `NativeKey` type field. The token generator
+  emits stable names for the JC305 source interface tokens. `instanceof(null)`
+  now returns false and pushes its result as a byte boolean. Keep this logic
+  in native VM code and do not modify API sources or CAPs.
+- **Validation:** Earlier focused VPCD Security run on the type-aware mapping
+  completed 901 calls: 11 supported marker checks `OK`, eight unsupported
+  cases `UNSUPPORTED_PER_SPEC`, 882 intentionally filtered, cleanup stages
+  passed. Artifact:
+  `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware4/`.
+  The final source with the byte-stack correction passes PC, ARM, and RISC-V
+  asymm_crypto builds. A new VPCD attempt failed before applet selection
+  because its emulator session was not established; no physical board was
+  enumerated after the cycle's BOOTSEL request timed out. Re-run the focused
+  test on the final image when hardware is available.
+
+
 ## JC305 redeclared Key method prefixes need per-interface token remapping (2026-10-28)
 
 - **Symptom:** API 3.0.5 Security `KeyPair(byte, short)` constructor calls

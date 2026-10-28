@@ -28,6 +28,7 @@
 #include "../context.hpp"
 #include "../debug.hpp"
 #include "../heap.hpp"
+#include "javacard-rom-metadata.h"
 #include "../jc_handlers/flashmemory.hpp"
 #include "../jc_handlers/jc_class.hpp"
 #include "../jc_handlers/jc_cp.hpp"
@@ -42,6 +43,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 
 #ifndef PC_VERSION
 extern "C" void choupi_install_stage(uint8_t stage);
@@ -51,6 +53,86 @@ extern "C" void choupi_install_context(uint32_t context);
 namespace jcvm {
 
 namespace {
+// NativeKey has one ROM class whose declared interfaces are the union of
+// supported key families. JC305 instanceof must refine those interfaces by
+// the instance's actual Key.getType() value.
+std::optional<bool> nativeKeyInterfaceMatch(
+    JC_Instance &instance, const uint8_t source_interface_token) {
+  constexpr uint8_t kDesTransientReset = 1;
+  constexpr uint8_t kDesTransientDeselect = 2;
+  constexpr uint8_t kDesPersistent = 3;
+  constexpr uint8_t kRsaPublic = 4;
+  constexpr uint8_t kRsaPrivate = 5;
+  constexpr uint8_t kRsaCrtPrivate = 6;
+  constexpr uint8_t kEcFpPublic = 11;
+  constexpr uint8_t kEcFpPrivate = 12;
+  constexpr uint8_t kAesTransientReset = 13;
+  constexpr uint8_t kAesTransientDeselect = 14;
+  constexpr uint8_t kAesPersistent = 15;
+  constexpr uint8_t kRsaPrivateTransientReset = 22;
+  constexpr uint8_t kRsaPrivateTransientDeselect = 23;
+  constexpr uint8_t kRsaCrtTransientReset = 24;
+  constexpr uint8_t kRsaCrtTransientDeselect = 25;
+  constexpr uint8_t kEcFpPrivateTransientReset = 30;
+  constexpr uint8_t kEcFpPrivateTransientDeselect = 31;
+
+  const Package security_package(ROM_PACKAGE_INDEX_JAVACARD_SECURITY);
+  if (instance.getPackageID() != security_package.getPackageID()) {
+    return std::nullopt;
+  }
+  const auto native_key_class_offset = HTONS(
+      Export_Handler(security_package).getExportedClassOffset(
+          ROM_CLASS_EXPORT_TOKEN_JAVACARD_SECURITY_NATIVEKEY));
+  if (instance.getClassIndex() != native_key_class_offset) {
+    return std::nullopt;
+  }
+
+  const uint8_t key_type = static_cast<uint8_t>(instance.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
+  switch (source_interface_token) {
+  case jc305_source_javacard_security_interface_SecretKey:
+    return key_type == kDesTransientReset ||
+           key_type == kDesTransientDeselect || key_type == kDesPersistent ||
+           key_type == kAesTransientReset || key_type == kAesTransientDeselect ||
+           key_type == kAesPersistent;
+  case jc305_source_javacard_security_interface_PrivateKey:
+    return key_type == kRsaPrivate || key_type == kRsaCrtPrivate ||
+           key_type == kRsaPrivateTransientReset ||
+           key_type == kRsaPrivateTransientDeselect ||
+           key_type == kRsaCrtTransientReset ||
+           key_type == kRsaCrtTransientDeselect || key_type == kEcFpPrivate ||
+           key_type == kEcFpPrivateTransientReset ||
+           key_type == kEcFpPrivateTransientDeselect;
+  case jc305_source_javacard_security_interface_PublicKey:
+    return key_type == kRsaPublic || key_type == kEcFpPublic;
+  case jc305_source_javacard_security_interface_AESKey:
+    return key_type == kAesTransientReset ||
+           key_type == kAesTransientDeselect || key_type == kAesPersistent;
+  case jc305_source_javacard_security_interface_DESKey:
+    return key_type == kDesTransientReset ||
+           key_type == kDesTransientDeselect || key_type == kDesPersistent;
+  case jc305_source_javacard_security_interface_RSAPublicKey:
+    return key_type == kRsaPublic;
+  case jc305_source_javacard_security_interface_RSAPrivateKey:
+    return key_type == kRsaPrivate || key_type == kRsaCrtPrivate ||
+           key_type == kRsaPrivateTransientReset ||
+           key_type == kRsaPrivateTransientDeselect ||
+           key_type == kRsaCrtTransientReset || key_type == kRsaCrtTransientDeselect;
+  case jc305_source_javacard_security_interface_RSAPrivateCrtKey:
+    return key_type == kRsaCrtPrivate ||
+           key_type == kRsaCrtTransientReset ||
+           key_type == kRsaCrtTransientDeselect;
+  case jc305_source_javacard_security_interface_ECPublicKey:
+    return key_type == kEcFpPublic;
+  case jc305_source_javacard_security_interface_ECPrivateKey:
+    return key_type == kEcFpPrivate ||
+           key_type == kEcFpPrivateTransientReset ||
+           key_type == kEcFpPrivateTransientDeselect;
+  default:
+    return std::nullopt;
+  }
+}
+
 bool isRuntimeCryptoExceptionFactoryAllocation(
     Context &context,
     const std::pair<jpackage_ID_t, jclass_index_t> instantiated_class) {
@@ -411,6 +493,32 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
     // resolution supplies the class candidate; when that candidate does not
     // match, also try the interface candidate from the independent token map.
     auto type_out_ref = std::make_pair(type_out_package, type_out_class);
+    const auto target_interface =
+        interface_candidate.second != nullptr
+            ? interface_candidate
+            : (IS_INTERFACE(type_out_class)
+                   ? type_out_ref
+                   : std::make_pair(
+                         type_out_package,
+                         static_cast<const uint8_t *>(nullptr)));
+    if (target_interface.second != nullptr) {
+      if (usesJC305CompatibilityTokens(source_package) &&
+          type_out_classref.isExternalClassRef()) {
+        const auto *imported_package = Import_Handler(source_package).getPackageAID(
+            type_out_classref.external_classref.package_token & 0x7f);
+        constexpr uint8_t security_aid[] = {
+            0xA0, 0x00, 0x00, 0x00, 0x62, 0x01, 0x02};
+        if (imported_package != nullptr && imported_package->AID_length == 7 &&
+            std::memcmp(imported_package->AID, security_aid,
+                        sizeof(security_aid)) == 0) {
+          if (const auto native_key_result = nativeKeyInterfaceMatch(
+                  *instance, type_out_classref.external_classref.class_token);
+              native_key_result.has_value()) {
+            return *native_key_result ? TRUE : FALSE;
+          }
+        }
+      }
+    }
     const char *trace_setting = std::getenv("CHOUPI_VM_TRACE_EXCEPTIONS");
     const bool trace_cast = trace_setting != nullptr &&
                             std::strcmp(trace_setting, "1") == 0;
@@ -796,7 +904,9 @@ void Bytecodes::bc_instanceof() {
 
   TRACE_JCVM_DEBUG("INSTANCEOF 0x%02X 0x%02X", atype, index);
 
-  jbool_t result = docheck(objectref, atype, index);
+  const jbool_t result = objectref.isNullPointer()
+                             ? FALSE
+                             : docheck(objectref, atype, index);
   stack.push_Byte(result);
 
   return;

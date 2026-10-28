@@ -27,6 +27,19 @@ PACKAGES = {
     "javacardx_crypto": "javacardx/crypto/javacard/crypto.jca",
 }
 
+SECURITY_KEY_INTERFACES = (
+    "SecretKey",
+    "PrivateKey",
+    "PublicKey",
+    "AESKey",
+    "DESKey",
+    "RSAPublicKey",
+    "RSAPrivateKey",
+    "RSAPrivateCrtKey",
+    "ECPublicKey",
+    "ECPrivateKey",
+)
+
 
 def read_classes(path: Path) -> dict[str, int]:
     try:
@@ -90,7 +103,6 @@ def generate(source_root: Path, target_root: Path, output: Path) -> None:
             arrays.append(f"    {values},")
         arrays.append("};")
         arrays.append("")
-
         source_interfaces = read_interfaces(source_root / relative_path)
         target_interfaces = read_interfaces(target_root / relative_path)
         missing_interfaces = sorted(set(source_interfaces) - set(target_interfaces))
@@ -116,6 +128,21 @@ def generate(source_root: Path, target_root: Path, output: Path) -> None:
             arrays.append(f"    {values},")
         arrays.append("};")
         arrays.append("")
+        if package == "javacard_security":
+            for name in SECURITY_KEY_INTERFACES:
+                if name not in target_interfaces:
+                    raise ValueError(
+                        f"{relative_path}: embedded API is missing interface {name}"
+                    )
+                arrays.append(
+                    f"inline constexpr uint8_t rom_javacard_security_interface_{name} = "
+                    f"{target_interfaces[name]};"
+                )
+                arrays.append(
+                    f"inline constexpr uint8_t jc305_source_javacard_security_interface_{name} = "
+                    f"{source_interfaces[name]};"
+                )
+            arrays.append("")
     arrays.extend(("} // namespace jcvm", ""))
     output.parent.mkdir(parents=True, exist_ok=True)
     generated = "\n".join(arrays)
