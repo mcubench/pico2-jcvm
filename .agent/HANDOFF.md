@@ -25,8 +25,8 @@
   USB serial D92 remained enumerated, and a finite serial monitor afterward
   produced repeated `TEST:SUMMARY pass=1 fail=0`; PC/SC only showed Virtual PCD
   readers. Treat 4096 as an unresolved transport failure, not as unsupported.
-- Implementation commit `a6bdb2f`; physical evidence/progress recorded in the
-  following metadata commit. The implementation only touched native dispatch;
+- Implementation commit `a6bdb2f`; physical evidence/progress commit
+  `746517a`. The implementation only touched native dispatch;
   user's other dirty files remain untouched.
 - Next: restore PC/SC enumeration, isolate the RSA public 4096 KeyBuilder
   boundary with captured serial/CCID logs, then complete full Security and
