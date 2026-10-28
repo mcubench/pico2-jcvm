@@ -61,6 +61,32 @@
 
 # Project issue knowledge base
 
+## JCAlgTest 1.8.2 KeyPair RSA-3072 rows send a 4096-bit length (2026-10-28)
+
+- **Symptom:** The physical full support report completed on D92 without
+  transport errors, but the generated `asymm_crypto` manifest comparison
+  found two missing positives: `KeyPair ALG_RSA LENGTH_RSA_3072` and
+  `KeyPair ALG_RSA_CRT LENGTH_RSA_3072`.
+- **Cause:** The unchanged upstream 1.8.2 support CAP's APDU for the row it
+  labels 3072 sends `B0 75 19 00 03 01 10 00 00` (RSA, length `0x1000` =
+  4096), and CRT sends the same length with algorithm 2. The Java Card API's
+  actual `LENGTH_RSA_3072` is `0x0C00`. The VM correctly rejects the queried
+  4096-bit size because this profile leaves KeyPair 4096 disabled. The direct
+  JCAlgTest query therefore returns reason 3 (`NO_SUCH_ALGORITHM`).
+- **Viable fix:** No firmware workaround is appropriate. Do not make the 3072
+  API accept 4096, enable 4096 solely to change this mislabeled result, or
+  edit the upstream CAP. Keep the comparison failure explicit and test true
+  3072-bit KeyPair support with the existing API vectors / applicable deploy
+  CAPs. Report the two upstream rows as a known CAP/client limitation.
+- **Validation:** D92 (`D92E743D5F640C0F`) completed the full JCAlgTest report:
+  4,525/4,525 rows, 196 yes, 4,329 no, zero other; all row identities matched
+  the 1.8.2 jCardSim reference. The normalized generated-support comparison
+  had 143/145 identities, with only the two mislabeled rows missing. The exact
+  RSA-3072 support APDU returned `1903FF...9000`. Separate physical vectors
+  passed RSA-3072 in 31.224 s and RSA-CRT-3072 in 170.478 s; GPPro cleanup
+  passed. Logs: `artifacts/results/jcalgtest/asymm_crypto_D92_complete_20261028/`
+  and `artifacts/logs/asymm-crypto-pcsc-20261028T191018Z.log`.
+
 ## Long RSA-3072 KeyPair generation exceeded default VPCD deadline (2026-10-27)
 
 - **Symptom:** The asymmetric VPCD suite failed on its RSA-3072 generation

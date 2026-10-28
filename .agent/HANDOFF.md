@@ -1,3 +1,36 @@
+# Current continuation — complete physical asymm_crypto support report (2026-10-28)
+
+- D92 (`D92E743D5F640C0F`) ran the unchanged upstream JCAlgTest 1.8.2
+  `ALG_SUPPORT_EXTENDED` report to completion. The CSV at
+  `artifacts/results/jcalgtest/asymm_crypto_D92_complete_20261028/` contains
+  all 4,525 reference rows; CHOUPI returned 196 yes, 4,329 no, zero other.
+  All row identities match the 1.8.2 jCardSim reference.
+- Improved `tools/compare-jcalgtest-support.py` to canonicalize JCAlgTest
+  factory aliases, EC KeyAgreement KDF labels, and KeyPair generation sections.
+  The generated `asymm_crypto` manifest has 145 selected identities; 143 map
+  to positive report results. The two missing expected identities are RSA and
+  RSA-CRT KeyPair 3072.
+- These two rows expose an upstream CAP/client mismatch, not a native generator
+  failure. The unchanged CAP sends `0x1000` (4096) in the 3072 KeyPair probe;
+  `KeyBuilder.LENGTH_RSA_3072` is `0x0C00`. The card correctly reports
+  `NO_SUCH_ALGORITHM` because KeyPair 4096 is disabled. The exact probe returned
+  `1903FF...9000`. Do not alter the CAP or enable 4096 to hide this defect.
+- Separate physical D92 vectors passed RSA-3072 generation/signature in
+  31.224 s and RSA-CRT-3072 generation/components in 170.478 s. Temporary
+  GPPro package cleanup passed. Log:
+  `artifacts/logs/asymm-crypto-pcsc-20261028T191018Z.log`.
+- Both 3072 KeyPair operations are therefore implemented and physically
+  functional, but exact upstream support-report-to-manifest parity remains
+  blocked by those mislabeled CAP rows. TODO and QKB record the limitation.
+- The host-only `tools/JCAlgTestApduProbe.java` now has focused DES and
+  RSA-3072 support query flags. Current tool changes are not yet committed.
+  Earlier unrelated user changes listed by `git status` must be preserved.
+- Next: finish the logical comparator/report documentation commit (progress
+  entry included), then continue the open physical `/deploy` coverage and
+  Windows validation. No firmware source change was made during this report
+  investigation; the currently flashed combined profile remains the image
+  from the 2026-10-28 D92 cycle.
+
 # Current continuation — physical long-RSA validation completed (2026-10-27)
 
 - Fixed long synchronous native RSA calls on Pico 2. `choupi/src/interpretor.cpp`
@@ -18,9 +51,12 @@
   bytes, SHA-256 `2c17467a26a2d035dec9bb0fb9e3eba329e1e5d05989a8f25ed7b2b720768a1d`.
   It contains symmetric and asymmetric crypto support and no preinstalled
   JCAlgTest applet.
-- Remaining: exact full support-report comparison, complete physical `/deploy`
-  acceptance, Windows validation, RSA private-operation hardening, and
-  investigate the intermittent `CHOUPI:WATCHDOG_RECOVERY ... cause=other` marker.
+- Remaining: complete physical `/deploy` acceptance, Windows validation, RSA
+  private-operation hardening, and investigate the intermittent
+  `CHOUPI:WATCHDOG_RECOVERY ... cause=other` marker. The physical support
+  report is now complete; it has two upstream mislabeled 3072-bit KeyPair rows
+  that remain explicit manifest mismatches (see the current continuation at
+  the top of this file and `.agent/QKB.md`).
 - Commit: pending.
 
 # Current continuation — quick physical flash check (2026-10-27)

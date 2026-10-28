@@ -24,6 +24,9 @@ SIGNATURE_FACTORY_SECTION = (
 # both the one-byte algorithm query and the getInstance parameter matrix.
 # Canonicalize those aliases to the capability row generated from the profile.
 CIPHER_FACTORY_ALGORITHMS = {
+    "CIPHER_RSA PAD_NOPAD": ("javacardx.crypto.Cipher", "ALG_RSA_NOPAD"),
+    "CIPHER_RSA PAD_PKCS1": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1"),
+    "CIPHER_RSA PAD_PKCS1_OAEP": ("javacardx.crypto.Cipher", "ALG_RSA_PKCS1_OAEP"),
     "CIPHER_AES_CBC PAD_NOPAD": ("javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"),
     "CIPHER_AES_ECB PAD_NOPAD": ("javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_ECB_NOPAD"),
     "CIPHER_AES_CBC PAD_ISO9797_M1": ("javacardx.crypto.Cipher", "ALG_AES_CBC_ISO9797_M1"),
@@ -42,6 +45,23 @@ CIPHER_FACTORY_ALGORITHMS = {
     "CIPHER_DES_ECB PAD_PKCS5": ("javacardx.crypto.Cipher", "ALG_DES_ECB_PKCS5"),
 }
 SIGNATURE_FACTORY_ALGORITHMS = {
+    "SIG_CIPHER_ECDSA PAD_NULL ALG_SHA": "ALG_ECDSA_SHA",
+    "SIG_CIPHER_ECDSA PAD_NULL ALG_SHA_224": "ALG_ECDSA_SHA_224",
+    "SIG_CIPHER_ECDSA PAD_NULL ALG_SHA_256": "ALG_ECDSA_SHA_256",
+    "SIG_CIPHER_ECDSA PAD_NULL ALG_SHA_384": "ALG_ECDSA_SHA_384",
+    "SIG_CIPHER_ECDSA PAD_NULL ALG_SHA_512": "ALG_ECDSA_SHA_512",
+    "SIG_CIPHER_RSA PAD_ISO9796 ALG_SHA": "ALG_RSA_SHA_ISO9796",
+    "SIG_CIPHER_RSA PAD_ISO9796_MR ALG_SHA": "ALG_RSA_SHA_ISO9796_MR",
+    "SIG_CIPHER_RSA PAD_PKCS1 ALG_SHA": "ALG_RSA_SHA_PKCS1",
+    "SIG_CIPHER_RSA PAD_PKCS1 ALG_SHA_224": "ALG_RSA_SHA_224_PKCS1",
+    "SIG_CIPHER_RSA PAD_PKCS1 ALG_SHA_256": "ALG_RSA_SHA_256_PKCS1",
+    "SIG_CIPHER_RSA PAD_PKCS1 ALG_SHA_384": "ALG_RSA_SHA_384_PKCS1",
+    "SIG_CIPHER_RSA PAD_PKCS1 ALG_SHA_512": "ALG_RSA_SHA_512_PKCS1",
+    "SIG_CIPHER_RSA PAD_PKCS1_PSS ALG_SHA": "ALG_RSA_SHA_PKCS1_PSS",
+    "SIG_CIPHER_RSA PAD_PKCS1_PSS ALG_SHA_224": "ALG_RSA_SHA_224_PKCS1_PSS",
+    "SIG_CIPHER_RSA PAD_PKCS1_PSS ALG_SHA_256": "ALG_RSA_SHA_256_PKCS1_PSS",
+    "SIG_CIPHER_RSA PAD_PKCS1_PSS ALG_SHA_384": "ALG_RSA_SHA_384_PKCS1_PSS",
+    "SIG_CIPHER_RSA PAD_PKCS1_PSS ALG_SHA_512": "ALG_RSA_SHA_512_PKCS1_PSS",
     "SIG_CIPHER_AES_CMAC128 PAD_ISO9797_M2 ALG_NULL": "ALG_AES_CMAC_128",
     "SIG_CIPHER_AES_MAC128 PAD_NOPAD ALG_NULL": "ALG_AES_MAC_128_NOPAD",
     "SIG_CIPHER_DES_MAC4 PAD_ISO9797_1_M1_ALG3 ALG_NULL": "ALG_DES_MAC4_ISO9797_1_M1_ALG3",
@@ -64,12 +84,27 @@ def canonical_section(section: str) -> str:
         return SIGNATURE_SECTION
     if section.startswith("javacard.crypto.Signature."):
         return SIGNATURE_SECTION + section[len("javacard.crypto.Signature"):]
+    if section.startswith("javacard.security.KeyPair ") and section.endswith(
+        " on-card generation"
+    ):
+        return "javacard.security.KeyPair"
     return section
 
 
 def canonical_support_identity(section: str, algorithm: str) -> tuple[str, str]:
     """Map result-matrix aliases back to their selected algorithm capability."""
     section = canonical_section(section)
+    if section == "javacard.security.KeyAgreement":
+        # JCAlgTest reports the KDF overload next to the base operation even
+        # though the CHOUPI support manifest selects the Java Card algorithm.
+        for base in ("ALG_EC_SVDP_DH", "ALG_EC_SVDP_DHC"):
+            if algorithm.startswith(base + "/" + base + "_"):
+                return section, base
+    if section == "javacard.security.KeyPair":
+        # EC key-pair generation is parameterized by field size in the report,
+        # while the Java Card factory capability is the ALG_EC_FP selector.
+        if algorithm.startswith("ALG_EC_FP LENGTH_EC_FP_"):
+            return section, "ALG_EC_FP"
     if section == CIPHER_FACTORY_SECTION:
         # These two parameterized overloads are separately selectable flags.
         if algorithm in ("CIPHER_AES_CBC PAD_NOPAD", "CIPHER_DES_CBC PAD_NOPAD"):

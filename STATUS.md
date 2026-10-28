@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-27
+Updated: 2026-10-28
 
 ## Summary
 
@@ -14,8 +14,13 @@ wrappers pass; RISC-V has not been tested on hardware. On 2026-10-27, D92
 `D92E743D5F640C0F` was flashed with the combined `asymm_crypto` ARM image and
 passed the finite runtime monitor, 53/53 selected RSA-signature and EC-key
 storage vectors, and 71/71 symmetric crypto known-answer vectors over PC/SC.
-This is focused crypto evidence, not complete asymmetric-profile or `/deploy`
-acceptance. Pico 2 `2BED26ED20556535` was last
+The combined profile also passed the full 79-vector asymmetric API suite and
+the complete physical JCAlgTest report (4,525 rows; 196 yes, 4,329 no, zero
+other). Two expected KeyPair-3072 results remain mismatched because the
+unchanged upstream CAP sends 4096 as the requested length for those rows;
+direct 3072-bit RSA and RSA-CRT generation vectors pass. The profile is not
+fully accepted until physical `/deploy` coverage completes and this upstream
+report limitation remains explicit. Pico 2 `2BED26ED20556535` was last
 confirmed running `symm_crypto` with an ISD-only GPPro listing on 2026-10-25.
 Firmware images do not preload JCAlgTest, and reflashing preserves the separate
 persistent CAP store; install CAPs explicitly with GPPro after confirming the
@@ -23,19 +28,23 @@ card registry is empty.
 
 ## Verified
 
-- **Physical `asymm_crypto` smoke and API vectors (2026-10-27):** Both
+- **Physical `asymm_crypto` crypto and support-report validation
+  (2026-10-28):** Both
   architecture wrapper builds passed, and the ARM image was flashed and
   verified on D92 `D92E743D5F640C0F`. The finite monitor passed. The physical
-  PC/SC known-answer probe passed 53/53: RSA PKCS#1/PSS/ISO9796-2 signing and
-  verification, message-recovery cases, malformed-signature rejection, and
-  three EC private-key storage checks. GPPro cleanup removed the temporary
-  probe package. The same image passed a separate 71/71 symmetric KAT suite;
-  GPPro cleanup and a post-test listing confirmed the temporary A000 package
-  was removed and pre-existing JCAlgTest/F01234567890 entries were preserved.
+  PC/SC asymmetric known-answer suite passed 79/79, including RSA signatures,
+  ECDSA, key agreement, and RSA/EC generation; separate 53/53 RSA-signature
+  and EC-key-storage plus 71/71 symmetric KAT suites also passed. GPPro
+  cleanup removed each temporary probe package. The full JCAlgTest 1.8.2
+  support report returned 196 yes, 4,329 no, zero other across all 4,525 rows.
+  Its only generated-manifest difference is the two upstream-mislabeled
+  RSA/RSA-CRT KeyPair 3072 probes; details are at the top of TODO.md and in
+  `.agent/QKB.md`.
   Logs: `artifacts/logs/asymm-crypto-pcsc-20261027T080334Z.log`,
   `artifacts/logs/symm-crypto-kat-pcsc-20261027T195919Z.log`, and
-  `artifacts/logs/gppro-post-symm-probe-D92-20261027.log`. This does not cover
-  the entire profile, full JCAlgTest support report, or `/deploy` suite.
+  `artifacts/logs/asymm-crypto-pcsc-20261028T191018Z.log`. Full physical
+  `/deploy` acceptance, Windows validation, and RSA private-operation
+  hardening remain open.
 
 - **Empty-card `symm_crypto` reflash and physical registry check (2026-10-25):**
   Rebuilt ARM and RISC-V with `./tools/cycle choupi --profile symm_crypto`

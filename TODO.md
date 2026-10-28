@@ -1519,10 +1519,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   was removed; a post-test GPPro listing confirmed the pre-existing JCAlgTest
   applet/package and F01234567890 package remained while the temporary probe
   AID was absent. This closes physical evidence for these selected operations,
-  not complete `asymm_crypto` acceptance. Remaining work includes EC
-  signatures, key agreement and generation vectors, exact full-report
-  comparison, and complete physical `/deploy` acceptance. RSA private-
-  operation blinding and broader cryptographic hardening remain unvalidated.
+  not complete `asymm_crypto` acceptance. The 2026-10-27 complete 79-vector
+  asymmetric suite subsequently covered EC signatures, key agreement and
+  generation. The 2026-10-28 full support report matched all 4,525 reference
+  rows but exposed two mislabeled upstream RSA-3072 KeyPair probes; details are
+  recorded below and in `.agent/QKB.md`. Complete physical `/deploy`
+  acceptance and RSA private-operation hardening remain open.
   Separate ARM UF2s and expected
   support CSVs are packaged for external Windows testing at
   `build/external-test/pico2-jcvm-windows-test.zip`; Windows results remain
@@ -1700,6 +1702,16 @@ rollback and duplicate/invalid registration handling also remain unverified.
   110.769 s in the full suite), RSA-3072 (137.724 s isolated; 138.521 s in
   the full suite), ECDSA, key agreement, EC/RSA generation, and signatures.
   Logs: `artifacts/logs/asymm-crypto-pcsc-20261027T213146Z.log` and
-  `artifacts/logs/asymm-crypto-pcsc-20261027T213548Z.log`. Broader profile
-  acceptance remains open: exact full support-report comparison, physical
+  `artifacts/logs/asymm-crypto-pcsc-20261027T213548Z.log`. The 2026-10-28
+  physical JCAlgTest v1.8.2 report completed all 4,525 rows on D92 with 196
+  yes, 4,329 no, and zero other statuses; all report row identities matched
+  jCardSim. The profile manifest has two apparent missing yes results for RSA
+  and RSA-CRT KeyPair 3072. Inspection proves an upstream CAP/client mismatch:
+  those rows send length `0x1000` (4096) to `KeyPair`, although the API length
+  for 3072 is `0x0C00`. The unchanged CAP therefore asks for the disabled
+  4096-bit size and correctly receives NO_SUCH_ALGORITHM. Separate physical
+  vectors passed RSA-3072 (31.224 s) and RSA-CRT-3072 (170.478 s), and temporary
+  package cleanup passed. Do not enable 4096 or alter the upstream CAP just to
+  make its mislabeled rows say yes. Keep the comparator manifest check red for
+  this documented CAP defect. Remaining profile acceptance: physical
   `/deploy` suite, Windows validation, and RSA private-operation hardening.

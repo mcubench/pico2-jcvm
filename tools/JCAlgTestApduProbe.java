@@ -113,6 +113,35 @@ public final class JCAlgTestApduProbe {
       }
 
       if (probeArgs.size() == 1 &&
+          "--des-cipher-support".equals(probeArgs.get(0))) {
+        ResponseAPDU response = transmit(channel, "DES_CIPHER_SUPPORT",
+            new CommandAPDU(0xB0, 0x75, 0x11, 0x00,
+                new byte[] {0x01}, 256));
+        byte[] result = response.getData();
+        if (result.length < 2 || result[0] != 0x11 || result[1] != 0x00) {
+          throw new IllegalStateException(
+              "DES CBC NOPAD support should be reported as supported");
+        }
+        System.out.println("TEST:PASS des_cipher_support");
+        return;
+      }
+
+      if (probeArgs.size() == 1 &&
+          "--rsa-3072-keypair-support".equals(probeArgs.get(0))) {
+        ResponseAPDU response = transmit(channel, "RSA_3072_KEYPAIR_SUPPORT",
+            new CommandAPDU(0xB0, 0x75, 0x19, 0x00,
+                new byte[] {0x01, 0x10, 0x00}, 256));
+        byte[] result = response.getData();
+        if (result.length < 2 || result[0] != 0x19) {
+          throw new IllegalStateException(
+              "short or malformed RSA-3072 KeyPair support response");
+        }
+        System.out.printf("JCALGTEST:RSA_3072_KEYPAIR status=%02X%n",
+            result[1] & 0xff);
+        return;
+      }
+
+      if (probeArgs.size() == 1 &&
           "--unsupported-rsa-oaep-md5".equals(probeArgs.get(0))) {
         // Isolate the exact JCAlgTest ALG_SUPPORT_EXTENDED probe that lost its
         // PC/SC transaction on D92. MD5/RSA/OAEP is unsupported by this
