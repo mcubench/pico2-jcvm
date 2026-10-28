@@ -13985,3 +13985,15 @@
 - Decision: Keep the native interface remap. Retest the full Security deploy set physically when its API client is available; continue triaging marker-interface and remaining API 3.0.5 findings.
 - Commit: `a6bdb2f`.
 - Artifacts/logs: `artifacts/results/deploy/keypair-constructor-vpcd-20261028/rsa512-after-map-fix.csv`; `artifacts/logs/cycle-choupi-20261028T204343Z.log`; invalid client attempt `artifacts/results/deploy/keypair-constructor-physical-20261028/security.csv` (UPLOAD/CLEANUP only).
+
+
+## 2026-10-28 — Validate KeyPair dispatch on D92 and isolate Security sweep drop 6 minutes
+
+- Step/experiment: `physical-jc305-keypair-dispatch-validation`
+- When: '2026-10-28 20:49 UTC' - '2026-10-28 20:55 UTC'
+- Change: No firmware changes. Ran the unchanged API 3.0.5 Security CAP on identified physical D92 using the repository deploy client to validate the imported key-interface dispatch fix.
+- Validation: Physical constructor subset completed 39 probes (27 `OK`, 12 `UNSUPPORTED_PER_SPEC`; no wrong result/runtime failure). `genKeyPair()` subset completed 14 probes (9 supported RSA/RSA-CRT/EC_FP `OK`, five unsupported per spec). GPPro cleanup passed for both. Full Security started but aborted after 42 calls at `KeyBuilder.buildKey(TYPE_RSA_PUBLIC, LENGTH_RSA_4096)` with `SCARD_E_NOT_TRANSACTED`; subsequent client calls saw disconnected card and cleanup could not reconnect. USB serial D92 remained enumerated. `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial D92E743D5F640C0F --seconds 8` then passed repeated `TEST:SUMMARY pass=1 fail=0`, while PC/SC listed only Virtual PCD readers.
+- Result: The native interface fix is validated on hardware for every selected constructor and generation case. The full Security run is not a pass; the RSA public 4096 boundary caused or coincided with a PC/SC transport loss, whose cause remains unknown.
+- Decision: Keep the token map fix. Restore PC/SC discovery, isolate the RSA public 4096 KeyBuilder call, and capture serial output at failure before claiming full Security coverage.
+- Commit: pending.
+- Artifacts/logs: `AlgTest_JavaCard/deploy/results/keypair-constructor-physical-20261028/all-keypair-constructors.csv`; `.../keypair-generation.csv`; `.../security-full.csv`; `artifacts/logs/cycle-choupi-20261028T204343Z.log`.

@@ -5730,3 +5730,28 @@ fix.
   passed. Identified physical D92 flash verification and finite startup monitor
   passed, but the constructor itself has not yet been tested physically.
   Commit: `a6bdb2f`.
+
+
+## Full JC305 Security sweep loses PC/SC after RSA public 4096 KeyBuilder (2026-10-28)
+
+- **Symptom:** With the corrected JC305 key-interface method mapping, focused
+  physical D92 API 3.0.5 tests passed all 39 `KeyPair(byte, short)` constructor
+  probes (27 supported OK, 12 `UNSUPPORTED_PER_SPEC`) and 14 `genKeyPair()`
+  probes (9 supported RSA/RSA-CRT/EC_FP OK, five `UNSUPPORTED_PER_SPEC`). A
+  subsequent full Security sweep aborted after 42 calls while testing
+  `KeyBuilder.buildKey(TYPE_RSA_PUBLIC, LENGTH_RSA_4096)`: the first failed APDU
+  surfaced `SCARD_E_NOT_TRANSACTED`; following calls reported a disconnected
+  card and cleanup could not connect.
+- **Cause:** Not established. This is a PC/SC transport loss, not a card status
+  word or explicit unsupported response. The physical USB device and serial
+  console remained present; a finite serial monitor afterward passed repeated
+  runtime checks. PC/SC then listed only the two Virtual PCD readers.
+- **Viable fix:** None established. After PC/SC reader enumeration recovers,
+  isolate only the RSA public 4096 `KeyBuilder` probe, capture finite serial
+  output immediately after failure, and distinguish a firmware reset/CCID state
+  issue from host PC/SC loss. Do not relabel the 4096 result as expected
+  unsupported without a card response.
+- **Validation:** Focused physical CSVs are
+  `AlgTest_JavaCard/deploy/results/keypair-constructor-physical-20261028/`
+  (`all-keypair-constructors.csv` and `keypair-generation.csv`). Full-run CSV
+  `security-full.csv`; post-failure D92 monitor passed.

@@ -14,15 +14,23 @@
   finite serial monitor passed `TEST:SUMMARY pass=1 fail=0`, with one watchdog
   recovery marker followed by repeated passing summaries. Cycle log:
   `artifacts/logs/cycle-choupi-20261028T204343Z.log`.
-- The attempted physical `/deploy` API invocation was not valid test evidence:
-  it used the JCAlgTest report client rather than the API-test client. Security
-  CAP install and cleanup did pass; no physical KeyPair result is claimed. The
-  focused constructor still needs a physical rerun with the correct API client.
-- Implementation and progress commit: `a6bdb2f`. The implementation only
-  touched native dispatch; user's other dirty files remain untouched.
-- Next: obtain/use the API 3.0.5 deploy client and run the focused physical
-  KeyPair constructor; then rerun Security and inspect whether selected
-  `genKeyPair` and marker-interface failures share the token-map issue.
+- Physical focused API 3.0.5 Security tests on D92 using the correct deploy
+  client passed all 39 `KeyPair(byte, short)` constructor probes (27 supported
+  cases OK, 12 unsupported per spec) and all 14 `genKeyPair()` probes (9
+  supported RSA/RSA-CRT/EC_FP cases OK, five unsupported per spec). Results:
+  `AlgTest_JavaCard/deploy/results/keypair-constructor-physical-20261028/`.
+- The subsequent full Security run stopped after 42 calls at
+  `KeyBuilder.buildKey(TYPE_RSA_PUBLIC, LENGTH_RSA_4096)`: PC/SC returned
+  `SCARD_E_NOT_TRANSACTED`, then disconnected. Cleanup could not reconnect.
+  USB serial D92 remained enumerated, and a finite serial monitor afterward
+  produced repeated `TEST:SUMMARY pass=1 fail=0`; PC/SC only showed Virtual PCD
+  readers. Treat 4096 as an unresolved transport failure, not as unsupported.
+- Implementation commit `a6bdb2f`; physical evidence/progress recorded in the
+  following metadata commit. The implementation only touched native dispatch;
+  user's other dirty files remain untouched.
+- Next: restore PC/SC enumeration, isolate the RSA public 4096 KeyBuilder
+  boundary with captured serial/CCID logs, then complete full Security and
+  investigate still-open marker-interface results.
 
 # Current continuation — debug API 3.0.5 deploy failures (2026-10-28)
 

@@ -17,10 +17,14 @@ out explicitly.
   prefix on `PublicKey`, `PrivateKey`, and concrete key subinterfaces, but
   only token 0 (`Key`) had been translated. Expanded that mapping in native
   VM dispatch; focused upstream Security CAP VPCD constructor test now passes.
-  ARM/RISC-V builds and physical flash/startup pass. Physical constructor
-  retest remains outstanding because the deploy API test client is unavailable
-  in this checkout; the attempted runner invocation used the wrong client and
-  was not counted as test evidence.
+  ARM/RISC-V builds and physical flash/startup pass. On physical D92, all 39
+  constructor probes completed: 27 supported cases passed and 12 unsupported
+  cases were correctly classified. All 14 `genKeyPair()` cases completed: 9
+  supported RSA/RSA-CRT/EC_FP cases passed and five unsupported cases were
+  correctly classified. The full Security sweep remains incomplete: at call
+  42, the `TYPE_RSA_PUBLIC, LENGTH_RSA_4096` probe produced a PC/SC transport
+  failure and the reader disappeared; subsequent serial monitor still passed.
+  Retry this boundary case and complete Security after PC/SC recovers.
 - [ ] Correct native Java Card marker-interface invocation semantics:
   Security tests for `SecretKey`, `PrivateKey`, and `PublicKey` returned
   native key type IDs (`0003`, `000f`, `0005`, etc.) where the deploy client
