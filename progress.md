@@ -14075,7 +14075,7 @@
   inconsistent and no Pico was attached.
 - Decision: Establish a clean reader/card state and rerun only these API rows;
   then verify the final ARM image on a physical Pico.
-- Commit: recorded in the following metadata commit.
+- Commit: `92ecf0a`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-guards-vpcd-20261028/`,
   `artifacts/results/deploy/ec-key-guards-vpcd-20261028-retry/`,
   `artifacts/results/deploy/ec-key-guards-vpcd-20261028-reader00/`,

@@ -21,6 +21,7 @@
   connected. Afterward continue the remaining 3.0.5 Crypto `6F00` and runtime
   reason mismatches. Keep this source change separate from the committed
   marker-interface fix.
+- Source and progress commit: `92ecf0a` (`Map EC key initialization errors to API semantics`).
 
 # Current continuation — fix JC305 key interfaces and null instanceof (2026-10-28)
 
