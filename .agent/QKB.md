@@ -5751,7 +5751,10 @@ fix.
   `present=true`.
 - **Cause:** Not established. Possible stale package state, applet registry
   state, or selecting a different Virtual PCD reader than the active emulator;
-  do not assume the VM rejected the tested method.
+  do not assume the VM rejected the tested method. GPPro inventory through a
+  fresh emulator session listed only ISD, but a subsequent upload still
+  reported the Security package present, so inventory and upload appear to
+  address different state or reader contexts.
 - **Viable fix:** None yet. Before a rerun, confirm reader-to-endpoint mapping,
   query package/app registry on the same reader, and uninstall/restore a clean
   image before retrying. Keep each emulator image and log in a separate
@@ -5762,7 +5765,9 @@ fix.
   the Security CAP but timed out before producing call rows. A repeat hit the
   duplicate-package warning; test-only had no applet. `lsusb` showed no
   physical Pico at the time. Logs are under
-  `artifacts/results/deploy/ec-key-guards-vpcd-20261028*/`.
+  `artifacts/results/deploy/ec-key-guards-vpcd-20261028*/`. `pcsc_scan -r`
+  showed two Virtual PCD readers; the allowed physical helper found zero Pico
+  devices.
 
 
 ## JC305 redeclared Key method prefixes need per-interface token remapping (2026-10-28)

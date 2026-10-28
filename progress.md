@@ -14055,10 +14055,10 @@
 - Artifacts/logs: `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware10/`;
   `artifacts/results/gppro-empty-install-vpcd-20261028T222954Z/`.
 
-## 2026-10-28 — Guard EC key getters and null domain copy (13 minutes)
+## 2026-10-28 — Guard EC key getters and null domain copy (16 minutes)
 
 - Step/experiment: `ec-key-initialization-guards`
-- When: '2026-10-28 22:34 UTC' - '2026-10-28 22:47 UTC'
+- When: '2026-10-28 22:34 UTC' - '2026-10-28 22:50 UTC'
 - Change: `NativeKey.getK()` now raises `CryptoException.UNINITIALIZED_KEY`
   when the EC key is not initialized. `copyDomainParametersFrom(null)` now
   raises `CryptoException.ILLEGAL_VALUE` instead of reaching the native null
@@ -14066,8 +14066,10 @@
 - Validation: PC, ARM, and RISC-V `asymm_crypto` wrapper builds passed. The
   unchanged Security CAP focused client was attempted over VPCD but produced
   no call rows before timing out. A retry reported a duplicate Security
-  package; `--test-only` then reported `TEST_NO_APPLET`. Elevated `lsusb`
-  showed only the two root hubs. No hardware flash or behavior pass is
+  package; `--test-only` then reported `TEST_NO_APPLET`. A GPPro inventory on
+  a fresh VPCD session showed only ISD immediately before another duplicate
+  package report. Elevated `lsusb` showed only the two root hubs. No hardware
+  flash or behavior pass is
   claimed. Builds emitted existing Rust and packed-member warnings; none
   originated in the changed native methods.
 - Result: The native changes compile for all targets. Their expected API

@@ -15,6 +15,10 @@
   evidence for or against either code change. Logs:
   `artifacts/results/deploy/ec-key-guards-vpcd-20261028/`,
   `...-retry/`, `...-reader00/`, and `...-testonly/`.
+- A GPPro inventory via a fresh VPCD session listed only ISD, but the following
+  deploy upload still reported the Security package already present. The
+  discrepancy remains unresolved. The allowed physical reader helper reports
+  zero attached Pico devices.
 - Next: restore a clean VPCD install state on the selected reader (check
   reader/endpoint mapping and package registry), rerun only `getK` and
   `copyDomainParametersFrom`, then validate on physical ARM when a Pico is
