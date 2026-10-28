@@ -38,10 +38,14 @@ out explicitly.
   metadata at startup and an explicit card-presence probe before the deploy
   runner. No physical token was enumerated for final-image retest; do that
   when a Pico is available.
-- [ ] Triage remaining physical 3.0.5 failures: one `ECKey.getK()` returned
-  zero instead of the uninitialized-key exception; null
-  `ECKey.copyDomainParametersFrom` raised a VM runtime exception; Crypto
-  produced 14 unexpected `6F00` and 14 card-runtime reason mismatches.
+- [ ] Triage remaining physical 3.0.5 failures: `NativeKey.getK()` now checks
+  EC key initialization and null `copyDomainParametersFrom` explicitly maps
+  to `CryptoException.ILLEGAL_VALUE`, but neither change has a completed API
+  result yet. PC/ARM/RISC-V builds pass; VPCD attempts uploaded the CAP but
+  then either timed out, encountered a duplicate Security package, or reported
+  `TEST_NO_APPLET`. No physical Pico is enumerated. Reproduce these two calls
+  before marking fixed. Crypto still has 14 unexpected `6F00` and 14
+  card-runtime reason mismatches.
 - [ ] Re-run the affected deploy areas after each fix on VPCD, then physical
   hardware after ARM and RISC-V builds pass. Source data:
   `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.

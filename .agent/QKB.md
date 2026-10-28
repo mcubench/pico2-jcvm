@@ -5741,6 +5741,30 @@ fix.
   those were harness setup failures, not VM results.
 
 
+## VPCD API 3.0.5 reruns can encounter stale or duplicate Security CAP state (2026-10-28)
+
+- **Symptom:** After a focused Security API run uploaded a CAP but the client
+  timed out before cleanup, a later deploy run reported
+  `UPLOAD_OTHER` with `Package with AID 4A43416C6754657374417069536563 is
+  already present on card`. A `--test-only` retry then reported
+  `TEST_NO_APPLET`. These occurred while the VPCD presence probe returned
+  `present=true`.
+- **Cause:** Not established. Possible stale package state, applet registry
+  state, or selecting a different Virtual PCD reader than the active emulator;
+  do not assume the VM rejected the tested method.
+- **Viable fix:** None yet. Before a rerun, confirm reader-to-endpoint mapping,
+  query package/app registry on the same reader, and uninstall/restore a clean
+  image before retrying. Keep each emulator image and log in a separate
+  artifact directory. The known-good marker validation setup uses
+  `Virtual PCD 00 01` at `127.0.0.1:35964`, dummy package metadata/cap-code,
+  and a successful presence probe.
+- **Validation:** Focused `getK`/`copyDomainParametersFrom` attempt uploaded
+  the Security CAP but timed out before producing call rows. A repeat hit the
+  duplicate-package warning; test-only had no applet. `lsusb` showed no
+  physical Pico at the time. Logs are under
+  `artifacts/results/deploy/ec-key-guards-vpcd-20261028*/`.
+
+
 ## JC305 redeclared Key method prefixes need per-interface token remapping (2026-10-28)
 
 - **Symptom:** API 3.0.5 Security `KeyPair(byte, short)` constructor calls

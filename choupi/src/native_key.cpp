@@ -567,12 +567,17 @@ void javacard_security_NativeKey_setK(jref_t receiver, jshort_t cofactor) {
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK, cofactor);
 }
 jshort_t javacard_security_NativeKey_getK(jref_t receiver) {
-  return nativeKey(receiver)->getField_Short(
+  auto key = nativeKey(receiver);
+  if (!javacard_security_NativeKey_isInitialized(receiver))
+    throwCryptoException(CryptoExceptionReason::UninitializedKey);
+  return key->getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK);
 }
 void javacard_security_NativeKey_copyDomainParametersFrom(jref_t receiver,
                                                            jref_t source) {
   auto destination = nativeKey(receiver);
+  if (source.isNullPointer())
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
   auto from = nativeKey(source);
   if (!ecFpType(static_cast<uint8_t>(destination->getField_Byte(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE))) ||

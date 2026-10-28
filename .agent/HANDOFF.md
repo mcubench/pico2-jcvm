@@ -1,3 +1,27 @@
+# Current continuation — EC key initialization and null argument handling (2026-10-28)
+
+- In `choupi/src/native_key.cpp`, `NativeKey.getK()` now throws
+  `CryptoException.UNINITIALIZED_KEY` unless the EC key is initialized, and
+  `copyDomainParametersFrom(null)` explicitly throws
+  `CryptoException.ILLEGAL_VALUE`. These changes are not yet validated by the
+  API client and remain uncommitted.
+- `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile
+  asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. No
+  physical board was enumerated by elevated `lsusb`, so this source was not
+  flashed.
+- Focused Security test attempt uploaded its CAP but timed out without call
+  rows. The retry found a duplicate Security package; a test-only attempt
+  returned `TEST_NO_APPLET`. This is unresolved VPCD package/reader state, not
+  evidence for or against either code change. Logs:
+  `artifacts/results/deploy/ec-key-guards-vpcd-20261028/`,
+  `...-retry/`, `...-reader00/`, and `...-testonly/`.
+- Next: restore a clean VPCD install state on the selected reader (check
+  reader/endpoint mapping and package registry), rerun only `getK` and
+  `copyDomainParametersFrom`, then validate on physical ARM when a Pico is
+  connected. Afterward continue the remaining 3.0.5 Crypto `6F00` and runtime
+  reason mismatches. Keep this source change separate from the committed
+  marker-interface fix.
+
 # Current continuation — fix JC305 key interfaces and null instanceof (2026-10-28)
 
 - Implemented the Security marker-interface fix in native `instanceof`: ROM
