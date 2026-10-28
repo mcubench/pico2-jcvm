@@ -5704,3 +5704,29 @@ fix.
   `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.
   Per-area counts and cleanup are in `.agent/HANDOFF.md`. No fix has been
   applied yet; do not claim these paths pass.
+
+
+## JC305 redeclared Key method prefixes need per-interface token remapping (2026-10-28)
+
+- **Symptom:** API 3.0.5 Security `KeyPair(byte, short)` constructor calls
+  returned `6F00`; tracing showed a later `IF_SCMPNE` stack underflow after
+  `INVOKEINTERFACE`. The constructor had invoked `PublicKey.getSize()`.
+- **Cause:** JC305's imported `PublicKey` (class token 3) redeclares the four
+  inherited `Key` methods, whose method order differs from the embedded API.
+  The JC305-to-embedded token translation `{1,3,2,0}` had only been applied to
+  `Key` class token 0. The call therefore reached `NativeKey.clearKey()`
+  instead of `getSize()S`, leaving a value on the operand stack. The same
+  redeclared prefix exists on `PrivateKey`, `SecretKey`, DSAPrivateKey,
+  DSAPublicKey, KoreanSEEDKey, DHPrivateKey, DHPublicKey, and RSA key
+  interfaces already handled by specialized maps. Do not apply the prefix map
+  to DSAKey, whose token 1 represents a DSA-specific operation.
+- **Viable fix:** Apply the common four-method translation to imported JC305
+  key interfaces that redeclare the `Key` prefix, before specialized full
+  interface maps. Current implementation is in
+  `choupi/src/jc_handlers/jc_cp.cpp`.
+- **Validation:** Unchanged API 3.0.5 Security CAP RSA-512 constructor failed
+  with `6F00` on current-source VPCD before the fix and passed afterward
+  (one selected call; 900 excluded). PC, ARM, and RISC-V asymm_crypto builds
+  passed. Identified physical D92 flash verification and finite startup monitor
+  passed, but the constructor itself has not yet been tested physically.
+  Commit: `a6bdb2f`.

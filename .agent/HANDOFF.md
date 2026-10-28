@@ -1,3 +1,29 @@
+# Current continuation — fix JC305 imported key interface dispatch (2026-10-28)
+
+- Fixed a `KeyPair(byte, short)` constructor `6F00` on API 3.0.5 Security CAP.
+  JC305 redeclares the `Key` method prefix across public/private/concrete key
+  interfaces; the native imported-interface mapper previously translated only
+  `Key` class token 0. Added tokens for the interfaces with the common prefix.
+- Focused upstream Security CAP VPCD regression: before fix, RSA-512
+  `KeyPair(byte, short)` returned `6F00`; after fix, 901 calls completed with
+  the selected constructor `OK` and 900 excluded. The traced broken call was
+  `PublicKey.getSize()` resolving to `NativeKey.clearKey()` and causing stack
+  underflow. Details are in `.agent/QKB.md`.
+- `./tools/build-pc --profile asymm_crypto`, ARM, and RISC-V wrapper builds
+  passed. Identified D92 (`D92E743D5F640C0F`) was flashed with verified image;
+  finite serial monitor passed `TEST:SUMMARY pass=1 fail=0`, with one watchdog
+  recovery marker followed by repeated passing summaries. Cycle log:
+  `artifacts/logs/cycle-choupi-20261028T204343Z.log`.
+- The attempted physical `/deploy` API invocation was not valid test evidence:
+  it used the JCAlgTest report client rather than the API-test client. Security
+  CAP install and cleanup did pass; no physical KeyPair result is claimed. The
+  focused constructor still needs a physical rerun with the correct API client.
+- Implementation and progress commit: `a6bdb2f`. The implementation only
+  touched native dispatch; user's other dirty files remain untouched.
+- Next: obtain/use the API 3.0.5 deploy client and run the focused physical
+  KeyPair constructor; then rerun Security and inspect whether selected
+  `genKeyPair` and marker-interface failures share the token-map issue.
+
 # Current continuation — debug API 3.0.5 deploy failures (2026-10-28)
 
 - The physical API 3.0.5 `/deploy` Core, Security, and Crypto areas completed on
