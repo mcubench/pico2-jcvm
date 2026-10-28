@@ -19,6 +19,10 @@
   deploy upload still reported the Security package already present. The
   discrepancy remains unresolved. The allowed physical reader helper reports
   zero attached Pico devices.
+- A direct GPPro install of `AlgTestApiSecurity_305.cap` on the fresh VPCD
+  session printed `CAP loaded` then exited with status 1 before reporting its
+  INSTALL stage. Do not treat LOAD as installed; runner cleanup/registry state
+  still needs diagnosis.
 - Next: restore a clean VPCD install state on the selected reader (check
   reader/endpoint mapping and package registry), rerun only `getK` and
   `copyDomainParametersFrom`, then validate on physical ARM when a Pico is

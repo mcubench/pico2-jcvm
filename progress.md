@@ -14082,3 +14082,24 @@
   `artifacts/results/deploy/ec-key-guards-vpcd-20261028-retry/`,
   `artifacts/results/deploy/ec-key-guards-vpcd-20261028-reader00/`,
   `artifacts/results/deploy/ec-key-guards-vpcd-20261028-testonly/`.
+
+## 2026-10-28 — Inspect VPCD Security package state (3 minutes)
+
+- Step/experiment: `ec-key-vpcd-package-state-diagnosis`
+- When: '2026-10-28 22:50 UTC' - '2026-10-28 22:53 UTC'
+- Change: No source change. Queried GPPro inventory and attempted a direct
+  Security CAP install to isolate the VPCD duplicate-package outcome.
+- Validation: A fresh VPCD presence probe passed; `gp --list` showed only ISD.
+  A later deploy upload still reported the Security package already present.
+  A direct `gp --install AlgTestApiSecurity_305.cap` printed `CAP loaded` and
+  exited status 1 before providing an INSTALL result. No physical Pico was
+  attached.
+- Result: VPCD reader/card state is inconsistent across commands or sessions;
+  successful CAP LOAD does not establish applet installation. The native
+  `getK` and null-copy behavior remains unverified.
+- Decision: Continue offline source review; before more deploy calls, identify
+  the exact VPCD reader and verify package and applet registry using the same
+  GPPro connection.
+- Commit: recorded in the following metadata commit.
+- Artifacts/logs: `artifacts/results/deploy/ec-key-guards-vpcd-20261028-inventory/`;
+  `artifacts/results/deploy/ec-key-getk-vpcd-direct-20261028/`.

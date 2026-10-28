@@ -5767,7 +5767,10 @@ fix.
   physical Pico at the time. Logs are under
   `artifacts/results/deploy/ec-key-guards-vpcd-20261028*/`. `pcsc_scan -r`
   showed two Virtual PCD readers; the allowed physical helper found zero Pico
-  devices.
+  devices. A GPPro inventory against a fresh `Virtual PCD 00 01` session listed
+  only ISD. A direct GPPro Security CAP install later printed `CAP loaded` then
+  exited 1 before reporting INSTALL status. Do not infer successful install
+  from the LOAD message alone.
 
 
 ## JC305 redeclared Key method prefixes need per-interface token remapping (2026-10-28)
