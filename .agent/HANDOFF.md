@@ -19,6 +19,7 @@
   Other major errors are `SecretKey`/`PrivateKey`/`PublicKey` marker probes
   returning type IDs (e.g. `0003`) instead of boolean, and 14 crypto-path
   `6F00` cases. Details are in the 3.0.5 CSV and the new QKB entry.
+- Baseline/status commit: `38caf7a`.
 - Next: reproduce a focused Security KeyPair constructor on current PC/VPCD,
   trace the API invocation/native dispatch, and fix the smallest native VM
   defect. Keep CAPs unchanged. Build PC and both wrapper architectures after

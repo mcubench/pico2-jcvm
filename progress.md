@@ -13972,6 +13972,5 @@
 - Decision: Reproduce a focused KeyPair constructor with current-source
   VPCD, then inspect native API dispatch and interface return semantics.
   Hardware firmware changes remain gated by both architecture builds.
-- Commit: documentation baseline commit; exact SHA recorded in the following
-  continuity metadata update.
+- Commit: `38caf7a` (continuity metadata is recorded in the following commit).
 - Artifacts/logs: `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.
