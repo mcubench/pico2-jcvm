@@ -13974,3 +13974,14 @@
   Hardware firmware changes remain gated by both architecture builds.
 - Commit: `38caf7a` (continuity metadata is recorded in the following commit).
 - Artifacts/logs: `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.
+
+## 2026-10-28 — Fix imported key-interface method mapping 14 minutes
+
+- Step/experiment: `jc305-key-interface-method-token-remap`
+- When: '2026-10-28 20:35 UTC' - '2026-10-28 20:49 UTC'
+- Change: Expanded the JC305 imported-interface method-token remap in `choupi/src/jc_handlers/jc_cp.cpp` to cover the common `Key` method prefix redeclared by `PublicKey`, `PrivateKey`, and concrete key interfaces. This prevents `invokeinterface` from dispatching `getSize()` to the unrelated embedded `clearKey()` slot and leaving the operand stack unbalanced.
+- Validation: Reproduced the unchanged API 3.0.5 Security CAP RSA-512 `KeyPair(byte,short)` failure on VPCD before the change (`SW=6F00`); after the change, the focused run completed 901 calls with 900 `SKIPPED_BY_USER` and the constructor `OK`. `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. Flashed identified physical D92 (`D92E743D5F640C0F`) using `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --serial D92E743D5F640C0F`; flash verify passed and finite serial monitor ended `TEST:SUMMARY pass=1 fail=0`. A physical deploy runner attempt installed and removed the Security CAP but was invalid as API evidence because the configured client was the JCAlgTest report client; no physical constructor result is claimed.
+- Result: The imported key-interface token mapping caused the stack imbalance responsible for the constructor `6F00`. One watchdog recovery marker appeared during physical startup, followed by repeated passing runtime summaries. Physical API constructor retest remains open pending the correct API test client.
+- Decision: Keep the native interface remap. Retest the full Security deploy set physically when its API client is available; continue triaging marker-interface and remaining API 3.0.5 findings.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/deploy/keypair-constructor-vpcd-20261028/rsa512-after-map-fix.csv`; `artifacts/logs/cycle-choupi-20261028T204343Z.log`; invalid client attempt `artifacts/results/deploy/keypair-constructor-physical-20261028/security.csv` (UPLOAD/CLEANUP only).

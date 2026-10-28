@@ -8,13 +8,19 @@ out explicitly.
 
 ### Fresh API 3.0.5 physical failures on combined asymmetric profile (2026-10-28)
 
-- [ ] Reproduce and fix Security `KeyPair(byte, short)` calls returning
+- [x] Reproduce and fix Security `KeyPair(byte, short)` calls returning
   `6F00` for RSA, RSA-CRT, and EC_FP constructors. The physical 3.0.5 run
   returned this for every tested constructor size; selected `genKeyPair`
   calls also returned `6F00`, despite separate direct RSA-3072 and
-  RSA-CRT-3072 generation vectors passing. Start with a focused current-source
-  VPCD reproduction and inspect constructor/native dispatch before changing
-  arithmetic.
+  RSA-CRT-3072 generation vectors passing. Root cause was an incomplete
+  imported-interface method-token map: JC305 redeclares the `Key` method
+  prefix on `PublicKey`, `PrivateKey`, and concrete key subinterfaces, but
+  only token 0 (`Key`) had been translated. Expanded that mapping in native
+  VM dispatch; focused upstream Security CAP VPCD constructor test now passes.
+  ARM/RISC-V builds and physical flash/startup pass. Physical constructor
+  retest remains outstanding because the deploy API test client is unavailable
+  in this checkout; the attempted runner invocation used the wrong client and
+  was not counted as test evidence.
 - [ ] Correct native Java Card marker-interface invocation semantics:
   Security tests for `SecretKey`, `PrivateKey`, and `PublicKey` returned
   native key type IDs (`0003`, `000f`, `0005`, etc.) where the deploy client

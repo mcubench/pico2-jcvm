@@ -361,15 +361,19 @@ uint8_t remap_embedded_virtual_method_token(
 uint8_t remap_imported_interface_method_token(
     const jc_cap_package_info &package_info, const uint8_t class_token,
     const uint8_t method_token) noexcept {
-  // The JC305 Key interface orders methods as clearKey, getSize, getType,
-  // isInitialized. The embedded API order is isInitialized, clearKey,
-  // getType, getSize. Keep this scoped to the Key interface (class token 0)
-  // because other security interfaces have their own token maps below.
+  // JC305 redeclares the inherited Key methods on Key's public/private and
+  // concrete key subinterfaces, in the order clearKey, getSize, getType,
+  // isInitialized. The embedded API's interface order is isInitialized,
+  // clearKey, getType, getSize. Apply this common prefix map to each
+  // interface that declares that prefix; interfaces with additional methods
+  // have their own full maps below.
   static constexpr uint8_t security_key_interface_methods[] = {1, 3, 2, 0};
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&
-      class_token == 0 &&
+      (class_token == 0 || class_token == 2 || class_token == 3 ||
+       class_token == 4 || class_token == 5 || class_token == 6 ||
+       class_token == 24 || class_token == 28 || class_token == 29) &&
       method_token < sizeof(security_key_interface_methods)) {
     return security_key_interface_methods[method_token];
   }
