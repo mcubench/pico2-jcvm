@@ -23,10 +23,10 @@
   functional, but exact upstream support-report-to-manifest parity remains
   blocked by those mislabeled CAP rows. TODO and QKB record the limitation.
 - The host-only `tools/JCAlgTestApduProbe.java` now has focused DES and
-  RSA-3072 support query flags. Current tool changes are not yet committed.
+  RSA-3072 support query flags. Comparator/report documentation and probe
+  changes were committed as `4129f24`.
   Earlier unrelated user changes listed by `git status` must be preserved.
-- Next: finish the logical comparator/report documentation commit (progress
-  entry included), then continue the open physical `/deploy` coverage and
+- Next: continue the open physical `/deploy` coverage and
   Windows validation. No firmware source change was made during this report
   investigation; the currently flashed combined profile remains the image
   from the 2026-10-28 D92 cycle.
