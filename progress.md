@@ -14024,7 +14024,7 @@
 - Decision: Retry the final-source focused Security marker tests when a Pico is
   enumerated; then continue API 3.0.5 `ECKey.getK()`, null
   `copyDomainParametersFrom`, and Crypto failure triage.
-- Commit: recorded in the following metadata commit.
+- Commit: `19b6d6b`.
 - Artifacts/logs: VPCD
   `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware4/`;
   final attempted VPCD

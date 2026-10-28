@@ -23,6 +23,7 @@
   evidence; retry final-source VPCD and physical marker tests when available.
 - Build artifacts: `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`, `build/choupi-pc/choupi`.
+- Source and progress commit: `19b6d6b` (`Fix JC305 native key marker instanceof checks`).
 - Next: restore an identified Pico in host USB, run the exact focused Security
   marker test on final flashed image, and resolve the VPCD emulator setup if
   physical hardware remains unavailable. Then continue `ECKey.getK()`, null
