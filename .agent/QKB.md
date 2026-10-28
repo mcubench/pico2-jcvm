@@ -5723,16 +5723,22 @@ fix.
   emits stable names for the JC305 source interface tokens. `instanceof(null)`
   now returns false and pushes its result as a byte boolean. Keep this logic
   in native VM code and do not modify API sources or CAPs.
-- **Validation:** Earlier focused VPCD Security run on the type-aware mapping
-  completed 901 calls: 11 supported marker checks `OK`, eight unsupported
-  cases `UNSUPPORTED_PER_SPEC`, 882 intentionally filtered, cleanup stages
+- **Validation:** Final-source focused VPCD Security run completed 901 calls:
+  11 supported marker checks `OK`, eight unsupported cases
+  `UNSUPPORTED_PER_SPEC`, 882 intentionally filtered; upload and cleanup
   passed. Artifact:
-  `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware4/`.
-  The final source with the byte-stack correction passes PC, ARM, and RISC-V
-  asymm_crypto builds. A new VPCD attempt failed before applet selection
-  because its emulator session was not established; no physical board was
-  enumerated after the cycle's BOOTSEL request timed out. Re-run the focused
-  test on the final image when hardware is available.
+  `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware10/`.
+  PC, ARM, and RISC-V asymm_crypto builds passed. Physical D92 flash and finite
+  monitor passed on the immediately prior source (before the null-byte stack
+  correction); final source was not flashed because no Pico enumerated after
+  the subsequent cycle's BOOTSEL request timed out.
+- **VPCD setup note:** The host emulator invocation must include
+  `--applet-aid`, `--package-id 63`, the contiguous dummy `--cap-code`, and
+  `--rom-mask`. Start the empty card without `--install`, wait briefly, then
+  run `VpcdPresenceProbe` against the matching reader (`Virtual PCD 00 01` is
+  port `35964`) with `--require-present` before starting the deploy client.
+  Omitting cap code or the presence probe led to `TEST_NO_APPLET`/probe timeout;
+  those were harness setup failures, not VM results.
 
 
 ## JC305 redeclared Key method prefixes need per-interface token remapping (2026-10-28)

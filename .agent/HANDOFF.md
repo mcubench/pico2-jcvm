@@ -5,10 +5,10 @@
   interface checks now refine assignability from the actual native key type.
   Null `instanceof` returns false and is pushed with the Java Card byte stack
   operation. No API sources or CAP files changed.
-- Focused prior VPCD validation of the type-aware mapping passed: 11 supported
+- Final-source focused VPCD Security run completed 901 calls: 11 supported
   marker calls `OK`, eight unsupported cases `UNSUPPORTED_PER_SPEC`, 882
-  filtered calls, and cleanup passed. Evidence:
-  `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware4/`.
+  filtered calls, and upload/cleanup passed. Evidence:
+  `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware10/`.
 - Final-source `./tools/build-pc --profile asymm_crypto`,
   `./tools/build arm --profile asymm_crypto`, and
   `./tools/build riscv --profile asymm_crypto` passed. An earlier D92 cycle
@@ -16,17 +16,16 @@
   after the byte-stack correction the new cycle's CDC BOOTSEL request timed
   out. `lsusb` then showed only root hubs, so the cycle was stopped; no final
   source image flash or physical marker retest is claimed.
-- New VPCD attempt after rebuilding PC exited before applet selection: first
-  invocation had a missing `--applet-aid`; the corrected install attempt then
-  reported `TEST_NO_APPLET`, with no `VPCD:CONNECTED` in emulator log. This is
-  not a code result. Earlier passing VPCD artifact remains the behavior
-  evidence; retry final-source VPCD and physical marker tests when available.
+- VPCD setup detail: emulator startup needs `--applet-aid`, `--package-id 63`,
+  a dummy `--cap-code`, and `--rom-mask`, even for an empty card. Start without
+  `--install`, wait, then require a successful `VpcdPresenceProbe` before the
+  deploy client. Reader `Virtual PCD 00 01` uses endpoint `127.0.0.1:35964`.
+  The corrected final-source marker test passed using this sequence.
 - Build artifacts: `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`, `build/choupi-pc/choupi`.
 - Source and progress commit: `19b6d6b` (`Fix JC305 native key marker instanceof checks`).
-- Next: restore an identified Pico in host USB, run the exact focused Security
-  marker test on final flashed image, and resolve the VPCD emulator setup if
-  physical hardware remains unavailable. Then continue `ECKey.getK()`, null
+- Next: restore an identified Pico in host USB and run the focused Security
+  marker test on the final flashed image. Then continue `ECKey.getK()`, null
   `copyDomainParametersFrom`, and remaining Crypto 3.0.5 failure triage.
 
 ## Previous continuation — fix JC305 imported key interface dispatch (2026-10-28)

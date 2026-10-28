@@ -14031,3 +14031,26 @@
   `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware6/`;
   physical cycles `artifacts/logs/cycle-choupi-20261028T220129Z.log` and
   `artifacts/logs/cycle-choupi-20261028T220351Z.log`.
+
+## 2026-10-28 — Validate final marker fix over VPCD (7 minutes)
+
+- Step/experiment: `jc305-marker-instanceof-final-vpcd`
+- When: '2026-10-28 22:27 UTC' - '2026-10-28 22:34 UTC'
+- Change: No source change. Re-ran the unchanged API 3.0.5 Security CAP over
+  VPCD against the final-source PC emulator after correcting emulator startup
+  and reader-presence sequencing.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd`
+  passed for `Virtual PCD 00 01`, confirming GPPro load/install and listing.
+  The focused deploy Security run then completed all 901 calls: 11 supported
+  marker checks `OK`, eight unsupported cases `UNSUPPORTED_PER_SPEC`, 882
+  filtered, and CAP upload/cleanup passed. The final physical image was not
+  tested because `lsusb` showed no attached Pico after the BOOTSEL timeout.
+- Result: Final-source marker behavior is validated on VPCD; physical behavior
+  after the byte-stack correction remains open. The matching endpoint is
+  `127.0.0.1:35964` for `Virtual PCD 00 01`; emulator setup also needs a dummy
+  CAP code and a successful presence probe before the deploy runner.
+- Decision: Test the final image physically when a Pico is reconnected, then
+  continue the remaining API 3.0.5 Security and Crypto failures.
+- Commit: recorded in the following metadata commit.
+- Artifacts/logs: `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware10/`;
+  `artifacts/results/gppro-empty-install-vpcd-20261028T222954Z/`.

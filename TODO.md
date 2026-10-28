@@ -33,9 +33,11 @@ out explicitly.
   pushed as a Java Card boolean byte. Unchanged Security CAP VPCD run:
   11 supported marker cases `OK`, eight unsupported cases
   `UNSUPPORTED_PER_SPEC`, zero failed calls. PC/ARM/RISC-V builds pass. A
-  later VPCD rerun after the byte-stack correction could not establish its
-  emulator session, and no physical token was enumerated for retest; retest
-  the final image on hardware when a Pico is available.
+  final-source VPCD rerun passed all 901 calls with the same 11 supported and
+  eight unsupported marker outcomes. The emulator requires dummy package
+  metadata at startup and an explicit card-presence probe before the deploy
+  runner. No physical token was enumerated for final-image retest; do that
+  when a Pico is available.
 - [ ] Triage remaining physical 3.0.5 failures: one `ECKey.getK()` returned
   zero instead of the uninitialized-key exception; null
   `ECKey.copyDomainParametersFrom` raised a VM runtime exception; Crypto
