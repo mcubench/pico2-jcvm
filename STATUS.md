@@ -28,6 +28,17 @@ card registry is empty.
 
 ## Verified
 
+- **Physical API 3.0.5 deploy baseline on combined `asymm_crypto` (2026-10-28):**
+  D92 completed unchanged Core/Security/Crypto CAP scenarios and all temporary
+  applets/packages were cleaned up. Core: 291 calls, 271 OK, 15 expected
+  unsupported, four optional Ext scenarios unavailable, one existing
+  `Applet.deselect()` wrong result. Security: 901 calls, 348 OK, 504 expected
+  unsupported, 34 `6F00`, 12 wrong results, one runtime exception, two
+  skipped. Crypto: 466 calls, 275 OK, 163 expected unsupported, 14 `6F00`,
+  14 exception-reason mismatches. Constructor `6F00` and marker-interface
+  wrong values need native VM diagnosis; this run is a baseline, not a passing
+  acceptance result. CSV and issue details are in TODO and HANDOFF.
+
 - **Physical `asymm_crypto` crypto and support-report validation
   (2026-10-28):** Both
   architecture wrapper builds passed, and the ARM image was flashed and

@@ -6,6 +6,36 @@ out explicitly.
 
 ## Current prioritized backlog — 2026-10-20
 
+### Fresh API 3.0.5 physical failures on combined asymmetric profile (2026-10-28)
+
+- [ ] Reproduce and fix Security `KeyPair(byte, short)` calls returning
+  `6F00` for RSA, RSA-CRT, and EC_FP constructors. The physical 3.0.5 run
+  returned this for every tested constructor size; selected `genKeyPair`
+  calls also returned `6F00`, despite separate direct RSA-3072 and
+  RSA-CRT-3072 generation vectors passing. Start with a focused current-source
+  VPCD reproduction and inspect constructor/native dispatch before changing
+  arithmetic.
+- [ ] Correct native Java Card marker-interface invocation semantics:
+  Security tests for `SecretKey`, `PrivateKey`, and `PublicKey` returned
+  native key type IDs (`0003`, `000f`, `0005`, etc.) where the deploy client
+  expects boolean. Inspect invokeinterface/return-value handling; do not
+  change API or CAP sources.
+- [ ] Triage remaining physical 3.0.5 failures: one `ECKey.getK()` returned
+  zero instead of the uninitialized-key exception; null
+  `ECKey.copyDomainParametersFrom` raised a VM runtime exception; Crypto
+  produced 14 unexpected `6F00` and 14 card-runtime reason mismatches.
+- [ ] Re-run the affected deploy areas after each fix on VPCD, then physical
+  hardware after ARM and RISC-V builds pass. Source data:
+  `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.
+
+The physical 3.0.5 sweep itself completed Core (291: 271 OK, 15 expected
+unsupported, four optional Ext scenarios unavailable, one known
+`Applet.deselect()` wrong result), Security (901: 348 OK, 504 expected
+unsupported, 34 `6F00`, 12 wrong results, one runtime exception, two skipped),
+and Crypto (466: 275 OK, 163 expected unsupported, 14 `6F00`, 14 card-runtime
+reason mismatches). Every CAP cleanup succeeded. This is a baseline of current
+physical behavior, not a passing acceptance run.
+
 The checklist and status notes below contain historical snapshots and can be
 stale. This section is the current source of truth for open work. Missing
 algorithms and JCAlgTest `NO_SUCH_ALGORITHM` results are expected unless CHOUPI

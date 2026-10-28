@@ -1,4 +1,30 @@
-# Current continuation — complete physical asymm_crypto support report (2026-10-28)
+# Current continuation — debug API 3.0.5 deploy failures (2026-10-28)
+
+- The physical API 3.0.5 `/deploy` Core, Security, and Crypto areas completed on
+  D92 (`D92E743D5F640C0F`) using the current combined `asymm_crypto` image and
+  unchanged upstream CAPs. Results are in
+  `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.
+  Core: 291 calls (271 OK, 15 `UNSUPPORTED_PER_SPEC`, four optional Ext calls
+  unavailable after the Ext CAP's expected `6A88` install refusal, one known
+  `Applet.deselect()` wrong result). Security: 901 calls (348 OK, 504 expected
+  unsupported, 34 `6F00`, 12 wrong results, one runtime exception, two skipped).
+  Crypto: 466 calls (275 OK, 163 expected unsupported, 14 card-runtime reason
+  mismatches, 14 `6F00`). GPPro cleanup succeeded for every area; final listing
+  retained only the original JCAlgTest and F012 packages plus ISD.
+- Highest-priority fresh defect: every 3.0.5 `KeyPair(byte, short)` constructor
+  probe (RSA, RSA-CRT, EC_FP at all tested sizes) returns `6F00`; 7 selected
+  `genKeyPair` probes also return `6F00`. This conflicts with prior direct
+  hardware generation vectors passing for selected 3072-bit RSA/RSA-CRT, so
+  isolate the constructor path rather than assuming the crypto engines fail.
+  Other major errors are `SecretKey`/`PrivateKey`/`PublicKey` marker probes
+  returning type IDs (e.g. `0003`) instead of boolean, and 14 crypto-path
+  `6F00` cases. Details are in the 3.0.5 CSV and the new QKB entry.
+- Next: reproduce a focused Security KeyPair constructor on current PC/VPCD,
+  trace the API invocation/native dispatch, and fix the smallest native VM
+  defect. Keep CAPs unchanged. Build PC and both wrapper architectures after
+  source changes; physical flash remains gated by both wrapper builds.
+
+# Previous continuation — complete physical asymm_crypto support report (2026-10-28)
 
 - D92 (`D92E743D5F640C0F`) ran the unchanged upstream JCAlgTest 1.8.2
   `ALG_SUPPORT_EXTENDED` report to completion. The CSV at

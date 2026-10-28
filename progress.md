@@ -13949,3 +13949,29 @@
 - Decision: Keep the upstream CAP unchanged and continue with `/deploy` physical acceptance, Windows validation, and RSA private-operation hardening. Track the two rows as an upstream test limitation, not supported manifest parity.
 - Commit: `4129f24` (metadata correction is in the following commit).
 - Artifacts/logs: `artifacts/results/jcalgtest/asymm_crypto_D92_complete_20261028/`; `artifacts/logs/asymm-crypto-pcsc-20261028T191018Z.log`; comparator console output shows `ROWS matched=4525` and `DECLARED_SUPPORT expected=145 actual=143 missing=2`.
+## 2026-10-28 — Baseline physical API 3.0.5 failure clusters (12 minutes)
+
+- Step/experiment: `asymm-crypto-physical-deploy-305-baseline`
+- When: '2026-10-28 18:24 UTC' - '2026-10-28 18:36 UTC'
+- Change: No firmware or upstream CAP changes. Recorded the complete physical
+  Core, Security, and Crypto API 3.0.5 results in TODO, QKB, STATUS, and the
+  current handoff to prioritize native VM diagnosis.
+- Validation: Physical D92 run used the unchanged deploy CAPs and completed
+  all three areas. Core: 291 calls (271 OK, 15 expected unsupported, four
+  optional Ext calls unavailable, one `Applet.deselect()` wrong result).
+  Security: 901 (348 OK, 504 expected unsupported, 34 `6F00`, 12 wrong
+  results, one runtime exception, two skipped). Crypto: 466 (275 OK, 163
+  expected unsupported, 14 `6F00`, 14 unexpected card-runtime reasons).
+  GPPro cleanup succeeded for every area; final listing retained existing
+  packages only. No source build or flash was needed for this recording step.
+- Result: Highest-priority failures are all tested `KeyPair(byte, short)`
+  constructors returning `6F00`, native key type IDs returned by marker
+  interface probes instead of booleans, plus related API exceptions. Separate
+  direct RSA-3072 and RSA-CRT-3072 physical vectors had passed, so the
+  constructor failure should first be traced through dispatch/object setup.
+- Decision: Reproduce a focused KeyPair constructor with current-source
+  VPCD, then inspect native API dispatch and interface return semantics.
+  Hardware firmware changes remain gated by both architecture builds.
+- Commit: documentation baseline commit; exact SHA recorded in the following
+  continuity metadata update.
+- Artifacts/logs: `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.

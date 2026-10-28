@@ -5681,3 +5681,26 @@ fix.
   its RSA-3072 and RSA-CRT-3072 generation cases took 138.521 s and 110.769 s.
   ARM/RISC-V wrapper builds, finite serial monitor, and PC/VPCD 99/99 vector
   suite passed. Logs are recorded in `.agent/HANDOFF.md`.
+# Physical API 3.0.5 KeyPair and marker-interface failures (2026-10-28)
+
+- **Symptom:** On physical combined `asymm_crypto` firmware, the unchanged
+  Security 3.0.5 CAP got `6F00` from every `KeyPair(byte, short)` constructor
+  probe (RSA, RSA-CRT, and EC_FP across tested sizes). Seven selected
+  `genKeyPair` probes also got `6F00`. The same run's marker-interface checks
+  for `SecretKey`, `PrivateKey`, and `PublicKey` returned native key type IDs
+  rather than booleans. One null EC parameter-copy probe had an uncaught VM
+  exception. Crypto had additional `6F00` and exception-reason mismatches.
+- **Cause:** Not yet established. Direct physical RSA-3072 and RSA-CRT-3072
+  vectors passed, so constructor dispatch/object setup needs isolation before
+  attributing this to cryptographic arithmetic. Marker results suggest a
+  native return-type or `invokeinterface` contract issue, but this is only a
+  hypothesis pending trace/reproduction.
+- **Viable fix:** Not established. Reproduce on current PC/VPCD with the
+  unchanged deploy CAP and isolate one constructor first. Trace API native
+  dispatch and interpreter return handling; preserve all upstream CAPs and
+  implement behavior only in native VM code.
+- **Validation:** Physical D92 API 3.0.5 Core/Security/Crypto sweep completed
+  in 12 minutes, CSV
+  `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.
+  Per-area counts and cleanup are in `.agent/HANDOFF.md`. No fix has been
+  applied yet; do not claim these paths pass.
