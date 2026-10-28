@@ -24,6 +24,7 @@
 - Build artifacts: `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`, `build/choupi-pc/choupi`.
 - Source and progress commit: `19b6d6b` (`Fix JC305 native key marker instanceof checks`).
+- Final VPCD validation/progress commit: `c9ab8c8` (`Record final marker VPCD validation`).
 - Next: restore an identified Pico in host USB and run the focused Security
   marker test on the final flashed image. Then continue `ECKey.getK()`, null
   `copyDomainParametersFrom`, and remaining Crypto 3.0.5 failure triage.

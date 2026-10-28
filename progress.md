@@ -14051,6 +14051,6 @@
   CAP code and a successful presence probe before the deploy runner.
 - Decision: Test the final image physically when a Pico is reconnected, then
   continue the remaining API 3.0.5 Security and Crypto failures.
-- Commit: recorded in the following metadata commit.
+- Commit: `c9ab8c8`.
 - Artifacts/logs: `artifacts/results/deploy/marker-interface-vpcd-20261028-type-aware10/`;
   `artifacts/results/gppro-empty-install-vpcd-20261028T222954Z/`.
