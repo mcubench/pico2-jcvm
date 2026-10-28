@@ -43,6 +43,11 @@ extern "C" void choupi_watchdog_update(void);
 extern "C" uint32_t choupi_time_us_32(void);
 extern "C" void choupi_install_trace(uint32_t pc, uint8_t opcode,
                                       uint32_t instruction_count);
+static volatile uint32_t applet_execution_progress_us = 0;
+
+extern "C" void choupi_vm_native_progress(void) {
+  applet_execution_progress_us = choupi_time_us_32();
+}
 #endif
 
 #ifdef DEBUG
@@ -371,7 +376,8 @@ uint16_t Interpretor::run() noexcept {
   }
 #endif
 #ifndef PC_VERSION
-  const uint32_t install_start_time_us = choupi_time_us_32();
+  const uint32_t execution_start_time_us = choupi_time_us_32();
+  applet_execution_progress_us = execution_start_time_us;
   const uint32_t applet_execution_budget_us =
       this->installMethodEntry ? 5000000u : 15000000u;
 #endif
@@ -395,12 +401,12 @@ uint16_t Interpretor::run() noexcept {
           static_cast<uint32_t>(reinterpret_cast<uintptr_t>(instruction_pc)),
           bytecode, instruction_count);
     }
-    // This synchronous entry is handled inside the USB CCID callback. Keep a
-    // hard wall-clock bound so a bad CAP loop cannot starve USB/PCSC; allow
-    // normal applet calls more time than installation for finite crypto
-    // performance workloads (for example JCAlgTest's 50-call doFinal tests).
+    // Bound applet bytecode that makes no forward progress, while allowing
+    // native crypto operations to run longer when their RNG callback reports
+    // progress (it also services the watchdog and CCID time extensions).
     if (this->startsAtMethodOffset && (instruction_count & 0xffu) == 0 &&
-        static_cast<uint32_t>(choupi_time_us_32() - install_start_time_us) >=
+        static_cast<uint32_t>(choupi_time_us_32() -
+                              applet_execution_progress_us) >=
             applet_execution_budget_us) {
       this->last_exception_id = Exceptions::RuntimeException;
       this->last_exception_opcode = bytecode;

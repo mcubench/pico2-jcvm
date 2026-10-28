@@ -4,9 +4,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 require_host_usb_access
 require_command timeout
-[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-pcsc '<exact PC/SC reader name>'"
+[[ $# -eq 1 || $# -eq 2 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-pcsc '<exact PC/SC reader name>' [label-substring]"
 
 reader_name="$1"
+label_filter="${2:-}"
 repo_log_dir="${repo_root}/artifacts/logs"
 build_dir="${repo_root}/build/symm-crypto-probe"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
@@ -64,30 +65,59 @@ if grep -Fq "APP: ${applet_aid} " "${list}" || grep -Fq "PKG: ${package_aid} " "
   die "probe package AID is already present; refusing to replace existing data"
 fi
 
-python3 - "${repo_root}" "${vectors}" <<'PY'
+python3 - "${repo_root}" "${vectors}" "${label_filter}" <<'PY'
 import importlib.util
 import sys
 from pathlib import Path
 
 root, output = Path(sys.argv[1]), Path(sys.argv[2])
+label_filter = sys.argv[3]
 source = root / "tools/tests/test_asymm_crypto_vpcd.py"
 spec = importlib.util.spec_from_file_location("asymm_vectors", source)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 vectors = [case for case in module.vectors()
            if case[2].startswith(("RSA SHA1", "RSA SHA-",
-                                  "EC prime-field private key"))]
+                                  "EC prime-field private key",
+                                  "EC key agreement", "EC DH ", "EC DHC ",
+                                  "ECDSA algorithm=", "EC KeyPair generation"))
+           or (case[2].startswith(("RSA ", "RSA-CRT "))
+               and "generation" in case[2])]
 ec_vectors = sum(case[2].startswith("EC prime-field private key")
                  for case in vectors)
-rsa_vectors = len(vectors) - ec_vectors
+ecdsa_vectors = sum("ECDSA algorithm=" in case[2] for case in vectors)
+agreement_vectors = sum(
+    case[2].startswith(("EC key agreement", "EC DH ", "EC DHC "))
+    for case in vectors)
+ec_keypair_vectors = sum("EC KeyPair generation" in case[2] for case in vectors)
+rsa_keypair_vectors = sum(
+    case[2].startswith(("RSA ", "RSA-CRT ")) and "generation" in case[2]
+    for case in vectors)
+rsa_vectors = sum(case[2].startswith(("RSA SHA1", "RSA SHA-")) for case in vectors)
 with output.open("w", encoding="ascii") as stream:
     for command, expected, label in vectors:
         stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
-if rsa_vectors != 50 or ec_vectors != 3:
+if (rsa_vectors, ec_vectors, ecdsa_vectors, agreement_vectors,
+        ec_keypair_vectors, rsa_keypair_vectors) != (50, 3, 5, 8, 7, 6):
     raise SystemExit(
-        "expected 50 RSA signature and 3 EC key-storage vectors, "
-        f"got {rsa_vectors} RSA and {ec_vectors} EC")
-print(f"VECTORS:PASS rsa={rsa_vectors} ec={ec_vectors} total={len(vectors)} file={output}")
+        "expected 50 RSA signature, 3 EC key-storage, 5 ECDSA, "
+        "8 key-agreement, 7 EC key-pair, and 6 RSA key-pair vectors; got "
+        f"{rsa_vectors} RSA, {ec_vectors} EC storage, {ecdsa_vectors} ECDSA, "
+        f"{agreement_vectors} agreement, {ec_keypair_vectors} EC key-pair, "
+        f"and {rsa_keypair_vectors} RSA key-pair")
+print("VECTORS:PASS "
+      f"rsa={rsa_vectors} ec_storage={ec_vectors} ecdsa={ecdsa_vectors} "
+      f"agreement={agreement_vectors} ec_keypair={ec_keypair_vectors} "
+      f"rsa_keypair={rsa_keypair_vectors} "
+      f"total={len(vectors)} file={output}")
+if label_filter:
+    vectors = [case for case in vectors if label_filter in case[2]]
+    if not vectors:
+        raise SystemExit(f"no vectors match label substring: {label_filter!r}")
+    with output.open("w", encoding="ascii") as stream:
+        for command, expected, label in vectors:
+            stream.write(f"{label}\t{command.hex()}\t{expected.hex()}\n")
+    print(f"VECTORS:FILTERED count={len(vectors)} label={label_filter!r}")
 PY
 
 installed_here=1
@@ -96,6 +126,9 @@ timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${cap}" \
   die "GPPro install failed; see ${build_dir}/physical-install-${timestamp}.log"
 "${repo_root}/tools/env" javac -d "${client_build}" \
   "${repo_root}/tools/tests/SymmCryptoPcscProbe.java"
-timeout --signal=TERM --kill-after=5s 180s "${repo_root}/tools/env" java \
+# RSA-3072 key generation can take over two minutes on the RP2350 (RSA-CRT
+# varies by several minutes depending on random prime candidates). CCID time
+# extensions keep a long APDU alive, so keep a finite but generous host bound.
+timeout --signal=TERM --kill-after=5s 600s "${repo_root}/tools/env" java \
   -cp "${client_build}" SymmCryptoPcscProbe "${reader_name}" "${vectors}"
 printf 'PHYSICAL:PASS log=%s\n' "${log#${repo_root}/}"

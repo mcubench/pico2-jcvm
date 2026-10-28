@@ -4,6 +4,7 @@
 
 #include "device/usbd.h"
 #include "device/usbd_pvt.h"
+#include "pico/time.h"
 #include "pico/unique_id.h"
 #include "tusb.h"
 #include "scp03.hpp"
@@ -127,6 +128,12 @@ volatile uint8_t debug_last_unknown_message = 0;
 volatile uint8_t debug_recent_commands[12] = {};
 volatile uint8_t debug_recent_command_index = 0;
 volatile uint16_t debug_command_count = 0;
+bool native_operation_active = false;
+bool native_extension_in_flight = false;
+uint8_t native_operation_rhport = 0;
+uint8_t native_operation_sequence = 0;
+uint32_t native_last_extension_us = 0;
+uint8_t native_extension_response[10]{};
 Scp03Session secure_channel;
 CapLoadSession cap_load_session;
 bool get_status_first_seen = false;
@@ -257,6 +264,7 @@ void queue_out(uint8_t rhport) {
 void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
                    size_t payload_length, uint8_t status = 0,
                    uint8_t error = 0, uint8_t specific = 0) {
+  const uint8_t sequence = rx_buffer[6];
   if (payload_length + 10 > sizeof(tx_buffer)) {
     payload_length = 0;
     status = 0x40; // failed
@@ -268,7 +276,7 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   tx_buffer[3] = static_cast<uint8_t>(payload_length >> 16);
   tx_buffer[4] = static_cast<uint8_t>(payload_length >> 24);
   tx_buffer[5] = 0; // slot
-  tx_buffer[6] = rx_buffer[6]; // sequence number
+  tx_buffer[6] = sequence; // sequence number
   tx_buffer[7] = status;
   tx_buffer[8] = error;
   tx_buffer[9] = specific;
@@ -310,11 +318,31 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   // host can distinguish completion from a longer CCID response. TinyUSB's
   // low-level endpoint API leaves this class-specific framing to the driver.
   tx_zlp_pending = response_requires_zlp(transfer_length);
+  if (native_extension_in_flight) {
+    const absolute_time_t deadline = make_timeout_time_ms(100);
+    while (native_extension_in_flight && !time_reached(deadline)) {
+      tud_task();
+      if (native_extension_in_flight) sleep_us(100);
+    }
+  }
   if (!usbd_edpt_xfer(rhport, ep_in, tx_buffer, transfer_length)) {
     tx_zlp_pending = false;
     ++debug_in_submit_errors;
   }
 }
+
+class NativeOperationScope {
+public:
+  NativeOperationScope(uint8_t rhport, uint8_t sequence) {
+    native_operation_active = true;
+    native_operation_rhport = rhport;
+    native_operation_sequence = sequence;
+    native_last_extension_us = time_us_32();
+  }
+  ~NativeOperationScope() { native_operation_active = false; }
+  NativeOperationScope(const NativeOperationScope &) = delete;
+  NativeOperationScope &operator=(const NativeOperationScope &) = delete;
+};
 
 void process_message(uint8_t rhport) {
   const uint8_t command = rx_buffer[0];
@@ -663,10 +691,14 @@ void process_message(uint8_t rhport) {
             choupi_reader_led_activity();
             std::printf("CHOUPI:SELECT process=begin\r\n");
             std::fflush(stdout);
-            const uint16_t process_status = choupi_vm_process_applet(
-                apdu, static_cast<uint16_t>(apdu_length), response,
-                static_cast<uint16_t>(sizeof(response)),
-                &applet_response_length);
+            uint16_t process_status = 0xffff;
+            {
+              NativeOperationScope operation(rhport, rx_buffer[6]);
+              process_status = choupi_vm_process_applet(
+                  apdu, static_cast<uint16_t>(apdu_length), response,
+                  static_cast<uint16_t>(sizeof(response)),
+                  &applet_response_length);
+            }
             std::printf("CHOUPI:SELECT process=end sw=%04X len=%u\r\n",
                         static_cast<unsigned>(process_status),
                         static_cast<unsigned>(applet_response_length));
@@ -698,9 +730,13 @@ void process_message(uint8_t rhport) {
     } else if (apdu_length <= UINT16_MAX) {
       uint16_t applet_response_length = 0;
       choupi_reader_led_activity();
-      const uint16_t status = choupi_vm_process_applet(
-          apdu, static_cast<uint16_t>(apdu_length), response,
-          static_cast<uint16_t>(sizeof(response)), &applet_response_length);
+      uint16_t status = 0xffff;
+      {
+        NativeOperationScope operation(rhport, rx_buffer[6]);
+        status = choupi_vm_process_applet(
+            apdu, static_cast<uint16_t>(apdu_length), response,
+            static_cast<uint16_t>(sizeof(response)), &applet_response_length);
+      }
       if (status != 0xffff) {
         response_length = applet_response_length;
         if (fs_sync() != 0) {
@@ -730,6 +766,8 @@ void driver_init() {
   rx_expected = 0;
   message_pending = false;
   tx_zlp_pending = false;
+  native_operation_active = false;
+  native_extension_in_flight = false;
   slot_state = 1;
   ep_out = 0;
   ep_in = 0;
@@ -739,6 +777,8 @@ void driver_init() {
 }
 
 bool driver_deinit() {
+  native_operation_active = false;
+  native_extension_in_flight = false;
   choupi_reader_led_set_reader_mode(false);
   return true;
 }
@@ -749,6 +789,8 @@ void driver_reset(uint8_t) {
   rx_expected = 0;
   message_pending = false;
   tx_zlp_pending = false;
+  native_operation_active = false;
+  native_extension_in_flight = false;
   slot_state = 1;
   get_status_first_seen = false;
   ep_out = 0;
@@ -826,10 +868,19 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     rx_expected = 0;
     message_pending = false;
     tx_zlp_pending = false;
+    native_extension_in_flight = false;
     queue_out(rhport);
     return true;
   }
   if (endpoint == ep_in) {
+    if (native_extension_in_flight) {
+      native_extension_in_flight = false;
+      debug_stage = 7;
+      // Keep Bulk-OUT unarmed until the original XfrBlock gets its final
+      // response. Reusing rx_buffer for a concurrent slot-status command
+      // would corrupt the APDU still executing in the VM.
+      return true;
+    }
     if (tx_zlp_pending) {
       tx_zlp_pending = false;
       if (!usbd_edpt_xfer(rhport, ep_in, nullptr, 0)) {
@@ -899,6 +950,41 @@ extern "C" void choupi_ccid_task(void) {
   ++debug_task_count;
   debug_stage = 5;
   process_message(rhport);
+}
+
+extern "C" void choupi_ccid_native_crypto_progress(void) {
+  if (!native_operation_active || ep_in == 0) return;
+  const uint32_t now = time_us_32();
+  const bool extension_due =
+      static_cast<uint32_t>(now - native_last_extension_us) >= 1000000U;
+  if (!native_extension_in_flight && !extension_due)
+    return;
+
+  // The USB-ICC/CCID status bitmap uses command status 2 (0x80) to request a
+  // time extension. Keep the APDU sequence unchanged until its final response.
+  tud_task();
+  if (!native_operation_active || native_extension_in_flight || !extension_due ||
+      usbd_edpt_busy(native_operation_rhport, ep_in))
+    return;
+  native_extension_response[0] = 0x80; // RDR_to_PC_DataBlock
+  native_extension_response[1] = 0;
+  native_extension_response[2] = 0;
+  native_extension_response[3] = 0;
+  native_extension_response[4] = 0;
+  native_extension_response[5] = 0; // slot
+  native_extension_response[6] = native_operation_sequence;
+  native_extension_response[7] = 0x80; // present/active + time extension
+  native_extension_response[8] = 0;
+  native_extension_response[9] = 0;
+  if (usbd_edpt_xfer(native_operation_rhport, ep_in,
+                     native_extension_response,
+                     sizeof(native_extension_response))) {
+    native_extension_in_flight = true;
+    native_last_extension_us = now;
+    debug_stage = 6;
+  } else {
+    ++debug_in_submit_errors;
+  }
 }
 
 extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,

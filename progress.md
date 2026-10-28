@@ -13927,3 +13927,14 @@
 - Decision: Physical flash path is operational. Inspect the watchdog recovery marker if it appears again during a clean power-up; continue remaining asymmetric coverage.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261027T200454Z.log`; image `build/arm/pico2_choupi.uf2`.
+
+## 2026-10-27 — Keep long RSA operations alive and validate on D92 (55 minutes)
+
+- Step/experiment: `asymm-crypto-long-operation-physical-validation`
+- When: '2026-10-27 20:47 UTC' - '2026-10-27 21:42 UTC'
+- Change: Replaced the fixed applet wall-clock expiry with an inactivity deadline refreshed by native crypto progress. The RP2350 RNG callback services the watchdog and CCID time extension path. CCID sends periodic time extensions and leaves Bulk-OUT unarmed until the original response completes, preventing receive-buffer reuse. Raised the physical vector harness's bounded timeout to 600 seconds for RSA-CRT-3072 variance.
+- Validation: ARM and RISC-V `asymm_crypto` wrapper builds passed; PC/VPCD suite passed 99/99. Flashed identified D92 and inspected finite serial output (`TEST:SUMMARY pass=1 fail=0`). Physical asymmetric suite passed 79/79. Isolated RSA-3072 passed in 137.724 s; isolated RSA-CRT-3072 passed in 171.517 s. Full-suite RSA-3072 and RSA-CRT-3072 took 138.521 s and 110.769 s. GPPro cleanup passed.
+- Result: Prior `6400` timeout on RSA-3072 is fixed for tested workloads. Full 79-vector physical suite passes. The combined ARM UF2 is 2,031,104 bytes, SHA-256 `2c17467a26a2d035dec9bb0fb9e3eba329e1e5d05989a8f25ed7b2b720768a1d`. Intermittent `cause=other` watchdog marker and broader profile acceptance remain open.
+- Decision: Keep the 600-second finite host bound and inactivity timeout. Continue with support-report comparison, physical `/deploy`, Windows validation, and RSA hardening.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261027T212115Z.log`, `artifacts/logs/asymm-crypto-pcsc-20261027T213146Z.log`, `artifacts/logs/asymm-crypto-pcsc-20261027T213548Z.log`.

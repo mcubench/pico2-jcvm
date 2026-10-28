@@ -61,6 +61,8 @@ extern "C" void choupi_vm_array_write_failure_state(
     uint16_t *ref, uint8_t *type, uint8_t *exception_id);
 extern "C" uint8_t choupi_persistent_write_transaction_active(void);
 extern "C" void choupi_ccid_task(void);
+extern "C" void choupi_ccid_native_crypto_progress(void);
+extern "C" void choupi_vm_native_progress(void);
 extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,
                                          uint16_t *rx_events,
                                          uint16_t *task_count,
@@ -88,6 +90,11 @@ extern "C" void choupi_ccid_debug_recent(uint8_t *commands,
                                            uint16_t *command_count);
 
 extern "C" void choupi_watchdog_update(void) { watchdog_update(); }
+extern "C" void choupi_native_crypto_progress(void) {
+  choupi_vm_native_progress();
+  watchdog_update();
+  choupi_ccid_native_crypto_progress();
+}
 extern "C" uint32_t choupi_time_us_32(void) { return time_us_32(); }
 extern "C" void choupi_install_trace(uint32_t pc, uint8_t opcode,
                                       uint32_t instruction_count) {

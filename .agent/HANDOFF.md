@@ -1,3 +1,28 @@
+# Current continuation — physical long-RSA validation completed (2026-10-27)
+
+- Fixed long synchronous native RSA calls on Pico 2. `choupi/src/interpretor.cpp`
+  now measures applet inactivity from native crypto progress callbacks. The
+  RP2350 RNG callback feeds progress, watchdog, and CCID service. CCID sends
+  periodic time extensions during the call and does not rearm Bulk-OUT before
+  the final response, protecting the active APDU buffer.
+- Extended `tools/test-asymm-crypto-pcsc` to cover 79 physical vectors and use
+  a bounded 600-second timeout for slow RSA key generation.
+- D92 (`D92E743D5F640C0F`) passed the complete suite 79/79. RSA-3072 passed
+  in 137.724 s isolated / 138.521 s full suite; RSA-CRT-3072 passed in
+  171.517 s isolated / 110.769 s full suite. GPPro temporary-package cleanup
+  succeeded. Full suite log: `artifacts/logs/asymm-crypto-pcsc-20261027T213548Z.log`;
+  isolated CRT log: `artifacts/logs/asymm-crypto-pcsc-20261027T213146Z.log`.
+- ARM and RISC-V profile builds, physical flash verification, finite runtime
+  monitor, and PC/VPCD 99/99 suite passed. Combined-profile external ARM UF2:
+  `build/external-test/firmware/pico2_choupi_asymm_crypto.uf2`, 2,031,104
+  bytes, SHA-256 `2c17467a26a2d035dec9bb0fb9e3eba329e1e5d05989a8f25ed7b2b720768a1d`.
+  It contains symmetric and asymmetric crypto support and no preinstalled
+  JCAlgTest applet.
+- Remaining: exact full support-report comparison, complete physical `/deploy`
+  acceptance, Windows validation, RSA private-operation hardening, and
+  investigate the intermittent `CHOUPI:WATCHDOG_RECOVERY ... cause=other` marker.
+- Commit: pending.
+
 # Current continuation — quick physical flash check (2026-10-27)
 
 - The user reported the Pico 2 tokens connected and asked for a quick flash.

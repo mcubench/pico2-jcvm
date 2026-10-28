@@ -1691,3 +1691,15 @@ rollback and duplicate/invalid registration handling also remain unverified.
   decoded lengths to ISO 7816 short APDU case rules; no bug surfaced. Remaining
   here: full CAP nested-table validation and fuzzing, plus interrupted
   persistent-write recovery / fuzzing.
+
+
+- [x] Physical asymmetric known-answer coverage on combined profile: after
+  adding progress-based native-call timeout refresh and periodic CCID time
+  extensions, D92 (`D92E743D5F640C0F`) passed all 79/79 API vectors. This
+  includes RSA-CRT-3072 key generation (171.517 s in an isolated run;
+  110.769 s in the full suite), RSA-3072 (137.724 s isolated; 138.521 s in
+  the full suite), ECDSA, key agreement, EC/RSA generation, and signatures.
+  Logs: `artifacts/logs/asymm-crypto-pcsc-20261027T213146Z.log` and
+  `artifacts/logs/asymm-crypto-pcsc-20261027T213548Z.log`. Broader profile
+  acceptance remains open: exact full support-report comparison, physical
+  `/deploy` suite, Windows validation, and RSA private-operation hardening.

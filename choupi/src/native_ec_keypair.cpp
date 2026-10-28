@@ -13,6 +13,10 @@
 #include <random>
 #include <vector>
 
+#if !defined(PC_VERSION)
+extern "C" void choupi_native_crypto_progress(void);
+#endif
+
 #if JC_SUPPORT_KEYPAIR_EC_FP
 #include "mbedtls/ecp.h"
 #endif
@@ -56,6 +60,13 @@ std::shared_ptr<JC_Instance> keyPairInstance(jref_t reference) {
 
 #if JC_SUPPORT_KEYPAIR_EC_FP || JC_SUPPORT_KEYPAIR_RSA_ANY
 int randomBytes(void *, unsigned char *output, size_t length) {
+#if !defined(PC_VERSION)
+  // RSA prime generation runs synchronously inside one native Java Card call
+  // and can exceed the RP2350 watchdog and CCID response intervals. Mbed TLS
+  // requests fresh randomness throughout candidate generation and primality
+  // testing, so service both at this bounded callback boundary.
+  choupi_native_crypto_progress();
+#endif
 #ifdef PC_VERSION
   static std::random_device source;
   for (size_t i = 0; i < length; ++i)

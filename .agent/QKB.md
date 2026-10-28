@@ -5633,3 +5633,25 @@ fix.
 - **Cause:** A general RSA private-result verification requires the corresponding public exponent E. The CRT key interface does not expose E, and there is no key-pair association in the current native key state. Exponent blinding does not provide this check.
 - **Viable fix:** None within the current private-key API. A future design would need to retain/associate E for keys generated as pairs or add an explicit association mechanism for imported keys. A check that only validates CRT recombination residues can detect some recombination corruption but cannot detect a faulty P/Q exponentiation branch, so it must not be presented as complete CRT fault protection.
 - **Validation:** Source audit of `choupi/src/native_rsa_math.hpp`, `native_rsa_cipher.cpp`, and `native_rsa_signature.cpp`, plus the Java Card `RSAPrivateCrtKey` API. No implementation or hardware test was performed. The approved reader helper found zero devices despite the user's report that tokens are plugged in; `lsusb` listed only VirtualBox devices.
+
+
+## Long synchronous RSA operations time out on hardware (2026-10-27)
+
+- **Symptom:** Physical RSA-3072 key generation returned `6400` after about
+  150 seconds despite a healthy device. A subsequent full test harness also
+  terminated during RSA-CRT-3072 at its 180-second host timeout.
+- **Cause:** The firmware applied a fixed 15-second interpreter wall-clock
+  limit around the entire applet call. Long native RSA generation is
+  synchronous; Mbed TLS repeatedly calls its RNG callback while searching
+  candidates. CCID clients also need time-extension responses during that call.
+- **Viable fix:** Refresh the interpreter's applet progress deadline from the
+  native RNG callback, while feeding the watchdog and servicing USB. Send
+  periodic CCID time extensions during native crypto and keep Bulk-OUT
+  unarmed until the original APDU completes, avoiding reuse of the APDU receive
+  buffer during execution. Raise the finite physical harness timeout to 600
+  seconds to accommodate RP2350 RSA-CRT-3072 variance.
+- **Validation:** On D92, isolated RSA-3072 passed in 137.724 s and isolated
+  RSA-CRT-3072 passed in 171.517 s. The complete physical suite passed 79/79;
+  its RSA-3072 and RSA-CRT-3072 generation cases took 138.521 s and 110.769 s.
+  ARM/RISC-V wrapper builds, finite serial monitor, and PC/VPCD 99/99 vector
+  suite passed. Logs are recorded in `.agent/HANDOFF.md`.
