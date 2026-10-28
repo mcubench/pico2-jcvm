@@ -14100,6 +14100,6 @@
 - Decision: Continue offline source review; before more deploy calls, identify
   the exact VPCD reader and verify package and applet registry using the same
   GPPro connection.
-- Commit: recorded in the following metadata commit.
+- Commit: `eaf39cb`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-guards-vpcd-20261028-inventory/`;
   `artifacts/results/deploy/ec-key-getk-vpcd-direct-20261028/`.
