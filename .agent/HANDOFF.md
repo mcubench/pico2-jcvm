@@ -1,3 +1,23 @@
+# Latest continuation — physical Core API comparison (2026-10-29)
+
+- Ran unchanged API 3.0.5 Core against the two current-source ARM images with
+  exact reader selection and optional scenarios disabled. `Applet.deselect()`
+  returned expected `-19` on both boards, resolving the earlier discrepancy.
+- D92 `D92E743D5F640C0F` passed 291 rows: 272 `OK`, 11
+  `UNSUPPORTED_PER_SPEC`, eight `APPLET_NOT_INSTALLED` scenario rows, no
+  `SW_ERROR`. 2BED `2BED26ED20556535` repeated the same 291-row results twice:
+  198 `OK`, 74 `SW_ERROR` (`6F00`), 11 unsupported, eight unavailable
+  scenarios. Cleanup passed. The cause appears board/state-specific but is not
+  known; compare equivalent persistent card states and capture runtime fault
+  diagnostics before modifying code. See the new TODO and QKB entries.
+- The first parallel runner attempt selected 2BED correctly and loaded Core,
+  but optional Ext scenario INSTALL returned `6A88` before test calls; rollback
+  succeeded. Direct exact-reader run with `--no-scenarios` completed.
+- Artifacts (local, ignored by Git):
+  `artifacts/results/deploy/core-physical-retest-20261029/`.
+- Previous request-only changes: TODO items now track available-memory
+  accounting and JCOP4 P71 symmetric API coverage; neither has been implemented.
+
 # Latest continuation — GlobalPlatform CPLC GET DATA (2026-10-29)
 
 - Physical follow-up: both builds passed; ARM CHOUPI firmware was flashed to

@@ -6321,6 +6321,33 @@ fix.
   `artifacts/logs/cycle-choupi-20261029T143255Z.log`, and
   `artifacts/logs/gp-cplc-physical-D92E743D5F640C0F-20261029.log`.
 
+## Physical Core 6F00 results differ between identical-image Pico boards (2026-10-29)
+
+- **Observation:** The current ARM firmware image was flashed to 2BED and D92
+  and each passed the finite `choupi_runtime` monitor. The unchanged API 3.0.5
+  Core CAP was run with `--no-scenarios` and exact-reader pinning. D92 completed
+  291 calls with 272 `OK`, 11 `UNSUPPORTED_PER_SPEC`, and eight expected
+  unavailable Multi-scenario rows; no `SW_ERROR`. 2BED completed the same 291
+  calls twice with 198 `OK`, 74 `SW_ERROR` (`6F00`), 11
+  `UNSUPPORTED_PER_SPEC`, and the same eight scenario rows. CAP cleanup passed
+  on each run; GPPro could still list the ISD and persistent packages.
+- **Scope:** 2BED's errors cluster in JCSystem (6), Util (19), AID (14), APDU
+  (1), OwnerPIN (13), PIN (12), OwnerPINx (6), and OwnerPINxWithPredecrement
+  (3). `Applet.deselect()` itself returned the expected `-19` on both boards.
+  2BED had the JCAlgTest package/applet registered; D92 had that package plus
+  an `F01234567890` package. The differing registry contents are a variable,
+  not an established cause. No firmware change is justified yet.
+- **Next diagnostic:** Establish equivalent clean persistent applet/package
+  state, then rerun the exact Core command and capture per-APDU VM fault/exception
+  diagnostics on 2BED. Compare dynamic package IDs and imported API dispatch
+  mappings with D92. Do not classify this as transport loss: the test completed
+  and received `6F00` responses.
+- **Artifacts:**
+  `artifacts/results/deploy/core-physical-retest-20261029/core-no-scenarios.csv`,
+  `2BED-core-no-scenarios-retry.csv`, `D92-core-no-scenarios.csv`, and
+  `pico1.csv` (the first parallel attempt stopped at the optional Ext CAP
+  install refusal, then rolled it back).
+
 ## Default-profile build failures in signature digest support (2026-10-29)
 
 - **Symptom/cause:** The `current` profile's ARM build failed compiling
