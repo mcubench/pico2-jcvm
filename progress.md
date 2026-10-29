@@ -14774,3 +14774,14 @@
 - Commit: `1bf6eb0` (TODO/QKB/handoff); this progress record follows.
 - Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261029-two-pass.log`;
   SHA-256 `268d50220c34b277fc8235e0b5afa97cdb728f7907a8ebaf1d91ad14a25fe967`.
+
+## 2026-10-29 — Diagnose asymm JCAlgTest RSA support timing (8 minutes)
+
+- Step/experiment: `asymm-jcalgtest-rsa-timing-vpcd`
+- When: '2026-10-29 06:35 UTC' - '2026-10-29 06:43 UTC'
+- Change: Recorded the partial official support sweep and native key-generation timing evidence in TODO, QKB, and the session handoff. No VM source changed because the timing discrepancy is unexplained.
+- Validation: Official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` on host PC/SC VPCD installed successfully and reported RSA-512 support, but its generation APDU took 133.756 s. The attempt was stopped during the next request; the resulting CSV is partial. Repeated `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` through host access passed 99/99. RSA/RSA-CRT generation measured 1.068/1.149 s (512), 1.334/3.469 s (1024), and 47.488/23.334 s (3072). `git diff --check` found only pre-existing trailing whitespace in modified `AGENTS.md`; the new/edited task files themselves are clean. No ARM/RISC-V rebuild or hardware flash was needed because source did not change.
+- Result: The official 133.756 s RSA-512 observation is not explained by native generation time; do not attribute it to RSA or alter the implementation without an exact request/workload comparison. The partial CSV is invalid for profile comparison. The interrupted client's `apdu must be at least 2 bytes long` followed emulator shutdown while its next APDU was in flight.
+- Decision: Keep the investigation open. Compare exact JCAlgTest request semantics against the native probe on the same fresh VPCD image, then rerun/capture a complete official support report if feasible.
+- Commit: `e453aeb` (TODO/QKB/handoff); this progress record follows.
+- Artifacts/logs: `artifacts/results/jcalgtest-vpcd-asymm-current-pcsc-20261029/` (partial official run); `artifacts/logs/asymm-crypto-keypair-vpcd-timing-20261029.log`, SHA-256 `71ee2f1af942215b726cac1285910a84fa2650c6b1f4c1743212e546a8dc96b2`.
