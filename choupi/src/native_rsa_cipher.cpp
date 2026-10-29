@@ -91,6 +91,7 @@ void mgf1Sha1(const unsigned char *seed, size_t seedLength,
     input[offset + 2] = static_cast<unsigned char>(counter >> 8);
     input[offset + 3] = static_cast<unsigned char>(counter);
     std::array<unsigned char, 20> digest{};
+    RsaSensitiveBufferGuard digestGuard(digest);
     if (mbedtls_sha1(input.data(), input.size(), digest.data()) != 0)
       throw Exceptions::RuntimeException;
     const size_t count = std::min(maskLength - produced, digest.size());
@@ -474,6 +475,7 @@ void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_DQ,
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_PQ};
     std::array<std::vector<unsigned char>, 2> factors;
+    RsaSensitiveBufferGuard factorsGuard(factors);
     for (uint16_t i = 0; i < std::size(crtFields); ++i) {
       loadKeyComponent(*key, crtFields[i], static_cast<uint16_t>(i + 2),
                        *exponent, static_cast<uint16_t>(i * crtPartLength),
