@@ -14679,3 +14679,27 @@
 - Commit: implementation `da8ee60`; validation/doc record commit `9f0b5a4`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`.
 
+
+## 2026-10-29 — Focus Core Applet.deselect on fresh VPCD (10 minutes)
+
+- Step/experiment: `core-deselect-vpcd-current-source`
+- When: '2026-10-29 05:49 UTC' - '2026-10-29 05:59 UTC'
+- Change: Ran the unchanged API 3.0.5 Core CAP against a fresh PC JCVM/VPCD
+  image with a filter selecting only `Applet.deselect()`. Recorded the physical
+  discrepancy and the VPCD filter procedure in TODO, QKB, and handoff; made no
+  firmware or CAP changes.
+- Validation: Fresh VPCD upload/test/cleanup completed. All 291 calls were
+  processed: 288 `SKIPPED_BY_USER`, two optional Multi rows
+  `APPLET_NOT_INSTALLED` with `--no-scenarios`, and `Applet.deselect()` `OK`
+  (`returned=1 effect=as expected`). A first unfiltered run hit its 300-second
+  limit. The approved Pico reader helper found zero devices. Targeted
+  `git diff --check` passed; whole-worktree check reports pre-existing trailing
+  whitespace in modified, unstaged `AGENTS.md`.
+- Result: Current VPCD did not reproduce the physical 2026-10-28 `WRONG_RESULT`
+  (`returned=-15`); physical validation remains outstanding. No hardware claim
+  is made.
+- Decision: Keep this discrepancy open and compare select/deselect counters on
+  physical ARM when a Pico enumerates. Continue with offline implementation.
+- Commit: `352b366` (result/TODO/QKB/handoff); this progress record follows.
+- Artifacts/logs: `artifacts/results/deploy/core-deselect-vpcd-20261029/`;
+  no image flashed.
