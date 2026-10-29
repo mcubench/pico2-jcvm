@@ -1616,6 +1616,23 @@ rollback and duplicate/invalid registration handling also remain unverified.
 
 ## Expanded and required cryptographic profiles
 
+- [ ] **Complete symmetric Java Card algorithm coverage against the JCOP4
+  P71 reference.** Audit every symmetric cipher, MAC/signature, key type, and
+  key length marked `yes` in
+  `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`
+  (SHA-256 `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`)
+  against the existing `symm_crypto` and `asymm_crypto` selections and native
+  API dispatch. Distinguish algorithms whose primitive/key storage already
+  exists from missing API factories or modes—for example, AES support does
+  not by itself expose every AES cipher algorithm. Add missing behavior in
+  native C++ JCVM code, update capability selection and generated expected
+  support data where applicable, and validate with unchanged upstream CAPs,
+  known-answer vectors, ARM/RISC-V builds, and physical Pico results. The
+  reference CSV is from JCAlgTest 1.7.9 and has no `ALG_AES_CTR` row; include
+  API-defined candidates such as `javacardx.crypto.Cipher.ALG_AES_CTR` in the
+  audit, but establish the target card's expected support independently before
+  claiming matrix parity for a row absent from this file.
+
 - [ ] Implement and validate the `asymm_crypto` selectable profile against
   `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`
   (SHA-256 `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`).
