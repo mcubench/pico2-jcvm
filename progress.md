@@ -14503,7 +14503,7 @@
   it does not demonstrate a broken SHA-512 PSS implementation.
 - Decision: Keep SHA-512 PSS support enabled; do not relax native size checks or
   change the upstream CAP. Physical verification remains pending.
-- Commit: pending.
+- Commit: `20a24a6` (validation and documentation record).
 - Artifacts/logs: `AlgTest_JavaCard/deploy/client/AlgTestJClient.jar`
   (read-only bytecode inspection); no new result artifact.
 
