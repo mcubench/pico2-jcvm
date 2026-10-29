@@ -5,19 +5,28 @@
 - Commit `4b546aa` adds native `Signature.setInitialDigest()` validation and
   resumable SHA-1/224/256/384/512 state for RSA and ECDSA signatures. ECDSA
   precomputed-hash sign/verify dispatch is implemented, and ECDSA `init()` now
-  clears stale digest state. No Java API source, provider, or CAP file changed.
-- PC, ARM, and RISC-V `asymm_crypto` wrapper builds pass. Runtime validation is
-  not complete: focused unchanged API 3.0.5 Crypto CAP runs timed out during
-  GPPro CAP upload on both VPCD endpoints, before reaching the changed methods.
-  No physical Pico was available.
-- Artifacts from failed transport attempts:
-  `artifacts/results/deploy/signature-initial-digest-vpcd-20261029/`,
-  `signature-initial-digest-invalid-trace-20261029/`, and
-  `signature-initial-digest-invalid-trace-reader01-20261029/`.
-- Next: restore responsive PC/SC transport, then validate accepted SHA state
-  lengths and block counts, invalid-length exceptions, RSA continuation
-  signatures, and ECDSA precomputed-hash sign/verify including altered hashes.
-  Do not claim runtime support until those vectors pass.
+  clears stale digest state. This continuation fixes the state metadata layout:
+  the state length is derived from the digest algorithm, leaving all 16 bytes of
+  the Signature IV array for the full SHA-384/512 byte count. No Java API source,
+  provider, or CAP file changed.
+- The follow-up length/storage fix is committed as `d6ebeeb`.
+- PC, ARM, and RISC-V `asymm_crypto` builds pass. With the unchanged upstream
+  3.0.5 Crypto CAP on VPCD, the RSA/SHA-256 known-signature continuation passes
+  (`OK`, 465 unrelated calls intentionally skipped). The SHA-1 known-signature
+  case also returned `OK` in a broader filtered run, though that run timed out
+  before completing all selected cases. Invalid length/block cases returned
+  their expected `ILLEGAL_VALUE` results in the earlier filtered run.
+- One ECDSA/SHA-256 round-trip-only run timed out before its selected call was
+  recorded. This is a timeout in the broad CAP test path; native dispatch traces
+  showed the setter and RSA sign/verify calls returning in another run. More
+  ECDSA and SHA-384/512 vectors are still needed. No physical Pico was
+  available.
+- Successful artifact: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-sha256-testonly.csv`.
+  Earlier incomplete runs are in the same directory and in
+  `artifacts/results/deploy/signature-initial-digest-vpcd-20261029/`.
+- Next: add isolated tests for the remaining ECDSA and SHA variants and the
+  malformed-length boundaries; run them on an identified physical ARM Pico
+  when available.
 
 - Fixed the focused API 3.0.5 uninitialized `ECKey.getK()` timeout. Trace
   evidence showed native dispatch index 7 (`NativeKey.clearKey`) clearing

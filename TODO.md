@@ -1627,10 +1627,13 @@ rollback and duplicate/invalid registration handling also remain unverified.
   VM. EC APIs, key agreement/generation, complete report comparison, physical
   `/deploy` coverage, and private-operation hardening remain open. Native
   `Signature.setInitialDigest()` continuation for SHA-1/224/256/384/512 and
-  ECDSA precomputed-hash sign/verify now compile for PC, ARM, and RISC-V, but
-  their runtime vectors are still pending because both VPCD endpoints timed
-  out during GPPro CAP upload. See progress commit `4b546aa` and the current
-  `.agent/HANDOFF.md` entry.
+  ECDSA precomputed-hash sign/verify compile for PC, ARM, and RISC-V. VPCD has
+  passed the upstream RSA/SHA-256 known-signature continuation (one selected
+  call, 465 skipped); SHA-1 known-signature and invalid length/block cases also
+  passed in a broader filtered run. Isolated ECDSA/SHA-256 timed out before its
+  result row; SHA-224/384/512 and malformed-boundary coverage remain. No
+  physical result is available. See the current `.agent/HANDOFF.md` entry and
+  `artifacts/results/deploy/signature-initial-digest-vpcd-final/`.
   Progress (2026-10-27): added native C++ `KeyAgreement` dispatch and six
   `asymm_crypto` capabilities for EC SVDP-DH/DHC, their plain variants,
   PACE-GM, and uncompressed XY output. The API object stores its algorithm and

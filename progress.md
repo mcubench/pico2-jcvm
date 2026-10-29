@@ -14232,3 +14232,33 @@
   `signature-initial-digest-invalid-trace-20261029/`, and
   `signature-initial-digest-invalid-trace-reader01-20261029/`.
 
+## 2026-10-29 — Fix Signature initial-digest storage and exercise SHA-256 (34 minutes)
+
+- Step/experiment: `native-signature-initial-digest-vpcd-followup`
+- When: '2026-10-29 01:38 UTC' - '2026-10-29 02:12 UTC'
+- Change: Corrected SHA-384/512 message-length handling to retain the full
+  128-bit byte count and fit it in the existing 16-byte IV storage. Removed
+  redundant state-length metadata and derive state size from the selected SHA
+  algorithm. This fixed valid `setInitialDigest()` calls previously throwing
+  `ArrayStoreException`; invalid-state validation remains in place. No Java API
+  source or CAP changed.
+- Validation: `./tools/build-pc --profile asymm_crypto`,
+  `./tools/build arm --profile asymm_crypto`, and
+  `./tools/build riscv --profile asymm_crypto` passed. The unchanged API 3.0.5
+  Crypto CAP passed the isolated RSA/SHA-256 known-signature continuation over
+  VPCD: 1 selected call `OK`, 465 skipped. SHA-1 known-signature also returned
+  `OK` in a filtered run; invalid state length, zero message length, and
+  non-block-aligned length returned expected `ILLEGAL_VALUE` in the preceding
+  filtered run. Isolated ECDSA/SHA-256 timed out before its result row. No Pico
+  was attached and no physical validation was run. `git diff --check` passed
+  for files changed in this step; an unrelated pre-existing trailing-space
+  change in `AGENTS.md` is excluded from this step.
+- Result: RSA/SHA-256 continuation has one upstream VPCD known-answer pass.
+  SHA-1 and malformed-input evidence is partial; ECDSA and SHA-224/384/512
+  remain unverified. VPCD setup required refreshing `pcscd` before starting the
+  emulator and running only one API client at a time.
+- Decision: Retain the native metadata layout. Continue with isolated ECDSA and
+  remaining SHA vectors, then run physical ARM tests when a Pico is available.
+- Commit: `d6ebeeb`.
+- Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/`
+

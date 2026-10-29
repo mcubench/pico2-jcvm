@@ -5920,3 +5920,43 @@ fix.
   `artifacts/results/deploy/signature-initial-digest-invalid-trace-20261029/`
   and `signature-initial-digest-invalid-trace-reader01-20261029/`. No physical
   Pico reader was enumerated.
+
+## VPCD endpoint refused the emulator after its service had idled (2026-10-29)
+
+- **Symptom:** GPPro could not connect although the Virtual PCD readers were
+  listed by PC/SC. The emulator logged `ERROR: connecting to vpcd endpoint
+  127.0.0.1:35964: Connection refused` and exited.
+- **Cause:** The PC/SC plug-and-play service had gone idle between emulator
+  runs. Reader enumeration alone did not leave the VPCD TCP backend ready. A
+  background emulator command also exited with its launching shell, and two
+  concurrent API clients contended for the same virtual card during diagnosis.
+- **Viable solution:** Through the elevated host-access path, run
+  `PICO2_HOST_USB_ACCESS=1 ./tools/env pcsc_scan -r` before each new emulator
+  session. Keep the emulator attached to a persistent command session (do not
+  background it from a short-lived shell), require
+  `VpcdPresenceProbe ... --require-present`, and run only one API client at a
+  time. Use `--test-only` for subsequent isolated cases while the CAP remains
+  installed.
+- **Validation:** GPPro listed the installed Crypto CAP after this sequence.
+  The unchanged API 3.0.5 Crypto CAP then passed the selected RSA/SHA-256
+  `Signature.setInitialDigest()` known-signature case over VPCD (465 checks
+  skipped). Evidence:
+  `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-sha256-testonly.csv`.
+
+## Signature initial-digest metadata exceeded the native IV storage (2026-10-29)
+
+- **Symptom:** Valid RSA and ECDSA `Signature.setInitialDigest()` calls
+  returned `EXC_RUNTIME`, while invalid length/block tests correctly returned
+  `ILLEGAL_VALUE`.
+- **Cause:** The native Signature factory allocates a 16-byte IV array, but the
+  initial-digest metadata encoding required 18 bytes (128-bit byte count plus
+  a redundant 16-bit state length). `storeInitialDigestState()` therefore
+  raised `ArrayStoreException` for every valid state.
+- **Viable fix:** Keep the full 128-bit SHA-384/512 byte count in the existing
+  16-byte array and derive the state length from the digest algorithm. The
+  state itself remains in `recoveryHash`; do not enlarge the IV array because
+  MAC algorithms depend on its existing 16-byte size.
+- **Validation:** The unchanged upstream API 3.0.5 Crypto CAP passed the
+  RSA/SHA-256 known-signature continuation on VPCD. SHA-1 and invalid-length
+  cases also passed in a broader filtered run. Other digest variants and
+  physical validation remain open.
