@@ -14589,7 +14589,7 @@
 - Decision: Keep this as incremental private-operation hardening. Continue the
   audit for non-CRT private-operation mitigations and public-exponent
   association, then resume physical acceptance when a Pico is available.
-- Commit: implementation `f7595d9`; documentation/progress commit pending.
+- Commit: implementation `f7595d9`; progress/continuity record `2c39f16`.
 - Artifacts/logs: VPCD log `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   no new persistent test artifacts.
 

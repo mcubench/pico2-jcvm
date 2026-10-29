@@ -12,7 +12,7 @@
   `./tools/build riscv --profile asymm_crypto` passed. The existing asymmetric
   VPCD suite passed 99/99. Build output contained existing upstream Rust and
   packed-member warnings. No physical board test was run.
-- Implementation commit: `f7595d9`. The progress/QKB/TODO record is pending.
+- Implementation commit: `f7595d9`; progress/QKB/TODO record commit: `2c39f16`.
 - Remaining private RSA hardening includes assessing input blinding for
   imported keys without E, non-CRT private operations, and complete CRT fault
   verification with an associated public exponent. Continue Crypto API triage
