@@ -13,6 +13,12 @@
 - Artifacts: `artifacts/results/deploy/crypto-dh-vpcd-20261029/`; the clean
   run is in `retry2/`. The approved reader helper found zero physical Pico
   devices.
+- Repeated the physical `Cipher()` factory `6F00` check on another fresh VPCD
+  image: the selected unchanged API row again returned `OK` with object token
+  `86`; all 465 other rows were filtered and cleanup passed. This confirms
+  prior emulator evidence only. The helper still found zero physical Picos.
+  See `artifacts/results/deploy/cipher-factory-vpcd-20261029/runner.log` and
+  the 07:10 result rows in `crypto.csv`.
 
 # Previous continuation — Core Applet.deselect VPCD check (2026-10-29)
 

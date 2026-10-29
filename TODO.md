@@ -47,8 +47,9 @@ out explicitly.
 - [ ] Re-run focused EC key cases on a physical ARM Pico when one enumerates.
   The remaining physical 3.0.5 report has 14 unexpected Crypto `6F00` results
   and 14 card-runtime reason mismatches. The `Cipher()` factory `6F00` from
-  the older Crypto report passed in VPCD and remains a physical-only
-  discrepancy to retest, not a confirmed native failure.
+  the physical report passed twice in fresh-image VPCD checks (selected row
+  `OK`, object token `86`) and remains a physical-only discrepancy to retest,
+  not a confirmed native failure.
 - [ ] Resolve the physical Core `Applet.deselect()` discrepancy. The fresh
   current-source VPCD focused run on 2026-10-29 passed this row
   (`OK`, `effect=as expected`), but its diagnostic value was `1`, unlike the

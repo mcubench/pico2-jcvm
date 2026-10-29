@@ -5969,6 +5969,8 @@ fix.
   calls: selected `Cipher()` returned object token `86` as expected, 465 other
   calls were filtered, and GPPro cleanup passed. Result:
   `artifacts/results/deploy/cipher-factory-vpcd-20261029/`.
+  A second fresh-image run at 07:10 local repeated the same one-row pass and
+  cleanup. Neither run establishes why the physical 6F00 occurred.
 
 ## Both VPCD endpoints timed out during CAP upload (2026-10-29)
 
