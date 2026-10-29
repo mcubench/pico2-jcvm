@@ -14182,7 +14182,7 @@
 - Decision: Reuse the paired `00 00`/35963 endpoint after VPCD timeouts. Run
   the tested EC paths on physical ARM hardware when available; continue the
   remaining API 3.0.5 backlog offline.
-- Commit: pending.
+- Commit: `8f50afa`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-copy-domain-p256-reader00-20261029/`;
   `artifacts/results/deploy/ec-key-copy-domain-errors-reader00-20261029/`;
   failed endpoint attempts under `ec-key-copy-domain-p256-*-20261029/`.

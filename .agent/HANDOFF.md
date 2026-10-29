@@ -26,6 +26,7 @@
   `artifacts/results/deploy/ec-key-copy-domain-p256-reader00-20261029/` and
   `ec-key-copy-domain-errors-reader00-20261029/`. The 00 01 endpoint timed out
   once during testing and once during GPPro upload; see `.agent/QKB.md`.
+- VPCD validation and continuity notes committed as `8f50afa`.
 - No physical Pico was connected, so these are emulator results only. Next:
   continue triaging remaining API 3.0.5 Security and Crypto failures, and rerun
   focused EC tests on physical ARM hardware when available. Preserve unrelated
