@@ -592,6 +592,12 @@ void choupi_vm_clear_selected_applet(void) {
   selected_applet_is_active = false;
 }
 
+void choupi_vm_forget_selected_applet(void) {
+  choupi_vm_clear_selected_applet();
+  selected_applet_context.reset();
+  selected_applet_is_active = false;
+}
+
 uint16_t choupi_vm_invoke_applet_method(uint16_t method_offset,
                                        uint8_t method_package,
                                        const jcvm::jref_t *initial_references,

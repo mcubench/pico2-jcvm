@@ -29,6 +29,7 @@ extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                             const uint8_t *aid,
                                             uint8_t aid_length);
 extern "C" void choupi_vm_clear_selected_applet(void);
+extern "C" void choupi_vm_forget_selected_applet(void);
 extern "C" uint16_t choupi_vm_select_applet(void);
 extern "C" uint16_t choupi_vm_deselect_applet(uint8_t selecting_same_applet);
 extern "C" uint16_t choupi_vm_process_applet(const uint8_t *command,
@@ -477,6 +478,12 @@ void process_message(uint8_t rhport) {
           status = cap_load_session.deleteObject(
               request.aid, request.aid_length,
               request.delete_related_objects);
+          if (status == 0x9000) {
+            // DELETE removes persistent fields and child arrays. Discard the
+            // selected applet's in-memory object graph too, so a later
+            // reinstall with the same AID cannot reuse its now-stale fields.
+            choupi_vm_forget_selected_applet();
+          }
         }
         response[0] = static_cast<uint8_t>(status >> 8);
         response[1] = static_cast<uint8_t>(status);
