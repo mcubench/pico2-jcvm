@@ -14729,3 +14729,24 @@
 - Artifacts/logs: `artifacts/results/deploy/crypto-dh-vpcd-20261029/retry2/`;
   CSV SHA-256 `037dcf8f543f9b80a2c71ab6085b493af5def7ecb6301dbe307004a46298cf89`;
   emulator log SHA-256 `4b110de29b00b76abd14804af926e2e6fbf78e9b795e9433ea3f3353adccd508`.
+
+## 2026-10-29 — Repeat physical Cipher factory failure on VPCD (4 minutes)
+
+- Step/experiment: `crypto-cipher-factory-vpcd-repeat`
+- When: '2026-10-29 06:08 UTC' - '2026-10-29 06:12 UTC'
+- Change: Repeated the unchanged API 3.0.5 `javacardx.crypto.Cipher()` row on
+  a fresh PC JCVM/VPCD image and updated TODO, QKB, and handoff evidence.
+- Validation: The Crypto runner processed 466 calls (465
+  `SKIPPED_BY_USER`); `Cipher()` returned `OK` with object token `86`, and
+  GPPro cleanup passed. The approved physical reader helper found zero Pico
+  devices. Targeted `git diff --check` passed. No firmware source changed, so
+  builds and physical flashing were not run.
+- Result: The physical report's `Cipher()` `6F00` was again absent on VPCD.
+  The reason for the physical failure remains unknown; this is emulator-only
+  evidence.
+- Decision: Keep the physical discrepancy open. Compare the exact profile
+  image, reader, and unchanged CAP when an identified physical Pico is
+  available.
+- Commit: `eb45d61` (validation/TODO/QKB/handoff); this progress record follows.
+- Artifacts/logs: `artifacts/results/deploy/cipher-factory-vpcd-20261029/`;
+  runner log SHA-256 `017d7e9e913ad2fe284b135b8aa516e3111e32902eb1374603f999de3a8887eb`.
