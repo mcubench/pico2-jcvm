@@ -11,11 +11,10 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 
 ## Next concrete work
 
-1. Physically validate RSA component persistent-write batching on 2BED
-   `2BED26ED20556535`: run the unchanged JCAlgTest CAP and time the RSA-512
-   APDU. VPCD improved from a >240 s timeout to 16.419 s. Do not treat the
-   prior partial support CSV as complete; rerun the full official report after
-   the physical APDU passes.
+1. Rerun the complete official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` report
+   on the updated `asymm_crypto` firmware. The partial 2026-10-29 CSV remains
+   incomplete; focused physical RSA-512 APDU validation now passes three times
+   on 2BED in 1.532–1.707 s, status 00 / SW 9000.
 2. Investigate the `CHOUPI:WATCHDOG_RECOVERY marker=494E5354 cause=other`
    emitted once during the latest 2BED cycle. Runtime self-test passed before
    and after, but determine whether this is expected reset recovery or a

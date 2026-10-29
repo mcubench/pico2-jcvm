@@ -21,12 +21,15 @@ out explicitly.
   JCAlgTest APDU from a 240 s timeout to 16.419 s (`9000`) on VPCD. The
   independent native VPCD probe passes all 99/99 checks and measured 512-bit
   generation at 1.068/1.149 s (RSA/RSA-CRT). ARM/RISC-V builds and physical
-  startup passed with the fix, but physical APDU timing and a complete official
-  support report remain to be verified. Artifacts:
+  startup passed with the fix. Physical 2BED JCAlgTest RSA-512 support APDU
+  was repeated three times at 1.532, 1.707, and 1.650 seconds, each returning
+  status 00 with APDU `9000`. The full official support report remains to be
+  verified. Artifacts:
   `artifacts/results/jcalgtest-vpcd-asymm-current-pcsc-20261029/` and
   `artifacts/logs/asymm-crypto-keypair-vpcd-timing-20261029.log`,
   `artifacts/logs/jcalgtest-rsa512-instrumented-20261030.log`, and
-  `artifacts/logs/jcalgtest-rsa512-bulk-write-20261030.log`.
+  `artifacts/logs/jcalgtest-rsa512-bulk-write-20261030.log`, and
+  `artifacts/logs/rsa512-jcalgtest-physical-2BED-20261030.log`.
 
 - [x] Reproduce and fix Security `KeyPair(byte, short)` calls returning
   `6F00` for RSA, RSA-CRT, and EC_FP constructors. The physical 3.0.5 run

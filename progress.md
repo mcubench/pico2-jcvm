@@ -14895,3 +14895,14 @@
 - Decision: Physically run the unchanged RSA-512 support APDU on 2BED, inspect the watchdog recovery marker, then rerun a complete JCAlgTest support report. Preserve the incomplete 2026-10-29 report as partial evidence only.
 - Commit: `59e0a53` (source and validation record); this metadata-only commit records its SHA.
 - Artifacts/logs: `artifacts/logs/jcalgtest-rsa512-instrumented-20261030.log` SHA-256 `e9d33089b1970c76dcca84806f907e131594c46a2f380ff42f3ed3456afc4ddd`; `artifacts/logs/jcalgtest-rsa512-bulk-write-20261030.log` SHA-256 `c4a0f49c75698c7b275d01ef710c3b4b62cf004e4202227637b39b42bcfa6938`; `artifacts/logs/cycle-choupi-20261029T231730Z.log` SHA-256 `c45d40f8c2c7a46f965a1599b9d4608da4ffa27853404c34794b3d663921e531`.
+
+## 2026-10-29 Validate RSA-512 support APDU on physical Pico 2 10 minutes
+
+- Step/experiment: `rsa512-physical-apdu-validation`
+- When: '2026-10-29 23:12 UTC' - '2026-10-29 23:22 UTC'
+- Change: Added `--rsa-512-keypair-support` to the host-side `JCAlgTestApduProbe`; it sends the unchanged APDU `B07519000301020000`, checks the JCAlgTest response identity, and reports the support status. Updated TODO, QKB, and handoff. This Java is a host utility only; the firmware and upstream CAP remain unchanged.
+- Validation: On identified physical Pico 2 `2BED26ED20556535`, with exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00`, the probe selected installed JCAlgTest 1.8.2 (`GETVERSION` response `1.8.2_jc305`) and ran the RSA-512 support APDU three times. Measured 1,532 ms, 1,707 ms, and 1,650 ms; every result was `status=00`, APDU response SW `9000`. Elevated USB/PCSC path and `pcscd` ACL refresh were used. `git diff --check` passed. No firmware rebuild, flash, full support suite, or Windows validation was needed for this host utility change.
+- Result: The persistent-component batching fix is physically validated for the RSA-512 KeyPair support call, with no timeout or error. The full official support report and one intermittent watchdog recovery marker remain open.
+- Decision: Rerun the complete official JCAlgTest 1.8.2 support suite on the current image, preserving the partial 2026-10-29 report as incomplete evidence. Investigate the watchdog recovery marker separately.
+- Commit: Pending validation-tool commit; SHA to be recorded in metadata update.
+- Artifacts/logs: `artifacts/logs/rsa512-jcalgtest-physical-2BED-20261030.log` SHA-256 `65ce6c742b447c4bb306fccf77fc0e17bdb32987c2c6674262f17e29f9f4a718`.
