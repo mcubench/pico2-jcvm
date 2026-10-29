@@ -14129,6 +14129,6 @@
   per-byte filesystem-call bottleneck for RSA and EC keys.
 - Decision: Validate the same call on a physical ARM Pico when available, then
   resume the remaining API 3.0.5 Security and Crypto failures.
-- Commit: pending.
+- Commit: `4a178a2`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-getk-final-20261029/`;
   pre-change dispatch trace `artifacts/results/deploy/ec-key-getk-native-index-20261029/`.

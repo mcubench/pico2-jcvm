@@ -14,8 +14,8 @@
   arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto`
   passed. No physical Pico was available, so no firmware flash or hardware
   result is claimed.
-- The source and progress changes are awaiting their dedicated commit. After
-  committing, rerun the focused API test on an identified physical ARM Pico
+- Source and progress commit: `4a178a2` (`Batch persistent key component
+  clearing`). Rerun the focused API test on an identified physical ARM Pico
   when available. Then resume the remaining API 3.0.5 Security and Crypto
   failures, preserving upstream CAPs and all existing unrelated worktree edits.
 
