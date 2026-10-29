@@ -14455,7 +14455,7 @@
 - Decision: Continue using focused row filters on fresh VPCD storage; reserve
   the unfiltered run for a suitable longer window. Retest outstanding failures
   on physical ARM after both architecture builds and reader availability.
-- Commit: pending.
+- Commit: `58bafbf` (validation and documentation record).
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (`full-crypto-current.csv`, `full-crypto-emulator.log`); temporary client
   log `/tmp/apitest_card_5x39_p6b/APITEST_log_1793245348258.log`.
@@ -14479,7 +14479,7 @@
 - Decision: Keep the API CAP result open; inspect its test-key setup or capture
   the exact key size before changing PSS validation. Retry physical Crypto
   testing when a Pico reader is available.
-- Commit: pending.
+- Commit: `ba81951` (validation and documentation record).
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`
   (existing test log overwritten by the repository test); full API CAP data in
   `artifacts/results/deploy/crypto-current-vpcd-20261029/rsa-sha512-pss.csv`.
