@@ -130,8 +130,10 @@ std::vector<unsigned char> keyComponent(JC_Instance &signature,
   const jshort_t length = keyComponentLength(*key, component);
   if (length <= 0) {
     if (component == 0 && length == 0 && rsaCrtKey(*key)) {
-      const auto p = keyComponent(signature, 2);
-      const auto q = keyComponent(signature, 3);
+      auto p = keyComponent(signature, 2);
+      RsaSensitiveBufferGuard pGuard(p);
+      auto q = keyComponent(signature, 3);
+      RsaSensitiveBufferGuard qGuard(q);
       return rsaCrtModulus(p, q, keyModulusLength(*key));
     }
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
@@ -586,11 +588,14 @@ std::vector<unsigned char> privateModExp(
   if (rsaCrtKey(*rsaKeyInstance(signature.getField_Reference(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY)))) {
     std::array<std::vector<unsigned char>, 5> components;
+    RsaSensitiveBufferGuard componentsGuard(components);
     for (uint16_t i = 0; i < components.size(); ++i)
       components[i] = keyComponent(signature, static_cast<uint16_t>(i + 2));
     return rsaCrtModExp(modulus, components, input);
   }
-  return modExp(modulus, keyComponent(signature, 1), input);
+  auto exponent = keyComponent(signature, 1);
+  RsaSensitiveBufferGuard exponentGuard(exponent);
+  return modExp(modulus, exponent, input);
 }
 
 std::vector<unsigned char> transform(JC_Instance &signature,
@@ -599,7 +604,9 @@ std::vector<unsigned char> transform(JC_Instance &signature,
   if (hash.size() != digestLength(algorithm))
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   auto digestInfo = digestInfoFromHash(algorithm, hash.data());
-  const auto modulus = keyComponent(signature, 0);
+  RsaSensitiveBufferGuard digestInfoGuard(digestInfo);
+  auto modulus = keyComponent(signature, 0);
+  RsaSensitiveBufferGuard modulusGuard(modulus);
   const uint16_t length = static_cast<uint16_t>(modulus.size());
   if (modulus.size() != length)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
@@ -608,30 +615,35 @@ std::vector<unsigned char> transform(JC_Instance &signature,
         ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
     const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
-    return privateModExp(signature, modulus,
-                         encodedPss(signature, hash, length, bits));
+    auto encoded = encodedPss(signature, hash, length, bits);
+    RsaSensitiveBufferGuard encodedGuard(encoded);
+    return privateModExp(signature, modulus, encoded);
   }
   if (isIso9796(signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
-  return privateModExp(signature, modulus,
-                       encodedMessage(digestInfo, length));
+  auto encoded = encodedMessage(digestInfo, length);
+  RsaSensitiveBufferGuard encodedGuard(encoded);
+  return privateModExp(signature, modulus, encoded);
 }
 
 std::vector<unsigned char> transformMessage(
     JC_Instance &signature, const std::vector<unsigned char> &message,
     size_t *recoverableLength = nullptr) {
-  const auto hash = signatureHasInitialDigest(signature)
+  auto hash = signatureHasInitialDigest(signature)
       ? continueSignatureDigest(signature, message)
       : digestMessage(signature, message);
+  RsaSensitiveBufferGuard hashGuard(hash);
   if (isIso9796(signature)) {
     const auto key = rsaKeyInstance(signature.getField_Reference(
         ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
     const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
-    const auto modulus = keyComponent(signature, 0);
-    return privateModExp(signature, modulus,
-                         encodedIso9796(message, hash, modulus.size(), bits,
-                                        recoverableLength));
+    auto modulus = keyComponent(signature, 0);
+    RsaSensitiveBufferGuard modulusGuard(modulus);
+    auto encoded = encodedIso9796(message, hash, modulus.size(), bits,
+                                  recoverableLength);
+    RsaSensitiveBufferGuard encodedGuard(encoded);
+    return privateModExp(signature, modulus, encoded);
   }
   return transform(signature, hash);
 }

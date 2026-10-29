@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <random>
+#include <type_traits>
 #include <vector>
 
 #ifndef PC_VERSION
@@ -16,6 +17,29 @@
 #endif
 
 namespace jcvm {
+
+// Clear temporary byte buffers containing RSA keys, encoded blocks, or
+// decrypted material on every exit path (including Java Card exceptions).
+template <typename Buffer> class RsaSensitiveBufferGuard {
+ public:
+  explicit RsaSensitiveBufferGuard(Buffer &buffer) : buffer_(buffer) {}
+  RsaSensitiveBufferGuard(const RsaSensitiveBufferGuard &) = delete;
+  RsaSensitiveBufferGuard &operator=(const RsaSensitiveBufferGuard &) = delete;
+  ~RsaSensitiveBufferGuard() {
+    using Element = typename Buffer::value_type;
+    if constexpr (std::is_same_v<Element, unsigned char>) {
+      if (!buffer_.empty())
+        mbedtls_platform_zeroize(buffer_.data(), buffer_.size());
+    } else {
+      for (auto &element : buffer_)
+        if (!element.empty())
+          mbedtls_platform_zeroize(element.data(), element.size());
+    }
+  }
+
+ private:
+  Buffer &buffer_;
+};
 
 inline int rsaCrtRandomBytes(void *, unsigned char *output, size_t length) {
 #ifdef PC_VERSION

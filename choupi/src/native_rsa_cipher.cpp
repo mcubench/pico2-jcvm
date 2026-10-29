@@ -80,6 +80,7 @@ uint8_t randomByte() {
 void mgf1Sha1(const unsigned char *seed, size_t seedLength,
               unsigned char *mask, size_t maskLength) {
   std::vector<unsigned char> input(seedLength + 4);
+  RsaSensitiveBufferGuard inputGuard(input);
   std::copy(seed, seed + seedLength, input.begin());
   size_t produced = 0;
   uint32_t counter = 0;
@@ -143,16 +144,20 @@ std::vector<unsigned char> oaepEncode(
       0xbf,0xef,0x95,0x60,0x18,0x90,0xaf,0xd8,0x07,0x09};
   const size_t dbLength = modulusLength - hashLength - 1;
   std::vector<unsigned char> db(dbLength, 0);
+  RsaSensitiveBufferGuard dbGuard(db);
   std::copy(emptyLabelHash.begin(), emptyLabelHash.end(), db.begin());
   const size_t delimiter = dbLength - message.size() - 1;
   db[delimiter] = 1;
   std::copy(message.begin(), message.end(), db.begin() + delimiter + 1);
   std::array<unsigned char, hashLength> seed{};
+  RsaSensitiveBufferGuard seedGuard(seed);
   for (auto &byte : seed) byte = randomByte();
   std::vector<unsigned char> dbMask(dbLength);
+  RsaSensitiveBufferGuard dbMaskGuard(dbMask);
   mgf1Sha1(seed.data(), seed.size(), dbMask.data(), dbMask.size());
   for (size_t i = 0; i < dbLength; ++i) db[i] ^= dbMask[i];
   std::array<unsigned char, hashLength> seedMask{};
+  RsaSensitiveBufferGuard seedMaskGuard(seedMask);
   mgf1Sha1(db.data(), db.size(), seedMask.data(), seedMask.size());
   std::vector<unsigned char> encoded(modulusLength, 0);
   for (size_t i = 0; i < hashLength; ++i) encoded[1 + i] = seed[i] ^ seedMask[i];
@@ -170,12 +175,16 @@ std::vector<unsigned char> oaepDecode(
       0xbf,0xef,0x95,0x60,0x18,0x90,0xaf,0xd8,0x07,0x09};
   const size_t dbLength = encoded.size() - hashLength - 1;
   std::array<unsigned char, hashLength> seed{};
+  RsaSensitiveBufferGuard seedGuard(seed);
   std::copy_n(encoded.begin() + 1, hashLength, seed.begin());
   std::vector<unsigned char> db(encoded.begin() + 1 + hashLength, encoded.end());
+  RsaSensitiveBufferGuard dbGuard(db);
   std::array<unsigned char, hashLength> seedMask{};
+  RsaSensitiveBufferGuard seedMaskGuard(seedMask);
   mgf1Sha1(db.data(), db.size(), seedMask.data(), seedMask.size());
   for (size_t i = 0; i < hashLength; ++i) seed[i] ^= seedMask[i];
   std::vector<unsigned char> dbMask(dbLength);
+  RsaSensitiveBufferGuard dbMaskGuard(dbMask);
   mgf1Sha1(seed.data(), seed.size(), dbMask.data(), dbMask.size());
   for (size_t i = 0; i < dbLength; ++i) db[i] ^= dbMask[i];
   uint8_t bad = 0;
@@ -216,9 +225,13 @@ static jshort_t transformRsa(
       pad != 7 && pad != 9))
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   auto modulus = readBytes(*modulusArray, keyLength);
+  RsaSensitiveBufferGuard modulusGuard(modulus);
   auto exponent = readBytes(*exponentArray, exponentArray->size());
+  RsaSensitiveBufferGuard exponentGuard(exponent);
   auto input = readBytes(*inputArray, static_cast<uint16_t>(inputLength));
+  RsaSensitiveBufferGuard inputGuard(input);
   std::vector<unsigned char> encoded;
+  RsaSensitiveBufferGuard encodedGuard(encoded);
   if (nopad) {
     if (input.size() != keyLength)
       throwCryptoException(CryptoExceptionReason::IllegalValue);
@@ -245,8 +258,10 @@ static jshort_t transformRsa(
     encoded = oaepEncode(input, keyLength);
   }
   std::vector<unsigned char> result(keyLength);
+  RsaSensitiveBufferGuard resultGuard(result);
   if (crtPrivate) {
     std::array<std::vector<unsigned char>, 5> components;
+    RsaSensitiveBufferGuard componentsGuard(components);
     for (size_t i = 0; i < components.size(); ++i) {
       const size_t offset = i * crtPartLength;
       components[i].assign(exponent.begin() + offset,
