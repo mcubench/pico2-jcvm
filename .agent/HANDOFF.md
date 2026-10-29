@@ -1,3 +1,24 @@
+# Current continuation — SignatureMessageRecovery exception correction
+
+- Fixed `SignatureMessageRecovery.beginVerify()` after `init(MODE_SIGN)`: the
+  shared mode guard returned `CryptoException.INVALID_INIT`, but Java Card
+  specifies `ILLEGAL_USE` for this mode. Uninitialized instances still return
+  `INVALID_INIT`. Native-only change; no Java API sources or CAPs changed.
+- The unchanged upstream API 3.0.5 Crypto CAP focused test passed on current PC
+  JCVM/VPCD after the change: 466 rows, 465 intentionally skipped, selected
+  `beginVerify after init for sign (illegal use)` row `OK`; upload and cleanup
+  passed. Before the change, the same VPCD case returned `SW=6F00`; the prior
+  physical report recorded reason `0x0004`.
+- PC, ARM, and RISC-V `asymm_crypto` wrapper builds pass. No physical Pico was
+  available, so this fix has emulator validation only. Source commit:
+  `be0ea69`.
+- The separate RSA/SHA-512 PSS probe reports `ILLEGAL_VALUE`; this may reflect
+  the small test key being unable to fit SHA-512 PSS's default salt. It is not
+  changed or yet attributed as a native defect. See `crypto-current-vpcd-20261029/`.
+- Next: continue triaging remaining API 3.0.5 Crypto rows on VPCD, then repeat
+  focused cases on physical ARM hardware when an identified reader is available.
+  Preserve unrelated dirty worktree changes.
+
 # Current continuation — persistent native key writes and EC API validation
 
 ## Native Signature digest continuation (2026-10-29)

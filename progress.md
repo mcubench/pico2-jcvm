@@ -14340,3 +14340,28 @@
 - Commit: `d6ebeeb` and `1aaf17c` (source commits validated by this run).
 - Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-setinitialdigest-group-reader00.csv`.
 
+## 2026-10-29 — Correct SignatureMessageRecovery mode error (19 minutes)
+
+- Step/experiment: `signature-message-recovery-beginverify-mode`
+- When: '2026-10-29 02:45 UTC' - '2026-10-29 03:04 UTC'
+- Change: Made `SignatureMessageRecovery.beginVerify()` distinguish an
+  uninitialized object (`INVALID_INIT`) from an object initialized for signing
+  (`ILLEGAL_USE`). The API contract specifically requires `ILLEGAL_USE` for
+  the latter. No Java API source or CAP file changed.
+- Validation: `./tools/build-pc --profile asymm_crypto`,
+  `./tools/build arm --profile asymm_crypto`, and
+  `./tools/build riscv --profile asymm_crypto` passed. The unchanged API 3.0.5
+  Crypto CAP VPCD run passed the selected wrong-mode case (`OK`; 465 rows
+  intentionally skipped); upload and cleanup passed. Before the fix, that
+  VPCD case returned `SW=6F00`. No physical device was enumerated or flashed.
+- Result: Focused mode behavior matches the documented exception contract.
+  Separate RSA/SHA-512 PSS and ISO9796 parameter probes returned
+  `ILLEGAL_VALUE`; these were not changed because their expected behavior or
+  test-key constraints need further isolation.
+- Decision: Continue with the remaining API 3.0.5 Crypto failures and retest
+  this fix on physical ARM when hardware is available. No hardware metric was
+  measured.
+- Commit: `be0ea69`.
+- Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
+  (focused CSVs and VPCD flash image).
+

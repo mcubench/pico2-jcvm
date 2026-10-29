@@ -5993,3 +5993,31 @@ fix.
   ARM, and RISC-V `asymm_crypto` builds passed. No physical validation was run.
   Artifact:
   `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-rsa-precomputed-invalid-reader00-fixed.csv`.
+
+## SignatureMessageRecovery beginVerify mode error (2026-10-29)
+
+- **Symptom:** The API 3.0.5 Crypto CAP's `beginVerify after init for sign`
+  case did not receive the specified `CryptoException.ILLEGAL_USE`. The earlier
+  physical run recorded reason `0x0004` (`INVALID_INIT`); before the fix, the
+  current PC JCVM/VPCD case returned `6F00`.
+- **Cause:** `beginVerify()` used the shared `requireInitialized(...,
+  MODE_VERIFY)` guard. That guard reports `INVALID_INIT` for either an
+  uninitialized object or a mode mismatch, but the Java Card
+  `SignatureMessageRecovery.beginVerify()` contract specifically requires
+  `ILLEGAL_USE` when initialized for signing.
+- **Viable fix:** First call the no-mode initialization check, then report
+  `ILLEGAL_USE` for a non-verify mode in `javacard_security_Signature_beginVerify`.
+  This preserves `INVALID_INIT` when the object was never initialized.
+- **Validation:** Unchanged upstream API 3.0.5 Crypto CAP on current PC JCVM/VPCD
+  passed the selected row (`OK`; 465 other rows filtered). CAP upload and
+  cleanup passed. PC, ARM, and RISC-V `asymm_crypto` builds passed. No physical
+  device was available. Source commit: `be0ea69`.
+- **Other diagnostic:** RSA/SHA-512 PSS on the same API CAP returned
+  `CryptoException.ILLEGAL_VALUE` in VPCD. Native PSS initialization checks
+  whether the key can fit the SHA-512 digest and default digest-length salt;
+  insufficient key length is a plausible explanation, but the test key size
+  and exact failing subcall were not established. Do not change this case
+  without isolating those details.
+- **Artifacts:**
+  `artifacts/results/deploy/crypto-current-vpcd-20261029/mr-beginverify-wrong-mode-fixed.csv`,
+  `rsa-sha512-pss.csv`, and `rsa-iso9796-params.csv`.

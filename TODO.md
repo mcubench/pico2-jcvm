@@ -49,6 +49,11 @@ out explicitly.
   and 14 card-runtime reason mismatches. The `Cipher()` factory `6F00` from
   the older Crypto report passed in VPCD and remains a physical-only
   discrepancy to retest, not a confirmed native failure.
+- [x] Correct `SignatureMessageRecovery.beginVerify()` after initialization in
+  sign mode: Java Card requires `CryptoException.ILLEGAL_USE`; the previous
+  shared mode guard returned `INVALID_INIT`. The unchanged upstream API 3.0.5
+  Crypto CAP selected case passes on current PC JCVM/VPCD. This does not replace
+  physical retesting of the dated baseline CSV.
 - [ ] Re-run the affected deploy areas after each fix on VPCD, then physical
   hardware after ARM and RISC-V builds pass. Source data:
   `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.
