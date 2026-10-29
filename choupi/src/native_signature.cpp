@@ -937,6 +937,8 @@ void javacard_security_Signature_init(
   if (!parameters) throw Exceptions::NullPointerException;
   const uint8_t algorithm = static_cast<uint8_t>(signature->getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
+  if (isMessageRecoverySignature(*signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
