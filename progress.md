@@ -14904,5 +14904,5 @@
 - Validation: On identified physical Pico 2 `2BED26ED20556535`, with exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00`, the probe selected installed JCAlgTest 1.8.2 (`GETVERSION` response `1.8.2_jc305`) and ran the RSA-512 support APDU three times. Measured 1,532 ms, 1,707 ms, and 1,650 ms; every result was `status=00`, APDU response SW `9000`. Elevated USB/PCSC path and `pcscd` ACL refresh were used. `git diff --check` passed. No firmware rebuild, flash, full support suite, or Windows validation was needed for this host utility change.
 - Result: The persistent-component batching fix is physically validated for the RSA-512 KeyPair support call, with no timeout or error. The full official support report and one intermittent watchdog recovery marker remain open.
 - Decision: Rerun the complete official JCAlgTest 1.8.2 support suite on the current image, preserving the partial 2026-10-29 report as incomplete evidence. Investigate the watchdog recovery marker separately.
-- Commit: Pending validation-tool commit; SHA to be recorded in metadata update.
+- Commit: `1053bca` (probe and validation record); this metadata-only commit records its SHA.
 - Artifacts/logs: `artifacts/logs/rsa512-jcalgtest-physical-2BED-20261030.log` SHA-256 `65ce6c742b447c4bb306fccf77fc0e17bdb32987c2c6674262f17e29f9f4a718`.
