@@ -1,4 +1,20 @@
-# Latest continuation — DH/DHC Crypto VPCD retest (2026-10-29)
+# Latest continuation — JCAlgTest VPCD persistence integration (2026-10-29)
+
+- `./tools/test-pc-vpcd-applet --passes 2` passed 30/30 checks across two fresh
+  emulator processes. Both passes selected the unchanged JCAlgTest 1.8.2 CAP,
+  returned GETVERSION `1.8.2_jc305`, JCSystem info, SHA-256 support/doFinal
+  and static performance, AES and RSA support, secure random, CRC16, and the
+  expected `NO_SUCH_ALGORITHM` response for the unsupported one-shot factory.
+  Pass 2 resumed the installed applet from the saved emulator image. This
+  supersedes the older TODO statement that VPCD applet field access failed.
+- The single pass took 59.352 s; the two-process persistence run took about
+  76.8 s total (pass 1 58.449 s, pass 2 18.333 s). The emulator required
+  23.570 s to connect on the first pass. This is host persistence evidence,
+  not a physical Pico power-cycle test.
+- Emulator log: `artifacts/logs/host-vpcd-jcalgtest-20261029-two-pass.log`.
+  Physical PC/SC enumeration was not part of this run.
+
+# Previous continuation — DH/DHC Crypto VPCD retest (2026-10-29)
 
 - Re-ran the two unchanged API 3.0.5 `KeyAgreement` known-secret rows for
   `ALG_EC_SVDP_DH` and `ALG_EC_SVDP_DHC` on a fresh VPCD flash image. Both

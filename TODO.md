@@ -1397,9 +1397,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   report command chaining, secure messaging, interindustry encoding, and CLA
   validity; the corresponding `APDU` methods read the current command's CLA.
   A standalone test passes 17 cases, and API CAP conversion plus the ARM build
-  pass. The VPCD applet reaches its APDU entry and invokes the APDU path, but
-  its first applet field access fails before a result can validate these
-  helpers.
+  pass. Current-source host VPCD now completes two clean processes of the
+  unchanged JCAlgTest 1.8.2 CAP: install and SELECT, GETVERSION, JCSystem,
+  supported-algorithm probes, SHA-256 prepare/doFinal and static performance,
+  AES/RSA/secure-random/CRC probes, and expected `NO_SUCH_ALGORITHM` for the
+  unsupported one-shot factory. Both processes pass all 15 checks (30/30),
+  including restoration from the saved image. This resolves the earlier host
+  applet field-access failure; physical APDU validation, extended APDUs, and
+  T=1 WTX remain open.
   `APDU.getCurrentAPDU()` now returns the same Java APDU object passed to
   `process()` and throws `SecurityException` during `select()`, verified in two
   VPCD applet cases. Physical validation remains blocked by missing Pico PC/SC
@@ -1410,11 +1415,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   normal outgoing mode. The implementation cannot send a T=1 WTX while the
   VM synchronously processes a CCID command, so actual transport time-extension
   signaling remains unsupported.
-  The bridge fragments data responses at
-  short Le and serves `GET RESPONSE` using `61xx`. Parser, response-chain, and
-  Context state tests pass; the Pico cycle also passed after flashing this
-  implementation. An applet-level APDU exchange and PC/SC verification remain
-  outstanding; extended APDUs are rejected.
+  The bridge fragments data responses at short Le and serves `GET RESPONSE`
+  using `61xx`. Parser, response-chain, and Context state tests pass; the Pico
+  cycle also passed after flashing this implementation. Host VPCD applet
+  exchanges now pass; physical APDU/PCSC validation remains outstanding.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
   remaining transient array variants, `Util` helpers, `JCSystem` queries,
   `AID`, and

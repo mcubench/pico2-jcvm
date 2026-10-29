@@ -6155,6 +6155,21 @@ fix.
 - **Artifacts:** `artifacts/results/deploy/crypto-dh-vpcd-20261029/`; clean
   output is in `retry2/`.
 
+## JCAlgTest host VPCD applet path passes after restore (2026-10-29)
+
+- **Observation:** Current-source `tools/test-pc-vpcd-applet --passes 2` passed
+  twice through the unchanged JCAlgTest v1.8.2 CAP, including GETVERSION,
+  JCSystem, support probes, SHA-256 doFinal and static performance, and the
+  expected unsupported one-shot factory result. Each pass reported 15/15; the
+  second emulator process resumed the installed applet from the saved image.
+- **Resolution:** The older TODO statement that the VPCD applet failed on its
+  first applet field access is stale for current source. The host integration
+  path now validates applet stateful API calls and process restart. It does not
+  establish physical Pico persistence or Windows PC/SC behavior.
+- **Timing/artifact:** First pass 58.449 s, second process 18.333 s, initial
+  VPCD connect 23.570 s. Emulator log:
+  `artifacts/logs/host-vpcd-jcalgtest-20261029-two-pass.log`.
+
 ## Full API 3.0.5 Crypto VPCD sweep is too slow for a normal session (2026-10-29)
 
 - **Observation:** The unchanged unfiltered Crypto CAP processed 190 of 466
