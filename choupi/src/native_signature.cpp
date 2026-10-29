@@ -183,38 +183,40 @@ uint32_t readBigEndianWord(const std::vector<unsigned char> &state,
          static_cast<uint32_t>(state[offset + 3]);
 }
 
-uint64_t readInitialMessageLength(JC_Array &lengthBytes) {
-  uint64_t result = 0;
-  for (uint16_t i = 0; i < 8; ++i)
-    result = (result << 8) |
-        static_cast<uint8_t>(lengthBytes.getByteEntry(i));
-  return result;
-}
+struct DigestByteLength {
+  uint64_t low;
+  uint64_t high;
+};
 
-uint16_t readInitialStateLength(JC_Array &lengthBytes) {
-  return static_cast<uint16_t>(
-      (static_cast<uint8_t>(lengthBytes.getByteEntry(8)) << 8) |
-      static_cast<uint8_t>(lengthBytes.getByteEntry(9)));
+DigestByteLength readInitialMessageLength(JC_Array &lengthBytes) {
+  DigestByteLength result{0, 0};
+  for (uint16_t i = 0; i < 8; ++i) {
+    result.high = (result.high << 8) |
+        static_cast<uint8_t>(lengthBytes.getByteEntry(i));
+    result.low = (result.low << 8) |
+        static_cast<uint8_t>(lengthBytes.getByteEntry(8 + i));
+  }
+  return result;
 }
 
 void storeInitialDigestState(JC_Instance &signature,
                              const std::vector<unsigned char> &state,
-                             uint64_t digestedLength) {
+                             DigestByteLength digestedLength) {
   auto recoveryHash = byteArray(signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
   auto lengthBytes = byteArray(signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR);
-  if (state.size() > recoveryHash->size() || lengthBytes->size() < 10)
+  if (state.size() > recoveryHash->size() || lengthBytes->size() < 16)
     throw Exceptions::ArrayStoreException;
   for (uint16_t i = 0; i < recoveryHash->size(); ++i)
     recoveryHash->setByteEntry(i, i < state.size() ? state[i] : 0);
   for (uint16_t i = 0; i < 8; ++i) {
     const unsigned shift = static_cast<unsigned>((7 - i) * 8);
-    lengthBytes->setByteEntry(i, static_cast<jbyte_t>(digestedLength >> shift));
+    lengthBytes->setByteEntry(i,
+        static_cast<jbyte_t>(digestedLength.high >> shift));
+    lengthBytes->setByteEntry(8 + i,
+        static_cast<jbyte_t>(digestedLength.low >> shift));
   }
-  lengthBytes->setByteEntry(8,
-      static_cast<jbyte_t>(state.size() >> 8));
-  lengthBytes->setByteEntry(9, static_cast<jbyte_t>(state.size()));
   signature.setField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE,
       static_cast<jbyte_t>(kInitialDigestState));
@@ -222,7 +224,8 @@ void storeInitialDigestState(JC_Instance &signature,
 
 std::vector<unsigned char> continueDigestFromState(
     uint8_t algorithm, const std::vector<unsigned char> &state,
-    uint64_t digestedLength, const std::vector<unsigned char> &message) {
+    DigestByteLength digestedLength,
+    const std::vector<unsigned char> &message) {
   std::vector<unsigned char> result;
   int rc = -1;
   switch (algorithm) {
@@ -234,8 +237,8 @@ std::vector<unsigned char> continueDigestFromState(
     rc = mbedtls_sha1_starts(&context);
     for (size_t i = 0; rc == 0 && i < 5; ++i)
       context.MBEDTLS_PRIVATE(state)[i] = readBigEndianWord(state, i * 4);
-    context.MBEDTLS_PRIVATE(total)[0] = static_cast<uint32_t>(digestedLength);
-    context.MBEDTLS_PRIVATE(total)[1] = static_cast<uint32_t>(digestedLength >> 32);
+    context.MBEDTLS_PRIVATE(total)[0] = static_cast<uint32_t>(digestedLength.low);
+    context.MBEDTLS_PRIVATE(total)[1] = static_cast<uint32_t>(digestedLength.low >> 32);
     std::fill(std::begin(context.MBEDTLS_PRIVATE(buffer)),
               std::end(context.MBEDTLS_PRIVATE(buffer)), 0);
     if (rc == 0 && !message.empty())
@@ -262,8 +265,8 @@ std::vector<unsigned char> continueDigestFromState(
     rc = mbedtls_sha256_starts(&context, sha224 ? 1 : 0);
     for (size_t i = 0; rc == 0 && i < 8; ++i)
       context.MBEDTLS_PRIVATE(state)[i] = readBigEndianWord(state, i * 4);
-    context.MBEDTLS_PRIVATE(total)[0] = static_cast<uint32_t>(digestedLength);
-    context.MBEDTLS_PRIVATE(total)[1] = static_cast<uint32_t>(digestedLength >> 32);
+    context.MBEDTLS_PRIVATE(total)[0] = static_cast<uint32_t>(digestedLength.low);
+    context.MBEDTLS_PRIVATE(total)[1] = static_cast<uint32_t>(digestedLength.low >> 32);
     std::fill(std::begin(context.MBEDTLS_PRIVATE(buffer)),
               std::end(context.MBEDTLS_PRIVATE(buffer)), 0);
     if (rc == 0 && !message.empty())
@@ -294,8 +297,8 @@ std::vector<unsigned char> continueDigestFromState(
         word = (word << 8) | state[i * 8 + j];
       context.MBEDTLS_PRIVATE(state)[i] = word;
     }
-    context.MBEDTLS_PRIVATE(total)[0] = digestedLength;
-    context.MBEDTLS_PRIVATE(total)[1] = 0;
+    context.MBEDTLS_PRIVATE(total)[0] = digestedLength.low;
+    context.MBEDTLS_PRIVATE(total)[1] = digestedLength.high;
     std::fill(std::begin(context.MBEDTLS_PRIVATE(buffer)),
               std::end(context.MBEDTLS_PRIVATE(buffer)), 0);
     if (rc == 0 && !message.empty())
@@ -854,13 +857,22 @@ std::vector<unsigned char> continueSignatureDigest(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
   auto lengthBytes = byteArray(signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR);
-  const uint16_t stateLength = readInitialStateLength(*lengthBytes);
-  if (stateLength == 0 || stateLength > stateArray->size())
-    throwCryptoException(CryptoExceptionReason::IllegalUse);
-  const auto state = readBytes(*stateArray, 0, stateLength);
-  const uint64_t digestedLength = readInitialMessageLength(*lengthBytes);
   const uint8_t algorithm = static_cast<uint8_t>(signature.getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM));
+  uint16_t stateLength = 0;
+  switch (algorithm) {
+  case 1: stateLength = 20; break;
+  case 4:
+  case 7: stateLength = 32; break;
+  case 5:
+  case 6: stateLength = 64; break;
+  default: throwCryptoException(CryptoExceptionReason::IllegalUse);
+  }
+  if (stateLength > stateArray->size() || lengthBytes->size() < 16)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  const auto state = readBytes(*stateArray, 0, stateLength);
+  const DigestByteLength digestedLength =
+      readInitialMessageLength(*lengthBytes);
   return continueDigestFromState(algorithm, state, digestedLength, message);
 }
 
@@ -1033,14 +1045,28 @@ void javacard_security_Signature_setInitialDigest(
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   checkRange(digest, digestOffset, digestLength);
   checkRange(messageLength, messageLengthOffset, messageLengthLength);
+  const jshort_t maxMessageLengthBytes =
+      (digestAlgorithm == 5 || digestAlgorithm == 6) ? 16 : 8;
   if (digestLength != expectedStateLength || messageLengthLength == 0 ||
-      messageLengthLength > 8)
+      messageLengthLength > maxMessageLengthBytes)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
-  uint64_t digestedLength = 0;
-  for (jshort_t i = 0; i < messageLengthLength; ++i)
-    digestedLength = (digestedLength << 8) | static_cast<uint8_t>(
-        messageLength->getByteEntry(static_cast<uint16_t>(messageLengthOffset + i)));
-  if (digestedLength == 0 || digestedLength % blockLength != 0)
+  DigestByteLength digestedLength{0, 0};
+  const jshort_t highLengthBytes =
+      std::max<jshort_t>(0, static_cast<jshort_t>(messageLengthLength - 8));
+  for (jshort_t i = 0; i < messageLengthLength; ++i) {
+    const uint8_t byte = static_cast<uint8_t>(messageLength->getByteEntry(
+        static_cast<uint16_t>(messageLengthOffset + i)));
+    if (i < highLengthBytes)
+      digestedLength.high = (digestedLength.high << 8) | byte;
+    else
+      digestedLength.low = (digestedLength.low << 8) | byte;
+  }
+  const bool sha512Family = digestAlgorithm == 5 || digestAlgorithm == 6;
+  if ((sha512Family && digestedLength.high >= (uint64_t{1} << 61)) ||
+      (!sha512Family && (digestedLength.high != 0 ||
+                         digestedLength.low > 0x1FFFFFFFFFFFFFFFULL)) ||
+      (digestedLength.high == 0 && digestedLength.low == 0) ||
+      digestedLength.low % blockLength != 0)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   const auto state = readBytes(*digest, static_cast<uint16_t>(digestOffset),
                                static_cast<uint16_t>(digestLength));
