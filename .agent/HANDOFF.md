@@ -32,6 +32,7 @@
   and GPPro cleanup passed. Result:
   `artifacts/results/deploy/cipher-factory-vpcd-20261029/`. It remains a
   physical-only discrepancy pending retest on an identified Pico.
+- Backlog and test record committed as `c3be5bd`.
 - No physical Pico was connected, so these are emulator results only. Next:
   continue triaging remaining API 3.0.5 Security and Crypto failures, and rerun
   focused EC tests on physical ARM hardware when available. Preserve unrelated

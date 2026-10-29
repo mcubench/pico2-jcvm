@@ -14202,5 +14202,5 @@
   justify changing native Cipher dispatch.
 - Decision: Rerun that exact case on an identified physical ARM Pico when
   available; meanwhile continue confirmed API 3.0.5 native failures.
-- Commit: pending.
+- Commit: `c3be5bd`.
 - Artifacts/logs: `artifacts/results/deploy/cipher-factory-vpcd-20261029/`.
