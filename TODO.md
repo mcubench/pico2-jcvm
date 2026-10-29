@@ -75,7 +75,11 @@ out explicitly.
   focused rows, and schedule the full run only in a sufficiently long window.
   Follow-up existing native VPCD vectors passed 99/99, including SHA-512 PSS
   precomputed sign/verify with explicit zero salt. This does not resolve the
-  API CAP's default-salt `ILLEGAL_VALUE`; its generated key size is unknown.
+  API CAP's default-salt row as a supported operation: bytecode inspection
+  shows its selected RSA-CRT test key is only 1024 bits. A 64-byte SHA-512
+  digest salt needs at least 130 encoded bytes; that key has 128, so
+  `ILLEGAL_VALUE` is correct for this test input. Keep SHA-512 PSS enabled and
+  do not alter native size checks or upstream CAP data.
 
 The physical 3.0.5 sweep itself completed Core (291: 271 OK, 15 expected
 unsupported, four optional Ext scenarios unavailable, one known

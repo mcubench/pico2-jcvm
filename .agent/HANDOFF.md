@@ -12161,8 +12161,11 @@ confirmed on hardware. The original investigation evidence remains in earlier
 - Follow-up offline check: `./tools/env python3
   tools/tests/test_asymm_crypto_vpcd.py` passed 99/99 outside the restricted
   sandbox, including the native SHA-512 PSS explicit zero-salt vectors. This
-  confirms that valid SHA-512 PSS path, but does not resolve the API CAP's
-  `ILLEGAL_VALUE` because its key size/default-salt feasibility is unknown.
-  The approved reader helper found zero physical Pico readers. The normal
+  confirms the valid SHA-512 PSS path. Bytecode inspection resolves the API
+  CAP's `ILLEGAL_VALUE`: case 46 maps to the 1024-bit RSA-CRT test key, but
+  SHA-512 PSS with the default 64-byte salt needs a 130-byte encoded message;
+  a 1024-bit key has only 128 bytes. The size rejection is correct. Keep the
+  algorithm enabled and do not change the upstream CAP. The approved reader
+  helper found zero physical Pico readers. The normal
   sandbox attempt failed to create the local VPCD socket (`Operation not
   permitted`); the elevated local test used no USB.

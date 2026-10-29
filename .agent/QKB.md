@@ -6099,6 +6099,28 @@ fix.
   generated key size/default salt constraints remain unverified.
 - **Artifact:** `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`.
 
+## API Crypto SHA-512 PSS row uses an undersized 1024-bit test key (2026-10-29)
+
+- **Symptom:** The API 3.0.5 Crypto CAP's
+  `ALG_RSA_SHA_512_PKCS1_PSS` sign/verify sequence returned
+  `CryptoException.ILLEGAL_VALUE` (`0x0001`) on current PC JCVM/VPCD.
+- **Cause:** Inspection of the unchanged host client bytecode shows the row's
+  case 46 maps to `K_RSA`, and `selectKeys(K_RSA)` uses
+  `ApiTestCryptoKeys.rsaCrt()`, which builds a 1024-bit RSA-CRT key. Default
+  PSS salt length equals the SHA-512 digest size (64 bytes). PSS needs at least
+  `hLen + sLen + 2 = 130` encoded bytes, but the key provides 128. Rejecting
+  this key/parameter combination with `ILLEGAL_VALUE` is correct.
+- **Viable resolution:** None needed in firmware. Keep SHA-512 PSS enabled and
+  retain the key-size validation. Do not modify the upstream CAP; its fixture
+  cannot exercise this default-salt operation. Use explicit shorter salt or a
+  larger RSA key for an affirmative operation test.
+- **Validation:** Existing native PC/VPCD asymmetric suite passed 99/99,
+  including SHA-512 PSS precomputed sign/verify with explicit zero salt. No
+  physical device was available.
+- **Evidence:** `javap -c -p` inspection of
+  `AlgTest_JavaCard/deploy/client/AlgTestJClient.jar`, class
+  `algtestapi.ApiTestCryptoSignature` and `algtestapi.ApiTestCryptoKeys`.
+
 ## Reuse of VPCD storage caused intermittent Crypto IOException results (2026-10-29)
 
 - **Symptom:** After multiple Crypto CAP upload/test/cleanup cycles on one PC

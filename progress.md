@@ -14484,3 +14484,26 @@
   (existing test log overwritten by the repository test); full API CAP data in
   `artifacts/results/deploy/crypto-current-vpcd-20261029/rsa-sha512-pss.csv`.
 
+## 2026-10-29 — Explain API CAP SHA-512 PSS exception (3 minutes)
+
+- Step/experiment: `crypto-api-pss-test-key-inspection`
+- When: '2026-10-29 04:04 UTC' - '2026-10-29 04:07 UTC'
+- Change: No source change. Inspected the unchanged official API client bytecode
+  and its test-key helper to identify the key selected for the failing
+  `ALG_RSA_SHA_512_PKCS1_PSS` sign/verify row.
+- Validation: `javap -c -p` inspection showed `KIND[46] == K_RSA`; the Crypto
+  Signature client maps `K_RSA` to `ApiTestCryptoKeys.rsaCrt()`, which builds a
+  1024-bit RSA-CRT key. For SHA-512 with the default digest-sized 64-byte PSS
+  salt, EMSA-PSS requires `emLen >= hLen + sLen + 2 = 130` bytes, while a
+  1024-bit modulus gives `emLen = 128` bytes. `ILLEGAL_VALUE` is therefore the
+  correct key/parameter constraint. Existing native explicit zero-salt
+  SHA-512 PSS VPCD vectors passed within the 99/99 suite. No hardware test was
+  possible because the approved helper found zero physical readers.
+- Result: The API CAP row's exception is explained by its undersized test key;
+  it does not demonstrate a broken SHA-512 PSS implementation.
+- Decision: Keep SHA-512 PSS support enabled; do not relax native size checks or
+  change the upstream CAP. Physical verification remains pending.
+- Commit: pending.
+- Artifacts/logs: `AlgTest_JavaCard/deploy/client/AlgTestJClient.jar`
+  (read-only bytecode inspection); no new result artifact.
+
