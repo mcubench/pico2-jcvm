@@ -14634,7 +14634,7 @@
   key material retained in Java Card key objects or Mbed TLS MPI internals.
 - Decision: Keep this incremental cleanup; continue audit of the remaining RSA
   private-operation timing/fault protections and broader project backlog.
-- Commit: implementation `df2d2d9`; validation/doc record commit pending.
+- Commit: implementation `df2d2d9`; validation/doc record commit `e5562ec`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   no new persistent test artifacts.
 

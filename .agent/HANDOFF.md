@@ -27,7 +27,7 @@
 - Continued through the RSA Signature API entry points: message/digest/signature
   copies, verification blocks, and ISO9796 recovered-message buffers now also
   use scoped guards. PC, ARM, and RISC-V builds plus VPCD 99/99 pass again.
-  Implementation commit: `df2d2d9`. The worktree still has the unrelated
+  Implementation commit: `df2d2d9`; record commit `e5562ec`. The worktree still has the unrelated
   changes listed by `git status`; they were not staged.
 
 ## RSA NOPAD both-direction fix (2026-10-29)
