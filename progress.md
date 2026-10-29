@@ -14796,3 +14796,14 @@
 - Decision: Keep physical CPLC validation open until ARM firmware is flashed and queried through a real CCID reader. Do not treat PC VPCD's `6999` as a CPLC failure.
 - Commit: `6d08baf` (CPLC implementation/build fixes); this progress record follows.
 - Artifacts/logs: GPPro host VPCD pass: `artifacts/results/gppro-empty-install-vpcd-20261029T142152Z/`; exact unit output was 14/14. The failed PC VPCD GET DATA attempt is recorded in `.agent/QKB.md`.
+
+## 2026-10-29 — Validate CPLC GET DATA on physical Pico 2 boards (7 minutes)
+
+- Step/experiment: `gp-cplc-physical-validation`
+- When: '2026-10-29 14:30 UTC' - '2026-10-29 14:37 UTC'
+- Change: Updated TODO, QKB, and session handoff with physical validation evidence and PC/SC recovery guidance. The current ARM image (`8d4bbbd1b395de7babf97915202316ff8b9239161f2e32d5685a0b4cc7468791`) was flashed to identified boards `2BED26ED20556535` and `D92E743D5F640C0F`.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 2BED26ED20556535` and the equivalent D92 command both passed ARM/RISC-V build gates, verified flash, and finite serial monitors with `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. The bounded `./tools/probe-gp-get-data` SmartcardIO probe returned the exact CPLC TLV with `9000` on both boards, both in open mode and after SCP03 C-MAC authentication. A reader temporarily disappeared from PC/SC; the authorized access helper restored enumeration and validation continued on the second board. `git diff --check` passed for the documentation changes.
+- Result: The physical CCID path serves `9F7F` correctly before and after SCP03 authentication on two Pico 2 identities. The APDU value contains the configured synthetic Feitian/RP2350 markers, `6302` date fields, and zero serial/batch/equipment identifiers.
+- Decision: CPLC hardware validation is closed. Continue with the highest-priority open implementation and acceptance items in `TODO.md`; retain per-device failover and reader-refresh guidance.
+- Commit: `ecd1b7b` (TODO/QKB/handoff validation record); this progress entry follows.
+- Artifacts/logs: `artifacts/logs/gp-cplc-physical-D92E743D5F640C0F-20261029.log`; `artifacts/logs/cycle-choupi-20261029T143004Z.log`; `artifacts/logs/cycle-choupi-20261029T143255Z.log`; logs are ignored by `.gitignore` and remain local.
