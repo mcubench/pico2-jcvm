@@ -6289,3 +6289,34 @@ fix.
   `artifacts/results/jcalgtest-vpcd-asymm-current-pcsc-20261029/`; complete
   native probe timing in
   `artifacts/logs/asymm-crypto-keypair-vpcd-timing-20261029.log`.
+
+## PC VPCD does not exercise the Pico CCID GET DATA dispatcher (2026-10-29)
+
+- **Symptom:** Running the SmartcardIO `GPGetDataApduProbe` against a plain
+  `choupi --vpcd` PC emulator returned `6999` for `80 CA 00 66`. The emulator
+  VPCD endpoint implements CAP/runtime APDUs but does not pass this request
+  through `src/ccid_device.cpp`, where card-manager GET DATA is dispatched.
+- **Viable test split:** Use `./tools/test-gp-get-data` for the shared
+  CPLC/Card Recognition TLV encoder and response status. Use
+  `tools/GPGetDataApduProbe.java` only with actual CCID firmware for open and
+  SCP03-authenticated GET DATA checks. The separate PC VPCD GPPro install test
+  remains valid for CAP LOAD/INSTALL; it does not cover GET DATA.
+- **Validation:** The existing VPCD GPPro install flow passed after the
+  unsuccessful GET DATA attempt was removed from it. No physical CCID reader
+  was tested in this step.
+
+## Default-profile build failures in signature digest support (2026-10-29)
+
+- **Symptom/cause:** The `current` profile's ARM build failed compiling
+  `Signature.setInitialDigest()` when no RSA/ECDSA signature algorithms were
+  selected, because its validation called helper functions compiled only for
+  those optional providers. After guarding those calls, ARM linked with
+  undefined `mbedtls_sha256_free`: the firmware CMake source condition omitted
+  `sha256.c` when SHA-256 was enabled by itself.
+- **Viable fix:** Compile the algorithm check only when its family is selected,
+  and include SHA-256's Mbed TLS source in the firmware whenever
+  `JC_SUPPORT_SHA256` is enabled. An unused local must be marked
+  `[[maybe_unused]]` for the profile with both signature families disabled.
+- **Validation:** `./tools/build arm` and `./tools/build riscv` passed on the
+  `current` profile after both changes. The RISC-V wrapper builds its
+  documented VM-core smoke image only.

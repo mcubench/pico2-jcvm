@@ -15,6 +15,9 @@ public final class GPGetDataApduProbe {
       fromHex("404142434445464748494A4B4C4D4E4F");
   private static final byte[] CARD_DATA =
       fromHex("6618731606072A864886FC6B01640B06092A864886FC6B040310");
+  private static final byte[] CPLC_DATA = fromHex(
+      "9F7F2A096E23504A43630200016302000000000000096E6302096E6302" +
+      "096E630200000000096E630200000000");
 
   private static byte[] fromHex(String text) {
     String compact = text.replaceAll("\\s", "");
@@ -159,7 +162,8 @@ public final class GPGetDataApduProbe {
   private static ResponseAPDU transmitProtected(CardChannel channel,
                                                  byte[] sessionState,
                                                  String name,
-                                                 CommandAPDU command)
+                                                 CommandAPDU command,
+                                                 byte[] expectedData)
       throws Exception {
     byte[] sessionMacKey = Arrays.copyOfRange(sessionState, 0, 16);
     byte[] chainingValue = Arrays.copyOfRange(sessionState, 16, 32);
@@ -167,11 +171,13 @@ public final class GPGetDataApduProbe {
     byte[] header = { (byte)0x84, plain[1], plain[2], plain[3], 0x08 };
     byte[] mac = aesCmac(sessionMacKey,
         concat(chainingValue, header, new byte[0]));
+    System.arraycopy(mac, 0, sessionState, 16, mac.length);
     byte[] protectedCommand = concat(header, firstEight(mac), new byte[] {0x00});
     ResponseAPDU response = transmit(channel, name,
         new CommandAPDU(protectedCommand));
-    if (response.getSW() != 0x9000 || !Arrays.equals(response.getData(), CARD_DATA)) {
-      throw new IllegalStateException("authenticated Card Data response mismatch");
+    if (response.getSW() != 0x9000 ||
+        !Arrays.equals(response.getData(), expectedData)) {
+      throw new IllegalStateException("authenticated GET DATA response mismatch");
     }
     return response;
   }
@@ -205,14 +211,17 @@ public final class GPGetDataApduProbe {
         throw new IllegalStateException("unexpected Card Recognition Data response");
       }
 
-      ResponseAPDU cplc = transmit(channel, "GET_DATA_CPLC_UNAVAILABLE",
+      ResponseAPDU cplc = transmit(channel, "GET_DATA_CPLC",
           new CommandAPDU(0x80, 0xCA, 0x9F, 0x7F, 256));
-      if (cplc.getSW() != 0x6a88 || cplc.getData().length != 0) {
-        throw new IllegalStateException("unavailable CPLC must return 6A88");
+      if (cplc.getSW() != 0x9000 ||
+          !Arrays.equals(cplc.getData(), CPLC_DATA)) {
+        throw new IllegalStateException("unexpected CPLC response");
       }
       byte[] session = establishScp03(channel);
       transmitProtected(channel, session, "GET_DATA_CARD_RECOGNITION_AUTHENTICATED",
-          new CommandAPDU(0x80, 0xCA, 0x00, 0x66, 256));
+          new CommandAPDU(0x80, 0xCA, 0x00, 0x66, 256), CARD_DATA);
+      transmitProtected(channel, session, "GET_DATA_CPLC_AUTHENTICATED",
+          new CommandAPDU(0x80, 0xCA, 0x9F, 0x7F, 256), CPLC_DATA);
       System.out.println("TEST:PASS gp_get_data_open_and_authenticated");
     } finally {
       card.disconnect(false);

@@ -6,6 +6,11 @@ out explicitly.
 
 ## Current prioritized backlog — 2026-10-20
 
+- [x] Repair `current`-profile firmware builds when SHA-256 is the only
+  selected digest: guard `setInitialDigest()`'s optional RSA/ECDSA checks and
+  include the Mbed TLS SHA-256 source in ARM firmware. ARM and RISC-V wrappers
+  now pass again.
+
 ### Fresh API 3.0.5 physical failures on combined asymmetric profile (2026-10-28)
 
 - [ ] Finish the official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run on the
@@ -454,11 +459,14 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   selectable. Full persistent registry enumeration and physical CCID behavior
   remain open; see the card-manager section below.
 - [x] **Complete the selected GlobalPlatform GET DATA / GET STATUS profile.**
-  GPPro `--info` confirms Card Recognition Data (`0066`) is returned correctly;
-  CPLC (`9F7F`), Card Capabilities (`0067`), Key Info Template (`00E0`), and
-  unknown data objects return `6A88`, which GPPro accepts as unavailable. There
-  is no manufacturing data source for CPLC. Add required data objects only
-  when backed by actual card data. Authenticated GET STATUS first/next pairs
+  Card Recognition Data (`0066`) remains unchanged. CPLC (`9F7F`) now returns
+  a 42-byte CPLC data block with the Feitian marker (`096E`), RP2350 type
+  marker (`2350`), and YDDD dates for 2026-10-29 (`6302`); serial, batch, and
+  equipment identifiers are zero because the firmware has no per-card
+  manufacturing source. These are documented synthetic CPLC identifiers, not
+  factory-programmed chip identity. Card Capabilities (`0067`), Key Info
+  Template (`00E0`), and unknown data objects remain unavailable (`6A88`).
+  Authenticated GET STATUS first/next pairs
   (`P2=02/03`) now pass for application, package, and module categories with
   one entry each. The host VPCD storage shim now indexes multiple packages and
   applet instances and assembles GET STATUS pages across the registry. An

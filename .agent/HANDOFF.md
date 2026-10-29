@@ -1,4 +1,26 @@
-# Latest continuation — asymm_crypto RSA support timing diagnostic (2026-10-29)
+# Latest continuation — GlobalPlatform CPLC GET DATA (2026-10-29)
+
+- Implemented CPLC GET DATA (`9F7F`) in `src/gp_get_data.hpp`. The response is
+  a 42-byte value in `9F7F 2A`, with Feitian marker `096E`, RP2350 marker
+  `2350`, OS provider marker `JC`, level `0001`, and dates `6302` (YDDD for
+  2026-10-29). Serial, batch, and equipment identifiers are zero. These are
+  synthetic project markers, not factory-programmed unique chip identity;
+  `096E` reuses Feitian's USB VID and is not claimed as a registered CPLC code.
+- Updated unit coverage passed 14/14. ARM and RISC-V wrapper builds pass on
+  the `current` profile; RISC-V remains a VM-core smoke image. During those
+  builds, fixed `current`-profile compile/link defects in `setInitialDigest()`
+  optional signature checks and the ARM SHA-256 source list.
+- `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed the
+  existing GPPro empty-card LOAD/INSTALL flow. A GET DATA probe against plain
+  PC VPCD returned `6999` on Card Recognition Data because that emulator path
+  bypasses `src/ccid_device.cpp`; it cannot validate this CPLC handler. The
+  probe is updated for a real CCID test, but no physical flash/query was done.
+- Next: when hardware validation is requested/available, flash an ARM image
+  after build gates and run `tools/GPGetDataApduProbe.java` against the exact
+  Pico reader. The check should validate open and SCP03-authenticated GET DATA.
+- Work record: TODO/QKB and `progress.md` step `gp-cplc-response-bytes`.
+
+# Previous continuation — asymm_crypto RSA support timing diagnostic (2026-10-29)
 
 - Started an official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run against the
   `asymm_crypto` profile over PC/SC VPCD. The applet installed successfully and

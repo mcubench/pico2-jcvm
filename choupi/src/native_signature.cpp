@@ -1017,7 +1017,7 @@ void javacard_security_Signature_setInitialDigest(
     jshort_t messageLengthOffset, jshort_t messageLengthLength) {
   auto signature = signatureInstance(receiver);
   requireInitialized(*signature);
-  const uint8_t algorithm = static_cast<uint8_t>(signature->getField_Byte(
+  [[maybe_unused]] const uint8_t algorithm = static_cast<uint8_t>(signature->getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
   const uint8_t digestAlgorithm = static_cast<uint8_t>(signature->getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM));
@@ -1038,8 +1038,18 @@ void javacard_security_Signature_setInitialDigest(
   default:
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   }
+  bool isSupportedInitialDigestAlgorithm = false;
+#if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
+  isSupportedInitialDigestAlgorithm = isRsaSignatureAlgorithm(algorithm);
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  isSupportedInitialDigestAlgorithm =
+      isSupportedInitialDigestAlgorithm || isEcdsaSignatureAlgorithm(algorithm);
+#endif
   if (isMessageRecoverySignature(*signature) ||
-      (!isRsaSignatureAlgorithm(algorithm) && !isEcdsaSignatureAlgorithm(algorithm)))
+      !isSupportedInitialDigestAlgorithm)
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   const jshort_t existingLength = signature->getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH);

@@ -208,7 +208,8 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   if(JC_SUPPORT_SHA256)
     target_link_libraries(pico2_choupi PRIVATE pico_sha256)
   endif()
-  if(JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512)
+  if(JC_SUPPORT_SHA1 OR JC_SUPPORT_SHA224 OR JC_SUPPORT_SHA256 OR
+     JC_SUPPORT_SHA384 OR JC_SUPPORT_SHA512)
     target_sources(pico2_choupi PRIVATE
       "${PICO_SDK_PATH}/lib/mbedtls/library/sha1.c"
       "${PICO_SDK_PATH}/lib/mbedtls/library/sha256.c"

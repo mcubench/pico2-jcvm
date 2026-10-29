@@ -7,15 +7,41 @@
 
 namespace gp {
 
-// Card Recognition Data for the card-manager features currently exposed by
-// CHOUPI: GlobalPlatform Card Recognition Data and the SCP03 S8 protocol
-// implemented by Scp03Session. No CPLC or unique card-identification values
-// are advertised because this firmware has no manufacturing data source.
+// Card Recognition Data and synthetic CPLC data for the card-manager
+// features exposed by CHOUPI. CPLC identifiers are project-defined markers,
+// not factory-programmed RP2350/Pico manufacturing identifiers. Dates use the
+// GlobalPlatform YDDD encoding; 2026-10-29 is year digit 6, day 302.
 constexpr uint8_t kCardRecognitionData[] = {
     0x66, 0x18, 0x73, 0x16,
     0x06, 0x07, 0x2a, 0x86, 0x48, 0x86, 0xfc, 0x6b, 0x01,
     0x64, 0x0b, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xfc, 0x6b,
     0x04, 0x03, 0x10};
+
+// Feitian's USB vendor ID (096E) is reused as the synthetic CPLC fabricator
+// marker; RP2350 is encoded as the synthetic IC type 2350. These are not
+// claimed to be GlobalPlatform-assigned CPLC manufacturer/type codes.
+// Unavailable per-device serial, batch and equipment identifiers are zero.
+constexpr uint8_t kCplcData[] = {
+    0x9f, 0x7f, 0x2a,
+    0x09, 0x6e, // IC fabricator: Feitian marker
+    0x23, 0x50, // IC type: RP2350 marker
+    0x4a, 0x43, // OS provider: "JC"
+    0x63, 0x02, // OS release date: 2026 day 302 (October 29)
+    0x00, 0x01, // OS release level
+    0x63, 0x02, // IC fabrication date
+    0x00, 0x00, 0x00, 0x00, // IC serial number unavailable
+    0x00, 0x00, // IC batch identifier unavailable
+    0x09, 0x6e, // IC module fabricator: Feitian marker
+    0x63, 0x02, // IC module packaging date
+    0x09, 0x6e, // ICC manufacturer: Feitian marker
+    0x63, 0x02, // IC embedding date
+    0x09, 0x6e, // IC pre-personalizer: Feitian marker
+    0x63, 0x02, // IC pre-personalization date
+    0x00, 0x00, 0x00, 0x00, // pre-personalization equipment ID unavailable
+    0x09, 0x6e, // IC personalizer: Feitian marker
+    0x63, 0x02, // IC personalization date
+    0x00, 0x00, 0x00, 0x00, // personalization equipment ID unavailable
+};
 
 inline bool get_data_object(uint8_t p1, uint8_t p2, const uint8_t *&data,
                             size_t &length) noexcept {
@@ -24,6 +50,11 @@ inline bool get_data_object(uint8_t p1, uint8_t p2, const uint8_t *&data,
   if (p1 == 0x00 && p2 == 0x66) {
     data = kCardRecognitionData;
     length = sizeof(kCardRecognitionData);
+    return true;
+  }
+  if (p1 == 0x9f && p2 == 0x7f) {
+    data = kCplcData;
+    length = sizeof(kCplcData);
     return true;
   }
   return false;
