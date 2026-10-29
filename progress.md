@@ -14432,7 +14432,7 @@
   fresh-image reproduction.
 - Decision: Continue checking remaining dated Crypto rows, then repeat on
   identified physical hardware. No hardware metric was measured.
-- Commit: Pending follow-up SHA for this validation record.
+- Commit: `7fd27f7` (validation and documentation record).
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (focused Crypto CSVs and persistent-storage trace log).
 
