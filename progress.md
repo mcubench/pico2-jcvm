@@ -14750,3 +14750,27 @@
 - Commit: `eb45d61` (validation/TODO/QKB/handoff); this progress record follows.
 - Artifacts/logs: `artifacts/results/deploy/cipher-factory-vpcd-20261029/`;
   runner log SHA-256 `017d7e9e913ad2fe284b135b8aa516e3111e32902eb1374603f999de3a8887eb`.
+
+## 2026-10-29 — Pass JCAlgTest applet APDU and restore integration (6 minutes)
+
+- Step/experiment: `jcalgtest-vpcd-two-process-integration`
+- When: '2026-10-29 06:12 UTC' - '2026-10-29 06:18 UTC'
+- Change: Revalidated the unchanged JCAlgTest v1.8.2 CAP through the real PC
+  JCVM/VPCD bridge in two emulator processes. Updated the APDU backlog to
+  replace the stale first-field-access failure with the passing current result.
+- Validation: `./tools/test-pc-vpcd-applet --passes 2` passed 30/30 checks.
+  Both runs passed SELECT, GETVERSION `1.8.2_jc305`, JCSystem info, SHA-256
+  support/doFinal/static performance, AES and RSA support, secure-random and
+  CRC16 probes, and the expected unsupported one-shot result. The second
+  process resumed the installed applet from the saved image. Pass 1 took
+  58.449 s; pass 2 took 18.333 s; first VPCD connection took 23.570 s.
+  Targeted `git diff --check` passed. No firmware source changed; no build or
+  physical operation was required.
+- Result: Current host integration and emulator process-restart persistence
+  pass. This does not verify physical flash retention, Windows PC/SC, extended
+  APDUs, or WTX.
+- Decision: Keep physical AC1–AC5 outstanding; proceed with the remaining API
+  and install/persistence acceptance work without treating VPCD as hardware.
+- Commit: `1bf6eb0` (TODO/QKB/handoff); this progress record follows.
+- Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261029-two-pass.log`;
+  SHA-256 `268d50220c34b277fc8235e0b5afa97cdb728f7907a8ebaf1d91ad14a25fe967`.
