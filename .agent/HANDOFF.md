@@ -22,7 +22,17 @@
   out on reader 00 01; use the paired 00 00 endpoint for focused continuation
   vectors. RSA/SHA-1 and RSA/SHA-256 known-signature cases pass. SHA-224/384/512
   vectors remain. No physical Pico was available.
+- ECDSA precomputed-hash signing and verification also pass for SHA-1 and
+  SHA-256 using the unchanged Crypto CAP on VPCD reader 00 00 (one selected
+  case `OK`, 465 skipped per case). This resolves the previous physical
+  report's `ILLEGAL_USE` result for these two algorithms in emulator testing.
+  Use a 200-second client timeout for this API filter: earlier skipped Crypto
+  rows take long enough to exceed 80 seconds before the target row is reached.
 - Successful artifact: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-sha256-testonly.csv`.
+  ECDSA initial-digest and precomputed-hash passes are in the sibling files
+  `crypto-ecdsa256-reader00.csv`, `crypto-ecdsa-sha1-reader00.csv`,
+  `crypto-ecdsa-precomputed-sha256-testonly-reader00-retry.csv`, and
+  `crypto-ecdsa-precomputed-sha1-reader00.csv`.
   Earlier incomplete runs are in the same directory and in
   `artifacts/results/deploy/signature-initial-digest-vpcd-20261029/`.
 - Next: add isolated tests for SHA-224/384/512 and malformed-length boundaries;

@@ -14281,3 +14281,24 @@
 - Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-ecdsa256-reader00.csv`;
   `crypto-ecdsa-sha1-reader00.csv`.
 
+## 2026-10-29 — Validate ECDSA precomputed-hash sign and verify (9 minutes)
+
+- Step/experiment: `native-ecdsa-precomputed-hash-vpcd`
+- When: '2026-10-29 02:19 UTC' - '2026-10-29 02:28 UTC'
+- Change: No code change. Exercised upstream ECDSA precomputed-hash
+  `signPreComputedHash()` and `verifyPreComputedHash()` cases against the
+  current native VM using the unchanged API 3.0.5 Crypto CAP.
+- Validation: VPCD 00 00 passed the ECDSA SHA-256 known-signature round trip
+  and SHA-1 round trip: one selected row `OK`, 465 skipped for each. The client
+  needed a 200-second deadline because the selected rows occur after many
+  skipped rows; an 80-second run timed out before reaching its target. No
+  physical Pico was connected.
+- Result: The previous physical ECDSA precomputed-hash `ILLEGAL_USE` rows for
+  SHA-1 and SHA-256 are not reproduced in VPCD. SHA-224/384/512 and physical
+  verification remain open.
+- Decision: Continue with remaining digest algorithms and repeat these
+  vectors on physical ARM hardware when available.
+- Commit: `d6ebeeb` (native dispatch implementation under validation).
+- Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-ecdsa-precomputed-sha256-testonly-reader00-retry.csv`;
+  `crypto-ecdsa-precomputed-sha1-reader00.csv`.
+

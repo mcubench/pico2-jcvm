@@ -5967,3 +5967,11 @@ fix.
   than treating the first timeout as a VM failure. Artifacts are
   `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-ecdsa256-reader00.csv`
   and `crypto-ecdsa-sha1-reader00.csv`.
+- The earlier physical `signPreComputedHash()` ECDSA/SHA-1 and SHA-256
+  `ILLEGAL_USE` results are not reproduced by the unchanged Crypto CAP on
+  VPCD: both selected sign/verify round-trip cases pass on 00 00. Use a
+  200-second API client deadline for those regex-filtered calls because the
+  runner emits/filters preceding Crypto rows before reaching them. Results:
+  `crypto-ecdsa-precomputed-sha256-testonly-reader00-retry.csv` and
+  `crypto-ecdsa-precomputed-sha1-reader00.csv` in the signature test artifact
+  directory.
