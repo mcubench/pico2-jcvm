@@ -80,7 +80,10 @@ out explicitly.
   Current-source VPCD spot checks on 2026-10-29 pass for ECDSA/SHA-1 and
   KeyAgreement factory/uninitialized-key cases. The two secp192r1 DH/DHC
   known-secret rows failed once with `6F00`, then both passed on a traced
-  repeat; investigate this intermittent result before changing native code.
+  repeat. A second fresh-image current-source VPCD run on 2026-10-29 passed
+  both selected rows (`OK`, returned `0x0014`); the physical discrepancy still
+  needs retest when a Pico enumerates. An overlapping runner attempt later that
+  day produced duplicate-package/PCSC reset errors and is invalid evidence.
   Reused VPCD persistent storage also produced intermittent `IOException`
   (`6F00`) in uninitialized-key probes; a fresh empty emulator image passes
   Signature, SignatureMessageRecovery, and Cipher checks. Use fresh VPCD storage

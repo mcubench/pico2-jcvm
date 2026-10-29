@@ -1,4 +1,20 @@
-# Latest continuation — Core Applet.deselect VPCD check (2026-10-29)
+# Latest continuation — DH/DHC Crypto VPCD retest (2026-10-29)
+
+- Re-ran the two unchanged API 3.0.5 `KeyAgreement` known-secret rows for
+  `ALG_EC_SVDP_DH` and `ALG_EC_SVDP_DHC` on a fresh VPCD flash image. Both
+  returned `OK`, `0x0014`, and `effect=as expected`; the complete runner
+  processed 466 rows (464 filtered) and cleanup passed. This confirms the
+  earlier traced pass, but physical Crypto rows remain unverified.
+- One initial attempt overlapped with a second runner after a presence probe
+  printed `present=false`; its duplicate package and PC/SC reset errors are
+  invalid test data. Do not infer a VM defect from those results. Ensure the
+  probe pipeline fails on a false presence (`set -o pipefail`) and wait for
+  each runner session to finish before reusing its reader.
+- Artifacts: `artifacts/results/deploy/crypto-dh-vpcd-20261029/`; the clean
+  run is in `retry2/`. The approved reader helper found zero physical Pico
+  devices.
+
+# Previous continuation — Core Applet.deselect VPCD check (2026-10-29)
 
 - A fresh current-source API 3.0.5 Core focused VPCD run selected only
   `Applet.deselect()`: 291 rows processed, 288 `SKIPPED_BY_USER`, two Multi

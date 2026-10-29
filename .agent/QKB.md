@@ -6135,6 +6135,24 @@ fix.
   `keyagreement-uninitialized.csv` under
   `artifacts/results/deploy/crypto-current-vpcd-20261029/`.
 
+## VPCD presence probe and overlapping API runner attempts (2026-10-29)
+
+- **Symptom:** A VPCD presence probe printed `present=false`, but a shell
+  pipeline ending in `tee` still returned success. A later attempt overlapped
+  the still-running runner against the same PC/SC reader, producing duplicate
+  package warnings, `SCARD_W_RESET_CARD`, disconnects, and failed cleanup.
+- **Cause:** The probe's nonzero status was masked by the successful `tee`
+  command because the shell did not enable `pipefail`; the exec session had not
+  yet completed when a second runner started. These overlapping-run artifacts
+  are invalid behavioral evidence.
+- **Viable procedure:** Use `set -euo pipefail` for probe pipelines, require
+  `present=true` before the runner, use a fresh emulator flash image for every
+  attempt, and wait until the runner exec session exits before reusing the
+  reader. The clean follow-up ran both secp192r1 DH/DHC known-secret cases
+  successfully (2 `OK`, return `0x0014`) and cleaned up the CAP.
+- **Artifacts:** `artifacts/results/deploy/crypto-dh-vpcd-20261029/`; clean
+  output is in `retry2/`.
+
 ## Full API 3.0.5 Crypto VPCD sweep is too slow for a normal session (2026-10-29)
 
 - **Observation:** The unchanged unfiltered Crypto CAP processed 190 of 466
