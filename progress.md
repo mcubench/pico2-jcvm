@@ -14204,3 +14204,31 @@
   available; meanwhile continue confirmed API 3.0.5 native failures.
 - Commit: `c3be5bd`.
 - Artifacts/logs: `artifacts/results/deploy/cipher-factory-vpcd-20261029/`.
+## 2026-10-29 — Add native Signature initial-digest continuation (23 minutes)
+
+- Step/experiment: `native-signature-initial-digest`
+- When: '2026-10-29 00:43 UTC' - '2026-10-29 01:06 UTC'
+- Change: Implemented native `Signature.setInitialDigest()` state validation and
+  continuation for enabled SHA-1/224/256/384/512 signature algorithms. RSA
+  signing and verification resume the SHA state; ECDSA message signing and
+  verification do likewise. Added native ECDSA `signPreComputedHash()` and
+  `verifyPreComputedHash()` dispatch. ECDSA `init()` now clears stale digest
+  state before reuse. No API Java sources, Java providers, or CAP files changed.
+- Validation: `./tools/build-pc --profile asymm_crypto`,
+  `./tools/build arm --profile asymm_crypto`, and
+  `./tools/build riscv --profile asymm_crypto` passed. `git diff --check` on
+  changed native source passed. Focused unchanged API 3.0.5 Crypto CAP runtime
+  checks were attempted through both VPCD readers but GPPro timed out during
+  CAP upload, before these native methods were invoked; no runtime pass is
+  claimed. No physical Pico was available, so no flash was attempted.
+- Result: All three compilation targets include the change; runtime behavior
+  and cryptographic vectors remain unverified.
+- Decision: Keep the implementation pending focused VPCD or physical vectors.
+  First restore a responsive reader, then test valid continuation, invalid
+  state lengths/block counts, RSA continuation, and ECDSA precomputed hashes.
+- Commit: `pending`
+- Artifacts/logs: Prior failed transport attempts under
+  `artifacts/results/deploy/signature-initial-digest-vpcd-20261029/`,
+  `signature-initial-digest-invalid-trace-20261029/`, and
+  `signature-initial-digest-invalid-trace-reader01-20261029/`.
+

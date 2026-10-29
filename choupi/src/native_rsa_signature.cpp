@@ -6,6 +6,7 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_signature_digest.hpp"
 #include "native_rsa_math.hpp"
 
 #include "mbedtls/bignum.h"
@@ -619,7 +620,9 @@ std::vector<unsigned char> transform(JC_Instance &signature,
 std::vector<unsigned char> transformMessage(
     JC_Instance &signature, const std::vector<unsigned char> &message,
     size_t *recoverableLength = nullptr) {
-  const auto hash = digestMessage(signature, message);
+  const auto hash = signatureHasInitialDigest(signature)
+      ? continueSignatureDigest(signature, message)
+      : digestMessage(signature, message);
   if (isIso9796(signature)) {
     const auto key = rsaKeyInstance(signature.getField_Reference(
         ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
@@ -756,6 +759,7 @@ jshort_t rsaSignatureSign(JC_Instance &signature,
   for (size_t i = 0; i < result.size(); ++i)
     output->setByteEntry(static_cast<uint16_t>(outputOffset + i), result[i]);
   clearMessage(signature);
+  clearSignatureInitialDigest(signature);
   return static_cast<jshort_t>(result.size());
 }
 
@@ -853,10 +857,13 @@ jbool_t rsaSignatureVerify(JC_Instance &signature,
   append(signature, input, offset, length);
   checkRange(expected, expectedOffset, expectedLength);
   const auto message = bufferedData(signature);
-  const auto hash = digestMessage(signature, message);
+  const auto hash = signatureHasInitialDigest(signature)
+      ? continueSignatureDigest(signature, message)
+      : digestMessage(signature, message);
   const auto value = readArray(*expected, expectedOffset, expectedLength);
   const bool valid = verify(signature, hash, value, &message);
   clearMessage(signature);
+  clearSignatureInitialDigest(signature);
   return valid ? TRUE : FALSE;
 }
 

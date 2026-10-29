@@ -6,6 +6,7 @@
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
 #include "native_ec_group.hpp"
+#include "native_signature_digest.hpp"
 
 #include "mbedtls/ecdsa.h"
 #include "mbedtls/sha1.h"
@@ -26,6 +27,15 @@
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
 namespace jcvm {
+
+jshort_t ecdsaSignatureSignHash(JC_Instance &signature,
+    const std::vector<unsigned char> &hash,
+    const std::shared_ptr<JC_Array> &output, jshort_t outputOffset);
+jbool_t ecdsaSignatureVerifyHash(JC_Instance &signature,
+    const std::vector<unsigned char> &hash,
+    const std::shared_ptr<JC_Array> &expected, jshort_t expectedOffset,
+    jshort_t expectedLength);
+
 namespace {
 constexpr uint8_t kSign = 1;
 constexpr uint8_t kVerify = 2;
@@ -147,27 +157,30 @@ int randomBytes(void *, unsigned char *output, size_t length) {
   return 0;
 }
 
-std::vector<unsigned char> digest(uint8_t algorithm,
-                                 const std::vector<unsigned char> &message) {
-  size_t length = 0;
+size_t digestLength(uint8_t algorithm) {
   switch (algorithm) {
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA
-  case 1: length = 20; break;
+  case 1: return 20;
 #endif
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA_224
-  case 7: length = 28; break;
+  case 7: return 28;
 #endif
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA_256
-  case 4: length = 32; break;
+  case 4: return 32;
 #endif
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA_384
-  case 5: length = 48; break;
+  case 5: return 48;
 #endif
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
-  case 6: length = 64; break;
+  case 6: return 64;
 #endif
   default: throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
   }
+}
+
+std::vector<unsigned char> digest(uint8_t algorithm,
+                                 const std::vector<unsigned char> &message) {
+  const size_t length = digestLength(algorithm);
   std::vector<unsigned char> out(length);
   int rc = -1;
   switch (algorithm) {
@@ -189,6 +202,18 @@ std::vector<unsigned char> digest(uint8_t algorithm,
   }
   if (rc != 0) throwCryptoException(CryptoExceptionReason::IllegalUse);
   return out;
+}
+
+std::vector<unsigned char> digestForSignature(
+    JC_Instance &signature, const std::vector<unsigned char> &message) {
+  if (signatureHasInitialDigest(signature)) {
+    auto result = continueSignatureDigest(signature, message);
+    clearSignatureInitialDigest(signature);
+    return result;
+  }
+  return digest(static_cast<uint8_t>(signature.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM)),
+      message);
 }
 
 std::vector<unsigned char> readMessage(JC_Instance &signature,
@@ -331,6 +356,15 @@ void initializeEcdsaSignature(JC_Instance &signature, jref_t keyRef,
   signature.setField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH, 0);
   signature.setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
+  auto recoveryHash = Context::getActiveContext().getHeap().getArray(
+      signature.getField_Reference(
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH));
+  if (!recoveryHash || recoveryHash->getType() != JAVA_ARRAY_T_BYTE)
+    throw Exceptions::ArrayStoreException;
+  for (uint16_t i = 0; i < recoveryHash->size(); ++i)
+    recoveryHash->setByteEntry(i, 0);
+  signature.setField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MODE,
       static_cast<jbyte_t>(mode));
   signature.setField_Byte(
@@ -351,6 +385,18 @@ jshort_t ecdsaSignatureLength(JC_Instance &signature) {
 jshort_t ecdsaSignatureSign(JC_Instance &signature,
     const std::shared_ptr<JC_Array> &input, jshort_t offset, jshort_t length,
     const std::shared_ptr<JC_Array> &output, jshort_t outputOffset) {
+  const auto message = readMessage(signature, input, offset, length);
+  return ecdsaSignatureSignHash(signature, digestForSignature(signature, message),
+                                output, outputOffset);
+}
+
+jshort_t ecdsaSignatureSignHash(JC_Instance &signature,
+    const std::vector<unsigned char> &hash,
+    const std::shared_ptr<JC_Array> &output, jshort_t outputOffset) {
+  const uint8_t digestAlgorithm = static_cast<uint8_t>(signature.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM));
+  if (hash.size() != digestLength(digestAlgorithm))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   auto key = object(signature.getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
   const uint16_t bits = static_cast<uint16_t>(key->getField_Short(
@@ -363,9 +409,6 @@ jshort_t ecdsaSignatureSign(JC_Instance &signature,
   if (rc == 0) rc = mbedtls_mpi_read_binary(&context.MBEDTLS_PRIVATE(d), privateBytes.data(), privateBytes.size());
   if (rc == 0) rc = mbedtls_ecp_check_privkey(
       &context.MBEDTLS_PRIVATE(grp), &context.MBEDTLS_PRIVATE(d));
-  const auto message = readMessage(signature, input, offset, length);
-  const auto hash = digest(static_cast<uint8_t>(signature.getField_Byte(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM)), message);
   mbedtls_mpi r, s;
   mbedtls_mpi_init(&r); mbedtls_mpi_init(&s);
   if (rc == 0) rc = mbedtls_ecdsa_sign(&context.MBEDTLS_PRIVATE(grp), &r, &s,
@@ -387,6 +430,16 @@ jbool_t ecdsaSignatureVerify(JC_Instance &signature,
     const std::shared_ptr<JC_Array> &input, jshort_t offset, jshort_t length,
     const std::shared_ptr<JC_Array> &expected, jshort_t expectedOffset,
     jshort_t expectedLength) {
+  auto message = readMessage(signature, input, offset, length);
+  return ecdsaSignatureVerifyHash(signature,
+      digestForSignature(signature, message), expected, expectedOffset,
+      expectedLength);
+}
+
+jbool_t ecdsaSignatureVerifyHash(JC_Instance &signature,
+    const std::vector<unsigned char> &hash,
+    const std::shared_ptr<JC_Array> &expected, jshort_t expectedOffset,
+    jshort_t expectedLength) {
   if (!expected || expected->getType() != JAVA_ARRAY_T_BYTE)
     throw Exceptions::ArrayStoreException;
   if (expectedOffset < 0 || expectedLength < 0 ||
@@ -406,9 +459,10 @@ jbool_t ecdsaSignatureVerify(JC_Instance &signature,
       point.data(), point.size());
   if (rc == 0) rc = mbedtls_ecp_check_pubkey(
       &context.MBEDTLS_PRIVATE(grp), &context.MBEDTLS_PRIVATE(Q));
-  auto message = readMessage(signature, input, offset, length);
-  auto hash = digest(static_cast<uint8_t>(signature.getField_Byte(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM)), message);
+  const uint8_t digestAlgorithm = static_cast<uint8_t>(signature.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM));
+  if (hash.size() != digestLength(digestAlgorithm))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   mbedtls_mpi r, s;
   mbedtls_mpi_init(&r); mbedtls_mpi_init(&s);
   const auto sigBytes = [&]() {

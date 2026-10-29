@@ -6,6 +6,11 @@
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
+#include "native_signature_digest.hpp"
+
+#include "mbedtls/sha1.h"
+#include "mbedtls/sha256.h"
+#include "mbedtls/sha512.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -38,6 +43,13 @@ std::vector<unsigned char> computeSymmetricMac(
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
 void initializeEcdsaSignature(JC_Instance &signature, jref_t key, uint8_t mode);
 jshort_t ecdsaSignatureLength(JC_Instance &signature);
+jshort_t ecdsaSignatureSignHash(JC_Instance &signature,
+    const std::vector<unsigned char> &hash,
+    const std::shared_ptr<JC_Array> &output, jshort_t outputOffset);
+jbool_t ecdsaSignatureVerifyHash(JC_Instance &signature,
+    const std::vector<unsigned char> &hash,
+    const std::shared_ptr<JC_Array> &expected, jshort_t expectedOffset,
+    jshort_t expectedLength);
 jshort_t ecdsaSignatureSign(JC_Instance &signature,
     const std::shared_ptr<JC_Array> &input, jshort_t offset, jshort_t length,
     const std::shared_ptr<JC_Array> &output, jshort_t outputOffset);
@@ -109,6 +121,7 @@ constexpr uint8_t kPaddingPkcs5 = 6;
 constexpr uint8_t kPaddingPkcs1Pss = 8;
 constexpr uint8_t kPaddingIso9796 = 10;
 constexpr uint8_t kPaddingIso9796Mr = 11;
+constexpr uint8_t kInitialDigestState = 3;
 
 uint16_t signatureClassIndex() {
   const uint16_t offset =
@@ -159,6 +172,144 @@ std::vector<unsigned char> readBytes(JC_Array &array, uint16_t offset,
   std::vector<unsigned char> result(length);
   for (uint16_t index = 0; index < length; ++index)
     result[index] = static_cast<uint8_t>(array.getByteEntry(offset + index));
+  return result;
+}
+
+uint32_t readBigEndianWord(const std::vector<unsigned char> &state,
+                           size_t offset) {
+  return (static_cast<uint32_t>(state[offset]) << 24) |
+         (static_cast<uint32_t>(state[offset + 1]) << 16) |
+         (static_cast<uint32_t>(state[offset + 2]) << 8) |
+         static_cast<uint32_t>(state[offset + 3]);
+}
+
+uint64_t readInitialMessageLength(JC_Array &lengthBytes) {
+  uint64_t result = 0;
+  for (uint16_t i = 0; i < 8; ++i)
+    result = (result << 8) |
+        static_cast<uint8_t>(lengthBytes.getByteEntry(i));
+  return result;
+}
+
+uint16_t readInitialStateLength(JC_Array &lengthBytes) {
+  return static_cast<uint16_t>(
+      (static_cast<uint8_t>(lengthBytes.getByteEntry(8)) << 8) |
+      static_cast<uint8_t>(lengthBytes.getByteEntry(9)));
+}
+
+void storeInitialDigestState(JC_Instance &signature,
+                             const std::vector<unsigned char> &state,
+                             uint64_t digestedLength) {
+  auto recoveryHash = byteArray(signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
+  auto lengthBytes = byteArray(signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR);
+  if (state.size() > recoveryHash->size() || lengthBytes->size() < 10)
+    throw Exceptions::ArrayStoreException;
+  for (uint16_t i = 0; i < recoveryHash->size(); ++i)
+    recoveryHash->setByteEntry(i, i < state.size() ? state[i] : 0);
+  for (uint16_t i = 0; i < 8; ++i) {
+    const unsigned shift = static_cast<unsigned>((7 - i) * 8);
+    lengthBytes->setByteEntry(i, static_cast<jbyte_t>(digestedLength >> shift));
+  }
+  lengthBytes->setByteEntry(8,
+      static_cast<jbyte_t>(state.size() >> 8));
+  lengthBytes->setByteEntry(9, static_cast<jbyte_t>(state.size()));
+  signature.setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE,
+      static_cast<jbyte_t>(kInitialDigestState));
+}
+
+std::vector<unsigned char> continueDigestFromState(
+    uint8_t algorithm, const std::vector<unsigned char> &state,
+    uint64_t digestedLength, const std::vector<unsigned char> &message) {
+  std::vector<unsigned char> result;
+  int rc = -1;
+  switch (algorithm) {
+#if JC_SUPPORT_SHA1
+  case 1: {
+    if (state.size() != 20) break;
+    mbedtls_sha1_context context;
+    mbedtls_sha1_init(&context);
+    rc = mbedtls_sha1_starts(&context);
+    for (size_t i = 0; rc == 0 && i < 5; ++i)
+      context.MBEDTLS_PRIVATE(state)[i] = readBigEndianWord(state, i * 4);
+    context.MBEDTLS_PRIVATE(total)[0] = static_cast<uint32_t>(digestedLength);
+    context.MBEDTLS_PRIVATE(total)[1] = static_cast<uint32_t>(digestedLength >> 32);
+    std::fill(std::begin(context.MBEDTLS_PRIVATE(buffer)),
+              std::end(context.MBEDTLS_PRIVATE(buffer)), 0);
+    if (rc == 0 && !message.empty())
+      rc = mbedtls_sha1_update(&context, message.data(), message.size());
+    result.resize(20);
+    if (rc == 0) rc = mbedtls_sha1_finish(&context, result.data());
+    mbedtls_sha1_free(&context);
+    break;
+  }
+#endif
+#if JC_SUPPORT_SHA224 || JC_SUPPORT_SHA256
+  case 4:
+  case 7: {
+    if (state.size() != 32) break;
+    const bool sha224 = algorithm == 7;
+#if !JC_SUPPORT_SHA224
+    if (sha224) break;
+#endif
+#if !JC_SUPPORT_SHA256
+    if (!sha224) break;
+#endif
+    mbedtls_sha256_context context;
+    mbedtls_sha256_init(&context);
+    rc = mbedtls_sha256_starts(&context, sha224 ? 1 : 0);
+    for (size_t i = 0; rc == 0 && i < 8; ++i)
+      context.MBEDTLS_PRIVATE(state)[i] = readBigEndianWord(state, i * 4);
+    context.MBEDTLS_PRIVATE(total)[0] = static_cast<uint32_t>(digestedLength);
+    context.MBEDTLS_PRIVATE(total)[1] = static_cast<uint32_t>(digestedLength >> 32);
+    std::fill(std::begin(context.MBEDTLS_PRIVATE(buffer)),
+              std::end(context.MBEDTLS_PRIVATE(buffer)), 0);
+    if (rc == 0 && !message.empty())
+      rc = mbedtls_sha256_update(&context, message.data(), message.size());
+    result.resize(sha224 ? 28 : 32);
+    if (rc == 0) rc = mbedtls_sha256_finish(&context, result.data());
+    mbedtls_sha256_free(&context);
+    break;
+  }
+#endif
+#if JC_SUPPORT_SHA384 || JC_SUPPORT_SHA512
+  case 5:
+  case 6: {
+    if (state.size() != 64) break;
+    const bool sha384 = algorithm == 5;
+#if !JC_SUPPORT_SHA384
+    if (sha384) break;
+#endif
+#if !JC_SUPPORT_SHA512
+    if (!sha384) break;
+#endif
+    mbedtls_sha512_context context;
+    mbedtls_sha512_init(&context);
+    rc = mbedtls_sha512_starts(&context, sha384 ? 1 : 0);
+    for (size_t i = 0; rc == 0 && i < 8; ++i) {
+      uint64_t word = 0;
+      for (size_t j = 0; j < 8; ++j)
+        word = (word << 8) | state[i * 8 + j];
+      context.MBEDTLS_PRIVATE(state)[i] = word;
+    }
+    context.MBEDTLS_PRIVATE(total)[0] = digestedLength;
+    context.MBEDTLS_PRIVATE(total)[1] = 0;
+    std::fill(std::begin(context.MBEDTLS_PRIVATE(buffer)),
+              std::end(context.MBEDTLS_PRIVATE(buffer)), 0);
+    if (rc == 0 && !message.empty())
+      rc = mbedtls_sha512_update(&context, message.data(), message.size());
+    result.resize(sha384 ? 48 : 64);
+    if (rc == 0) rc = mbedtls_sha512_finish(&context, result.data());
+    mbedtls_sha512_free(&context);
+    break;
+  }
+#endif
+  default:
+    break;
+  }
+  if (rc != 0) throwCryptoException(CryptoExceptionReason::IllegalUse);
   return result;
 }
 
@@ -520,7 +671,7 @@ jref_t createSignature(uint8_t algorithm, uint8_t digest, uint8_t cipher,
       heap.addArray(64, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
   instance->setField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH,
-      heap.addArray(20, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
+      heap.addArray(64, JAVA_ARRAY_T_BYTE, ClearEvent::CLEAR_ON_RESET));
   instance->setField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
   return reference;
@@ -689,6 +840,44 @@ std::vector<unsigned char> runMac(JC_Instance &signature) {
 
 } // namespace
 
+bool signatureHasInitialDigest(JC_Instance &signature) {
+  return static_cast<uint8_t>(signature.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE)) ==
+      kInitialDigestState;
+}
+
+std::vector<unsigned char> continueSignatureDigest(
+    JC_Instance &signature, const std::vector<unsigned char> &message) {
+  if (!signatureHasInitialDigest(signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  auto stateArray = byteArray(signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
+  auto lengthBytes = byteArray(signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR);
+  const uint16_t stateLength = readInitialStateLength(*lengthBytes);
+  if (stateLength == 0 || stateLength > stateArray->size())
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  const auto state = readBytes(*stateArray, 0, stateLength);
+  const uint64_t digestedLength = readInitialMessageLength(*lengthBytes);
+  const uint8_t algorithm = static_cast<uint8_t>(signature.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM));
+  return continueDigestFromState(algorithm, state, digestedLength, message);
+}
+
+void clearSignatureInitialDigest(JC_Instance &signature) {
+  if (!signatureHasInitialDigest(signature)) return;
+  auto stateArray = byteArray(signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
+  auto lengthBytes = byteArray(signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR);
+  for (uint16_t i = 0; i < stateArray->size(); ++i)
+    stateArray->setByteEntry(i, 0);
+  for (uint16_t i = 0; i < lengthBytes->size(); ++i)
+    lengthBytes->setByteEntry(i, 0);
+  signature.setField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
+}
+
 jref_t javacard_security_Signature_getInstance(jbyte_t algorithm,
                                                jbool_t externalAccess) {
   uint8_t digest = 0, cipher = 0, padding = 0;
@@ -812,10 +1001,50 @@ void javacard_security_Signature_setInitialDigest(
     jref_t receiver, std::shared_ptr<JC_Array> digest, jshort_t digestOffset,
     jshort_t digestLength, std::shared_ptr<JC_Array> messageLength,
     jshort_t messageLengthOffset, jshort_t messageLengthLength) {
-  (void)signatureInstance(receiver); (void)digest; (void)digestOffset;
-  (void)digestLength; (void)messageLength; (void)messageLengthOffset;
-  (void)messageLengthLength;
-  throwCryptoException(CryptoExceptionReason::IllegalUse);
+  auto signature = signatureInstance(receiver);
+  requireInitialized(*signature);
+  const uint8_t algorithm = static_cast<uint8_t>(signature->getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
+  const uint8_t digestAlgorithm = static_cast<uint8_t>(signature->getField_Byte(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEDIGESTALGORITHM));
+  uint16_t expectedStateLength = 0;
+  uint16_t blockLength = 0;
+  switch (digestAlgorithm) {
+#if JC_SUPPORT_SHA1
+  case 1: expectedStateLength = 20; blockLength = 64; break;
+#endif
+#if JC_SUPPORT_SHA224 || JC_SUPPORT_SHA256
+  case 4: expectedStateLength = 32; blockLength = 64; break;
+  case 7: expectedStateLength = 32; blockLength = 64; break;
+#endif
+#if JC_SUPPORT_SHA384 || JC_SUPPORT_SHA512
+  case 5: expectedStateLength = 64; blockLength = 128; break;
+  case 6: expectedStateLength = 64; blockLength = 128; break;
+#endif
+  default:
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  }
+  if (isMessageRecoverySignature(*signature) ||
+      (!isRsaSignatureAlgorithm(algorithm) && !isEcdsaSignatureAlgorithm(algorithm)))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  const jshort_t existingLength = signature->getField_Short(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH);
+  if (existingLength != 0 || signatureHasInitialDigest(*signature))
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  checkRange(digest, digestOffset, digestLength);
+  checkRange(messageLength, messageLengthOffset, messageLengthLength);
+  if (digestLength != expectedStateLength || messageLengthLength == 0 ||
+      messageLengthLength > 8)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  uint64_t digestedLength = 0;
+  for (jshort_t i = 0; i < messageLengthLength; ++i)
+    digestedLength = (digestedLength << 8) | static_cast<uint8_t>(
+        messageLength->getByteEntry(static_cast<uint16_t>(messageLengthOffset + i)));
+  if (digestedLength == 0 || digestedLength % blockLength != 0)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  const auto state = readBytes(*digest, static_cast<uint16_t>(digestOffset),
+                               static_cast<uint16_t>(digestLength));
+  storeInitialDigestState(*signature, state, digestedLength);
 }
 void javacard_security_Signature_update(
     jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t offset,
@@ -860,10 +1089,11 @@ jshort_t javacard_security_Signature_beginVerify(
   appendBytes(*signature, recovered.data(), static_cast<uint16_t>(recovered.size()));
   auto recoveryHash = byteArray(*signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
-  if (recoveryHash->size() != hash.size())
+  if (recoveryHash->size() < hash.size())
     throw Exceptions::ArrayStoreException;
   for (uint16_t index = 0; index < recoveryHash->size(); ++index)
-    recoveryHash->setByteEntry(index, hash[index]);
+    recoveryHash->setByteEntry(index,
+        index < hash.size() ? static_cast<jbyte_t>(hash[index]) : 0);
   signature->setField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE,
       static_cast<jbyte_t>(partial ? 2 : 1));
@@ -945,6 +1175,20 @@ jshort_t javacard_security_Signature_signPreComputedHash(
                                 outputOffset);
   }
 #endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  requireInitialized(*signature, kModeSign);
+  if (isEcdsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM)))) {
+    if (signatureHasInitialDigest(*signature))
+      throwCryptoException(CryptoExceptionReason::IllegalUse);
+    checkRange(hash, offset, length);
+    return ecdsaSignatureSignHash(*signature,
+        readBytes(*hash, static_cast<uint16_t>(offset),
+                  static_cast<uint16_t>(length)), output, outputOffset);
+  }
+#endif
   (void)hash; (void)offset; (void)length; (void)output; (void)outputOffset;
   throwCryptoException(CryptoExceptionReason::IllegalUse);
 }
@@ -1009,8 +1253,9 @@ jbool_t javacard_security_Signature_verify(
                                  static_cast<uint16_t>(messageLength));
   auto recoveryHash = byteArray(*signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
-  const auto hash = readBytes(*recoveryHash, 0,
-                              static_cast<uint16_t>(recoveryHash->size()));
+  if (recoveryHash->size() < 20)
+    throw Exceptions::ArrayStoreException;
+  const auto hash = readBytes(*recoveryHash, 0, 20);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796_MR
   const bool valid = rsaSignatureVerifyRecoveredMessage(
       *signature, message, hash);
@@ -1031,6 +1276,21 @@ jbool_t javacard_security_Signature_verifyPreComputedHash(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
     return rsaSignatureVerifyHash(*signature, hash, hashOffset, hashLength,
                                   expected, expectedOffset, expectedLength);
+#endif
+#if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
+    JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
+  requireInitialized(*signature, kModeVerify);
+  if (isEcdsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM)))) {
+    if (signatureHasInitialDigest(*signature))
+      throwCryptoException(CryptoExceptionReason::IllegalUse);
+    checkRange(hash, hashOffset, hashLength);
+    return ecdsaSignatureVerifyHash(*signature,
+        readBytes(*hash, static_cast<uint16_t>(hashOffset),
+                  static_cast<uint16_t>(hashLength)), expected,
+        expectedOffset, expectedLength);
+  }
 #endif
   (void)hash; (void)hashOffset; (void)hashLength; (void)expected;
   (void)expectedOffset; (void)expectedLength;
