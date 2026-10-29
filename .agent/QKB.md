@@ -6305,6 +6305,22 @@ fix.
   unsuccessful GET DATA attempt was removed from it. No physical CCID reader
   was tested in this step.
 
+## Pico reader disappears or is omitted from PC/SC after flash/reconnect (2026-10-29)
+
+- **Symptom:** After a Pico passed an APDU probe, its PC/SC reader disappeared
+  before a second run. A second Pico flashed successfully and passed finite
+  serial startup, but the immediate `pcsc_scan -r` listed only VPCD readers.
+- **Viable recovery:** Keep testing on another identified physical Pico rather
+  than waiting for the first one. Refresh USB access with the permitted
+  `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`, then run
+  `pcsc_scan -r` again and target the exact reader name. The helper restored
+  both physical readers; the second board then passed open and
+  SCP03-authenticated CPLC queries. Do not infer a firmware APDU failure from
+  a reader omitted by PC/SC.
+- **Artifacts:** `artifacts/logs/cycle-choupi-20261029T143004Z.log`,
+  `artifacts/logs/cycle-choupi-20261029T143255Z.log`, and
+  `artifacts/logs/gp-cplc-physical-D92E743D5F640C0F-20261029.log`.
+
 ## Default-profile build failures in signature digest support (2026-10-29)
 
 - **Symptom/cause:** The `current` profile's ARM build failed compiling

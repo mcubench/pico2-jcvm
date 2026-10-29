@@ -1,5 +1,18 @@
 # Latest continuation — GlobalPlatform CPLC GET DATA (2026-10-29)
 
+- Physical follow-up: both builds passed; ARM CHOUPI firmware was flashed to
+  `2BED26ED20556535` and `D92E743D5F640C0F`. The finite monitor passed on both.
+  Open and SCP03-authenticated `9F7F` returned the exact 42-byte CPLC value on
+  both. The first board disappeared after its successful probe, so the second
+  board was used as failover. The approved reader helper restored PC/SC
+  enumeration after the second board's reboot. Captured probe:
+  `artifacts/logs/gp-cplc-physical-D92E743D5F640C0F-20261029.log`; cycle logs
+  are `cycle-choupi-20261029T143004Z.log` and
+  `cycle-choupi-20261029T143255Z.log`.
+- Firmware SHA-256: `8d4bbbd1b395de7babf97915202316ff8b9239161f2e32d5685a0b4cc7468791`.
+- Next: continue with the prioritized open API/card-manager acceptance items
+  in `TODO.md`; CPLC firmware validation is complete.
+
 - Implemented CPLC GET DATA (`9F7F`) in `src/gp_get_data.hpp`. The response is
   a 42-byte value in `9F7F 2A`, with Feitian marker `096E`, RP2350 marker
   `2350`, OS provider marker `JC`, level `0001`, and dates `6302` (YDDD for
@@ -13,11 +26,11 @@
 - `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed the
   existing GPPro empty-card LOAD/INSTALL flow. A GET DATA probe against plain
   PC VPCD returned `6999` on Card Recognition Data because that emulator path
-  bypasses `src/ccid_device.cpp`; it cannot validate this CPLC handler. The
-  probe is updated for a real CCID test, but no physical flash/query was done.
-- Next: when hardware validation is requested/available, flash an ARM image
-  after build gates and run `tools/GPGetDataApduProbe.java` against the exact
-  Pico reader. The check should validate open and SCP03-authenticated GET DATA.
+  bypasses `src/ccid_device.cpp`; it cannot validate this CPLC handler. Physical
+  open and SCP03 CPLC validation was later completed; see the follow-up above.
+- Historical next step: physical validation was completed in the follow-up
+  above; use the physical probe log rather than the earlier VPCD failure as
+  evidence for the CCID handler.
 - Work record: TODO/QKB and `progress.md` step `gp-cplc-response-bytes`.
 
 # Previous continuation — asymm_crypto RSA support timing diagnostic (2026-10-29)

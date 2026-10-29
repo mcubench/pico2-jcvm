@@ -464,7 +464,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   marker (`2350`), and YDDD dates for 2026-10-29 (`6302`); serial, batch, and
   equipment identifiers are zero because the firmware has no per-card
   manufacturing source. These are documented synthetic CPLC identifiers, not
-  factory-programmed chip identity. Card Capabilities (`0067`), Key Info
+  factory-programmed chip identity. The current ARM image was flashed and
+  open plus SCP03-authenticated `9F7F` queries passed on physical Pico 2 boards
+  `2BED26ED20556535` and `D92E743D5F640C0F`; see the dated probe log under
+  `artifacts/logs/`. Card Capabilities (`0067`), Key Info
   Template (`00E0`), and unknown data objects remain unavailable (`6A88`).
   Authenticated GET STATUS first/next pairs
   (`P2=02/03`) now pass for application, package, and module categories with
