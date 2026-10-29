@@ -503,6 +503,8 @@ std::vector<unsigned char> encodedPss(JC_Instance &signature,
   for (auto &byte : salt) byte = randomByte();
   std::vector<unsigned char> hashInput(8, 0);
   RsaSensitiveBufferGuard hashInputGuard(hashInput);
+  // Avoid freeing an earlier allocation that already held the digest or salt.
+  hashInput.reserve(8 + hash.size() + salt.size());
   hashInput.insert(hashInput.end(), hash.begin(), hash.end());
   hashInput.insert(hashInput.end(), salt.begin(), salt.end());
   auto h = digestMessage(signature, hashInput);
@@ -565,6 +567,9 @@ bool verifyPss(JC_Instance &signature, const std::vector<unsigned char> &hash,
 
   std::vector<unsigned char> hashInput(8, 0);
   RsaSensitiveBufferGuard hashInputGuard(hashInput);
+  // The second append must not reallocate and leave a copied digest in freed
+  // allocator storage.
+  hashInput.reserve(8 + hash.size() + saltLength);
   hashInput.insert(hashInput.end(), hash.begin(), hash.end());
   hashInput.insert(hashInput.end(), db.begin() + delimiter + 1, db.end());
   auto expectedH = digestMessage(signature, hashInput);
