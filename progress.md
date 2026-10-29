@@ -13450,7 +13450,7 @@
 - Decision: Build a reproducible conversion/comparison path for legacy target
   CSVs, continue RSA private-operation hardening, and retry physical checks
   after a Pico enumerates through the VM.
-- Commit: pending.
+- Commit: `58bafbf` (validation and documentation record).
 - Artifacts/logs: supplied target CSV above; no hardware log.
 
 ## 2026-10-27 — Implement RSA-CRT private Cipher and Signature operations
