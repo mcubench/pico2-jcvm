@@ -57,6 +57,14 @@ out explicitly.
 - [x] Make parameterized `Signature.init()` on a message-recovery algorithm
   return `CryptoException.ILLEGAL_USE`. The upstream 3.0.5
   `ALG_RSA_SHA_ISO9796_MR init with parameters` case now passes on VPCD.
+- [x] Fix RSA `ALG_RSA_NOPAD` mode validation. The upstream API test exercises
+  public-encrypt/private-decrypt and private-encrypt/public-decrypt; the native
+  guard previously rejected the latter pair with `ILLEGAL_VALUE`. Both raw
+  directions are now allowed while PKCS#1/OAEP keep their normal mode rules.
+  PC/ARM/RISC-V `asymm_crypto` builds pass; the unchanged API NOPAD filter
+  passes 4/4 selected calls on VPCD. Fresh-image PKCS#1 regression passes five
+  supported calls and one expected unsupported case. Physical retest remains
+  pending.
 - [ ] Re-run the affected deploy areas after each fix on VPCD, then physical
   hardware after ARM and RISC-V builds pass. Source data:
   `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.

@@ -61,6 +61,27 @@
 
 # Project issue knowledge base
 
+## RSA NOPAD reverse key/mode pair rejected as `ILLEGAL_VALUE` (2026-10-29)
+
+- **Symptom:** The unchanged API 3.0.5 Crypto CAP's `ALG_RSA_NOPAD` round trip
+  returned `CryptoException.ILLEGAL_VALUE` for a supported raw RSA call.
+- **Cause:** Native `Cipher.init()` accepted only public-key encrypt and
+  private-key decrypt for all RSA algorithms. The upstream NOPAD test also
+  performs private-key encrypt and public-key decrypt, which are valid for the
+  raw RSA primitive.
+- **Viable fix:** Permit either RSA key type in either mode only when the
+  selected padding is `PAD_NOPAD`; keep PKCS#1 and OAEP restricted to
+  public-key encrypt/private-key decrypt. `ALG_RSA_NOPAD` now passes all four
+  selected upstream calls on VPCD. PC/ARM/RISC-V `asymm_crypto` builds pass.
+  Physical validation is pending because no Pico reader was enumerated.
+- **Related emulator note:** A PKCS#1 filter returned three `6F00`s after
+  repeated CAP cycles on one emulator image; the same fresh-image regression
+  passed five calls and one expected unsupported case. Use zero-length VPCD
+  storage for Crypto sweeps and require the card-presence probe before testing.
+- **Artifacts:** `artifacts/results/deploy/crypto-current-vpcd-20261029/`
+  (`rsa-nopad-diag.csv`, `rsa-nopad-fixed.csv`,
+  `rsa-pkcs1-regression-fresh.csv`).
+
 ## Intermittent VPCD ECDSA SHA-224/512 `6F00` during combined API filtering (2026-10-29)
 
 - **Symptom:** One fresh-image API 3.0.5 Crypto run selecting ECDSA SHA-224 and

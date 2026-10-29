@@ -1,5 +1,23 @@
 # Current continuation — reset VPCD storage between Crypto sweeps
 
+## RSA NOPAD both-direction fix (2026-10-29)
+
+- Fixed native `Cipher.init()` mode validation: `ALG_RSA_NOPAD` accepts either
+  RSA key type in either mode, as the raw primitive supports both directions.
+  PKCS#1/OAEP remain public-key encrypt and private-key decrypt only.
+- Root cause was confirmed from the unchanged API CAP client bytecode: its NOPAD
+  round trip performs both public-encrypt/private-decrypt and
+  private-encrypt/public-decrypt. The old native guard rejected the second pair
+  with `ILLEGAL_VALUE`.
+- PC, ARM, and RISC-V `asymm_crypto` wrapper builds pass. Focused API 3.0.5
+  VPCD NOPAD run passes all four selected calls with upload and cleanup. Fresh
+  VPCD PKCS#1 regression passes five calls and one expected unsupported case;
+  a reused-image run had three `6F00`s that did not recur on fresh storage.
+  No physical reader was available.
+- See progress `rsa-nopad-both-directions`, QKB entry, and artifacts under
+  `artifacts/results/deploy/crypto-current-vpcd-20261029/`. Next: continue
+  triaging unresolved API Crypto cases and retry NOPAD on physical ARM hardware.
+
 ## ECDSA SHA-2 continuation update (2026-10-29)
 
 - On fresh VPCD storage, unchanged API 3.0.5 Crypto CAP ECDSA SHA-384 factory,

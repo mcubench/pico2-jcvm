@@ -427,8 +427,12 @@ void initializeRsaCipher(std::shared_ptr<JC_Instance> cipher,
            : (lengths->getShortEntry(0) <= 0 ||
               lengths->getShortEntry(1) <= 0)))
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
-  if (!((publicKey && mode == kModeEncrypt) ||
-        (privateKey && mode == kModeDecrypt)))
+  const bool noPadding = cipher->getField_Byte(
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PADDINGALGORITHM) == 1;
+  const bool standardMode = (publicKey && mode == kModeEncrypt) ||
+                            (privateKey && mode == kModeDecrypt);
+  const bool rawRsaMode = noPadding && (publicKey || privateKey);
+  if (!standardMode && !rawRsaMode)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   const jshort_t keyBits = key->getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE);

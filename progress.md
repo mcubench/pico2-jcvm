@@ -14536,3 +14536,34 @@
   `ecdsa-sha224-focused.csv`, `ecdsa-sha224-trace.csv`, and
   `ecdsa-precomputed-sha224-384-512.csv`); trace logs in `/tmp`.
 
+## 2026-10-29 — Allow both RSA NOPAD primitive directions (26 minutes)
+
+- Step/experiment: `rsa-nopad-both-directions`
+- When: '2026-10-29 04:46 UTC' - '2026-10-29 05:12 UTC'
+- Change: `Cipher.init()` now permits public/private key use in either mode for
+  `ALG_RSA_NOPAD`. PKCS#1 and OAEP keep the existing public-encrypt/private-
+  decrypt restriction. Trace evidence showed the upstream API test covers both
+  primitive directions, including private-key `MODE_ENCRYPT` and public-key
+  `MODE_DECRYPT`; the old shared RSA mode guard rejected those valid NOPAD
+  calls with `ILLEGAL_VALUE`.
+- Validation: `./tools/build-pc --profile asymm_crypto`,
+  `./tools/build arm --profile asymm_crypto`, and
+  `./tools/build riscv --profile asymm_crypto` passed. Unchanged API 3.0.5
+  `ALG_RSA_NOPAD` Crypto filter passed: 4 `OK`, 462 intentionally skipped,
+  upload and CAP cleanup passed. Fresh-image RSA PKCS#1 regression filter
+  passed: five `OK`, one expected `UNSUPPORTED_PER_SPEC`, 460 skipped. A prior
+  PKCS#1 run on reused VPCD storage had three `6F00`s; those were absent on a
+  fresh zero-length image. Physical validation was unavailable; the approved
+  helper found zero Pico readers.
+- Result: The upstream raw RSA round trip now exercises public encrypt/private
+  decrypt and private encrypt/public decrypt successfully. PKCS#1 behavior
+  remains unchanged on fresh VPCD.
+- Decision: Retain the native mode distinction and retry physical RSA NOPAD
+  coverage when an identified Pico is available. Continue with unresolved API
+  Crypto rows.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
+  (`rsa-nopad-focused.csv`, `rsa-nopad-fixed.csv`,
+  `rsa-pkcs1-regression.csv`, `rsa-pkcs1-regression-fresh.csv`);
+  `/tmp/rsa-nopad-diag-vpcd.log`.
+
