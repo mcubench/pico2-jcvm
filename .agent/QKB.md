@@ -6264,3 +6264,28 @@ fix.
   an assumed exact delimiter spacing: a stricter negative lookahead filtered
   the target too and silently left all 291 rows skipped.
 - **Artifacts:** `artifacts/results/deploy/core-deselect-vpcd-20261029/`.
+
+## JCAlgTest RSA-512 support probe unexpectedly slow on VPCD (2026-10-29)
+
+- **Symptom:** The official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run on
+  `asymm_crypto` reported 133.756 seconds for the `ALG_RSA LENGTH_RSA_512`
+  key-pair-generation APDU. The run was interrupted before the next key size;
+  its CSV is partial. The following client-side `IllegalArgumentException`
+  (`apdu must be at least 2 bytes long`) resulted from that deliberate VPCD
+  shutdown while the next APDU was in flight and is not a VM response.
+- **Counter-evidence:** The independent native VPCD suite ran the same public
+  Java Card `KeyPair.genKeyPair()` path and passed all 99/99 checks. Its
+  measured RSA/RSA-CRT generation APDU times were 1.068/1.149 seconds at 512,
+  1.334/3.469 seconds at 1024, and 47.488/23.334 seconds at 3072 bits.
+  Therefore RSA-512 generation itself is not established as the source of the
+  133.756-second result. The discrepancy may lie in the JCAlgTest workload or
+  execution path; do not change RSA based only on this observation.
+- **Next diagnostic:** Compare the precise JCAlgTest request and APDU timing
+  against the native probe on the same fresh emulator image/profile. Capture
+  the official result without interrupting an in-flight request, then run the
+  exact APDU against the same applet with timing. Do not use the partial CSV as
+  a profile support comparison.
+- **Artifacts:** Partial official attempt in
+  `artifacts/results/jcalgtest-vpcd-asymm-current-pcsc-20261029/`; complete
+  native probe timing in
+  `artifacts/logs/asymm-crypto-keypair-vpcd-timing-20261029.log`.

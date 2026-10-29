@@ -8,6 +8,17 @@ out explicitly.
 
 ### Fresh API 3.0.5 physical failures on combined asymmetric profile (2026-10-28)
 
+- [ ] Finish the official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run on the
+  `asymm_crypto` profile. A host PC/SC VPCD run reached RSA-512 generation and
+  reported 133.756 s for that APDU; it was stopped before the next size, so its
+  CSV is partial and must not be compared as complete. The independent native
+  VPCD probe passes all 99/99 checks and times the RSA/RSA-CRT generation rows
+  at 1.068/1.149 s (512), 1.334/3.469 s (1024), and 47.488/23.334 s (3072).
+  The unexplained 512-bit timing discrepancy needs an exact client/APDU-path
+  comparison before changing RSA implementation. Artifacts:
+  `artifacts/results/jcalgtest-vpcd-asymm-current-pcsc-20261029/` and
+  `artifacts/logs/asymm-crypto-keypair-vpcd-timing-20261029.log`.
+
 - [x] Reproduce and fix Security `KeyPair(byte, short)` calls returning
   `6F00` for RSA, RSA-CRT, and EC_FP constructors. The physical 3.0.5 run
   returned this for every tested constructor size; selected `genKeyPair`

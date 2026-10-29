@@ -1,4 +1,27 @@
-# Latest continuation — JCAlgTest VPCD persistence integration (2026-10-29)
+# Latest continuation — asymm_crypto RSA support timing diagnostic (2026-10-29)
+
+- Started an official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run against the
+  `asymm_crypto` profile over PC/SC VPCD. The applet installed successfully and
+  the RSA-512 `genKeyPair()` support APDU returned `yes`, but took 133.756 s.
+  The client then began the RSA-736 request. I stopped the run to investigate;
+  the client `apdu must be at least 2 bytes long` stack trace was caused by
+  tearing down VPCD during that in-flight request, not a card status response.
+  Its generated CSV is partial and must not be used for support comparison.
+- Repeated `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` through the
+  approved host-access path while capturing per-APDU timings. It passed 99/99.
+  RSA/RSA-CRT generation took 1.068/1.149 s (512), 1.334/3.469 s (1024), and
+  47.488/23.334 s (3072). This is direct counter-evidence to attributing the
+  133.756 s result to RSA-512 alone. No source change is justified yet.
+- Next: compare the exact official-client APDU workload with the native probe
+  on the same fresh VPCD image and capture complete timing. Then finish the
+  support report only if it can be completed without treating a partial CSV as
+  valid. TODO and QKB contain this investigation.
+- Artifacts: `artifacts/results/jcalgtest-vpcd-asymm-current-pcsc-20261029/`
+  (partial official report) and
+  `artifacts/logs/asymm-crypto-keypair-vpcd-timing-20261029.log` (99/99 native
+  probe timing).
+
+# Previous continuation — JCAlgTest VPCD persistence integration (2026-10-29)
 
 - `./tools/test-pc-vpcd-applet --passes 2` passed 30/30 checks across two fresh
   emulator processes. Both passes selected the unchanged JCAlgTest 1.8.2 CAP,
