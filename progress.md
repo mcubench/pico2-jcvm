@@ -14818,3 +14818,14 @@
 - Decision: Leave implementation deferred until the investigation is selected as the next work item.
 - Commit: `432dee1` (TODO entry); this progress record follows.
 - Artifacts/logs: none.
+
+## 2026-10-29 — Track JCOP4 P71 symmetric algorithm coverage gaps (4 minutes)
+
+- Step/experiment: `jc2020-p71-symmetric-coverage-todo`
+- When: '2026-10-29 14:47 UTC' - '2026-10-29 14:51 UTC'
+- Change: Cross-checked the existing `asymm_crypto` TODO (which enumerates asymmetric target support) and the completed `symm_crypto` task (which targets a different no-ECC JCAlgTest report). Added a separate Priority 2 task to audit/implement symmetric JCOP4 P71 API coverage through native JCVM C++ dispatch.
+- Validation: Verified the supplied matrix hash `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`; confirmed it identifies JCAlgTest 1.7.9 and has no `ALG_AES_CTR` row. `git diff --check -- TODO.md` passed. No implementation or device tests were performed, as requested.
+- Result: TODO now distinguishes existing AES/DES primitives and current profile modes from missing Java Card factories/modes, and explicitly requires independent expected-support evidence for API rows absent from the legacy matrix.
+- Decision: Keep this as a separate implementation task; do not claim `ALG_AES_CTR` support from the supplied CSV alone.
+- Commit: `ac029eb` (TODO entry); this progress record follows.
+- Artifacts/logs: reference matrix `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`.
