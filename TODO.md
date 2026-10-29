@@ -70,17 +70,23 @@ out explicitly.
   the default 64-byte SHA-512 salt, which cannot fit; keep the native size check.
   The earlier run on the `current` profile (22 `OK`, 444 unsupported) was a
   profile sanity check, not asymmetric validation.
-- [ ] Investigate repeated full-Security persistent-storage exhaustion. Two
-  complete physical Security sweeps reached 901 calls, with the 2048-bit RSA
-  CRT `setP` call returning `6F00` at the same point; it passed in isolation.
-  A narrowed run through the preceding API classes reproduced it. Serial
-  evidence shows the filesystem at 65,409/65,536 bytes across 5,929 records;
-  the attempted 131-byte array record could not fit and an internal
-  `IOException` escaped. Audit persistent-object roots/reclamation and map
-  storage exhaustion to the proper Java Card resource exception before
-  treating this as an RSA defect. Preserve stable Java Card handles and the
-  documented policy of pinning loaded persistent objects until safe deletion
-  is designed.
+- [x] Map persistent filesystem capacity exhaustion to Java Card
+  `SystemException.NO_RESOURCE` and keep RP2350 overlay offsets within their
+  16-bit representation. Full physical API 3.0.5 Security rerun on 2BED
+  completed 901 calls: 396 `OK`, 504 `UNSUPPORTED_PER_SPEC`, one `NO_MEMORY`,
+  zero `SW_ERROR` or wrong results; CAP cleanup succeeded. The former RSA CRT
+  `setP` `6F00` now reports `NO_MEMORY; EXC_SYSTEM reason=0x0005`. The 65,535
+  byte limit is deliberate: `OverlayFile` and snapshot offsets are `uint16_t`.
+  A 77,824-byte experiment exceeded that representation and corrupted D92's
+  snapshot offsets; it was not a valid capacity increase. Keep safe persistent
+  object reclamation/GC as a separate open task, preserving stable handles and
+  pinning loaded persistent objects until deletion is designed.
+- [ ] Implement safe persistent-object reclamation/GC for repeated API
+  workloads. The full Security `setP` write failed because storage was full;
+  exception mapping is fixed as above. Audit persistent-object roots and
+  reclaim only unreachable storage. Preserve stable Java Card handles and pin
+  loaded persistent objects until deletion is designed. This is not evidence
+  of an RSA arithmetic defect.
 - [x] Resume the physical API 3.0.5 Security sweep on identified Pico 2
   `2BED26ED20556535` with the `asymm_crypto` image. Both full sweeps completed
   901 calls and successful CAP cleanup. The public RSA-4096 `KeyBuilder`
@@ -88,7 +94,8 @@ out explicitly.
   `UNSUPPORTED_PER_SPEC`. Focused repeat of public RSA-4096, RSA CRT `setP` /
   `setPQ` 2048, and `MessageDigest.OneShot.open(ALG_SHA)` returned 3 `OK`
   calls (the SHA factory is correctly unsupported). The full-run `setP`
-  storage failure remains open as above.
+  storage reclamation remains open as above; the error now returns
+  `NO_MEMORY`/`NO_RESOURCE` instead of `6F00`.
 - [x] Resolve the physical Core `Applet.deselect()` discrepancy. On the
   current ARM image, exact-reader physical Core runs on both `2BED26ED20556535`
   and `D92E743D5F640C0F` returned `OK`, diagnostic `-19`, and

@@ -61,6 +61,24 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   and instance/reference-array graph roots. Preserve Java Card handles and
   persistent identity; test-only host stubs do not prove CAP lifecycle or power
   recovery. Archive records retain individual regression and recovery details.
+- **Persistent write exhaustion — fixed error mapping; reclamation remains open:**
+  filesystem status 1 is `OutOfFlash`/capacity exhaustion, so Java Card writes
+  now throw `SystemException.NO_RESOURCE` (reason `0x0005`) rather than
+  `IOException`/`6F00`; other filesystem errors remain `IOException`. Physical
+  2BED API 3.0.5 Security retest completed 901 calls: 396 `OK`, 504
+  `UNSUPPORTED_PER_SPEC`, one `NO_MEMORY`, no `SW_ERROR` or wrong results, and
+  successful CAP cleanup. Full-run RSA CRT 2048 `setP` now reports the
+  resource exception. `OverlayFile` and `FilesystemRecord` offsets are
+  `uint16_t`; cap the arena at 65,535 bytes. A 77,824-byte trial overflowed
+  these offsets, causing D92 `tag-reconstruct` erase failure and DELETE `6581`.
+  D92 was subsequently sent the corrected image and flash verification passed,
+  but it did not return as a PC/SC reader; its runtime/recovery state is
+  unconfirmed. Never increase the arena without a storage format/offset-width
+  migration. Do not reclaim persistent objects until roots and stable handles
+  are safely accounted for. Evidence: corrected ARM UF2 SHA-256
+  `e99fe641f95d45a8775edf8996bade276103134dbfd6ba05855f0f10847856ea`, CSV
+  `artifacts/results/deploy/asymm-storage-20261029/2BED-security-bounded.csv`
+  SHA-256 `cdc05f4904d39fddfda86b5233b8a3a61ea112b2b31f013a3455a9e55c918ea1`.
 - **Native-only boundary:** old Java crypto-provider plans are superseded.
   Implement behavior in native C++ API dispatch; preserve upstream CAPs.
 - **RSA support-label mismatch:** JCAlgTest 1.8.2's 3072 KeyPair rows send 4096.
@@ -278,16 +296,16 @@ HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
   LENGTH_RSA_2048)` at the same point. The exact call passed when isolated.
   A narrowed rerun including the preceding API test classes reproduced the
   same failure; the next `setQ`, `setDP1`, `setDQ1`, and `setPQ` rows passed.
-- **Cause:** Serial trace proves persistent filesystem exhaustion, not RSA
+- **Cause:** Serial trace proved persistent filesystem exhaustion, not RSA
   arithmetic failure. `fs_write` rejected a new 131-byte array record with
-  5,929 records and 65,409/65,536 bytes occupied. The internal `OutOfFlash`
-  result is currently mapped by persistent write callers to `IOException`,
-  which escaped the CAP as `6F00`. The filesystem exception mapping and
-  whether this workload retains unreachable persistent objects both need
-  follow-up. Existing heap collection leaves persistent tags pinned until
-  safe persisted-root enumeration/deletion is implemented; do not free these
-  records by clearing heap slots alone because Java Card references encode
-  stable heap handles.
+  5,929 records and 65,409/65,536 bytes occupied. The old `OutOfFlash` to
+  `IOException` mapping escaped the CAP as `6F00`. **Resolution:** status 1 now
+  maps to `SystemException.NO_RESOURCE` (reason 5), validated by the bounded
+  physical rerun documented under “Persistent write exhaustion” above. The
+  65,535-byte arena limit protects current `uint16_t` offsets; a 77,824-byte
+  trial corrupted snapshot offsets and is rejected. Safe persisted-root
+  enumeration/reclamation remains open. Do not free persistent records by
+  clearing heap slots alone because Java Card references encode stable handles.
 - **Validation:** The physical 3.0.5 Crypto run on asymm_crypto completed
   466 calls (302 `OK`, 163 `UNSUPPORTED_PER_SPEC`, one known SHA-512 PSS
   default-salt size exception) and all previous Crypto failures except that
@@ -297,8 +315,7 @@ HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
   one `setP` failure. Monitor log:
   `artifacts/logs/2BED-asymm-security-prefix-serial.log`; CSVs and hashes are
   recorded in `progress.md` under `physical-asymm-crypto-security-retest`.
-- **Follow-up:** Audit object/root retention and map `fs::Error::OutOfFlash` to
-  the Java Card resource exception expected for storage allocation failure.
+- **Follow-up:** Audit object/root retention and safe persistent reclamation.
   Do not classify this as an RSA implementation defect, and do not increase
   flash partitions or alter configuration without a measured layout review.
 

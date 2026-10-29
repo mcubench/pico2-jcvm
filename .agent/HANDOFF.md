@@ -11,14 +11,14 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 
 ## Next concrete work
 
-1. Investigate the physical API 3.0.5 Security persistent-filesystem exhaustion
-   at RSA CRT `setP` (evidence below). Audit persistent object retention and
-   Java Card storage-error mapping. Preserve stable handles and the current
-   GC safety rule; do not patch the RSA operation itself based on this result.
-2. Investigate the official-client RSA-512 timing discrepancy using the exact
+1. Investigate the official-client RSA-512 timing discrepancy using the exact
    APDU workload on the same fresh VPCD image. Do not use its partial CSV as a
    complete support report. Continue focused Crypto triage before scheduling
    another full multi-hour run.
+2. Implement safe persistent-object reclamation for repeated API workloads.
+   The storage-full exception mapping is fixed, but the full Security run still
+   reaches the persistent capacity limit. Preserve stable handles and keep
+   loaded persistent objects pinned until deletion is designed.
 3. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, private RSA hardening, intermittent watchdog marker.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded
@@ -32,13 +32,18 @@ handoff are complete; see the run counts and hashes below.
 These are last observations, not a live enumeration. Reconfirm board identity,
 reader name, profile, and installed state before every hardware task.
 
-- 2BED: `2BED26ED20556535` is currently flashed with the ARM `asymm_crypto`
-  image, SHA-256 `620f4c739c1891bbc921e8bcb7202988a1bbff9ff878ea566b3d3523b7e9fcb3`,
-  and passed its finite startup monitor (`TEST:SUMMARY pass=1 fail=0`). D92:
-  `D92E743D5F640C0F` was targeted
-  for the same update, but 1200-baud BOOTSEL recovery timed out; a later reader
-  scan omitted it. Do not infer D92's firmware state from the interrupted
-  recovery. RISC-V currently provides VM-core smoke coverage; it is not full
+- 2BED: `2BED26ED20556535` is currently flashed with the corrected ARM
+  `asymm_crypto` image SHA-256
+  `e99fe641f95d45a8775edf8996bade276103134dbfd6ba05855f0f10847856ea` and
+  passed repeated finite runtime checks during the Security run. Its complete
+  API 3.0.5 Security rerun completed 901 calls with 396 `OK`, 504
+  `UNSUPPORTED_PER_SPEC`, one `NO_MEMORY`, zero `SW_ERROR`/wrong results, and
+  successful CAP cleanup. D92 `D92E743D5F640C0F` did enter BOOTSEL and the
+  corrected image was reported flash-verified, but it did not reappear in the
+  subsequent PC/SC scan; current firmware/runtime state is unconfirmed. Do not
+  infer D92 recovery or test results from flash verification alone. Latest
+  scan found 8E and 2BED readers; use an identified available board as
+  failover. RISC-V currently provides VM-core smoke coverage; it is not full
   CCID firmware acceptance.
 - Current Core 3.0.5, exact reader and `--no-scenarios`: baseline D92 completed
   291 rows (272 OK, 11 unsupported, eight unavailable scenarios, zero
@@ -69,6 +74,13 @@ reader name, profile, and installed state before every hardware task.
 
 ### Physical API 3.0.5 asymm_crypto retest — 2026-10-29
 
+Persistent storage error handling is now fixed: `fs_write` status 1 (OutOfFlash)
+maps to `SystemException.NO_RESOURCE` instead of `IOException`/`6F00`. A 65,535
+byte overlay bound is required by the current `uint16_t` file/snapshot offsets;
+77,824 bytes overflowed these offsets and corrupted the D92 snapshot. Corrected
+2BED retest results and artifacts are recorded in the following progress entry.
+Safe storage reclamation remains open.
+
 - Exact reader: `Pico 2 CHOUPI CCID [JCVM CCID]
   (2BED26ED20556535) 01 00` after the `asymm_crypto` flash and PC/SC ACL
   refresh. Both ARM and RISC-V `./tools/build` gates passed as part of
@@ -88,14 +100,12 @@ reader name, profile, and installed state before every hardware task.
   and RSA-public-4096 checks returned 3 `OK`. The repeated full-run RSA CRT
   `setP` 2048 `6F00` also reproduced in a narrowed prefix through preceding
   classes, but not when isolated.
-- Serial evidence identifies persistent filesystem exhaustion: `fs_write`
-  rejected a 131-byte record with 5,929 records and 65,409/65,536 bytes used.
-  Internal `OutOfFlash` currently surfaces as `IOException`, then `6F00`.
-  This is storage pressure / resource-error handling, not evidence of faulty
-  RSA arithmetic. Audit safe persistent-object reclamation and map storage
-  exhaustion to the appropriate Java Card resource exception; loaded
-  persistent objects must not be freed by merely clearing their stable heap
-  handles. Serial log:
+- Earlier serial evidence identifies persistent filesystem exhaustion:
+  `fs_write` rejected a 131-byte record with 5,929 records and 65,409 bytes
+  used. The old `IOException`/`6F00` mapping is fixed as summarized above.
+  This is storage pressure, not evidence of faulty RSA arithmetic. Safe
+  persistent-object reclamation remains open; loaded persistent objects must
+  not be freed by merely clearing their stable heap handles. Serial log:
   `artifacts/logs/2BED-asymm-security-prefix-serial.log`.
 - Crypto CSV SHA-256:
   `28400be72b530b81d264dbad3dbd11f860ba3af6c5756c06dac792ee8e4d05b1`.

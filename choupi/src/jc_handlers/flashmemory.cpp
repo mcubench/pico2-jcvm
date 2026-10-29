@@ -26,6 +26,7 @@
 */
 
 #include "flashmemory.hpp"
+#include "../context.hpp"
 #include "../exceptions.hpp"
 #include "../heap.hpp"
 #include "../jc_types/jc_array.hpp"
@@ -167,6 +168,22 @@ uint8_t write_persistent_tag(const fs::Tag &tag, const uint8_t *data,
   return fs_write(tag.value, tag.len, data, length);
 }
 
+void write_persistent_tag_or_throw(const fs::Tag &tag, const uint8_t *data,
+                                   const uint32_t length) {
+  const uint8_t status = write_persistent_tag(tag, data, length);
+  if (status == 0) {
+    return;
+  }
+  // The filesystem ABI maps OutOfFlash to status 1. Java Card persistent
+  // storage exhaustion is a resource limit, not an I/O device failure.
+  if (status == 1) {
+    Context::getActiveContext().setPendingSystemExceptionReason(
+        5); // SystemException.NO_RESOURCE
+    throw Exceptions::SystemException;
+  }
+  throw Exceptions::IOException;
+}
+
 bool rollback_persistent_writes() noexcept {
   bool success = true;
   // Erase transaction-created records first so a nearly full filesystem can
@@ -236,18 +253,14 @@ void write_persistent_object_alias(const fs::Tag &tag,
                                    const fs::Tag &target_tag) {
   uint8_t data[2 + TAG_MAX_LENGTH] = {kPersistentObjectAlias, target_tag.len};
   std::memcpy(data + 2, target_tag.value, target_tag.len);
-  if (write_persistent_tag(tag, data, 2 + target_tag.len)) {
-    throw Exceptions::IOException;
-  }
+  write_persistent_tag_or_throw(tag, data, 2 + target_tag.len);
 }
 
 void write_persistent_array_alias(const fs::Tag &tag,
                                   const fs::Tag &target_tag) {
   uint8_t data[2 + TAG_MAX_LENGTH] = {kPersistentArrayAlias, target_tag.len};
   std::memcpy(data + 2, target_tag.value, target_tag.len);
-  if (write_persistent_tag(tag, data, 2 + target_tag.len)) {
-    throw Exceptions::IOException;
-  }
+  write_persistent_tag_or_throw(tag, data, 2 + target_tag.len);
 }
 
 fs::Tag read_persistent_alias_target(uint32_t length, const uint8_t *data) {
@@ -437,10 +450,8 @@ void FlashMemory_Handler::writeInstanceHeader(
   uint8_t data[] = {FieldType::FIELD_TYPE_OBJECT, package,
                     HIGH_BYTE_SHORT(class_index), LOW_BYTE_SHORT(class_index)};
 
-  if (write_persistent_tag(
-          tag, data, static_cast<uint32_t>(sizeof(data) / sizeof(data[0])))) {
-    throw Exceptions::IOException;
-  }
+  write_persistent_tag_or_throw(
+      tag, data, static_cast<uint32_t>(sizeof(data) / sizeof(data[0])));
 }
 
 /**
@@ -568,9 +579,7 @@ void FlashMemory_Handler::writeArray(const fs::Tag &tag, const FieldType type,
      */
   }
 
-  if (write_persistent_tag(tag, data, array_size)) {
-    throw Exceptions::IOException;
-  }
+  write_persistent_tag_or_throw(tag, data, array_size);
 
   if (!array.isTransientArray()) {
     array.setPersistentTag(tag);
@@ -671,9 +680,7 @@ FlashMemory_Handler::getDataInPlaceFromTag(const fs::Tag &tag) {
  */
 void FlashMemory_Handler::setDataFromTag(const fs::Tag &tag, uint32_t length,
                                          const uint8_t data[]) {
-  if (write_persistent_tag(tag, data, length)) {
-    throw Exceptions::IOException;
-  }
+  write_persistent_tag_or_throw(tag, data, length);
 }
 
 /**
@@ -1177,10 +1184,8 @@ void FlashMemory_Handler::setPersistentField_Instance(
     case FieldType::FIELD_TYPE_BOOLEAN: {
       const uint8_t data[] = {field.type, static_cast<uint8_t>(field.value)};
 
-      if (write_persistent_tag(field_tag, data,
-                               sizeof(jbyte_t) + sizeof(uint8_t))) {
-        throw Exceptions::IOException;
-      }
+      write_persistent_tag_or_throw(
+          field_tag, data, sizeof(jbyte_t) + sizeof(uint8_t));
 
       break;
     }
@@ -1190,10 +1195,8 @@ void FlashMemory_Handler::setPersistentField_Instance(
           field.type, static_cast<uint8_t>(HIGH_BYTE_SHORT(field.value)),
           static_cast<uint8_t>(LOW_BYTE_SHORT(field.value))};
 
-      if (write_persistent_tag(field_tag, data,
-                               sizeof(jshort_t) + sizeof(uint8_t))) {
-        throw Exceptions::IOException;
-      }
+      write_persistent_tag_or_throw(
+          field_tag, data, sizeof(jshort_t) + sizeof(uint8_t));
 
       break;
     }
@@ -1212,10 +1215,8 @@ void FlashMemory_Handler::setPersistentField_Instance(
           static_cast<uint8_t>(LOW_BYTE_SHORT(INT_2_LSSHORTS(value))),
       };
 
-      if (write_persistent_tag(field_tag, data,
-                               sizeof(jint_t) + sizeof(uint8_t))) {
-        throw Exceptions::IOException;
-      }
+      write_persistent_tag_or_throw(
+          field_tag, data, sizeof(jint_t) + sizeof(uint8_t));
 
       break;
     }
@@ -1646,9 +1647,7 @@ void FlashMemory_Handler::writePersistentField_Array_Byte(
 
   std::vector<uint8_t> updated(stored, stored + length);
   std::copy(contents.begin(), contents.end(), updated.begin() + 3);
-  if (write_persistent_tag(tag, updated.data(), length)) {
-    throw Exceptions::IOException;
-  }
+  write_persistent_tag_or_throw(tag, updated.data(), length);
 }
 
 /*

@@ -132,7 +132,6 @@ uint32_t watchdog_recovery_origin = 0;
 
 constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
-constexpr size_t kMaxOverlayBytes = 64 * 1024;
 constexpr uint32_t kFilesystemSlot0 = flash_layout::filesystem_slot(0);
 constexpr uint32_t kFilesystemSlotSize = flash_layout::filesystem_slot_size;
 constexpr uint32_t kFilesystemSlot1 = flash_layout::filesystem_slot(1);
@@ -160,6 +159,12 @@ struct __attribute__((packed)) FilesystemRecord {
 };
 static_assert(sizeof(FilesystemRecord) == 10,
               "filesystem snapshot index record must be 10 bytes");
+// OverlayFile and FilesystemRecord store byte offsets in uint16_t fields.
+// Keep the arena within that representation until the on-flash format is
+// deliberately upgraded.
+constexpr size_t kMaxOverlayBytes = UINT16_MAX;
+static_assert(kMaxOverlayBytes <= UINT16_MAX,
+              "overlay offsets must fit their 16-bit representation");
 constexpr size_t kFilesystemMaxPayload =
     kMaxOverlayFiles * sizeof(FilesystemRecord) + kMaxOverlayBytes;
 static_assert(kFilesystemPayloadOffset + kFilesystemMaxPayload <=
