@@ -5960,3 +5960,10 @@ fix.
   RSA/SHA-256 known-signature continuation on VPCD. SHA-1 and invalid-length
   cases also passed in a broader filtered run. Other digest variants and
   physical validation remain open.
+- Paired-endpoint result: an isolated ECDSA/SHA-256 run timed out on 00 01,
+  while isolated ECDSA/SHA-1 and SHA-256 round trips both passed on
+  `Virtual PCD 00 00` / `127.0.0.1:35963` (465 calls skipped each). For these
+  expensive Crypto test vectors, switch to 00 00 after a 00 01 timeout rather
+  than treating the first timeout as a VM failure. Artifacts are
+  `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-ecdsa256-reader00.csv`
+  and `crypto-ecdsa-sha1-reader00.csv`.

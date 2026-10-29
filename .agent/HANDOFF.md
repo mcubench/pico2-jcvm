@@ -16,17 +16,18 @@
   case also returned `OK` in a broader filtered run, though that run timed out
   before completing all selected cases. Invalid length/block cases returned
   their expected `ILLEGAL_VALUE` results in the earlier filtered run.
-- One ECDSA/SHA-256 round-trip-only run timed out before its selected call was
-  recorded. This is a timeout in the broad CAP test path; native dispatch traces
-  showed the setter and RSA sign/verify calls returning in another run. More
-  ECDSA and SHA-384/512 vectors are still needed. No physical Pico was
-  available.
+- ECDSA/SHA-256 and ECDSA/SHA-1 initial-digest round trips pass when isolated
+  on paired VPCD reader `Virtual PCD 00 00` / endpoint `127.0.0.1:35963` (one
+  selected call `OK`, 465 skipped for each). The same ECDSA/SHA-256 test timed
+  out on reader 00 01; use the paired 00 00 endpoint for focused continuation
+  vectors. RSA/SHA-1 and RSA/SHA-256 known-signature cases pass. SHA-224/384/512
+  vectors remain. No physical Pico was available.
 - Successful artifact: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-sha256-testonly.csv`.
   Earlier incomplete runs are in the same directory and in
   `artifacts/results/deploy/signature-initial-digest-vpcd-20261029/`.
-- Next: add isolated tests for the remaining ECDSA and SHA variants and the
-  malformed-length boundaries; run them on an identified physical ARM Pico
-  when available.
+- Next: add isolated tests for SHA-224/384/512 and malformed-length boundaries;
+  then run the full focused suite on an identified physical ARM Pico when
+  available.
 
 - Fixed the focused API 3.0.5 uninitialized `ECKey.getK()` timeout. Trace
   evidence showed native dispatch index 7 (`NativeKey.clearKey`) clearing

@@ -14262,3 +14262,22 @@
 - Commit: `d6ebeeb`.
 - Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/`
 
+## 2026-10-29 — Validate ECDSA initial-digest round trips on paired VPCD (7 minutes)
+
+- Step/experiment: `native-signature-initial-digest-ecdsa-vpcd`
+- When: '2026-10-29 02:12 UTC' - '2026-10-29 02:19 UTC'
+- Change: No code change. Retried the unchanged upstream API 3.0.5 Crypto CAP
+  ECDSA/SHA-256 case on paired VPCD reader 00 00 after reader 00 01 timed out.
+  Also ran the ECDSA/SHA-1 round-trip case individually.
+- Validation: Both cases passed: `466 calls; SKIPPED_BY_USER=465; OK=1` for
+  each run. VPCD readers were refreshed first, emulator presence was confirmed,
+  and each API client ran sequentially. No physical Pico was connected.
+- Result: ECDSA SHA-1 and SHA-256 initial-digest round trips work on VPCD; the
+  00 01 timeout was endpoint-specific. SHA-224/384/512 and hardware remain
+  unverified.
+- Decision: Use paired VPCD endpoint 00 00 for subsequent Crypto continuation
+  tests, then verify on a physical ARM Pico when available.
+- Commit: `d6ebeeb` (native implementation validated in this record).
+- Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-ecdsa256-reader00.csv`;
+  `crypto-ecdsa-sha1-reader00.csv`.
+

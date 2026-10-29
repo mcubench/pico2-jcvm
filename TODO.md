@@ -1631,8 +1631,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   passed the upstream RSA/SHA-256 known-signature continuation (one selected
   call, 465 skipped); SHA-1 known-signature and invalid length/block cases also
   passed in a broader filtered run. Isolated ECDSA/SHA-256 timed out before its
-  result row; SHA-224/384/512 and malformed-boundary coverage remain. No
-  physical result is available. See the current `.agent/HANDOFF.md` entry and
+  result on reader 00 01, but both ECDSA/SHA-1 and ECDSA/SHA-256 round-trip
+  vectors pass when isolated on paired reader 00 00. SHA-224/384/512 and
+  malformed-boundary coverage remain. No physical result is available. See the
+  current `.agent/HANDOFF.md` entry and
   `artifacts/results/deploy/signature-initial-digest-vpcd-final/`.
   Progress (2026-10-27): added native C++ `KeyAgreement` dispatch and six
   `asymm_crypto` capabilities for EC SVDP-DH/DHC, their plain variants,
