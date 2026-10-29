@@ -68,6 +68,11 @@ out explicitly.
   (`6F00`) in uninitialized-key probes; a fresh empty emulator image passes
   Signature, SignatureMessageRecovery, and Cipher checks. Use fresh VPCD storage
   for further Crypto sweeps. DES/AES key-length cipher vectors pass.
+  An unfiltered fresh-image Crypto run processed 190/466 calls (112 `OK`, 78
+  expected `UNSUPPORTED_PER_SPEC`, zero failures) in about 17 minutes, then
+  stopped because completing at that pace would take several hours. Runner
+  cleanup succeeded; this is not a full-suite pass. Continue with filtered
+  focused rows, and schedule the full run only in a sufficiently long window.
 
 The physical 3.0.5 sweep itself completed Core (291: 271 OK, 15 expected
 unsupported, four optional Ext scenarios unavailable, one known

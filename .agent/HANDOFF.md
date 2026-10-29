@@ -12134,3 +12134,27 @@ confirmed on hardware. The original investigation evidence remains in earlier
   support-report comparison, physical `/deploy` acceptance, and private RSA
   hardening. Retest the five ECDSA algorithms on an identified Pico as soon as
   it enumerates through the approved host-access path.
+
+## Latest continuation — API 3.0.5 Crypto triage (2026-10-29)
+
+- Fixed two API reason-code cases in native `SignatureMessageRecovery`:
+  `beginVerify()` after sign initialization and parameterized `Signature.init()`
+  now return `ILLEGAL_USE`. Both unchanged upstream CAP rows pass on VPCD;
+  PC, ARM, and RISC-V `asymm_crypto` builds passed. Source commits are
+  `be0ea69` and `2ae55a4`.
+- Current-source focused VPCD checks pass for ECDSA/SHA-1 secp192r1, the
+  KeyAgreement factory and uninitialized-key case, DES/AES key-length cipher
+  vectors, and fresh-image uninitialized-key errors. The secp192r1 DH/DHC
+  known-secret checks failed once with `IOException`/`6F00` and passed on a
+  trace-enabled repeat; cause unknown. Reused VPCD storage caused intermittent
+  `IOException` results; use a fresh empty flash image for isolated sweeps.
+- An unfiltered run of the unchanged API 3.0.5 Crypto CAP processed 190/466
+  calls (112 `OK`, 78 `UNSUPPORTED_PER_SPEC`, no failed calls), then was
+  stopped after the observed pace implied several hours. Runner cleanup passed
+  and removed the test CAP. It is partial evidence, not a complete suite pass.
+  See `progress.md` entry `crypto-api-vpcd-full-partial` and artifacts under
+  `artifacts/results/deploy/crypto-current-vpcd-20261029/`.
+- Next: continue focused triage of the dated Crypto failures on fresh VPCD;
+  confirm expected test-key constraints for RSA/SHA-512 PSS before changing
+  behavior. Physical board testing was not available in this session. Avoid
+  re-running the unfiltered suite without a longer test window.

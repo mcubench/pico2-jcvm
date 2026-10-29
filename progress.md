@@ -14436,3 +14436,27 @@
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (focused Crypto CSVs and persistent-storage trace log).
 
+## 2026-10-29 — Partial full Crypto VPCD run (17 minutes)
+
+- Step/experiment: `crypto-api-vpcd-full-partial`
+- When: '2026-10-29 03:42 UTC' - '2026-10-29 03:59 UTC'
+- Change: No source change. Started the unchanged API 3.0.5 Crypto CAP against
+  a fresh PC JCVM/VPCD flash image to measure full-sweep behavior after the
+  focused fixes.
+- Validation: 190 of 466 Crypto calls completed before stopping the client
+  after observing a multi-hour estimated runtime. The 190 calls contained 112
+  `OK` and 78 `UNSUPPORTED_PER_SPEC`; zero processed calls failed. The run
+  stopped with client status 130, and the runner reported `CLEANUP OK` and
+  removed `AlgTestApiCrypto_305.cap`. The emulator and PC/SC keepalive were
+  stopped. This is a partial run, not a full-suite pass. No hardware validation
+  or metric was measured.
+- Result: At the observed rate, a complete 466-call run would take several
+  hours. The rows after `ALG_RSA_SHA_256_PKCS1` remain untested in this run.
+- Decision: Continue using focused row filters on fresh VPCD storage; reserve
+  the unfiltered run for a suitable longer window. Retest outstanding failures
+  on physical ARM after both architecture builds and reader availability.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
+  (`full-crypto-current.csv`, `full-crypto-emulator.log`); temporary client
+  log `/tmp/apitest_card_5x39_p6b/APITEST_log_1793245348258.log`.
+

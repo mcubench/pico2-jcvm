@@ -6067,6 +6067,23 @@ fix.
   `keyagreement-uninitialized.csv` under
   `artifacts/results/deploy/crypto-current-vpcd-20261029/`.
 
+## Full API 3.0.5 Crypto VPCD sweep is too slow for a normal session (2026-10-29)
+
+- **Observation:** The unchanged unfiltered Crypto CAP processed 190 of 466
+  calls in about 17 minutes on PC JCVM/VPCD. The processed rows were 112 `OK`
+  and 78 `UNSUPPORTED_PER_SPEC`, with no failed call. The latest processed
+  algorithm was `ALG_RSA_SHA_256_PKCS1`.
+- **Action and cleanup:** Stopped the Java client after the observed pace
+  implied several hours for all calls. The wrapper reported `CLEANUP OK` and
+  removed `AlgTestApiCrypto_305.cap`; the emulator and `pcsc_scan` keepalive
+  were stopped. Do not count this as full acceptance.
+- **Viable approach:** Use filtered VPCD runs for focused rows and start from a
+  fresh zero-length flash image per sweep. Only schedule the full unfiltered
+  CAP run in a window long enough to complete all 466 calls and cleanup.
+- **Artifacts:** `artifacts/results/deploy/crypto-current-vpcd-20261029/`
+  (`full-crypto-current.csv`, `full-crypto-emulator.log`); raw partial client
+  log at `/tmp/apitest_card_5x39_p6b/APITEST_log_1793245348258.log`.
+
 ## Reuse of VPCD storage caused intermittent Crypto IOException results (2026-10-29)
 
 - **Symptom:** After multiple Crypto CAP upload/test/cleanup cycles on one PC
