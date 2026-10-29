@@ -5720,6 +5720,9 @@ fix.
 - **Follow-up:** The RSA-PSS helper's generated salt, hash input, MGF1
   scratch/masks, and decoded data block are also guarded and wiped. PC, ARM,
   RISC-V, and VPCD 99/99 validations pass (implementation commit `4ecd522`).
+- **Follow-up:** RSA Signature entry points now wipe copied message/hash/signature
+  inputs and outputs, RSA verification scratch, and ISO9796 recovered-message
+  intermediates (commit `df2d2d9`). All target builds and VPCD 99/99 pass.
 
 
 ## Long synchronous RSA operations time out on hardware (2026-10-27)

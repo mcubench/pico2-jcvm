@@ -14615,3 +14615,26 @@
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   no new persistent test artifacts.
 
+## 2026-10-29 — Wipe RSA Signature API temporaries (6 minutes)
+
+- Step/experiment: `rsa-signature-temporary-zeroization`
+- When: '2026-10-29 05:27 UTC' - '2026-10-29 05:33 UTC'
+- Change: Added scoped zeroization for copied Signature message/hash/signature
+  buffers, RSA verify intermediates, ISO9796 recovered blocks, and result
+  buffers after their API callers have copied the outputs. Exception paths
+  are covered by RAII. No CAP or Java source changed.
+- Validation: `./tools/build-pc --profile asymm_crypto`,
+  `./tools/build arm --profile asymm_crypto`, and
+  `./tools/build riscv --profile asymm_crypto` passed. The existing asymmetric
+  VPCD suite passed 99/99. Builds emitted existing upstream Rust and
+  packed-member warnings. Physical reader check found zero Pico devices, so no
+  board test was run.
+- Result: All identified heap-vector scratch in RSA cipher/signature operations
+  has explicit cleanup on normal and exceptional exits. This does not address
+  key material retained in Java Card key objects or Mbed TLS MPI internals.
+- Decision: Keep this incremental cleanup; continue audit of the remaining RSA
+  private-operation timing/fault protections and broader project backlog.
+- Commit: implementation `df2d2d9`; validation/doc record commit pending.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
+  no new persistent test artifacts.
+
