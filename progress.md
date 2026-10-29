@@ -14132,3 +14132,29 @@
 - Commit: `4a178a2`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-getk-final-20261029/`;
   pre-change dispatch trace `artifacts/results/deploy/ec-key-getk-native-index-20261029/`.
+
+## 2026-10-29 — Batch persistent EC key writes (17 minutes)
+
+- Step/experiment: `native-key-batched-persistent-writes`
+- When: '2026-10-29 00:06 UTC' - '2026-10-29 00:23 UTC'
+- Change: Added a transaction-aware bulk writer for persistent byte-array
+  records. Native RSA/EC component setters and EC domain-parameter copying now
+  assemble padded contents in memory and persist each component in one record
+  write; transient arrays continue to update in memory. Persistent key clearing
+  uses the same writer.
+- Validation: The unchanged API 3.0.5 Security CAP completed the focused VPCD
+  `ECKey.getField()` case and the `copyDomainParametersFrom(null)` case. Each
+  report had 901 rows, the selected row `OK`, and 900 rows
+  `SKIPPED_BY_USER`; GPPro upload and cleanup passed. The latter expected
+  `ILLEGAL_VALUE` for null source. Final source passed
+  `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile
+  asymm_crypto`, and `./tools/build riscv --profile asymm_crypto`. PC build
+  emitted existing Rust warnings. No physical Pico was connected; hardware
+  validation was not run.
+- Result: Getter, component-write setup, and null domain-copy paths no longer
+  stall on per-byte persistent filesystem writes in the tested emulator cases.
+- Decision: Run these focused cases on an identified physical ARM Pico when
+  available; continue triaging remaining API 3.0.5 Security/Crypto failures.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/deploy/ec-key-getfield-final-20261029/`;
+  `artifacts/results/deploy/ec-key-copy-domain-null-batched-20261029/`.

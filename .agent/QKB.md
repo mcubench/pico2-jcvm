@@ -5844,3 +5844,26 @@ fix.
   ARM, and RISC-V `asymm_crypto` builds passed. No physical Pico was connected;
   hardware validation remains open. Final report:
   `artifacts/results/deploy/ec-key-getk-final-20261029/`.
+
+## Persistent key component writes stalled EC API setup (2026-10-29)
+
+- **Symptom:** The focused API 3.0.5 `copyDomainParametersFrom(null)` test
+  timed out before reaching the null-source method. Dispatch tracing showed it
+  stalled earlier while the applet initialized key state through native
+  `NativeKey.setA` (dispatch index 29). Persistent EC component setters and
+  domain copies wrote each array byte with an individual filesystem syscall.
+- **Cause:** Per-byte persistent array updates made key setup/copy proportional
+  to repeated filesystem syscall cost. The earlier clear-only bulk optimization
+  did not cover setter writes.
+- **Viable fix:** Build a full padded byte vector in memory, validate and update
+  the existing persistent byte-array record with one transaction-aware
+  `write_persistent_tag()` call, then update the component length. Use the same
+  path for persistent RSA/EC setters and EC domain copying; retain per-byte
+  updates for transient arrays. This change also centralizes bulk clearing.
+- **Validation:** Unchanged API 3.0.5 Security CAP VPCD runs passed for
+  uninitialized `ECKey.getField()` and `copyDomainParametersFrom(null)` (901
+  calls each, selected row `OK`, 900 unrelated rows filtered, upload and
+  cleanup passed). PC, ARM, and RISC-V `asymm_crypto` builds passed. No
+  physical Pico was connected. Results:
+  `artifacts/results/deploy/ec-key-getfield-final-20261029/` and
+  `artifacts/results/deploy/ec-key-copy-domain-null-batched-20261029/`.

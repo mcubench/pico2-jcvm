@@ -13,6 +13,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 namespace jcvm {
 namespace {
@@ -336,6 +337,23 @@ void clearKeyBytes(const std::shared_ptr<JC_Array> &array) {
     array->setByteEntry(i, 0);
   }
 }
+void writeKeyBytes(const std::shared_ptr<JC_Array> &array,
+                   const std::vector<uint8_t> &contents) {
+  if (!array || array->getType() != JAVA_ARRAY_T_BYTE) {
+    throw Exceptions::ArrayStoreException;
+  }
+  if (contents.size() != array->size()) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (array->isPersistent() && !array->isTransientArray()) {
+    FlashMemory_Handler::writePersistentField_Array_Byte(
+        array->getPersistentTag(), contents);
+    return;
+  }
+  for (uint16_t i = 0; i < array->size(); ++i) {
+    array->setByteEntry(i, contents[i]);
+  }
+}
 void checkInput(const std::shared_ptr<JC_Array> &array, jshort_t offset,
                 jshort_t length) {
   if (!array) throw Exceptions::NullPointerException;
@@ -351,10 +369,12 @@ void setComponent(JC_Instance &key, uint16_t component,
   auto destination = componentArray(key, component);
   if (length == 0 || static_cast<uint16_t>(length) > destination->size())
     throwCryptoException(CryptoExceptionReason::IllegalValue);
-  for (uint16_t i = 0; i < destination->size(); ++i) destination->setByteEntry(i, 0);
+  std::vector<uint8_t> contents(destination->size(), 0);
   const uint16_t start = static_cast<uint16_t>(destination->size() - length);
   for (uint16_t i = 0; i < static_cast<uint16_t>(length); ++i)
-    destination->setByteEntry(start + i, source->getByteEntry(static_cast<uint16_t>(offset + i)));
+    contents[start + i] = static_cast<uint8_t>(
+        source->getByteEntry(static_cast<uint16_t>(offset + i)));
+  writeKeyBytes(destination, contents);
   lengthsArray(key)->setShortEntry(component, length);
 }
 jshort_t getComponent(JC_Instance &key, uint16_t component,
@@ -382,11 +402,12 @@ void setEcComponent(JC_Instance &key, uint16_t component,
   auto destination = ecComponentArray(key, component);
   if (length == 0 || static_cast<uint16_t>(length) > destination->size())
     throwCryptoException(CryptoExceptionReason::IllegalValue);
-  for (uint16_t i = 0; i < destination->size(); ++i) destination->setByteEntry(i, 0);
+  std::vector<uint8_t> contents(destination->size(), 0);
   const uint16_t start = static_cast<uint16_t>(destination->size() - length);
   for (uint16_t i = 0; i < static_cast<uint16_t>(length); ++i)
-    destination->setByteEntry(start + i,
+    contents[start + i] = static_cast<uint8_t>(
         source->getByteEntry(static_cast<uint16_t>(offset + i)));
+  writeKeyBytes(destination, contents);
   ecLengthsArray(key)->setShortEntry(component, length);
 }
 jshort_t getEcComponent(JC_Instance &key, uint16_t component,
@@ -606,11 +627,12 @@ void javacard_security_NativeKey_copyDomainParametersFrom(jref_t receiver,
     if (length <= 0) throwCryptoException(CryptoExceptionReason::UninitializedKey);
     auto src = ecComponentArray(*from, i);
     auto dst = ecComponentArray(*destination, i);
-    for (uint16_t j = 0; j < dst->size(); ++j) dst->setByteEntry(j, 0);
+    std::vector<uint8_t> contents(dst->size(), 0);
     const uint16_t start = static_cast<uint16_t>(src->size() - length);
     const uint16_t dstStart = static_cast<uint16_t>(dst->size() - length);
     for (uint16_t j = 0; j < static_cast<uint16_t>(length); ++j)
-      dst->setByteEntry(dstStart + j, src->getByteEntry(start + j));
+      contents[dstStart + j] = static_cast<uint8_t>(src->getByteEntry(start + j));
+    writeKeyBytes(dst, contents);
     ecLengthsArray(*destination)->setShortEntry(i, length);
   }
   destination->setField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK,

@@ -1630,16 +1630,23 @@ void FlashMemory_Handler::setPersistentField_Array_Byte(const fs::Tag &tag,
 
 void FlashMemory_Handler::clearPersistentField_Array_Byte(
     const fs::Tag &tag, const uint16_t size) {
+  FlashMemory_Handler::writePersistentField_Array_Byte(
+      tag, std::vector<uint8_t>(size, 0));
+}
+
+void FlashMemory_Handler::writePersistentField_Array_Byte(
+    const fs::Tag &tag, const std::vector<uint8_t> &contents) {
   auto [length, stored] = FlashMemory_Handler::getDataInPlaceFromTag(tag);
-  const uint32_t expected_length = 3u + static_cast<uint32_t>(size);
+  const uint32_t expected_length =
+      3u + static_cast<uint32_t>(contents.size());
   if (length != expected_length || stored[0] != FieldType::FIELD_TYPE_ARRAY_BYTE ||
-      BYTES_TO_SHORT(stored[1], stored[2]) != size) {
+      BYTES_TO_SHORT(stored[1], stored[2]) != contents.size()) {
     throw Exceptions::SecurityException;
   }
 
-  std::vector<uint8_t> cleared(stored, stored + length);
-  std::fill(cleared.begin() + 3, cleared.end(), 0);
-  if (write_persistent_tag(tag, cleared.data(), length)) {
+  std::vector<uint8_t> updated(stored, stored + length);
+  std::copy(contents.begin(), contents.end(), updated.begin() + 3);
+  if (write_persistent_tag(tag, updated.data(), length)) {
     throw Exceptions::IOException;
   }
 }

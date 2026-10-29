@@ -1,23 +1,26 @@
-# Current continuation — uninitialized EC key getter and persistent key clear
+# Current continuation — persistent native key writes and EC API validation
 
-- Fixed the focused API 3.0.5 `ECKey.getK()` timeout. Trace evidence showed
-  native dispatch index 7 (`NativeKey.clearKey`) clearing persistent EC byte
-  arrays one byte at a time. Added one validated, transaction-aware record
-  write per persistent byte array; transient arrays still use in-memory clears.
-  The change covers RSA component arrays too.
-- The existing `NativeKey.getK()` implementation now checks the EC cofactor and
-  throws `CryptoException.UNINITIALIZED_KEY` when unset. The unchanged Security
-  CAP's focused VPCD run completed 901 rows: this selected row `OK`, 900 rows
-  filtered, and GPPro upload/cleanup passed. Result:
-  `artifacts/results/deploy/ec-key-getk-final-20261029/`.
-- Final clean-source `./tools/build-pc --profile asymm_crypto`, `./tools/build
-  arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto`
-  passed. No physical Pico was available, so no firmware flash or hardware
-  result is claimed.
-- Source and progress commit: `4a178a2` (`Batch persistent key component
-  clearing`). Rerun the focused API test on an identified physical ARM Pico
-  when available. Then resume the remaining API 3.0.5 Security and Crypto
-  failures, preserving upstream CAPs and all existing unrelated worktree edits.
+- Fixed the focused API 3.0.5 uninitialized `ECKey.getK()` timeout. Trace
+  evidence showed native dispatch index 7 (`NativeKey.clearKey`) clearing
+  persistent EC byte arrays one byte at a time. Commit `4a178a2` batches those
+  clears (including RSA components), retains transaction snapshots, and keeps
+  transient arrays in-memory. `NativeKey.getK()` also rejects an unset EC
+  cofactor with `CryptoException.UNINITIALIZED_KEY`.
+- Follow-up source changes (currently uncommitted) generalize the bulk record
+  writer and use it for persistent RSA/EC setters and EC domain-parameter
+  copying. Focused unchanged Security CAP VPCD runs passed for
+  `ECKey.getField()` and `copyDomainParametersFrom(null)`, with the selected
+  call `OK`, 900 filtered calls, and GPPro upload/cleanup passing. Null source
+  returns the expected `ILLEGAL_VALUE`. Artifacts:
+  `artifacts/results/deploy/ec-key-getfield-final-20261029/` and
+  `artifacts/results/deploy/ec-key-copy-domain-null-batched-20261029/`.
+- Final-source PC, ARM and RISC-V `asymm_crypto` wrapper builds passed after
+  diagnostic instrumentation was removed. PC build emitted pre-existing Rust
+  warnings. No physical Pico was connected, so no hardware result is claimed.
+- Next: commit the pending batch setter/copy change with its progress/QKB
+  record. When a physical ARM Pico is available, rerun focused EC key cases;
+  otherwise continue triaging remaining API 3.0.5 Security and Crypto failures.
+  Preserve the unrelated dirty files listed by `git status`.
 
 # Current continuation — fix JC305 key interfaces and null instanceof (2026-10-28)
 
