@@ -4,6 +4,7 @@
 #include "javacard-support.h"
 #include "heap.hpp"
 #include "jc_handlers/jc_export.hpp"
+#include "jc_handlers/flashmemory.hpp"
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
@@ -322,6 +323,19 @@ std::shared_ptr<JC_Array> ecLengthsArray(JC_Instance &key) {
   return arrayField(key, ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECLENGTHS,
                     JAVA_ARRAY_T_SHORT);
 }
+void clearKeyBytes(const std::shared_ptr<JC_Array> &array) {
+  if (!array || array->getType() != JAVA_ARRAY_T_BYTE) {
+    throw Exceptions::ArrayStoreException;
+  }
+  if (array->isPersistent() && !array->isTransientArray()) {
+    FlashMemory_Handler::clearPersistentField_Array_Byte(
+        array->getPersistentTag(), array->size());
+    return;
+  }
+  for (uint16_t i = 0; i < array->size(); ++i) {
+    array->setByteEntry(i, 0);
+  }
+}
 void checkInput(const std::shared_ptr<JC_Array> &array, jshort_t offset,
                 jshort_t length) {
   if (!array) throw Exceptions::NullPointerException;
@@ -448,7 +462,7 @@ void javacard_security_NativeKey_clearKey(jref_t receiver) {
   if (rsaType(type)) {
     for (uint16_t i = 0; i < kComponentCount; ++i) {
       auto component = componentArray(*key, i);
-      for (uint16_t j = 0; j < component->size(); ++j) component->setByteEntry(j, 0);
+      clearKeyBytes(component);
     }
     auto lengths = lengthsArray(*key);
     for (uint16_t i = 0; i < kComponentCount; ++i) lengths->setShortEntry(i, 0);
@@ -457,7 +471,7 @@ void javacard_security_NativeKey_clearKey(jref_t receiver) {
   if (ecFpType(type)) {
     for (uint16_t i = 0; i < kEcComponentCount; ++i) {
       auto component = ecComponentArray(*key, i);
-      for (uint16_t j = 0; j < component->size(); ++j) component->setByteEntry(j, 0);
+      clearKeyBytes(component);
       ecLengthsArray(*key)->setShortEntry(i, 0);
     }
     key->setField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK, 0);
@@ -568,10 +582,11 @@ void javacard_security_NativeKey_setK(jref_t receiver, jshort_t cofactor) {
 }
 jshort_t javacard_security_NativeKey_getK(jref_t receiver) {
   auto key = nativeKey(receiver);
-  if (!javacard_security_NativeKey_isInitialized(receiver))
-    throwCryptoException(CryptoExceptionReason::UninitializedKey);
-  return key->getField_Short(
+  const jshort_t cofactor = key->getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK);
+  if (cofactor <= 0)
+    throwCryptoException(CryptoExceptionReason::UninitializedKey);
+  return cofactor;
 }
 void javacard_security_NativeKey_copyDomainParametersFrom(jref_t receiver,
                                                            jref_t source) {

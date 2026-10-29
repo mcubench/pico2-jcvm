@@ -1628,6 +1628,22 @@ void FlashMemory_Handler::setPersistentField_Array_Byte(const fs::Tag &tag,
   }
 }
 
+void FlashMemory_Handler::clearPersistentField_Array_Byte(
+    const fs::Tag &tag, const uint16_t size) {
+  auto [length, stored] = FlashMemory_Handler::getDataInPlaceFromTag(tag);
+  const uint32_t expected_length = 3u + static_cast<uint32_t>(size);
+  if (length != expected_length || stored[0] != FieldType::FIELD_TYPE_ARRAY_BYTE ||
+      BYTES_TO_SHORT(stored[1], stored[2]) != size) {
+    throw Exceptions::SecurityException;
+  }
+
+  std::vector<uint8_t> cleared(stored, stored + length);
+  std::fill(cleared.begin() + 3, cleared.end(), 0);
+  if (write_persistent_tag(tag, cleared.data(), length)) {
+    throw Exceptions::IOException;
+  }
+}
+
 /*
  * Get array data store value in flash memory at a specific index.
  *

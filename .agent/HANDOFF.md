@@ -1,36 +1,23 @@
-# Current continuation — EC key initialization and null argument handling (2026-10-28)
+# Current continuation — uninitialized EC key getter and persistent key clear
 
-- In `choupi/src/native_key.cpp`, `NativeKey.getK()` now throws
-  `CryptoException.UNINITIALIZED_KEY` unless the EC key is initialized, and
-  `copyDomainParametersFrom(null)` explicitly throws
-  `CryptoException.ILLEGAL_VALUE`. These changes are not yet validated by the
-  API client and remain uncommitted.
-- `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile
-  asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. No
-  physical board was enumerated by elevated `lsusb`, so this source was not
-  flashed.
-- Focused Security test attempt uploaded its CAP but timed out without call
-  rows. The retry found a duplicate Security package; a test-only attempt
-  returned `TEST_NO_APPLET`. This is unresolved VPCD package/reader state, not
-  evidence for or against either code change. Logs:
-  `artifacts/results/deploy/ec-key-guards-vpcd-20261028/`,
-  `...-retry/`, `...-reader00/`, and `...-testonly/`.
-- A GPPro inventory via a fresh VPCD session listed only ISD, but the following
-  deploy upload still reported the Security package already present. The
-  discrepancy remains unresolved. The allowed physical reader helper reports
-  zero attached Pico devices.
-- A direct GPPro install of `AlgTestApiSecurity_305.cap` on the fresh VPCD
-  session printed `CAP loaded` then exited with status 1 before reporting its
-  INSTALL stage. Do not treat LOAD as installed; runner cleanup/registry state
-  still needs diagnosis.
-- Latest VPCD package-state diagnostic commit: `eaf39cb`.
-- Next: restore a clean VPCD install state on the selected reader (check
-  reader/endpoint mapping and package registry), rerun only `getK` and
-  `copyDomainParametersFrom`, then validate on physical ARM when a Pico is
-  connected. Afterward continue the remaining 3.0.5 Crypto `6F00` and runtime
-  reason mismatches. Keep this source change separate from the committed
-  marker-interface fix.
-- Source and progress commit: `92ecf0a` (`Map EC key initialization errors to API semantics`).
+- Fixed the focused API 3.0.5 `ECKey.getK()` timeout. Trace evidence showed
+  native dispatch index 7 (`NativeKey.clearKey`) clearing persistent EC byte
+  arrays one byte at a time. Added one validated, transaction-aware record
+  write per persistent byte array; transient arrays still use in-memory clears.
+  The change covers RSA component arrays too.
+- The existing `NativeKey.getK()` implementation now checks the EC cofactor and
+  throws `CryptoException.UNINITIALIZED_KEY` when unset. The unchanged Security
+  CAP's focused VPCD run completed 901 rows: this selected row `OK`, 900 rows
+  filtered, and GPPro upload/cleanup passed. Result:
+  `artifacts/results/deploy/ec-key-getk-final-20261029/`.
+- Final clean-source `./tools/build-pc --profile asymm_crypto`, `./tools/build
+  arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto`
+  passed. No physical Pico was available, so no firmware flash or hardware
+  result is claimed.
+- The source and progress changes are awaiting their dedicated commit. After
+  committing, rerun the focused API test on an identified physical ARM Pico
+  when available. Then resume the remaining API 3.0.5 Security and Crypto
+  failures, preserving upstream CAPs and all existing unrelated worktree edits.
 
 # Current continuation — fix JC305 key interfaces and null instanceof (2026-10-28)
 

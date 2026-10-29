@@ -5822,3 +5822,25 @@ fix.
   `AlgTest_JavaCard/deploy/results/keypair-constructor-physical-20261028/`
   (`all-keypair-constructors.csv` and `keypair-generation.csv`). Full-run CSV
   `security-full.csv`; post-failure D92 monitor passed.
+
+## NativeKey.clearKey byte-by-byte persistence stalled EC API calls (2026-10-29)
+
+- **Symptom:** The focused API 3.0.5 uninitialized `ECKey.getK()` request timed
+  out over VPCD after 15 seconds. The VM trace reached native dispatch index 7
+  (`NativeKey.clearKey`) while preparing the test and repeatedly wrote
+  persistent key-array bytes.
+- **Cause:** `clearKey()` zeroed each persistent RSA/EC component by calling
+  `JC_Array::setByteEntry()` for every byte. Each byte incurred an individual
+  filesystem syscall; the clear did not finish within the focused API test
+  deadline.
+- **Viable fix:** For persistent byte arrays, validate the stored byte-array
+  record and write one zero-filled record through the existing
+  `write_persistent_tag()` path so transaction snapshots are preserved. Keep
+  the in-memory byte loop for transient arrays. `NativeKey.clearKey()` uses
+  this for both RSA and EC components.
+- **Validation:** The unchanged API 3.0.5 Security CAP completed 901 calls on
+  VPCD after the change: uninitialized `ECKey.getK()` was `OK`, 900 unrelated
+  calls were intentionally filtered, and GPPro upload/cleanup passed. PC,
+  ARM, and RISC-V `asymm_crypto` builds passed. No physical Pico was connected;
+  hardware validation remains open. Final report:
+  `artifacts/results/deploy/ec-key-getk-final-20261029/`.

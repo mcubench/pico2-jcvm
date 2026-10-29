@@ -191,6 +191,9 @@ public:
                                             Heap &heap
 #endif /* JCVM_SECURE_HEAP_ACCESS */
   );
+  /// Zero all elements of a persistent byte array with one record write.
+  static void clearPersistentField_Array_Byte(const fs::Tag &tag,
+                                              const uint16_t size);
   /// Get array data store in flash memory at a specific index.
   static const jshort_t getPersistentField_Array_Short(const fs::Tag &tag,
                                                        const uint16_t index

@@ -14103,3 +14103,32 @@
 - Commit: `eaf39cb`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-guards-vpcd-20261028-inventory/`;
   `artifacts/results/deploy/ec-key-getk-vpcd-direct-20261028/`.
+
+## 2026-10-28 — Batch persistent key clearing (36 minutes)
+
+- Step/experiment: `native-key-batched-persistent-clear`
+- When: '2026-10-28 23:30 UTC' - '2026-10-29 00:06 UTC'
+- Change: `NativeKey.clearKey()` now clears persistent RSA and EC byte-array
+  components with one record write per array instead of one filesystem call per
+  byte. The bulk path validates the existing array record and uses the normal
+  persistent-write snapshot mechanism. Transient arrays retain the in-memory
+  byte loop. The uninitialized `ECKey.getK()` guard is included in this
+  validated native-key step.
+- Validation: The unchanged API 3.0.5 Security CAP uploaded and was removed
+  successfully over VPCD. Its 901-call report completed with the selected
+  uninitialized `ECKey.getK()` row `OK`, 900 other rows
+  `SKIPPED_BY_USER`, and no failed stage. The report timestamps were 10 seconds
+  apart for upload, test, and cleanup. The equivalent pre-change request timed
+  out in 15 seconds inside native dispatch index 7 (`NativeKey.clearKey()`);
+  tracing showed repeated single-byte persistent writes. Final clean-source
+  `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile
+  asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. No
+  physical Pico was attached, so no flash or hardware behavior is claimed.
+- Result: The focused API call now completes on the emulator and reports the
+  expected uninitialized-key behavior. Persistent key clearing avoids the
+  per-byte filesystem-call bottleneck for RSA and EC keys.
+- Decision: Validate the same call on a physical ARM Pico when available, then
+  resume the remaining API 3.0.5 Security and Crypto failures.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/deploy/ec-key-getk-final-20261029/`;
+  pre-change dispatch trace `artifacts/results/deploy/ec-key-getk-native-index-20261029/`.
