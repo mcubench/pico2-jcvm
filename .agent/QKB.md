@@ -5886,3 +5886,18 @@ fix.
   source. Artifacts:
   `artifacts/results/deploy/ec-key-copy-domain-p256-reader00-20261029/` and
   `artifacts/results/deploy/ec-key-copy-domain-errors-reader00-20261029/`.
+
+## Physical Cipher factory 6F00 not reproduced in VPCD (2026-10-29)
+
+- **Symptom:** A prior physical API 3.0.5 Crypto report had a `6F00` for the
+  `javacardx.crypto.Cipher` `Cipher()` scenario.
+- **Cause:** Not established. This may be card-state or transport-specific;
+  current evidence does not isolate it to native `Cipher.getInstance` code.
+- **Viable next step:** Do not change native implementation based only on that
+  physical row. Rerun the unchanged Crypto CAP on an identified physical Pico
+  and compare its exact CAP, profile image, reader, and row against the VPCD
+  result before attributing the failure.
+- **Validation:** Focused unchanged API 3.0.5 Crypto CAP completed 466 VPCD
+  calls: selected `Cipher()` returned object token `86` as expected, 465 other
+  calls were filtered, and GPPro cleanup passed. Result:
+  `artifacts/results/deploy/cipher-factory-vpcd-20261029/`.

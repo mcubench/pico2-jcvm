@@ -38,14 +38,17 @@ out explicitly.
   metadata at startup and an explicit card-presence probe before the deploy
   runner. No physical token was enumerated for final-image retest; do that
   when a Pico is available.
-- [ ] Triage remaining physical 3.0.5 failures: `NativeKey.getK()` now checks
-  EC key initialization and null `copyDomainParametersFrom` explicitly maps
-  to `CryptoException.ILLEGAL_VALUE`, but neither change has a completed API
-  result yet. PC/ARM/RISC-V builds pass; VPCD attempts uploaded the CAP but
-  then either timed out, encountered a duplicate Security package, or reported
-  `TEST_NO_APPLET`. No physical Pico is enumerated. Reproduce these two calls
-  before marking fixed. Crypto still has 14 unexpected `6F00` and 14
-  card-runtime reason mismatches.
+- [x] Reproduce and fix EC key API timeouts caused by per-byte persistent
+  component writes. Persistent key clear/set and domain-copy paths now use one
+  transaction-aware record write per byte array. Unchanged API 3.0.5 Security
+  CAP VPCD cases passed for uninitialized `getK()`/`getField()`, null source,
+  valid P-256 copy, mismatched source size, and uninitialized source; PC, ARM,
+  and RISC-V builds passed. No physical validation is claimed.
+- [ ] Re-run focused EC key cases on a physical ARM Pico when one enumerates.
+  The remaining physical 3.0.5 report has 14 unexpected Crypto `6F00` results
+  and 14 card-runtime reason mismatches. The `Cipher()` factory `6F00` from
+  the older Crypto report passed in VPCD and remains a physical-only
+  discrepancy to retest, not a confirmed native failure.
 - [ ] Re-run the affected deploy areas after each fix on VPCD, then physical
   hardware after ARM and RISC-V builds pass. Source data:
   `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.

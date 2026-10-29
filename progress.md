@@ -14186,3 +14186,21 @@
 - Artifacts/logs: `artifacts/results/deploy/ec-key-copy-domain-p256-reader00-20261029/`;
   `artifacts/results/deploy/ec-key-copy-domain-errors-reader00-20261029/`;
   failed endpoint attempts under `ec-key-copy-domain-p256-*-20261029/`.
+
+## 2026-10-29 — Check physical Cipher failure against VPCD (5 minutes)
+
+- Step/experiment: `cipher-factory-physical-failure-vpcd-recheck`
+- When: '2026-10-29 00:37 UTC' - '2026-10-29 00:42 UTC'
+- Change: No source change. Reproduced the API 3.0.5 Crypto `Cipher()` factory
+  scenario from an earlier physical report over VPCD and updated the active
+  backlog to distinguish confirmed VM failures from physical-only results.
+- Validation: The unchanged Crypto CAP completed 466 calls: selected
+  `javacardx.crypto.Cipher.Cipher()` returned object token `86` as expected,
+  465 other calls were intentionally filtered, and GPPro cleanup passed. No
+  physical Pico was attached; no hardware validation was run.
+- Result: The prior physical `6F00` is not reproduced on VPCD and does not yet
+  justify changing native Cipher dispatch.
+- Decision: Rerun that exact case on an identified physical ARM Pico when
+  available; meanwhile continue confirmed API 3.0.5 native failures.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/deploy/cipher-factory-vpcd-20261029/`.
