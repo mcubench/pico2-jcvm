@@ -14703,3 +14703,29 @@
 - Commit: `352b366` (result/TODO/QKB/handoff); this progress record follows.
 - Artifacts/logs: `artifacts/results/deploy/core-deselect-vpcd-20261029/`;
   no image flashed.
+
+## 2026-10-29 — Retest secp192r1 DH/DHC known secrets (9 minutes)
+
+- Step/experiment: `crypto-dh-dhc-vpcd-repeat`
+- When: '2026-10-29 05:59 UTC' - '2026-10-29 06:08 UTC'
+- Change: Re-ran the unchanged API 3.0.5 Crypto CAP on a fresh PC JCVM/VPCD
+  flash image, selecting only the secp192r1 `ALG_EC_SVDP_DH` and
+  `ALG_EC_SVDP_DHC` known-secret rows. Updated TODO, QKB, and the handoff with
+  the outcome and a probe/runner concurrency guard.
+- Validation: `api_card_runner.py` processed all 466 rows (464
+  `SKIPPED_BY_USER`); both selected calls returned `OK`, `0x0014`, and
+  `effect=as expected`. CAP cleanup passed. The physical reader helper found
+  zero Pico devices. An overlapping attempt created invalid duplicate-package
+  and PC/SC reset results; it is excluded from behavioral conclusions and is
+  recorded in QKB. Targeted `git diff --check` passed. No firmware source
+  changed, so builds and physical flashing were not run.
+- Result: Both secp192r1 DH/DHC known-secret VPCD checks now pass on a clean
+  image after the earlier traced repeat. Physical report discrepancies still
+  require an ARM Pico retest.
+- Decision: Preserve current native behavior; no reproducible VPCD defect was
+  established. For each next attempt, enforce `pipefail`, require a positive
+  presence probe, use a new flash image, and wait for runner exit.
+- Commit: `4d810c5` (validation/TODO/QKB/handoff); this progress record follows.
+- Artifacts/logs: `artifacts/results/deploy/crypto-dh-vpcd-20261029/retry2/`;
+  CSV SHA-256 `037dcf8f543f9b80a2c71ab6085b493af5def7ecb6301dbe307004a46298cf89`;
+  emulator log SHA-256 `4b110de29b00b76abd14804af926e2e6fbf78e9b795e9433ea3f3353adccd508`.
