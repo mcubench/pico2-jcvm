@@ -1,4 +1,19 @@
-# Current continuation — SignatureMessageRecovery exception correction
+# Current continuation — SignatureMessageRecovery parameterized init correction
+
+- Fixed the parameterized `Signature.init(Key, mode, parameters, offset,
+  length)` overload for `SignatureMessageRecovery` algorithms. The Java Card
+  contract requires `CryptoException.ILLEGAL_USE`; the generic RSA PSS branch
+  previously returned `ILLEGAL_VALUE` for `ALG_RSA_SHA_ISO9796_MR`.
+- The unchanged upstream API 3.0.5 Crypto CAP focused row passes on current PC
+  JCVM/VPCD: `ALG_RSA_SHA_ISO9796_MR init with parameters (illegal use)` returned
+  `OK`, with 465 other rows filtered and successful upload/cleanup. PC, ARM,
+  and RISC-V `asymm_crypto` wrapper builds pass. No physical device was
+  available. Source commit: `2ae55a4`.
+- See `.agent/QKB.md` for the failure and workaround details. Continue with
+  remaining Crypto cases and physical retesting when an identified Pico is
+  available. Preserve unrelated dirty files.
+
+# Previous continuation — SignatureMessageRecovery exception correction
 
 - Fixed `SignatureMessageRecovery.beginVerify()` after `init(MODE_SIGN)`: the
   shared mode guard returned `CryptoException.INVALID_INIT`, but Java Card

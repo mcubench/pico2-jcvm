@@ -14365,3 +14365,25 @@
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (focused CSVs and VPCD flash image).
 
+## 2026-10-29 — Correct parameterized init for message-recovery signatures (5 minutes)
+
+- Step/experiment: `signature-message-recovery-parameterized-init`
+- When: '2026-10-29 03:04 UTC' - '2026-10-29 03:09 UTC'
+- Change: Made the native parameterized `Signature.init()` overload throw
+  `CryptoException.ILLEGAL_USE` for message-recovery algorithms. The generic
+  RSA/PSS handler had returned `ILLEGAL_VALUE`; Java Card requires
+  `ILLEGAL_USE` for this overload on `SignatureMessageRecovery`.
+- Validation: `./tools/build-pc --profile asymm_crypto`,
+  `./tools/build arm --profile asymm_crypto`, and
+  `./tools/build riscv --profile asymm_crypto` passed. The unchanged upstream
+  API 3.0.5 Crypto CAP VPCD test passed the selected
+  `ALG_RSA_SHA_ISO9796_MR init with parameters (illegal use)` row (`OK`; 465
+  other rows intentionally skipped); upload and cleanup passed. No physical
+  device was enumerated or flashed.
+- Result: The message-recovery parameterized-init exception now matches the API
+  contract. No hardware metric was measured.
+- Decision: Continue with remaining Crypto deploy failures and retest on
+  physical ARM hardware when available.
+- Commit: `2ae55a4`.
+- Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/mr-init-parameters-fixed.csv`.
+

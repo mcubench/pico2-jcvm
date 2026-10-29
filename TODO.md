@@ -54,6 +54,9 @@ out explicitly.
   shared mode guard returned `INVALID_INIT`. The unchanged upstream API 3.0.5
   Crypto CAP selected case passes on current PC JCVM/VPCD. This does not replace
   physical retesting of the dated baseline CSV.
+- [x] Make parameterized `Signature.init()` on a message-recovery algorithm
+  return `CryptoException.ILLEGAL_USE`. The upstream 3.0.5
+  `ALG_RSA_SHA_ISO9796_MR init with parameters` case now passes on VPCD.
 - [ ] Re-run the affected deploy areas after each fix on VPCD, then physical
   hardware after ARM and RISC-V builds pass. Source data:
   `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.

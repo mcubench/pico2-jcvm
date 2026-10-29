@@ -6021,3 +6021,23 @@ fix.
 - **Artifacts:**
   `artifacts/results/deploy/crypto-current-vpcd-20261029/mr-beginverify-wrong-mode-fixed.csv`,
   `rsa-sha512-pss.csv`, and `rsa-iso9796-params.csv`.
+
+## SignatureMessageRecovery parameterized init must return ILLEGAL_USE (2026-10-29)
+
+- **Symptom:** The API 3.0.5 Crypto CAP case `ALG_RSA_SHA_ISO9796_MR init with
+  parameters (illegal use)` returned `CryptoException.ILLEGAL_VALUE` in VPCD.
+- **Cause:** The overload `Signature.init(Key, mode, parameters, offset,
+  length)` sent all RSA algorithms through the PSS parameter handler, which
+  returned `ILLEGAL_VALUE` because message-recovery algorithms do not accept
+  this overload. The Java Card `SignatureMessageRecovery` contract explicitly
+  requires `ILLEGAL_USE` for parameterized init.
+- **Viable fix:** In the native parameterized-init dispatch, detect a
+  message-recovery Signature before the generic RSA/PSS handling and throw
+  `CryptoException.ILLEGAL_USE`.
+- **Validation:** Unchanged API 3.0.5 Crypto CAP on current PC JCVM/VPCD passed
+  the selected row (`OK`; 465 other rows filtered); upload and cleanup passed.
+  PC, ARM, and RISC-V `asymm_crypto` wrapper builds passed. No physical device
+  was available. Source commit: `2ae55a4`.
+- **Reference:** [Oracle Java Card `SignatureMessageRecovery`](https://docs.oracle.com/en/java/javacard/3.2/jcapi/api_classic/javacard/security/SignatureMessageRecovery.html).
+- **Artifacts:**
+  `artifacts/results/deploy/crypto-current-vpcd-20261029/mr-init-parameters-fixed.csv`.
