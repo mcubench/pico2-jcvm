@@ -22,8 +22,8 @@
 
 - Extended zeroization to the PSS salt, hash input, MGF1 input/digest, masks,
   and decoded data block. PC, ARM, and RISC-V builds pass; VPCD asymmetric
-  vectors pass 99/99. Implementation commit: `4ecd522`. No Pico reader was
-  available for hardware validation.
+  vectors pass 99/99. Implementation commit: `4ecd522`; record commit
+  `21fa7f6`. No Pico reader was available for hardware validation.
 
 ## RSA NOPAD both-direction fix (2026-10-29)
 

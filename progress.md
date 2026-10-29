@@ -14611,7 +14611,7 @@
   same exception-safe wiping policy as the outer RSA operations.
 - Decision: Retain this incremental cleanup. Private input blinding and
   complete CRT fault verification remain separate design gaps.
-- Commit: implementation `4ecd522`; validation/doc record commit pending.
+- Commit: implementation `4ecd522`; validation/doc record commit `21fa7f6`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   no new persistent test artifacts.
 
