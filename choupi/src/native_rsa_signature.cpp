@@ -838,7 +838,7 @@ jshort_t rsaSignatureSignHash(JC_Instance &signature,
   if (isIso9796(signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (length != digestLength(signatureDigestAlgorithm(signature)))
-    throwCryptoException(CryptoExceptionReason::IllegalValue);
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   const auto value = transform(signature, readArray(*hash, offset,
       static_cast<uint16_t>(length)));
   checkRange(output, outputOffset, static_cast<jshort_t>(value.size()));
@@ -877,7 +877,7 @@ jbool_t rsaSignatureVerifyHash(JC_Instance &signature,
   if (isIso9796(signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (hashLength != digestLength(signatureDigestAlgorithm(signature)))
-    throwCryptoException(CryptoExceptionReason::IllegalValue);
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   return verify(signature, readArray(*hash, hashOffset,
                                      static_cast<uint16_t>(hashLength)),
       readArray(*expected, expectedOffset, expectedLength)) ? TRUE : FALSE;
