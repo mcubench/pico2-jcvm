@@ -14387,3 +14387,27 @@
 - Commit: `2ae55a4`.
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/mr-init-parameters-fixed.csv`.
 
+## 2026-10-29 — Triage dated Crypto secp192r1 failures (16 minutes)
+
+- Step/experiment: `crypto-secp192-keyagreement-vpcd-triage`
+- When: '2026-10-29 03:09 UTC' - '2026-10-29 03:25 UTC'
+- Change: No retained source change. Rechecked selected rows from the dated
+  physical API 3.0.5 Crypto failure report on current PC JCVM/VPCD; temporary
+  PC-only persistent-array error logging was removed after diagnosis.
+- Validation: `./tools/build-pc --profile asymm_crypto` passed on the clean
+  source. The previous ARM/RISC-V wrapper builds remain valid for the same
+  final source. Current-source VPCD passed ECDSA/SHA-1 secp192r1, KeyAgreement
+  factory, and uninitialized-key checks. DH and DHC secp192r1 known-secret
+  checks first returned `6F00` (runtime exception ID 5, `IOException`) and both
+  passed on a trace-enabled repeat (`returned=0x0014`); no persistent byte-array
+  read error was logged on that repeat. No physical Pico was available.
+- Result: These dated physical `6F00` rows are not stable reproductions on
+  VPCD. The transient IOException cause remains unknown; do not change native
+  code without a repeatable failure.
+- Decision: Continue triaging remaining API 3.0.5 Crypto rows and retest the
+  transient KeyAgreement result on physical hardware when available. No
+  hardware metric was measured.
+- Commit: Pending follow-up SHA for this validation record.
+- Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
+  (five focused CSVs and `ec-keyagreement-trace.log`).
+

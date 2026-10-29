@@ -6041,3 +6041,28 @@ fix.
 - **Reference:** [Oracle Java Card `SignatureMessageRecovery`](https://docs.oracle.com/en/java/javacard/3.2/jcapi/api_classic/javacard/security/SignatureMessageRecovery.html).
 - **Artifacts:**
   `artifacts/results/deploy/crypto-current-vpcd-20261029/mr-init-parameters-fixed.csv`.
+
+## KeyAgreement secp192r1 VPCD failures were not repeatable (2026-10-29)
+
+- **Symptom:** The dated physical API 3.0.5 report had `6F00` for the
+  `KeyAgreement()` factory, two secp192r1 DH/DHC known-secret operations, and
+  initialization with an uninitialized EC private key.
+- **Investigation:** On current PC JCVM/VPCD, the factory returned `OK`, the
+  uninitialized-key case returned the expected `UNINITIALIZED_KEY` (`0x0002`),
+  and ECDSA/SHA-1 with secp192r1 passed. DH and DHC each returned `6F00` once;
+  the runtime diagnostic identified exception ID 5 (`IOException`). A
+  trace-enabled repeat passed both rows (`returned=0x0014` each). Temporary
+  PC-only diagnostics around persistent byte-array reads reported no read
+  failure on the passing repeat and were removed afterward.
+- **Cause:** Not established. No native code change is justified by one
+  non-repeatable `IOException` followed by a passing run. Consider a transient
+  PC emulator/persistent-storage interaction; this is only a hypothesis.
+- **Viable fix:** None confirmed. Preserve the exact-image/profile and reader
+  identity when retesting on physical hardware; capture VM diagnostics if the
+  failure recurs.
+- **Validation:** Clean-source PC, ARM, and RISC-V `asymm_crypto` builds pass.
+  VPCD result files:
+  `ecdsa-sha1-secp192-known.csv`, `ec-svdp-p192-known.csv`,
+  `ec-svdp-p192-traced.csv`, `keyagreement-factory.csv`, and
+  `keyagreement-uninitialized.csv` under
+  `artifacts/results/deploy/crypto-current-vpcd-20261029/`.

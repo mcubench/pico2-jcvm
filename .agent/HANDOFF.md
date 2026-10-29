@@ -1,4 +1,21 @@
-# Current continuation — SignatureMessageRecovery parameterized init correction
+# Current continuation — triage remaining Crypto 6F00 rows
+
+- Rechecked selected rows from the dated physical API 3.0.5 Crypto report on
+  current PC JCVM/VPCD. ECDSA/SHA-1 with secp192r1 passed; `KeyAgreement()` and
+  the uninitialized EC private-key case passed. Two secp192r1 DH/DHC known
+  secret rows failed with `6F00` once, then passed on a trace-enabled rerun
+  (`returned=0x0014` for each). The first run reported native exception ID 5
+  (`IOException`); the repeat emitted no persistent-array read failure.
+- No source fix was made for these intermittent KeyAgreement results. The
+  temporary PC-only diagnostic was removed and `./tools/build-pc
+  --profile asymm_crypto` passed on the clean source. ARM/RISC-V wrapper builds
+  passed after the prior two committed Signature fixes. VPCD/APDU log and CSVs
+  are under `artifacts/results/deploy/crypto-current-vpcd-20261029/`.
+- Physical report counts remain a dated baseline; no Pico was available in this
+  turn. Next: focus on remaining reproducible Crypto rows and retest the
+  intermittent KeyAgreement cases on physical hardware when available.
+
+# Previous continuation — SignatureMessageRecovery parameterized init correction
 
 - Fixed the parameterized `Signature.init(Key, mode, parameters, offset,
   length)` overload for `SignatureMessageRecovery` algorithms. The Java Card

@@ -60,6 +60,10 @@ out explicitly.
 - [ ] Re-run the affected deploy areas after each fix on VPCD, then physical
   hardware after ARM and RISC-V builds pass. Source data:
   `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.
+  Current-source VPCD spot checks on 2026-10-29 pass for ECDSA/SHA-1 and
+  KeyAgreement factory/uninitialized-key cases. The two secp192r1 DH/DHC
+  known-secret rows failed once with `6F00`, then both passed on a traced
+  repeat; investigate this intermittent result before changing native code.
 
 The physical 3.0.5 sweep itself completed Core (291: 271 OK, 15 expected
 unsupported, four optional Ext scenarios unavailable, one known
