@@ -14676,6 +14676,6 @@
 - Decision: Keep the reservation and retain the PSS vectors as regression
   coverage. This is incremental cleanup, not a complete private-RSA side-channel
   or fault-protection solution.
-- Commit: implementation `da8ee60`; validation/doc record commit pending.
+- Commit: implementation `da8ee60`; validation/doc record commit `9f0b5a4`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`.
 

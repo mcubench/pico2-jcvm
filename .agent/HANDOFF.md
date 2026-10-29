@@ -37,7 +37,7 @@
 - PSS hash-input buffers now reserve their exact final size before appending the
   digest and salt, so vector growth cannot free an earlier allocation holding
   those bytes. PC/ARM/RISC-V and VPCD 99/99 pass. Source commit: `da8ee60`;
-  progress record pending.
+  progress record commit `9f0b5a4`.
 
 ## RSA NOPAD both-direction fix (2026-10-29)
 
