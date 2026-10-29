@@ -271,6 +271,37 @@ HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
   (`all-keypair-constructors.csv` and `keypair-generation.csv`). Full-run CSV
   `security-full.csv`; post-failure D92 monitor passed.
 
+## API 3.0.5 Security sweep exhausts persistent filesystem at RSA CRT setP (2026-10-29)
+
+- **Symptom:** Two full physical Security runs on 2BED completed 901 calls but
+  returned `6F00` from `RSAPrivateCrtKey.setP(TYPE_RSA_CRT_PRIVATE,
+  LENGTH_RSA_2048)` at the same point. The exact call passed when isolated.
+  A narrowed rerun including the preceding API test classes reproduced the
+  same failure; the next `setQ`, `setDP1`, `setDQ1`, and `setPQ` rows passed.
+- **Cause:** Serial trace proves persistent filesystem exhaustion, not RSA
+  arithmetic failure. `fs_write` rejected a new 131-byte array record with
+  5,929 records and 65,409/65,536 bytes occupied. The internal `OutOfFlash`
+  result is currently mapped by persistent write callers to `IOException`,
+  which escaped the CAP as `6F00`. The filesystem exception mapping and
+  whether this workload retains unreachable persistent objects both need
+  follow-up. Existing heap collection leaves persistent tags pinned until
+  safe persisted-root enumeration/deletion is implemented; do not free these
+  records by clearing heap slots alone because Java Card references encode
+  stable heap handles.
+- **Validation:** The physical 3.0.5 Crypto run on asymm_crypto completed
+  466 calls (302 `OK`, 163 `UNSUPPORTED_PER_SPEC`, one known SHA-512 PSS
+  default-salt size exception) and all previous Crypto failures except that
+  valid size error passed. Security ran twice (396 `OK`, 503/504 unsupported,
+  two/one `6F00` respectively). The isolated `setP`/`setPQ` plus public RSA
+  4096 KeyBuilder tests passed 3/3. The narrowed 629-call prefix reproduced
+  one `setP` failure. Monitor log:
+  `artifacts/logs/2BED-asymm-security-prefix-serial.log`; CSVs and hashes are
+  recorded in `progress.md` under `physical-asymm-crypto-security-retest`.
+- **Follow-up:** Audit object/root retention and map `fs::Error::OutOfFlash` to
+  the Java Card resource exception expected for storage allocation failure.
+  Do not classify this as an RSA implementation defect, and do not increase
+  flash partitions or alter configuration without a measured layout review.
+
 ## NativeKey.clearKey byte-by-byte persistence stalled EC API calls (2026-10-29)
 
 - **Symptom:** The focused API 3.0.5 uninitialized `ECKey.getK()` request timed

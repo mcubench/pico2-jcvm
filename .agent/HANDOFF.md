@@ -11,31 +11,31 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 
 ## Next concrete work
 
-1. The repeated Core `6F00` cluster is fixed and passed two consecutive
-   physical regressions on 2BED. Continue the next priority: retest fixed EC
-   key and Crypto API rows on available physical ARM hardware, then resume the
-   interrupted Security sweep. D92 failed targeted flash recovery and was not
-   available after that attempt; confirm exact reader identity before use.
-2. Retest fixed EC key and Crypto API rows on identified physical ARM hardware;
-   complete the interrupted Security sweep, including the RSA-public-4096
-   KeyBuilder boundary that previously lost PC/SC transport.
-3. Investigate the official-client RSA-512 timing discrepancy using the exact
+1. Investigate the physical API 3.0.5 Security persistent-filesystem exhaustion
+   at RSA CRT `setP` (evidence below). Audit persistent object retention and
+   Java Card storage-error mapping. Preserve stable handles and the current
+   GC safety rule; do not patch the RSA operation itself based on this result.
+2. Investigate the official-client RSA-512 timing discrepancy using the exact
    APDU workload on the same fresh VPCD image. Do not use its partial CSV as a
    complete support report. Continue focused Crypto triage before scheduling
    another full multi-hour run.
-4. Remaining acceptance/hardening: Windows validation, physical power-cycle
+3. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, private RSA hardening, intermittent watchdog marker.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded
    investigation requests, not implemented features.
+
+The 2026-10-29 physical Crypto and Security retests requested in the previous
+handoff are complete; see the run counts and hashes below.
 
 ## Latest physical state and results
 
 These are last observations, not a live enumeration. Reconfirm board identity,
 reader name, profile, and installed state before every hardware task.
 
-- 2BED: `2BED26ED20556535` is flashed with the current ARM candidate image,
-  SHA-256 `6a3915f6611dca76a728b6085fda6af6671a16ca1e59ba1fef674e9ed3a4b17a`,
-  and passed its finite startup monitor. D92: `D92E743D5F640C0F` was targeted
+- 2BED: `2BED26ED20556535` is currently flashed with the ARM `asymm_crypto`
+  image, SHA-256 `620f4c739c1891bbc921e8bcb7202988a1bbff9ff878ea566b3d3523b7e9fcb3`,
+  and passed its finite startup monitor (`TEST:SUMMARY pass=1 fail=0`). D92:
+  `D92E743D5F640C0F` was targeted
   for the same update, but 1200-baud BOOTSEL recovery timed out; a later reader
   scan omitted it. Do not infer D92's firmware state from the interrupted
   recovery. RISC-V currently provides VM-core smoke coverage; it is not full
@@ -66,6 +66,44 @@ reader name, profile, and installed state before every hardware task.
   as failover; an old absence report does not establish present availability.
 - Firmware reflashing preserves installed CAP state. Do not call a card empty
   without a fresh GPPro listing. Most result/log artifacts are local and Git-ignored.
+
+### Physical API 3.0.5 asymm_crypto retest — 2026-10-29
+
+- Exact reader: `Pico 2 CHOUPI CCID [JCVM CCID]
+  (2BED26ED20556535) 01 00` after the `asymm_crypto` flash and PC/SC ACL
+  refresh. Both ARM and RISC-V `./tools/build` gates passed as part of
+  `./tools/cycle choupi --profile asymm_crypto --chipid 2BED26ED20556535`.
+- Crypto completed 466 calls: 302 `OK`, 163 `UNSUPPORTED_PER_SPEC`, one
+  `EXC_CARDRUNTIME reason=0x0001` on the upstream RSA SHA-512 PSS default-salt
+  vector. That vector uses a 1024-bit key; the required SHA-512 salt does not
+  fit, so retain the size check. Every other previously failing Crypto row
+  passed, including EC secp192r1 signing/key agreement, RSA NOPAD, and the
+  earlier factory/cipher cases. Hash:
+  `28400be72b530b81d264dbad3dbd11f860ba3af6c5756c06dac792ee8e4d05b1`.
+- Security completed twice, 901 calls each. Pass 1: 396 `OK`, 503
+  `UNSUPPORTED_PER_SPEC`, two `SW_ERROR`. Pass 2: 396 `OK`, 504 unsupported,
+  one `SW_ERROR`. Both CAP cleanups succeeded. The earlier RSA-public-4096
+  `KeyBuilder` boundary returned `OK`; RSA/RSA-CRT KeyPair 4096 was correctly
+  unsupported. Focused `setP`/`setPQ` CRT-2048, `ALG_SHA` one-shot factory,
+  and RSA-public-4096 checks returned 3 `OK`. The repeated full-run RSA CRT
+  `setP` 2048 `6F00` also reproduced in a narrowed prefix through preceding
+  classes, but not when isolated.
+- Serial evidence identifies persistent filesystem exhaustion: `fs_write`
+  rejected a 131-byte record with 5,929 records and 65,409/65,536 bytes used.
+  Internal `OutOfFlash` currently surfaces as `IOException`, then `6F00`.
+  This is storage pressure / resource-error handling, not evidence of faulty
+  RSA arithmetic. Audit safe persistent-object reclamation and map storage
+  exhaustion to the appropriate Java Card resource exception; loaded
+  persistent objects must not be freed by merely clearing their stable heap
+  handles. Serial log:
+  `artifacts/logs/2BED-asymm-security-prefix-serial.log`.
+- Crypto CSV SHA-256:
+  `28400be72b530b81d264dbad3dbd11f860ba3af6c5756c06dac792ee8e4d05b1`.
+  Security CSV hashes:
+  `925fa829ccd85435af6bfedd568d614579cd1ccc655cc890fa7c0de206c547e2`,
+  `8136c7961e4ff3576418199c530b0fb13a6b8164320bac5e86315f7f75448784`.
+  Focused CSV SHA-256:
+  `24ae0ea320e42c35e1ae10324186c7905785dbc44a010aa6fbf5f1dd5d99380b1`.
 
 ## Combined-profile acceptance baseline
 

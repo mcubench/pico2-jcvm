@@ -60,12 +60,35 @@ out explicitly.
   CAP VPCD cases passed for uninitialized `getK()`/`getField()`, null source,
   valid P-256 copy, mismatched source size, and uninitialized source; PC, ARM,
   and RISC-V builds passed. No physical validation is claimed.
-- [ ] Re-run focused EC key cases on a physical ARM Pico when one enumerates.
-  The remaining physical 3.0.5 report has 14 unexpected Crypto `6F00` results
-  and 14 card-runtime reason mismatches. The `Cipher()` factory `6F00` from
-  the physical report passed twice in fresh-image VPCD checks (selected row
-  `OK`, object token `86`) and remains a physical-only discrepancy to retest,
-  not a confirmed native failure.
+- [x] Re-run focused EC key cases on a physical ARM Pico when one enumerates.
+  **Completed on 2026-10-29, 2BED `2BED26ED20556535`, `asymm_crypto`:** the
+  unchanged API 3.0.5 Crypto CAP completed all 466 calls (302 `OK`, 163
+  `UNSUPPORTED_PER_SPEC`, one SHA-512 PSS `ILLEGAL_VALUE`). Every prior
+  unexpected Crypto failure except that known undersized-key PSS case now
+  passes, including EC secp192r1 signing/key agreement, RSA NOPAD, and the
+  prior factory/cipher failures. The PSS test uses a 1024-bit key but requests
+  the default 64-byte SHA-512 salt, which cannot fit; keep the native size check.
+  The earlier run on the `current` profile (22 `OK`, 444 unsupported) was a
+  profile sanity check, not asymmetric validation.
+- [ ] Investigate repeated full-Security persistent-storage exhaustion. Two
+  complete physical Security sweeps reached 901 calls, with the 2048-bit RSA
+  CRT `setP` call returning `6F00` at the same point; it passed in isolation.
+  A narrowed run through the preceding API classes reproduced it. Serial
+  evidence shows the filesystem at 65,409/65,536 bytes across 5,929 records;
+  the attempted 131-byte array record could not fit and an internal
+  `IOException` escaped. Audit persistent-object roots/reclamation and map
+  storage exhaustion to the proper Java Card resource exception before
+  treating this as an RSA defect. Preserve stable Java Card handles and the
+  documented policy of pinning loaded persistent objects until safe deletion
+  is designed.
+- [x] Resume the physical API 3.0.5 Security sweep on identified Pico 2
+  `2BED26ED20556535` with the `asymm_crypto` image. Both full sweeps completed
+  901 calls and successful CAP cleanup. The public RSA-4096 `KeyBuilder`
+  boundary returned `OK`; RSA/RSA-CRT KeyPair 4096 returned
+  `UNSUPPORTED_PER_SPEC`. Focused repeat of public RSA-4096, RSA CRT `setP` /
+  `setPQ` 2048, and `MessageDigest.OneShot.open(ALG_SHA)` returned 3 `OK`
+  calls (the SHA factory is correctly unsupported). The full-run `setP`
+  storage failure remains open as above.
 - [x] Resolve the physical Core `Applet.deselect()` discrepancy. On the
   current ARM image, exact-reader physical Core runs on both `2BED26ED20556535`
   and `D92E743D5F640C0F` returned `OK`, diagnostic `-19`, and
@@ -100,8 +123,9 @@ out explicitly.
   passes 4/4 selected calls on VPCD. Fresh-image PKCS#1 regression passes five
   supported calls and one expected unsupported case. Physical retest remains
   pending.
-- [ ] Re-run the affected deploy areas after each fix on VPCD, then physical
-  hardware after ARM and RISC-V builds pass. Source data:
+- [ ] Re-run the remaining affected deploy cases after each fix on VPCD;
+  physical 3.0.5 Crypto and Security retests now completed on 2BED after both
+  architecture builds passed. Source data:
   `artifacts/results/deploy/asymm_crypto_D92_20261028/core_security_crypto_retry.csv`.
   Current-source VPCD spot checks on 2026-10-29 pass for ECDSA/SHA-1 and
   KeyAgreement factory/uninitialized-key cases. The two secp192r1 DH/DHC
