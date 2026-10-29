@@ -1,5 +1,24 @@
 # Current continuation — reset VPCD storage between Crypto sweeps
 
+## ECDSA SHA-2 continuation update (2026-10-29)
+
+- On fresh VPCD storage, unchanged API 3.0.5 Crypto CAP ECDSA SHA-384 factory,
+  getter, and sign/verify rows passed 4/4. SHA-224/SHA-512 combined rows
+  initially returned two `6F00`s, but SHA-224-only and SHA-512-only retries
+  passed, and a traced combined rerun passed all 8 selected rows. The traced
+  SHA-224-only rerun passed 4/4. Upload and cleanup passed throughout.
+- No source change or failure cause was established; treat the initial `6F00`s
+  as intermittent VPCD observations. Physical retest is still pending.
+- The unchanged API CAP provides ECDSA precomputed-hash round trips only for
+  SHA-1 and SHA-256; the attempted SHA-224/384/512 precomputed filter selected
+  zero calls. Their initial-digest continuation is also not covered by these
+  CAP rows. See progress record `ecdsa-sha224-384-512-api-vpcd` and artifacts
+  in `artifacts/results/deploy/crypto-current-vpcd-20261029/`.
+- Next: continue with another actionable API 3.0.5 Crypto gap. When an
+  unchanged upstream CAP exercises SHA-224/384/512 continuation or
+  precomputed-hash behavior, add focused VPCD coverage without editing the CAP;
+  retest this group on physical ARM hardware when available.
+
 - DES/AES cipher tests with DES 64/192 and AES 192/256 keys all passed on
   current PC JCVM/VPCD (five selected rows `OK`, including DES CBC ISO9797-M2
   known block). Rechecked Signature/Cipher uninitialized-key cases after

@@ -14507,3 +14507,32 @@
 - Artifacts/logs: `AlgTest_JavaCard/deploy/client/AlgTestJClient.jar`
   (read-only bytecode inspection); no new result artifact.
 
+## 2026-10-29 — Validate ECDSA SHA-224/384/512 on VPCD (18 minutes)
+
+- Step/experiment: `ecdsa-sha224-384-512-api-vpcd`
+- When: '2026-10-29 04:23 UTC' - '2026-10-29 04:41 UTC'
+- Change: No source change. Ran unchanged API 3.0.5 Crypto CAP against fresh
+  VPCD storage for ECDSA SHA-224/384/512 factory, getter, and sign/verify rows.
+- Validation: SHA-384 selected rows passed 4/4. SHA-224 and SHA-512 first
+  combined run produced two `6F00` responses; separate SHA-224 and SHA-512
+  retries passed, and a combined retry with `CHOUPI_VM_TRACE_EXCEPTIONS=1`
+  and `CHOUPI_VM_TRACE_APDU=1` passed 8/8 with CAP upload and cleanup passing.
+  The traced SHA-224-only retry also passed 4/4. Two prior focused ECDSA
+  precomputed-hash tests (SHA-1 and SHA-256) remain the only such vectors in
+  the unchanged CAP; a SHA-224/384/512 precomputed filter selected zero calls
+  (466 skipped), so it provides no coverage for those variants. No Pico was
+  available; this is VPCD-only validation.
+- Result: Normal SHA-224/384/512 ECDSA sign/verify works on current VPCD. The
+  initial two `6F00` results were not reproduced, including in a traced
+  combined rerun; no native defect or root cause is established.
+- Decision: Leave native code unchanged. Keep the transient result open for
+  physical retest; continue with remaining Crypto/API test coverage. SHA-224,
+  SHA-384, and SHA-512 initial-digest continuation and precomputed-hash vectors
+  still need coverage where an unchanged upstream CAP exercises them.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
+  (`ecdsa-sha384-focused.csv`, `ecdsa-sha224-512-focused.csv`,
+  `ecdsa-sha224-512-trace.csv`, `ecdsa-sha512-trace.csv`,
+  `ecdsa-sha224-focused.csv`, `ecdsa-sha224-trace.csv`, and
+  `ecdsa-precomputed-sha224-384-512.csv`); trace logs in `/tmp`.
+

@@ -61,6 +61,25 @@
 
 # Project issue knowledge base
 
+## Intermittent VPCD ECDSA SHA-224/512 `6F00` during combined API filtering (2026-10-29)
+
+- **Symptom:** One fresh-image API 3.0.5 Crypto run selecting ECDSA SHA-224 and
+  SHA-512 rows returned `6F00` on both sign/verify calls. A SHA-224-only run
+  also returned `6F00` once.
+- **Cause:** Unknown. Separate SHA-224 and SHA-512 retries passed, a traced
+  combined rerun passed all eight selected ECDSA SHA-224/512 calls, and a
+  traced SHA-224-only rerun passed. Do not treat the first failure as a
+  confirmed algorithm defect or claim a root cause.
+- **Viable diagnostic:** Use a new zero-length emulator image, require VPCD
+  presence before testing, and capture `CHOUPI_VM_TRACE_EXCEPTIONS=1` plus
+  `CHOUPI_VM_TRACE_APDU=1` on the emulator. Retest one digest at a time and in
+  combination; verify upload and CAP cleanup. Escalate to a source fix only if
+  the failing case reproduces with diagnostic evidence.
+- **Artifacts:** `artifacts/results/deploy/crypto-current-vpcd-20261029/`
+  (see `ecdsa-sha224-512-focused.csv`, `ecdsa-sha224-focused.csv`,
+  `ecdsa-sha224-trace.csv`, `ecdsa-sha512-trace.csv`, and
+  `ecdsa-sha224-512-trace.csv`). No physical test was run.
+
 ## JCAlgTest 1.8.2 KeyPair RSA-3072 rows send a 4096-bit length (2026-10-28)
 
 - **Symptom:** The physical full support report completed on D92 without

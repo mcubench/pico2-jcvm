@@ -1663,8 +1663,13 @@ rollback and duplicate/invalid registration handling also remain unverified.
   vectors pass when isolated on paired reader 00 00. ECDSA precomputed-hash
   sign/verify also pass for SHA-1 and SHA-256, resolving the prior physical
   `ILLEGAL_USE` result in VPCD. The malformed precomputed-hash length case now
-  returns the specified `ILLEGAL_USE` on VPCD. SHA-224/384/512 and physical
-  validation remain. The complete upstream `setInitialDigest` group on VPCD
+  returns the specified `ILLEGAL_USE` on VPCD. Standard ECDSA SHA-224/384/512
+  factory/getter/sign/verify rows now pass on VPCD (4/4 for SHA-384; 8/8 for
+  SHA-224/512 on a traced combined retry after initial intermittent `6F00`s).
+  The unchanged upstream CAP has no ECDSA precomputed-hash vectors for these
+  three digests, and its `setInitialDigest` group covers only SHA-1/SHA-256;
+  higher-digest continuation/precomputed coverage and physical validation
+  remain. The complete upstream `setInitialDigest` group on VPCD
   now passes all four supported RSA/ECDSA SHA-1/SHA-256 vectors and three
   malformed state/length cases (466 total Crypto calls: 10 OK, eight expected
   unsupported, 448 skipped). See the
