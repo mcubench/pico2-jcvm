@@ -14829,3 +14829,14 @@
 - Decision: Keep this as a separate implementation task; do not claim `ALG_AES_CTR` support from the supplied CSV alone.
 - Commit: `ac029eb` (TODO entry); this progress record follows.
 - Artifacts/logs: reference matrix `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`.
+
+## 2026-10-29 — Compare physical Core API results on two Pico 2 boards (18 minutes)
+
+- Step/experiment: `physical-core-305-board-comparison`
+- When: '2026-10-29 14:38 UTC' - '2026-10-29 14:56 UTC'
+- Change: Updated TODO/QKB/handoff with current-source physical Core results. Marked the `Applet.deselect()` discrepancy resolved and added a separate open item for repeatable 2BED-only `6F00` results. Firmware source was not changed.
+- Validation: Both boards were previously flashed with the same current ARM CHOUPI image (SHA-256 `8d4bbbd1b395de7babf97915202316ff8b9239161f2e32d5685a0b4cc7468791`) and passed finite startup monitors. Exact-reader Core 3.0.5 runs used `--no-scenarios`. D92 (`D92E743D5F640C0F`) completed 291 calls: 272 `OK`, 11 `UNSUPPORTED_PER_SPEC`, eight unavailable scenario rows, zero `SW_ERROR`. 2BED (`2BED26ED20556535`) completed 291 calls twice with identical results: 198 `OK`, 74 `SW_ERROR`/`6F00`, 11 unsupported, eight unavailable scenario rows. Both boards returned `Applet.deselect()` as `OK`, `returned=-19`, `effect=as expected`; both CAP cleanups succeeded. `git diff --check` passed for the tracked documentation.
+- Result: The deselect discrepancy is resolved on physical boards. A 2BED-specific Core response-error cluster is reproducible and differs from D92 under the same image and test command; it is not a transport abort. GPPro lists showed different pre-existing package registries; cause remains unknown. The optional Ext scenario CAP still refuses INSTALL with `6A88`, is rolled back, and the exact Core tests complete with scenarios disabled.
+- Decision: Investigate equivalent persistent card state and collect runtime fault/exception diagnostics on 2BED before changing VM code. Do not count the 2BED Core run as passing.
+- Commit: `9a267f8` (TODO/QKB/handoff results); this progress record follows.
+- Artifacts/logs: `artifacts/results/deploy/core-physical-retest-20261029/core-no-scenarios.csv` SHA-256 `47d6ca9c6c142f607ec0299b900a09d0cba96e07afea6e925a45a46c86afc1a0`; `2BED-core-no-scenarios-retry.csv` SHA-256 `d6743b6f4dbab7431c096a6ea56aa98900afe11c4a1f384cf6679fcda96c837f`; `D92-core-no-scenarios.csv` SHA-256 `1b355c6da4fdd26723420a419961e58f4dc01cb65c5f6a2e5fafeacea188ab97`; `pico1.csv` SHA-256 `fb1b444b4d615d023889bcf0506e2fc3d9ac34b416997ac71645de4c049fb815`. These result files are ignored by `.gitignore` and remain local.
