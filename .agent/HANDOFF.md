@@ -1,5 +1,23 @@
 # Current continuation — reset VPCD storage between Crypto sweeps
 
+## RSA temporary buffer zeroization (2026-10-29)
+
+- Added `RsaSensitiveBufferGuard` and applied it to temporary RSA cipher and
+  signature key copies, encoded private-operation blocks, OAEP masks/seeds,
+  decrypted result buffers, and nested CRT component vectors. Destruction
+  wipes the live bytes on both normal and exception exits; output vectors
+  returned to callers are not wiped before consumption.
+- Validation: `./tools/build-pc --profile asymm_crypto`,
+  `./tools/build arm --profile asymm_crypto`, and
+  `./tools/build riscv --profile asymm_crypto` passed. The existing asymmetric
+  VPCD suite passed 99/99. Build output contained existing upstream Rust and
+  packed-member warnings. No physical board test was run.
+- Implementation commit: `f7595d9`. The progress/QKB/TODO record is pending.
+- Remaining private RSA hardening includes assessing input blinding for
+  imported keys without E, non-CRT private operations, and complete CRT fault
+  verification with an associated public exponent. Continue Crypto API triage
+  on fresh VPCD storage, then retest physical ARM when a reader is available.
+
 ## RSA NOPAD both-direction fix (2026-10-29)
 
 - Fixed native `Cipher.init()` mode validation: `ALG_RSA_NOPAD` accepts either

@@ -14567,3 +14567,29 @@
   `rsa-pkcs1-regression.csv`, `rsa-pkcs1-regression-fresh.csv`);
   `/tmp/rsa-nopad-diag-vpcd.log`.
 
+## 2026-10-29 — Wipe temporary RSA operation buffers (14 minutes)
+
+- Step/experiment: `rsa-sensitive-buffer-zeroization`
+- When: '2026-10-29 05:08 UTC' - '2026-10-29 05:22 UTC'
+- Change: Added scoped zeroization guards for temporary RSA private-key component
+  copies, encoded operation blocks, OAEP seeds/masks, and decrypted plaintext
+  buffers in native cipher/signature operations. Guards run on normal return
+  and exception unwinding. Returned operation results remain valid for their
+  callers; no Java source or CAP changed.
+- Validation: `./tools/build-pc --profile asymm_crypto`,
+  `./tools/build arm --profile asymm_crypto`, and
+  `./tools/build riscv --profile asymm_crypto` passed. The existing
+  `PICO2_HOST_USB_ACCESS=1 ./tools/env python3
+  tools/tests/test_asymm_crypto_vpcd.py` run passed 99/99, including RSA,
+  ECDSA, key agreement, and key generation vectors. Builds emitted existing
+  upstream Rust and packed-member warnings. No physical Pico was used.
+- Result: Temporary RSA byte buffers under the covered operations are now
+  explicitly wiped before allocator release, including during exception exits.
+  This does not provide input blinding or complete CRT fault verification.
+- Decision: Keep this as incremental private-operation hardening. Continue the
+  audit for non-CRT private-operation mitigations and public-exponent
+  association, then resume physical acceptance when a Pico is available.
+- Commit: implementation `f7595d9`; documentation/progress commit pending.
+- Artifacts/logs: VPCD log `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
+  no new persistent test artifacts.
+

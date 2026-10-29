@@ -1717,9 +1717,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   private RSA hardening, and `/deploy` acceptance remain open. Source review
   confirms bundled Mbed TLS `mbedtls_mpi_exp_mod()` uses fixed-width,
   constant-time exponentiation. CRT operations now apply fresh 224-bit
-  exponent blinding with an `N`-width-derived fixed exponent loop. Remaining
-  security work: audit the full operation and assess input blinding despite CRT
-  keys not exposing E. Java Card CRT keys expose P, Q, DP1, DQ1, and PQ, but no
+  exponent blinding with an `N`-width-derived fixed exponent loop. Native RSA
+  cipher/signature scratch buffers that contain copied key material, encoded
+  private-operation blocks, or decrypted data are now wiped by scoped guards,
+  including exception exits. Remaining security work: audit the full operation
+  and assess input blinding despite private keys not exposing E. Java Card CRT
+  keys expose P, Q, DP1, DQ1, and PQ, but no
   public exponent; the native API does not associate a public key with the
   private key. Therefore a complete CRT result check needs an explicit key
   association/API design change. Do not treat exponent blinding or a CRT

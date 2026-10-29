@@ -5700,6 +5700,24 @@ fix.
 - **Viable fix:** None within the current private-key API. A future design would need to retain/associate E for keys generated as pairs or add an explicit association mechanism for imported keys. A check that only validates CRT recombination residues can detect some recombination corruption but cannot detect a faulty P/Q exponentiation branch, so it must not be presented as complete CRT fault protection.
 - **Validation:** Source audit of `choupi/src/native_rsa_math.hpp`, `native_rsa_cipher.cpp`, and `native_rsa_signature.cpp`, plus the Java Card `RSAPrivateCrtKey` API. No implementation or hardware test was performed. The approved reader helper found zero devices despite the user's report that tokens are plugged in; `lsusb` listed only VirtualBox devices.
 
+## RSA temporary byte vectors retained secret material after use — 2026-10-29
+
+- **Symptom:** RSA native code copied private key components, decrypted
+  plaintext, padding state, and encoded private-operation blocks into ordinary
+  vectors, whose storage was released without an explicit wipe.
+- **Cause:** The vectors had no cleanup policy, so normal return and Java Card
+  exception unwinding both left cleanup to the general allocator.
+- **Viable fix:** Attach a non-copyable scoped zeroization guard immediately
+  after creating sensitive buffers. Use it for byte vectors, fixed byte
+  arrays, and arrays of byte vectors; keep returned signature/ciphertext or
+  decrypted result buffers alive until their caller has consumed them.
+- **Validation:** PC, ARM, and RISC-V `asymm_crypto` builds pass, and the
+  existing VPCD asymmetric suite passes 99/99. Physical validation was not
+  performed because no attached Pico had been established in this step.
+- **Limit:** This reduces residual heap copies but does not solve private RSA
+  input blinding or CRT fault verification; those still need a public exponent
+  association/design.
+
 
 ## Long synchronous RSA operations time out on hardware (2026-10-27)
 
