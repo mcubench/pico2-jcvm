@@ -1094,7 +1094,11 @@ jshort_t javacard_security_Signature_beginVerify(
     jref_t receiver, std::shared_ptr<JC_Array> signatureData,
     jshort_t offset, jshort_t length) {
   auto signature = signatureInstance(receiver);
-  requireInitialized(*signature, kModeVerify);
+  requireInitialized(*signature);
+  if (signature->getField_Byte(
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MODE) !=
+      kModeVerify)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (!isMessageRecoverySignature(*signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   clearMessage(*signature);
