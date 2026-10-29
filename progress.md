@@ -14807,3 +14807,14 @@
 - Decision: CPLC hardware validation is closed. Continue with the highest-priority open implementation and acceptance items in `TODO.md`; retain per-device failover and reader-refresh guidance.
 - Commit: `ecd1b7b` (TODO/QKB/handoff validation record); this progress entry follows.
 - Artifacts/logs: `artifacts/logs/gp-cplc-physical-D92E743D5F640C0F-20261029.log`; `artifacts/logs/cycle-choupi-20261029T143004Z.log`; `artifacts/logs/cycle-choupi-20261029T143255Z.log`; logs are ignored by `.gitignore` and remain local.
+
+## 2026-10-29 — Track available-memory allocation investigation (2 minutes)
+
+- Step/experiment: `jcvm-available-memory-allocation-investigation`
+- When: '2026-10-29 14:42 UTC' - '2026-10-29 14:44 UTC'
+- Change: Added a Priority 2 investigation item to `TODO.md` for measuring `JCSystem.getAvailableMemory()` before and after controlled `Cipher` and key allocations, separating persistent and transient pools.
+- Validation: `git diff --check -- TODO.md` passed. No firmware changes, measurements, or tests were performed, as requested.
+- Result: The suspected over-reporting is recorded as unverified; the TODO requires a reproducible baseline and allocator/storage comparison before any code change is proposed.
+- Decision: Leave implementation deferred until the investigation is selected as the next work item.
+- Commit: `432dee1` (TODO entry); this progress record follows.
+- Artifacts/logs: none.
