@@ -28,6 +28,10 @@
   report's `ILLEGAL_USE` result for these two algorithms in emulator testing.
   Use a 200-second client timeout for this API filter: earlier skipped Crypto
   rows take long enough to exceed 80 seconds before the target row is reached.
+- Fixed RSA precomputed-hash length errors to return the required
+  `CryptoException.ILLEGAL_USE` instead of `ILLEGAL_VALUE`. The upstream
+  malformed-hash row passes on VPCD with expected reason `0x0005`; implementation
+  is committed as `1aaf17c`.
 - Successful artifact: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-sha256-testonly.csv`.
   ECDSA initial-digest and precomputed-hash passes are in the sibling files
   `crypto-ecdsa256-reader00.csv`, `crypto-ecdsa-sha1-reader00.csv`,

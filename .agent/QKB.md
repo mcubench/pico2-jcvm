@@ -5975,3 +5975,20 @@ fix.
   `crypto-ecdsa-precomputed-sha256-testonly-reader00-retry.csv` and
   `crypto-ecdsa-precomputed-sha1-reader00.csv` in the signature test artifact
   directory.
+
+## RSA precomputed-hash length error used the wrong reason code (2026-10-29)
+
+- **Symptom:** The upstream API 3.0.5 Crypto CAP reported
+  `CryptoException.ILLEGAL_VALUE` (`0x0001`) for a malformed precomputed hash,
+  while the API contract requires `ILLEGAL_USE` (`0x0005`).
+- **Cause:** Native RSA `signPreComputedHash()` and
+  `verifyPreComputedHash()` classified a hash-length/digest-length mismatch as
+  `ILLEGAL_VALUE`.
+- **Viable fix:** Throw `CryptoException.ILLEGAL_USE` from both native RSA
+  precomputed-hash entry points when the hash length differs from the selected
+  message digest size.
+- **Validation:** Unchanged upstream Crypto CAP VPCD test passed the malformed
+  hash row with expected reason `0x0005`; 465 other calls were skipped. PC,
+  ARM, and RISC-V `asymm_crypto` builds passed. No physical validation was run.
+  Artifact:
+  `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-rsa-precomputed-invalid-reader00-fixed.csv`.

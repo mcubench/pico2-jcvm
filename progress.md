@@ -14302,3 +14302,22 @@
 - Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-ecdsa-precomputed-sha256-testonly-reader00-retry.csv`;
   `crypto-ecdsa-precomputed-sha1-reader00.csv`.
 
+## 2026-10-29 — Correct RSA precomputed-hash length exception (3 minutes)
+
+- Step/experiment: `rsa-precomputed-hash-invalid-length`
+- When: '2026-10-29 02:32 UTC' - '2026-10-29 02:35 UTC'
+- Change: Changed RSA `signPreComputedHash()` and `verifyPreComputedHash()` to
+  throw `CryptoException.ILLEGAL_USE` when the provided hash length does not
+  match the algorithm digest length. This follows the Java Card API contract;
+  both paths previously returned `ILLEGAL_VALUE`.
+- Validation: PC, ARM, and RISC-V `asymm_crypto` builds passed. The unchanged
+  upstream API 3.0.5 Crypto CAP passed its malformed-hash case on VPCD 00 00:
+  selected row `OK` with expected exception reason `0x0005`, 465 skipped. No
+  physical Pico was connected.
+- Result: The previously recorded physical `ILLEGAL_VALUE` mismatch for this
+  API case now passes the same upstream vector on VPCD.
+- Decision: Keep the spec-matching exception code; test remaining signature
+  error and state-length cases on hardware when available.
+- Commit: `1aaf17c`.
+- Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-rsa-precomputed-invalid-reader00-fixed.csv`.
+
