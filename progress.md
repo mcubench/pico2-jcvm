@@ -14593,3 +14593,25 @@
 - Artifacts/logs: VPCD log `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   no new persistent test artifacts.
 
+## 2026-10-29 — Wipe RSA-PSS padding scratch (5 minutes)
+
+- Step/experiment: `rsa-pss-scratch-zeroization`
+- When: '2026-10-29 05:22 UTC' - '2026-10-29 05:27 UTC'
+- Change: Extended scoped zeroization to RSA-PSS salt and hash input, MGF1 input
+  and digest scratch, masks, decoded data blocks, and verification intermediates.
+  The final encoded operation result remains available to the signing path
+  until consumed. No CAP or Java source changed.
+- Validation: `./tools/build-pc --profile asymm_crypto`,
+  `./tools/build arm --profile asymm_crypto`, and
+  `./tools/build riscv --profile asymm_crypto` passed. The existing asymmetric
+  VPCD test suite passed 99/99. Builds emitted existing upstream Rust and
+  packed-member warnings. The approved reader helper found zero physical Pico
+  devices; hardware validation was not performed.
+- Result: PSS temporary salt/padding bytes and verification buffers now use the
+  same exception-safe wiping policy as the outer RSA operations.
+- Decision: Retain this incremental cleanup. Private input blinding and
+  complete CRT fault verification remain separate design gaps.
+- Commit: implementation `4ecd522`; validation/doc record commit pending.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
+  no new persistent test artifacts.
+

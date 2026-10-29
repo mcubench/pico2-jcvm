@@ -18,6 +18,13 @@
   verification with an associated public exponent. Continue Crypto API triage
   on fresh VPCD storage, then retest physical ARM when a reader is available.
 
+### RSA-PSS inner padding scratch
+
+- Extended zeroization to the PSS salt, hash input, MGF1 input/digest, masks,
+  and decoded data block. PC, ARM, and RISC-V builds pass; VPCD asymmetric
+  vectors pass 99/99. Implementation commit: `4ecd522`. No Pico reader was
+  available for hardware validation.
+
 ## RSA NOPAD both-direction fix (2026-10-29)
 
 - Fixed native `Cipher.init()` mode validation: `ALG_RSA_NOPAD` accepts either

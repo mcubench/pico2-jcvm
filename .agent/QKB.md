@@ -5717,6 +5717,9 @@ fix.
 - **Limit:** This reduces residual heap copies but does not solve private RSA
   input blinding or CRT fault verification; those still need a public exponent
   association/design.
+- **Follow-up:** The RSA-PSS helper's generated salt, hash input, MGF1
+  scratch/masks, and decoded data block are also guarded and wiped. PC, ARM,
+  RISC-V, and VPCD 99/99 validations pass (implementation commit `4ecd522`).
 
 
 ## Long synchronous RSA operations time out on hardware (2026-10-27)

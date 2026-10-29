@@ -1719,8 +1719,8 @@ rollback and duplicate/invalid registration handling also remain unverified.
   constant-time exponentiation. CRT operations now apply fresh 224-bit
   exponent blinding with an `N`-width-derived fixed exponent loop. Native RSA
   cipher/signature scratch buffers that contain copied key material, encoded
-  private-operation blocks, or decrypted data are now wiped by scoped guards,
-  including exception exits. Remaining security work: audit the full operation
+  private-operation blocks, decrypted data, and RSA-PSS salt/mask state are now
+  wiped by scoped guards, including exception exits. Remaining security work: audit the full operation
   and assess input blinding despite private keys not exposing E. Java Card CRT
   keys expose P, Q, DP1, DQ1, and PQ, but no
   public exponent; the native API does not associate a public key with the
