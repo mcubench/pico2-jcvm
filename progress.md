@@ -14638,3 +14638,26 @@
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   no new persistent test artifacts.
 
+## 2026-10-29 — Finish RSA byte-vector cleanup audit (5 minutes)
+
+- Step/experiment: `rsa-final-byte-vector-audit`
+- When: '2026-10-29 05:31 UTC' - '2026-10-29 05:36 UTC'
+- Change: Added scoped zeroization for temporary RSA CRT factor copies and the
+  OAEP MGF1 digest buffer. Audited every vector in the RSA cipher/signature
+  translation units; returned operation outputs remain available until copied
+  by the caller. Confirmed the pinned Mbed TLS `mbedtls_mpi_free()` uses
+  `mbedtls_mpi_zeroize_and_free()` for MPI limbs.
+- Validation: `./tools/build-pc --profile asymm_crypto`,
+  `./tools/build arm --profile asymm_crypto`, and
+  `./tools/build riscv --profile asymm_crypto` passed. The existing asymmetric
+  VPCD suite passed 99/99. The approved helper found zero physical Pico readers;
+  no hardware test was run.
+- Result: Identified RSA native heap byte-vector scratch now has scoped wiping;
+  allocated Mbed TLS MPI limbs are also zeroized by the library's free path.
+- Decision: Keep private-key objects intact as Java Card state. Remaining
+  security gaps are input blinding for private operations and full CRT fault
+  verification with an associated public exponent.
+- Commit: implementation `bedf23a`; progress/continuity commit pending.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
+  SDK source `.local-toolchain/sdk/lib/mbedtls/library/bignum.c`.
+

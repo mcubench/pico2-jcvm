@@ -29,6 +29,10 @@
   use scoped guards. PC, ARM, and RISC-V builds plus VPCD 99/99 pass again.
   Implementation commit: `df2d2d9`; record commit `e5562ec`. The worktree still has the unrelated
   changes listed by `git status`; they were not staged.
+- Final vector audit added guards for RSA Cipher's temporary CRT factor copies
+  and OAEP's MGF1 digest scratch. Bundled Mbed TLS `mbedtls_mpi_free()` calls
+  `mbedtls_mpi_zeroize_and_free()` for allocated MPI limbs. PC/ARM/RISC-V and
+  VPCD 99/99 pass. Source commit: `bedf23a`; progress record pending.
 
 ## RSA NOPAD both-direction fix (2026-10-29)
 

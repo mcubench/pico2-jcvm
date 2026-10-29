@@ -5723,6 +5723,10 @@ fix.
 - **Follow-up:** RSA Signature entry points now wipe copied message/hash/signature
   inputs and outputs, RSA verification scratch, and ISO9796 recovered-message
   intermediates (commit `df2d2d9`). All target builds and VPCD 99/99 pass.
+- **Follow-up:** The remaining RSA CRT factor copies and OAEP MGF1 digest
+  scratch are guarded (commit `bedf23a`). Audit of the pinned SDK confirms
+  `mbedtls_mpi_free()` wipes allocated limbs through
+  `mbedtls_mpi_zeroize_and_free()`.
 
 
 ## Long synchronous RSA operations time out on hardware (2026-10-27)
