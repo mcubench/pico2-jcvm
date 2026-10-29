@@ -67,9 +67,12 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   Manifest remains 143/145 despite passing true physical 3072 vectors. Do not
   alter firmware/CAP semantics to hide the two upstream mislabeled rows.
 - **Current status overrides:** physical `Applet.deselect()` discrepancy is
-  resolved (`-19` both boards); remaining 2BED Core 6F00 cluster is unresolved.
-  CPLC open/SCP03 hardware validation is complete. Latest board observations
-  and evidence are in HANDOFF; old access failures are not current enumeration.
+  resolved (`-19` both boards), and the repeated Core `6F00` cluster is fixed:
+  successful GP DELETE now discards the selected applet context/heap, preventing
+  a reinstall from reusing stale object fields after persistent array records
+  are removed. Updated 2BED passed two consecutive complete Core runs. CPLC
+  open/SCP03 hardware validation is complete. Latest board observations and
+  evidence are in HANDOFF; old access failures are not current enumeration.
 
 ## Recent detailed issue records
 
@@ -724,6 +727,34 @@ HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
   `2BED-core-no-scenarios-retry.csv`, `D92-core-no-scenarios.csv`, and
   `pico1.csv` (the first parallel attempt stopped at the optional Ext CAP
   install refusal, then rolled it back).
+
+### Follow-up: persistent applet context survived GP DELETE
+
+- **Diagnostic:** Reproducing the failing 2BED pattern on D92 with serial
+  capture showed 74 `IOException` failures at `arraylength`. Every failed read
+  was a persistent array body under the Core applet's instance root; the Pico
+  filesystem read returned its missing-record status. A heap-cache probe did
+  not find direct cache lookups for these child tags.
+- **Cause:** GP DELETE cleared the applet's persistent records and deselected
+  it, but retained `selected_applet_context` and its heap. A subsequent
+  reinstall with the same package/AID could reuse the already-restored object
+  graph whose fields referenced the deleted array bodies.
+- **Viable fix:** After a successful GP DELETE, call
+  `choupi_vm_forget_selected_applet()` to clear transient lifecycle state and
+  destroy the selected context/heap. Keep ordinary deselect and reset behavior
+  unchanged so an installed applet still preserves its context across normal
+  reselection/reset handling.
+- **Validation:** `./tools/build arm` and `./tools/build riscv` passed. The
+  fixed image (`6a3915f6611dca76a728b6085fda6af6671a16ca1e59ba1fef674e9ed3a4b17a`)
+  was flashed to 2BED and passed finite startup monitoring. Two consecutive
+  unchanged API 3.0.5 Core runs each completed 291 calls with 272 `OK`, 11
+  `UNSUPPORTED_PER_SPEC`, eight expected unavailable scenarios, and zero
+  `SW_ERROR`; GP DELETE/cleanup passed both times. The overlay regression suite
+  passed with `TEST:SUMMARY fail=0`. D92's reflash recovery timed out; no D92
+  result is attributed to the fix.
+- **Artifacts:** `artifacts/results/deploy/core-physical-retest-20261029/`
+  (`2BED-candidate-fix-pass1.csv`, `2BED-candidate-fix-pass2.csv`) and
+  `artifacts/logs/cycle-choupi-20261029T154706Z.log`.
 
 ## Default-profile build failures in signature digest support (2026-10-29)
 

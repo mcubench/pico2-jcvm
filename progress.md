@@ -14851,3 +14851,14 @@
 - Decision: Keep active handoff as a current snapshot; use QKB for reusable diagnoses, progress for chronology, and archive for full historical evidence. Next implementation action remains the 2BED Core discrepancy investigation.
 - Commit: This documentation commit; resolve SHA with `git log -1 --format=%H -- .agent/archive/2026-10-29-pre-compaction/manifest.json`.
 - Artifacts/logs: `.agent/archive/2026-10-29-pre-compaction/{QKB.md,HANDOFF.md,manifest.json,README.md}`; no new runtime logs.
+
+## 2026-10-29 Fix repeated Core failures after GP DELETE (50 minutes)
+
+- Step/experiment: `physical-core-delete-context-invalidation`
+- When: '2026-10-29 15:07 UTC' - '2026-10-29 15:57 UTC'
+- Change: GP DELETE removed persistent applet records but retained the selected applet context and heap. Added `choupi_vm_forget_selected_applet()` after a successful DELETE so reinstalling the same AID cannot reuse stale object fields whose persistent array bodies were deleted. Ordinary deselect/reset behavior remains unchanged. Implementation commit: `1c06845`.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`. The current ARM CHOUPI image was flashed to Pico 2 `2BED26ED20556535`; finite monitor passed `TEST:SUMMARY pass=1 fail=0`. Two consecutive unchanged API 3.0.5 Core `--no-scenarios` runs, each including GPPro upload and DELETE cleanup, completed 291 calls with 272 `OK`, 11 `UNSUPPORTED_PER_SPEC`, eight expected unavailable scenario rows, zero `SW_ERROR`. Scoped `git diff --check` passed. Attempted to flash D92, but targeted BOOTSEL recovery timed out; no result is attributed to that board.
+- Result: Before the fix, physical serial traces showed 74 uncaught `IOException`/`arraylength` failures at missing persistent array-body tags. After the fix, both consecutive 2BED reruns had zero failed calls. The previous 2BED result was 198 `OK` plus 74 `6F00`; the previous D92 baseline had 272 `OK` and zero `SW_ERROR`.
+- Decision: Close the repeated Core `6F00` investigation for the tested DELETE/reinstall path. Continue with physical EC/Crypto retesting and the interrupted Security sweep on an identified board.
+- Commit: `1c06845` (implementation; this progress/QKB/HANDOFF record follows in a documentation commit).
+- Artifacts/logs: `artifacts/results/deploy/core-physical-retest-20261029/2BED-candidate-fix-pass1.csv` SHA-256 `7d5cf036c16ec994c0e110858047b5a35234bb9d2d5f342612bb722816f07131`; `2BED-candidate-fix-pass2.csv` SHA-256 `e6631f6a590059637ec1a1de8d17a52316b93371a3dcd01a5b9bdfde608ee799`; `artifacts/logs/cycle-choupi-20261029T154706Z.log` SHA-256 `30903f2e8a91dce433aea70f1a8aacdad53b847ab0bdbf1be6b121ead15366eb`; build image `build/arm/pico2_choupi.uf2` SHA-256 `6a3915f6611dca76a728b6085fda6af6671a16ca1e59ba1fef674e9ed3a4b17a`.

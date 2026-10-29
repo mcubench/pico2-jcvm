@@ -72,18 +72,17 @@ out explicitly.
   `effect=as expected`. This supersedes the older physical `-15` and focused
   VPCD `1` observations. Core results differ on 2BED for other methods; track
   that separately below rather than attributing it to deselection.
-- [ ] Diagnose the reproducible 2BED-only 3.0.5 Core `6F00` cluster. On the
-  same current ARM image, two exact-reader runs on `2BED26ED20556535` each
-  completed all 291 rows with 198 `OK`, 74 `SW_ERROR`, 11
-  `UNSUPPORTED_PER_SPEC`, and eight scenario rows `APPLET_NOT_INSTALLED`.
-  These are card response errors, not a reader transport abort. The 74 errors
-  span JCSystem (6), Util (19), AID (14), APDU (1), OwnerPIN (13), PIN (12),
-  OwnerPINx (6), and OwnerPINxWithPredecrement (3). The same command and image
-  on `D92E743D5F640C0F` completed with 272 `OK`, 11 `UNSUPPORTED_PER_SPEC`,
-  eight scenario rows unavailable, and no `SW_ERROR`. Both boards returned
-  the expected `Applet.deselect()` result. Package state differs, but neither
-  registry state nor a cause has been established. Compare clean card state,
-  package allocation, and runtime traces before changing VM code. CSVs:
+- [x] Diagnose and fix the repeated physical API 3.0.5 Core `6F00` cluster.
+  Serial traces showed 74 uncaught `IOException`s at `arraylength` while
+  reading persistent array bodies. A successful GP DELETE removed those
+  records, but only deselected the applet; it retained the selected applet
+  context and heap. A later reinstall with the same AID could therefore reuse
+  stale in-memory object fields pointing at deleted arrays. Added an explicit
+  context/heap discard after successful GP DELETE. After flashing 2BED, two
+  consecutive exact-reader Core runs each completed 291 calls with 272 `OK`,
+  11 `UNSUPPORTED_PER_SPEC`, eight unavailable scenarios, and no `SW_ERROR`.
+  This replaces the previous 198 `OK` / 74 `6F00` repeated failures. The
+  overlay tombstone regression suite also passes. Artifacts:
   `artifacts/results/deploy/core-physical-retest-20261029/`.
 - [x] Correct `SignatureMessageRecovery.beginVerify()` after initialization in
   sign mode: Java Card requires `CryptoException.ILLEGAL_USE`; the previous

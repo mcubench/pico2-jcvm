@@ -11,10 +11,11 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 
 ## Next concrete work
 
-1. Diagnose the repeatable 2BED-only Core `6F00` cluster. Establish equivalent
-   persistent package/applet state, compare dynamic package IDs/imported API
-   mappings, and capture per-APDU exception/fault traces before changing code.
-   Card cleanup/state changes must respect existing installed artifacts.
+1. The repeated Core `6F00` cluster is fixed and passed two consecutive
+   physical regressions on 2BED. Continue the next priority: retest fixed EC
+   key and Crypto API rows on available physical ARM hardware, then resume the
+   interrupted Security sweep. D92 failed targeted flash recovery and was not
+   available after that attempt; confirm exact reader identity before use.
 2. Retest fixed EC key and Crypto API rows on identified physical ARM hardware;
    complete the interrupted Security sweep, including the RSA-public-4096
    KeyBuilder boundary that previously lost PC/SC transport.
@@ -32,18 +33,23 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 These are last observations, not a live enumeration. Reconfirm board identity,
 reader name, profile, and installed state before every hardware task.
 
-- D92: `D92E743D5F640C0F`; 2BED: `2BED26ED20556535`.
-  Both last flashed current-source ARM CHOUPI, SHA-256
-  `8d4bbbd1b395de7babf97915202316ff8b9239161f2e32d5685a0b4cc7468791`,
-  and passed finite runtime monitoring. RISC-V currently provides VM-core smoke
-  coverage; do not equate its build with full CCID firmware acceptance.
-- Current Core 3.0.5, exact reader and `--no-scenarios`: D92 completed 291 rows
-  (272 OK, 11 unsupported, eight unavailable scenarios, zero SW_ERROR).
-  2BED twice completed 291 rows (198 OK, 74 `6F00` SW_ERROR, 11 unsupported,
-  eight unavailable scenarios). This is a card response discrepancy, not a
-  transport abort. Package registries differ; causation is unknown.
-  Error counts: JCSystem 6, Util 19, AID 14, APDU 1, OwnerPIN 13, PIN 12,
-  OwnerPINx 6, OwnerPINxWithPredecrement 3. Cleanup succeeded.
+- 2BED: `2BED26ED20556535` is flashed with the current ARM candidate image,
+  SHA-256 `6a3915f6611dca76a728b6085fda6af6671a16ca1e59ba1fef674e9ed3a4b17a`,
+  and passed its finite startup monitor. D92: `D92E743D5F640C0F` was targeted
+  for the same update, but 1200-baud BOOTSEL recovery timed out; a later reader
+  scan omitted it. Do not infer D92's firmware state from the interrupted
+  recovery. RISC-V currently provides VM-core smoke coverage; it is not full
+  CCID firmware acceptance.
+- Current Core 3.0.5, exact reader and `--no-scenarios`: baseline D92 completed
+  291 rows (272 OK, 11 unsupported, eight unavailable scenarios, zero
+  SW_ERROR). Baseline 2BED repeated with 198 OK and 74 `6F00` errors. Serial
+  tracing showed the errors were uncaught `IOException`s at `arraylength` on
+  missing persistent array records. Successful GP DELETE removed applet data
+  but left the selected applet context and heap alive. Added explicit context
+  invalidation after successful DELETE. The updated 2BED passed two consecutive
+  291-row runs (272 OK, 11 unsupported, eight unavailable scenarios, zero
+  SW_ERROR); cleanup succeeded each time. CSVs and hashes are recorded in
+  `progress.md` under `physical-core-delete-context-invalidation`.
 - `Applet.deselect()` returned expected `-19` on both boards: resolved.
   Earlier physical `-15` and VPCD `1` observations are superseded.
 - Optional Ext scenario INSTALL still returns `6A88` and rolls back.
