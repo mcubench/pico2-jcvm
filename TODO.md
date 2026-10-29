@@ -391,6 +391,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
 
 ### Priority 2 — close correctness and reliability gaps
 
+- [ ] **Investigate `JCSystem.getAvailableMemory()` accounting around object
+  allocation.** Reported available-memory values appear too large. Measure both
+  overloads before and after controlled allocations, starting with a
+  `Cipher.getInstance()` instance and then representative key objects. Record
+  persistent, reset-transient, and deselect-transient deltas separately, and
+  compare the readings with actual allocator/storage usage. Establish expected
+  behavior and capture a reproducible baseline before proposing any code
+  changes.
+
 - [x] Preserve timestamps of unchanged generated build inputs. The Java Card
   support, class-token, and ROM-metadata generators now write output files only
   when their bytes change, preventing repeated Java Card API and ROM-mask
