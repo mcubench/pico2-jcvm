@@ -461,6 +461,7 @@ std::vector<unsigned char> mgf1(JC_Instance &signature,
                                 size_t maskLength) {
   std::vector<unsigned char> mask(maskLength);
   std::vector<unsigned char> input(seed.size() + 4);
+  RsaSensitiveBufferGuard inputGuard(input);
   std::copy(seed.begin(), seed.end(), input.begin());
   size_t produced = 0;
   uint32_t counter = 0;
@@ -470,7 +471,8 @@ std::vector<unsigned char> mgf1(JC_Instance &signature,
     input[offset + 1] = static_cast<unsigned char>(counter >> 16);
     input[offset + 2] = static_cast<unsigned char>(counter >> 8);
     input[offset + 3] = static_cast<unsigned char>(counter);
-    const auto digest = digestMessage(signature, input);
+    auto digest = digestMessage(signature, input);
+    RsaSensitiveBufferGuard digestGuard(digest);
     const size_t count = std::min(maskLength - produced, digest.size());
     std::copy_n(digest.begin(), count, mask.begin() + produced);
     produced += count;
@@ -494,16 +496,21 @@ std::vector<unsigned char> encodedPss(JC_Instance &signature,
     throwCryptoException(CryptoExceptionReason::IllegalValue);
 
   std::vector<unsigned char> salt(saltLength);
+  RsaSensitiveBufferGuard saltGuard(salt);
   for (auto &byte : salt) byte = randomByte();
   std::vector<unsigned char> hashInput(8, 0);
+  RsaSensitiveBufferGuard hashInputGuard(hashInput);
   hashInput.insert(hashInput.end(), hash.begin(), hash.end());
   hashInput.insert(hashInput.end(), salt.begin(), salt.end());
-  const auto h = digestMessage(signature, hashInput);
+  auto h = digestMessage(signature, hashInput);
+  RsaSensitiveBufferGuard hGuard(h);
   const size_t dbLength = encodedLength - hashLength - 1;
   std::vector<unsigned char> db(dbLength, 0);
+  RsaSensitiveBufferGuard dbGuard(db);
   db[dbLength - saltLength - 1] = 1;
   std::copy(salt.begin(), salt.end(), db.end() - saltLength);
-  const auto mask = mgf1(signature, h, dbLength);
+  auto mask = mgf1(signature, h, dbLength);
+  RsaSensitiveBufferGuard maskGuard(mask);
   for (size_t i = 0; i < dbLength; ++i) db[i] ^= mask[i];
   const uint8_t unusedBits = static_cast<uint8_t>(8 * encodedLength - (modulusBits - 1));
   if (unusedBits != 0)
@@ -539,8 +546,11 @@ bool verifyPss(JC_Instance &signature, const std::vector<unsigned char> &hash,
     return false;
 
   std::vector<unsigned char> hVector(h, h + hashLength);
-  const auto mask = mgf1(signature, hVector, dbLength);
+  RsaSensitiveBufferGuard hVectorGuard(hVector);
+  auto mask = mgf1(signature, hVector, dbLength);
+  RsaSensitiveBufferGuard maskGuard(mask);
   std::vector<unsigned char> db(dbLength);
+  RsaSensitiveBufferGuard dbGuard(db);
   for (size_t i = 0; i < dbLength; ++i) db[i] = maskedDb[i] ^ mask[i];
   if (unusedBits != 0)
     db[0] &= static_cast<unsigned char>(0xffu >> unusedBits);
@@ -551,9 +561,11 @@ bool verifyPss(JC_Instance &signature, const std::vector<unsigned char> &hash,
   if (difference != 0) return false;
 
   std::vector<unsigned char> hashInput(8, 0);
+  RsaSensitiveBufferGuard hashInputGuard(hashInput);
   hashInput.insert(hashInput.end(), hash.begin(), hash.end());
   hashInput.insert(hashInput.end(), db.begin() + delimiter + 1, db.end());
-  const auto expectedH = digestMessage(signature, hashInput);
+  auto expectedH = digestMessage(signature, hashInput);
+  RsaSensitiveBufferGuard expectedHGuard(expectedH);
   difference = 0;
   for (size_t i = 0; i < hashLength; ++i) difference |= expectedH[i] ^ h[i];
   return difference == 0;
