@@ -14561,7 +14561,7 @@
 - Decision: Retain the native mode distinction and retry physical RSA NOPAD
   coverage when an identified Pico is available. Continue with unresolved API
   Crypto rows.
-- Commit: pending.
+- Commit: `4a3d04a`.
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (`rsa-nopad-focused.csv`, `rsa-nopad-fixed.csv`,
   `rsa-pkcs1-regression.csv`, `rsa-pkcs1-regression-fresh.csv`);
