@@ -14657,7 +14657,7 @@
 - Decision: Keep private-key objects intact as Java Card state. Remaining
   security gaps are input blinding for private operations and full CRT fault
   verification with an associated public exponent.
-- Commit: implementation `bedf23a`; progress/continuity commit pending.
+- Commit: implementation `bedf23a`; progress/continuity commit `9fe6ed1`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   SDK source `.local-toolchain/sdk/lib/mbedtls/library/bignum.c`.
 

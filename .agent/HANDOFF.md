@@ -32,7 +32,8 @@
 - Final vector audit added guards for RSA Cipher's temporary CRT factor copies
   and OAEP's MGF1 digest scratch. Bundled Mbed TLS `mbedtls_mpi_free()` calls
   `mbedtls_mpi_zeroize_and_free()` for allocated MPI limbs. PC/ARM/RISC-V and
-  VPCD 99/99 pass. Source commit: `bedf23a`; progress record pending.
+  VPCD 99/99 pass. Source commit: `bedf23a`; progress record commit
+  `9fe6ed1`.
 
 ## RSA NOPAD both-direction fix (2026-10-29)
 
