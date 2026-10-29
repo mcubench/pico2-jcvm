@@ -5956,10 +5956,11 @@ fix.
   16-byte array and derive the state length from the digest algorithm. The
   state itself remains in `recoveryHash`; do not enlarge the IV array because
   MAC algorithms depend on its existing 16-byte size.
-- **Validation:** The unchanged upstream API 3.0.5 Crypto CAP passed the
-  RSA/SHA-256 known-signature continuation on VPCD. SHA-1 and invalid-length
-  cases also passed in a broader filtered run. Other digest variants and
-  physical validation remain open.
+- **Validation:** The full unchanged upstream `setInitialDigest` group passed
+  on VPCD 00 00: four RSA/ECDSA SHA-1/SHA-256 valid vectors and three invalid
+  length/block cases, in a 466-call Crypto run (10 OK, eight expected
+  unsupported, 448 filtered). SHA-224/384/512 and physical validation remain
+  open.
 - Paired-endpoint result: an isolated ECDSA/SHA-256 run timed out on 00 01,
   while isolated ECDSA/SHA-1 and SHA-256 round trips both passed on
   `Virtual PCD 00 00` / `127.0.0.1:35963` (465 calls skipped each). For these

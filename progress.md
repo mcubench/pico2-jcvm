@@ -14321,3 +14321,22 @@
 - Commit: `1aaf17c`.
 - Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-rsa-precomputed-invalid-reader00-fixed.csv`.
 
+## 2026-10-29 — Complete the upstream initial-digest Crypto group (7 minutes)
+
+- Step/experiment: `signature-initial-digest-upstream-group-vpcd`
+- When: '2026-10-29 02:37 UTC' - '2026-10-29 02:44 UTC'
+- Change: No code change. Ran all upstream API 3.0.5 Crypto cases matching
+  `setInitialDigest` using the unchanged CAP on paired VPCD reader 00 00.
+- Validation: Complete client run passed 466 checks: 10 `OK`, eight
+  `UNSUPPORTED_PER_SPEC`, and 448 intentionally skipped. All four valid
+  continuation vectors passed (RSA SHA-1, RSA SHA-256, ECDSA SHA-1, ECDSA
+  SHA-256); state-length, zero-length, and non-block-aligned negative cases
+  returned expected `ILLEGAL_VALUE`. Physical validation was not possible;
+  the approved device helper found zero physical readers.
+- Result: The complete upstream `setInitialDigest` test group passes on VPCD
+  with the current native Signature implementation.
+- Decision: Keep the current SHA state layout and exception handling. Remaining
+  SHA-224/384/512 runtime vectors and physical validation are open.
+- Commit: `d6ebeeb` and `1aaf17c` (source commits validated by this run).
+- Artifacts/logs: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-setinitialdigest-group-reader00.csv`.
+

@@ -32,6 +32,11 @@
   `CryptoException.ILLEGAL_USE` instead of `ILLEGAL_VALUE`. The upstream
   malformed-hash row passes on VPCD with expected reason `0x0005`; implementation
   is committed as `1aaf17c`.
+- The complete upstream `setInitialDigest` group now passes on VPCD 00 00:
+  466 Crypto checks total (10 `OK`, eight `UNSUPPORTED_PER_SPEC`, 448 skipped).
+  RSA SHA-1/SHA-256, ECDSA SHA-1/SHA-256 continuation and the three invalid
+  length/block cases all produced expected results. Evidence:
+  `crypto-setinitialdigest-group-reader00.csv`.
 - Successful artifact: `artifacts/results/deploy/signature-initial-digest-vpcd-final/crypto-sha256-testonly.csv`.
   ECDSA initial-digest and precomputed-hash passes are in the sibling files
   `crypto-ecdsa256-reader00.csv`, `crypto-ecdsa-sha1-reader00.csv`,
@@ -39,9 +44,9 @@
   `crypto-ecdsa-precomputed-sha1-reader00.csv`.
   Earlier incomplete runs are in the same directory and in
   `artifacts/results/deploy/signature-initial-digest-vpcd-20261029/`.
-- Next: add isolated tests for SHA-224/384/512 and malformed-length boundaries;
-  then run the full focused suite on an identified physical ARM Pico when
-  available.
+- Next: add a way to exercise SHA-224/384/512 continuation through existing
+  upstream CAP coverage, then run the focused suite on physical ARM hardware.
+  The approved physical-reader helper currently finds zero Pico 2 readers.
 
 - Fixed the focused API 3.0.5 uninitialized `ECKey.getK()` timeout. Trace
   evidence showed native dispatch index 7 (`NativeKey.clearKey`) clearing

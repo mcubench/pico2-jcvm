@@ -1636,7 +1636,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   sign/verify also pass for SHA-1 and SHA-256, resolving the prior physical
   `ILLEGAL_USE` result in VPCD. The malformed precomputed-hash length case now
   returns the specified `ILLEGAL_USE` on VPCD. SHA-224/384/512 and physical
-  validation remain. See the
+  validation remain. The complete upstream `setInitialDigest` group on VPCD
+  now passes all four supported RSA/ECDSA SHA-1/SHA-256 vectors and three
+  malformed state/length cases (466 total Crypto calls: 10 OK, eight expected
+  unsupported, 448 skipped). See the
   current `.agent/HANDOFF.md` entry and
   `artifacts/results/deploy/signature-initial-digest-vpcd-final/`.
   Progress (2026-10-27): added native C++ `KeyAgreement` dispatch and six
