@@ -14407,7 +14407,7 @@
 - Decision: Continue triaging remaining API 3.0.5 Crypto rows and retest the
   transient KeyAgreement result on physical hardware when available. No
   hardware metric was measured.
-- Commit: Pending follow-up SHA for this validation record.
+- Commit: `5a3564e` (validation and documentation record).
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (five focused CSVs and `ec-keyagreement-trace.log`).
 
