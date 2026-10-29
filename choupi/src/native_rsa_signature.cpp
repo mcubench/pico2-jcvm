@@ -422,12 +422,15 @@ bool verifyIso9796(const std::vector<unsigned char> &message,
   constexpr size_t digestSize = 20;
   if (hash.size() != digestSize) return false;
   Iso9796Block decoded;
+  RsaSensitiveBufferGuard recoveredGuard(decoded.recoveredMessage);
+  RsaSensitiveBufferGuard decodedHashGuard(decoded.hash);
   if (!decodeIso9796(encoded, decoded) ||
       decoded.recoveredMessage.size() > message.size() ||
       !std::equal(decoded.recoveredMessage.begin(),
                   decoded.recoveredMessage.end(), message.begin()))
     return false;
   std::vector<unsigned char> digestToCheck = hash;
+  RsaSensitiveBufferGuard digestToCheckGuard(digestToCheck);
   if (!decoded.partial) {
     if (decoded.recoveredMessage.size() != message.size()) return false;
     digestToCheck = digestMessageForIso9796(message);
@@ -668,12 +671,15 @@ bool verify(JC_Instance &signature, const std::vector<unsigned char> &hash,
   const uint16_t length = keyModulusLength(*key);
   const uint8_t algorithm = signatureDigestAlgorithm(signature);
   if (value.size() != length || hash.size() != digestLength(algorithm)) return false;
-  const auto modulus = keyComponent(signature, 0);
-  const auto exponent = keyComponent(signature, 1);
+  auto modulus = keyComponent(signature, 0);
+  RsaSensitiveBufferGuard modulusGuard(modulus);
+  auto exponent = keyComponent(signature, 1);
+  RsaSensitiveBufferGuard exponentGuard(exponent);
   if (!std::lexicographical_compare(value.begin(), value.end(),
                                     modulus.begin(), modulus.end()))
     return false;
-  const auto actual = modExp(modulus, exponent, value);
+  auto actual = modExp(modulus, exponent, value);
+  RsaSensitiveBufferGuard actualGuard(actual);
   if (isIso9796(signature))
     return message && verifyIso9796(*message, hash, actual);
   if (isPss(signature)) {
@@ -681,7 +687,10 @@ bool verify(JC_Instance &signature, const std::vector<unsigned char> &hash,
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE));
     return verifyPss(signature, hash, actual, length, bits);
   }
-  const auto expected = encodedMessage(digestInfoFromHash(algorithm, hash.data()), length);
+  auto digestInfo = digestInfoFromHash(algorithm, hash.data());
+  RsaSensitiveBufferGuard digestInfoGuard(digestInfo);
+  auto expected = encodedMessage(digestInfo, length);
+  RsaSensitiveBufferGuard expectedGuard(expected);
   uint8_t difference = 0;
   for (size_t i = 0; i < expected.size(); ++i)
     difference |= static_cast<uint8_t>(expected[i] ^ actual[i]);
@@ -777,8 +786,10 @@ jshort_t rsaSignatureSign(JC_Instance &signature,
   if (isIso9796MessageRecovery(signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   append(signature, input, offset, length);
-  const auto message = bufferedData(signature);
-  const auto result = transformMessage(signature, message);
+  auto message = bufferedData(signature);
+  RsaSensitiveBufferGuard messageGuard(message);
+  auto result = transformMessage(signature, message);
+  RsaSensitiveBufferGuard resultGuard(result);
   checkRange(output, outputOffset, static_cast<jshort_t>(result.size()));
   for (size_t i = 0; i < result.size(); ++i)
     output->setByteEntry(static_cast<uint16_t>(outputOffset + i), result[i]);
@@ -802,9 +813,11 @@ jshort_t rsaSignatureSignRecovery(
       static_cast<uint16_t>(recoveredLengthOffset) >= recoveredLength->size())
     throw Exceptions::ArrayIndexOutOfBoundsException;
   append(signature, input, offset, length);
-  const auto message = bufferedData(signature);
+  auto message = bufferedData(signature);
+  RsaSensitiveBufferGuard messageGuard(message);
   size_t recoveredCount = 0;
-  const auto result = transformMessage(signature, message, &recoveredCount);
+  auto result = transformMessage(signature, message, &recoveredCount);
+  RsaSensitiveBufferGuard resultGuard(result);
   if (recoveredCount > 32767)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   checkRange(output, outputOffset, static_cast<jshort_t>(result.size()));
@@ -825,14 +838,20 @@ jshort_t rsaSignatureBeginVerify(
   checkRange(signatureData, offset, length);
   const auto key = rsaKeyInstance(signature.getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY));
-  const auto modulus = keyComponent(signature, 0);
-  const auto exponent = keyComponent(signature, 1);
+  auto modulus = keyComponent(signature, 0);
+  RsaSensitiveBufferGuard modulusGuard(modulus);
+  auto exponent = keyComponent(signature, 1);
+  RsaSensitiveBufferGuard exponentGuard(exponent);
   if (length != static_cast<jshort_t>(modulus.size()))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
-  const auto value = readArray(*signatureData, static_cast<uint16_t>(offset),
-                               static_cast<uint16_t>(length));
-  const auto encoded = modExp(modulus, exponent, value);
+  auto value = readArray(*signatureData, static_cast<uint16_t>(offset),
+                         static_cast<uint16_t>(length));
+  RsaSensitiveBufferGuard valueGuard(value);
+  auto encoded = modExp(modulus, exponent, value);
+  RsaSensitiveBufferGuard encodedGuard(encoded);
   Iso9796Block decoded;
+  RsaSensitiveBufferGuard recoveredGuard(decoded.recoveredMessage);
+  RsaSensitiveBufferGuard hashGuard(decoded.hash);
   if (!decodeIso9796(encoded, decoded))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   recovered = std::move(decoded.recoveredMessage);
@@ -846,7 +865,8 @@ bool rsaSignatureVerifyRecoveredMessage(
     const std::vector<unsigned char> &hash) {
   if (!isIso9796MessageRecovery(signature) || hash.size() != 20)
     throwCryptoException(CryptoExceptionReason::IllegalUse);
-  const auto actual = digestMessageForIso9796(message);
+  auto actual = digestMessageForIso9796(message);
+  RsaSensitiveBufferGuard actualGuard(actual);
   uint8_t difference = 0;
   for (size_t index = 0; index < actual.size(); ++index)
     difference |= static_cast<uint8_t>(actual[index] ^ hash[index]);
@@ -863,8 +883,10 @@ jshort_t rsaSignatureSignHash(JC_Instance &signature,
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (length != digestLength(signatureDigestAlgorithm(signature)))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
-  const auto value = transform(signature, readArray(*hash, offset,
-      static_cast<uint16_t>(length)));
+  auto hashBytes = readArray(*hash, offset, static_cast<uint16_t>(length));
+  RsaSensitiveBufferGuard hashGuard(hashBytes);
+  auto value = transform(signature, hashBytes);
+  RsaSensitiveBufferGuard valueGuard(value);
   checkRange(output, outputOffset, static_cast<jshort_t>(value.size()));
   for (size_t i = 0; i < value.size(); ++i)
     output->setByteEntry(static_cast<uint16_t>(outputOffset + i), value[i]);
@@ -880,11 +902,14 @@ jbool_t rsaSignatureVerify(JC_Instance &signature,
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   append(signature, input, offset, length);
   checkRange(expected, expectedOffset, expectedLength);
-  const auto message = bufferedData(signature);
-  const auto hash = signatureHasInitialDigest(signature)
+  auto message = bufferedData(signature);
+  RsaSensitiveBufferGuard messageGuard(message);
+  auto hash = signatureHasInitialDigest(signature)
       ? continueSignatureDigest(signature, message)
       : digestMessage(signature, message);
-  const auto value = readArray(*expected, expectedOffset, expectedLength);
+  RsaSensitiveBufferGuard hashGuard(hash);
+  auto value = readArray(*expected, expectedOffset, expectedLength);
+  RsaSensitiveBufferGuard valueGuard(value);
   const bool valid = verify(signature, hash, value, &message);
   clearMessage(signature);
   clearSignatureInitialDigest(signature);
@@ -902,9 +927,11 @@ jbool_t rsaSignatureVerifyHash(JC_Instance &signature,
     throwCryptoException(CryptoExceptionReason::IllegalUse);
   if (hashLength != digestLength(signatureDigestAlgorithm(signature)))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
-  return verify(signature, readArray(*hash, hashOffset,
-                                     static_cast<uint16_t>(hashLength)),
-      readArray(*expected, expectedOffset, expectedLength)) ? TRUE : FALSE;
+  auto hashBytes = readArray(*hash, hashOffset, static_cast<uint16_t>(hashLength));
+  RsaSensitiveBufferGuard hashGuard(hashBytes);
+  auto value = readArray(*expected, expectedOffset, expectedLength);
+  RsaSensitiveBufferGuard valueGuard(value);
+  return verify(signature, hashBytes, value) ? TRUE : FALSE;
 }
 } // namespace jcvm
 #endif
