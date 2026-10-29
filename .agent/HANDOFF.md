@@ -17,8 +17,9 @@
 - Final-source PC, ARM and RISC-V `asymm_crypto` wrapper builds passed after
   diagnostic instrumentation was removed. PC build emitted pre-existing Rust
   warnings. No physical Pico was connected, so no hardware result is claimed.
-- Next: commit the pending batch setter/copy change with its progress/QKB
-  record. When a physical ARM Pico is available, rerun focused EC key cases;
+- Follow-up implementation and validation records committed as `b101b0a`
+  (`Batch persistent native key component writes`).
+- Next: when a physical ARM Pico is available, rerun focused EC key cases;
   otherwise continue triaging remaining API 3.0.5 Security and Crypto failures.
   Preserve the unrelated dirty files listed by `git status`.
 
