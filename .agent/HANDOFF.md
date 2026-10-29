@@ -12158,3 +12158,11 @@ confirmed on hardware. The original investigation evidence remains in earlier
   confirm expected test-key constraints for RSA/SHA-512 PSS before changing
   behavior. Physical board testing was not available in this session. Avoid
   re-running the unfiltered suite without a longer test window.
+- Follow-up offline check: `./tools/env python3
+  tools/tests/test_asymm_crypto_vpcd.py` passed 99/99 outside the restricted
+  sandbox, including the native SHA-512 PSS explicit zero-salt vectors. This
+  confirms that valid SHA-512 PSS path, but does not resolve the API CAP's
+  `ILLEGAL_VALUE` because its key size/default-salt feasibility is unknown.
+  The approved reader helper found zero physical Pico readers. The normal
+  sandbox attempt failed to create the local VPCD socket (`Operation not
+  permitted`); the elevated local test used no USB.

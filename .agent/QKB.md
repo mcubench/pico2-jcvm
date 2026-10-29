@@ -6084,6 +6084,21 @@ fix.
   (`full-crypto-current.csv`, `full-crypto-emulator.log`); raw partial client
   log at `/tmp/apitest_card_5x39_p6b/APITEST_log_1793245348258.log`.
 
+## Local asymmetric VPCD test needs an unrestricted local socket (2026-10-29)
+
+- **Symptom:** `./tools/env python3 tools/tests/test_asymm_crypto_vpcd.py`
+  failed immediately in the restricted execution context with
+  `TEST:FAIL [Errno 1] Operation not permitted`.
+- **Viable workaround:** Run this local PC/VPCD test through the approved
+  elevated execution path so its loopback emulator socket can be created. The
+  test did not access USB or PC/SC.
+- **Validation:** Elevated run passed `TEST:SUMMARY pass=99 fail=0`, including
+  50 RSA Signature vectors and SHA-512 PSS precomputed sign/verify using an
+  explicit zero-salt parameter. This confirms that valid native SHA-512 PSS
+  path. It does not explain the separate API 3.0.5 CAP `ILLEGAL_VALUE`, whose
+  generated key size/default salt constraints remain unverified.
+- **Artifact:** `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`.
+
 ## Reuse of VPCD storage caused intermittent Crypto IOException results (2026-10-29)
 
 - **Symptom:** After multiple Crypto CAP upload/test/cleanup cycles on one PC

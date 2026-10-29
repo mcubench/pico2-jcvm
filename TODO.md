@@ -73,6 +73,9 @@ out explicitly.
   stopped because completing at that pace would take several hours. Runner
   cleanup succeeded; this is not a full-suite pass. Continue with filtered
   focused rows, and schedule the full run only in a sufficiently long window.
+  Follow-up existing native VPCD vectors passed 99/99, including SHA-512 PSS
+  precomputed sign/verify with explicit zero salt. This does not resolve the
+  API CAP's default-salt `ILLEGAL_VALUE`; its generated key size is unknown.
 
 The physical 3.0.5 sweep itself completed Core (291: 271 OK, 15 expected
 unsupported, four optional Ext scenarios unavailable, one known

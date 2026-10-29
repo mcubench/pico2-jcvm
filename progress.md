@@ -14460,3 +14460,27 @@
   (`full-crypto-current.csv`, `full-crypto-emulator.log`); temporary client
   log `/tmp/apitest_card_5x39_p6b/APITEST_log_1793245348258.log`.
 
+## 2026-10-29 — Retest native asymmetric vectors offline (4 minutes)
+
+- Step/experiment: `asymm-crypto-vpcd-sha512-pss-triage`
+- When: '2026-10-29 04:00 UTC' - '2026-10-29 04:04 UTC'
+- Change: No source change. Ran the existing native PC/VPCD asymmetric
+  known-answer suite after the API Crypto probe reported `ILLEGAL_VALUE` for
+  the SHA-512 PSS test sequence.
+- Validation: Initial sandbox run could not create its local emulator socket
+  (`Operation not permitted`). The same repository test passed when run outside
+  the restricted sandbox: `./tools/env python3
+  tools/tests/test_asymm_crypto_vpcd.py`, 99/99 checks. This included 50 RSA
+  signature vectors and SHA-512 PSS precomputed sign/verify with explicit
+  zero-salt parameters. No physical device or USB was used.
+- Result: Native SHA-512 PSS works for the valid zero-salt parameter case. The
+  API CAP's `ILLEGAL_VALUE` remains unexplained; the exact generated key size
+  and default salt constraints were not established. No native fix is justified.
+- Decision: Keep the API CAP result open; inspect its test-key setup or capture
+  the exact key size before changing PSS validation. Retry physical Crypto
+  testing when a Pico reader is available.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`
+  (existing test log overwritten by the repository test); full API CAP data in
+  `artifacts/results/deploy/crypto-current-vpcd-20261029/rsa-sha512-pss.csv`.
+
