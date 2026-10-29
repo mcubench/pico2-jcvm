@@ -49,6 +49,15 @@ out explicitly.
   and 14 card-runtime reason mismatches. The `Cipher()` factory `6F00` from
   the older Crypto report passed in VPCD and remains a physical-only
   discrepancy to retest, not a confirmed native failure.
+- [ ] Resolve the physical Core `Applet.deselect()` discrepancy. The fresh
+  current-source VPCD focused run on 2026-10-29 passed this row
+  (`OK`, `effect=as expected`), but its diagnostic value was `1`, unlike the
+  physical baseline's expected `-19` and the 2026-10-28 `WRONG_RESULT` value
+  `-15`. A fresh unfiltered Core VPCD attempt exceeded 300 seconds; the
+  filtered run completed all 291 rows with 288 skipped and two Multi-scenario
+  rows unavailable because scenarios were disabled. No source change was
+  justified. Retry on physical ARM hardware when a Pico enumerates and compare
+  exact per-run select/deselect counters.
 - [x] Correct `SignatureMessageRecovery.beginVerify()` after initialization in
   sign mode: Java Card requires `CryptoException.ILLEGAL_USE`; the previous
   shared mode guard returned `INVALID_INIT`. The unchanged upstream API 3.0.5

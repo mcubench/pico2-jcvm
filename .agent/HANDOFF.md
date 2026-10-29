@@ -1,4 +1,24 @@
-# Current continuation — reset VPCD storage between Crypto sweeps
+# Latest continuation — Core Applet.deselect VPCD check (2026-10-29)
+
+- A fresh current-source API 3.0.5 Core focused VPCD run selected only
+  `Applet.deselect()`: 291 rows processed, 288 `SKIPPED_BY_USER`, two Multi
+  rows `APPLET_NOT_INSTALLED` because `--no-scenarios` was used, and the target
+  row `OK` (`effect=as expected`, diagnostic `returned=1`). No source change
+  was justified. The physical 2026-10-28 `WRONG_RESULT` (`-15`) is unresolved;
+  current-source VPCD does not reproduce it, and the approved reader helper
+  found no physical Pico devices.
+- An unfiltered Core attempt exceeded 300 seconds. For future single-row runs,
+  use `--exclude '^(?!.*deselect).*$'`; this excludes all descriptors except
+  those containing `deselect`. A more exact expression initially matched all
+  rows because its expected separator spacing did not match the client input.
+- Artifacts: `artifacts/results/deploy/core-vpcd-current-20261029/`,
+  `core-vpcd-current-retry-20261029/`,
+  `core-vpcd-current-retry2-20261029/`, and
+  `core-deselect-vpcd-20261029/`. Continue implementation and validation
+  offline while no Pico reader is available; retry this specific physical row
+  once a Pico enumerates.
+
+# Previous continuation — reset VPCD storage between Crypto sweeps
 
 ## RSA temporary buffer zeroization (2026-10-29)
 

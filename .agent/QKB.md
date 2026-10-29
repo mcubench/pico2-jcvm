@@ -6215,3 +6215,17 @@ fix.
   `cipher-aead-errors-repeat.csv`, `signature-aead-persistent-trace.csv`, and
   `signature-aead-persistent-trace.log` in
   `artifacts/results/deploy/crypto-current-vpcd-20261029/`.
+
+## Focused API Core rows on VPCD (2026-10-29)
+
+- **Observation:** The unchanged API 3.0.5 Core CAP contains 291 calls; an
+  unfiltered run did not finish before the 300-second limit. A fresh-image
+  focused rerun completed in under a minute when all but `Applet.deselect()`
+  were filtered. The selected row returned `OK` (`effect=as expected`,
+  diagnostic `returned=1`); this does not reproduce the physical 2026-10-28
+  `WRONG_RESULT` (`-15`) and does not replace physical validation.
+- **Viable filter:** `--exclude '^(?!.*deselect).*$'` leaves method descriptors
+  containing `deselect` and marks other calls `SKIPPED_BY_USER`. Avoid matching
+  an assumed exact delimiter spacing: a stricter negative lookahead filtered
+  the target too and silently left all 291 rows skipped.
+- **Artifacts:** `artifacts/results/deploy/core-deselect-vpcd-20261029/`.
