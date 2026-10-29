@@ -5867,3 +5867,22 @@ fix.
   physical Pico was connected. Results:
   `artifacts/results/deploy/ec-key-getfield-final-20261029/` and
   `artifacts/results/deploy/ec-key-copy-domain-null-batched-20261029/`.
+
+## VPCD endpoint can stall after a focused API timeout (2026-10-29)
+
+- **Symptom:** After a 40-second focused EC API test timeout on `Virtual PCD 00
+  01` (endpoint `127.0.0.1:35964`), the next run on the same reader timed out
+  in GPPro upload after 50 seconds even though the reader was enumerated.
+- **Cause:** Not established. Reader enumeration alone did not establish that
+  the VPCD transport was transacting. A fresh presence probe succeeded on the
+  other paired endpoint and tests then passed there.
+- **Viable workaround:** Start a fresh VPCD emulator, run
+  `pcsc_scan -r`, require `VpcdPresenceProbe` to report `present=true`, and
+  after repeated `00 01` failures switch to its paired reader/endpoint
+  `Virtual PCD 00 00` / `127.0.0.1:35963`. Do not interpret a GPPro upload
+  timeout as a VM API result.
+- **Validation:** On `00 00`/35963, unchanged API 3.0.5 Security CAP tests
+  passed for valid P-256 domain copy, mismatched source size, and uninitialized
+  source. Artifacts:
+  `artifacts/results/deploy/ec-key-copy-domain-p256-reader00-20261029/` and
+  `artifacts/results/deploy/ec-key-copy-domain-errors-reader00-20261029/`.

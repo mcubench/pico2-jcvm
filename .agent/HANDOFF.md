@@ -18,11 +18,18 @@
   diagnostic instrumentation was removed. PC build emitted pre-existing Rust
   warnings. No physical Pico was connected, so no hardware result is claimed.
 - Follow-up implementation and validation records committed as `b101b0a`
-  (`Batch persistent native key component writes`); metadata reference
-  committed as `14963d8`.
-- Next: when a physical ARM Pico is available, rerun focused EC key cases;
-  otherwise continue triaging remaining API 3.0.5 Security and Crypto failures.
-  Preserve the unrelated dirty files listed by `git status`.
+  (`Batch persistent native key component writes`).
+- Further VPCD validation passed for valid P-256 `copyDomainParametersFrom`
+  (returns 32 bytes), mismatched source size (`ILLEGAL_VALUE`), and
+  uninitialized source (`UNINITIALIZED_KEY`). Runs used `Virtual PCD 00 00` /
+  `127.0.0.1:35963`; artifacts are under
+  `artifacts/results/deploy/ec-key-copy-domain-p256-reader00-20261029/` and
+  `ec-key-copy-domain-errors-reader00-20261029/`. The 00 01 endpoint timed out
+  once during testing and once during GPPro upload; see `.agent/QKB.md`.
+- No physical Pico was connected, so these are emulator results only. Next:
+  continue triaging remaining API 3.0.5 Security and Crypto failures, and rerun
+  focused EC tests on physical ARM hardware when available. Preserve unrelated
+  dirty files shown by `git status`.
 
 # Current continuation — fix JC305 key interfaces and null instanceof (2026-10-28)
 

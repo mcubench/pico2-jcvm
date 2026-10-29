@@ -13450,7 +13450,7 @@
 - Decision: Build a reproducible conversion/comparison path for legacy target
   CSVs, continue RSA private-operation hardening, and retry physical checks
   after a Pico enumerates through the VM.
-- Commit: `b101b0a`.
+- Commit: pending.
 - Artifacts/logs: supplied target CSV above; no hardware log.
 
 ## 2026-10-27 — Implement RSA-CRT private Cipher and Signature operations
@@ -13881,7 +13881,7 @@
 - Validation: `python3 -m py_compile tools/javacard-support.py tools/javacard-class-tokens.py tools/extract-rom-metadata.py tools/test-javacard-support.py` passed. `python3 tools/test-javacard-support.py` passed 11/11. `./tools/build-pc --profile asymm_crypto`, `./tools/build arm --profile asymm_crypto`, and `./tools/build riscv --profile asymm_crypto` passed. Three timed PC builds took 96.45 s (first rebuild after generator edits), 20.88 s (C++ refresh), and 32.84 s (unchanged); the last run skipped Java Card API and ROM-mask generation and compiled no C++ objects. Host OS build/relink and manifest checks still run. The existing VPCD asymmetric suite passed 99/99 before this build-only change. No flash was attempted because no physical reader was visible.
 - Result: Repeated builds no longer invalidate Java Card API, ROM-mask, or C++ compilation inputs when generated contents are unchanged. Runtime for the host OS build/relink remains in the steady-state wrapper path.
 - Decision: Keep the generator regression and continue through the open runtime/API backlog; retry physical acceptance when a Pico enumerates.
-- Commit: `b101b0a`.
+- Commit: pending.
 - Artifacts/logs: PC build logs in `/tmp/pico2-build-pc-incremental-first.log`, `/tmp/pico2-build-pc-incremental-second.log`, and `/tmp/pico2-build-pc-incremental-third.log` (temporary, not committed); generated ARM UF2 `build/arm/pico2_choupi.uf2` and RISC-V smoke UF2 `build/riscv/pico2_jcvm_smoke.uf2`.
 
 ## 2026-10-27 — Build profile UF2s and flash one Pico 2 (18 minutes)
@@ -14155,6 +14155,34 @@
   stall on per-byte persistent filesystem writes in the tested emulator cases.
 - Decision: Run these focused cases on an identified physical ARM Pico when
   available; continue triaging remaining API 3.0.5 Security/Crypto failures.
-- Commit: pending.
+- Commit: `b101b0a`.
 - Artifacts/logs: `artifacts/results/deploy/ec-key-getfield-final-20261029/`;
   `artifacts/results/deploy/ec-key-copy-domain-null-batched-20261029/`.
+
+## 2026-10-29 — Validate EC domain copy paths (14 minutes)
+
+- Step/experiment: `native-ec-domain-copy-vpcd-validation`
+- When: '2026-10-29 00:23 UTC' - '2026-10-29 00:37 UTC'
+- Change: No source change. Exercised valid P-256 domain copying and the
+  mismatched-size and uninitialized-source error paths with the unchanged API
+  3.0.5 Security CAP.
+- Validation: On `Virtual PCD 00 00` (`127.0.0.1:35963`), the P-256 case
+  completed 901 calls: selected `copyDomainParametersFrom` returned 32 bytes
+  (`0x0020`) as expected and 900 other calls were filtered. A second 901-call
+  run selected two error cases; mismatched size returned expected
+  `ILLEGAL_VALUE`, and uninitialized source returned expected
+  `UNINITIALIZED_KEY`; GPPro cleanup passed. The test stages took 73 seconds
+  for the P-256 case and 45 seconds for the two error cases. No physical Pico
+  was connected; hardware validation was not run.
+- Result: Successful persistent EC domain copying and its two tested failure
+  paths complete on VPCD with specification-matching results. An earlier
+  attempt on `Virtual PCD 00 01` timed out at 40 seconds; a retry on that
+  endpoint timed out during GPPro upload after 50 seconds. The paired
+  `00 00`/35963 endpoint passed after a fresh presence probe.
+- Decision: Reuse the paired `00 00`/35963 endpoint after VPCD timeouts. Run
+  the tested EC paths on physical ARM hardware when available; continue the
+  remaining API 3.0.5 backlog offline.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/deploy/ec-key-copy-domain-p256-reader00-20261029/`;
+  `artifacts/results/deploy/ec-key-copy-domain-errors-reader00-20261029/`;
+  failed endpoint attempts under `ec-key-copy-domain-p256-*-20261029/`.
