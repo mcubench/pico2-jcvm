@@ -6,7 +6,7 @@
   clears (including RSA components), retains transaction snapshots, and keeps
   transient arrays in-memory. `NativeKey.getK()` also rejects an unset EC
   cofactor with `CryptoException.UNINITIALIZED_KEY`.
-- Follow-up source changes (currently uncommitted) generalize the bulk record
+- Follow-up source changes generalize the bulk record
   writer and use it for persistent RSA/EC setters and EC domain-parameter
   copying. Focused unchanged Security CAP VPCD runs passed for
   `ECKey.getField()` and `copyDomainParametersFrom(null)`, with the selected
@@ -18,7 +18,8 @@
   diagnostic instrumentation was removed. PC build emitted pre-existing Rust
   warnings. No physical Pico was connected, so no hardware result is claimed.
 - Follow-up implementation and validation records committed as `b101b0a`
-  (`Batch persistent native key component writes`).
+  (`Batch persistent native key component writes`); metadata reference
+  committed as `14963d8`.
 - Next: when a physical ARM Pico is available, rerun focused EC key cases;
   otherwise continue triaging remaining API 3.0.5 Security and Crypto failures.
   Preserve the unrelated dirty files listed by `git status`.
