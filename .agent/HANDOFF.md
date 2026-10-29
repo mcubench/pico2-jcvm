@@ -11,15 +11,20 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 
 ## Next concrete work
 
-1. Investigate the official-client RSA-512 timing discrepancy using the exact
-   APDU workload on the same fresh VPCD image. Do not use its partial CSV as a
-   complete support report. Continue focused Crypto triage before scheduling
-   another full multi-hour run.
-2. Implement safe persistent-object reclamation for repeated API workloads.
+1. Physically validate RSA component persistent-write batching on 2BED
+   `2BED26ED20556535`: run the unchanged JCAlgTest CAP and time the RSA-512
+   APDU. VPCD improved from a >240 s timeout to 16.419 s. Do not treat the
+   prior partial support CSV as complete; rerun the full official report after
+   the physical APDU passes.
+2. Investigate the `CHOUPI:WATCHDOG_RECOVERY marker=494E5354 cause=other`
+   emitted once during the latest 2BED cycle. Runtime self-test passed before
+   and after, but determine whether this is expected reset recovery or a
+   reproducible fault.
+3. Implement safe persistent-object reclamation for repeated API workloads.
    The storage-full exception mapping is fixed, but the full Security run still
    reaches the persistent capacity limit. Preserve stable handles and keep
    loaded persistent objects pinned until deletion is designed.
-3. Remaining acceptance/hardening: Windows validation, physical power-cycle
+4. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, private RSA hardening, intermittent watchdog marker.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded
    investigation requests, not implemented features.
@@ -32,10 +37,12 @@ handoff are complete; see the run counts and hashes below.
 These are last observations, not a live enumeration. Reconfirm board identity,
 reader name, profile, and installed state before every hardware task.
 
-- 2BED: `2BED26ED20556535` is currently flashed with the corrected ARM
-  `asymm_crypto` image SHA-256
-  `e99fe641f95d45a8775edf8996bade276103134dbfd6ba05855f0f10847856ea` and
-  passed repeated finite runtime checks during the Security run. Its complete
+- 2BED: `2BED26ED20556535` is currently flashed with the ARM `asymm_crypto`
+  image SHA-256
+  `64607ee4d6b95e89cff0d0a9c5f0ee675a9b49ccd310dc31259d5fbbc6739d74` and
+  passed its latest finite runtime checks. The cycle emitted one
+  `WATCHDOG_RECOVERY marker=494E5354 cause=other`; no `TEST:FAIL` or nonzero
+  exit occurred. Its complete
   API 3.0.5 Security rerun completed 901 calls with 396 `OK`, 504
   `UNSUPPORTED_PER_SPEC`, one `NO_MEMORY`, zero `SW_ERROR`/wrong results, and
   successful CAP cleanup. D92 `D92E743D5F640C0F` did enter BOOTSEL and the

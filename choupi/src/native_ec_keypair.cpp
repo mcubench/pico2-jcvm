@@ -3,11 +3,13 @@
 #include "javacard-rom-metadata.h"
 #include "javacard-support.h"
 #include "jc_handlers/jc_export.hpp"
+#include "jc_handlers/flashmemory.hpp"
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
 #include "native_ec_group.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <random>
@@ -124,10 +126,18 @@ void putRsaComponent(const std::shared_ptr<JC_Instance> &key, uint16_t component
       lengths->getType() != JAVA_ARRAY_T_SHORT || lengths->size() <= component ||
       bytes.empty() || bytes.size() > array->size())
     throw Exceptions::ArrayStoreException;
-  for (uint16_t i = 0; i < array->size(); ++i) array->setByteEntry(i, 0);
   const uint16_t start = static_cast<uint16_t>(array->size() - bytes.size());
-  for (size_t i = 0; i < bytes.size(); ++i)
-    array->setByteEntry(static_cast<uint16_t>(start + i), bytes[i]);
+  if (array->isPersistent() && !array->isTransientArray()) {
+    std::vector<uint8_t> contents(array->size(), 0);
+    std::copy(bytes.begin(), bytes.end(), contents.begin() + start);
+    FlashMemory_Handler::writePersistentField_Array_Byte(
+        array->getPersistentTag(), contents);
+  } else {
+    for (uint16_t i = 0; i < array->size(); ++i)
+      array->setByteEntry(i, 0);
+    for (size_t i = 0; i < bytes.size(); ++i)
+      array->setByteEntry(static_cast<uint16_t>(start + i), bytes[i]);
+  }
   lengths->setShortEntry(component, static_cast<jshort_t>(bytes.size()));
 }
 

@@ -79,6 +79,17 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `e99fe641f95d45a8775edf8996bade276103134dbfd6ba05855f0f10847856ea`, CSV
   `artifacts/results/deploy/asymm-storage-20261029/2BED-security-bounded.csv`
   SHA-256 `cdc05f4904d39fddfda86b5233b8a3a61ea112b2b31f013a3455a9e55c918ea1`.
+- **RSA-512 JCAlgTest support APDU stalled on persistent byte writes — batching fix:**
+  VPCD trace showed RSA-512 primes ready in 539 ms, then `putRsaComponent()`
+  performed repeated per-byte persistent writes. Added one bulk persistent
+  array write per key component, keeping the byte-wise path for transient
+  arrays. On a fresh PC VPCD image, unchanged APDU
+  `B07519000301020000` improved from a 240 s timeout to 16.419 s and returned
+  `9000`; native probe APDU `801A000000` took 0.288 s. ARM/RISC-V builds passed
+  and physical 2BED flash/startup passed, but physical applet APDU timing
+  remains unverified. The cycle logged one `WATCHDOG_RECOVERY marker=494E5354
+  cause=other`; investigate. Logs are indexed in progress under
+  `rsa512-persistent-component-batch`.
 - **Native-only boundary:** old Java crypto-provider plans are superseded.
   Implement behavior in native C++ API dispatch; preserve upstream CAPs.
 - **RSA support-label mismatch:** JCAlgTest 1.8.2's 3072 KeyPair rows send 4096.
