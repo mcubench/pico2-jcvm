@@ -13925,7 +13925,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid d92e743d5f640c0f` passed. Both ARM and RISC-V builds passed, flash verification passed, and the finite 18-second monitor reported repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The log also contained one `CHOUPI:WATCHDOG_RECOVERY ... cause=other` record before subsequent passing iterations. No PC/SC or applet test was run.
 - Result: The combined-profile image boots and the smoke check passes on D92. The other connected token was not touched. Image size: 2,029,568 bytes; SHA-256 `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`.
 - Decision: Physical flash path is operational. Inspect the watchdog recovery marker if it appears again during a clean power-up; continue remaining asymmetric coverage.
-- Commit: pending.
+- Commit: `6d08baf` (CPLC implementation/build fixes); this progress record follows.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261027T200454Z.log`; image `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-27 — Keep long RSA operations alive and validate on D92 (55 minutes)
@@ -13936,7 +13936,7 @@
 - Validation: ARM and RISC-V `asymm_crypto` wrapper builds passed; PC/VPCD suite passed 99/99. Flashed identified D92 and inspected finite serial output (`TEST:SUMMARY pass=1 fail=0`). Physical asymmetric suite passed 79/79. Isolated RSA-3072 passed in 137.724 s; isolated RSA-CRT-3072 passed in 171.517 s. Full-suite RSA-3072 and RSA-CRT-3072 took 138.521 s and 110.769 s. GPPro cleanup passed.
 - Result: Prior `6400` timeout on RSA-3072 is fixed for tested workloads. Full 79-vector physical suite passes. The combined ARM UF2 is 2,031,104 bytes, SHA-256 `2c17467a26a2d035dec9bb0fb9e3eba329e1e5d05989a8f25ed7b2b720768a1d`. Intermittent `cause=other` watchdog marker and broader profile acceptance remain open.
 - Decision: Keep the 600-second finite host bound and inactivity timeout. Continue with support-report comparison, physical `/deploy`, Windows validation, and RSA hardening.
-- Commit: pending.
+- Commit: `6d08baf` (CPLC implementation/build fixes); this progress record follows.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261027T212115Z.log`, `artifacts/logs/asymm-crypto-pcsc-20261027T213146Z.log`, `artifacts/logs/asymm-crypto-pcsc-20261027T213548Z.log`.
 
 ## 2026-10-28 — Complete physical asymm_crypto report and trace RSA-3072 mismatch (29 minutes)
@@ -14529,7 +14529,7 @@
   physical retest; continue with remaining Crypto/API test coverage. SHA-224,
   SHA-384, and SHA-512 initial-digest continuation and precomputed-hash vectors
   still need coverage where an unchanged upstream CAP exercises them.
-- Commit: pending.
+- Commit: `6d08baf` (CPLC implementation/build fixes); this progress record follows.
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (`ecdsa-sha384-focused.csv`, `ecdsa-sha224-512-focused.csv`,
   `ecdsa-sha224-512-trace.csv`, `ecdsa-sha512-trace.csv`,
@@ -14785,3 +14785,14 @@
 - Decision: Keep the investigation open. Compare exact JCAlgTest request semantics against the native probe on the same fresh VPCD image, then rerun/capture a complete official support report if feasible.
 - Commit: `e453aeb` (TODO/QKB/handoff); this progress record follows.
 - Artifacts/logs: `artifacts/results/jcalgtest-vpcd-asymm-current-pcsc-20261029/` (partial official run); `artifacts/logs/asymm-crypto-keypair-vpcd-timing-20261029.log`, SHA-256 `71ee2f1af942215b726cac1285910a84fa2650c6b1f4c1743212e546a8dc96b2`.
+
+## 2026-10-29 — Add synthetic CPLC GET DATA response (23 minutes)
+
+- Step/experiment: `gp-cplc-response-bytes`
+- When: '2026-10-29 14:00 UTC' - '2026-10-29 14:23 UTC'
+- Change: Implemented GlobalPlatform GET DATA `9F7F` as a 42-byte CPLC value inside the `9F7F 2A` TLV. The synthetic markers are Feitian `096E` (reusing its USB VID; explicitly not claimed as a registered CPLC fabricator code), RP2350 `2350`, OS provider `JC`, release level `0001`, and date `6302` (YDDD for 2026-10-29). Per-device serial, batch, and equipment identifiers remain zero. Updated the host SmartcardIO probe to check open and SCP03-authenticated CPLC. Updated unit tests and TODO/QKB/handoff. Also repaired two existing `current`-profile build defects: optional signature helper references when RSA/ECDSA are disabled, and missing ARM SHA-256 Mbed TLS source when SHA-256 is enabled alone.
+- Validation: `./tools/test-gp-get-data` passed 14/14, including exact CPLC TLV bytes/length and `9000`. `./tools/build arm` and `./tools/build riscv` passed on `current`; the RISC-V wrapper builds its VM-core smoke image only. `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed CAP LOAD/INSTALL. The SmartcardIO GET DATA probe compiled, but the PC VPCD endpoint returned `6999` for `80CA006600`; it does not run through the Pico CCID card-manager dispatcher, so this is not evidence against the firmware CPLC path. No physical flash/test was run. `git diff --check` passed for files in this step.
+- Result: The shared GET DATA encoder now returns CPLC bytes through the CCID dispatch path, with synthetic rather than unique manufacturing identity. The separate physical CCID probe is ready for a later hardware run.
+- Decision: Keep physical CPLC validation open until ARM firmware is flashed and queried through a real CCID reader. Do not treat PC VPCD's `6999` as a CPLC failure.
+- Commit: `6d08baf` (CPLC implementation/build fixes); this progress record follows.
+- Artifacts/logs: GPPro host VPCD pass: `artifacts/results/gppro-empty-install-vpcd-20261029T142152Z/`; exact unit output was 14/14. The failed PC VPCD GET DATA attempt is recorded in `.agent/QKB.md`.
