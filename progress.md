@@ -14661,3 +14661,21 @@
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`;
   SDK source `.local-toolchain/sdk/lib/mbedtls/library/bignum.c`.
 
+## 2026-10-29 — Prevent RSA-PSS vector reallocation residue (5 minutes)
+
+- Step/experiment: `rsa-pss-buffer-reserve`
+- When: '2026-10-29 05:36 UTC' - '2026-10-29 05:41 UTC'
+- Change: RSA-PSS signing and verification now reserve the complete hash-input
+  size before appending the digest and salt bytes. This prevents vector growth
+  from freeing an earlier allocation that already contains sensitive copied
+  data; the scoped guard wipes the single final allocation on exit.
+- Validation: PC, ARM, and RISC-V `asymm_crypto` wrapper builds passed. The
+  existing VPCD asymmetric suite passed 99/99. No physical device was available.
+- Result: PSS hash/salt assembly now avoids intermediate allocator copies in
+  addition to wiping its final scratch buffer.
+- Decision: Keep the reservation and retain the PSS vectors as regression
+  coverage. This is incremental cleanup, not a complete private-RSA side-channel
+  or fault-protection solution.
+- Commit: implementation `da8ee60`; validation/doc record commit pending.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`.
+

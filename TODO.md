@@ -1721,7 +1721,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   cipher/signature scratch buffers that contain copied key material, encoded
   private-operation blocks, decrypted data, and RSA-PSS salt/mask state are now
   wiped by scoped guards, including copied signature messages/hashes and
-  ISO9796 recovery buffers on exception exits. Remaining security work: audit the full operation
+  ISO9796 recovery buffers on exception exits. RSA-PSS hash/salt concatenation
+  reserves its final capacity before copying secrets to prevent reallocation
+  residue. Remaining security work: audit the full operation
   and assess input blinding despite private keys not exposing E. Java Card CRT
   keys expose P, Q, DP1, DQ1, and PQ, but no
   public exponent; the native API does not associate a public key with the

@@ -34,6 +34,10 @@
   `mbedtls_mpi_zeroize_and_free()` for allocated MPI limbs. PC/ARM/RISC-V and
   VPCD 99/99 pass. Source commit: `bedf23a`; progress record commit
   `9fe6ed1`.
+- PSS hash-input buffers now reserve their exact final size before appending the
+  digest and salt, so vector growth cannot free an earlier allocation holding
+  those bytes. PC/ARM/RISC-V and VPCD 99/99 pass. Source commit: `da8ee60`;
+  progress record pending.
 
 ## RSA NOPAD both-direction fix (2026-10-29)
 
