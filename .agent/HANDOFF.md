@@ -1,4 +1,24 @@
-# Current continuation — triage remaining Crypto 6F00 rows
+# Current continuation — reset VPCD storage between Crypto sweeps
+
+- DES/AES cipher tests with DES 64/192 and AES 192/256 keys all passed on
+  current PC JCVM/VPCD (five selected rows `OK`, including DES CBC ISO9797-M2
+  known block). Rechecked Signature/Cipher uninitialized-key cases after
+  intermittent `6F00`/`IOException` results on a reused emulator image.
+- Starting a new emulator with a zero-length flash image resolved the
+  transient failures: Signature, SignatureMessageRecovery, and Cipher returned
+  expected `UNINITIALIZED_KEY`; the GCM uninitialized-key case returned
+  `NO_SUCH_ALGORITHM` (`UNSUPPORTED_PER_SPEC`). `AEADCipher()` factory passed.
+  No source change was retained. Temporary PC diagnostics were removed; clean
+  `./tools/build-pc --profile asymm_crypto` passed. ARM/RISC-V builds from the
+  preceding Signature source commits remain valid.
+- Use a fresh empty flash image for each VPCD Crypto sweep rather than reusing
+  the same persistent image across repeated upload/test/cleanup cycles. See
+  `.agent/QKB.md` and artifacts in
+  `artifacts/results/deploy/crypto-current-vpcd-20261029/`.
+- No Pico was available in this turn. Next: continue with remaining dated
+  Crypto rows and retest on physical hardware when available.
+
+# Previous continuation — triage remaining Crypto 6F00 rows
 
 - Rechecked selected rows from the dated physical API 3.0.5 Crypto report on
   current PC JCVM/VPCD. ECDSA/SHA-1 with secp192r1 passed; `KeyAgreement()` and

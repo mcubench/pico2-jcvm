@@ -64,6 +64,10 @@ out explicitly.
   KeyAgreement factory/uninitialized-key cases. The two secp192r1 DH/DHC
   known-secret rows failed once with `6F00`, then both passed on a traced
   repeat; investigate this intermittent result before changing native code.
+  Reused VPCD persistent storage also produced intermittent `IOException`
+  (`6F00`) in uninitialized-key probes; a fresh empty emulator image passes
+  Signature, SignatureMessageRecovery, and Cipher checks. Use fresh VPCD storage
+  for further Crypto sweeps. DES/AES key-length cipher vectors pass.
 
 The physical 3.0.5 sweep itself completed Core (291: 271 OK, 15 expected
 unsupported, four optional Ext scenarios unavailable, one known

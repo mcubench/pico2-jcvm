@@ -6066,3 +6066,30 @@ fix.
   `ec-svdp-p192-traced.csv`, `keyagreement-factory.csv`, and
   `keyagreement-uninitialized.csv` under
   `artifacts/results/deploy/crypto-current-vpcd-20261029/`.
+
+## Reuse of VPCD storage caused intermittent Crypto IOException results (2026-10-29)
+
+- **Symptom:** After multiple Crypto CAP upload/test/cleanup cycles on one PC
+  emulator flash image, uninitialized-key Signature and GCM test rows
+  intermittently returned `6F00`; VPCD diagnostics reported exception ID 5
+  (`IOException`). KeyAgreement DH/DHC secp192r1 rows also failed once with
+  `IOException` on the reused image.
+- **Cause:** The failing rows were not native algorithm failures: the same
+  tests passed after starting the emulator with a fresh zero-length flash image.
+  The persistent PC emulator state was contaminated or stale; the exact stored
+  record involved was not identified. This does not establish a physical card
+  storage defect.
+- **Viable workaround:** Start a fresh PC JCVM emulator with a new zero-length
+  flash image for each isolated Crypto sweep. Keep `pcsc_scan` active while
+  starting VPCD, then require `VpcdPresenceProbe --require-present` before the
+  client. Avoid repeating many CAP lifecycles against one emulator image.
+- **Validation:** On fresh VPCD, Signature, SignatureMessageRecovery, and Cipher
+  uninitialized-key rows returned expected `UNINITIALIZED_KEY`; the GCM row
+  returned `NO_SUCH_ALGORITHM` (`UNSUPPORTED_PER_SPEC`), and `AEADCipher()`
+  returned normally. DES 64/192 and AES 192/256 cipher known-answer rows all
+  passed (five selected rows including DES CBC ISO9797-M2). Clean PC build
+  passed after removing temporary diagnostics. No physical device was tested.
+- **Artifacts:** `cipher-keylengths.csv`, `cipher-aead-errors.csv`,
+  `cipher-aead-errors-repeat.csv`, `signature-aead-persistent-trace.csv`, and
+  `signature-aead-persistent-trace.log` in
+  `artifacts/results/deploy/crypto-current-vpcd-20261029/`.

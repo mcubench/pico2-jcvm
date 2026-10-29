@@ -14411,3 +14411,28 @@
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (five focused CSVs and `ec-keyagreement-trace.log`).
 
+## 2026-10-29 — Retest Crypto rows on fresh VPCD storage (14 minutes)
+
+- Step/experiment: `crypto-api-vpcd-storage-refresh`
+- When: '2026-10-29 03:25 UTC' - '2026-10-29 03:39 UTC'
+- Change: No retained source changes. Compared dated physical Crypto `6F00`
+  rows on reused versus fresh PC emulator storage; removed temporary storage
+  diagnostics after the investigation.
+- Validation: Five DES/AES cipher key-length rows passed on current-source
+  VPCD (`OK`), including DES CBC ISO9797-M2. On reused emulator storage,
+  uninitialized-key Signature/GCM cases intermittently returned `6F00` with
+  runtime `IOException`; on a fresh zero-length flash image, Signature,
+  SignatureMessageRecovery, and Cipher returned expected `UNINITIALIZED_KEY`,
+  `AEADCipher()` returned normally, and GCM returned expected
+  `NO_SUCH_ALGORITHM` (`UNSUPPORTED_PER_SPEC`). Clean-source
+  `./tools/build-pc --profile asymm_crypto` passed. ARM/RISC-V builds from the
+  preceding source changes remain valid. No physical Pico was available.
+- Result: Use fresh emulator storage for each VPCD Crypto sweep. Do not attribute
+  stale-image `IOException` results to native algorithm code without a
+  fresh-image reproduction.
+- Decision: Continue checking remaining dated Crypto rows, then repeat on
+  identified physical hardware. No hardware metric was measured.
+- Commit: Pending follow-up SHA for this validation record.
+- Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
+  (focused Crypto CSVs and persistent-storage trace log).
+
