@@ -1,5 +1,24 @@
 # Current continuation — persistent native key writes and EC API validation
 
+## Native Signature digest continuation (2026-10-29)
+
+- Commit `4b546aa` adds native `Signature.setInitialDigest()` validation and
+  resumable SHA-1/224/256/384/512 state for RSA and ECDSA signatures. ECDSA
+  precomputed-hash sign/verify dispatch is implemented, and ECDSA `init()` now
+  clears stale digest state. No Java API source, provider, or CAP file changed.
+- PC, ARM, and RISC-V `asymm_crypto` wrapper builds pass. Runtime validation is
+  not complete: focused unchanged API 3.0.5 Crypto CAP runs timed out during
+  GPPro CAP upload on both VPCD endpoints, before reaching the changed methods.
+  No physical Pico was available.
+- Artifacts from failed transport attempts:
+  `artifacts/results/deploy/signature-initial-digest-vpcd-20261029/`,
+  `signature-initial-digest-invalid-trace-20261029/`, and
+  `signature-initial-digest-invalid-trace-reader01-20261029/`.
+- Next: restore responsive PC/SC transport, then validate accepted SHA state
+  lengths and block counts, invalid-length exceptions, RSA continuation
+  signatures, and ECDSA precomputed-hash sign/verify including altered hashes.
+  Do not claim runtime support until those vectors pass.
+
 - Fixed the focused API 3.0.5 uninitialized `ECKey.getK()` timeout. Trace
   evidence showed native dispatch index 7 (`NativeKey.clearKey`) clearing
   persistent EC byte arrays one byte at a time. Commit `4a178a2` batches those

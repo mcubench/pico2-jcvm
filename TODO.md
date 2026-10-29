@@ -1625,7 +1625,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   full/partial message-recovery and altered-suffix checks on VPCD. Its physical
   validation remains pending because no Pico currently enumerates inside this
   VM. EC APIs, key agreement/generation, complete report comparison, physical
-  `/deploy` coverage, and private-operation hardening remain open.
+  `/deploy` coverage, and private-operation hardening remain open. Native
+  `Signature.setInitialDigest()` continuation for SHA-1/224/256/384/512 and
+  ECDSA precomputed-hash sign/verify now compile for PC, ARM, and RISC-V, but
+  their runtime vectors are still pending because both VPCD endpoints timed
+  out during GPPro CAP upload. See progress commit `4b546aa` and the current
+  `.agent/HANDOFF.md` entry.
   Progress (2026-10-27): added native C++ `KeyAgreement` dispatch and six
   `asymm_crypto` capabilities for EC SVDP-DH/DHC, their plain variants,
   PACE-GM, and uncompressed XY output. The API object stores its algorithm and

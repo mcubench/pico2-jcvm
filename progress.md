@@ -14226,7 +14226,7 @@
 - Decision: Keep the implementation pending focused VPCD or physical vectors.
   First restore a responsive reader, then test valid continuation, invalid
   state lengths/block counts, RSA continuation, and ECDSA precomputed hashes.
-- Commit: `pending`
+- Commit: `4b546aa`
 - Artifacts/logs: Prior failed transport attempts under
   `artifacts/results/deploy/signature-initial-digest-vpcd-20261029/`,
   `signature-initial-digest-invalid-trace-20261029/`, and

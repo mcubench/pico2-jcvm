@@ -5901,3 +5901,22 @@ fix.
   calls: selected `Cipher()` returned object token `86` as expected, 465 other
   calls were filtered, and GPPro cleanup passed. Result:
   `artifacts/results/deploy/cipher-factory-vpcd-20261029/`.
+
+## Both VPCD endpoints timed out during CAP upload (2026-10-29)
+
+- **Symptom:** After an earlier focused API timeout, a presence probe on the
+  paired VPCD endpoint reported the reader present, but subsequent GPPro CAP
+  uploads timed out on both `Virtual PCD 00 00` (`127.0.0.1:35963`) and
+  `Virtual PCD 00 01` (`127.0.0.1:35964`). The native test applet was never
+  installed and the targeted native methods were not invoked.
+- **Cause:** Unknown. Reader enumeration and a successful presence probe did
+  not establish that a later PC/SC transaction could complete.
+- **Viable solution:** None confirmed for this two-endpoint failure. The prior
+  workaround (fresh emulator, presence probe, switch paired endpoint) remains
+  useful for a single stalled endpoint, but do not repeat an upload timeout
+  and interpret it as a runtime API result. Refresh/restart the emulator
+  session through its normal test harness, verify transport, then retry once.
+- **Validation:** Both endpoint upload timeouts are recorded in
+  `artifacts/results/deploy/signature-initial-digest-invalid-trace-20261029/`
+  and `signature-initial-digest-invalid-trace-reader01-20261029/`. No physical
+  Pico reader was enumerated.
