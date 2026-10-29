@@ -14840,3 +14840,14 @@
 - Decision: Investigate equivalent persistent card state and collect runtime fault/exception diagnostics on 2BED before changing VM code. Do not count the 2BED Core run as passing.
 - Commit: `9a267f8` (TODO/QKB/handoff results); this progress record follows.
 - Artifacts/logs: `artifacts/results/deploy/core-physical-retest-20261029/core-no-scenarios.csv` SHA-256 `47d6ca9c6c142f607ec0299b900a09d0cba96e07afea6e925a45a46c86afc1a0`; `2BED-core-no-scenarios-retry.csv` SHA-256 `d6743b6f4dbab7431c096a6ea56aa98900afe11c4a1f384cf6679fcda96c837f`; `D92-core-no-scenarios.csv` SHA-256 `1b355c6da4fdd26723420a419961e58f4dc01cb65c5f6a2e5fafeacea188ab97`; `pico1.csv` SHA-256 `fb1b444b4d615d023889bcf0506e2fc3d9ac34b416997ac71645de4c049fb815`. These result files are ignored by `.gitignore` and remain local.
+
+## 2026-10-29 Compact continuity documents 5 minutes
+
+- Step/experiment: `continuity-qkb-handoff-compaction`
+- When: '2026-10-29 15:21 UTC' - '2026-10-29 15:26 UTC'
+- Change: Replaced accumulated HANDOFF narratives with a current snapshot of tasks, board results, fixes, limits, and next actions. Consolidated QKB operating fixes, retained recent detailed records, and indexed historical topics. Preserved byte-for-byte originals in `.agent/archive/2026-10-29-pre-compaction/` with SHA-256 manifest; historical snapshots explicitly do not establish current instructions or device state.
+- Validation: Python archive SHA-256/byte/line checks, all historical issue-index section locations, and exact retention of recent QKB records passed. Scoped `git diff --check` passed. Builds/hardware intentionally skipped: documentation only; no firmware changed and no USB/PCSC operations performed.
+- Result: Active documents reduced from 1,243,563 bytes / 18,748 lines to 89,158 bytes / 1,161 lines (92.8% fewer bytes). Archives retain original QKB SHA-256 `6ec8924f56912048678afaf88ce78f5b03758b01fc46198051eaff8b2ef6f1a8` and HANDOFF SHA-256 `e51b30867f2c3495f3cea2377e4217df60aacf2cdf2bc1bdccba4d402d0b751a`. No runtime performance measured. Unrelated worktree changes preserved.
+- Decision: Keep active handoff as a current snapshot; use QKB for reusable diagnoses, progress for chronology, and archive for full historical evidence. Next implementation action remains the 2BED Core discrepancy investigation.
+- Commit: This documentation commit; resolve SHA with `git log -1 --format=%H -- .agent/archive/2026-10-29-pre-compaction/manifest.json`.
+- Artifacts/logs: `.agent/archive/2026-10-29-pre-compaction/{QKB.md,HANDOFF.md,manifest.json,README.md}`; no new runtime logs.
