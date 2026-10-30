@@ -15455,3 +15455,36 @@
 - Decision: Keep record deletion disabled. Next test a physical multi-owner installation only if safe free space permits; otherwise continue offline fail-closed recovery tests. Require actual power-cycle and interrupted-update evidence before any deletion path.
 - Commit: `1d9b38a` (implementation/test; this progress record is committed separately).
 - Artifacts/logs: ARM UF2 SHA-256 `2f1d13a2a539a890bb9a914c2f5759595d6d13b14ceec39c9d4ea3a2ef16b10e`; cycle log `artifacts/logs/cycle-choupi-20261030T053625Z.log` SHA-256 `b0252c9ea524691652ea83e34c5f376f25f28fadb3e706b0af4658d08b09de0e`; monitor `artifacts/logs/persistent-inventory-physical-monitor-2BED-20261030-final.log` SHA-256 `aed092de9894cf7683b60dbd663148b9a1f4d1da7787a6a2cfa90294907f5879`; APDU log `artifacts/logs/pico-powerup-persistence-20261030T053745Z.log` SHA-256 `3941c7bba8baf6783b60d66bed9108e65d4376a5963c77bccd9ea6b33c2c8394`.
+
+## 2026-10-30 Stress read-only inventory across persistence restore and GC 11 minutes
+
+- Step/experiment: `persistent-inventory-vpcd-persistence-stress`
+- When: '2026-10-30 05:39 UTC' - '2026-10-30 05:50 UTC'
+- Change: Ran the existing JCSystem transaction persistence regression with
+  `PICO2_PERSISTENT_INVENTORY=1`, covering installation, process restart,
+  persisted-object restore, and four GC-pressure rounds. The first attempt
+  stopped because the PC emulator executable was missing after its build
+  wrapper; rebuilding with `./tools/build-pc` produced it, and the full test
+  then passed. Recorded the evidence in TODO and HANDOFF.
+- Validation: `PICO2_PERSISTENT_INVENTORY=1 PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-persistence` passed installation/commit (3/3) and restore
+  with four GC-pressure rounds (38/38). Both install-time inventory scans and
+  all 37 restore-time scans completed; each reported `unreachable_tags=0`,
+  `invalid_refs=0`, `edge_failures=0`, and `root_failures=0`. No hardware was
+  used and no persistent records were erased.
+- Result: The read-only full-root inventory diagnostic remains complete during
+  fresh-process persistence restoration and GC pressure, including rounds
+  that reclaimed volatile heap handles. This is VPCD evidence only; physical
+  power-cycle recovery and persistent-record reclamation remain unvalidated.
+- Decision: Keep persistent-record deletion disabled; require actual Pico 2
+  power-cycle and interrupted-update recovery evidence before enabling it.
+- Commit: `af0483c` (TODO/HANDOFF evidence; progress record committed
+  separately).
+- Artifacts/logs: install log SHA-256
+  `fe7fcfb782b1647f431b88a5992db3d50e27bbe5b65e92a490635dc4a62dd95c`;
+  install emulator log SHA-256
+  `306c995aea20d083d9f5934ded57e63fb616d0690118f8859eaa76dbc94fe34a`;
+  restore log SHA-256
+  `c0d11a3c96e78f0d9cd31e43d2260348b742c45fad3d8bb3082882c882598e7a`;
+  restore emulator log SHA-256
+  `d7c407ff2d31d26b568d0116cd2067cc40c7b2c549e0b6fd2f736648a9f58575`.
