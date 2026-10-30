@@ -15762,7 +15762,7 @@
 - Decision: Keep the 8E transport issue open pending a controlled same-board
   retry. Evaluate the DES MAC `FF01` only against intended profile support and
   upstream expectations; do not treat absent RSA/signature algorithms as bugs.
-- Commit: `pending documentation commit`
+- Commit: `9684dc7` (documentation commit for this hardware run)
 - Artifacts/logs: Client log SHA-256
   `5b054c044d7c5a7c511906bc1498100473886aa9ce3cb6a69f310fef013c2e45`; CSV
   SHA-256 `488708254d7189dc4bdde7b3c31eea04489537a5dfaff044a56bfb8115570e46`;
