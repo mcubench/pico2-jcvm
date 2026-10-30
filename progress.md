@@ -13936,7 +13936,7 @@
 - Validation: ARM and RISC-V `asymm_crypto` wrapper builds passed; PC/VPCD suite passed 99/99. Flashed identified D92 and inspected finite serial output (`TEST:SUMMARY pass=1 fail=0`). Physical asymmetric suite passed 79/79. Isolated RSA-3072 passed in 137.724 s; isolated RSA-CRT-3072 passed in 171.517 s. Full-suite RSA-3072 and RSA-CRT-3072 took 138.521 s and 110.769 s. GPPro cleanup passed.
 - Result: Prior `6400` timeout on RSA-3072 is fixed for tested workloads. Full 79-vector physical suite passes. The combined ARM UF2 is 2,031,104 bytes, SHA-256 `2c17467a26a2d035dec9bb0fb9e3eba329e1e5d05989a8f25ed7b2b720768a1d`. Intermittent `cause=other` watchdog marker and broader profile acceptance remain open.
 - Decision: Keep the 600-second finite host bound and inactivity timeout. Continue with support-report comparison, physical `/deploy`, Windows validation, and RSA hardening.
-- Commit: pending.
+- Commit: `205fa66` (test and continuity notes); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261027T212115Z.log`, `artifacts/logs/asymm-crypto-pcsc-20261027T213146Z.log`, `artifacts/logs/asymm-crypto-pcsc-20261027T213548Z.log`.
 
 ## 2026-10-28 — Complete physical asymm_crypto report and trace RSA-3072 mismatch (29 minutes)
@@ -15312,3 +15312,14 @@
 - Decision: Continue with restart/power-cycle recovery and stable-handle validation before implementing any persistent-record deletion.
 - Commit: `8407f2a` (test and continuity notes); this progress record is committed separately.
 - Artifacts/logs: Final test output from `./tools/test-persistent-transaction`; no archived log or hardware artifacts.
+
+## 2026-10-30 Exercise malformed object fields through collection 2 minutes
+
+- Step/experiment: `persistent-inventory-malformed-object-field-collector`
+- When: '2026-10-30 04:36 UTC' - '2026-10-30 04:38 UTC'
+- Change: Extended the actual heap collector fixture with a persistent `JC_Instance` containing one declared field and a truncated serialized object alias at that field tag. The test asserts an incomplete trace, one edge-load failure, zero reclaimed slots, and both the rooted instance and unrelated array still resolving. Updated TODO, QKB, and handoff to include object-field coverage.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `malformed_serialized_object_field_blocks_heap_reclamation`. `git diff --check` passed. No firmware code changed; platform builds and hardware were not run.
+- Result: Strict persisted object-field traversal also fails closed before heap-handle reclamation. The in-memory filesystem fixture does not model reboot or persistent-record deletion.
+- Decision: Proceed to explicit restart/power-cycle recovery tests before enabling persistent-record reclamation.
+- Commit: pending.
+- Artifacts/logs: Final output from `./tools/test-persistent-transaction`; no archived log or hardware artifact.
