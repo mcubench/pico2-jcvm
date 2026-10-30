@@ -425,6 +425,33 @@ int main() {
     persistent_transaction_test::instance_field_count = 0;
   }
 
+  {
+    persistent_transaction_test::instance_field_count = 1;
+    jcvm::Heap heap(7);
+    const auto instance_tag =
+        FlashMemory_Handler::getAppletInstanceTag(4, 2, 3);
+    const auto parent_reference = heap.addInstance(
+        jcvm::JC_Instance(heap, 2, 3, instance_tag));
+    const auto parent = heap.getInstance(parent_reference);
+    const auto cached_fields = parent->getFields();
+    const auto child_tag =
+        FlashMemory_Handler::getAppletInstanceTag(4, 2, 4);
+    const auto cached_child_reference =
+        heap.addInstance(jcvm::JC_Instance(heap, 2, 4, child_tag));
+    cached_fields->at(0).type = jcvm::FieldType::FIELD_TYPE_OBJECT;
+    cached_fields->at(0).value =
+        static_cast<jcvm::jword_t>(cached_child_reference.compact());
+    heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+
+    const auto summary = heap.collectUnreachableFrom({parent_reference});
+    expect(summary.complete && summary.arrays_reclaimed == 1 &&
+               heap.getInstance(parent_reference) != nullptr &&
+               heap.getInstance(cached_child_reference) != nullptr &&
+               summary.arrays_total == 1 && summary.arrays_reachable == 0,
+           "loaded_persistent_cached_reference_survives_collection");
+    persistent_transaction_test::instance_field_count = 0;
+  }
+
   // Reconstruct heap handles over the same durable-record fixture, then let
   // strict traversal restore the array referenced by an alias after restart.
   {

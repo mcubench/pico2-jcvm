@@ -114,6 +114,8 @@ public:
 
   ///  Get the number of instance field.
   auto getNumberOfFields() const noexcept -> decltype(fields->size());
+  /// Whether this object's in-memory field cache is current and loaded.
+  bool hasLoadedFields() const noexcept;
   /// Get fields arrays
   auto getFields() const -> decltype(fields);
 };

@@ -629,6 +629,15 @@ auto JC_Instance::getNumberOfFields() const noexcept
   }
 }
 
+bool JC_Instance::hasLoadedFields() const noexcept {
+  if (!this->isPersistent()) {
+    return true;
+  }
+  return this->persistent_fields_loaded &&
+         this->persistent_rollback_generation ==
+             FlashMemory_Handler::persistentWriteRollbackGeneration();
+}
+
 ///  Get fields arrays
 /**
  * Get the number of instance field.

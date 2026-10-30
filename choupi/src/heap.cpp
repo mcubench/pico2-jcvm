@@ -560,6 +560,7 @@ void Heap::visitChildReferences(JC_Array &array,
         visitor(child, visitor_context);
       }
     }
+
     return;
   }
 
@@ -611,6 +612,57 @@ void Heap::visitChildReferences(const JC_Instance &instance,
         if (!child.isNullPointer()) {
           visitor(child, visitor_context);
         }
+        break;
+      }
+      case FieldType::FIELD_TYPE_BYTE:
+      case FieldType::FIELD_TYPE_BOOLEAN:
+      case FieldType::FIELD_TYPE_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+      case FieldType::FIELD_TYPE_INT:
+#endif
+      case FieldType::FIELD_TYPE_UNINITIALIZED:
+        break;
+      default:
+        throw Exceptions::SecurityException;
+      }
+    }
+
+    // A loaded persistent object can hold a newer in-memory reference than
+    // the serialized field snapshot seen by the strict flash walk above.
+    // Keep those cached children live across the APDU boundary that created
+    // them, while retaining strict validation of the persistent records.
+    if (!instance.hasLoadedFields()) {
+      return;
+    }
+    const auto fields = instance.getFields();
+    for (uint16_t index = 0; index < fields->size(); ++index) {
+      const jc_field_t &field = fields->at(index);
+      switch (field.type) {
+      case FieldType::FIELD_TYPE_OBJECT:
+      case FieldType::FIELD_TYPE_ARRAY_BYTE:
+      case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
+      case FieldType::FIELD_TYPE_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+      case FieldType::FIELD_TYPE_ARRAY_INT:
+#endif
+      case FieldType::FIELD_TYPE_ARRAY_OBJECT:
+      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
+      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
+      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
+#endif
+      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT: {
+        const jref_t child(field.value);
+        if (child.isNullPointer()) {
+          break;
+        }
+        const bool expects_array =
+            field.type != FieldType::FIELD_TYPE_OBJECT;
+        if (child.isArray() != expects_array) {
+          throw Exceptions::SecurityException;
+        }
+        visitor(child, visitor_context);
         break;
       }
       case FieldType::FIELD_TYPE_BYTE:
