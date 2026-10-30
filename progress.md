@@ -16676,3 +16676,15 @@
   restart log `artifacts/logs/host-vpcd-multipackage-restart-20261030T205219Z.log`
   SHA-256 `f1d94e406196debb795fdb1c2a3e588f91335919a1b9a5f5a9339dd7aa0b21f2`;
   corrupt/missing sidecar rejection logs are in the same directory.
+
+## 2026-10-30 Record multi-package VPCD rerun commit 1 minute
+
+- Step/experiment: `multipackage-restart-delete-regression-log-closeout`
+- When: '2026-10-30 20:53 UTC' - '2026-10-30 20:54 UTC'
+- Change: Recorded the implementation-log commit SHA in the append-only log.
+- Validation: Confirmed commit `920e878` contains only this progress record.
+- Result: The 25/25 VPCD multi-package rerun is recorded in `920e878`.
+- Decision: Preserve all existing source changes and continue with independent
+  project work.
+- Commit: recorded in this follow-up commit.
+- Artifacts/logs: none.
