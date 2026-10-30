@@ -16,6 +16,7 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    cursor syscall. The cursor preserves its bucket/offset across calls, filters
    by prefix, and returns only tags readable from the current context. Host
    tests, both architecture builds, and a physical CHOUPI runtime cycle pass.
+   The C++ cursor wrapper is static so callers do not reinitialize storage.
    Next implement the trusted VM inventory consumer and owner-scoped roots.
    No persistent records are deleted; preserve stable handles and keep loaded
    persistent records intact until reachability is proven.

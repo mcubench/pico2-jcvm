@@ -142,6 +142,10 @@ HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
   length. This bridge does not authorize deletion. Next, consume it in a native
   owner-scoped VM inventory that includes static roots, applet roots, object
   fields, array bodies, and aliases before any reclamation.
+- **C++ cursor wrapper integration:** `FileSystem` construction calls `fs_init`,
+  so a root-inventory caller must not instantiate it just to page tags. The
+  `nextTag` wrapper is static and can be called without storage reinitialization.
+  PC host build compiles the wrapper; it is not yet consumed by a VM root scan.
 - **Validation:** Host functional suite passed 67, 0 failed, 2 ignored (generated
   `bindgen_test_layout*` tests skipped because they abort with `null reference
   produced`). ARM and RISC-V repository builds passed. Identified physical

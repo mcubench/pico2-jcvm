@@ -14939,3 +14939,14 @@
 - Decision: Implement the native owner-scoped inventory consumer next. Include static roots, applet roots, fields, array bodies, and aliases; keep persistent deletion disabled until graph accounting and recovery validation are complete.
 - Commit: `cf908e5` (CHOUPI OS submodule), `b0db3e2` (parent docs/progress and OS pointer); this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T004223Z.log` SHA-256 `70f7e80aa212490893cbbe49d825f2577ff647a9d89231c6388daf959b41eae8`. Host suite: 67 passed, 0 failed, 2 ignored; no separate archived log.
+
+## 2026-10-30 Make trusted tag cursor callable without filesystem reinitialization 7 minutes
+
+- Step/experiment: `persistent-tag-cursor-static-wrapper`
+- When: '2026-10-30 00:45 UTC' - '2026-10-30 00:52 UTC'
+- Change: Made the C++ `FileSystem::nextTag` wrapper static. Constructing `FileSystem` calls `fs_init`, so a future trusted inventory consumer must be able to page tags without constructing another filesystem object or reinitializing storage. Updated the persistent-reclamation checklist and handoff to distinguish the completed cursor bridge from the still-open root/alias walk.
+- Validation: `./tools/build-pc` passed and compiled the OS C++ wrapper; its ROM-mask generation completed. `./tools/build arm` and `./tools/build riscv` passed. `git diff --check` passed for the OS change and task documentation. No physical flash was needed: this change is confined to the host-facing C++ wrapper and is not used by the ARM firmware.
+- Result: Trusted VM code can call the cursor API without triggering `fs_init`; the wrapper is compiled but no persistent root scan consumes it yet. No flash records are deleted.
+- Decision: Next implement and test a read-only owner-scoped VM inventory that accounts for serialized static roots, applet roots, object fields, arrays, and aliases. Do not enable persistent-record reclamation until malformed, inaccessible, and cross-owner edges fail closed.
+- Commit: `dfdbcbf` (CHOUPI OS submodule); parent documentation/progress commit and metadata-only follow-up pending.
+- Artifacts/logs: PC build final result `ROMMASK:PASS image=build/choupi-pc/flash header=build/choupi-pc/jni.hpp manifest=build/choupi-pc/generation.sha256`; ARM and RISC-V builds passed. No standalone build log archived.
