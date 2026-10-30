@@ -1125,6 +1125,80 @@ int main() {
              std::memcmp(restored_high_offset_value, high_offset_value,
                          sizeof(high_offset_value)) == 0,
          "filesystem_v3_restores_high_offset_record");
+
+  // An interrupted generation must recover atomically, including the
+  // high-offset record already in the previous v3 snapshot. Sample cuts
+  // during erase, payload, and header programming.
+  committed_flash = fake_flash;
+  constexpr uint8_t interrupted_v3_tag[] = {0xf0, 0x04, 0x04};
+  constexpr uint8_t interrupted_v3_value[] = {0xa9, 0xb8, 0xc7};
+  reset_flash_failure();
+  const bool v3_cut_baseline =
+      fs_write(interrupted_v3_tag, sizeof(interrupted_v3_tag),
+               interrupted_v3_value, sizeof(interrupted_v3_value)) == 0 &&
+      fs_sync() == 0;
+  const size_t v3_snapshot_mutations = flash_mutation_count;
+  bool v3_high_offset_cuts_are_atomic =
+      v3_cut_baseline && v3_snapshot_mutations > 1;
+  const std::array<size_t, 7> v3_cut_points = {
+      0,
+      1,
+      v3_snapshot_mutations / 4,
+      v3_snapshot_mutations / 2,
+      (v3_snapshot_mutations * 3) / 4,
+      v3_snapshot_mutations - 256,
+      v3_snapshot_mutations - 1};
+  for (const size_t cut : v3_cut_points) {
+    if (!v3_high_offset_cuts_are_atomic) break;
+    fake_flash = committed_flash;
+    if (fs_init() != 0 ||
+        fs_write(interrupted_v3_tag, sizeof(interrupted_v3_tag),
+                 interrupted_v3_value, sizeof(interrupted_v3_value)) != 0) {
+      v3_high_offset_cuts_are_atomic = false;
+      break;
+    }
+    reset_flash_failure(cut);
+    const uint8_t interrupted_sync_status = fs_sync();
+    if (interrupted_sync_status == 0) {
+      std::printf("TEST:INFO v3 cut did not interrupt cut=%zu mutations=%zu\n",
+                  cut, v3_snapshot_mutations);
+      v3_high_offset_cuts_are_atomic = false;
+      break;
+    }
+    reset_flash_failure();
+    uint8_t recovered_byte = 0;
+    const int recovered_init_status = fs_init();
+    const uint8_t recovered_high_status =
+        fs_read(wide_value_tag, sizeof(wide_value_tag),
+                restored_high_offset_value,
+                sizeof(restored_high_offset_value));
+    const bool high_offset_matches =
+        std::memcmp(restored_high_offset_value, high_offset_value,
+                    sizeof(high_offset_value)) == 0;
+    uint8_t recovered_interrupted_value[sizeof(interrupted_v3_value)]{};
+    const bool interrupted_record_is_new =
+        fs_read(interrupted_v3_tag, sizeof(interrupted_v3_tag),
+                recovered_interrupted_value,
+                sizeof(recovered_interrupted_value)) == 0 &&
+        std::memcmp(recovered_interrupted_value, interrupted_v3_value,
+                    sizeof(interrupted_v3_value)) == 0;
+    const bool interrupted_record_is_old =
+        fs_read(interrupted_v3_tag, sizeof(interrupted_v3_tag),
+                &recovered_byte, sizeof(recovered_byte)) != 0;
+    if (recovered_init_status != 0 || recovered_high_status != 0 ||
+        !high_offset_matches ||
+        (!interrupted_record_is_old && !interrupted_record_is_new)) {
+      std::printf("TEST:INFO v3 recovery cut=%zu init=%d high=%u match=%u old=%u new=%u\n",
+                  cut, recovered_init_status, recovered_high_status,
+                  high_offset_matches ? 1u : 0u,
+                  interrupted_record_is_old ? 1u : 0u,
+                  interrupted_record_is_new ? 1u : 0u);
+      v3_high_offset_cuts_are_atomic = false;
+      break;
+    }
+  }
+  expect(v3_high_offset_cuts_are_atomic,
+         "filesystem_v3_interrupted_snapshot_preserves_high_offset_record");
   expect(fs_erase(wide_blocker_tag, sizeof(wide_blocker_tag)) == 0 &&
              fs_erase(wide_blocker2_tag, sizeof(wide_blocker2_tag)) == 0 &&
              fs_read(wide_value_tag, sizeof(wide_value_tag),

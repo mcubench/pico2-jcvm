@@ -16337,3 +16337,28 @@
   `3cb62be1b5cd8539fcddbd450a900f1f83236fa375eb0bf20cec79c9ca2efa0e`;
   serial log SHA-256
   `5561e9a86014df6dbaf00066b7df9c6ac190b7be10836ec911c0c26a9dd80df4`.
+
+## 2026-10-30 Test interrupted v3 snapshots with high offsets 6 minutes
+
+- Step/experiment: `rp2350-overlay-v3-high-offset-power-cuts`
+- When: '2026-10-30 18:19 UTC' - '2026-10-30 18:25 UTC'
+- Change: Extended the RP2350 filesystem host test to sample seven interrupted
+  snapshot writes across erase, payload, and header programming while the old
+  snapshot contains a record above 65,535 bytes. Recovery must retain that
+  record and expose either the prior state or the complete new record. Updated
+  QKB and handoff with the test coverage and current physical-reader limit.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with
+  `TEST:SUMMARY fail=0`. The test-only change did not require ARM/RISC-V builds
+  or firmware flashing. The two devices still enumerate over USB (8E and
+  2BED), but the authorized helper plus `pcsc_scan -r` list only VPCD readers;
+  physical failover and power-loss testing were unavailable. Targeted
+  `git diff --check` passed.
+- Result: All seven cut samples recovered the >64 KiB v3 record and an atomic
+  old-or-complete-new record state. A final header byte may already be erased
+  (`0xFF`), so recovery can validly expose the new generation even when the
+  last attempted mutation is interrupted.
+- Decision: Keep the v3 interrupted-snapshot check. Continue safe persistent
+  reclamation and hardware power-loss acceptance as separate TODO items.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: no retained host-test log; output ended with
+  `TEST:SUMMARY fail=0`.

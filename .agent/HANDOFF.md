@@ -682,8 +682,9 @@ commit IDs, feature-specific tests, and interrupted tasks before resuming them.
 
 ## Latest continuation: overlay v3 / Crypto capacity retest — 2026-10-30
 
-- `src/choupi_pico2.cpp` and `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`
-  contain the uncommitted implementation. Version 2 remains readable; new
+- `src/choupi_pico2.cpp` contains the v3 implementation committed as
+  `181415d`; `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp` has an
+  uncommitted follow-up regression. Version 2 remains readable; new
   snapshots use v3, with the high offset bit stored in `OverlayFile.flags` bit
   6. The arena is 77,824 bytes and fits the 160 KiB slot exactly at the
   configured maximum index size.
@@ -702,8 +703,14 @@ commit IDs, feature-specific tests, and interrupted tasks before resuming them.
   scan listed only VPCD readers. Do not claim post-run physical registry or
   cold-power verification. Cycle log and additional evidence hashes are in
   QKB’s “RP2350 overlay capacity v3 resolves physical API Crypto exhaustion”.
-- Next: inspect the final diff, run targeted whitespace checks, append the
-  progress record, and commit only `src/choupi_pico2.cpp`, the overlay test,
-  `TODO.md`, `.agent/QKB.md`, `.agent/HANDOFF.md`, and `progress.md`. Preserve
-  other dirty worktree changes. After commit, continue the remaining TODO
-  items, particularly safe persistent reclamation and power-loss validation.
+- Next: run targeted whitespace checks, append the progress record, and commit
+  only the overlay test plus `.agent/QKB.md`, `.agent/HANDOFF.md`, and
+  `progress.md`. Preserve other dirty worktree changes. After commit, continue
+  the remaining TODO items, particularly safe persistent reclamation and
+  physical power-loss validation.
+- Follow-up to `181415d`: a high-offset v3 interrupted-snapshot
+  regression now samples seven cuts across erase, payload, and header writes.
+  The previous >64 KiB record remains intact and recovery accepts only the old
+  snapshot or the complete new record. The full overlay test passes. Both 8E
+  and 2BED still enumerate over USB, but PC/SC lists only VPCD readers, so no
+  physical failover or power-loss test is currently available.

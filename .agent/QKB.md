@@ -1872,7 +1872,9 @@ original terminology/status; check current summary and later fixes before reuse.
   File lengths stay 16-bit, so a single record still cannot exceed 65,535
   bytes; use multiple records when testing offsets beyond 64 KiB.
 - `./tools/test-rp2350-fs-overlay` passes v2 migration, high-offset restore,
-  compaction, and restart checks (`TEST:SUMMARY fail=0`). Both
+  compaction, restart, and seven v3 interrupted-snapshot cut points
+  (`TEST:SUMMARY fail=0`). Each cut preserves the >64 KiB record and recovers
+  either the old snapshot or a complete new generation. Both
   `./tools/build arm` and `./tools/build riscv` pass. Current `symm_crypto`
   cycle flashed/verified ARM UF2 on Pico 2 `2BED26ED20556535`; its 18-second
   monitor had 18 `TEST:SUMMARY pass=1 fail=0` records and one known stale-field
