@@ -29,8 +29,10 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    roots remain uncovered. The JCArray heap regression now proves partial root
    enumeration, an invalid in-memory array edge, and an injected strict
    persistent-array child read exception each return an incomplete trace and
-   reclaim zero heap handles. Malformed serialized fields/aliases and reboot
-   recovery remain untested, so persistent records cannot be deleted.
+   reclaim zero heap handles. The FlashMemory transaction test now rejects
+   truncated/mismatched array-alias headers. Malformed object-alias chains,
+   collector behavior on corrupt serialized edges, and reboot recovery remain
+   untested, so persistent records cannot be deleted.
 
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in

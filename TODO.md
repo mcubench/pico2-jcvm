@@ -76,7 +76,10 @@ out explicitly.
       reference-array child both make the trace incomplete and reclaim zero
       heap handles. A strict persistent-array child read exception is also
       injected and blocks reclamation.
-    - [ ] Inject malformed serialized fields/aliases and verify reboot recovery.
+    - [x] FlashMemory host test rejects truncated and length-mismatched array
+      alias target headers.
+    - [ ] Inject malformed serialized object/array edges and alias chains into
+      the collector, then verify reboot recovery.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   power-cycle recovery before enabling any reclamation. `JCSystem` object
   deletion remains unsupported until this accounting is complete.

@@ -1411,3 +1411,16 @@ original terminology/status; check current summary and later fixes before reuse.
   an unrelated unrooted array. This verifies the collector's safety gate for a
   persistent read exception, but does not fuzz malformed record bytes or alias
   cycles and does not validate post-reboot recovery.
+
+### Persistent array-alias headers reject truncated encodings — covered 2026-10-30
+
+- The FlashMemory transaction fixture now exercises the actual
+  `getPersistentField_Type` decoder against stored alias records. It rejects a
+  one-byte array-alias header and a declared target-tag length that does not
+  match the record payload; the full `./tools/test-persistent-transaction`
+  suite passes. The fixture now implements `fs_read_inplace` and minimal unused
+  Context hooks required when retaining the actual decoder section in the host
+  link.
+- These checks cover malformed array-alias framing only. They do not validate
+  malformed object-alias chains through `getPersistentField_ReferenceStrict`,
+  collector behavior on an alias-corrupt record, or recovery after restart.

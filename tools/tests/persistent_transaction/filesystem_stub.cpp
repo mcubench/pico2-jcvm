@@ -1,4 +1,5 @@
 #include "ffi.h"
+#include "context.hpp"
 
 #include <algorithm>
 #include <map>
@@ -18,6 +19,11 @@ uint16_t persistent_transaction_test_pending_reason = 0;
 extern "C" void choupi_record_transaction_buffer_full(void) {
   persistent_transaction_test_pending_reason = 3;
 }
+
+namespace jcvm {
+Context &Context::getActiveContext() { throw Exceptions::RuntimeException; }
+void Context::setPendingSystemExceptionReason(uint16_t) noexcept {}
+} // namespace jcvm
 
 extern "C" void path_applet_field(uint8_t applet, uint8_t package,
                                    uint8_t class_index, uint8_t field,
@@ -112,6 +118,16 @@ extern "C" uint8_t fs_read(const uint8_t *tag, const uint8_t tag_length,
     return 2;
   }
   std::copy(found->second.begin(), found->second.end(), data);
+  return 0;
+}
+
+extern "C" uint8_t fs_read_inplace(const uint8_t *tag,
+                                    const uint8_t tag_length,
+                                    const uint8_t **data, uint32_t *length) {
+  const auto found = files.find(key_for(tag, tag_length));
+  if (found == files.end() || data == nullptr || length == nullptr) return 2;
+  *data = found->second.data();
+  *length = static_cast<uint32_t>(found->second.size());
   return 0;
 }
 

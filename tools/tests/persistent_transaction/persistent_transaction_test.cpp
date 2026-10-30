@@ -222,6 +222,28 @@ int main() {
   expect(failed_reads_allocated == 1 && failed_reads_freed == 1,
          "failed_persistent_byte_read_releases_temporary_buffer");
 
+  const auto malformed_alias = make_tag(0x75);
+  seed(malformed_alias.value, malformed_alias.len, {0xfd});
+  bool truncated_alias_rejected = false;
+  try {
+    (void)FlashMemory_Handler::getPersistentField_Type(malformed_alias);
+  } catch (jcvm::Exceptions) {
+    truncated_alias_rejected = true;
+  }
+  expect(truncated_alias_rejected,
+         "persistent_array_alias_rejects_truncated_target_header");
+
+  seed(malformed_alias.value, malformed_alias.len,
+       {0xfd, 2, 0xa0});
+  bool mismatched_alias_length_rejected = false;
+  try {
+    (void)FlashMemory_Handler::getPersistentField_Type(malformed_alias);
+  } catch (jcvm::Exceptions) {
+    mismatched_alias_length_rejected = true;
+  }
+  expect(mismatched_alias_length_rejected,
+         "persistent_array_alias_rejects_mismatched_target_length");
+
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
          "depth_zero_initially");
   expect(!FlashMemory_Handler::commitPersistentWriteTransaction(),
