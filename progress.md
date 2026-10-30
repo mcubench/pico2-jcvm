@@ -14983,3 +14983,14 @@
 - Decision: Inspect CAP static metadata to enumerate reference slots for every installed package, then traverse serialized typed fields, arrays, and aliases. Keep reclamation disabled.
 - Commit: `68b61c0`; this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T011703Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
+
+## 2026-10-30 Enumerate CAP static-reference slot tags 4 minutes
+
+- Step/experiment: `persistent-static-reference-slot-inventory`
+- When: '2026-10-30 01:18 UTC' - '2026-10-30 01:22 UTC'
+- Change: Added `visitPackageStaticReferenceSlots`, deriving two-byte static reference offsets from CAP `reference_count` and the specified initial static-image segment. It uses the 8-bit static path through offset 255 and the 16-bit path afterwards, and rejects `2 * reference_count > image_size`. This enumerates candidate root tags only; it does not read their values. Recorded the specification basis in QKB/TODO/HANDOFF.
+- Validation: `./tools/test-persistent-inventory` passed eight cases (`TEST:SUMMARY fail=0`), including 129 static reference slots crossing offset 255 and inconsistent image metadata. `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, flash verification, and finite physical runtime (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The monitor did not invoke the inventory helper. Scoped `git diff --check` passed.
+- Result: CAP package metadata can now enumerate candidate persistent reference-static tags without scanning unrelated primitive-static records. The stored values and transitive object graph remain unexamined; no record is deleted.
+- Decision: Read those static slots through the native persistent API, skip nulls, and then traverse object, reference-array, and alias records under fail-closed rules.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T012137Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.

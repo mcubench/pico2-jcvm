@@ -63,5 +63,33 @@ VisitResult visitPackageStatics(const uint8_t package_id,
   return visitPrefix(prefix, visitor, context);
 }
 
+VisitResult visitPackageStaticReferenceSlots(
+    const uint8_t package_id, const uint16_t image_size,
+    const uint16_t reference_count, const TagVisitor visitor, void *context) {
+  if (visitor == nullptr || reference_count > image_size / 2u) {
+    return VisitResult::InvalidStaticLayout;
+  }
+
+  for (uint32_t offset = 0; offset < static_cast<uint32_t>(reference_count) * 2;
+       offset += 2) {
+    Tag tag{};
+    if (offset <= UINT8_MAX) {
+      path_static(package_id, static_cast<uint8_t>(offset), &tag.value,
+                  &tag.len);
+    } else {
+      path_static16(package_id, static_cast<uint16_t>(offset), &tag.value,
+                    &tag.len);
+    }
+    if (tag.len == 0 || tag.len > kTagCapacity || tag.value[0] != 0x02 ||
+        tag.value[1] != package_id) {
+      return VisitResult::InvalidTag;
+    }
+    if (!visitor(tag, context)) {
+      return VisitResult::Stopped;
+    }
+  }
+  return VisitResult::Complete;
+}
+
 } // namespace PersistentInventory
 } // namespace jcvm

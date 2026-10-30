@@ -32,7 +32,16 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   stop, stalled cursor, and malformed output. They do not decode references or
   feed heap GC, and have not been called on physical hardware. ARM/RISC-V
   wrappers and PC build pass; latest startup-only flash log is
-  `artifacts/logs/cycle-choupi-20261030T011703Z.log`.
+  `artifacts/logs/cycle-choupi-20261030T012137Z.log`.
+- CAP reference-static slots are enumerated from `reference_count`, after
+  checking `2 * reference_count <= image_size`; the visitor uses two-byte
+  offsets and switches to the 16-bit static tag form beyond offset 255. This
+  follows the official Java Card VM spec's Static Field Image layout: reference
+  fields occupy the initial segment and each is two bytes
+  ([Oracle Java Card VM Spec 3.1, Static Field Component](https://docs.oracle.com/en/java/javacard/3.1/jc-vm-spec/F12650_05.pdf)).
+  Tests cover 129 references crossing the 8-bit offset boundary and invalid
+  metadata. The visitor only returns candidate tags; it does not fetch values
+  or establish non-null roots.
 
 ## Canonical operating fixes and unresolved boundaries
 

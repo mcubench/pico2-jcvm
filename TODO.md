@@ -14,9 +14,12 @@ out explicitly.
 - [x] Add native read-only visitors for applet-owner (`0x03, owner`) and
   package-static (`0x02, package`) tag namespaces. They fail closed on invalid
   tags or stalled cursors but do not decode references or delete records.
+- [x] Derive package static-reference slot tags from CAP `reference_count`:
+  reference slots occupy the first `2 * reference_count` bytes, two bytes per
+  slot. Reject metadata whose reference segment exceeds `image_size`.
 - [ ] Implement a native trusted-VM inventory consumer with explicit owner
-  boundaries. Enumerate persistent roots, static references, applet roots,
-  object fields, reference-array bodies, and aliases before identifying
+  boundaries. Read non-null serialized static roots, then enumerate applet
+  roots, object fields, reference-array bodies, and aliases before identifying
   unreachable records.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   power-cycle recovery before enabling any reclamation. `JCSystem` object

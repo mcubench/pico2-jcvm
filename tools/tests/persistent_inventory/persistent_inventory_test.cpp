@@ -63,6 +63,23 @@ extern "C" uint8_t fs_next_tag(const uint8_t *prefix, uint8_t prefix_len,
   return 1;
 }
 
+extern "C" void path_static(uint8_t package_id, uint8_t offset,
+                             uint8_t (*tag)[128], uint8_t *length) {
+  (*tag)[0] = 0x02;
+  (*tag)[1] = package_id;
+  (*tag)[2] = offset;
+  *length = 3;
+}
+
+extern "C" void path_static16(uint8_t package_id, uint16_t offset,
+                               uint8_t (*tag)[128], uint8_t *length) {
+  (*tag)[0] = 0x02;
+  (*tag)[1] = package_id;
+  (*tag)[2] = static_cast<uint8_t>(offset >> 8);
+  (*tag)[3] = static_cast<uint8_t>(offset);
+  *length = 4;
+}
+
 int main() {
   std::vector<uint8_t> max_length_package_tag(128, 0x5a);
   max_length_package_tag[0] = 0x02;
@@ -87,6 +104,26 @@ int main() {
                        jcvm::PersistentInventory::VisitResult::Complete &&
                    package_result.count == 3 && package_result.saw_long_tag,
                "enumerates_package_statics_including_maximum_tag");
+
+  Result static_roots;
+  ok &= expect(jcvm::PersistentInventory::visitPackageStaticReferenceSlots(
+                   9, 10, 3, collect, &static_roots) ==
+                       jcvm::PersistentInventory::VisitResult::Complete &&
+                   static_roots.count == 3,
+               "enumerates_two_byte_static_reference_slots");
+  Result extended_static_roots;
+  ok &= expect(jcvm::PersistentInventory::visitPackageStaticReferenceSlots(
+                   9, 258, 129, collect, &extended_static_roots) ==
+                       jcvm::PersistentInventory::VisitResult::Complete &&
+                   extended_static_roots.count == 129,
+               "uses_16_bit_static_offsets_after_255");
+  Result invalid_static_roots;
+  ok &= expect(jcvm::PersistentInventory::visitPackageStaticReferenceSlots(
+                   9, 3, 2, collect, &invalid_static_roots) ==
+                       jcvm::PersistentInventory::VisitResult::
+                           InvalidStaticLayout &&
+                   invalid_static_roots.count == 0,
+               "rejects_static_reference_segment_larger_than_image");
 
   ok &= expect(jcvm::PersistentInventory::visitApplet(
                    7, stop_immediately, nullptr) ==

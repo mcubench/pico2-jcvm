@@ -13,7 +13,13 @@ struct Tag {
   uint8_t value[kTagCapacity] = {};
 };
 
-enum class VisitResult : uint8_t { Complete, Stopped, InvalidCursor, InvalidTag };
+enum class VisitResult : uint8_t {
+  Complete,
+  Stopped,
+  InvalidCursor,
+  InvalidTag,
+  InvalidStaticLayout
+};
 
 using TagVisitor = bool (*)(const Tag &tag, void *context);
 
@@ -30,6 +36,14 @@ VisitResult visitApplet(uint8_t applet_owner, TagVisitor visitor,
 /// Visit the serialized static-field namespace belonging to one package.
 VisitResult visitPackageStatics(uint8_t package_id, TagVisitor visitor,
                                 void *context);
+
+/// Visit every reference-valued static slot tag described by CAP metadata.
+/// The CAP Static component places reference slots first, two bytes each.
+VisitResult visitPackageStaticReferenceSlots(uint8_t package_id,
+                                             uint16_t image_size,
+                                             uint16_t reference_count,
+                                             TagVisitor visitor,
+                                             void *context);
 
 } // namespace PersistentInventory
 } // namespace jcvm
