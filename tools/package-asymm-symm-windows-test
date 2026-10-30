@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+[[ $# -eq 0 ]] || die "usage: ./tools/package-asymm-symm-windows-test"
+require_command zip
+require_command unzip
+require_command sha256sum
+
+package_root="${repo_root}/build/external-test"
+package_dir="${package_root}/windows-profile-package"
+archive="${package_root}/pico2-jcvm-windows-test.zip"
+cap="${repo_root}/AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+client_jar="${repo_root}/build/algtest-client-1.8.2/AlgTestJClient.jar"
+reference_csv="${repo_root}/artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+
+for input in "${cap}" "${gp_jar}" "${client_jar}" "${reference_csv}" \
+             "${repo_root}/tools/compare-jcalgtest-support.py" \
+             "${repo_root}/docs/windows-asymm-symm-test.md"; do
+  [[ -s "${input}" ]] || die "required package input is missing: ${input}"
+done
+
+# Keep the upstream exercise CAP and its provenance unchanged.
+cap_hash="$(sha256sum "${cap}" | cut -d ' ' -f 1)"
+[[ "${cap_hash}" == "b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169" ]] || \
+  die "the supplied upstream JCAlgTest CAP hash changed: ${cap_hash}"
+
+rm -rf -- "${package_dir}"
+mkdir -p "${package_dir}/firmware" "${package_dir}/applet" \
+  "${package_dir}/tools" "${package_dir}/expected" \
+  "${package_dir}/reference"
+
+for profile in symm_crypto asymm_crypto; do
+  "${repo_root}/tools/build" arm --profile "${profile}"
+  [[ "$(<"${repo_root}/build/javacard-support/profile.txt")" == "${profile}" ]] || \
+    die "generated support metadata does not name ${profile}"
+  install -m 0644 "${repo_root}/build/arm/pico2_choupi.uf2" \
+    "${package_dir}/firmware/pico2_choupi_${profile}.uf2"
+  install -m 0644 "${repo_root}/build/javacard-support/jcalgtest-supported.csv" \
+    "${package_dir}/expected/expected-support-${profile}.csv"
+
+  # The RISC-V image is not distributed; keep its repository build gate.
+  "${repo_root}/tools/build" riscv --profile "${profile}"
+done
+
+install -m 0644 "${cap}" \
+  "${package_dir}/applet/AlgTest_v1.8.2_jc305.cap"
+install -m 0644 "${gp_jar}" "${package_dir}/tools/gp.jar"
+install -m 0644 "${client_jar}" "${package_dir}/tools/AlgTestJClient.jar"
+install -m 0644 "${repo_root}/tools/compare-jcalgtest-support.py" \
+  "${package_dir}/tools/compare-jcalgtest-support.py"
+install -m 0644 "${reference_csv}" \
+  "${package_dir}/reference/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv"
+install -m 0644 "${repo_root}/docs/windows-asymm-symm-test.md" \
+  "${package_dir}/README.md"
+
+(cd "${package_dir}" && \
+  find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | \
+  xargs -0 sha256sum > SHA256SUMS.txt)
+
+mkdir -p "$(dirname "${archive}")"
+rm -f -- "${archive}"
+(cd "${package_dir}" && \
+  zip -q -X -r "${archive}" firmware applet tools expected reference \
+  README.md SHA256SUMS.txt)
+
+unzip -t "${archive}" >/dev/null
+(cd "${package_dir}" && sha256sum --check SHA256SUMS.txt >/dev/null)
+printf 'WINDOWS_PACKAGE:PASS profiles=symm_crypto,asymm_crypto archive=%s archive_sha256=%s\n' \
+  "${archive#${repo_root}/}" \
+  "$(sha256sum "${archive}" | cut -d ' ' -f 1)"

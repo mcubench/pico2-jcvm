@@ -40,6 +40,22 @@ CSV is stale. See QKB for exact logs. API `/deploy` result corrections and
 private-key hardening remain open.
 Asymmetric profile audit documentation commit: `01b826e`.
 
+## Refreshed Windows profile test package
+
+The Windows bundle was rebuilt on 2026-10-30 with
+`./tools/package-asymm-symm-windows-test`. It contains current ARM UF2s for
+`symm_crypto` and `asymm_crypto`, regenerated expected support CSVs (46 and
+145 positives), the unchanged upstream JCAlgTest CAP, GPPro, the official
+client, comparator, reference CSV, and corrected run sheet. ARM and RISC-V
+wrapper builds passed for both profiles. ZIP SHA-256 is
+`26a1d6e6d34033c44a22915c8a41c644917de85fd04c5d6d3598606889708be3`; image
+hashes and validation details are in the 2026-10-30 Windows-package progress
+record. The README now supplies the required jCardSim CSV argument to the
+comparator and explains the known 143/145 asymmetric query result. Windows
+validation is still pending; this step did not flash or access physical cards.
+The ignored loose file `build/external-test/expected-support-asymm_crypto.csv`
+is still stale; use the CSV inside the refreshed ZIP.
+
 ## Current memory-reporting investigation
 
 The TODO investigation is complete; measurements did not reproduce inflated

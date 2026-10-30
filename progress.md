@@ -1933,7 +1933,6 @@
 - Commit: `recorded in the following reference commit`
 - Artifacts/logs: none.
 
-
 ## 2026-10-19 — Verify JCVMArray temporary cleanup when element copies throw
 
 - Step/experiment: jcvmarray-element-copy-exception-safety
@@ -15898,3 +15897,36 @@
 - Commit: `01b826e` (audit evidence commit recorded here)
 - Artifacts/logs: none.
 
+
+## 2026-10-30 Refresh Windows profile package 12 minutes
+
+- Step/experiment: `windows-profile-package-refresh`
+- When: '2026-10-30 14:30 UTC' - '2026-10-30 14:42 UTC'
+- Change: Added `tools/package-asymm-symm-windows-test` to rebuild and package
+  both profiles' ARM UF2s and generated support manifests, while running ARM
+  and RISC-V wrapper builds for each profile. The script verifies the pinned
+  upstream CAP hash and emits a checksummed ZIP. Corrected the Windows run
+  sheet's comparator invocation to supply its required jCardSim reference
+  file and documented the known two-row asymmetric CAP query discrepancy.
+  Updated TODO, QKB, and HANDOFF with package freshness and validation state.
+- Validation: `bash -n tools/package-asymm-symm-windows-test` passed. The
+  packager completed twice; all ARM and RISC-V wrapper builds passed for both
+  profiles. The archive passed `unzip -t` and `sha256sum --check`; it contains
+  46 symmetric and 145 asymmetric expected positives. Embedded README contains
+  the complete comparator command and 143/145 caveat. No device/USB access or
+  flash was attempted. Targeted `git diff --check` passed; a full-tree check
+  still reports pre-existing trailing whitespace in the unrelated modified
+  `AGENTS.md` line 52, left untouched.
+- Result: Refreshed ignored archive is 24,243,253 bytes with SHA-256
+  `26a1d6e6d34033c44a22915c8a41c644917de85fd04c5d6d3598606889708be3`.
+  `symm_crypto` UF2 is 1,811,456 bytes (SHA-256
+  `18a7a230adf2e1719c26e1f79ccd48f60e93ae108c4b989ade4a2a89d943604e`);
+  `asymm_crypto` UF2 is 2,070,016 bytes (SHA-256
+  `b34630800ced9b7104bf47e937656cbe4639d26d4ddda0ba1e17166825bb80d3`). The
+  loose ignored asymmetric expected CSV remains stale; use the packaged one.
+- Decision: Package is ready for external Windows validation. Windows reader
+  enumeration and card runs remain pending.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: `build/external-test/pico2-jcvm-windows-test.zip` (ignored;
+  archive SHA-256 above); packaged CAP SHA-256
+  `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.

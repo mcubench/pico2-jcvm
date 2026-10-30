@@ -1934,10 +1934,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   vectors pass. Do not alter the CAP or native support to hide this query
   mismatch. Remaining physical `/deploy` result corrections and RSA
   private-operation hardening are tracked separately. The cached
-  `build/external-test/expected-support-asymm_crypto.csv` is stale; regenerate
-  expected support from the current JSON before comparing.
-  Separate ARM UF2s and expected
-  support CSVs are packaged for external Windows testing at
+  The loose cache `build/external-test/expected-support-asymm_crypto.csv`
+  remains stale; the refreshed archive regenerates both expected CSVs from
+  current profiles. Separate ARM UF2s and expected support CSVs are packaged
+  for external Windows testing at
   `build/external-test/pico2-jcvm-windows-test.zip`; Windows results remain
   pending. Native EC prime-field private key storage is now implemented for
   supported lengths 128–521 bits, including transient reset/deselect storage,

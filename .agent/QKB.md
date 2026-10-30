@@ -1692,3 +1692,23 @@ original terminology/status; check current summary and later fixes before reuse.
   `lifecycle_roots=6`, `sensitive_result_cross_context=1`, and session cleanup.
   Revisit this audit if the interpreter gains concurrent contexts or another
   persistent native owner. No persistent records are deleted by this change.
+
+### Stale external profile package — refreshed 2026-10-30
+
+- The old ignored `build/external-test/pico2-jcvm-windows-test.zip` and loose
+  asymmetric expected CSV were stale. Viable refresh: run
+  `./tools/package-asymm-symm-windows-test`. The packager verifies the pinned
+  upstream CAP hash, runs ARM and RISC-V wrappers for both profiles, copies
+  each generated ARM UF2 and expected CSV before changing profile, and writes
+  per-file SHA-256s into the archive. It validates ZIP integrity and all
+  checksums. Latest ZIP SHA-256:
+  `26a1d6e6d34033c44a22915c8a41c644917de85fd04c5d6d3598606889708be3`.
+- The generated package contains 46 `symm_crypto` and 145 `asymm_crypto`
+  declared positives. Use the packaged expected CSVs; the loose ignored
+  `build/external-test/expected-support-asymm_crypto.csv` remains stale.
+  Windows has not yet run the included instructions. The README's comparator
+  command must include the required second positional jCardSim reference CSV.
+- The asymmetric physical comparison is known to be 143/145 because the
+  unchanged upstream JCAlgTest CAP labels RSA/RSA-CRT 3072 key-pair probes as
+  3072 but sends 4096; independent physical 3072 generation vectors pass.
+  Preserve this caveat; do not alter the CAP or expected manifest to hide it.

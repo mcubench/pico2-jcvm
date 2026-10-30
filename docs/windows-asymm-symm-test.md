@@ -70,16 +70,24 @@ registry is otherwise empty, then explicitly upload the unchanged upstream
 CAP. At the JCAlgTest reader prompt, select the Pico entry.
 
 Compare the completed output CSV to the profile's expected support set. Find
-the actual CSV under `results\symm_crypto`, then run:
+the actual CSV under `results\symm_crypto`, then run this command (the
+jCardSim reference is a required second positional argument):
 
 ```powershell
-py .\tools\compare-jcalgtest-support.py .\results\symm_crypto\<actual-file>.csv --expected-support .\expected\expected-support-symm_crypto.csv
+py .\tools\compare-jcalgtest-support.py .\results\symm_crypto\<actual-file>.csv .\reference\jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv --expected-support .\expected\expected-support-symm_crypto.csv
 ```
 
 For the second profile, repeat BOOTSEL flashing with
 `firmware/pico2_choupi_asymm_crypto.uf2`, then repeat installation and testing
 with `asymm_crypto` in the output path and card name, and use
 `expected-support-asymm_crypto.csv`.
+
+The current asymmetric profile has 145 declared positive entries. With the
+unchanged upstream 1.8.2 CAP, the physical comparison is expected to show
+143/145: the CAP labels two RSA/RSA-CRT 3072 key-pair probes as 3072 but sends
+4096. Preserve the upstream CAP and record these two known query mismatches;
+independent 3072-bit generation checks passed on hardware. Do not treat this
+known comparator result as a failed package or alter the CAP to hide it.
 
 ## Notes
 
