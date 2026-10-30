@@ -14981,5 +14981,5 @@
 - Validation: `./tools/test-persistent-inventory` passed five cases (`TEST:SUMMARY fail=0`). `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, flash verification, and finite runtime (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The monitor did not call the inventory visitor. Scoped `git diff --check` passed.
 - Result: Package-static tags can now be streamed separately, which is needed before reference-valued statics can be considered graph roots. No flash record is modified or deleted.
 - Decision: Inspect CAP static metadata to enumerate reference slots for every installed package, then traverse serialized typed fields, arrays, and aliases. Keep reclamation disabled.
-- Commit: recorded in the immediate follow-up progress entry.
+- Commit: `68b61c0`; this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T011703Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
