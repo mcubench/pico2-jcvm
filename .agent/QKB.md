@@ -1712,3 +1712,24 @@ original terminology/status; check current summary and later fixes before reuse.
   unchanged upstream JCAlgTest CAP labels RSA/RSA-CRT 3072 key-pair probes as
   3072 but sends 4096; independent physical 3072 generation vectors pass.
   Preserve this caveat; do not alter the CAP or expected manifest to hide it.
+
+### Read-only power-up check does not perform a power cycle — clarified 2026-10-30
+
+- `tools/test-pico-powerup` checks GPPro package/applet listing, applet SELECT,
+  GETVERSION, and JCSystem-info. It does not reset the card or remove USB power.
+  Its completion marker is now
+  `PERSISTENCE:PASS registry_applet_and_jcsystem_verified power_cycle=not_verified_by_script`.
+  A separate physical reboot/cold-power procedure is required before treating
+  a result as power-cycle recovery evidence.
+- The available physical reader was confirmed as Pico 2
+  `2BED26ED20556535` on USB bus 001 device 116 / root-hub port 2. `lsusb -t`
+  exposed only the root hub, `uhubctl` was not installed, and sysfs exposed
+  `power/control` autosuspend only; no controllable VBUS port was identified.
+  Do not substitute USB authorization detach or PC/SC reset for power loss.
+- Latest read-only check passed SELECT, GETVERSION `1.8.2_jc305`, and
+  JCSystem-info (`9000`). The finite serial monitor passed seven runtime
+  summaries with no `TEST:FAIL` or `FAULT`. Logs:
+  `artifacts/logs/pico-powerup-persistence-20261030T145210Z.log` (SHA-256
+  `4708926c9e2209409d15a6217f8043a58e473be8cff3fc9a5378fa5b6b7c4840`) and
+  `artifacts/logs/persistent-inventory-latest-monitor-2BED-20261030.log` (SHA-256
+  `f7a73be8232621a94faa183aabd21559748a7d829c781e0462b0e4465c06561d`).

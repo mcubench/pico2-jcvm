@@ -15958,3 +15958,30 @@
 - Decision: Resume the remaining project backlog.
 - Commit: `50bb405` (package commit reference record)
 - Artifacts/logs: none.
+
+## 2026-10-30 Make power-up check scope explicit 10 minutes
+
+- Step/experiment: `powerup-probe-power-cycle-scope`
+- When: '2026-10-30 14:44 UTC' - '2026-10-30 14:54 UTC'
+- Change: Changed `tools/test-pico-powerup` success output to say it verified
+  registry/applet/JCSystem availability and that power-cycle recovery was not
+  verified by the script. Updated the README usage note and the active TODO,
+  QKB, and HANDOFF entries. Inspected USB topology for controllable VBUS.
+- Validation: `bash -n tools/test-pico-powerup` passed. Elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup '<exact 2BED reader>'`
+  listed the JCAlgTest applet/package and returned `9000` for SELECT, GETVERSION
+  (`1.8.2_jc305`), and JCSystem-info. `pcsc_scan -r` listed physical 2BED and
+  both VPCD readers. An elevated 8-second monitor passed seven runtime
+  summaries with no `TEST:FAIL` or `FAULT`. `lsusb -t` showed 2BED on root-hub
+  port 2; no `uhubctl` or per-port VBUS switch was available, so no power cycle
+  was attempted. Targeted `git diff --check` passed. No firmware build/flash
+  was needed for this shell/documentation-only change.
+- Result: The probe can no longer imply that it performed or proved a reboot.
+  Physical 2BED remains readable; actual USB power-loss recovery is still open.
+- Decision: Keep persistent-record deletion disabled until a genuine power
+  cycle and interrupted-update recovery can be exercised.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261030T145210Z.log`
+  SHA-256 `4708926c9e2209409d15a6217f8043a58e473be8cff3fc9a5378fa5b6b7c4840`;
+  `artifacts/logs/persistent-inventory-latest-monitor-2BED-20261030.log`
+  SHA-256 `f7a73be8232621a94faa183aabd21559748a7d829c781e0462b0e4465c06561d`.

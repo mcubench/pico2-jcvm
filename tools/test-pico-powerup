@@ -86,4 +86,5 @@ done
 [[ "${probe_verified}" == 1 ]] || \
   die "JCAlgTest process probe did not confirm the restored applet after ${attempts} attempts; see ${log}"
 
-printf 'PERSISTENCE:PASS rebooted_package_and_applet log=%s\n' "${log}"
+printf 'PERSISTENCE:PASS registry_applet_and_jcsystem_verified power_cycle=not_verified_by_script log=%s\n' \
+  "${log}"

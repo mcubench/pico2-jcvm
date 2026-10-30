@@ -142,6 +142,9 @@ out explicitly.
       This validates the host model, not physical power loss during heap GC.
     - [ ] Verify recovery after an actual USB power cycle; PC/SC card reset
       does not remove USB power or establish loss-of-power behavior.
+      `tools/test-pico-powerup` is read-only; its success marker now says
+      `power_cycle=not_verified_by_script` so the probe cannot be mistaken for
+      a reset or cold-power test.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   physical power-cycle recovery before enabling persistent-record reclamation.
   PC VPCD process restart now passes the JCSystem persistence suite; hardware

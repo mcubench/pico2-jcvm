@@ -56,6 +56,19 @@ validation is still pending; this step did not flash or access physical cards.
 The ignored loose file `build/external-test/expected-support-asymm_crypto.csv`
 is still stale; use the CSV inside the refreshed ZIP.
 
+## Latest physical reader check and power-cycle limit
+
+On 2026-10-30, the approved reader helper and `pcsc_scan -r` found physical
+Pico 2 `2BED26ED20556535`. The read-only `tools/test-pico-powerup` check listed
+the installed JCAlgTest package/applet and received `9000` for SELECT,
+GETVERSION (`1.8.2_jc305`), and JCSystem-info. Its completion marker now
+explicitly says `power_cycle=not_verified_by_script`; it does not reset or
+power off the device. An eight-second serial capture showed seven passing
+runtime summaries and no `TEST:FAIL`/`FAULT`. The USB topology inspection
+showed only a root hub, no `uhubctl`, and no exposed per-port VBUS control.
+No physical power cycle occurred. Logs and hashes are in QKB. Do not treat
+this check as power-loss recovery evidence.
+
 ## Current memory-reporting investigation
 
 The TODO investigation is complete; measurements did not reproduce inflated
