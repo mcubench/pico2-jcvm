@@ -241,10 +241,18 @@ out explicitly.
   3.0.5 Crypto CAP run on physical `symm_crypto` 2BED completed all 466 calls
   with 24 `NO_MEMORY` / `SystemException.NO_RESOURCE` results (138 `OK`, 304
   `UNSUPPORTED_PER_SPEC`) and successful CAP cleanup. The errors affect
-  multiple symmetric Signature/Cipher paths; the exact exhausted allocator or
-  store is unproven. After that cleanup, focused DES-64 and AES-192 known-answer
+  multiple symmetric Signature/Cipher paths; the full-run failures were not
+  individually traced. After that cleanup, focused DES-64 and AES-192 known-answer
   reruns still returned `NO_RESOURCE` (2/2), with successful upload and cleanup;
   the problem is not limited to reaching these calls late in the full sweep.
+  A concurrent 2BED serial trace of those rows captured
+  `FS_WRITE_FAIL op=new size=4 files=6263 bytes=65533/65535`: the new 4-byte
+  record failed with only two overlay bytes left. After the Crypto CAP was
+  uninstalled, a version-only JCSystem-info probe again reported 5,969 bytes
+  free. This confirms active filesystem capacity exhaustion during the
+  operation; it does not establish that persistent-object GC, rather than the
+  loaded test package plus API working data exceeding the 64 KiB overlay, is
+  the needed fix.
   JCSystem-info now exposes a useful boundary: the current persistent free
   value was 6,010 bytes (P1=01) after the full run and 5,969 bytes (P1=00) after
   the focused CAP lifecycle; the P1=00 legacy short and extended fields agree.

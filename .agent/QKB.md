@@ -1827,6 +1827,19 @@ original terminology/status; check current summary and later fixes before reuse.
   (`AA9000`) and then ended with `SCARD_E_PROTO_MISMATCH`. The following
   version-only probe succeeded with SELECT, GETVERSION, and JCSystem-info all
   `9000`.
+- A concurrent serial capture during the same two-row repeat showed the
+  concrete failure: `CHOUPI:FS_WRITE_FAIL op=new tag_len=14 size=4 files=6263
+  bytes=65533/65535`, followed by `PERSIST_EXCEPTION` and a caught Java Card
+  `SystemException.NO_RESOURCE`. Another new 4-byte record failed at the same
+  65,533-byte usage. After CAP cleanup, a safe version-only memory probe again
+  reported 5,969 bytes free. The immediate cause is the active 64 KiB overlay
+  limit while the CAP and its test objects are resident. Whether persistent
+  GC, a larger compatible overlay format, or smaller test-time writes is the
+  appropriate remedy remains open; do not enable record deletion before the
+  interrupted-update/power-loss gates pass.
+- Serial-traced runner CSV:
+  `artifacts/results/deploy/crypto-memory-trace-2BED-20261030.csv` (SHA-256
+  `ee2853a2e35f339677c9693f8e37440f70c02c5b25008918878ebfd97c8a842c`).
 
 ### Read-only power-up check does not perform a power cycle — clarified 2026-10-30
 

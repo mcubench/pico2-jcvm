@@ -105,6 +105,14 @@ When using `tools/probe-jc-algtest` only for memory, include `--version-only`
 after `--jcsystem-info-p1 00`; without it the tool continues to a SHA-256
 prepare test and can fail with `SCARD_E_PROTO_MISMATCH`.
 
+A concurrent serial trace during a repeat of the failing rows captured
+`CHOUPI:FS_WRITE_FAIL op=new tag_len=14 size=4 files=6263 bytes=65533/65535`
+followed by a `SystemException.NO_RESOURCE` path. The 4-byte record was
+rejected with two bytes left in the 64 KiB overlay. Once the Crypto CAP was
+uninstalled, JCSystem-info again reported 5,969 bytes free. This confirms the
+immediate failure is overlay capacity during the loaded package's work; it
+does not by itself prove persistent GC is the remedy.
+
 ## Physical RSA NOPAD retest
 
 The previously noted NOPAD physical retest is complete. On 2026-10-29, the

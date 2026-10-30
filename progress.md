@@ -16258,3 +16258,37 @@
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261030T173744Z.log`
   (SHA-256 `ba3f8aeac6c1d13d1726309b0123fbcadb6c89d6ab515822ca919e658e5f3d72`);
   clean version-only APDU transcript appears above in tool output.
+
+## 2026-10-30 Trace symmetric NO_RESOURCE to overlay exhaustion 4 minutes
+
+- Step/experiment: `physical-symm-no-resource-serial-trace`
+- When: '2026-10-30 17:46 UTC' - '2026-10-30 17:50 UTC'
+- Change: No code/image change. Repeated the DES-64 and AES-192 API Crypto
+  calls on 2BED while capturing serial output and updated the current resource
+  diagnosis in TODO, QKB, and HANDOFF.
+- Validation: The runner uploaded the unchanged Crypto CAP, selected two rows
+  (both `NO_MEMORY` / `NO_RESOURCE`), and uninstalled it successfully. During
+  the calls the serial capture reported
+  `CHOUPI:FS_WRITE_FAIL op=new tag_len=14 size=4 files=6263 bytes=65533/65535`
+  followed by `PERSIST_EXCEPTION`; another new 4-byte record failed at the
+  same usage. This confirms two bytes remained in the 64 KiB overlay when the
+  write failed. After cleanup, the safe version-only P1=00 probe returned
+  persistent free memory 5,969 bytes in both legacy and extended fields and
+  `9000`. No source changed; build/flash were not run. Targeted diff check
+  passed.
+- Result: The focused failures are active overlay exhaustion while the API CAP
+  and test objects are resident, not an RSA/AES/DES arithmetic problem. The
+  24 full-sweep NO_RESOURCE rows were not individually serial-traced; do not
+  extrapolate the exact rejected tag/size to every row. CAP cleanup restores
+  reported free storage. Whether GC, overlay-format growth, or workload size
+  is the correct remedy remains open.
+- Decision: Preserve the existing ban on persistent-record deletion until
+  interrupted-update and physical power-loss tests pass; next, evaluate a
+  compatible increase to the bounded overlay or reduce resident working-set
+  pressure without editing upstream CAPs.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: deploy CSV
+  `artifacts/results/deploy/crypto-memory-trace-2BED-20261030.csv` (SHA-256
+  `ee2853a2e35f339677c9693f8e37440f70c02c5b25008918878ebfd97c8a842c`); the
+  finite serial monitor output was captured in this session and includes the
+  two `FS_WRITE_FAIL` events. The final read-only transcript is in QKB.
