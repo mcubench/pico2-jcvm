@@ -16130,3 +16130,27 @@
 - Commit: recorded in the following progress entry.
 - Artifacts/logs: `artifacts/results/deploy/crypto-physical-retest-20261029/2BED-asymm-crypto.csv`
   (SHA-256 `28400be72b530b81d264dbad3dbd11f860ba3af6c5756c06dac792ee8e4d05b1`).
+
+## 2026-10-30 Focus current physical RSA NOPAD and KeyAgreement cases 3 minutes
+
+- Step/experiment: `physical-current-crypto-nopad-keyagreement-focus`
+- When: '2026-10-30 17:25 UTC' - '2026-10-30 17:28 UTC'
+- Change: No firmware/source change. Ran a focused upstream API 3.0.5 Crypto
+  CAP check on the already-flashed `asymm_crypto` image on Pico 2
+  `8E464F4E2BBC0A19`; updated TODO, QKB, and handoff with the current-image
+  result. This also records prior evidence-correction commit `26c2285`.
+- Validation: `api_card_runner.py --api 305 --areas Crypto` used the exact 8E
+  reader and Linux PC/SC library; a negative-lookahead filter selected the four
+  RSA NOPAD rows and the secp192r1 known-secret DH/DHC rows. All six returned
+  `OK`; DH and DHC each returned `0x0014`. The 460 other calls were explicitly
+  filtered. Upload, test, and cleanup stages passed. No image was flashed;
+  build wrappers and serial monitor were not rerun because no source changed.
+  CSV audit asserts exactly 466 rows, six selected `OK`, and all stages `OK`.
+  Targeted `git diff --check` passed.
+- Result: The current `asymm_crypto` image passes the six focused API calls on
+  physical 8E. The complete Crypto and broader deploy regressions remain open.
+- Decision: Keep the remaining deploy verification focused; use the result as
+  current physical coverage for NOPAD and secp192r1 DH/DHC only.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: `artifacts/results/deploy/crypto-focused-current-8E-20261030.csv`
+  (SHA-256 `321cd73f1664deaac455729b2806b426185733a36fb3d3bc46009fd7263ecdbb`).

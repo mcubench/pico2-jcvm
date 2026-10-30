@@ -1760,6 +1760,22 @@ original terminology/status; check current summary and later fixes before reuse.
 - The prior “physical retest pending” notes were stale. This does not make the
   broader deploy matrix clean; track its remaining findings separately.
 
+### Current-image physical RSA NOPAD and secp192r1 KeyAgreement focus — 2026-10-30
+
+- Ran the unchanged API 3.0.5 Crypto CAP on physical Pico 2
+  `8E464F4E2BBC0A19`, using its already-installed `asymm_crypto` image and the
+  exact reader name. The focused filter selected six calls: four RSA NOPAD
+  cases and known-secret secp192r1 `ALG_EC_SVDP_DH` / `ALG_EC_SVDP_DHC`.
+- All six calls returned `OK`; the DH/DHC cases each returned `0x0014`. Of 466
+  total API calls, 460 were intentionally filtered. CAP upload and cleanup both
+  passed. No image was flashed or source changed during this run.
+- CSV:
+  `artifacts/results/deploy/crypto-focused-current-8E-20261030.csv` (SHA-256
+  `321cd73f1664deaac455729b2806b426185733a36fb3d3bc46009fd7263ecdbb`).
+- This closes the current-image physical check for these six rows only. It
+  does not establish a full Crypto area pass or close the remaining deploy
+  regression sweep.
+
 ### Read-only power-up check does not perform a power cycle — clarified 2026-10-30
 
 - `tools/test-pico-powerup` checks GPPro package/applet listing, applet SELECT,

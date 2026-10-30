@@ -310,9 +310,14 @@ out explicitly.
   KeyAgreement factory/uninitialized-key cases. The two secp192r1 DH/DHC
   known-secret rows failed once with `6F00`, then both passed on a traced
   repeat. A second fresh-image current-source VPCD run on 2026-10-29 passed
-  both selected rows (`OK`, returned `0x0014`); the physical discrepancy still
-  needs retest when a Pico enumerates. An overlapping runner attempt later that
-  day produced duplicate-package/PCSC reset errors and is invalid evidence.
+  both selected rows (`OK`, returned `0x0014`). A current physical focused run
+  on 8E (`asymm_crypto`) passed both known-secret rows and all four NOPAD rows
+  (6 selected calls `OK`; 460 unrelated Crypto rows filtered) with successful
+  CAP upload/cleanup. CSV:
+  `artifacts/results/deploy/crypto-focused-current-8E-20261030.csv` (SHA-256
+  `321cd73f1664deaac455729b2806b426185733a36fb3d3bc46009fd7263ecdbb`). An
+  overlapping runner attempt later on 2026-10-29 produced duplicate-package/
+  PCSC reset errors and is invalid evidence.
   Reused VPCD persistent storage also produced intermittent `IOException`
   (`6F00`) in uninitialized-key probes; a fresh empty emulator image passes
   Signature, SignatureMessageRecovery, and Cipher checks. Use fresh VPCD storage

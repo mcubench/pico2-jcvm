@@ -79,6 +79,14 @@ The CSV and SHA-256 are recorded in TODO.md and QKB. Do not keep NOPAD on the
 physical retest list; broader focused deploy reruns and private-key hardening
 remain open.
 
+On 2026-10-30, a current-image focused Crypto run on Pico 2
+`8E464F4E2BBC0A19` also passed the four NOPAD rows plus the secp192r1 DH and
+DHC known-secret rows (6/6 selected calls, `OK`; 460 unrelated calls filtered).
+Crypto CAP upload and cleanup passed. CSV SHA-256:
+`321cd73f1664deaac455729b2806b426185733a36fb3d3bc46009fd7263ecdbb`. The
+remaining VPCD rerun item still covers other affected rows and is not closed by
+this focused physical result.
+
 ## Refreshed Windows profile test package
 
 The Windows bundle was rebuilt on 2026-10-30 with
