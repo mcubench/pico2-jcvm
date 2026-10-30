@@ -15532,3 +15532,31 @@
   `d38739da339528ea0c6934fdd8707e0a82b5d87e296d0a25362fd7920d93645b`;
   serial monitor SHA-256
   `ad32fc9b36ee4ae7dfbbef0d304f82331391b33591b821bc2636d73eea163619`.
+
+## 2026-10-30 Reconcile JCSystem available-memory readings 2 minutes
+
+- Step/experiment: `jcsystem-memory-accounting-probe`
+- When: '2026-10-30 06:03 UTC' - '2026-10-30 06:05 UTC'
+- Change: Added selectable JCSystem-info P1 and direct JCAlgTest Cipher-factory
+  allocation probes. Recorded physical findings in TODO and HANDOFF; no
+  firmware behavior or CAP changed.
+- Validation: `./tools/env javac -d /tmp/jcvm-memory-probe-check
+  tools/JCAlgTestApduProbe.java` passed; `git diff --check` passed. The physical
+  APDU and finite monitor evidence had been captured earlier in this session
+  on Pico 2 `2BED26ED20556535`; no hardware operation was repeated in this
+  documentation pass.
+- Result: 32-bit JCAlgTest values measured 228,696 transient bytes before
+  Cipher construction and 227,240/227,240 afterward (1,456-byte deltas); a
+  repeat from 228,528 measured 1,288/1,296-byte deltas. Persistent memory was
+  8,846 bytes both times (zero delta). The scalar `0x847f` is explained by the
+  API's 32,767-byte cap plus JCAlgTest's signed-short addition of its two
+  576-byte arrays. This does not yet prove the 32-bit estimate is inflated;
+  direct key probes and independent allocator/stack-bound reconciliation
+  remain open.
+- Decision: Keep the TODO investigation open and avoid changing the native
+  accounting until the available estimate is independently reconciled.
+- Commit: `12f3d1d` (probe and findings; progress record committed separately).
+- Artifacts/logs: `artifacts/logs/jcsystem-memory-probe-2BED-20261030.log`,
+  SHA-256 `5515f87702c561c819ffc418af005749479f90e8a030d0a1a343ce9f12d5c74a`;
+  `artifacts/logs/jcsystem-memory-monitor-2BED-20261030.log`, SHA-256
+  `eb6db5d688de6bef4b1a39d19b28a48cfed621c835c2df086467b6d935d5f601`.
