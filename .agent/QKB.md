@@ -8,6 +8,24 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## Current-source cryptographic VPCD vectors — 2026-10-30
+
+- Reran all three API vector wrappers after refreshing the max-crypto ARM image.
+  The symmetric test built profile `symm_crypto` and passed 75 checks (73
+  crypto vectors: 32 cipher, 13 MAC-sign, 26 MAC-verify); the asymmetric test
+  built `asymm_crypto` and passed 99 checks (97 crypto vectors); the CTR test
+  built `symm_crypto_ctr` and passed 10 checks (eight CTR vectors). These are
+  PC VPCD checks, not physical results. Individual wrappers choose focused
+  profiles rather than one combined `max_crypto` PC build.
+- Logs and SHA-256: `artifacts/logs/symm-crypto-kat-vpcd-20261026.log`
+  (`b9dfdc35ed2fef5d5458fd534d29a8dfd62431f378d20968761b3fa5cbd1da0c`),
+  `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`
+  (`15dbd589b9eb140e2d92c0c62c76a7e4648848d77a17b421fcf5d68d02c880f7`), and
+  `artifacts/logs/aes-ctr-vpcd-20261030T225058Z.log`
+  (`18054d1b1deec2da3eb7ca2932d51749842e81430c693ffdb631742660ccae36`). The
+  first two scripts reuse dated log filenames; their modification times are
+  2026-10-30 and hashes identify the current rerun contents.
+
 ## Official SDK JCRMI VPCD rerun fails during helper applet INSTALL — 2026-10-30
 
 - **Symptom:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` repeatedly

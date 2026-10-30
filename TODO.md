@@ -1919,8 +1919,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
 
 - [x] Prepare a combined `max_crypto` profile for external ARM testing.
   It unions `current`, `symm_crypto`, `asymm_crypto`, and `symm_crypto_ctr`:
-  147/150 declared capabilities. ARM image built successfully; symmetric
-  VPCD KAT 71/71, asymmetric KAT 97/97, and AES-CTR KAT 8/8 pass. The provided
+  147/150 declared capabilities. ARM image built successfully; latest
+  current-source VPCD KATs pass with 73 symmetric vectors, 97 asymmetric
+  vectors, and eight AES-CTR vectors (the physical symmetric suite separately
+  passed 71/71). The provided
   JCOP4 matrix does not include AES-CTR, so it is an API extension. The UF2 is
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no applet is
   preinstalled. Rebuilt on 2026-10-30 from current source: 2,074,112 bytes,

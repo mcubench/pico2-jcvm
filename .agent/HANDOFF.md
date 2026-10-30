@@ -35,6 +35,12 @@ flashed. The approved reader helper found two USB nodes, but a bounded
 established. The image README has the current hash and size.
 The refreshed artifact and progress record are committed as `c9aa6c4`.
 
+Current-source PC VPCD vector reruns also pass: `symm_crypto` 73/73 crypto
+vectors (75 checks), `asymm_crypto` 97/97 (99 checks), and
+`symm_crypto_ctr` 8/8 CTR vectors (10 checks). The wrappers build focused
+profiles, not one combined `max_crypto` run. Hashes and logs are in QKB. These
+are emulator checks; no Pico was visible through PC/SC for physical validation.
+
 Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists
 may be stale. `progress.md` is the append-only work record.

@@ -17083,3 +17083,24 @@
   remains unavailable.
 - Commit: pending.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.
+
+## 2026-10-30 Recheck cryptographic VPCD known-answer suites 11 minutes
+
+- Step/experiment: `max-crypto-current-source-vpcd-vectors`
+- When: '2026-10-30 22:40 UTC' - '2026-10-30 22:51 UTC'
+- Change: Reran the focused current-source symmetric, asymmetric, and AES-CTR
+  VPCD known-answer wrappers after rebuilding the combined ARM max profile;
+  updated the max-profile checklist and QKB/HANDOFF evidence.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-vpcd` passed
+  75 checks / 73 crypto vectors; `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-asymm-crypto-vpcd` passed 99 checks / 97 crypto vectors; and
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-aes-ctr-vpcd` passed 10 checks / eight
+  CTR vectors. Each built its focused profile (`symm_crypto`, `asymm_crypto`,
+  or `symm_crypto_ctr`) through the PC VPCD wrapper.
+- Result: All crypto vector groups passed on current source. This does not prove
+  a single combined `max_crypto` emulator run or physical hardware behavior.
+- Decision: Keep previous physical reports distinct from these fresh VPCD
+  results; rerun external/physical acceptance when the reader is available.
+- Commit: pending.
+- Artifacts/logs: See QKB's “Current-source cryptographic VPCD vectors” with
+  paths and SHA-256 hashes for all three runs.
