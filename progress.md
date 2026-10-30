@@ -16501,6 +16501,6 @@
 - Decision: Optional AES-CTR inclusion follows the selected capability in both
   Pico architecture builds. Physical validation remains open because a Pico
   PC/SC reader is not registered.
-- Commit: `pending`
+- Commit: `73859a8` (validation record is completed in the following log commit)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; no new build log archived.
