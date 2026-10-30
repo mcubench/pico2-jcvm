@@ -16709,6 +16709,24 @@
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
 
+## 2026-10-30 Reconcile max-crypto artifact checksum 2 minutes
+
+- Step/experiment: `max-crypto-artifact-current-hash-audit`
+- When: '2026-10-30 21:04 UTC' - '2026-10-30 21:06 UTC'
+- Change: Corrected the latest max-profile firmware SHA-256 in the session
+  handoff to match the current UF2 artifact and companion README.
+- Validation: `sha256sum artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2
+  artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv` reports firmware
+  SHA-256 `e013ff4f87331dc99980d9fe9edf10b0a1579838fa5b3feefb166beb93632340`
+  (2,073,600 bytes) and CSV SHA-256
+  `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
+- Result: Handoff and user-facing firmware README now identify the same current
+  artifact hash. No firmware was rebuilt or changed.
+- Decision: Keep the generated UF2 unchanged; continue physical testing once a
+  CCID reader registers in PC/SC and otherwise work on independent open items.
+- Commit: recorded in immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/firmware/README-max_crypto.txt` and the current UF2.
+
 ## 2026-10-30 Record multi-package VPCD rerun commit 1 minute
 
 - Step/experiment: `multipackage-restart-delete-regression-log-closeout`

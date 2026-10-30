@@ -31,7 +31,7 @@ and include it. `python3 tools/test-javacard-support.py` passes 14/14.
 
 The verified ARM max-profile artifact was refreshed from the latest wrapper
 build: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, SHA-256
-`09c0d25efbd3342add41b199f095f0f92a17a0c23001d175bc5fb53da42e2395`,
+`e013ff4f87331dc99980d9fe9edf10b0a1579838fa5b3feefb166beb93632340`,
 2,073,600 bytes. Its support CSV remains 147 rows, SHA-256
 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
 No physical flash or validation was performed. USB/PCSC physical testing stays
