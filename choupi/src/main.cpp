@@ -135,8 +135,32 @@ private:
   jcvm::Context &context_;
 };
 
+struct RegisteredAppletRootContext {
+  jcvm::Heap::ReferenceVisitor visitor;
+  void *visitor_context;
+  uint8_t owner;
+  uint8_t package_id;
+  uint16_t class_index;
+  uint8_t root_count = 0;
+  bool metadata_matches = true;
+};
+
+bool visit_registered_applet_root(uint8_t owner, uint8_t package_id,
+                                  uint16_t class_index, uint16_t reference,
+                                  void *opaque) {
+  auto &expected = *static_cast<RegisteredAppletRootContext *>(opaque);
+  if (owner != expected.owner || package_id != expected.package_id ||
+      class_index != expected.class_index || expected.root_count != 0) {
+    expected.metadata_matches = false;
+    return false;
+  }
+  ++expected.root_count;
+  expected.visitor(jcvm::jref_t(reference), expected.visitor_context);
+  return true;
+}
+
 bool enumerate_all_registered_applet_roots(
-    jcvm::Heap &heap, jcvm::PersistentInventory::AppletRootVisitor visitor,
+    jcvm::Heap &heap, jcvm::Heap::ReferenceVisitor visitor,
     void *visitor_context) {
   if (visitor == nullptr) return false;
   try {
@@ -156,12 +180,18 @@ bool enumerate_all_registered_applet_roots(
         if (!cap_store_package_instance_at(
                 package_id, index, applet_aid, applet_aid_length,
                 instance_aid, instance_aid_length, class_index) ||
+            applet_aid_length < 5 || applet_aid_length > sizeof(applet_aid) ||
+            instance_aid_length < 5 ||
+            instance_aid_length > sizeof(instance_aid) ||
             class_index == 0xffff ||
             !cap_store_applet_owner(instance_aid, instance_aid_length, owner))
           return false;
+        RegisteredAppletRootContext root_context{
+            visitor, visitor_context, owner, package_id, class_index};
         const auto result = jcvm::PersistentInventory::visitAppletInstanceRoots(
-            owner, heap, visitor, visitor_context);
-        if (result != jcvm::PersistentInventory::VisitResult::Complete)
+            owner, heap, visit_registered_applet_root, &root_context);
+        if (result != jcvm::PersistentInventory::VisitResult::Complete ||
+            !root_context.metadata_matches || root_context.root_count != 1)
           return false;
       }
     }
@@ -190,12 +220,10 @@ bool visit_selected_package_static_root(uint8_t, uint16_t,
   return true;
 }
 
-bool visit_selected_applet_instance_root(uint8_t, uint8_t, uint16_t,
-                                         const uint16_t reference,
+void visit_selected_applet_instance_root(const jcvm::jref_t reference,
                                          void *opaque) {
   auto &roots = *static_cast<SelectedAppletRootContext *>(opaque);
-  roots.visitor(jcvm::jref_t(reference), roots.visitor_context);
-  return true;
+  roots.visitor(reference, roots.visitor_context);
 }
 
 bool enumerate_selected_applet_roots(
@@ -251,12 +279,11 @@ bool count_static_inventory_root(uint8_t, uint16_t, const uint16_t reference,
   return true;
 }
 
-bool count_applet_inventory_root(uint8_t, uint8_t, uint16_t,
-                                 const uint16_t reference, void *opaque) {
+void count_applet_inventory_root(const jcvm::jref_t reference,
+                                 void *opaque) {
   auto &counts = *static_cast<PersistentInventoryCounts *>(opaque);
   ++counts.applet_roots;
   counts.references.emplace_back(reference);
-  return true;
 }
 
 void inventory_persistent_roots_if_enabled(jcvm::Context &context) {

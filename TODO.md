@@ -63,9 +63,10 @@ out explicitly.
     across registry reinitialization and deleting one preserves the other.
   - [x] Enumerate registered applet roots for every installed applet instance,
     using its stable owner ID. The PC inventory diagnostic and ARM collector
-    share the same package/instance enumeration; VPCD restart coverage confirms
-    three roots are found before and after restart. Physical multi-instance
-    installation has not been tested.
+    share the same package/instance enumeration. Require a valid applet/instance
+    AID, exactly one root, and matching owner/package/class metadata; otherwise
+    fail closed. VPCD restart coverage confirms three roots before and after
+    restart. Physical multi-instance installation has not been tested.
   - [ ] Include every live context and native-held root before computing
     authoritative reachability. Other live contexts/native owners and any
     roots outside the registered per-instance records remain uncovered.

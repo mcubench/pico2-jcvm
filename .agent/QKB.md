@@ -1372,3 +1372,19 @@ original terminology/status; check current summary and later fixes before reuse.
   hardware-path issue. Do not attribute it to all-instance root enumeration
   without further evidence. Reinstalling or deleting the physical applet was
   intentionally not attempted during this read-only check.
+
+### Installed-instance root enumeration must match the registry — fixed 2026-10-30
+
+- A complete cursor scan could previously return zero registered roots for an
+  installed applet instance and still mark the walk complete. The collector
+  now validates applet and instance AID lengths, resolves the instance owner,
+  and requires exactly one root whose owner, package ID, and class index match
+  the package-instance registry entry. Missing, duplicate, or mismatched roots
+  fail the root walk, so `collectUnreachableFrom` skips reclaiming heap slots.
+- The multipackage VPCD suite passed 25/25 before and after process restart;
+  all three installed roots were discovered with a complete trace and no invalid
+  references or edge failures. ARM, RISC-V, and PC builds passed. On physical
+  2BED `2BED26ED20556535`, a full ARM image cycle passed finite startup checks;
+  after refreshing the PC/SC ACL helper, JCAlgTest SELECT, GETVERSION, and
+  JCSystem-info each returned `9000`. No persistent filesystem records were
+  deleted. Negative registry/root-corruption injection is still untested.

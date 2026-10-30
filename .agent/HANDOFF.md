@@ -22,9 +22,11 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    retain different IDs in overlay recovery tests; VPCD multipackage restart /
    DELETE previously passed 23/23 and JCSystem transaction applet passes
    85/85. ARM and RISC-V builds pass. New VPCD coverage confirms all three
-   installed instance roots are visited before and after restart. Physical
-   multi-instance install/root restore has not been tested; live contexts and
-   native-held roots remain uncovered, so persistent records cannot be deleted.
+   installed instance roots are visited before and after restart. Enumeration
+   now requires one root per registered instance with matching owner/package/
+   class metadata and valid AIDs; mismatch fails closed. Physical multi-instance
+   install/root restore has not been tested; live contexts and native-held
+   roots remain uncovered, so persistent records cannot be deleted.
 
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in
@@ -50,8 +52,10 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    fail the walk, while transient and unpersisted objects use in-memory edges.
    Strict VPCD cases 14–16 and 82 pass. Root enumeration now reports
    completion, and the device collector loads static roots from every package
-   reported installed plus registered roots for every installed applet instance before
-   marking; any inventory error skips collection. CAPs without a Static Field
+   reported installed plus registered roots for every installed applet instance
+   before marking; any inventory error skips collection. Registry enumeration
+   validates AID lengths and requires exactly one root matching the instance's
+   owner/package/class metadata. CAPs without a Static Field
    component contribute no static roots. The ARM runtime and PC diagnostic
    share the same package enumeration. Physical 2BED JCAlgTest
    SELECT/version/JCSystem-info APDUs all returned `9000`, with serial showing
