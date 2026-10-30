@@ -964,20 +964,21 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   The converter-built fixture is loaded and exercised through current-source
   VPCD for SELECT, primitive INVOKE, primitive-array INVOKE, and protocol-error
   responses. The supplied Service CAP is format 2.1 and cannot validate the
-  CAP 2.2 remote metadata path. External JCRMI interoperability now passes the
+  CAP 2.2 remote metadata path. External JCRMI interoperability passes the
   SDK 2.2.1 client probe over current-source VPCD for primitive `short`,
   byte/short/boolean/int arrays (including null values), returned remote-
   interface invocation, sensitive-result checks, custom runtime/checked
   exceptions, and nine framework exception classes/reasons (18 checks total).
-  The wrapper creates a fresh erased 512 KiB VPCD flash image per run to avoid
-  stale serialized package state. Log:
-  `artifacts/logs/rmi-client-official-vpcd-client-20261025T190043Z.log`.
-  A fresh rerun on 2026-10-30 does not currently reproduce that result: the
-  emulator fails during helper applet INSTALL with stage 9 / `6F00` before
-  accepting the VPCD connection. Repeated runs produced the same outcome; the
-  failure has not been tied to CAP 2.2 parsing and remains open for diagnosis.
-  This remains a focused interop subset; broader client and RMI profile
-  coverage remains open.
+  A fresh 2026-10-30 rerun first exposed a Directory parser bug: the CAP 2.2
+  layout has twelve component-size entries, but the validator treated it as
+  eleven, reading `import_count` as `custom_count` and rejecting the helper
+  package before VM INSTALL. The version-aware fix preserves the observed
+  eleven-entry CAP 2.1 layout. After the fix, the unchanged generated fixture
+  and official SDK probe pass. Current log:
+  `artifacts/logs/rmi-client-official-vpcd-client-20261030T232628Z.log`.
+  The wrapper creates a fresh erased 512 KiB VPCD flash image per run. This is
+  a focused interoperability subset; broader client and RMI profile coverage
+  remains open.
   Physical Service results are from existing firmware and do not validate
   current source.
 
@@ -2216,7 +2217,9 @@ rollback and duplicate/invalid registration handling also remain unverified.
   checked. Field, method, and constant-pool type offsets are checked against
   type-record starts, using the CAP `type_descriptor_info` base with a
   compatibility fallback for compact constant-pool-array-relative offsets.
-  CAP 2.2 Class payload extents now also walk the signature-pool descriptors,
+  CAP 2.2 Directory components validate all twelve component-size entries;
+  CAP 2.1 retains its observed eleven-entry layout. Class payload extents also
+  walk the signature-pool descriptors,
   interface records/names, compact class records, method tables, interface
   method maps, and remote metadata lengths. Synthetic tests cover valid mixed
   records plus malformed signatures and truncated remote fields; the supplied

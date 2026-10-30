@@ -1,5 +1,23 @@
 # Session handoff — updated 2026-10-30
 
+## CAP 2.2 Directory layout and official SDK JCRMI integration — 2026-10-30
+
+The helper INSTALL failure (`stage=9 / 6F00`) is fixed. JCDK 3.0.5 CAP 2.2
+Directory components carry twelve size entries; the validator had interpreted
+the import count as a custom-component count. It now validates twelve entries
+for CAP 2.2 and retains the observed eleven-entry CAP 2.1 layout. The exact
+converter Directory fixture passes. `./tools/test-cap-parser` passes 4,203
+checks, 100,000 fuzz inputs, and 48 CAP corpus files; the generated RMI CAP
+passes standalone parsing. ARM `max_crypto` and RISC-V wrapper/core builds
+pass. The official SDK 2.2.1 JCRMI VPCD probe passes all 18 checks.
+
+Refreshed empty-card max ARM image:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, 2,075,136 bytes,
+SHA-256 `efb5fca5c96365e98a56a20d764807f9e35d1ecb841f0fe24cc8046ba7b0de36`.
+The VPCD logs are `artifacts/logs/rmi-client-official-vpcd-{client,emulator}-20261030T232628Z.log`.
+No physical reader was registered, so this was not a board test. Implementation
+commit is pending; preserve unrelated dirty changes, especially `src/cap_load.cpp`.
+
 ## CAP 2.2 internal remote-interface references — 2026-10-30
 
 The parser now records internal interface-record boundaries in a bounded
@@ -13,8 +31,7 @@ passes for the unchanged JCAlgTest CAP. No physical validation was performed.
 The refreshed empty-card max ARM image is 2,075,136 bytes, SHA-256
 `78cd6aa1e6d1d24e8d195087b527ea49e4f5fe101ca0dac14d1a19526cec8960`.
 Implementation is committed as `ffab347`; preserve unrelated worktree
-changes. The open JCRMI helper INSTALL failure remains separately
-unresolved.
+changes. The JCRMI helper INSTALL failure was resolved by the CAP 2.2 Directory fix recorded above.
 
 
 ## CAP 2.2 remote signature validation — 2026-10-30

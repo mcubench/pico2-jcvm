@@ -310,6 +310,14 @@ void test_class_component_22() {
     append_component(cap, 6, class_payload);
     return cap;
   };
+  const auto make_cap_with_directory = [&](const std::vector<uint8_t> &directory,
+                                           const uint8_t minor) {
+    const std::vector<uint8_t> header_only = make_cap(
+        {0x00, 0x02, 0x01, 0x10, 0x80}, 2, minor);
+    std::vector<uint8_t> cap(header_only.begin(), header_only.begin() + 19);
+    append_component(cap, 2, directory);
+    return cap;
+  };
 
   std::vector<uint8_t> class_payload = {
       0x00, 0x02, 0x01, 0x10, // Signature pool: one ()V descriptor.
@@ -358,6 +366,27 @@ void test_class_component_22() {
   auto unsupported_major = make_cap(minimal_22_class, 3, 0);
   expect(!parses(unsupported_major.data(), unsupported_major.size()),
          "unsupported_cap_major_version_rejected");
+
+  // Real JCDK 3.0.5 CAP 2.2 Directory has twelve component-size entries.
+  const std::vector<uint8_t> converter_directory_22 = {
+      0x00, 0x1e, 0x00, 0x21, 0x00, 0x0d, 0x00, 0x3e, 0x00, 0xca, 0x01,
+      0x6f, 0x02, 0x77, 0x00, 0x0a, 0x00, 0x43, 0x00, 0x00, 0x04, 0x1e,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x01,
+      0x00};
+  const auto directory_22_parses =
+      make_cap_with_directory(converter_directory_22, 2);
+  expect(parses(directory_22_parses.data(), directory_22_parses.size()),
+         "class_component_22_converter_directory_with_12_sizes_parses");
+
+  const std::vector<uint8_t> legacy_directory_21(31, 0);
+  const auto directory_21_parses =
+      make_cap_with_directory(legacy_directory_21, 1);
+  expect(parses(directory_21_parses.data(), directory_21_parses.size()),
+         "class_component_21_directory_with_11_sizes_parses");
+  const auto short_directory_22 =
+      make_cap_with_directory(legacy_directory_21, 2);
+  expect(!parses(short_directory_22.data(), short_directory_22.size()),
+         "class_component_22_directory_missing_12th_size_rejected");
 
   // JCDK 3.0.5 converter output with two remote methods. Both method
   // signature offsets point to starts in the four-byte signature pool, and
@@ -571,7 +600,8 @@ int main(int argc, char **argv) {
         expect_payload_mutation_rejected(cap, offset, 9, 0xff);
         break;
       case 2:
-        expect_payload_mutation_rejected(cap, offset, 30, 0xff);
+        expect_payload_mutation_rejected(
+            cap, offset, cap.size() > 7 && cap[7] == 2 ? 32 : 30, 0xff);
         break;
       case 3:
       case 4:

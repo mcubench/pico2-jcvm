@@ -8,6 +8,33 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## CAP 2.2 Directory layout fixed; official JCRMI VPCD probe passes — 2026-10-30
+
+- The JCDK 3.0.5 converter emits CAP 2.2 Directory payloads with twelve
+  component-size entries as specified in Oracle JCVMS 3.0.5 §6.5. This
+  validator had assumed eleven, so it interpreted `import_count` as
+  `custom_count` and rejected the generated RMI helper CAP before VM applet
+  installation. The check now selects twelve entries for CAP 2.2 and retains
+  the eleven-entry CAP 2.1 layout found in the supplied deploy corpus. See the
+  [Oracle JCVMS 3.0.5 Directory specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf#page=82).
+- Added an exact JCDK 3.0.5 Directory fixture, CAP 2.1/2.2 length checks, and
+  version-aware custom-count mutation coverage. `./tools/test-cap-parser`
+  passes 4,203 checks, 100,000 fuzz inputs, and 48 CAP corpus files. The exact
+  generated RMI CAP also passes standalone validation (149 checks, one corpus
+  CAP).
+- `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` now passes all 18
+  official SDK 2.2.1 checks, including primitive/array methods, returned
+  remote-interface invocation, `SensitiveResult`, and framework/custom
+  exceptions. PC VPCD only; no physical reader was registered.
+- ARM `max_crypto` wrapper build and RISC-V wrapper/core build pass. Refreshed
+  external-test ARM image is 2,075,136 bytes, SHA-256
+  `efb5fca5c96365e98a56a20d764807f9e35d1ecb841f0fe24cc8046ba7b0de36`.
+  Client log SHA-256
+  `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f` and
+  emulator log SHA-256
+  `9082a1d893378597425d7f70e084c7b439fe289cf20dcf251e4245db646e8cdc` are in
+  `artifacts/logs/` with timestamp `20261030T232628Z`.
+
 ## CAP 2.2 internal remote-interface references — 2026-10-30
 
 - The Class-component validator now records internal interface-record starts in
@@ -67,29 +94,20 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   first two scripts reuse dated log filenames; their modification times are
   2026-10-30 and hashes identify the current rerun contents.
 
-## Official SDK JCRMI VPCD rerun fails during helper applet INSTALL — 2026-10-30
+## Official SDK JCRMI VPCD helper INSTALL failure — resolved 2026-10-30
 
-- **Symptom:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` repeatedly
-  fails before the official JCRMI client connects. The emulator reports
-  `ERROR: PC applet INSTALL failed stage=9 sw=6F00 vm=0000 exception=0` and the
-  client times out in `ServerSocket.accept()`; its output log is empty.
-- **Evidence:** Latest emulator log
-  `artifacts/logs/rmi-client-official-vpcd-emulator-20261030T222347Z.log`
-  (SHA-256
-  `0883d2596271a2233ee256744dac7a663d0c8c88abb1cc93fe5e8c85d706a5bd`);
-  paired client log is empty (SHA-256
-  `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`). The
-  failure reproduced on multiple fresh 512 KiB images on 2026-10-30. The
-  previously successful 2026-10-25 SDK client run remains historical evidence.
-- **Diagnosis:** Unknown. The failure occurs in the helper applet INSTALL
-  path before RMI APDUs. Temporary `cap_load.cpp` stage diagnostics were
-  compiled but did not appear in the captured emulator output, so they did not
-  identify the throwing operation. Do not attribute this to the CAP 2.2 parser
-  without a reproducer that isolates the connection.
-- **Next:** Trace why the emulator log lacks compiled diagnostics, then isolate
-  INSTALL stages with the converter fixture or compare the exact fixture CAP
-  and source against the 2026-10-25 passing run. Keep this unresolved until the
-  official SDK probe completes again.
+- Earlier fresh runs failed with `stage=9 sw=6F00` before the SDK client
+  connected. The failure was in the Directory component validator, not the
+  VM INSTALL method: CAP 2.2 has twelve component-size entries. Treating the
+  twelfth size as `import_count` and the actual import count as `custom_count`
+  rejected a valid generated CAP before VM initialization.
+- The validator now uses the 12-entry CAP 2.2 layout and retains the observed
+  11-entry CAP 2.1 layout. Exact converter fixture coverage and the generated
+  helper CAP now parse.
+- `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` passes 18/18 using the
+  official SDK 2.2.1 client. The logs and hashes are in the later
+  “CAP 2.2 Directory layout fixed” record. This supersedes the old failure
+  evidence above; it is VPCD, not physical-card validation.
 
 ## Physical `/deploy` Service profile recheck and Java PC/SC library — 2026-10-30
 

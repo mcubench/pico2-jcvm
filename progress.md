@@ -17205,3 +17205,32 @@
 - Commit: pending.
 - Artifacts/logs: GPPro VPCD evidence is under
   `artifacts/results/gppro-empty-install-vpcd-20261030T230701Z/`.
+
+
+## 2026-10-30 Fix CAP 2.2 Directory parsing and JCRMI INSTALL 18 minutes
+
+- Step/experiment: `cap22-directory-layout-and-official-jcrmi-vpcd`
+- When: '2026-10-30 23:13 UTC' - '2026-10-30 23:31 UTC'
+- Change: CAP 2.2 Directory parsing now accounts for twelve component-size
+  entries; CAP 2.1 retains its observed eleven-entry format. Added exact JCDK
+  Directory fixture and versioned count-mutation tests. Updated TODO/QKB/HANDOFF
+  and refreshed the external-test max ARM image.
+- Validation: `./tools/test-cap-parser` passed 4,203 checks, 100,000 fuzz inputs,
+  and 48 corpus CAPs. The exact RMI fixture CAP passed standalone parsing
+  (149 checks, one corpus CAP). `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-rmi-client-vpcd` passed all 18 official SDK 2.2.1 checks.
+  `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed.
+- Result: The prior helper install `stage=9 / 6F00` is resolved: the Directory
+  validator had treated the CAP 2.2 import count as a custom-component count.
+  The empty-card ARM UF2 is 2,075,136 bytes, SHA-256
+  `efb5fca5c96365e98a56a20d764807f9e35d1ecb841f0fe24cc8046ba7b0de36`. This is
+  VPCD/build evidence; no physical reader was registered or flashed.
+- Decision: Keep broader RMI profile coverage and physical-card validation open;
+  the previously failing official SDK interop subset is restored.
+- Commit: pending.
+- Artifacts/logs: client log SHA-256
+  `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`; emulator
+  log SHA-256
+  `9082a1d893378597425d7f70e084c7b439fe289cf20dcf251e4245db646e8cdc`; both
+  under `artifacts/logs/` with timestamp `20261030T232628Z`.

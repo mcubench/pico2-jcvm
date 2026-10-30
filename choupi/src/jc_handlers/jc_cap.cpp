@@ -487,7 +487,11 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
     return true;
   }
   case 2: { // Directory
-    constexpr size_t fixed_size = 11 * sizeof(uint16_t) + 6 + 3;
+    // CAP 2.2 Directory adds the twelfth standard component-size entry
+    // (Debug); older 2.1 packages in the supplied corpus use eleven entries.
+    const size_t component_size_count =
+        cap_major == 2 && cap_minor >= 2 ? 12 : 11;
+    const size_t fixed_size = component_size_count * sizeof(uint16_t) + 6 + 3;
     if (size < fixed_size) return false;
     const uint8_t custom_count = payload[fixed_size - 1];
     offset = fixed_size;
