@@ -17272,8 +17272,7 @@
 - Decision: Keep installation-time resolution of external class tokens to
   exported interfaces open; then continue the prioritized persistent-object
   reclamation and cold power-cycle work.
-- Commit: implementation commit SHA is recorded in the following closeout
-  entry.
+- Commit: `6bd2619`.
 - Artifacts/logs: client log SHA-256
   `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`;
   emulator log SHA-256

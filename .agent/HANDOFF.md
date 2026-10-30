@@ -16,6 +16,7 @@ against the target package's exported interfaces at installation. Next, pursue
 this CAP-link validation, then return to top-priority safe persistent-object
 reclamation and actual USB power-cycle recovery. Preserve unrelated dirty
 `src/cap_load.cpp` edits.
+Implementation commit: `6bd2619`.
 
 The official client log is
 `artifacts/logs/rmi-client-official-vpcd-client-20261030T233752Z.log`; the
