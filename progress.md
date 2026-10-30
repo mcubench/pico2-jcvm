@@ -15290,3 +15290,14 @@
 - Decision: Continue byte-level strict restore/collector fault coverage and recovery testing before authorizing any persistent-record deletion.
 - Commit: `aacbd0e` (root-scope audit and status docs); this record is committed separately.
 - Artifacts/logs: `./tools/test-rmi-registry` output; no archived log or hardware artifact.
+
+## 2026-10-30 Reject array aliases to scalar records 1 minute
+
+- Step/experiment: `persistent-inventory-array-alias-target-type`
+- When: '2026-10-30 04:32 UTC' - '2026-10-30 04:34 UTC'
+- Change: Extended the FlashMemory transaction fixture with a correctly framed array alias targeting a stored scalar record. The actual type decoder must reject the target because only array record types are legal. Updated TODO/QKB/handoff; object-alias reference restoration and GC integration remain open.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `persistent_array_alias_rejects_non_array_target`. Scoped `git diff --check` passed. No platform build or hardware run was needed.
+- Result: Three actual array-alias decoder failure cases now pass: truncated header, mismatched declared target length, and a non-array target. This does not prove a malformed serialized record aborts collection; no persistent record deletion was attempted.
+- Decision: Continue malformed object-alias chain coverage and strict-restore/collector integration before considering reclamation of persistent records.
+- Commit: `8e5f9dc` (test and status notes); this progress record is committed separately.
+- Artifacts/logs: `/tmp/persistent-alias-malformed.log`; final output contains `TEST:SUMMARY fail=0`. No hardware artifacts.
