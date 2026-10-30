@@ -165,6 +165,11 @@ reader name, profile, and installed state before every hardware task.
   `artifacts/logs/pico-powerup-persistence-20261030T044725Z.log` (SHA-256
   `bfcc4cc3fdf299ab3654d8be46e1b00926f5b2b795aa9b4e58551a160fa5d2ab`). This
   did not trigger a physical power cycle.
+  A subsequent `Card.disconnect(true)` card reset on 2BED returned `9000` for
+  SELECT before and after reset, `1.8.2_jc305`/`9000` for GETVERSION, and
+  `9000` for JCSystem-info after reconnect; captured log:
+  `artifacts/logs/pcsc-card-reset-2BED-20261030T0455Z.log`. This is a CCID card
+  reset, not removal of USB power.
   RISC-V currently provides VM-core smoke coverage; it is not full
   CCID firmware acceptance.
 - Current Core 3.0.5, exact reader and `--no-scenarios`: baseline D92 completed

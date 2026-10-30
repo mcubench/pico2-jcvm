@@ -164,11 +164,21 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `bfcc4cc3fdf299ab3654d8be46e1b00926f5b2b795aa9b4e58551a160fa5d2ab`.
 - This run did not initiate a reset or power cycle, so it only confirms the
   current card/app state and is not physical power-loss recovery evidence.
-- A Java SmartcardIO `Card.disconnect(true)` reset attempt printed the selected
-  reader but no post-reset APDU results. The subsequent read-only power-up
-  probe above passed, confirming the card remained accessible, but the missing
-  reset/APDU output means this attempt is inconclusive and must not be recorded
-  as reset or power-cycle validation.
+- A captured Java SmartcardIO `Card.disconnect(true)` reset test passed on the
+  identified board: SELECT returned `9000` before reset; after PC/SC reset and
+  reconnect, SELECT returned `9000`, GETVERSION returned
+  `1.8.2_jc305`/`9000`, and JCSystem-info returned `9000`. Log:
+  `artifacts/logs/pcsc-card-reset-2BED-20261030T0455Z.log`. This invokes CCID
+  card power-off/on, not USB power removal or RP2350 cold reboot.
+- Re-running `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed
+  25/25. Both initial and post-process-restart inventory logs report
+  `static_roots=9 applet_roots=3 trace_complete=1`, 14/14 arrays, 4/4
+  instances, and zero invalid references or edge/root failures. Distinct owner
+  IDs remained stable; deleting one instance preserved the others. Logs:
+  `host-vpcd-multipackage-apdu-20261030T045329Z.log`
+  (`f5d8ce2f8575477a63b16bacd50344916d40c37abd64833369f741143ba967cd`) and
+  `host-vpcd-multipackage-restart-20261030T045329Z.log`
+  (`dd132b4f47944c3f720b2d5997e0384e78aa5322d8d9b2e63d58ce820ec94c00`).
 
 ### Simulated RP2350 overlay interruption recovery — 2026-10-30
 

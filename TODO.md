@@ -95,13 +95,21 @@ out explicitly.
       reclaimed persistent array, nested aliases, and four GC-pressure rounds.
       Logs: `artifacts/logs/vpcd-persistence-commit-20261030T044356Z.log` and
       `artifacts/logs/vpcd-persistence-restore-20261030T044356Z.log`.
+    - [x] Exercise the PC/SC card-interface reset on physical board 2BED.
+      `Card.disconnect(true)` followed by reconnect preserved the installed
+      JCAlgTest applet; SELECT, GETVERSION, and JCSystem-info returned `9000`.
+      This is a card reset, not removal of USB power.
+    - [x] Re-run multipackage VPCD restart inventory: 25/25 checks passed;
+      both before and after restart the trace found 9 static roots and all 3
+      applet roots, with `trace_complete=1`, zero invalid refs, and zero edge or
+      root failures.
     - [x] Validate the RP2350 overlay's simulated reset and interrupted
       snapshot/install-journal recovery: `./tools/test-rp2350-fs-overlay` passed
       75 checks, including 1,000 randomized multi-record cuts, 1,000 install
       journal clear cuts, and 1,000 cross-store registry/filesystem header cuts.
       This validates the host model, not physical power loss during heap GC.
-    - [ ] Verify the same recovery after a physical Pico 2 power cycle; host
-      process restart does not establish hardware power-loss behavior.
+    - [ ] Verify recovery after an actual USB power cycle; PC/SC card reset
+      does not remove USB power or establish loss-of-power behavior.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   physical power-cycle recovery before enabling persistent-record reclamation.
   PC VPCD process restart now passes the JCSystem persistence suite; hardware
