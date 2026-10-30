@@ -244,6 +244,24 @@ int main() {
   expect(mismatched_alias_length_rejected,
          "persistent_array_alias_rejects_mismatched_target_length");
 
+  const auto scalar_alias_target = make_tag(0x77);
+  seed(scalar_alias_target.value, scalar_alias_target.len,
+       byte_record(0x5a));
+  std::vector<uint8_t> scalar_alias_record{0xfd, scalar_alias_target.len};
+  scalar_alias_record.insert(
+      scalar_alias_record.end(), scalar_alias_target.value,
+      scalar_alias_target.value + scalar_alias_target.len);
+  seed(malformed_alias.value, malformed_alias.len,
+       std::move(scalar_alias_record));
+  bool scalar_alias_target_rejected = false;
+  try {
+    (void)FlashMemory_Handler::getPersistentField_Type(malformed_alias);
+  } catch (jcvm::Exceptions) {
+    scalar_alias_target_rejected = true;
+  }
+  expect(scalar_alias_target_rejected,
+         "persistent_array_alias_rejects_non_array_target");
+
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
          "depth_zero_initially");
   expect(!FlashMemory_Handler::commitPersistentWriteTransaction(),

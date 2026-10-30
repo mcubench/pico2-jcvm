@@ -82,7 +82,7 @@ out explicitly.
       heap handles. A strict persistent-array child read exception is also
       injected and blocks reclamation.
     - [x] FlashMemory host test rejects truncated and length-mismatched array
-      alias target headers.
+      alias target headers plus a valid alias pointing to a scalar record.
     - [ ] Inject malformed serialized object/array edges and alias chains into
       the collector, then verify reboot recovery.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and

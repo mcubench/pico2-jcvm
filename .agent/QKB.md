@@ -1417,8 +1417,9 @@ original terminology/status; check current summary and later fixes before reuse.
 - The FlashMemory transaction fixture now exercises the actual
   `getPersistentField_Type` decoder against stored alias records. It rejects a
   one-byte array-alias header and a declared target-tag length that does not
-  match the record payload; the full `./tools/test-persistent-transaction`
-  suite passes. The fixture now implements `fs_read_inplace` and minimal unused
+  match the record payload, and rejects a correctly framed alias whose target
+  is a scalar record. The full `./tools/test-persistent-transaction` suite
+  passes. The fixture now implements `fs_read_inplace` and minimal unused
   Context hooks required when retaining the actual decoder section in the host
   link.
 - These checks cover malformed array-alias framing only. They do not validate

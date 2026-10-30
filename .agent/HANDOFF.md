@@ -31,9 +31,10 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    proves partial root enumeration, an invalid in-memory array edge, and a
    strict persistent-array child read exception each return an incomplete trace
    and reclaim zero heap handles. The FlashMemory transaction test now rejects
-   truncated/mismatched array-alias headers. Malformed object-alias chains,
-   collector behavior on corrupt serialized edges, and reboot recovery remain
-   untested, so persistent records cannot be deleted.
+   truncated/mismatched array-alias headers and rejects an array alias whose
+   target is scalar. Malformed object-alias chains, collector behavior on
+   corrupt serialized edges, and reboot recovery remain untested, so persistent
+   records cannot be deleted.
 
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in
