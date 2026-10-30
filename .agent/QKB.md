@@ -132,6 +132,13 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   loss/restart, prove persistent record cleanup or recovery, or authorize
   record deletion. Keep persistent reclamation disabled until restart recovery
   and stable-handle semantics are tested.
+- A separate host case then drops the volatile heap, preserves the in-memory
+  filesystem fixture, creates a new Heap, restores a persistent reference
+  array whose element aliases a persistent byte array, and collects with that
+  root. It observes two reachable arrays, one unrelated heap slot reclaimed,
+  and unchanged serialized root/target records. This verifies heap
+  reconstruction over retained fixture records only; it is not a process,
+  emulator, filesystem, or physical power-cycle recovery test.
 
 ### Device collector now scans selected-package and applet roots; `0xFF` body-tag false positive fixed — 2026-10-30
 

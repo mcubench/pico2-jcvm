@@ -86,6 +86,9 @@ out explicitly.
     - [x] Inject malformed object-field and reference-array alias records,
       including a cyclic array-alias chain, through the actual strict decoder
       and heap collector; each incomplete trace reclaims zero handles.
+    - [x] Recreate the volatile heap over retained persistent records and
+      verify a valid aliased array graph restores and only an unrelated heap
+      slot is reclaimed (host fixture only).
     - [ ] Verify persistent-record and heap-handle recovery after reboot or
       emulator restart. The collector test is currently host-only and does not
       delete persistent records.

@@ -35,8 +35,11 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    now also links the actual Heap, JC_Array, JC_Instance, and strict FlashMemory
    decoder. Malformed object-field aliases, truncated reference-array aliases,
    and a cyclic array-alias chain each make the mark incomplete and reclaim
-   zero handles. Reboot recovery remains untested, so persistent records cannot
-   be deleted.
+   zero handles. A separate host case recreates a volatile heap over retained
+   filesystem-fixture records, restores a valid persistent array-alias graph,
+   and reclaims only an unrelated slot. This is not an OS/physical reboot test;
+   persistent record recovery across actual restart remains untested, so
+   persistent records cannot be deleted.
 
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in

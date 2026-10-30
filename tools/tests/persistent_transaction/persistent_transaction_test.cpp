@@ -339,6 +339,53 @@ int main() {
     persistent_transaction_test::instance_field_count = 0;
   }
 
+  // Reconstruct heap handles over the same durable-record fixture, then let
+  // strict traversal restore the array referenced by an alias after restart.
+  {
+    const auto root_tag = make_tag(0x7c);
+    const auto target_tag = make_tag(0x7d);
+    seed(root_tag.value, root_tag.len,
+         {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
+          0, 1, 0xff, 0xff});
+    seed(target_tag.value, target_tag.len,
+         {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
+          0, 1, 0x42});
+    const auto element_tag = FlashMemory_Handler::computeTag(root_tag, 0);
+    std::vector<uint8_t> array_alias{0xfd, target_tag.len};
+    array_alias.insert(array_alias.end(), target_tag.value,
+                       target_tag.value + target_tag.len);
+    seed(element_tag.value, element_tag.len, std::move(array_alias));
+
+    bool restart_restore_passed = false;
+    try {
+      jcvm::Heap restarted_heap(7);
+      const auto restored_root =
+          FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              root_tag, restarted_heap);
+      const auto unreachable =
+          restarted_heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+      const auto summary =
+          restarted_heap.collectUnreachableFrom({restored_root});
+      bool unreachable_handle_invalidated = false;
+      try {
+        (void)restarted_heap.getArray(unreachable);
+      } catch (jcvm::Exceptions) {
+        unreachable_handle_invalidated = true;
+      }
+      restart_restore_passed =
+          summary.complete && summary.arrays_reachable == 2 &&
+          summary.arrays_reclaimed == 1 &&
+          restarted_heap.getArray(restored_root) != nullptr &&
+          unreachable_handle_invalidated &&
+          read(root_tag.value, root_tag.len).size() == 5 &&
+          read(target_tag.value, target_tag.len).size() == 4;
+    } catch (jcvm::Exceptions) {
+      restart_restore_passed = false;
+    }
+    expect(restart_restore_passed,
+           "recreated_heap_restores_alias_graph_and_reclaims_only_garbage");
+  }
+
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
          "depth_zero_initially");
   expect(!FlashMemory_Handler::commitPersistentWriteTransaction(),
