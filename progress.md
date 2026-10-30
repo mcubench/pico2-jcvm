@@ -15507,3 +15507,28 @@
   recovery and physical multi-owner behavior are validated.
 - Commit: `9dba8ce` (checklist update; progress record committed separately).
 - Artifacts/logs: See previous progress entry for full logs and hashes.
+
+## 2026-10-30 Revalidate physical persistence reader without changing card 2 minutes
+
+- Step/experiment: `persistent-inventory-physical-readonly-recheck`
+- When: '2026-10-30 05:51 UTC' - '2026-10-30 05:53 UTC'
+- Change: Rechecked identified physical Pico 2 2BED after VPCD persistence
+  stress, using read-only registry listing and JCAlgTest APDUs followed by a
+  finite serial monitor. Updated the session handoff with current reader state.
+- Validation: Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup
+  'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'` passed package/
+  applet listing and SELECT, GETVERSION (`1.8.2_jc305`), JCSystem-info APDUs,
+  all `9000`. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial
+  2BED26ED20556535 --seconds 8` produced eight `TEST:SUMMARY pass=1 fail=0`
+  lines and no `FAULT`. Reader enumeration also showed both virtual readers
+  and the identified physical reader. No flash or card data was changed.
+- Result: Board 2BED is operational and passes current read-only APDU/runtime
+  checks. This does not test physical multi-owner inventory or remove USB
+  power; those recovery/acceptance gates remain open.
+- Decision: Preserve the physical power-cycle and interrupted-update gate
+  before any persistent-record reclamation.
+- Commit: `2207cf3` (handoff; progress record committed separately).
+- Artifacts/logs: APDU log SHA-256
+  `d38739da339528ea0c6934fdd8707e0a82b5d87e296d0a25362fd7920d93645b`;
+  serial monitor SHA-256
+  `ad32fc9b36ee4ae7dfbbef0d304f82331391b33591b821bc2636d73eea163619`.
