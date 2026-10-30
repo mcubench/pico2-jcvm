@@ -16951,3 +16951,18 @@
   `a76dd25089b50e0269388c057098eafdbb434b5a96bbcdeb4b868b75b9537fac`; client
   log SHA-256
   `9c63926e0acdade95dfe32e4b479f9cd917011434736fc4d44349d344d5cd444`).
+
+## 2026-10-30 Record base-profile rerun commit 1 minute
+
+- Step/experiment: `base-profile-jcalgtest-vpcd-rerun-closeout`
+- When: '2026-10-30 21:59 UTC' - '2026-10-30 22:00 UTC'
+- Change: Added the commit reference for the completed base-profile VPCD
+  validation record.
+- Validation: Confirmed commit `5093b6a` contains TODO, QKB, HANDOFF, and
+  progress documentation only; the generated VPCD evidence remains ignored by
+  the repository's `artifacts/results/` rule.
+- Result: The fresh report outcome and its emulator-only limitation are recorded
+  in the committed project documentation.
+- Decision: Continue with the next open backlog item.
+- Commit: recorded in this follow-up.
+- Artifacts/logs: `artifacts/results/jcalgtest-base-vpcd-current-20261030-rerun3/`.

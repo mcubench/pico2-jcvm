@@ -69,6 +69,7 @@ also passes against all 15 declared capabilities. Evidence and hashes are in
 `.agent/QKB.md`; detailed files are under
 `artifacts/results/jcalgtest-base-vpcd-current-20261030-rerun3/`. This is not
 physical-card validation.
+The documentation and result record are committed as `5093b6a`.
 
 ## Current continuation: optional native module gating — 2026-10-30
 
