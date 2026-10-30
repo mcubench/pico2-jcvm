@@ -113,7 +113,9 @@ VisitResult visitInstalledPackageStaticRoots(
     const JC_Cap cap = Package(package_id).getCap();
     const auto *static_fields = cap.getStaticField();
     if (static_fields == nullptr) {
-      return VisitResult::InvalidStaticLayout;
+      // A valid CAP may have no Static Field component. It has no serialized
+      // package static roots to contribute to the heap walk.
+      return VisitResult::Complete;
     }
     return visitPersistentPackageStaticRoots(
         package_id, NTOHS(static_fields->image_size),

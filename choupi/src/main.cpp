@@ -169,12 +169,24 @@ bool enumerate_selected_applet_roots(
   selected_context->visitRootReferences(visitor, visitor_context);
   roots.visitor = visitor;
   roots.visitor_context = visitor_context;
-  roots.static_result =
-      jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
-          selected_context->getAppletPackageID(),
-          selected_context->getHeap(),
-          visit_selected_package_static_root, &roots);
-  if (roots.static_result != jcvm::PersistentInventory::VisitResult::Complete) {
+  roots.static_result = jcvm::PersistentInventory::VisitResult::Complete;
+  try {
+    // Static fields belong to packages, not only to the package containing
+    // the selected applet. Imported packages can retain persistent objects
+    // through their own static reference slots.
+    for (uint8_t package_id = 0; package_id < JCVM_MAX_PACKAGES;
+         ++package_id) {
+      if (!jcvm::FlashMemory_Handler::isPackageExist(package_id)) continue;
+      roots.static_result =
+          jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
+              package_id, selected_context->getHeap(),
+              visit_selected_package_static_root, &roots);
+      if (roots.static_result !=
+          jcvm::PersistentInventory::VisitResult::Complete) {
+        return false;
+      }
+    }
+  } catch (...) {
     return false;
   }
   roots.applet_result =
@@ -218,10 +230,21 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   PersistentInventoryCounts counts;
   context.appendRootReferences(counts.references);
   const std::size_t context_roots = counts.references.size();
-  const auto static_result =
-      jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
-          context.getAppletPackageID(), context.getHeap(),
-          count_static_inventory_root, &counts);
+  auto static_result = jcvm::PersistentInventory::VisitResult::Complete;
+  try {
+    for (uint8_t package_id = 0; package_id < JCVM_MAX_PACKAGES;
+         ++package_id) {
+      if (!jcvm::FlashMemory_Handler::isPackageExist(package_id)) continue;
+      static_result =
+          jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
+              package_id, context.getHeap(), count_static_inventory_root,
+              &counts);
+      if (static_result != jcvm::PersistentInventory::VisitResult::Complete)
+        break;
+    }
+  } catch (...) {
+    static_result = jcvm::PersistentInventory::VisitResult::ReadFailure;
+  }
   const auto applet_result =
       jcvm::PersistentInventory::visitAppletInstanceRoots(
           context.getAppletID(), context.getHeap(), count_applet_inventory_root,

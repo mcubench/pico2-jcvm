@@ -51,8 +51,12 @@ out explicitly.
     on adapter errors or exceptions. A 7-byte applet-owned array-body tag
     ending in `0xFF` was mistaken for a registered-applet root; recognize only
     exact 5/6-byte root tags. The physical JCAlgTest APDUs pass with the fix.
-  - [ ] Include every installed package's static roots and every active
-    applet/context/native root before computing authoritative reachability.
+  - [x] Scan static reference roots from every package reported installed by
+    the VM package bitmap. CAPs without a Static Field component contribute no
+    roots. The ARM runtime and PC diagnostic use the same package enumeration.
+  - [ ] Include every live applet/context/native root before computing
+    authoritative reachability; current owner coverage is still limited to
+    the active applet heap.
   - [ ] Add malformed serialized edge/alias tests and prove an incomplete walk
     cannot authorize reclamation, including recovery after power cycling.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and

@@ -157,6 +157,24 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   directory without linking or probing USB; the wrapper then builds and reports
   `RMI_REGISTRY:PASS` again.
 
+### Persistent collector must scan every installed package's static roots — 2026-10-30
+
+- Static reference fields are package-owned. Scanning only the selected applet
+  package can miss objects retained by an imported package's initialized
+  statics. Enumerate IDs through `JCVM_MAX_PACKAGES` and gate each walk with
+  `FlashMemory_Handler::isPackageExist`; this also filters stale dynamic slot
+  bits. Fail closed if package presence or root enumeration throws/fails.
+- A valid CAP can omit the Static Field component. Treat that as an empty root
+  set, not malformed metadata; otherwise scanning every installed package
+  would stop at ordinary CAPs with no static fields.
+- The PC diagnostic and ARM collector now share this enumeration. On physical
+  2BED, JCAlgTest SELECT, GETVERSION, and JCSystem-info all returned `9000`,
+  and captured serial showed three `gc_begin`/`gc_end` pairs without
+  `HEAP_GC_SKIP`. Log:
+  `artifacts/logs/persistent-inventory-all-package-device-monitor-2BED-20261030.log`.
+- This covers package static roots only. Other live applet/context/native
+  roots remain unaccounted; do not enable persistent record deletion.
+
 ## Canonical operating fixes and unresolved boundaries
 
 - **Host USB/PCSC access — viable workflow:** follow root `AGENTS.md` from the

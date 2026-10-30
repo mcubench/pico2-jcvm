@@ -35,17 +35,23 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    fields and persistent reference-array elements; malformed types/tag widths
    fail the walk, while transient and unpersisted objects use in-memory edges.
    Strict VPCD cases 14–16 and 82 pass. Root enumeration now reports
-   completion, and the device collector loads selected-package static roots
-   and registered applet roots before marking; any inventory error skips
-   collection. Physical 2BED JCAlgTest SELECT/version/JCSystem-info APDUs all
-   returned `9000`, with serial showing each collection reach `gc_end` and no
-   `HEAP_GC_SKIP`. A 7-byte array-body tag ending in `0xFF` was misclassified
+   completion, and the device collector loads static roots from every package
+   reported installed plus registered roots for the active applet before
+   marking; any inventory error skips collection. CAPs without a Static Field
+   component contribute no static roots. The ARM runtime and PC diagnostic
+   share the same package enumeration. Physical 2BED JCAlgTest
+   SELECT/version/JCSystem-info APDUs all returned `9000`, with serial showing
+   each collection reach `gc_end` and no `HEAP_GC_SKIP`. A 7-byte array-body
+   tag ending in `0xFF` was misclassified
    as an applet root; exact 5/6-byte recognition fixed it. PC/ARM/RISC-V builds
    and the inventory unit test pass. Full physical JCSystem transaction-probe
    installation could not run on 2BED because only 8,821/65,535 bytes were
-   free; 8E stopped enumerating after flash. All-installed-package and all-live
-   context/native root coverage remain incomplete, malformed-edge negative
-   tests are still missing, and no persistent records have been deleted.
+   free; 8E stopped enumerating after flash. All-live applet/context/native
+   root coverage remains incomplete, malformed-edge negative tests are still
+   missing, and no persistent records have been deleted. The 2026-10-30
+   all-package static-root change is validated on 2BED with the full ARM image
+   and three read-only APDUs; log:
+   `artifacts/logs/persistent-inventory-all-package-device-monitor-2BED-20261030.log`.
    Continue those gaps before authorizing persistent-record reclamation.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, and private RSA hardening.
