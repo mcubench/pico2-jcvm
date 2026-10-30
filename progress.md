@@ -15112,7 +15112,7 @@
 - Validation: `./tools/test-rmi-registry` passed and printed `RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1`. Scoped `git diff --check` passed. No hardware or full firmware builds were needed for this test-build-only fix.
 - Result: The repository RMI test wrapper compiles again with the updated heap source.
 - Decision: Add a dedicated heap/persistent-storage unit harness before claiming negative coverage for malformed serialized edges or incomplete-mark reclamation safety.
-- Commit: pending.
+- Commit: `ccbec3e` (restart evidence and continuity notes); this progress record is committed separately.
 - Artifacts/logs: none.
 
 ## 2026-10-30 Progress log commit-reference correction
@@ -15334,3 +15334,14 @@
 - Decision: Keep persistent-record reclamation disabled and continue with real restart recovery and stable-handle semantics.
 - Commit: pending.
 - Artifacts/logs: `./tools/test-persistent-transaction` final output; no archived log or hardware artifact.
+
+## 2026-10-30 Validate GC across VPCD process restart 4 minutes
+
+- Step/experiment: `persistent-inventory-vpcd-process-restart`
+- When: '2026-10-30 04:41 UTC' - '2026-10-30 04:45 UTC'
+- Change: Rebuilt the PC emulator and ran the repository's persistence suite against the unchanged JCSystem transaction CAP, including a fresh emulator process restoring the saved filesystem image. No runtime implementation change was needed. Updated TODO/QKB/handoff with exact scope and results.
+- Validation: Initial `./tools/test-vpcd-persistence` attempt failed before APDUs with local socket `Operation not permitted` in the restricted sandbox. Reran `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` via elevated host execution; install/commit passed 3/3, process-restart restore and GC passed 38/38, and command exited successfully. The restore covered a reclaimed array restored from flash, nested aliases, identity checks, and four GC-pressure rounds.
+- Result: PC VPCD process restart preserved persistent state and GC restored reachable persistent records while handling four allocation-pressure rounds. This is emulator evidence only; RP2350 power-loss/interrupted-write recovery is still unverified. No physical device was accessed.
+- Decision: Retain the persistent reclamation restriction until physical power-cycle and interrupted-update recovery are validated.
+- Commit: pending.
+- Artifacts/logs: Commit log `artifacts/logs/vpcd-persistence-commit-20261030T044356Z.log` SHA-256 `df4578db168deb7b1751623e486f3e9d696623eaadd3af56890d6ca916ee9192`; restore log `artifacts/logs/vpcd-persistence-restore-20261030T044356Z.log` SHA-256 `68a9b4f9169ec699143095dec88f64c840043a16485f125c9849aed797fe8c75`.
