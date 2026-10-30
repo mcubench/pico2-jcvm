@@ -15147,3 +15147,14 @@
 - Decision: Next identify a safe enumeration model for all live applet/context/native owners and add malformed edge/alias tests that prove incomplete walks cannot authorize reclamation. Keep persistent deletion disabled.
 - Commit: pending.
 - Artifacts/logs: cycle `artifacts/logs/cycle-choupi-20261030T031258Z.log` (SHA-256 `a9390c1a6e36bb67e165461f1a47d2d47b43b3fd5993df59cad3f018734243dd`); physical APDU serial `artifacts/logs/persistent-inventory-all-package-device-monitor-2BED-20261030.log` (SHA-256 `77b58646ab691615dae495ef1817ac2341251d310584f30521853b86e5e2f218`); ARM UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `ccb0550252a9a1ecec2c38ed37b403fb0418cbd920bb32033f8a4517530a63c8`).
+
+## 2026-10-30 Progress commit reference correction
+
+- Step/experiment: `persistent-inventory-all-package-static-roots`
+- When: '2026-10-30 03:17 UTC' - '2026-10-30 03:18 UTC'
+- Change: Replaced the pending commit reference for the immediately preceding implementation record with its completed code-and-documentation commit, `54c31a2`.
+- Validation: `git show --stat --oneline 54c31a2` confirms the commit contains the all-package collector change, TODO/QKB/HANDOFF updates, and its progress record.
+- Result: The implementation progress record now points to its committed change; no source or test files changed.
+- Decision: Continue with complete live-root enumeration and malformed-edge reclamation safety tests.
+- Commit: `54c31a2` (the progress reference correction is recorded in the following administrative commit).
+- Artifacts/logs: none.
