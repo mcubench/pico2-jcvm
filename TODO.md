@@ -527,6 +527,14 @@ cipher.
   absent from minimal, for both PC and Pico; SCP03's common AES primitive stays
   linked. Details and artifacts are recorded in `progress.md` and
   `.agent/HANDOFF.md`.
+- [x] Re-run the `base` profile's full JCAlgTest support report against the
+  unchanged upstream CAP on a fresh PC VPCD card. The current-source run
+  matched all 4,525 normalized reference rows, reported 10 yes / 4,515 no / zero
+  other, and matched the generated 10-entry capability manifest. All three
+  `OwnerPINBuilder` rows returned `yes`; the three `SystemException.ILLEGAL_USE`
+  outcomes in the archived 2026-10-24 report did not reproduce. Evidence is in
+  `artifacts/results/jcalgtest-base-vpcd-current-20261030-rerun3/`; this is
+  emulator evidence, not physical-card validation.
 
 Assumptions: minimal disables every selectable capability, including optional
 PIN variants, while core Java Card, card management, and public API entry points

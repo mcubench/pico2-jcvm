@@ -2118,3 +2118,34 @@ original terminology/status; check current summary and later fixes before reuse.
   `bf1f7a43bc4ce0d0cf07804c11b31e7b1277c09256c14abdb51b41649e5ce451`) and
   `artifacts/logs/vpcd-persistence-restore-20261030T203932Z.log` (SHA-256
   `59309a770239352bfa223f6e8bcd0bc6b307e4ea772c5079b3cc2bd599387bbc`).
+
+### Fresh `base` profile JCAlgTest report clears historical OwnerPIN errors — 2026-10-30
+
+- Rebuilt the current PC JCVM/ROM mask with `./tools/build-pc --profile base`;
+  support generation selected 10 of 150 capabilities and ROM-mask generation
+  passed.
+- On a new blank VPCD image, explicitly installed the unchanged upstream
+  `AlgTest_v1.8.2_jc305.cap` with GPPro, confirmed the package was `LOADED` and
+  applet `SELECTABLE`, then ran official JCAlgTest 1.8.2
+  `ALG_SUPPORT_EXTENDED` through `Virtual PCD 00 01`.
+- The comparator matched all 4,525 normalized rows against jCardSim. CHOUPI
+  reported 10 yes, 4,515 no, zero other; generated support comparison was
+  10/10 with no missing or unexpected capabilities. `OwnerPINBuilder` results
+  were `OWNER_PIN=yes`, `OWNER_PIN_X=yes`, and
+  `OWNER_PIN_X_WITH_PREDECREMENT=yes`. The three
+  `SystemException.ILLEGAL_USE` results in the archived 2026-10-24 report did
+  not reproduce on current source.
+- Use both the emulator bootstrap CAP code and `--applet-aid` when starting the
+  VPCD emulator so PC/SC sees a present card; that bootstrap does not install
+  the applet. Run GPPro `--install` with the unchanged CAP before starting the
+  JCAlgTest client. Starting VPCD without the bootstrap left the reader absent;
+  running the client before explicit install returned `6A82` on SELECT and
+  produced no valid report.
+- This is PC VPCD evidence, not physical-card validation. CSV SHA-256
+  `a76dd25089b50e0269388c057098eafdbb434b5a96bbcdeb4b868b75b9537fac`; client
+  log SHA-256
+  `9c63926e0acdade95dfe32e4b479f9cd917011434736fc4d44349d344d5cd444`;
+  expected-support CSV SHA-256
+  `0b5d8ac1bd273d09ebe771267adee4334294b43c3616ce7617e8b7bd7d05ade7`.
+  Files are under
+  `artifacts/results/jcalgtest-base-vpcd-current-20261030-rerun3/`.

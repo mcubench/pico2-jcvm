@@ -60,9 +60,15 @@ the unchanged, unrelated uncommitted `src/cap_load.cpp`; preserve that file.
 `readme.md` now saves the generated expected-support CSV after each `base` and
 `current` profile build, compares each physical report against the shared
 jCardSim reference, and shows a separate expected-set diff. A historical
-2026-10-24 base report still has three `OwnerPINBuilder` runtime errors; get a
-fresh report before treating base acceptance as complete. Current report
-comparison passes against all 15 declared capabilities. See `.agent/QKB.md`.
+2026-10-24 base report had three `OwnerPINBuilder` runtime errors. A fresh
+current-source base-profile VPCD run on 2026-10-30 completed all 4,525
+normalized rows (10 yes, 4,515 no, zero other), matched the generated 10/10
+capability manifest, and all three `OwnerPINBuilder` rows returned `yes`.
+Those historical errors did not reproduce. Current-profile report comparison
+also passes against all 15 declared capabilities. Evidence and hashes are in
+`.agent/QKB.md`; detailed files are under
+`artifacts/results/jcalgtest-base-vpcd-current-20261030-rerun3/`. This is not
+physical-card validation.
 
 ## Current continuation: optional native module gating — 2026-10-30
 

@@ -16922,3 +16922,32 @@
 - Decision: Supply these artifacts for external testing; await test results.
 - Commit: recorded in this follow-up.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.
+
+## 2026-10-30 Revalidate base profile support on fresh VPCD 20 minutes
+
+- Step/experiment: `base-profile-jcalgtest-vpcd-rerun`
+- When: '2026-10-30 21:39 UTC' - '2026-10-30 21:59 UTC'
+- Change: Rebuilt the PC JCVM ROM mask for `base`, explicitly installed the
+  unchanged upstream JCAlgTest 1.8.2 JC305 CAP through GPPro on a fresh VPCD
+  card, and ran the official extended support report. Recorded the result in
+  TODO, QKB, and HANDOFF.
+- Validation: `./tools/build-pc --profile base` passed with 10/150 capabilities
+  enabled. GPPro listed the JCAlgTest package as LOADED and applet SELECTABLE.
+  `tools/compare-jcalgtest-support.py` matched all 4,525 normalized rows against
+  jCardSim and passed the generated support check (10 expected, 10 actual,
+  zero unexpected/missing). CHOUPI reported 10 yes, 4,515 no, zero other. All
+  three `OwnerPINBuilder` cases returned yes, so the three historical
+  `SystemException.ILLEGAL_USE` outcomes were not reproduced.
+- Result: Current-source base-profile API support and OwnerPINBuilder behavior
+  pass on PC VPCD. The initial client attempt without GPPro installation
+  returned `6A82`; the corrected clean-card run passed. No physical card was
+  used.
+- Decision: Treat the archived OwnerPINBuilder failures as historical and
+  resolved for the current source; retain the fresh report as emulator-only
+  evidence.
+- Commit: pending.
+- Artifacts/logs: `artifacts/results/jcalgtest-base-vpcd-current-20261030-rerun3/`
+  (CSV SHA-256
+  `a76dd25089b50e0269388c057098eafdbb434b5a96bbcdeb4b868b75b9537fac`; client
+  log SHA-256
+  `9c63926e0acdade95dfe32e4b479f9cd917011434736fc4d44349d344d5cd444`).
