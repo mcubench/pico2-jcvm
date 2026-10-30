@@ -208,6 +208,31 @@ are in `tools/JCAlgTestApduProbe.java`.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded
    investigation requests, not implemented features.
 
+## Latest collector regression fix — 2026-10-30
+
+Physical SHA-256 `doFinal` had returned `FF01` after a successful setup APDU.
+The collector retained persistent references from strict flash snapshots but
+missed newer references in a loaded object's in-memory field cache. It could
+therefore reclaim the digest instance between APDUs. `Heap::visitChildReferences`
+still validates serialized records strictly, then also traverses cached fields
+only when the cache is loaded and current for the rollback generation. A new
+host regression confirms the cached persistent child survives while unrelated
+garbage is reclaimed.
+
+Validation on 2026-10-30: persistent transaction test passes, ARM and RISC-V
+`symm_crypto` wrappers pass, and `./tools/test-vpcd-persistence` passes install /
+commit 3/3 plus restore / GC 38/38 after process restart. On 2BED
+`2BED26ED20556535`, the ARM `symm_crypto` image was flash-verified and its
+18-second monitor had 18 passing runtime summaries and no `TEST:FAIL`/`FAULT`.
+The JCAlgTest SHA-256 prepare and doFinal APDUs both returned `AA9000` in three
+consecutive probes. Current image SHA-256:
+`18a7a230adf2e1719c26e1f79ccd48f60e93ae108c4b989ade4a2a89d943604e`. Logs:
+`artifacts/logs/cycle-choupi-20261030T105252Z.log`,
+`artifacts/logs/sha256-dofinal-loaded-cache-2BED-20261030.log`, and VPCD logs
+with timestamp `20261030T105520Z`. The one `WATCHDOG_RECOVERY ... cause=other`
+marker remains unexplained and separate from these passing checks. The stale
+QKB note is now marked fixed.
+
 The 2026-10-29 physical Crypto and Security retests requested in the previous
 handoff are complete; see the run counts and hashes below.
 
@@ -243,9 +268,10 @@ reader name, profile, and installed state before every hardware task.
   watchdog API did not identify a watchdog-caused reboot. Runtime checks passed
   throughout; no firmware change is indicated by this diagnostic alone.
 
-- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 04:17 UTC
+- 2BED: `2BED26ED20556535` was previously flashed at 2026-10-30 04:17 UTC
   with the ARM `current` image SHA-256
-  `8ce742b58ce39bf275e20bd6221f3e1a6289b2603d8f5d49f488a4f05a8c1093`.
+  `8ce742b58ce39bf275e20bd6221f3e1a6289b2603d8f5d49f488a4f05a8c1093`; that
+  image was superseded by the `symm_crypto` collector-fix image listed above.
   Flash verification succeeded and the finite monitor passed with repeated
   `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; log:
   `artifacts/logs/cycle-choupi-20261030T041755Z.log` (SHA-256
@@ -263,10 +289,10 @@ reader name, profile, and installed state before every hardware task.
   corrected image was reported flash-verified, but it did not reappear in the
   subsequent PC/SC scan; current firmware/runtime state is unconfirmed. Do not
   infer D92 recovery or test results from flash verification alone. Latest
-  read-only 2BED probe selected JCAlgTest 1.8.2 and received `9000` for
-  SELECT/version/JCSystem-info, but isolated SHA-256 `doFinal` returned `FF01`
-  after setup returned `9000`. The same unchanged CAP passes SHA-256 in VPCD;
-  this physical discrepancy is undiagnosed and documented in QKB. The latest
+  2BED was subsequently flashed with the normal `symm_crypto` ARM image above.
+  After the fix, isolated JCAlgTest SHA-256 prepare and doFinal both returned
+  `AA9000` in three consecutive probes; see the collector regression section
+  above. The latest
   scan showed Virtual PCD 00 00, Virtual PCD 00 01, and physical 2BED; use
   another identified board as failover if it is available.
   A fresh read-only `./tools/test-pico-powerup` run on 2026-10-30 confirmed

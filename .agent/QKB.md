@@ -1460,19 +1460,35 @@ original terminology/status; check current summary and later fixes before reuse.
   native-held roots remain outside this enumeration; persistent record deletion
   remains disabled.
 
-### Physical SHA-256 doFinal probe returns FF01 while VPCD passes — unresolved 2026-10-30
+### Physical SHA-256 doFinal lost its persistent digest instance at APDU GC — fixed 2026-10-30
 
 - On Pico 2 `2BED26ED20556535`, the unchanged installed JCAlgTest 1.8.2 applet
-  selected normally; GETVERSION and JCSystem-info returned `9000`. The isolated
-  SHA-256 doFinal setup APDU returned `AA9000`, then the doFinal APDU returned
-  `FF01`. Log: `artifacts/logs/sha256-dofinal-2BED-after-all-applet-inventory-20261030.log`.
-- The same firmware inventory implementation and unchanged JCAlgTest CAP pass
-  the VPCD multipackage/JCAlgTest validation, including SHA-256 doFinal/static
-  cases. This currently indicates a physical-only discrepancy; it does not
-  establish whether the cause is device state, persisted applet state, or a
-  hardware-path issue. Do not attribute it to all-instance root enumeration
-  without further evidence. Reinstalling or deleting the physical applet was
-  intentionally not attempted during this read-only check.
+  previously selected normally; GETVERSION and JCSystem-info returned `9000`,
+  SHA-256 setup returned `AA9000`, but doFinal returned `FF01`. Serial tracing
+  showed the factory returned digest handle `0036`, the next APDU used receiver
+  `0036`, then the collector reclaimed that persistent instance at APDU end.
+- Cause: strict persistent-field tracing reads the serialized flash snapshot.
+  A persistent object's loaded in-memory field cache can contain a newer
+  reference than that snapshot; the collector was ignoring this live edge.
+  The `FF01` was therefore consistent with a stale/dangling digest handle on
+  the following APDU. This was not a SHA-256 arithmetic failure.
+- `Heap::visitChildReferences` now first keeps strict serialized validation,
+  then visits cached child handles only when the persistent field cache is
+  loaded and current for the active rollback generation. A focused
+  `persistent_transaction` regression proves the cached child survives and
+  unrelated garbage is reclaimed. VPCD persistence passes install/commit 3/3
+  and restore/GC 38/38 after process restart. On the normal symm_crypto ARM
+  image, physical board 2BED was flash-verified, its finite monitor passed 18
+  repeated runtime summaries, and the unchanged JCAlgTest SHA-256 prepare and
+  doFinal APDUs both returned `AA9000` in three consecutive probes.
+- Evidence: ARM image SHA-256
+  `18a7a230adf2e1719c26e1f79ccd48f60e93ae108c4b989ade4a2a89d943604e`;
+  cycle log `artifacts/logs/cycle-choupi-20261030T105252Z.log`; physical APDU
+  log `artifacts/logs/sha256-dofinal-loaded-cache-2BED-20261030.log`; VPCD
+  logs `artifacts/logs/vpcd-persistence-commit-20261030T105520Z.log` and
+  `artifacts/logs/vpcd-persistence-restore-20261030T105520Z.log`. A recurring
+  `WATCHDOG_RECOVERY ... cause=other` startup marker remains separate; all
+  finite runtime checks passed.
 
 ### Installed-instance root enumeration must match the registry — fixed 2026-10-30
 

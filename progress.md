@@ -15657,3 +15657,50 @@
 - Decision: The recent changes do not regress the asymmetric native known-answer suite. Continue with the next persistent-object reclamation hardening/acceptance task; electrical power-cycle and interrupted-update acceptance remain separate gates.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`, SHA-256 `1fe57d459ee76ae1c5913aa3273bd7708b231a487431dcb4630557f9adbc085b`.
+## 2026-10-30 Preserve cached persistent GC edges 10 minutes
+
+- Step/experiment: `persistent-loaded-edge-sha256`
+- When: '2026-10-30 10:50 UTC' - '2026-10-30 11:00 UTC'
+- Change: GC now traces references in a loaded persistent object's current
+  in-memory field cache after strict serialized-field validation. It avoids
+  loading every persistent object during collection by checking whether the
+  cache is already loaded and valid for the current rollback generation. Added
+  a host regression for a cached persistent child reference and recorded the
+  physical failure cause in `.agent/QKB.md` and `.agent/HANDOFF.md`.
+- Validation: `./tools/test-persistent-transaction` passed with
+  `TEST:SUMMARY fail=0`, including
+  `loaded_persistent_cached_reference_survives_collection`. Both
+  `./tools/build arm --profile symm_crypto` and
+  `./tools/build riscv --profile symm_crypto` passed. The escalated repository
+  cycle `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile symm_crypto
+  --chipid 2BED26ED20556535` rebuilt both architectures, flash-verified the
+  normal ARM image, and passed the 18-second physical monitor with 18
+  `TEST:SUMMARY pass=1 fail=0` records and no `TEST:FAIL` or `FAULT`.
+  `./tools/test-vpcd-persistence` passed install/commit 3/3 and restored
+  persistence plus four GC pressure rounds 38/38. Three separate focused
+  physical probes against the unchanged JCAlgTest 1.8.2 CAP each returned
+  `AA9000` for SHA-256 prepare and doFinal; each ended
+  `TEST:PASS sha256_dofinal_only`.
+- Result: The physical SHA-256 doFinal failure is explained by the collector
+  reclaiming a live digest object referenced by a loaded field cache whose
+  serialized flash snapshot was stale. On real board `2BED26ED20556535`, both
+  APDUs now succeed on all three attempts. The one startup
+  `WATCHDOG_RECOVERY ... cause=other` marker remains separate; runtime checks
+  passed. First flash attempt could not find a reset interface; the repository
+  CDC 1200-baud BOOTSEL recovery path entered BOOTSEL and flash verification
+  then passed.
+- Decision: Keep strict serialized validation and fail-closed malformed-record
+  behavior, while treating valid current in-memory references as additional
+  roots. Continue remaining acceptance and persistence hardening work.
+- Commit: `993b8da` (native fix and regression test; this knowledge/progress
+  record is committed separately).
+- Artifacts/logs: ARM image SHA-256
+  `18a7a230adf2e1719c26e1f79ccd48f60e93ae108c4b989ade4a2a89d943604e`;
+  cycle log SHA-256
+  `665242a5175573014f923e1cc29562e003c5f5931e0d214565c0130bf4380804`;
+  physical probes SHA-256
+  `6db417523913b1f8572365f2d905c16ca4da5e0b5675fcb58bac77ec2a8f5ff1`;
+  VPCD install log SHA-256
+  `bcbd305534be8e98d256a72fcee316330ac28c8edf7af663c92e6fb674e1af27`;
+  VPCD restore log SHA-256
+  `74cb4de484036e6a41cfa2735278bf5d5d48b0ffc1689a56285a9640ff2a8257`.
