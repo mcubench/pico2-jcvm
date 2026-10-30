@@ -37,9 +37,12 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    and a cyclic array-alias chain each make the mark incomplete and reclaim
    zero handles. A separate host case recreates a volatile heap over retained
    filesystem-fixture records, restores a valid persistent array-alias graph,
-   and reclaims only an unrelated slot. This is not an OS/physical reboot test;
-   persistent record recovery across actual restart remains untested, so
-   persistent records cannot be deleted.
+   and reclaims only an unrelated slot. The rebuilt PC VPCD
+   `./tools/test-vpcd-persistence` now passes after a fresh emulator process:
+   38 restore/GC checks including restoration of a reclaimed persistent array,
+   nested aliases, and four GC-pressure rounds. This is not physical power-loss
+   evidence; keep persistent record deletion disabled until Pico 2 power-cycle
+   recovery and interrupted-update behavior are validated.
 
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in

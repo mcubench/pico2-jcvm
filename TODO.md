@@ -89,12 +89,19 @@ out explicitly.
     - [x] Recreate the volatile heap over retained persistent records and
       verify a valid aliased array graph restores and only an unrelated heap
       slot is reclaimed (host fixture only).
-    - [ ] Verify persistent-record and heap-handle recovery after reboot or
-      emulator restart. The collector test is currently host-only and does not
-      delete persistent records.
+    - [x] Verify persistent alias restoration and heap collection across a
+      fresh PC VPCD emulator process. The unchanged JCSystem transaction CAP
+      passed 38 checks, including post-restart restoration of a previously
+      reclaimed persistent array, nested aliases, and four GC-pressure rounds.
+      Logs: `artifacts/logs/vpcd-persistence-commit-20261030T044356Z.log` and
+      `artifacts/logs/vpcd-persistence-restore-20261030T044356Z.log`.
+    - [ ] Verify the same recovery after a physical Pico 2 power cycle; host
+      process restart does not establish hardware power-loss behavior.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
-  power-cycle recovery before enabling any reclamation. `JCSystem` object
-  deletion remains unsupported until this accounting is complete.
+  physical power-cycle recovery before enabling persistent-record reclamation.
+  PC VPCD process restart now passes the JCSystem persistence suite; hardware
+  power-loss recovery remains open. `JCSystem` object deletion remains
+  unsupported until this accounting is complete.
 
 - [x] Repair `current`-profile firmware builds when SHA-256 is the only
   selected digest: guard `setInitialDigest()`'s optional RSA/ECDSA checks and

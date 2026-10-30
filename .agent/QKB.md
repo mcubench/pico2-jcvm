@@ -139,6 +139,20 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   and unchanged serialized root/target records. This verifies heap
   reconstruction over retained fixture records only; it is not a process,
   emulator, filesystem, or physical power-cycle recovery test.
+- The existing `./tools/test-vpcd-persistence` suite provides a full emulator
+  process restart check using the unchanged JCSystem transaction CAP. It passed
+  install/commit (3/3) and post-restart restore/GC (38/38), including restoration
+  of a persistent array after clearing its static alias, nested alias identity,
+  and four repeated GC-pressure rounds. The first default-sandbox attempt was
+  denied opening the local VPCD socket (`Operation not permitted`); rerunning
+  the same wrapper with `PICO2_HOST_USB_ACCESS=1` and elevated host execution
+  passed. Logs and hashes:
+  `vpcd-persistence-commit-20261030T044356Z.log`
+  (`df4578db168deb7b1751623e486f3e9d696623eaadd3af56890d6ca916ee9192`) and
+  `vpcd-persistence-restore-20261030T044356Z.log`
+  (`68a9b4f9169ec699143095dec88f64c840043a16485f125c9849aed797fe8c75`).
+  This establishes PC emulator process restart only; physical power-cycle and
+  interrupted-write recovery remain open.
 
 ### Device collector now scans selected-package and applet roots; `0xFF` body-tag false positive fixed — 2026-10-30
 
