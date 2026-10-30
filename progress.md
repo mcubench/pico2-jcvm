@@ -15246,3 +15246,14 @@
 - Decision: Continue with malformed-root/edge fail-closed coverage and all-live-root accounting; do not enable persistent-record reclamation.
 - Commit: `fa33e55` (handoff refresh); this record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T041755Z.log` (SHA-256 `b59c48f302d59bd9cecd14b6877b89abbe7036d49a080bbef831127b572b332f`); no separate APDU log.
+
+## 2026-10-30 Test that incomplete heap traces reclaim nothing 4 minutes
+
+- Step/experiment: `persistent-inventory-incomplete-trace-gc-gate`
+- When: '2026-10-30 04:22 UTC' - '2026-10-30 04:26 UTC'
+- Change: Extended the JCArray heap regression to check that root enumeration returning false after yielding a partial root set and a reachable reference array containing an invalid child handle both set `complete=false` and reclaim zero heap handles. Repaired the test target's OS FFI include precedence and filesystem fixture for the strict persistent reader symbols added to `heap.cpp`.
+- Validation: `./tools/test-jcarray` passed all existing checks plus `gc_skips_reclamation_after_incomplete_root_scan` and `gc_skips_reclamation_after_invalid_child_ref`. The first rebuild exposed a missing OS `ffi.h` include and then missing strict-reader test stubs; both were fixed before the passing run. Existing upstream packed-member and ignored-qualifier warnings remain. `git diff --check` passed. ARM/RISC-V were not rebuilt because only the host test and its fixture changed.
+- Result: The real heap collector keeps all previously allocated handles when root traversal fails or a reachable in-memory edge is invalid. Serialized flash corruption and alias cycles are not exercised; physical record reclamation remains disabled.
+- Decision: Add fault injection for malformed serialized fields/aliases and reboot recovery, then audit additional live contexts/native-held roots before enabling any persistent-record deletion.
+- Commit: `ad147f8` (heap safety tests, harness repair, and status updates); this record is committed separately.
+- Artifacts/logs: `/tmp/jcarray-gc-safety.log`; the final `./tools/test-jcarray` run passed. No hardware access was needed.
