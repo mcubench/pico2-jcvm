@@ -15279,3 +15279,14 @@
 - Decision: Inject malformed reference records through the real strict restore path and collector, then verify no handle or persistent data is reclaimed across restart.
 - Commit: `125db15` (decoder regressions, fixture, and status notes); this record is committed separately.
 - Artifacts/logs: `/tmp/persistent-alias-malformed.log`; final output contains `TEST:SUMMARY fail=0`. No hardware artifacts.
+
+## 2026-10-30 Audit post-APDU context and native roots 3 minutes
+
+- Step/experiment: `persistent-inventory-post-apdu-root-audit`
+- When: '2026-10-30 04:30 UTC' - '2026-10-30 04:33 UTC'
+- Change: Audited the physical collection call site and root visitors. The collector runs after the interpreter/temporary native scopes return; the current interpreter owns one context, supplied as the selected external context. `Context::visitRootReferences` enumerates heap-owned roots, remote objects, applet/APDU lifecycle references, Java buffer mirrors, sensitive results, and stack reference returns. `Heap::visitRootReferences` adds runtime exception and cached static roots. Updated TODO/QKB/handoff to record this code-audited root coverage and the future concurrency re-audit trigger.
+- Validation: `./tools/test-rmi-registry` passed: `lifecycle_roots=6`, `sensitive_result_cross_context=1`, `session_cleanup=1`. `git diff --check` passed for the continuity files. No source changed; no hardware/build run was needed.
+- Result: At the post-APDU collection boundary, this implementation has no additional live interpreter context to enumerate. All installed applet roots and package statics are handled separately. Malformed persisted records/alias chains and reboot recovery remain open; no persistent records have been deleted.
+- Decision: Continue byte-level strict restore/collector fault coverage and recovery testing before authorizing any persistent-record deletion.
+- Commit: `aacbd0e` (root-scope audit and status docs); this record is committed separately.
+- Artifacts/logs: `./tools/test-rmi-registry` output; no archived log or hardware artifact.
