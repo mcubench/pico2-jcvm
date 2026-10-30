@@ -17045,3 +17045,27 @@
   prioritized TODO items.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-emulator-20261030T222347Z.log`.
+
+## 2026-10-30 Refresh max-crypto ARM test image 8 minutes
+
+- Step/experiment: `max-crypto-arm-image-refresh`
+- When: '2026-10-30 22:32 UTC' - '2026-10-30 22:40 UTC'
+- Change: Rebuilt the external-test `max_crypto` ARM profile from current source
+  and refreshed its tracked empty-card UF2 and README metadata. Updated TODO and
+  HANDOFF with the new artifact identity and current hardware-access result.
+- Validation: `./tools/build arm --profile max_crypto` passed with 147/150
+  capabilities. The build inspected the RP2350 ARM Secure image. The resulting
+  UF2 is 2,074,112 bytes, SHA-256
+  `184b1a2ee3965405f17ab85d99b0ba19f66c788e4cc6b975a6aca0043debbe49`.
+  `./tools/build riscv --profile base` passed after the platform-independent
+  parser change. The approved PC/SC helper found two USB nodes, but bounded
+  `pcsc_scan -r` timed out without output.
+- Result: The downloadable max-profile image now matches current firmware source
+  and the expected-support CSV is unchanged. No device was flashed; physical
+  reader visibility was not confirmed.
+- Decision: Keep the image available for external testing. Resume physical
+  acceptance when a Pico is registered by PC/SC; continue offline backlog work.
+- Commit: pending.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
+  and `artifacts/firmware/README-max_crypto.txt`; image SHA-256 above, expected
+  CSV SHA-256 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.

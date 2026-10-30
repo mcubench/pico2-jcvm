@@ -1923,7 +1923,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   VPCD KAT 71/71, asymmetric KAT 97/97, and AES-CTR KAT 8/8 pass. The provided
   JCOP4 matrix does not include AES-CTR, so it is an API extension. The UF2 is
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no applet is
-  preinstalled. Physical validation remains open. The previously incomplete
+  preinstalled. Rebuilt on 2026-10-30 from current source: 2,074,112 bytes,
+  SHA-256
+  `184b1a2ee3965405f17ab85d99b0ba19f66c788e4cc6b975a6aca0043debbe49`.
+  Physical validation remains open. The previously incomplete
   all-disabled `minimal` selection now builds on both wrapper targets; the
   optional AES-CTR object is absent in those configurations and present in
   `max_crypto`.

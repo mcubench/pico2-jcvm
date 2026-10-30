@@ -21,6 +21,19 @@ worktree entries. Next, investigate the INSTALL failure and the missing
 captured diagnostics, then continue the prioritized TODO; physical PC/SC had
 only VPCD readers on the latest recorded scan.
 
+## Refreshed external-test max-crypto ARM image — 2026-10-30
+
+Rebuilt current source with `./tools/build arm --profile max_crypto` (147/150
+capabilities) and refreshed
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`: 2,074,112 bytes,
+SHA-256 `184b1a2ee3965405f17ab85d99b0ba19f66c788e4cc6b975a6aca0043debbe49`.
+The companion expected-support CSV is unchanged (SHA-256
+`81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`). ARM
+image inspection and `./tools/build riscv --profile base` passed; no device was
+flashed. The approved reader helper found two USB nodes, but a bounded
+`pcsc_scan -r` timed out without output, so physical card availability is not
+established. The image README has the current hash and size.
+
 Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists
 may be stale. `progress.md` is the append-only work record.
