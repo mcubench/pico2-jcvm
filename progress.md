@@ -15058,7 +15058,7 @@
 - Validation: `git diff --check -- TODO.md .agent/QKB.md .agent/HANDOFF.md` passed. No builds or hardware checks were needed for this documentation-only step.
 - Result: Continuation docs now distinguish parser/build/startup evidence from actually invoking the persistent inventory on device.
 - Decision: Continue with direct tests for the flash/CAP adapters and a bounded diagnostic invocation; do not enable persistent deletion until typed edges and all context roots are accounted for.
-- Commit: pending.
+- Commit: `2c92b7f` (test build fix and QKB note); this progress record is committed separately.
 - Artifacts/logs: none.
 ## 2026-10-30 — Isolate persistent inventory adapter host fault — 16 minutes
 
@@ -15103,3 +15103,14 @@
 - Decision: Add malformed-edge/alias negative tests, inventory every installed package and active context/native root, and explicitly gate reclamation on complete traversal. Preserve persistent deletion as disabled until these are validated.
 - Commit: `b512b0d` (strict edge implementation and unique physical-probe AID); documentation and this progress entry are recorded in subsequent commits.
 - Artifacts/logs: VPCD strict edges `artifacts/logs/persistent-inventory-strict-edges-vpcd-20261030.log` (SHA-256 `ebaa2cf38722416ec891b4c4109434a36823d0cba77c287fb26cdf7f656513fa`); VPCD after unique test AID `artifacts/logs/persistent-inventory-strict-edges-vpcd-20261030-aid.log` (SHA-256 `166241ec6e221859383e489a5da5d02f78d4b841b4d2fea218080a479c744bc`); physical cycle logs `artifacts/logs/cycle-choupi-20261030T023020Z.log` (SHA-256 `aca83ec66c681f5ed94fb7b51c616b918b6014fcf222bf42245f562ccbcee48a`) and `artifacts/logs/cycle-choupi-20261030T023256Z.log` (SHA-256 `ecf4c2d02e35b81061e1f655d7dab60129c5f28a0c78eaa2a9b4cb879cf365b2`); physical JCSystem probe `artifacts/logs/jcsystem-transaction-physical-20261030T023635Z.log` (SHA-256 `4ee8084a4a818a05ef31ab98415e1622ca285843fd43d246842bfc6fa37bb76d`); ARM UF2 SHA-256 `4a28bb894b91f7ff18f0aec1fa92149ffb292dbb257a358d382f4e69ef0d51bb`.
+
+## 2026-10-30 Restore standalone RMI unit build 4 minutes
+
+- Step/experiment: `rmi-test-ffi-include-path`
+- When: '2026-10-30 02:41 UTC' - '2026-10-30 02:45 UTC'
+- Change: Added `choupi/os/src` to the standalone RMI unit target's include paths because `heap.cpp` now includes the OS `ffi.h` declarations for strict persistent-edge traversal. Kept the small target's existing source/link scope; it does not need USB or persistent-store linkage for its current tests.
+- Validation: `./tools/test-rmi-registry` passed and printed `RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1`. Scoped `git diff --check` passed. No hardware or full firmware builds were needed for this test-build-only fix.
+- Result: The repository RMI test wrapper compiles again with the updated heap source.
+- Decision: Add a dedicated heap/persistent-storage unit harness before claiming negative coverage for malformed serialized edges or incomplete-mark reclamation safety.
+- Commit: pending.
+- Artifacts/logs: none.
