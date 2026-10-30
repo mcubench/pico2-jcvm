@@ -128,6 +128,13 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   self-referential array-alias chain each produce `complete=false`, one
   edge-load failure, and zero reclaimed heap slots. The wrapper passes with
   `TEST:SUMMARY fail=0`.
+- Fixture correction: the persistent reference arrays now have valid
+  serialized `FIELD_TYPE_ARRAY_OBJECT` headers and length fields. Earlier test
+  revisions assigned a persistent tag to an array but omitted its serialized
+  header, so they could fail on parent length before reaching the malformed
+  child. Re-run after adding the headers still passes all collector assertions;
+  the self-reference case is evidence of fail-closed alias rejection, not a
+  direct measurement of the recursion-depth guard.
 - This is host-only fail-closed behavior evidence. It does not emulate power
   loss/restart, prove persistent record cleanup or recovery, or authorize
   record deletion. Keep persistent reclamation disabled until restart recovery

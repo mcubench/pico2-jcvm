@@ -34,8 +34,10 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    truncated/mismatched array-alias headers and aliases to scalar records. It
    now also links the actual Heap, JC_Array, JC_Instance, and strict FlashMemory
    decoder. Malformed object-field aliases, truncated reference-array aliases,
-   and a cyclic array-alias chain each make the mark incomplete and reclaim
-   zero handles. A separate host case recreates a volatile heap over retained
+   and a self-referential array-alias record each make the mark incomplete and
+   reclaim zero handles. Reference-array fixtures now include valid serialized
+   array-object headers, so traversal reaches the malformed child records.
+   A separate host case recreates a volatile heap over retained
    filesystem-fixture records, restores a valid persistent array-alias graph,
    and reclaims only an unrelated slot. The rebuilt PC VPCD
    `./tools/test-vpcd-persistence` now passes after a fresh emulator process:
