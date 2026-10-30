@@ -50,6 +50,19 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    persistent record deletion disabled until Pico 2 power-cycle recovery and
    interrupted-update behavior are validated.
 
+   Latest native change: persistent array-alias type resolution now follows
+   nested aliases to a valid array terminal and rejects cycles at a 32-alias
+   bound, matching strict reference restore. Host tests include a valid
+   two-link alias chain through collection and cyclic chains through the type
+   decoder/strict reader. `./tools/test-persistent-transaction` passes;
+   ARM/RISC-V wrappers pass; VPCD persistence passes 3 install/commit and 38
+   restore/GC checks. The ARM image was flashed/verified on 2BED; the finite
+   monitor passed and read-only JCAlgTest SELECT, GETVERSION, and JCSystem-info
+   APDUs returned `9000`. Image SHA-256
+   `b4a26add8ef5bfc28b948633d2f4790caaf48aaaa7addcae8f236f57c1ab8de6`; cycle
+   log `artifacts/logs/cycle-choupi-20261030T050119Z.log`; APDU log
+   `artifacts/logs/pico-powerup-persistence-20261030T050239Z.log`.
+
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in
    `src/choupi_pico2.cpp`. The physical cycle passed startup, but did not call

@@ -68,6 +68,8 @@ private:
                                                 Heap &heap,
                                                 bool fail_on_read,
                                                 uint8_t alias_depth);
+  static FieldType getPersistentField_TypeImpl(const fs::Tag &tag,
+                                               uint8_t alias_depth);
   /// Write data from tag
   static void setDataFromTag(const fs::Tag &tag, uint32_t length,
                              const uint8_t data[]);

@@ -86,6 +86,10 @@ out explicitly.
     - [x] Inject malformed object-field and reference-array alias records,
       including a cyclic array-alias chain, through the actual strict decoder
       and heap collector; each incomplete trace reclaims zero handles.
+    - [x] Resolve valid nested array-alias chains consistently in both the
+      type decoder and strict reference restore, bounded to 32 aliases; test a
+      valid two-link chain through collection and a cycle through strict
+      restore.
     - [x] Recreate the volatile heap over retained persistent records and
       verify a valid aliased array graph restores and only an unrelated heap
       slot is reclaimed (host fixture only).

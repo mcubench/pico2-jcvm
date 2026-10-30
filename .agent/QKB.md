@@ -135,6 +135,23 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   child. Re-run after adding the headers still passes all collector assertions;
   the self-reference case is evidence of fail-closed alias rejection, not a
   direct measurement of the recursion-depth guard.
+- A follow-up valid-chain fixture found that strict reference restoration
+  already followed array aliases recursively, but `getPersistentField_Type`
+  inspected only one target. Since heap traversal queries the type first, a
+  valid alias-to-alias chain failed before reaching the recursive reader. The
+  type decoder now recursively resolves array aliases, accepts only array
+  terminal types, and rejects cycles after the same 32-alias limit used by
+  strict reference restoration. Host tests cover a two-link chain through the
+  actual collector and a cycle through both collector and strict restore.
+- After the fix, persistent-transaction tests pass; ARM and RISC-V wrappers
+  pass; the updated ARM image was flashed/verified on 2BED; the finite runtime
+  monitor passed; and physical JCAlgTest SELECT, GETVERSION, and JCSystem-info
+  all returned `9000`. The existing VPCD persistence/restart suite also passes
+  3 install/commit and 38 restore/GC checks. Image SHA-256
+  `b4a26add8ef5bfc28b948633d2f4790caaf48aaaa7addcae8f236f57c1ab8de6`; cycle
+  log SHA-256 `264a3e499c8c3f06f96176e20e5fc8899418fc4d8a28a03a67b0bf8adc1ac39d`;
+  physical APDU log SHA-256
+  `69af8d88d141cf607dbb43153801f3ecb9c62812cb274884ac2421d99baa6601`.
 - This is host-only fail-closed behavior evidence. It does not emulate power
   loss/restart, prove persistent record cleanup or recovery, or authorize
   record deletion. Keep persistent reclamation disabled until restart recovery

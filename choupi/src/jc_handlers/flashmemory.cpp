@@ -68,6 +68,7 @@ namespace {
 
 constexpr uint8_t kPersistentObjectAlias = 0xFE;
 constexpr uint8_t kPersistentArrayAlias = 0xFD;
+constexpr uint8_t kMaxPersistentAliasDepth = 32;
 constexpr size_t kMaxPersistentObjectDepth = TAG_MAX_LENGTH / 2 + 1;
 constexpr uint16_t kMaxCommitCapacity = 0x7fff;
 // Per-entry metadata is one tag-length byte plus a two-byte payload length.
@@ -273,6 +274,28 @@ fs::Tag read_persistent_alias_target(uint32_t length, const uint8_t *data) {
   target_tag.len = data[1];
   std::memcpy(target_tag.value, data + 2, target_tag.len);
   return target_tag;
+}
+
+bool is_persistent_array_type(const FieldType type) noexcept {
+  switch (type) {
+  case FieldType::FIELD_TYPE_ARRAY_BYTE:
+  case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
+  case FieldType::FIELD_TYPE_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+  case FieldType::FIELD_TYPE_ARRAY_INT:
+#endif
+  case FieldType::FIELD_TYPE_ARRAY_OBJECT:
+  case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
+  case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
+  case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+  case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
+#endif
+  case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT:
+    return true;
+  default:
+    return false;
+  }
 }
 
 // Persistent array contents need an identity tag independent of the field
@@ -842,7 +865,7 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
   FieldType type = static_cast<FieldType>(data[0]);
 
   if (data[0] == kPersistentObjectAlias) {
-    if (fail_on_read && alias_depth >= 32) {
+    if (fail_on_read && alias_depth >= kMaxPersistentAliasDepth) {
       throw Exceptions::SecurityException;
     }
     const fs::Tag target_tag = read_persistent_alias_target(length, data);
@@ -861,7 +884,7 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
   }
 
   if (data[0] == kPersistentArrayAlias) {
-    if (fail_on_read && alias_depth >= 32) {
+    if (fail_on_read && alias_depth >= kMaxPersistentAliasDepth) {
       throw Exceptions::SecurityException;
     }
     const fs::Tag target_tag = read_persistent_alias_target(length, data);
@@ -1017,43 +1040,33 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
 }
 
 /** Return the stored representation of one persistent instance field. */
-FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &tag) {
-  auto [length, data] = FlashMemory_Handler::getDataInPlaceFromTag(tag);
-  if (length == 0) {
+FieldType FlashMemory_Handler::getPersistentField_TypeImpl(
+    const fs::Tag &tag, const uint8_t alias_depth) {
+  const auto [length, data] = FlashMemory_Handler::getDataInPlaceFromTag(tag);
+  if (length == 0 || data == nullptr) {
     throw Exceptions::SecurityException;
   }
   if (data[0] == kPersistentObjectAlias) {
     return FieldType::FIELD_TYPE_OBJECT;
   }
   if (data[0] == kPersistentArrayAlias) {
+    if (alias_depth >= kMaxPersistentAliasDepth) {
+      throw Exceptions::SecurityException;
+    }
     const fs::Tag target_tag = read_persistent_alias_target(length, data);
-    auto [target_length, target_data] =
-        FlashMemory_Handler::getDataInPlaceFromTag(target_tag);
-    if (target_length == 0 || target_data == nullptr) {
+    const FieldType target_type =
+        FlashMemory_Handler::getPersistentField_TypeImpl(
+            target_tag, static_cast<uint8_t>(alias_depth + 1));
+    if (!is_persistent_array_type(target_type)) {
       throw Exceptions::SecurityException;
     }
-    const FieldType target_type = static_cast<FieldType>(target_data[0]);
-    switch (target_type) {
-    case FieldType::FIELD_TYPE_ARRAY_BYTE:
-    case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
-    case FieldType::FIELD_TYPE_ARRAY_SHORT:
-#ifdef JCVM_INT_SUPPORTED
-    case FieldType::FIELD_TYPE_ARRAY_INT:
-#endif
-    case FieldType::FIELD_TYPE_ARRAY_OBJECT:
-    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
-    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
-    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
-#ifdef JCVM_INT_SUPPORTED
-    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
-#endif
-    case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT:
-      return target_type;
-    default:
-      throw Exceptions::SecurityException;
-    }
+    return target_type;
   }
   return static_cast<FieldType>(data[0]);
+}
+
+FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &tag) {
+  return FlashMemory_Handler::getPersistentField_TypeImpl(tag, 0);
 }
 
 /**

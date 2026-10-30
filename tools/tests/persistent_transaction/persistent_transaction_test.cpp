@@ -277,6 +277,9 @@ int main() {
     const auto parent = heap.getArray(parent_reference);
     const auto parent_tag = make_tag(0x79);
     parent->setPersistentTag(parent_tag);
+    seed(parent_tag.value, parent_tag.len,
+         {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
+          0, 1, 0xff, 0xff});
     const auto malformed_edge = FlashMemory_Handler::computeTag(parent_tag, 0);
     seed(malformed_edge.value, malformed_edge.len, {0xfe});
     const auto summary = heap.collectUnreachableFrom({parent_reference});
@@ -298,6 +301,9 @@ int main() {
     const auto parent = heap.getArray(parent_reference);
     const auto parent_tag = make_tag(suffix);
     parent->setPersistentTag(parent_tag);
+    seed(parent_tag.value, parent_tag.len,
+         {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
+          0, 1, 0xff, 0xff});
     const auto edge_tag = FlashMemory_Handler::computeTag(parent_tag, 0);
     seed(edge_tag.value, edge_tag.len, std::move(record));
     const auto summary = heap.collectUnreachableFrom({parent_reference});
@@ -316,7 +322,74 @@ int main() {
   cyclic_alias.insert(cyclic_alias.end(), alias_edge_tag.value,
                       alias_edge_tag.value + alias_edge_tag.len);
   exercise_bad_array_edge(0x7b, std::move(cyclic_alias),
-                          "cyclic_serialized_array_alias_blocks_reclamation");
+                          "cyclic_serialized_array_alias_is_bounded_and_blocks_reclamation");
+
+  {
+    jcvm::Heap heap(7);
+    const auto parent_reference =
+        heap.addArray(1, jcvm::JAVA_ARRAY_T_REFERENCE, 0xffff);
+    const auto garbage_reference =
+        heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    const auto parent = heap.getArray(parent_reference);
+    const auto parent_tag = make_tag(0x7e);
+    const auto middle_tag = make_tag(0x7f);
+    const auto target_tag = make_tag(0x80);
+    parent->setPersistentTag(parent_tag);
+    seed(parent_tag.value, parent_tag.len,
+         {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
+          0, 1, 0xff, 0xff});
+    const auto edge_tag = FlashMemory_Handler::computeTag(parent_tag, 0);
+    std::vector<uint8_t> edge_alias{0xfd, middle_tag.len};
+    edge_alias.insert(edge_alias.end(), middle_tag.value,
+                      middle_tag.value + middle_tag.len);
+    seed(edge_tag.value, edge_tag.len, std::move(edge_alias));
+    std::vector<uint8_t> middle_alias{0xfd, target_tag.len};
+    middle_alias.insert(middle_alias.end(), target_tag.value,
+                        target_tag.value + target_tag.len);
+    seed(middle_tag.value, middle_tag.len, std::move(middle_alias));
+    seed(target_tag.value, target_tag.len,
+         {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
+          0, 1, 0x42});
+
+    const auto summary = heap.collectUnreachableFrom({parent_reference});
+    bool garbage_handle_invalidated = false;
+    try {
+      (void)heap.getArray(garbage_reference);
+    } catch (jcvm::Exceptions) {
+      garbage_handle_invalidated = true;
+    }
+    expect(summary.complete && summary.edge_load_failures == 0 &&
+               summary.arrays_reachable == 2 &&
+               summary.arrays_reclaimed == 1 &&
+               heap.getArray(parent_reference) != nullptr &&
+               garbage_handle_invalidated &&
+               FlashMemory_Handler::getPersistentField_Type(edge_tag) ==
+                   jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE,
+           "nested_persistent_array_alias_chain_traces_to_target");
+  }
+
+  {
+    jcvm::Heap heap(7);
+    const auto first_alias = make_tag(0x81);
+    const auto second_alias = make_tag(0x82);
+    std::vector<uint8_t> first_record{0xfd, second_alias.len};
+    first_record.insert(first_record.end(), second_alias.value,
+                        second_alias.value + second_alias.len);
+    seed(first_alias.value, first_alias.len, std::move(first_record));
+    std::vector<uint8_t> second_record{0xfd, first_alias.len};
+    second_record.insert(second_record.end(), first_alias.value,
+                         first_alias.value + first_alias.len);
+    seed(second_alias.value, second_alias.len, std::move(second_record));
+    bool strict_cycle_rejected = false;
+    try {
+      (void)FlashMemory_Handler::getPersistentField_ReferenceStrict(first_alias,
+                                                                      heap);
+    } catch (jcvm::Exceptions) {
+      strict_cycle_rejected = true;
+    }
+    expect(strict_cycle_rejected,
+           "cyclic_array_alias_strict_restore_is_bounded");
+  }
 
   {
     persistent_transaction_test::instance_field_count = 1;
