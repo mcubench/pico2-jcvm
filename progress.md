@@ -15211,5 +15211,5 @@
 - Validation: `git show --stat --oneline 11c25d6` confirms it contains only the handoff, QKB, and progress update.
 - Result: The record now identifies the documentation commit.
 - Decision: Continue with inactive applet and other live-owner root enumeration.
-- Commit: pending.
+- Commit: `9277022` (the progress record containing this reference is committed in the follow-up correction commit).
 - Artifacts/logs: none.
