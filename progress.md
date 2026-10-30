@@ -16760,6 +16760,18 @@
 - Commit: recorded in immediate follow-up progress entry.
 - Artifacts/logs: diagnostic output recorded in `.agent/QKB.md`; no new log file.
 
+## 2026-10-30 Record PCSC diagnostic commit 1 minute
+
+- Step/experiment: `physical-pico-pcsc-diagnostic-log-closeout`
+- When: '2026-10-30 21:09 UTC' - '2026-10-30 21:10 UTC'
+- Change: Recorded the commit SHA for the current Pico PC/SC diagnostic.
+- Validation: Confirmed commit `48d803c` contains only QKB/HANDOFF evidence and
+  its progress records.
+- Result: Fresh reader-registration status is committed as `48d803c`.
+- Decision: Continue with offline tasks until a physical reader registers.
+- Commit: recorded in this follow-up commit.
+- Artifacts/logs: none.
+
 ## 2026-10-30 Record multi-package VPCD rerun commit 1 minute
 
 - Step/experiment: `multipackage-restart-delete-regression-log-closeout`
