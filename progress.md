@@ -15169,3 +15169,14 @@
 - Decision: Design a collision-free stable owner mapping persisted in install metadata, and test legacy owner-0 migration before changing collector authorization.
 - Commit: pending.
 - Artifacts/logs: none.
+
+## 2026-10-30 Applet-root audit commit reference correction
+
+- Step/experiment: `persistent-applet-root-owner-audit`
+- When: '2026-10-30 03:20 UTC' - '2026-10-30 03:21 UTC'
+- Change: Replaced the pending commit reference for the applet-root owner audit with documentation commit `05ef053`.
+- Validation: `git show --stat --oneline 05ef053` confirms it contains the TODO, QKB, handoff, and progress updates for the owner collision finding.
+- Result: The audit record now points to its committed documentation; no source or test files changed.
+- Decision: Implement a stable per-instance owner mapping only after specifying on-flash compatibility and migration behavior.
+- Commit: `05ef053` (this correction is recorded in the following administrative commit).
+- Artifacts/logs: none.
