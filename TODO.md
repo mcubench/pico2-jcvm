@@ -67,9 +67,14 @@ out explicitly.
     AID, exactly one root, and matching owner/package/class metadata; otherwise
     fail closed. VPCD restart coverage confirms three roots before and after
     restart. Physical multi-instance installation has not been tested.
-  - [ ] Include every live context and native-held root before computing
-    authoritative reachability. Other live contexts/native owners and any
-    roots outside the registered per-instance records remain uncovered.
+  - [x] Audit live context and native-held roots at post-APDU collection.
+    `Interpretor` currently owns one context, the physical collector runs only
+    after execution returns for the selected external context, and
+    `Context::visitRootReferences` plus `Heap::visitRootReferences` includes
+    runtime exceptions, cached statics, lifecycle/APDU references, RMI roots,
+    sensitive results, and stack reference returns. `test-rmi-registry` passes
+    these root categories. Revisit if concurrent contexts or another persistent
+    native owner is introduced.
   - [ ] Add malformed serialized edge/alias tests and prove an incomplete walk
     cannot authorize reclamation, including recovery after power cycling.
     - [x] Host heap test confirms a partial root enumerator and an invalid

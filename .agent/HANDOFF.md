@@ -25,11 +25,12 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    installed instance roots are visited before and after restart. Enumeration
    now requires one root per registered instance with matching owner/package/
    class metadata and valid AIDs; mismatch fails closed. Physical multi-instance
-   install/root restore has not been tested; live contexts and native-held
-   roots remain uncovered. The JCArray heap regression now proves partial root
-   enumeration, an invalid in-memory array edge, and an injected strict
-   persistent-array child read exception each return an incomplete trace and
-   reclaim zero heap handles. The FlashMemory transaction test now rejects
+   install/root restore has not been tested. A post-APDU root audit found one
+   interpreter context, with its native/runtime roots enumerated by Context and
+   Heap visitors (`test-rmi-registry` passes). The JCArray heap regression now
+   proves partial root enumeration, an invalid in-memory array edge, and a
+   strict persistent-array child read exception each return an incomplete trace
+   and reclaim zero heap handles. The FlashMemory transaction test now rejects
    truncated/mismatched array-alias headers. Malformed object-alias chains,
    collector behavior on corrupt serialized edges, and reboot recovery remain
    untested, so persistent records cannot be deleted.

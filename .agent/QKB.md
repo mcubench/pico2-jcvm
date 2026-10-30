@@ -1424,3 +1424,19 @@ original terminology/status; check current summary and later fixes before reuse.
 - These checks cover malformed array-alias framing only. They do not validate
   malformed object-alias chains through `getPersistentField_ReferenceStrict`,
   collector behavior on an alias-corrupt record, or recovery after restart.
+
+### Post-APDU collector has one live interpreter context — audited 2026-10-30
+
+- `Interpretor` currently pushes one `Context` in each constructor; the hardware
+  APDU entry point supplies the selected external context. Collection is called
+  after interpreter execution, not while Java frames or native C++ call-local
+  references are active. Its callback invokes `Context::visitRootReferences`
+  and `Heap::visitRootReferences`, which visit remote-object roots, applet and
+  APDU lifecycle references, APDU buffer mirrors, sensitive results, stack
+  reference returns, runtime exception roots, and cached static references.
+- The missing root inventory was therefore per-installed-applet roots, now
+  enumerated for every registry instance, rather than several simultaneous
+  interpreter contexts. `./tools/test-rmi-registry` passes
+  `lifecycle_roots=6`, `sensitive_result_cross_context=1`, and session cleanup.
+  Revisit this audit if the interpreter gains concurrent contexts or another
+  persistent native owner. No persistent records are deleted by this change.
