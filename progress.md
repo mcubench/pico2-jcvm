@@ -15081,3 +15081,14 @@
 - Decision: Keep reclamation disabled. Next implement/test serialized object and reference-array edges, then add all active applet/context roots before reachability can authorize deletion. Physical invocation of the adapters remains open.
 - Commit: `7e755e1`
 - Artifacts/logs: VPCD `artifacts/logs/persistent-inventory-vpcd-fixed-20261030.log` (SHA-256 `2e2e570a91d6fdc98b84314fc6efead267d03ad1b16f3e2150d5e1163a53f0e5`); physical `artifacts/logs/cycle-choupi-20261030T021444Z.log` (SHA-256 `a62337be82ee683ad3bb089e97a15255ee12d7f89c9402428f9a5bf7d1f957b0`); ARM UF2 SHA-256 `0d1e6526d7bb968cd2f712be12a043ac748b7b1099f35b459c3898e31024de23`.
+
+## 2026-10-30 — Trace reachability from inventory roots — 8 minutes
+
+- Step/experiment: `persistent-inventory-rooted-heap-trace`
+- When: '2026-10-30 02:17 UTC' - '2026-10-30 02:26 UTC'
+- Change: Extended the opt-in PC-only inventory diagnostic to include the selected `Context` roots, append roots discovered by the static/applet adapters, and run the existing read-only `Heap::traceReachableFrom()` pass. It reports reachable/total object counts and invalid/edge-failure counts; exceptions from the diagnostic are contained. No collector or persistent storage mutation is invoked.
+- Validation: `./tools/build-pc` passed. Unchanged JCSystem transaction CAP VPCD cases 14–16 and nested-alias case 82 passed (`TEST:SUMMARY pass=6 fail=0`, 44.790 s). Four post-APDU scans reported both adapters `Complete`, six static roots, one applet root; after setup, `trace_complete=1`, arrays 11/11 and instances 7/7 reachable, zero invalid refs, and zero edge-load failures. This source change is entirely inside `PC_VERSION`; ARM/RISC-V builds and physical flash were intentionally skipped for this diagnostic-only extension.
+- Result: Existing graph traversal reaches the fixture's persistent fields, reference arrays, aliases, and context roots. The walk still uses tolerant child getters, and only one applet/context workload is covered; this does not establish fail-closed semantics or authorize record deletion.
+- Decision: Next add strict object-field and reference-array edge readers, then broaden root enumeration across installed packages and active contexts before any reclamation.
+- Commit: `ad973f3`
+- Artifacts/logs: `artifacts/logs/persistent-inventory-edges-vpcd-20261030b.log` (SHA-256 `69a40e6e57eb978993f6e4085ce8151fda55179b2c172799d111a736193678a7`); `/tmp/build-pc-inventory-edges.log`.
