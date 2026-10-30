@@ -15422,3 +15422,14 @@
 - Decision: Keep deletion disabled. Next, connect this read-only consumer to trusted installed-root inventory after root completeness is established, and add cursor-error behavior tests before any deletion design.
 - Commit: `c7bc50a` (implementation; this progress record is committed separately).
 - Artifacts/logs: ARM UF2 SHA-256 `5e6aefac07fb265c109c1d11b4b58eda1a2a83ecdd87452cea615f438393b31e`; cycle log `artifacts/logs/cycle-choupi-20261030T051629Z.log` SHA-256 `827e92b4fc6b4eab5c14d95e104825f9e14d1cc3701bc26ad8cafbd686a7e294`; test outputs were not separately archived.
+
+## 2026-10-30 Verify partial cursor results remain provisional 2 minutes
+
+- Step/experiment: `persistent-inventory-cursor-failure-contract`
+- When: '2026-10-30 05:19 UTC' - '2026-10-30 05:21 UTC'
+- Change: Documented that owner-tag candidate callbacks stream provisional results and must not mutate storage; callers may act only when the overall return status is `Complete`. Added a fixture that stalls after one returned record.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including the new case where one provisional candidate is observed, the next cursor step returns `InvalidCursor`, and both stored records remain unchanged.
+- Result: A cursor failure is distinguishable from a completed inventory and cannot be mistaken for a complete candidate list. No persistent records were erased. No firmware behavior changed, so ARM/RISC-V builds and physical flashing were not repeated.
+- Decision: Keep deletion disabled; integrate only a consumer that stages candidates and commits work after `Complete`, using the combined installed-package static and per-instance applet roots.
+- Commit: `49f3c9e` (implementation/test; this progress record is committed separately).
+- Artifacts/logs: Test output only; no separate log.
