@@ -14992,5 +14992,5 @@
 - Validation: `./tools/test-persistent-inventory` passed eight cases (`TEST:SUMMARY fail=0`), including 129 static reference slots crossing offset 255 and inconsistent image metadata. `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, flash verification, and finite physical runtime (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The monitor did not invoke the inventory helper. Scoped `git diff --check` passed.
 - Result: CAP package metadata can now enumerate candidate persistent reference-static tags without scanning unrelated primitive-static records. The stored values and transitive object graph remain unexamined; no record is deleted.
 - Decision: Read those static slots through the native persistent API, skip nulls, and then traverse object, reference-array, and alias records under fail-closed rules.
-- Commit: recorded in the immediate follow-up progress entry.
+- Commit: `386a186`; this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T012137Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
