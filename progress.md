@@ -15027,3 +15027,14 @@
 - Decision: Add direct adapter tests with a mock storage/heap boundary, then design an owner-aware inventory entry point that supplies validated CAP static metadata and all necessary applet/runtime roots. Do not enable flash deletion.
 - Commit: `d7fb19f` (adapter); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T014218Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `cefc89fb69c41255406a4941b3ef7c04c515c2fbf88f49b9bf94356f6832e9a8`.
+
+## 2026-10-30 Read static root metadata from installed CAP 3 minutes
+
+- Step/experiment: `persistent-static-root-cap-metadata`
+- When: '2026-10-30 01:43 UTC' - '2026-10-30 01:46 UTC'
+- Change: Added `visitInstalledPackageStaticRoots`, which obtains the installed package CAP's Static Field component, decodes its big-endian `image_size` and `reference_count`, and delegates to the strict cached-root adapter. Missing Static Field metadata is rejected as an invalid layout. The inventory remains opt-in and read-only.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `./tools/test-persistent-inventory` passed all 11 cases. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` verified flash and passed repeated finite monitor checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`), with no `TEST:FAIL`/`FAULT`. The physical monitor did not call the CAP reader. Scoped `git diff --check` passed.
+- Result: A caller can request static roots using metadata from the actual installed CAP instead of manually supplied counts. The API is not yet called by GC and no persistent records are removed.
+- Decision: Add direct tests for installed CAP metadata extraction and strict restore, then determine a safe context/owner inventory that includes every live applet root, object-field edge, array edge, and alias before any persistent-store deletion.
+- Commit: `2334781` (CAP metadata adapter); this progress record is committed separately.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T014537Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `cefc89fb69c41255406a4941b3ef7c04c515c2fbf88f49b9bf94356f6832e9a8`.
