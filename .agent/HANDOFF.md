@@ -69,6 +69,26 @@ on normal `symm_crypto`. No Service CAP remains installed after the tests.
 Evidence and hashes are in the QKB section “Physical `/deploy` Service profile
 recheck and Java PC/SC library.”
 
+## Latest full physical Crypto test and reader state
+
+On 2026-10-30, a full 3.0.5 Crypto run on 8E (`asymm_crypto`) stopped at 233
+calls. The first transport failure occurred on the RSA-512 SHA-1 known-signature
+case; four following calls reported the reader disconnected. Cleanup could not
+find the 8E PC/SC reader. The same board still enumerated over USB with normal
+CDC/CCID descriptors, and an eight-second serial monitor showed eight passing
+runtime summaries and no `FAULT`, but PC/SC continued to list only 2BED. The
+cause is unproven; do not count this as a complete Crypto result. The Crypto
+CAP may remain installed on 8E; verify and uninstall it when PC/SC access
+returns.
+
+Using the other physical device as failover, the full unchanged Crypto CAP on
+2BED (`symm_crypto`) completed 466 calls: 138 `OK`, 304
+`UNSUPPORTED_PER_SPEC`, and 24 `NO_MEMORY` (`SystemException.NO_RESOURCE`).
+Upload and cleanup passed. A read-only JCAlgTest registry/version/JCSystem-info
+probe returned `9000` after the run, followed by eight passing serial runtime
+summaries. The `NO_RESOURCE` origin is not identified; keep persistent
+reclamation disabled pending its recovery acceptance requirements.
+
 ## Physical RSA NOPAD retest
 
 The previously noted NOPAD physical retest is complete. On 2026-10-29, the

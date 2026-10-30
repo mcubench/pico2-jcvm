@@ -1776,6 +1776,35 @@ original terminology/status; check current summary and later fixes before reuse.
   does not establish a full Crypto area pass or close the remaining deploy
   regression sweep.
 
+### Full API 3.0.5 Crypto physical runs and 8E PC/SC loss — 2026-10-30
+
+- Full Crypto on 8E (`asymm_crypto`) uploaded successfully but aborted after
+  233/466 calls. It recorded 145 `OK`, 82 `UNSUPPORTED_PER_SPEC`, one
+  `EXC_CARDRUNTIME` (RSA SHA-512 PSS, reason `0x0001`), then five `CARD_ERROR`
+  rows beginning with the RSA-512 SHA-1 known-signature call
+  (`SCARD_E_NOT_TRANSACTED`) and subsequent “Card has been disconnected.”
+  Cleanup failed because the exact 8E reader was no longer found. CSV SHA-256:
+  `f55cb277860dc648441a6ab2e58bc1167693db29b880d98f260951420f634a4f`.
+- The serial device and USB descriptors for 8E remained present after the
+  abort. Its finite eight-second monitor returned eight `TEST:PASS` /
+  `TEST:SUMMARY pass=1 fail=0` records and no `FAULT`, but `pcsc_scan -r`
+  continued to show only physical board 2BED. The USB helper saw both devices.
+  Root cause is not established; do not classify the five transport fallout
+  rows as five independent VM failures. The 8E Crypto CAP may remain installed;
+  check before the next install when PC/SC returns.
+- Failover full Crypto on 2BED (`symm_crypto`) completed all 466 calls with
+  138 `OK`, 304 `UNSUPPORTED_PER_SPEC`, and 24 `NO_MEMORY` /
+  `SystemException.NO_RESOURCE`. Upload and cleanup passed. The resource errors
+  affect multiple MAC/signature and Cipher paths; the exact allocator/store is
+  not established. This is consistent with known storage pressure, but does
+  not prove persistent GC is the cause. CSV SHA-256:
+  `8343b601775a8fc3e8dbe126509901b137b5903464b8372d9c39d927bcbb6510`.
+- A read-only post-run check on 2BED confirmed the JCAlgTest applet/package,
+  GETVERSION `1.8.2_jc305`, and JCSystem-info all returned `9000`. Log:
+  `artifacts/logs/pico-powerup-persistence-20261030T173744Z.log` (SHA-256
+  `ba3f8aeac6c1d13d1726309b0123fbcadb6c89d6ab515822ca919e658e5f3d72`). This
+  check does not measure power-cycle recovery.
+
 ### Read-only power-up check does not perform a power cycle — clarified 2026-10-30
 
 - `tools/test-pico-powerup` checks GPPro package/applet listing, applet SELECT,

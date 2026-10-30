@@ -16168,3 +16168,39 @@
 - Decision: Continue with the remaining prioritized firmware and deploy work.
 - Commit: recorded in the following progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-30 Run full physical API 3.0.5 Crypto on both profile boards 9 minutes
+
+- Step/experiment: `physical-api305-crypto-full-asymm-and-symm`
+- When: '2026-10-30 17:30 UTC' - '2026-10-30 17:39 UTC'
+- Change: No source/image changes. Ran full unchanged 3.0.5 Crypto on 8E
+  (`asymm_crypto`), then failed over to 2BED (`symm_crypto`) after the 8E
+  reader disappeared. Updated TODO, QKB, and handoff with complete and partial
+  evidence.
+- Validation: On 8E, CAP upload passed; the client stopped at 233/466 calls
+  after RSA-512 SHA-1 returned `SCARD_E_NOT_TRANSACTED`; four following calls
+  were transport disconnects. Cleanup could not find the reader. 8E remained
+  USB-enumerated and an eight-second serial monitor showed eight
+  `TEST:PASS`/`TEST:SUMMARY pass=1 fail=0`, no `FAULT`; PC/SC listed only 2BED.
+  On 2BED, full Crypto completed 466 calls (138 `OK`, 304
+  `UNSUPPORTED_PER_SPEC`, 24 `NO_MEMORY`) and CAP cleanup passed. Read-only
+  registry/version/JCSystem-info probes returned `9000`, and its eight-second
+  monitor showed eight passing summaries. No build or flash was needed because
+  firmware source did not change. Targeted documentation `git diff --check`
+  passed.
+- Result: The 8E full Crypto test is incomplete, with cleanup blocked by its
+  current PC/SC absence; the five card-error rows follow reader loss. The
+  separate 2BED `symm_crypto` run passed transport and cleanup but surfaced 24
+  `SystemException.NO_RESOURCE` results. The precise resource exhausted is
+  unknown; keep the persistence/reclamation task open and do not attribute it
+  to any one cryptographic implementation yet.
+- Decision: When 8E returns to PC/SC, check/uninstall its possibly retained
+  Crypto CAP before rerunning. Investigate resource exhaustion independently;
+  retain 2BED as the working hardware failover.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: `artifacts/results/deploy/crypto-full-current-8E-20261030.csv`
+  (SHA-256 `f55cb277860dc648441a6ab2e58bc1167693db29b880d98f260951420f634a4f`),
+  `artifacts/results/deploy/crypto-full-symm-2BED-20261030.csv` (SHA-256
+  `8343b601775a8fc3e8dbe126509901b137b5903464b8372d9c39d927bcbb6510`), and
+  `artifacts/logs/pico-powerup-persistence-20261030T173744Z.log` (SHA-256
+  `ba3f8aeac6c1d13d1726309b0123fbcadb6c89d6ab515822ca919e658e5f3d72`).
