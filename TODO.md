@@ -295,8 +295,13 @@ out explicitly.
   directions are now allowed while PKCS#1/OAEP keep their normal mode rules.
   PC/ARM/RISC-V `asymm_crypto` builds pass; the unchanged API NOPAD filter
   passes 4/4 selected calls on VPCD. Fresh-image PKCS#1 regression passes five
-  supported calls and one expected unsupported case. Physical retest remains
-  pending.
+  supported calls and one expected unsupported case. Physical retest completed
+  on Pico 2 `2BED26ED20556535` with the `asymm_crypto` image: all four NOPAD
+  rows in the unchanged 3.0.5 Crypto CAP returned `OK`, and CAP cleanup
+  succeeded. The complete 466-call Crypto area contained 302 `OK`, 163
+  `UNSUPPORTED_PER_SPEC`, and one unrelated `EXC_CARDRUNTIME`. Evidence:
+  `artifacts/results/deploy/crypto-physical-retest-20261029/2BED-asymm-crypto.csv`
+  (SHA-256 `28400be72b530b81d264dbad3dbd11f860ba3af6c5756c06dac792ee8e4d05b1`).
 - [ ] Re-run the remaining affected deploy cases after each fix on VPCD;
   physical 3.0.5 Crypto and Security retests now completed on 2BED after both
   architecture builds passed. Source data:

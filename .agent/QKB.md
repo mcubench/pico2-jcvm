@@ -1747,6 +1747,19 @@ original terminology/status; check current summary and later fixes before reuse.
   3072 but sends 4096; independent physical 3072 generation vectors pass.
   Preserve this caveat; do not alter the CAP or expected manifest to hide it.
 
+### Physical API 3.0.5 RSA NOPAD rows pass — 2026-10-29
+
+- The unchanged Crypto CAP completed all 466 calls on Pico 2
+  `2BED26ED20556535` with `asymm_crypto`. All four `ALG_RSA_NOPAD` rows
+  returned `OK`, including the parameterized illegal-value case; upload and
+  cleanup stages both passed. The area totals were 302 `OK`, 163
+  `UNSUPPORTED_PER_SPEC`, and one unrelated `EXC_CARDRUNTIME`.
+- Evidence CSV:
+  `artifacts/results/deploy/crypto-physical-retest-20261029/2BED-asymm-crypto.csv`
+  (SHA-256 `28400be72b530b81d264dbad3dbd11f860ba3af6c5756c06dac792ee8e4d05b1`).
+- The prior “physical retest pending” notes were stale. This does not make the
+  broader deploy matrix clean; track its remaining findings separately.
+
 ### Read-only power-up check does not perform a power cycle — clarified 2026-10-30
 
 - `tools/test-pico-powerup` checks GPPro package/applet listing, applet SELECT,

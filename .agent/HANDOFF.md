@@ -69,6 +69,16 @@ on normal `symm_crypto`. No Service CAP remains installed after the tests.
 Evidence and hashes are in the QKB section “Physical `/deploy` Service profile
 recheck and Java PC/SC library.”
 
+## Physical RSA NOPAD retest
+
+The previously noted NOPAD physical retest is complete. On 2026-10-29, the
+unchanged API 3.0.5 Crypto CAP passed all four `ALG_RSA_NOPAD` rows on Pico 2
+`2BED26ED20556535` with the `asymm_crypto` image; CAP upload and cleanup both
+succeeded. The surrounding 466-call area had one unrelated runtime exception.
+The CSV and SHA-256 are recorded in TODO.md and QKB. Do not keep NOPAD on the
+physical retest list; broader focused deploy reruns and private-key hardening
+remain open.
+
 ## Refreshed Windows profile test package
 
 The Windows bundle was rebuilt on 2026-10-30 with
@@ -558,8 +568,9 @@ CAPs unchanged. Historical Java-provider plans are superseded by this boundary.
   selected no such cases. Artifact directory:
   `artifacts/results/deploy/signature-initial-digest-vpcd-final/`.
 - MessageRecovery mode/parameter reasons fixed (`be0ea69`, `2ae55a4`);
-  NOPAD now permits both RSA directions, four selected VPCD calls pass.
-  PKCS#1/OAEP mode restrictions remain. Physical retests pending.
+  NOPAD now permits both RSA directions, four selected VPCD calls pass, and
+  all four physical API 3.0.5 NOPAD rows pass on 2BED. PKCS#1/OAEP mode
+  restrictions remain.
 - ECDSA SHA-384 selected calls pass 4/4; SHA-224/512 traced combined retry
   passes 8/8 after intermittent 6F00. DH/DHC secp192r1 passes fresh-image
   retries. No root cause established for the intermittent failures.

@@ -16105,3 +16105,28 @@
 - Decision: Continue with the remaining project backlog.
 - Commit: `d50ea84` (tracker update recorded here)
 - Artifacts/logs: none.
+
+## 2026-10-30 Correct stale physical RSA NOPAD status 8 minutes
+
+- Step/experiment: `physical-api305-rsa-nopad-evidence-audit`
+- When: '2026-10-30 17:17 UTC' - '2026-10-30 17:25 UTC'
+- Change: Cross-checked the existing 2026-10-29 physical 3.0.5 Crypto result
+  and corrected stale “physical retest pending” statements in `TODO.md` and
+  `.agent/HANDOFF.md`. Added the reusable board/result/hash details to
+  `.agent/QKB.md`.
+- Validation: A CSV audit confirmed 466 call rows, exactly four
+  `ALG_RSA_NOPAD` rows with status `OK`, all upload/test/cleanup stage rows
+  `OK`, and totals of 302 `OK`, 163 `UNSUPPORTED_PER_SPEC`, and one unrelated
+  `EXC_CARDRUNTIME`. Targeted `git diff --check -- TODO.md .agent/QKB.md
+  .agent/HANDOFF.md` passed. The repository-wide `git diff --check` still
+  reports pre-existing trailing whitespace in the user's modified `AGENTS.md`;
+  it was left untouched. No new firmware build or hardware run was needed for
+  this evidence correction.
+- Result: Physical RSA NOPAD acceptance was already complete on Pico 2
+  `2BED26ED20556535` using `asymm_crypto`; the open 3.0.5 Crypto issue remains
+  the separate runtime exception, not NOPAD behavior.
+- Decision: Keep the focused broader deploy reruns open; remove NOPAD from the
+  physical retest queue.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: `artifacts/results/deploy/crypto-physical-retest-20261029/2BED-asymm-crypto.csv`
+  (SHA-256 `28400be72b530b81d264dbad3dbd11f860ba3af6c5756c06dac792ee8e4d05b1`).
