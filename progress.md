@@ -15070,3 +15070,14 @@
 - Decision: Add a focused heap/cache or minimal adapter test to isolate the fault before direct hardware invocation or reclamation work. Keep persistent deletion disabled.
 - Commit: `3e0728d` (QKB/HANDOFF investigation record)
 - Artifacts/logs: `artifacts/logs/persistent-inventory-static-vpcd-20261030e.log`, `artifacts/logs/persistent-inventory-control-vpcd-20261030.log`, `/tmp/build-pc-inventory.log`
+
+## 2026-10-30 — Fix and exercise static-root inventory adapter — 7 minutes
+
+- Step/experiment: `persistent-inventory-static-context-forwarding`
+- When: '2026-10-30 02:10 UTC' - '2026-10-30 02:17 UTC'
+- Change: The generic static-root walker shares one opaque pointer between its reader and visitor. The persistent adapter incorrectly passed its private reader context directly to the caller visitor, which overwrote the heap pointer. Added an adapter context carrying both the heap and downstream visitor/context, and a forwarding callback. Added an opt-in PC-only post-APDU hook (`PICO2_PERSISTENT_INVENTORY=1`) to invoke both adapters and report result/root counts.
+- Validation: `./tools/test-persistent-inventory` passed; PC, ARM, and RISC-V wrappers passed. With the unchanged JCSystem transaction CAP, `PICO2_PERSISTENT_INVENTORY=1 ./tools/test-jcsystem-transaction-applet --case 14 --case 15 --case 16` passed (`TEST:SUMMARY pass=5 fail=0`, 49.098 s). All four post-APDU scans reported `static_result=0 static_roots=6 applet_result=0 applet_roots=1`. Physical `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, recovered from an unavailable reset interface through the wrapper's CDC-1200 BOOTSEL path, verified the flash, and passed finite serial (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The physical monitor did not invoke the PC-only inventory hook.
+- Result: Both installed-CAP static and applet root adapters now complete against the VPCD JCSystem workload. Full object-field/reference-array/alias traversal is not implemented; no persistent records were deleted.
+- Decision: Keep reclamation disabled. Next implement/test serialized object and reference-array edges, then add all active applet/context roots before reachability can authorize deletion. Physical invocation of the adapters remains open.
+- Commit: `7e755e1`
+- Artifacts/logs: VPCD `artifacts/logs/persistent-inventory-vpcd-fixed-20261030.log` (SHA-256 `2e2e570a91d6fdc98b84314fc6efead267d03ad1b16f3e2150d5e1163a53f0e5`); physical `artifacts/logs/cycle-choupi-20261030T021444Z.log` (SHA-256 `a62337be82ee683ad3bb089e97a15255ee12d7f89c9402428f9a5bf7d1f957b0`); ARM UF2 SHA-256 `0d1e6526d7bb968cd2f712be12a043ac748b7b1099f35b459c3898e31024de23`.
