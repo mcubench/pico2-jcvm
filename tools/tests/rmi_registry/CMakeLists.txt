@@ -14,5 +14,7 @@ target_compile_definitions(rmi_registry_test PRIVATE PC_VERSION=1)
 target_compile_options(rmi_registry_test PRIVATE
   -Wall -Wextra -ffunction-sections -fdata-sections -UNDEBUG
   -Wno-ignored-qualifiers -Wno-address-of-packed-member)
-target_include_directories(rmi_registry_test PRIVATE "${CHOUPI_SOURCE_DIR}")
+target_include_directories(rmi_registry_test PRIVATE
+  "${CHOUPI_SOURCE_DIR}"
+  "${CMAKE_SOURCE_DIR}/../../../choupi/os/src")
 target_link_options(rmi_registry_test PRIVATE -Wl,--gc-sections)

@@ -117,6 +117,14 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   context, and native owner; physical invocation of inventory; and evidence
   that an incomplete mark cannot authorize reclamation.
 
+### Standalone RMI unit build needs the CHOUPI OS include path — 2026-10-30
+
+- `heap.cpp` now includes `ffi.h` for strict persistent-edge reads. The
+  `tools/test-rmi-registry` CMake target compiles `heap.cpp` outside the main
+  wrapper and must add `choupi/os/src` to its include paths. Add the include
+  directory without linking or probing USB; the wrapper then builds and reports
+  `RMI_REGISTRY:PASS` again.
+
 ## Canonical operating fixes and unresolved boundaries
 
 - **Host USB/PCSC access — viable workflow:** follow root `AGENTS.md` from the
