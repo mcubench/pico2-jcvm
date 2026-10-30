@@ -33,6 +33,7 @@ image inspection and `./tools/build riscv --profile base` passed; no device was
 flashed. The approved reader helper found two USB nodes, but a bounded
 `pcsc_scan -r` timed out without output, so physical card availability is not
 established. The image README has the current hash and size.
+The refreshed artifact and progress record are committed as `c9aa6c4`.
 
 Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists

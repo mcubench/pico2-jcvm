@@ -15375,7 +15375,7 @@
 - Validation: A subsequent elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'` passed its read-only package listing and three APDUs (`9000`), showing the card remained accessible after the attempt.
 - Result: No verified reset result and no USB power cycle. Do not treat this as recovery evidence.
 - Decision: Leave hardware power-cycle recovery open; use a reset method with observable completion if further testing is pursued.
-- Commit: pending.
+- Commit: `c9aa6c4` (recorded in closeout below).
 - Artifacts/logs: Follow-up log `artifacts/logs/pico-powerup-persistence-20261030T045057Z.log`, SHA-256 `9e2043dec2516401449b81cbc0cf51bf4ec4fd40f135532b58c9c3dce2528205`; no log was captured from the reset attempt itself.
 
 ## 2026-10-30 Validate multi-owner restart and card reset 3 minutes
@@ -17069,3 +17069,17 @@
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; image SHA-256 above, expected
   CSV SHA-256 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
+
+## 2026-10-30 Record max-crypto image refresh commit 1 minute
+
+- Step/experiment: `max-crypto-arm-image-refresh-closeout`
+- When: '2026-10-30 22:40 UTC' - '2026-10-30 22:41 UTC'
+- Change: Recorded the refreshed image commit in the handoff and progress log.
+- Validation: Verified commit `c9aa6c4` contains only the max-crypto image,
+  README, TODO, HANDOFF, and associated progress record.
+- Result: The current max-crypto image is committed with its exact size and
+  checksum. Physical testing remains pending PC/SC reader registration.
+- Decision: Continue with the offline prioritized backlog while hardware access
+  remains unavailable.
+- Commit: pending.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.
