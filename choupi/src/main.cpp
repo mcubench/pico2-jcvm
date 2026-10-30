@@ -147,16 +147,22 @@ void enumerate_selected_applet_roots(
 struct PersistentInventoryCounts {
   unsigned static_roots = 0;
   unsigned applet_roots = 0;
+  std::vector<jcvm::jref_t> references;
 };
 
-bool count_static_inventory_root(uint8_t, uint16_t, uint16_t, void *opaque) {
-  ++static_cast<PersistentInventoryCounts *>(opaque)->static_roots;
+bool count_static_inventory_root(uint8_t, uint16_t, const uint16_t reference,
+                                 void *opaque) {
+  auto &counts = *static_cast<PersistentInventoryCounts *>(opaque);
+  ++counts.static_roots;
+  counts.references.emplace_back(reference);
   return true;
 }
 
-bool count_applet_inventory_root(uint8_t, uint8_t, uint16_t, uint16_t,
-                                 void *opaque) {
-  ++static_cast<PersistentInventoryCounts *>(opaque)->applet_roots;
+bool count_applet_inventory_root(uint8_t, uint8_t, uint16_t,
+                                 const uint16_t reference, void *opaque) {
+  auto &counts = *static_cast<PersistentInventoryCounts *>(opaque);
+  ++counts.applet_roots;
+  counts.references.emplace_back(reference);
   return true;
 }
 
@@ -167,6 +173,8 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   }
 
   PersistentInventoryCounts counts;
+  context.appendRootReferences(counts.references);
+  const std::size_t context_roots = counts.references.size();
   const auto static_result =
       jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
           context.getAppletPackageID(), context.getHeap(),
@@ -175,11 +183,26 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
       jcvm::PersistentInventory::visitAppletInstanceRoots(
           context.getAppletID(), context.getHeap(), count_applet_inventory_root,
           &counts);
+  jcvm::Heap::ReachabilitySummary reachability;
+  if (static_result == jcvm::PersistentInventory::VisitResult::Complete &&
+      applet_result == jcvm::PersistentInventory::VisitResult::Complete) {
+    reachability = context.getHeap().traceReachableFrom(counts.references);
+  } else {
+    reachability.complete = false;
+  }
   std::fprintf(stderr,
                "PERSISTENT_INVENTORY: static_result=%u static_roots=%u "
-               "applet_result=%u applet_roots=%u\n",
+               "applet_result=%u applet_roots=%u trace_complete=%u "
+               "reachable_arrays=%u/%u reachable_instances=%u/%u "
+               "invalid_refs=%u edge_failures=%u context_roots=%u\n",
                static_cast<unsigned>(static_result), counts.static_roots,
-               static_cast<unsigned>(applet_result), counts.applet_roots);
+               static_cast<unsigned>(applet_result), counts.applet_roots,
+               reachability.complete ? 1u : 0u,
+               reachability.arrays_reachable, reachability.arrays_total,
+               reachability.instances_reachable,
+               reachability.instances_total, reachability.invalid_references,
+               reachability.edge_load_failures,
+               static_cast<unsigned>(context_roots));
 }
 
 void trace_heap_after_apdu_if_enabled() {
@@ -216,7 +239,11 @@ void trace_heap_after_apdu_if_enabled() {
     return;
   }
 
-  inventory_persistent_roots_if_enabled(context);
+  try {
+    inventory_persistent_roots_if_enabled(context);
+  } catch (...) {
+    std::fprintf(stderr, "PERSISTENT_INVENTORY:ERROR root_walk_failed\n");
+  }
 
   for (unsigned long pass = 1; pass <= repeat_count; ++pass) {
     try {
