@@ -173,9 +173,14 @@ bool validate_type_descriptor(const uint8_t *type, const size_t nibble_count) {
 }
 
 bool validate_type_descriptor_sequence(const uint8_t *data,
-                                      const size_t size) {
+                                      const size_t size,
+                                      uint8_t *descriptor_start_bits = nullptr) {
   size_t offset = 0;
   while (offset < size) {
+    if (descriptor_start_bits != nullptr) {
+      descriptor_start_bits[offset / 8] |=
+          static_cast<uint8_t>(1u << (offset & 7));
+    }
     const size_t nibble_count = data[offset++];
     const size_t descriptor_bytes = (nibble_count + 1) / 2;
     if (descriptor_bytes > size - offset ||
@@ -188,11 +193,26 @@ bool validate_type_descriptor_sequence(const uint8_t *data,
 }
 
 bool validate_remote_interface_info(const uint8_t *payload,
-                                    const size_t size, size_t &offset) {
+                                    const size_t size, size_t &offset,
+                                    const size_t signature_pool_length,
+                                    const uint8_t *signature_start_bits) {
   if (offset >= size) return false;
   const size_t remote_methods = payload[offset++];
   const size_t remote_method_bytes = remote_methods * 5;
   if (remote_method_bytes > size - offset) return false;
+  uint16_t previous_method_hash = 0;
+  for (size_t index = 0; index < remote_methods; ++index) {
+    const uint8_t *method = payload + offset + index * 5;
+    const uint16_t method_hash = read_be16(method);
+    const size_t signature_offset = read_be16(method + 2);
+    if ((index != 0 && method_hash <= previous_method_hash) ||
+        signature_offset >= signature_pool_length ||
+        (signature_start_bits[signature_offset / 8] &
+         static_cast<uint8_t>(1u << (signature_offset & 7))) == 0) {
+      return false;
+    }
+    previous_method_hash = method_hash;
+  }
   offset += remote_method_bytes;
 
   if (offset >= size) return false;
@@ -216,9 +236,16 @@ bool validate_remote_interface_info(const uint8_t *payload,
 bool validate_class_component_22(const uint8_t *payload, const size_t size) {
   if (size < 2) return false;
   const size_t signature_pool_length = read_be16(payload);
+  // CAP validation runs synchronously in the single-threaded VM loader. Keep
+  // this large lookup bitmap out of its constrained call stack while reducing
+  // signature-offset validation to bounded linear time for adversarial CAPs.
+  static std::array<uint8_t, (UINT16_MAX + 1u + 7u) / 8u>
+      signature_start_bits{};
+  signature_start_bits.fill(0);
   if (signature_pool_length > size - 2 ||
       !validate_type_descriptor_sequence(payload + 2,
-                                         signature_pool_length)) {
+                                         signature_pool_length,
+                                         signature_start_bits.data())) {
     return false;
   }
 
@@ -260,7 +287,9 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size) {
       }
 
       if ((flags & 0x02) != 0 &&
-          !validate_remote_interface_info(payload, size, offset)) {
+          !validate_remote_interface_info(
+              payload, size, offset, signature_pool_length,
+              signature_start_bits.data())) {
         return false;
       }
     }

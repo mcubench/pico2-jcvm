@@ -17001,3 +17001,31 @@
 - Decision: Continue with outstanding acceptance work.
 - Commit: recorded in this follow-up.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T220126Z.log`.
+
+## 2026-10-30 Validate CAP 2.2 remote signatures 20 minutes
+
+- Step/experiment: `cap22-remote-signature-offset-validation`
+- When: '2026-10-30 22:11 UTC' - '2026-10-30 22:31 UTC'
+- Change: Require remote method hashes to be strictly ascending and each
+  signature offset to reference a descriptor start within the CAP 2.2 signature
+  pool. Added converter-emitted JCDK 3.0.5 fixture coverage for valid metadata,
+  interior/out-of-range offsets, and descending hashes. Updated TODO, QKB, and
+  handoff with current integration evidence.
+- Validation: `./tools/test-cap-parser` passed 4,191 checks, 100,000 fuzz
+  inputs, and 48 corpus CAPs. `./tools/build arm --profile base` and
+  `./tools/build riscv --profile base` passed. The official SDK VPCD integration
+  (`PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd`) was attempted on
+  fresh images and failed before client connection: helper applet INSTALL
+  returned stage 9 / `6F00`; diagnosis remains open.
+- Result: CAP parser validation passes on the converter fixture and both wrapper
+  builds. Fresh JCRMI integration is not passing; this does not establish a
+  parser regression. No physical device was tested.
+- Decision: Retain the parser validation and regressions. Investigate the
+  helper-install failure and why temporary stage diagnostics did not appear in
+  captured emulator output before claiming current SDK interoperability.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-emulator-20261030T222347Z.log`
+  (SHA-256
+  `0883d2596271a2233ee256744dac7a663d0c8c88abb1cc93fe5e8c85d706a5bd`);
+  client log empty (SHA-256
+  `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`).

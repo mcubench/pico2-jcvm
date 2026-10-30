@@ -358,6 +358,64 @@ void test_class_component_22() {
   auto unsupported_major = make_cap(minimal_22_class, 3, 0);
   expect(!parses(unsupported_major.data(), unsupported_major.size()),
          "unsupported_cap_major_version_rejected");
+
+  // JCDK 3.0.5 converter output with two remote methods. Both method
+  // signature offsets point to starts in the four-byte signature pool, and
+  // hashes are in the required ascending order.
+  constexpr uint8_t emitted_class_component[] = {
+      0x06, 0x00, 0x4e, 0x00, 0x04, 0x01, 0x40, 0x02, 0x44, 0xa1, 0x81,
+      0x00, 0x07, 'C',  'o',  'u',  'n',  't',  'e',  'r',  0x22, 0x82,
+      0x05, 0x01, 0xff, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x08, 0x00,
+      0x15, 0x81, 0x00, 0x00, 0x00, 0x06, 0x02, 0x01, 0x02, 0x02, 0x26,
+      0x61, 0x00, 0x00, 0x02, 0x7c, 0x38, 0x00, 0x02, 0x01, 0x00, 0x0b,
+      'C',  'o',  'u',  'n',  't',  'e',  'r',  'I',  'm',  'p',  'l',  0x01,
+      0x00, 0x06, 0x00, 0x83, 0x03, 0x01, 0x00, 0x01, 0x07, 0x01, 0x00,
+      0x00, 0x00, 0x51};
+  std::vector<uint8_t> emitted_payload(emitted_class_component + 3,
+                                      emitted_class_component +
+                                          sizeof(emitted_class_component));
+  auto emitted_valid = make_cap(emitted_payload);
+  expect(parses(emitted_valid.data(), emitted_valid.size()),
+         "class_component_22_converter_remote_methods_parse");
+
+  const jcvm::JC_Cap parsed_emitted(static_cast<uint16_t>(emitted_valid.size()),
+                                    emitted_valid.data());
+  const auto *emitted_class = parsed_emitted.getClass();
+  const auto *emitted_interface =
+      reinterpret_cast<const jcvm::jc_cap_interface_info *>(
+          emitted_class->infos + emitted_class->classInfoStartOffset());
+  const auto *emitted_remote_class =
+      reinterpret_cast<const jcvm::jc_cap_class_info *>(
+          reinterpret_cast<const uint8_t *>(emitted_interface) +
+          emitted_interface->getSize());
+  const auto *emitted_remote_info =
+      emitted_remote_class->remoteInterfaceInfo();
+  expect(emitted_remote_info != nullptr &&
+             emitted_remote_info->remote_methods_count == 2 &&
+             emitted_remote_info->remote_methods[0].getSignatureOffset() == 0 &&
+             emitted_remote_info->remote_methods[1].getSignatureOffset() == 2,
+         "class_component_22_converter_offsets_are_descriptor_starts");
+
+  const size_t remote_info_offset =
+      reinterpret_cast<const uint8_t *>(emitted_remote_info) -
+      emitted_valid.data();
+  auto interior_signature_offset = emitted_valid;
+  interior_signature_offset[remote_info_offset + 4] = 1;
+  expect(!parses(interior_signature_offset.data(),
+                 interior_signature_offset.size()),
+         "class_component_22_signature_offset_must_be_descriptor_start");
+
+  auto out_of_range_signature_offset = emitted_valid;
+  out_of_range_signature_offset[remote_info_offset + 4] = 4;
+  expect(!parses(out_of_range_signature_offset.data(),
+                 out_of_range_signature_offset.size()),
+         "class_component_22_signature_offset_must_be_in_pool");
+
+  auto descending_remote_hash = emitted_valid;
+  descending_remote_hash[remote_info_offset + 1 + 5] = 0x10;
+  descending_remote_hash[remote_info_offset + 1 + 6] = 0x00;
+  expect(!parses(descending_remote_hash.data(), descending_remote_hash.size()),
+         "class_component_22_remote_hashes_must_be_ascending");
 }
 
 } // namespace

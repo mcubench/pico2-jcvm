@@ -8,6 +8,30 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## Official SDK JCRMI VPCD rerun fails during helper applet INSTALL — 2026-10-30
+
+- **Symptom:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` repeatedly
+  fails before the official JCRMI client connects. The emulator reports
+  `ERROR: PC applet INSTALL failed stage=9 sw=6F00 vm=0000 exception=0` and the
+  client times out in `ServerSocket.accept()`; its output log is empty.
+- **Evidence:** Latest emulator log
+  `artifacts/logs/rmi-client-official-vpcd-emulator-20261030T222347Z.log`
+  (SHA-256
+  `0883d2596271a2233ee256744dac7a663d0c8c88abb1cc93fe5e8c85d706a5bd`);
+  paired client log is empty (SHA-256
+  `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`). The
+  failure reproduced on multiple fresh 512 KiB images on 2026-10-30. The
+  previously successful 2026-10-25 SDK client run remains historical evidence.
+- **Diagnosis:** Unknown. The failure occurs in the helper applet INSTALL
+  path before RMI APDUs. Temporary `cap_load.cpp` stage diagnostics were
+  compiled but did not appear in the captured emulator output, so they did not
+  identify the throwing operation. Do not attribute this to the CAP 2.2 parser
+  without a reproducer that isolates the connection.
+- **Next:** Trace why the emulator log lacks compiled diagnostics, then isolate
+  INSTALL stages with the converter fixture or compare the exact fixture CAP
+  and source against the 2026-10-25 passing run. Keep this unresolved until the
+  official SDK probe completes again.
+
 ## Physical `/deploy` Service profile recheck and Java PC/SC library — 2026-10-30
 
 - The 3.0.5 Service CAP produced an earlier asymmetric-profile report of 102

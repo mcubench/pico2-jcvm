@@ -969,6 +969,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   The wrapper creates a fresh erased 512 KiB VPCD flash image per run to avoid
   stale serialized package state. Log:
   `artifacts/logs/rmi-client-official-vpcd-client-20261025T190043Z.log`.
+  A fresh rerun on 2026-10-30 does not currently reproduce that result: the
+  emulator fails during helper applet INSTALL with stage 9 / `6F00` before
+  accepting the VPCD connection. Repeated runs produced the same outcome; the
+  failure has not been tied to CAP 2.2 parsing and remains open for diagnosis.
   This remains a focused interop subset; broader client and RMI profile
   coverage remains open.
   Physical Service results are from existing firmware and do not validate

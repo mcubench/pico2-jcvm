@@ -1,5 +1,25 @@
 # Session handoff — updated 2026-10-30
 
+## CAP 2.2 remote signature validation — 2026-10-30
+
+`choupi/src/jc_handlers/jc_cap.cpp` now validates remote method hashes in
+ascending order and requires each `signature_offset` to be both inside the
+signature pool and at a descriptor start. A converter-emitted JCDK 3.0.5 CAP
+fixture has positive coverage plus interior-offset, out-of-range-offset, and
+descending-hash rejection cases in `tools/tests/cap_parser/cap_parser_test.cpp`.
+`./tools/test-cap-parser` passes 4,191 checks across 100,000 fuzz inputs and 48
+CAP corpus files. `./tools/build arm --profile base` and
+`./tools/build riscv --profile base` pass. The PC VPCD official JCRMI client
+test currently fails before connection: helper applet INSTALL returns stage 9
+`6F00`; earlier 2026-10-25 client success remains historical. The cause is
+unresolved and is recorded in QKB. Do not claim fresh JCRMI integration pass.
+
+Commit the parser source/test and docs separately from unrelated dirty files.
+Preserve current edits in `src/cap_load.cpp`, `AGENTS.md`, and other pre-existing
+worktree entries. Next, investigate the INSTALL failure and the missing
+captured diagnostics, then continue the prioritized TODO; physical PC/SC had
+only VPCD readers on the latest recorded scan.
+
 Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists
 may be stale. `progress.md` is the append-only work record.
