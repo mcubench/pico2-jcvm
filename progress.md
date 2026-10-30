@@ -16697,6 +16697,18 @@
 - Commit: recorded in immediate follow-up progress entry.
 - Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261030T205954Z/`.
 
+## 2026-10-30 Record VPCD retry commit 1 minute
+
+- Step/experiment: `pc-vpcd-refused-connect-retry-log-closeout`
+- When: '2026-10-30 21:01 UTC' - '2026-10-30 21:02 UTC'
+- Change: Recorded the implementation commit SHA for the VPCD retry step.
+- Validation: Confirmed commit `7e998ef` contains only the retry source change,
+  QKB/HANDOFF updates, and its original progress record.
+- Result: VPCD retry step is committed as `7e998ef`.
+- Decision: Continue with the next requested task.
+- Commit: recorded in this follow-up commit.
+- Artifacts/logs: none.
+
 ## 2026-10-30 Record multi-package VPCD rerun commit 1 minute
 
 - Step/experiment: `multipackage-restart-delete-regression-log-closeout`
