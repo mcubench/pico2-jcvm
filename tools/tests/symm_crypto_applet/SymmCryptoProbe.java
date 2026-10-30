@@ -75,7 +75,7 @@ public final class SymmCryptoProbe extends Applet {
       output[0] = runRsaKeyPair(algorithm);
       outputLength = (short)1;
     } else if (instruction == (byte)0x10) {
-      output = operation == 1 && !isNoPadCipher(algorithm) &&
+      output = (operation == 1 || operation == 5) && !isNoPadCipher(algorithm) &&
           !isIso9797M1(algorithm)
           ? new byte[(short)3] : new byte[(short)(inputLength + 32)];
       outputLength = runCipher(algorithm, operation, input, inputLength, output);
@@ -717,13 +717,21 @@ public final class SymmCryptoProbe extends Applet {
 
   private static short runCipher(byte algorithm, byte operation, byte[] input,
                                  short inputLength, byte[] output) {
-    boolean aes = algorithm == 13 || algorithm == 14 || algorithm >= 22;
+    boolean aes = algorithm == (byte)0xF0 || algorithm == 13 || algorithm == 14 || algorithm >= 22;
     short keyLength = (short)(aes ? KeyBuilder.LENGTH_AES_128 : KeyBuilder.LENGTH_DES);
     Key key = KeyBuilder.buildKey(aes ? KeyBuilder.TYPE_AES : KeyBuilder.TYPE_DES,
                                   keyLength, false);
     if (aes) {
       byte[] keyBytes = new byte[16];
-      for (short i = 0; i < keyBytes.length; i++) keyBytes[i] = (byte)(i + 1);
+      if (algorithm == (byte)0xF0) {
+        byte[] ctrKey = {(byte)0x2b, (byte)0x7e, (byte)0x15, (byte)0x16,
+            (byte)0x28, (byte)0xae, (byte)0xd2, (byte)0xa6, (byte)0xab,
+            (byte)0xf7, (byte)0x15, (byte)0x88, (byte)0x09, (byte)0xcf,
+            (byte)0x4f, (byte)0x3c};
+        for (short i = 0; i < keyBytes.length; i++) keyBytes[i] = ctrKey[i];
+      } else {
+        for (short i = 0; i < keyBytes.length; i++) keyBytes[i] = (byte)(i + 1);
+      }
       ((AESKey)key).setKey(keyBytes, (short)0);
     } else {
       byte[] keyBytes = {
@@ -731,8 +739,26 @@ public final class SymmCryptoProbe extends Applet {
           (byte)0x9b, (byte)0xbc, (byte)0xdf, (byte)0xf1};
       ((DESKey)key).setKey(keyBytes, (short)0);
     }
-    Cipher cipher = Cipher.getInstance(algorithm, false);
-    byte mode = operation == 0 ? Cipher.MODE_ENCRYPT : Cipher.MODE_DECRYPT;
+    byte operationMode = operation >= 4 ? (byte)(operation - 4) : operation;
+    Cipher cipher = algorithm == (byte)0xF0 && operation >= 4
+        ? Cipher.getInstance((byte)8, Cipher.PAD_NOPAD, false)
+        : Cipher.getInstance(algorithm, false);
+    byte mode = (operationMode == 1 || operationMode == 3)
+        ? Cipher.MODE_DECRYPT : Cipher.MODE_ENCRYPT;
+    if (algorithm == (byte)0xF0) {
+      if (inputLength < 16) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      byte[] counter = new byte[16];
+      for (short i = 0; i < 16; i++) counter[i] = input[i];
+      cipher.init(key, mode, counter, (short)0, (short)counter.length);
+      short payloadLength = (short)(inputLength - 16);
+      if (operationMode >= 2) {
+        short firstLength = payloadLength > 19 ? (short)19 : (short)(payloadLength / 2);
+        short written = cipher.update(input, (short)16, firstLength, output, (short)0);
+        return (short)(written + cipher.doFinal(input, (short)(16 + firstLength),
+            (short)(payloadLength - firstLength), output, written));
+      }
+      return cipher.doFinal(input, (short)16, payloadLength, output, (short)0);
+    }
     if (isCbc(algorithm)) {
       byte[] iv = new byte[(short)(aes ? 16 : 8)];
       cipher.init(key, mode, iv, (short)0, (short)iv.length);
@@ -748,7 +774,8 @@ public final class SymmCryptoProbe extends Applet {
   }
 
   private static boolean isNoPadCipher(byte algorithm) {
-    return algorithm == 1 || algorithm == 5 || algorithm == 13 || algorithm == 14;
+    return algorithm == 1 || algorithm == 5 || algorithm == 13 || algorithm == 14 ||
+        algorithm == (byte)0xF0;
   }
 
   private static boolean isIso9797M1(byte algorithm) {

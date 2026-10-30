@@ -96,6 +96,11 @@ CAPABILITIES: dict[str, tuple[str, str]] = {
     "cipher_aes_cbc_nopad": (
         "javacardx.crypto.Cipher", "ALG_AES_BLOCK_128_CBC_NOPAD"
     ),
+    "cipher_aes_ctr": ("javacardx.crypto.Cipher", "ALG_AES_CTR"),
+    "cipher_getinstance_aes_ctr": (
+        "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
+        "CIPHER_AES_CTR PAD_NOPAD",
+    ),
     "cipher_des_cbc_nopad": ("javacardx.crypto.Cipher", "ALG_DES_CBC_NOPAD"),
     "cipher_getinstance_aes_cbc_nopad": (
         "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
@@ -227,9 +232,11 @@ def validate_capabilities(value: Any, path: Path) -> dict[str, bool]:
         "key_des", "key_des3_2key", "key_des3_3key",
         "key_des_transient_reset", "key_des_transient_deselect",
     ))
-    aes_cipher = any(key.startswith("cipher_aes_") and enabled
+    aes_cipher = any((key.startswith("cipher_aes_") or
+                      key.startswith("cipher_getinstance_aes_")) and enabled
                      for key, enabled in value.items())
-    des_cipher = any(key.startswith("cipher_des_") and enabled
+    des_cipher = any((key.startswith("cipher_des_") or
+                      key.startswith("cipher_getinstance_des_")) and enabled
                      for key, enabled in value.items())
     aes_mac = any(key.startswith("signature_aes_") and enabled
                   for key, enabled in value.items())

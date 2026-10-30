@@ -1909,6 +1909,19 @@ rollback and duplicate/invalid registration handling also remain unverified.
   audit, but establish the target card's expected support independently before
   claiming matrix parity for a row absent from this file.
 
+- [ ] **Validate Java Card 3.0.5 AES-CTR on a physical Pico 2.** Native C++
+  dispatch and an isolated `symm_crypto_ctr` profile are implemented; existing
+  named profiles retain their prior support sets. The unchanged JCAlgTest 1.8.2
+  report exposes `ALG_AES_CTR` and reported `no` on the old image. NIST
+  SP 800-38A known-answer vectors now pass through the single and paired factory
+  paths, with single-shot and 19-byte-split streaming encrypt/decrypt on VPCD
+  (8/8); ARM and RISC-V wrapper builds pass.
+  CTR is built as its own native module only in the selected profile. The
+  supplied JCOP4 P71 CSV is from JCAlgTest 1.7.9 and has no AES-CTR row, so
+  this profile is an API extension, not a claimed matrix-parity result. Flash
+  `symm_crypto_ctr` and run the unchanged 1.8.2 support test when a physical
+  Pico reader is registered again; compare its AES-CTR rows and full report.
+
 - [x] Implement and validate the `asymm_crypto` selectable profile against
   `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`
   (SHA-256 `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`).

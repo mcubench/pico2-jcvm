@@ -1932,3 +1932,35 @@ original terminology/status; check current summary and later fixes before reuse.
   `b6b08a7ce585cd995c182926a629b494042f01a9d451d0aaea94dd156afb3a82`) and
   `artifacts/logs/usb-visible-no-pcsc-2BED-20261030.log` (SHA-256
   `0d1dfcbe80fb5f6e2f99d25198ee18a3279b1531bfac9d8ade5f2e3cb54b02ca`).
+
+### VPCD localhost sockets need host networking access in this VM — 2026-10-30
+
+- The non-physical VPCD applet harness failed in the restricted execution
+  context with `TEST:FAIL [Errno 1] Operation not permitted` when it attempted
+  to open its localhost socket. Re-running the already-built VPCD test through
+  the approved elevated execution path succeeded. This is a sandbox socket
+  permission failure, not a Pico USB/PCSC problem. For VPCD-only harnesses that
+  create localhost listeners, use host networking access on the test command;
+  do not route them through the physical USB helper.
+- At the same check, the authorized USB access helper granted two device nodes,
+  but `pcsc_scan -r` returned only `Virtual PCD 00 00` and `Virtual PCD 00 01`.
+  No physical smart-card validation was available.
+
+### AES-CTR native stream state — 2026-10-30
+
+- Java Card 3.0.5 `Cipher.ALG_AES_CTR` is a stream mode and `update()` must
+  emit all input bytes. The native provider uses Mbed TLS CTR with the mutable
+  16-byte counter in `Cipher.iv`, cached keystream block in the otherwise
+  unused `Cipher.modulus` array, and byte offset in `modulusLength`. These
+  existing fields avoid changing the ROM class layout. `doFinal()` resets the
+  counter/stream state to the initialization values. The separately selectable
+  `symm_crypto_ctr` profile enables the `ALG_AES_CTR` path and the paired
+  `CIPHER_AES_CTR PAD_NOPAD` path; the existing profiles keep their previous
+  output sets. VPCD passes the NIST SP 800-38A AES-128 CTR vector through both
+  factory paths, in one-shot mode and split after 19 bytes for both encryption
+  and decryption (8/8). Its implementation is compiled from the separate
+  `choupi/src/native_aes_ctr.cpp` module only when either the single-algorithm
+  or paired-factory AES-CTR capability is selected. Physical Pico validation
+  remains open; AES-CTR is not
+  present in the supplied JCOP4 P71 1.7.9 matrix and must not be counted as
+  matrix parity.

@@ -10,6 +10,7 @@
 #include "native_rsa_cipher.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -25,6 +26,13 @@ int cipherAesCbc(bool encrypt, std::vector<unsigned char> &key,
                  const std::vector<unsigned char> &input,
                  std::vector<unsigned char> &output);
 int cipherAesEcb(bool encrypt, std::vector<unsigned char> &key,
+                 const std::vector<unsigned char> &input,
+                 std::vector<unsigned char> &output);
+#endif
+#if JC_SUPPORT_CIPHER_AES_CTR || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CTR
+int cipherAesCtr(std::vector<unsigned char> &key,
+                 std::vector<unsigned char> &counter, size_t &offset,
+                 std::vector<unsigned char> &streamBlock,
                  const std::vector<unsigned char> &input,
                  std::vector<unsigned char> &output);
 #endif
@@ -159,7 +167,7 @@ void writeArray(const std::shared_ptr<JC_Array> &array, uint16_t offset,
 
 bool isAesAlgorithm(uint8_t algorithm) {
   return algorithm == 13 || algorithm == 14 ||
-         (algorithm >= 22 && algorithm <= 27);
+         (algorithm >= 22 && algorithm <= 27) || algorithm == 0xF0;
 }
 bool isDesAlgorithm(uint8_t algorithm) {
   return algorithm >= 1 && algorithm <= 8;
@@ -181,6 +189,7 @@ bool singleAlgorithmEnabled(uint8_t algorithm) {
   case 10: return JC_SUPPORT_CIPHER_RSA_PKCS1;
   case 12: return JC_SUPPORT_CIPHER_RSA_NOPAD;
   case 13: return JC_SUPPORT_CIPHER_AES_CBC_NOPAD;
+  case 0xF0: return JC_SUPPORT_CIPHER_AES_CTR;
   case 14: return JC_SUPPORT_CIPHER_AES_ECB_NOPAD;
   case 15: return JC_SUPPORT_CIPHER_RSA_OAEP;
   case 22: return JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M1;
@@ -206,6 +215,7 @@ bool pairAlgorithmEnabled(uint8_t algorithm) {
   case 10: return JC_SUPPORT_CIPHER_RSA_PKCS1;
   case 12: return JC_SUPPORT_CIPHER_RSA_NOPAD;
   case 13: return JC_SUPPORT_CIPHER_AES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD;
+  case 0xF0: return JC_SUPPORT_CIPHER_GETINSTANCE_AES_CTR;
   case 14: return JC_SUPPORT_CIPHER_AES_ECB_NOPAD;
   case 15: return JC_SUPPORT_CIPHER_RSA_OAEP;
   case 22: return JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M1;
@@ -236,6 +246,7 @@ CipherSpec specForAlgorithm(uint8_t algorithm, bool pairFactory) {
   case 10: return {10, 7, 7, false, false, true};
   case 12: return {12, 7, 1, false, false, true};
   case 13: return {13, 1, 1, true, true, false};
+  case 0xF0: return {0xF0, 8, 1, true, false, false};
   case 14: return {14, 2, 1, true, false, false};
   case 15: return {15, 7, 9, false, false, true};
   case 22: return {22, 1, 2, true, true, false};
@@ -249,7 +260,7 @@ CipherSpec specForAlgorithm(uint8_t algorithm, bool pairFactory) {
 }
 
 uint8_t algorithmForPair(uint8_t cipher, uint8_t padding) {
-  const uint8_t algorithms[] = {1,2,3,4,5,6,7,8,13,14,22,23,24,25,26,27,10,12,15};
+  const uint8_t algorithms[] = {1,2,3,4,5,6,7,8,13,14,22,23,24,25,26,27,10,12,15,0xF0};
   for (uint8_t algorithm : algorithms) {
     const CipherSpec spec = specForAlgorithmUnchecked(algorithm);
     if (spec.cipher == cipher && spec.padding == padding &&
@@ -271,6 +282,7 @@ CipherSpec specForAlgorithmUnchecked(uint8_t algorithm) {
   case 10: return {10, 7, 7, false, false, true};
   case 12: return {12, 7, 1, false, false, true};
   case 13: return {13, 1, 1, true, true, false};
+  case 0xF0: return {0xF0, 8, 1, true, false, false};
   case 14: return {14, 2, 1, true, false, false};
   case 15: return {15, 7, 9, false, false, true};
   case 22: return {22, 1, 2, true, true, false};
@@ -303,7 +315,8 @@ jref_t newCipher(const CipherSpec &spec) {
   setByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_KEYDATA, 0);
   setByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_IV, 16);
   setByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIV, 16);
-  setByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS, 0);
+  setByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS,
+               spec.algorithm == 0xF0 ? 16 : 0);
   setByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_EXPONENT, 0);
   setByteArray(*cipher, ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFERED, 32);
   return reference;
@@ -412,6 +425,28 @@ std::vector<unsigned char> transformSymmetric(JC_Instance &cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE) == kModeEncrypt;
   int result = -1;
   if (aes) {
+#if JC_SUPPORT_CIPHER_AES_CTR || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CTR
+    if (algorithm == 0xF0) {
+      auto streamArray = byteArray(cipher,
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);
+      // These RSA workspace fields are otherwise unused by symmetric ciphers.
+      std::vector<unsigned char> streamBlock =
+          readArray(streamArray, 0, static_cast<uint16_t>(streamArray->size()));
+      size_t offset = static_cast<uint16_t>(cipher.getField_Short(
+          ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH));
+      result = cipherAesCtr(key, iv, offset, streamBlock, input, output);
+      if (result == 0) {
+        saveIv(cipher, iv);
+        writeArray(streamArray, 0, streamBlock,
+                   static_cast<uint16_t>(streamBlock.size()));
+        cipher.setField_Short(
+            ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH,
+            static_cast<jshort_t>(offset));
+      }
+      if (result != 0) throwCryptoException(CryptoExceptionReason::IllegalUse);
+      return output;
+    }
+#endif
 #if JC_SUPPORT_CIPHER_AES_CBC_NOPAD || JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD || \
     JC_SUPPORT_CIPHER_AES_ECB_NOPAD || JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M1 || \
     JC_SUPPORT_CIPHER_AES_CBC_ISO9797_M2 || JC_SUPPORT_CIPHER_AES_CBC_PKCS5 || \
@@ -442,6 +477,16 @@ void restoreInitialIv(JC_Instance &cipher) {
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_IV);
   for (uint16_t i = 0; i < initial->size(); ++i)
     current->setByteEntry(i, initial->getByteEntry(i));
+  const uint8_t algorithm = static_cast<uint8_t>(cipher.getField_Byte(
+      ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
+  if (algorithm == 0xF0) {
+    auto stream = byteArray(cipher,
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);
+    for (uint16_t i = 0; i < stream->size(); ++i)
+      stream->setByteEntry(i, 0);
+    cipher.setField_Short(
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH, 0);
+  }
 }
 
 void initializeSymmetricCipher(JC_Instance &cipher, jref_t keyReference,
@@ -497,8 +542,9 @@ void initializeSymmetricCipher(JC_Instance &cipher, jref_t keyReference,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_INITIALIV);
   const bool cbc = (algorithm >= 1 && algorithm <= 4) ||
                    algorithm == 13 || (algorithm >= 22 && algorithm <= 24);
+  const bool ctr = algorithm == 0xF0;
   if (withParameters) {
-    if (!cbc || !parameters || offset < 0 || length != blockSize)
+    if ((!cbc && !ctr) || !parameters || offset < 0 || length != blockSize)
       throwCryptoException(CryptoExceptionReason::IllegalValue);
     checkArray(parameters, offset, length);
   }
@@ -508,6 +554,14 @@ void initializeSymmetricCipher(JC_Instance &cipher, jref_t keyReference,
               static_cast<uint16_t>(offset + i))) : 0;
     iv->setByteEntry(i, static_cast<jbyte_t>(value));
     initial->setByteEntry(i, static_cast<jbyte_t>(value));
+  }
+  if (ctr) {
+    auto stream = byteArray(cipher,
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUS);
+    for (uint16_t i = 0; i < stream->size(); ++i)
+      stream->setByteEntry(i, 0);
+    cipher.setField_Short(
+        ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODULUSLENGTH, 0);
   }
   clearBuffer(cipher);
   cipher.setField_Byte(
@@ -541,6 +595,7 @@ jshort_t updateSymmetric(JC_Instance &cipher,
   const uint16_t bufferedLength = static_cast<uint16_t>(cipher.getField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
   uint16_t processLength = static_cast<uint16_t>(bufferedLength - bufferedLength % blockSize);
+  if (algorithm == 0xF0) processLength = bufferedLength;
   const uint8_t padding = static_cast<uint8_t>(cipher.getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_PADDINGALGORITHM));
   const bool encrypt = cipher.getField_Byte(
@@ -597,6 +652,16 @@ jshort_t doFinalSymmetric(JC_Instance &cipher,
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE) == kModeEncrypt;
   uint16_t dataLength = static_cast<uint16_t>(cipher.getField_Short(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_BUFFEREDLENGTH));
+  if (algorithm == 0xF0) {
+    checkRangeForOutput(output, outputOffset, dataLength);
+    if (dataLength != 0) {
+      const auto result = transformSymmetric(cipher, dataLength);
+      writeArray(output, static_cast<uint16_t>(outputOffset), result, dataLength);
+    }
+    clearBuffer(cipher);
+    restoreInitialIv(cipher);
+    return static_cast<jshort_t>(dataLength);
+  }
   if (encrypt && padding != 1) {
     const uint16_t remainder = static_cast<uint16_t>(dataLength % blockSize);
     const uint16_t pad = remainder == 0 && padding == 2

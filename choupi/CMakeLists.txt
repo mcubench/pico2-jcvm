@@ -342,13 +342,16 @@ file(GLOB_RECURSE JCVM_CORE_SOURCES_FILES
      CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 list(FILTER JCVM_CORE_SOURCES_FILES EXCLUDE REGEX
-  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mbedtls_digest|rsa_cipher|rsa_key|rsa_signature|ecdsa_signature|key)\\.cpp$")
+  "/native_(random|cipher|aes_cbc|aes_ctr|des_cbc|sha256|mbedtls_digest|rsa_cipher|rsa_key|rsa_signature|ecdsa_signature|key)\\.cpp$")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_random.cpp")
 endif()
 list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_cipher.cpp")
 if(JC_SUPPORT_CIPHER_AES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPAD)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_aes_cbc.cpp")
+endif()
+if(JC_SUPPORT_CIPHER_AES_CTR OR JC_SUPPORT_CIPHER_GETINSTANCE_AES_CTR)
+  list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_aes_ctr.cpp")
 endif()
 if(JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_des_cbc.cpp")

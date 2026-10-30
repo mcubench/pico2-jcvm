@@ -4,6 +4,36 @@ Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists
 may be stale. `progress.md` is the append-only work record.
 
+## Current continuation: Java Card AES-CTR — 2026-10-30
+
+Native `Cipher.ALG_AES_CTR` support and selectable profile `symm_crypto_ctr`
+are implemented. Previous profiles (`current`, `base`, `no_aes`, `minimal`,
+`symm_crypto`, `asymm_crypto`) retain their capability selections. The CTR
+native path stores the counter in the existing Cipher IV array, stream block in
+the otherwise-unused modulus array, and partial-block offset in
+`modulusLength`; no ROM class field layout changed. `doFinal()` resets stream
+state to the initialized counter. The test-only applet only invokes the API;
+cryptographic work stays in C++.
+
+Validation: support generator 12/12; dedicated PC build includes
+`native_aes_ctr.cpp`; VPCD NIST SP 800-38A AES-128 CTR single algorithm and
+paired factory, one-shot and split streaming encrypt/decrypt 8/8 (split after
+19 bytes to exercise a partial keystream block); ARM and RISC-V wrapper builds
+passed for `symm_crypto_ctr`. The generated support set has 48 entries. ARM
+UF2 is 1,815,040 bytes, SHA-256
+`4c42949db4b318cfa6658e10ba8fc7cb88be715d12292f0191a9468c636cf65b`.
+The final elevated `pcsc_scan -r` did not return within the bounded check; no
+physical reader was confirmed, so no flash or hardware claim was made. The
+supplied JCOP4 1.7.9 matrix has no AES-CTR row; the dedicated profile is an API
+extension and not claimed matrix parity. VPCD log:
+`artifacts/logs/aes-ctr-vpcd-20261030T185802Z.log` (SHA-256
+`f057331e506e4ae1b764915bfdb4c37606f6b65dc0a3e30a649e13eb102555ad`).
+
+Next: when a physical reader returns, flash `symm_crypto_ctr`, run finite
+monitoring and the unchanged JCAlgTest 1.8.2 extended support test, compare the
+CTR rows and full report, then record results. Continue other TODO work while
+physical reader registration is absent. Preserve unrelated dirty changes.
+
 Full pre-compaction history: [archived handoff](archive/2026-10-29-pre-compaction/HANDOFF.md).
 The archive is historical evidence, not current instructions or current board state.
 [Issue knowledge base](QKB.md) contains current troubleshooting and a historical index.

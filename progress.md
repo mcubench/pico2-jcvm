@@ -16389,3 +16389,50 @@
   `b6b08a7ce585cd995c182926a629b494042f01a9d451d0aaea94dd156afb3a82`;
   `artifacts/logs/usb-visible-no-pcsc-2BED-20261030.log` SHA-256
   `0d1dfcbe80fb5f6e2f99d25198ee18a3279b1531bfac9d8ade5f2e3cb54b02ca`.
+
+## 2026-10-30 Add native Java Card AES-CTR support 39 minutes
+
+- Step/experiment: `native-aes-ctr-profile-and-kat`
+- When: '2026-10-30 18:20 UTC' - '2026-10-30 18:59 UTC'
+- Change: Added selectable `cipher_aes_ctr` capability and a dedicated
+  `symm_crypto_ctr` profile while preserving all previous profile selections.
+  Implemented AES-CTR through native Mbed TLS in the JCVM. Stream counter,
+  partial keystream block, and byte offset use existing Cipher instance fields,
+  so ROM class layout is unchanged; `update()` emits arbitrary byte lengths
+  and `doFinal()` resets to the initial counter. Extended the local test applet
+  only to invoke the native Java Card API and added NIST SP 800-38A test vectors.
+  Added a separately selectable paired-factory capability for
+  `CIPHER_AES_CTR PAD_NOPAD` as exposed by JCAlgTest. Split the implementation
+  into `native_aes_ctr.cpp`, selected in CMake only when AES-CTR is enabled.
+  Kept paired-factory selection independent: its native module and dispatch
+  compile when only `cipher_getinstance_aes_ctr` is enabled, if AES key support
+  is also selected.
+  Updated TODO, QKB, and handoff. The supplied JCOP4 P71 1.7.9 matrix contains
+  no AES-CTR row, so this is tracked as an API extension, not matrix parity.
+- Validation: `python3 tools/test-javacard-support.py` passed 12/12;
+  `./tools/test-aes-ctr-vpcd` generated the profile and ROM mask and built the
+  PC VM. The support generator passed 13/13 including pair-only configuration
+  validation. The final PC VM build included `native_aes_ctr.cpp`; elevated
+  VPCD passed 8 NIST encrypt/decrypt cases through both factory paths:
+  single-shot and streaming with a 19-byte split (partial keystream block).
+  `./tools/build arm --profile symm_crypto_ctr` and
+  `./tools/build riscv --profile symm_crypto_ctr` both passed after the final
+  source/config changes. The final elevated
+  `pcsc_scan -r` did not return within the bounded check; no physical reader
+  was confirmed, so no flash was performed. `git diff --check` passes for the
+  task files; an unrelated pre-existing trailing-space warning remains in
+  `AGENTS.md`.
+- Result: The JCVM correctly implements AES-128 CTR per the selected NIST
+  vector through both the single-algorithm and paired factories, including
+  stream state across a non-block-aligned update boundary.
+  ARM/RISC-V images compile. Physical behavior and the JCAlgTest 1.8.2 report
+  remain unverified because no physical PC/SC reader is registered.
+- Decision: Keep the feature isolated in `symm_crypto_ctr`; use it for a
+  physical JCAlgTest run when PC/SC returns. Continue independent TODO work in
+  the meantime.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: VPCD log
+  `artifacts/logs/aes-ctr-vpcd-20261030T185802Z.log` SHA-256
+  `f057331e506e4ae1b764915bfdb4c37606f6b65dc0a3e30a649e13eb102555ad`; ARM
+  UF2 1,815,040 bytes, SHA-256
+  `4c42949db4b318cfa6658e10ba8fc7cb88be715d12292f0191a9468c636cf65b`.

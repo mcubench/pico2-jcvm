@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+"${repo_root}/tools/build-pc" --profile symm_crypto_ctr
+"${repo_root}/tools/build-symm-crypto-probe"
+"${repo_root}/tools/env" python3 "${repo_root}/tools/tests/test_aes_ctr_vpcd.py"

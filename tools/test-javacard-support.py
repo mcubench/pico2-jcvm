@@ -232,6 +232,41 @@ class JavaCardSupportTests(unittest.TestCase):
             }}
             self.assertEqual(actual, expected)
 
+    def test_symm_crypto_ctr_is_separately_selectable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / "generated"
+            result = self.run_named_profile("symm_crypto_ctr", out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            profile = json.loads((out / "javacard-support.json").read_text())
+            self.assertTrue(profile["cipher_aes_ctr"])
+            with (out / "jcalgtest-supported.csv").open(newline="") as source:
+                rows = {tuple(row) for row in list(csv.reader(source, delimiter=";"))[1:]}
+            self.assertIn(("javacardx.crypto.Cipher", "ALG_AES_CTR"), rows)
+            self.assertIn((
+                "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
+                "CIPHER_AES_CTR PAD_NOPAD",
+            ), rows)
+            self.assertEqual(len(rows), 48)
+
+    def test_ctr_pair_factory_can_be_selected_without_single_factory(self):
+        pair_only = {key: False for key in CONFIG}
+        pair_only["key_aes_128"] = True
+        pair_only["cipher_getinstance_aes_ctr"] = True
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / "generated"
+            result = self.run_generator(pair_only, out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            header = (out / "javacard-support.h").read_text()
+            self.assertIn("#define JC_SUPPORT_CIPHER_AES_CTR 0", header)
+            self.assertIn("#define JC_SUPPORT_CIPHER_GETINSTANCE_AES_CTR 1", header)
+            with (out / "jcalgtest-supported.csv").open(newline="") as source:
+                rows = {tuple(row) for row in list(csv.reader(source, delimiter=";"))[1:]}
+            self.assertNotIn(("javacardx.crypto.Cipher", "ALG_AES_CTR"), rows)
+            self.assertIn((
+                "javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess)",
+                "CIPHER_AES_CTR PAD_NOPAD",
+            ), rows)
+
     def test_asymm_crypto_selects_native_digest_without_java_provider(self):
         with tempfile.TemporaryDirectory() as temporary:
             out = Path(temporary) / "generated"
@@ -301,6 +336,12 @@ class JavaCardSupportTests(unittest.TestCase):
         orphan = {key: False for key in CONFIG}
         orphan["cipher_aes_cbc_nopad"] = True
         variants.append((orphan, "requires at least one enabled AES key"))
+        orphan_ctr = {key: False for key in CONFIG}
+        orphan_ctr["cipher_aes_ctr"] = True
+        variants.append((orphan_ctr, "requires at least one enabled AES key"))
+        orphan_ctr_pair = {key: False for key in CONFIG}
+        orphan_ctr_pair["cipher_getinstance_aes_ctr"] = True
+        variants.append((orphan_ctr_pair, "requires at least one enabled AES key"))
         for value, diagnostic in variants:
             with self.subTest(diagnostic=diagnostic), tempfile.TemporaryDirectory() as temporary:
                 out = Path(temporary) / "generated"
