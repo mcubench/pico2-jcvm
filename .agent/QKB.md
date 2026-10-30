@@ -52,35 +52,38 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - Registered applet instance roots are identified by applet namespace tags
   ending in `0xFF`; both 8-bit and 16-bit class-index tag forms are decoded.
   Restored objects are checked against package/class fields encoded in the
-  root tag. Parser tests pass, but neither the CAP/static adapter nor applet
-  root visitor has yet been called from a runtime diagnostic or hardware test.
-  Physical cycles at `artifacts/logs/cycle-choupi-20261030T013616Z.log`,
-  `artifacts/logs/cycle-choupi-20261030T014218Z.log`,
-  `artifacts/logs/cycle-choupi-20261030T014537Z.log`, and
-  `artifacts/logs/cycle-choupi-20261030T015008Z.log` tested startup only.
-  These adapters are inventory groundwork, not proof of complete root
-  coverage or authorization to delete persistent records.
+  root tag. The PC-only `PICO2_PERSISTENT_INVENTORY=1` post-APDU diagnostic now
+  invokes the installed-CAP static adapter and applet-root adapter. On the
+  unchanged JCSystem transaction CAP, cases 14–16 passed with both adapters
+  returning `Complete`; each scan reported six non-null static roots and one
+  registered applet root. VPCD log:
+  `artifacts/logs/persistent-inventory-vpcd-fixed-20261030.log`.
+  These checks exercise root restoration but do not yet walk object fields,
+  reference-array bodies, or full alias graphs, and do not authorize persistent
+  record deletion. The physical cycle at
+  `artifacts/logs/cycle-choupi-20261030T021444Z.log` tested startup only; the
+  PC-only diagnostic did not run on hardware.
 
-### Host diagnostic fault while scanning static inventory roots — unresolved
+### Static root adapter callback context corrupted its heap pointer — fixed
 
-- A temporary PC-only post-APDU diagnostic invoked
-  `visitInstalledPackageStaticRoots()` against the unchanged JCSystem
-  transaction CAP. The control run without the diagnostic passed the focused
-  case: ATR, SELECT, and “static reference identity after restore” all passed
-  (`TEST:SUMMARY pass=3 fail=0`, 52.343 s).
-- With the diagnostic enabled, package 56 CAP metadata decoded as
-  `image_size=12`, `reference_count=6`. Slot offset 0 restored successfully
-  (`compact_reference=10`); processing slot offset 2 then terminated the host
-  emulator. Its log reported a SIGSEGV and Rust host-emulator panic for
-  `unauthorized address 0x0`, during the heap persistent-reference cache
-  lookup. This does not yet identify whether the fault is in heap/cache state,
-  the emulator's syscall boundary, or the inventory call context.
-- The temporary diagnostic and its debug logging were removed. No persistent
-  records were deleted or changed. Static/app root adapters remain unverified;
-  isolate this crash with a focused heap/cache test or a minimal adapter harness
-  before invoking the adapters on hardware or enabling reclamation.
+- The generic static-root walker intentionally supplies the same opaque context
+  to both its reference reader and root visitor. The adapter had passed its
+  private heap-reader context to the caller's visitor, which treated it as its
+  own context. The first callback overwrote the stored heap pointer; the next
+  static slot then faulted in cache lookup with SIGSEGV / unauthorized address
+  `0x0`.
+- The adapter now stores the caller's visitor and context alongside its heap
+  pointer and uses a forwarding callback. A null visitor returns
+  `InvalidArgument`. The previous fault reproduces only with the old wiring;
+  after the fix, the unchanged VPCD JCSystem cases 14–16 pass (5/5 harness
+  checks) and both adapters report `Complete` for all four post-APDU scans.
+- `./tools/test-persistent-inventory`, PC/ARM/RISC-V builds, and the identified
+  2BED ARM physical cycle all passed. The physical monitor emitted
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`; it did not invoke
+  these adapters. No persistent records were deleted or changed.
 - Logs: `artifacts/logs/persistent-inventory-static-vpcd-20261030e.log` (fault),
-  `artifacts/logs/persistent-inventory-control-vpcd-20261030.log` (control).
+  `artifacts/logs/persistent-inventory-vpcd-fixed-20261030.log` (fixed run),
+  `artifacts/logs/cycle-choupi-20261030T021444Z.log` (physical startup).
 
 ## Canonical operating fixes and unresolved boundaries
 

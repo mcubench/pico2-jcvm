@@ -23,20 +23,17 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    package/field cache; missing slots mean null, but malformed or unreadable
    present records fail closed. Registered applet roots ending in `0xFF` are
    decoded for both class-index widths and checked against their serialized
-   package/class identity. Focused tests cover the visitor, static-slot layout,
-   and applet root-tag parser. A temporary PC-only post-APDU diagnostic crashed
-   the host emulator while the installed static-root adapter processed slot
-   offset 2: slot 0 restored as compact ref 10, then the emulator reported
-   SIGSEGV / unauthorized address 0x0 during persistent-reference cache lookup.
-   The control JCSystem case passed without the diagnostic (3/3 checks). The
-   diagnostic was removed; cause is unresolved. See QKB and
-   `artifacts/logs/persistent-inventory-static-vpcd-20261030e.log` plus the
-   control log. None of the flash/CAP adapters has passed direct testing or
-   hardware invocation; recent physical cycles are startup checks only. Next
-   isolate the heap/cache failure with a minimal test before exercising both
-   adapters, then enumerate object fields, reference arrays, and aliases under
-   complete owner/context root coverage before considering persistent-record
-   deletion.
+   package/class identity. The opt-in PC-only post-APDU diagnostic
+   `PICO2_PERSISTENT_INVENTORY=1` now calls both runtime adapters. A context
+   forwarding bug that overwrote the heap pointer was fixed. Unchanged JCSystem
+   VPCD cases 14–16 pass (5/5 harness checks); each of four scans reports six
+   non-null static roots and one applet root, with both results `Complete`.
+   PC/ARM/RISC-V builds pass. The 2BED physical ARM cycle passed
+   `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, but the diagnostic
+   is PC-only, so physical adapter invocation is still open. Logs and the cause
+   are in QKB. Next decode object fields, reference-array bodies, and alias
+   chains under complete owner/context root coverage before considering any
+   persistent-record deletion. No persistent records have been deleted.
    No persistent records are deleted.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, and private RSA hardening.

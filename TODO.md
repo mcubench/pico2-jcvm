@@ -26,9 +26,12 @@ out explicitly.
     connect it to the heap's package/static root cache.
   - [x] Load static-slot layout from the installed CAP and decode both
     registered applet-root tag widths; verify applet root package/class identity.
-  - [ ] Directly test the flash/CAP adapters and exercise both inventory entry
-    points on hardware. Current hardware cycles only prove startup; they did
-    not call the new inventory code.
+  - [x] Directly exercise the installed-CAP static-root and registered
+    applet-root adapters in the PC VPCD diagnostic against the unchanged
+    JCSystem transaction CAP. Cases 14–16 pass; each scan reports six
+    non-null static roots and one applet root with `Complete` results.
+  - [ ] Exercise both inventory entry points on physical hardware. The latest
+    ARM cycle proves startup only; the diagnostic is currently PC-only.
   - [ ] Decode persistent object/reference-array edges and alias chains, then
     include every active applet/context root before computing reachability.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
