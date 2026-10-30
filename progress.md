@@ -15605,3 +15605,44 @@
   `38a798792210e14b482b78a7ba1932a6bf0e0a7af59bd255740883bdd781115f`;
   symm_crypto ARM image SHA-256
   `a7a09fa952592a43b5970065c50b0551f35e4f0c7908e853476338eee20604e1`.
+
+## 2026-10-30 Reconcile memory totals with live allocator counters 8 minutes
+
+- Step/experiment: `jcsystem-memory-live-allocator-reconciliation`
+- When: '2026-10-30 06:20 UTC' - '2026-10-30 06:28 UTC'
+- Change: Added debug-only allocator diagnostics under the existing
+  `PICO2_DEBUG_HEAP_GC=1` build option and used them during JCSystem-info and
+  controlled key-construction APDUs. Marked the memory-reporting TODO complete
+  and updated HANDOFF with the outcome. No production accounting behavior
+  changed.
+- Validation: Debug `./tools/build arm --profile symm_crypto` and `./tools/build
+  riscv --profile symm_crypto` passed. Debug physical cycle passed on 2BED;
+  the live `B073000001` APDU returned `9000`. Then the normal (debug disabled)
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile symm_crypto --chipid
+  2BED26ED20556535` rebuilt both targets, flash-verified the full ARM image,
+  and passed the finite 18-second runtime monitor. It emitted one recurring
+  `WATCHDOG_RECOVERY ... cause=other` marker; monitor still recorded repeated
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`.
+- Result: During JCSystem-info the runtime reported arena 46,124 bytes, used
+  45,188, free 936; `sbrk(0)` was at `0x20048000`, 229,376 bytes below
+  `__StackLimit=0x20080000`. Reported transient available `230,312` equals
+  `mallinfo free + uncommitted gap` exactly. Link-map static end
+  `0x2003CBD0` leaves 275,504 gross bytes to the stack limit; committed arena
+  plus gap matches within 4-byte alignment. Raw allocator changes for
+  persistent/reset/deselect AES-128 keys were 464/608/608 bytes and matched
+  JCSystem before/after deltas exactly. Cipher factory deltas were 1,288–1,456
+  bytes. No inflated 32-bit reading was reproduced; the 16-bit scalar is
+  capped, and the apparent `0x847f` anomaly originates in JCAlgTest's own
+  signed-short addition. Debug image was replaced with normal symm_crypto.
+- Decision: Close the memory-reporting investigation without changing native
+  accounting. Keep the debug-only raw-counter output for future diagnostics;
+  move to the next open TODO priority.
+- Commit: `0d44495` (diagnostics and findings; this progress record committed separately).
+- Artifacts/logs: raw serial
+  `artifacts/logs/jcsystem-memory-raw-counters-2BED-20261030.log`, SHA-256
+  `09da99e3278f03f333cfe4c18bd2aac910af4ee196eabbe959db03de2c08d7d5`; raw
+  APDUs `artifacts/logs/jcsystem-memory-key-raw-apdus-2BED-20261030.log`,
+  SHA-256 `597514a8b0db7e7e3609ed9144c5ef7f950e054b39baa133174d182f2a21e14e`;
+  debug cycle SHA-256 `010e72031ee43a0a8a005388bcbc3c2f50c68ec5b18052454533302c1f11a19f`;
+  normal restoration cycle SHA-256
+  `fa71cbceeb1cc1bce5cdf8b896366922ccc3b17333071d28551a36e28309423e`.
