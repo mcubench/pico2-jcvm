@@ -18,6 +18,17 @@ artifact README has flashing and validation notes. This is a build-only
 refresh; no physical device was flashed or tested. The refresh is committed as
 `0b90024`.
 
+## Fresh VPCD multipackage lifecycle — 2026-10-30
+
+After rebuilding the PC JCVM for `base`, `PICO2_HOST_USB_ACCESS=1
+./tools/test-vpcd-multipackage` passed 25/25 checks: two packages and three
+instances installed, GET STATUS and SELECT passed before/after process restart,
+all three owner roots were inventoried, and delete/cascade-delete left an empty
+registry. This exercises the current worktree, including the pre-existing
+uncommitted `src/cap_load.cpp` changes; those edits were not committed here.
+This is VPCD evidence only. Hardware enumeration and cold power-cycle recovery
+remain to be checked separately. Log hashes and paths are in `.agent/QKB.md`.
+
 ## Latest continuation: VPCD emulator connection retry — 2026-10-30
 
 `choupi/src/main_pc.cpp::connect_vpcd()` now retries local `ECONNREFUSED` for

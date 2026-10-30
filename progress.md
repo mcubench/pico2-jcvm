@@ -16966,3 +16966,25 @@
 - Decision: Continue with the next open backlog item.
 - Commit: recorded in this follow-up.
 - Artifacts/logs: `artifacts/results/jcalgtest-base-vpcd-current-20261030-rerun3/`.
+
+## 2026-10-30 Re-run VPCD multipackage lifecycle 1 minute
+
+- Step/experiment: `vpcd-multipackage-base-profile-rerun`
+- When: '2026-10-30 22:01 UTC' - '2026-10-30 22:02 UTC'
+- Change: Re-ran the authenticated multipackage VPCD lifecycle after rebuilding
+  the PC JCVM for `base`; documented the current result without changing or
+  staging pre-existing loader edits.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed
+  `TEST:SUMMARY pass=25 fail=0`, covering two packages/three instances,
+  pre/post-restart GET STATUS and SELECT, root inventory, malformed sidecars,
+  instance deletion, package-delete refusal, cascade deletion, and empty final
+  registry.
+- Result: Multi-package install, sidecar restart, owner-root inventory, and
+  deletion remain green in the current worktree. This is VPCD evidence only.
+- Decision: Keep physical power-loss recovery and enabled persistent-record
+  reclamation open; the test does not validate USB power removal.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T220126Z.log`
+  (SHA-256
+  `67fc5ac0901290ac0db8120eed1078784dbbb115999879a1e711b6a0b7c257cf`),
+  restart/corrupt/missing sidecar hashes recorded in `.agent/QKB.md`.

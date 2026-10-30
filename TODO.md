@@ -134,7 +134,9 @@ out explicitly.
     - [x] Re-run multipackage VPCD restart inventory: 25/25 checks passed;
       both before and after restart the trace found 9 static roots and all 3
       applet roots, with `trace_complete=1`, zero invalid refs, and zero edge or
-      root failures.
+      root failures. A fresh `base`-profile rerun on 2026-10-30 also passed all
+      25 checks, including two-package/three-instance restore and deletion;
+      log `artifacts/logs/host-vpcd-multipackage-apdu-20261030T220126Z.log`.
     - [x] Validate the RP2350 overlay's simulated reset and interrupted
       snapshot/install-journal recovery: `./tools/test-rp2350-fs-overlay` passed
       75 checks, including 1,000 randomized multi-record cuts, 1,000 install

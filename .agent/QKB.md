@@ -2149,3 +2149,26 @@ original terminology/status; check current summary and later fixes before reuse.
   `0b5d8ac1bd273d09ebe771267adee4334294b43c3616ce7617e8b7bd7d05ade7`.
   Files are under
   `artifacts/results/jcalgtest-base-vpcd-current-20261030-rerun3/`.
+
+### Fresh base-profile multipackage VPCD lifecycle — 2026-10-30
+
+- After `./tools/build-pc --profile base`,
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed all 25 checks.
+  The run installed two packages and three applet instances, validated package
+  and module GET STATUS, selected all three AIDs, checked per-owner reachability,
+  restarted from the saved image/registry, then verified instance deletion,
+  package-delete refusal while live instances remained, cascade deletion, and
+  an empty final registry.
+- The test exercised the current PC build, including the pre-existing dirty
+  `src/cap_load.cpp`; no source files were staged or committed by this run.
+  VPCD/process-restart evidence is not physical USB power-cycle evidence.
+- APDU log SHA-256
+  `67fc5ac0901290ac0db8120eed1078784dbbb115999879a1e711b6a0b7c257cf`;
+  restart log SHA-256
+  `62c64049dac1a210102de0176f2f98044a3a6208ec71e0f56c571c1b512b9748`;
+  malformed-sidecar logs:
+  `1258fee290847031d1bab8628a03ead541db187e4be544f8bef65951d817ccdf`
+  (corrupt) and
+  `758ad126b3e90ba79e92d99021dca3739b553bc130f600a4ed559ea3bdba50fd`
+  (missing). Paths are printed by the test under `artifacts/logs/` with suffix
+  `20261030T220126Z`.
