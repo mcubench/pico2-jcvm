@@ -10840,7 +10840,7 @@
 - Decision: Retain the implementation. On a visible card, first rebuild ARM
   and RISC-V, then flash the ARM image and run these vectors plus the upstream
   `/deploy` Crypto area. Keep JCAlgTest upstream CAP unchanged.
-- Commit: recorded in the following progress entry.
+- Commit: `26c2285`.
 - Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261024.log`;
   run with `./tools/test-symm-crypto-vpcd`.
 
@@ -16151,6 +16151,20 @@
   physical 8E. The complete Crypto and broader deploy regressions remain open.
 - Decision: Keep the remaining deploy verification focused; use the result as
   current physical coverage for NOPAD and secp192r1 DH/DHC only.
-- Commit: recorded in the following progress entry.
+- Commit: `c17dd0d`.
 - Artifacts/logs: `artifacts/results/deploy/crypto-focused-current-8E-20261030.csv`
   (SHA-256 `321cd73f1664deaac455729b2806b426185733a36fb3d3bc46009fd7263ecdbb`).
+
+## 2026-10-30 Record physical crypto evidence commit identifiers 1 minute
+
+- Step/experiment: `physical-current-crypto-focus-commit-ids`
+- When: '2026-10-30 17:28 UTC' - '2026-10-30 17:29 UTC'
+- Change: Recorded the commit IDs for the preceding NOPAD evidence correction
+  and current-image focused hardware result.
+- Validation: `git show --stat --oneline 26c2285 c17dd0d` confirms each change
+  contains only TODO/QKB/handoff/progress documentation.
+- Result: The stale status correction is `26c2285`; the current 8E focused
+  hardware result is `c17dd0d`.
+- Decision: Continue with the remaining prioritized firmware and deploy work.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: none.
