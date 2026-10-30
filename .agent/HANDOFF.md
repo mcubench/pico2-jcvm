@@ -14,7 +14,8 @@ test currently fails before connection: helper applet INSTALL returns stage 9
 `6F00`; earlier 2026-10-25 client success remains historical. The cause is
 unresolved and is recorded in QKB. Do not claim fresh JCRMI integration pass.
 
-Commit the parser source/test and docs separately from unrelated dirty files.
+Parser code, regression cases, TODO/QKB/handoff updates, and their progress
+record are committed as `69708c5`, separately from unrelated dirty files.
 Preserve current edits in `src/cap_load.cpp`, `AGENTS.md`, and other pre-existing
 worktree entries. Next, investigate the INSTALL failure and the missing
 captured diagnostics, then continue the prioritized TODO; physical PC/SC had

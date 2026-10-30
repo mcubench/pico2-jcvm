@@ -15364,7 +15364,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed 75 checks with `TEST:SUMMARY fail=0`, including 1,000 randomized multi-record power cuts, 1,000 install-journal clear cuts, 1,000 cross-store registry/filesystem header cuts, reset restoring the last committed transaction, and full-overlay cleanup cases. The expected negative-fixture `FAULT FS snapshot unavailable; preserve flash for recovery` appeared while the overall suite passed. Repeated once with output archived to `/tmp/persistent-gc-overlay-recovery.log`.
 - Result: Host model storage snapshots and install metadata recover atomically across tested simulated interruption points. This does not simulate physical flash loss during actual heap GC and does not authorize persistent object-record deletion.
 - Decision: Keep deletion disabled; physical Pico 2 power-cycle validation remains the next recovery gate.
-- Commit: pending.
+- Commit: `69708c5` (recorded in closeout below).
 - Artifacts/logs: `/tmp/persistent-gc-overlay-recovery.log` (ephemeral, not committed).
 
 ## 2026-10-30 Check PCSC reset behavior without claiming power cycle 1 minute
@@ -17029,3 +17029,19 @@
   `0883d2596271a2233ee256744dac7a663d0c8c88abb1cc93fe5e8c85d706a5bd`);
   client log empty (SHA-256
   `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`).
+
+## 2026-10-30 Record CAP 2.2 validation commit 1 minute
+
+- Step/experiment: `cap22-remote-signature-offset-validation-closeout`
+- When: '2026-10-30 22:31 UTC' - '2026-10-30 22:32 UTC'
+- Change: Recorded commit `69708c5` in the parser validation handoff and
+  progress entry.
+- Validation: Confirmed `69708c5` contains the parser, its regression tests,
+  TODO/QKB/HANDOFF, and the progress record; unrelated worktree changes remain
+  unstaged.
+- Result: The CAP 2.2 validation step is committed; the SDK VPCD helper-install
+  failure remains open.
+- Decision: Continue investigating current VPCD INSTALL failure and remaining
+  prioritized TODO items.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-emulator-20261030T222347Z.log`.
