@@ -25,6 +25,15 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `TEST:SUMMARY pass=1 fail=0`. This cycle did **not** call the cursor from the
   VM, so physical cursor-call behavior remains unverified. Log:
   `artifacts/logs/cycle-choupi-20261030T010244Z.log`.
+- A native read-only `PersistentInventory::visitApplet` visitor now pages the
+  applet-owned `0x03, owner` namespace with the same cursor. It validates
+  forward progress, returned tag length, and prefix, and can stop early without
+  mutation. Its focused host test passes for owner isolation, root/body-shaped
+  tags, early stop, stalled cursor, and malformed result. It is not wired into
+  heap GC, does not include package-static `0x02` tags, and has not itself been
+  called on physical hardware. ARM/RISC-V wrappers and PC build pass; latest
+  startup-only flash log is
+  `artifacts/logs/cycle-choupi-20261030T011112Z.log`.
 
 ## Canonical operating fixes and unresolved boundaries
 

@@ -14961,3 +14961,14 @@
 - Decision: Next implement a trusted read-only VM inventory consumer and verify on hardware that its call path reaches the Pico overlay cursor. Include static/applet roots, object fields, array bodies, and aliases; keep reclamation disabled until all persisted references and stable handles are proven safe.
 - Commit: `53397b4` (OS submodule), `9f83a0b` (parent implementation); this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T010244Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `cb74c57d1916e3be5d65a593247934d962292048ee355e4227f0db33f7724a0b`.
+
+## 2026-10-30 Add read-only applet persistent-tag inventory 6 minutes
+
+- Step/experiment: `persistent-applet-tag-inventory`
+- When: '2026-10-30 01:06 UTC' - '2026-10-30 01:12 UTC'
+- Change: Added `PersistentInventory::visitPrefix` and `visitApplet` as native read-only wrappers over `fs_next_tag`. The helper consumes one tag at a time, verifies cursor progress, bounds the returned tag, and verifies the requested prefix. Added a focused host test for owner isolation, root/body-shaped tags, early stop, cursor stall, and malformed output. Updated TODO/QKB/HANDOFF. It does not traverse stored object edges, enumerate package statics, or erase records.
+- Validation: `./tools/test-persistent-inventory` passed all four cases (`TEST:SUMMARY fail=0`). `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, verified the ARM image, and passed repeated finite monitor checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The physical cycle did not call `PersistentInventory::visitApplet`; actual cursor-call validation remains open. Scoped `git diff --check` passed.
+- Result: Native VM code now has a bounded read-only way to inventory applet-owned persistent tags, with fail-closed behavior for cursor and tag corruption. Full graph inventory and safe persistent-record reclamation remain unimplemented.
+- Decision: Next enumerate persisted roots and decode typed object/array/alias edges, including package-static roots; only then compare the persistent graph against live VM roots. Keep flash deletion disabled.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T011112Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.

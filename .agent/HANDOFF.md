@@ -15,8 +15,11 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in
    `src/choupi_pico2.cpp`. The physical cycle passed startup, but did not call
-   the cursor. Next consume the cursor in a trusted VM root inventory and add a
-   physical cursor-call test.
+   the cursor. A native read-only visitor now pages applet-owned `0x03, owner`
+   tags and rejects stalled/malformed cursor responses; it does not enumerate
+   package-static roots or participate in GC yet. Next build the complete
+   persistent graph inventory, then invoke this visitor from a diagnostic VM
+   path and test an actual cursor call on hardware.
    No persistent records are deleted; preserve stable handles and keep loaded
    persistent records intact until reachability is proven.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
@@ -59,13 +62,13 @@ reader name, profile, and installed state before every hardware task.
   watchdog API did not identify a watchdog-caused reboot. Runtime checks passed
   throughout; no firmware change is indicated by this diagnostic alone.
 
-- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 01:02 UTC
+- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 01:11 UTC
   with the ARM `current` image SHA-256
-  `cb74c57d1916e3be5d65a593247934d962292048ee355e4227f0db33f7724a0b`.
+  `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
   Flash verification succeeded and the finite monitor passed repeatedly with
   `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; log:
-  `artifacts/logs/cycle-choupi-20261030T010244Z.log`. The monitor did not call
-  the new filesystem cursor. The earlier `asymm_crypto` test outcomes below
+  `artifacts/logs/cycle-choupi-20261030T011112Z.log`. The monitor did not call
+  the filesystem cursor. The earlier `asymm_crypto` test outcomes below
   remain historical results for that profile, not the current flashed image.
   The cycle emitted no `TEST:FAIL` or nonzero exit. Its complete
   API 3.0.5 Security rerun completed 901 calls with 396 `OK`, 504

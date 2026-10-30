@@ -11,6 +11,9 @@ out explicitly.
 - [x] Add a bounded-memory OS filesystem tag visitor and cursor syscall for
   trusted VM inventory. Cursor iteration supports prefix filtering and skips
   tags the active context cannot read. It does not delete records.
+- [x] Add a native read-only applet-owner tag visitor over that cursor. It
+  enumerates the `0x03, owner` namespace and fails closed on invalid tags or
+  stalled cursors; it does not include package-static tags or delete records.
 - [ ] Implement a native trusted-VM inventory consumer with explicit owner
   boundaries. Enumerate persistent roots, static references, applet roots,
   object fields, reference-array bodies, and aliases before identifying
