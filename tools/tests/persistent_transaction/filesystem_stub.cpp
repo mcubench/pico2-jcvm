@@ -10,6 +10,7 @@
 #include <vector>
 
 namespace persistent_transaction_test {
+uint16_t instance_field_count = 0;
 extern bool track_array_allocations;
 extern unsigned int tracked_array_allocations;
 extern unsigned int tracked_array_deallocations;
@@ -28,7 +29,7 @@ void Context::setPendingSystemExceptionReason(uint16_t) noexcept {}
 Package::Package(jpackage_ID_t package_id) noexcept : ID(package_id) {}
 const uint16_t Class_Handler::getInstanceFieldsSize(
     jclass_index_t) const {
-  return 0;
+  return persistent_transaction_test::instance_field_count;
 }
 } // namespace jcvm
 

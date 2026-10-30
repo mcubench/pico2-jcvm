@@ -32,10 +32,11 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    strict persistent-array child read exception each return an incomplete trace
    and reclaim zero heap handles. The FlashMemory transaction test rejects
    truncated/mismatched array-alias headers and aliases to scalar records. It
-   now also links the actual Heap, JC_Array, and strict FlashMemory decoder: a
-   truncated object alias, truncated array alias, and cyclic array-alias chain
-   each make the mark incomplete and reclaim zero handles. Reboot recovery
-   remains untested, so persistent records cannot be deleted.
+   now also links the actual Heap, JC_Array, JC_Instance, and strict FlashMemory
+   decoder. Malformed object-field aliases, truncated reference-array aliases,
+   and a cyclic array-alias chain each make the mark incomplete and reclaim
+   zero handles. Reboot recovery remains untested, so persistent records cannot
+   be deleted.
 
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in

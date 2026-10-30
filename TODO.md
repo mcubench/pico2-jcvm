@@ -83,9 +83,9 @@ out explicitly.
       injected and blocks reclamation.
     - [x] FlashMemory host test rejects truncated and length-mismatched array
       alias target headers plus a valid alias pointing to a scalar record.
-    - [x] Inject malformed serialized object/array aliases and a cyclic alias
-      chain through the actual strict reference decoder and heap collector;
-      each incomplete trace reclaims zero handles.
+    - [x] Inject malformed object-field and reference-array alias records,
+      including a cyclic array-alias chain, through the actual strict decoder
+      and heap collector; each incomplete trace reclaims zero handles.
     - [ ] Verify persistent-record and heap-handle recovery after reboot or
       emulator restart. The collector test is currently host-only and does not
       delete persistent records.

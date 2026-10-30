@@ -11,6 +11,7 @@
 #include <vector>
 
 namespace persistent_transaction_test {
+extern uint16_t instance_field_count;
 std::vector<uint8_t> read(const uint8_t *tag, uint8_t length);
 void seed(const uint8_t *tag, uint8_t tag_length, std::vector<uint8_t> value);
 void fail_one_write();
@@ -316,6 +317,27 @@ int main() {
                       alias_edge_tag.value + alias_edge_tag.len);
   exercise_bad_array_edge(0x7b, std::move(cyclic_alias),
                           "cyclic_serialized_array_alias_blocks_reclamation");
+
+  {
+    persistent_transaction_test::instance_field_count = 1;
+    jcvm::Heap heap(7);
+    const auto instance_tag =
+        FlashMemory_Handler::getAppletInstanceTag(1, 2, 3);
+    const auto instance_reference = heap.addInstance(
+        jcvm::JC_Instance(heap, 2, 3, instance_tag));
+    const auto unreachable_reference =
+        heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    const auto malformed_field =
+        FlashMemory_Handler::computeTag(instance_tag, 0);
+    seed(malformed_field.value, malformed_field.len, {0xfe});
+    const auto summary = heap.collectUnreachableFrom({instance_reference});
+    expect(!summary.complete && summary.edge_load_failures == 1 &&
+               summary.arrays_reclaimed == 0 &&
+               heap.getInstance(instance_reference) != nullptr &&
+               heap.getArray(unreachable_reference) != nullptr,
+           "malformed_serialized_object_field_blocks_heap_reclamation");
+    persistent_transaction_test::instance_field_count = 0;
+  }
 
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
          "depth_zero_initially");
