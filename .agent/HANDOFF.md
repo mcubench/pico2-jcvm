@@ -29,6 +29,7 @@ positive identities match the generated `symm_crypto` profile and the physical
 comparison log/hash. Do not infer AES-CTR support from this matrix. Continue
 with remaining backlog; persistent-record deletion remains disabled until
 physical USB power-cycle recovery is validated.
+Parity audit documentation commit: `6183ebf`.
 
 ## Current memory-reporting investigation
 
