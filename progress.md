@@ -14926,5 +14926,5 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. Focused OS test `./tools/env cargo test --manifest-path choupi/os/Cargo.toml --no-default-features --features host visits_active_tags -- --nocapture` passed. Full functional OS suite passed 66 tests, 0 failed, 2 ignored, with `--skip bindgen_test_layout`; those generated layout tests abort with `null reference produced`. Host suite required elevated execution because its MPU emulator uses `PTRACE_ATTACH`. No physical flash or hardware test was run because this primitive is not connected to runtime code.
 - Result: The filesystem index can now be scanned with bounded temporary memory in tests and future internal code. Persistent root discovery, owner-scoped bridge design, and deletion safety remain open.
 - Decision: Next define and implement a trusted owner-scoped tag inventory bridge, then enumerate persistent roots and aliases. Keep deletion disabled until the full persisted graph is accounted for.
-- Commit: `88cd0f5` (OS submodule); root documentation/pointer commit pending.
+- Commit: `88cd0f5` (OS submodule), `94f3446` (root docs and pointer); this metadata-only commit records the root SHA.
 - Artifacts/logs: `/tmp/javacard-os-tests.log` captures the sandbox-only PTRACE failure; no persistent test artifact.
