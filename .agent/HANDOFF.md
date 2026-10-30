@@ -89,6 +89,13 @@ probe returned `9000` after the run, followed by eight passing serial runtime
 summaries. The `NO_RESOURCE` origin is not identified; keep persistent
 reclamation disabled pending its recovery acceptance requirements.
 
+After the full run's successful cleanup, a focused rerun of the DES-64 and
+AES-192 known-answer Cipher rows still returned `NO_MEMORY` / `NO_RESOURCE`
+(2/2); upload and cleanup passed. These are persistent repeatable row failures,
+not only late-run fallout. Firmware maps filesystem `OutOfFlash` to this status,
+but the exact exhausted capacity path remains to be traced. Focused CSV hash:
+`ad53a69876f892724a8be1727fbb48c93d2ac4b726f4435bce034ead36565c8a`.
+
 ## Physical RSA NOPAD retest
 
 The previously noted NOPAD physical retest is complete. On 2026-10-29, the

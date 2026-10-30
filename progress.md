@@ -16204,3 +16204,26 @@
   `8343b601775a8fc3e8dbe126509901b137b5903464b8372d9c39d927bcbb6510`), and
   `artifacts/logs/pico-powerup-persistence-20261030T173744Z.log` (SHA-256
   `ba3f8aeac6c1d13d1726309b0123fbcadb6c89d6ab515822ca919e658e5f3d72`).
+
+## 2026-10-30 Reproduce symmetric NO_RESOURCE outside full Crypto sweep 3 minutes
+
+- Step/experiment: `physical-symm-no-resource-focused-repeat`
+- When: '2026-10-30 17:39 UTC' - '2026-10-30 17:42 UTC'
+- Change: No firmware changes. On physical 2BED, reran only the unchanged
+  API 3.0.5 Crypto DES-64 and AES-192 known-answer Cipher rows after successful
+  cleanup of the prior full Crypto CAP. Updated TODO, QKB, and handoff.
+- Validation: The focused runner uploaded the CAP, selected exactly two calls
+  from 466, both returned `NO_MEMORY` / `EXC_SYSTEM reason=0x0005
+  (NO_RESOURCE)`, and CAP cleanup passed. Source inspection confirms the VM
+  maps the filesystem `OutOfFlash` status to `SystemException.NO_RESOURCE`,
+  but does not establish which capacity bound was hit. No build or flash was
+  needed; targeted documentation diff check passed.
+- Result: The DES-64 and AES-192 errors reproduce when isolated after the full
+  suite and CAP uninstall; they are not solely caused by running late in the
+  Crypto sequence. Persistent resource accounting remains a leading area to
+  investigate, not a proven root cause.
+- Decision: Keep these two rows as focused regressions and trace the precise
+  capacity failure before modifying GC or changing supported-algorithm results.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: `artifacts/results/deploy/crypto-memory-focused-2BED-20261030.csv`
+  (SHA-256 `ad53a69876f892724a8be1727fbb48c93d2ac4b726f4435bce034ead36565c8a`).

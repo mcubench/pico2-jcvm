@@ -1804,6 +1804,13 @@ original terminology/status; check current summary and later fixes before reuse.
   `artifacts/logs/pico-powerup-persistence-20261030T173744Z.log` (SHA-256
   `ba3f8aeac6c1d13d1726309b0123fbcadb6c89d6ab515822ca919e658e5f3d72`). This
   check does not measure power-cycle recovery.
+- After the successful full-run cleanup, a focused repeat of only the DES-64
+  and AES-192 known-answer Cipher rows again returned `NO_MEMORY` /
+  `SystemException.NO_RESOURCE` (2/2); upload and cleanup passed. These errors
+  reproduce outside the full sweep sequence. Firmware maps filesystem
+  `OutOfFlash` status 1 to `NO_RESOURCE`, but this observation alone does not
+  identify which capacity limit was reached. Focused CSV SHA-256:
+  `ad53a69876f892724a8be1727fbb48c93d2ac4b726f4435bce034ead36565c8a`.
 
 ### Read-only power-up check does not perform a power cycle — clarified 2026-10-30
 

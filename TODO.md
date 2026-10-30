@@ -242,9 +242,11 @@ out explicitly.
   with 24 `NO_MEMORY` / `SystemException.NO_RESOURCE` results (138 `OK`, 304
   `UNSUPPORTED_PER_SPEC`) and successful CAP cleanup. The errors affect
   multiple symmetric Signature/Cipher paths; the exact exhausted allocator or
-  store is unproven. This strengthens the resource-recovery priority but does
-  not prove persistent GC is the specific cause. This is not evidence of an
-  RSA arithmetic defect.
+  store is unproven. After that cleanup, focused DES-64 and AES-192 known-answer
+  reruns still returned `NO_RESOURCE` (2/2), with successful upload and cleanup;
+  the problem is not limited to reaching these calls late in the full sweep.
+  This strengthens the resource-recovery priority but does not prove persistent
+  GC is the specific cause. This is not evidence of an RSA arithmetic defect.
   - [x] Add a bounded-memory, read-only active-tag visitor to the OS filesystem
     index, with prefix filtering and early termination; focused filesystem
     coverage passes. This is only an inventory primitive and is not yet
