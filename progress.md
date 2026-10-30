@@ -16292,3 +16292,48 @@
   `ee2853a2e35f339677c9693f8e37440f70c02c5b25008918878ebfd97c8a842c`); the
   finite serial monitor output was captured in this session and includes the
   two `FS_WRITE_FAIL` events. The final read-only transcript is in QKB.
+
+## 2026-10-30 Increase RP2350 persistent overlay capacity and validate on hardware 26 minutes
+
+- Step/experiment: `rp2350-overlay-v3-physical-crypto-capacity`
+- When: '2026-10-30 17:52 UTC' - '2026-10-30 18:18 UTC'
+- Change: Upgraded filesystem snapshot generation to v3, storing offset bit 16
+  in unused `OverlayFile.flags` bit 6 while keeping the 10-byte on-flash index
+  unchanged. Raised the byte arena to 77,824 bytes, the exact capacity left in
+  a 160 KiB slot after its 4 KiB header and maximum 8,192-record index. Kept
+  v2 snapshots readable. Added tests for v2 read/migration, records above 64
+  KiB, compaction, and restart. Updated TODO, QKB, and handoff with the new
+  diagnosis and physical results.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with
+  `TEST:SUMMARY fail=0`; `./tools/build arm` and `./tools/build riscv` passed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile symm_crypto
+  --chipid 2BED26ED20556535` passed both profile builds, flash verification,
+  and its 18-second finite serial monitor (18 passing runtime summaries; one
+  known stale-field watchdog marker, `cause=other`). On physical 2BED, the
+  unchanged API 3.0.5 Crypto CAP passed focused DES-64 and AES-192 known-answer
+  cases (plus DES CBC M2), and completed the full area: 466 calls, 161 `OK`,
+  305 `UNSUPPORTED_PER_SPEC`, zero other statuses; upload and cleanup passed.
+  The concurrent serial capture had no `FS_WRITE_FAIL`, `PERSIST_EXCEPTION`,
+  `TEST:FAIL`, or `FAULT`. A post-run registry check timed out and PC/SC later
+  listed only VPCD readers, so post-run applet selection and power-cycle
+  recovery were not verified. Targeted `git diff --check` passed.
+- Result: The former full-suite 24 `SystemException.NO_RESOURCE` results and
+  focused DES/AES failures are resolved on the larger overlay. One record's
+  size remains 16-bit; larger aggregate offsets use multiple records. Safe
+  reclamation remains separate and disabled pending interrupted-update and
+  physical power-loss acceptance.
+- Decision: Retain v3 with v2 compatibility. Proceed with the next TODO item;
+  before relying on the larger arena across brownouts, add explicit v3
+  interrupted-snapshot coverage and repeat physical tests when a reader is
+  available.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: ARM UF2 SHA-256
+  `a4790d06c5691ac5f222bc51fb47e207268e7b805bd749958940de82d130f977`; cycle
+  log `artifacts/logs/cycle-choupi-20261030T180431Z.log` SHA-256
+  `dfe46433fb498099a60450d88811d4e60f323e10453e7a1941b03104f6a4f023`;
+  focused Crypto CSV SHA-256
+  `69bf72a96047fbd8a8bf380b48face54559d28477fa4a5368e757943e2f5fca4`;
+  full Crypto CSV SHA-256
+  `3cb62be1b5cd8539fcddbd450a900f1f83236fa375eb0bf20cec79c9ca2efa0e`;
+  serial log SHA-256
+  `5561e9a86014df6dbaf00066b7df9c6ac190b7be10836ec911c0c26a9dd80df4`.

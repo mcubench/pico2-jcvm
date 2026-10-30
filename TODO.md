@@ -233,29 +233,23 @@ out explicitly.
   snapshot offsets; it was not a valid capacity increase. Keep safe persistent
   object reclamation/GC as a separate open task, preserving stable handles and
   pinning loaded persistent objects until deletion is designed.
+- [x] Increase the persistent overlay arena without changing snapshot index
+  size. Snapshot format v3 uses an unused record flag bit for offset bit 16,
+  accepts and migrates v2 snapshots, and raises the arena from 65,535 to
+  77,824 bytes (the exact two-slot snapshot bound). Host overlay tests cover
+  v2 migration, offsets above 64 KiB, compaction, and restart. On physical
+  `symm_crypto` Pico 2 `2BED26ED20556535`, the formerly failing DES-64 and
+  AES-192 Crypto calls both passed; the full unchanged API 3.0.5 Crypto area
+  then completed 466/466 rows with 161 `OK`, 305 `UNSUPPORTED_PER_SPEC`, and
+  zero other results. CAP upload/cleanup and ARM/RISC-V wrapper builds passed.
+  UF2 SHA-256 is `a4790d06c5691ac5f222bc51fb47e207268e7b805bd749958940de82d130f977`.
 - [ ] Implement safe persistent-object reclamation/GC for repeated API
-  workloads. The full Security `setP` write failed because storage was full;
-  exception mapping is fixed as above. Audit persistent-object roots and
-  reclaim only unreachable storage. Preserve stable Java Card handles and pin
-  loaded persistent objects until deletion is designed. A full unchanged API
-  3.0.5 Crypto CAP run on physical `symm_crypto` 2BED completed all 466 calls
-  with 24 `NO_MEMORY` / `SystemException.NO_RESOURCE` results (138 `OK`, 304
-  `UNSUPPORTED_PER_SPEC`) and successful CAP cleanup. The errors affect
-  multiple symmetric Signature/Cipher paths; the full-run failures were not
-  individually traced. After that cleanup, focused DES-64 and AES-192 known-answer
-  reruns still returned `NO_RESOURCE` (2/2), with successful upload and cleanup;
-  the problem is not limited to reaching these calls late in the full sweep.
-  A concurrent 2BED serial trace of those rows captured
-  `FS_WRITE_FAIL op=new size=4 files=6263 bytes=65533/65535`: the new 4-byte
-  record failed with only two overlay bytes left. After the Crypto CAP was
-  uninstalled, a version-only JCSystem-info probe again reported 5,969 bytes
-  free. This confirms active filesystem capacity exhaustion during the
-  operation; it does not establish that persistent-object GC, rather than the
-  loaded test package plus API working data exceeding the 64 KiB overlay, is
-  the needed fix.
-  JCSystem-info now exposes a useful boundary: the current persistent free
-  value was 6,010 bytes (P1=01) after the full run and 5,969 bytes (P1=00) after
-  the focused CAP lifecycle; the P1=00 legacy short and extended fields agree.
+  workloads that still exceed the expanded overlay. The earlier 64 KiB bound
+  caused the recorded 24 Crypto `NO_RESOURCE` results and focused DES-64/AES-192
+  failures; those all disappeared in the post-v3 physical rerun. Keep stable
+  Java Card handles and power-loss/interrupted-update safeguards. Do not
+  conflate the resolved overlay-capacity issue with safe record reclamation;
+  do not enable persistent deletion until the existing recovery gates pass.
   The 41-byte delta spans the focused test/probe sequence and is not attributed
   to one APDU. The reported free bytes do not explain which individual write
   exceeds a remaining resource limit.

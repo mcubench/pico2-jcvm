@@ -1861,3 +1861,47 @@ original terminology/status; check current summary and later fixes before reuse.
   `4708926c9e2209409d15a6217f8043a58e473be8cff3fc9a5378fa5b6b7c4840`) and
   `artifacts/logs/persistent-inventory-latest-monitor-2BED-20261030.log` (SHA-256
   `f7a73be8232621a94faa183aabd21559748a7d829c781e0462b0e4465c06561d`).
+
+### RP2350 overlay capacity v3 resolves physical API Crypto exhaustion — 2026-10-30
+
+- The 65,535-byte overlay cap was not required by the fixed snapshot slot. The
+  index uses 8,192 ten-byte records and each 160 KiB slot reserves 4 KiB for
+  its header, leaving exactly 77,824 bytes for the byte arena. Snapshot format
+  v3 stores offset bit 16 in otherwise-unused `OverlayFile.flags` bit 6; v2
+  snapshots remain readable and the next write publishes a v3 generation.
+  File lengths stay 16-bit, so a single record still cannot exceed 65,535
+  bytes; use multiple records when testing offsets beyond 64 KiB.
+- `./tools/test-rp2350-fs-overlay` passes v2 migration, high-offset restore,
+  compaction, and restart checks (`TEST:SUMMARY fail=0`). Both
+  `./tools/build arm` and `./tools/build riscv` pass. Current `symm_crypto`
+  cycle flashed/verified ARM UF2 on Pico 2 `2BED26ED20556535`; its 18-second
+  monitor had 18 `TEST:SUMMARY pass=1 fail=0` records and one known stale-field
+  watchdog marker (`cause=other`). UF2 SHA-256:
+  `a4790d06c5691ac5f222bc51fb47e207268e7b805bd749958940de82d130f977`.
+- On that same physical board, the unchanged API 3.0.5 Crypto CAP passed its
+  previously failing DES-64 and AES-192 known-answer calls (both `OK`); the
+  focused filter also selected DES CBC M2, which passed. Upload and cleanup
+  succeeded. Full Crypto then completed all 466 calls with 161 `OK`, 305
+  `UNSUPPORTED_PER_SPEC`, zero other statuses, and successful cleanup. This
+  supersedes the earlier 2BED full-run 24 `NO_RESOURCE` result for the new
+  image; it does not claim persistent GC/reclamation is implemented.
+- Concurrent serial capture of the full run contained 15,582 lines and no
+  `FS_WRITE_FAIL`, `PERSIST_EXCEPTION`, `TEST:FAIL`, or `FAULT`. Its 900-second
+  monitor was intentionally terminated after the client completed. The
+  post-run read-only GP registry check timed out three times; subsequent
+  `pcsc_scan -r` listed only the two VPCD readers. Therefore APDU-level
+  post-run registry verification and physical power-cycle recovery were not
+  confirmed, even though API CAP cleanup reported success.
+- Evidence: focused CSV SHA-256
+  `69bf72a96047fbd8a8bf380b48face54559d28477fa4a5368e757943e2f5fca4`; full
+  Crypto CSV SHA-256
+  `3cb62be1b5cd8539fcddbd450a900f1f83236fa375eb0bf20cec79c9ca2efa0e`;
+  serial capture SHA-256
+  `5561e9a86014df6dbaf00066b7df9c6ac190b7be10836ec911c0c26a9dd80df4`;
+  cycle log SHA-256
+  `dfe46433fb498099a60450d88811d4e60f323e10453e7a1941b03104f6a4f023`.
+- For a repeat on this host, use the exact reader name with
+  `--pcsc-lib /usr/lib/x86_64-linux-gnu/libpcsclite.so.1`; the authorized
+  `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper may need to be rerun after
+  firmware reboot. Do not treat SmartcardIO's failure to resolve a stale reader
+  name as a VM failure; refresh `pcsc_scan -r` first.

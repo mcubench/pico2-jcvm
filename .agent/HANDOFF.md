@@ -113,6 +113,14 @@ uninstalled, JCSystem-info again reported 5,969 bytes free. This confirms the
 immediate failure is overlay capacity during the loaded package's work; it
 does not by itself prove persistent GC is the remedy.
 
+**Superseded by the 2026-10-30 overlay-v3 validation below:** the index now
+uses flag bit 6 for offset bit 16 and the bounded arena is 77,824 bytes. The
+same 2BED board was flashed with `symm_crypto`; focused DES-64 and AES-192
+known-answer calls passed, then the full unchanged 3.0.5 Crypto suite completed
+466 calls (161 `OK`, 305 `UNSUPPORTED_PER_SPEC`, zero other results), with
+successful upload and cleanup. Persistent GC is still a separate open design
+item; do not enable record deletion without power-loss validation.
+
 ## Physical RSA NOPAD retest
 
 The previously noted NOPAD physical retest is complete. On 2026-10-29, the
@@ -671,3 +679,31 @@ inspect fresh `git status` before staging. No firmware was changed by compaction
 Keep this file a current snapshot; add reusable diagnoses to QKB and detailed
 chronology to `progress.md`. Consult archived sections for older measurements,
 commit IDs, feature-specific tests, and interrupted tasks before resuming them.
+
+## Latest continuation: overlay v3 / Crypto capacity retest — 2026-10-30
+
+- `src/choupi_pico2.cpp` and `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`
+  contain the uncommitted implementation. Version 2 remains readable; new
+  snapshots use v3, with the high offset bit stored in `OverlayFile.flags` bit
+  6. The arena is 77,824 bytes and fits the 160 KiB slot exactly at the
+  configured maximum index size.
+- Validation passed: `./tools/test-rp2350-fs-overlay` (`TEST:SUMMARY fail=0`),
+  `./tools/build arm`, `./tools/build riscv`, and the profile-specific ARM cycle
+  on 2BED. ARM UF2 SHA-256:
+  `a4790d06c5691ac5f222bc51fb47e207268e7b805bd749958940de82d130f977`.
+- Physical 2BED `2BED26ED20556535`, `symm_crypto`: the unchanged upstream
+  Crypto CAP passed DES-64 and AES-192 known-answer rows; complete Crypto
+  passed 466 calls with 161 `OK`, 305 `UNSUPPORTED_PER_SPEC`, zero other
+  statuses. Upload and cleanup passed. Full CSV:
+  `artifacts/results/deploy/crypto-overlay-v3-full-2BED-20261030.csv` (SHA-256
+  `3cb62be1b5cd8539fcddbd450a900f1f83236fa375eb0bf20cec79c9ca2efa0e`).
+- Captured full-run serial log has no `FS_WRITE_FAIL`, `PERSIST_EXCEPTION`,
+  `TEST:FAIL`, or `FAULT`. The post-run registry probe timed out, and a fresh
+  scan listed only VPCD readers. Do not claim post-run physical registry or
+  cold-power verification. Cycle log and additional evidence hashes are in
+  QKB’s “RP2350 overlay capacity v3 resolves physical API Crypto exhaustion”.
+- Next: inspect the final diff, run targeted whitespace checks, append the
+  progress record, and commit only `src/choupi_pico2.cpp`, the overlay test,
+  `TODO.md`, `.agent/QKB.md`, `.agent/HANDOFF.md`, and `progress.md`. Preserve
+  other dirty worktree changes. After commit, continue the remaining TODO
+  items, particularly safe persistent reclamation and power-loss validation.

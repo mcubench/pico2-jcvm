@@ -139,7 +139,8 @@ constexpr uint32_t kFilesystemHeaderSize = FLASH_SECTOR_SIZE;
 constexpr uint32_t kFilesystemPayloadOffset = kFilesystemHeaderSize;
 constexpr uint32_t kFilesystemXipBase = 0x10000000;
 constexpr uint32_t kFilesystemMagic = 0x3253464a; // "JFS2"
-constexpr uint16_t kFilesystemVersion = 2;
+constexpr uint16_t kFilesystemVersion = 3;
+constexpr uint16_t kFilesystemLegacyVersion = 2;
 
 struct OverlayFile {
   uint16_t hash = 0;
@@ -159,12 +160,14 @@ struct __attribute__((packed)) FilesystemRecord {
 };
 static_assert(sizeof(FilesystemRecord) == 10,
               "filesystem snapshot index record must be 10 bytes");
-// OverlayFile and FilesystemRecord store byte offsets in uint16_t fields.
-// Keep the arena within that representation until the on-flash format is
-// deliberately upgraded.
-constexpr size_t kMaxOverlayBytes = UINT16_MAX;
-static_assert(kMaxOverlayBytes <= UINT16_MAX,
-              "overlay offsets must fit their 16-bit representation");
+// Version 3 stores the seventeenth offset bit in an otherwise unused flag.
+// The fixed two-slot snapshot has room for 8,192 ten-byte index records and a
+// 77,824-byte arena: the complete payload plus its header exactly fits one
+// 160 KiB slot. Version 2 snapshots remain readable with 16-bit offsets.
+constexpr size_t kMaxOverlayBytes = 77824;
+constexpr uint32_t kOverlayOffsetHighBit = 0x10000;
+static_assert(kMaxOverlayBytes <= 0x1ffff,
+              "overlay offsets must fit the one-bit high-offset encoding");
 constexpr size_t kFilesystemMaxPayload =
     kMaxOverlayFiles * sizeof(FilesystemRecord) + kMaxOverlayBytes;
 static_assert(kFilesystemPayloadOffset + kFilesystemMaxPayload <=
@@ -197,7 +200,23 @@ constexpr uint8_t kOverlayCompressedTag = 1u << 2;
 constexpr uint8_t kOverlayParentTag = 1u << 3;
 constexpr uint8_t kOverlaySerialized = 1u << 4;
 constexpr uint8_t kOverlayDeleted = 1u << 5;
+constexpr uint8_t kOverlayOffsetHigh = 1u << 6;
 constexpr uint8_t kMaxOverlayTagLength = 128;
+
+uint32_t overlay_offset(const OverlayFile &file) {
+  return static_cast<uint32_t>(file.offset) |
+         ((file.flags & kOverlayOffsetHigh) != 0
+              ? kOverlayOffsetHighBit
+              : 0u);
+}
+
+void set_overlay_offset(OverlayFile &file, uint32_t offset) {
+  file.offset = static_cast<uint16_t>(offset);
+  file.flags &= static_cast<uint8_t>(~kOverlayOffsetHigh);
+  if ((offset & kOverlayOffsetHighBit) != 0) {
+    file.flags |= kOverlayOffsetHigh;
+  }
+}
 
 alignas(FLASH_PAGE_SIZE) OverlayFile overlay[kMaxOverlayFiles];
 size_t overlay_file_count = 0;
@@ -265,10 +284,16 @@ const FilesystemHeader *filesystem_slot_header(uint32_t offset) {
 }
 
 bool filesystem_header_valid(const FilesystemHeader &header) {
+  const bool supported_version =
+      header.version == kFilesystemLegacyVersion ||
+      header.version == kFilesystemVersion;
+  const uint32_t maximum_bytes =
+      header.version == kFilesystemLegacyVersion ? UINT16_MAX
+                                                 : kMaxOverlayBytes;
   return header.magic == kFilesystemMagic &&
-         header.version == kFilesystemVersion &&
+         supported_version &&
          header.file_count <= kMaxOverlayFiles &&
-         header.bytes_used <= kMaxOverlayBytes &&
+         header.bytes_used <= maximum_bytes &&
          header.payload_length ==
              header.file_count * sizeof(FilesystemRecord) + header.bytes_used &&
          header.payload_length <= kFilesystemMaxPayload &&
@@ -428,13 +453,15 @@ bool restore_overlay_slot(uint32_t offset, uint8_t slot, bool legacy) {
   if (valid) {
     std::memcpy(overlay_bytes, payload, header->bytes_used);
     for (size_t index = 0; index < kMaxOverlayFiles; ++index) {
-      const auto &file = overlay[index];
+      auto &file = overlay[index];
+      const uint32_t offset = overlay_offset(file);
       if ((file.flags & kOverlayUsed) != 0 &&
-          (file.offset >= header->bytes_used ||
-           (overlay_bytes[file.offset] & 0x7f) >
-               header->bytes_used - file.offset ||
-           file.size > header->bytes_used - file.offset - 1 -
-                           (overlay_bytes[file.offset] & 0x7f))) {
+          ((header->version == kFilesystemLegacyVersion &&
+            (file.flags & kOverlayOffsetHigh) != 0) ||
+           offset >= header->bytes_used ||
+           (overlay_bytes[offset] & 0x7f) > header->bytes_used - offset ||
+           file.size > header->bytes_used - offset - 1 -
+                           (overlay_bytes[offset] & 0x7f))) {
         valid = false;
         break;
       }
@@ -547,7 +574,7 @@ bool is_compressible_tag(const uint8_t *tag, uint8_t tag_length) {
 }
 
 uint8_t stored_tag_length(const OverlayFile &file) {
-  return overlay_bytes[file.offset] & 0x7F;
+  return overlay_bytes[overlay_offset(file)] & 0x7F;
 }
 
 bool overlay_is_used(const OverlayFile &file) {
@@ -605,7 +632,7 @@ uint8_t overlay_key_length(const OverlayFile &file) {
   }
   if (overlay_compresses_tag(file)) {
     const uint8_t root_length = tag_root_length(
-        overlay_bytes + file.offset + 1, file.tag_length);
+        overlay_bytes + overlay_offset(file) + 1, file.tag_length);
     return static_cast<uint8_t>(root_length + (file.tag_length - root_length) / 2);
   }
   return file.tag_length;
@@ -613,8 +640,9 @@ uint8_t overlay_key_length(const OverlayFile &file) {
 
 bool stored_tag_matches(const OverlayFile &file, const uint8_t *tag,
                         uint8_t tag_length) {
-  const uint8_t header = overlay_bytes[file.offset];
-  const uint8_t *stored = overlay_bytes + file.offset + 1;
+  const uint32_t offset = overlay_offset(file);
+  const uint8_t header = overlay_bytes[offset];
+  const uint8_t *stored = overlay_bytes + offset + 1;
   if ((header & 0x80) != 0) {
     const uint16_t parent_slot = static_cast<uint16_t>(stored[0]) |
                                  static_cast<uint16_t>(stored[1] << 8);
@@ -646,7 +674,7 @@ bool stored_tag_matches(const OverlayFile &file, const uint8_t *tag,
 }
 
 uint8_t *overlay_data(OverlayFile &file) {
-  return overlay_bytes + file.offset + 1 + stored_tag_length(file);
+  return overlay_bytes + overlay_offset(file) + 1 + stored_tag_length(file);
 }
 
 uint16_t hash_tag(const uint8_t *tag, uint8_t tag_length) {
@@ -676,12 +704,14 @@ OverlayFile *find_overlay(const uint8_t *tag, uint8_t tag_length,
       const bool matches = stored_tag_matches(file, tag, tag_length);
       if (matches) {
         if (overlay_has_record(file)) {
-          if (newest_live == nullptr || file.offset > newest_live->offset) {
+          if (newest_live == nullptr ||
+              overlay_offset(file) > overlay_offset(*newest_live)) {
             newest_live = &file;
             newest_live_slot = slot;
           }
         } else if (newest_tombstone == nullptr ||
-                   file.offset > newest_tombstone->offset) {
+                   overlay_offset(file) >
+                       overlay_offset(*newest_tombstone)) {
           newest_tombstone = &file;
           newest_tombstone_slot = slot;
         }
@@ -742,13 +772,14 @@ bool reconstruct_overlay_tag(uint16_t slot, uint8_t *tag,
   const OverlayFile &file = overlay[slot];
   if (!overlay_is_used(file) || !overlay_has_storage(file) ||
       file.tag_length == 0 || file.tag_length > 128 ||
-      file.offset >= overlay_bytes_used) {
+      overlay_offset(file) >= overlay_bytes_used) {
     return false;
   }
 
-  const uint8_t header = overlay_bytes[file.offset];
+  const uint32_t offset = overlay_offset(file);
+  const uint8_t header = overlay_bytes[offset];
   const uint8_t key_length = header & 0x7f;
-  const uint8_t *stored = overlay_bytes + file.offset + 1;
+  const uint8_t *stored = overlay_bytes + offset + 1;
   if ((header & 0x80) != 0) {
     if (key_length != 3 || file.tag_length < 2) return false;
     const uint16_t parent_slot = static_cast<uint16_t>(stored[0]) |
@@ -809,41 +840,46 @@ bool append_overlay(OverlayFile &file, const uint8_t *tag, const uint8_t *data,
   if (new_used > kMaxOverlayBytes) {
     return false;
   }
-  const size_t old_offset = file.offset;
+  const size_t old_offset = overlay_offset(file);
   if (old_record_size != 0) {
     std::memmove(overlay_bytes + old_offset,
                  overlay_bytes + old_offset + old_record_size,
                  overlay_bytes_used - old_offset - old_record_size);
     for (size_t index = 0; index < kMaxOverlayFiles; ++index) {
       if (&overlay[index] != &file && overlay_has_storage(overlay[index]) &&
-          overlay[index].offset > old_offset) {
-        overlay[index].offset -= static_cast<uint32_t>(old_record_size);
+          overlay_offset(overlay[index]) > old_offset) {
+        set_overlay_offset(
+            overlay[index],
+            overlay_offset(overlay[index]) -
+                static_cast<uint32_t>(old_record_size));
       }
     }
   }
-  file.offset = static_cast<uint32_t>(overlay_bytes_used - old_record_size);
-  overlay_bytes[file.offset] = static_cast<uint8_t>(
+  set_overlay_offset(file, static_cast<uint32_t>(overlay_bytes_used -
+                                                  old_record_size));
+  const uint32_t new_offset = overlay_offset(file);
+  overlay_bytes[new_offset] = static_cast<uint8_t>(
       key_length | (parent_tag ? 0x80 : 0));
   if (parent_tag) {
     uint16_t parent_slot = 0;
     if (!find_parent_slot(tag, file.tag_length, &parent_slot)) {
       return false;
     }
-    overlay_bytes[file.offset + 1] = static_cast<uint8_t>(parent_slot);
-    overlay_bytes[file.offset + 2] = static_cast<uint8_t>(parent_slot >> 8);
-    overlay_bytes[file.offset + 3] = tag[file.tag_length - 1];
+    overlay_bytes[new_offset + 1] = static_cast<uint8_t>(parent_slot);
+    overlay_bytes[new_offset + 2] = static_cast<uint8_t>(parent_slot >> 8);
+    overlay_bytes[new_offset + 3] = tag[file.tag_length - 1];
   } else if (overlay_compresses_tag(file)) {
     const uint8_t root_length = tag_root_length(tag, file.tag_length);
-    std::memcpy(overlay_bytes + file.offset + 1, tag, root_length);
+    std::memcpy(overlay_bytes + new_offset + 1, tag, root_length);
     uint8_t stored_index = root_length;
     for (uint8_t index = root_length; index < file.tag_length; index += 2) {
-      overlay_bytes[file.offset + 1 + stored_index++] = tag[index];
+      overlay_bytes[new_offset + 1 + stored_index++] = tag[index];
     }
   } else if (file.tag_length != 0) {
-    std::memcpy(overlay_bytes + file.offset + 1, tag, file.tag_length);
+    std::memcpy(overlay_bytes + new_offset + 1, tag, file.tag_length);
   }
   if (length != 0) {
-    std::memcpy(overlay_bytes + file.offset + 1 + key_length, data,
+    std::memcpy(overlay_bytes + new_offset + 1 + key_length, data,
                 length);
   }
   file.size = length;
@@ -954,7 +990,7 @@ bool write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
                               existing_length);
     return false;
   }
-  file->offset = static_cast<uint16_t>(overlay_bytes_used);
+  set_overlay_offset(*file, static_cast<uint32_t>(overlay_bytes_used));
   if (!append_overlay(*file, tag, existing, existing_length)) {
     report_fs_write_rejection("overlay-capacity", tag, tag_length, offset,
                               length, existing_length);
@@ -1183,7 +1219,8 @@ uint8_t erase_overlay_slot(uint16_t slot) {
   if (slot >= kMaxOverlayFiles) return 1;
   auto &file = overlay[slot];
   if (!overlay_is_used(file) || !overlay_has_record(file) ||
-      !overlay_has_storage(file) || file.offset >= overlay_bytes_used) {
+      !overlay_has_storage(file) ||
+      overlay_offset(file) >= overlay_bytes_used) {
     return 1;
   }
 
@@ -1192,29 +1229,33 @@ uint8_t erase_overlay_slot(uint16_t slot) {
   // canonical tag can be reconstructed, while find_overlay() cannot resolve
   // it through the now-deleted parent. Preserving the encoding lets us write
   // a durable tombstone without resolving that parent again.
-  const uint8_t key_header = overlay_bytes[file.offset];
+  const uint32_t file_offset = overlay_offset(file);
+  const uint8_t key_header = overlay_bytes[file_offset];
   const size_t key_length = key_header & 0x7f;
   const size_t old_record_size = 1 + key_length + file.size;
-  if (old_record_size > overlay_bytes_used - file.offset) return 1;
+  if (old_record_size > overlay_bytes_used - file_offset) return 1;
   uint8_t encoded_key[128]{};
   if (key_length + 1 > sizeof(encoded_key)) return 1;
-  std::memcpy(encoded_key, overlay_bytes + file.offset, key_length + 1);
+  std::memcpy(encoded_key, overlay_bytes + file_offset, key_length + 1);
 
-  const size_t old_offset = file.offset;
+  const size_t old_offset = file_offset;
   const size_t remaining = overlay_bytes_used - old_offset - old_record_size;
   std::memmove(overlay_bytes + old_offset,
                overlay_bytes + old_offset + old_record_size, remaining);
   for (size_t index = 0; index < kMaxOverlayFiles; ++index) {
     if (&overlay[index] != &file && overlay_has_storage(overlay[index]) &&
-        overlay[index].offset > old_offset) {
-      overlay[index].offset -= static_cast<uint32_t>(old_record_size);
+        overlay_offset(overlay[index]) > old_offset) {
+      set_overlay_offset(
+          overlay[index],
+          overlay_offset(overlay[index]) -
+              static_cast<uint32_t>(old_record_size));
     }
   }
 
   const size_t new_offset = overlay_bytes_used - old_record_size;
   std::memcpy(overlay_bytes + new_offset, encoded_key, key_length + 1);
   overlay_bytes_used = new_offset + key_length + 1;
-  file.offset = static_cast<uint32_t>(new_offset);
+  set_overlay_offset(file, static_cast<uint32_t>(new_offset));
   file.size = 0;
   file.flags |= kOverlayHasRecord | kOverlayDeleted | kOverlaySerialized;
   overlay_dirty = true;

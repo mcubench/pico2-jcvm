@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <utility>
 #include <cstring>
+#include <vector>
 
 extern "C" const uint8_t choupi_rommask_start[] = {0};
 extern "C" const uint8_t choupi_rommask_end[] = {0};
@@ -1039,6 +1040,105 @@ int main() {
                  legacy_flash.begin() + flash_layout::legacy_cap2_offset);
   expect(second_slot_preserves_cap2,
          "second_filesystem_slot_preserves_legacy_cap2_bytes");
+
+  // Version 3 uses one previously unused record flag bit for offset bit 16.
+  // Keep a hand-downgraded v2 snapshot readable, then prove that the next
+  // committed generation migrates it to v3 without changing its records.
+  fake_flash.fill(0xff);
+  expect(fs_init() == 0, "filesystem_v2_migration_setup");
+  constexpr uint8_t v2_tag[] = {0xe0, 0x01, 0x01};
+  constexpr uint8_t v2_value[] = {0x19, 0x28, 0x37};
+  expect(fs_write(v2_tag, sizeof(v2_tag), v2_value, sizeof(v2_value)) == 0 &&
+             fs_sync() == 0,
+         "filesystem_v2_migration_seed_snapshot");
+  const uint32_t slot0 = flash_layout::filesystem_slot(0);
+  fake_flash[slot0 + 4] = 2;
+  fake_flash[slot0 + 5] = 0;
+  const uint32_t v2_header_crc = test_crc32(fake_flash.data() + slot0, 28);
+  std::memcpy(fake_flash.data() + slot0 + 28, &v2_header_crc,
+              sizeof(v2_header_crc));
+  uint8_t v2_actual[sizeof(v2_value)]{};
+  expect(fs_init() == 0 &&
+             fs_read(v2_tag, sizeof(v2_tag), v2_actual,
+                     sizeof(v2_actual)) == 0 &&
+             std::memcmp(v2_actual, v2_value, sizeof(v2_value)) == 0,
+         "filesystem_v2_snapshot_remains_readable");
+  constexpr uint8_t v3_tag[] = {0xe0, 0x02, 0x02};
+  constexpr uint8_t v3_value[] = {0x48, 0x57};
+  expect(fs_write(v3_tag, sizeof(v3_tag), v3_value, sizeof(v3_value)) == 0 &&
+             fs_sync() == 0 &&
+             fake_flash[flash_layout::filesystem_slot(1) + 4] == 3,
+         "filesystem_first_write_migrates_snapshot_to_v3");
+  uint8_t v3_actual[sizeof(v3_value)]{};
+  expect(fs_init() == 0 &&
+             fs_read(v2_tag, sizeof(v2_tag), v2_actual,
+                     sizeof(v2_actual)) == 0 &&
+             std::memcmp(v2_actual, v2_value, sizeof(v2_value)) == 0 &&
+             fs_read(v3_tag, sizeof(v3_tag), v3_actual,
+                     sizeof(v3_actual)) == 0 &&
+             std::memcmp(v3_actual, v3_value, sizeof(v3_value)) == 0,
+         "filesystem_v3_migration_restores_v2_and_new_records");
+
+  // Force the second record's serialized offset above 65,535, commit and
+  // restore it, then compact the first record and verify the shifted offset.
+  fake_flash.fill(0xff);
+  expect(fs_init() == 0, "filesystem_wide_offset_setup");
+  constexpr uint8_t wide_blocker_tag[] = {0xf0, 0x01, 0x01};
+  constexpr uint8_t wide_blocker2_tag[] = {0xf0, 0x03, 0x03};
+  constexpr uint8_t wide_value_tag[] = {0xf0, 0x02, 0x02};
+  const std::vector<uint8_t> wide_blocker(40000, 0xa6);
+  const std::vector<uint8_t> wide_blocker2(26000, 0xb7);
+  constexpr uint8_t high_offset_value[] = {0x62, 0x73, 0x84, 0x95};
+  expect(fs_write(wide_blocker_tag, sizeof(wide_blocker_tag),
+                  wide_blocker.data(), wide_blocker.size()) == 0 &&
+             fs_write(wide_blocker2_tag, sizeof(wide_blocker2_tag),
+                      wide_blocker2.data(), wide_blocker2.size()) == 0 &&
+             fs_write(wide_value_tag, sizeof(wide_value_tag),
+                      high_offset_value, sizeof(high_offset_value)) == 0 &&
+             fs_sync() == 0,
+         "filesystem_v3_writes_records_past_64k");
+  std::vector<uint8_t> restored_wide_blocker(wide_blocker.size());
+  std::vector<uint8_t> restored_wide_blocker2(wide_blocker2.size());
+  uint8_t restored_high_offset_value[sizeof(high_offset_value)]{};
+  const bool wide_restore_init = fs_init() == 0;
+  const bool wide_blocker_restore =
+      wide_restore_init &&
+      fs_read(wide_blocker_tag, sizeof(wide_blocker_tag),
+              restored_wide_blocker.data(), restored_wide_blocker.size()) ==
+          0;
+  const bool high_offset_restore =
+      wide_restore_init &&
+      fs_read(wide_value_tag, sizeof(wide_value_tag),
+              restored_high_offset_value,
+              sizeof(restored_high_offset_value)) == 0;
+  const bool wide_blocker2_restore =
+      wide_restore_init &&
+      fs_read(wide_blocker2_tag, sizeof(wide_blocker2_tag),
+              restored_wide_blocker2.data(), restored_wide_blocker2.size()) ==
+          0;
+  expect(wide_restore_init, "filesystem_v3_snapshot_reinitializes");
+  expect(wide_blocker_restore && restored_wide_blocker == wide_blocker,
+         "filesystem_v3_restores_low_offset_record");
+  expect(wide_blocker2_restore && restored_wide_blocker2 == wide_blocker2,
+         "filesystem_v3_restores_second_offset_record");
+  expect(high_offset_restore &&
+             std::memcmp(restored_high_offset_value, high_offset_value,
+                         sizeof(high_offset_value)) == 0,
+         "filesystem_v3_restores_high_offset_record");
+  expect(fs_erase(wide_blocker_tag, sizeof(wide_blocker_tag)) == 0 &&
+             fs_erase(wide_blocker2_tag, sizeof(wide_blocker2_tag)) == 0 &&
+             fs_read(wide_value_tag, sizeof(wide_value_tag),
+                     restored_high_offset_value,
+                     sizeof(restored_high_offset_value)) == 0 &&
+             std::memcmp(restored_high_offset_value, high_offset_value,
+                         sizeof(high_offset_value)) == 0 &&
+             fs_sync() == 0 && fs_init() == 0 &&
+             fs_read(wide_value_tag, sizeof(wide_value_tag),
+                     restored_high_offset_value,
+                     sizeof(restored_high_offset_value)) == 0 &&
+             std::memcmp(restored_high_offset_value, high_offset_value,
+                         sizeof(high_offset_value)) == 0,
+         "filesystem_v3_compacts_high_offset_and_restarts");
 
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the
