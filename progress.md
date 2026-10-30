@@ -15200,5 +15200,16 @@
 - Validation: Compared the summary count against the final `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` output (`TEST:SUMMARY pass=23 fail=0`). No source changed.
 - Result: Handoff and QKB counts now match the final run.
 - Decision: Continue with root enumeration for inactive applets and other live owners.
-- Commit: pending.
+- Commit: `11c25d6` (this commit reference is recorded in the following correction entry).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T034819Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261030T034819Z.log`.
+
+## 2026-10-30 Progress reference correction
+
+- Step/experiment: `persistent-applet-owner-progress-count-correction`
+- When: '2026-10-30 03:54 UTC' - '2026-10-30 03:55 UTC'
+- Change: Recorded documentation commit `11c25d6` for the corrected VPCD suite count.
+- Validation: `git show --stat --oneline 11c25d6` confirms it contains only the handoff, QKB, and progress update.
+- Result: The record now identifies the documentation commit.
+- Decision: Continue with inactive applet and other live-owner root enumeration.
+- Commit: pending.
+- Artifacts/logs: none.
