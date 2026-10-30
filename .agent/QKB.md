@@ -1571,6 +1571,32 @@ original terminology/status; check current summary and later fixes before reuse.
   concurrent serial capture and host USB event capture, or isolate the failing
   method using client filters if available. Do not mark the official static
   suite as passing until its complete report succeeds.
+- Follow-up on normal image, separate identified Pico 2 `2BED26ED20556535`:
+  the official run continued for the full 3,600-second wrapper limit and
+  completed DES/AES Cipher coverage (126 DES and 108 AES method entries), then
+  timed out during RSA/signature cases. It produced 4,214 CSV lines / 937
+  method entries and contains no `SCARD_E_*`. Concurrent 2.5 MB serial capture
+  has 3,575 passing summaries and no `TEST:FAIL`, `FAULT`, or
+  `WATCHDOG_RECOVERY`; concurrent udev capture has no USB add/remove event.
+  PC/SC still listed 2BED after the run. This does not prove the entire suite
+  passes but shows the DES CBC PKCS5 initialization failure did not reproduce
+  on 2BED after about an hour of normal-image stress. The original disconnect
+  remains board/state-specific or intermittent; root cause unproven.
+- Separate observation: this run logged 72 `FF01` responses in DES MAC
+  `Signature_*` static measurements, which JCAlgTest records as
+  `CANT_BE_MEASURED`. These were applet execution errors, not reader loss; do
+  not conflate them with the missing-algorithm `NO_SUCH_ALGORITHM` outcomes.
+  Investigate only if these MAC signatures are intended as supported in the
+  selected profile or the upstream suite expects a clean unsupported result.
+- Evidence:
+  `artifacts/results/jcalgtest/performance-static-normal-full-2BED-20261030/`
+  (client log SHA-256
+  `5b054c044d7c5a7c511906bc1498100473886aa9ce3cb6a69f310fef013c2e45`, CSV
+  SHA-256 `488708254d7189dc4bdde7b3c31eea04489537a5dfaff044a56bfb8115570e46`);
+  serial log SHA-256
+  `0cc602228990f9919375449a9162b4aa541e37db44a4ed870322c29c69b18780`; empty
+  udev log SHA-256
+  `a75697edb29c2c13f19e67b1fcaa15b36e16e39fd08f9ed40f33e7f029ae5b5a`.
 
 ### Post-APDU collector has one live interpreter context — audited 2026-10-30
 

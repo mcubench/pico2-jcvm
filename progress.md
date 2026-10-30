@@ -15738,3 +15738,34 @@
   partial official report SHA-256
   `4d2f861ec349710396dab4e507680846e29989e075bc07a0caa3333560528816`.
 
+## 2026-10-30 Stress-test normal static workload with USB capture 60 minutes
+
+- Step/experiment: `physical-static-normal-capture-2BED`
+- When: '2026-10-30 12:18 UTC' - '2026-10-30 13:18 UTC'
+- Change: Ran the official JCAlgTest 1.8.2 `ALG_PERFORMANCE_STATIC` workload on
+  normal ARM `symm_crypto` firmware on Pico 2 `2BED26ED20556535`, with a
+  3,600-second timeout and concurrent serial plus kernel/udev USB capture.
+  Updated QKB and HANDOFF with the bounded result and separate `FF01`
+  observation.
+- Validation: Client advanced for the full configured hour and timed out with
+  status 124 during RSA/signature cases; this was not a client/PCSC failure.
+  The DES/AES Cipher sections completed (126 DES and 108 AES method entries);
+  4,214 CSV lines and 937 methods were recorded. The client log has zero
+  `SCARD_E_*`; serial capture has 3,575 `TEST:SUMMARY pass=1 fail=0`, no
+  `TEST:FAIL`, `FAULT`, or `WATCHDOG_RECOVERY`; udev capture reported no USB
+  events. `pcsc_scan -r` after the run still listed physical 2BED.
+- Result: The 8E disconnect at DES CBC PKCS5 `Cipher_init()` did not reproduce
+  on 2BED under normal firmware, including the equivalent case and prolonged
+  later load. The full static test remains incomplete. 72 DES MAC
+  `Signature_*` attempts returned `FF01` and were labeled
+  `CANT_BE_MEASURED`; this is a separate applet exception result.
+- Decision: Keep the 8E transport issue open pending a controlled same-board
+  retry. Evaluate the DES MAC `FF01` only against intended profile support and
+  upstream expectations; do not treat absent RSA/signature algorithms as bugs.
+- Commit: `pending documentation commit`
+- Artifacts/logs: Client log SHA-256
+  `5b054c044d7c5a7c511906bc1498100473886aa9ce3cb6a69f310fef013c2e45`; CSV
+  SHA-256 `488708254d7189dc4bdde7b3c31eea04489537a5dfaff044a56bfb8115570e46`;
+  serial SHA-256 `0cc602228990f9919375449a9162b4aa541e37db44a4ed870322c29c69b18780`;
+  udev SHA-256 `a75697edb29c2c13f19e67b1fcaa15b36e16e39fd08f9ed40f33e7f029ae5b5a`.
+

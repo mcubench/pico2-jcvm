@@ -263,6 +263,24 @@ Next: reproduce with the normal image while capturing serial/USB state on the
 same board, or reduce the official run to a precise failing method if supported
 by the upstream client. Do not call `ALG_PERFORMANCE_STATIC` accepted yet.
 
+Follow-up capture on normal 2BED: the same official client was allowed 3,600
+seconds with concurrent serial and kernel/udev USB monitoring. It completed
+the DES and AES Cipher sections (126 DES and 108 AES method entries), then
+continued into the unsupported RSA/signature matrix before the outer timeout
+returned 124. There were 4,214 CSV lines and 937 method entries. The partial
+client log contains no `SCARD_E_*`; the serial capture has no `TEST:FAIL`,
+`FAULT`, or watchdog recovery markers; the USB log contains only its startup
+banner (no add/remove events). A fresh `pcsc_scan -r` still lists 2BED. Thus
+the repeated 8E transport failure did not reproduce on 2BED under the normal
+image, even with prolonged load and monitoring. This is not a complete static
+suite pass. The log also records 72 `FF01` responses for DES MAC Signature
+measurement attempts, each reported by the client as `CANT_BE_MEASURED`; treat
+these as a separate unsupported-signature/applet-exception investigation, not
+as reader loss. Artifacts:
+`artifacts/logs/static-normal-full-2BED-serial-20261030.log`,
+`artifacts/logs/static-normal-full-2BED-usb-udev-20261030.log`, and
+`artifacts/results/jcalgtest/performance-static-normal-full-2BED-20261030/`.
+
 The 2026-10-29 physical Crypto and Security retests requested in the previous
 handoff are complete; see the run counts and hashes below.
 
