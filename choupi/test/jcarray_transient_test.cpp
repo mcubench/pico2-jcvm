@@ -6,6 +6,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 namespace jcvm {
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
@@ -50,6 +51,17 @@ bool enumerate_context_roots(jcvm::Heap::ReferenceVisitor visitor,
   static_cast<const jcvm::Context *>(context)->visitRootReferences(
       visitor, visitor_context);
   return true;
+}
+
+struct PartialRootContext {
+  jcvm::jref_t emitted_reference;
+};
+
+bool enumerate_partial_roots(jcvm::Heap::ReferenceVisitor visitor,
+                             void *visitor_context, void *root_context) {
+  const auto &roots = *static_cast<PartialRootContext *>(root_context);
+  visitor(roots.emitted_reference, visitor_context);
+  return false;
 }
 } // namespace
 
@@ -582,6 +594,40 @@ int main() {
     std::cerr << "primitive, transient, or remote root retained an object\n";
     return 1;
   }
+
+  const auto partialRootRef = heap.addArray(2, jcvm::JAVA_ARRAY_T_BYTE);
+  const auto partialUnvisitedRef = heap.addArray(2, jcvm::JAVA_ARRAY_T_BYTE);
+  PartialRootContext partialRoots{partialRootRef};
+  const auto partialCollection =
+      heap.collectUnreachableFrom(enumerate_partial_roots, &partialRoots);
+  if (partialCollection.complete ||
+      partialCollection.root_enumeration_failures != 1 ||
+      partialCollection.arrays_reclaimed != 0 ||
+      !heap.getArray(partialRootRef) || !heap.getArray(partialUnvisitedRef)) {
+    std::cerr << "incomplete root scan authorized heap-handle reclamation\n";
+    return 1;
+  }
+
+  const auto malformedParentRef = heap.addArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE, static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto malformedParent = heap.getArray(malformedParentRef);
+  const auto malformedUnvisitedRef = heap.addArray(2, jcvm::JAVA_ARRAY_T_BYTE);
+  jcvm::jref_t invalidChild;
+  invalidChild.setAsInstance(true);
+  invalidChild.setOffset(0x7ffe);
+  malformedParent->setReferenceEntry(0, invalidChild, context);
+  const std::vector<jcvm::jref_t> malformedRoots{malformedParentRef};
+  const auto malformedCollection =
+      heap.collectUnreachableFrom(malformedRoots);
+  if (malformedCollection.complete ||
+      malformedCollection.invalid_references != 1 ||
+      malformedCollection.arrays_reclaimed != 0 ||
+      !heap.getArray(malformedParentRef) ||
+      !heap.getArray(malformedUnvisitedRef)) {
+    std::cerr << "invalid child reference authorized heap-handle reclamation\n";
+    return 1;
+  }
+
   std::cout << "TEST:PASS gc_retains_static_and_apdu_buffers\n";
   std::cout << "TEST:PASS gc_traces_reference_array_child\n";
   std::cout << "TEST:PASS gc_traces_instance_field_child\n";
@@ -592,5 +638,7 @@ int main() {
   std::cout << "TEST:PASS gc_clears_transient_reference_graph_by_event\n";
   std::cout << "TEST:PASS gc_reclaims_unrooted_array reclaimed="
             << collection.arrays_reclaimed << "\n";
+  std::cout << "TEST:PASS gc_skips_reclamation_after_incomplete_root_scan\n";
+  std::cout << "TEST:PASS gc_skips_reclamation_after_invalid_child_ref\n";
   return 0;
 }

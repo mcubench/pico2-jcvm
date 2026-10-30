@@ -72,6 +72,10 @@ out explicitly.
     roots outside the registered per-instance records remain uncovered.
   - [ ] Add malformed serialized edge/alias tests and prove an incomplete walk
     cannot authorize reclamation, including recovery after power cycling.
+    - [x] Host heap test confirms a partial root enumerator and an invalid
+      reference-array child both make the trace incomplete and reclaim zero
+      heap handles.
+    - [ ] Inject malformed serialized fields/aliases and verify reboot recovery.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   power-cycle recovery before enabling any reclamation. `JCSystem` object
   deletion remains unsupported until this accounting is complete.

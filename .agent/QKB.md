@@ -1388,3 +1388,16 @@ original terminology/status; check current summary and later fixes before reuse.
   after refreshing the PC/SC ACL helper, JCAlgTest SELECT, GETVERSION, and
   JCSystem-info each returned `9000`. No persistent filesystem records were
   deleted. Negative registry/root-corruption injection is still untested.
+
+### JCArray host collector harness needs the OS FFI declarations and strict-reader stubs — fixed 2026-10-30
+
+- `heap.cpp` now includes the Rust OS `ffi.h` and references strict persistent
+  field/tag helpers. The standalone JCArray harness was picking the older
+  `tools/tests/short_apdu/ffi.h` first and its filesystem stub lacked these
+  declarations/definitions. Put `choupi/os/src` first in the target include path
+  and extend its filesystem fixture with the new FFI and strict-reader stubs.
+- `./tools/test-jcarray` now passes the existing heap lifecycle/GC suite plus
+  two fail-closed checks: a root enumerator that returns false after yielding a
+  partial set, and a reachable reference array with an invalid child handle.
+  Both mark summaries incomplete and reclaim zero heap handles. This does not
+  exercise malformed serialized fields/aliases or reboot recovery.

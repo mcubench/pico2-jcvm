@@ -6,6 +6,7 @@
 #include <cstdint>
 
 extern "C" int fs_length(const uint8_t *, uint8_t, uint32_t *) { return 0; }
+extern "C" uint8_t fs_exists(const uint8_t *, uint8_t) { return 0; }
 
 extern "C" uint8_t choupi_vm_is_selecting_applet(void) { return 0; }
 
@@ -25,6 +26,10 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
 JC_Instance::~JC_Instance() noexcept { delete this->fields; }
 
 bool JC_Instance::hasPersistentTag() const noexcept { return false; }
+fs::Tag JC_Instance::getPersistentTag() const noexcept { return {}; }
+auto JC_Instance::getNumberOfFields() const noexcept -> decltype(fields->size()) {
+  return fields->size();
+}
 jpackage_ID_t JC_Instance::getPackageID() const noexcept { return 0; }
 jclass_index_t JC_Instance::getClassIndex() const noexcept { return 0; }
 
@@ -38,6 +43,23 @@ void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
+fs::Tag FlashMemory_Handler::computeTag(const fs::Tag &tag,
+                                        const uint16_t index) {
+  fs::Tag result = tag;
+  result.value[result.len++] = static_cast<uint8_t>(index >> 8);
+  result.value[result.len++] = static_cast<uint8_t>(index);
+  return result;
+}
+
+FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &) {
+  return FieldType::FIELD_TYPE_UNINITIALIZED;
+}
+
+jref_t FlashMemory_Handler::getPersistentField_ReferenceStrict(
+    const fs::Tag &, Heap &) {
+  return jref_t{};
+}
+
 const jbyte_t FlashMemory_Handler::getPersistentField_Array_Byte(
     const fs::Tag &, const uint16_t, Heap &) {
   return 0;

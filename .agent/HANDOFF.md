@@ -26,7 +26,10 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    now requires one root per registered instance with matching owner/package/
    class metadata and valid AIDs; mismatch fails closed. Physical multi-instance
    install/root restore has not been tested; live contexts and native-held
-   roots remain uncovered, so persistent records cannot be deleted.
+   roots remain uncovered. The JCArray heap regression now proves partial root
+   enumeration and an invalid in-memory array edge return an incomplete trace
+   and reclaim zero heap handles. Malformed serialized fields/aliases and reboot
+   recovery remain untested, so persistent records cannot be deleted.
 
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in

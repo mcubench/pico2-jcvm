@@ -28,6 +28,7 @@ target_compile_definitions(jcarray_transient_test PRIVATE
   PC_VERSION
   MBEDTLS_CONFIG_FILE="mbedtls_config_pc.h")
 target_include_directories(jcarray_transient_test PRIVATE
+  "${REPO_ROOT}/choupi/os/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/../short_apdu"
   "${CHOUPI_SOURCE_DIR}"
   "${REPO_ROOT}/src"
