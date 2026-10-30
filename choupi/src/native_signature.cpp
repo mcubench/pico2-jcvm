@@ -175,8 +175,8 @@ std::vector<unsigned char> readBytes(JC_Array &array, uint16_t offset,
   return result;
 }
 
-uint32_t readBigEndianWord(const std::vector<unsigned char> &state,
-                           size_t offset) {
+[[maybe_unused]] uint32_t readBigEndianWord(
+    const std::vector<unsigned char> &state, size_t offset) {
   return (static_cast<uint32_t>(state[offset]) << 24) |
          (static_cast<uint32_t>(state[offset + 1]) << 16) |
          (static_cast<uint32_t>(state[offset + 2]) << 8) |

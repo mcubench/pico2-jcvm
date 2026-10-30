@@ -1965,15 +1965,19 @@ original terminology/status; check current summary and later fixes before reuse.
   present in the supplied JCOP4 P71 1.7.9 matrix and must not be counted as
   matrix parity.
 
-### Minimal-profile native-signature compile warning — 2026-10-30
+### Minimal-profile native module selection and compile guards — resolved 2026-10-30
 
-- With every optional capability disabled, the ARM `minimal` wrapper build
-  gets past `native_cipher.cpp` after marking its mode variable maybe-unused,
-  then fails under `-Werror=unused-function` because
-  `native_signature.cpp::readBigEndianWord()` has no enabled digest consumer.
-  An explicit CMake list removal ensures the optional AES-CTR source is left
-  out when both CTR capability flags are false; minimal compilation remains
-  incomplete due to the signature helper warning.
-- Max-profile ARM and RISC-V wrapper builds pass; this issue does not affect the
-  `max_crypto` external-test image. Gate the helper by enabled SHA support or
-  mark it maybe-unused, then rebuild minimal on both wrappers.
+- The ARM target had its own `CHOUPI_VM_SOURCES` list, separate from the PC
+  build. It did not exclude optional `native_aes_ctr.cpp` from the source glob,
+  so minimal-profile builds still compiled that module. The root CMake list now
+  excludes AES-CTR and explicitly appends it only when either CTR capability is
+  selected, matching the PC build.
+- Marked `native_signature.cpp::readBigEndianWord()` maybe-unused because no
+  digest consumer exists in the all-disabled profile. Both
+  `./tools/build arm --profile minimal` and
+  `./tools/build riscv --profile minimal` pass, and both generated
+  `build.ninja` files omit `native_aes_ctr.cpp.o`.
+- Regression validation: both max-profile wrapper builds pass and include the
+  CTR object; `python3 tools/test-javacard-support.py` passes 14/14. Builds
+  still emit existing packed-member alignment warnings from CAP structure
+  headers; this fix adds no new compiler warning.

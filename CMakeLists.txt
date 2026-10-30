@@ -48,7 +48,7 @@ file(GLOB_RECURSE CHOUPI_VM_SOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/*.cpp")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX "/main(_arm|_pc)?\\.cpp$")
 list(FILTER CHOUPI_VM_SOURCES EXCLUDE REGEX
-  "/native_(random|cipher|aes_cbc|des_cbc|sha256|mac|mbedtls_digest|rsa_cipher|rsa_key|rsa_signature|ecdsa_signature|key)\\.cpp$")
+  "/native_(random|cipher|aes_cbc|aes_ctr|des_cbc|sha256|mac|mbedtls_digest|rsa_cipher|rsa_key|rsa_signature|ecdsa_signature|key)\\.cpp$")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_random.cpp")
 endif()
@@ -60,6 +60,9 @@ if(JC_SUPPORT_CIPHER_AES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_AES_CBC_NOPA
    JC_SUPPORT_CIPHER_AES_ECB_PKCS5 OR JC_SUPPORT_SIGNATURE_AES_MAC_128_NOPAD OR
    JC_SUPPORT_SIGNATURE_AES_CMAC_128)
   list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_aes_cbc.cpp")
+endif()
+if(JC_SUPPORT_CIPHER_AES_CTR OR JC_SUPPORT_CIPHER_GETINSTANCE_AES_CTR)
+  list(APPEND CHOUPI_VM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/choupi/src/native_aes_ctr.cpp")
 endif()
 if(JC_SUPPORT_CIPHER_DES_CBC_NOPAD OR JC_SUPPORT_CIPHER_GETINSTANCE_DES_CBC_NOPAD OR
    JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M1 OR JC_SUPPORT_CIPHER_DES_CBC_ISO9797_M2 OR

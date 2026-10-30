@@ -4,11 +4,29 @@ Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists
 may be stale. `progress.md` is the append-only work record.
 
-## Current continuation: max_crypto ARM image and AES-CTR — 2026-10-30
+## Current continuation: optional native module gating — 2026-10-30
+
+Fixed the `minimal` profile wrapper builds. The top-level Pico CMake source
+list now excludes `native_aes_ctr.cpp` from its glob and appends it only when
+an AES-CTR capability is enabled; `native_signature.cpp` marks its digest-only
+helper maybe-unused for no-digest profiles. ARM and RISC-V `minimal` builds
+pass and omit `native_aes_ctr.cpp.o`; ARM and RISC-V `max_crypto` builds pass
+and include it. `python3 tools/test-javacard-support.py` passes 14/14.
+
+The verified ARM max-profile artifact was refreshed from the latest wrapper
+build: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, SHA-256
+`09c0d25efbd3342add41b199f095f0f92a17a0c23001d175bc5fb53da42e2395`,
+2,073,600 bytes. Its support CSV remains 147 rows, SHA-256
+`81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
+No physical flash or validation was performed. USB/PCSC physical testing stays
+blocked until a Pico reader is registered. Existing alignment warnings in
+packed CAP structure headers still appear in builds.
+
+## External-test image background: max_crypto ARM — 2026-10-30
 
 User-requested external-test image is available at
-`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (SHA-256
-`6e7fcde80772f2c2b33d4d1b4ba37b2d0ba215eb469e93563a793cafc6a2eb5f`). The
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (refreshed SHA-256
+is recorded above). The
 `max_crypto` profile enables 147/150 capabilities by unioning the existing
 `current`, `symm_crypto`, `asymm_crypto`, and `symm_crypto_ctr` profiles; it
 leaves the card empty for explicit CAP installation. The companion expected

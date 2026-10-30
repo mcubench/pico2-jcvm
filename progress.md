@@ -16476,3 +16476,31 @@
   SHA-256 `483872eb956089d30398bcaaf536366e48ae93a05689fc0914f4f305a43c4597`,
   and CTR VPCD log `artifacts/logs/aes-ctr-vpcd-20261030T191228Z.log` SHA-256
   `35e7f8abf857a944ca7526cf163382bd72bf84898ce6c3b28e5a96de8fc30004`.
+
+## 2026-10-30 Fix minimal-profile native source selection 9 minutes
+
+- Step/experiment: `minimal-profile-module-gating`
+- When: '2026-10-30 19:19 UTC' - '2026-10-30 19:28 UTC'
+- Change: Updated the top-level Pico source list to exclude AES-CTR from the
+  glob and include it only when either CTR capability is selected. Marked the
+  digest-only `readBigEndianWord()` helper maybe-unused so no-digest profiles
+  compile. Updated TODO, issue knowledge base, and handoff. Refreshed the
+  external `max_crypto` ARM UF2 from the verified build and its documented
+  SHA-256.
+- Validation: `./tools/build arm --profile minimal` and
+  `./tools/build riscv --profile minimal` passed; their generated Ninja files
+  omitted `native_aes_ctr.cpp.o`. `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed and compiled that module.
+  `python3 tools/test-javacard-support.py` passed 14/14. `git diff --check`
+  passed for changed project files. No physical flash was attempted.
+- Result: All-disabled and max-crypto profiles now compile on both wrappers.
+  Refreshed empty-card ARM UF2 is 2,073,600 bytes, SHA-256
+  `09c0d25efbd3342add41b199f095f0f92a17a0c23001d175bc5fb53da42e2395`; CSV
+  remains 147 rows, SHA-256
+  `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
+- Decision: Optional AES-CTR inclusion follows the selected capability in both
+  Pico architecture builds. Physical validation remains open because a Pico
+  PC/SC reader is not registered.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
+  and `artifacts/firmware/README-max_crypto.txt`; no new build log archived.
