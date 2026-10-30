@@ -245,6 +245,12 @@ out explicitly.
   store is unproven. After that cleanup, focused DES-64 and AES-192 known-answer
   reruns still returned `NO_RESOURCE` (2/2), with successful upload and cleanup;
   the problem is not limited to reaching these calls late in the full sweep.
+  JCSystem-info now exposes a useful boundary: the current persistent free
+  value was 6,010 bytes (P1=01) after the full run and 5,969 bytes (P1=00) after
+  the focused CAP lifecycle; the P1=00 legacy short and extended fields agree.
+  The 41-byte delta spans the focused test/probe sequence and is not attributed
+  to one APDU. The reported free bytes do not explain which individual write
+  exceeds a remaining resource limit.
   This strengthens the resource-recovery priority but does not prove persistent
   GC is the specific cause. This is not evidence of an RSA arithmetic defect.
   - [x] Add a bounded-memory, read-only active-tag visitor to the OS filesystem

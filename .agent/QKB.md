@@ -1812,6 +1812,22 @@ original terminology/status; check current summary and later fixes before reuse.
   identify which capacity limit was reached. Focused CSV SHA-256:
   `ad53a69876f892724a8be1727fbb48c93d2ac4b726f4435bce034ead36565c8a`.
 
+- JCSystem-info before and after this focus showed a small but internally
+  consistent current persistent-memory reading: P1=01 after the full run had
+  legacy short value `0x177A` (6,010 bytes); a subsequent clean P1=00
+  version-only probe reported `0x1751` (5,969 bytes) in both short and extended
+  fields. The 41-byte difference spans the isolated CAP install/test/cleanup
+  and an extra prepare APDU; it is not attributed to any one operation. The
+  positive free-byte value does not explain the exact write that returns
+  `OutOfFlash`.
+- Probe procedure: to stop after JCSystem-info, invoke
+  `tools/probe-jc-algtest --reader <exact-reader> --jcsystem-info-p1 00
+  --version-only`. Omitting `--version-only` continues into the SHA-256 static
+  test sequence; one such attempt sent `OFFICIAL_SHA256_STATIC_PREPARE`
+  (`AA9000`) and then ended with `SCARD_E_PROTO_MISMATCH`. The following
+  version-only probe succeeded with SELECT, GETVERSION, and JCSystem-info all
+  `9000`.
+
 ### Read-only power-up check does not perform a power cycle — clarified 2026-10-30
 
 - `tools/test-pico-powerup` checks GPPro package/applet listing, applet SELECT,

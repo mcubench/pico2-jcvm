@@ -16227,3 +16227,34 @@
 - Commit: recorded in the following progress entry.
 - Artifacts/logs: `artifacts/results/deploy/crypto-memory-focused-2BED-20261030.csv`
   (SHA-256 `ad53a69876f892724a8be1727fbb48c93d2ac4b726f4435bce034ead36565c8a`).
+
+## 2026-10-30 Measure current persistent memory after NO_RESOURCE rows 4 minutes
+
+- Step/experiment: `physical-symm-current-persistent-memory-probe`
+- When: '2026-10-30 17:42 UTC' - '2026-10-30 17:46 UTC'
+- Change: No firmware change. Compared JCSystem-info persistent-free-memory
+  fields before and after the focused NO_RESOURCE repetition. Added the
+  measurements and safe probe invocation to TODO, QKB, and HANDOFF. The prior
+  full-run evidence commit is `fc706ac`; the isolated-repeat commit is
+  `21cf172`.
+- Validation: On 2BED, the read-only `tools/test-pico-powerup` run after the
+  full suite returned GETVERSION and JCSystem-info `9000`. Its P1=01 current
+  legacy persistent-free-memory field is `0x177A` (6,010 bytes). After the
+  focused CAP run, `tools/probe-jc-algtest --jcsystem-info-p1 00
+  --version-only` returned current persistent-free-memory `0x1751` (5,969 bytes)
+  in both the legacy short and extended fields, plus `9000`. An initial probe
+  omitted `--version-only`, continued into a SHA-256 prepare call, then hit
+  `SCARD_E_PROTO_MISMATCH`; the safe version-only probe immediately afterward
+  succeeded. Targeted `git diff --check` passed.
+- Result: The current short/extended memory fields agree; no inflated reading
+  reproduced. Free storage fell by 41 bytes across the intervening focused
+  CAP/probe sequence, but the change cannot be attributed to one APDU. The
+  failing Cipher calls remain unexplained despite thousands of bytes reported
+  free.
+- Decision: Trace the precise `OutOfFlash` failure/capacity condition before
+  changing GC or the error mapping. Always pass `--version-only` when using the
+  API probe for JCSystem data alone.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261030T173744Z.log`
+  (SHA-256 `ba3f8aeac6c1d13d1726309b0123fbcadb6c89d6ab515822ca919e658e5f3d72`);
+  clean version-only APDU transcript appears above in tool output.

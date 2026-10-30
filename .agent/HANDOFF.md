@@ -96,6 +96,15 @@ not only late-run fallout. Firmware maps filesystem `OutOfFlash` to this status,
 but the exact exhausted capacity path remains to be traced. Focused CSV hash:
 `ad53a69876f892724a8be1727fbb48c93d2ac4b726f4435bce034ead36565c8a`.
 
+Memory fields: following the full run, JCSystem-info P1=01 reported current
+legacy persistent free memory `0x177A` (6,010 bytes). After the focused CAP
+lifecycle, a clean version-only P1=00 probe reported `0x1751` (5,969 bytes) in
+both the legacy short and extended fields. The 41-byte delta spans install,
+tests, cleanup, and a failed probe attempt; do not attribute it to one call.
+When using `tools/probe-jc-algtest` only for memory, include `--version-only`
+after `--jcsystem-info-p1 00`; without it the tool continues to a SHA-256
+prepare test and can fail with `SCARD_E_PROTO_MISMATCH`.
+
 ## Physical RSA NOPAD retest
 
 The previously noted NOPAD physical retest is complete. On 2026-10-29, the
