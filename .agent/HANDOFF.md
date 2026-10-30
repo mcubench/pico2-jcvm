@@ -18,13 +18,18 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    the cursor. Native read-only visitors now page applet-owned `0x03, owner`
    and package-static `0x02, package` tags, rejecting stalled/malformed cursor
    responses. CAP `reference_count` now generates each two-byte static slot
-   tag after validating `2 * reference_count <= image_size`. The code does
-   not read values, decode object/reference records, or participate in GC yet.
-   Next resolve non-null static roots and build the persistent graph inventory,
-   then invoke it from a diagnostic VM path and test an actual cursor call on
-   hardware.
-   No persistent records are deleted; preserve stable handles and keep loaded
-   persistent records intact until reachability is proven.
+   tag after validating `2 * reference_count <= image_size`. Static roots now
+   load from installed CAP metadata through a strict flash reader and the heap's
+   package/field cache; missing slots mean null, but malformed or unreadable
+   present records fail closed. Registered applet roots ending in `0xFF` are
+   decoded for both class-index widths and checked against their serialized
+   package/class identity. Focused tests cover the visitor, static-slot layout,
+   and applet root-tag parser. None of the flash/CAP adapters has yet been
+   called from a diagnostic VM path or verified on hardware; recent cycles are
+   startup checks only. Next add direct adapter tests, then enumerate object
+   fields, reference arrays, and aliases under complete owner/context root
+   coverage before considering any persistent-record deletion.
+   No persistent records are deleted.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, and private RSA hardening.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded
@@ -65,14 +70,15 @@ reader name, profile, and installed state before every hardware task.
   watchdog API did not identify a watchdog-caused reboot. Runtime checks passed
   throughout; no firmware change is indicated by this diagnostic alone.
 
-- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 01:21 UTC
+- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 01:50 UTC
   with the ARM `current` image SHA-256
-  `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
-  Flash verification succeeded and the finite monitor passed repeatedly with
+  `0d1e6526d7bb968cd2f712be12a043ac748b7b1099f35b459c3898e31024de23`.
+  Flash verification succeeded and the finite monitor passed with
   `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; log:
-  `artifacts/logs/cycle-choupi-20261030T012137Z.log`. The monitor did not call
-  the filesystem cursor. The earlier `asymm_crypto` test outcomes below
-  remain historical results for that profile, not the current flashed image.
+  `artifacts/logs/cycle-choupi-20261030T015008Z.log`. This startup-only cycle
+  did not call the filesystem cursor or new root adapters. The earlier
+  `asymm_crypto` test outcomes below remain historical results for that
+  profile, not the current flashed image.
   The cycle emitted no `TEST:FAIL` or nonzero exit. Its complete
   API 3.0.5 Security rerun completed 901 calls with 396 `OK`, 504
   `UNSUPPORTED_PER_SPEC`, one `NO_MEMORY`, zero `SW_ERROR`/wrong results, and

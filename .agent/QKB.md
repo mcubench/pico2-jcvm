@@ -42,6 +42,24 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   Tests cover 129 references crossing the 8-bit offset boundary and invalid
   metadata. The visitor only returns candidate tags; it does not fetch values
   or establish non-null roots.
+- Static root loading now has a strict path: a missing package static-reference
+  tag is the default null, while an existing record that cannot be read or
+  decoded propagates failure instead of becoming null. Strict decoding limits
+  alias recursion to 32 hops and rejects array aliases resolving to null or a
+  non-array. Normal VM getters retain their tolerant legacy behavior. The
+  installed-CAP adapter obtains big-endian static metadata from that CAP and
+  consults the heap's package/field cache before restoring roots.
+- Registered applet instance roots are identified by applet namespace tags
+  ending in `0xFF`; both 8-bit and 16-bit class-index tag forms are decoded.
+  Restored objects are checked against package/class fields encoded in the
+  root tag. Parser tests pass, but neither the CAP/static adapter nor applet
+  root visitor has yet been called from a runtime diagnostic or hardware test.
+  Physical cycles at `artifacts/logs/cycle-choupi-20261030T013616Z.log`,
+  `artifacts/logs/cycle-choupi-20261030T014218Z.log`,
+  `artifacts/logs/cycle-choupi-20261030T014537Z.log`, and
+  `artifacts/logs/cycle-choupi-20261030T015008Z.log` tested startup only.
+  These adapters are inventory groundwork, not proof of complete root
+  coverage or authorization to delete persistent records.
 
 ## Canonical operating fixes and unresolved boundaries
 

@@ -21,6 +21,16 @@ out explicitly.
   boundaries. Read non-null serialized static roots, then enumerate applet
   roots, object fields, reference-array bodies, and aliases before identifying
   unreachable records.
+  - [x] Add a strict reference restore that treats absent static slots as
+    default null but propagates errors for present malformed/unreadable records;
+    connect it to the heap's package/static root cache.
+  - [x] Load static-slot layout from the installed CAP and decode both
+    registered applet-root tag widths; verify applet root package/class identity.
+  - [ ] Directly test the flash/CAP adapters and exercise both inventory entry
+    points on hardware. Current hardware cycles only prove startup; they did
+    not call the new inventory code.
+  - [ ] Decode persistent object/reference-array edges and alias chains, then
+    include every active applet/context root before computing reachability.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   power-cycle recovery before enabling any reclamation. `JCSystem` object
   deletion remains unsupported until this accounting is complete.
@@ -123,7 +133,8 @@ out explicitly.
     implements the same 128-byte cursor ABI in its persistent overlay.
   - [ ] Enumerate serialized static/applet roots and prove reference/alias
     reachability by consuming this API before implementing persistent-record
-    deletion. The physical cursor call itself still needs runtime validation.
+    deletion. Static and registered applet-root adapters now exist, but direct
+    adapter tests and physical cursor invocation remain open.
 - [x] Resume the physical API 3.0.5 Security sweep on identified Pico 2
   `2BED26ED20556535` with the `asymm_crypto` image. Both full sweeps completed
   901 calls and successful CAP cleanup. The public RSA-4096 `KeyBuilder`
