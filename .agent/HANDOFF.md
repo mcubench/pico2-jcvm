@@ -11,10 +11,12 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 
 ## Next concrete work
 
-1. Implement safe persistent-object reclamation for repeated API workloads.
-   The storage-full exception mapping is fixed, but the full Security run still
-   reaches the persistent capacity limit. Preserve stable handles and keep
-   loaded persistent objects pinned until deletion is designed.
+1. Continue safe persistent-object reclamation for repeated API workloads.
+   The OS filesystem now has a bounded-memory, read-only active-tag visitor
+   with prefix filtering and early termination, covered by a focused test.
+   Next, design the trusted VM bridge and owner-scoped root inventory. No
+   persistent records are deleted; preserve stable handles and keep loaded
+   persistent records intact until reachability is proven.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, and private RSA hardening.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded

@@ -131,6 +131,24 @@ The following retained records cover active investigations and recent fixes.
 Their dates and validation scopes remain significant. Later follow-ups in
 HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
 
+## OS test harness and persistent-tag inventory groundwork — 2026-10-30
+
+- **Persistent-storage GC groundwork:** The OS `FileSystem` owns an in-memory
+  active-tag `HashSet` and supports prefix erase, but VM code had no read-only
+  tag inventory interface. Added a borrowed callback visitor over that index;
+  it filters by prefix, supports early stop, and allocates no temporary tag
+  collection. This does not expose enumeration across the VM/OS boundary and
+  does not authorize record deletion. Next, design owner-scoped trusted
+  inventory and include static roots, applet roots, field tags, array bodies,
+  and aliases before any reclamation.
+- **Host OS test invocation:** `javacard-os` unit tests need host `PTRACE_ATTACH`;
+  run the repository toolchain wrapper with elevated host execution. The
+  generated `bindgen_test_layout*` tests currently abort with `null reference
+  produced`; skip those when running functional OS tests. The remaining suite
+  passed 66 tests with two ignored after updating one stale expected
+  `assert_eq!` panic string to the current Rust format. This panic-text update
+  only repairs test compatibility; it does not alter runtime behavior.
+
 ## RSA temporary byte vectors retained secret material after use — 2026-10-29
 
 - **Symptom:** RSA native code copied private key components, decrypted

@@ -94,6 +94,13 @@ out explicitly.
   reclaim only unreachable storage. Preserve stable Java Card handles and pin
   loaded persistent objects until deletion is designed. This is not evidence
   of an RSA arithmetic defect.
+  - [x] Add a bounded-memory, read-only active-tag visitor to the OS filesystem
+    index, with prefix filtering and early termination; focused filesystem
+    coverage passes. This is only an inventory primitive and is not yet
+    exposed to VM code.
+  - [ ] Bridge tag inventory into trusted VM code with access/ownership checks;
+    enumerate serialized roots and prove reference/alias reachability before
+    implementing any persistent-record deletion.
 - [x] Resume the physical API 3.0.5 Security sweep on identified Pico 2
   `2BED26ED20556535` with the `asymm_crypto` image. Both full sweeps completed
   901 calls and successful CAP cleanup. The public RSA-4096 `KeyBuilder`
