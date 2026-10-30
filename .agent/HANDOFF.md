@@ -17,9 +17,9 @@ JCAlgTest rows are in
 Symmetric, asymmetric, and CTR VPCD KATs passed 71/71, 97/97, and 8/8.
 No physical flash or hardware test was performed. A bounded PC/SC check did
 not return, so physical availability remains unconfirmed.
-The AES-CTR source/profile step is committed as `1ea9c7e`. The max image has
-not yet been committed; see the latest progress record for the full build and
-test evidence. Its usage instructions and file hashes are in
+The AES-CTR source/profile step is committed as `1ea9c7e`; the max image/profile
+step is committed as `8a2c5ec`. See the latest progress record for the full
+build and test evidence. Usage instructions and file hashes are in
 `artifacts/firmware/README-max_crypto.txt`.
 
 Native `Cipher.ALG_AES_CTR` support and selectable profile `symm_crypto_ctr`

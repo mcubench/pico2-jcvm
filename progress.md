@@ -16468,7 +16468,7 @@
 - Decision: Provide this ARM image for external testing. It is not physically
   validated; flash, finite-monitor, GPPro install/select, and official
   JCAlgTest report comparison remain outstanding on a registered Pico.
-- Commit: recorded in the following progress entry.
+- Commit: `8a2c5ec`
 - Artifacts/logs: firmware and CSV above; symmetric VPCD log
   `artifacts/logs/symm-crypto-kat-vpcd-20261026.log` SHA-256
   `856a0913cc52dd5becf28f16ddee3b7066697c24e9c96d3070b27b08abb0fe22`,
