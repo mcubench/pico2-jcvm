@@ -2,6 +2,8 @@
 
 #include "heap.hpp"
 #include "jc_handlers/flashmemory.hpp"
+#include "jc_handlers/package.hpp"
+#include "jc_utils.hpp"
 
 namespace jcvm {
 namespace PersistentInventory {
@@ -43,6 +45,19 @@ VisitResult visitPersistentPackageStaticRoots(
   return visitPackageStaticRoots(package_id, image_size, reference_count,
                                  readPersistentStaticReference, visitor,
                                  &read_context);
+}
+
+VisitResult visitInstalledPackageStaticRoots(
+    const uint8_t package_id, Heap &heap, const StaticRootVisitor visitor,
+    void *context) {
+  const JC_Cap cap = Package(package_id).getCap();
+  const auto *static_fields = cap.getStaticField();
+  if (static_fields == nullptr) {
+    return VisitResult::InvalidStaticLayout;
+  }
+  return visitPersistentPackageStaticRoots(
+      package_id, NTOHS(static_fields->image_size),
+      NTOHS(static_fields->reference_count), heap, visitor, context);
 }
 
 } // namespace PersistentInventory

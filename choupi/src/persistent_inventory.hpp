@@ -67,6 +67,11 @@ VisitResult visitPersistentPackageStaticRoots(
     uint8_t package_id, uint16_t image_size, uint16_t reference_count,
     Heap &heap, StaticRootVisitor visitor, void *context);
 
+/// Load static reference metadata from an installed package CAP, then visit it.
+VisitResult visitInstalledPackageStaticRoots(uint8_t package_id, Heap &heap,
+                                             StaticRootVisitor visitor,
+                                             void *context);
+
 } // namespace PersistentInventory
 } // namespace jcvm
 
