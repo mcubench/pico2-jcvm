@@ -29,6 +29,18 @@ USB power-cycle test is possible until PC/SC registers a physical reader. See
 `.agent/QKB.md` for the USB/CCID diagnostic evidence; do not change firmware or
 driver files without IFD daemon errors.
 
+## Latest CAP parser hardening — 2026-10-30
+
+Dynamic CAP validation now accepts only compact 2.1 and 2.2 Header versions.
+It pre-reads the Header version so component order does not accidentally select
+the wrong Class parser, and rejects Class layouts whose VMMT semantics are not
+implemented (CAP 2.3+). `./tools/test-cap-parser` passes 4,186 checks over 48
+supplied CAPs and 100,000 deterministic fuzz inputs. ARM and RISC-V
+`max_crypto` wrappers pass; PC `max_crypto` passes. GPPro clean-card
+installation and VPCD multi-package restart/delete pass (25/25). No physical
+validation was possible. See the latest TODO and QKB entries. Builds included
+the unchanged, unrelated uncommitted `src/cap_load.cpp`; preserve that file.
+
 ## Current continuation: optional native module gating — 2026-10-30
 
 Fixed the `minimal` profile wrapper builds. The top-level Pico CMake source

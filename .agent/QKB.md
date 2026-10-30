@@ -2051,6 +2051,36 @@ original terminology/status; check current summary and later fixes before reuse.
   fault-injected.
 - Artifacts: `artifacts/results/gppro-empty-install-vpcd-20261030T205954Z/`.
 
+### CAP 2.3 Class layout must not be parsed as 2.1/2.2 — resolved 2026-10-30
+
+- The parser previously accepted every CAP version's Class component after its
+  2.1/2.2 branches. CAP 2.3 adds a Virtual Method Mapping Table (VMMT) to the
+  Class component; this VM does not consume that table. Silently accepting the
+  new layout could skip metadata needed for virtual dispatch.
+- Dynamic CAP validation now reads the Header version before walking other
+  components, independent of component order, accepts compact formats 2.1 and
+  2.2, and rejects other versions. The Class validator fails closed unless it
+  has a 2.1 or 2.2 parser. No Java Card 3.0.5 behavior is restricted: the
+  supplied API/deploy CAP corpus uses 2.1. To add compact CAP 2.3 support,
+  implement VMMT dispatch and validate it with official-format fixtures first.
+- Evidence: the official [Java Card VM Specification 3.2](https://docs.oracle.com/en/java/javacard/3.2/jc-vm-spec/F74158_02.pdf)
+  describes the format 2.3 extended Class component; the [Java Card 3.1 release notes](https://docs.oracle.com/en/java/javacard/3.1/specnotes/index.html)
+  state that format 2.3 adds VMMT.
+- Validation: `./tools/test-cap-parser` passes 4,186 checks, all 48 supplied
+  deploy CAPs, and 100,000 deterministic fuzz inputs. The test covers 2.3 and
+  unknown-major rejection, and parses 2.2 when Class precedes Header. ARM
+  `max_crypto`, RISC-V `max_crypto`, and PC `max_crypto` wrapper builds pass.
+  Through the approved host path, GPPro's unchanged 1.8.2 CAP installed from a
+  clean VPCD image, and the multi-package restart/delete suite passed 25/25.
+  This does not claim physical validation; PC/SC still lists only VPCD.
+- Logs: `artifacts/results/gppro-empty-install-vpcd-20261030T212130Z/`
+  (emulator log SHA-256
+  `d9b30bb92667cd529983716a05d12e03d2b61bfe32a6233e954355ec5b81ca74`);
+  multi-package APDU log SHA-256
+  `ccd7500268390ec94f585af60d84dd076750ed9aa3396f0d083873a5b6abffb1`,
+  restart log SHA-256
+  `b18ec590036087e809b3c370c02d6168d0a5af7dcd4438524badfb770ae417a9`.
+
 ### Persistence regression after latest native changes — 2026-10-30
 
 - `./tools/test-persistent-inventory`, `./tools/test-persistent-transaction`,

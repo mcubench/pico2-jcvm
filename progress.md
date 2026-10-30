@@ -16772,6 +16772,40 @@
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
 
+## 2026-10-30 Reject unsupported CAP class layouts 14 minutes
+
+- Step/experiment: `cap-parser-supported-version-boundary`
+- When: '2026-10-30 21:10 UTC' - '2026-10-30 21:24 UTC'
+- Change: Dynamic CAP validation now pre-reads the Header format before parsing
+  components, accepts only compact formats 2.1/2.2, and rejects CAP 2.3+ Class
+  components whose VMMT data the VM does not consume. This also allows valid
+  2.2 CAPs to place Class before Header without applying the wrong parser.
+  Updated TODO/QKB/HANDOFF with the explicit format boundary.
+- Validation: `./tools/test-cap-parser` passed 4,186 checks, all 48 supplied
+  deploy CAPs, and 100,000 deterministic fuzz inputs. ARM, RISC-V, and PC
+  `max_crypto` wrappers passed. `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-gppro-empty-install-vpcd` passed GPPro LOAD/INSTALL and listing
+  on clean VPCD. `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage`
+  passed 25/25, including three instances, fresh-process restore, owner scans,
+  and deletion. `git -c core.whitespace=cr-at-eol diff --check --` over changed
+  files passed; `jc_cap.cpp/.hpp` retain the repository's CRLF line endings.
+- Result: Existing 2.1 applet CAP installation and current multi-package
+  behavior remain valid. CAP 2.3 is explicitly unsupported until VMMT dispatch
+  is implemented. Builds still emit existing packed-member/Cargo warnings; no
+  new C++ warning appeared for this change. No Pico was flashed; USB devices
+  were present but PC/SC registered only VPCD. Target builds also included the
+  separate, unchanged worktree edits in `src/cap_load.cpp`.
+- Decision: Keep CAP 2.1/2.2 as the supported dynamic format boundary; track
+  VMMT/2.3 implementation separately if the declared profile expands.
+- Commit: recorded in immediate follow-up progress entry.
+- Artifacts/logs: clean install directory
+  `artifacts/results/gppro-empty-install-vpcd-20261030T212130Z/` (emulator log
+  SHA-256 `d9b30bb92667cd529983716a05d12e03d2b61bfe32a6233e954355ec5b81ca74`);
+  multi-package APDU log SHA-256
+  `ccd7500268390ec94f585af60d84dd076750ed9aa3396f0d083873a5b6abffb1`,
+  restart log SHA-256
+  `b18ec590036087e809b3c370c02d6168d0a5af7dcd4438524badfb770ae417a9`.
+
 ## 2026-10-30 Record multi-package VPCD rerun commit 1 minute
 
 - Step/experiment: `multipackage-restart-delete-regression-log-closeout`

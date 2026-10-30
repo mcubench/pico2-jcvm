@@ -2199,7 +2199,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   method maps, and remote metadata lengths. Synthetic tests cover valid mixed
   records plus malformed signatures and truncated remote fields; the supplied
   deploy corpus is all CAP 2.1. Semantic cross-reference checks for CAP 2.2
-  remote metadata and CAP 2.3+ Class layouts remain open.
+  remote metadata remain open. The parser now rejects unsupported CAP header
+  versions and fails closed on CAP 2.3+ Class components because they add a
+  VMMT not consumed by this Java Card 3.0.5-targeted VM. Add compact CAP 2.3
+  support only with VMMT dispatch and dedicated fixtures; extended CAP 2.3 is
+  outside the current declared profile.
   The short APDU parser
   passes a separate
   ASan/UBSan harness over 250,000 randomized inputs, comparing results and

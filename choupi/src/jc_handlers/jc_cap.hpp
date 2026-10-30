@@ -43,7 +43,7 @@
 #include "../types.hpp"
 
 namespace jcvm {
-// FIXME: Currently, only the CAP file version 2.1 is implemented
+// Dynamic CAP validation supports compact CAP formats 2.1 and 2.2.
 class JC_Cap {
 private:
   /// Pointer to the header component

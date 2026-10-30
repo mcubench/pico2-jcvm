@@ -292,11 +292,13 @@ void test_class_component_22() {
     cap.push_back(static_cast<uint8_t>(payload.size()));
     cap.insert(cap.end(), payload.begin(), payload.end());
   };
-  const auto make_cap = [&](std::vector<uint8_t> class_payload) {
+  const auto make_cap = [&](std::vector<uint8_t> class_payload,
+                            const uint8_t major = 2,
+                            const uint8_t minor = 2) {
     std::vector<uint8_t> cap;
     std::vector<uint8_t> header(16, 0);
-    header[4] = 2; // CAP format minor version.
-    header[5] = 2; // CAP format major version.
+    header[4] = minor;
+    header[5] = major;
     header[9] = 5; // Package AID length.
     header[10] = 0xf0;
     header[11] = 0x00;
@@ -320,6 +322,17 @@ void test_class_component_22() {
   expect(parses(valid.data(), valid.size()),
          "class_component_22_signature_and_remote_records_parse");
 
+  const std::vector<uint8_t> minimal_22_class = {0x00, 0x02, 0x01, 0x10,
+                                                 0x80};
+  const auto header_first = make_cap(minimal_22_class);
+  std::vector<uint8_t> class_before_header;
+  class_before_header.insert(class_before_header.end(), header_first.begin() + 19,
+                             header_first.end());
+  class_before_header.insert(class_before_header.end(), header_first.begin(),
+                             header_first.begin() + 19);
+  expect(parses(class_before_header.data(), class_before_header.size()),
+         "class_component_22_version_detected_when_header_follows");
+
   class_payload[3] = 0x00;
   auto invalid_signature = make_cap(class_payload);
   expect(!parses(invalid_signature.data(), invalid_signature.size()),
@@ -337,6 +350,14 @@ void test_class_component_22() {
   auto truncated_remote_class = make_cap(class_payload);
   expect(!parses(truncated_remote_class.data(), truncated_remote_class.size()),
          "class_component_22_truncated_remote_class_rejected");
+
+  auto unsupported_class_23 = make_cap(minimal_22_class, 2, 3);
+  expect(!parses(unsupported_class_23.data(), unsupported_class_23.size()),
+         "class_component_23_unimplemented_vmmt_rejected");
+
+  auto unsupported_major = make_cap(minimal_22_class, 3, 0);
+  expect(!parses(unsupported_major.data(), unsupported_major.size()),
+         "unsupported_cap_major_version_rejected");
 }
 
 } // namespace

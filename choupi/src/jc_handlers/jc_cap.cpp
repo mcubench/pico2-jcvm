@@ -426,8 +426,10 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
       return validate_class_component_21(payload, size);
     if (cap_major == 2 && cap_minor == 2)
       return validate_class_component_22(payload, size);
-    // CAP format 2.3+ adds extended method blocks and remote class tables.
-    return true;
+    // CAP format 2.3 adds VMMT records to this component. The interpreter does
+    // not consume that table, so accepting the layout would silently skip
+    // compatibility metadata and risk incorrect virtual dispatch.
+    return false;
   case 7: { // Method: exception handler table precedes method data.
     if (size < 1) return false;
     const size_t handler_bytes = static_cast<size_t>(payload[0]) * 8;
@@ -559,6 +561,30 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file,
   uint8_t cap_minor = 1;
   const uint8_t *class_payload = nullptr;
   size_t class_payload_size = 0;
+
+  // Components are not required to be serialized in tag order. Read the
+  // Header version before validating the Class component so a preceding Class
+  // component cannot be interpreted using the default 2.1 layout. This first
+  // pass only follows already-bounds-checked component frames.
+  if (validate_payloads) {
+    const uint8_t *scan = cap_file;
+    while (scan < cap_file_end) {
+      const size_t remaining = static_cast<size_t>(cap_file_end - scan);
+      if (remaining < 3) throw Exceptions::SecurityException;
+      const size_t payload_size =
+          (static_cast<size_t>(scan[1]) << 8) | scan[2];
+      if (payload_size > remaining - 3) throw Exceptions::SecurityException;
+      if (scan[0] == CAP_COMPONENT_HEADER) {
+        if (payload_size < 6) throw Exceptions::SecurityException;
+        cap_minor = scan[3 + 4];
+        cap_major = scan[3 + 5];
+        if (cap_major != 2 || (cap_minor != 1 && cap_minor != 2))
+          throw Exceptions::SecurityException;
+        break;
+      }
+      scan += 3 + payload_size;
+    }
+  }
 
   while (component < cap_file_end) {
     const size_t remaining = static_cast<size_t>(cap_file_end - component);
