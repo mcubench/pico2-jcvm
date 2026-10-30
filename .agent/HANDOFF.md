@@ -1,4 +1,4 @@
-# Session handoff — compacted 2026-10-29
+# Session handoff — updated 2026-10-30
 
 Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists
@@ -11,20 +11,12 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 
 ## Next concrete work
 
-1. Rerun the complete official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` report
-   on the updated `asymm_crypto` firmware. The partial 2026-10-29 CSV remains
-   incomplete; focused physical RSA-512 APDU validation now passes three times
-   on 2BED in 1.532–1.707 s, status 00 / SW 9000.
-2. Investigate the `CHOUPI:WATCHDOG_RECOVERY marker=494E5354 cause=other`
-   emitted once during the latest 2BED cycle. Runtime self-test passed before
-   and after, but determine whether this is expected reset recovery or a
-   reproducible fault.
-3. Implement safe persistent-object reclamation for repeated API workloads.
+1. Implement safe persistent-object reclamation for repeated API workloads.
    The storage-full exception mapping is fixed, but the full Security run still
    reaches the persistent capacity limit. Preserve stable handles and keep
    loaded persistent objects pinned until deletion is designed.
-4. Remaining acceptance/hardening: Windows validation, physical power-cycle
-   checks where still open, private RSA hardening, intermittent watchdog marker.
+2. Remaining acceptance/hardening: Windows validation, physical power-cycle
+   checks where still open, and private RSA hardening.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded
    investigation requests, not implemented features.
 
@@ -35,6 +27,33 @@ handoff are complete; see the run counts and hashes below.
 
 These are last observations, not a live enumeration. Reconfirm board identity,
 reader name, profile, and installed state before every hardware task.
+
+- **JCAlgTest 1.8.2 physical `ALG_SUPPORT_EXTENDED` on `asymm_crypto`:** 8E
+  `8E464F4E2BBC0A19` was flashed with ARM image SHA-256
+  `64607ee4d6b95e89cff0d0a9c5f0ee675a9b49ccd310dc31259d5fbbc6739d74` and
+  its unchanged upstream CAP was reinstalled. The complete report has 4,525
+  matching rows, 196 yes, 4,329 no, and zero other values; it matches the
+  2026-10-28 physical reference. Declared-support comparison is 143/145 due to
+  the upstream RSA/RSA-CRT 3072 rows sending 4096; preserve these two known
+  mismatches. Report SHA-256
+  `ce655a87c41cdf160c2e514abf0ff54ea5902b074489da2573a49055fad52997`;
+  log SHA-256 `881ce1f6d3f727ba3686c3b085d29c7fa01c0ee6b4d9cd9230b69c076cfb6c6a`.
+  On 2BED, the full report passed RSA-512 and RSA-736 after reinstall but hit
+  the explicit 900-second command timeout at 4,484/4,525 rows; all 196 yes
+  results were present, but this report is partial. Both readers were visible
+  after the run. Artifacts are under
+  `artifacts/results/jcalgtest/asymm_crypto_complete_20261030_physical_8E_reinstalled/`
+  and `artifacts/results/jcalgtest/asymm_crypto_complete_20261030_physical_2BED_reinstalled/`.
+- **Profile-switch applet state:** On 8E, the inherited JCAlgTest instance
+  returned `FF01` for JCSystem and RSA support after flashing `asymm_crypto`.
+  Deleting only its applet/package and reinstalling the unchanged upstream CAP
+  restored normal `9000` responses and enabled the complete run. Repeat this
+  reinstall after a firmware profile change before interpreting test APDUs.
+- **Watchdog marker:** the 8E cycle emitted one
+  `WATCHDOG_RECOVERY marker=494E5354 cause=other` with stale trace fields.
+  Startup consumes the RP2350 scratch marker once, and `cause=other` means the
+  watchdog API did not identify a watchdog-caused reboot. Runtime checks passed
+  throughout; no firmware change is indicated by this diagnostic alone.
 
 - 2BED: `2BED26ED20556535` is currently flashed with the ARM `asymm_crypto`
   image SHA-256

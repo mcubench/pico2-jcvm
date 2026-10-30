@@ -13,21 +13,21 @@ out explicitly.
 
 ### Fresh API 3.0.5 physical failures on combined asymmetric profile (2026-10-28)
 
-- [ ] Finish the official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run on the
-  `asymm_crypto` profile. The prior full run's CSV remains partial and must not
-  be compared as a complete report. Its RSA-512 APDU stalled because generated
-  key components were copied byte-by-byte into persistent arrays. Native RSA
-  prime generation took 539 ms; batching each component reduced the exact
-  JCAlgTest APDU from a 240 s timeout to 16.419 s (`9000`) on VPCD. The
-  independent native VPCD probe passes all 99/99 checks and measured 512-bit
-  generation at 1.068/1.149 s (RSA/RSA-CRT). ARM/RISC-V builds and physical
-  startup passed with the fix. Physical 2BED JCAlgTest RSA-512 support APDU
-  was repeated three times at 1.532, 1.707, and 1.650 seconds, each returning
-  status 00 with APDU `9000`. The full official support report remains to be
-  verified. Artifacts:
-  `artifacts/results/jcalgtest-vpcd-asymm-current-pcsc-20261029/` and
+- [x] Finish the official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run on
+  `asymm_crypto`. On Pico 2 `8E464F4E2BBC0A19`, the complete report matched all
+  4,525 reference rows: 196 yes, 4,329 no, zero other values. The declared
+  support comparison is 143/145 because the two upstream RSA-3072 KeyPair
+  rows send 4096; do not “fix” these by changing firmware or CAP behavior. On
+  `2BED26ED20556535`, a fresh reinstall passed RSA-512 and RSA-736, then the
+  900-second command bound stopped the report at 4,484/4,525 rows (196 yes,
+  4,290 no, zero other); that report remains partial. Both boards used ARM
+  image SHA-256
+  `64607ee4d6b95e89cff0d0a9c5f0ee675a9b49ccd310dc31259d5fbbc6739d74`.
+  Artifacts:
+  `artifacts/results/jcalgtest/asymm_crypto_complete_20261030_physical_8E_reinstalled/`,
+  `artifacts/results/jcalgtest/asymm_crypto_complete_20261030_physical_2BED_reinstalled/`,
   `artifacts/logs/asymm-crypto-keypair-vpcd-timing-20261029.log`,
-  `artifacts/logs/jcalgtest-rsa512-instrumented-20261030.log`, and
+  `artifacts/logs/jcalgtest-rsa512-instrumented-20261030.log`,
   `artifacts/logs/jcalgtest-rsa512-bulk-write-20261030.log`, and
   `artifacts/logs/rsa512-jcalgtest-physical-2BED-20261030.log`.
 

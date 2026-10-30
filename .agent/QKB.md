@@ -89,9 +89,29 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   and physical 2BED flash/startup passed. The exact physical JCAlgTest APDU was
   then run three times on `2BED26ED20556535`: 1.532, 1.707, and 1.650 s,
   each returned status 00 and SW 9000. The cycle logged one
-  `WATCHDOG_RECOVERY marker=494E5354 cause=other`; investigate. Full official
-  support report remains open. Logs are indexed in progress under
-  `rsa512-persistent-component-batch` and `rsa512-physical-apdu-validation`.
+  `WATCHDOG_RECOVERY marker=494E5354 cause=other`; the marker interpretation
+  is resolved below. A complete official support report passed on 8E; 2BED's
+  retry reached 4,484/4,525 comparable rows before the explicit 900-second
+  runner bound, with all 196 yes results present. Logs are indexed in progress
+  under `rsa512-persistent-component-batch` and
+  `rsa512-physical-apdu-validation`.
+- **Reinstall test CAP after changing firmware capability profiles:** On 8E,
+  the previously installed JCAlgTest CAP still selected and returned its
+  version after flashing `asymm_crypto`, but JCSystem info and algorithm
+  support APDUs returned `FF01`. Deleting only JCAlgTest's applet/package and
+  reinstalling the unchanged upstream CAP restored JCSystem info and RSA
+  support to `9000`; the complete physical support report then passed. Use
+  this recovery for stale installed test-app state after a ROM/profile change.
+  Preserve unrelated card packages.
+- **`WATCHDOG_RECOVERY cause=other` is retained reset context, not proof of a
+  watchdog fault:** Runtime startup derives this label from
+  `watchdog_enable_caused_reboot()`. The marker is stored in RP2350 watchdog
+  scratch registers, survives non-watchdog reset/reflash, and is consumed once.
+  The 8E cycle emitted `cause=other` with stale-looking trace fields, followed
+  by repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; no
+  watchdog reset or runtime failure was observed. Do not treat this line alone
+  as a failure. Revisit if `cause=watchdog`, repeated resets, or a failing
+  runtime check occurs.
 - **Native-only boundary:** old Java crypto-provider plans are superseded.
   Implement behavior in native C++ API dispatch; preserve upstream CAPs.
 - **RSA support-label mismatch:** JCAlgTest 1.8.2's 3072 KeyPair rows send 4096.
