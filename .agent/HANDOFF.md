@@ -114,15 +114,17 @@ reader name, profile, and installed state before every hardware task.
   watchdog API did not identify a watchdog-caused reboot. Runtime checks passed
   throughout; no firmware change is indicated by this diagnostic alone.
 
-- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 04:01 UTC
+- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 04:17 UTC
   with the ARM `current` image SHA-256
-  `ef604f796e541a4cc06bf24548255c32abcc02db0c086daef277bad3a059d36d`.
+  `8ce742b58ce39bf275e20bd6221f3e1a6289b2603d8f5d49f488a4f05a8c1093`.
   Flash verification succeeded and the finite monitor passed with repeated
   `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; log:
-  `artifacts/logs/cycle-choupi-20261030T040156Z.log` (SHA-256
-  `10c15e1c5b5b1793e42fe6bb334b44487ba7e9253e56ed0a2acd4b0d4815b3f4`). This
-  startup-only cycle does not exercise multi-instance installation or root
-  restore. The cycle emitted one stale-field `WATCHDOG_RECOVERY` marker with
+  `artifacts/logs/cycle-choupi-20261030T041755Z.log` (SHA-256
+  `b59c48f302d59bd9cecd14b6877b89abbe7036d49a080bbef831127b572b332f`). The
+  startup monitor was followed by read-only SELECT, GETVERSION, and JCSystem-
+  info APDUs; all returned `9000`. The authorized PC/SC ACL helper had to be
+  rerun after the reader was initially absent from the scan. The cycle emitted
+  one stale-field `WATCHDOG_RECOVERY` marker with
   `cause=other`; runtime checks passed. The earlier `asymm_crypto` test outcomes
   below remain historical results for that profile, not the current image.
   The cycle emitted no `TEST:FAIL` or nonzero command status. Its complete
@@ -135,8 +137,9 @@ reader name, profile, and installed state before every hardware task.
   read-only 2BED probe selected JCAlgTest 1.8.2 and received `9000` for
   SELECT/version/JCSystem-info, but isolated SHA-256 `doFinal` returned `FF01`
   after setup returned `9000`. The same unchanged CAP passes SHA-256 in VPCD;
-  this physical discrepancy is undiagnosed and documented in QKB. Latest scan
-  found 8E and 2BED readers; use an identified available board as failover.
+  this physical discrepancy is undiagnosed and documented in QKB. The latest
+  scan showed Virtual PCD 00 00, Virtual PCD 00 01, and physical 2BED; use
+  another identified board as failover if it is available.
   RISC-V currently provides VM-core smoke coverage; it is not full
   CCID firmware acceptance.
 - Current Core 3.0.5, exact reader and `--no-scenarios`: baseline D92 completed
