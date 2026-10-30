@@ -108,6 +108,23 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    and three read-only APDUs; log:
    `artifacts/logs/persistent-inventory-all-package-device-monitor-2BED-20261030.log`.
    Continue those gaps before authorizing persistent-record reclamation.
+   New read-only consumer step (2026-10-30):
+   `PersistentInventory::visitUnreachableAppletTags` now traces supplied
+   roots first and reports owner-scoped serialized tags outside all marked
+   persistent-object tag subtrees. Incomplete tracing returns
+   `IncompleteReachability` before candidate callbacks. Host transaction tests
+   cover a reachable reference-array alias graph, an orphan in the same owner,
+   another owner's records, and malformed reachable data; both persistent
+   transaction and standalone inventory suites pass. ARM and RISC-V builds
+   pass, and the current ARM image flash-verifies and passes the finite startup
+   monitor on physical 2BED. This consumer is not connected to runtime GC and
+   was not invoked by a hardware APDU. No persistent records were deleted.
+   Image SHA-256 `5e6aefac07fb265c109c1d11b4b58eda1a2a83ecdd87452cea615f438393b31e`;
+   cycle log `artifacts/logs/cycle-choupi-20261030T051629Z.log` SHA-256
+   `827e92b4fc6b4eab5c14d95e104825f9e14d1cc3701bc26ad8cafbd686a7e294`.
+   Next: add incomplete-cursor coverage, then integrate the consumer only after
+   combining complete installed-package static and per-instance applet roots.
+   Keep record deletion disabled pending real power-cycle recovery.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, and private RSA hardening.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded

@@ -1,11 +1,41 @@
 #include "persistent_inventory.hpp"
 
+#include "heap.hpp"
 #include "ffi.h"
 
 #include <cstring>
 
 namespace jcvm {
 namespace PersistentInventory {
+
+namespace {
+struct VectorRoots {
+  const std::vector<jref_t> *references;
+};
+
+bool enumerateVectorRoots(const Heap::ReferenceVisitor visitor,
+                          void *visitor_context, void *root_context) {
+  if (visitor == nullptr || root_context == nullptr) return false;
+  const auto &roots = *static_cast<VectorRoots *>(root_context)->references;
+  for (const auto &reference : roots) visitor(reference, visitor_context);
+  return true;
+}
+
+struct CandidateContext {
+  Heap *heap;
+  TagVisitor visitor;
+  void *visitor_context;
+};
+
+bool visitUnreachableTag(const Tag &tag, void *opaque) {
+  auto &context = *static_cast<CandidateContext *>(opaque);
+  fs::Tag heap_tag{};
+  heap_tag.len = tag.len;
+  std::memcpy(heap_tag.value, tag.value, tag.len);
+  if (context.heap->hasReachablePersistentTagPrefix(heap_tag)) return true;
+  return context.visitor(tag, context.visitor_context);
+}
+} // namespace
 
 VisitResult visitPrefix(const Tag &prefix, const TagVisitor visitor,
                         void *context) {
@@ -143,6 +173,30 @@ VisitResult visitPackageStaticRoots(
     }
   }
   return VisitResult::Complete;
+}
+
+VisitResult visitUnreachableAppletTags(
+    const uint8_t applet_owner, Heap &heap,
+    const std::vector<jref_t> &roots, const TagVisitor candidate_visitor,
+    void *context) {
+  VectorRoots root_context{&roots};
+  return visitUnreachableAppletTags(applet_owner, heap, enumerateVectorRoots,
+                                    &root_context, candidate_visitor, context);
+}
+
+VisitResult visitUnreachableAppletTags(
+    const uint8_t applet_owner, Heap &heap,
+    const RootReferenceEnumerator enumerate_roots, void *root_context,
+    const TagVisitor candidate_visitor, void *candidate_context) {
+  if (enumerate_roots == nullptr || candidate_visitor == nullptr) {
+    return VisitResult::InvalidArgument;
+  }
+  const Heap::ReachabilitySummary summary =
+      heap.traceReachableFrom(enumerate_roots, root_context);
+  if (!summary.complete) return VisitResult::IncompleteReachability;
+
+  CandidateContext context{&heap, candidate_visitor, candidate_context};
+  return visitApplet(applet_owner, visitUnreachableTag, &context);
 }
 
 } // namespace PersistentInventory

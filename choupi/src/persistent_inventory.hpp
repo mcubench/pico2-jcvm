@@ -1,12 +1,17 @@
 #ifndef JCVM_PERSISTENT_INVENTORY_HPP
 #define JCVM_PERSISTENT_INVENTORY_HPP
 
+#include "jc_types/jref_t.hpp"
+
 #include <cstdint>
+#include <vector>
 
 namespace jcvm {
 class Heap;
-
 namespace PersistentInventory {
+
+using RootReferenceEnumerator = bool (*)(void (*)(jref_t, void *), void *,
+                                         void *);
 
 constexpr uint8_t kTagCapacity = 128;
 
@@ -28,7 +33,8 @@ enum class VisitResult : uint8_t {
   InvalidTag,
   InvalidStaticLayout,
   InvalidArgument,
-  ReadFailure
+  ReadFailure,
+  IncompleteReachability
 };
 
 using TagVisitor = bool (*)(const Tag &tag, void *context);
@@ -91,6 +97,17 @@ VisitResult visitInstalledPackageStaticRoots(uint8_t package_id, Heap &heap,
 VisitResult visitAppletInstanceRoots(uint8_t applet_owner, Heap &heap,
                                      AppletRootVisitor visitor,
                                      void *context);
+
+/// Visit owner-scoped serialized records outside every reachable persistent
+/// object's tag subtree. A complete root trace is required before the first
+/// candidate is reported. This function never erases tags.
+VisitResult visitUnreachableAppletTags(
+    uint8_t applet_owner, Heap &heap, const std::vector<jref_t> &roots,
+    TagVisitor candidate_visitor, void *context);
+VisitResult visitUnreachableAppletTags(
+    uint8_t applet_owner, Heap &heap,
+    RootReferenceEnumerator enumerate_roots, void *root_context,
+    TagVisitor candidate_visitor, void *candidate_context);
 
 } // namespace PersistentInventory
 } // namespace jcvm

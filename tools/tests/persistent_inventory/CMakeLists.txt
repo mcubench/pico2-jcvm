@@ -8,7 +8,10 @@ add_executable(
   persistent_inventory_test.cpp
   "${REPO_ROOT}/choupi/src/persistent_inventory.cpp")
 target_compile_features(persistent_inventory_test PRIVATE cxx_std_17)
-target_compile_options(persistent_inventory_test PRIVATE -Wall -Wextra)
+target_compile_options(persistent_inventory_test PRIVATE
+  -Wall -Wextra -Wno-ignored-qualifiers -Wno-address-of-packed-member
+  -ffunction-sections -fdata-sections)
 target_include_directories(persistent_inventory_test PRIVATE
   "${REPO_ROOT}/choupi/src"
   "${REPO_ROOT}/choupi/os/src")
+target_link_options(persistent_inventory_test PRIVATE -Wl,--gc-sections)

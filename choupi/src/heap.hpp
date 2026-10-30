@@ -174,6 +174,13 @@ public:
   /// Mark reachable handles from a supplied root set without freeing slots.
   ReachabilitySummary traceReachableFrom(
       const std::vector<jref_t> &roots);
+  /// Mark reachable handles from a streamed root set without freeing slots.
+  ReachabilitySummary traceReachableFrom(
+      RootReferenceEnumerator enumerate_roots, void *root_context);
+  /// Test whether a serialized record is the identity or a child record of a
+  /// currently marked, reachable persistent object. Call only immediately
+  /// after a complete traceReachableFrom() pass.
+  bool hasReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept;
   /// Reclaim unmarked local slots only after a complete mark pass.
   ReachabilitySummary collectUnreachableFrom(
       const std::vector<jref_t> &roots);

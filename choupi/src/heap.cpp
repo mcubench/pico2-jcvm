@@ -873,6 +873,50 @@ Heap::ReachabilitySummary Heap::traceReachableFrom(
   return this->traceAndMark(enumerateVectorRoots, &root_context);
 }
 
+Heap::ReachabilitySummary Heap::traceReachableFrom(
+    const RootReferenceEnumerator enumerate_roots, void *root_context) {
+  ReachabilitySummary summary;
+  if (enumerate_roots == nullptr) {
+    summary.complete = false;
+    summary.root_enumeration_failures = 1;
+    return summary;
+  }
+  return this->traceAndMark(enumerate_roots, root_context);
+}
+
+bool Heap::hasReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept {
+  if (tag.len == 0 || tag.len > sizeof(tag.value)) {
+    return false;
+  }
+
+  for (const auto &array : this->arrays) {
+    if (!array || array->heap_mark == 0 || !array->isPersistent() ||
+        !array->hasPersistentTag()) {
+      continue;
+    }
+    const fs::Tag object_tag = array->getPersistentTag();
+    if (object_tag.len != 0 && object_tag.len <= tag.len &&
+        object_tag.len <= sizeof(object_tag.value) &&
+        std::memcmp(tag.value, object_tag.value, object_tag.len) == 0) {
+      return true;
+    }
+  }
+
+  for (const auto &instance : this->instances) {
+    if (!instance || instance->heap_mark == 0 || !instance->isPersistent() ||
+        !instance->hasPersistentTag()) {
+      continue;
+    }
+    const fs::Tag object_tag = instance->getPersistentTag();
+    if (object_tag.len != 0 && object_tag.len <= tag.len &&
+        object_tag.len <= sizeof(object_tag.value) &&
+        std::memcmp(tag.value, object_tag.value, object_tag.len) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 Heap::ReachabilitySummary Heap::collectUnreachableFrom(
     const std::vector<jref_t> &roots) {
   ReachabilitySummary summary;

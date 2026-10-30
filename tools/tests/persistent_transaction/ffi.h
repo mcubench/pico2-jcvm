@@ -10,6 +10,13 @@ uint8_t fs_read(const uint8_t *tag, uint8_t tag_length, uint8_t *data,
 uint8_t fs_write(const uint8_t *tag, uint8_t tag_length, const uint8_t *data,
                  uint32_t length);
 uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length);
+typedef struct {
+  uint16_t bucket;
+  uint16_t offset;
+  uint8_t tag[129];
+} fs_tag_next_request_t;
+uint8_t fs_next_tag(const uint8_t *prefix, uint8_t prefix_length,
+                    fs_tag_next_request_t *request);
 uint8_t fs_read_inplace(const uint8_t *tag, uint8_t tag_length,
                         const uint8_t **data, uint32_t *length);
 uint8_t fs_read_1b_at(const uint8_t *tag, uint8_t tag_length,

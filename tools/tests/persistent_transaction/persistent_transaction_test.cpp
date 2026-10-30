@@ -1,5 +1,6 @@
 #include "jc_handlers/flashmemory.hpp"
 #include "heap.hpp"
+#include "persistent_inventory.hpp"
 #include "jc_types/jc_array.hpp"
 
 #include <cstdint>
@@ -71,6 +72,17 @@ jcvm::fs::Tag make_tag(uint8_t first) {
 
 std::vector<uint8_t> byte_record(uint8_t value) {
   return {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_BYTE), value};
+}
+
+struct CandidateTags {
+  std::vector<std::vector<uint8_t>> tags;
+};
+
+bool collect_candidate(const jcvm::PersistentInventory::Tag &tag,
+                       void *opaque) {
+  auto &captured = *static_cast<CandidateTags *>(opaque);
+  captured.tags.emplace_back(tag.value, tag.value + tag.len);
+  return true;
 }
 } // namespace
 
@@ -457,6 +469,97 @@ int main() {
     }
     expect(restart_restore_passed,
            "recreated_heap_restores_alias_graph_and_reclaims_only_garbage");
+  }
+
+  {
+    constexpr uint8_t owner = 0x21;
+    const uint8_t root_tag[] = {0x03, owner, 0x44, 0x55, 0xff};
+    const uint8_t target_tag[] = {0x03, owner, 0x66, 0x77};
+    const uint8_t orphan_tag[] = {0x03, owner, 0x88, 0x99};
+    const uint8_t other_owner_tag[] = {0x03, 0x22, 0x11, 0x33};
+    seed(root_tag, sizeof(root_tag),
+         {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
+          0, 1, 0xff, 0xff});
+    seed(target_tag, sizeof(target_tag),
+         {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE),
+          0, 1, 0x42});
+    jcvm::fs::Tag serialized_root{};
+    serialized_root.len = sizeof(root_tag);
+    std::memcpy(serialized_root.value, root_tag, sizeof(root_tag));
+    const auto element_tag =
+        FlashMemory_Handler::computeTag(serialized_root, 0);
+    std::vector<uint8_t> element_alias{0xfd, sizeof(target_tag)};
+    element_alias.insert(element_alias.end(), target_tag,
+                         target_tag + sizeof(target_tag));
+    seed(element_tag.value, element_tag.len, std::move(element_alias));
+    seed(orphan_tag, sizeof(orphan_tag), byte_record(0x19));
+    seed(other_owner_tag, sizeof(other_owner_tag), byte_record(0x29));
+
+    bool inventory_passed = false;
+    try {
+      jcvm::Heap heap(owner);
+      jcvm::fs::Tag serialized_root{};
+      serialized_root.len = sizeof(root_tag);
+      std::memcpy(serialized_root.value, root_tag, sizeof(root_tag));
+      const auto root_reference =
+          FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              serialized_root, heap);
+      CandidateTags candidates;
+      const auto result = jcvm::PersistentInventory::visitUnreachableAppletTags(
+          owner, heap, std::vector<jcvm::jref_t>{root_reference},
+          collect_candidate, &candidates);
+      inventory_passed =
+          result == jcvm::PersistentInventory::VisitResult::Complete &&
+          candidates.tags.size() == 1 &&
+          candidates.tags.front() ==
+              std::vector<uint8_t>(orphan_tag, orphan_tag + sizeof(orphan_tag)) &&
+          !persistent_transaction_test::read(root_tag, sizeof(root_tag)).empty() &&
+          !persistent_transaction_test::read(target_tag, sizeof(target_tag)).empty() &&
+          !persistent_transaction_test::read(orphan_tag, sizeof(orphan_tag)).empty() &&
+          !persistent_transaction_test::read(other_owner_tag,
+                                               sizeof(other_owner_tag)).empty();
+    } catch (jcvm::Exceptions) {
+      inventory_passed = false;
+    }
+    expect(inventory_passed,
+           "read_only_inventory_excludes_reachable_alias_subtree_and_other_owners");
+  }
+
+  {
+    constexpr uint8_t owner = 0x23;
+    const uint8_t root_tag[] = {0x03, owner, 0x44, 0x55, 0xff};
+    const uint8_t orphan_tag[] = {0x03, owner, 0x88, 0x99};
+    seed(root_tag, sizeof(root_tag),
+         {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
+          0, 1, 0xff, 0xff});
+    jcvm::fs::Tag serialized_root{};
+    serialized_root.len = sizeof(root_tag);
+    std::memcpy(serialized_root.value, root_tag, sizeof(root_tag));
+    const auto edge_tag = FlashMemory_Handler::computeTag(serialized_root, 0);
+    seed(edge_tag.value, edge_tag.len, {0xfe});
+    seed(orphan_tag, sizeof(orphan_tag), byte_record(0x19));
+
+    bool failed_closed = false;
+    try {
+      jcvm::Heap heap(owner);
+      const auto root_reference =
+          FlashMemory_Handler::getPersistentField_ReferenceStrict(
+              serialized_root, heap);
+      CandidateTags candidates;
+      const auto result = jcvm::PersistentInventory::visitUnreachableAppletTags(
+          owner, heap, std::vector<jcvm::jref_t>{root_reference},
+          collect_candidate, &candidates);
+      failed_closed =
+          result == jcvm::PersistentInventory::VisitResult::IncompleteReachability &&
+          candidates.tags.empty() &&
+          !persistent_transaction_test::read(root_tag, sizeof(root_tag)).empty() &&
+          !persistent_transaction_test::read(orphan_tag,
+                                               sizeof(orphan_tag)).empty();
+    } catch (jcvm::Exceptions) {
+      failed_closed = false;
+    }
+    expect(failed_closed,
+           "incomplete_reachability_reports_no_persistent_inventory_candidates");
   }
 
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),

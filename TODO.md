@@ -67,6 +67,13 @@ out explicitly.
     AID, exactly one root, and matching owner/package/class metadata; otherwise
     fail closed. VPCD restart coverage confirms three roots before and after
     restart. Physical multi-instance installation has not been tested.
+  - [x] Add a read-only owner-scoped inventory consumer that traces roots
+    before reporting serialized tags outside reachable persistent-object tag
+    subtrees. Host tests prove reachable nested-alias records and another
+    owner's records are excluded, malformed reachable data returns
+    `IncompleteReachability` before any candidate callback, and no records
+    are modified. The parent item remains open for installed static/applet
+    root integration and physical recovery acceptance.
   - [x] Audit live context and native-held roots at post-APDU collection.
     `Interpretor` currently owns one context, the physical collector runs only
     after execution returns for the selected external context, and

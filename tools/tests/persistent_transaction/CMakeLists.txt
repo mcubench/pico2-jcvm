@@ -7,6 +7,7 @@ add_executable(
   persistent_transaction_test.cpp
   filesystem_stub.cpp
   "${CHOUPI_SOURCE_DIR}/jc_handlers/flashmemory.cpp"
+  "${CHOUPI_SOURCE_DIR}/persistent_inventory.cpp"
   "${CHOUPI_SOURCE_DIR}/heap.cpp"
   "${CHOUPI_SOURCE_DIR}/jc_types/jc_array.cpp"
   "${CHOUPI_SOURCE_DIR}/jc_types/jc_object.cpp"

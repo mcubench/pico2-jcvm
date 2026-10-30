@@ -166,6 +166,30 @@ extern "C" uint8_t fs_sync(void) {
   return 0;
 }
 
+extern "C" uint8_t fs_next_tag(const uint8_t *prefix,
+                                const uint8_t prefix_length,
+                                fs_tag_next_request_t *request) {
+  if (request == nullptr || (prefix_length != 0 && prefix == nullptr)) return 2;
+  if (request->bucket != 0 || request->offset > files.size()) return 2;
+  size_t index = request->offset;
+  auto it = files.begin();
+  std::advance(it, static_cast<std::ptrdiff_t>(index));
+  for (; it != files.end(); ++it, ++index) {
+    const auto &tag = it->first;
+    if (tag.size() < prefix_length ||
+        std::memcmp(tag.data(), prefix, prefix_length) != 0) continue;
+    if (index >= UINT16_MAX) return 2;
+    request->bucket = 0;
+    request->offset = static_cast<uint16_t>(index + 1);
+    request->tag[0] = static_cast<uint8_t>(tag.size());
+    std::memcpy(request->tag + 1, tag.data(), tag.size());
+    return 0;
+  }
+  request->bucket = 0;
+  request->offset = static_cast<uint16_t>(files.size());
+  return 1;
+}
+
 namespace persistent_transaction_test {
 std::vector<uint8_t> read(const uint8_t *tag, const uint8_t length) {
   const auto found = files.find(key_for(tag, length));
