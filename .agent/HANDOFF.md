@@ -21,6 +21,7 @@ post-run monitor passed. Detailed commands, hashes, and logs are in QKB's
 “Physical JCAlgTest `symm_crypto` support report” section. No source or card
 firmware was changed; no CAP was installed or deleted. Persistent-object
 deletion remains disabled pending actual USB power-cycle/recovery validation.
+Documentation and evidence summary commit: `daddc01`.
 
 ## Current memory-reporting investigation
 
