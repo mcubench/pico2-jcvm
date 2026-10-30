@@ -327,8 +327,13 @@ def resolve_reader_index(a, reader_name):
     helper = os.path.join(HERE, '..', '..', 'tools', 'JCAlgTestReaderIndex.java')
     subprocess.run([a.javac, '-d', build_dir, helper],
                    check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    result = subprocess.run([a.java, '-cp', build_dir, 'JCAlgTestReaderIndex', reader_name],
-                            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    props = []
+    if a.pcsc_lib:
+        props.append('-Dsun.security.smartcardio.library=' + a.pcsc_lib)
+    result = subprocess.run([a.java] + props +
+                            ['-cp', build_dir, 'JCAlgTestReaderIndex', reader_name],
+                            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            text=True)
     return result.stdout.strip()
 
 

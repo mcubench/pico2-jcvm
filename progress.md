@@ -16017,3 +16017,45 @@
 - Artifacts/logs: report
   `artifacts/results/jcalgtest/symm_crypto_support_physical_2BED_20261030_long/`;
   package `build/external-test/pico2-jcvm-windows-test.zip`.
+
+## 2026-10-30 Fix Java PC/SC reader-index selection 27 minutes
+
+- Step/experiment: `deploy-java-pcsc-library-reader-index`
+- When: '2026-10-30 16:49 UTC' - '2026-10-30 17:16 UTC'
+- Change: Updated `AlgTest_JavaCard/deploy/api_card_runner.py` so `--pcsc-lib`
+  is passed both to the exact-reader index helper and to the JCAlgTest client.
+  The previous helper ignored this option and Java SmartcardIO on this host
+  returned an empty reader list despite `pcsc_scan -r` finding the devices.
+  Updated the QKB and handoff with the physical recheck and current board state.
+- Validation: `python3 -m py_compile AlgTest_JavaCard/deploy/api_card_runner.py`
+  and targeted `git diff --check` passed. ARM and RISC-V wrapper builds passed
+  for `asymm_crypto`; the normal ARM image was flashed and verified on physical
+  Pico 2 `8E464F4E2BBC0A19`, and the 18-second finite startup monitor passed.
+  With no `JAVA_TOOL_OPTIONS`, the deploy runner using only
+  `--pcsc-lib /usr/lib/x86_64-linux-gnu/libpcsclite.so.1` resolved the named
+  board, uploaded the unchanged Service 3.0.5 CAP, passed 124/124 calls, then
+  uninstalled it. The concurrent serial trace captured APDU processing and
+  passing runtime summaries. A preceding normal-image run using the explicit
+  property in `JAVA_TOOL_OPTIONS` also passed 124/124. The temporary reference
+  field trace used for diagnosis was reverted. No firmware source or CAP was
+  changed.
+- Result: The earlier asymmetric 102/124 Service result is not reproducible on
+  a correctly selected reader. The PC/SC resolver bug is fixed; its relation
+  to the older runtime-exception result is not proven. Board 8E runs normal
+  `asymm_crypto`; 2BED remains on normal `symm_crypto`; no test CAP remains
+  installed.
+- Decision: Use `--pcsc-lib` for future deploy runs on this host. If the 102
+  runtime exceptions recur, first verify the exact reader index and capture a
+  fresh per-board trace before attributing them to firmware.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: CSV
+  `artifacts/results/deploy/Service_normal_asymm_pcscopt_8E_20261030.csv`
+  (SHA-256 `8b534206de57e52e762d1727ad67c24fa38af1277cc893272e471c03fe1fd39b`);
+  client log `artifacts/logs/service-normal-asymm-pcscopt-client-8E-20261030.log`
+  (SHA-256 `75dc2bfd266e77ce1c4be8588c04cce1211cba040959e59595d9a9d3d2b91a35`);
+  serial log `artifacts/logs/service-normal-asymm-pcscopt-monitor-8E-20261030.log`
+  (SHA-256 `ca7ee5e1e55755fbbe2d62e0433015c5bc0f7b9fde6d4f9bbb49e652ddb0617b`);
+  image `build/arm/pico2_choupi.uf2` (SHA-256
+  `b34630800ced9b7104bf47e937656cbe4639d26d4ddda0ba1e17166825bb80d3`);
+  verified cycle `artifacts/logs/cycle-choupi-20261030T165823Z.log` (SHA-256
+  `aaec42cf05678afc5f9a0f94282d2848b7d153d334ac2496e320718b20117d6e`).

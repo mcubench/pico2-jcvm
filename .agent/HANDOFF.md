@@ -40,6 +40,35 @@ CSV is stale. See QKB for exact logs. API `/deploy` result corrections and
 private-key hardening remain open.
 Asymmetric profile audit documentation commit: `01b826e`.
 
+## Physical Service-profile recheck and PC/SC reader selection
+
+The earlier asymmetric-profile 102/124 `EXC_RUNTIME` report from the unchanged
+3.0.5 Service CAP has not reproduced on a correctly selected physical board.
+Normal `asymm_crypto` firmware on Pico 2 `8E464F4E2BBC0A19` passed the complete
+Service suite twice: 124/124 calls, CAP upload and cleanup successful. The
+asymmetric image passed ARM and RISC-V wrapper builds, was flashed and verified
+on 8E, and its finite startup serial monitor passed. The second successful
+run was made with the normal firmware and `--pcsc-lib` only; its serial trace
+showed the Service APDUs and normal runtime summaries. No firmware source
+change was made. A temporary diagnostic trace was reverted after its own
+124/124 passing run.
+
+The deploy runner's `--pcsc-lib` was not passed to its Java helper that maps
+reader names to client indices. It now supplies the same
+`-Dsun.security.smartcardio.library` property to that helper and the test
+client. Without the property, this host's Java SmartcardIO enumerates no PC/SC
+readers even though `pcsc_scan -r` lists them; with it, 8E resolves to index 3
+after two VPCD entries. Always provide
+`--pcsc-lib /usr/lib/x86_64-linux-gnu/libpcsclite.so.1` on this host. This
+resolves a real runner robustness issue, but does not prove that it caused the
+older 102 runtime exceptions. Record any fresh failure with its exact reader
+name and Java PC/SC library.
+
+Current identified board state: 8E is on normal `asymm_crypto`; 2BED remains
+on normal `symm_crypto`. No Service CAP remains installed after the tests.
+Evidence and hashes are in the QKB section “Physical `/deploy` Service profile
+recheck and Java PC/SC library.”
+
 ## Refreshed Windows profile test package
 
 The Windows bundle was rebuilt on 2026-10-30 with

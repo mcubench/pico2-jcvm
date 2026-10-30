@@ -8,6 +8,40 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## Physical `/deploy` Service profile recheck and Java PC/SC library — 2026-10-30
+
+- The 3.0.5 Service CAP produced an earlier asymmetric-profile report of 102
+  `EXC_RUNTIME` results out of 124 calls on two boards. A controlled rerun on
+  physical Pico 2 `8E464F4E2BBC0A19` with the normal `asymm_crypto` image
+  passed all 124/124 calls, including CAP upload and cleanup. A diagnostic
+  build also passed 124/124; its temporary bytecode field trace was removed.
+  Do not treat the older 102-exception result as a confirmed firmware defect:
+  it has not been reproduced under a correctly pinned Java SmartcardIO reader.
+- The host-side cause found was a reader-index resolver omission in
+  `AlgTest_JavaCard/deploy/api_card_runner.py`: `--pcsc-lib` was applied to the
+  official client but not the helper that maps an exact reader name to the
+  client's numeric index. With the system Java, the helper saw no readers
+  until `-Dsun.security.smartcardio.library=/usr/lib/x86_64-linux-gnu/libpcsclite.so.1`
+  was supplied; then physical 8E resolved to index 3 (two VPCD entries precede
+  it). The resolver now receives the same property when `--pcsc-lib` is set.
+- Validation without `JAVA_TOOL_OPTIONS`: `python3 -m py_compile
+  AlgTest_JavaCard/deploy/api_card_runner.py` and `git diff --check` passed;
+  the repository deploy runner with only `--pcsc-lib` then uploaded, tested,
+  and removed the unchanged Service CAP on physical 8E: 124 calls, all `OK`.
+  The concurrent serial capture showed physical APDUs and normal passing
+  runtime summaries. The normal `asymm_crypto` firmware had passed ARM/RISC-V
+  wrapper builds and a verified physical cycle before the test. No firmware
+  source changed. Physical board 8E is running normal `asymm_crypto`; 2BED
+  remains on normal `symm_crypto`.
+- Reproduction artifacts: `artifacts/results/deploy/Service_normal_asymm_pcscopt_8E_20261030.csv`
+  (SHA-256 `8b534206de57e52e762d1727ad67c24fa38af1277cc893272e471c03fe1fd39b`);
+  client log `artifacts/logs/service-normal-asymm-pcscopt-client-8E-20261030.log`
+  (SHA-256 `75dc2bfd266e77ce1c4be8588c04cce1211cba040959e59595d9a9d3d2b91a35`);
+  serial log `artifacts/logs/service-normal-asymm-pcscopt-monitor-8E-20261030.log`
+  (SHA-256 `ca7ee5e1e55755fbbe2d62e0433015c5bc0f7b9fde6d4f9bbb49e652ddb0617b`);
+  image `build/arm/pico2_choupi.uf2` (SHA-256
+  `b34630800ced9b7104bf47e937656cbe4639d26d4ddda0ba1e17166825bb80d3`).
+
 ## Physical JCAlgTest `symm_crypto` support report — 2026-10-30
 
 - Board `2BED26ED20556535` was selected by exact PC/SC reader name and was
