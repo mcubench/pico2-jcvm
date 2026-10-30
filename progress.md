@@ -15386,7 +15386,7 @@
 - Validation: Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 25/25. Initial and restart traces each reported 9 static roots, 3 applet roots, 14/14 arrays, 4/4 instances, and zero invalid refs/edge failures/root failures. On physical 2BED, Java SmartcardIO SELECT returned `9000` before reset; `Card.disconnect(true)` requested PC/SC reset; after reconnect, SELECT returned `9000`, GETVERSION returned `1.8.2_jc305`/`9000`, and JCSystem-info returned `9000`.
 - Result: Stable multi-owner metadata and root inventory survive emulator restart; the physical CCID card-reset path preserves/selects the applet. Neither test removes USB power; cold reboot/recovery and actual power-loss behavior remain unverified.
 - Decision: Continue the inventory consumer work while retaining the persistent-record deletion gate until an actual hardware power-cycle test is available.
-- Commit: pending.
+- Commit: `3ede9fd` (recorded in closeout below).
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T045329Z.log` SHA-256 `f5d8ce2f8575477a63b16bacd50344916d40c37abd64833369f741143ba967cd`; restart log SHA-256 `dd132b4f47944c3f720b2d5997e0384e78aa5322d8d9b2e63d58ce820ec94c00`; physical reset log `artifacts/logs/pcsc-card-reset-2BED-20261030T0455Z.log` SHA-256 `441c027f1afd5e9cebdf31e46fe761d5292ecafdafdeadb56863e13caec80f7e`.
 
 ## 2026-10-30 Correct malformed-edge collector fixtures 2 minutes
@@ -17104,3 +17104,17 @@
 - Commit: pending.
 - Artifacts/logs: See QKB's “Current-source cryptographic VPCD vectors” with
   paths and SHA-256 hashes for all three runs.
+
+## 2026-10-30 Record crypto VPCD rerun commit 1 minute
+
+- Step/experiment: `max-crypto-current-source-vpcd-vectors-closeout`
+- When: '2026-10-30 22:51 UTC' - '2026-10-30 22:52 UTC'
+- Change: Recorded the crypto VPCD evidence commit in the handoff and progress
+  log.
+- Validation: Verified commit `3ede9fd` contains only TODO, QKB, HANDOFF, and
+  progress documentation.
+- Result: Current-source VPCD vector results and their emulator-only scope are
+  committed.
+- Decision: Continue prioritized offline correctness work.
+- Commit: pending.
+- Artifacts/logs: The three VPCD logs listed in QKB.

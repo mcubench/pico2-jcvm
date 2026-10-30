@@ -40,6 +40,7 @@ vectors (75 checks), `asymm_crypto` 97/97 (99 checks), and
 `symm_crypto_ctr` 8/8 CTR vectors (10 checks). The wrappers build focused
 profiles, not one combined `max_crypto` run. Hashes and logs are in QKB. These
 are emulator checks; no Pico was visible through PC/SC for physical validation.
+The evidence and progress record are committed as `3ede9fd`.
 
 Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists
