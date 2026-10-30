@@ -16871,3 +16871,17 @@
 - Decision: Append future progress records at the actual file end.
 - Commit: recorded with the README correction commit.
 - Artifacts/logs: none.
+
+## 2026-10-30 Record README correction commit 1 minute
+
+- Step/experiment: `readme-profile-report-comparison-log-closeout`
+- When: '2026-10-30 21:30 UTC' - '2026-10-30 21:31 UTC'
+- Change: Recorded the documentation correction commit SHA.
+- Validation: Confirmed commit `5787b45` contains only the README, QKB,
+  HANDOFF, and progress changes for the comparison workflow.
+- Result: The corrected profile comparison instructions are committed as
+  `5787b45`.
+- Decision: Continue with remaining project acceptance and implementation
+  work.
+- Commit: recorded in this follow-up commit.
+- Artifacts/logs: none.
