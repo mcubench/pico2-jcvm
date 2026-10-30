@@ -50,6 +50,18 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    persistent record deletion disabled until Pico 2 power-cycle recovery and
    interrupted-update behavior are validated.
 
+   Latest opt-in inventory stress check: `PICO2_PERSISTENT_INVENTORY=1
+   PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed the install /
+   commit stage (3/3 checks) and the fresh-process restore plus four GC-pressure
+   rounds (38/38). Both install-time inventory scans and all 37 restore-time
+   scans completed with zero unreachable owner tags, invalid refs, edge
+   failures, or root failures, including around GC runs reclaiming volatile
+   heap handles. This is PC VPCD evidence only; keep record deletion disabled.
+   Logs: `artifacts/logs/vpcd-persistence-commit-20261030T054451Z.log`,
+   `artifacts/logs/vpcd-persistence-install-emulator-20261030T054451Z.log`,
+   `artifacts/logs/vpcd-persistence-restore-20261030T054451Z.log`, and
+   `artifacts/logs/vpcd-persistence-restore-emulator-20261030T054451Z.log`.
+
    Latest native change: persistent array-alias type resolution now follows
    nested aliases to a valid array terminal and rejects cycles at a 32-alias
    bound, matching strict reference restore. Host tests include a valid

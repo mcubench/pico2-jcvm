@@ -85,6 +85,16 @@ out explicitly.
     This is a single legacy owner-0 applet, not physical multi-instance or
     power-cycle coverage. The parent item remains open for broader recovery
     acceptance.
+  - [x] Run the JCSystem transaction workload with the read-only inventory
+    diagnostic enabled throughout install, fresh-process restore, and all four
+    GC-pressure rounds. The install/commit workload passed 3/3 checks; restore
+    passed 38/38. Both install scans and all 37 restore scans completed with
+    zero invalid references, edge/root failures, or unreachable owner tags.
+    Logs are `artifacts/logs/vpcd-persistence-commit-20261030T054451Z.log`,
+    `artifacts/logs/vpcd-persistence-install-emulator-20261030T054451Z.log`,
+    `artifacts/logs/vpcd-persistence-restore-20261030T054451Z.log`, and
+    `artifacts/logs/vpcd-persistence-restore-emulator-20261030T054451Z.log`.
+    This remains PC VPCD evidence, not hardware power-cycle coverage.
   - [x] Audit live context and native-held roots at post-APDU collection.
     `Interpretor` currently owns one context, the physical collector runs only
     after execution returns for the selected external context, and
