@@ -16885,3 +16885,26 @@
   work.
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
+
+## 2026-10-30 Refresh max-crypto ARM external-test firmware 4 minutes
+
+- Step/experiment: `max-crypto-arm-artifact-refresh`
+- When: '2026-10-30 21:34 UTC' - '2026-10-30 21:38 UTC'
+- Change: Rebuilt the `max_crypto` RP2350 ARM firmware from current source and
+  refreshed the tracked empty-card UF2 and its artifact README metadata. Kept
+  the matching generated JCAlgTest expected-support CSV unchanged.
+- Validation: `./tools/build arm --profile max_crypto` passed; generated
+  support reports 147/150 enabled. `picotool info` identified the output as
+  RP2350 ARM Secure. UF2 size is 2,073,600 bytes and SHA-256 is
+  `4715fb57cdb87df343616bd4c1e5ea94debfc96ff5b4819312ef73590651c9d4`.
+  Support CSV SHA-256 is
+  `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
+- Result: Current-source ARM image is ready for external testing. The card is
+  empty so the upstream JCAlgTest CAP must be installed separately. Existing
+  packed-structure alignment warnings appeared during compilation; no errors.
+- Decision: Provide the refreshed UF2 and matching expected-support CSV for
+  external test setup. Physical flash and runtime validation were not run.
+- Commit: pending.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`,
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`,
+  `artifacts/firmware/README-max_crypto.txt`.

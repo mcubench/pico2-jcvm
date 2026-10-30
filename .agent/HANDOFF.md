@@ -4,6 +4,19 @@ Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists
 may be stale. `progress.md` is the append-only work record.
 
+## External-test max-crypto ARM image refreshed — 2026-10-30
+
+Rebuilt `max_crypto` from current source with `./tools/build arm --profile
+max_crypto`; the ARM wrapper passed and produced the empty-card image
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (2,073,600
+bytes, SHA-256
+`4715fb57cdb87df343616bd4c1e5ea94debfc96ff5b4819312ef73590651c9d4`). It
+enables 147 of 150 declared capabilities. Expected JCAlgTest rows remain in
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv` (SHA-256
+`81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`). The
+artifact README has flashing and validation notes. This is a build-only
+refresh; no physical device was flashed or tested.
+
 ## Latest continuation: VPCD emulator connection retry — 2026-10-30
 
 `choupi/src/main_pc.cpp::connect_vpcd()` now retries local `ECONNREFUSED` for
