@@ -101,6 +101,7 @@ struct HostAppletInstance {
   std::vector<uint8_t> applet_aid;
   std::vector<uint8_t> instance_aid;
   uint16_t class_index = 0xffff;
+  uint8_t owner_id = 0;
 };
 
 struct HostCapPackage {
@@ -225,7 +226,8 @@ extern "C" uint8_t choupi_store_cap_instance(uint8_t package_id,
                                                uint8_t applet_aid_length,
                                                const uint8_t *instance_aid,
                                                uint8_t instance_aid_length,
-                                               uint16_t applet_class_index) {
+                                               uint16_t applet_class_index,
+                                               uint8_t owner_id) {
   static bool failure_reported = false;
   const char *fail_store =
       std::getenv("CHOUPI_TEST_FAIL_CAP_INSTANCE_STORE_ONCE");
@@ -264,6 +266,7 @@ extern "C" uint8_t choupi_store_cap_instance(uint8_t package_id,
   stored->applet_aid.assign(applet_aid, applet_aid + applet_aid_length);
   stored->instance_aid.assign(instance_aid, instance_aid + instance_aid_length);
   stored->class_index = applet_class_index;
+  stored->owner_id = owner_id;
   std::fprintf(stderr,
                "VPCD:APPLET_INSTANCE package-id=%u class-index=%u "
                "applet-aid=",
@@ -274,9 +277,32 @@ extern "C" uint8_t choupi_store_cap_instance(uint8_t package_id,
   std::fprintf(stderr, " instance-aid=");
   for (uint8_t index = 0; index < instance_aid_length; ++index)
     std::fprintf(stderr, "%02X", instance_aid[index]);
-  std::fprintf(stderr, "\n");
+  std::fprintf(stderr, " owner-id=%u\n", static_cast<unsigned>(owner_id));
   return 0;
 }
+
+namespace {
+uint8_t store_host_cap_instance_with_new_owner(
+    uint8_t package_id, const uint8_t *applet_aid,
+    uint8_t applet_aid_length, const uint8_t *instance_aid,
+    uint8_t instance_aid_length, uint16_t applet_class_index) {
+  uint8_t owner_id = 0;
+  if (!cap_store_allocate_applet_owner(owner_id)) return 1;
+  return choupi_store_cap_instance(package_id, applet_aid, applet_aid_length,
+                                   instance_aid, instance_aid_length,
+                                   applet_class_index, owner_id);
+}
+
+uint8_t store_host_cap_instance_with_owner(
+    uint8_t package_id, const uint8_t *applet_aid,
+    uint8_t applet_aid_length, const uint8_t *instance_aid,
+    uint8_t instance_aid_length, uint16_t applet_class_index,
+    uint8_t owner_id) {
+  return choupi_store_cap_instance(package_id, applet_aid, applet_aid_length,
+                                   instance_aid, instance_aid_length,
+                                   applet_class_index, owner_id);
+}
+} // namespace
 
 bool cap_store_find_package(const uint8_t *aid, uint8_t aid_length,
                             uint8_t &package_id) noexcept {
@@ -333,14 +359,54 @@ bool cap_store_package_aid(uint8_t package_id, uint8_t *aid,
   return true;
 }
 
+bool cap_store_allocate_applet_owner(uint8_t &owner_id) noexcept {
+  bool used[256]{};
+  for (const auto &package : host_cap_packages)
+    for (const auto &instance : package.instances)
+      if (instance.owner_id != 0) used[instance.owner_id] = true;
+  for (uint16_t candidate = 1; candidate <= UINT8_MAX; ++candidate) {
+    if (!used[candidate]) {
+      owner_id = static_cast<uint8_t>(candidate);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool cap_store_applet_owner(const uint8_t *aid, uint8_t aid_length,
+                            uint8_t &owner_id) noexcept {
+  if (aid == nullptr || aid_length < 5 || aid_length > 16) return false;
+  for (const auto &package : host_cap_packages)
+    for (const auto &instance : package.instances)
+      if (instance.instance_aid.size() == aid_length &&
+          std::memcmp(instance.instance_aid.data(), aid, aid_length) == 0) {
+        owner_id = instance.owner_id;
+        return true;
+      }
+  return false;
+}
+
+bool cap_store_mark_package_installed(uint8_t package_id, const uint8_t *aid,
+                                      uint8_t aid_length,
+                                      const uint8_t *instance_aid,
+                                      uint8_t instance_aid_length,
+                                      uint16_t applet_class_index,
+                                      uint8_t owner_id) noexcept {
+  return choupi_store_cap_instance(package_id, aid, aid_length, instance_aid,
+                                   instance_aid_length,
+                                   applet_class_index, owner_id) == 0;
+}
+
 bool cap_store_mark_package_installed(uint8_t package_id, const uint8_t *aid,
                                       uint8_t aid_length,
                                       const uint8_t *instance_aid,
                                       uint8_t instance_aid_length,
                                       uint16_t applet_class_index) noexcept {
-  return choupi_store_cap_instance(package_id, aid, aid_length, instance_aid,
-                                   instance_aid_length,
-                                   applet_class_index) == 0;
+  uint8_t owner_id = 0;
+  return cap_store_allocate_applet_owner(owner_id) &&
+         cap_store_mark_package_installed(
+             package_id, aid, aid_length, instance_aid, instance_aid_length,
+             applet_class_index, owner_id);
 }
 
 bool cap_store_remove_package_instance(uint8_t package_id,
@@ -427,8 +493,11 @@ bool cap_store_write(const uint8_t *data, size_t length) noexcept {
 
 bool cap_store_mark_installed(const uint8_t *aid, uint8_t aid_length,
                               uint16_t applet_class_index) noexcept {
+  uint8_t owner_id = 0;
+  if (!cap_store_allocate_applet_owner(owner_id)) return false;
   return choupi_store_cap_instance(vpcd_package_id, aid, aid_length, aid,
-                                   aid_length, applet_class_index) == 0;
+                                   aid_length, applet_class_index,
+                                   owner_id) == 0;
 }
 
 const uint8_t *cap_store_data(uint32_t *length) noexcept {
@@ -677,7 +746,7 @@ bool load_host_cap_registry(const uint8_t *package_bits,
   std::vector<uint8_t> data{std::istreambuf_iterator<char>(input),
                             std::istreambuf_iterator<char>()};
   constexpr size_t kMinimumRegistrySize = 14;
-  constexpr size_t kMaximumRegistrySize = 8 * (64 * 1024 + 40 * 36) + 64;
+  constexpr size_t kMaximumRegistrySize = 8 * (64 * 1024 + 40 * 37) + 64;
   if (data.size() < kMinimumRegistrySize ||
       data.size() > kMaximumRegistrySize ||
       std::memcmp(data.data(), "VCR1", 4) != 0) {
@@ -693,7 +762,8 @@ bool load_host_cap_registry(const uint8_t *package_bits,
     return false;
   }
   size_t offset = 4;
-  if (data[offset++] != 1) {
+  const uint8_t registry_version = data[offset++];
+  if (registry_version != 1 && registry_version != 2) {
     std::fprintf(stderr, "ERROR: unsupported VPCD CAP registry version\n");
     return false;
   }
@@ -710,6 +780,7 @@ bool load_host_cap_registry(const uint8_t *package_bits,
     std::fprintf(stderr, "ERROR: VPCD CAP registry has too many packages\n");
     return false;
   }
+  bool used_owner_ids[256]{};
   std::vector<uint8_t> seen_package_ids;
   for (uint8_t package_index = 0; package_index < package_count;
        ++package_index) {
@@ -780,16 +851,31 @@ bool load_host_cap_registry(const uint8_t *package_bits,
       uint8_t existing_applet_aid[16]{};
       uint8_t existing_applet_aid_length = 0;
       uint16_t existing_class_index = 0xffff;
+      uint8_t owner_id = 0; // VCR1 instances used the original owner 0.
+      if (registry_version == 2) {
+        if (offset >= crc_offset) {
+          std::fprintf(stderr, "ERROR: truncated VPCD applet owner record\n");
+          return false;
+        }
+        owner_id = data[offset++];
+        if (owner_id != 0 && used_owner_ids[owner_id]) {
+          std::fprintf(stderr,
+                       "ERROR: invalid or duplicate VPCD applet owner ID\n");
+          return false;
+        }
+        if (owner_id != 0) used_owner_ids[owner_id] = true;
+      }
       if (!cap_declares_applet(package_id, applet_aid.data(),
                                static_cast<uint8_t>(applet_aid.size())) ||
           cap_store_find_instance(
               instance_aid.data(), static_cast<uint8_t>(instance_aid.size()),
               existing_package_id, existing_applet_aid,
               existing_applet_aid_length, existing_class_index) ||
-          choupi_store_cap_instance(
+          store_host_cap_instance_with_owner(
               package_id, applet_aid.data(),
               static_cast<uint8_t>(applet_aid.size()), instance_aid.data(),
-              static_cast<uint8_t>(instance_aid.size()), class_index) != 0) {
+              static_cast<uint8_t>(instance_aid.size()), class_index,
+              owner_id) != 0) {
         std::fprintf(stderr, "ERROR: invalid or duplicate VPCD applet record\n");
         return false;
       }
@@ -830,9 +916,10 @@ bool save_host_cap_registry() {
     std::fprintf(stderr, "ERROR: host CAP registry exceeds eight packages\n");
     return false;
   }
-  std::vector<uint8_t> data{'V', 'C', 'R', '1', 1};
+  std::vector<uint8_t> data{'V', 'C', 'R', '1', 2};
   append_u32(data, host_registry_crc32(flash, flash_length));
   data.push_back(static_cast<uint8_t>(host_cap_packages.size()));
+  bool used_owner_ids[256]{};
   for (const HostCapPackage &package : host_cap_packages) {
     if (package.package_id < 56 || package.package_id > 63 ||
         package.package_aid.size() < 5 || package.package_aid.size() > 16 ||
@@ -852,10 +939,12 @@ bool save_host_cap_registry() {
       if (instance.applet_aid.size() < 5 || instance.applet_aid.size() > 16 ||
           instance.instance_aid.size() < 5 ||
           instance.instance_aid.size() > 16 ||
-          instance.class_index == 0xffff) {
+          instance.class_index == 0xffff ||
+          (instance.owner_id != 0 && used_owner_ids[instance.owner_id])) {
         std::fprintf(stderr, "ERROR: invalid host applet registry state\n");
         return false;
       }
+      if (instance.owner_id != 0) used_owner_ids[instance.owner_id] = true;
       data.push_back(static_cast<uint8_t>(instance.applet_aid.size()));
       data.insert(data.end(), instance.applet_aid.begin(),
                   instance.applet_aid.end());
@@ -863,6 +952,7 @@ bool save_host_cap_registry() {
       data.insert(data.end(), instance.instance_aid.begin(),
                   instance.instance_aid.end());
       append_u16(data, instance.class_index);
+      data.push_back(instance.owner_id);
     }
   }
   append_u32(data, host_registry_crc32(data.data(), data.size()));
@@ -1822,7 +1912,7 @@ int main_pc(int argc, char *argv[]) {
             static_cast<uint8_t>(restore.instance_aid.size()),
             duplicate_package, duplicate_applet_aid,
             duplicate_applet_aid_length, duplicate_class_index) ||
-        choupi_store_cap_instance(
+        store_host_cap_instance_with_new_owner(
             restore.package_id, restore.applet_aid.data(),
             static_cast<uint8_t>(restore.applet_aid.size()),
             restore.instance_aid.data(),
@@ -1880,7 +1970,7 @@ int main_pc(int argc, char *argv[]) {
       vpcd_stored_applet_aid = vpcd_applet_aid;
       vpcd_stored_instance_aid = vpcd_applet_aid;
       vpcd_stored_class_index = vpcd_applet_class_index;
-      if (choupi_store_cap_instance(
+      if (store_host_cap_instance_with_new_owner(
               vpcd_package_id, vpcd_stored_applet_aid.data(),
               static_cast<uint8_t>(vpcd_stored_applet_aid.size()),
               vpcd_stored_instance_aid.data(),

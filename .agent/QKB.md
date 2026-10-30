@@ -177,19 +177,32 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
 ## Canonical operating fixes and unresolved boundaries
 
-### Persistent applet root key does not distinguish instances of one class — 2026-10-30
+### Stable owner IDs distinguish same-class applet instances — implemented 2026-10-30
 
-- `runtime_install_method()` constructs `Interpretor(0, package_id, ...)`, and
-  `choupi_vm_restore_applet()` constructs `Context(0, package_id)`. The
-  registered applet root tag is formed from owner, package, class, and the
-  root suffix; it does not include the instance AID. Thus two registered
-  instances of the same package/class overwrite/share one root slot, so an
-  inventory scan cannot prove both applet instances are retained.
-- Before persistent reclamation, allocate a stable unique owner per installed
-  applet instance and use that owner consistently for install, restore,
-  select, and tag enumeration. Persist the mapping alongside the install
-  registry and plan compatibility/migration for existing owner-0 records.
-  Do not use a truncated AID hash without collision detection.
+- Registered applet root tags encode owner/package/class/root suffix, but not
+  instance AID. Assign each new installed instance a unique owner ID and
+  persist the AID-to-owner mapping in unused metadata-sector tail bytes. CAP
+  header version 5 validates this owner map and includes it in the existing
+  mirrored metadata publication. Install journal `INS2` carries the owner;
+  `INS1` recovery and CAP metadata versions 3/4 preserve the legacy owner 0.
+- Install, restore, and DELETE cleanup now use the recorded owner. Multiple
+  instances of one applet class are allowed when their instance AIDs differ;
+  the package may still have only one package AID. Owner IDs are allocated
+  from 1..255 globally across installed packages. Do not reuse an owner for
+  live instances.
+- PC VPCD registry sidecars now write VCR2 and preserve each owner ID across
+  process restart. VCR1 is still accepted and restores its historic owner 0,
+  allowing old snapshots to remain usable. The Rust filesystem allows the
+  trusted RuntimeEnvironment/Installer contexts to access explicit logical
+  applet-owner tags; ordinary applet contexts remain scoped to their own ID.
+- Validation: overlay power-cut/metadata tests pass, including distinct owner
+  mapping for two same-class instances, registry reinitialization, and removal
+  of one mapping without changing the other. PC VPCD multi-package restart and
+  delete suite passes 20/20; JCSystem transaction applet suite passes 85/85.
+  ARM/RISC-V builds pass, and identified 2BED firmware flash/finite startup
+  monitor pass. Physical install of multiple instances and their root restore
+  has not been exercised. The collector still only enumerates active-applet
+  roots, so complete all-live-owner coverage and reclamation remain blocked.
 
 - **Host USB/PCSC access — viable workflow:** follow root `AGENTS.md` from the
   first attempt: elevated host execution and `PICO2_HOST_USB_ACCESS=1` on each

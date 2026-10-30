@@ -54,12 +54,17 @@ out explicitly.
   - [x] Scan static reference roots from every package reported installed by
     the VM package bitmap. CAPs without a Static Field component contribute no
     roots. The ARM runtime and PC diagnostic use the same package enumeration.
+  - [x] Persist a stable unique owner for each newly installed applet
+    instance and use it consistently for install, restore, and deletion.
+    Legacy v3/v4 CAP registry records and `INS1` journals retain owner `0`;
+    new metadata/journals carry owner IDs. PC VPCD sidecars now persist owner
+    IDs in VCR2 while reading legacy VCR1 records as owner `0`. Overlay
+    recovery tests verify two instances of one class retain different owners
+    across registry reinitialization and deleting one preserves the other.
   - [ ] Include every live applet/context/native root before computing
-    authoritative reachability. Firmware currently assigns owner `0` during
-    both install and restore, while registered-root tags identify only
-    owner/package/class, not applet instance AID. Multiple installed instances
-    of one package/class therefore cannot have independent roots; design and
-    migrate a stable per-instance owner mapping before reclamation.
+    authoritative reachability. Owner identity is now distinct, but the
+    collector still enumerates registered roots only for the active applet;
+    inactive applets and other live contexts/native owners remain uncovered.
   - [ ] Add malformed serialized edge/alias tests and prove an incomplete walk
     cannot authorize reclamation, including recovery after power cycling.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and

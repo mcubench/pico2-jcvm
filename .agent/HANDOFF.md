@@ -12,6 +12,20 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 ## Next concrete work
 
 1. Continue safe persistent-object reclamation for repeated API workloads.
+   Stable per-instance persistent root identity is now implemented: new Pico
+   CAP registry version 5 metadata records globally unique applet owner IDs,
+   install journal `INS2` carries them, and PC VPCD sidecar VCR2 preserves
+   them across process restarts. Legacy CAP metadata v3/v4, INS1 journals, and
+   VCR1 sidecars remain readable with owner `0`. OS filesystem permissions
+   allow trusted RuntimeEnvironment/Installer contexts to access these logical
+   owner tags while keeping applet contexts isolated. Two same-class instances
+   retain different IDs in overlay recovery tests; VPCD multipackage restart /
+   DELETE passes 20/20 and JCSystem transaction applet passes 85/85. ARM and
+   RISC-V builds pass. Physical 2BED was reflashed with current ARM firmware
+   and finite startup monitor passed, but physical multi-instance install/root
+   restore has not been tested. Root enumeration still scans only the active
+   applet; it is not yet safe to delete persistent records.
+
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in
    `src/choupi_pico2.cpp`. The physical cycle passed startup, but did not call
@@ -97,16 +111,18 @@ reader name, profile, and installed state before every hardware task.
   watchdog API did not identify a watchdog-caused reboot. Runtime checks passed
   throughout; no firmware change is indicated by this diagnostic alone.
 
-- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 01:50 UTC
+- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 03:50 UTC
   with the ARM `current` image SHA-256
-  `0d1e6526d7bb968cd2f712be12a043ac748b7b1099f35b459c3898e31024de23`.
-  Flash verification succeeded and the finite monitor passed with
+  `4ca86e0337194f90ef4c87640dbd2a77dfd4030040a71a097bdfc2552f29e5a8`.
+  Flash verification succeeded and the finite monitor passed with repeated
   `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; log:
-  `artifacts/logs/cycle-choupi-20261030T015008Z.log`. This startup-only cycle
-  did not call the filesystem cursor or new root adapters. The earlier
-  `asymm_crypto` test outcomes below remain historical results for that
-  profile, not the current flashed image.
-  The cycle emitted no `TEST:FAIL` or nonzero exit. Its complete
+  `artifacts/logs/cycle-choupi-20261030T035044Z.log` (SHA-256
+  `956debc0a0919dbd270139a27c6d15ce69dfb4a41f2e5c97cd67eb600e4c4661`). This
+  startup-only cycle does not exercise multi-instance installation or root
+  restore. The cycle emitted one stale-field `WATCHDOG_RECOVERY` marker with
+  `cause=other`; runtime checks passed. The earlier `asymm_crypto` test outcomes
+  below remain historical results for that profile, not the current image.
+  The cycle emitted no `TEST:FAIL` or nonzero command status. Its complete
   API 3.0.5 Security rerun completed 901 calls with 396 `OK`, 504
   `UNSUPPORTED_PER_SPEC`, one `NO_MEMORY`, zero `SW_ERROR`/wrong results, and
   successful CAP cleanup. D92 `D92E743D5F640C0F` did enter BOOTSEL and the

@@ -881,6 +881,46 @@ int main() {
       sizeof(instance_aid), 0x0123);
   expect(installed_record_written && cap_store_package_instance_count(63) == 1,
          "cap_instance_metadata_is_published");
+  uint8_t first_owner = 0;
+  const bool first_owner_found =
+      cap_store_applet_owner(instance_aid, sizeof(instance_aid), first_owner);
+  constexpr uint8_t second_instance_aid[] = {0xa0, 0x00, 0x00, 0x00, 0x74};
+  uint8_t second_owner = 0;
+  const bool second_instance_written =
+      cap_store_allocate_applet_owner(second_owner) &&
+      cap_store_mark_package_installed(
+          63, applet_aid, sizeof(applet_aid), second_instance_aid,
+          sizeof(second_instance_aid), 0x0123, second_owner);
+  uint8_t persisted_first_owner = 0;
+  uint8_t persisted_second_owner = 0;
+  const bool owner_ids_persisted = cap_store_initialize() &&
+      cap_store_applet_owner(instance_aid, sizeof(instance_aid),
+                             persisted_first_owner) &&
+      cap_store_applet_owner(second_instance_aid, sizeof(second_instance_aid),
+                             persisted_second_owner) &&
+      first_owner_found && second_instance_written && first_owner != 0 &&
+      second_owner != 0 && first_owner != second_owner &&
+      persisted_first_owner == first_owner &&
+      persisted_second_owner == second_owner;
+  expect(owner_ids_persisted,
+         "same_applet_class_instances_have_distinct_stable_owners");
+  const bool repeated_instance_publication_is_idempotent =
+      cap_store_mark_package_installed(
+          63, applet_aid, sizeof(applet_aid), instance_aid,
+          sizeof(instance_aid), 0x0123, first_owner) &&
+      cap_store_package_instance_count(63) == 2;
+  expect(repeated_instance_publication_is_idempotent,
+         "install_journal_replay_accepts_already_published_instance");
+  const bool conflicting_instance_publication_is_rejected =
+      !cap_store_mark_package_installed(
+          63, applet_aid, sizeof(applet_aid), instance_aid,
+          sizeof(instance_aid), 0x0123, second_owner + 1);
+  expect(conflicting_instance_publication_is_rejected,
+         "duplicate_instance_aid_with_different_owner_is_rejected");
+  expect(cap_store_remove_package_instance(63, second_instance_aid,
+                                           sizeof(second_instance_aid)) &&
+             cap_store_package_instance_count(63) == 1,
+         "removing_one_instance_preserves_other_owner_mapping");
   reset_flash_failure(4096);
   const bool interrupted_remove =
       !cap_store_remove_package_instance(63, instance_aid,

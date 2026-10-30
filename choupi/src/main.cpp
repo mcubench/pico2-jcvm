@@ -40,6 +40,7 @@
 #include "jc_types/jc_array_type.hpp"
 #include "persistent_inventory.hpp"
 #include "../../src/short_apdu.hpp"
+#include "../../src/cap_store.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -705,8 +706,11 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
       }
     }
 
+    uint8_t applet_owner = 0;
+    if (!cap_store_applet_owner(aid, aid_length, applet_owner)) return 1;
+
     auto context = std::make_unique<jcvm::Context>(
-        0, static_cast<jcvm::jpackage_ID_t>(package_id));
+        applet_owner, static_cast<jcvm::jpackage_ID_t>(package_id));
     if (!context->setAppletAID(aid, aid_length) ||
         !context->restoreAppletInstance(
             static_cast<jcvm::jpackage_ID_t>(package_id),
@@ -1194,7 +1198,8 @@ uint16_t runtime(uint8_t id_package, uint8_t id_class, uint8_t id_method) {
   return status;
 }
 
-uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
+uint16_t runtime_install_method(uint8_t id_package, uint8_t applet_owner,
+                                uint16_t method_offset,
                                 const uint8_t *install_data,
                                 uint8_t install_length,
                                 const uint8_t *instance_aid,
@@ -1217,7 +1222,7 @@ uint16_t runtime_install_method(uint8_t id_package, uint16_t method_offset,
   choupi_install_stage(0);
   choupi_install_context(0);
 #endif
-  jcvm::Interpretor interpretor(0,
+  jcvm::Interpretor interpretor(applet_owner,
                                 static_cast<jcvm::jpackage_ID_t>(id_package),
                                 method_offset, install_data, install_length);
   interpretor.getCurrentContext().resetSensitiveResult();

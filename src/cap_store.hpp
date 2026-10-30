@@ -16,12 +16,23 @@ const uint8_t *cap_store_data_for_package(uint8_t package_id,
                                           uint32_t *length) noexcept;
 bool cap_store_package_aid(uint8_t package_id, uint8_t *aid,
                            uint8_t &aid_length) noexcept;
+bool cap_store_allocate_applet_owner(uint8_t &owner_id) noexcept;
+bool cap_store_applet_owner(const uint8_t *instance_aid,
+                            uint8_t instance_aid_length,
+                            uint8_t &owner_id) noexcept;
 bool cap_store_mark_package_installed(uint8_t package_id,
                                       const uint8_t *applet_aid,
                                       uint8_t applet_aid_length,
                                       const uint8_t *instance_aid,
                                       uint8_t instance_aid_length,
                                       uint16_t applet_class_index) noexcept;
+bool cap_store_mark_package_installed(uint8_t package_id,
+                                      const uint8_t *applet_aid,
+                                      uint8_t applet_aid_length,
+                                      const uint8_t *instance_aid,
+                                      uint8_t instance_aid_length,
+                                      uint16_t applet_class_index,
+                                      uint8_t owner_id) noexcept;
 bool cap_store_remove_package_instance(uint8_t package_id,
                                        const uint8_t *instance_aid,
                                        uint8_t instance_aid_length) noexcept;

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import socket
 import subprocess
 import sys
@@ -23,6 +24,37 @@ COMPONENTS = (
 ISD_AID = bytes.fromhex("A000000151000000")
 STATIC_KEY = bytes.fromhex("404142434445464748494A4B4C4D4E4F")
 EMPTY_CARD_AID = bytes.fromhex("4A43416C675465737431")
+
+
+def sidecar_owner_ids(data: bytes) -> list[int]:
+    if data[:5] != b"VCR1\x02" or len(data) < 14:
+        raise RuntimeError("VPCD registry was not written as VCR2")
+    offset = 9
+    package_count = data[offset]
+    offset += 1
+    owner_ids = []
+
+    def read_lv() -> None:
+        nonlocal offset
+        length = data[offset]
+        offset += 1 + length
+
+    for _ in range(package_count):
+        offset += 1
+        read_lv()
+        code_length = int.from_bytes(data[offset:offset + 4], "big")
+        offset += 4 + code_length
+        instance_count = data[offset]
+        offset += 1
+        for _ in range(instance_count):
+            read_lv()
+            read_lv()
+            offset += 2
+            owner_ids.append(data[offset])
+            offset += 1
+    if offset != len(data) - 4:
+        raise RuntimeError("VCR2 registry has malformed owner records")
+    return owner_ids
 
 
 def receive_exact(connection: socket.socket, length: int) -> bytes:
@@ -385,6 +417,13 @@ def main() -> int:
 
             registry_path = Path(f"{memory}.cap-registry")
             registry_bytes = registry_path.read_bytes()
+            owner_ids = sidecar_owner_ids(registry_bytes)
+            if len(owner_ids) != 3 or any(owner_id == 0 for owner_id in owner_ids) or \
+                    len(set(owner_ids)) != len(owner_ids):
+                raise RuntimeError(
+                    f"VCR2 did not persist 3 distinct applet owners: {owner_ids}"
+                )
+            print("TEST:PASS VCR2 persists distinct nonzero applet owner IDs")
 
             def expect_resume_rejected(label: str, sidecar: bytes | None,
                                        expected: str) -> None:
@@ -449,6 +488,18 @@ def main() -> int:
             connection, _ = accept_vpcd(
                 listener, process, args.timeout, restart_log_path, "restart"
             )
+            restored_owners = [
+                int(owner_id) for owner_id in re.findall(
+                    r"owner-id=(\d+)",
+                    restart_log_path.read_text(errors="replace"),
+                )
+            ]
+            if restored_owners != owner_ids:
+                raise RuntimeError(
+                    "VCR2 applet owner IDs changed across restart: "
+                    f"before={owner_ids}, after={restored_owners}"
+                )
+            print("TEST:PASS VCR2 owner IDs restore unchanged after process restart")
             connection.settimeout(args.timeout)
             send_message(connection, b"\x01")
             send_message(connection, b"\x04")
@@ -542,7 +593,7 @@ def main() -> int:
             if get_status(scp, 0x20) or get_status(scp, 0x40):
                 raise RuntimeError("registry is not empty after deleting Core")
             print("TEST:PASS DELETE leaves registry empty")
-            print("TEST:SUMMARY pass=20 fail=0")
+            print("TEST:SUMMARY pass=23 fail=0")
             return 0
         finally:
             if connection is not None:

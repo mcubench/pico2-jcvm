@@ -1344,10 +1344,11 @@ extern "C" uint8_t choupi_store_cap_instance(uint8_t package_id,
                                               uint8_t applet_aid_length,
                                               const uint8_t *aid,
                                               uint8_t aid_length,
-                                              uint16_t applet_class_index) {
+                                              uint16_t applet_class_index,
+                                              uint8_t owner_id) {
   return cap_store_mark_package_installed(package_id, applet_aid,
                                           applet_aid_length, aid, aid_length,
-                                          applet_class_index) ? 0 : 1;
+                                          applet_class_index, owner_id) ? 0 : 1;
 }
 
 extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length) {

@@ -56,8 +56,10 @@ extern "C" uint8_t choupi_store_cap_instance(uint8_t package_id,
                                               uint8_t applet_aid_length,
                                               const uint8_t *instance_aid,
                                               uint8_t instance_aid_length,
-                                              uint16_t applet_class_index);
+                                              uint16_t applet_class_index,
+                                              uint8_t owner_id);
 extern "C" uint16_t runtime_install_method(uint8_t package_id,
+                                            uint8_t applet_owner,
                                             uint16_t method_offset,
                                             const uint8_t *install_data,
                                             uint8_t install_length,
@@ -172,13 +174,28 @@ constexpr uint8_t kLifecyclePackageId = 0xff;
 constexpr uint8_t kAppletDeletedState = 1;
 constexpr uint8_t kPackageDeletedState = 2;
 constexpr uint8_t kInstallJournalKind = 3;
-constexpr uint32_t kInstallJournalMagic = 0x31534e49; // "INS1"
+constexpr uint32_t kInstallJournalMagic = 0x32534e49; // "INS2"
+constexpr uint32_t kLegacyInstallJournalMagic = 0x31534e49; // "INS1"
 
 bool aid_matches(const uint8_t *left, uint8_t left_length,
                  const uint8_t *right, size_t right_length) noexcept;
 
 #pragma pack(push, 1)
 struct InstallJournalRecord {
+  uint32_t magic;
+  uint8_t package_id;
+  uint8_t package_aid_length;
+  uint8_t applet_aid_length;
+  uint8_t instance_aid_length;
+  uint8_t applet_owner;
+  uint16_t applet_class_index;
+  uint8_t package_aid[16];
+  uint8_t applet_aid[16];
+  uint8_t instance_aid[16];
+  uint32_t crc32;
+};
+
+struct LegacyInstallJournalRecord {
   uint32_t magic;
   uint8_t package_id;
   uint8_t package_aid_length;
@@ -235,9 +252,40 @@ bool read_install_journal(uint8_t package_id,
   try {
     auto [length, data] =
         jcvm::FlashMemory_Handler::readPersistentRecord(tag);
-    if (length != sizeof(record) || data == nullptr) return false;
-    std::memcpy(&record, data.get(), sizeof(record));
-    return valid_install_journal(record, package_id);
+    if (data == nullptr) return false;
+    if (length == sizeof(record)) {
+      std::memcpy(&record, data.get(), sizeof(record));
+      return valid_install_journal(record, package_id);
+    }
+    if (length != sizeof(LegacyInstallJournalRecord)) return false;
+    LegacyInstallJournalRecord legacy{};
+    std::memcpy(&legacy, data.get(), sizeof(legacy));
+    if (legacy.magic != kLegacyInstallJournalMagic ||
+        legacy.package_id != package_id ||
+        legacy.package_aid_length < 5 || legacy.package_aid_length > 16 ||
+        legacy.applet_aid_length < 5 || legacy.applet_aid_length > 16 ||
+        legacy.instance_aid_length < 5 || legacy.instance_aid_length > 16 ||
+        legacy.applet_class_index == 0xffff ||
+        legacy.crc32 != install_journal_crc32(
+                            reinterpret_cast<const uint8_t *>(&legacy),
+                            offsetof(LegacyInstallJournalRecord, crc32)))
+      return false;
+    record = {};
+    record.magic = kInstallJournalMagic;
+    record.package_id = legacy.package_id;
+    record.package_aid_length = legacy.package_aid_length;
+    record.applet_aid_length = legacy.applet_aid_length;
+    record.instance_aid_length = legacy.instance_aid_length;
+    record.applet_owner = 0; // v1 install roots were persisted as owner 0.
+    record.applet_class_index = legacy.applet_class_index;
+    std::memcpy(record.package_aid, legacy.package_aid, sizeof(record.package_aid));
+    std::memcpy(record.applet_aid, legacy.applet_aid, sizeof(record.applet_aid));
+    std::memcpy(record.instance_aid, legacy.instance_aid,
+                sizeof(record.instance_aid));
+    record.crc32 = install_journal_crc32(
+        reinterpret_cast<const uint8_t *>(&record),
+        offsetof(InstallJournalRecord, crc32));
+    return true;
   } catch (...) {
     return false;
   }
@@ -327,7 +375,8 @@ bool recover_pending_install_journals() noexcept {
                    package_id, record.applet_aid,
                    record.applet_aid_length, record.instance_aid,
                    record.instance_aid_length,
-                   record.applet_class_index) != 0) {
+                   record.applet_class_index,
+                   record.applet_owner) != 0) {
       recovered_all = false;
       continue;
     }
@@ -357,19 +406,21 @@ bool read_lifecycle_state(const jcvm::fs::Tag &tag,
   }
 }
 
-bool clear_applet_persistent_state(uint8_t package_id,
+bool clear_applet_persistent_state(uint8_t applet_owner,
+                                   uint8_t package_id,
                                    uint16_t class_index) noexcept {
   // Root object and instance fields use the same tag namespace. Any child
   // array/object records become unreachable when these owning fields are
   // erased and are overwritten if the applet is installed again.
   for (uint16_t field = 0; field <= 0xff; ++field) {
     const auto tag = jcvm::FlashMemory_Handler::getPersistentFieldTag(
-        0, package_id, class_index, static_cast<uint8_t>(field));
+        applet_owner, package_id, class_index, static_cast<uint8_t>(field));
     if (fs_erase_prefix(tag.value, tag.len) != 0) return false;
     if (class_index > UINT8_MAX) {
       const auto legacy_tag =
           jcvm::FlashMemory_Handler::getLegacyPersistentFieldTag(
-              0, package_id, class_index, static_cast<uint8_t>(field));
+              applet_owner, package_id, class_index,
+              static_cast<uint8_t>(field));
       if (fs_erase_prefix(legacy_tag.value, legacy_tag.len) != 0)
         return false;
     }
@@ -973,6 +1024,16 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     return false;
   }
 
+  if (!recover_pending_install_journals()) {
+    install_failure_stage_ = 11;
+    return false;
+  }
+  uint8_t applet_owner = 0;
+  if (!cap_store_allocate_applet_owner(applet_owner)) {
+    install_failure_stage_ = 11;
+    return false;
+  }
+
   if (!jcvm::FlashMemory_Handler::beginPersistentWriteTransaction()) {
     install_failure_stage_ = 7;
     return false;
@@ -997,7 +1058,8 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
       return false;
     }
     install_vm_status_ = runtime_install_method(
-        resolved_package_id, install_method_offset, install_parameters,
+        resolved_package_id, applet_owner, install_method_offset,
+        install_parameters,
         static_cast<uint8_t>(install_parameters_length), instance_aid,
         instance_aid_length, &applet_registered,
         &applet_class_index, &install_vm_exception_id_,
@@ -1017,6 +1079,7 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     journal.package_aid_length = load_package_aid_length_;
     journal.applet_aid_length = applet_aid_length;
     journal.instance_aid_length = instance_aid_length;
+    journal.applet_owner = applet_owner;
     journal.applet_class_index = applet_class_index;
     std::memcpy(journal.package_aid, load_package_aid_,
                 journal.package_aid_length);
@@ -1045,7 +1108,7 @@ bool CapLoadSession::installAndMakeSelectable(const uint8_t *data,
     if (choupi_store_cap_instance(resolved_package_id, applet_aid,
                                   applet_aid_length, instance_aid,
                                   instance_aid_length,
-                                  applet_class_index) != 0) {
+                                  applet_class_index, applet_owner) != 0) {
       install_failure_stage_ = 8;
       return false;
     }
@@ -1085,6 +1148,10 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
       delete_related_objects, target);
   if (target_status != 0x9000) return target_status;
   const bool delete_package = target.package;
+  uint8_t applet_owner = 0;
+  if (!delete_package &&
+      !cap_store_applet_owner(instance_aid_, instance_aid_length_,
+                              applet_owner)) return 0x6581;
 
   struct DeleteBackend {
     bool begin() noexcept {
@@ -1092,6 +1159,7 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
       return jcvm::FlashMemory_Handler::beginPersistentWriteTransaction();
     }
     uint8_t package_id;
+    uint8_t applet_owner;
     bool clear_applet(uint16_t class_index) noexcept {
       stage = 2;
       if (delete_package) {
@@ -1102,16 +1170,20 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
           uint8_t instance_aid[16]{};
           uint8_t instance_aid_length = 0;
           uint16_t related_class_index = 0xffff;
+          uint8_t related_owner = 0;
           if (!cap_store_package_instance_at(
                   package_id, index, applet_aid, applet_aid_length,
                   instance_aid, instance_aid_length, related_class_index) ||
-              !clear_applet_persistent_state(package_id,
+              !cap_store_applet_owner(instance_aid, instance_aid_length,
+                                      related_owner) ||
+              !clear_applet_persistent_state(related_owner, package_id,
                                              related_class_index))
             return false;
         }
         return true;
       }
-      return clear_applet_persistent_state(package_id, class_index);
+      return clear_applet_persistent_state(applet_owner, package_id,
+                                           class_index);
     }
     bool clear_package_static() noexcept {
       stage = 3;
@@ -1139,7 +1211,7 @@ uint16_t CapLoadSession::deleteObject(const uint8_t *aid, uint8_t aid_length,
     bool delete_package = false;
     uint8_t stage = 0;
     uint8_t failure_stage = 0;
-  } backend{package_id_};
+  } backend{package_id_, applet_owner};
 
   backend.delete_package = delete_package;
 
