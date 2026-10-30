@@ -15354,7 +15354,7 @@
 - Validation: `pcsc_scan -r` showed Virtual PCD 00 00, Virtual PCD 00 01, and `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00`. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'` passed: GPPro listed the JCAlgTest 1.8.2 applet and package; SELECT, GETVERSION, and JCSystem-info returned `9000`.
 - Result: The currently attached 2BED runtime and persistent applet are accessible. This command does not initiate a power cycle, so physical reboot/power-loss recovery remains unvalidated.
 - Decision: Preserve the no-persistent-record-deletion gate until a true hardware power cycle and interrupted-update recovery are tested.
-- Commit: pending.
+- Commit: `0f06e7e` (implementation, tests, and status notes); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261030T044725Z.log`, SHA-256 `bfcc4cc3fdf299ab3654d8be46e1b00926f5b2b795aa9b4e58551a160fa5d2ab`.
 
 ## 2026-10-30 Validate overlay interrupted-update recovery 2 minutes
@@ -15400,3 +15400,14 @@
 - Decision: Continue by adding strict alias-chain type resolution and a direct recursion-bound test, then return to persistent-record inventory.
 - Commit: pending.
 - Artifacts/logs: `./tools/test-persistent-transaction` output; no archived log or hardware artifact.
+
+## 2026-10-30 Resolve nested persistent array aliases consistently 8 minutes
+
+- Step/experiment: `persistent-inventory-array-alias-chain-resolution`
+- When: '2026-10-30 04:57 UTC' - '2026-10-30 05:05 UTC'
+- Change: Fixed a gap where `getPersistentField_Type()` inspected only the first array-alias target even though strict reference restoration followed aliases recursively. Type resolution now follows nested aliases to a valid array terminal, rejects scalar/object targets, and shares the 32-alias bound with strict reference restore. Corrected collector fixtures to include valid serialized parent array headers. Added tests for a two-link alias chain through the production collector, a cycle through both the type decoder and strict restore, and fail-closed malformed edges. Updated TODO/QKB/handoff.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`; `./tools/build arm` and `./tools/build riscv` passed; elevated `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 2BED26ED20556535` flash-verified the updated full ARM image and the finite monitor passed `TEST:SUMMARY pass=1 fail=0`; physical JCAlgTest SELECT, GETVERSION (`1.8.2_jc305`), and JCSystem-info returned `9000`; elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed install/commit 3/3 and process-restart restore/GC 38/38.
+- Result: The type walker and reference restorer now agree on nested array aliases and reject cyclic/malformed inputs within a fixed bound. The updated image runs on physical 2BED. No persistent records were deleted. Build logs include pre-existing PC/Rust packed-layout and lint warnings; ARM/RISC-V and new alias code produced no errors.
+- Decision: Continue building the read-only inventory consumer that identifies which serialized records belong to the complete reachable graph; keep persistent-record deletion disabled pending physical power-loss recovery.
+- Commit: pending.
+- Artifacts/logs: UF2 SHA-256 `b4a26add8ef5bfc28b948633d2f4790caaf48aaaa7addcae8f236f57c1ab8de6`; cycle log `artifacts/logs/cycle-choupi-20261030T050119Z.log` SHA-256 `264a3e499c8c3f06f96176e20e5fc8899418fc4d8a28a03a67b0bf8adc1ac39d`; physical APDU log `artifacts/logs/pico-powerup-persistence-20261030T050239Z.log` SHA-256 `69af8d88d141cf607dbb43153801f3ecb9c62812cb274884ac2421d99baa6601`; VPCD logs `vpcd-persistence-commit-20261030T050312Z.log` SHA-256 `be259af5c5f3f89cddde6b4e1d77900ddf594829c8e8f01bd3211fa257590006` and `vpcd-persistence-restore-20261030T050312Z.log` SHA-256 `98f2affc12a813d2b423d545ce27eb6a26680831b7e22a814cba7dedd09cbf9e`.
