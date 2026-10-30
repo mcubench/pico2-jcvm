@@ -14529,7 +14529,7 @@
   physical retest; continue with remaining Crypto/API test coverage. SHA-224,
   SHA-384, and SHA-512 initial-digest continuation and precomputed-hash vectors
   still need coverage where an unchanged upstream CAP exercises them.
-- Commit: pending.
+- Commit: `0711ec6` (test and continuity notes); this progress record is committed separately.
 - Artifacts/logs: `artifacts/results/deploy/crypto-current-vpcd-20261029/`
   (`ecdsa-sha384-focused.csv`, `ecdsa-sha224-512-focused.csv`,
   `ecdsa-sha224-512-trace.csv`, `ecdsa-sha512-trace.csv`,
@@ -15323,3 +15323,14 @@
 - Decision: Proceed to explicit restart/power-cycle recovery tests before enabling persistent-record reclamation.
 - Commit: pending.
 - Artifacts/logs: Final output from `./tools/test-persistent-transaction`; no archived log or hardware artifact.
+
+## 2026-10-30 Reconstruct heap from retained persistent records 2 minutes
+
+- Step/experiment: `persistent-inventory-host-heap-reconstruction`
+- When: '2026-10-30 04:39 UTC' - '2026-10-30 04:41 UTC'
+- Change: Added a host-fixture scenario that seeds a persistent reference-array root, a persistent byte-array target, and an element alias between them; it creates a fresh Heap over those records, restores the graph, and runs collection. The assertion requires two reachable arrays, one unrelated slot reclaimed, and unchanged persistent root/target records. TODO/QKB/handoff state that this is heap reconstruction only, not reboot recovery.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`. An initial assertion treated `Heap::getArray()` on a reclaimed handle as a nullable lookup; the secure heap correctly throws `SecurityException`, so the test was corrected to assert that invalidation. `git diff --check` passed. No firmware source or hardware was involved.
+- Result: A newly constructed host Heap restores a valid persistent alias graph from retained filesystem-fixture data and can reclaim an unrelated volatile slot. Actual FS/process/emulator/physical restart recovery and persistent-record deletion remain untested.
+- Decision: Keep persistent-record reclamation disabled and continue with real restart recovery and stable-handle semantics.
+- Commit: pending.
+- Artifacts/logs: `./tools/test-persistent-transaction` final output; no archived log or hardware artifact.
