@@ -15145,7 +15145,7 @@
 - Validation: `./tools/test-persistent-inventory` passed all 15 cases; `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. The full ARM CHOUPI image was flashed to identified Pico 2 `2BED26ED20556535`; cycle log reports `CYCLE:PASS` and finite serial `TEST:SUMMARY pass=1 fail=0`. Physical JCAlgTest 1.8.2 SELECT, GETVERSION, and JCSystem-info APDUs returned `9000`. Captured serial contains 3 `gc_begin` and 3 `gc_end` events and no `HEAP_GC_SKIP`. `git diff --check` passed. The PC/SC ACL helper was rerun once after re-enumeration before the reader appeared.
 - Result: All installed packages now contribute reference-valued static slots to the mark roots on both the device collector and PC diagnostic path. This does not enumerate all live applet/context/native owners, test malformed serialized-edge recovery, or authorize persistent-record deletion. The build emitted existing Rust `javacard-os` cfg/deprecation/unsafe warnings and C++ packed-member alignment warnings; no build errors.
 - Decision: Next identify a safe enumeration model for all live applet/context/native owners and add malformed edge/alias tests that prove incomplete walks cannot authorize reclamation. Keep persistent deletion disabled.
-- Commit: pending.
+- Commit: `4e7c31a` (continuity notes); this progress record is committed separately.
 - Artifacts/logs: cycle `artifacts/logs/cycle-choupi-20261030T031258Z.log` (SHA-256 `a9390c1a6e36bb67e165461f1a47d2d47b43b3fd5993df59cad3f018734243dd`); physical APDU serial `artifacts/logs/persistent-inventory-all-package-device-monitor-2BED-20261030.log` (SHA-256 `77b58646ab691615dae495ef1817ac2341251d310584f30521853b86e5e2f218`); ARM UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `ccb0550252a9a1ecec2c38ed37b403fb0418cbd920bb32033f8a4517530a63c8`).
 
 ## 2026-10-30 Progress commit reference correction
@@ -15345,3 +15345,14 @@
 - Decision: Retain the persistent reclamation restriction until physical power-cycle and interrupted-update recovery are validated.
 - Commit: pending.
 - Artifacts/logs: Commit log `artifacts/logs/vpcd-persistence-commit-20261030T044356Z.log` SHA-256 `df4578db168deb7b1751623e486f3e9d696623eaadd3af56890d6ca916ee9192`; restore log `artifacts/logs/vpcd-persistence-restore-20261030T044356Z.log` SHA-256 `68a9b4f9169ec699143095dec88f64c840043a16485f125c9849aed797fe8c75`.
+
+## 2026-10-30 Confirm current physical card state 3 minutes
+
+- Step/experiment: `persistent-inventory-2bed-readonly-probe`
+- When: '2026-10-30 04:45 UTC' - '2026-10-30 04:48 UTC'
+- Change: Re-enumerated PC/SC readers and ran the repository's read-only power-up persistence probe against the exact identified 2BED reader. No card contents, firmware, or USB configuration were changed. Updated handoff/QKB with the observation and its limits.
+- Validation: `pcsc_scan -r` showed Virtual PCD 00 00, Virtual PCD 00 01, and `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00`. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'` passed: GPPro listed the JCAlgTest 1.8.2 applet and package; SELECT, GETVERSION, and JCSystem-info returned `9000`.
+- Result: The currently attached 2BED runtime and persistent applet are accessible. This command does not initiate a power cycle, so physical reboot/power-loss recovery remains unvalidated.
+- Decision: Preserve the no-persistent-record-deletion gate until a true hardware power cycle and interrupted-update recovery are tested.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261030T044725Z.log`, SHA-256 `bfcc4cc3fdf299ab3654d8be46e1b00926f5b2b795aa9b4e58551a160fa5d2ab`.
