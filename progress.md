@@ -13925,7 +13925,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile asymm_crypto --chipid d92e743d5f640c0f` passed. Both ARM and RISC-V builds passed, flash verification passed, and the finite 18-second monitor reported repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The log also contained one `CHOUPI:WATCHDOG_RECOVERY ... cause=other` record before subsequent passing iterations. No PC/SC or applet test was run.
 - Result: The combined-profile image boots and the smoke check passes on D92. The other connected token was not touched. Image size: 2,029,568 bytes; SHA-256 `08fabe785011c5d5917672a8adbc447f74fc006202c3c50b04dca96515ab6cbb`.
 - Decision: Physical flash path is operational. Inspect the watchdog recovery marker if it appears again during a clean power-up; continue remaining asymmetric coverage.
-- Commit: pending.
+- Commit: `44a04b4` (TODO/QKB/HANDOFF update); this progress entry records the documentation commit.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261027T200454Z.log`; image `build/arm/pico2_choupi.uf2`.
 
 ## 2026-10-27 — Keep long RSA operations alive and validate on D92 (55 minutes)
@@ -15049,3 +15049,14 @@
 - Decision: Add direct persistent-store adapter tests and define the complete owner/context root set before using this in any collection decision. Keep persistent record deletion disabled.
 - Commit: `69f0a49` (root scanner and parser tests); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T015008Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `0d1e6526d7bb968cd2f712be12a043ac748b7b1099f35b459c3898e31024de23`.
+
+## 2026-10-30 Refresh persistent-inventory handoff 2 minutes
+
+- Step/experiment: `persistent-inventory-handoff-sync`
+- When: '2026-10-30 01:50 UTC' - '2026-10-30 01:52 UTC'
+- Change: Updated the prioritized TODO, compact QKB, and session HANDOFF to record strict static restore, CAP-derived static metadata, registered applet-root parsing, and the remaining direct-adapter/runtime validation gaps. Kept root discovery and persistence deletion explicitly incomplete.
+- Validation: `git diff --check -- TODO.md .agent/QKB.md .agent/HANDOFF.md` passed. No builds or hardware checks were needed for this documentation-only step.
+- Result: Continuation docs now distinguish parser/build/startup evidence from actually invoking the persistent inventory on device.
+- Decision: Continue with direct tests for the flash/CAP adapters and a bounded diagnostic invocation; do not enable persistent deletion until typed edges and all context roots are accounted for.
+- Commit: pending.
+- Artifacts/logs: none.
