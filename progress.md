@@ -16602,3 +16602,16 @@
   restore log `artifacts/logs/vpcd-persistence-restore-20261030T203932Z.log`
   SHA-256
   `59309a770239352bfa223f6e8bcd0bc6b307e4ea772c5079b3cc2bd599387bbc`.
+
+## 2026-10-30 Record persistence-regression commit 1 minute
+
+- Step/experiment: `persistent-inventory-and-vpcd-restart-regression-log-closeout`
+- When: '2026-10-30 20:45 UTC' - '2026-10-30 20:46 UTC'
+- Change: Added the preceding validation commit SHA to the append-only log.
+- Validation: Confirmed commit `183bfe6` contains only TODO, QKB, handoff, and
+  the detailed persistence regression record.
+- Result: The latest persistence-suite rerun is documented in commit `183bfe6`.
+- Decision: Continue the project; retain physical power-cycle and persistent
+  record reclamation as open work.
+- Commit: recorded in this follow-up commit.
+- Artifacts/logs: none.
