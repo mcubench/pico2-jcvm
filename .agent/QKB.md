@@ -164,6 +164,11 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `bfcc4cc3fdf299ab3654d8be46e1b00926f5b2b795aa9b4e58551a160fa5d2ab`.
 - This run did not initiate a reset or power cycle, so it only confirms the
   current card/app state and is not physical power-loss recovery evidence.
+- A Java SmartcardIO `Card.disconnect(true)` reset attempt printed the selected
+  reader but no post-reset APDU results. The subsequent read-only power-up
+  probe above passed, confirming the card remained accessible, but the missing
+  reset/APDU output means this attempt is inconclusive and must not be recorded
+  as reset or power-cycle validation.
 
 ### Simulated RP2350 overlay interruption recovery — 2026-10-30
 
