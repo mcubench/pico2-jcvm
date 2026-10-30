@@ -595,46 +595,34 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
 
 ### Priority 2 — close correctness and reliability gaps
 
-- [ ] **Investigate `JCSystem.getAvailableMemory()` accounting around object
-  allocation.** Reported available-memory values appear too large. Measure both
-  overloads before and after controlled allocations, starting with a
-  `Cipher.getInstance()` instance and then representative key objects. Record
-  persistent, reset-transient, and deselect-transient deltas separately, and
-  compare the readings with actual allocator/storage usage. Establish expected
-  behavior and capture a reproducible baseline before proposing any code
-  changes. Initial physical sample on Pico 2 `2BED26ED20556535` does not yet
-  establish that the 32-bit report is too large: JCAlgTest returned 228,696
-  bytes reset/deselect free before Cipher construction, then 227,240/227,240
-  (1,456-byte deltas); a repeat from a stable 228,528-byte baseline returned
-  227,240/227,232 (1,288/1,296-byte deltas). Persistent available memory was
-  8,846 bytes before and after, with zero allocation. Its scalar overload is
-  capped at 32,767, so the JCAlgTest scalar `0x847f` is its own signed-short
-  arithmetic overflow after adding two 576-byte arrays, not a native API value.
-  A direct persistent AES-128 KeyBuilder probe (type `0x0F`, length 128) then
-  measured 416 bytes less reset/deselect memory and zero persistent delta on
-  this `current`-profile image. AES transient-reset and transient-deselect
-  probes (types `0x0D`/`0x0E`) returned `NO_SUCH_ALGORITHM` as expected because
-  both capabilities are disabled in `current`; they do not provide allocation
-  measurements. Do not treat this as a transient-key defect; those variants
-  need a symm_crypto image for physical measurement.
-  That physical check is now complete: after a full `symm_crypto` CHOUPI image
-  was flash-verified on 2BED, persistent AES-128 showed 464-byte transient
-  drops; reset-transient AES-128 showed 632 bytes and a noisy -2-byte
-  persistent delta; deselect-transient AES-128 showed 616 bytes and zero
-  persistent delta. All three constructors returned status `00`. The 512 KiB
-  ARM link map places the static RAM end at `0x2003CBD0` and `__StackLimit` at
-  `0x20080000`, a 275,504-byte gross gap; the observed ~230,000 bytes free is
-  numerically plausible after runtime heap use, but this is not a live
-  allocator reconciliation. Do not report the estimate as proven correct yet.
-  The 32-bit transient implementation currently adds allocator free blocks to
-  the gap from `sbrk(0)` to `__StackLimit`; persistent reports overlay capacity
-  minus current use. Both transient kinds currently return the same allocator
-  estimate. Still open: independently account for the runtime heap/free-block
-  and stack-bound portions before deciding whether changes are warranted.
-  Probe code and raw evidence: `tools/JCAlgTestApduProbe.java`,
-  `artifacts/logs/jcsystem-memory-probe-2BED-20261030.log`, and
-  `artifacts/logs/jcsystem-key-memory-2BED-20261030.log` plus the `symm_crypto`
-  measurements in `artifacts/logs/jcsystem-key-memory-symm-2BED-20261030.log`.
+- [x] **Investigate `JCSystem.getAvailableMemory()` accounting around object
+  allocation.** On physical Pico 2 `2BED26ED20556535`, the 32-bit JCAlgTest
+  transient result exactly matched live allocator counters plus the remaining
+  heap/stack gap. During JCSystem-info: `mallinfo` reported arena 46,124,
+  allocated 45,188, free 936 bytes; `sbrk(0)` was 229,376 bytes below
+  `__StackLimit`; `936 + 229,376 = 230,312`, exactly the returned result.
+  The link map independently gives 275,504 bytes between static RAM end
+  `0x2003CBD0` and `__StackLimit` `0x20080000`; 46,124-byte committed arena plus
+  229,376-byte uncommitted gap equals that total within 4-byte alignment.
+  Repeating controlled AES-128 constructors on `symm_crypto` showed matching
+  physical allocator/report deltas: persistent/reset/deselect key types
+  `0x0F`/`0x0D`/`0x0E` changed used heap and transient available memory by
+  464/464, 608/608, and 608/608 bytes respectively. The JCAlgTest report also
+  observed 1,288–1,456-byte Cipher factory allocations. Persistent available
+  bytes changed by at most 2 bytes in these key trials. The scalar native API
+  clamps at 32,767; JCAlgTest's `0x847f` scalar field is its own signed-short
+  overflow after adding two 576-byte arrays, not the 32-bit native result.
+  Reset and deselect values are equal because this firmware has one shared
+  transient heap pool. Conclusion: the original “too large” concern is not
+  reproduced; no accounting code change is warranted from this evidence.
+  `PICO2_DEBUG_HEAP_GC=1` now emits raw allocator, break, gap, and total values
+  for future diagnostics; normal builds omit that output. ARM and RISC-V debug
+  wrappers passed, and the board was restored to normal `symm_crypto` firmware.
+  Evidence: `tools/JCAlgTestApduProbe.java`,
+  `artifacts/logs/jcsystem-memory-probe-2BED-20261030.log`,
+  `artifacts/logs/jcsystem-key-memory-symm-2BED-20261030.log`,
+  `artifacts/logs/jcsystem-memory-raw-counters-2BED-20261030.log`, and
+  `artifacts/logs/jcsystem-memory-key-raw-apdus-2BED-20261030.log`.
 
 - [x] Preserve timestamps of unchanged generated build inputs. The Java Card
   support, class-token, and ROM-metadata generators now write output files only

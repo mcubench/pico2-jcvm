@@ -985,6 +985,19 @@ extern "C" uint32_t choupi_available_transient_memory_bytes(void) {
   const size_t uncommitted = heap_end < heap_limit ? heap_limit - heap_end : 0;
   const uint64_t available =
       static_cast<uint64_t>(allocator.fordblks) + uncommitted;
+#ifdef CHOUPI_DEBUG_HEAP_GC
+  std::printf(
+      "CHOUPI:MEMORY transient arena=%llu used=%llu free=%llu keep=%llu "
+      "brk=%08lX limit=%08lX gap=%lu available=%llu\r\n",
+      static_cast<unsigned long long>(allocator.arena),
+      static_cast<unsigned long long>(allocator.uordblks),
+      static_cast<unsigned long long>(allocator.fordblks),
+      static_cast<unsigned long long>(allocator.keepcost),
+      static_cast<unsigned long>(heap_end),
+      static_cast<unsigned long>(heap_limit),
+      static_cast<unsigned long>(uncommitted),
+      static_cast<unsigned long long>(available));
+#endif
   return available > UINT32_MAX ? UINT32_MAX
                                 : static_cast<uint32_t>(available);
 }
