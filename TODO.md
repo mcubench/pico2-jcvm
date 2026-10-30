@@ -55,8 +55,11 @@ out explicitly.
     the VM package bitmap. CAPs without a Static Field component contribute no
     roots. The ARM runtime and PC diagnostic use the same package enumeration.
   - [ ] Include every live applet/context/native root before computing
-    authoritative reachability; current owner coverage is still limited to
-    the active applet heap.
+    authoritative reachability. Firmware currently assigns owner `0` during
+    both install and restore, while registered-root tags identify only
+    owner/package/class, not applet instance AID. Multiple installed instances
+    of one package/class therefore cannot have independent roots; design and
+    migrate a stable per-instance owner mapping before reclamation.
   - [ ] Add malformed serialized edge/alias tests and prove an incomplete walk
     cannot authorize reclamation, including recovery after power cycling.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and

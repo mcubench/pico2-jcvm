@@ -47,8 +47,12 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    and the inventory unit test pass. Full physical JCSystem transaction-probe
    installation could not run on 2BED because only 8,821/65,535 bytes were
    free; 8E stopped enumerating after flash. All-live applet/context/native
-   root coverage remains incomplete, malformed-edge negative tests are still
-   missing, and no persistent records have been deleted. The 2026-10-30
+   root coverage remains incomplete: install and restore currently use owner
+   `0`, and registered applet-root tags are keyed only by owner/package/class,
+   so two instances of one class cannot have separate roots. Design a stable
+   per-instance owner mapping and migration before reclamation. Malformed-edge
+   negative tests are also missing; no persistent records have been deleted.
+   The 2026-10-30
    all-package static-root change is validated on 2BED with the full ARM image
    and three read-only APDUs; log:
    `artifacts/logs/persistent-inventory-all-package-device-monitor-2BED-20261030.log`.

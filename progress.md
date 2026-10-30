@@ -15158,3 +15158,14 @@
 - Decision: Continue with complete live-root enumeration and malformed-edge reclamation safety tests.
 - Commit: `54c31a2` (the progress reference correction is recorded in the following administrative commit).
 - Artifacts/logs: none.
+
+## 2026-10-30 Identify applet root identity collision 2 minutes
+
+- Step/experiment: `persistent-applet-root-owner-audit`
+- When: '2026-10-30 03:18 UTC' - '2026-10-30 03:20 UTC'
+- Change: Audited install/restore root identity after broadening package static scanning. Found both paths construct owner `0`, while persistent applet root tags encode owner/package/class but not instance AID. Updated TODO, QKB, and handoff to require stable per-instance owner allocation plus compatibility migration before reclamation.
+- Validation: Source inspection of `runtime_install_method()`, `choupi_vm_restore_applet()`, and `FlashMemory_Handler::getAppletInstanceTag()` confirmed the shared owner and tag identity. No implementation or test run was performed in this investigation step.
+- Result: Two installed instances of the same package/class cannot currently own independent registered-applet root tags; complete root enumeration and persistent deletion remain unsafe.
+- Decision: Design a collision-free stable owner mapping persisted in install metadata, and test legacy owner-0 migration before changing collector authorization.
+- Commit: pending.
+- Artifacts/logs: none.

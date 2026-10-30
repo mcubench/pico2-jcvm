@@ -177,6 +177,20 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
 ## Canonical operating fixes and unresolved boundaries
 
+### Persistent applet root key does not distinguish instances of one class — 2026-10-30
+
+- `runtime_install_method()` constructs `Interpretor(0, package_id, ...)`, and
+  `choupi_vm_restore_applet()` constructs `Context(0, package_id)`. The
+  registered applet root tag is formed from owner, package, class, and the
+  root suffix; it does not include the instance AID. Thus two registered
+  instances of the same package/class overwrite/share one root slot, so an
+  inventory scan cannot prove both applet instances are retained.
+- Before persistent reclamation, allocate a stable unique owner per installed
+  applet instance and use that owner consistently for install, restore,
+  select, and tag enumeration. Persist the mapping alongside the install
+  registry and plan compatibility/migration for existing owner-0 records.
+  Do not use a truncated AID hash without collision detection.
+
 - **Host USB/PCSC access — viable workflow:** follow root `AGENTS.md` from the
   first attempt: elevated host execution and `PICO2_HOST_USB_ACCESS=1` on each
   repository USB wrapper. The permitted ACL helper can restore access after
