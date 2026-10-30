@@ -1968,6 +1968,14 @@ original terminology/status; check current summary and later fixes before reuse.
   user cannot read system journal/syslog diagnostics, so this rules out a
   missing VID/PID mapping but not CCID descriptor/IFD initialization failure.
   Do not change firmware or driver files without daemon-side error evidence.
+- Recheck at 2026-10-30 21:09 UTC: `lsusb` again found serials
+  `8E464F4E2BBC0A19` and `2BED26ED20556535`, both with a CCID 1.10 descriptor,
+  T=1 protocol and interface 2. `PICO2_HOST_USB_ACCESS=1 ./tools/doctor` passed
+  all build prerequisites. The bounded `timeout 8s pcsc_scan -r` still listed
+  only VPCD. `pcscd.service` had exited successfully after its normal
+  socket-activated auto-exit; journal entries were unavailable to this user.
+  USB enumeration alone still does not permit physical APDU or power-cycle
+  tests.
 - Logs: `artifacts/logs/usb-visible-no-pcsc-8E-20261030.log` (SHA-256
   `b6b08a7ce585cd995c182926a629b494042f01a9d451d0aaea94dd156afb3a82`) and
   `artifacts/logs/usb-visible-no-pcsc-2BED-20261030.log` (SHA-256

@@ -20,6 +20,15 @@ This is emulator-only; no ARM/RISC-V build or physical flash was needed. Keep
 unrelated worktree edits intact, especially `src/cap_load.cpp`, which remains
 uncommitted from separate loader work.
 
+## Current hardware access — 2026-10-30 21:09 UTC
+
+Two Pico 2 devices, `8E464F4E2BBC0A19` and `2BED26ED20556535`, enumerate over
+USB with CCID 1.10/T=1 descriptors, but a bounded `pcsc_scan -r` still reports
+only the two VPCD readers. `tools/doctor` passes. No physical APDU, flash, or
+USB power-cycle test is possible until PC/SC registers a physical reader. See
+`.agent/QKB.md` for the USB/CCID diagnostic evidence; do not change firmware or
+driver files without IFD daemon errors.
+
 ## Current continuation: optional native module gating — 2026-10-30
 
 Fixed the `minimal` profile wrapper builds. The top-level Pico CMake source

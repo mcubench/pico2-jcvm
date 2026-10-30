@@ -16740,6 +16740,26 @@
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
 
+## 2026-10-30 Recheck physical reader registration 4 minutes
+
+- Step/experiment: `physical-pico-usb-present-pcsc-absent-recheck`
+- When: '2026-10-30 21:05 UTC' - '2026-10-30 21:09 UTC'
+- Change: Updated the issue knowledge base and handoff with a fresh diagnostic
+  of the two USB-enumerated Pico 2 boards and current PC/SC reader state.
+- Validation: The authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader`
+  granted access to both USB nodes; `PICO2_HOST_USB_ACCESS=1 ./tools/doctor`
+  passed. `lsusb -d 2e8a:0009` found `8E464F4E2BBC0A19` and
+  `2BED26ED20556535`; USB descriptors show CCID 1.10/T=1 on interface 2.
+  `timeout 8s pcsc_scan -r` listed only the two VPCD readers. `pcscd` auto-exited
+  successfully after the query; daemon journal entries were unavailable.
+- Result: Host tooling and USB enumeration work, but physical PC/SC APDUs and
+  USB power-cycle tests remain blocked by missing reader registration. No
+  firmware or driver changes were made.
+- Decision: Keep hardware recovery acceptance open; continue with independent
+  offline project work, and retry physical testing when PC/SC registers a Pico.
+- Commit: recorded in immediate follow-up progress entry.
+- Artifacts/logs: diagnostic output recorded in `.agent/QKB.md`; no new log file.
+
 ## 2026-10-30 Record multi-package VPCD rerun commit 1 minute
 
 - Step/experiment: `multipackage-restart-delete-regression-log-closeout`
