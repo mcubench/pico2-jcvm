@@ -15301,3 +15301,14 @@
 - Decision: Continue malformed object-alias chain coverage and strict-restore/collector integration before considering reclamation of persistent records.
 - Commit: `8e5f9dc` (test and status notes); this progress record is committed separately.
 - Artifacts/logs: `/tmp/persistent-alias-malformed.log`; final output contains `TEST:SUMMARY fail=0`. No hardware artifacts.
+
+## 2026-10-30 Exercise malformed aliases through heap collection 5 minutes
+
+- Step/experiment: `persistent-inventory-malformed-alias-collector`
+- When: '2026-10-30 04:34 UTC' - '2026-10-30 04:39 UTC'
+- Change: Extended the persistent-transaction host target to link the actual heap, array, instance, reference, and FlashMemory decoder code. Injected serialized truncated object and array aliases plus a self-referential array-alias chain into persistent reference-array edges. The collector regression requires an incomplete mark, one edge-load failure, zero reclaimed arrays, and both heap handles still resolving. Updated TODO, QKB, and handoff; reboot recovery remains explicitly open.
+- Validation: `./tools/test-persistent-transaction` passed all cases with `TEST:SUMMARY fail=0`, including all three malformed-alias collector cases. `git diff --check` passed. No firmware source changed, so ARM/RISC-V builds and hardware were not run.
+- Result: The production strict decoder and collector fail closed for these malformed serialized edges and do not reclaim heap handles. The filesystem is an in-memory fixture; no persistent records were deleted and power-cycle/restart recovery was not measured.
+- Decision: Continue with restart/power-cycle recovery and stable-handle validation before implementing any persistent-record deletion.
+- Commit: `8407f2a` (test and continuity notes); this progress record is committed separately.
+- Artifacts/logs: Final test output from `./tools/test-persistent-transaction`; no archived log or hardware artifacts.
