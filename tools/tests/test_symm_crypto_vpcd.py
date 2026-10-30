@@ -116,6 +116,18 @@ def mac_vectors() -> list[tuple[bytes, bytes, str]]:
         apdu = bytes((0x80, 0x11, algorithm, 1, len(verify_input))) + verify_input + b"\x00"
         results.append((apdu, b"\x00\x90\x00", f"MAC {algorithm} reject"))
 
+    # The native Signature object keeps only a 64-byte update buffer. A
+    # one-shot call must still accept the long input directly, and repeated
+    # sign() calls on the same instance must reset their MAC state.
+    long_message = bytes(range(128))
+    long_mac = cbc_mac(MAC_DES_KEY, long_message, 8, algorithm3=False)[:4]
+    apdu = bytes((0x80, 0x11, 3, 2, len(long_message))) + long_message + b"\x00"
+    results.append((apdu, long_mac + b"\x90\x00",
+                    "DES MAC M1 128-byte repeated sign"))
+    apdu = bytes((0x80, 0x11, 3, 3, len(long_message))) + long_message + b"\x00"
+    results.append((apdu, long_mac + b"\x90\x00",
+                    "DES MAC M1 buffered update plus direct sign input"))
+
     cmac = CMAC(algorithms.AES(AES_MAC_KEY))
     cmac.update(AES_MAC_MESSAGE)
     expected = cmac.finalize()

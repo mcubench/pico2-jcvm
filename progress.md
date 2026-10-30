@@ -16504,3 +16504,60 @@
 - Commit: `73859a8` (validation record is completed in the following log commit)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; no new build log archived.
+
+## 2026-10-30 Fix DES-MAC static workload persistent-state cost 30 minutes
+
+- Step/experiment: `jcalgtest-desmac-persistent-state`
+- When: '2026-10-30 20:00 UTC' - '2026-10-30 20:30 UTC'
+- Change: Added a MAC-specific Signature completion path that clears buffered
+  `update()` bytes only when present. One-shot MAC sign/verify no longer scans
+  unused persistent message/recovery arrays or resets an IV that the MAC
+  backend does not modify. The generic cleanup avoids rewriting already-zero
+  values. Corrected the test applet's repeat-sign mode and added regressions for
+  long repeated signing and mixed buffered/direct input. Refreshed the
+  max-support ARM empty-card UF2 and its documented hash.
+- Validation: `./tools/build-pc --profile max_crypto` passed;
+  `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. The VPCD symmetric suite
+  passed 73/73 vectors. Unchanged upstream JCAlgTest 1.8.2 DES MAC4 ISO9797 M1
+  static APDUs with 256-byte input and 50 sign calls returned `AA9000`; prepare
+  took 24.686 s and measurement took 47.425 s. No hardware flash was run.
+- Result: Host VPCD no longer reproduces the 72 DES MAC static applet failures.
+  The full physical static suite and focused physical confirmation remain
+  open; this does not address reader disconnects.
+- Decision: Keep MAC cleanup specialized and retain the regression vectors.
+  Retry the focused unchanged upstream APDUs on a physical Pico when PC/SC
+  lists a physical reader, then rerun the relevant official static section.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
+  SHA-256 `79e9d98849069113bdaa10d416aa5ba9c5a20fb0ab35ce7b983cd2d74cb8dc84`;
+  upstream VPCD log
+  `artifacts/logs/jcalgtest-desmac-256byte-50repeat-optimized2-vpcd-20261030.log`
+  SHA-256 `4be4132e3443325f44eb9ae55ba71c6f4af14e6a8ae006d8b169a475c24682cb`;
+  full symmetric VPCD log
+  `artifacts/logs/symm-crypto-desmac-full-final2-vpcd-20261030.log` SHA-256
+  `15c8d973aab2223e93ffb4e9f13da07e49c586eefe0782d189cbe4a68bb447d1`.
+
+## 2026-10-30 Validate final DES-MAC optimization and refresh max ARM image 5 minutes
+
+- Step/experiment: `jcalgtest-desmac-final-build-and-vpcd-regression`
+- When: '2026-10-30 20:30 UTC' - '2026-10-30 20:35 UTC'
+- Change: Validated the zero-IV/no-persistent-array-read optimization, recorded
+  the VPCD networking requirement, and refreshed the max_crypto ARM empty-card
+  UF2 and published SHA-256.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm
+  --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed.
+  `python3 tools/tests/test_symm_crypto_vpcd.py` passed 75 APDU checks and 73
+  symmetric crypto vectors through the approved host-network path. The same
+  harness in restricted mode failed with `Operation not permitted` when opening
+  localhost; no Pico was flashed.
+- Result: Current external ARM image is 2,073,600 bytes with SHA-256
+  `e013ff4f87331dc99980d9fe9edf10b0a1579838fa5b3feefb166beb93632340`.
+  Physical Signature static confirmation remains open.
+- Decision: Keep the optimized native MAC path and use approved host networking
+  for VPCD tests; retest exact upstream Signature static APDUs on physical Pico
+  when PC/SC registers a reader.
+- Commit: recorded in immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`,
+  `artifacts/firmware/README-max_crypto.txt`, and the existing VPCD evidence
+  documented above; no new log archived.

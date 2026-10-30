@@ -504,6 +504,33 @@ as reader loss. Artifacts:
 `artifacts/logs/static-normal-full-2BED-usb-udev-20261030.log`, and
 `artifacts/results/jcalgtest/performance-static-normal-full-2BED-20261030/`.
 
+Host follow-up isolated the 72 DES MAC `CANT_BE_MEASURED` rows. An unchanged
+upstream JCAlgTest 1.8.2 VPCD run reproduced the exact DES MAC4 ISO9797 M1
+static settings (256-byte input, 50 sign calls); initially its measurement
+timed out. The persistent applet-owned `Signature` object caused repeated
+unnecessary reads and clears of unused message/recovery arrays and an IV that
+the MAC backend does not mutate. Native MAC completion now clears the message
+buffer only when `update()` data is pending and does not touch the unchanged
+IV. The exact upstream prepare APDU returned `AA9000` in 24.686 s and the
+measurement returned `AA9000` in 47.425 s. The synthetic symmetric VPCD suite
+passes 73/73, including 128-byte repeated signing and buffered-update plus
+direct input. Log:
+`artifacts/logs/jcalgtest-desmac-256byte-50repeat-optimized2-vpcd-20261030.log`
+(SHA-256
+`4be4132e3443325f44eb9ae55ba71c6f4af14e6a8ae006d8b169a475c24682cb`).
+Physical confirmation and the full official static report remain open; the
+host result does not validate the physical reader-disconnect issue.
+
+Follow-up validation after the final MAC input/IV optimization: PC build and
+both `./tools/build arm --profile max_crypto` and
+`./tools/build riscv --profile max_crypto` pass. The VPCD symmetric harness
+passes 75 APDU checks / 73 crypto vectors when run through the approved host
+network path; a restricted run failed with `Operation not permitted` before
+the elevated retry. Refreshed external ARM UF2:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, SHA-256
+`e013ff4f87331dc99980d9fe9edf10b0a1579838fa5b3feefb166beb93632340`.
+Physical Signature static confirmation remains open; no Pico was flashed.
+
 The 2026-10-29 physical Crypto and Security retests requested in the previous
 handoff are complete; see the run counts and hashes below.
 

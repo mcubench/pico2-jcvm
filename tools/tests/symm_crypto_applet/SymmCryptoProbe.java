@@ -807,9 +807,38 @@ public final class SymmCryptoProbe extends Applet {
       ((DESKey)key).setKey(keyBytes, (short)0);
     }
     Signature signature = Signature.getInstance(algorithm, false);
-    signature.init(key, operation == 0 ? Signature.MODE_SIGN : Signature.MODE_VERIFY);
-    if (operation == 0)
-      return signature.sign(input, (short)0, inputLength, output, (short)0);
+    signature.init(key, operation == 1 ? Signature.MODE_VERIFY : Signature.MODE_SIGN);
+    if (operation == 3) {
+      short bufferedLength = (short)(inputLength / 2);
+      signature.update(input, (short)0, bufferedLength);
+      return signature.sign(input, bufferedLength,
+          (short)(inputLength - bufferedLength), output, (short)0);
+    }
+    if (operation == 0 || operation == 2) {
+      short signatureLength;
+      try {
+        signatureLength = signature.sign(input, (short)0, inputLength,
+            output, (short)0);
+      } catch (CryptoException exception) {
+        output[0] = (byte)(0x50 | exception.getReason());
+        return (short)1;
+      }
+      if (operation == 2) {
+        for (short repeat = 1; repeat < 50; repeat++) {
+          short repeatedLength;
+          try {
+            repeatedLength = signature.sign(input, (short)0, inputLength,
+                output, (short)0);
+          } catch (CryptoException exception) {
+            output[0] = (byte)(0x60 | exception.getReason());
+            return (short)1;
+          }
+          if (repeatedLength != signatureLength)
+            ISOException.throwIt(ISO7816.SW_UNKNOWN);
+        }
+      }
+      return signatureLength;
+    }
     short signatureLength = signature.getLength();
     short messageLength = (short)(inputLength - signatureLength);
     if (messageLength < 0) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);

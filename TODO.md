@@ -1402,14 +1402,18 @@ differences separately. It passed with 15 declared/observed `yes` rows, 4,510
 `no` rows, and no CHOUPI error statuses. The archived physical CSV predates the
 OwnerPINX fix, so AC4 still needs a fresh physical run.
 
-The separate physical `ALG_PERFORMANCE_STATIC` run remains unresolved. A
-previous run directly observed cumulative array retention and allocation
-failure. This rerun completed a 250-call DES CBC `Cipher_doFinal` measurement
+The physical `ALG_PERFORMANCE_STATIC` suite remains incomplete. A previous run
+directly observed cumulative array retention and allocation failure. A
+separate rerun completed a 250-call DES CBC `Cipher_doFinal` measurement
 (28.64 ms/op average), then the next DES `Cipher_init` request failed with
 `SCARD_E_READER_UNAVAILABLE`; its bounded serial capture did not record an
 allocation failure, and the physical reader was visible again after ACL
 refresh. Keep the known array-retention root cause and this distinct reader
-failure separate; do not report the static suite as passed. See `.agent/QKB.md`.
+failure separate. The later 72 DES-MAC `CANT_BE_MEASURED` entries now have a
+host VPCD reproducer and a native reset-path fix: unchanged JCAlgTest 1.8.2
+256-byte, 50-repeat DES-MAC APDUs return `AA9000`, and the 73-vector symmetric
+VPCD suite passes. Physical confirmation of those MAC cases and completion of
+the full static suite remain open; see `.agent/QKB.md`.
 
 Next actions:
 

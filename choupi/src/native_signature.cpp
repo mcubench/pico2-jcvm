@@ -771,14 +771,34 @@ void clearMessage(JC_Instance &signature) {
   if (length < 0 || static_cast<uint16_t>(length) > message->size())
     throw Exceptions::ArrayIndexOutOfBoundsException;
   for (jshort_t i = 0; i < length; ++i)
-    message->setByteEntry(static_cast<uint16_t>(i), 0);
-  signature.setField_Short(countField, 0);
-  signature.setField_Byte(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE, 0);
+    if (message->getByteEntry(static_cast<uint16_t>(i)) != 0)
+      message->setByteEntry(static_cast<uint16_t>(i), 0);
+  if (length != 0) signature.setField_Short(countField, 0);
+  const uint16_t recoveryStateField =
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYSTATE;
+  if (signature.getField_Byte(recoveryStateField) != 0)
+    signature.setField_Byte(recoveryStateField, 0);
   auto recoveryHash = byteArray(signature,
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_RECOVERYHASH);
   for (uint16_t i = 0; i < recoveryHash->size(); ++i)
-    recoveryHash->setByteEntry(i, 0);
+    if (recoveryHash->getByteEntry(i) != 0)
+      recoveryHash->setByteEntry(i, 0);
+}
+
+void clearMacMessage(JC_Instance &signature) {
+  const uint16_t countField =
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH;
+  const jshort_t length = signature.getField_Short(countField);
+  if (length < 0) throw Exceptions::ArrayIndexOutOfBoundsException;
+  if (length == 0) return;
+
+  auto message = byteArray(signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER);
+  if (static_cast<uint16_t>(length) > message->size())
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  for (jshort_t i = 0; i < length; ++i)
+    message->setByteEntry(static_cast<uint16_t>(i), 0);
+  signature.setField_Short(countField, 0);
 }
 
 void requireInitialized(JC_Instance &signature, uint8_t mode = 0) {
@@ -790,37 +810,43 @@ void requireInitialized(JC_Instance &signature, uint8_t mode = 0) {
     throwCryptoException(CryptoExceptionReason::InvalidInit);
 }
 
-void resetIv(JC_Instance &signature) {
-  auto iv = byteArray(signature,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR);
-  for (uint16_t i = 0; i < iv->size(); ++i) iv->setByteEntry(i, 0);
-}
-
-std::vector<unsigned char> runMac(JC_Instance &signature) {
+std::vector<unsigned char> runMac(
+    JC_Instance &signature, const std::shared_ptr<JC_Array> &inputArray,
+    jshort_t inputOffset, jshort_t inputLength) {
   const uint8_t algorithm = static_cast<uint8_t>(signature.getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM));
   const jref_t keyReference = signature.getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_KEY);
   auto keyObject = keyInstance(keyReference);
   auto key = keyBytes(*keyObject);
-  const auto iv = byteArray(signature,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR);
-  const auto message = byteArray(signature,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER);
-  const jshort_t length = signature.getField_Short(
+  const jshort_t bufferedLength = signature.getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGELENGTH);
-  if (length < 0 || static_cast<uint16_t>(length) > message->size())
+  if (bufferedLength < 0)
     throwCryptoException(CryptoExceptionReason::IllegalUse);
+  std::shared_ptr<JC_Array> message;
+  if (bufferedLength != 0) {
+    message = byteArray(signature,
+        ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_MESSAGEBUFFER);
+    if (static_cast<uint16_t>(bufferedLength) > message->size())
+      throwCryptoException(CryptoExceptionReason::IllegalUse);
+  }
+  checkRange(inputArray, inputOffset, inputLength);
+  const uint32_t combinedLength = static_cast<uint32_t>(bufferedLength) +
+                                  static_cast<uint16_t>(inputLength);
+  if (combinedLength > 32767)
+    throw Exceptions::ArrayIndexOutOfBoundsException;
   std::vector<unsigned char> keyBytes(key->size());
-  std::vector<unsigned char> ivBytes(iv->size());
-  std::vector<unsigned char> input(static_cast<size_t>(length));
+  const bool aes = algorithm == 18 || algorithm == 49;
+  std::vector<unsigned char> ivBytes(aes ? 16 : 8, 0);
+  std::vector<unsigned char> input(combinedLength);
   for (uint16_t i = 0; i < key->size(); ++i)
     keyBytes[i] = static_cast<uint8_t>(key->getByteEntry(i));
-  for (uint16_t i = 0; i < iv->size(); ++i)
-    ivBytes[i] = static_cast<uint8_t>(iv->getByteEntry(i));
-  for (jshort_t i = 0; i < length; ++i)
+  for (jshort_t i = 0; i < bufferedLength; ++i)
     input[static_cast<size_t>(i)] = static_cast<uint8_t>(
         message->getByteEntry(static_cast<uint16_t>(i)));
+  for (jshort_t i = 0; i < inputLength; ++i)
+    input[static_cast<size_t>(bufferedLength + i)] = static_cast<uint8_t>(
+        inputArray->getByteEntry(static_cast<uint16_t>(inputOffset + i)));
 #if JC_SUPPORT_SIGNATURE_DES_MAC8_NOPAD || \
     JC_SUPPORT_SIGNATURE_DES_MAC4_ISO9797_M1 || \
     JC_SUPPORT_SIGNATURE_DES_MAC8_ISO9797_M1 || \
@@ -1175,13 +1201,11 @@ jshort_t javacard_security_Signature_sign(
     return rsaSignatureSign(*signature, input, offset, length, output,
                             outputOffset);
 #endif
-  appendMessage(*signature, input, offset, length);
-  const auto result = runMac(*signature);
+  const auto result = runMac(*signature, input, offset, length);
   for (jshort_t i = 0; i < resultSize; ++i)
     output->setByteEntry(static_cast<uint16_t>(outputOffset + i),
                          static_cast<jbyte_t>(result[static_cast<size_t>(i)]));
-  clearMessage(*signature);
-  resetIv(*signature);
+  clearMacMessage(*signature);
   return resultSize;
 }
 
@@ -1259,16 +1283,14 @@ jbool_t javacard_security_Signature_verify(
     return rsaSignatureVerify(*signature, input, offset, length, expected,
                               expectedOffset, expectedLength);
 #endif
-  appendMessage(*signature, input, offset, length);
-  const auto result = runMac(*signature);
+  const auto result = runMac(*signature, input, offset, length);
   uint8_t difference = expectedLength == resultSize ? 0 : 1;
   if (expectedLength == resultSize)
     for (jshort_t i = 0; i < resultSize; ++i)
       difference |= static_cast<uint8_t>(result[static_cast<size_t>(i)] ^
           static_cast<uint8_t>(expected->getByteEntry(
               static_cast<uint16_t>(expectedOffset + i))));
-  clearMessage(*signature);
-  resetIv(*signature);
+  clearMacMessage(*signature);
   return difference == 0 ? TRUE : FALSE;
 }
 

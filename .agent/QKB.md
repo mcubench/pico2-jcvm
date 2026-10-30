@@ -1711,6 +1711,37 @@ original terminology/status; check current summary and later fixes before reuse.
   udev log SHA-256
   `a75697edb29c2c13f19e67b1fcaa15b36e16e39fd08f9ed40f33e7f029ae5b5a`.
 
+- **DES-MAC static errors isolated in VPCD — 2026-10-30:** Replayed the
+  unchanged upstream JCAlgTest 1.8.2 `Signature` static workload with DES MAC4
+  ISO9797 M1, 256-byte input, and 50 sign calls. The initial emulator run
+  timed out. The applet stores its `Signature` instance in a persistent field;
+  the generic completion path cleared unused message/recovery arrays and reset
+  an IV that the MAC backend never mutates. Those operations caused persistent
+  array reads/writes on every sign. A specialized MAC completion path now
+  clears only buffered `update()` bytes, and does no buffer work when none are
+  pending; it also leaves the unchanged IV alone. The same upstream prep and
+  measurement APDUs now return `AA9000`; measurement elapsed 47.425 s and
+  prepare elapsed 24.686 s. The diagnostic log SHA-256 is
+  `4be4132e3443325f44eb9ae55ba71c6f4af14e6a8ae006d8b169a475c24682cb` at
+  `artifacts/logs/jcalgtest-desmac-256byte-50repeat-optimized2-vpcd-20261030.log`.
+  The complete symmetric VPCD set passes 73 vectors, including repeated sign
+  and buffered-update-plus-direct-input checks. Viable fix: retain separate
+  MAC completion cleanup and avoid reading or writing persistent engine arrays
+  unless buffered data actually exists. This establishes host VPCD behavior
+  only; repeat the focused test on a physical Pico and rerun the relevant
+  official static Signature section before closing the physical issue. Do not
+  conflate this applet execution issue with the intermittent reader disconnect
+  described above.
+
+- Final follow-up validation: the latest version avoids persistent IV reads by
+  supplying the zero IV locally (the MAC implementation does not mutate it).
+  PC build plus ARM and RISC-V max-profile wrapper builds pass. The VPCD suite
+  passes 75 APDU checks / 73 crypto vectors through the approved host-network
+  path; restricted execution fails with `Operation not permitted` while
+  opening localhost sockets. Updated external ARM UF2 SHA-256:
+  `e013ff4f87331dc99980d9fe9edf10b0a1579838fa5b3feefb166beb93632340`.
+  No physical Pico was flashed, so physical MAC/static validation remains open.
+
 ### Post-APDU collector has one live interpreter context — audited 2026-10-30
 
 - `Interpretor` currently pushes one `Context` in each constructor; the hardware
