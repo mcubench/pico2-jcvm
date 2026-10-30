@@ -31,6 +31,14 @@ with remaining backlog; persistent-record deletion remains disabled until
 physical USB power-cycle recovery is validated.
 Parity audit documentation commit: `6183ebf`.
 
+The `asymm_crypto` profile audit also matches all 136 shared JCOP4 target
+identities. Its current generated set has 145 entries; the physical 1.8.2
+report is 143/145 because the unchanged upstream CAP sends RSA/RSA-CRT 4096 on
+two rows labeled 3072, while direct 3072 generation vectors pass. Regenerate
+the expected set from current config for comparisons; the cached external-test
+CSV is stale. See QKB for exact logs. API `/deploy` result corrections and
+private-key hardening remain open.
+
 ## Current memory-reporting investigation
 
 The TODO investigation is complete; measurements did not reproduce inflated

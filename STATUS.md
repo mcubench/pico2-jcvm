@@ -28,6 +28,15 @@ card registry is empty.
 
 ## Verified
 
+- **Asymmetric algorithm profile parity with JCOP4 P71 (2026-10-30):** The
+  current generated `asymm_crypto` manifest has 145 entries and matches all 136
+  shared positive identities in the supplied target matrix. The full physical
+  8E report has 4,525 rows and zero non-yes/no statuses; its generated-manifest
+  comparison reports 143/145 because the unchanged upstream CAP sends 4096 for
+  two RSA-3072 KeyPair queries. Independent RSA-3072 and RSA-CRT-3072 physical
+  generation vectors pass. This known CAP query limitation and remaining
+  private-operation hardening are separate from profile parity; see QKB.
+
 - **Symmetric algorithm parity with JCOP4 P71 (2026-10-30):** The supplied
   1.7.9 reference has 41 symmetric support identities. All 41 are selected by
   `symm_crypto` and all 41 were reported on physical Pico 2

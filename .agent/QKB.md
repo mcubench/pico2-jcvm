@@ -60,6 +60,33 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   matrix. Continue with the other open project work, including physical
   USB power-cycle recovery before any persistent-record deletion.
 
+## Asymmetric profile parity with the supplied JCOP4 P71 matrix — 2026-10-30
+
+- The cached `build/external-test/expected-support-asymm_crypto.csv` is stale
+  (90 expected identities) and yields false missing-support output. Regenerate
+  expected support from the current JSON before comparing:
+  `python3 tools/javacard-support.py --config config/javacard-support.json
+  --profile asymm_crypto --out-dir artifacts/results/profile-audits/asymm_crypto`.
+- The current manifest has 145 entries and matches all 136 positive identities
+  shared with the supplied JCAlgTest 1.7.9 matrix. Reproducible output:
+  `artifacts/logs/compare-asymm-profile-jcop4-target-20261030.log` (SHA-256
+  `98867eecdc3f0c978ee262ca8904e74557302ccc491963109eb88eca377093fd`). The
+  generated manifest and CSV are in `artifacts/results/profile-audits/asymm_crypto/`.
+- Full physical JCAlgTest 1.8.2 report from 8E has 4,525 matching rows, 196
+  yes, 4,329 no, and zero other values. Against the generated 145-entry
+  declaration, 143 canonical identities match; the two missing report
+  identities are `ALG_RSA LENGTH_RSA_3072` and
+  `ALG_RSA_CRT LENGTH_RSA_3072`. The unchanged upstream CAP sends length 4096
+  for these queries. Separate physical RSA-3072 and RSA-CRT-3072 generation
+  vectors pass; do not change the CAP or native support to mask its query.
+- Full support comparison output:
+  `artifacts/logs/compare-asymm-physical-support-8E-20261030.log` (SHA-256
+  `6f5c08dfda64cc859a44f0e71e50a7f840e28a6152d118bb4753b83b85dc5606`). The
+  comparator exits 1 for these two upstream-labeled rows; it has zero
+  unexpected positives and zero non-yes/no results. Profile parity is
+  complete; broader physical `/deploy` result corrections and RSA
+  private-operation hardening remain separate.
+
 ## Persistent filesystem tag cursor — 2026-10-30
 
 - The root Pico firmware does not link `choupi/os`; that Rust filesystem and

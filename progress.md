@@ -15858,3 +15858,30 @@
 - Commit: `6183ebf` (audit evidence commit recorded here)
 - Artifacts/logs: none.
 
+## 2026-10-30 Verify asymmetric profile parity against JCOP4 P71 7 minutes
+
+- Step/experiment: `asymm-profile-jcop4-target-audit`
+- When: '2026-10-30 14:20 UTC' - '2026-10-30 14:28 UTC'
+- Change: Regenerated `asymm_crypto` expected support from current JSON after
+  finding the cached external-test CSV was stale. Compared profile positives
+  against the supplied JCAlgTest 1.7.9 target and compared the full physical
+  1.8.2 report against the generated set.
+- Validation: The current profile enables 145 entries; all 136 positive
+  identities shared with the JCOP4 target match exactly. The full physical 8E
+  report has 4,525 rows, 196 yes, 4,329 no, zero other. Generated support
+  comparison is 143/145, with only the two upstream CAP RSA/RSA-CRT 3072 rows
+  missing because their probes send 4096. Independent physical 3072 generation
+  vectors passed for both algorithms. No firmware source changed; builds and
+  flash were not repeated.
+- Result: Asymmetric profile parity with the target matrix is complete, with
+  the documented upstream query mismatch. Remaining `/deploy` result fixes
+  and private-operation hardening are separate work.
+- Decision: Keep the two CAP rows as a known client-data limitation; do not
+  change native capability or the upstream CAP to conceal it.
+- Commit: recorded by the following progress entry.
+- Artifacts/logs: Fresh expected set in
+  `artifacts/results/profile-audits/asymm_crypto/`; target comparison SHA-256
+  `98867eecdc3f0c978ee262ca8904e74557302ccc491963109eb88eca377093fd`;
+  physical comparison SHA-256
+  `6f5c08dfda64cc859a44f0e71e50a7f840e28a6152d118bb4753b83b85dc5606`.
+

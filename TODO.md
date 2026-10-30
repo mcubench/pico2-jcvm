@@ -1876,7 +1876,7 @@ rollback and duplicate/invalid registration handling also remain unverified.
   audit, but establish the target card's expected support independently before
   claiming matrix parity for a row absent from this file.
 
-- [ ] Implement and validate the `asymm_crypto` selectable profile against
+- [x] Implement and validate the `asymm_crypto` selectable profile against
   `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`
   (SHA-256 `a335e371a3f4b1bed8c74aac4b3cbe353b623f37a778e94fd14a52d00ee23dcb`).
   Its asymmetric yes set includes RSA PKCS#1/NoPad/OAEP ciphers; RSA SHA-1/SHA-2
@@ -1924,6 +1924,18 @@ rollback and duplicate/invalid registration handling also remain unverified.
   rows but exposed two mislabeled upstream RSA-3072 KeyPair probes; details are
   recorded below and in `.agent/QKB.md`. Complete physical `/deploy`
   acceptance and RSA private-operation hardening remain open.
+  **Profile parity audit completed 2026-10-30:** regenerating expected support
+  from current `config/javacard-support.json` produces 145 entries; all 136
+  positive identities shared with the supplied JCOP4 P71 matrix match exactly.
+  The complete physical 1.8.2 report from 8E contains 4,525 rows, 196 yes,
+  4,329 no, and zero other. Its declared-set comparison reports 143/145
+  because the unchanged upstream CAP labels two RSA/RSA-CRT 3072 KeyPair
+  queries as 4096. Independent physical RSA-3072 and RSA-CRT-3072 generation
+  vectors pass. Do not alter the CAP or native support to hide this query
+  mismatch. Remaining physical `/deploy` result corrections and RSA
+  private-operation hardening are tracked separately. The cached
+  `build/external-test/expected-support-asymm_crypto.csv` is stale; regenerate
+  expected support from the current JSON before comparing.
   Separate ARM UF2s and expected
   support CSVs are packaged for external Windows testing at
   `build/external-test/pico2-jcvm-windows-test.zip`; Windows results remain
