@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-28
+Updated: 2026-10-30
 
 ## Summary
 
@@ -27,6 +27,14 @@ persistent CAP store; install CAPs explicitly with GPPro after confirming the
 card registry is empty.
 
 ## Verified
+
+- **Physical `symm_crypto` support report (2026-10-30):** On Pico 2
+  `2BED26ED20556535`, the unchanged JCAlgTest 1.8.2 CAP completed its full
+  4,525-row `ALG_SUPPORT_EXTENDED` matrix. The generated profile comparison
+  matched all 46 declared positives (zero unexpected or missing); the report
+  contained 73 yes, 4,452 no, and zero other values. The full report, client
+  transcript, comparator output, and post-run serial log are recorded in
+  `.agent/QKB.md`. This complements the `asymm_crypto` report below.
 
 - **Physical API 3.0.5 deploy baseline on combined `asymm_crypto` (2026-10-28):**
   D92 completed unchanged Core/Security/Crypto CAP scenarios and all temporary

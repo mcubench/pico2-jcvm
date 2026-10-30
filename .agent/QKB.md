@@ -8,6 +8,39 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## Physical JCAlgTest `symm_crypto` support report — 2026-10-30
+
+- Board `2BED26ED20556535` was selected by exact PC/SC reader name and was
+  already running the `symm_crypto` ARM image (`build/javacard-support/profile.txt`;
+  latest recorded flash cycle `artifacts/logs/cycle-choupi-20261030T071532Z.log`).
+  No firmware was flashed and no CAP was installed or deleted for this test.
+- The first `ALG_SUPPORT_EXTENDED` attempt used the runner's default 900-second
+  bound and ended with status 124 at 2,264 rows. This was a command timeout, not
+  a reader or firmware failure. The viable workaround is to set
+  `JCALGTEST_TIMEOUT_SECONDS=3600`; the fresh run completed in about 27 minutes.
+- Full unchanged JCAlgTest 1.8.2 report: 4,525 normalized rows, 73 yes,
+  4,452 no, zero other. It exactly matched the generated `symm_crypto` support
+  declaration: 46 expected yes, 46 actual, zero unexpected, zero missing.
+  jCardSim row identities all matched. Its reference distribution was 1,469
+  yes, 2,935 no, and 121 other; that is a separate simulator profile and not
+  the expected support declaration for this firmware.
+- Comparator output:
+  `artifacts/logs/compare-jcalgtest-symm-support-2BED-20261030.log`
+  (SHA-256 `679cb172d3ffcefc671eb57d27debfbba723ef081d931a50989ce4dff06cf54b`).
+  Full client transcript:
+  `artifacts/logs/jcalgtest-symm-support-physical-2BED-20261030.log`
+  (SHA-256 `8c3ec90f4aa3034ee7e029389c8b7fd90b1232553e9364235e48b5e83d4c86ec`).
+  CSV SHA-256 `e84b29fb770d8795372ac5f042b1f007a4d6994a54b87fea8078f4f9fc5b921f`;
+  JCAlgTest report log SHA-256
+  `0fba635228ba7847db859120e3b39f6c22a1165c408f203cc44edb4a105a5f67`.
+  Post-run monitor log SHA-256
+  `5bab064d1d555950f5f0e2aa6701d5643c7f15adfb46b25982989dba5f6411d8`.
+  The 8-second monitor passed repeated `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`.
+- The timed-out partial report remains in
+  `artifacts/results/jcalgtest/symm_crypto_support_physical_2BED_20261030/`;
+  use the `_long/` report for comparisons.
+
 ## Persistent filesystem tag cursor — 2026-10-30
 
 - The root Pico firmware does not link `choupi/os`; that Rust filesystem and

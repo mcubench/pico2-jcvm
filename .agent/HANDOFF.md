@@ -9,6 +9,19 @@ The archive is historical evidence, not current instructions or current board st
 [Issue knowledge base](QKB.md) contains current troubleshooting and a historical index.
 Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.json`.
 
+## Latest physical profile validation
+
+On 2026-10-30, Pico 2 `2BED26ED20556535` completed the unchanged JCAlgTest
+1.8.2 `ALG_SUPPORT_EXTENDED` matrix on the existing `symm_crypto` ARM image:
+4,525 normalized rows, 73 yes, 4,452 no, zero other. The generated support
+manifest matched all 46 declared positives exactly. jCardSim row identities
+matched. A default 900-second runner timeout produced only a partial report;
+`JCALGTEST_TIMEOUT_SECONDS=3600` completed in about 27 minutes. The finite
+post-run monitor passed. Detailed commands, hashes, and logs are in QKB's
+“Physical JCAlgTest `symm_crypto` support report” section. No source or card
+firmware was changed; no CAP was installed or deleted. Persistent-object
+deletion remains disabled pending actual USB power-cycle/recovery validation.
+
 ## Current memory-reporting investigation
 
 The TODO investigation is complete; measurements did not reproduce inflated

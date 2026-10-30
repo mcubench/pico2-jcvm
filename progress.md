@@ -15769,3 +15769,41 @@
   serial SHA-256 `0cc602228990f9919375449a9162b4aa541e37db44a4ed870322c29c69b18780`;
   udev SHA-256 `a75697edb29c2c13f19e67b1fcaa15b36e16e39fd08f9ed40f33e7f029ae5b5a`.
 
+## 2026-10-30 Complete physical symm_crypto support report 47 minutes
+
+- Step/experiment: `physical-symm-support-full-2BED`
+- When: '2026-10-30 13:26 UTC' - '2026-10-30 14:13 UTC'
+- Change: Ran unchanged JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` against physical
+  Pico 2 `2BED26ED20556535`, using exact PC/SC reader selection and the existing
+  `symm_crypto` ARM firmware. The initial 900-second bound ended with status
+  124 at 2,264 result rows. Repeated with
+  `JCALGTEST_TIMEOUT_SECONDS=3600`; the full run completed in about 27 minutes.
+  No firmware was flashed and no CAP was installed or deleted.
+- Validation: The full CSV has 4,525 normalized rows, 73 yes, 4,452 no, and
+  zero other values. `tools/compare-jcalgtest-support.py` matched all row
+  identities with jCardSim and matched the generated `symm_crypto` support set
+  exactly: 46 expected yes, 46 actual, zero unexpected, zero missing. The
+  finite 8-second physical monitor passed repeated
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no
+  `TEST:FAIL` or `FAULT`. No firmware source changed, so architecture builds
+  were not repeated.
+- Result: Physical `symm_crypto` report acceptance and comparator checks pass.
+  The simulator's status distribution differs from this firmware's support
+  profile; the generated profile list is the expected set. The short run's
+  partial report is kept separate from the complete `_long/` report.
+- Decision: Keep the `symm_crypto` support report closed. Continue with the
+  remaining project backlog; persistent-record deletion stays disabled pending
+  physical USB power-cycle recovery.
+- Commit: recorded by the following progress entry.
+- Artifacts/logs: Complete report
+  `artifacts/results/jcalgtest/symm_crypto_support_physical_2BED_20261030_long/`
+  CSV SHA-256 `e84b29fb770d8795372ac5f042b1f007a4d6994a54b87fea8078f4f9fc5b921f`;
+  JCAlgTest log SHA-256
+  `0fba635228ba7847db859120e3b39f6c22a1165c408f203cc44edb4a105a5f67`;
+  captured client transcript SHA-256
+  `8c3ec90f4aa3034ee7e029389c8b7fd90b1232553e9364235e48b5e83d4c86ec`;
+  comparator output SHA-256
+  `679cb172d3ffcefc671eb57d27debfbba723ef081d931a50989ce4dff06cf54b`;
+  post-run monitor SHA-256
+  `5bab064d1d555950f5f0e2aa6701d5643c7f15adfb46b25982989dba5f6411d8`.
+

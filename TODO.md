@@ -1800,13 +1800,25 @@ rollback and duplicate/invalid registration handling also remain unverified.
   session tests with fake VM callbacks, the installed JCAlgTest 1.8.2 applet
   now completes a focused real-VM host integration pass. Broader bytecode and
   persistent-state assertions still need dedicated golden tests.
-- [ ] Run the matching JCAlgTest v1.8.2 client in supported-algorithms mode and
-  archive its CSV and logs with hashes.
+- [x] Run the matching JCAlgTest v1.8.2 client in supported-algorithms mode and
+  archive its CSV and logs with hashes. On physical Pico 2
+  `2BED26ED20556535` running `symm_crypto`, the complete `ALG_SUPPORT_EXTENDED`
+  report returned 4,525 rows and no values other than yes/no. The generated
+  `symm_crypto` manifest matched exactly: 46 expected yes, 46 actual, zero
+  unexpected or missing. The full report is
+  `artifacts/results/jcalgtest/symm_crypto_support_physical_2BED_20261030_long/`.
+  A first default 900-second attempt stopped at 2,264 rows; rerun with
+  `JCALGTEST_TIMEOUT_SECONDS=3600` completed in about 27 minutes. No firmware
+  source changed for this validation.
 - [x] Generate a simulator reference using the official v1.8.2 client and its
   bundled jCardSim; the complete `ALG_SUPPORT_EXTENDED` CSV and run log are
   archived. Cross-comparison against a CHOUPI card result is still pending.
-- [ ] Compare the CHOUPI supported-algorithms CSV against the jCardSim
-  reference and CHOUPI's declared supported-algorithm list.
+- [x] Compare the CHOUPI supported-algorithms CSV against the jCardSim
+  reference and CHOUPI's declared supported-algorithm list. The physical
+  `symm_crypto` report matched all 4,525 normalized row identities, contained
+  73 yes / 4,452 no / zero other raw results, and passed the generated support
+  comparison (46/46). jCardSim comparison output and artifact hashes are in
+  `.agent/QKB.md` and `progress.md`.
 - [ ] Complete hardware integration: the current ARM `current` profile was
   rebuilt with both ARM/RISC-V wrappers, flashed and verified on Pico 2 2BED
   `2BED26ED20556535`, and passed an 18-second monitor with repeated
