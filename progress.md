@@ -15268,3 +15268,14 @@
 - Decision: Build byte-level malformed field/alias fixtures and exercise restoration across emulator restart before expanding the feature's scope to persistent-record reclamation.
 - Commit: `8aa1aba` (test, fixture, and notes); this record is committed separately.
 - Artifacts/logs: `/tmp/jcarray-gc-safety.log`; no hardware artifacts.
+
+## 2026-10-30 Reject malformed persistent array-alias headers 3 minutes
+
+- Step/experiment: `persistent-inventory-malformed-array-alias-header`
+- When: '2026-10-30 04:27 UTC' - '2026-10-30 04:30 UTC'
+- Change: Added stored-record cases for the actual FlashMemory type decoder: a truncated array-alias header and a declared target-tag length inconsistent with payload bytes. Extended the persistent-transaction host filesystem fixture with `fs_read_inplace` and minimal unused Context hooks so the decoder could link against its real implementation. Updated TODO/QKB/handoff to distinguish covered array-alias framing from open object-alias/collector/reboot cases.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `persistent_array_alias_rejects_truncated_target_header` and `persistent_array_alias_rejects_mismatched_target_length`. Scoped `git diff --check` passed. No ARM/RISC-V build or hardware run was needed for host-test-only changes.
+- Result: Two malformed array-alias encodings fail with a Java Card VM exception instead of being accepted as a type. This does not yet demonstrate the collector skipping reclamation for corrupt serialized bytes, and object-alias chain handling remains untested.
+- Decision: Inject malformed reference records through the real strict restore path and collector, then verify no handle or persistent data is reclaimed across restart.
+- Commit: `125db15` (decoder regressions, fixture, and status notes); this record is committed separately.
+- Artifacts/logs: `/tmp/persistent-alias-malformed.log`; final output contains `TEST:SUMMARY fail=0`. No hardware artifacts.
