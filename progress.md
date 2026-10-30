@@ -15332,7 +15332,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`. An initial assertion treated `Heap::getArray()` on a reclaimed handle as a nullable lookup; the secure heap correctly throws `SecurityException`, so the test was corrected to assert that invalidation. `git diff --check` passed. No firmware source or hardware was involved.
 - Result: A newly constructed host Heap restores a valid persistent alias graph from retained filesystem-fixture data and can reclaim an unrelated volatile slot. Actual FS/process/emulator/physical restart recovery and persistent-record deletion remain untested.
 - Decision: Keep persistent-record reclamation disabled and continue with real restart recovery and stable-handle semantics.
-- Commit: pending.
+- Commit: `e0ebd22` (test evidence and continuity notes); this progress record is committed separately.
 - Artifacts/logs: `./tools/test-persistent-transaction` final output; no archived log or hardware artifact.
 
 ## 2026-10-30 Validate GC across VPCD process restart 4 minutes
@@ -15378,3 +15378,14 @@
 - Decision: Leave hardware power-cycle recovery open; use a reset method with observable completion if further testing is pursued.
 - Commit: pending.
 - Artifacts/logs: Follow-up log `artifacts/logs/pico-powerup-persistence-20261030T045057Z.log`, SHA-256 `9e2043dec2516401449b81cbc0cf51bf4ec4fd40f135532b58c9c3dce2528205`; no log was captured from the reset attempt itself.
+
+## 2026-10-30 Validate multi-owner restart and card reset 3 minutes
+
+- Step/experiment: `persistent-inventory-multiowner-reset-retest`
+- When: '2026-10-30 04:52 UTC' - '2026-10-30 04:55 UTC'
+- Change: Re-ran multipackage inventory across a fresh VPCD process, then repeated the physical board check with an observable PC/SC card-interface reset on identified 2BED. No firmware or CAP contents changed. Updated TODO/QKB/handoff with the separate VPCD, CCID reset, and USB power-cycle evidence levels.
+- Validation: Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 25/25. Initial and restart traces each reported 9 static roots, 3 applet roots, 14/14 arrays, 4/4 instances, and zero invalid refs/edge failures/root failures. On physical 2BED, Java SmartcardIO SELECT returned `9000` before reset; `Card.disconnect(true)` requested PC/SC reset; after reconnect, SELECT returned `9000`, GETVERSION returned `1.8.2_jc305`/`9000`, and JCSystem-info returned `9000`.
+- Result: Stable multi-owner metadata and root inventory survive emulator restart; the physical CCID card-reset path preserves/selects the applet. Neither test removes USB power; cold reboot/recovery and actual power-loss behavior remain unverified.
+- Decision: Continue the inventory consumer work while retaining the persistent-record deletion gate until an actual hardware power-cycle test is available.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T045329Z.log` SHA-256 `f5d8ce2f8575477a63b16bacd50344916d40c37abd64833369f741143ba967cd`; restart log SHA-256 `dd132b4f47944c3f720b2d5997e0384e78aa5322d8d9b2e63d58ce820ec94c00`; physical reset log `artifacts/logs/pcsc-card-reset-2BED-20261030T0455Z.log` SHA-256 `441c027f1afd5e9cebdf31e46fe761d5292ecafdafdeadb56863e13caec80f7e`.
