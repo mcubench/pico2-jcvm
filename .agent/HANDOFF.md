@@ -714,3 +714,12 @@ commit IDs, feature-specific tests, and interrupted tasks before resuming them.
   snapshot or the complete new record. The full overlay test passes. Both 8E
   and 2BED still enumerate over USB, but PC/SC lists only VPCD readers, so no
   physical failover or power-loss test is currently available.
+- A further host-path check confirmed both 8E and 2BED are still enumerated
+  with CCID USB interfaces and retain their expected USB serials. The approved
+  access helper grants both nodes, but PC/SC still lists only the two VPCD
+  readers. Finite eight-second serial monitors on both boards passed 8/8
+  runtime summaries with no `TEST:FAIL`/`FAULT`. `pcscd.socket` is active and
+  `pcscd.service` auto-exited normally; this does not explain reader loss. Logs
+  and hashes are in QKB’s “Pico USB enumeration without PC/SC reader
+  registration”. Physical applet APDUs remain blocked until PC/SC registers a
+  Pico reader; do not infer a firmware crash from the missing PC/SC entry.

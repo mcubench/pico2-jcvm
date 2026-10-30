@@ -16362,3 +16362,30 @@
 - Commit: recorded in the following progress entry.
 - Artifacts/logs: no retained host-test log; output ended with
   `TEST:SUMMARY fail=0`.
+
+## 2026-10-30 Separate PC/SC reader loss from Pico runtime failure 4 minutes
+
+- Step/experiment: `usb-visible-pcsc-missing-after-crypto`
+- When: '2026-10-30 18:25 UTC' - '2026-10-30 18:29 UTC'
+- Change: No firmware change. Inspected USB/CCID descriptors and captured
+  finite serial logs from the two still-enumerated Pico 2 boards. Added the
+  distinction between firmware runtime and host PC/SC registration to QKB and
+  handoff.
+- Validation: `lsusb -d 2e8a:0009` found two devices; `lsusb -v` confirmed CCID
+  interfaces and serials `8E464F4E2BBC0A19` and `2BED26ED20556535`. The
+  authorized reader helper granted both device nodes, but `pcsc_scan -r`
+  listed only VPCD readers. Eight-second `./tools/monitor` runs on each board
+  passed 8/8 runtime summaries with no `TEST:FAIL` or `FAULT`. The 2BED output
+  retained CCID counters `xfr=1200 tasks=1945`. `pcscd.socket` is active;
+  `pcscd.service` auto-exited normally. No build or flash was run.
+- Result: Both firmware images remain running; no physical PC/SC reader is
+  available for applet APDUs or another card test. The cause of missing PC/SC
+  registration is unproven. Do not infer firmware crash and do not reflash
+  just to chase reader visibility.
+- Decision: Continue with offline TODO items until PC/SC registers a physical
+  Pico reader; use either board as failover when one returns.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: `artifacts/logs/usb-visible-no-pcsc-8E-20261030.log` SHA-256
+  `b6b08a7ce585cd995c182926a629b494042f01a9d451d0aaea94dd156afb3a82`;
+  `artifacts/logs/usb-visible-no-pcsc-2BED-20261030.log` SHA-256
+  `0d1dfcbe80fb5f6e2f99d25198ee18a3279b1531bfac9d8ade5f2e3cb54b02ca`.

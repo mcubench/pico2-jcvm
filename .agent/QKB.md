@@ -1907,3 +1907,28 @@ original terminology/status; check current summary and later fixes before reuse.
   `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper may need to be rerun after
   firmware reboot. Do not treat SmartcardIO's failure to resolve a stale reader
   name as a VM failure; refresh `pcsc_scan -r` first.
+
+### Pico USB enumeration without PC/SC reader registration — 2026-10-30
+
+- After the full Crypto run and successful CAP cleanup, `lsusb -d 2e8a:0009`
+  still found two normal-mode CHOUPI devices. Their USB descriptors include
+  the CCID interface and identify `8E464F4E2BBC0A19` (bus 001 device 015) and
+  `2BED26ED20556535` (bus 001 device 017). The authorized reader helper granted
+  access to both nodes, but `pcsc_scan -r` listed only `Virtual PCD 00 00` and
+  `Virtual PCD 00 01`.
+- Eight-second serial monitors on each board produced eight
+  `TEST:SUMMARY pass=1 fail=0` records and no `TEST:FAIL` or `FAULT`. The 2BED
+  last CCID debug counters showed `xfr=1200`, `tasks=1945`; thus its firmware
+  continued running after the deploy client/cleanup, even though PC/SC no
+  longer registered it. This is a host reader-registration/transport issue
+  until proven otherwise; do not classify it as a firmware crash or keep
+  reflashing solely because PC/SC enumeration is missing.
+- `pcscd.socket` is active/listening, while `pcscd.service` was inactive after
+  auto-exit. That lifecycle is normal for the socket-activated service and is
+  not by itself the cause. Journal access did not expose daemon messages. No
+  root cause or remediation was established; physical PC/SC testing cannot
+  continue until a board reader is registered.
+- Logs: `artifacts/logs/usb-visible-no-pcsc-8E-20261030.log` (SHA-256
+  `b6b08a7ce585cd995c182926a629b494042f01a9d451d0aaea94dd156afb3a82`) and
+  `artifacts/logs/usb-visible-no-pcsc-2BED-20261030.log` (SHA-256
+  `0d1dfcbe80fb5f6e2f99d25198ee18a3279b1531bfac9d8ade5f2e3cb54b02ca`).
