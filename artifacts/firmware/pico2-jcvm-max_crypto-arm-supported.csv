@@ -1,0 +1,148 @@
+section;algorithm_name
+javacard.framework.OwnerPINBuilder;OWNER_PIN
+javacard.framework.OwnerPINBuilder;OWNER_PIN_X
+javacard.framework.OwnerPINBuilder;OWNER_PIN_X_WITH_PREDECREMENT
+javacard.security.KeyBuilder;TYPE_AES LENGTH_AES_128
+javacard.security.KeyBuilder;TYPE_AES LENGTH_AES_192
+javacard.security.KeyBuilder;TYPE_AES LENGTH_AES_256
+javacard.security.KeyBuilder;TYPE_DES LENGTH_DES
+javacard.security.KeyBuilder;TYPE_DES LENGTH_DES3_2KEY
+javacard.security.KeyBuilder;TYPE_DES LENGTH_DES3_3KEY
+javacard.security.MessageDigest;ALG_SHA_256
+javacard.security.MessageDigest;ALG_SHA
+javacard.security.MessageDigest;ALG_SHA_224
+javacard.security.MessageDigest;ALG_SHA_384
+javacard.security.MessageDigest;ALG_SHA_512
+javacardx.crypto.Cipher;ALG_RSA_PKCS1
+javacardx.crypto.Cipher;ALG_RSA_NOPAD
+javacardx.crypto.Cipher;ALG_RSA_PKCS1_OAEP
+javacard.security.Signature;ALG_RSA_SHA_PKCS1
+javacard.security.Signature;ALG_RSA_SHA_ISO9796
+javacard.security.Signature;ALG_RSA_SHA_ISO9796_MR
+javacard.security.Signature;ALG_RSA_SHA_224_PKCS1
+javacard.security.Signature;ALG_RSA_SHA_256_PKCS1
+javacard.security.Signature;ALG_RSA_SHA_384_PKCS1
+javacard.security.Signature;ALG_RSA_SHA_512_PKCS1
+javacard.security.Signature;ALG_RSA_SHA_PKCS1_PSS
+javacard.security.Signature;ALG_RSA_SHA_224_PKCS1_PSS
+javacard.security.Signature;ALG_RSA_SHA_256_PKCS1_PSS
+javacard.security.Signature;ALG_RSA_SHA_384_PKCS1_PSS
+javacard.security.Signature;ALG_RSA_SHA_512_PKCS1_PSS
+javacard.security.Signature;ALG_ECDSA_SHA
+javacard.security.Signature;ALG_ECDSA_SHA_224
+javacard.security.Signature;ALG_ECDSA_SHA_256
+javacard.security.Signature;ALG_ECDSA_SHA_384
+javacard.security.Signature;ALG_ECDSA_SHA_512
+javacard.security.KeyAgreement;ALG_EC_SVDP_DH
+javacard.security.KeyAgreement;ALG_EC_SVDP_DHC
+javacard.security.KeyAgreement;ALG_EC_SVDP_DH_PLAIN
+javacard.security.KeyAgreement;ALG_EC_SVDP_DHC_PLAIN
+javacard.security.KeyAgreement;ALG_EC_PACE_GM
+javacard.security.KeyAgreement;ALG_EC_SVDP_DH_PLAIN_XY
+javacard.security.KeyPair;ALG_EC_FP
+javacard.security.RandomData;ALG_SECURE_RANDOM
+javacardx.crypto.Cipher;ALG_AES_BLOCK_128_CBC_NOPAD
+javacardx.crypto.Cipher;ALG_AES_CTR
+javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess);CIPHER_AES_CTR PAD_NOPAD
+javacardx.crypto.Cipher;ALG_DES_CBC_NOPAD
+javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess);CIPHER_AES_CBC PAD_NOPAD
+javacardx.crypto.Cipher.getInstance(byte cipherAlgorithm, byte paddingAlgorithm, boolean externalAccess);CIPHER_DES_CBC PAD_NOPAD
+javacardx.crypto.Cipher;ALG_DES_CBC_ISO9797_M1
+javacardx.crypto.Cipher;ALG_DES_CBC_ISO9797_M2
+javacardx.crypto.Cipher;ALG_DES_CBC_PKCS5
+javacardx.crypto.Cipher;ALG_DES_ECB_NOPAD
+javacardx.crypto.Cipher;ALG_DES_ECB_ISO9797_M1
+javacardx.crypto.Cipher;ALG_DES_ECB_ISO9797_M2
+javacardx.crypto.Cipher;ALG_DES_ECB_PKCS5
+javacardx.crypto.Cipher;ALG_AES_BLOCK_128_ECB_NOPAD
+javacardx.crypto.Cipher;ALG_AES_CBC_ISO9797_M1
+javacardx.crypto.Cipher;ALG_AES_CBC_ISO9797_M2
+javacardx.crypto.Cipher;ALG_AES_CBC_PKCS5
+javacardx.crypto.Cipher;ALG_AES_ECB_ISO9797_M1
+javacardx.crypto.Cipher;ALG_AES_ECB_ISO9797_M2
+javacardx.crypto.Cipher;ALG_AES_ECB_PKCS5
+javacard.security.KeyBuilder;TYPE_AES_TRANSIENT_RESET
+javacard.security.KeyBuilder;TYPE_AES_TRANSIENT_DESELECT
+javacard.security.KeyBuilder;TYPE_DES_TRANSIENT_RESET
+javacard.security.KeyBuilder;TYPE_DES_TRANSIENT_DESELECT
+javacard.security.Signature;ALG_DES_MAC8_NOPAD
+javacard.security.Signature;ALG_DES_MAC4_ISO9797_M1
+javacard.security.Signature;ALG_DES_MAC8_ISO9797_M1
+javacard.security.Signature;ALG_DES_MAC4_ISO9797_M2
+javacard.security.Signature;ALG_DES_MAC8_ISO9797_M2
+javacard.security.Signature;ALG_DES_MAC4_PKCS5
+javacard.security.Signature;ALG_DES_MAC8_PKCS5
+javacard.security.Signature;ALG_AES_MAC_128_NOPAD
+javacard.security.Signature;ALG_DES_MAC4_ISO9797_1_M2_ALG3
+javacard.security.Signature;ALG_DES_MAC8_ISO9797_1_M2_ALG3
+javacard.security.Signature;ALG_DES_MAC4_ISO9797_1_M1_ALG3
+javacard.security.Signature;ALG_DES_MAC8_ISO9797_1_M1_ALG3
+javacard.security.Signature;ALG_AES_CMAC_128
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_512
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_736
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_768
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_896
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_1024
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_1280
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_1536
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_1984
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_2048
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_3072
+javacard.security.KeyBuilder;TYPE_RSA_PUBLIC LENGTH_RSA_4096
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_512
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_736
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_768
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_896
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_1024
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_1280
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_1536
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_1984
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_2048
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_3072
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE LENGTH_RSA_4096
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_512
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_736
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_768
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_896
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_1024
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_1280
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_1536
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_1984
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_2048
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_3072
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE LENGTH_RSA_4096
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE_TRANSIENT_RESET
+javacard.security.KeyBuilder;TYPE_RSA_PRIVATE_TRANSIENT_DESELECT
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE_TRANSIENT_RESET
+javacard.security.KeyBuilder;TYPE_RSA_CRT_PRIVATE_TRANSIENT_DESELECT
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE LENGTH_EC_FP_128
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE LENGTH_EC_FP_160
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE LENGTH_EC_FP_192
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE LENGTH_EC_FP_224
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE LENGTH_EC_FP_256
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE LENGTH_EC_FP_320
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE LENGTH_EC_FP_384
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE LENGTH_EC_FP_512
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE LENGTH_EC_FP_521
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE_TRANSIENT_RESET
+javacard.security.KeyBuilder;TYPE_EC_FP_PRIVATE_TRANSIENT_DESELECT
+javacard.security.KeyPair;ALG_RSA LENGTH_RSA_512
+javacard.security.KeyPair;ALG_RSA_CRT LENGTH_RSA_512
+javacard.security.KeyPair;ALG_RSA LENGTH_RSA_736
+javacard.security.KeyPair;ALG_RSA_CRT LENGTH_RSA_736
+javacard.security.KeyPair;ALG_RSA LENGTH_RSA_768
+javacard.security.KeyPair;ALG_RSA_CRT LENGTH_RSA_768
+javacard.security.KeyPair;ALG_RSA LENGTH_RSA_896
+javacard.security.KeyPair;ALG_RSA_CRT LENGTH_RSA_896
+javacard.security.KeyPair;ALG_RSA LENGTH_RSA_1024
+javacard.security.KeyPair;ALG_RSA_CRT LENGTH_RSA_1024
+javacard.security.KeyPair;ALG_RSA LENGTH_RSA_1280
+javacard.security.KeyPair;ALG_RSA_CRT LENGTH_RSA_1280
+javacard.security.KeyPair;ALG_RSA LENGTH_RSA_1536
+javacard.security.KeyPair;ALG_RSA_CRT LENGTH_RSA_1536
+javacard.security.KeyPair;ALG_RSA LENGTH_RSA_1984
+javacard.security.KeyPair;ALG_RSA_CRT LENGTH_RSA_1984
+javacard.security.KeyPair;ALG_RSA LENGTH_RSA_2048
+javacard.security.KeyPair;ALG_RSA_CRT LENGTH_RSA_2048
+javacard.security.KeyPair;ALG_RSA LENGTH_RSA_3072
+javacard.security.KeyPair;ALG_RSA_CRT LENGTH_RSA_3072

@@ -1964,3 +1964,16 @@ original terminology/status; check current summary and later fixes before reuse.
   remains open; AES-CTR is not
   present in the supplied JCOP4 P71 1.7.9 matrix and must not be counted as
   matrix parity.
+
+### Minimal-profile native-signature compile warning — 2026-10-30
+
+- With every optional capability disabled, the ARM `minimal` wrapper build
+  gets past `native_cipher.cpp` after marking its mode variable maybe-unused,
+  then fails under `-Werror=unused-function` because
+  `native_signature.cpp::readBigEndianWord()` has no enabled digest consumer.
+  An explicit CMake list removal ensures the optional AES-CTR source is left
+  out when both CTR capability flags are false; minimal compilation remains
+  incomplete due to the signature helper warning.
+- Max-profile ARM and RISC-V wrapper builds pass; this issue does not affect the
+  `max_crypto` external-test image. Gate the helper by enabled SHA support or
+  mark it maybe-unused, then rebuild minimal on both wrappers.

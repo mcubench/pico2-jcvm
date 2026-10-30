@@ -421,7 +421,7 @@ std::vector<unsigned char> transformSymmetric(JC_Instance &cipher,
   std::vector<unsigned char> key = symmetricKey(cipher);
   std::vector<unsigned char> iv = ecb ? std::vector<unsigned char>(blockSize, 0)
                                       : cipherIv(cipher, blockSize);
-  const bool encrypt = cipher.getField_Byte(
+  [[maybe_unused]] const bool encrypt = cipher.getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_MODE) == kModeEncrypt;
   int result = -1;
   if (aes) {

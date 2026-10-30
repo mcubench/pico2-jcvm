@@ -4,7 +4,23 @@ Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists
 may be stale. `progress.md` is the append-only work record.
 
-## Current continuation: Java Card AES-CTR — 2026-10-30
+## Current continuation: max_crypto ARM image and AES-CTR — 2026-10-30
+
+User-requested external-test image is available at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (SHA-256
+`6e7fcde80772f2c2b33d4d1b4ba37b2d0ba215eb469e93563a793cafc6a2eb5f`). The
+`max_crypto` profile enables 147/150 capabilities by unioning the existing
+`current`, `symm_crypto`, `asymm_crypto`, and `symm_crypto_ctr` profiles; it
+leaves the card empty for explicit CAP installation. The companion expected
+JCAlgTest rows are in
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv` (147 rows).
+Symmetric, asymmetric, and CTR VPCD KATs passed 71/71, 97/97, and 8/8.
+No physical flash or hardware test was performed. A bounded PC/SC check did
+not return, so physical availability remains unconfirmed.
+The AES-CTR source/profile step is committed as `1ea9c7e`. The max image has
+not yet been committed; see the latest progress record for the full build and
+test evidence. Its usage instructions and file hashes are in
+`artifacts/firmware/README-max_crypto.txt`.
 
 Native `Cipher.ALG_AES_CTR` support and selectable profile `symm_crypto_ctr`
 are implemented. Previous profiles (`current`, `base`, `no_aes`, `minimal`,

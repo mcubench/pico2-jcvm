@@ -248,6 +248,21 @@ class JavaCardSupportTests(unittest.TestCase):
             ), rows)
             self.assertEqual(len(rows), 48)
 
+    def test_max_crypto_profile_is_union_of_supported_crypto_profiles(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / "generated"
+            result = self.run_named_profile("max_crypto", out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            profile = json.loads((out / "javacard-support.json").read_text())
+            self.assertEqual(sum(profile.values()), 147)
+            self.assertTrue(profile["cipher_aes_ctr"])
+            self.assertTrue(profile["cipher_getinstance_aes_ctr"])
+            self.assertTrue(profile["signature_ecdsa_sha_512"])
+            self.assertTrue(profile["key_rsa_public_4096"])
+            self.assertFalse(profile["key_ec_fp_private_112"])
+            self.assertFalse(profile["keypair_rsa_4096"])
+            self.assertFalse(profile["keypair_rsa_crt_4096"])
+
     def test_ctr_pair_factory_can_be_selected_without_single_factory(self):
         pair_only = {key: False for key in CONFIG}
         pair_only["key_aes_128"] = True

@@ -16430,9 +16430,49 @@
 - Decision: Keep the feature isolated in `symm_crypto_ctr`; use it for a
   physical JCAlgTest run when PC/SC returns. Continue independent TODO work in
   the meantime.
-- Commit: recorded in the following progress entry.
+- Commit: `1ea9c7e`
 - Artifacts/logs: VPCD log
   `artifacts/logs/aes-ctr-vpcd-20261030T185802Z.log` SHA-256
   `f057331e506e4ae1b764915bfdb4c37606f6b65dc0a3e30a649e13eb102555ad`; ARM
   UF2 1,815,040 bytes, SHA-256
   `4c42949db4b318cfa6658e10ba8fc7cb88be715d12292f0191a9468c636cf65b`.
+
+## 2026-10-30 Prepare max_crypto ARM external-test firmware 16 minutes
+
+- Step/experiment: `max-crypto-arm-external-image`
+- When: '2026-10-30 18:59 UTC' - '2026-10-30 19:15 UTC'
+- Change: Added the `max_crypto` capability profile as the union of `current`,
+  `symm_crypto`, `asymm_crypto`, and `symm_crypto_ctr` (147/150 capabilities).
+  Added a profile regression test and generated a companion expected JCAlgTest
+  support CSV. Built an empty-card ARM UF2 and copied it to the firmware
+  artifacts directory for external use. Explicit CMake removal keeps the
+  optional AES-CTR source out of the globbed list before selected modules are
+  added. Marked cipher mode local as maybe-unused for builds where all cipher
+  algorithms are disabled.
+- Validation: `python3 tools/test-javacard-support.py` passed 14/14. ARM
+  `./tools/build arm --profile max_crypto` and required RISC-V wrapper build
+  both passed. On the max-profile PC VM, VPCD symmetric KAT passed 71/71,
+  asymmetric KAT passed 97/97, and AES-CTR passed 8/8. `picotool info` accepts
+  the packaged UF2 as RP2350 ARM Secure; its flash load range is
+  `0x10000000..0x100FD01C`. No physical flash or hardware validation was run.
+  A `minimal` profile build was attempted; after fixing an unused local in
+  `native_cipher.cpp`, compilation stops on an unused `readBigEndianWord`
+  helper in `native_signature.cpp`. Minimal-profile build acceptance remains
+  open.
+- Result: External-test image
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` is 2,073,600
+  bytes (UF2 container), SHA-256
+  `6e7fcde80772f2c2b33d4d1b4ba37b2d0ba215eb469e93563a793cafc6a2eb5f`; no
+  applet is preinstalled. The expected support CSV contains 147 rows. It
+  disables EC-FP private 112-bit and RSA/RSA-CRT KeyPair 4096-bit entries.
+- Decision: Provide this ARM image for external testing. It is not physically
+  validated; flash, finite-monitor, GPPro install/select, and official
+  JCAlgTest report comparison remain outstanding on a registered Pico.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: firmware and CSV above; symmetric VPCD log
+  `artifacts/logs/symm-crypto-kat-vpcd-20261026.log` SHA-256
+  `856a0913cc52dd5becf28f16ddee3b7066697c24e9c96d3070b27b08abb0fe22`,
+  asymmetric VPCD log `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`
+  SHA-256 `483872eb956089d30398bcaaf536366e48ae93a05689fc0914f4f305a43c4597`,
+  and CTR VPCD log `artifacts/logs/aes-ctr-vpcd-20261030T191228Z.log` SHA-256
+  `35e7f8abf857a944ca7526cf163382bd72bf84898ce6c3b28e5a96de8fc30004`.

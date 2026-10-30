@@ -343,6 +343,11 @@ file(GLOB_RECURSE JCVM_CORE_SOURCES_FILES
      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 list(FILTER JCVM_CORE_SOURCES_FILES EXCLUDE REGEX
   "/native_(random|cipher|aes_cbc|aes_ctr|des_cbc|sha256|mbedtls_digest|rsa_cipher|rsa_key|rsa_signature|ecdsa_signature|key)\\.cpp$")
+# Keep the optional CTR source out of the globbed core list before conditionally
+# adding it below. The explicit removal also handles an already-configured
+# build directory when a profile switches CTR off.
+list(REMOVE_ITEM JCVM_CORE_SOURCES_FILES
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/native_aes_ctr.cpp")
 if(JC_SUPPORT_SECURE_RANDOM)
   list(APPEND JCVM_CORE_SOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/native_random.cpp")
 endif()

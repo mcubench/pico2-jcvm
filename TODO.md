@@ -1885,6 +1885,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
 
 ## Expanded and required cryptographic profiles
 
+- [x] Prepare a combined `max_crypto` profile for external ARM testing.
+  It unions `current`, `symm_crypto`, `asymm_crypto`, and `symm_crypto_ctr`:
+  147/150 declared capabilities. ARM image built successfully; symmetric
+  VPCD KAT 71/71, asymmetric KAT 97/97, and AES-CTR KAT 8/8 pass. The provided
+  JCOP4 matrix does not include AES-CTR, so it is an API extension. The UF2 is
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no applet is
+  preinstalled. Physical validation remains open.
+
 - [x] **Complete symmetric Java Card algorithm coverage against the JCOP4
   P71 reference.** Audit every symmetric cipher, MAC/signature, key type, and
   key length marked `yes` in
