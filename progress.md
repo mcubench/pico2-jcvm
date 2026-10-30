@@ -15944,3 +15944,17 @@
   pending.
 - Commit: recorded by the following progress entry.
 - Artifacts/logs: none.
+
+## 2026-10-30 Record Windows package commit identifier 1 minute
+
+- Step/experiment: `windows-profile-package-commit-id`
+- When: '2026-10-30 14:43 UTC' - '2026-10-30 14:44 UTC'
+- Change: Record the immutable commit identifier for the Windows package
+  refresh and its progress evidence.
+- Validation: `git show --stat --oneline 6295780` confirms the script, run sheet,
+  TODO, QKB, HANDOFF, and main progress record are the intended committed
+  files.
+- Result: The Windows package change is committed as `6295780`.
+- Decision: Resume the remaining project backlog.
+- Commit: `50bb405` (package commit reference record)
+- Artifacts/logs: none.
