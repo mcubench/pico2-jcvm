@@ -64,6 +64,10 @@ private:
   /// Read data in place from tag
   static std::pair<uint32_t, const uint8_t *>
   getDataInPlaceFromTag(const fs::Tag &tag);
+  static jref_t getPersistentField_ReferenceImpl(const fs::Tag &tag,
+                                                Heap &heap,
+                                                bool fail_on_read,
+                                                uint8_t alias_depth);
   /// Write data from tag
   static void setDataFromTag(const fs::Tag &tag, uint32_t length,
                              const uint8_t data[]);
@@ -169,6 +173,10 @@ public:
 #endif /* JCVM_INT_SUPPORTED */
   /// Get int data store in flash memory.
   static jref_t getPersistentField_Reference(const fs::Tag &tag, Heap &heap);
+  /// Resolve a stored reference while propagating storage/format failures.
+  /// An absent tag is the default null value for a reference slot.
+  static jref_t getPersistentField_ReferenceStrict(const fs::Tag &tag,
+                                                   Heap &heap);
   /// Read the serialized field type stored at a tag.
   static FieldType getPersistentField_Type(const fs::Tag &tag);
   /// Store a persistent object or array reference under a tag.

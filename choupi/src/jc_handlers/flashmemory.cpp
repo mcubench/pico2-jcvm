@@ -779,9 +779,29 @@ const fs::Tag FlashMemory_Handler::getAppletInstanceTag(
  */
 jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
                                                          Heap &heap) {
+  return FlashMemory_Handler::getPersistentField_ReferenceImpl(tag, heap,
+                                                               false, 0);
+}
+
+jref_t FlashMemory_Handler::getPersistentField_ReferenceStrict(
+    const fs::Tag &tag, Heap &heap) {
+  return FlashMemory_Handler::getPersistentField_ReferenceImpl(tag, heap,
+                                                               true, 0);
+}
+
+jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
+    const fs::Tag &tag, Heap &heap, const bool fail_on_read,
+    const uint8_t alias_depth) {
   jref_t existing_reference;
   if (heap.getPersistentReference(tag, existing_reference)) {
     return existing_reference;
+  }
+
+  // Static reference slots without a stored record have their specified
+  // default value, null. Any present record must be decoded successfully by
+  // the strict path; it must never turn a read/format error into a null root.
+  if (fail_on_read && fs_exists(tag.value, tag.len) == 0) {
+    return jref_t();
   }
 
   uint32_t length = 0;
@@ -793,6 +813,9 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
     length = length_tmp;
     data = data_tmp;
   } catch (Exceptions e) {
+    if (fail_on_read) {
+      throw e;
+    }
     std::printf("CHOUPI:RESTORE_READ_FAIL id=%u tag=",
                 static_cast<unsigned>(e));
     for (uint8_t index = 0; index < tag.len; ++index) {
@@ -819,6 +842,9 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
   FieldType type = static_cast<FieldType>(data[0]);
 
   if (data[0] == kPersistentObjectAlias) {
+    if (fail_on_read && alias_depth >= 32) {
+      throw Exceptions::SecurityException;
+    }
     const fs::Tag target_tag = read_persistent_alias_target(length, data);
     auto [target_length, target_data] =
         FlashMemory_Handler::getDataInPlaceFromTag(target_tag);
@@ -835,13 +861,28 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
   }
 
   if (data[0] == kPersistentArrayAlias) {
+    if (fail_on_read && alias_depth >= 32) {
+      throw Exceptions::SecurityException;
+    }
     const fs::Tag target_tag = read_persistent_alias_target(length, data);
-    return FlashMemory_Handler::getPersistentField_Reference(target_tag, heap);
+    const jref_t target_reference =
+        FlashMemory_Handler::getPersistentField_ReferenceImpl(
+        target_tag, heap, fail_on_read,
+        static_cast<uint8_t>(alias_depth + 1));
+    if (fail_on_read &&
+        (target_reference.isNullPointer() || !target_reference.isArray())) {
+      throw Exceptions::SecurityException;
+    }
+    return target_reference;
   }
 
   if (type == FieldType::FIELD_TYPE_UNINITIALIZED) {
 #ifdef JCVM_ARRAY_SIZE_CHECK
     if (length != sizeof(uint8_t)) {
+      throw Exceptions::SecurityException;
+    }
+#else
+    if (fail_on_read && length != sizeof(uint8_t)) {
       throw Exceptions::SecurityException;
     }
 #endif
@@ -855,7 +896,32 @@ jref_t FlashMemory_Handler::getPersistentField_Reference(const fs::Tag &tag,
   if (length < 3) {
     throw Exceptions::SecurityException;
   }
+#else
+  if (fail_on_read && length < 3) {
+    throw Exceptions::SecurityException;
+  }
 #endif
+
+  if (fail_on_read) {
+    if (type == FieldType::FIELD_TYPE_OBJECT && length < 4) {
+      throw Exceptions::SecurityException;
+    }
+    if (type == FieldType::FIELD_TYPE_ARRAY_OBJECT && length < 5) {
+      throw Exceptions::SecurityException;
+    }
+    if ((type == FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE ||
+         type == FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN ||
+         type == FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT
+#ifdef JCVM_INT_SUPPORTED
+         || type == FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT
+#endif
+         ) && length < 4) {
+      throw Exceptions::SecurityException;
+    }
+    if (type == FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT && length < 6) {
+      throw Exceptions::SecurityException;
+    }
+  }
 
   uint16_t size = BYTES_TO_SHORT(data[1], data[2]);
 
