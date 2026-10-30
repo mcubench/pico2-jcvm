@@ -9,6 +9,33 @@ The archive is historical evidence, not current instructions or current board st
 [Issue knowledge base](QKB.md) contains current troubleshooting and a historical index.
 Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.json`.
 
+## Current memory-reporting investigation
+
+The TODO item on `JCSystem.getAvailableMemory()` remains open; no firmware logic
+was changed. On physical Pico 2 `2BED26ED20556535`, the JCAlgTest 32-bit memory
+query reported 228,696 transient bytes free before `Cipher.getInstance()`, then
+227,240/227,240 reset/deselect (1,456-byte drops). A repeated sample from a
+228,528-byte baseline returned 227,240 reset and 227,232 deselect (1,288/1,296
+byte drops). Persistent available memory stayed at 8,846 bytes (zero delta).
+Thus this probe does not prove that available memory is inflated; the measured
+Cipher allocation is about 1.3–1.45 KiB and varies with allocator state.
+
+The scalar `getAvailableMemory` native call clamps at 32,767. JCAlgTest's scalar
+reset field `0x847f` is caused by its own signed-short addition of two 576-byte
+arrays to that capped value. The 32-bit API path reports the full 32-bit
+estimate. Both transient types currently use the same `mallinfo` free-block
+count plus the gap from `sbrk(0)` to `__StackLimit`; persistent free space is
+overlay capacity minus used bytes. This formula still needs an independent
+allocator/stack-bound reconciliation. The new `--jcsystem-info-p1` and
+`--cipher-support` probe options are in `tools/JCAlgTestApduProbe.java`.
+
+Evidence: `artifacts/logs/jcsystem-memory-probe-2BED-20261030.log` (SHA-256
+`5515f87702c561c819ffc418af005749479f90e8a030d0a1a343ce9f12d5c74a`) and
+finite serial monitor `artifacts/logs/jcsystem-memory-monitor-2BED-20261030.log`
+(SHA-256 `eb6db5d688de6bef4b1a39d19b28a48cfed621c835c2df086467b6d935d5f601`).
+Next: add direct representative key construction probes, then compare allocator
+state before proposing native changes. Preserve all unrelated worktree edits.
+
 ## Next concrete work
 
 1. Continue safe persistent-object reclamation for repeated API workloads.

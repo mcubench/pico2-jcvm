@@ -602,7 +602,22 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   persistent, reset-transient, and deselect-transient deltas separately, and
   compare the readings with actual allocator/storage usage. Establish expected
   behavior and capture a reproducible baseline before proposing any code
-  changes.
+  changes. Initial physical sample on Pico 2 `2BED26ED20556535` does not yet
+  establish that the 32-bit report is too large: JCAlgTest returned 228,696
+  bytes reset/deselect free before Cipher construction, then 227,240/227,240
+  (1,456-byte deltas); a repeat from a stable 228,528-byte baseline returned
+  227,240/227,232 (1,288/1,296-byte deltas). Persistent available memory was
+  8,846 bytes before and after, with zero allocation. Its scalar overload is
+  capped at 32,767, so the JCAlgTest scalar `0x847f` is its own signed-short
+  arithmetic overflow after adding two 576-byte arrays, not a native API value.
+  The 32-bit transient implementation currently adds allocator free blocks to
+  the gap from `sbrk(0)` to `__StackLimit`; persistent reports overlay capacity
+  minus current use. Both transient kinds currently return the same allocator
+  estimate. Still open: independently reconcile the heap/stack estimate with
+  real allocator capacity, characterize APDU/query and transient-category
+  effects, and repeat controlled measurements for representative key objects.
+  Probe code and raw evidence: `tools/JCAlgTestApduProbe.java` and
+  `artifacts/logs/jcsystem-memory-probe-2BED-20261030.log`.
 
 - [x] Preserve timestamps of unchanged generated build inputs. The Java Card
   support, class-token, and ROM-metadata generators now write output files only

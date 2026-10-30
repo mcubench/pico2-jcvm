@@ -29,6 +29,13 @@ public final class JCAlgTestApduProbe {
     return bytes;
   }
 
+  private static int readInt(byte[] data, int offset) {
+    return ((data[offset] & 0xff) << 24) |
+        ((data[offset + 1] & 0xff) << 16) |
+        ((data[offset + 2] & 0xff) << 8) |
+        (data[offset + 3] & 0xff);
+  }
+
   private static ResponseAPDU transmit(CardChannel channel, String name,
                                        CommandAPDU command) throws Exception {
     long startedAt = System.nanoTime();
@@ -47,6 +54,7 @@ public final class JCAlgTestApduProbe {
   public static void main(String[] args) throws Exception {
     String requestedReader = null;
     boolean skipJcSystemInfo = false;
+    int jcSystemInfoP1 = 0x01;
     List<String> probeArgs = new ArrayList<>();
     for (int i = 0; i < args.length; i++) {
       if ("--reader".equals(args[i])) {
@@ -57,6 +65,13 @@ public final class JCAlgTestApduProbe {
         requestedReader = args[++i];
       } else if ("--skip-jcsystem-info".equals(args[i])) {
         skipJcSystemInfo = true;
+      } else if ("--jcsystem-info-p1".equals(args[i])) {
+        if (i + 1 >= args.length ||
+            !args[i + 1].matches("(?i)[0-9a-f]{2}")) {
+          throw new IllegalArgumentException(
+              "--jcsystem-info-p1 requires exactly two hexadecimal digits");
+        }
+        jcSystemInfoP1 = Integer.parseInt(args[++i], 16);
       } else {
         probeArgs.add(args[i]);
       }
@@ -102,8 +117,8 @@ public final class JCAlgTestApduProbe {
 
       if (!skipJcSystemInfo) {
         transmit(channel, "JCSYSTEM_INFO",
-            new CommandAPDU(0xB0, 0x73, 0x01, 0x00,
-                new byte[] {0x01}, 256));
+            new CommandAPDU(0xB0, 0x73, jcSystemInfoP1, 0x00,
+                new byte[] {(byte) jcSystemInfoP1}, 256));
       }
 
       if (probeArgs.size() == 1 && "--version-only".equals(probeArgs.get(0))) {
@@ -123,6 +138,42 @@ public final class JCAlgTestApduProbe {
               "DES CBC NOPAD support should be reported as supported");
         }
         System.out.println("TEST:PASS des_cipher_support");
+        return;
+      }
+
+      if (probeArgs.size() == 2 &&
+          "--cipher-support".equals(probeArgs.get(0))) {
+        if (!probeArgs.get(1).matches("(?i)[0-9a-f]{2}")) {
+          throw new IllegalArgumentException(
+              "--cipher-support requires a one-byte hexadecimal algorithm ID");
+        }
+        int algorithm = Integer.parseInt(probeArgs.get(1), 16);
+        ResponseAPDU response = transmit(channel,
+            "CIPHER_SUPPORT_" + String.format("%02X", algorithm),
+            new CommandAPDU(0xB0, 0x75, 0x11, 0x00,
+                new byte[] {(byte) algorithm}, 256));
+        byte[] result = response.getData();
+        if (result.length != 27 || result[0] != 0x11 ||
+            result[2] != (byte) 0xff) {
+          throw new IllegalStateException(
+              "short or malformed JCAlgTest Cipher support response: " +
+              hex(result));
+        }
+        int[] starts = new int[3];
+        int[] ends = new int[3];
+        for (int type = 0; type < 3; type++) {
+          int offset = 3 + type * 8;
+          starts[type] = readInt(result, offset);
+          ends[type] = readInt(result, offset + 4);
+        }
+        System.out.printf(
+            "JCALGTEST:CIPHER_SUPPORT algorithm=%02X status=%02X " +
+            "persistent=%d->%d delta=%d deselect=%d->%d delta=%d " +
+            "reset=%d->%d delta=%d%n",
+            algorithm, result[1] & 0xff,
+            starts[0], ends[0], starts[0] - ends[0],
+            starts[1], ends[1], starts[1] - ends[1],
+            starts[2], ends[2], starts[2] - ends[2]);
         return;
       }
 
