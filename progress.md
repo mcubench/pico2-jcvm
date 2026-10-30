@@ -15646,3 +15646,14 @@
   debug cycle SHA-256 `010e72031ee43a0a8a005388bcbc3c2f50c68ec5b18052454533302c1f11a19f`;
   normal restoration cycle SHA-256
   `fa71cbceeb1cc1bce5cdf8b896366922ccc3b17333071d28551a36e28309423e`.
+
+## 2026-10-30 Revalidate asymmetric crypto VPCD vectors 7 minutes
+
+- Step/experiment: `asymm-crypto-vpcd-regression`
+- When: '2026-10-30 06:29 UTC' - '2026-10-30 06:36 UTC'
+- Change: No firmware source changed. Rebuilt the PC `asymm_crypto` VM and probe, then reran the full native asymmetric VPCD known-answer suite after the preceding memory-accounting work.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` passed. The wrapper reported `JAVACARD_SUPPORT:PASS profile=asymm_crypto capabilities=148 enabled=145`, generated ROM mask and probe CAP successfully, and finished with `TEST:SUMMARY pass=99 fail=0` and `asymmetric_vectors=97 ... fail=0`.
+- Result: All 99 checks passed, including 10 SHA vectors, RSA and EC key-builder/key-pair coverage, ECDSA, key agreement, and RSA signature vectors. The slowest observed custom APDUs were roughly 28 and 24 seconds; VPCD connect took 10.615 seconds. Existing packed-member compiler warnings appeared during the PC build; no build or test failures occurred.
+- Decision: The recent changes do not regress the asymmetric native known-answer suite. Continue with the next persistent-object reclamation hardening/acceptance task; electrical power-cycle and interrupted-update acceptance remain separate gates.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`, SHA-256 `1fe57d459ee76ae1c5913aa3273bd7708b231a487431dcb4630557f9adbc085b`.
