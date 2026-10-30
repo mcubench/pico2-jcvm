@@ -15,11 +15,12 @@ KeyPair 4096 entries. The provided JCOP4 comparison matrix also excludes
 AES-CTR, so this profile's AES-CTR entry is a JCVM API extension.
 
 SHA-256:
-  efb5fca5c96365e98a56a20d764807f9e35d1ecb841f0fe24cc8046ba7b0de36  pico2-jcvm-max_crypto-arm-empty-card.uf2
+  3f2bdf483acb086e465f51ece612e8b6487e7be4ae958d5158d8c1c896836acd  pico2-jcvm-max_crypto-arm-empty-card.uf2
   81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0  pico2-jcvm-max_crypto-arm-supported.csv
 
 Refreshed from current source on 2026-10-30 with
-`./tools/build arm --profile max_crypto`. The ARM image is 2,075,136 bytes and
+`./tools/build arm --profile max_crypto`. The ARM image is 2,075,648 bytes and
 includes CAP 2.2 remote metadata checks for signatures, public method tokens,
-and internal remote-interface references, as well as the RP2350 overlay
-implementation. No physical board was flashed.
+internal remote-interface references, and external remote-interface Import
+indexes, as well as the RP2350 overlay implementation. No physical board was
+flashed.

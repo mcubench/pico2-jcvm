@@ -17249,3 +17249,34 @@
 - Decision: Continue with the next open project acceptance item.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261030T232628Z.log`.
+
+## 2026-10-30 CAP 2.2 external remote-interface Import token validation 11 minutes
+
+- Step/experiment: `cap22-external-remote-interface-import-index`
+- When: '2026-10-30 23:31 UTC' - '2026-10-30 23:42 UTC'
+- Change: Cross-check external remote-interface package tokens against the
+  importing CAP's Import count after the complete CAP has been parsed. Add
+  missing-import, valid-index, and out-of-range-index parser regressions.
+  Refresh the external-test max ARM image and update TODO, QKB, handoff, and
+  image README. Exported-class/interface resolution remains open.
+- Validation: `./tools/test-cap-parser` passed 4,205 checks, 100,000 fuzz
+  inputs, and 48 CAP corpus files. `./tools/build arm --profile max_crypto`
+  and `./tools/build riscv --profile max_crypto` passed. The official SDK
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` passed all 18 checks.
+  Existing packed-structure/alignment warnings remain. No physical board was
+  flashed.
+- Result: Missing Import and out-of-range remote-interface package tokens are
+  rejected, while valid imported package indexes parse. The max ARM UF2 is
+  2,075,648 bytes, SHA-256
+  `3f2bdf483acb086e465f51ece612e8b6487e7be4ae958d5158d8c1c896836acd`.
+- Decision: Keep installation-time resolution of external class tokens to
+  exported interfaces open; then continue the prioritized persistent-object
+  reclamation and cold power-cycle work.
+- Commit: implementation commit SHA is recorded in the following closeout
+  entry.
+- Artifacts/logs: client log SHA-256
+  `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`;
+  emulator log SHA-256
+  `daddde74f22aaa65a885c2527f0096d306eefc83ee2e3c7ebc4c925ef36d0231`;
+  build log SHA-256
+  `4b4192ccf60af000e8ff7aba39a8702963f2526a705a31b23d65ddbbf5d05129`.

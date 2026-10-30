@@ -960,7 +960,11 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   remote-enabled CAP 2.2 package. Malformed signature-pool bounds are rejected.
   Remote method hashes are strictly ascending; signature offsets must point
   to descriptor starts; and virtual-method tokens must be public and fall
-  within the class public-method table.
+  within the class public-method table. Internal remote-interface references
+  must target an interface record boundary; external references must use an
+  in-range Import-component token. Still verify at installation that each
+  imported class token resolves to an exported interface in the referenced
+  installed package.
   The converter-built fixture is loaded and exercised through current-source
   VPCD for SELECT, primitive INVOKE, primitive-array INVOKE, and protocol-error
   responses. The supplied Service CAP is format 2.1 and cannot validate the

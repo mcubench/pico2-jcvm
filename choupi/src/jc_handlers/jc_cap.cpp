@@ -199,7 +199,8 @@ bool validate_remote_interface_info(const uint8_t *payload,
                                     const size_t public_method_table_count,
                                     const uint8_t *signature_start_bits,
                                     const uint8_t *interface_start_bits =
-                                        nullptr) {
+                                        nullptr,
+                                    const uint8_t import_count = UINT8_MAX) {
   if (offset >= size) return false;
   const size_t remote_methods = payload[offset++];
   const size_t remote_method_bytes = remote_methods * 5;
@@ -246,6 +247,10 @@ bool validate_remote_interface_info(const uint8_t *payload,
            static_cast<uint8_t>(1u << (class_ref & 7))) == 0) {
         return false;
       }
+      if ((class_ref & 0x8000) != 0 &&
+          ((class_ref >> 8) & 0x7f) >= import_count) {
+        return false;
+      }
     }
   }
   offset += remote_interface_bytes;
@@ -255,7 +260,8 @@ bool validate_remote_interface_info(const uint8_t *payload,
 bool validate_internal_remote_interface_refs(
     const uint8_t *payload, const size_t size,
     const size_t signature_pool_length, const uint8_t *signature_start_bits,
-    const uint8_t *interface_start_bits) {
+    const uint8_t *interface_start_bits,
+    const uint8_t import_count = UINT8_MAX) {
   size_t offset = 2 + signature_pool_length;
   while (offset < size) {
     const uint8_t flags = payload[offset] >> 4;
@@ -296,14 +302,15 @@ bool validate_internal_remote_interface_refs(
         !validate_remote_interface_info(
             payload, size, offset, signature_pool_length,
             public_method_base, public_methods, signature_start_bits,
-            interface_start_bits)) {
+            interface_start_bits, import_count)) {
       return false;
     }
   }
   return offset == size;
 }
 
-bool validate_class_component_22(const uint8_t *payload, const size_t size) {
+bool validate_class_component_22(const uint8_t *payload, const size_t size,
+                                 const uint8_t import_count = UINT8_MAX) {
   if (size < 2) return false;
   const size_t signature_pool_length = read_be16(payload);
   // CAP validation runs synchronously in the single-threaded VM loader. Keep
@@ -381,7 +388,8 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size) {
   return offset == size && record_count != 0 &&
          validate_internal_remote_interface_refs(
              payload, size, signature_pool_length,
-             signature_start_bits.data(), interface_start_bits.data());
+             signature_start_bits.data(), interface_start_bits.data(),
+             import_count);
 }
 
 bool validate_descriptor_type_offsets(const uint8_t *descriptor,
@@ -844,6 +852,21 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file,
     }
 
     component = next_component;
+  }
+
+  // External remote-interface references contain an Import-component token.
+  // Validate these only after all components are known because CAP component
+  // order is not fixed. The first Class pass checks record framing and
+  // internal targets; this contextual pass checks imported package indexes.
+  if (validate_payloads && cap_major == 2 && cap_minor == 2 &&
+      this->class_comp != nullptr) {
+    const uint8_t import_count =
+        this->import_comp == nullptr ? 0 : this->import_comp->count;
+    if (!validate_class_component_22(
+            this->class_comp->infos, NTOHS(this->class_comp->size),
+            import_count)) {
+      throw Exceptions::SecurityException;
+    }
   }
 
   return;

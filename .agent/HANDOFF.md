@@ -1,5 +1,27 @@
 # Session handoff — updated 2026-10-30
 
+## CAP 2.2 external remote-interface Import indexes — 2026-10-30
+
+CAP 2.2 external remote-interface references now validate their seven-bit
+package token against the complete Import component, including when CAP
+components are in a different order. Missing Import and out-of-range token
+fixtures are rejected; valid imported references parse. `./tools/test-cap-parser`
+passes 4,205 checks, 100,000 fuzz inputs, and 48 CAP corpus files; both
+`max_crypto` ARM and RISC-V wrapper builds pass. The official SDK JCRMI VPCD
+probe passes 18/18. Refreshed ARM external-test image:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, 2,075,648 bytes,
+SHA-256 `3f2bdf483acb086e465f51ece612e8b6487e7be4ae958d5158d8c1c896836acd`.
+No physical board was flashed. Imported class tokens still need to be checked
+against the target package's exported interfaces at installation. Next, pursue
+this CAP-link validation, then return to top-priority safe persistent-object
+reclamation and actual USB power-cycle recovery. Preserve unrelated dirty
+`src/cap_load.cpp` edits.
+
+The official client log is
+`artifacts/logs/rmi-client-official-vpcd-client-20261030T233752Z.log`; the
+emulator log is
+`artifacts/logs/rmi-client-official-vpcd-emulator-20261030T233752Z.log`.
+
 ## CAP 2.2 Directory layout and official SDK JCRMI integration — 2026-10-30
 
 The helper INSTALL failure (`stage=9 / 6F00`) is fixed. JCDK 3.0.5 CAP 2.2

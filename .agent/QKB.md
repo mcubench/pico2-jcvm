@@ -8,6 +8,31 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## CAP 2.2 external remote-interface Import indexes — 2026-10-30
+
+- The parser now cross-checks each external remote-interface reference's
+  seven-bit package token against the importing CAP's Import component after
+  all component frames have been read. This preserves arbitrary CAP component
+  order. Missing Import components and out-of-range tokens are rejected;
+  valid imported indexes parse.
+- `./tools/test-cap-parser` passes 4,205 checks, 100,000 fuzz inputs, and 48
+  CAP corpus files. ARM and RISC-V `max_crypto` wrapper builds pass. The
+  official SDK 2.2.1 JCRMI VPCD test passes 18/18.
+- The refreshed external-test ARM image is
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, 2,075,648
+  bytes, SHA-256
+  `3f2bdf483acb086e465f51ece612e8b6487e7be4ae958d5158d8c1c896836acd`.
+  No physical board was flashed. External package index validation is now
+  covered, but verifying that each imported class token resolves to an
+  exported interface remains open.
+- Client log SHA-256
+  `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`;
+  emulator log SHA-256
+  `daddde74f22aaa65a885c2527f0096d306eefc83ee2e3c7ebc4c925ef36d0231`;
+  build log SHA-256
+  `4b4192ccf60af000e8ff7aba39a8702963f2526a705a31b23d65ddbbf5d05129`.
+  Logs use timestamp `20261030T233752Z`.
+
 ## CAP 2.2 Directory layout fixed; official JCRMI VPCD probe passes — 2026-10-30
 
 - The JCDK 3.0.5 converter emits CAP 2.2 Directory payloads with twelve

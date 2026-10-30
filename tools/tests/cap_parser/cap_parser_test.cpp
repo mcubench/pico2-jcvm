@@ -294,7 +294,8 @@ void test_class_component_22() {
   };
   const auto make_cap = [&](std::vector<uint8_t> class_payload,
                             const uint8_t major = 2,
-                            const uint8_t minor = 2) {
+                            const uint8_t minor = 2,
+                            const uint8_t import_count = 0) {
     std::vector<uint8_t> cap;
     std::vector<uint8_t> header(16, 0);
     header[4] = minor;
@@ -307,6 +308,14 @@ void test_class_component_22() {
     header[14] = 0x01;
     header[15] = 0; // Empty CAP 2.2 package name.
     append_component(cap, 1, header);
+    if (import_count != 0) {
+      std::vector<uint8_t> imports{import_count};
+      for (uint8_t index = 0; index < import_count; ++index) {
+        imports.insert(imports.end(), {0, 0, 5, 0xf0, 0, 0, 0,
+                                       static_cast<uint8_t>(index + 1)});
+      }
+      append_component(cap, 4, imports);
+    }
     append_component(cap, 6, class_payload);
     return cap;
   };
@@ -454,9 +463,22 @@ void test_class_component_22() {
   auto external_remote_interface = emitted_valid;
   external_remote_interface[remote_interfaces_offset] = 0x80;
   external_remote_interface[remote_interfaces_offset + 1] = 0;
-  expect(parses(external_remote_interface.data(),
-                external_remote_interface.size()),
-         "class_component_22_external_remote_interface_ref_deferred_to_package_resolution");
+  expect(!parses(external_remote_interface.data(),
+                 external_remote_interface.size()),
+         "class_component_22_external_remote_interface_missing_import_rejected");
+
+  auto imported_remote_interface = make_cap(emitted_payload, 2, 2, 1);
+  const size_t imported_remote_interfaces_offset =
+      remote_interfaces_offset + 3 + 9;
+  imported_remote_interface[imported_remote_interfaces_offset] = 0x80;
+  imported_remote_interface[imported_remote_interfaces_offset + 1] = 0;
+  expect(parses(imported_remote_interface.data(),
+                imported_remote_interface.size()),
+         "class_component_22_external_remote_interface_valid_import_parses");
+  imported_remote_interface[imported_remote_interfaces_offset] = 0x81;
+  expect(!parses(imported_remote_interface.data(),
+                 imported_remote_interface.size()),
+         "class_component_22_external_remote_interface_import_index_checked");
 
   // An internal reference may point to an interface record that follows the
   // remote class in the Class component.
