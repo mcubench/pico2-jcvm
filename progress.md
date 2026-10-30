@@ -15985,3 +15985,15 @@
   SHA-256 `4708926c9e2209409d15a6217f8043a58e473be8cff3fc9a5378fa5b6b7c4840`;
   `artifacts/logs/persistent-inventory-latest-monitor-2BED-20261030.log`
   SHA-256 `f7a73be8232621a94faa183aabd21559748a7d829c781e0462b0e4465c06561d`.
+
+## 2026-10-30 Record power-up probe commit identifier 1 minute
+
+- Step/experiment: `powerup-probe-power-cycle-scope-commit-id`
+- When: '2026-10-30 14:54 UTC' - '2026-10-30 14:55 UTC'
+- Change: Record the immutable commit containing the probe-scope correction.
+- Validation: `git show --stat --oneline 2ab9306` confirms only the six
+  intended script/documentation/progress files were committed.
+- Result: The correction is committed as `2ab9306`.
+- Decision: Continue with the safe persistent-reclamation acceptance gaps.
+- Commit: `2ab9306` (change commit recorded here)
+- Artifacts/logs: none.
