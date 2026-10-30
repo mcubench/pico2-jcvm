@@ -16988,3 +16988,16 @@
   (SHA-256
   `67fc5ac0901290ac0db8120eed1078784dbbb115999879a1e711b6a0b7c257cf`),
   restart/corrupt/missing sidecar hashes recorded in `.agent/QKB.md`.
+
+## 2026-10-30 Record multipackage rerun commit 1 minute
+
+- Step/experiment: `vpcd-multipackage-base-profile-rerun-closeout`
+- When: '2026-10-30 22:02 UTC' - '2026-10-30 22:03 UTC'
+- Change: Recorded the commit reference for the fresh VPCD lifecycle evidence.
+- Validation: Confirmed commit `1906ef2` contains only TODO, QKB, HANDOFF, and
+  progress documentation; all four log hashes were rechecked.
+- Result: The 25/25 test result and its emulator-only scope are recorded in the
+  current handoff and knowledge base.
+- Decision: Continue with outstanding acceptance work.
+- Commit: recorded in this follow-up.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T220126Z.log`.

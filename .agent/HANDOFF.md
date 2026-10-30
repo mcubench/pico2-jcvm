@@ -28,6 +28,7 @@ registry. This exercises the current worktree, including the pre-existing
 uncommitted `src/cap_load.cpp` changes; those edits were not committed here.
 This is VPCD evidence only. Hardware enumeration and cold power-cycle recovery
 remain to be checked separately. Log hashes and paths are in `.agent/QKB.md`.
+The documentation record is committed as `1906ef2`.
 
 ## Latest continuation: VPCD emulator connection retry — 2026-10-30
 
