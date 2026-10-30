@@ -92,6 +92,31 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `artifacts/logs/persistent-inventory-vpcd-fixed-20261030.log` (fixed run),
   `artifacts/logs/cycle-choupi-20261030T021444Z.log` (physical startup).
 
+### Strict heap traversal of serialized persistent edges — 2026-10-30
+
+- The opt-in read-only reachability tracer now treats serialized persistent
+  object fields and persistent reference-array elements as strict edges. It
+  restores them with `getPersistentField_ReferenceStrict`; malformed field
+  types and tags too wide to append a two-byte field/element index cause the
+  walk to fail instead of silently treating an edge as null. Missing object
+  fields remain default values. Transient arrays and objects that have not yet
+  acquired persistent tags continue to use their in-memory references.
+- PC VPCD JCSystem cases 14–16 and nested-alias case 82 pass with strict edge
+  traversal (`trace_complete=1`, arrays 11/11, instances 7/7, invalid refs=0,
+  edge failures=0). ARM/RISC-V builds and two identified physical startup
+  cycles passed. The physical JCSystem transaction probe on 8E passed 9/9,
+  including rollback/commit, large array, catchable buffer-full, and card power
+  cycle persistence checks. This is regression evidence; the PC-only inventory
+  trace itself has not been run on physical hardware.
+- The test package/applet AID collided with installed upstream JCAlgTest and
+  prevented physical test installation. The repository-owned test fixture now
+  uses package `A0000000620301` / applet `A000000062030101`; only that temporary
+  fixture was installed/deleted. The upstream CAP was not changed.
+- No persistent records were deleted. Remaining safety gaps: malformed edge
+  and alias negative cases; roots from every installed package, applet,
+  context, and native owner; physical invocation of inventory; and evidence
+  that an incomplete mark cannot authorize reclamation.
+
 ## Canonical operating fixes and unresolved boundaries
 
 - **Host USB/PCSC access — viable workflow:** follow root `AGENTS.md` from the

@@ -35,10 +35,17 @@ out explicitly.
   - [x] Run the existing heap reachability tracer from selected-context roots
     plus discovered static/applet roots in PC VPCD. Cases 14–16 and 82 pass;
     all loaded fixtures are marked with zero invalid refs or edge-load failures.
-    This still uses tolerant child restoration and is diagnostic only.
-  - [ ] Decode persistent object/reference-array edges and alias chains with
-    strict fail-closed reads, then include every active applet/context root
-    before computing authoritative reachability.
+    The initial tracer used tolerant child restoration and was diagnostic only.
+  - [x] Traverse serialized persistent object fields and reference-array
+    elements with strict readers. Malformed field types or invalid tag widths
+    fail the mark walk; transient and not-yet-persisted objects retain their
+    in-memory traversal. VPCD cases 14–16 and 82 pass, as do physical JCSystem
+    transaction checks on 8E. This does not establish complete root coverage.
+  - [ ] Include every installed package's static roots and every active
+    applet/context/native root, then exercise the inventory adapters on physical
+    hardware before computing authoritative reachability.
+  - [ ] Add malformed serialized edge/alias tests and prove an incomplete walk
+    cannot authorize reclamation, including recovery after power cycling.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   power-cycle recovery before enabling any reclamation. `JCSystem` object
   deletion remains unsupported until this accounting is complete.
