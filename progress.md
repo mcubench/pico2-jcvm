@@ -16059,3 +16059,16 @@
   `b34630800ced9b7104bf47e937656cbe4639d26d4ddda0ba1e17166825bb80d3`);
   verified cycle `artifacts/logs/cycle-choupi-20261030T165823Z.log` (SHA-256
   `aaec42cf05678afc5f9a0f94282d2848b7d153d334ac2496e320718b20117d6e`).
+
+## 2026-10-30 Record PC/SC reader-selection fix commit 1 minute
+
+- Step/experiment: `deploy-java-pcsc-library-reader-index-commit-id`
+- When: '2026-10-30 17:16 UTC' - '2026-10-30 17:17 UTC'
+- Change: Recorded the commit identifier for the deploy reader-selection fix.
+- Validation: `git show --stat --oneline 9aaf6f1` confirms only the runner,
+  progress, QKB, and handoff files for this step were committed.
+- Result: The fix is committed as `9aaf6f1`.
+- Decision: Continue with the broader backlog; recapture an exact named-reader
+  result before treating any prior `/deploy` regression as firmware behavior.
+- Commit: `9aaf6f1` (change commit recorded here)
+- Artifacts/logs: none.
