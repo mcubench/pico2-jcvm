@@ -16908,3 +16908,17 @@
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`,
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`,
   `artifacts/firmware/README-max_crypto.txt`.
+
+## 2026-10-30 Close out max-crypto artifact commit 1 minute
+
+- Step/experiment: `max-crypto-arm-artifact-refresh-closeout`
+- When: '2026-10-30 21:38 UTC' - '2026-10-30 21:39 UTC'
+- Change: Recorded the implementation commit for the refreshed external-test
+  firmware artifact.
+- Validation: Confirmed commit `0b90024` contains only the UF2, its README,
+  and the required progress and handoff records; rechecked both artifact hashes.
+- Result: The refreshed ARM image and manifest are committed and reproducible
+  from the wrapper build.
+- Decision: Supply these artifacts for external testing; await test results.
+- Commit: recorded in this follow-up.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.

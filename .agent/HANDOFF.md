@@ -15,7 +15,8 @@ enables 147 of 150 declared capabilities. Expected JCAlgTest rows remain in
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv` (SHA-256
 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`). The
 artifact README has flashing and validation notes. This is a build-only
-refresh; no physical device was flashed or tested.
+refresh; no physical device was flashed or tested. The refresh is committed as
+`0b90024`.
 
 ## Latest continuation: VPCD emulator connection retry — 2026-10-30
 
