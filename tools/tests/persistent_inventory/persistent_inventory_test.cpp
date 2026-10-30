@@ -19,6 +19,11 @@ struct Result {
   bool saw_root = false;
   bool saw_array_body = false;
   bool saw_long_tag = false;
+  unsigned read_count = 0;
+  unsigned root_count = 0;
+  uint16_t last_static_offset = 0;
+  bool fail_static_read = false;
+  bool stop_static_root = false;
 };
 
 bool collect(const jcvm::PersistentInventory::Tag &tag, void *context) {
@@ -33,6 +38,24 @@ bool collect(const jcvm::PersistentInventory::Tag &tag, void *context) {
 
 bool stop_immediately(const jcvm::PersistentInventory::Tag &, void *) {
   return false;
+}
+
+bool read_static_reference(const uint8_t, const uint16_t offset,
+                           uint16_t &reference, void *context) {
+  auto &result = *static_cast<Result *>(context);
+  ++result.read_count;
+  if (result.fail_static_read && offset == 4) return false;
+  reference = offset == 0 ? 0 : 0x0101;
+  return true;
+}
+
+bool visit_static_root(const uint8_t package_id, const uint16_t offset,
+                       const uint16_t reference, void *context) {
+  auto &result = *static_cast<Result *>(context);
+  ++result.root_count;
+  result.last_static_offset = offset;
+  return package_id == 9 && reference != 0 &&
+         !result.stop_static_root;
 }
 
 bool expect(bool condition, const char *name) {
@@ -124,6 +147,32 @@ int main() {
                            InvalidStaticLayout &&
                    invalid_static_roots.count == 0,
                "rejects_static_reference_segment_larger_than_image");
+
+  Result static_values;
+  ok &= expect(jcvm::PersistentInventory::visitPackageStaticRoots(
+                   9, 10, 3, read_static_reference, visit_static_root,
+                   &static_values) ==
+                       jcvm::PersistentInventory::VisitResult::Complete &&
+                   static_values.read_count == 3 &&
+                   static_values.root_count == 2 &&
+                   static_values.last_static_offset == 4,
+               "reads_all_static_slots_and_visits_only_non_null_roots");
+  Result failed_static_values;
+  failed_static_values.fail_static_read = true;
+  ok &= expect(jcvm::PersistentInventory::visitPackageStaticRoots(
+                   9, 10, 3, read_static_reference, visit_static_root,
+                   &failed_static_values) ==
+                       jcvm::PersistentInventory::VisitResult::ReadFailure &&
+                   failed_static_values.root_count == 1,
+               "fails_closed_on_static_root_read_failure");
+  Result stopped_static_values;
+  stopped_static_values.stop_static_root = true;
+  ok &= expect(jcvm::PersistentInventory::visitPackageStaticRoots(
+                   9, 10, 3, read_static_reference, visit_static_root,
+                   &stopped_static_values) ==
+                       jcvm::PersistentInventory::VisitResult::Stopped &&
+                   stopped_static_values.root_count == 1,
+               "supports_early_stop_during_static_root_walk");
 
   ok &= expect(jcvm::PersistentInventory::visitApplet(
                    7, stop_immediately, nullptr) ==

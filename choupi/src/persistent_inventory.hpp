@@ -18,10 +18,16 @@ enum class VisitResult : uint8_t {
   Stopped,
   InvalidCursor,
   InvalidTag,
-  InvalidStaticLayout
+  InvalidStaticLayout,
+  InvalidArgument,
+  ReadFailure
 };
 
 using TagVisitor = bool (*)(const Tag &tag, void *context);
+using StaticReferenceReader = bool (*)(uint8_t package_id, uint16_t offset,
+                                       uint16_t &reference, void *context);
+using StaticRootVisitor = bool (*)(uint8_t package_id, uint16_t offset,
+                                   uint16_t reference, void *context);
 
 /// Visit active persistent tags below a prefix without constructing an FS.
 /// The cursor is local to this call and storage must not mutate during it.
@@ -44,6 +50,14 @@ VisitResult visitPackageStaticReferenceSlots(uint8_t package_id,
                                              uint16_t reference_count,
                                              TagVisitor visitor,
                                              void *context);
+
+/// Read and visit non-null 16-bit static references one slot at a time.
+/// The reader must report failure distinctly from a null reference and should
+/// register loaded references in the heap's static-root cache.
+VisitResult visitPackageStaticRoots(uint8_t package_id, uint16_t image_size,
+                                    uint16_t reference_count,
+                                    StaticReferenceReader reader,
+                                    StaticRootVisitor visitor, void *context);
 
 } // namespace PersistentInventory
 } // namespace jcvm

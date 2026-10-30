@@ -9,9 +9,10 @@ namespace PersistentInventory {
 
 VisitResult visitPrefix(const Tag &prefix, const TagVisitor visitor,
                         void *context) {
-  if (prefix.len > kTagCapacity || visitor == nullptr) {
+  if (prefix.len > kTagCapacity) {
     return VisitResult::InvalidTag;
   }
+  if (visitor == nullptr) return VisitResult::InvalidArgument;
 
   fs_tag_next_request_t request{};
   while (true) {
@@ -66,7 +67,8 @@ VisitResult visitPackageStatics(const uint8_t package_id,
 VisitResult visitPackageStaticReferenceSlots(
     const uint8_t package_id, const uint16_t image_size,
     const uint16_t reference_count, const TagVisitor visitor, void *context) {
-  if (visitor == nullptr || reference_count > image_size / 2u) {
+  if (visitor == nullptr) return VisitResult::InvalidArgument;
+  if (reference_count > image_size / 2u) {
     return VisitResult::InvalidStaticLayout;
   }
 
@@ -85,6 +87,33 @@ VisitResult visitPackageStaticReferenceSlots(
       return VisitResult::InvalidTag;
     }
     if (!visitor(tag, context)) {
+      return VisitResult::Stopped;
+    }
+  }
+  return VisitResult::Complete;
+}
+
+VisitResult visitPackageStaticRoots(
+    const uint8_t package_id, const uint16_t image_size,
+    const uint16_t reference_count, const StaticReferenceReader reader,
+    const StaticRootVisitor visitor, void *context) {
+  if (reader == nullptr || visitor == nullptr) {
+    return VisitResult::InvalidArgument;
+  }
+  if (reference_count > image_size / 2u) {
+    return VisitResult::InvalidStaticLayout;
+  }
+
+  for (uint32_t offset = 0; offset < static_cast<uint32_t>(reference_count) * 2;
+       offset += 2) {
+    uint16_t reference = 0;
+    if (!reader(package_id, static_cast<uint16_t>(offset), reference,
+                 context)) {
+      return VisitResult::ReadFailure;
+    }
+    if (reference != 0 &&
+        !visitor(package_id, static_cast<uint16_t>(offset), reference,
+                 context)) {
       return VisitResult::Stopped;
     }
   }
