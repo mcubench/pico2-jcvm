@@ -15060,3 +15060,13 @@
 - Decision: Continue with direct tests for the flash/CAP adapters and a bounded diagnostic invocation; do not enable persistent deletion until typed edges and all context roots are accounted for.
 - Commit: pending.
 - Artifacts/logs: none.
+## 2026-10-30 — Isolate persistent inventory adapter host fault — 16 minutes
+
+- Step/experiment: `persistent-inventory-static-adapter-probe`
+- When: '2026-10-30 01:54 UTC' - '2026-10-30 02:10 UTC'
+- Change: Tried a temporary PC-only post-APDU diagnostic for the installed static-root adapter; removed the diagnostic and all temporary trace logging after it exposed a host-emulator fault. Updated `.agent/QKB.md` and `.agent/HANDOFF.md` with the unresolved boundary.
+- Validation: `./tools/test-persistent-inventory` passed all 15 focused checks; `./tools/build-pc` passed. The control `./tools/test-jcsystem-transaction-applet --case 14` passed ATR, SELECT, and static-reference identity (`TEST:SUMMARY pass=3 fail=0`, 52.343 s). With the temporary inventory diagnostic, VPCD closed after static slot offset 0 returned compact reference 10 and slot offset 2 entered heap persistent-reference cache lookup; the Rust host emulator reported SIGSEGV / unauthorized address `0x0`. No ARM/RISC-V build or physical test was run because no source change was retained and the probe was PC-only.
+- Result: Existing control behavior is intact. The installed static adapter cannot yet be safely invoked in the host emulator; the fault's cause is not established. No persistent records were deleted or changed.
+- Decision: Add a focused heap/cache or minimal adapter test to isolate the fault before direct hardware invocation or reclamation work. Keep persistent deletion disabled.
+- Commit: `3e0728d` (QKB/HANDOFF investigation record)
+- Artifacts/logs: `artifacts/logs/persistent-inventory-static-vpcd-20261030e.log`, `artifacts/logs/persistent-inventory-control-vpcd-20261030.log`, `/tmp/build-pc-inventory.log`
