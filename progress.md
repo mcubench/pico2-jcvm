@@ -16727,6 +16727,19 @@
 - Commit: recorded in immediate follow-up progress entry.
 - Artifacts/logs: `artifacts/firmware/README-max_crypto.txt` and the current UF2.
 
+## 2026-10-30 Record artifact hash correction commit 1 minute
+
+- Step/experiment: `max-crypto-artifact-current-hash-log-closeout`
+- When: '2026-10-30 21:06 UTC' - '2026-10-30 21:07 UTC'
+- Change: Recorded the documentation correction commit SHA.
+- Validation: Confirmed commit `efe4cd5` contains only the handoff checksum
+  correction and its original progress record.
+- Result: The current max-profile artifact hash correction is committed as
+  `efe4cd5`.
+- Decision: Continue with unresolved project priorities.
+- Commit: recorded in this follow-up commit.
+- Artifacts/logs: none.
+
 ## 2026-10-30 Record multi-package VPCD rerun commit 1 minute
 
 - Step/experiment: `multipackage-restart-delete-regression-log-closeout`
