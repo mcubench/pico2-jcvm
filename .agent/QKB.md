@@ -198,7 +198,7 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - Validation: overlay power-cut/metadata tests pass, including distinct owner
   mapping for two same-class instances, registry reinitialization, and removal
   of one mapping without changing the other. PC VPCD multi-package restart and
-  delete suite passes 20/20; JCSystem transaction applet suite passes 85/85.
+  delete suite passes 23/23; JCSystem transaction applet suite passes 85/85.
   ARM/RISC-V builds pass, and identified 2BED firmware flash/finite startup
   monitor pass. Physical install of multiple instances and their root restore
   has not been exercised. The collector still only enumerates active-applet

@@ -15191,3 +15191,14 @@
 - Decision: Implement complete all-live applet/context/native root enumeration and malformed serialized-edge/alias negative tests before enabling any persistent reclamation. Retain VCR1, INS1, and CAP v3/v4 compatibility.
 - Commit: `9f7d1f7` (implementation, tests, QKB/TODO/HANDOFF, and progress); nested Rust OS permission commit `7e6dd11`.
 - Artifacts/logs: final physical cycle `artifacts/logs/cycle-choupi-20261030T035044Z.log` (SHA-256 `956debc0a0919dbd270139a27c6d15ce69dfb4a41f2e5c97cd67eb600e4c4661`); flashed ARM image `build/arm/pico2_choupi.uf2` (SHA-256 `4ca86e0337194f90ef4c87640dbd2a77dfd4030040a71a097bdfc2552f29e5a8`); VPCD multipackage run logs `artifacts/logs/host-vpcd-multipackage-apdu-20261030T034819Z.log` and `artifacts/logs/host-vpcd-multipackage-restart-20261030T034819Z.log`; emulator failure before rebuilding the Rust OS: `emulator exited before VPCD connect` due `filename::can_read` denying nonzero logical owners.
+
+## 2026-10-30 Correct VPCD multipackage check count 1 minute
+
+- Step/experiment: `persistent-applet-owner-progress-count-correction`
+- When: '2026-10-30 03:53 UTC' - '2026-10-30 03:54 UTC'
+- Change: Corrected the compact QKB and handoff summaries to report the final VPCD multipackage suite count of 23, including the VCR2 uniqueness and owner-restart assertions.
+- Validation: Compared the summary count against the final `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` output (`TEST:SUMMARY pass=23 fail=0`). No source changed.
+- Result: Handoff and QKB counts now match the final run.
+- Decision: Continue with root enumeration for inactive applets and other live owners.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T034819Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261030T034819Z.log`.

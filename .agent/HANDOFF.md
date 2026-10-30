@@ -20,7 +20,7 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    allow trusted RuntimeEnvironment/Installer contexts to access these logical
    owner tags while keeping applet contexts isolated. Two same-class instances
    retain different IDs in overlay recovery tests; VPCD multipackage restart /
-   DELETE passes 20/20 and JCSystem transaction applet passes 85/85. ARM and
+   DELETE passes 23/23 and JCSystem transaction applet passes 85/85. ARM and
    RISC-V builds pass. Physical 2BED was reflashed with current ARM firmware
    and finite startup monitor passed, but physical multi-instance install/root
    restore has not been tested. Root enumeration still scans only the active
