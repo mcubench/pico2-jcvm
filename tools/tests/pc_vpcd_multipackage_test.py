@@ -411,12 +411,15 @@ def main() -> int:
             inventory_logs = log_path.read_text(errors="replace")
             if not re.search(
                     r"PERSISTENT_INVENTORY:.*applet_roots=3 "
-                    r"trace_complete=1", inventory_logs):
+                    r"trace_complete=1 owner_scans=3 "
+                    r"unreachable_complete=1 unreachable_tags=\d+",
+                    inventory_logs):
                 raise RuntimeError(
-                    "inventory did not mark all three installed applet roots; "
+                    "inventory did not mark all three installed applet roots "
+                    "and complete all owner-tag scans; "
                     f"log={log_path}"
                 )
-            print("TEST:PASS inventory marks all 3 installed applet roots")
+            print("TEST:PASS inventory marks all 3 applet roots and scans owners")
 
             # Exit the first process cleanly so it saves VM state, then resume
             # the saved card with all CAP packages and instance records.
@@ -577,12 +580,15 @@ def main() -> int:
             restart_inventory_logs = restart_log_path.read_text(errors="replace")
             if not re.search(
                     r"PERSISTENT_INVENTORY:.*applet_roots=3 "
-                    r"trace_complete=1", restart_inventory_logs):
+                    r"trace_complete=1 owner_scans=3 "
+                    r"unreachable_complete=1 unreachable_tags=\d+",
+                    restart_inventory_logs):
                 raise RuntimeError(
-                    "restart inventory did not mark all three applet roots; "
+                    "restart inventory did not mark all three applet roots "
+                    "and complete all owner-tag scans; "
                     f"log={restart_log_path}"
                 )
-            print("TEST:PASS restart inventory marks all 3 applet roots")
+            print("TEST:PASS restart inventory scans all 3 applet owners")
 
             exchange(connection, bytes.fromhex("00A4040000"), "reselect ISD")
             delete_object(scp, multi_applets[0], False,

@@ -271,6 +271,10 @@ struct PersistentInventoryCounts {
   std::vector<jcvm::jref_t> references;
 };
 
+struct UnreachableTagCount {
+  unsigned tags = 0;
+};
+
 bool count_static_inventory_root(uint8_t, uint16_t, const uint16_t reference,
                                  void *opaque) {
   auto &counts = *static_cast<PersistentInventoryCounts *>(opaque);
@@ -284,6 +288,55 @@ void count_applet_inventory_root(const jcvm::jref_t reference,
   auto &counts = *static_cast<PersistentInventoryCounts *>(opaque);
   ++counts.applet_roots;
   counts.references.emplace_back(reference);
+}
+
+bool count_unreachable_applet_tag(
+    const jcvm::PersistentInventory::Tag &, void *opaque) {
+  ++static_cast<UnreachableTagCount *>(opaque)->tags;
+  return true;
+}
+
+bool inventory_unreachable_tags_for_all_owners(
+    jcvm::Heap &heap, const std::vector<jcvm::jref_t> &roots,
+    unsigned &owner_scans, unsigned &tag_count) {
+  try {
+    for (uint8_t package_id = 0; package_id < JCVM_MAX_PACKAGES;
+         ++package_id) {
+      const uint8_t instance_count =
+          cap_store_package_instance_count(package_id);
+      if (instance_count == 0) continue;
+      if (!jcvm::FlashMemory_Handler::isPackageExist(package_id)) return false;
+      for (uint8_t index = 0; index < instance_count; ++index) {
+        uint8_t applet_aid[16]{};
+        uint8_t applet_aid_length = 0;
+        uint8_t instance_aid[16]{};
+        uint8_t instance_aid_length = 0;
+        uint16_t class_index = 0xffff;
+        uint8_t owner = 0;
+        if (!cap_store_package_instance_at(
+                package_id, index, applet_aid, applet_aid_length,
+                instance_aid, instance_aid_length, class_index) ||
+            applet_aid_length < 5 || applet_aid_length > sizeof(applet_aid) ||
+            instance_aid_length < 5 ||
+            instance_aid_length > sizeof(instance_aid) ||
+            class_index == 0xffff ||
+            !cap_store_applet_owner(instance_aid, instance_aid_length, owner))
+          return false;
+
+        UnreachableTagCount count;
+        const auto result =
+            jcvm::PersistentInventory::visitUnreachableAppletTags(
+                owner, heap, roots, count_unreachable_applet_tag, &count);
+        if (result != jcvm::PersistentInventory::VisitResult::Complete)
+          return false;
+        ++owner_scans;
+        tag_count += count.tags;
+      }
+    }
+  } catch (...) {
+    return false;
+  }
+  return true;
 }
 
 void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
@@ -315,9 +368,16 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
       ? jcvm::PersistentInventory::VisitResult::Complete
       : jcvm::PersistentInventory::VisitResult::ReadFailure;
   jcvm::Heap::ReachabilitySummary reachability;
+  unsigned owner_scans = 0;
+  unsigned unreachable_tags = 0;
+  bool unreachable_complete = false;
   if (static_result == jcvm::PersistentInventory::VisitResult::Complete &&
       applet_result == jcvm::PersistentInventory::VisitResult::Complete) {
     reachability = context.getHeap().traceReachableFrom(counts.references);
+    if (reachability.complete) {
+      unreachable_complete = inventory_unreachable_tags_for_all_owners(
+          context.getHeap(), counts.references, owner_scans, unreachable_tags);
+    }
   } else {
     reachability.complete = false;
     reachability.root_enumeration_failures = 1;
@@ -325,12 +385,15 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   std::fprintf(stderr,
                "PERSISTENT_INVENTORY: static_result=%u static_roots=%u "
                "applet_result=%u applet_roots=%u trace_complete=%u "
+               "owner_scans=%u unreachable_complete=%u unreachable_tags=%u "
                "reachable_arrays=%u/%u reachable_instances=%u/%u "
                "invalid_refs=%u edge_failures=%u root_failures=%u "
                "context_roots=%u\n",
                static_cast<unsigned>(static_result), counts.static_roots,
                static_cast<unsigned>(applet_result), counts.applet_roots,
                reachability.complete ? 1u : 0u,
+               owner_scans, unreachable_complete ? 1u : 0u,
+               unreachable_tags,
                reachability.arrays_reachable, reachability.arrays_total,
                reachability.instances_reachable,
                reachability.instances_total, reachability.invalid_references,

@@ -117,8 +117,13 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    another owner's records, and malformed reachable data; both persistent
    transaction and standalone inventory suites pass. ARM and RISC-V builds
    pass, and the current ARM image flash-verifies and passes the finite startup
-   monitor on physical 2BED. This consumer is not connected to runtime GC and
-   was not invoked by a hardware APDU. No persistent records were deleted.
+   monitor on physical 2BED. The consumer is now connected to the opt-in PC
+   VPCD diagnostic, which supplies context roots plus installed static and all
+   registered applet roots, then scans all owners. Fresh-process multipackage
+   validation passed before and after restart with 3/3 owner scans complete,
+   14/14 arrays and 4/4 instances reachable, zero invalid refs/edge failures,
+   and zero candidate tags. It remains outside physical runtime GC and was not
+   invoked by a hardware APDU. No persistent records were deleted.
    Image SHA-256 `5e6aefac07fb265c109c1d11b4b58eda1a2a83ecdd87452cea615f438393b31e`;
    cycle log `artifacts/logs/cycle-choupi-20261030T051629Z.log` SHA-256
    `827e92b4fc6b4eab5c14d95e104825f9e14d1cc3701bc26ad8cafbd686a7e294`.
@@ -126,9 +131,9 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    receives provisional results; a cursor stall after the first result returns
    `InvalidCursor`, so callers must discard the partial list unless the final
    status is `Complete`. The host transaction test verifies the stall leaves
-   both records intact. Next: integrate the consumer only after combining
-   complete installed-package static and per-instance applet roots. Keep record
-   deletion disabled pending real power-cycle recovery.
+   both records intact. Next: validate read-only owner scans on hardware with a
+   suitable multi-instance fixture, then continue interrupted-update and real
+   power-cycle recovery before any persistent-record deletion.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, and private RSA hardening.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded
