@@ -17228,9 +17228,24 @@
   VPCD/build evidence; no physical reader was registered or flashed.
 - Decision: Keep broader RMI profile coverage and physical-card validation open;
   the previously failing official SDK interop subset is restored.
-- Commit: pending.
+- Commit: `5f82ed8`.
 - Artifacts/logs: client log SHA-256
   `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`; emulator
   log SHA-256
   `9082a1d893378597425d7f70e084c7b439fe289cf20dcf251e4245db646e8cdc`; both
   under `artifacts/logs/` with timestamp `20261030T232628Z`.
+
+
+## 2026-10-30 Record CAP 2.2 Directory integration commit 1 minute
+
+- Step/experiment: `cap22-directory-layout-and-jcrmi-closeout`
+- When: '2026-10-30 23:31 UTC' - '2026-10-30 23:32 UTC'
+- Change: Recorded implementation commit `5f82ed8` in progress and handoff.
+- Validation: Confirmed the commit includes the version-aware Directory parser,
+  regression cases, passing-test evidence, refreshed max ARM image, and
+  corresponding TODO/QKB/HANDOFF records. Existing unrelated worktree entries
+  remain unstaged.
+- Result: The CAP 2.2 Directory and official JCRMI VPCD fix is committed.
+- Decision: Continue with the next open project acceptance item.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-client-20261030T232628Z.log`.

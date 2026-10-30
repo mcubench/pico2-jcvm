@@ -15,8 +15,7 @@ Refreshed empty-card max ARM image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, 2,075,136 bytes,
 SHA-256 `efb5fca5c96365e98a56a20d764807f9e35d1ecb841f0fe24cc8046ba7b0de36`.
 The VPCD logs are `artifacts/logs/rmi-client-official-vpcd-{client,emulator}-20261030T232628Z.log`.
-No physical reader was registered, so this was not a board test. Implementation
-commit is pending; preserve unrelated dirty changes, especially `src/cap_load.cpp`.
+No physical reader was registered, so this was not a board test. Implementation is committed as `5f82ed8`; preserve unrelated dirty changes, especially `src/cap_load.cpp`.
 
 ## CAP 2.2 internal remote-interface references — 2026-10-30
 
