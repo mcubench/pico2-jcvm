@@ -15488,3 +15488,22 @@
   `c0d11a3c96e78f0d9cd31e43d2260348b742c45fad3d8bb3082882c882598e7a`;
   restore emulator log SHA-256
   `d7c407ff2d31d26b568d0116cd2067cc40c7b2c549e0b6fd2f736648a9f58575`.
+
+## 2026-10-30 Close stale reachability checklist item 2 minutes
+
+- Step/experiment: `persistent-inventory-checklist-reconciliation`
+- When: '2026-10-30 05:49 UTC' - '2026-10-30 05:51 UTC'
+- Change: Marked the older TODO subitem for serialized-root and alias
+  reachability complete, with evidence now spanning direct adapter tests,
+  strict alias traversal, physical single-owner inventory, multipackage VPCD
+  restart, and VPCD persistence/GC stress. Kept physical multi-owner and real
+  USB power-cycle requirements open.
+- Validation: `git diff --check -- TODO.md` passed. This documentation-only
+  correction relies on the test and hardware evidence recorded in the
+  preceding progress entry; no tests or hardware operations were repeated.
+- Result: TODO no longer says native reachability and physical cursor use are
+  untested, while the remaining physical acceptance gates stay explicit.
+- Decision: Preserve the persistent-record deletion gate until power-cycle
+  recovery and physical multi-owner behavior are validated.
+- Commit: `9dba8ce` (checklist update; progress record committed separately).
+- Artifacts/logs: See previous progress entry for full logs and hashes.
