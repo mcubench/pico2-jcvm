@@ -5,6 +5,10 @@
 
 #include <cstdint>
 
+namespace jcarray_test_fixture {
+bool fail_persistent_reference_read = false;
+}
+
 extern "C" int fs_length(const uint8_t *, uint8_t, uint32_t *) { return 0; }
 extern "C" uint8_t fs_exists(const uint8_t *, uint8_t) { return 0; }
 
@@ -57,6 +61,9 @@ FieldType FlashMemory_Handler::getPersistentField_Type(const fs::Tag &) {
 
 jref_t FlashMemory_Handler::getPersistentField_ReferenceStrict(
     const fs::Tag &, Heap &) {
+  if (jcarray_test_fixture::fail_persistent_reference_read) {
+    throw Exceptions::SecurityException;
+  }
   return jref_t{};
 }
 

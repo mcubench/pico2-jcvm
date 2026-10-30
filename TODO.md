@@ -74,7 +74,8 @@ out explicitly.
     cannot authorize reclamation, including recovery after power cycling.
     - [x] Host heap test confirms a partial root enumerator and an invalid
       reference-array child both make the trace incomplete and reclaim zero
-      heap handles.
+      heap handles. A strict persistent-array child read exception is also
+      injected and blocks reclamation.
     - [ ] Inject malformed serialized fields/aliases and verify reboot recovery.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   power-cycle recovery before enabling any reclamation. `JCSystem` object

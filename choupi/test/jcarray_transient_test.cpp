@@ -8,6 +8,10 @@
 #include <memory>
 #include <vector>
 
+namespace jcarray_test_fixture {
+extern bool fail_persistent_reference_read;
+}
+
 namespace jcvm {
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
     jref_t, jshort_t, jshort_t, jref_t, jshort_t);
@@ -628,6 +632,31 @@ int main() {
     return 1;
   }
 
+  const auto persistentParentRef =
+      heap.addArray(1, jcvm::JAVA_ARRAY_T_REFERENCE,
+                    static_cast<jcvm::jc_cp_offset_t>(0xffff));
+  const auto persistentParent = heap.getArray(persistentParentRef);
+  jcvm::fs::Tag persistentTag{};
+  persistentTag.len = 2;
+  persistentTag.value[0] = 0xa0;
+  persistentTag.value[1] = 0x42;
+  persistentParent->setPersistentTag(persistentTag);
+  const auto persistentUnvisitedRef =
+      heap.addArray(2, jcvm::JAVA_ARRAY_T_BYTE);
+  const std::vector<jcvm::jref_t> persistentRoots{persistentParentRef};
+  jcarray_test_fixture::fail_persistent_reference_read = true;
+  const auto persistentCollection =
+      heap.collectUnreachableFrom(persistentRoots);
+  jcarray_test_fixture::fail_persistent_reference_read = false;
+  if (persistentCollection.complete ||
+      persistentCollection.edge_load_failures != 1 ||
+      persistentCollection.arrays_reclaimed != 0 ||
+      !heap.getArray(persistentParentRef) ||
+      !heap.getArray(persistentUnvisitedRef)) {
+    std::cerr << "persistent edge read failure authorized reclamation\n";
+    return 1;
+  }
+
   std::cout << "TEST:PASS gc_retains_static_and_apdu_buffers\n";
   std::cout << "TEST:PASS gc_traces_reference_array_child\n";
   std::cout << "TEST:PASS gc_traces_instance_field_child\n";
@@ -640,5 +669,6 @@ int main() {
             << collection.arrays_reclaimed << "\n";
   std::cout << "TEST:PASS gc_skips_reclamation_after_incomplete_root_scan\n";
   std::cout << "TEST:PASS gc_skips_reclamation_after_invalid_child_ref\n";
+  std::cout << "TEST:PASS gc_skips_reclamation_after_persistent_edge_failure\n";
   return 0;
 }

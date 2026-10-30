@@ -27,8 +27,9 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    class metadata and valid AIDs; mismatch fails closed. Physical multi-instance
    install/root restore has not been tested; live contexts and native-held
    roots remain uncovered. The JCArray heap regression now proves partial root
-   enumeration and an invalid in-memory array edge return an incomplete trace
-   and reclaim zero heap handles. Malformed serialized fields/aliases and reboot
+   enumeration, an invalid in-memory array edge, and an injected strict
+   persistent-array child read exception each return an incomplete trace and
+   reclaim zero heap handles. Malformed serialized fields/aliases and reboot
    recovery remain untested, so persistent records cannot be deleted.
 
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico

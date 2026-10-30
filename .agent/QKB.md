@@ -1401,3 +1401,13 @@ original terminology/status; check current summary and later fixes before reuse.
   partial set, and a reachable reference array with an invalid child handle.
   Both mark summaries incomplete and reclaim zero heap handles. This does not
   exercise malformed serialized fields/aliases or reboot recovery.
+
+### Strict persistent child-read failure must stop heap reclamation — covered 2026-10-30
+
+- The JCArray host collector fixture can mark an array persistent and inject a
+  `SecurityException` from `getPersistentField_ReferenceStrict` while scanning
+  its child slots. `./tools/test-jcarray` confirms the trace reports one
+  `edge_load_failure`, returns incomplete, and reclaims zero handles, including
+  an unrelated unrooted array. This verifies the collector's safety gate for a
+  persistent read exception, but does not fuzz malformed record bytes or alias
+  cycles and does not validate post-reboot recovery.
