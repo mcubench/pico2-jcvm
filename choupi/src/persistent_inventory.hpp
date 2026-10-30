@@ -27,6 +27,10 @@ VisitResult visitPrefix(const Tag &prefix, TagVisitor visitor,
 VisitResult visitApplet(uint8_t applet_owner, TagVisitor visitor,
                         void *context);
 
+/// Visit the serialized static-field namespace belonging to one package.
+VisitResult visitPackageStatics(uint8_t package_id, TagVisitor visitor,
+                                void *context);
+
 } // namespace PersistentInventory
 } // namespace jcvm
 

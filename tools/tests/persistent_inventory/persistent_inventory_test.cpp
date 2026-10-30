@@ -18,6 +18,7 @@ struct Result {
   unsigned count = 0;
   bool saw_root = false;
   bool saw_array_body = false;
+  bool saw_long_tag = false;
 };
 
 bool collect(const jcvm::PersistentInventory::Tag &tag, void *context) {
@@ -26,6 +27,7 @@ bool collect(const jcvm::PersistentInventory::Tag &tag, void *context) {
   result.saw_root |= tag.len == 5 && tag.value[4] == 0xff;
   result.saw_array_body |= tag.len == 7 && tag.value[5] == 0xff &&
                            tag.value[6] == 0xff;
+  result.saw_long_tag |= tag.len == jcvm::PersistentInventory::kTagCapacity;
   return true;
 }
 
@@ -62,9 +64,15 @@ extern "C" uint8_t fs_next_tag(const uint8_t *prefix, uint8_t prefix_len,
 }
 
 int main() {
+  std::vector<uint8_t> max_length_package_tag(128, 0x5a);
+  max_length_package_tag[0] = 0x02;
+  max_length_package_tag[1] = 9;
   entries = {{{0x03, 7, 0x38, 1, 0xff}},
              {{0x03, 7, 0x38, 1, 0x00, 0xff, 0xff}},
-             {{0x03, 8, 0x38, 1, 0xff}}};
+             {{0x03, 8, 0x38, 1, 0xff}},
+             {{0x02, 9, 1}},
+             {{0x02, 9, 2, 0xff, 0xff}},
+             {max_length_package_tag}};
   Result result;
   bool ok = expect(jcvm::PersistentInventory::visitApplet(7, collect,
                                                            &result) ==
@@ -72,6 +80,13 @@ int main() {
                        result.count == 2 && result.saw_root &&
                        result.saw_array_body,
                    "enumerates_only_applet_owner_namespace");
+
+  Result package_result;
+  ok &= expect(jcvm::PersistentInventory::visitPackageStatics(
+                   9, collect, &package_result) ==
+                       jcvm::PersistentInventory::VisitResult::Complete &&
+                   package_result.count == 3 && package_result.saw_long_tag,
+               "enumerates_package_statics_including_maximum_tag");
 
   ok &= expect(jcvm::PersistentInventory::visitApplet(
                    7, stop_immediately, nullptr) ==

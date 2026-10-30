@@ -54,5 +54,14 @@ VisitResult visitApplet(const uint8_t applet_owner, const TagVisitor visitor,
   return visitPrefix(prefix, visitor, context);
 }
 
+VisitResult visitPackageStatics(const uint8_t package_id,
+                                const TagVisitor visitor, void *context) {
+  Tag prefix{};
+  prefix.len = 2;
+  prefix.value[0] = 0x02; // package static fields and their persistent graphs
+  prefix.value[1] = package_id;
+  return visitPrefix(prefix, visitor, context);
+}
+
 } // namespace PersistentInventory
 } // namespace jcvm

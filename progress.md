@@ -14972,3 +14972,14 @@
 - Decision: Next enumerate persisted roots and decode typed object/array/alias edges, including package-static roots; only then compare the persistent graph against live VM roots. Keep flash deletion disabled.
 - Commit: `16b4695`; this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T011112Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
+
+## 2026-10-30 Add package-static persistent-tag inventory 4 minutes
+
+- Step/experiment: `persistent-package-static-tag-inventory`
+- When: '2026-10-30 01:13 UTC' - '2026-10-30 01:17 UTC'
+- Change: Added `PersistentInventory::visitPackageStatics`, paging the `0x02, package` namespace independently from applet-owned `0x03, owner` state. Expanded the focused host test with three package tags, including a 128-byte tag, and updated TODO/QKB/HANDOFF. Enumeration remains read-only and does not identify which tags encode references.
+- Validation: `./tools/test-persistent-inventory` passed five cases (`TEST:SUMMARY fail=0`). `./tools/build arm`, `./tools/build riscv`, and `./tools/build-pc` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, flash verification, and finite runtime (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). The monitor did not call the inventory visitor. Scoped `git diff --check` passed.
+- Result: Package-static tags can now be streamed separately, which is needed before reference-valued statics can be considered graph roots. No flash record is modified or deleted.
+- Decision: Inspect CAP static metadata to enumerate reference slots for every installed package, then traverse serialized typed fields, arrays, and aliases. Keep reclamation disabled.
+- Commit: recorded in the immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T011703Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
