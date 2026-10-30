@@ -15114,3 +15114,14 @@
 - Decision: Add a dedicated heap/persistent-storage unit harness before claiming negative coverage for malformed serialized edges or incomplete-mark reclamation safety.
 - Commit: pending.
 - Artifacts/logs: none.
+
+## 2026-10-30 Progress log commit-reference correction
+
+- Step/experiment: `progress-commit-reference-erratum`
+- When: '2026-10-30 02:45 UTC' - '2026-10-30 02:46 UTC'
+- Change: Corrected two commit references affected by a mistaken first-match update. The earlier `persistent-inventory-handoff-sync` record belongs to documentation commit `00095ac`, not the later RMI build fix. The `rmi-test-ffi-include-path` record above belongs to code/QKB commit `2c92b7f` and progress commit `7394221`.
+- Validation: Compared the affected records with `git show` for the referenced commits; no source or test files changed.
+- Result: The append-only log now has an explicit correction without rewriting historical entries.
+- Decision: Continue using unique section-scoped edits when updating commit references.
+- Commit: `7394221` records the RMI progress entry; this erratum is committed separately.
+- Artifacts/logs: none.
