@@ -15343,7 +15343,7 @@
 - Validation: Initial `./tools/test-vpcd-persistence` attempt failed before APDUs with local socket `Operation not permitted` in the restricted sandbox. Reran `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` via elevated host execution; install/commit passed 3/3, process-restart restore and GC passed 38/38, and command exited successfully. The restore covered a reclaimed array restored from flash, nested aliases, identity checks, and four GC-pressure rounds.
 - Result: PC VPCD process restart preserved persistent state and GC restored reachable persistent records while handling four allocation-pressure rounds. This is emulator evidence only; RP2350 power-loss/interrupted-write recovery is still unverified. No physical device was accessed.
 - Decision: Retain the persistent reclamation restriction until physical power-cycle and interrupted-update recovery are validated.
-- Commit: pending.
+- Commit: `7dfeaad` (evidence correction); this progress record is committed separately.
 - Artifacts/logs: Commit log `artifacts/logs/vpcd-persistence-commit-20261030T044356Z.log` SHA-256 `df4578db168deb7b1751623e486f3e9d696623eaadd3af56890d6ca916ee9192`; restore log `artifacts/logs/vpcd-persistence-restore-20261030T044356Z.log` SHA-256 `68a9b4f9169ec699143095dec88f64c840043a16485f125c9849aed797fe8c75`.
 
 ## 2026-10-30 Confirm current physical card state 3 minutes
@@ -15389,3 +15389,14 @@
 - Decision: Continue the inventory consumer work while retaining the persistent-record deletion gate until an actual hardware power-cycle test is available.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T045329Z.log` SHA-256 `f5d8ce2f8575477a63b16bacd50344916d40c37abd64833369f741143ba967cd`; restart log SHA-256 `dd132b4f47944c3f720b2d5997e0384e78aa5322d8d9b2e63d58ce820ec94c00`; physical reset log `artifacts/logs/pcsc-card-reset-2BED-20261030T0455Z.log` SHA-256 `441c027f1afd5e9cebdf31e46fe761d5292ecafdafdeadb56863e13caec80f7e`.
+
+## 2026-10-30 Correct malformed-edge collector fixtures 2 minutes
+
+- Step/experiment: `persistent-inventory-valid-parent-fixtures`
+- When: '2026-10-30 04:55 UTC' - '2026-10-30 04:57 UTC'
+- Change: Corrected the persistent reference-array collector fixtures to seed valid serialized array-object headers and lengths before placing malformed aliases in their child tags. The earlier fixture assigned an in-memory persistent tag without storing the array header, which allowed failure at parent length before the malformed child was read. Updated QKB/handoff to correct the evidence and clarify that the self-referential alias case proves fail-closed rejection but not specifically the recursion-depth guard.
+- Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including malformed object alias, truncated array alias, self-referential array alias, and malformed object-field cases with valid parent/root representation. No ARM/RISC-V build or hardware run was needed for the test-only fixture correction.
+- Result: The collector now reaches malformed child records through valid serialized reference arrays; incomplete traces still reclaim zero handles. Direct recursion-depth behavior remains unverified.
+- Decision: Continue by adding strict alias-chain type resolution and a direct recursion-bound test, then return to persistent-record inventory.
+- Commit: pending.
+- Artifacts/logs: `./tools/test-persistent-transaction` output; no archived log or hardware artifact.
