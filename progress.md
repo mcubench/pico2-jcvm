@@ -15016,3 +15016,14 @@
 - Decision: Add a package/CAP adapter that checks the per-heap static-root cache before restoring reference slots, then feed all valid roots into an owner-bounded graph walk. Add direct strict-reader tests before relying on it for any destructive cleanup.
 - Commit: `51b347e` (strict decoder); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T013616Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `bcd9cbfdd19110febb760da2c0d6dcd2a56019b1086a71b0590605f57c938479`.
+
+## 2026-10-30 Connect static inventory to strict flash restore 5 minutes
+
+- Step/experiment: `persistent-static-root-flash-adapter`
+- When: '2026-10-30 01:38 UTC' - '2026-10-30 01:43 UTC'
+- Change: Added `visitPersistentPackageStaticRoots`, an adapter that reads CAP-provided reference-slot metadata, checks the current heap's package/field root cache first, and otherwise resolves each reference with the strict flash decoder and caches the resulting handle. The generic visitor still handles null filtering, bounds, callback stop, and read failure. This adapter is not called from the ordinary APDU path and does not erase persistent records.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed; all three compiled the new adapter. `./tools/test-persistent-inventory` passed all 11 abstraction-level cases. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` verified the ARM flash and passed repeated finite runtime checks (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`); the runtime monitor did not call this adapter. Scoped CRLF-aware `git diff --check` passed.
+- Result: There is now a production adapter from package static slots to heap-cached references with strict storage error propagation. Direct adapter behavior is not yet unit-tested or invoked by firmware; full package enumeration and object/array/alias traversal remain open. No persistent record was changed or deleted.
+- Decision: Add direct adapter tests with a mock storage/heap boundary, then design an owner-aware inventory entry point that supplies validated CAP static metadata and all necessary applet/runtime roots. Do not enable flash deletion.
+- Commit: `d7fb19f` (adapter); this progress record is committed separately.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T014218Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `cefc89fb69c41255406a4941b3ef7c04c515c2fbf88f49b9bf94356f6832e9a8`.
