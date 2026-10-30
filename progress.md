@@ -15321,7 +15321,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including `malformed_serialized_object_field_blocks_heap_reclamation`. `git diff --check` passed. No firmware code changed; platform builds and hardware were not run.
 - Result: Strict persisted object-field traversal also fails closed before heap-handle reclamation. The in-memory filesystem fixture does not model reboot or persistent-record deletion.
 - Decision: Proceed to explicit restart/power-cycle recovery tests before enabling persistent-record reclamation.
-- Commit: pending.
+- Commit: `3602fdf` (QKB note); this progress record is committed separately.
 - Artifacts/logs: Final output from `./tools/test-persistent-transaction`; no archived log or hardware artifact.
 
 ## 2026-10-30 Reconstruct heap from retained persistent records 2 minutes
@@ -15367,3 +15367,14 @@
 - Decision: Keep deletion disabled; physical Pico 2 power-cycle validation remains the next recovery gate.
 - Commit: pending.
 - Artifacts/logs: `/tmp/persistent-gc-overlay-recovery.log` (ephemeral, not committed).
+
+## 2026-10-30 Check PCSC reset behavior without claiming power cycle 1 minute
+
+- Step/experiment: `persistent-inventory-pcsc-reset-attempt`
+- When: '2026-10-30 04:50 UTC' - '2026-10-30 04:51 UTC'
+- Change: Attempted a Java SmartcardIO `Card.disconnect(true)` reset on exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00`, followed by read-only SELECT/version/JCSystem-info APDUs. The process printed the reader identity but no APDU result, so this is recorded as inconclusive.
+- Validation: A subsequent elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'` passed its read-only package listing and three APDUs (`9000`), showing the card remained accessible after the attempt.
+- Result: No verified reset result and no USB power cycle. Do not treat this as recovery evidence.
+- Decision: Leave hardware power-cycle recovery open; use a reset method with observable completion if further testing is pursued.
+- Commit: pending.
+- Artifacts/logs: Follow-up log `artifacts/logs/pico-powerup-persistence-20261030T045057Z.log`, SHA-256 `9e2043dec2516401449b81cbc0cf51bf4ec4fd40f135532b58c9c3dce2528205`; no log was captured from the reset attempt itself.
