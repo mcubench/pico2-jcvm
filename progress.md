@@ -15257,3 +15257,14 @@
 - Decision: Add fault injection for malformed serialized fields/aliases and reboot recovery, then audit additional live contexts/native-held roots before enabling any persistent-record deletion.
 - Commit: `ad147f8` (heap safety tests, harness repair, and status updates); this record is committed separately.
 - Artifacts/logs: `/tmp/jcarray-gc-safety.log`; the final `./tools/test-jcarray` run passed. No hardware access was needed.
+
+## 2026-10-30 Inject a persistent child read failure into the heap guard 3 minutes
+
+- Step/experiment: `persistent-inventory-persistent-edge-read-fail-closed`
+- When: '2026-10-30 04:24 UTC' - '2026-10-30 04:27 UTC'
+- Change: Added a JCArray filesystem-fixture switch that makes strict persistent-reference restoration throw while scanning a persistent reference-array body. The regression checks the summary counts one edge-load failure, marks the trace incomplete, and reclaims zero handles, including an unrelated array. Updated TODO/QKB/handoff; byte-level malformed-record and alias-cycle recovery remain open.
+- Validation: `./tools/test-jcarray` passed the full existing suite plus `gc_skips_reclamation_after_persistent_edge_failure`; output was saved at `/tmp/jcarray-gc-safety.log`. `git diff --check` passed. This is host-only test-fixture/test-code work; ARM/RISC-V builds and physical hardware were not involved.
+- Result: A persistent child read exception cannot authorize heap-handle reclamation. Serialized malformed data and power-cycle recovery are not tested, and no persistent storage deletion exists.
+- Decision: Build byte-level malformed field/alias fixtures and exercise restoration across emulator restart before expanding the feature's scope to persistent-record reclamation.
+- Commit: `8aa1aba` (test, fixture, and notes); this record is committed separately.
+- Artifacts/logs: `/tmp/jcarray-gc-safety.log`; no hardware artifacts.
