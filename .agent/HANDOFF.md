@@ -233,6 +233,36 @@ with timestamp `20261030T105520Z`. The one `WATCHDOG_RECOVERY ... cause=other`
 marker remains unexplained and separate from these passing checks. The stale
 QKB note is now marked fixed.
 
+## Physical `ALG_PERFORMANCE_STATIC` follow-up — 2026-10-30
+
+Two normal `symm_crypto` runs on physical 8E disconnected at the third measured
+DES CBC PKCS5 `Cipher_init()` transfer with `SCARD_E_NOT_TRANSACTED`, followed
+by `SCARD_E_READER_UNAVAILABLE`. A GC-diagnostic image was flashed to physical
+2BED for correlation. Its official run reached that same DES CBC PKCS5
+`Cipher_init()` case and passed it, then proceeded through DES ECB and 3DES
+measurements without an APDU/USB failure. The wrapper's 900-second timeout
+ended this diagnostic run during 3DES CBC NOPAD `Cipher_init()`; it is not a
+full-suite pass. GC snapshots were stable at 148 live / 198 allocated arrays
+and 36 live / 39 allocated instances, with zero invalid edges or root/edge
+failures. The diagnostic serial trace kept returning `TEST:SUMMARY pass=1
+fail=0`. This argues against a deterministic failure at the former DES point
+or accumulating GC corruption, but the normal-image disconnect cause remains
+unproven and could still involve timing or USB/PCSC behavior.
+
+The diagnostic image was replaced with the standard ARM `symm_crypto` image;
+the normal cycle passed both architecture builds, flash verification, and its
+18-second monitor (18 passing summaries, no `TEST:FAIL`/`FAULT`). The normal
+image SHA-256 remains
+`18a7a230adf2e1719c26e1f79ccd48f60e93ae108c4b989ade4a2a89d943604e`. PC/SC
+currently lists 2BED. Logs: `artifacts/logs/heap-gc-static-debug-2BED-20261030.log`,
+`artifacts/logs/heap-gc-static-debug-2BED-continued-20261030.log`, and
+`artifacts/results/jcalgtest/performance-static-gc-debug-2BED-20261030/`.
+Normal-image repeated failures are in
+`artifacts/results/jcalgtest/performance-static-post-gc-fix-8E-20261030/`.
+Next: reproduce with the normal image while capturing serial/USB state on the
+same board, or reduce the official run to a precise failing method if supported
+by the upstream client. Do not call `ALG_PERFORMANCE_STATIC` accepted yet.
+
 The 2026-10-29 physical Crypto and Security retests requested in the previous
 handoff are complete; see the run counts and hashes below.
 

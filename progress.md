@@ -15704,3 +15704,37 @@
   `bcbd305534be8e98d256a72fcee316330ac28c8edf7af663c92e6fb674e1af27`;
   VPCD restore log SHA-256
   `74cb4de484036e6a41cfa2735278bf5d5d48b0ffc1689a56285a9640ff2a8257`.
+## 2026-10-30 Correlate static workload disconnect with GC diagnostics 19 minutes
+
+- Step/experiment: `physical-static-debug-correlation`
+- When: '2026-10-30 11:24 UTC' - '2026-10-30 11:43 UTC'
+- Change: Flashed the GC-diagnostic `symm_crypto` image to physical Pico 2
+  `2BED26ED20556535`, ran the official JCAlgTest 1.8.2
+  `ALG_PERFORMANCE_STATIC` client with a 900-second finite timeout, captured
+  debug serial output, then restored the standard image. Updated QKB and
+  HANDOFF with current evidence and next diagnostic step.
+- Validation: Both ARM and RISC-V wrappers passed during the restore cycle;
+  image flash verification passed; finite 18-second serial monitor passed with
+  18 runtime summaries and no `TEST:FAIL`/`FAULT`; `pcsc_scan -r` listed 2BED.
+  `PICO2_DEBUG_HEAP_GC=1` static run progressed beyond the previously failing
+  DES CBC PKCS5 `Cipher_init()` case and into 3DES CBC NOPAD, then the outer
+  900-second timeout returned 124. This is partial coverage, not a suite pass.
+- Result: Diagnostic GC snapshots stabilized at 148 live / 198 allocated
+  arrays and 36 live / 39 allocated instances; zero invalid refs, edge
+  failures, or root failures. Debug serial output kept reporting passing
+  runtime summaries. The normal-image disconnect cause remains unresolved;
+  static acceptance is still open.
+- Decision: Repeat on a normal image with concurrent serial and USB event
+  capture, or isolate the exact method through official client filters if
+  available. Do not claim the official static workload passes.
+- Commit: `pending documentation commit`
+- Artifacts/logs: Debug cycle SHA-256
+  `659a1f38218d73e60625576c0604908e90a56473938efd619afe4d8e275e11d3`;
+  restore cycle SHA-256
+  `273137d294a0ab53ad0b1ea076a16dd53c374d17e061f2cb87cc099834463bbf`;
+  debug serial SHA-256 `39265d3a4586c64e9b4a9925aee038f11197a30d373397ea3663482fc92cea62`;
+  continued serial SHA-256
+  `0be037e8c23436d9b5833f0ae5705e1fa1249bfab1b55601e913889ccb9bf43f`;
+  partial official report SHA-256
+  `4d2f861ec349710396dab4e507680846e29989e075bc07a0caa3333560528816`.
+

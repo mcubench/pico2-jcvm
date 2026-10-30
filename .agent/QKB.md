@@ -1543,6 +1543,35 @@ original terminology/status; check current summary and later fixes before reuse.
   malformed object-alias chains through `getPersistentField_ReferenceStrict`,
   collector behavior on an alias-corrupt record, or recovery after restart.
 
+### Physical static workload disconnect is not yet explained — updated 2026-10-30
+
+- On normal `symm_crypto` firmware, two official JCAlgTest 1.8.2
+  `ALG_PERFORMANCE_STATIC` runs on 8E ended during the measured DES CBC PKCS5
+  `Cipher_init()` sequence with `SCARD_E_NOT_TRANSACTED`, then
+  `SCARD_E_READER_UNAVAILABLE`. The second run's reader later disappeared from
+  PC/SC even though USB enumeration still showed devices; the ACL helper
+  restored a reader earlier in the investigation. Preserve both reports at
+  `artifacts/results/jcalgtest/performance-static-post-gc-fix-8E-20261030/`.
+- A GC-diagnostic image on separate physical 2BED passed that same DES CBC
+  PKCS5 `Cipher_init()` case, then DES ECB and many 3DES cases. It was still
+  responding normally when the 900-second outer timeout ended during 3DES CBC
+  NOPAD `Cipher_init()`; this is partial coverage only. Debug serial output
+  reports passing runtime summaries. GC snapshots stabilized at 148 live / 198
+  allocated arrays and 36 live / 39 allocated instances, with zero invalid
+  refs, edge failures, or root failures. This makes deterministic GC/reference
+  corruption at the earlier failure location less likely, but does not
+  distinguish a timing-sensitive firmware issue from USB/PCSC transport loss.
+- Diagnostic logs and partial report:
+  `artifacts/logs/heap-gc-static-debug-2BED-20261030.log`,
+  `artifacts/logs/heap-gc-static-debug-2BED-continued-20261030.log`, and
+  `artifacts/results/jcalgtest/performance-static-gc-debug-2BED-20261030/`.
+  Standard firmware was restored and passed both build wrappers, flash
+  verification, an 18-second monitor, and PC/SC discovery (2BED).
+- Next probe: rerun the exact normal image on one identified board with
+  concurrent serial capture and host USB event capture, or isolate the failing
+  method using client filters if available. Do not mark the official static
+  suite as passing until its complete report succeeds.
+
 ### Post-APDU collector has one live interpreter context — audited 2026-10-30
 
 - `Interpretor` currently pushes one `Context` in each constructor; the hardware
