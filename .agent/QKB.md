@@ -2022,6 +2022,27 @@ original terminology/status; check current summary and later fixes before reuse.
   still emit existing packed-member alignment warnings from CAP structure
   headers; this fix adds no new compiler warning.
 
+### PC VPCD emulator connect refusal during reader startup — mitigated 2026-10-30
+
+- `choupi` previously made a single TCP connect attempt to the configured
+  localhost VPCD endpoint. A transient `ECONNREFUSED` occurred even though
+  `pcsc_scan -r` had enumerated the virtual reader; the socket-activated
+  listener became available moments later. This stopped GPPro testing before
+  CAP traffic.
+- `connect_vpcd()` now retries refused connections for up to 31 attempts at
+  100 ms intervals (about three seconds maximum), while immediately returning
+  on success or non-refused errors. Each failed socket is closed. This is
+  emulator-only code; target firmware is unchanged.
+- Validation: `./tools/build-pc --profile current` passed. The approved-host
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` then passed
+  from an empty image: GPPro LOAD/INSTALL and post-install list confirmed
+  package `4A43416C6754657374` and selectable applet
+  `4A43416C675465737431` on Virtual PCD 00 01. The test's emulator log
+  recorded `VPCD:CONNECTED endpoint=127.0.0.1:35964`. This run did not force a
+  delayed-listener condition, so the retry branch itself was not directly
+  fault-injected.
+- Artifacts: `artifacts/results/gppro-empty-install-vpcd-20261030T205954Z/`.
+
 ### Persistence regression after latest native changes — 2026-10-30
 
 - `./tools/test-persistent-inventory`, `./tools/test-persistent-transaction`,

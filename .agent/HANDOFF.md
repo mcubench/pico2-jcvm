@@ -4,6 +4,22 @@ Read `AGENTS.md` and `.agent/SESSION_CONTINUITY.md` before work. The prioritized
 opening section of `TODO.md` tracks active scope; later historical checklists
 may be stale. `progress.md` is the append-only work record.
 
+## Latest continuation: VPCD emulator connection retry — 2026-10-30
+
+`choupi/src/main_pc.cpp::connect_vpcd()` now retries local `ECONNREFUSED` for
+up to roughly three seconds (31 attempts, 100 ms between attempts), fixing a
+race where the PCSC VPCD listener could start after reader enumeration. PC
+build passed and `PICO2_HOST_USB_ACCESS=1
+./tools/test-gppro-empty-install-vpcd` passed through the approved host-access
+path. The clean VPCD test completed GPPro LOAD/INSTALL and verified the package
+as loaded and applet selectable. The retry branch was not fault-injected in
+this run. Details and output are in `.agent/QKB.md` and
+`artifacts/results/gppro-empty-install-vpcd-20261030T205954Z/`.
+
+This is emulator-only; no ARM/RISC-V build or physical flash was needed. Keep
+unrelated worktree edits intact, especially `src/cap_load.cpp`, which remains
+uncommitted from separate loader work.
+
 ## Current continuation: optional native module gating — 2026-10-30
 
 Fixed the `minimal` profile wrapper builds. The top-level Pico CMake source

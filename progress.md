@@ -16677,6 +16677,26 @@
   SHA-256 `f1d94e406196debb795fdb1c2a3e588f91335919a1b9a5f5a9339dd7aa0b21f2`;
   corrupt/missing sidecar rejection logs are in the same directory.
 
+## 2026-10-30 Bound PC VPCD connection startup race 5 minutes
+
+- Step/experiment: `pc-vpcd-refused-connect-retry`
+- When: '2026-10-30 20:56 UTC' - '2026-10-30 21:01 UTC'
+- Change: `choupi/src/main_pc.cpp::connect_vpcd()` now retries
+  `ECONNREFUSED` up to 31 attempts with 100 ms intervals, covering a brief
+  gap between PC/SC reader enumeration and socket-activated listener readiness.
+  Other connection failures still return immediately.
+- Validation: `./tools/build-pc --profile current` passed. The approved-host
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed with
+  GPPro LOAD/INSTALL and post-install package/applet listing on Virtual PCD 00
+  01. No target build or flash was needed for this PC-only change.
+- Result: clean-card installation completed; emulator logged
+  `VPCD:CONNECTED endpoint=127.0.0.1:35964`. The retry branch was not directly
+  fault-injected in this run. `git diff --check` passed for changed files.
+- Decision: retain the bounded refusal retry and use the GPPro VPCD test as its
+  integration validation; continue with the next independent TODO item.
+- Commit: recorded in immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261030T205954Z/`.
+
 ## 2026-10-30 Record multi-package VPCD rerun commit 1 minute
 
 - Step/experiment: `multipackage-restart-delete-regression-log-closeout`

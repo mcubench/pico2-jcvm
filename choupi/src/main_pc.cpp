@@ -52,6 +52,7 @@
 #include <netdb.h>
 #include <string>
 #include <sys/socket.h>
+#include <thread>
 #include <unistd.h>
 #include <vector>
 
@@ -1103,26 +1104,41 @@ int connect_vpcd(const std::string &endpoint) {
                  endpoint.c_str(), gai_strerror(lookup));
     return -1;
   }
+  constexpr unsigned int kConnectAttempts = 31;
+  constexpr auto kConnectRetryDelay = std::chrono::milliseconds(100);
+  int last_error = ECONNREFUSED;
   int socket_fd = -1;
-  for (addrinfo *address = addresses; address != nullptr;
-       address = address->ai_next) {
-    socket_fd = ::socket(address->ai_family, address->ai_socktype,
-                         address->ai_protocol);
-    if (socket_fd < 0) {
-      continue;
+  for (unsigned int attempt = 0; attempt < kConnectAttempts; ++attempt) {
+    bool refused = false;
+    for (addrinfo *address = addresses; address != nullptr;
+         address = address->ai_next) {
+      socket_fd = ::socket(address->ai_family, address->ai_socktype,
+                           address->ai_protocol);
+      if (socket_fd < 0) {
+        last_error = errno;
+        continue;
+      }
+      if (::connect(socket_fd, address->ai_addr, address->ai_addrlen) == 0) {
+        ::freeaddrinfo(addresses);
+        return socket_fd;
+      }
+      last_error = errno;
+      refused |= last_error == ECONNREFUSED;
+      ::close(socket_fd);
+      socket_fd = -1;
     }
-    if (::connect(socket_fd, address->ai_addr, address->ai_addrlen) == 0) {
+    if (!refused || attempt + 1 == kConnectAttempts) {
       break;
     }
-    ::close(socket_fd);
-    socket_fd = -1;
+    // pcscd's socket-activated VPCD listener can appear just after reader
+    // enumeration. Retry refused local connections briefly instead of
+    // failing the entire emulator startup on that race.
+    std::this_thread::sleep_for(kConnectRetryDelay);
   }
   ::freeaddrinfo(addresses);
-  if (socket_fd < 0) {
-    std::fprintf(stderr, "ERROR: connecting to vpcd endpoint %s: %s\n",
-                 endpoint.c_str(), std::strerror(errno));
-  }
-  return socket_fd;
+  std::fprintf(stderr, "ERROR: connecting to vpcd endpoint %s: %s\n",
+               endpoint.c_str(), std::strerror(last_error));
+  return -1;
 }
 
 void vpcd_clear_applet(void *) { choupi_vm_clear_selected_applet(); }
