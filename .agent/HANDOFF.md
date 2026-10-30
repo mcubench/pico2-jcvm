@@ -122,11 +122,22 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    registered applet roots, then scans all owners. Fresh-process multipackage
    validation passed before and after restart with 3/3 owner scans complete,
    14/14 arrays and 4/4 instances reachable, zero invalid refs/edge failures,
-   and zero candidate tags. It remains outside physical runtime GC and was not
-   invoked by a hardware APDU. No persistent records were deleted.
-   Image SHA-256 `5e6aefac07fb265c109c1d11b4b58eda1a2a83ecdd87452cea615f438393b31e`;
-   cycle log `artifacts/logs/cycle-choupi-20261030T051629Z.log` SHA-256
-   `827e92b4fc6b4eab5c14d95e104825f9e14d1cc3701bc26ad8cafbd686a7e294`.
+   and zero candidate tags. A separate debug-only physical path is enabled with
+   `PICO2_DEBUG_HEAP_GC=1 ./tools/build arm`; after a complete post-APDU heap
+   trace it scans the selected legacy owner read-only. On physical 2BED the
+   unchanged JCAlgTest 1.8.2 applet returned `9000` to SELECT/version/JCSystem
+   info; the inventory output reported owner 0, 71 static roots, one applet
+   root, complete statuses, and zero candidate tags. The physical log is
+   `artifacts/logs/persistent-inventory-physical-monitor-2BED-20261030-final.log`
+   (SHA-256 `aed092de9894cf7688a30dbd663148b9a1f4d1da7787a6a2cfa90294907f5879`);
+   APDU log
+   `artifacts/logs/pico-powerup-persistence-20261030T053745Z.log` (SHA-256
+   `3941c7bba8baf6783b60d66bed9108e65d4376a5963c77bccd9ea6b33c2c8394`).
+   This is one legacy owner-0 applet, not physical multi-instance or power-cycle
+   coverage. No persistent records were deleted. Current ARM image SHA-256
+   `2f1d13a2a539a890bb9a914c2f5759595d6d13b14ceec39c9d4ea3a2ef16b10e`;
+   cycle log `artifacts/logs/cycle-choupi-20261030T053625Z.log` SHA-256
+   `b0252c9ea524691652ea83e34c5f376f25f28fadb3e706b0af4658d08b09de0e`.
    Cursor handling is now explicit: the candidate callback is streaming and
    receives provisional results; a cursor stall after the first result returns
    `InvalidCursor`, so callers must discard the partial list unless the final

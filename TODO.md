@@ -78,8 +78,13 @@ out explicitly.
     and after restart with complete scans and zero candidates. Cursor results
     are streamed provisionally: a stalled cursor after one result returns
     `InvalidCursor`, and callers must discard the partial list unless the
-    final result is `Complete`. The parent item remains open for physical
-    inventory validation and recovery acceptance.
+    final result is `Complete`. A one-shot `PICO2_DEBUG_HEAP_GC=1` physical
+    diagnostic now runs after a complete post-APDU heap trace. On 2BED the
+    unchanged JCAlgTest applet produced 71 non-null static roots and one
+    registered applet root; the owner scan completed with zero candidates.
+    This is a single legacy owner-0 applet, not physical multi-instance or
+    power-cycle coverage. The parent item remains open for broader recovery
+    acceptance.
   - [x] Audit live context and native-held roots at post-APDU collection.
     `Interpretor` currently owns one context, the physical collector runs only
     after execution returns for the selected external context, and

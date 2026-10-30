@@ -206,6 +206,8 @@ struct SelectedAppletRootContext {
   jcvm::Context *context;
   jcvm::Heap::ReferenceVisitor visitor;
   void *visitor_context;
+  unsigned static_root_count = 0;
+  unsigned applet_root_count = 0;
   jcvm::PersistentInventory::VisitResult static_result =
       jcvm::PersistentInventory::VisitResult::InvalidArgument;
   jcvm::PersistentInventory::VisitResult applet_result =
@@ -216,6 +218,7 @@ bool visit_selected_package_static_root(uint8_t, uint16_t,
                                         const uint16_t reference,
                                         void *opaque) {
   auto &roots = *static_cast<SelectedAppletRootContext *>(opaque);
+  ++roots.static_root_count;
   roots.visitor(jcvm::jref_t(reference), roots.visitor_context);
   return true;
 }
@@ -223,6 +226,7 @@ bool visit_selected_package_static_root(uint8_t, uint16_t,
 void visit_selected_applet_instance_root(const jcvm::jref_t reference,
                                          void *opaque) {
   auto &roots = *static_cast<SelectedAppletRootContext *>(opaque);
+  ++roots.applet_root_count;
   roots.visitor(reference, roots.visitor_context);
 }
 
@@ -231,6 +235,8 @@ bool enumerate_selected_applet_roots(
     void *opaque) {
   auto &roots = *static_cast<SelectedAppletRootContext *>(opaque);
   auto *selected_context = roots.context;
+  roots.static_root_count = 0;
+  roots.applet_root_count = 0;
   selected_context->visitRootReferences(visitor, visitor_context);
   roots.visitor = visitor;
   roots.visitor_context = visitor_context;
@@ -262,6 +268,18 @@ bool enumerate_selected_applet_roots(
       : jcvm::PersistentInventory::VisitResult::ReadFailure;
   return all_applet_roots;
 }
+
+#ifdef CHOUPI_DEBUG_HEAP_GC
+struct PhysicalPersistentTagCount {
+  unsigned count = 0;
+};
+
+bool count_physical_unreachable_tag(
+    const jcvm::PersistentInventory::Tag &, void *opaque) {
+  ++static_cast<PhysicalPersistentTagCount *>(opaque)->count;
+  return true;
+}
+#endif
 #endif
 
 #ifdef PC_VERSION
@@ -514,6 +532,29 @@ void collect_heap_after_apdu() {
           static_cast<unsigned long>(summary.edge_load_failures),
           static_cast<unsigned long>(summary.root_enumeration_failures));
       std::fflush(stdout);
+    }
+
+    static bool persistent_inventory_reported = false;
+    if (!persistent_inventory_reported && summary.complete) {
+      PhysicalPersistentTagCount count;
+      const auto inventory_result =
+          jcvm::PersistentInventory::visitUnreachableAppletTags(
+              static_cast<uint8_t>(context.getAppletID()), context.getHeap(),
+              enumerate_selected_applet_roots, &roots,
+              count_physical_unreachable_tag, &count);
+      std::printf(
+          "CHOUPI:PERSISTENT_INVENTORY owner=%u result=%u candidate_tags=%u "
+          "static_roots=%u applet_roots=%u static_result=%u "
+          "applet_result=%u\r\n",
+          static_cast<unsigned>(context.getAppletID()),
+          static_cast<unsigned>(inventory_result), count.count,
+          roots.static_root_count, roots.applet_root_count,
+          static_cast<unsigned>(roots.static_result),
+          static_cast<unsigned>(roots.applet_result));
+      std::fflush(stdout);
+      persistent_inventory_reported =
+          inventory_result ==
+          jcvm::PersistentInventory::VisitResult::Complete;
     }
 #endif
     if (!summary.complete) {
