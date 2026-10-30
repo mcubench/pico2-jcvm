@@ -117,6 +117,22 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   context, and native owner; physical invocation of inventory; and evidence
   that an incomplete mark cannot authorize reclamation.
 
+### Malformed aliases fail closed in the actual heap collector — 2026-10-30
+
+- The persistent-transaction host target now links production `heap.cpp`,
+  `jc_array.cpp`, `jc_instance.cpp`, `jref_t.cpp`, and the actual
+  `flashmemory.cpp` decoder. Its filesystem remains an in-memory fixture.
+- Real `Heap::collectUnreachableFrom()` walks persistent reference-array
+  elements through `getPersistentField_ReferenceStrict()`. A truncated object
+  alias, truncated array alias, and self-referential array-alias chain each
+  produce `complete=false`, one edge-load failure, zero reclaimed arrays, and
+  valid handles for both the rooted and otherwise unreachable arrays. The
+  wrapper passes with `TEST:SUMMARY fail=0`.
+- This is host-only fail-closed behavior evidence. It does not emulate power
+  loss/restart, prove persistent record cleanup or recovery, or authorize
+  record deletion. Keep persistent reclamation disabled until restart recovery
+  and stable-handle semantics are tested.
+
 ### Device collector now scans selected-package and applet roots; `0xFF` body-tag false positive fixed — 2026-10-30
 
 - The firmware collector now uses a boolean root enumerator. It restores roots

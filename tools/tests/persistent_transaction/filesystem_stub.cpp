@@ -1,5 +1,7 @@
 #include "ffi.h"
 #include "context.hpp"
+#include "jc_handlers/jc_class.hpp"
+#include "jc_handlers/package.hpp"
 
 #include <algorithm>
 #include <map>
@@ -23,7 +25,15 @@ extern "C" void choupi_record_transaction_buffer_full(void) {
 namespace jcvm {
 Context &Context::getActiveContext() { throw Exceptions::RuntimeException; }
 void Context::setPendingSystemExceptionReason(uint16_t) noexcept {}
+Package::Package(jpackage_ID_t package_id) noexcept : ID(package_id) {}
+const uint16_t Class_Handler::getInstanceFieldsSize(
+    jclass_index_t) const {
+  return 0;
+}
 } // namespace jcvm
+
+extern "C" void choupi_vm_record_persistent_restore_failure(
+    uint16_t, uint16_t, uint16_t, uint8_t, uint8_t, uint8_t) {}
 
 extern "C" void path_applet_field(uint8_t applet, uint8_t package,
                                    uint8_t class_index, uint8_t field,

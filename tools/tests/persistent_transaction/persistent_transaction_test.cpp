@@ -1,4 +1,6 @@
 #include "jc_handlers/flashmemory.hpp"
+#include "heap.hpp"
+#include "jc_types/jc_array.hpp"
 
 #include <cstdint>
 #include <cstdio>
@@ -261,6 +263,59 @@ int main() {
   }
   expect(scalar_alias_target_rejected,
          "persistent_array_alias_rejects_non_array_target");
+
+  // Exercise the production strict reference decoder through the real heap
+  // collector. A one-byte object-alias record is present at the serialized
+  // array-element tag, so it must fail closed before either heap slot is freed.
+  {
+    jcvm::Heap heap(7);
+    const auto parent_reference =
+        heap.addArray(1, jcvm::JAVA_ARRAY_T_REFERENCE, 0xffff);
+    const auto unreachable_reference =
+        heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    const auto parent = heap.getArray(parent_reference);
+    const auto parent_tag = make_tag(0x79);
+    parent->setPersistentTag(parent_tag);
+    const auto malformed_edge = FlashMemory_Handler::computeTag(parent_tag, 0);
+    seed(malformed_edge.value, malformed_edge.len, {0xfe});
+    const auto summary = heap.collectUnreachableFrom({parent_reference});
+    expect(!summary.complete && summary.edge_load_failures == 1 &&
+               summary.arrays_reclaimed == 0 &&
+               heap.getArray(parent_reference) != nullptr &&
+               heap.getArray(unreachable_reference) != nullptr,
+           "malformed_serialized_object_alias_blocks_heap_reclamation");
+  }
+
+  const auto exercise_bad_array_edge = [&](const uint8_t suffix,
+                                           std::vector<uint8_t> record,
+                                           const char *test_name) {
+    jcvm::Heap heap(7);
+    const auto parent_reference =
+        heap.addArray(1, jcvm::JAVA_ARRAY_T_REFERENCE, 0xffff);
+    const auto unreachable_reference =
+        heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    const auto parent = heap.getArray(parent_reference);
+    const auto parent_tag = make_tag(suffix);
+    parent->setPersistentTag(parent_tag);
+    const auto edge_tag = FlashMemory_Handler::computeTag(parent_tag, 0);
+    seed(edge_tag.value, edge_tag.len, std::move(record));
+    const auto summary = heap.collectUnreachableFrom({parent_reference});
+    expect(!summary.complete && summary.edge_load_failures == 1 &&
+               summary.arrays_reclaimed == 0 &&
+               heap.getArray(parent_reference) != nullptr &&
+               heap.getArray(unreachable_reference) != nullptr,
+           test_name);
+  };
+  exercise_bad_array_edge(0x7a, {0xfd},
+                          "truncated_serialized_array_alias_blocks_reclamation");
+
+  const auto alias_parent_tag = make_tag(0x7b);
+  const auto alias_edge_tag = FlashMemory_Handler::computeTag(alias_parent_tag, 0);
+  std::vector<uint8_t> cyclic_alias{0xfd, alias_edge_tag.len};
+  cyclic_alias.insert(cyclic_alias.end(), alias_edge_tag.value,
+                      alias_edge_tag.value + alias_edge_tag.len);
+  exercise_bad_array_edge(0x7b, std::move(cyclic_alias),
+                          "cyclic_serialized_array_alias_blocks_reclamation");
 
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
          "depth_zero_initially");

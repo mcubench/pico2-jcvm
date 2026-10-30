@@ -83,8 +83,12 @@ out explicitly.
       injected and blocks reclamation.
     - [x] FlashMemory host test rejects truncated and length-mismatched array
       alias target headers plus a valid alias pointing to a scalar record.
-    - [ ] Inject malformed serialized object/array edges and alias chains into
-      the collector, then verify reboot recovery.
+    - [x] Inject malformed serialized object/array aliases and a cyclic alias
+      chain through the actual strict reference decoder and heap collector;
+      each incomplete trace reclaims zero handles.
+    - [ ] Verify persistent-record and heap-handle recovery after reboot or
+      emulator restart. The collector test is currently host-only and does not
+      delete persistent records.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   power-cycle recovery before enabling any reclamation. `JCSystem` object
   deletion remains unsupported until this accounting is complete.
