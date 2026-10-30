@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 
-AID = bytes.fromhex("4A43416C675465737431")
+AID = bytes.fromhex("A000000062030101")
 
 
 def receive_exact(connection: socket.socket, size: int) -> bytes:

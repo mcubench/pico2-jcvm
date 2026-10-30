@@ -9,7 +9,7 @@ import java.util.List;
 /** Physical PC/SC probe for transaction rollback and commit-capacity usage. */
 public final class JCSystemTransactionPhysicalProbe {
   private static final byte[] APPLET_AID = {
-      0x4A, 0x43, 0x41, 0x6C, 0x67, 0x54, 0x65, 0x73, 0x74, 0x31
+      (byte)0xA0, 0x00, 0x00, 0x00, 0x62, 0x03, 0x01, 0x01
   };
 
   private static String hex(byte[] bytes) {

@@ -27,6 +27,7 @@
 
 #include "heap.hpp"
 #include "context.hpp"
+#include "ffi.h"
 #include "jc_handlers/jc_cp.hpp"
 #include "jc_types/jc_array.hpp"
 
@@ -542,6 +543,25 @@ void Heap::visitChildReferences(JC_Array &array,
     return;
   }
   const uint16_t length = array.size();
+  if (array.isPersistent() && array.hasPersistentTag() &&
+      !array.isTransientArray()) {
+    const fs::Tag array_tag = array.getPersistentTag();
+    if (array_tag.len > sizeof(array_tag.value) - sizeof(uint16_t)) {
+      throw Exceptions::SecurityException;
+    }
+    for (uint16_t index = 0; index < length; ++index) {
+      const fs::Tag element_tag =
+          FlashMemory_Handler::computeTag(array_tag, index);
+      const jref_t child =
+          FlashMemory_Handler::getPersistentField_ReferenceStrict(element_tag,
+                                                                  *this);
+      if (!child.isNullPointer()) {
+        visitor(child, visitor_context);
+      }
+    }
+    return;
+  }
+
   for (uint16_t index = 0; index < length; ++index) {
     const jref_t child = array.getReferenceEntry(index);
     if (!child.isNullPointer()) {
@@ -553,6 +573,60 @@ void Heap::visitChildReferences(JC_Array &array,
 void Heap::visitChildReferences(const JC_Instance &instance,
                                 const ReferenceVisitor visitor,
                                 void *visitor_context) {
+  if (instance.isPersistent() && instance.hasPersistentTag()) {
+    const fs::Tag instance_tag = instance.getPersistentTag();
+    const uint16_t field_count = instance.getNumberOfFields();
+    for (uint16_t index = 0; index < field_count; ++index) {
+      if (instance_tag.len > sizeof(instance_tag.value) - sizeof(uint16_t)) {
+        throw Exceptions::SecurityException;
+      }
+      const fs::Tag field_tag =
+          FlashMemory_Handler::computeTag(instance_tag, index);
+      if (fs_exists(field_tag.value, field_tag.len) == 0) {
+        continue;
+      }
+
+      const FieldType type =
+          FlashMemory_Handler::getPersistentField_Type(field_tag);
+      switch (type) {
+      case FieldType::FIELD_TYPE_OBJECT:
+      case FieldType::FIELD_TYPE_ARRAY_BYTE:
+      case FieldType::FIELD_TYPE_ARRAY_BOOLEAN:
+      case FieldType::FIELD_TYPE_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+      case FieldType::FIELD_TYPE_ARRAY_INT:
+#endif
+      case FieldType::FIELD_TYPE_ARRAY_OBJECT:
+      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE:
+      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BOOLEAN:
+      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_INT:
+#endif
+      case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_OBJECT: {
+        const jref_t child =
+            FlashMemory_Handler::getPersistentField_ReferenceStrict(field_tag,
+                                                                     *this);
+        if (!child.isNullPointer()) {
+          visitor(child, visitor_context);
+        }
+        break;
+      }
+      case FieldType::FIELD_TYPE_BYTE:
+      case FieldType::FIELD_TYPE_BOOLEAN:
+      case FieldType::FIELD_TYPE_SHORT:
+#ifdef JCVM_INT_SUPPORTED
+      case FieldType::FIELD_TYPE_INT:
+#endif
+      case FieldType::FIELD_TYPE_UNINITIALIZED:
+        break;
+      default:
+        throw Exceptions::SecurityException;
+      }
+    }
+    return;
+  }
+
   const auto fields = instance.getFields();
   for (uint16_t index = 0; index < fields->size(); ++index) {
     const jc_field_t &field = fields->at(index);

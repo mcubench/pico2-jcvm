@@ -27,9 +27,9 @@ cat > "${build_dir}/build.xml" <<EOF_ANT
   <target name="build">
     <javacard jckit="\${repo}/AlgTest_JavaCard/ext/jc305u3_kit">
       <cap output="\${basedir}/output/JCTransactionProbe.cap"
-           classes="\${basedir}/classes" aid="4a43416c6754657374">
+           classes="\${basedir}/classes" aid="a0000000620301">
         <applet class="algtest.JCTransactionProbe"
-                aid="4a43416c675465737431"/>
+                aid="a000000062030101"/>
       </cap>
     </javacard>
   </target>
