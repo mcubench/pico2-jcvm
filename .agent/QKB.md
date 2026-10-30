@@ -61,6 +61,27 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   These adapters are inventory groundwork, not proof of complete root
   coverage or authorization to delete persistent records.
 
+### Host diagnostic fault while scanning static inventory roots — unresolved
+
+- A temporary PC-only post-APDU diagnostic invoked
+  `visitInstalledPackageStaticRoots()` against the unchanged JCSystem
+  transaction CAP. The control run without the diagnostic passed the focused
+  case: ATR, SELECT, and “static reference identity after restore” all passed
+  (`TEST:SUMMARY pass=3 fail=0`, 52.343 s).
+- With the diagnostic enabled, package 56 CAP metadata decoded as
+  `image_size=12`, `reference_count=6`. Slot offset 0 restored successfully
+  (`compact_reference=10`); processing slot offset 2 then terminated the host
+  emulator. Its log reported a SIGSEGV and Rust host-emulator panic for
+  `unauthorized address 0x0`, during the heap persistent-reference cache
+  lookup. This does not yet identify whether the fault is in heap/cache state,
+  the emulator's syscall boundary, or the inventory call context.
+- The temporary diagnostic and its debug logging were removed. No persistent
+  records were deleted or changed. Static/app root adapters remain unverified;
+  isolate this crash with a focused heap/cache test or a minimal adapter harness
+  before invoking the adapters on hardware or enabling reclamation.
+- Logs: `artifacts/logs/persistent-inventory-static-vpcd-20261030e.log` (fault),
+  `artifacts/logs/persistent-inventory-control-vpcd-20261030.log` (control).
+
 ## Canonical operating fixes and unresolved boundaries
 
 - **Host USB/PCSC access — viable workflow:** follow root `AGENTS.md` from the
