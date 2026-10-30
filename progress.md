@@ -16653,3 +16653,26 @@
 - Decision: Leave PC/SC root-cause work open pending daemon-side IFD logs.
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
+
+## 2026-10-30 Revalidate multi-package lifecycle on current worktree 1 minute
+
+- Step/experiment: `multipackage-restart-delete-regression-current-worktree`
+- When: '2026-10-30 20:52 UTC' - '2026-10-30 20:53 UTC'
+- Change: Re-ran the multi-package VPCD integration suite against the current
+  worktree to verify install, selection, owner inventory, restart, and deletion.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed
+  25/25 through the approved host-network path. It loaded Core and Multi,
+  installed three instances, restored all owner IDs after a fresh process,
+  routed SELECT to all three, then verified instance and package DELETE rules.
+- Result: Current multi-package lifecycle works in VPCD, including the current
+  worktree's uncommitted loader state. This does not validate physical CCID;
+  both Pico boards remain absent from PC/SC.
+- Decision: Preserve the unrelated uncommitted loader edits; keep physical
+  multi-instance and power-cycle validation open.
+- Commit: recorded in immediate follow-up progress entry.
+- Artifacts/logs: APDU log
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261030T205219Z.log` SHA-256
+  `e5e92d97fd89ba03a0476243f55cd40a919298a24a68f2385d0fcba4ea613230`;
+  restart log `artifacts/logs/host-vpcd-multipackage-restart-20261030T205219Z.log`
+  SHA-256 `f1d94e406196debb795fdb1c2a3e588f91335919a1b9a5f5a9339dd7aa0b21f2`;
+  corrupt/missing sidecar rejection logs are in the same directory.
