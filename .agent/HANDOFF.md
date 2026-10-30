@@ -62,6 +62,14 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    `artifacts/logs/vpcd-persistence-restore-20261030T054451Z.log`, and
    `artifacts/logs/vpcd-persistence-restore-emulator-20261030T054451Z.log`.
 
+   Physical 2BED (`2BED26ED20556535`) remained available for read-only
+   validation: the JCAlgTest package/applet was listed, SELECT, GETVERSION
+   (`1.8.2_jc305`), and JCSystem-info returned `9000`, and an 8-second serial
+   monitor produced eight `TEST:SUMMARY pass=1 fail=0` lines with no `FAULT`.
+   No card contents were changed and no USB power cycle was attempted. Logs:
+   `artifacts/logs/pico-powerup-persistence-20261030T055138Z.log` and
+   `artifacts/logs/persistent-inventory-physical-monitor-2BED-20261030T0551Z.log`.
+
    Latest native change: persistent array-alias type resolution now follows
    nested aliases to a valid array terminal and rejects cycles at a 32-alias
    bound, matching strict reference restore. Host tests include a valid
