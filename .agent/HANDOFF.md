@@ -38,6 +38,7 @@ two rows labeled 3072, while direct 3072 generation vectors pass. Regenerate
 the expected set from current config for comparisons; the cached external-test
 CSV is stale. See QKB for exact logs. API `/deploy` result corrections and
 private-key hardening remain open.
+Asymmetric profile audit documentation commit: `01b826e`.
 
 ## Current memory-reporting investigation
 
