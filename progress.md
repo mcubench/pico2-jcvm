@@ -16829,3 +16829,45 @@
   project work.
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
+
+## 2026-10-30 Correct profile comparison steps 4 minutes
+
+- Step/experiment: `readme-profile-report-comparison-fix`
+- When: '2026-10-30 21:25 UTC' - '2026-10-30 21:29 UTC'
+- Change: Fixed the README's profile comparison example. It now saves the
+  support set generated for each build, compares base/current reports against
+  the shared jCardSim reference, and diffs the two expected sets.
+- Validation: The reference CSV exists and generated `base` and `current`
+  support CSVs each generate successfully (10 and 15 expected rows). The
+  comparator passes for the archived current report (15 declared, 15 actual).
+  The archived 2026-10-24 base report fails on three `OwnerPINBuilder` rows
+  returning `SystemException.ILLEGAL_USE`; a fresh base report is needed to
+  assess the current implementation. `git diff --check -- readme.md` passed.
+- Result: The procedure no longer compares the base report with itself or
+  omits the simulator reference. No hardware was run because physical PC/SC
+  reader registration is still absent.
+- Decision: Use these comparison commands for future profile runs; do not treat
+  the old base result as current implementation evidence.
+- Commit: recorded in immediate follow-up progress entry.
+- Artifacts/logs: reference CSV SHA-256
+  `67d9feebf9756da69db034bab05cddd9acb38d31aa980888fa7b5db22ef1757b`;
+  archived base/current reports at `artifacts/results/jcalgtest-profile-base-20261024/`
+  and `artifacts/results/jcalgtest-profile-current-20261024/`.
+
+## 2026-10-30 Record progress append-order correction 1 minute
+
+- Step/experiment: `continuation-progress-append-order-reconciliation`
+- When: '2026-10-30 21:29 UTC' - '2026-10-30 21:30 UTC'
+- Change: Added this end-of-file index because four continuation records
+  (VPCD retry `7e998ef`, artifact hash correction `efe4cd5`, PC/SC diagnostic
+  `48d803c`, CAP parser hardening `77931cf`) had initially been inserted before
+  older progress entries rather than appended at EOF. Their full records remain
+  intact; this index restores the chronological tail without rewriting history.
+- Validation: Confirmed each referenced implementation commit and its
+  immediately following SHA closeout (`de0fbb7`, `5aea2c4`, `1350bdb`,
+  `c037ae0`).
+- Result: All newly discovered progress entries now have an EOF chronology
+  index; prior records were not removed or rewritten.
+- Decision: Append future progress records at the actual file end.
+- Commit: recorded with the README correction commit.
+- Artifacts/logs: none.

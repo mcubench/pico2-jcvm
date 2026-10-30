@@ -41,6 +41,15 @@ installation and VPCD multi-package restart/delete pass (25/25). No physical
 validation was possible. See the latest TODO and QKB entries. Builds included
 the unchanged, unrelated uncommitted `src/cap_load.cpp`; preserve that file.
 
+## Corrected profile comparison instructions — 2026-10-30
+
+`readme.md` now saves the generated expected-support CSV after each `base` and
+`current` profile build, compares each physical report against the shared
+jCardSim reference, and shows a separate expected-set diff. A historical
+2026-10-24 base report still has three `OwnerPINBuilder` runtime errors; get a
+fresh report before treating base acceptance as complete. Current report
+comparison passes against all 15 declared capabilities. See `.agent/QKB.md`.
+
 ## Current continuation: optional native module gating — 2026-10-30
 
 Fixed the `minimal` profile wrapper builds. The top-level Pico CMake source

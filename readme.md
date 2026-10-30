@@ -14,6 +14,12 @@ unzip -o build/downloads/AlgTest_dist_1.8.2.zip AlgTestJClient.jar \
 # OwnerPINBuilder variants so disabled capabilities are reported as `no`.
 PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile base --serial D92E743D5F640C0F
 
+# Save the expected support set before building another profile (the wrapper
+# regenerates this file for each selected profile).
+mkdir -p artifacts/results/base-alg-support
+cp build/javacard-support/jcalgtest-supported.csv \
+  artifacts/results/base-alg-support/expected.csv
+
 # Grant pcscd access after USB re-enumeration, then confirm the physical reader.
 PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
 PICO2_HOST_USB_ACCESS=1 pcsc_scan -r
@@ -39,16 +45,30 @@ PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup "$reader_name"
 # Build and flash the all-enabled current profile to a second Pico, then run
 # the same JCAlgTest operation there for an apples-to-apples report comparison.
 PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --serial 2BED26ED20556535
+mkdir -p artifacts/results/current-alg-support
+cp build/javacard-support/jcalgtest-supported.csv \
+  artifacts/results/current-alg-support/expected.csv
 reader_name_current='Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'
 ./tools/run-jcalgtest --reader-name "$reader_name_current" \
   -op ALG_SUPPORT_EXTENDED -fresh \
   -outpath artifacts/results/current-alg-support
 
-# Compare each report against the capability rows generated for that profile.
+# Compare each report to the same jCardSim reference, with the expected support
+# set captured from the matching firmware build.
 ./tools/compare-jcalgtest-support.py \
   artifacts/results/base-alg-support/*ALGSUPPORT*.csv \
-  artifacts/results/base-alg-support/*ALGSUPPORT*.csv \
+  artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv \
   --expected-support artifacts/results/base-alg-support/expected.csv
+./tools/compare-jcalgtest-support.py \
+  artifacts/results/current-alg-support/*ALGSUPPORT*.csv \
+  artifacts/results/jcardsim-jcalgtest-v1.8.2-alg-support-extended.csv \
+  --expected-support artifacts/results/current-alg-support/expected.csv
+
+# Each comparison should end with COMPARE:PASS and no status other than yes/no.
+
+# Show which expected capability rows changed between the two profiles.
+diff -u artifacts/results/base-alg-support/expected.csv \
+  artifacts/results/current-alg-support/expected.csv
 
 # Run the static performance suite.
 ./tools/run-jcalgtest --reader-name "$reader_name" \

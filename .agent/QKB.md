@@ -2081,6 +2081,22 @@ original terminology/status; check current summary and later fixes before reuse.
   restart log SHA-256
   `b18ec590036087e809b3c370c02d6168d0a5af7dcd4438524badfb770ae417a9`.
 
+### Profile README compared the base report to itself — fixed 2026-10-30
+
+- `readme.md` previously supplied the base profile report as both inputs to
+  `compare-jcalgtest-support.py`, so the example never compared against
+  jCardSim and did not validate the current-profile report. It also pointed at
+  an `expected.csv` path without showing how to preserve that profile's
+  generated support set.
+- The instructions now copy `build/javacard-support/jcalgtest-supported.csv`
+  after each profile build, compare both results against the same checked-in
+  jCardSim CSV, and compare the two expected-support files separately.
+- Validation: both profile support CSVs generate successfully to `/tmp`. The
+  comparator passes for the archived current report (15 declared, 15 actual).
+  The archived base report from 2026-10-24 fails on three `OwnerPINBuilder`
+  rows with `SystemException.ILLEGAL_USE`; that indicates a fresh base-profile
+  report is needed, not a problem in the corrected command.
+
 ### Persistence regression after latest native changes — 2026-10-30
 
 - `./tools/test-persistent-inventory`, `./tools/test-persistent-transaction`,
