@@ -15005,3 +15005,14 @@
 - Decision: Implement a strict storage reader that distinguishes missing records, valid null records, and I/O/corruption, then connect it to package CAP metadata and static-root caching. Continue to keep flash deletion disabled until the rest of the object graph and aliases are accounted for.
 - Commit: `68d57f5` (visitor and tests); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T012825Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
+
+## 2026-10-30 Add strict persistent-reference restore 8 minutes
+
+- Step/experiment: `persistent-reference-strict-restore`
+- When: '2026-10-30 01:30 UTC' - '2026-10-30 01:38 UTC'
+- Change: Added `getPersistentField_ReferenceStrict` for the future reachability reader. Missing reference-slot tags resolve to the documented null default; once a record exists, its read/format errors propagate instead of being converted into a null root. Strict decoding validates serialized reference lengths and limits alias recursion to 32 hops; array aliases must resolve to a non-null array. The existing getter retains its prior tolerant read-error behavior for normal VM execution. No persistent record is deleted.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `./tools/test-persistent-inventory` passed all 11 cases; these test the visitor abstraction, not `getPersistentField_ReferenceStrict` itself. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` verified the ARM flash and passed the finite monitor with repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`. The hardware monitor did not invoke the strict reader. Scoped `git -c core.whitespace=cr-at-eol diff --check` passed; the source files use CRLF endings.
+- Result: A production decoder can now distinguish missing static-reference records from invalid or unreadable present records and fail closed. This reader is not yet connected to CAP metadata, static-root caching, or the inventory callback; no graph inventory or flash reclamation is enabled.
+- Decision: Add a package/CAP adapter that checks the per-heap static-root cache before restoring reference slots, then feed all valid roots into an owner-bounded graph walk. Add direct strict-reader tests before relying on it for any destructive cleanup.
+- Commit: `51b347e` (strict decoder); this progress record is committed separately.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T013616Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `bcd9cbfdd19110febb760da2c0d6dcd2a56019b1086a71b0590605f57c938479`.
