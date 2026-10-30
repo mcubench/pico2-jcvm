@@ -12,6 +12,7 @@
 #include <vector>
 
 namespace persistent_transaction_test {
+void force_cursor_stall_after_one_result();
 extern uint16_t instance_field_count;
 std::vector<uint8_t> read(const uint8_t *tag, uint8_t length);
 void seed(const uint8_t *tag, uint8_t tag_length, std::vector<uint8_t> value);
@@ -560,6 +561,28 @@ int main() {
     }
     expect(failed_closed,
            "incomplete_reachability_reports_no_persistent_inventory_candidates");
+  }
+
+  {
+    constexpr uint8_t owner = 0x31;
+    const uint8_t first_tag[] = {0x03, owner, 0x10, 0x01};
+    const uint8_t second_tag[] = {0x03, owner, 0x10, 0x02};
+    seed(first_tag, sizeof(first_tag), byte_record(0x11));
+    seed(second_tag, sizeof(second_tag), byte_record(0x22));
+    persistent_transaction_test::force_cursor_stall_after_one_result();
+
+    jcvm::Heap heap(owner);
+    CandidateTags candidates;
+    const auto result = jcvm::PersistentInventory::visitUnreachableAppletTags(
+        owner, heap, std::vector<jcvm::jref_t>{}, collect_candidate,
+        &candidates);
+    expect(result == jcvm::PersistentInventory::VisitResult::InvalidCursor &&
+               candidates.tags.size() == 1 &&
+               !persistent_transaction_test::read(first_tag,
+                                                    sizeof(first_tag)).empty() &&
+               !persistent_transaction_test::read(second_tag,
+                                                    sizeof(second_tag)).empty(),
+           "cursor_failure_marks_streamed_candidates_incomplete_without_mutation");
   }
 
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),

@@ -88,6 +88,8 @@ std::map<std::string, std::vector<uint8_t>> files;
 bool fail_next_write = false;
 bool fail_next_read = false;
 bool fail_next_sync = false;
+bool stall_after_one_cursor_result = false;
+bool cursor_result_returned = false;
 unsigned int sync_count = 0;
 unsigned int array_allocation_start = 0;
 unsigned int array_deallocation_start = 0;
@@ -170,6 +172,11 @@ extern "C" uint8_t fs_next_tag(const uint8_t *prefix,
                                 const uint8_t prefix_length,
                                 fs_tag_next_request_t *request) {
   if (request == nullptr || (prefix_length != 0 && prefix == nullptr)) return 2;
+  if (stall_after_one_cursor_result && cursor_result_returned) {
+    stall_after_one_cursor_result = false;
+    cursor_result_returned = false;
+    return 0;
+  }
   if (request->bucket != 0 || request->offset > files.size()) return 2;
   size_t index = request->offset;
   auto it = files.begin();
@@ -183,6 +190,7 @@ extern "C" uint8_t fs_next_tag(const uint8_t *prefix,
     request->offset = static_cast<uint16_t>(index + 1);
     request->tag[0] = static_cast<uint8_t>(tag.size());
     std::memcpy(request->tag + 1, tag.data(), tag.size());
+    if (stall_after_one_cursor_result) cursor_result_returned = true;
     return 0;
   }
   request->bucket = 0;
@@ -191,6 +199,11 @@ extern "C" uint8_t fs_next_tag(const uint8_t *prefix,
 }
 
 namespace persistent_transaction_test {
+void force_cursor_stall_after_one_result() {
+  stall_after_one_cursor_result = true;
+  cursor_result_returned = false;
+}
+
 std::vector<uint8_t> read(const uint8_t *tag, const uint8_t length) {
   const auto found = files.find(key_for(tag, length));
   return found == files.end() ? std::vector<uint8_t>{} : found->second;

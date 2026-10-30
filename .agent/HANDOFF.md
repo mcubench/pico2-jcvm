@@ -122,9 +122,13 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    Image SHA-256 `5e6aefac07fb265c109c1d11b4b58eda1a2a83ecdd87452cea615f438393b31e`;
    cycle log `artifacts/logs/cycle-choupi-20261030T051629Z.log` SHA-256
    `827e92b4fc6b4eab5c14d95e104825f9e14d1cc3701bc26ad8cafbd686a7e294`.
-   Next: add incomplete-cursor coverage, then integrate the consumer only after
-   combining complete installed-package static and per-instance applet roots.
-   Keep record deletion disabled pending real power-cycle recovery.
+   Cursor handling is now explicit: the candidate callback is streaming and
+   receives provisional results; a cursor stall after the first result returns
+   `InvalidCursor`, so callers must discard the partial list unless the final
+   status is `Complete`. The host transaction test verifies the stall leaves
+   both records intact. Next: integrate the consumer only after combining
+   complete installed-package static and per-instance applet roots. Keep record
+   deletion disabled pending real power-cycle recovery.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, and private RSA hardening.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded

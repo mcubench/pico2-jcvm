@@ -100,7 +100,10 @@ VisitResult visitAppletInstanceRoots(uint8_t applet_owner, Heap &heap,
 
 /// Visit owner-scoped serialized records outside every reachable persistent
 /// object's tag subtree. A complete root trace is required before the first
-/// candidate is reported. This function never erases tags.
+/// candidate is reported. The visitor is streaming: it can receive partial
+/// candidates if tag enumeration later fails. It must not mutate storage or
+/// treat candidates as actionable unless the returned result is Complete.
+/// This function never erases tags.
 VisitResult visitUnreachableAppletTags(
     uint8_t applet_owner, Heap &heap, const std::vector<jref_t> &roots,
     TagVisitor candidate_visitor, void *context);
