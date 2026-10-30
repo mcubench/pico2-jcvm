@@ -15038,3 +15038,14 @@
 - Decision: Add direct tests for installed CAP metadata extraction and strict restore, then determine a safe context/owner inventory that includes every live applet root, object-field edge, array edge, and alias before any persistent-store deletion.
 - Commit: `2334781` (CAP metadata adapter); this progress record is committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T014537Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `cefc89fb69c41255406a4941b3ef7c04c515c2fbf88f49b9bf94356f6832e9a8`.
+
+## 2026-10-30 Inventory registered applet instance roots 4 minutes
+
+- Step/experiment: `persistent-applet-instance-root-inventory`
+- When: '2026-10-30 01:46 UTC' - '2026-10-30 01:50 UTC'
+- Change: Added decoding for registered applet root tags in both 8-bit and 16-bit class-index forms. The native adapter scans one applet owner's namespace, resolves root records through the strict flash reader, verifies the stored instance package/class against the tag, and passes the handle to a caller. Malformed roots and restore errors stop the scan. Added parser tests for both forms, wrong owner, and malformed length. No persistent records are erased.
+- Validation: `./tools/test-persistent-inventory` passed all 15 checks (`TEST:SUMMARY fail=0`). `./tools/build-pc` passed. The elevated cycle rebuilt and passed ARM/RISC-V gates, then flashed 2BED `2BED26ED20556535`; the finite monitor passed repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL`/`FAULT`. The cycle recovered from the initial missing reset interface through BOOTSEL. Hardware startup did not invoke the new applet-root adapter. Scoped `git diff --check` passed.
+- Result: A selected applet owner's registered root records can now be decoded and resolved with tag/object identity checks. No ordinary GC or deletion path calls this visitor; all object-field, array, cross-context, and alias graph accounting remains incomplete.
+- Decision: Add direct persistent-store adapter tests and define the complete owner/context root set before using this in any collection decision. Keep persistent record deletion disabled.
+- Commit: `69f0a49` (root scanner and parser tests); this progress record is committed separately.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T015008Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `0d1e6526d7bb968cd2f712be12a043ac748b7b1099f35b459c3898e31024de23`.
