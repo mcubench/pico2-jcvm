@@ -128,6 +128,28 @@ int main() {
                    package_result.count == 3 && package_result.saw_long_tag,
                "enumerates_package_statics_including_maximum_tag");
 
+  jcvm::PersistentInventory::AppletRootTag applet_root{};
+  const jcvm::PersistentInventory::Tag short_applet_root{
+      5, {0x03, 7, 9, 0x2a, 0xff}};
+  ok &= expect(jcvm::PersistentInventory::decodeAppletRootTag(
+                   short_applet_root, 7, applet_root) &&
+                   applet_root.owner == 7 && applet_root.package_id == 9 &&
+                   applet_root.class_index == 0x2a,
+               "decodes_eight_bit_applet_instance_root");
+  const jcvm::PersistentInventory::Tag long_applet_root{
+      6, {0x03, 7, 9, 0x01, 0x23, 0xff}};
+  ok &= expect(jcvm::PersistentInventory::decodeAppletRootTag(
+                   long_applet_root, 7, applet_root) &&
+                   applet_root.class_index == 0x0123,
+               "decodes_sixteen_bit_applet_instance_root");
+  ok &= expect(!jcvm::PersistentInventory::decodeAppletRootTag(
+                   short_applet_root, 8, applet_root) &&
+                   !jcvm::PersistentInventory::decodeAppletRootTag(
+                       jcvm::PersistentInventory::Tag{
+                           7, {0x03, 7, 9, 0x01, 0x23, 0x45, 0xff}},
+                       7, applet_root),
+               "rejects_wrong_owner_and_malformed_applet_root_tags");
+
   Result static_roots;
   ok &= expect(jcvm::PersistentInventory::visitPackageStaticReferenceSlots(
                    9, 10, 3, collect, &static_roots) ==

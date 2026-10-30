@@ -15,6 +15,12 @@ struct Tag {
   uint8_t value[kTagCapacity] = {};
 };
 
+struct AppletRootTag {
+  uint8_t owner;
+  uint8_t package_id;
+  uint16_t class_index;
+};
+
 enum class VisitResult : uint8_t {
   Complete,
   Stopped,
@@ -30,6 +36,9 @@ using StaticReferenceReader = bool (*)(uint8_t package_id, uint16_t offset,
                                        uint16_t &reference, void *context);
 using StaticRootVisitor = bool (*)(uint8_t package_id, uint16_t offset,
                                    uint16_t reference, void *context);
+using AppletRootVisitor = bool (*)(uint8_t owner, uint8_t package_id,
+                                   uint16_t class_index, uint16_t reference,
+                                   void *context);
 
 /// Visit active persistent tags below a prefix without constructing an FS.
 /// The cursor is local to this call and storage must not mutate during it.
@@ -40,6 +49,10 @@ VisitResult visitPrefix(const Tag &prefix, TagVisitor visitor,
 /// Package static fields use a different namespace and are not included.
 VisitResult visitApplet(uint8_t applet_owner, TagVisitor visitor,
                         void *context);
+
+/// Decode an applet-instance root tag; returns false for non-root or malformed tags.
+bool decodeAppletRootTag(const Tag &tag, uint8_t expected_owner,
+                         AppletRootTag &root) noexcept;
 
 /// Visit the serialized static-field namespace belonging to one package.
 VisitResult visitPackageStatics(uint8_t package_id, TagVisitor visitor,
@@ -71,6 +84,11 @@ VisitResult visitPersistentPackageStaticRoots(
 VisitResult visitInstalledPackageStaticRoots(uint8_t package_id, Heap &heap,
                                              StaticRootVisitor visitor,
                                              void *context);
+
+/// Resolve registered applet-instance roots owned by one applet in a heap.
+VisitResult visitAppletInstanceRoots(uint8_t applet_owner, Heap &heap,
+                                     AppletRootVisitor visitor,
+                                     void *context);
 
 } // namespace PersistentInventory
 } // namespace jcvm

@@ -55,6 +55,26 @@ VisitResult visitApplet(const uint8_t applet_owner, const TagVisitor visitor,
   return visitPrefix(prefix, visitor, context);
 }
 
+bool decodeAppletRootTag(const Tag &tag, const uint8_t expected_owner,
+                         AppletRootTag &root) noexcept {
+  if (tag.len < 2 || tag.len > kTagCapacity || tag.value[0] != 0x03 ||
+      tag.value[1] != expected_owner || tag.value[tag.len - 1] != 0xff) {
+    return false;
+  }
+  if (tag.len == 5) {
+    root = AppletRootTag{tag.value[1], tag.value[2], tag.value[3]};
+    return true;
+  }
+  if (tag.len == 6) {
+    root = AppletRootTag{
+        tag.value[1], tag.value[2],
+        static_cast<uint16_t>((static_cast<uint16_t>(tag.value[3]) << 8) |
+                              tag.value[4])};
+    return true;
+  }
+  return false;
+}
+
 VisitResult visitPackageStatics(const uint8_t package_id,
                                 const TagVisitor visitor, void *context) {
   Tag prefix{};
