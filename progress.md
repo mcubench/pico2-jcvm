@@ -16561,3 +16561,17 @@
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`,
   `artifacts/firmware/README-max_crypto.txt`, and the existing VPCD evidence
   documented above; no new log archived.
+
+## 2026-10-30 Record DES-MAC validation commit 1 minute
+
+- Step/experiment: `jcalgtest-desmac-final-build-and-vpcd-regression-log-closeout`
+- When: '2026-10-30 20:35 UTC' - '2026-10-30 20:36 UTC'
+- Change: Added the implementation commit SHA to the preceding validation
+  record, preserving the append-only progress log.
+- Validation: Confirmed commit `3c4e95d` contains only the DES-MAC fix,
+  regression tests, related task notes, and refreshed max_crypto ARM artifact.
+- Result: The validated source/test/artifact step is committed as `3c4e95d`.
+- Decision: Continue physical confirmation when a Pico PC/SC reader is
+  available; current worktree contains unrelated changes that remain unstaged.
+- Commit: recorded in this follow-up commit.
+- Artifacts/logs: none.
