@@ -8,6 +8,27 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## CAP 2.2 remote method tokens must resolve to public table entries — 2026-10-30
+
+- Oracle JCVMS 3.0.5 §6.9.2.5 defines `virtual_method_token` as the remote
+  method's virtual token in the class, and §6.9.2.3 describes the public
+  virtual-method table token range. The validator now rejects a package-method
+  token (high bit set) or a public token outside the class's public method
+  table. See the [Oracle JCVMS 3.0.5 specification](https://docs.oracle.com/cd/E59935_01/JCVMS.pdf#page=106).
+- Converter-emitted JCDK 3.0.5 fixture coverage tests an in-range method,
+  package-token rejection, and one-past-table rejection. Signature offsets must
+  also point to a descriptor start, and method hashes are checked ascending.
+  `./tools/test-cap-parser` passed 4,194 checks, 100,000 deterministic fuzz
+  inputs, and 48 corpus CAPs. `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed.
+- `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed: the
+  unchanged JCAlgTest CAP loaded and GPPro listed its applet selectable. This
+  checks ordinary CAP install under the new parser; the separate JCRMI fixture
+  helper still fails at INSTALL stage 9 / `6F00` before client connection.
+- The refreshed empty-card max ARM UF2 is 2,074,112 bytes, SHA-256
+  `8ef6492df92514d9a677f25d8d2bb1eff59c28160fe2609063b9b311d8ed2727`.
+  Physical testing remains unavailable because `pcsc_scan -r` timed out.
+
 ## Current-source cryptographic VPCD vectors — 2026-10-30
 
 - Reran all three API vector wrappers after refreshing the max-crypto ARM image.

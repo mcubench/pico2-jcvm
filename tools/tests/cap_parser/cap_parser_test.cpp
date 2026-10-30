@@ -416,6 +416,25 @@ void test_class_component_22() {
   descending_remote_hash[remote_info_offset + 1 + 6] = 0x00;
   expect(!parses(descending_remote_hash.data(), descending_remote_hash.size()),
          "class_component_22_remote_hashes_must_be_ascending");
+
+  auto package_method_token = emitted_valid;
+  package_method_token[remote_info_offset + 1 + 4] = 0x80;
+  expect(!parses(package_method_token.data(), package_method_token.size()),
+         "class_component_22_remote_method_token_must_be_public");
+
+  const size_t first_invalid_public_token =
+      emitted_remote_class->public_method_table_base +
+      emitted_remote_class->public_method_table_count;
+  expect(first_invalid_public_token < 0x80,
+         "class_component_22_fixture_has_representable_invalid_public_token");
+  if (first_invalid_public_token < 0x80) {
+    auto out_of_range_method_token = emitted_valid;
+    out_of_range_method_token[remote_info_offset + 1 + 4] =
+        static_cast<uint8_t>(first_invalid_public_token);
+    expect(!parses(out_of_range_method_token.data(),
+                   out_of_range_method_token.size()),
+           "class_component_22_remote_method_token_must_be_in_table");
+  }
 }
 
 } // namespace

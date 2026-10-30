@@ -958,6 +958,9 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   signature-offset, and remote-interface-reference parsing pass against exact
   Header/Class component bytes emitted by the JCDK 3.0.5 converter for a small
   remote-enabled CAP 2.2 package. Malformed signature-pool bounds are rejected.
+  Remote method hashes are strictly ascending; signature offsets must point
+  to descriptor starts; and virtual-method tokens must be public and fall
+  within the class public-method table.
   The converter-built fixture is loaded and exercised through current-source
   VPCD for SELECT, primitive INVOKE, primitive-array INVOKE, and protocol-error
   responses. The supplied Service CAP is format 2.1 and cannot validate the
@@ -1927,7 +1930,7 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no applet is
   preinstalled. Rebuilt on 2026-10-30 from current source: 2,074,112 bytes,
   SHA-256
-  `184b1a2ee3965405f17ab85d99b0ba19f66c788e4cc6b975a6aca0043debbe49`.
+  `8ef6492df92514d9a677f25d8d2bb1eff59c28160fe2609063b9b311d8ed2727`.
   Physical validation remains open. The previously incomplete
   all-disabled `minimal` selection now builds on both wrapper targets; the
   optional AES-CTR object is absent in those configurations and present in
@@ -2217,8 +2220,8 @@ rollback and duplicate/invalid registration handling also remain unverified.
   interface records/names, compact class records, method tables, interface
   method maps, and remote metadata lengths. Synthetic tests cover valid mixed
   records plus malformed signatures and truncated remote fields; the supplied
-  deploy corpus is all CAP 2.1. Semantic cross-reference checks for CAP 2.2
-  remote metadata remain open. The parser now rejects unsupported CAP header
+  deploy corpus is all CAP 2.1. Remote interface class-reference target
+  validation remains open. The parser now rejects unsupported CAP header
   versions and fails closed on CAP 2.3+ Class components because they add a
   VMMT not consumed by this Java Card 3.0.5-targeted VM. Add compact CAP 2.3
   support only with VMMT dispatch and dedicated fixtures; extended CAP 2.3 is

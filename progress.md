@@ -17118,3 +17118,29 @@
 - Decision: Continue prioritized offline correctness work.
 - Commit: pending.
 - Artifacts/logs: The three VPCD logs listed in QKB.
+
+## 2026-10-30 Validate CAP 2.2 remote method tokens 9 minutes
+
+- Step/experiment: `cap22-remote-public-method-token-validation`
+- When: '2026-10-30 22:51 UTC' - '2026-10-30 23:00 UTC'
+- Change: Validate each remote method's virtual token as a public method token
+  within the class's declared public virtual-method table. Added negative cases
+  for package-method and one-past-table tokens. Refreshed the max-profile ARM
+  image from the validated source and updated TODO, QKB, and HANDOFF.
+- Validation: `./tools/test-cap-parser` passed 4,194 checks, 100,000 fuzz
+  inputs, and 48 corpus CAPs. `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. The unchanged JCAlgTest CAP
+  loaded and appeared selectable through GPPro on VPCD via
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd`.
+- Result: The converter fixture's remote tokens validate and malformed token
+  cases reject. The max ARM UF2 is 2,074,112 bytes, SHA-256
+  `8ef6492df92514d9a677f25d8d2bb1eff59c28160fe2609063b9b311d8ed2727`.
+  Fresh official SDK JCRMI helper INSTALL still fails at stage 9 / `6F00`; no
+  causal link to CAP parser validation is established. No physical token was
+  available through PC/SC.
+- Decision: Keep remote-interface class-reference resolution open. Revisit
+  JCRMI helper INSTALL diagnosis separately; do not claim current SDK RMI pass.
+- Commit: pending.
+- Artifacts/logs: max-profile UF2 and expected CSV under
+  `artifacts/firmware/`; GPPro evidence is under
+  `artifacts/results/gppro-empty-install-vpcd-20261030T225743Z/` (ignored).

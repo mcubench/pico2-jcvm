@@ -7,9 +7,11 @@ ascending order and requires each `signature_offset` to be both inside the
 signature pool and at a descriptor start. A converter-emitted JCDK 3.0.5 CAP
 fixture has positive coverage plus interior-offset, out-of-range-offset, and
 descending-hash rejection cases in `tools/tests/cap_parser/cap_parser_test.cpp`.
-`./tools/test-cap-parser` passes 4,191 checks across 100,000 fuzz inputs and 48
-CAP corpus files. `./tools/build arm --profile base` and
-`./tools/build riscv --profile base` pass. The PC VPCD official JCRMI client
+`./tools/test-cap-parser` passes 4,194 checks across 100,000 fuzz inputs and 48
+CAP corpus files. It also rejects remote package-method tokens and public
+tokens outside the class method table. Max-profile ARM and RISC-V wrapper
+builds pass, and GPPro VPCD LOAD/INSTALL/list succeeds for unchanged JCAlgTest.
+The PC VPCD official JCRMI client
 test currently fails before connection: helper applet INSTALL returns stage 9
 `6F00`; earlier 2026-10-25 client success remains historical. The cause is
 unresolved and is recorded in QKB. Do not claim fresh JCRMI integration pass.
@@ -26,13 +28,13 @@ only VPCD readers on the latest recorded scan.
 Rebuilt current source with `./tools/build arm --profile max_crypto` (147/150
 capabilities) and refreshed
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`: 2,074,112 bytes,
-SHA-256 `184b1a2ee3965405f17ab85d99b0ba19f66c788e4cc6b975a6aca0043debbe49`.
+SHA-256 `8ef6492df92514d9a677f25d8d2bb1eff59c28160fe2609063b9b311d8ed2727`.
 The companion expected-support CSV is unchanged (SHA-256
 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`). ARM
-image inspection and `./tools/build riscv --profile base` passed; no device was
-flashed. The approved reader helper found two USB nodes, but a bounded
-`pcsc_scan -r` timed out without output, so physical card availability is not
-established. The image README has the current hash and size.
+image inspection and `./tools/build riscv --profile max_crypto` passed; no
+device was flashed. The approved reader helper found two USB nodes, but a
+bounded `pcsc_scan -r` timed out without output, so physical card availability
+is not established. The image README has the current hash and size.
 The refreshed artifact and progress record are committed as `c9aa6c4`.
 
 Current-source PC VPCD vector reruns also pass: `symm_crypto` 73/73 crypto

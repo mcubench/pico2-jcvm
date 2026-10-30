@@ -195,6 +195,8 @@ bool validate_type_descriptor_sequence(const uint8_t *data,
 bool validate_remote_interface_info(const uint8_t *payload,
                                     const size_t size, size_t &offset,
                                     const size_t signature_pool_length,
+                                    const uint8_t public_method_table_base,
+                                    const size_t public_method_table_count,
                                     const uint8_t *signature_start_bits) {
   if (offset >= size) return false;
   const size_t remote_methods = payload[offset++];
@@ -205,8 +207,13 @@ bool validate_remote_interface_info(const uint8_t *payload,
     const uint8_t *method = payload + offset + index * 5;
     const uint16_t method_hash = read_be16(method);
     const size_t signature_offset = read_be16(method + 2);
+    const size_t virtual_method_token = method[4];
     if ((index != 0 && method_hash <= previous_method_hash) ||
         signature_offset >= signature_pool_length ||
+        virtual_method_token >= 0x80 ||
+        virtual_method_token < public_method_table_base ||
+        virtual_method_token - public_method_table_base >=
+            public_method_table_count ||
         (signature_start_bits[signature_offset / 8] &
          static_cast<uint8_t>(1u << (signature_offset & 7))) == 0) {
       return false;
@@ -269,6 +276,7 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size) {
     } else {
       constexpr size_t class_prefix_size = 10;
       if (size - offset < class_prefix_size) return false;
+      const uint8_t public_method_base = payload[offset + 6];
       const size_t public_methods = payload[offset + 7];
       const size_t package_methods = payload[offset + 9];
       offset += class_prefix_size;
@@ -289,6 +297,8 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size) {
       if ((flags & 0x02) != 0 &&
           !validate_remote_interface_info(
               payload, size, offset, signature_pool_length,
+              public_method_base,
+              public_methods,
               signature_start_bits.data())) {
         return false;
       }
