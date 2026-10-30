@@ -1959,6 +1959,15 @@ original terminology/status; check current summary and later fixes before reuse.
   not by itself the cause. Journal access did not expose daemon messages. No
   root cause or remediation was established; physical PC/SC testing cannot
   continue until a board reader is registered.
+- Follow-up diagnostic: both Pico devices still enumerate and their interface
+  descriptors show CDC ACM plus CCID interface 2. The installed
+  `/etc/libccid_Info.plist` has an exact `0x2E8A:0x0009` entry named `Pico 2
+  CHOUPI CCID`; the actual USB product string is `Pico2 JCVM CCID`. The
+  authorized helper grants `pcscd` read/write ACLs and restarts the service.
+  `pcscd` is running when queried, yet PC/SC still lists only VPCD. Current
+  user cannot read system journal/syslog diagnostics, so this rules out a
+  missing VID/PID mapping but not CCID descriptor/IFD initialization failure.
+  Do not change firmware or driver files without daemon-side error evidence.
 - Logs: `artifacts/logs/usb-visible-no-pcsc-8E-20261030.log` (SHA-256
   `b6b08a7ce585cd995c182926a629b494042f01a9d451d0aaea94dd156afb3a82`) and
   `artifacts/logs/usb-visible-no-pcsc-2BED-20261030.log` (SHA-256

@@ -829,3 +829,10 @@ commit IDs, feature-specific tests, and interrupted tasks before resuming them.
   and hashes are in QKB’s “Pico USB enumeration without PC/SC reader
   registration”. Physical applet APDUs remain blocked until PC/SC registers a
   Pico reader; do not infer a firmware crash from the missing PC/SC entry.
+- New diagnostic: the installed libccid Info.plist contains the exact
+  `0x2E8A:0x0009` Pico entry and matching friendly name. USB exposes CDC ACM
+  plus CCID interface 2; both finite serial monitors pass. The approved helper
+  grants `pcscd` access and restarts it, but the physical readers remain absent
+  from `pcsc_scan -r`. System journal access is unavailable to this user, so
+  the IFD initialization error remains unknown; do not modify driver or
+  firmware without that evidence.

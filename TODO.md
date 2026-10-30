@@ -1299,7 +1299,14 @@ prioritized backlog above for present status.
   `/deploy` coordinator now defaults to one GPPro attempt with no pause and
   exposes retry, pause, and timeout controls. This limits wasted retry time but
   does not resolve the underlying transport fault or dynamically reassign a
-  failed area to another reader.
+  failed area to another reader. On 2026-10-30, two Pico 2 devices
+  (`8E464F4E2BBC0A19` and `2BED26ED20556535`) enumerated as `2e8a:0009` with
+  CDC ACM and CCID interfaces; both passed finite serial monitors. The
+  installed libccid Info.plist contains an exact VID/PID entry, and the
+  approved helper granted `pcscd` access/restarted it, but `pcsc_scan -r`
+  still listed only VPCD. Root cause remains unproven; daemon journal access is
+  unavailable to the current user. Do not alter firmware or CCID mapping
+  without IFD logs.
 
 - [x] Add a committed install journal to recover CAP registry publication and
   VM filesystem state together. VPCD process-restart cases cover skipped and

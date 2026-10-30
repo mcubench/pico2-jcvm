@@ -16615,3 +16615,28 @@
   record reclamation as open work.
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
+
+## 2026-10-30 Diagnose USB-visible Pico readers missing from PC/SC 5 minutes
+
+- Step/experiment: `physical-reader-registration-diagnostic`
+- When: '2026-10-30 20:46 UTC' - '2026-10-30 20:51 UTC'
+- Change: Inspected the two USB-visible boards, CCID driver mapping, device
+  ACLs, and pcscd state; captured bounded serial monitors and updated TODO,
+  QKB, and handoff with the diagnostic result.
+- Validation: Escalated `lsusb` identified Pico 2 `8E464F4E2BBC0A19` and
+  `2BED26ED20556535`, both `2e8a:0009` with CDC ACM and CCID interface 2.
+  `/etc/libccid_Info.plist` contains the exact VID/PID pair. The approved helper
+  granted access to both nodes and restarted pcscd, but `pcsc_scan -r` listed
+  only two Virtual PCD readers. Finite 8-second serial monitors on both boards
+  exited 0; each emitted eight `TEST:SUMMARY pass=1 fail=0` lines and no fault.
+- Result: Firmware is running on both physical boards; the host does not
+  register their CCID interfaces. The libccid product mapping is present, but
+  the IFD startup error is unknown because system journal/syslog access is
+  denied. No card APDU or power cycle was attempted.
+- Decision: Preserve firmware. Obtain IFD daemon diagnostics before changing
+  CCID configuration; continue independent work while physical PC/SC is absent.
+- Commit: recorded in immediate follow-up progress entry.
+- Artifacts/logs: `artifacts/logs/physical-reader-missing-pcsc-8E-20261030T2049Z.log`
+  SHA-256 `b6b08a7ce585cd995c182926a629b494042f01a9d451d0aaea94dd156afb3a82`;
+  `artifacts/logs/physical-reader-missing-pcsc-2BED-20261030T2049Z.log`
+  SHA-256 `0d1dfcbe80fb5f6e2f99d25198ee18a3279b1531bfac9d8ade5f2e3cb54b02ca`.
