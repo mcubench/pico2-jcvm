@@ -95,6 +95,11 @@ out explicitly.
       reclaimed persistent array, nested aliases, and four GC-pressure rounds.
       Logs: `artifacts/logs/vpcd-persistence-commit-20261030T044356Z.log` and
       `artifacts/logs/vpcd-persistence-restore-20261030T044356Z.log`.
+    - [x] Validate the RP2350 overlay's simulated reset and interrupted
+      snapshot/install-journal recovery: `./tools/test-rp2350-fs-overlay` passed
+      75 checks, including 1,000 randomized multi-record cuts, 1,000 install
+      journal clear cuts, and 1,000 cross-store registry/filesystem header cuts.
+      This validates the host model, not physical power loss during heap GC.
     - [ ] Verify the same recovery after a physical Pico 2 power cycle; host
       process restart does not establish hardware power-loss behavior.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and

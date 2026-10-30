@@ -41,8 +41,12 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    `./tools/test-vpcd-persistence` now passes after a fresh emulator process:
    38 restore/GC checks including restoration of a reclaimed persistent array,
    nested aliases, and four GC-pressure rounds. This is not physical power-loss
-   evidence; keep persistent record deletion disabled until Pico 2 power-cycle
-   recovery and interrupted-update behavior are validated.
+   evidence. The offline RP2350 overlay suite also passes 75 checks, including
+   1,000 randomized multi-record snapshot cuts, 1,000 install-journal clear
+   cuts, and 1,000 cross-store registry/filesystem header cuts; those exercise
+   the host storage model, not the card's collector during power loss. Keep
+   persistent record deletion disabled until Pico 2 power-cycle recovery and
+   interrupted-update behavior are validated.
 
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in

@@ -165,6 +165,20 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - This run did not initiate a reset or power cycle, so it only confirms the
   current card/app state and is not physical power-loss recovery evidence.
 
+### Simulated RP2350 overlay interruption recovery — 2026-10-30
+
+- `./tools/test-rp2350-fs-overlay` passed 75 checks. It includes 1,000
+  randomized multi-record snapshot power cuts, 1,000 install-journal clear
+  cuts, 1,000 cross-store registry/filesystem header cuts, and simulated reset
+  restoring the last committed transaction state. The expected diagnostic
+  `FAULT FS snapshot unavailable; preserve flash for recovery` is emitted by
+  an explicit negative recovery fixture; the overall result remains
+  `TEST:SUMMARY fail=0`.
+- This is host-model storage-layer evidence. It does not exercise Pico 2 flash
+  under actual power loss while heap GC is operating, nor prove interrupted
+  persistent-object reclamation safe. Keep actual persistent-record deletion
+  disabled pending physical power-cycle recovery.
+
 ### Device collector now scans selected-package and applet roots; `0xFF` body-tag false positive fixed — 2026-10-30
 
 - The firmware collector now uses a boolean root enumerator. It restores roots
