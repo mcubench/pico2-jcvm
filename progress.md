@@ -15930,3 +15930,17 @@
 - Artifacts/logs: `build/external-test/pico2-jcvm-windows-test.zip` (ignored;
   archive SHA-256 above); packaged CAP SHA-256
   `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+
+## 2026-10-30 Record Windows package commit 1 minute
+
+- Step/experiment: `windows-profile-package-refresh-commit-reference`
+- When: '2026-10-30 14:42 UTC' - '2026-10-30 14:43 UTC'
+- Change: Record the immutable commit for the refreshed Windows test package,
+  corrected run sheet, and continuity updates.
+- Validation: `git show --stat --oneline 6295780` confirms six intended files
+  are included and unrelated worktree changes were not staged.
+- Result: The package refresh is committed as `6295780`.
+- Decision: Continue with remaining JCVM work; Windows external validation is
+  pending.
+- Commit: recorded by the following progress entry.
+- Artifacts/logs: none.
