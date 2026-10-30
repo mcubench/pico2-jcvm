@@ -14948,5 +14948,5 @@
 - Validation: `./tools/build-pc` passed and compiled the OS C++ wrapper; its ROM-mask generation completed. `./tools/build arm` and `./tools/build riscv` passed. `git diff --check` passed for the OS change and task documentation. No physical flash was needed: this change is confined to the host-facing C++ wrapper and is not used by the ARM firmware.
 - Result: Trusted VM code can call the cursor API without triggering `fs_init`; the wrapper is compiled but no persistent root scan consumes it yet. No flash records are deleted.
 - Decision: Next implement and test a read-only owner-scoped VM inventory that accounts for serialized static roots, applet roots, object fields, arrays, and aliases. Do not enable persistent-record reclamation until malformed, inaccessible, and cross-owner edges fail closed.
-- Commit: `dfdbcbf` (CHOUPI OS submodule); parent documentation/progress commit and metadata-only follow-up pending.
+- Commit: `dfdbcbf` (CHOUPI OS submodule), `a32dcc6` (parent docs/progress and OS pointer); this metadata-only commit records the parent SHA.
 - Artifacts/logs: PC build final result `ROMMASK:PASS image=build/choupi-pc/flash header=build/choupi-pc/jni.hpp manifest=build/choupi-pc/generation.sha256`; ARM and RISC-V builds passed. No standalone build log archived.
