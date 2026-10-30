@@ -15235,3 +15235,14 @@
 - Decision: Add malformed root/edge fault-injection tests and verify incomplete traversal cannot reclaim anything after power-cycle recovery. Continue accounting for all live contexts/native-held roots before enabling persistent-record reclamation.
 - Commit: `2940316` (implementation and continuity/backlog updates); this record is committed separately.
 - Artifacts/logs: VPCD APDU/restart logs `artifacts/logs/host-vpcd-multipackage-apdu-20261030T041653Z.log` (SHA-256 `167d088aad3f9460ad5d83c22969a9ce8daafbcdb90c7b111bed2a05cb17293e`) and `artifacts/logs/host-vpcd-multipackage-restart-20261030T041653Z.log` (SHA-256 `81ec147bfd69840c39f275a28ff1c6ea451e209c5f22432a3d1ecbd2cd263391`); physical cycle `artifacts/logs/cycle-choupi-20261030T041755Z.log` (SHA-256 `b59c48f302d59bd9cecd14b6877b89abbe7036d49a080bbef831127b572b332f`). The read-only APDU probe output was not archived separately.
+
+## 2026-10-30 Refresh physical inventory handoff 2 minutes
+
+- Step/experiment: `persistent-inventory-physical-handoff-refresh`
+- When: '2026-10-30 04:20 UTC' - '2026-10-30 04:22 UTC'
+- Change: Refreshed `.agent/HANDOFF.md` with the latest 2BED image/hash, verified startup cycle, post-flash read-only APDUs, PC/SC reader scan, and current physical SHA-256 discrepancy. Corrected the prior stale claim that 8E was in the latest scan.
+- Validation: Compared against `artifacts/logs/cycle-choupi-20261030T041755Z.log` and the just-completed probe/scan output; the probe returned `9000` for SELECT, GETVERSION, and JCSystem-info. `git diff --check -- .agent/HANDOFF.md` passed. No source/build behavior changed.
+- Result: Handoff now reports the current identified board as 2BED, ARM image SHA-256 `8ce742b58ce39bf275e20bd6221f3e1a6289b2603d8f5d49f488a4f05a8c1093`, and reader scan contents accurately. Probe output was not archived separately.
+- Decision: Continue with malformed-root/edge fail-closed coverage and all-live-root accounting; do not enable persistent-record reclamation.
+- Commit: `fa33e55` (handoff refresh); this record is committed separately.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T041755Z.log` (SHA-256 `b59c48f302d59bd9cecd14b6877b89abbe7036d49a080bbef831127b572b332f`); no separate APDU log.
