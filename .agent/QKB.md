@@ -77,6 +77,13 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `InvalidArgument`. The previous fault reproduces only with the old wiring;
   after the fix, the unchanged VPCD JCSystem cases 14–16 pass (5/5 harness
   checks) and both adapters report `Complete` for all four post-APDU scans.
+- The same opt-in diagnostic also calls the existing read-only
+  `Heap::traceReachableFrom()` with selected-context roots plus static/applet
+  roots. Cases 14–16 and nested-alias case 82 pass (6/6 harness checks). After
+  setup, four scans report 11/11 arrays and 7/7 instances reachable, zero
+  invalid refs, and zero edge-load failures. This walk still uses the ordinary
+  tolerant child getters; the result is diagnostic and does not prove strict
+  fail-closed edge validation or complete coverage of every context.
 - `./tools/test-persistent-inventory`, PC/ARM/RISC-V builds, and the identified
   2BED ARM physical cycle all passed. The physical monitor emitted
   `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`; it did not invoke

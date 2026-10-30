@@ -24,16 +24,19 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    present records fail closed. Registered applet roots ending in `0xFF` are
    decoded for both class-index widths and checked against their serialized
    package/class identity. The opt-in PC-only post-APDU diagnostic
-   `PICO2_PERSISTENT_INVENTORY=1` now calls both runtime adapters. A context
-   forwarding bug that overwrote the heap pointer was fixed. Unchanged JCSystem
-   VPCD cases 14–16 pass (5/5 harness checks); each of four scans reports six
-   non-null static roots and one applet root, with both results `Complete`.
-   PC/ARM/RISC-V builds pass. The 2BED physical ARM cycle passed
-   `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, but the diagnostic
-   is PC-only, so physical adapter invocation is still open. Logs and the cause
-   are in QKB. Next decode object fields, reference-array bodies, and alias
-   chains under complete owner/context root coverage before considering any
-   persistent-record deletion. No persistent records have been deleted.
+   `PICO2_PERSISTENT_INVENTORY=1` calls both runtime adapters and seeds the
+   existing read-only heap tracer with selected-context roots plus discovered
+   static/applet roots. A context-forwarding bug that overwrote the heap pointer
+   was fixed. Unchanged JCSystem VPCD cases 14–16 and nested-alias case 82 pass
+   (6/6 harness checks). Across four scans after setup, both adapters return
+   `Complete`, with six static roots and one applet root; all loaded objects
+   are marked reachable (`arrays=11/11`, `instances=7/7`, invalid refs=0, edge
+   failures=0). This uses tolerant child readers and is diagnostic only, not
+   proof of strict fail-closed traversal. PC/ARM/RISC-V builds pass. The 2BED
+   physical ARM cycle passed `TEST:PASS choupi_runtime` /
+   `TEST:SUMMARY pass=1 fail=0`, but the diagnostic is PC-only. Next add strict
+   object/reference-array edge readers and cover every active owner/context
+   before considering persistent-record deletion. No records have been deleted.
    No persistent records are deleted.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, and private RSA hardening.

@@ -32,8 +32,13 @@ out explicitly.
     non-null static roots and one applet root with `Complete` results.
   - [ ] Exercise both inventory entry points on physical hardware. The latest
     ARM cycle proves startup only; the diagnostic is currently PC-only.
-  - [ ] Decode persistent object/reference-array edges and alias chains, then
-    include every active applet/context root before computing reachability.
+  - [x] Run the existing heap reachability tracer from selected-context roots
+    plus discovered static/applet roots in PC VPCD. Cases 14–16 and 82 pass;
+    all loaded fixtures are marked with zero invalid refs or edge-load failures.
+    This still uses tolerant child restoration and is diagnostic only.
+  - [ ] Decode persistent object/reference-array edges and alias chains with
+    strict fail-closed reads, then include every active applet/context root
+    before computing authoritative reachability.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   power-cycle recovery before enabling any reclamation. `JCSystem` object
   deletion remains unsupported until this accounting is complete.
