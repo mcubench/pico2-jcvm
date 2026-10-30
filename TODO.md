@@ -1852,7 +1852,7 @@ rollback and duplicate/invalid registration handling also remain unverified.
 
 ## Expanded and required cryptographic profiles
 
-- [ ] **Complete symmetric Java Card algorithm coverage against the JCOP4
+- [x] **Complete symmetric Java Card algorithm coverage against the JCOP4
   P71 reference.** Audit every symmetric cipher, MAC/signature, key type, and
   key length marked `yes` in
   `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`
@@ -1863,7 +1863,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   not by itself expose every AES cipher algorithm. Add missing behavior in
   native C++ JCVM code, update capability selection and generated expected
   support data where applicable, and validate with unchanged upstream CAPs,
-  known-answer vectors, ARM/RISC-V builds, and physical Pico results. The
+  known-answer vectors, ARM/RISC-V builds, and physical Pico results. **Audit
+  completed 2026-10-30:** all 41 symmetric identities marked yes in the
+  supplied JCOP4 P71 matrix exactly match the 41 symmetric entries selected by
+  `symm_crypto` and the 41 symmetric entries observed on physical Pico 2
+  `2BED26ED20556535`. This complements the 71/71 physical symmetric KAT suite
+  and complete 4,525-row JCAlgTest report (46/46 generated profile entries).
+  No missing symmetric implementation was found against this matrix. Do not
+  infer support for algorithms absent from the reference. The
   reference CSV is from JCAlgTest 1.7.9 and has no `ALG_AES_CTR` row; include
   API-defined candidates such as `javacardx.crypto.Cipher.ALG_AES_CTR` in the
   audit, but establish the target card's expected support independently before

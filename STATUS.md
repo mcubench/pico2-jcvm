@@ -28,6 +28,14 @@ card registry is empty.
 
 ## Verified
 
+- **Symmetric algorithm parity with JCOP4 P71 (2026-10-30):** The supplied
+  1.7.9 reference has 41 symmetric support identities. All 41 are selected by
+  `symm_crypto` and all 41 were reported on physical Pico 2
+  `2BED26ED20556535`; there are zero missing or extra entries. Separate
+  physical symmetric known-answer coverage passed 71/71. The exact set
+  comparison and hash are in `.agent/QKB.md`. This does not infer AES-CTR
+  support because the target CSV has no such row.
+
 - **Physical `symm_crypto` support report (2026-10-30):** On Pico 2
   `2BED26ED20556535`, the unchanged JCAlgTest 1.8.2 CAP completed its full
   4,525-row `ALG_SUPPORT_EXTENDED` matrix. The generated profile comparison

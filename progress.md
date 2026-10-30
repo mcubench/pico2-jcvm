@@ -15821,3 +15821,26 @@
 - Commit: `daddc01` (evidence/documentation commit recorded here)
 - Artifacts/logs: none.
 
+## 2026-10-30 Audit symmetric profile against JCOP4 P71 5 minutes
+
+- Step/experiment: `symm-profile-jcop4-physical-parity`
+- When: '2026-10-30 14:13 UTC' - '2026-10-30 14:19 UTC'
+- Change: Compared the symmetric positive support identities in the supplied
+  JCAlgTest 1.7.9 JCOP4 P71 matrix with the generated `symm_crypto` manifest
+  and the completed physical JCAlgTest 1.8.2 report from Pico 2
+  `2BED26ED20556535`.
+- Validation: The target, profile, and physical report each contain 41
+  canonical symmetric identities. Missing and extra counts are zero for both
+  comparisons. Existing physical symmetric known-answer validation is 71/71.
+  No firmware code changed; build and flash validation were not needed.
+- Result: No missing symmetric implementation was found against this reference
+  matrix. The reference does not contain an `ALG_AES_CTR` row, so that
+  capability remains outside this parity claim.
+- Decision: Close the symmetric JCOP4 parity item. Continue with open work in
+  the handoff, starting with persistent-object reclamation safety gates.
+- Commit: recorded by the following progress entry.
+- Artifacts/logs: `artifacts/logs/compare-symm-jcop4-profile-and-physical-2BED-20261030.log`
+  SHA-256 `d4b05870cce57ec9ab9444c66b67102aa5553e108e3e11181cf87b4f020bb807`;
+  physical support CSV SHA-256
+  `e84b29fb770d8795372ac5f042b1f007a4d6994a54b87fea8078f4f9fc5b921f`.
+

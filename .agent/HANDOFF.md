@@ -23,6 +23,13 @@ firmware was changed; no CAP was installed or deleted. Persistent-object
 deletion remains disabled pending actual USB power-cycle/recovery validation.
 Documentation and evidence summary commit: `daddc01`.
 
+The supplied JCOP4 P71 symmetric matrix audit is complete: all 41 target
+positive identities match the generated `symm_crypto` profile and the physical
+2BED report; existing symmetric KAT coverage is 71/71. See QKB for the exact
+comparison log/hash. Do not infer AES-CTR support from this matrix. Continue
+with remaining backlog; persistent-record deletion remains disabled until
+physical USB power-cycle recovery is validated.
+
 ## Current memory-reporting investigation
 
 The TODO investigation is complete; measurements did not reproduce inflated

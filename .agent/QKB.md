@@ -41,6 +41,25 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `artifacts/results/jcalgtest/symm_crypto_support_physical_2BED_20261030/`;
   use the `_long/` report for comparisons.
 
+## Symmetric profile parity with the supplied JCOP4 P71 matrix — 2026-10-30
+
+- Filtered the supplied JCAlgTest 1.7.9 reference to symmetric KeyBuilder
+  AES/DES key types, AES/DES Cipher selectors and factory aliases, and AES/DES
+  MAC algorithms. It has 41 positive identities. The generated `symm_crypto`
+  profile selects exactly those 41 (zero missing, zero extra).
+- Canonicalized the full physical JCAlgTest 1.8.2 report from Pico 2
+  `2BED26ED20556535`; it reports the exact same 41 symmetric identities
+  (zero missing, zero extra). The independent physical symmetric known-answer
+  suite previously passed 71/71
+  (`artifacts/logs/symm-crypto-kat-pcsc-20261027T195919Z.log`).
+- The saved comparison is
+  `artifacts/logs/compare-symm-jcop4-profile-and-physical-2BED-20261030.log`
+  (SHA-256 `d4b05870cce57ec9ab9444c66b67102aa5553e108e3e11181cf87b4f020bb807`).
+  The reference contains no `ALG_AES_CTR` row; its support remains unclaimed.
+- Decision: No missing symmetric implementation was found against this
+  matrix. Continue with the other open project work, including physical
+  USB power-cycle recovery before any persistent-record deletion.
+
 ## Persistent filesystem tag cursor — 2026-10-30
 
 - The root Pico firmware does not link `choupi/os`; that Rust filesystem and
