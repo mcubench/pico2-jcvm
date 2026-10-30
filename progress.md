@@ -17159,3 +17159,31 @@
 - Decision: Continue with the next actionable correctness gap.
 - Commit: pending.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.
+
+## 2026-10-30 Validate CAP 2.2 internal remote-interface references 7 minutes
+
+- Step/experiment: `cap22-internal-remote-interface-reference-validation`
+- When: '2026-10-30 23:02 UTC' - '2026-10-30 23:09 UTC'
+- Change: The Class parser records internal interface-record starts and checks
+  remote class references in a second pass, supporting forward references.
+  Internal refs to non-boundaries or class records reject; external refs remain
+  available for installed-package resolution. Added converter-fixture cases,
+  updated TODO/QKB/HANDOFF, and refreshed the external-test max ARM UF2.
+- Validation: `./tools/test-cap-parser` passed 4,200 checks, 100,000 fuzz
+  inputs, and 48 corpus CAPs. `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed: the
+  unchanged JCAlgTest applet was listed selectable after install.
+- Result: The JCDK 3.0.5 fixture's internal reference and a synthetic
+  class-before-interface forward reference remain valid; malformed internal
+  references reject. The ARM image is 2,075,136 bytes,
+  SHA-256 `78cd6aa1e6d1d24e8d195087b527ea49e4f5fe101ca0dac14d1a19526cec8960`.
+  No physical test was performed. Existing packed-header warnings occurred in
+  the standalone host parser build.
+- Decision: Internal target validation is complete for CAP 2.2; external target
+  resolution still requires package-context validation.
+- Commit: pending.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`;
+  GPPro log under `artifacts/results/gppro-empty-install-vpcd-20261030T230701Z/`
+  (emulator.log SHA-256
+  `74e05347c22b5e63b9b391c4dc767b0c58e1dae76dab711bf47e4fc684035e2c`).

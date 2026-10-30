@@ -2220,8 +2220,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   interface records/names, compact class records, method tables, interface
   method maps, and remote metadata lengths. Synthetic tests cover valid mixed
   records plus malformed signatures and truncated remote fields; the supplied
-  deploy corpus is all CAP 2.1. Remote interface class-reference target
-  validation remains open. The parser now rejects unsupported CAP header
+  deploy corpus is all CAP 2.1. Internal remote-interface references must
+  target an actual interface record start in the same Class component;
+  forward references are resolved after the component scan. Imported external
+  references remain structurally accepted because target resolution requires
+  installed-package context. The parser now rejects unsupported CAP header
   versions and fails closed on CAP 2.3+ Class components because they add a
   VMMT not consumed by this Java Card 3.0.5-targeted VM. Add compact CAP 2.3
   support only with VMMT dispatch and dedicated fixtures; extended CAP 2.3 is

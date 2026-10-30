@@ -8,6 +8,26 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## CAP 2.2 internal remote-interface references — 2026-10-30
+
+- The Class-component validator now records internal interface-record starts in
+  a bounded 15-bit bitmap during its structural pass, then validates remote
+  interface references in a second pass. This accepts forward references,
+  rejects an offset into a record and a reference to a class record, and leaves
+  external references for package-context resolution.
+- `./tools/test-cap-parser` passed 4,200 checks, 100,000 fuzz inputs, and 48
+  corpus CAPs. ARM and RISC-V `max_crypto` wrapper builds passed. A fresh
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed; the
+  unchanged JCAlgTest package is loaded and selectable. This is PC VPCD, not
+  physical-card validation.
+- Current external-test ARM image:
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, 2,075,136
+  bytes, SHA-256
+  `78cd6aa1e6d1d24e8d195087b527ea49e4f5fe101ca0dac14d1a19526cec8960`.
+  GPPro emulator log SHA-256
+  `74e05347c22b5e63b9b391c4dc767b0c58e1dae76dab711bf47e4fc684035e2c` at
+  `artifacts/results/gppro-empty-install-vpcd-20261030T230701Z/emulator.log`.
+
 ## CAP 2.2 remote method tokens must resolve to public table entries — 2026-10-30
 
 - Oracle JCVMS 3.0.5 §6.9.2.5 defines `virtual_method_token` as the remote

@@ -395,10 +395,58 @@ void test_class_component_22() {
              emitted_remote_info->remote_methods[0].getSignatureOffset() == 0 &&
              emitted_remote_info->remote_methods[1].getSignatureOffset() == 2,
          "class_component_22_converter_offsets_are_descriptor_starts");
+  expect(emitted_remote_info != nullptr &&
+             emitted_remote_info->remoteInterfacesCount() == 1 &&
+             emitted_remote_info->remoteInterfaces()[0].isInternalClassRef() &&
+             NTOHS(emitted_remote_info->remoteInterfaces()[0].internal_classref) ==
+                 6,
+         "class_component_22_converter_internal_remote_interface_ref_parses");
 
   const size_t remote_info_offset =
       reinterpret_cast<const uint8_t *>(emitted_remote_info) -
       emitted_valid.data();
+
+  const size_t remote_interfaces_offset =
+      reinterpret_cast<const uint8_t *>(emitted_remote_info->remoteInterfaces()) -
+      emitted_valid.data();
+  auto non_boundary_remote_interface = emitted_valid;
+  non_boundary_remote_interface[remote_interfaces_offset + 1] = 7;
+  expect(!parses(non_boundary_remote_interface.data(),
+                 non_boundary_remote_interface.size()),
+         "class_component_22_internal_remote_interface_ref_must_be_record_start");
+
+  auto class_remote_interface_target = emitted_valid;
+  class_remote_interface_target[remote_interfaces_offset] = 0;
+  class_remote_interface_target[remote_interfaces_offset + 1] = 9;
+  expect(!parses(class_remote_interface_target.data(),
+                 class_remote_interface_target.size()),
+         "class_component_22_internal_remote_interface_ref_must_target_interface");
+
+  auto external_remote_interface = emitted_valid;
+  external_remote_interface[remote_interfaces_offset] = 0x80;
+  external_remote_interface[remote_interfaces_offset + 1] = 0;
+  expect(parses(external_remote_interface.data(),
+                external_remote_interface.size()),
+         "class_component_22_external_remote_interface_ref_deferred_to_package_resolution");
+
+  // An internal reference may point to an interface record that follows the
+  // remote class in the Class component.
+  const std::vector<uint8_t> forward_reference_payload = {
+      0x00, 0x02, 0x01, 0x10, // Signature pool.
+      0x20, 0xff, 0xff, 0xff, 0x01, 0xff, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x14, // Remote class -> interface at 20.
+      0x80};
+  const auto forward_reference = make_cap(forward_reference_payload);
+  expect(parses(forward_reference.data(), forward_reference.size()),
+         "class_component_22_internal_remote_interface_forward_ref_parses");
+  auto invalid_forward_reference = forward_reference;
+  const size_t forward_ref_offset = 3 + 16 + 3 + 18;
+  invalid_forward_reference[forward_ref_offset] = 0;
+  invalid_forward_reference[forward_ref_offset + 1] = 21;
+  expect(!parses(invalid_forward_reference.data(),
+                 invalid_forward_reference.size()),
+         "class_component_22_internal_remote_interface_forward_ref_target_checked");
+
   auto interior_signature_offset = emitted_valid;
   interior_signature_offset[remote_info_offset + 4] = 1;
   expect(!parses(interior_signature_offset.data(),

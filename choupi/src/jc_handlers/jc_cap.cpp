@@ -197,7 +197,9 @@ bool validate_remote_interface_info(const uint8_t *payload,
                                     const size_t signature_pool_length,
                                     const uint8_t public_method_table_base,
                                     const size_t public_method_table_count,
-                                    const uint8_t *signature_start_bits) {
+                                    const uint8_t *signature_start_bits,
+                                    const uint8_t *interface_start_bits =
+                                        nullptr) {
   if (offset >= size) return false;
   const size_t remote_methods = payload[offset++];
   const size_t remote_method_bytes = remote_methods * 5;
@@ -236,8 +238,69 @@ bool validate_remote_interface_info(const uint8_t *payload,
   const size_t remote_interfaces = payload[offset++];
   const size_t remote_interface_bytes = remote_interfaces * 2;
   if (remote_interface_bytes > size - offset) return false;
+  if (interface_start_bits != nullptr) {
+    for (size_t index = 0; index < remote_interfaces; ++index) {
+      const uint16_t class_ref = read_be16(payload + offset + index * 2);
+      if ((class_ref & 0x8000) == 0 &&
+          (interface_start_bits[class_ref / 8] &
+           static_cast<uint8_t>(1u << (class_ref & 7))) == 0) {
+        return false;
+      }
+    }
+  }
   offset += remote_interface_bytes;
   return true;
+}
+
+bool validate_internal_remote_interface_refs(
+    const uint8_t *payload, const size_t size,
+    const size_t signature_pool_length, const uint8_t *signature_start_bits,
+    const uint8_t *interface_start_bits) {
+  size_t offset = 2 + signature_pool_length;
+  while (offset < size) {
+    const uint8_t flags = payload[offset] >> 4;
+    const size_t interfaces = payload[offset] & 0x0f;
+    if ((flags & 0x08) != 0) {
+      const size_t superinterface_bytes = interfaces * 2;
+      if (superinterface_bytes > size - offset - 1) return false;
+      offset += 1 + superinterface_bytes;
+      if ((flags & 0x02) != 0) {
+        if (offset >= size) return false;
+        const size_t name_bytes = payload[offset++];
+        if (name_bytes > size - offset) return false;
+        offset += name_bytes;
+      }
+      continue;
+    }
+
+    constexpr size_t class_prefix_size = 10;
+    if (size - offset < class_prefix_size) return false;
+    const uint8_t public_method_base = payload[offset + 6];
+    const size_t public_methods = payload[offset + 7];
+    const size_t package_methods = payload[offset + 9];
+    offset += class_prefix_size;
+    const size_t method_table_bytes =
+        (public_methods + package_methods) * 2;
+    if (method_table_bytes > size - offset) return false;
+    offset += method_table_bytes;
+
+    for (size_t index = 0; index < interfaces; ++index) {
+      if (size - offset < 3) return false;
+      const size_t method_map_bytes = payload[offset + 2];
+      const size_t record_bytes = 3 + method_map_bytes;
+      if (record_bytes > size - offset) return false;
+      offset += record_bytes;
+    }
+
+    if ((flags & 0x02) != 0 &&
+        !validate_remote_interface_info(
+            payload, size, offset, signature_pool_length,
+            public_method_base, public_methods, signature_start_bits,
+            interface_start_bits)) {
+      return false;
+    }
+  }
+  return offset == size;
 }
 
 bool validate_class_component_22(const uint8_t *payload, const size_t size) {
@@ -248,7 +311,12 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size) {
   // signature-offset validation to bounded linear time for adversarial CAPs.
   static std::array<uint8_t, (UINT16_MAX + 1u + 7u) / 8u>
       signature_start_bits{};
+  // Internal class references use a 15-bit offset into the Class component.
+  // Track interface record starts so forward references can be checked after
+  // the complete record table has been structurally validated.
+  static std::array<uint8_t, 0x8000 / 8> interface_start_bits{};
   signature_start_bits.fill(0);
+  interface_start_bits.fill(0);
   if (signature_pool_length > size - 2 ||
       !validate_type_descriptor_sequence(payload + 2,
                                          signature_pool_length,
@@ -264,6 +332,10 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size) {
     if ((flags & 0x01) != 0) return false;
 
     if ((flags & 0x08) != 0) {
+      if (offset < 0x8000) {
+        interface_start_bits[offset / 8] |=
+            static_cast<uint8_t>(1u << (offset & 7));
+      }
       const size_t superinterface_bytes = interfaces * 2;
       if (superinterface_bytes > size - offset - 1) return false;
       offset += 1 + superinterface_bytes;
@@ -306,7 +378,10 @@ bool validate_class_component_22(const uint8_t *payload, const size_t size) {
     ++record_count;
   }
 
-  return offset == size && record_count != 0;
+  return offset == size && record_count != 0 &&
+         validate_internal_remote_interface_refs(
+             payload, size, signature_pool_length,
+             signature_start_bits.data(), interface_start_bits.data());
 }
 
 bool validate_descriptor_type_offsets(const uint8_t *descriptor,
