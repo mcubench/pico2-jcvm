@@ -177,6 +177,46 @@ public final class JCAlgTestApduProbe {
         return;
       }
 
+      if (probeArgs.size() == 3 &&
+          "--key-support".equals(probeArgs.get(0))) {
+        if (!probeArgs.get(1).matches("(?i)[0-9a-f]{2}") ||
+            !probeArgs.get(2).matches("(?i)[0-9a-f]{4}")) {
+          throw new IllegalArgumentException(
+              "--key-support requires a one-byte key type and " +
+              "a two-byte hexadecimal bit length");
+        }
+        int keyType = Integer.parseInt(probeArgs.get(1), 16);
+        int keyLength = Integer.parseInt(probeArgs.get(2), 16);
+        ResponseAPDU response = transmit(channel,
+            "KEY_SUPPORT_" + String.format("%02X_%04X", keyType, keyLength),
+            new CommandAPDU(0xB0, 0x75, 0x20, 0x00,
+                new byte[] {(byte) keyType, (byte) (keyLength >>> 8),
+                            (byte) keyLength}, 256));
+        byte[] result = response.getData();
+        if (result.length != 27 || result[0] != 0x20 ||
+            result[2] != (byte) 0xff) {
+          throw new IllegalStateException(
+              "short or malformed JCAlgTest KeyBuilder response: " +
+              hex(result));
+        }
+        int[] starts = new int[3];
+        int[] ends = new int[3];
+        for (int type = 0; type < 3; type++) {
+          int offset = 3 + type * 8;
+          starts[type] = readInt(result, offset);
+          ends[type] = readInt(result, offset + 4);
+        }
+        System.out.printf(
+            "JCALGTEST:KEY_SUPPORT type=%02X length=%d status=%02X " +
+            "persistent=%d->%d delta=%d deselect=%d->%d delta=%d " +
+            "reset=%d->%d delta=%d%n",
+            keyType, keyLength, result[1] & 0xff,
+            starts[0], ends[0], starts[0] - ends[0],
+            starts[1], ends[1], starts[1] - ends[1],
+            starts[2], ends[2], starts[2] - ends[2]);
+        return;
+      }
+
       if (probeArgs.size() == 1 &&
           "--rsa-3072-keypair-support".equals(probeArgs.get(0))) {
         ResponseAPDU response = transmit(channel, "RSA_3072_KEYPAIR_SUPPORT",

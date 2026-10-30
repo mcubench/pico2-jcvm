@@ -610,14 +610,31 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   8,846 bytes before and after, with zero allocation. Its scalar overload is
   capped at 32,767, so the JCAlgTest scalar `0x847f` is its own signed-short
   arithmetic overflow after adding two 576-byte arrays, not a native API value.
+  A direct persistent AES-128 KeyBuilder probe (type `0x0F`, length 128) then
+  measured 416 bytes less reset/deselect memory and zero persistent delta on
+  this `current`-profile image. AES transient-reset and transient-deselect
+  probes (types `0x0D`/`0x0E`) returned `NO_SUCH_ALGORITHM` as expected because
+  both capabilities are disabled in `current`; they do not provide allocation
+  measurements. Do not treat this as a transient-key defect; those variants
+  need a symm_crypto image for physical measurement.
+  That physical check is now complete: after a full `symm_crypto` CHOUPI image
+  was flash-verified on 2BED, persistent AES-128 showed 464-byte transient
+  drops; reset-transient AES-128 showed 632 bytes and a noisy -2-byte
+  persistent delta; deselect-transient AES-128 showed 616 bytes and zero
+  persistent delta. All three constructors returned status `00`. The 512 KiB
+  ARM link map places the static RAM end at `0x2003CBD0` and `__StackLimit` at
+  `0x20080000`, a 275,504-byte gross gap; the observed ~230,000 bytes free is
+  numerically plausible after runtime heap use, but this is not a live
+  allocator reconciliation. Do not report the estimate as proven correct yet.
   The 32-bit transient implementation currently adds allocator free blocks to
   the gap from `sbrk(0)` to `__StackLimit`; persistent reports overlay capacity
   minus current use. Both transient kinds currently return the same allocator
-  estimate. Still open: independently reconcile the heap/stack estimate with
-  real allocator capacity, characterize APDU/query and transient-category
-  effects, and repeat controlled measurements for representative key objects.
-  Probe code and raw evidence: `tools/JCAlgTestApduProbe.java` and
-  `artifacts/logs/jcsystem-memory-probe-2BED-20261030.log`.
+  estimate. Still open: independently account for the runtime heap/free-block
+  and stack-bound portions before deciding whether changes are warranted.
+  Probe code and raw evidence: `tools/JCAlgTestApduProbe.java`,
+  `artifacts/logs/jcsystem-memory-probe-2BED-20261030.log`, and
+  `artifacts/logs/jcsystem-key-memory-2BED-20261030.log` plus the `symm_crypto`
+  measurements in `artifacts/logs/jcsystem-key-memory-symm-2BED-20261030.log`.
 
 - [x] Preserve timestamps of unchanged generated build inputs. The Java Card
   support, class-token, and ROM-metadata generators now write output files only

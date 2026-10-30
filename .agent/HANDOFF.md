@@ -20,21 +20,43 @@ byte drops). Persistent available memory stayed at 8,846 bytes (zero delta).
 Thus this probe does not prove that available memory is inflated; the measured
 Cipher allocation is about 1.3–1.45 KiB and varies with allocator state.
 
+A direct persistent AES-128 KeyBuilder probe on the current-profile image
+measured a 416-byte reset/deselect drop and zero persistent delta. After
+building both architectures and flashing the full `symm_crypto` CHOUPI image,
+physical probes on the same 2BED board returned status `00` for persistent,
+reset-transient, and deselect-transient AES-128 keys. Their measured
+reset/deselect deltas were 464, 632, and 616 bytes respectively. Persistent
+free-space deltas were 0, -2, and 0 bytes; the -2 result is measurement noise
+at this resolution. Full ARM image SHA-256 is `a7a09fa952592a43b5970065c50b0551f35e4f0c7908e853476338eee20604e1`.
+The cycle's 18-second monitor passed `TEST:PASS choupi_runtime` and repeated
+`TEST:SUMMARY pass=1 fail=0`, with one existing `WATCHDOG_RECOVERY ...
+cause=other` marker. The board is currently running the symm_crypto profile.
+Captured key log:
+`artifacts/logs/jcsystem-key-memory-2BED-20261030.log`, SHA-256
+`0bc0383840824edfc5ae8945a3fcf364ebaa4d1f3cc04ddf71dc07abd743bba8`.
+Symm-profile key log:
+`artifacts/logs/jcsystem-key-memory-symm-2BED-20261030.log`, SHA-256
+`321c1a4f97657b3a1cc6f71ab8e3f019c679f3a935931a73e3576f7adc052fd7`.
+
 The scalar `getAvailableMemory` native call clamps at 32,767. JCAlgTest's scalar
 reset field `0x847f` is caused by its own signed-short addition of two 576-byte
 arrays to that capped value. The 32-bit API path reports the full 32-bit
 estimate. Both transient types currently use the same `mallinfo` free-block
 count plus the gap from `sbrk(0)` to `__StackLimit`; persistent free space is
 overlay capacity minus used bytes. This formula still needs an independent
-allocator/stack-bound reconciliation. The new `--jcsystem-info-p1` and
-`--cipher-support` probe options are in `tools/JCAlgTestApduProbe.java`.
+allocator/stack-bound reconciliation. The `--jcsystem-info-p1`,
+`--cipher-support`, and `--key-support` probe options are in
+`tools/JCAlgTestApduProbe.java`.
 
 Evidence: `artifacts/logs/jcsystem-memory-probe-2BED-20261030.log` (SHA-256
 `5515f87702c561c819ffc418af005749479f90e8a030d0a1a343ce9f12d5c74a`) and
 finite serial monitor `artifacts/logs/jcsystem-memory-monitor-2BED-20261030.log`
 (SHA-256 `eb6db5d688de6bef4b1a39d19b28a48cfed621c835c2df086467b6d935d5f601`).
-Next: add direct representative key construction probes, then compare allocator
-state before proposing native changes. Preserve all unrelated worktree edits.
+Next: independently account for the runtime heap/free-block and stack-bound
+portions before deciding whether memory reporting needs changes. The link map
+shows 275,504 gross bytes between static RAM and `__StackLimit`; measured free
+memory near 230 KiB is plausible but not conclusive. Preserve all unrelated
+worktree edits.
 
 ## Next concrete work
 
