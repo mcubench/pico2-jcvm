@@ -15560,3 +15560,48 @@
   SHA-256 `5515f87702c561c819ffc418af005749479f90e8a030d0a1a343ce9f12d5c74a`;
   `artifacts/logs/jcsystem-memory-monitor-2BED-20261030.log`, SHA-256
   `eb6db5d688de6bef4b1a39d19b28a48cfed621c835c2df086467b6d935d5f601`.
+
+## 2026-10-30 Measure KeyBuilder memory deltas on symm_crypto 15 minutes
+
+- Step/experiment: `jcsystem-memory-symmetric-key-probes`
+- When: '2026-10-30 06:05 UTC' - '2026-10-30 06:20 UTC'
+- Change: Extended the read-only JCAlgTest PC/SC probe to construct an
+  explicitly selected `KeyBuilder` type/length and decode its before/after
+  persistent, deselect-transient, and reset-transient 32-bit memory readings.
+  Updated TODO/HANDOFF with physical evidence; no firmware source or CAP was
+  changed.
+- Validation: `./tools/env javac -d /tmp/jcvm-memory-probe-check
+  tools/JCAlgTestApduProbe.java` and `git diff --check` passed. ARM and RISC-V
+  `symm_crypto` wrappers both passed. Full physical cycle used
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile symm_crypto --chipid
+  2BED26ED20556535`; flash verification passed and the 18-second serial monitor
+  repeatedly reported `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`.
+  It also emitted one `WATCHDOG_RECOVERY ... cause=other` marker; the run
+  remains an item for investigation. A preceding accidental `cycle arm` call
+  placed the architecture smoke image on the board; its smoke monitor passed
+  but it did not expose PC/SC. The full `cycle choupi` command restored and
+  verified the intended CHOUPI image. The approved PC/SC access helper restored
+  reader enumeration before the APDU probes.
+- Result: On the current-profile image, persistent AES-128 succeeded with a
+  416-byte reset/deselect delta, while transient key types returned expected
+  `NO_SUCH_ALGORITHM` because those profile capabilities are disabled. On the
+  symm_crypto image, persistent/reset-transient/deselect-transient AES-128
+  constructors all returned status `00`; measured reset/deselect deltas were
+  464/464, 632/632, and 616/616 bytes. Persistent deltas were 0, -2, and 0
+  bytes. The ARM map places static RAM end at `0x2003CBD0` and `__StackLimit` at
+  `0x20080000` (275,504 gross bytes); observed free memory around 230 KiB is
+  plausible after runtime allocations, but does not independently validate
+  `mallinfo` plus the heap/stack gap.
+- Decision: Keep the TODO memory-accounting investigation open, but do not
+  characterize the current-profile transient `NO_SUCH_ALGORITHM` result as a
+  defect. Continue by independently measuring runtime allocator and stack
+  bounds before changing firmware reporting.
+- Commit: `bf70ca5` (probe and findings; this progress record committed separately).
+- Artifacts/logs: current profile key probe SHA-256
+  `0bc0383840824edfc5ae8945a3fcf364ebaa4d1f3cc04ddf71dc07abd743bba8`;
+  symm_crypto key probe SHA-256
+  `321c1a4f97657b3a1cc6f71ab8e3f019c679f3a935931a73e3576f7adc052fd7`;
+  full-cycle log SHA-256
+  `38a798792210e14b482b78a7ba1932a6bf0e0a7af59bd255740883bdd781115f`;
+  symm_crypto ARM image SHA-256
+  `a7a09fa952592a43b5970065c50b0551f35e4f0c7908e853476338eee20604e1`.
