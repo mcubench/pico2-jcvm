@@ -131,16 +131,23 @@ The following retained records cover active investigations and recent fixes.
 Their dates and validation scopes remain significant. Later follow-ups in
 HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
 
-## OS test harness and persistent-tag inventory groundwork — 2026-10-30
+## OS trusted tag-cursor bridge and persistent-inventory groundwork — 2026-10-30
 
 - **Persistent-storage GC groundwork:** The OS `FileSystem` owns an in-memory
-  active-tag `HashSet` and supports prefix erase, but VM code had no read-only
-  tag inventory interface. Added a borrowed callback visitor over that index;
-  it filters by prefix, supports early stop, and allocates no temporary tag
-  collection. This does not expose enumeration across the VM/OS boundary and
-  does not authorize record deletion. Next, design owner-scoped trusted
-  inventory and include static roots, applet roots, field tags, array bodies,
-  and aliases before any reclamation.
+  active-tag `HashSet`. It now has both a bounded-memory visitor and a trusted
+  cursor syscall that returns one active tag per call, resumes by bucket and
+  offset, filters by prefix, validates user pointers, and skips tags unreadable
+  from the caller's context. Cursor stability requires the active index not to
+  be mutated between pages. Tests cover paging, end-of-scan, and invalid prefix
+  length. This bridge does not authorize deletion. Next, consume it in a native
+  owner-scoped VM inventory that includes static roots, applet roots, object
+  fields, array bodies, and aliases before any reclamation.
+- **Validation:** Host functional suite passed 67, 0 failed, 2 ignored (generated
+  `bindgen_test_layout*` tests skipped because they abort with `null reference
+  produced`). ARM and RISC-V repository builds passed. Identified physical
+  board 2BED `2BED26ED20556535` was flashed through the elevated host-access
+  wrapper; finite CHOUPI runtime passed with `TEST:SUMMARY pass=1 fail=0`.
+  Runtime log: `artifacts/logs/cycle-choupi-20261030T004223Z.log`.
 - **Host OS test invocation:** `javacard-os` unit tests need host `PTRACE_ATTACH`;
   run the repository toolchain wrapper with elevated host execution. The
   generated `bindgen_test_layout*` tests currently abort with `null reference

@@ -14928,3 +14928,14 @@
 - Decision: Next define and implement a trusted owner-scoped tag inventory bridge, then enumerate persistent roots and aliases. Keep deletion disabled until the full persisted graph is accounted for.
 - Commit: `88cd0f5` (OS submodule), `94f3446` (root docs and pointer); this metadata-only commit records the root SHA.
 - Artifacts/logs: `/tmp/javacard-os-tests.log` captures the sandbox-only PTRACE failure; no persistent test artifact.
+
+## 2026-10-30 Add trusted active-tag cursor bridge 11 minutes
+
+- Step/experiment: `persistent-tag-trusted-cursor-bridge`
+- When: '2026-10-30 00:33 UTC' - '2026-10-30 00:44 UTC'
+- Change: Added a resumable bucket/offset iterator to the OS hash index and a `FsNextTag` syscall that yields one active matching tag per call. The syscall validates readable/writable request memory, bounds prefixes to 32 bytes, validates tag structure, and filters tags through the current context's read permissions. Added C/C++ FFI and cursor wrapper, plus filesystem paging and syscall cursor/end/invalid-prefix tests. No persistent record is deleted.
+- Validation: `./tools/env cargo test --manifest-path choupi/os/Cargo.toml --no-default-features --features host -- --skip bindgen_test_layout` passed 67 tests, 0 failed, 2 ignored, 49 filtered. Focused syscall regression passed. `./tools/build arm` and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 2BED26ED20556535` passed flash verification and finite runtime on physical board 2BED; output included `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL`/`FAULT`. A retained `WATCHDOG_RECOVERY ... cause=other` diagnostic preceded repeated successful checks; it is not evidence of watchdog reset per current QKB. `git diff --check` passed before commit.
+- Result: The trusted VM can now page active tags through the OS boundary without allocating a whole-index snapshot, while respecting the current context's tag read access. The bridge has not yet been consumed by VM root inventory; no reclamation safety claim is made.
+- Decision: Implement the native owner-scoped inventory consumer next. Include static roots, applet roots, fields, array bodies, and aliases; keep persistent deletion disabled until graph accounting and recovery validation are complete.
+- Commit: `cf908e5` (CHOUPI OS submodule); parent repository commit and metadata-only follow-up pending.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T004223Z.log` SHA-256 `70f7e80aa212490893cbbe49d825f2577ff647a9d89231c6388daf959b41eae8`. Host suite: 67 passed, 0 failed, 2 ignored; no separate archived log.

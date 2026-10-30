@@ -12,10 +12,12 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 ## Next concrete work
 
 1. Continue safe persistent-object reclamation for repeated API workloads.
-   The OS filesystem now has a bounded-memory, read-only active-tag visitor
-   with prefix filtering and early termination, covered by a focused test.
-   Next, design the trusted VM bridge and owner-scoped root inventory. No
-   persistent records are deleted; preserve stable handles and keep loaded
+   The OS now exposes a bounded-memory, read-only active-tag visitor and
+   cursor syscall. The cursor preserves its bucket/offset across calls, filters
+   by prefix, and returns only tags readable from the current context. Host
+   tests, both architecture builds, and a physical CHOUPI runtime cycle pass.
+   Next implement the trusted VM inventory consumer and owner-scoped roots.
+   No persistent records are deleted; preserve stable handles and keep loaded
    persistent records intact until reachability is proven.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, and private RSA hardening.

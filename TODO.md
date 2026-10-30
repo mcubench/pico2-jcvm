@@ -6,6 +6,19 @@ out explicitly.
 
 ## Current prioritized backlog — 2026-10-20
 
+### Persistent-object reclamation groundwork — 2026-10-30
+
+- [x] Add a bounded-memory OS filesystem tag visitor and cursor syscall for
+  trusted VM inventory. Cursor iteration supports prefix filtering and skips
+  tags the active context cannot read. It does not delete records.
+- [ ] Implement a native trusted-VM inventory consumer with explicit owner
+  boundaries. Enumerate persistent roots, static references, applet roots,
+  object fields, reference-array bodies, and aliases before identifying
+  unreachable records.
+- [ ] Preserve stable Java Card handles and validate interrupted-update and
+  power-cycle recovery before enabling any reclamation. `JCSystem` object
+  deletion remains unsupported until this accounting is complete.
+
 - [x] Repair `current`-profile firmware builds when SHA-256 is the only
   selected digest: guard `setInitialDigest()`'s optional RSA/ECDSA checks and
   include the Mbed TLS SHA-256 source in ARM firmware. ARM and RISC-V wrappers
