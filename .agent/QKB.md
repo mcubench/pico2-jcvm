@@ -2012,3 +2012,25 @@ original terminology/status; check current summary and later fixes before reuse.
   CTR object; `python3 tools/test-javacard-support.py` passes 14/14. Builds
   still emit existing packed-member alignment warnings from CAP structure
   headers; this fix adds no new compiler warning.
+
+### Persistence regression after latest native changes — 2026-10-30
+
+- `./tools/test-persistent-inventory`, `./tools/test-persistent-transaction`,
+  and `./tools/test-rp2350-fs-overlay` passed; the overlay runner ended with
+  `TEST:SUMMARY fail=0`, including injected snapshot, install-journal, and
+  cross-store recovery cuts.
+- Rebuilt the PC emulator and ran `./tools/test-vpcd-persistence` through the
+  approved host-network path. Install/commit passed 3/3. A fresh process
+  restored committed state and passed 38/38 checks, including four GC-pressure
+  rounds and nested persistent aliases. This is VPCD evidence, not physical
+  loss-of-power validation.
+- Immediately afterward, the approved PC/SC helper granted access to two USB
+  nodes, but `pcsc_scan -r` listed only the two Virtual PCD readers. The USB
+  nodes were not identified as Pico readers; no physical card operation was
+  attempted. Keep physical power-cycle recovery and persistent-record deletion
+  open.
+- Logs: `artifacts/logs/vpcd-persistence-commit-20261030T203932Z.log`
+  (SHA-256
+  `bf1f7a43bc4ce0d0cf07804c11b31e7b1277c09256c14abdb51b41649e5ce451`) and
+  `artifacts/logs/vpcd-persistence-restore-20261030T203932Z.log` (SHA-256
+  `59309a770239352bfa223f6e8bcd0bc6b307e4ea772c5079b3cc2bd599387bbc`).

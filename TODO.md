@@ -145,6 +145,13 @@ out explicitly.
       `tools/test-pico-powerup` is read-only; its success marker now says
       `power_cycle=not_verified_by_script` so the probe cannot be mistaken for
       a reset or cold-power test.
+- [x] Re-run the host persistence/recovery regression after the latest native
+  Signature changes. Persistent inventory and transaction tests passed, the
+  RP2350 overlay/recovery suite ended with `TEST:SUMMARY fail=0`, and
+  `./tools/test-vpcd-persistence` passed install/commit 3/3 plus 38/38 checks
+  after a fresh emulator process and four GC-pressure rounds. This is host
+  VPCD/storage-model evidence only; no physical reader or USB power cycle was
+  available, so the prerequisite for persistent-record deletion remains open.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
   physical power-cycle recovery before enabling persistent-record reclamation.
   PC VPCD process restart now passes the JCSystem persistence suite; hardware

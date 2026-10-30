@@ -323,6 +323,21 @@ are in `tools/JCAlgTestApduProbe.java`.
    `artifacts/logs/vpcd-persistence-restore-20261030T054451Z.log`, and
    `artifacts/logs/vpcd-persistence-restore-emulator-20261030T054451Z.log`.
 
+   Fresh verification on 2026-10-30 after the DES-MAC changes rebuilt the PC
+   emulator and reran `./tools/test-vpcd-persistence`: install/commit passed
+   3/3; fresh-process restore and four GC-pressure rounds passed 38/38. Logs:
+   `artifacts/logs/vpcd-persistence-commit-20261030T203932Z.log` and
+   `artifacts/logs/vpcd-persistence-restore-20261030T203932Z.log`. The three
+   offline suites also pass: persistent inventory, persistent transaction,
+   and RP2350 overlay/recovery (`TEST:SUMMARY fail=0` in each). No source
+   changes were required by this rerun.
+
+   Reader check immediately afterward: the approved helper granted access to
+   two USB nodes, but `pcsc_scan -r` listed only `Virtual PCD 00 00` and
+   `Virtual PCD 00 01`. The physical nodes were not confirmed as Pico readers;
+   no physical power cycle or flash was attempted. Keep physical recovery
+   validation open.
+
    Physical 2BED (`2BED26ED20556535`) remained available for read-only
    validation: the JCAlgTest package/applet was listed, SELECT, GETVERSION
    (`1.8.2_jc305`), and JCSystem-info returned `9000`, and an 8-second serial

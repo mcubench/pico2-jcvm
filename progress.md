@@ -16575,3 +16575,30 @@
   available; current worktree contains unrelated changes that remain unstaged.
 - Commit: recorded in this follow-up commit.
 - Artifacts/logs: none.
+
+## 2026-10-30 Revalidate persistence inventory and restart recovery 9 minutes
+
+- Step/experiment: `persistent-inventory-and-vpcd-restart-regression`
+- When: '2026-10-30 20:36 UTC' - '2026-10-30 20:45 UTC'
+- Change: Re-ran the read-only inventory, persistent transaction, overlay
+  recovery, and VPCD process-restart suites after the latest native changes.
+  Updated TODO, QKB, and handoff with current evidence and reader state.
+- Validation: `./tools/test-persistent-inventory`,
+  `./tools/test-persistent-transaction`, and
+  `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`).
+  `./tools/test-vpcd-persistence` passed install/commit 3/3 and fresh-process
+  restore/GC 38/38, with four pressure rounds. The approved PC/SC helper granted
+  two USB nodes, but `pcsc_scan -r` listed only two Virtual PCD readers.
+- Result: Host restoration, alias identity, inventory, and volatile-heap GC
+  pressure are passing; actual Pico power-cycle recovery and persistent flash
+  record deletion remain unverified. No physical card operation was attempted.
+- Decision: Keep persistent record deletion disabled. Resume hardware recovery
+  validation when PC/SC registers a physical Pico; proceed with independent
+  native VM gaps meanwhile.
+- Commit: recorded in immediate follow-up progress entry.
+- Artifacts/logs: commit log
+  `artifacts/logs/vpcd-persistence-commit-20261030T203932Z.log` SHA-256
+  `bf1f7a43bc4ce0d0cf07804c11b31e7b1277c09256c14abdb51b41649e5ce451`;
+  restore log `artifacts/logs/vpcd-persistence-restore-20261030T203932Z.log`
+  SHA-256
+  `59309a770239352bfa223f6e8bcd0bc6b307e4ea772c5079b3cc2bd599387bbc`.
