@@ -1338,3 +1338,37 @@ original terminology/status; check current summary and later fixes before reuse.
 - [VPCD PC/SC service startup race (2026-10-27)](archive/2026-10-29-pre-compaction/QKB.md#L5682)
 - [VPCD install-recovery tests must resume from persisted registry (2026-10-27)](archive/2026-10-29-pre-compaction/QKB.md#L5689)
 - [RSA-CRT result verification needs a matching public exponent (2026-10-27)](archive/2026-10-29-pre-compaction/QKB.md#L5696)
+
+### Enumerate registered roots for all installed applet instances — 2026-10-30
+
+- The firmware/PC inventory path now walks the package instance registry,
+  resolves each instance's stable owner ID, and visits all registered root tags
+  in that owner namespace. Missing package metadata, instance records, owner
+  mappings, or root walks fail the inventory closed. This replaces the stale
+  active-applet-only limitation; applet instances share the active heap used
+  by the inventory tracer.
+- PC VPCD multipackage coverage passed with three installed applet roots both
+  before and after emulator restart (`applet_roots=3`, `trace_complete=1`,
+  zero invalid references/edge failures). Logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261030T040017Z.log`
+  (SHA-256 `9f397c883b02706990a84e532fc1ffe02a706ab89eba1debb1b7d4412e8016ab`)
+  and `artifacts/logs/host-vpcd-multipackage-restart-20261030T040017Z.log`
+  (SHA-256 `177355201566029f929b9fbe945c325799573a10a57ba66d0aeef3d1d5416995`).
+  Suite summary: `TEST:SUMMARY pass=25 fail=0`. Physical multi-instance
+  installation/root restore has not been tested. Other live contexts and
+  native-held roots remain outside this enumeration; persistent record deletion
+  remains disabled.
+
+### Physical SHA-256 doFinal probe returns FF01 while VPCD passes — unresolved 2026-10-30
+
+- On Pico 2 `2BED26ED20556535`, the unchanged installed JCAlgTest 1.8.2 applet
+  selected normally; GETVERSION and JCSystem-info returned `9000`. The isolated
+  SHA-256 doFinal setup APDU returned `AA9000`, then the doFinal APDU returned
+  `FF01`. Log: `artifacts/logs/sha256-dofinal-2BED-after-all-applet-inventory-20261030.log`.
+- The same firmware inventory implementation and unchanged JCAlgTest CAP pass
+  the VPCD multipackage/JCAlgTest validation, including SHA-256 doFinal/static
+  cases. This currently indicates a physical-only discrepancy; it does not
+  establish whether the cause is device state, persisted applet state, or a
+  hardware-path issue. Do not attribute it to all-instance root enumeration
+  without further evidence. Reinstalling or deleting the physical applet was
+  intentionally not attempted during this read-only check.

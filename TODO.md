@@ -61,10 +61,14 @@ out explicitly.
     IDs in VCR2 while reading legacy VCR1 records as owner `0`. Overlay
     recovery tests verify two instances of one class retain different owners
     across registry reinitialization and deleting one preserves the other.
-  - [ ] Include every live applet/context/native root before computing
-    authoritative reachability. Owner identity is now distinct, but the
-    collector still enumerates registered roots only for the active applet;
-    inactive applets and other live contexts/native owners remain uncovered.
+  - [x] Enumerate registered applet roots for every installed applet instance,
+    using its stable owner ID. The PC inventory diagnostic and ARM collector
+    share the same package/instance enumeration; VPCD restart coverage confirms
+    three roots are found before and after restart. Physical multi-instance
+    installation has not been tested.
+  - [ ] Include every live context and native-held root before computing
+    authoritative reachability. Other live contexts/native owners and any
+    roots outside the registered per-instance records remain uncovered.
   - [ ] Add malformed serialized edge/alias tests and prove an incomplete walk
     cannot authorize reclamation, including recovery after power cycling.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and

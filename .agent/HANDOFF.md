@@ -20,11 +20,11 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    allow trusted RuntimeEnvironment/Installer contexts to access these logical
    owner tags while keeping applet contexts isolated. Two same-class instances
    retain different IDs in overlay recovery tests; VPCD multipackage restart /
-   DELETE passes 23/23 and JCSystem transaction applet passes 85/85. ARM and
-   RISC-V builds pass. Physical 2BED was reflashed with current ARM firmware
-   and finite startup monitor passed, but physical multi-instance install/root
-   restore has not been tested. Root enumeration still scans only the active
-   applet; it is not yet safe to delete persistent records.
+   DELETE previously passed 23/23 and JCSystem transaction applet passes
+   85/85. ARM and RISC-V builds pass. New VPCD coverage confirms all three
+   installed instance roots are visited before and after restart. Physical
+   multi-instance install/root restore has not been tested; live contexts and
+   native-held roots remain uncovered, so persistent records cannot be deleted.
 
    Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
    firmware uses a matching cursor over the mutable overlay in
@@ -50,7 +50,7 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    fail the walk, while transient and unpersisted objects use in-memory edges.
    Strict VPCD cases 14–16 and 82 pass. Root enumeration now reports
    completion, and the device collector loads static roots from every package
-   reported installed plus registered roots for the active applet before
+   reported installed plus registered roots for every installed applet instance before
    marking; any inventory error skips collection. CAPs without a Static Field
    component contribute no static roots. The ARM runtime and PC diagnostic
    share the same package enumeration. Physical 2BED JCAlgTest
@@ -60,12 +60,11 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    as an applet root; exact 5/6-byte recognition fixed it. PC/ARM/RISC-V builds
    and the inventory unit test pass. Full physical JCSystem transaction-probe
    installation could not run on 2BED because only 8,821/65,535 bytes were
-   free; 8E stopped enumerating after flash. All-live applet/context/native
-   root coverage remains incomplete: install and restore currently use owner
-   `0`, and registered applet-root tags are keyed only by owner/package/class,
-   so two instances of one class cannot have separate roots. Design a stable
-   per-instance owner mapping and migration before reclamation. Malformed-edge
-   negative tests are also missing; no persistent records have been deleted.
+   free; 8E stopped enumerating after flash. New instances have stable distinct
+   owner IDs and registered roots are now enumerated per installed instance.
+   Physical multi-instance installation, other live contexts/native roots, and
+   malformed-edge negative tests remain open; no persistent records have been
+   deleted.
    The 2026-10-30
    all-package static-root change is validated on 2BED with the full ARM image
    and three read-only APDUs; log:
@@ -111,13 +110,13 @@ reader name, profile, and installed state before every hardware task.
   watchdog API did not identify a watchdog-caused reboot. Runtime checks passed
   throughout; no firmware change is indicated by this diagnostic alone.
 
-- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 03:50 UTC
+- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 04:01 UTC
   with the ARM `current` image SHA-256
-  `4ca86e0337194f90ef4c87640dbd2a77dfd4030040a71a097bdfc2552f29e5a8`.
+  `ef604f796e541a4cc06bf24548255c32abcc02db0c086daef277bad3a059d36d`.
   Flash verification succeeded and the finite monitor passed with repeated
   `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; log:
-  `artifacts/logs/cycle-choupi-20261030T035044Z.log` (SHA-256
-  `956debc0a0919dbd270139a27c6d15ce69dfb4a41f2e5c97cd67eb600e4c4661`). This
+  `artifacts/logs/cycle-choupi-20261030T040156Z.log` (SHA-256
+  `10c15e1c5b5b1793e42fe6bb334b44487ba7e9253e56ed0a2acd4b0d4815b3f4`). This
   startup-only cycle does not exercise multi-instance installation or root
   restore. The cycle emitted one stale-field `WATCHDOG_RECOVERY` marker with
   `cause=other`; runtime checks passed. The earlier `asymm_crypto` test outcomes
@@ -129,8 +128,12 @@ reader name, profile, and installed state before every hardware task.
   corrected image was reported flash-verified, but it did not reappear in the
   subsequent PC/SC scan; current firmware/runtime state is unconfirmed. Do not
   infer D92 recovery or test results from flash verification alone. Latest
-  scan found 8E and 2BED readers; use an identified available board as
-  failover. RISC-V currently provides VM-core smoke coverage; it is not full
+  read-only 2BED probe selected JCAlgTest 1.8.2 and received `9000` for
+  SELECT/version/JCSystem-info, but isolated SHA-256 `doFinal` returned `FF01`
+  after setup returned `9000`. The same unchanged CAP passes SHA-256 in VPCD;
+  this physical discrepancy is undiagnosed and documented in QKB. Latest scan
+  found 8E and 2BED readers; use an identified available board as failover.
+  RISC-V currently provides VM-core smoke coverage; it is not full
   CCID firmware acceptance.
 - Current Core 3.0.5, exact reader and `--no-scenarios`: baseline D92 completed
   291 rows (272 OK, 11 unsupported, eight unavailable scenarios, zero

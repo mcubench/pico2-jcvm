@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import socket
 import subprocess
@@ -317,9 +318,12 @@ def main() -> int:
             EMPTY_CARD_AID.hex(), "--package-id", "63", "--cap-code",
             str(dummy_code), "--rom-mask", str(rom_mask),
         ]
+        emulator_env = os.environ.copy()
+        emulator_env["PICO2_PERSISTENT_INVENTORY"] = "1"
         with log_path.open("wb") as log:
             process = subprocess.Popen(command, cwd=root, stdout=log,
-                                       stderr=log, start_new_session=True)
+                                       stderr=log, start_new_session=True,
+                                       env=emulator_env)
         connection = None
         try:
             connection, _ = accept_vpcd(
@@ -404,6 +408,15 @@ def main() -> int:
                 if response[-2:] != b"\x90\x00":
                     raise RuntimeError(f"SELECT {label} failed: {response.hex().upper()}")
                 print(f"TEST:PASS SELECT {label}")
+            inventory_logs = log_path.read_text(errors="replace")
+            if not re.search(
+                    r"PERSISTENT_INVENTORY:.*applet_roots=3 "
+                    r"trace_complete=1", inventory_logs):
+                raise RuntimeError(
+                    "inventory did not mark all three installed applet roots; "
+                    f"log={log_path}"
+                )
+            print("TEST:PASS inventory marks all 3 installed applet roots")
 
             # Exit the first process cleanly so it saves VM state, then resume
             # the saved card with all CAP packages and instance records.
@@ -484,6 +497,7 @@ def main() -> int:
                 process = subprocess.Popen(
                     restart_command, cwd=root, stdout=restart_log,
                     stderr=restart_log, start_new_session=True,
+                    env=emulator_env,
                 )
             connection, _ = accept_vpcd(
                 listener, process, args.timeout, restart_log_path, "restart"
@@ -560,6 +574,15 @@ def main() -> int:
                         f"{label} failed: {response.hex().upper()}"
                     )
             print("TEST:PASS restart SELECT routes all 3 applets")
+            restart_inventory_logs = restart_log_path.read_text(errors="replace")
+            if not re.search(
+                    r"PERSISTENT_INVENTORY:.*applet_roots=3 "
+                    r"trace_complete=1", restart_inventory_logs):
+                raise RuntimeError(
+                    "restart inventory did not mark all three applet roots; "
+                    f"log={restart_log_path}"
+                )
+            print("TEST:PASS restart inventory marks all 3 applet roots")
 
             exchange(connection, bytes.fromhex("00A4040000"), "reselect ISD")
             delete_object(scp, multi_applets[0], False,
@@ -593,7 +616,7 @@ def main() -> int:
             if get_status(scp, 0x20) or get_status(scp, 0x40):
                 raise RuntimeError("registry is not empty after deleting Core")
             print("TEST:PASS DELETE leaves registry empty")
-            print("TEST:SUMMARY pass=23 fail=0")
+            print("TEST:SUMMARY pass=25 fail=0")
             return 0
         finally:
             if connection is not None:

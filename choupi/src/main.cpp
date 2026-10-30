@@ -135,6 +135,42 @@ private:
   jcvm::Context &context_;
 };
 
+bool enumerate_all_registered_applet_roots(
+    jcvm::Heap &heap, jcvm::PersistentInventory::AppletRootVisitor visitor,
+    void *visitor_context) {
+  if (visitor == nullptr) return false;
+  try {
+    for (uint8_t package_id = 0; package_id < JCVM_MAX_PACKAGES;
+         ++package_id) {
+      const uint8_t instance_count =
+          cap_store_package_instance_count(package_id);
+      if (instance_count == 0) continue;
+      if (!jcvm::FlashMemory_Handler::isPackageExist(package_id)) return false;
+      for (uint8_t index = 0; index < instance_count; ++index) {
+        uint8_t applet_aid[16]{};
+        uint8_t applet_aid_length = 0;
+        uint8_t instance_aid[16]{};
+        uint8_t instance_aid_length = 0;
+        uint16_t class_index = 0xffff;
+        uint8_t owner = 0;
+        if (!cap_store_package_instance_at(
+                package_id, index, applet_aid, applet_aid_length,
+                instance_aid, instance_aid_length, class_index) ||
+            class_index == 0xffff ||
+            !cap_store_applet_owner(instance_aid, instance_aid_length, owner))
+          return false;
+        const auto result = jcvm::PersistentInventory::visitAppletInstanceRoots(
+            owner, heap, visitor, visitor_context);
+        if (result != jcvm::PersistentInventory::VisitResult::Complete)
+          return false;
+      }
+    }
+  } catch (...) {
+    return false;
+  }
+  return true;
+}
+
 #ifndef PC_VERSION
 struct SelectedAppletRootContext {
   jcvm::Context *context;
@@ -190,12 +226,13 @@ bool enumerate_selected_applet_roots(
   } catch (...) {
     return false;
   }
-  roots.applet_result =
-      jcvm::PersistentInventory::visitAppletInstanceRoots(
-          selected_context->getAppletID(),
-          selected_context->getHeap(),
-          visit_selected_applet_instance_root, &roots);
-  return roots.applet_result == jcvm::PersistentInventory::VisitResult::Complete;
+  const bool all_applet_roots = enumerate_all_registered_applet_roots(
+      selected_context->getHeap(), visit_selected_applet_instance_root,
+      &roots);
+  roots.applet_result = all_applet_roots
+      ? jcvm::PersistentInventory::VisitResult::Complete
+      : jcvm::PersistentInventory::VisitResult::ReadFailure;
+  return all_applet_roots;
 }
 #endif
 
@@ -246,10 +283,10 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   } catch (...) {
     static_result = jcvm::PersistentInventory::VisitResult::ReadFailure;
   }
-  const auto applet_result =
-      jcvm::PersistentInventory::visitAppletInstanceRoots(
-          context.getAppletID(), context.getHeap(), count_applet_inventory_root,
-          &counts);
+  const auto applet_result = enumerate_all_registered_applet_roots(
+      context.getHeap(), count_applet_inventory_root, &counts)
+      ? jcvm::PersistentInventory::VisitResult::Complete
+      : jcvm::PersistentInventory::VisitResult::ReadFailure;
   jcvm::Heap::ReachabilitySummary reachability;
   if (static_result == jcvm::PersistentInventory::VisitResult::Complete &&
       applet_result == jcvm::PersistentInventory::VisitResult::Complete) {
