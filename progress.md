@@ -17140,7 +17140,22 @@
   available through PC/SC.
 - Decision: Keep remote-interface class-reference resolution open. Revisit
   JCRMI helper INSTALL diagnosis separately; do not claim current SDK RMI pass.
-- Commit: pending.
+- Commit: `3ed1a42` (recorded in closeout below).
 - Artifacts/logs: max-profile UF2 and expected CSV under
   `artifacts/firmware/`; GPPro evidence is under
   `artifacts/results/gppro-empty-install-vpcd-20261030T225743Z/` (ignored).
+
+## 2026-10-30 Record CAP 2.2 token validation commit 1 minute
+
+- Step/experiment: `cap22-remote-public-method-token-validation-closeout`
+- When: '2026-10-30 23:00 UTC' - '2026-10-30 23:01 UTC'
+- Change: Recorded commit `3ed1a42` in the current handoff and progress entry.
+- Validation: Verified the commit includes the CAP validator, negative fixture
+  cases, rebuilt max ARM artifact, and its progress/TODO/QKB/HANDOFF records;
+  unrelated dirty changes were not staged.
+- Result: The remote method token validation is committed. JCRMI fixture
+  installation and remote-interface target cross-reference validation remain
+  open.
+- Decision: Continue with the next actionable correctness gap.
+- Commit: pending.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.

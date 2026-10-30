@@ -36,6 +36,8 @@ device was flashed. The approved reader helper found two USB nodes, but a
 bounded `pcsc_scan -r` timed out without output, so physical card availability
 is not established. The image README has the current hash and size.
 The refreshed artifact and progress record are committed as `c9aa6c4`.
+The CAP 2.2 public method-token checks, converter fixture regressions, and
+refreshed current-source UF2 are committed as `3ed1a42`.
 
 Current-source PC VPCD vector reruns also pass: `symm_crypto` 73/73 crypto
 vectors (75 checks), `asymm_crypto` 97/97 (99 checks), and
