@@ -155,6 +155,12 @@ reader name, profile, and installed state before every hardware task.
   this physical discrepancy is undiagnosed and documented in QKB. The latest
   scan showed Virtual PCD 00 00, Virtual PCD 00 01, and physical 2BED; use
   another identified board as failover if it is available.
+  A fresh read-only `./tools/test-pico-powerup` run on 2026-10-30 confirmed
+  2BED still lists the JCAlgTest package/applet and its SELECT, GETVERSION
+  (`1.8.2_jc305`), and JCSystem-info APDUs return `9000`; log
+  `artifacts/logs/pico-powerup-persistence-20261030T044725Z.log` (SHA-256
+  `bfcc4cc3fdf299ab3654d8be46e1b00926f5b2b795aa9b4e58551a160fa5d2ab`). This
+  did not trigger a physical power cycle.
   RISC-V currently provides VM-core smoke coverage; it is not full
   CCID firmware acceptance.
 - Current Core 3.0.5, exact reader and `--no-scenarios`: baseline D92 completed

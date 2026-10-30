@@ -154,6 +154,17 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   This establishes PC emulator process restart only; physical power-cycle and
   interrupted-write recovery remain open.
 
+### Read-only physical persistence probe — 2026-10-30
+
+- The read-only `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup
+  'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'` check passed on
+  identified board 2BED. GPPro listed the JCAlgTest 1.8.2 applet/package;
+  SELECT, GETVERSION (`1.8.2_jc305`), and JCSystem-info each returned `9000`.
+  Log SHA-256:
+  `bfcc4cc3fdf299ab3654d8be46e1b00926f5b2b795aa9b4e58551a160fa5d2ab`.
+- This run did not initiate a reset or power cycle, so it only confirms the
+  current card/app state and is not physical power-loss recovery evidence.
+
 ### Device collector now scans selected-package and applet roots; `0xFF` body-tag false positive fixed — 2026-10-30
 
 - The firmware collector now uses a boolean root enumerator. It restores roots
