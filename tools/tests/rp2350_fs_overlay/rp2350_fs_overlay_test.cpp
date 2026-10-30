@@ -190,6 +190,64 @@ int main() {
              actual[2] == second_value[2],
          "reused_tag_has_new_value");
 
+  constexpr uint8_t tag_prefix[] = {0x03, 0x2a};
+  constexpr uint8_t short_tag[] = {0x03, 0x2a, 0x38, 0x01, 0x00};
+  uint8_t long_tag[80]{};
+  std::memcpy(long_tag, "\x03\x2a\x38\x01\x00\x01", 6);
+  for (size_t index = 6; index < sizeof(long_tag); index += 2) {
+    long_tag[index] = static_cast<uint8_t>(index);
+    long_tag[index + 1] = static_cast<uint8_t>(index);
+  }
+  constexpr uint8_t other_owner_tag[] = {0x03, 0x2b, 0x38, 0x01, 0x00};
+  expect(fs_write(short_tag, sizeof(short_tag), first_value,
+                  sizeof(first_value)) == 0 &&
+             fs_write(long_tag, sizeof(long_tag), first_value,
+                      sizeof(first_value)) == 0 &&
+             fs_write(other_owner_tag, sizeof(other_owner_tag), first_value,
+                      sizeof(first_value)) == 0,
+         "write_tags_for_cursor_scan");
+  fs_tag_next_request_t cursor{};
+  bool found_short_tag = false;
+  bool found_long_tag = false;
+  unsigned int matching_tag_count = 0;
+  uint8_t cursor_status = 0;
+  while ((cursor_status =
+              fs_next_tag(tag_prefix, sizeof(tag_prefix), &cursor)) == 0) {
+    ++matching_tag_count;
+    found_short_tag |= cursor.tag[0] == sizeof(short_tag) &&
+                       std::memcmp(cursor.tag + 1, short_tag,
+                                   sizeof(short_tag)) == 0;
+    found_long_tag |= cursor.tag[0] == sizeof(long_tag) &&
+                      std::memcmp(cursor.tag + 1, long_tag,
+                                  sizeof(long_tag)) == 0;
+  }
+  expect(cursor_status == 1 && matching_tag_count == 2 && found_short_tag &&
+             found_long_tag,
+         "cursor_returns_matching_short_and_long_tags_only");
+  cursor = {};
+  cursor.offset = 1;
+  expect(fs_next_tag(tag_prefix, sizeof(tag_prefix), &cursor) == 2,
+         "cursor_rejects_invalid_backend_offset");
+  cursor = {};
+  expect(fs_erase(long_tag, sizeof(long_tag)) == 0,
+         "erase_long_tag_before_rescan");
+  found_short_tag = false;
+  found_long_tag = false;
+  matching_tag_count = 0;
+  while ((cursor_status =
+              fs_next_tag(tag_prefix, sizeof(tag_prefix), &cursor)) == 0) {
+    ++matching_tag_count;
+    found_short_tag |= cursor.tag[0] == sizeof(short_tag) &&
+                       std::memcmp(cursor.tag + 1, short_tag,
+                                   sizeof(short_tag)) == 0;
+    found_long_tag |= cursor.tag[0] == sizeof(long_tag) &&
+                      std::memcmp(cursor.tag + 1, long_tag,
+                                  sizeof(long_tag)) == 0;
+  }
+  expect(cursor_status == 1 && matching_tag_count == 1 && found_short_tag &&
+             !found_long_tag,
+         "cursor_skips_erased_tags");
+
   const auto collision = colliding_tags();
   constexpr uint8_t collision_value[] = {0x55};
   uint8_t collision_actual = 0;

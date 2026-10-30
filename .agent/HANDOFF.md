@@ -12,12 +12,11 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
 ## Next concrete work
 
 1. Continue safe persistent-object reclamation for repeated API workloads.
-   The OS now exposes a bounded-memory, read-only active-tag visitor and
-   cursor syscall. The cursor preserves its bucket/offset across calls, filters
-   by prefix, and returns only tags readable from the current context. Host
-   tests, both architecture builds, and a physical CHOUPI runtime cycle pass.
-   The C++ cursor wrapper is static so callers do not reinitialize storage.
-   Next implement the trusted VM inventory consumer and owner-scoped roots.
+   Host emulation now exposes a bounded-memory Rust-OS tag cursor; Pico
+   firmware uses a matching cursor over the mutable overlay in
+   `src/choupi_pico2.cpp`. The physical cycle passed startup, but did not call
+   the cursor. Next consume the cursor in a trusted VM root inventory and add a
+   physical cursor-call test.
    No persistent records are deleted; preserve stable handles and keep loaded
    persistent records intact until reachability is proven.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
@@ -60,12 +59,15 @@ reader name, profile, and installed state before every hardware task.
   watchdog API did not identify a watchdog-caused reboot. Runtime checks passed
   throughout; no firmware change is indicated by this diagnostic alone.
 
-- 2BED: `2BED26ED20556535` is currently flashed with the ARM `asymm_crypto`
-  image SHA-256
-  `64607ee4d6b95e89cff0d0a9c5f0ee675a9b49ccd310dc31259d5fbbc6739d74` and
-  passed its latest finite runtime checks. The cycle emitted one
-  `WATCHDOG_RECOVERY marker=494E5354 cause=other`; no `TEST:FAIL` or nonzero
-  exit occurred. Its complete
+- 2BED: `2BED26ED20556535` was most recently flashed at 2026-10-30 01:02 UTC
+  with the ARM `current` image SHA-256
+  `cb74c57d1916e3be5d65a593247934d962292048ee355e4227f0db33f7724a0b`.
+  Flash verification succeeded and the finite monitor passed repeatedly with
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; log:
+  `artifacts/logs/cycle-choupi-20261030T010244Z.log`. The monitor did not call
+  the new filesystem cursor. The earlier `asymm_crypto` test outcomes below
+  remain historical results for that profile, not the current flashed image.
+  The cycle emitted no `TEST:FAIL` or nonzero exit. Its complete
   API 3.0.5 Security rerun completed 901 calls with 396 `OK`, 504
   `UNSUPPORTED_PER_SPEC`, one `NO_MEMORY`, zero `SW_ERROR`/wrong results, and
   successful CAP cleanup. D92 `D92E743D5F640C0F` did enter BOOTSEL and the

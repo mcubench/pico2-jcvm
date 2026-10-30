@@ -8,6 +8,24 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## Persistent filesystem tag cursor — 2026-10-30
+
+- The root Pico firmware does not link `choupi/os`; that Rust filesystem and
+  its trusted cursor syscall serve the host emulator. Pico uses a separate
+  persistent C++ overlay in `src/choupi_pico2.cpp`.
+- Both backends now expose the same 134-byte cursor request ABI and 128-byte
+  tag capacity. The Pico cursor enumerates active mutable-overlay records,
+  filters by prefix, skips erased records, and rejects a nonzero offset.
+  Immutable ROM defaults are intentionally excluded because they consume no
+  persistent storage. Cursor state is invalid after filesystem mutation.
+- `./tools/test-rp2350-fs-overlay` exercises the Pico cursor, including
+  80-byte tags and tombstones; host Rust tests cover cursor paging and syscall
+  validation. The ARM image was flashed to identified board
+  `2BED26ED20556535`; the finite monitor passed `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. This cycle did **not** call the cursor from the
+  VM, so physical cursor-call behavior remains unverified. Log:
+  `artifacts/logs/cycle-choupi-20261030T010244Z.log`.
+
 ## Canonical operating fixes and unresolved boundaries
 
 - **Host USB/PCSC access — viable workflow:** follow root `AGENTS.md` from the

@@ -1064,6 +1064,44 @@ extern "C" uint8_t fs_exists(const uint8_t *tag, uint8_t tag_length) {
   return find_file(tag, tag_length, &data, &length) ? 1 : 0;
 }
 
+// Enumerate the mutable persistent overlay. The cursor is a slot index in the
+// Pico overlay; storage mutation invalidates it. ROM-mask defaults are not
+// included because they are immutable and cannot consume persistent space.
+extern "C" uint8_t fs_next_tag(const uint8_t *prefix, uint8_t prefix_length,
+                               fs_tag_next_request_t *request) {
+  static_assert(sizeof(fs_tag_next_request_t) == 134,
+                "filesystem cursor C ABI must match the OS backend");
+  if (prefix == nullptr || request == nullptr ||
+      prefix_length > kMaxOverlayTagLength || request->offset != 0 ||
+      request->bucket > kMaxOverlayFiles) {
+    return 2;
+  }
+
+  for (uint16_t slot = request->bucket; slot < kMaxOverlayFiles; ++slot) {
+    request->bucket = static_cast<uint16_t>(slot + 1);
+    const OverlayFile &file = overlay[slot];
+    if (!overlay_is_used(file) || !overlay_has_record(file)) continue;
+
+    uint8_t tag[kMaxOverlayTagLength]{};
+    uint8_t tag_length = 0;
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length) || tag_length == 0 ||
+        tag_length > sizeof(request->tag) - 1) {
+      return 2;
+    }
+    if (prefix_length > tag_length ||
+        std::memcmp(tag, prefix, prefix_length) != 0) {
+      continue;
+    }
+
+    request->tag[0] = tag_length;
+    std::memcpy(request->tag + 1, tag, tag_length);
+    return 0;
+  }
+
+  request->bucket = static_cast<uint16_t>(kMaxOverlayFiles);
+  return 1;
+}
+
 extern "C" uint8_t fs_length(const uint8_t *tag, uint8_t tag_length,
                               uint32_t *length) {
   const uint8_t *data = nullptr;
