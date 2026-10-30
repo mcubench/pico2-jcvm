@@ -4,6 +4,8 @@
 #include <cstdint>
 
 namespace jcvm {
+class Heap;
+
 namespace PersistentInventory {
 
 constexpr uint8_t kTagCapacity = 128;
@@ -58,6 +60,12 @@ VisitResult visitPackageStaticRoots(uint8_t package_id, uint16_t image_size,
                                     uint16_t reference_count,
                                     StaticReferenceReader reader,
                                     StaticRootVisitor visitor, void *context);
+
+/// Resolve package static roots through the heap cache and strict flash reader.
+/// The caller supplies the decoded CAP Static Field metadata.
+VisitResult visitPersistentPackageStaticRoots(
+    uint8_t package_id, uint16_t image_size, uint16_t reference_count,
+    Heap &heap, StaticRootVisitor visitor, void *context);
 
 } // namespace PersistentInventory
 } // namespace jcvm
