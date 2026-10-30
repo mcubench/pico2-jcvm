@@ -16806,6 +16806,18 @@
   restart log SHA-256
   `b18ec590036087e809b3c370c02d6168d0a5af7dcd4438524badfb770ae417a9`.
 
+## 2026-10-30 Record CAP parser hardening commit 1 minute
+
+- Step/experiment: `cap-parser-supported-version-boundary-log-closeout`
+- When: '2026-10-30 21:24 UTC' - '2026-10-30 21:25 UTC'
+- Change: Recorded the commit SHA for the CAP version-boundary implementation.
+- Validation: Confirmed commit `77931cf` contains the parser, regression,
+  TODO/QKB/HANDOFF, and original progress changes only.
+- Result: The CAP version-boundary step is committed as `77931cf`.
+- Decision: Continue with the next independent project priority.
+- Commit: recorded in this follow-up commit.
+- Artifacts/logs: none.
+
 ## 2026-10-30 Record multi-package VPCD rerun commit 1 minute
 
 - Step/experiment: `multipackage-restart-delete-regression-log-closeout`
