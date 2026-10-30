@@ -15167,7 +15167,7 @@
 - Validation: Source inspection of `runtime_install_method()`, `choupi_vm_restore_applet()`, and `FlashMemory_Handler::getAppletInstanceTag()` confirmed the shared owner and tag identity. No implementation or test run was performed in this investigation step.
 - Result: Two installed instances of the same package/class cannot currently own independent registered-applet root tags; complete root enumeration and persistent deletion remain unsafe.
 - Decision: Design a collision-free stable owner mapping persisted in install metadata, and test legacy owner-0 migration before changing collector authorization.
-- Commit: pending.
+- Commit: `e2621cf` (recovery notes); this progress record is committed separately.
 - Artifacts/logs: none.
 
 ## 2026-10-30 Applet-root audit commit reference correction
@@ -15356,3 +15356,14 @@
 - Decision: Preserve the no-persistent-record-deletion gate until a true hardware power cycle and interrupted-update recovery are tested.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261030T044725Z.log`, SHA-256 `bfcc4cc3fdf299ab3654d8be46e1b00926f5b2b795aa9b4e58551a160fa5d2ab`.
+
+## 2026-10-30 Validate overlay interrupted-update recovery 2 minutes
+
+- Step/experiment: `persistent-inventory-overlay-power-cut-regression`
+- When: '2026-10-30 04:48 UTC' - '2026-10-30 04:50 UTC'
+- Change: Ran the existing RP2350 overlay recovery suite as an offline check of the storage layer's interrupted-update guarantees. Updated TODO, QKB, and handoff to separate this simulated coverage from power loss during physical heap collection.
+- Validation: `./tools/test-rp2350-fs-overlay` passed 75 checks with `TEST:SUMMARY fail=0`, including 1,000 randomized multi-record power cuts, 1,000 install-journal clear cuts, 1,000 cross-store registry/filesystem header cuts, reset restoring the last committed transaction, and full-overlay cleanup cases. The expected negative-fixture `FAULT FS snapshot unavailable; preserve flash for recovery` appeared while the overall suite passed. Repeated once with output archived to `/tmp/persistent-gc-overlay-recovery.log`.
+- Result: Host model storage snapshots and install metadata recover atomically across tested simulated interruption points. This does not simulate physical flash loss during actual heap GC and does not authorize persistent object-record deletion.
+- Decision: Keep deletion disabled; physical Pico 2 power-cycle validation remains the next recovery gate.
+- Commit: pending.
+- Artifacts/logs: `/tmp/persistent-gc-overlay-recovery.log` (ephemeral, not committed).
