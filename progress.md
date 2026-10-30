@@ -16072,3 +16072,23 @@
   result before treating any prior `/deploy` regression as firmware behavior.
 - Commit: `9aaf6f1` (change commit recorded here)
 - Artifacts/logs: none.
+
+## 2026-10-30 Close physical JC305 Service API coverage 2 minutes
+
+- Step/experiment: `jc305-service-physical-acceptance`
+- When: '2026-10-30 17:17 UTC' - '2026-10-30 17:20 UTC'
+- Change: Marked the JC305 Service API acceptance item complete in `TODO.md`
+  after adding the physical result to the existing VPCD evidence.
+- Validation: Cross-checked the 124 `CALL` rows in
+  `Service_normal_asymm_pcscopt_8E_20261030.csv`: all report `OK`; upload,
+  test, and cleanup stages report `OK`. The existing VPCD checks cover 33
+  Dispatcher, 39 BasicService, and 124 deploy Service API calls.
+- Result: JC305 Service API coverage passes on current-source VPCD and physical
+  Pico 2 8E. The earlier 102 runtime-exception report remains unreproduced
+  under a correctly resolved reader.
+- Decision: Continue with the next open project priority. Persistent-object
+  reclamation remains disabled pending actual USB power-cycle recovery.
+- Commit: recorded in the following progress entry.
+- Artifacts/logs: physical CSV
+  `artifacts/results/deploy/Service_normal_asymm_pcscopt_8E_20261030.csv`;
+  client and serial log hashes are recorded in `.agent/QKB.md`.

@@ -838,9 +838,13 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
 
 ### Priority 3 — define and extend the VM profile
 
-- [ ] **Complete JC305 Service framework behavior.** Current-source VPCD
+- [x] **Complete JC305 Service framework behavior.** Current-source VPCD
   matches all 33 official `Dispatcher` cases, all 39 `BasicService` cases, and
-  all 124 deploy Service API cases. `CardRemoteObject` now exports objects into
+  all 124 deploy Service API cases. The unchanged deploy Service 3.0.5 CAP
+  also passed all 124 cases on physical Pico 2 `8E464F4E2BBC0A19`; upload and
+  cleanup passed. The earlier asymmetric 102/124 `EXC_RUNTIME` outcome was not
+  reproducible after fixing Java PC/SC reader-index selection. `CardRemoteObject`
+  now exports objects into
   a VM-owned, GC-rooted per-applet registry with stable 16-bit IDs, unexport,
   and 32 bounded slots; ARM and host builds pass. The 16-object catalog case
   initially exposed that an applet's existing reference consumes capacity, so
