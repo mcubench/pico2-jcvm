@@ -15433,3 +15433,14 @@
 - Decision: Keep deletion disabled; integrate only a consumer that stages candidates and commits work after `Complete`, using the combined installed-package static and per-instance applet roots.
 - Commit: `49f3c9e` (implementation/test; this progress record is committed separately).
 - Artifacts/logs: Test output only; no separate log.
+
+## 2026-10-30 Integrate owner-tag scan into VPCD inventory diagnostic 5 minutes
+
+- Step/experiment: `persistent-inventory-vpcd-owner-scan`
+- When: '2026-10-30 05:21 UTC' - '2026-10-30 05:26 UTC'
+- Change: Extended the opt-in PC-only post-APDU inventory diagnostic to pass the combined context, installed-package static, and all registered applet-instance roots to the read-only owner-tag consumer for every installed instance. It reports the number of owner scans, completion, and candidate tags. The multipackage test now requires complete scans across three owners before and after emulator restart.
+- Validation: The first VPCD attempt used a stale PC emulator and failed the new output assertion; after `./tools/build-pc`, elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 25/25. Before and after restart the log reports 9 static roots, 3 applet roots, `trace_complete=1`, `owner_scans=3`, `unreachable_complete=1`, `unreachable_tags=0`, arrays 14/14, instances 4/4, and zero invalid references or edge/root failures. `./tools/build arm` and `./tools/build riscv` passed. No physical reflash was run because the change is PC_VERSION-only; the previously flash-verified ARM runtime code is unchanged.
+- Result: The PC VPCD diagnostic now exercises the consumer against full installed roots and multiple owner namespaces, including a fresh process restore. It found no orphaned owner tags in this fixture. The scan is read-only; physical owner inventory and power-loss behavior remain unvalidated.
+- Decision: Continue physical read-only inventory validation with a suitable multi-instance fixture; keep persistent record deletion disabled until actual power-cycle recovery is established.
+- Commit: `122e675` (implementation/test; this progress record is committed separately).
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T052500Z.log` SHA-256 `02e070d02cf7fe104c9aae7efc87d3b847a1a99060fbd74cc012e076ec4022ee`; restart log `artifacts/logs/host-vpcd-multipackage-restart-20261030T052500Z.log` SHA-256 `8b14a51875cb60ca3ac1c71cf6aa19dd88cf1dd1fab96c880538c0eaeb20c67a`.
