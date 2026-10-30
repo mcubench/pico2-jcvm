@@ -16640,3 +16640,16 @@
   SHA-256 `b6b08a7ce585cd995c182926a629b494042f01a9d451d0aaea94dd156afb3a82`;
   `artifacts/logs/physical-reader-missing-pcsc-2BED-20261030T2049Z.log`
   SHA-256 `0d1dfcbe80fb5f6e2f99d25198ee18a3279b1531bfac9d8ade5f2e3cb54b02ca`.
+
+## 2026-10-30 Record Pico PC/SC diagnostic commit 1 minute
+
+- Step/experiment: `physical-reader-registration-diagnostic-log-closeout`
+- When: '2026-10-30 20:51 UTC' - '2026-10-30 20:52 UTC'
+- Change: Added the diagnostic commit SHA to the append-only progress log.
+- Validation: Confirmed commit `1523f34` includes only TODO, QKB, handoff, and
+  the PC/SC registration diagnostic record.
+- Result: The current host reader-registration evidence is documented in
+  `1523f34`.
+- Decision: Leave PC/SC root-cause work open pending daemon-side IFD logs.
+- Commit: recorded in this follow-up commit.
+- Artifacts/logs: none.
