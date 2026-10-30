@@ -13,6 +13,8 @@ namespace {
 
 struct StaticRootReadContext {
   Heap *heap;
+  StaticRootVisitor visitor;
+  void *visitor_context;
 };
 
 bool readPersistentStaticReference(const uint8_t package_id,
@@ -35,6 +37,14 @@ bool readPersistentStaticReference(const uint8_t package_id,
   }
   compact_reference = reference.compact();
   return true;
+}
+
+bool visitPersistentStaticRoot(const uint8_t package_id,
+                              const uint16_t offset,
+                              const uint16_t reference, void *opaque) {
+  const auto &context = *static_cast<StaticRootReadContext *>(opaque);
+  return context.visitor(package_id, offset, reference,
+                         context.visitor_context);
 }
 
 struct AppletRootReadContext {
@@ -88,10 +98,13 @@ VisitResult visitPersistentPackageStaticRoots(
     const uint8_t package_id, const uint16_t image_size,
     const uint16_t reference_count, Heap &heap,
     const StaticRootVisitor visitor, void *context) {
-  StaticRootReadContext read_context{&heap};
+  if (visitor == nullptr) {
+    return VisitResult::InvalidArgument;
+  }
+  StaticRootReadContext read_context{&heap, visitor, context};
   return visitPackageStaticRoots(package_id, image_size, reference_count,
-                                 readPersistentStaticReference, visitor,
-                                 &read_context);
+                                 readPersistentStaticReference,
+                                 visitPersistentStaticRoot, &read_context);
 }
 
 VisitResult visitInstalledPackageStaticRoots(

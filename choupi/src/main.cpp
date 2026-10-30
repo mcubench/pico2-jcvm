@@ -38,6 +38,7 @@
 #include "jc_handlers/jc_import.hpp"
 #include "jc_types/jc_array.hpp"
 #include "jc_types/jc_array_type.hpp"
+#include "persistent_inventory.hpp"
 #include "../../src/short_apdu.hpp"
 
 #include <cstdio>
@@ -143,13 +144,55 @@ void enumerate_selected_applet_roots(
 #endif
 
 #ifdef PC_VERSION
+struct PersistentInventoryCounts {
+  unsigned static_roots = 0;
+  unsigned applet_roots = 0;
+};
+
+bool count_static_inventory_root(uint8_t, uint16_t, uint16_t, void *opaque) {
+  ++static_cast<PersistentInventoryCounts *>(opaque)->static_roots;
+  return true;
+}
+
+bool count_applet_inventory_root(uint8_t, uint8_t, uint16_t, uint16_t,
+                                 void *opaque) {
+  ++static_cast<PersistentInventoryCounts *>(opaque)->applet_roots;
+  return true;
+}
+
+void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
+  const char *setting = std::getenv("PICO2_PERSISTENT_INVENTORY");
+  if (setting == nullptr || std::strcmp(setting, "1") != 0) {
+    return;
+  }
+
+  PersistentInventoryCounts counts;
+  const auto static_result =
+      jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
+          context.getAppletPackageID(), context.getHeap(),
+          count_static_inventory_root, &counts);
+  const auto applet_result =
+      jcvm::PersistentInventory::visitAppletInstanceRoots(
+          context.getAppletID(), context.getHeap(), count_applet_inventory_root,
+          &counts);
+  std::fprintf(stderr,
+               "PERSISTENT_INVENTORY: static_result=%u static_roots=%u "
+               "applet_result=%u applet_roots=%u\n",
+               static_cast<unsigned>(static_result), counts.static_roots,
+               static_cast<unsigned>(applet_result), counts.applet_roots);
+}
+
 void trace_heap_after_apdu_if_enabled() {
   const char *trace_setting = std::getenv("PICO2_HEAP_TRACE");
   const char *collect_setting = std::getenv("PICO2_HEAP_GC");
+  const char *inventory_setting = std::getenv("PICO2_PERSISTENT_INVENTORY");
   const bool collect_enabled = collect_setting != nullptr &&
                                std::strcmp(collect_setting, "1") == 0;
   const bool trace_enabled = trace_setting != nullptr;
-  if ((!trace_enabled && !collect_enabled) || !selected_applet_context) {
+  const bool inventory_enabled = inventory_setting != nullptr &&
+                                 std::strcmp(inventory_setting, "1") == 0;
+  if ((!trace_enabled && !collect_enabled && !inventory_enabled) ||
+      !selected_applet_context) {
     return;
   }
 
@@ -167,9 +210,13 @@ void trace_heap_after_apdu_if_enabled() {
 
   jcvm::Context &context = *selected_applet_context;
   if (!context.getStack().empty()) {
-    std::fprintf(stderr, "HEAP_TRACE:SKIP reason=active_java_frames\n");
+    if (trace_enabled || collect_enabled) {
+      std::fprintf(stderr, "HEAP_TRACE:SKIP reason=active_java_frames\n");
+    }
     return;
   }
+
+  inventory_persistent_roots_if_enabled(context);
 
   for (unsigned long pass = 1; pass <= repeat_count; ++pass) {
     try {
