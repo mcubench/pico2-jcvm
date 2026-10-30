@@ -14994,3 +14994,14 @@
 - Decision: Read those static slots through the native persistent API, skip nulls, and then traverse object, reference-array, and alias records under fail-closed rules.
 - Commit: `386a186`; this metadata-only commit records the parent SHA.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T012137Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
+
+## 2026-10-30 Add fail-closed static root visitor 9 minutes
+
+- Step/experiment: `persistent-static-root-read-visitor`
+- When: '2026-10-30 01:21 UTC' - '2026-10-30 01:30 UTC'
+- Change: Added a bounded visitor that reads each CAP-declared reference static slot through an injected reader, reports read failure distinctly from null, visits only non-null 16-bit references, and supports early stop. Invalid callbacks now return `InvalidArgument`, separate from malformed CAP layout. The interface deliberately avoids binding the visitor to the current `FlashMemory_Handler` reader, which catches storage errors and returns null; silently interpreting a failed read as null is unsafe for reachability. Added tests for non-null filtering, read failure, and early termination. No persistent record is deleted.
+- Validation: `./tools/test-persistent-inventory` passed all 11 checks (`TEST:SUMMARY fail=0`). `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` recovered from a missing reset-interface attempt via the wrapper's BOOTSEL path, verified the ARM flash, and passed the finite monitor with repeated `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`; no `TEST:FAIL` or `FAULT` appeared. The physical runtime did not invoke the inventory visitor. Scoped `git diff --check` passed for implementation/test files.
+- Result: Static-root iteration can now fail closed at the read boundary and skip null values. It remains an abstraction only: no production reader connects it to CAP metadata or heap root caching, and the existing persistent-reference API still collapses some read errors to null. No reclamation is enabled.
+- Decision: Implement a strict storage reader that distinguishes missing records, valid null records, and I/O/corruption, then connect it to package CAP metadata and static-root caching. Continue to keep flash deletion disabled until the rest of the object graph and aliases are accounted for.
+- Commit: `68d57f5` (visitor and tests); this progress record is committed separately.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261030T012825Z.log`; ARM image `build/arm/pico2_choupi.uf2`, SHA-256 `e664415f23f3562905c5cc01a38a205d3c333be16a015268e091d38dd3bbdcfb`.
