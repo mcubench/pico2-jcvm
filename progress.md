@@ -15727,7 +15727,7 @@
 - Decision: Repeat on a normal image with concurrent serial and USB event
   capture, or isolate the exact method through official client filters if
   available. Do not claim the official static workload passes.
-- Commit: `pending documentation commit`
+- Commit: `9f95a6a` (documentation commit for this investigation)
 - Artifacts/logs: Debug cycle SHA-256
   `659a1f38218d73e60625576c0604908e90a56473938efd619afe4d8e275e11d3`;
   restore cycle SHA-256
