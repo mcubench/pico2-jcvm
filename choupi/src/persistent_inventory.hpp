@@ -51,6 +51,8 @@ VisitResult visitApplet(uint8_t applet_owner, TagVisitor visitor,
                         void *context);
 
 /// Decode an applet-instance root tag; returns false for non-root or malformed tags.
+bool isAppletInstanceRootTag(const Tag &tag,
+                             uint8_t expected_owner) noexcept;
 bool decodeAppletRootTag(const Tag &tag, uint8_t expected_owner,
                          AppletRootTag &root) noexcept;
 

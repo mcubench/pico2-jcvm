@@ -117,6 +117,38 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   context, and native owner; physical invocation of inventory; and evidence
   that an incomplete mark cannot authorize reclamation.
 
+### Device collector now scans selected-package and applet roots; `0xFF` body-tag false positive fixed — 2026-10-30
+
+- The firmware collector now uses a boolean root enumerator. It restores roots
+  from the active package CAP's static reference slots and scans the selected
+  applet owner's registered root tags before marking. Any adapter error or
+  exception increments `root_enumeration_failures`, makes the mark incomplete,
+  and prevents the collector from freeing heap slots. This is limited to the
+  selected applet/package; all installed package roots and other live contexts
+  remain uncovered. No persistent filesystem record deletion is implemented.
+- Physical 2BED `2BED26ED20556535` was flashed with ARM UF2 SHA-256
+  `58001f50ed7501b772afceacc8a071c0d62f39901a4b894ff7a4efbdd4fbf5c5`;
+  cycle `artifacts/logs/cycle-choupi-20261030T030140Z.log` passed the finite
+  runtime monitor. The unchanged installed JCAlgTest 1.8.2 SELECT, GETVERSION,
+  and JCSystem-info APDUs all returned `9000`. Serial shows each of their three
+  `interpreter_end` / `gc_begin` / `gc_end` sequences, with no
+  `CHOUPI:HEAP_GC_SKIP` or root failure. Logs:
+  `artifacts/logs/persistent-inventory-device-apdu-2BED-20261030-retry.log`
+  (SHA-256 `a835343133df15784e387a82072e5ff27545a89212a2b9f339671a8f56b3181e`)
+  and `artifacts/logs/persistent-inventory-device-gc-monitor-2BED-20261030-retry.log`
+  (SHA-256 `de7a2d8b883c08e947893a29ab104dc9f3561aaa7f91ce30b74d05a0c5ffae47`).
+- Root scanning had classified every owner tag ending in `0xFF` as a registered
+  applet root. A reference-array body tag can also end in `0xFF`; the 7-byte
+  array element tag then caused `InvalidTag` and skipped collection. Root
+  recognition now accepts only the exact 5-byte and 6-byte forms. The inventory
+  unit test includes a 7-byte array-body tag ending in `0xFF` and passes.
+- A repeat physical transaction-probe attempt could not install its test CAP
+  on 2BED: the card reported `FS_WRITE_FAIL ... bytes=56714/65535` when setup
+  attempted a 32,770-byte persistent record, and GPPro returned `6A80`. No
+  existing package was removed. The 8E cycle verified its flash but the board
+  did not re-enumerate; use an available board as failover and leave full
+  transaction-probe retest open.
+
 ### Standalone RMI unit build needs the CHOUPI OS include path — 2026-10-30
 
 - `heap.cpp` now includes `ffi.h` for strict persistent-edge reads. The

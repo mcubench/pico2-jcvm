@@ -34,14 +34,19 @@ Archive integrity is recorded in `archive/2026-10-29-pre-compaction/manifest.jso
    failures=0). The tracer now strictly loads serialized persistent object
    fields and persistent reference-array elements; malformed types/tag widths
    fail the walk, while transient and unpersisted objects use in-memory edges.
-   Strict VPCD cases 14–16 and 82 pass. PC, ARM, and RISC-V builds pass; two
-   identified boards passed ARM flash/startup cycles, and physical 8E passed
-   the 9/9 JCSystem transaction probe with a collision-free test AID. This is
-   compatibility evidence, not proof that all roots were inventoried. Root
-   coverage is incomplete, inventory invocation remains PC-only, and no records
-   have been deleted. Next add malformed-edge/alias negative tests, enumerate
-   every active package/context root, and prove incomplete traversal cannot
-   trigger deletion.
+   Strict VPCD cases 14–16 and 82 pass. Root enumeration now reports
+   completion, and the device collector loads selected-package static roots
+   and registered applet roots before marking; any inventory error skips
+   collection. Physical 2BED JCAlgTest SELECT/version/JCSystem-info APDUs all
+   returned `9000`, with serial showing each collection reach `gc_end` and no
+   `HEAP_GC_SKIP`. A 7-byte array-body tag ending in `0xFF` was misclassified
+   as an applet root; exact 5/6-byte recognition fixed it. PC/ARM/RISC-V builds
+   and the inventory unit test pass. Full physical JCSystem transaction-probe
+   installation could not run on 2BED because only 8,821/65,535 bytes were
+   free; 8E stopped enumerating after flash. All-installed-package and all-live
+   context/native root coverage remain incomplete, malformed-edge negative
+   tests are still missing, and no persistent records have been deleted.
+   Continue those gaps before authorizing persistent-record reclamation.
 2. Remaining acceptance/hardening: Windows validation, physical power-cycle
    checks where still open, and private RSA hardening.
    Available-memory accounting and JCOP4 P71 symmetric coverage are recorded

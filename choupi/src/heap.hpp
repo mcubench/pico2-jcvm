@@ -50,7 +50,7 @@ enum ClearEvent : uint8_t;
 class Heap {
 public:
   using ReferenceVisitor = void (*)(jref_t, void *);
-  using RootReferenceEnumerator = void (*)(ReferenceVisitor, void *, void *);
+  using RootReferenceEnumerator = bool (*)(ReferenceVisitor, void *, void *);
 
   struct StaticReferenceRoot {
     jpackage_ID_t package_id;
@@ -73,6 +73,7 @@ public:
     uint32_t instances_reclaimed = 0;
     uint32_t invalid_references = 0;
     uint32_t edge_load_failures = 0;
+    uint32_t root_enumeration_failures = 0;
     uint32_t static_roots = 0;
     uint32_t runtime_roots = 0;
     uint32_t persistent_tagged_arrays = 0;

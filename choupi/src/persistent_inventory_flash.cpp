@@ -57,8 +57,7 @@ struct AppletRootReadContext {
 
 bool visitAppletRootTag(const Tag &tag, void *opaque) {
   auto &context = *static_cast<AppletRootReadContext *>(opaque);
-  if (tag.len < 2 || tag.value[0] != 0x03 || tag.value[1] != context.owner ||
-      tag.value[tag.len - 1] != 0xff) {
+  if (!isAppletInstanceRootTag(tag, context.owner)) {
     return true;
   }
 

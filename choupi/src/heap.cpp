@@ -61,12 +61,13 @@ void appendRootToVector(const jref_t reference, void *opaque) {
   static_cast<std::vector<jref_t> *>(opaque)->push_back(reference);
 }
 
-void enumerateVectorRoots(Heap::ReferenceVisitor visitor,
+bool enumerateVectorRoots(Heap::ReferenceVisitor visitor,
                           void *visitor_context, void *root_context) {
   const auto &roots = *static_cast<VectorRootContext *>(root_context)->roots;
   for (const jref_t &root : roots) {
     visitor(root, visitor_context);
   }
+  return true;
 }
 
 } // namespace
@@ -751,7 +752,15 @@ Heap::ReachabilitySummary Heap::traceAndMark(
               static_cast<unsigned>(this->instances.size()));
   std::fflush(stdout);
 #endif
-  enumerate_roots(visit_child, &visitor_context, root_context);
+  try {
+    if (!enumerate_roots(visit_child, &visitor_context, root_context)) {
+      ++summary.root_enumeration_failures;
+      summary.complete = false;
+    }
+  } catch (...) {
+    ++summary.root_enumeration_failures;
+    summary.complete = false;
+  }
 #if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
   for (const auto &array : this->arrays) {
     root_count += array && array->heap_mark == 1 ? 1u : 0u;

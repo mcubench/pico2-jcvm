@@ -149,6 +149,11 @@ int main() {
                            7, {0x03, 7, 9, 0x01, 0x23, 0x45, 0xff}},
                        7, applet_root),
                "rejects_wrong_owner_and_malformed_applet_root_tags");
+  const jcvm::PersistentInventory::Tag array_body_ending_ff{
+      7, {0x03, 7, 9, 1, 0x20, 0xff, 0xff}};
+  ok &= expect(!jcvm::PersistentInventory::isAppletInstanceRootTag(
+                   array_body_ending_ff, 7),
+               "does_not_treat_array_element_ending_ff_as_applet_root");
 
   Result static_roots;
   ok &= expect(jcvm::PersistentInventory::visitPackageStaticReferenceSlots(

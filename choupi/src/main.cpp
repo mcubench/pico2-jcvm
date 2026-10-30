@@ -135,11 +135,54 @@ private:
 };
 
 #ifndef PC_VERSION
-void enumerate_selected_applet_roots(
+struct SelectedAppletRootContext {
+  jcvm::Context *context;
+  jcvm::Heap::ReferenceVisitor visitor;
+  void *visitor_context;
+  jcvm::PersistentInventory::VisitResult static_result =
+      jcvm::PersistentInventory::VisitResult::InvalidArgument;
+  jcvm::PersistentInventory::VisitResult applet_result =
+      jcvm::PersistentInventory::VisitResult::InvalidArgument;
+};
+
+bool visit_selected_package_static_root(uint8_t, uint16_t,
+                                        const uint16_t reference,
+                                        void *opaque) {
+  auto &roots = *static_cast<SelectedAppletRootContext *>(opaque);
+  roots.visitor(jcvm::jref_t(reference), roots.visitor_context);
+  return true;
+}
+
+bool visit_selected_applet_instance_root(uint8_t, uint8_t, uint16_t,
+                                         const uint16_t reference,
+                                         void *opaque) {
+  auto &roots = *static_cast<SelectedAppletRootContext *>(opaque);
+  roots.visitor(jcvm::jref_t(reference), roots.visitor_context);
+  return true;
+}
+
+bool enumerate_selected_applet_roots(
     jcvm::Heap::ReferenceVisitor visitor, void *visitor_context,
-    void *context) {
-  static_cast<const jcvm::Context *>(context)->visitRootReferences(
-      visitor, visitor_context);
+    void *opaque) {
+  auto &roots = *static_cast<SelectedAppletRootContext *>(opaque);
+  auto *selected_context = roots.context;
+  selected_context->visitRootReferences(visitor, visitor_context);
+  roots.visitor = visitor;
+  roots.visitor_context = visitor_context;
+  roots.static_result =
+      jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
+          selected_context->getAppletPackageID(),
+          selected_context->getHeap(),
+          visit_selected_package_static_root, &roots);
+  if (roots.static_result != jcvm::PersistentInventory::VisitResult::Complete) {
+    return false;
+  }
+  roots.applet_result =
+      jcvm::PersistentInventory::visitAppletInstanceRoots(
+          selected_context->getAppletID(),
+          selected_context->getHeap(),
+          visit_selected_applet_instance_root, &roots);
+  return roots.applet_result == jcvm::PersistentInventory::VisitResult::Complete;
 }
 #endif
 
@@ -189,12 +232,14 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
     reachability = context.getHeap().traceReachableFrom(counts.references);
   } else {
     reachability.complete = false;
+    reachability.root_enumeration_failures = 1;
   }
   std::fprintf(stderr,
                "PERSISTENT_INVENTORY: static_result=%u static_roots=%u "
                "applet_result=%u applet_roots=%u trace_complete=%u "
                "reachable_arrays=%u/%u reachable_instances=%u/%u "
-               "invalid_refs=%u edge_failures=%u context_roots=%u\n",
+               "invalid_refs=%u edge_failures=%u root_failures=%u "
+               "context_roots=%u\n",
                static_cast<unsigned>(static_result), counts.static_roots,
                static_cast<unsigned>(applet_result), counts.applet_roots,
                reachability.complete ? 1u : 0u,
@@ -202,6 +247,7 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
                reachability.instances_reachable,
                reachability.instances_total, reachability.invalid_references,
                reachability.edge_load_failures,
+               reachability.root_enumeration_failures,
                static_cast<unsigned>(context_roots));
 }
 
@@ -290,9 +336,10 @@ void collect_heap_after_apdu() {
     return;
   }
 
+  SelectedAppletRootContext roots{&context, nullptr, nullptr};
   try {
     const auto summary = context.getHeap().collectUnreachableFrom(
-        enumerate_selected_applet_roots, &context);
+        enumerate_selected_applet_roots, &roots);
 #ifdef CHOUPI_DEBUG_HEAP_GC
     ++collection_sequence;
     if ((collection_sequence % 32) == 0 || !summary.complete) {
@@ -300,7 +347,7 @@ void collect_heap_after_apdu() {
           "CHOUPI:HEAP_GC summary seq=%lu arrays=%lu/%lu reclaimed=%lu "
           "instances=%lu/%lu reclaimed=%lu roots_static=%lu "
           "roots_runtime=%lu tagged_arrays=%lu tagged_instances=%lu "
-          "invalid=%lu edge_failures=%lu\r\n",
+          "invalid=%lu edge_failures=%lu root_failures=%lu\r\n",
           static_cast<unsigned long>(collection_sequence),
           static_cast<unsigned long>(summary.arrays_reachable),
           static_cast<unsigned long>(summary.arrays_total),
@@ -313,15 +360,20 @@ void collect_heap_after_apdu() {
           static_cast<unsigned long>(summary.persistent_tagged_arrays),
           static_cast<unsigned long>(summary.persistent_tagged_instances),
           static_cast<unsigned long>(summary.invalid_references),
-          static_cast<unsigned long>(summary.edge_load_failures));
+          static_cast<unsigned long>(summary.edge_load_failures),
+          static_cast<unsigned long>(summary.root_enumeration_failures));
       std::fflush(stdout);
     }
 #endif
     if (!summary.complete) {
       std::printf(
-          "CHOUPI:HEAP_GC_SKIP invalid=%u edge_failures=%u\r\n",
+          "CHOUPI:HEAP_GC_SKIP invalid=%u edge_failures=%u root_failures=%u "
+          "static_result=%u applet_result=%u\r\n",
           static_cast<unsigned>(summary.invalid_references),
-          static_cast<unsigned>(summary.edge_load_failures));
+          static_cast<unsigned>(summary.edge_load_failures),
+          static_cast<unsigned>(summary.root_enumeration_failures),
+          static_cast<unsigned>(roots.static_result),
+          static_cast<unsigned>(roots.applet_result));
     }
   } catch (...) {
     std::printf("CHOUPI:HEAP_GC_SKIP reason=root_enumeration_failed\r\n");

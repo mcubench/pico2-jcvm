@@ -55,10 +55,15 @@ VisitResult visitApplet(const uint8_t applet_owner, const TagVisitor visitor,
   return visitPrefix(prefix, visitor, context);
 }
 
+bool isAppletInstanceRootTag(const Tag &tag,
+                             const uint8_t expected_owner) noexcept {
+  return (tag.len == 5 || tag.len == 6) && tag.value[0] == 0x03 &&
+         tag.value[1] == expected_owner && tag.value[tag.len - 1] == 0xff;
+}
+
 bool decodeAppletRootTag(const Tag &tag, const uint8_t expected_owner,
                          AppletRootTag &root) noexcept {
-  if (tag.len < 2 || tag.len > kTagCapacity || tag.value[0] != 0x03 ||
-      tag.value[1] != expected_owner || tag.value[tag.len - 1] != 0xff) {
+  if (!isAppletInstanceRootTag(tag, expected_owner)) {
     return false;
   }
   if (tag.len == 5) {

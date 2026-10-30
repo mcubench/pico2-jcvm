@@ -45,10 +45,11 @@ fr_gouv_ssi_nativeimpl_NativeImplementation_makeTransientObjectArray(
 }
 
 namespace {
-void enumerate_context_roots(jcvm::Heap::ReferenceVisitor visitor,
+bool enumerate_context_roots(jcvm::Heap::ReferenceVisitor visitor,
                              void *visitor_context, void *context) {
   static_cast<const jcvm::Context *>(context)->visitRootReferences(
       visitor, visitor_context);
+  return true;
 }
 } // namespace
 

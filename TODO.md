@@ -30,8 +30,14 @@ out explicitly.
     applet-root adapters in the PC VPCD diagnostic against the unchanged
     JCSystem transaction CAP. Cases 14–16 pass; each scan reports six
     non-null static roots and one applet root with `Complete` results.
-  - [ ] Exercise both inventory entry points on physical hardware. The latest
-    ARM cycle proves startup only; the diagnostic is currently PC-only.
+  - [x] Exercise both inventory entry points on physical hardware. The ARM
+    collector now loads selected-package static roots and registered applet
+    roots before marking, and skips collection if either inventory walk fails.
+    On 2BED, three real JCAlgTest SELECT/version/JCSystem-info APDUs completed
+    with `9000`; serial showed each `gc_begin` followed by `gc_end`, with no
+    `HEAP_GC_SKIP` or root failure. Full transaction-probe installation could
+    not run on 2BED because it has only 8,821 bytes free; 8E stopped enumerating
+    after flash and was not available as failover.
   - [x] Run the existing heap reachability tracer from selected-context roots
     plus discovered static/applet roots in PC VPCD. Cases 14–16 and 82 pass;
     all loaded fixtures are marked with zero invalid refs or edge-load failures.
@@ -41,9 +47,12 @@ out explicitly.
     fail the mark walk; transient and not-yet-persisted objects retain their
     in-memory traversal. VPCD cases 14–16 and 82 pass, as do physical JCSystem
     transaction checks on 8E. This does not establish complete root coverage.
+  - [x] Make root enumeration report completion and fail the mark pass closed
+    on adapter errors or exceptions. A 7-byte applet-owned array-body tag
+    ending in `0xFF` was mistaken for a registered-applet root; recognize only
+    exact 5/6-byte root tags. The physical JCAlgTest APDUs pass with the fix.
   - [ ] Include every installed package's static roots and every active
-    applet/context/native root, then exercise the inventory adapters on physical
-    hardware before computing authoritative reachability.
+    applet/context/native root before computing authoritative reachability.
   - [ ] Add malformed serialized edge/alias tests and prove an incomplete walk
     cannot authorize reclamation, including recovery after power cycling.
 - [ ] Preserve stable Java Card handles and validate interrupted-update and
