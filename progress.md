@@ -15997,3 +15997,23 @@
 - Decision: Continue with the safe persistent-reclamation acceptance gaps.
 - Commit: `2ab9306` (change commit recorded here)
 - Artifacts/logs: none.
+
+## 2026-10-30 Verify packaged symmetric manifest against physical report 2 minutes
+
+- Step/experiment: `windows-package-symm-manifest-physical-crosscheck`
+- When: '2026-10-30 14:55 UTC' - '2026-10-30 14:57 UTC'
+- Change: Cross-checked the refreshed ZIP's `symm_crypto` expected-support CSV
+  against the archived complete JCAlgTest report from physical Pico 2 2BED.
+- Validation: The support comparator matched all 4,525 report rows; statuses
+  were 73 yes, 4,452 no, zero other. The packaged expected set had 46 entries,
+  and all 46 matched with zero unexpected or missing yes results. Reference
+  row identities matched. No hardware command or firmware change was involved
+  in this offline cross-check.
+- Result: The package's symmetric expected CSV matches the prior physical
+  result exactly.
+- Decision: Retain the ZIP as ready for external Windows execution; Windows
+  reader/client validation remains pending.
+- Commit: recorded by the following progress entry.
+- Artifacts/logs: report
+  `artifacts/results/jcalgtest/symm_crypto_support_physical_2BED_20261030_long/`;
+  package `build/external-test/pico2-jcvm-windows-test.zip`.
