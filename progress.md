@@ -17182,8 +17182,26 @@
   the standalone host parser build.
 - Decision: Internal target validation is complete for CAP 2.2; external target
   resolution still requires package-context validation.
-- Commit: pending.
+- Commit: `ffab347`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`;
   GPPro log under `artifacts/results/gppro-empty-install-vpcd-20261030T230701Z/`
   (emulator.log SHA-256
   `74e05347c22b5e63b9b391c4dc767b0c58e1dae76dab711bf47e4fc684035e2c`).
+
+
+## 2026-10-30 Record CAP 2.2 reference validation commit 1 minute
+
+- Step/experiment: `cap22-internal-remote-interface-reference-validation-closeout`
+- When: '2026-10-30 23:10 UTC' - '2026-10-30 23:11 UTC'
+- Change: Recorded implementation commit `ffab347` in the progress entry and
+  session handoff.
+- Validation: Confirmed `ffab347` contains the parser implementation, forward
+  and malformed-reference fixtures, refreshed max ARM image, and corresponding
+  TODO/QKB/HANDOFF/progress records. Unrelated worktree changes remain unstaged.
+- Result: Internal remote-interface reference validation is committed;
+  external cross-package resolution and the unrelated JCRMI helper INSTALL
+  failure remain open.
+- Decision: Continue with the next prioritized TODO item.
+- Commit: pending.
+- Artifacts/logs: GPPro VPCD evidence is under
+  `artifacts/results/gppro-empty-install-vpcd-20261030T230701Z/`.

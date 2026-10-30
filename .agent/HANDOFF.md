@@ -12,8 +12,8 @@ RISC-V `max_crypto` builds pass. Fresh GPPro LOAD/INSTALL/list on PC VPCD
 passes for the unchanged JCAlgTest CAP. No physical validation was performed.
 The refreshed empty-card max ARM image is 2,075,136 bytes, SHA-256
 `78cd6aa1e6d1d24e8d195087b527ea49e4f5fe101ca0dac14d1a19526cec8960`.
-Implementation commit is pending at handoff preparation; preserve unrelated
-worktree changes. The open JCRMI helper INSTALL failure remains separately
+Implementation is committed as `ffab347`; preserve unrelated worktree
+changes. The open JCRMI helper INSTALL failure remains separately
 unresolved.
 
 
