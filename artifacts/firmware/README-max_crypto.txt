@@ -6,7 +6,7 @@ Profile: max_crypto (147 of 150 declared JCAlgTest capabilities enabled)
 Card state: empty; no applet is preinstalled.
 Debug persistent-GC instrumentation: disabled.
 Image size: 2,088,448 bytes
-Firmware SHA-256: cf21bae06443f3b7e0e8d6150eb2927cbaecc908fe6cca19fd435791e8d4d2f2
+Firmware SHA-256: 3331edcb99400e774ad3e7678d0626fd9ab3986bde163077226a552dbe198213
 
 Flash
 1. Hold BOOTSEL while connecting the Pico 2 over USB.

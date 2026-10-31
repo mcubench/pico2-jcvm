@@ -600,9 +600,12 @@ void process_message(uint8_t rhport) {
           bool more_entries = false;
           response_length = 0;
           if (status == 0x9000) {
+            const size_t response_data_limit =
+                short_apdu_response_data_limit(
+                    apdu, apdu_length, sizeof(response) - 2);
             status = build_dynamic_get_status_page(
                 p1, apdu + 5, command_data_length, response,
-                sizeof(response) - 2, response_length, more_entries);
+                response_data_limit, response_length, more_entries);
             if (more_entries) status = 0x6310;
           }
           if (status == 0x9000 || status == 0x6310) {

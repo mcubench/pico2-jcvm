@@ -66,6 +66,7 @@
 #include "gp_delete.hpp"
 #include "gp_get_data.hpp"
 #include "gp_registry.hpp"
+#include "apdu_status.hpp"
 
 bool isSaving = false;
 uint8_t *flash = nullptr;
@@ -1420,8 +1421,13 @@ uint16_t vpcd_process_card_manager(
   const uint8_t p2 = command[3];
   const uint8_t *data = command + 5;
   if (instruction == 0xf2) {
+    const size_t response_data_limit =
+        short_apdu_response_data_limit(command, command_length,
+                                       response_capacity - 2);
+    const auto limited_response_capacity = static_cast<uint16_t>(
+        std::min<size_t>(response_capacity, response_data_limit + 2));
     return vpcd_get_status_page(p1, p2, data, command_data_length,
-                                response, response_capacity,
+                                response, limited_response_capacity,
                                 response_length);
   }
   if (instruction == 0xe4) {

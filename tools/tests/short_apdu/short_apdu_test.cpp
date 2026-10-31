@@ -1,4 +1,5 @@
 #include "short_apdu.hpp"
+#include "apdu_status.hpp"
 
 #include <array>
 #include <cstdio>
@@ -18,6 +19,28 @@ void expect(const bool condition, const char *name) {
 int main() {
   using pico2_jcvm::ShortApduCommand;
   using pico2_jcvm::parse_short_apdu;
+
+  constexpr std::array<uint8_t, 5> le16{0x80, 0xf2, 0x40, 0x02, 0x10};
+  expect(short_apdu_response_data_limit(le16.data(), le16.size(), 600) == 16,
+         "response_limit_case2_le");
+  constexpr std::array<uint8_t, 5> le256{0x80, 0xf2, 0x40, 0x02, 0x00};
+  expect(short_apdu_response_data_limit(le256.data(), le256.size(), 600) == 256,
+         "response_limit_case2_zero_le");
+  constexpr std::array<uint8_t, 9> case4_le32{0x80, 0xf2, 0x40, 0x02,
+                                              0x03, 0x4f, 0x00, 0x00, 0x20};
+  expect(short_apdu_response_data_limit(case4_le32.data(), case4_le32.size(),
+                                        600) == 32,
+         "response_limit_case4_le");
+  constexpr std::array<uint8_t, 8> case3_status{0x80, 0xf2, 0x40, 0x02,
+                                                0x03, 0x4f, 0x00, 0x00};
+  expect(short_apdu_response_data_limit(case3_status.data(),
+                                       case3_status.size(), 600) == 600,
+         "response_limit_case3_uses_capacity");
+  constexpr std::array<uint8_t, 6> extended_prefix{0x80, 0xf2, 0x40, 0x02,
+                                                   0x00, 0x20};
+  expect(short_apdu_response_data_limit(extended_prefix.data(),
+                                        extended_prefix.size(), 600) == 600,
+         "response_limit_extended_uses_capacity");
 
   ShortApduCommand parsed;
   constexpr std::array<uint8_t, 4> case1{0x00, 0x84, 0x00, 0x00};

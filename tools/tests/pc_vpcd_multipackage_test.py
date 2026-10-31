@@ -239,14 +239,23 @@ def install_applet(scp: Scp03, package_aid: bytes, applet_aid: bytes,
 
 
 def get_status(scp: Scp03, p1: int) -> bytes:
+    data, _ = get_status_pages(scp, p1)
+    return data
+
+
+def get_status_pages(scp: Scp03, p1: int) -> tuple[bytes, list[int]]:
     data = bytes.fromhex("4F00")
     response = scp.command(0xF2, p1, 0x02, data, f"GET STATUS P1={p1:02X}")
     page = bytearray(response[:-2])
+    statuses = [int.from_bytes(response[-2:], "big")]
+    print(f"TEST:TRACE GET STATUS p1={p1:02X} page=1 data={len(response) - 2} sw={statuses[-1]:04X}")
     while response[-2:] == b"\x63\x10":
         response = scp.command(0xF2, p1, 0x03, data,
                                f"GET STATUS next P1={p1:02X}")
         page.extend(response[:-2])
-    return bytes(page)
+        statuses.append(int.from_bytes(response[-2:], "big"))
+        print(f"TEST:TRACE GET STATUS p1={p1:02X} page={len(statuses)} data={len(response) - 2} sw={statuses[-1]:04X}")
+    return bytes(page), statuses
 
 
 def delete_object(scp: Scp03, aid: bytes, related: bool, label: str,
@@ -372,7 +381,14 @@ def main() -> int:
                            lookup_applets[0])
             install_applet(scp, lookup_package, lookup_applets[0],
                            lookup_second_aid)
-            print("TEST:PASS loaded Core, Multi, and lookup packages; installed 5 instances")
+            pagination_aids = [
+                bytes.fromhex("A000000151000005") + index.to_bytes(2, "big")
+                for index in range(16)
+            ]
+            for instance_aid in pagination_aids:
+                install_applet(scp, lookup_package, lookup_applets[0],
+                               instance_aid)
+            print("TEST:PASS loaded 3 packages and installed 21 applet instances")
 
             scp.command(0xF2, 0x20, 0x02, b"\x4f\x00",
                         "GET STATUS continuation baseline")
@@ -386,7 +402,7 @@ def main() -> int:
             print("TEST:PASS GET STATUS continuation rejects changed AID search")
 
             packages = get_status(scp, 0x20)
-            applets = get_status(scp, 0x40)
+            applets, applet_page_statuses = get_status_pages(scp, 0x40)
             modules = get_status(scp, 0x10)
             for aid, label, registry in (
                 (core_package, "Core package", packages),
@@ -400,6 +416,30 @@ def main() -> int:
             ):
                 if aid not in registry:
                     raise RuntimeError(f"{label} absent from GET STATUS")
+            expected_instance_aids = (
+                core_applets[0:1] + multi_applets +
+                lookup_applets[0:1] + [lookup_second_aid] + pagination_aids
+            )
+            if (len(applet_page_statuses) < 2 or
+                    applet_page_statuses[-1] != 0x9000 or
+                    any(status != 0x6310
+                        for status in applet_page_statuses[:-1])):
+                raise RuntimeError(
+                    "GET STATUS did not return correctly terminated pages: "
+                    f"{[f'{status:04X}' for status in applet_page_statuses]}"
+                )
+            for aid in expected_instance_aids:
+                encoded_aid = bytes((0x4f, len(aid))) + aid
+                if applets.count(encoded_aid) != 1:
+                    raise RuntimeError(
+                        "GET STATUS pagination omitted or duplicated applet "
+                        f"AID {aid.hex().upper()}: count="
+                        f"{applets.count(encoded_aid)}"
+                    )
+            print(
+                "TEST:PASS GET STATUS paginates all 21 instances without "
+                f"duplicates ({len(applet_page_statuses)} pages)"
+            )
             for aid, label in (
                 (core_package, "Core module package"),
                 (multi_package, "Multi module package"),
@@ -414,7 +454,7 @@ def main() -> int:
                         f"{label} {aid.hex().upper()} absent from module GET STATUS; "
                         f"response={modules.hex().upper()}"
                     )
-            print("TEST:PASS GET STATUS lists 3 packages and all 5 instances")
+            print("TEST:PASS GET STATUS lists all 3 packages and 21 instances")
             print("TEST:PASS module GET STATUS lists all packages and module AIDs")
 
             lookup_select = bytes((0x00, 0xA4, 0x04, 0x00,
@@ -543,16 +583,16 @@ def main() -> int:
             print("TEST:PASS JCSystem.lookupAID preserves permanent AID data and identity after card reset")
             inventory_logs = log_path.read_text(errors="replace")
             if not re.search(
-                    r"PERSISTENT_INVENTORY:.*applet_roots=5 "
-                    r"trace_complete=1 owner_scans=5 "
+                    r"PERSISTENT_INVENTORY:.*applet_roots=21 "
+                    r"trace_complete=1 owner_scans=21 "
                     r"unreachable_complete=1 unreachable_tags=\d+",
                     inventory_logs):
                 raise RuntimeError(
-                    "inventory did not mark all five installed applet roots "
+                    "inventory did not mark all 21 installed applet roots "
                     "and complete all owner-tag scans; "
                     f"log={log_path}"
                 )
-            print("TEST:PASS inventory marks all 5 applet roots and scans owners")
+            print("TEST:PASS inventory marks all 21 applet roots and scans owners")
 
             # Exit the first process cleanly so it saves VM state, then resume
             # the saved card with all CAP packages and instance records.
@@ -567,10 +607,10 @@ def main() -> int:
             registry_path = Path(f"{memory}.cap-registry")
             registry_bytes = registry_path.read_bytes()
             owner_ids = sidecar_owner_ids(registry_bytes)
-            if len(owner_ids) != 5 or any(owner_id == 0 for owner_id in owner_ids) or \
+            if len(owner_ids) != 21 or any(owner_id == 0 for owner_id in owner_ids) or \
                     len(set(owner_ids)) != len(owner_ids):
                 raise RuntimeError(
-                    f"VCR2 did not persist 4 distinct applet owners: {owner_ids}"
+                    f"VCR2 did not persist 21 distinct applet owners: {owner_ids}"
                 )
             print("TEST:PASS VCR2 persists distinct nonzero applet owner IDs")
 
@@ -671,7 +711,7 @@ def main() -> int:
             scp.authenticate()
             print("TEST:PASS restart SCP03 authentication")
             packages = get_status(scp, 0x20)
-            applets = get_status(scp, 0x40)
+            applets, restart_page_statuses = get_status_pages(scp, 0x40)
             modules = get_status(scp, 0x10)
             for aid, label, registry in (
                 (core_package, "Core package after restart", packages),
@@ -685,6 +725,24 @@ def main() -> int:
             ):
                 if aid not in registry:
                     raise RuntimeError(f"{label} absent from GET STATUS")
+            if restart_page_statuses != applet_page_statuses:
+                raise RuntimeError(
+                    "GET STATUS page boundaries changed after process restart: "
+                    f"before={[f'{status:04X}' for status in applet_page_statuses]}, "
+                    f"after={[f'{status:04X}' for status in restart_page_statuses]}"
+                )
+            for aid in expected_instance_aids:
+                encoded_aid = bytes((0x4f, len(aid))) + aid
+                if applets.count(encoded_aid) != 1:
+                    raise RuntimeError(
+                        "restart GET STATUS pagination omitted or duplicated "
+                        f"applet AID {aid.hex().upper()}: "
+                        f"count={applets.count(encoded_aid)}"
+                    )
+            print(
+                "TEST:PASS restart GET STATUS paginates all 21 instances "
+                f"({len(restart_page_statuses)} pages)"
+            )
             for aid, label in (
                 (core_package, "Core module package after restart"),
                 (multi_package, "Multi module package after restart"),
@@ -699,7 +757,7 @@ def main() -> int:
                         f"{label} {aid.hex().upper()} absent from module GET STATUS "
                         f"after restart; response={modules.hex().upper()}"
                     )
-            print("TEST:PASS restart GET STATUS lists 3 packages and 5 instances")
+            print("TEST:PASS restart GET STATUS lists all 3 packages and 21 instances")
             print("TEST:PASS restart module GET STATUS lists all packages and module AIDs")
             for aid, label in (
                 (core_applets[0], "Core after restart"),
@@ -729,16 +787,16 @@ def main() -> int:
             print("TEST:PASS JCSystem.lookupAID preserves persistent AID identity after restart")
             restart_inventory_logs = restart_log_path.read_text(errors="replace")
             if not re.search(
-                    r"PERSISTENT_INVENTORY:.*applet_roots=5 "
-                    r"trace_complete=1 owner_scans=5 "
+                    r"PERSISTENT_INVENTORY:.*applet_roots=21 "
+                    r"trace_complete=1 owner_scans=21 "
                     r"unreachable_complete=1 unreachable_tags=\d+",
                     restart_inventory_logs):
                 raise RuntimeError(
-                    "restart inventory did not mark all five applet roots "
+                    "restart inventory did not mark all 21 applet roots "
                     "and complete all owner-tag scans; "
                     f"log={restart_log_path}"
                 )
-            print("TEST:PASS restart inventory scans all 5 applet owners")
+            print("TEST:PASS restart inventory scans all 21 applet owners")
 
             exchange(connection, bytes.fromhex("00A4040000"), "reselect ISD")
             delete_object(scp, multi_applets[0], False,
@@ -767,6 +825,9 @@ def main() -> int:
                 raise RuntimeError("cascade DELETE removed unrelated Core entries")
             print("TEST:PASS cascade DELETE removes Multi only")
 
+            for aid in pagination_aids:
+                delete_object(scp, aid, False,
+                              f"DELETE paginated lookup instance {aid.hex()}")
             delete_object(scp, lookup_applets[0], False,
                           "DELETE lookup applet instance")
             delete_object(scp, lookup_second_aid, False,
@@ -779,7 +840,7 @@ def main() -> int:
             if get_status(scp, 0x20) or get_status(scp, 0x40):
                 raise RuntimeError("registry is not empty after deleting Core")
             print("TEST:PASS DELETE leaves registry empty")
-            print("TEST:SUMMARY pass=39 fail=0")
+            print("TEST:SUMMARY pass=41 fail=0")
             return 0
         finally:
             if connection is not None:
