@@ -18232,7 +18232,8 @@
   algorithms.
 - Decision: Continue with Crypto using the deploy README's RSA-2048 keygen
   exclusion; investigate resource recovery and transient reset separately.
-- Commit: `<fill after documentation commit>`
+- Commit: `a448f54` (validation record; commit reference finalized in the
+  follow-up documentation commit)
 - Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-security-20261031.csv`
   (ignored; SHA-256
   `c6ba9233e27584280bd5632b1ca281509fedd2cc19c08fbd4184b01179694045`).
