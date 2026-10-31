@@ -17644,3 +17644,23 @@
 - Commit: `c73fc70` (artifact; this runtime closeout is committed separately)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; no runtime log.
+
+## 2026-10-31 inspect identified Pico CDC startup 2 minutes
+
+- Step/experiment: `physical-2bed-cdc-runtime-monitor`
+- When: '2026-10-31 01:59 UTC' - '2026-10-31 02:01 UTC'
+- Change: Captured a finite CDC startup trace from Pico 2
+  `2BED26ED20556535` and recorded the distinction between runtime liveness and
+  unavailable PC/SC/APDU access in QKB and the handoff. No firmware was flashed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial
+  2BED26ED20556535 --seconds 8` exited 0 with repeated
+  `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`; no `FAULT` was
+  present. The authorized reader helper granted two USB nodes, but
+  `timeout --signal=TERM --kill-after=1s 4s pcsc_scan -r` exited 124 with no
+  reader.
+- Result: Board firmware is running; physical PC/SC applet validation remains
+  unavailable. The monitor counters were `rx_events=2761 tasks=1945`.
+- Decision: Continue offline implementation and use another identified Pico
+  if PC/SC access becomes available.
+- Commit: `f1992d0` (evidence; this runtime closeout is committed separately)
+- Artifacts/logs: monitor output only; no log was saved.
