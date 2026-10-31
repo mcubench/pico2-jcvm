@@ -1774,7 +1774,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   which returned 1. The corrected map passes the full 37-check VPCD
   multipackage lifecycle suite. Physical PC/SC validation is still open; the
   approved helper granted access to two USB nodes, but a bounded reader scan
-  found no registered readers.
+  found no registered readers. A full current-source JCSystem transaction CAP
+  run also passes 85/85 VPCD checks, covering transactions, persistence,
+  APDU/lifecycle behavior, exception mapping, lookupAID, and GC pressure.
+  Log: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261031T015450Z.log`.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
   remaining transient array variants, `Util` helpers, `JCSystem` queries,
   `AID`, and

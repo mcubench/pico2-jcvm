@@ -35,6 +35,19 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   instances. `./tools/test-jcarray` then passes all 27 cases, including
   `gc_skips_reclamation_after_invalid_child_ref`.
 
+## Full current-source JCSystem applet VPCD regression — 2026-10-31
+
+- `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet` passed
+  the full API fixture: `TEST:SUMMARY pass=85 fail=0 elapsed_s=87.427`.
+  It covered the 83 numbered cases plus install/restart checks and included
+  transaction semantics, restore, short APDU state, exceptions, persistent
+  aliases, `lookupAID()`, lifecycle callbacks, and reclamation pressure.
+- This is PC VPCD integration evidence on current max-profile source, not a
+  physical board test. The separate physical reader scan still found no PC/SC
+  reader.
+- Log: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261031T015450Z.log`,
+  SHA-256 `b9c1988f1b8934999bd7470a43c6492b6c2aa733c0c3f23a5a85975d1dd71c75`.
+
 ## `JCSystem.lookupAID()` peer lookup and short-APDU length diagnostic — 2026-10-31
 
 - The native implementation now scans installed package instance AIDs and
