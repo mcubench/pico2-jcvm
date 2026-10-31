@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-30
+Updated: 2026-10-31
 
 ## Summary
 
@@ -36,6 +36,20 @@ card registry is empty.
   two RSA-3072 KeyPair queries. Independent RSA-3072 and RSA-CRT-3072 physical
   generation vectors pass. This known CAP query limitation and remaining
   private-operation hardening are separate from profile parity; see QKB.
+
+- **Current max_crypto physical runtime and API Core check (2026-10-31):** Pico
+  2 `2BED26ED20556535` was flashed with the 2,088,448-byte ARM image
+  (`3331edcb99400e774ad3e7678d0626fd9ab3986bde163077226a552dbe198213`). Its
+  finite runtime monitor and physical GPPro listing passed. The direct SCP03
+  GET STATUS test passed with three applet instances and a short Le. Upstream
+  API 3.0.5 Core completed 291 calls: 272 `OK`, 15 spec-allowed unsupported,
+  and four optional Ext methods unavailable because the Ext CAP was refused
+  with `6A88`; the partial Ext package, Multi CAP, and Core CAP were cleaned
+  up. A final GPPro listing showed only ISD and the existing JCAlgTest applet.
+  Security and Crypto from the same deploy suite still need a current-image
+  rerun. The result CSV is ignored by Git at
+  `artifacts/results/deploy/pico2-2BED-max_crypto-core-20261031.csv` (SHA-256
+  `fdcfbb8423d30df092f2fca7a8045472ebb81feb9f70dabc9173fb8688759a6c`).
 
 - **Symmetric algorithm parity with JCOP4 P71 (2026-10-30):** The supplied
   1.7.9 reference has 41 symmetric support identities. All 41 are selected by

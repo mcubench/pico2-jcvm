@@ -1,5 +1,25 @@
 # Session handoff — updated 2026-10-31
 
+## Current max_crypto physical API Core deploy rerun — 2026-10-31
+
+Ran the upstream `AlgTest_JavaCard/deploy` API 3.0.5 Core area on Pico 2
+`2BED26ED20556535`, running the refreshed `max_crypto` ARM image. Core
+completed all 291 calls: 272 `OK`, 15 `UNSUPPORTED_PER_SPEC`, and four
+optional Ext calls unavailable because Ext installation returned `6A88`.
+The runner rolled back the partial Ext package and removed its Multi and Core
+CAPs. A final exact-reader GPPro listing showed only ISD and the pre-existing
+JCAlgTest applet/package. CSV:
+`artifacts/results/deploy/pico2-2BED-max_crypto-core-20261031.csv` (ignored by
+Git, SHA-256
+`fdcfbb8423d30df092f2fca7a8045472ebb81feb9f70dabc9173fb8688759a6c`). Final
+GPPro transcript:
+`artifacts/logs/gppro-list-physical-2BED-after-core-20261031.log` (ignored by
+Git, SHA-256
+`504b4fa8be609ab3c5915c6a4c5402b35b5ca8bfcc84d4223f328399826635a8`).
+
+Next: rerun the deploy Security and Crypto areas on the current image, keeping
+RSA-2048 generation excluded per the deploy instructions.
+
 ## Physical three-entry GET STATUS pagination — 2026-10-31
 
 Added `tools/test-get-status-multipage-physical` and extended the direct SCP03

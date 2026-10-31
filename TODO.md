@@ -1039,10 +1039,18 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
 
 - [ ] **Complete deploy-folder API coverage on the Pico 2.** Runtime loading
   accepts arbitrary package AIDs and assigns IDs 56–63. The latest physical
-  Core 3.0.5 run completed 291 calls (272 OK, 15 allowed unsupported, and
-  four optional Ext methods unavailable because that CAP was refused with
-  `6A88`). It recorded 38 JCSystem rows: 37 `OK`; `requestObjectDeletion()`
-  returned profile-allowed `UNSUPPORTED_PER_SPEC`/`ILLEGAL_USE`. Current
+  rerun on 2026-10-31 used the reflashed `max_crypto` image on Pico 2
+  `2BED26ED20556535`: API 3.0.5 Core completed all 291 calls (272 `OK`, 15
+  `UNSUPPORTED_PER_SPEC`, four optional Ext `APPLET_NOT_INSTALLED`). The Ext
+  CAP was refused at install with `6A88` and immediately rolled back; both
+  Multi and Core CAP cleanup passed. A final exact-reader GPPro listing showed
+  only ISD and the pre-existing JCAlgTest package/applet. CSV SHA-256 is
+  `fdcfbb8423d30df092f2fca7a8045472ebb81feb9f70dabc9173fb8688759a6c`; it is
+  retained under ignored `artifacts/results/deploy/`. JCSystem accounted for
+  38 rows: 37 `OK`; `requestObjectDeletion()` returned profile-allowed
+  `UNSUPPORTED_PER_SPEC`.
+  Four optional Ext methods were unavailable because that CAP was refused with
+  `6A88`. Current
   ARM and host builds pass. Fresh VPCD select-only smoke checks pass for
   Security, Crypto, JavacardxExt, JavacardxSec, Service, Biometry, and each
   Multi AID independently. Core's own-AID Shareable probe returns `0000`, and

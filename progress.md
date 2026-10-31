@@ -18184,3 +18184,29 @@
   `4b3e27af31e2387c9b0f320329e1e6fe7d49180ed902a1550d34508bdac5a512`) and
   `artifacts/logs/physical-get-status-le-20261031T061848Z.log` (SHA-256
   `1b7196a61fded893a8b80e456352b2bfc6c285848e8846dee32358be02270522`).
+
+## 2026-10-31 Validate max_crypto physical Core API suite 8 minutes
+
+- Step/experiment: `max-crypto-deploy-core-physical-20261031`
+- When: '2026-10-31 06:21 UTC' - '2026-10-31 06:29 UTC'
+- Change: Recorded the current-image upstream API 3.0.5 Core run in the status
+  trackers and corrected a duplicated TODO summary. No firmware or CAP changed.
+- Validation: The exact-reader run on Pico 2 `2BED26ED20556535` completed all
+  291 calls: 272 `OK`, 15 `UNSUPPORTED_PER_SPEC`, and four optional Ext
+  methods unavailable after Ext INSTALL returned `6A88`; rollback and Multi
+  and Core cleanup passed. A final exact-reader GPPro listing confirmed only
+  ISD and the pre-existing JCAlgTest applet/package. CSV inspection confirmed
+  38 JCSystem rows: 37 `OK`, with `requestObjectDeletion()` classified
+  `UNSUPPORTED_PER_SPEC`. `git diff --check` passed. Two initial runner
+  invocations failed before card access because its `--out` path was relative
+  to the deploy directory; the corrected run used an absolute path.
+- Result: Current max_crypto firmware passes the full physical Core stage with
+  the noted optional Ext limitation. The card was left in its original state.
+- Decision: Continue validation on the same identified board with Security,
+  then Crypto using the deploy README's RSA-2048 exclusion.
+- Commit: `<fill after documentation commit>`
+- Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-core-20261031.csv`
+  (ignored; SHA-256
+  `fdcfbb8423d30df092f2fca7a8045472ebb81feb9f70dabc9173fb8688759a6c`);
+  final GPPro listing log SHA-256
+  `504b4fa8be609ab3c5915c6a4c5402b35b5ca8bfcc84d4223f328399826635a8`.
