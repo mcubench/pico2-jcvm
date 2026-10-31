@@ -18211,3 +18211,28 @@
   `fdcfbb8423d30df092f2fca7a8045472ebb81feb9f70dabc9173fb8688759a6c`);
   final GPPro listing log SHA-256
   `504b4fa8be609ab3c5915c6a4c5402b35b5ca8bfcc84d4223f328399826635a8`.
+
+## 2026-10-31 Run max_crypto physical Security API suite 14 minutes
+
+- Step/experiment: `max-crypto-deploy-security-physical-20261031`
+- When: '2026-10-31 06:29 UTC' - '2026-10-31 06:43 UTC'
+- Change: Ran unchanged upstream API 3.0.5 Security CAP/client on physical
+  Pico 2 `2BED26ED20556535`; updated current status, TODO, and handoff notes.
+  No firmware or CAP was changed.
+- Validation: Host-access-gated exact-reader runner exited zero after all 901
+  calls and reported Security cleanup OK. Counts were 302 `OK`, 504
+  `UNSUPPORTED_PER_SPEC`, 94 `NO_MEMORY`, and one `WRONG_RESULT`. CSV review
+  located the first `NO_MEMORY` at call 460; subsequent errors span EC, RSA,
+  AES, and DES key behavior. The wrong result was an AES transient-reset key
+  remaining uninitialized after deselect. No reader-drop or test timeout
+  occurred. `git diff --check` is run before the documentation commit.
+- Result: The max_crypto image completes the whole Security area, but its
+  accumulated `NO_MEMORY` results and transient reset mismatch need diagnosis.
+  Cause is not yet established; not treating these as expected unsupported
+  algorithms.
+- Decision: Continue with Crypto using the deploy README's RSA-2048 keygen
+  exclusion; investigate resource recovery and transient reset separately.
+- Commit: `<fill after documentation commit>`
+- Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-security-20261031.csv`
+  (ignored; SHA-256
+  `c6ba9233e27584280bd5632b1ca281509fedd2cc19c08fbd4184b01179694045`).

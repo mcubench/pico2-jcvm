@@ -1050,8 +1050,13 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   38 rows: 37 `OK`; `requestObjectDeletion()` returned profile-allowed
   `UNSUPPORTED_PER_SPEC`.
   Four optional Ext methods were unavailable because that CAP was refused with
-  `6A88`. Current
-  ARM and host builds pass. Fresh VPCD select-only smoke checks pass for
+  `6A88`. The same image's Security stage then completed 901 calls (302 `OK`,
+  504 `UNSUPPORTED_PER_SPEC`, 94 `NO_MEMORY`, one `WRONG_RESULT`). The first
+  `NO_MEMORY` occurred at call 460; later failures span key families and EC
+  accessors. One AES transient-reset `isInitialized()` check was a wrong result.
+  Resource exhaustion and transient reset behavior need investigation. The
+  Security CAP cleanup passed. Current ARM and host builds pass. Fresh
+  VPCD select-only smoke checks pass for
   Security, Crypto, JavacardxExt, JavacardxSec, Service, Biometry, and each
   Multi AID independently. Core's own-AID Shareable probe returns `0000`, and
   its Shareable tagging-interface probe returns `000101`, both with `9000`.

@@ -51,6 +51,16 @@ card registry is empty.
   `artifacts/results/deploy/pico2-2BED-max_crypto-core-20261031.csv` (SHA-256
   `fdcfbb8423d30df092f2fca7a8045472ebb81feb9f70dabc9173fb8688759a6c`).
 
+- **Current max_crypto API Security check (2026-10-31):** The same physical Pico
+  completed all 901 upstream API calls: 302 `OK`, 504 `UNSUPPORTED_PER_SPEC`,
+  94 `NO_MEMORY`, and one `WRONG_RESULT`. `NO_MEMORY` starts at call 460 and
+  spans key families and EC accessors; one AES transient-reset state check
+  returned the unexpected uninitialized value. The runner removed the Security
+  CAP successfully. Treat resource exhaustion and transient reset semantics as
+  open findings pending diagnosis. CSV SHA-256 is
+  `c6ba9233e27584280bd5632b1ca281509fedd2cc19c08fbd4184b01179694045` under
+  ignored `artifacts/results/deploy/`.
+
 - **Symmetric algorithm parity with JCOP4 P71 (2026-10-30):** The supplied
   1.7.9 reference has 41 symmetric support identities. All 41 are selected by
   `symm_crypto` and all 41 were reported on physical Pico 2

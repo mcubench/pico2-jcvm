@@ -1,5 +1,20 @@
 # Session handoff — updated 2026-10-31
 
+## Current max_crypto physical API Security rerun — 2026-10-31
+
+On Pico 2 `2BED26ED20556535`, the unchanged deploy API 3.0.5 Security area
+completed all 901 calls. Results: 302 `OK`, 504 `UNSUPPORTED_PER_SPEC`, 94
+`NO_MEMORY`, and one `WRONG_RESULT`. The first `NO_MEMORY` was call 460 and
+later affected several unrelated key families/EC accessors; this suggests
+resource exhaustion during the long suite but does not yet establish its
+cause. The wrong result was `Key.isInitialized()` for an AES transient-reset
+key after deselect. Security CAP cleanup succeeded. CSV SHA-256:
+`c6ba9233e27584280bd5632b1ca281509fedd2cc19c08fbd4184b01179694045` at
+`artifacts/results/deploy/pico2-2BED-max_crypto-security-20261031.csv` (ignored).
+
+Next: run Crypto using the deploy README's RSA-2048 key-generation exclusion,
+then investigate the Security resource exhaustion and reset-state finding.
+
 ## Current max_crypto physical API Core deploy rerun — 2026-10-31
 
 Ran the upstream `AlgTest_JavaCard/deploy` API 3.0.5 Core area on Pico 2
