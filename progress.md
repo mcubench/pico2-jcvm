@@ -17463,3 +17463,37 @@
 - Commit: `5ebbfe5` (this progress pointer is recorded in the follow-up
   closeout commit)
 - Artifacts/logs: `docs/supported-profile.md`; no dedicated test log.
+
+## 2026-10-31 implement installed-instance JCSystem.lookupAID 12 minutes
+
+- Step/experiment: `native-lookup-aid-installed-peer-vpcd`
+- When: '2026-10-31 01:03 UTC' - '2026-10-31 01:15 UTC'
+- Change: Routed `JCSystem.lookupAID()` through the native API dispatcher,
+  searched installed applet instance AIDs, and cached peer `AID` objects as
+  active-context GC roots. Added a converter-built CAP fixture and extended
+  the authenticated multipackage test to cover peer match, repeated identity,
+  and unknown AID. The fixture clears its cached reference before restart so
+  the existing persistence inventory test remains independent. Updated TODO,
+  QKB, and session handoff.
+- Validation: `./tools/build-lookup-aid-fixture` passed with zero converter
+  errors/warnings; `./tools/test-rmi-registry` passed; `./tools/build-pc
+  --profile max_crypto`, `./tools/build arm --profile max_crypto`, and
+  `./tools/build riscv --profile max_crypto` passed. The elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed all 33 checks.
+  No physical board was used.
+- Result: Installed peer lookup, same-context object identity, unknown-AID
+  handling, fresh-process restore, and cleanup pass in PC VPCD. The EPO
+  cross-context and persistent-reference requirements remain incomplete. A
+  focused diagnostic also found `getIncomingLength()` returning 1 after
+  `setIncomingAndReceive()` returned 13; cause remains unresolved and is
+  tracked separately.
+- Decision: Continue with a runtime-owned EPO/heap model and cross-context
+  tests; investigate the APDU getter independently. This does not close the
+  Java Card `lookupAID()` compatibility item.
+- Commit: `027c384` (nested Java API source commit `5785fb1`)
+- Artifacts/logs: APDU log
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261031T011006Z.log`, SHA-256
+  `be3729bfd76833d476a948eccdeab2771c2e795ac75c06cffeb1165114fd5637`;
+  restart log `artifacts/logs/host-vpcd-multipackage-restart-20261031T011006Z.log`,
+  SHA-256
+  `b0ec9aa58f3f13e0d175b46d0d49a8804d50dc537cf7ed97ba8ccc0073718941`.

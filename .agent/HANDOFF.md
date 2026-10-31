@@ -8,8 +8,8 @@ multipackage test passes 33/33, including peer lookup, repeated identity,
 unknown AID, fresh-process restart, and deletion. `./tools/test-rmi-registry`,
 `./tools/build arm --profile max_crypto`, and
 `./tools/build riscv --profile max_crypto` pass. The Java API submodule change
-is committed at `5785fb1`; root implementation and test changes are still
-uncommitted at this point.
+is committed at `5785fb1`; root implementation and test changes are committed
+at `027c384`.
 
 This does not yet satisfy the specified permanent JCRE Entry Point Object
 contract. The current cache is held by an applet `Context`; cross-context
