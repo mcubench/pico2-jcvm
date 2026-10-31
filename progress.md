@@ -18756,6 +18756,6 @@
 - Decision: Close detailed filesystem status parity. Keep PC emulator disk
   checkpoint durability as the remaining ARCH-02 discrepancy.
 - Commit: OS `7362164` (`Align filesystem error statuses across backends`);
-  root commit pending.
+  root `21c8336` (`Align filesystem status codes across backends`).
 - Artifacts/logs: No persistent logs; test and build outputs are ignored under
   `build/` and `choupi/os/target/`.

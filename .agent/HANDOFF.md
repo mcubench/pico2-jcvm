@@ -19,7 +19,9 @@ passes. PC, ARM, and RISC-V `max_crypto` wrapper builds pass. Existing upstream
 Rust and packed-member warnings remain. No hardware flash was run; this step's
 storage behavior is exercised in the overlay harness and OS emulator.
 
-Implementation commits are pending; update this section after committing.
+OS implementation commit: `7362164` (`Align filesystem error statuses across
+backends`); root integration commit: `21c8336` (`Align filesystem status codes
+across backends`).
 Next: continue the remaining filesystem durability and JCVM acceptance items.
 
 ## Current filesystem ABI alignment — 128-byte tags
