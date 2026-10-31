@@ -18384,6 +18384,6 @@
   known upstream report discrepancy without modifying the CAP or support set.
 - Decision: Keep current max_crypto selection; do not enable unsupported 4096
   keypair generation or add EC-112 absent from the target matrix.
-- Commit: pending (finalized in a follow-up progress record commit)
+- Commit: `1b6b0cb`
 - Artifacts/logs: `artifacts/firmware/README-max_crypto.txt`, `TODO.md`, and
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`.
