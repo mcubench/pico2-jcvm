@@ -17601,3 +17601,25 @@
 - Commit: `f3722bf` (implementation; this validation closeout is committed
   separately)
 - Artifacts/logs: no saved logs; command output only.
+
+## 2026-10-31 run full JCSystem transaction VPCD suite 3 minutes
+
+- Step/experiment: `jcsystem-full-current-vpcd-83-cases`
+- When: '2026-10-31 01:54 UTC' - '2026-10-31 01:57 UTC'
+- Change: Ran and recorded the full current-source JCSystem transaction CAP
+  integration suite. Updated TODO and QKB with its result and log hash; no
+  runtime source changed.
+- Validation: `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-jcsystem-transaction-applet` passed with
+  `TEST:SUMMARY pass=85 fail=0 elapsed_s=87.427`. Coverage included all 83
+  numbered APDU cases plus installation/restart, transaction persistence,
+  exceptions, lifecycle behavior, `lookupAID`, and reclamation pressure.
+  Physical reader access was separately attempted: the authorized helper
+  granted two USB nodes, but bounded `pcsc_scan -r` returned no reader.
+- Result: The full JCSystem transaction API fixture passes in PC VPCD against
+  the current max-profile emulator image; this is not physical validation.
+- Decision: Continue with the next open Java Card API/deploy coverage gap.
+- Commit: `63aefd4` (evidence documentation; this runtime closeout is committed
+  separately)
+- Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261031T015450Z.log`,
+  SHA-256 `b9c1988f1b8934999bd7470a43c6492b6c2aa733c0c3f23a5a85975d1dd71c75`.

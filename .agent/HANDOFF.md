@@ -22,6 +22,12 @@ The related JC array test now supplies `JC_Instance::hasLoadedFields()` and
 uses `0x3ffe` for an invalid local handle; `0x7ffe` is in the global-handle
 namespace. `./tools/test-jcarray` passes all 27 cases; commit `f3722bf`.
 
+The full current-source JCSystem transaction CAP run passed 85/85 VPCD checks
+in 87.427 seconds, including restart restore, API/exception behavior,
+`lookupAID()`, lifecycle callbacks, and GC pressure. Evidence is in
+`artifacts/logs/jcsystem-transaction-apdu-vpcd-20261031T015450Z.log` and
+validation commit `63aefd4`. Physical PC/SC remains unavailable.
+
 ## Current continuation — JCSystem.lookupAID permanent EPO behavior — 2026-10-31
 
 `lookupAID()` and `getAID()` now return runtime-wide JCRE `AID` Entry Point
