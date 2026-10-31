@@ -83,6 +83,8 @@ Failed-install/cleanup logs:
 `...T215407Z.log`; hashes are in `progress.md`. No reader packages were removed
 except the temporary probe package and applet installed by the successful
 test.
+Root physical install/rollback commit: `99dfe3b` (`Verify physical GPPro install
+and rollback`).
 
 ## ARCH-02 PC disk-checkpoint contract — 2026-10-31
 
