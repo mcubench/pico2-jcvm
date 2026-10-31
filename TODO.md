@@ -1997,7 +1997,21 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `ALG_SUPPORT_EXTENDED` sweep reached its explicit 900-second bound at
   1,155/4,525 rows (179 yes, 976 no; all saved algorithm results were yes/no,
   with no transport error logged). It is partial, not a complete support
-  report. The run read CPLC dates `6302` from the previous image; this was
+  report. **Follow-up full run (2026-10-31):** the same physical Pico 2
+  `2BED26ED20556535`, running the refreshed image above, completed the complete
+  unchanged JCAlgTest 1.8.2 client with exit status 0. It matched all 4,525
+  jCardSim row identities and returned 198 yes, 4,327 no, and zero other
+  statuses. The generated 147-entry `max_crypto` support comparison has the
+  two known missing RSA/RSA-CRT-3072 KeyPair identities because the upstream
+  CAP sends 4096 for those rows; excluding only those two in a temporary
+  expected file yields an exact 145/145 match with zero unexpected support.
+  Do not edit the upstream CAP or misrepresent this known mismatch as full
+  declared-set parity. CSV:
+  `artifacts/results/jcalgtest/max_crypto_full_2BED_20261031/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv`
+  (SHA-256 `b3aa5964c499a16e812c9b336712415127874a7a3d638d8989404dca51b30d81`);
+  raw log `ALGTEST_log_1793415896947.log` (SHA-256
+  `641a9057fc990f6a717190880902bec74a242764aec2d3018cd0bc53e451c09f`).
+  The earlier run read CPLC dates `6302` from the previous image; this was
   corrected to `6304` and verified over open and authenticated physical GET
   DATA after the suite. The refreshed artifact below contains the fix. The
   previously

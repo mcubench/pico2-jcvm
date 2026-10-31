@@ -915,6 +915,16 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - **RSA support-label mismatch:** JCAlgTest 1.8.2's 3072 KeyPair rows send 4096.
   Manifest remains 143/145 despite passing true physical 3072 vectors. Do not
   alter firmware/CAP semantics to hide the two upstream mislabeled rows.
+- **Full max_crypto report confirmation (2026-10-31):**
+  `JCALGTEST_TIMEOUT_SECONDS=5400` allowed the unchanged physical client to
+  complete on Pico 2 `2BED26ED20556535` (4,525 identities, 198 yes, 4,327 no,
+  zero other). Run `tools/compare-jcalgtest-support.py` against jCardSim and the
+  generated manifest. Expect its only declared-set failure to be RSA and
+  RSA-CRT 3072 KeyPair: the upstream rows send 4096. With those two rows
+  omitted only in a temporary expected file, comparison passes 145/145 with
+  no unexpected support. Raw CSV/log and hashes are in `.agent/HANDOFF.md` and
+  TODO. This is a viable 90-minute bound for the full extended client, not a
+  reason to modify the upstream CAP.
 - **Current status overrides:** physical `Applet.deselect()` discrepancy is
   resolved (`-19` both boards), and the repeated Core `6F00` cluster is fixed:
   successful GP DELETE now discards the selected applet context/heap, preventing

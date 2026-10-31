@@ -1,5 +1,29 @@
 # Session handoff — updated 2026-10-30
 
+## Complete physical max_crypto JCAlgTest run — 2026-10-31
+
+The official unchanged JCAlgTest 1.8.2 client completed
+`ALG_SUPPORT_EXTENDED` on Pico 2 `2BED26ED20556535` with exit status 0. The
+report contains all 4,525 normalized identities and matches jCardSim row for
+row. Results: 198 yes, 4,327 no, zero other statuses. Against the generated
+147-entry `max_crypto` declaration, only RSA and RSA-CRT `KeyPair` at 3072 are
+missing: the upstream CAP queries 4096 for those two rows. A temporary expected
+file excluding only these known malformed rows compares the remaining 145/145
+capabilities exactly, with no unexpected positives. Keep the upstream CAP
+unchanged and retain this mismatch in reports. This completed report supersedes
+the earlier 900-second partial run for the refreshed `max_crypto` image; it
+does not close the standalone `symm_crypto_ctr` profile, Windows acceptance, or
+other project gates. CSV SHA-256
+`b3aa5964c499a16e812c9b336712415127874a7a3d638d8989404dca51b30d81`; raw
+client log SHA-256
+`641a9057fc990f6a717190880902bec74a242764aec2d3018cd0bc53e451c09f`.
+Artifacts are in
+`artifacts/results/jcalgtest/max_crypto_full_2BED_20261031/`.
+The reusable comparison is `python3 tools/compare-jcalgtest-support.py` with
+the generated `build/javacard-support/jcalgtest-supported.csv`; its expected
+failure is exactly the two upstream-labeled KeyPair rows. A filtered temporary
+expectation gives `COMPARE:PASS` for the other 145 identities.
+
 ## Maximum-support ARM external-test artifact refreshed — 2026-10-31
 
 The downloadable ARM `max_crypto` UF2 was stale relative to the image built
@@ -24,7 +48,8 @@ UF2 now matches the flashed ARM build byte-for-byte: 2,086,400 bytes, SHA-256
 matches `build/arm/pico2_choupi.uf2`. Physical APDU log:
 `artifacts/logs/physical-gp-get-data-cplc-2BED-20261031.log` (SHA-256
 `b4a4bb53964e98ee2c8541c00b7f4a0687ae9cedc1e8cd40e90e12b511708e42`). The
-JCAlgTest report remains partial at 1,155/4,525 due its 900-second timeout.
+initial JCAlgTest attempt was partial at 1,155/4,525 due its 900-second bound;
+the completed follow-up is recorded in the entry above.
 Preserve unrelated dirty files listed in prior handoff sections.
 
 ## Physical AES-CTR known-answer check on max_crypto — 2026-10-31
