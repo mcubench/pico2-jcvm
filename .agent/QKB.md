@@ -2731,3 +2731,20 @@ original terminology/status; check current summary and later fixes before reuse.
   max_crypto builds, and the identified Pico 2 ARM cycle passed. Keep this
   behavior and avoid interpreting the untouched destination tail as record
   data; call `fs_length` first when the full record size is required.
+
+## OS filesystem tag length extension — 2026-10-31
+
+- The OS record header stores tag length in five bits and reserved code 30;
+  legacy writers capped tags at 29 bytes while Pico allowed 128. The C syscall
+  bridge also used a 33-byte length-prefixed tag scratch area, despite its
+  cursor output already allowing 128.
+- Viable fix: reserve header code 30 for an extra one-byte tag length, valid
+  only for lengths 30–128. Legacy 1–29-byte records keep their byte layout.
+  Parsing validates the extended length and rejects zero, reserved code 31,
+  lengths below 30, or lengths above 128. The syscall bridge now carries 129
+  bytes and rejects public wrapper tags outside 1–128 before marshaling;
+  applet/static ownership checks accept structurally valid 128-byte tags.
+  Tests cover restart, replacement, erase, 29/30/128/129 boundaries, malformed
+  encoded lengths, and 128-byte syscall I/O. PC/ARM/RISC-V max_crypto wrapper
+  builds pass. Keep old record compatibility; do not reinterpret any old valid
+  header as an extended tag because code 30 was previously rejected.

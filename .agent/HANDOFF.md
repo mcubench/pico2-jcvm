@@ -1,6 +1,28 @@
 # Session handoff — updated 2026-10-31
 
-## Current filesystem ABI alignment — oversized reads
+## Current filesystem ABI alignment — 128-byte tags
+
+Aligned the OS Rust filesystem with Pico's 128-byte tag capacity. OS records
+with tags through 29 bytes retain the original encoding; tag lengths 30–128 use
+reserved five-bit header code 30 followed by one length byte. The syscall
+length-prefixed scratch buffer is now 129 bytes, and applet/static tag access
+checks accept the shared limit. Existing records require no migration.
+
+Validation: OS filesystem suite passes 27/27 (two ignored), including legacy
+and extended records across restart, replacement and erase, malformed length
+rejection, and the 29/30/128/129 boundaries. The elevated OS syscall emulator
+suite passes 4/4, including 128-byte tag I/O and rejection of empty and
+129-byte syscall-buffer tags. PC,
+`PICO2_DEBUG=0` ARM and RISC-V `max_crypto` wrapper builds pass. Existing Rust
+upstream warnings remain. No physical flash was run because this change only
+affects the host OS filesystem; Pico already accepted 128-byte tags. Root
+integration testing still does not directly exercise a GP CAP with a 128-byte
+persistent tag.
+
+OS implementation commit: `52772f1` (`Align OS filesystem tag length with
+Pico`). Root docs/TODO and the gitlink update are pending the root commit.
+
+## Previous filesystem ABI alignment — oversized reads
 
 Aligned Pico `fs_read` with the OS filesystem: both copy the smaller of the
 caller buffer and record length, return success for a larger destination, and

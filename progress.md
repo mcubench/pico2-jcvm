@@ -18700,3 +18700,33 @@
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261031T205709Z.log` and
   `artifacts/logs/cycle-arm-20261031T205613Z.log` (the latter is the smoke
   target cycle, not the JCVM runtime cycle).
+
+## 2026-10-31 Unify filesystem tag limits 19 minutes
+
+- Step/experiment: `filesystem-tag-limit-alignment-20261031`
+- When: '2026-10-31 20:59 UTC' - '2026-10-31 21:18 UTC'
+- Change: Extended the Rust OS filesystem record format to support tags through
+  128 bytes using reserved header code 30 plus a length byte, retaining legacy
+  encoding for 1–29-byte tags. Expanded syscall tag buffers to 129 bytes,
+  reject empty and over-128-byte public wrapper tags, and align applet/static
+  ownership checks and filesystem ABI documentation.
+- Validation: Rust OS filesystem suite passed 27/27 (two ignored), covering
+  restart, replacement, erase, malformed lengths and 29/30/128/129 boundaries.
+  Elevated Rust syscall emulator suite passed 4/4, including 128-byte tag I/O
+  and marshaling rejection boundaries. `./tools/build-pc --profile max_crypto`,
+  `PICO2_DEBUG=0 ./tools/build arm --profile max_crypto`, and the equivalent
+  RISC-V wrapper all passed. `git diff --check` passed for task files; repository
+  Rust formatting check could not run because `cargo-fmt` is not installed.
+  No hardware flash was run because Pico uses the separate C++ filesystem path;
+  the changed Rust OS backend is host-emulator-only. Existing upstream Rust
+  warnings remain.
+- Result: Both filesystem backends now accept 1–128-byte tags, with legacy OS
+  records unchanged and extended records validated on read. Syscall marshaling
+  rejects unrepresentable tag lengths instead of panicking or overrunning its
+  buffer.
+- Decision: Close the filesystem tag-limit discrepancy; keep detailed error
+  alignment and host disk-checkpoint durability as open ARCH-02 follow-ups.
+- Commit: OS `52772f1` (`Align OS filesystem tag length with Pico`); root
+  commit pending.
+- Artifacts/logs: No persistent test logs; test and build outputs are ignored
+  under `choupi/os/target` and `build/`.

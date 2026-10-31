@@ -42,7 +42,10 @@ hardware-access, progress and handoff requirements for implementation changes.
   Overlay regression passes; OS filesystem tests pass 22/22 (two ignored), and
   the focused host syscall test passes. PC, ARM, and RISC-V `max_crypto` builds
   pass. PC/Pico discrepancies remain explicit follow-ups:
-  - [ ] Unify the maximum persistent tag length (OS 29 bytes, Pico 128 bytes).
+  - [x] Unify the maximum persistent tag length at 128 bytes. The OS record
+    format uses a reserved header code plus one tag-length byte for 30–128-byte
+    tags; legacy 1–29-byte records retain their original encoding and remain
+    readable. Read/write/restart tests cover 29, 30, 128, and rejected 129.
   - [x] Unify `fs_read` oversized-buffer behavior: OS and Pico both copy the
     available prefix and leave the rest of the destination unchanged.
   - [ ] Define and align detailed filesystem error codes across backends.

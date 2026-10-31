@@ -15,10 +15,12 @@ success convention but do not yet share detailed error codes or all bounds.
   be writable for the documented output size. Pointers must be non-null when
   the corresponding length is nonzero. The FFI does not validate every pointer
   or buffer length; invalid caller memory can fault.
-- The OS filesystem accepts tags of 1–29 bytes. The Pico overlay supports
-  tags of 1–128 bytes. Keep portable callers at 29 bytes or less until this
-  discrepancy is resolved. `fs_next_tag` accepts prefixes through 128 bytes
-  and returns tags in its 129-byte length-prefixed field.
+- Both OS and Pico filesystems accept tags of 1–128 bytes. The OS filesystem
+  retains its original header encoding for tags through 29 bytes; tags of
+  30–128 bytes use the reserved header length code followed by one length byte.
+  Existing OS records remain readable without migration. `fs_next_tag` accepts
+  prefixes through 128 bytes and returns tags in its 129-byte length-prefixed
+  field.
 - The maximum record size is backend and available-storage dependent. Pico
   overlay writes fail if its record-count, byte-capacity, or snapshot limits
   would be exceeded. The OS backend can return `OutOfFlash` after sector
@@ -89,8 +91,6 @@ instead of indexing beyond the record.
 
 ## Known backend discrepancies to close
 
-- Tag maximum: 29 bytes in the OS filesystem versus 128 bytes in the Pico
-  overlay.
 - Detailed errors differ; most Pico errors collapse to `1`.
 - PC `fs_sync()` only reports that the emulator has no separate flush phase;
   it does not persist the emulated flash image to disk.
