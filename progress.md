@@ -18571,3 +18571,36 @@
 - Commit: Root `54bcb3f` (`Centralize VM and transport diagnostic
   declarations`); the SHA is recorded in the progress-only follow-up.
 - Artifacts/logs: No persistent logs; build results are recorded above.
+
+## 2026-10-31 Guard native progress callback reentry 17 minutes
+
+- Step/experiment: `arch-04-native-progress-reentry-20261031`
+- When: '2026-10-31 20:08 UTC' - '2026-10-31 20:25 UTC'
+- Change: Added `NativeProgressGuard` and applied it to TinyUSB servicing from
+  native crypto progress and to CCID message dispatch. Added a focused nested
+  callback regression and documented callback ownership, execution context,
+  event queue behavior, watchdog refresh, and APDU dispatch rules. Updated
+  `TODO.md` with evidence and the remaining hardware gate.
+- Validation: `./tools/test-native-progress-guard` passed 6/6. PC,
+  `PICO2_DEBUG=0` ARM, and RISC-V `max_crypto` builds passed. The first
+  restricted VPCD integration attempt failed with local socket `EPERM`; the
+  required host-access rerun `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-asymm-crypto-vpcd` passed with `TEST:SUMMARY pass=99 fail=0`
+  and `asymmetric_vectors=97`. The installed applet SELECT and all APDU
+  responses completed; VPCD connect took 32.201 seconds. `pcsc_scan -r`
+  listed only two virtual readers, so no Pico hardware check was run.
+  `git diff --check` passed. Existing packed-member and upstream Rust warnings
+  remain; no new target build warnings came from the guard.
+- Result: Nested progress calls cannot recursively pump TinyUSB, and nested
+  CCID task calls cannot dispatch a second APDU. Messages queued during active
+  dispatch remain available to the main loop. The PC backend verifies VM
+  crypto/APDU completion only; Pico watchdog and CCID time-extension behavior
+  remain unverified. TinyUSB drains events until empty, so hostile continuous
+  USB control traffic is not covered by a strict WCET guarantee.
+- Decision: Keep ARCH-04 open until a physical long native operation verifies
+  watchdog service, recurring CCID time extensions, and final APDU completion.
+  Continue with the independent ARCH-05 startup/filesystem split meanwhile.
+- Commit: Implementation SHA will be recorded in the immediate follow-up.
+- Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`
+  SHA-256 `723f9d2d5b55e4cc6e697149f75dd5dc7b7e4a5a7c2d252fdf785f7631b845d6`;
+  generated test image and flash copies are ignored build artifacts.

@@ -1,5 +1,29 @@
 # Session handoff — updated 2026-10-31
 
+## Current ARCH-04 native progress reentry — 2026-10-31
+
+Added `src/native_progress_guard.hpp`; `choupi_ccid_native_crypto_progress()`
+cannot recursively call TinyUSB, and `choupi_ccid_task()` cannot recursively
+dispatch APDUs. `docs/NATIVE_PROGRESS_CALLBACKS.md` records the callback order,
+main-loop/APDU boundary, watchdog ownership and TinyUSB event-drain behavior.
+The focused guard harness passes 6/6. PC, ARM and RISC-V `max_crypto` builds
+pass. The elevated VPCD asymmetric test passes all 97 vectors / 99 total
+checks, including RSA/EC key generation and applet APDU completion; this does
+not exercise Pico callbacks. The only PC/SC readers currently listed are the
+two virtual devices, so the required physical check remains open. Do not claim
+watchdog servicing or CCID time extensions verified until a long native crypto
+APDU is run on Pico and its final response is observed.
+
+The callback's own work is fixed, but TinyUSB's `tud_task()` drains events
+until empty. The active CCID bulk OUT endpoint is not rearmed until the APDU
+response, preventing an ordinary CCID stream from replenishing events during
+the call; continuous control-event flooding is not a strict WCET case covered
+here.
+
+Next: proceed with ARCH-05 (startup/filesystem extraction) in `TODO.md`, while
+keeping the ARCH-04 physical verification gate open. Preserve all unrelated
+worktree edits listed by `git status`.
+
 ## Current ARCH-03 diagnostic declarations — 2026-10-31
 
 Added `src/vm_diagnostics.h` as the authoritative C ABI declaration source for

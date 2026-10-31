@@ -65,6 +65,16 @@ hardware-access, progress and handoff requirements for implementation changes.
   before choosing enforcement. Acceptance: focused reentry checks plus a
   representative long native crypto operation retain CCID time extensions,
   watchdog servicing and correct APDU completion without nested execution.
+  Added `docs/NATIVE_PROGRESS_CALLBACKS.md` and RAII guards preventing nested
+  TinyUSB servicing and nested CCID APDU dispatch. The focused guard test passes
+  six checks; the PC VPCD asymmetric suite passes 97 vectors (including RSA/EC
+  generation and signatures), and PC/ARM/RISC-V `max_crypto` builds pass. PC
+  VPCD does not exercise the Pico progress callback, watchdog, or CCID time
+  extensions. Hardware validation remains open: the current PC/SC scan found
+  only two virtual readers. TinyUSB drains all queued events per `tud_task()`
+  call; active CCID bulk OUT remains unarmed while an APDU runs, bounding
+  compliant CCID traffic, but this is not a strict bound against a hostile
+  stream of USB control events.
 - [ ] **ARCH-05 — Separate Pico startup and filesystem code (moderate).**
   After ARCH-02, extract filesystem/overlay implementation from
   `src/choupi_pico2.cpp` into a focused module; leave boot/hardware initialization

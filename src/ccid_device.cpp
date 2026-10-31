@@ -19,6 +19,7 @@
 #include "reader_led.hpp"
 #include "vm_lifecycle.h"
 #include "vm_diagnostics.h"
+#include "native_progress_guard.hpp"
 
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
@@ -122,6 +123,8 @@ volatile uint8_t debug_recent_command_index = 0;
 volatile uint16_t debug_command_count = 0;
 bool native_operation_active = false;
 bool native_extension_in_flight = false;
+bool ccid_task_active = false;
+bool ccid_progress_active = false;
 uint8_t native_operation_rhport = 0;
 uint8_t native_operation_sequence = 0;
 uint32_t native_last_extension_us = 0;
@@ -1093,6 +1096,8 @@ const usbd_class_driver_t kDriver = {
 } // namespace
 
 extern "C" void choupi_ccid_task(void) {
+  choupi::NativeProgressGuard task_guard(ccid_task_active);
+  if (!task_guard) return;
   if (!message_pending) {
     return;
   }
@@ -1104,6 +1109,8 @@ extern "C" void choupi_ccid_task(void) {
 }
 
 extern "C" void choupi_ccid_native_crypto_progress(void) {
+  choupi::NativeProgressGuard progress_guard(ccid_progress_active);
+  if (!progress_guard) return;
   if (!native_operation_active || ep_in == 0) return;
   const uint32_t now = time_us_32();
   const bool extension_due =
