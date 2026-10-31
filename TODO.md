@@ -142,6 +142,11 @@ out explicitly.
       75 checks, including 1,000 randomized multi-record cuts, 1,000 install
       journal clear cuts, and 1,000 cross-store registry/filesystem header cuts.
       This validates the host model, not physical power loss during heap GC.
+    - [x] Re-run current-source recovery tests on 2026-10-31:
+      `./tools/test-rp2350-fs-overlay` ended with `TEST:SUMMARY fail=0`, and
+      `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed install /
+      commit 3/3 plus restore and four GC-pressure rounds 38/38. These remain
+      host model/emulator checks; the actual USB cold power-cycle gate is open.
     - [ ] Verify recovery after an actual USB power cycle; PC/SC card reset
       does not remove USB power or establish loss-of-power behavior.
       `tools/test-pico-powerup` is read-only; its success marker now says

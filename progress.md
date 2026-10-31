@@ -17406,3 +17406,36 @@
   restart log SHA-256
   `edb76b7e704dd368e59e92ed06be9a9f530432d13fd4852cf541cd036f0e62c9`;
   ARM image at `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.
+
+## 2026-10-31 persistence recovery rerun and hardware availability 6 minutes
+
+- Step/experiment: `persistent-recovery-current-source-audit`
+- When: '2026-10-31 00:34 UTC' - '2026-10-31 00:40 UTC'
+- Change: Revalidated the overlay power-cut model and persistent JCSystem
+  restore/GC workload on current source. Checked physical reader availability
+  through the required host-access path and updated the open recovery status.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with
+  `TEST:SUMMARY fail=0` (including 1,000 randomized filesystem transaction
+  cuts, 1,000 install-journal clear cuts, and 1,000 cross-store header cuts).
+  The restricted first attempt of `./tools/test-vpcd-persistence` failed with
+  `EPERM` creating the local VPCD socket; the elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` rerun passed
+  install/commit 3/3 and fresh-process restore/GC pressure 38/38 over four
+  rounds. `./tools/doctor` passed. Two USB CCID devices enumerate and the
+  approved access helper grants pcscd access to both, but bounded
+  `pcsc_scan -r` times out without readers. No physical APDU, flash, or actual
+  USB power-cycle test occurred.
+- Result: Simulated interruption and emulator restart recovery remain green on
+  current source. Physical recovery evidence is still absent because PC/SC
+  cannot expose either enumerated USB reader.
+- Decision: Keep persistent deletion disabled until real USB cold-power
+  recovery passes; continue on independent implementation and test gaps.
+- Commit: pending.
+- Artifacts/logs: install log SHA-256
+  `48da283414541d4009d434c8fb5141117ae519259ed5b5a8f9fbc0f550986b57`;
+  install emulator SHA-256
+  `ff645ed3339e680415a57245369da0c3a2c4844e6a3dc8668ae76c0ee13c511e`;
+  restore log SHA-256
+  `1d28ae265a57d53368e6b38ffcd3cf9860c08e45c99fd312fd8bc615ed1e259e`;
+  restore emulator SHA-256
+  `ed9f8eb603185e8e4b10feee5aae86eabf37eb3b541b46744221e288e6f2495c`.

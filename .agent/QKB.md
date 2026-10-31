@@ -72,6 +72,23 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   restart log SHA-256:
   `70abcfd61bb9c04c5008edd6cc0a54fb4da9cbf58dc598c3b3278cb36c53a711`.
 
+## Current-source persistence rerun and physical PC/SC visibility — 2026-10-31
+
+- `./tools/test-rp2350-fs-overlay` passes with `TEST:SUMMARY fail=0`, including
+  1,000 randomized filesystem transaction cuts, 1,000 install-journal clear
+  cuts, and 1,000 cross-store header cuts. This is host fault-injection, not a
+  physical loss-of-USB-power test.
+- The restricted first attempt of `./tools/test-vpcd-persistence` failed with
+  `EPERM` creating its local VPCD socket. Rerunning as
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` through elevated host
+  access passed install/commit 3/3 and fresh-process restore/GC stress 38/38
+  over four GC-pressure rounds. It remains PC VPCD evidence only.
+- `lsusb -d 2e8a:` sees Pico2 JCVM CCID readers at USB nodes `001/015` and
+  `001/017`. `sudo -n /usr/local/sbin/pico2-pcsc-reader` reports
+  `ACCESS_GRANTED count=2`; `pcscd.service` is active. Despite this, bounded
+  `timeout 8s pcsc_scan -r` exits 124 with no reader output, including after
+  access refresh. No physical APDU, flash, or cold-power test was performed.
+
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 
 - The parser now cross-checks each external remote-interface reference's

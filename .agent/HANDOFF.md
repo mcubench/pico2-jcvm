@@ -60,6 +60,19 @@ The official SDK client log is
 Next: resume persistent-object reclamation and cold USB power-cycle recovery.
 Implementation commit: `1741120`.
 
+## Persistence safety validation and physical reader state — 2026-10-31
+
+Current-source recovery checks pass offline: `./tools/test-rp2350-fs-overlay`
+ends with `TEST:SUMMARY fail=0`; the elevated host-access VPCD persistence run
+passes install/commit 3/3 and fresh-process restore/GC pressure 38/38 over four
+rounds. These do not establish USB power-loss recovery. Two Pico2 JCVM CCID
+devices enumerate as USB `2e8a:0009` at nodes 001/015 and 001/017, and the
+approved reader helper grants pcscd access to both. `pcscd` is active, but
+bounded `pcsc_scan -r` still times out without readers. No physical APDU or
+flash was possible. Continue offline with remaining independent work; do not
+enable persistent-object deletion until actual cold USB power-cycle recovery
+has been verified.
+
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 
 CAP 2.2 external remote-interface references now validate their seven-bit
