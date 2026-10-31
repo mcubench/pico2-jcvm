@@ -1,5 +1,27 @@
 # Session handoff — updated 2026-10-31
 
+## Current filesystem error-code parity — 2026-10-31
+
+Defined shared C ABI filesystem statuses: `0` success, `1` OutOfFlash, `2`
+NoSuchTag, `3` InvalidLengthForTag, `0x81` locked flash, `0x82` out-of-bounds,
+and `0x83` unknown flash/snapshot I/O. Pico now distinguishes those conditions
+for reads, writes, erases, typed access, prefix erase, and sync. Typed 2/4-byte
+offset arithmetic rejects overflow before scaling. OS `edit_at` validates tag
+and bounds before removing a record, and OS prefix erase now accepts the shared
+128-byte maximum. `fs_exists`, `fs_next_tag`, and `fs_init` keep their distinct
+contracts. The mapping is documented in `docs/FILESYSTEM_ABI.md`.
+
+Validation: overlay and power-cut harness passes `TEST:SUMMARY fail=0`, with
+new checks for missing/invalid/oversized tags, bounds, overflow, capacity
+exhaustion, and injected snapshot I/O failure. Rust OS filesystem tests pass
+28/28 (two ignored), syscall emulator tests 4/4, and the FFI status table test
+passes. PC, ARM, and RISC-V `max_crypto` wrapper builds pass. Existing upstream
+Rust and packed-member warnings remain. No hardware flash was run; this step's
+storage behavior is exercised in the overlay harness and OS emulator.
+
+Implementation commits are pending; update this section after committing.
+Next: continue the remaining filesystem durability and JCVM acceptance items.
+
 ## Current filesystem ABI alignment — 128-byte tags
 
 Aligned the OS Rust filesystem with Pico's 128-byte tag capacity. OS records

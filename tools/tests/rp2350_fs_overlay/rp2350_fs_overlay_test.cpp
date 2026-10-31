@@ -215,11 +215,51 @@ int main() {
   expect(fs_init() == 0, "filesystem_initializes");
 
   constexpr uint8_t reusable_tag[] = {0xa0, 0x01, 0x02};
+  constexpr uint8_t missing_tag[] = {0xa0, 0x01, 0xfe};
   constexpr uint8_t first_value[] = {0x10, 0x20, 0x30};
   uint8_t actual[3]{};
+  uint32_t missing_length = 0;
+  const uint8_t *missing_data = nullptr;
+  expect(fs_read(missing_tag, sizeof(missing_tag), actual, sizeof(actual)) ==
+                 FS_STATUS_NO_SUCH_TAG &&
+             fs_length(missing_tag, sizeof(missing_tag), &missing_length) ==
+                 FS_STATUS_NO_SUCH_TAG &&
+             fs_read_inplace(missing_tag, sizeof(missing_tag), &missing_data,
+                             &missing_length) == FS_STATUS_NO_SUCH_TAG &&
+             fs_erase(missing_tag, sizeof(missing_tag)) ==
+                 FS_STATUS_NO_SUCH_TAG,
+         "missing_records_use_shared_status");
+  expect(fs_read(reusable_tag, 0, actual, sizeof(actual)) ==
+                 FS_STATUS_INVALID_TAG_LENGTH &&
+             fs_write(reusable_tag, 0, first_value, sizeof(first_value)) ==
+                 FS_STATUS_INVALID_TAG_LENGTH &&
+             fs_erase(reusable_tag, 0) == FS_STATUS_INVALID_TAG_LENGTH &&
+             fs_erase_prefix(reusable_tag, 0) ==
+                 FS_STATUS_INVALID_TAG_LENGTH,
+         "invalid_tag_lengths_use_shared_status");
+  std::array<uint8_t, 129> oversized_tag{};
+  expect(fs_read(oversized_tag.data(), oversized_tag.size(), actual,
+                 sizeof(actual)) == FS_STATUS_INVALID_TAG_LENGTH &&
+             fs_write(oversized_tag.data(), oversized_tag.size(), first_value,
+                      sizeof(first_value)) == FS_STATUS_INVALID_TAG_LENGTH &&
+             fs_erase(oversized_tag.data(), oversized_tag.size()) ==
+                 FS_STATUS_INVALID_TAG_LENGTH,
+         "oversized_tags_use_shared_status");
   expect(fs_write(reusable_tag, sizeof(reusable_tag), first_value,
-                  sizeof(first_value)) == 0,
+                  sizeof(first_value)) == FS_STATUS_OK,
          "write_before_erase");
+  expect(fs_read_1b_at(reusable_tag, sizeof(reusable_tag),
+                       sizeof(first_value), actual) ==
+                 FS_STATUS_IO_OUT_OF_BOUNDS &&
+             fs_write_1b_at(reusable_tag, sizeof(reusable_tag),
+                            sizeof(first_value), first_value[0]) ==
+                 FS_STATUS_IO_OUT_OF_BOUNDS &&
+             fs_read_2b_at(reusable_tag, sizeof(reusable_tag), UINT32_MAX,
+                           reinterpret_cast<uint16_t *>(actual)) ==
+                 FS_STATUS_IO_OUT_OF_BOUNDS &&
+             fs_write_4b_at(reusable_tag, sizeof(reusable_tag), UINT32_MAX,
+                            0) == FS_STATUS_IO_OUT_OF_BOUNDS,
+         "typed_access_uses_shared_out_of_bounds_status");
   const uint8_t *borrowed_data = nullptr;
   uint32_t borrowed_length = 0;
   expect(fs_read_inplace(reusable_tag, sizeof(reusable_tag), &borrowed_data,
@@ -656,7 +696,7 @@ int main() {
     journal_cut_state ^= journal_cut_state << 5;
     const size_t cut = journal_cut_state % cleared_snapshot_mutations;
     reset_flash_failure(cut);
-    const bool interrupted = fs_sync() != 0;
+    const bool interrupted = fs_sync() == FS_STATUS_IO_UNKNOWN;
     reset_flash_failure();
     if (!interrupted || fs_init() != 0) {
       journal_clear_recovers_atomically = false;
@@ -878,7 +918,7 @@ int main() {
     const size_t cut =
         journal_creation_cut_state % journal_creation_mutations;
     reset_flash_failure(cut);
-    const bool interrupted = fs_sync() != 0;
+    const bool interrupted = fs_sync() == FS_STATUS_IO_UNKNOWN;
     reset_flash_failure();
     if (!interrupted || !cap_store_initialize() || fs_init() != 0) {
       journal_creation_atomic = false;
@@ -1462,9 +1502,10 @@ int main() {
   for (uint32_t value = 0; value <= 0xffff; ++value) {
     const std::array<uint8_t, 3> tag = {
         0xb1, static_cast<uint8_t>(value >> 8), static_cast<uint8_t>(value)};
-    if (fs_write(tag.data(), tag.size(), fill_payload.data(),
-                 fill_payload.size()) != 0) {
-      overlay_capacity_reached = true;
+    const uint8_t status = fs_write(tag.data(), tag.size(), fill_payload.data(),
+                                    fill_payload.size());
+    if (status != FS_STATUS_OK) {
+      overlay_capacity_reached = status == FS_STATUS_OUT_OF_FLASH;
       break;
     }
   }

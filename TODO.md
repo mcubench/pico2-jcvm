@@ -48,7 +48,15 @@ hardware-access, progress and handoff requirements for implementation changes.
     readable. Read/write/restart tests cover 29, 30, 128, and rejected 129.
   - [x] Unify `fs_read` oversized-buffer behavior: OS and Pico both copy the
     available prefix and leave the rest of the destination unchanged.
-  - [ ] Define and align detailed filesystem error codes across backends.
+  - [x] Define and align detailed filesystem error codes across backends.
+    Both OS FFI and Pico use `0` success, `1` out of flash, `2` missing tag,
+    `3` invalid tag length, `0x81` locked flash, `0x82` out-of-bounds typed
+    offset, and `0x83` unknown flash/snapshot I/O. Pico now returns precise
+    statuses for reads, writes, erase, typed access, sync, and invalid tags;
+    OS bounds edits reject without modifying the record. `fs_exists`,
+    `fs_next_tag`, and `fs_init` retain their documented special contracts.
+    Overlay fault/capacity tests, OS filesystem and syscall suites, and PC/ARM/
+    RISC-V max_crypto builds pass. Disk checkpoint durability remains open.
   - [ ] Define a disk-checkpoint durability contract for PC emulator memory;
     current `fs_sync()` is a no-op and persistence depends on VPCD sidecar flow.
 - [x] **ARCH-03 — Consolidate diagnostic declarations (small).**

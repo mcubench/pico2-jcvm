@@ -2,8 +2,8 @@
 
 This document records the current `fs_*` contract used by the VM and loader.
 The PC emulator delegates record operations to the CHOUPI OS filesystem; Pico
-uses the bounded filesystem overlay in `src/pico_filesystem.cpp`. They share the
-success convention but do not yet share detailed error codes or all bounds.
+uses the bounded filesystem overlay in `src/pico_filesystem.cpp`. Filesystem
+status-returning operations use the same error codes on both backends.
 
 ## Call and buffer rules
 
@@ -18,9 +18,9 @@ success convention but do not yet share detailed error codes or all bounds.
 - Both OS and Pico filesystems accept tags of 1–128 bytes. The OS filesystem
   retains its original header encoding for tags through 29 bytes; tags of
   30–128 bytes use the reserved header length code followed by one length byte.
-  Existing OS records remain readable without migration. `fs_next_tag` accepts
-  prefixes through 128 bytes and returns tags in its 129-byte length-prefixed
-  field.
+  Existing OS records remain readable without migration. `fs_erase_prefix()`
+  and `fs_next_tag()` accept prefixes through 128 bytes; `fs_next_tag()` returns
+  tags in its 129-byte length-prefixed field.
 - The maximum record size is backend and available-storage dependent. Pico
   overlay writes fail if its record-count, byte-capacity, or snapshot limits
   would be exceeded. The OS backend can return `OutOfFlash` after sector
@@ -28,9 +28,28 @@ success convention but do not yet share detailed error codes or all bounds.
 
 ## Return values
 
-`0` means success for operations that return status. `fs_exists` is special:
-it returns `1` when present and `0` when absent. `fs_next_tag` returns `0` for
-a result, `1` at end, and `2` for invalid request/cursor state. Its cursor is
+For `fs_read`, `fs_write`, `fs_erase`, `fs_length`, `fs_read_inplace`, typed
+offset access, prefix erase, and `fs_sync`, the status values are:
+
+| Status | Meaning |
+| --- | --- |
+| `0` | Success |
+| `1` | Not enough filesystem capacity (`OutOfFlash`) |
+| `2` | Tag does not exist (`NoSuchTag`) |
+| `3` | Invalid tag or prefix length |
+| `0x81` | Flash region is locked |
+| `0x82` | Typed offset is out of range or overflowed |
+| `0x83` | Other flash or snapshot I/O failure |
+
+The OS filesystem maps unknown flash-controller error details to `0x83`; Pico
+reports the same code when snapshot persistence fails without a more specific
+cause. A function returns only the codes that apply to it: capacity errors are
+returned by mutations, missing-tag errors by lookup/read/erase operations, and
+out-of-bounds errors by typed offset operations. `fs_init()` has a separate
+initialization status contract: zero means success and any nonzero result means
+initialization failed. `fs_exists()` is special: it returns `1` when present
+and `0` when absent, including invalid tags. `fs_next_tag()` returns `0` for a
+result, `1` at end, and `2` for invalid request/cursor state. Its cursor is
 invalid after any filesystem mutation and must be restarted from zero.
 
 For `fs_read`, both backends copy `min(requested_length, record_length)` bytes
@@ -40,11 +59,9 @@ Scalar reads and writes use byte offsets for 1-byte operations and element
 indexes for 2- and 4-byte operations. Reads/writes outside the record fail;
 integer overflow in scaled offsets is rejected.
 
-On Pico, most filesystem errors collapse to status `1`. On PC, operations
-using the OS filesystem return `1` for out of flash, `2` for missing tags, `3`
-for invalid tag length, and `0x80 | flash_error` for flash I/O errors. Thus a
-nonzero result is portable failure; its exact meaning is not. `fs_next_tag`
-uses its separate 0/1/2 status contract.
+The PC emulator's `fs_sync()` is a no-op and returns zero; Pico maps snapshot
+write failures to `0x83`. `fs_next_tag()` and `fs_exists()` use their separate
+result conventions above.
 
 ## `fs_read_inplace` ownership and lifetime
 
@@ -91,7 +108,6 @@ instead of indexing beyond the record.
 
 ## Known backend discrepancies to close
 
-- Detailed errors differ; most Pico errors collapse to `1`.
 - PC `fs_sync()` only reports that the emulator has no separate flush phase;
   it does not persist the emulated flash image to disk.
 

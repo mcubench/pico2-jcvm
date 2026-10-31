@@ -944,29 +944,38 @@ bool find_file(const uint8_t *tag, uint8_t tag_length,
   return find_rom_file(tag, tag_length, data, length);
 }
 
-bool write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
-              const uint8_t *data, uint32_t length) {
+uint8_t validate_tag(const uint8_t *tag, uint8_t tag_length) {
+  return tag != nullptr && tag_length != 0 &&
+                 tag_length <= kMaxOverlayTagLength
+             ? FS_STATUS_OK
+             : FS_STATUS_INVALID_TAG_LENGTH;
+}
+
+uint8_t write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
+                 const uint8_t *data, uint32_t length) {
+  const uint8_t tag_status = validate_tag(tag, tag_length);
+  if (tag_status != FS_STATUS_OK) return tag_status;
   const uint8_t *existing = nullptr;
   uint32_t existing_length = 0;
   if (!find_file(tag, tag_length, &existing, &existing_length)) {
     report_fs_write_rejection("missing-record", tag, tag_length, offset,
                               length, 0);
-    return false;
+    return FS_STATUS_NO_SUCH_TAG;
   }
   if (offset > existing_length || length > existing_length - offset) {
     report_fs_write_rejection("out-of-range", tag, tag_length, offset,
                               length, existing_length);
-    return false;
+    return FS_STATUS_IO_OUT_OF_BOUNDS;
   }
   auto *file = find_overlay(tag, tag_length);
   if (file != nullptr) {
     if (file->size != existing_length) {
       report_fs_write_failure("update-size", tag, tag_length, existing_length);
-      return false;
+      return FS_STATUS_IO_UNKNOWN;
     }
     std::memcpy(overlay_data(*file) + offset, data, length);
     overlay_dirty = true;
-    return true;
+    return FS_STATUS_OK;
   }
 
   const size_t record_key_length = encoded_tag_length(tag, tag_length);
@@ -974,23 +983,23 @@ bool write_at(const uint8_t *tag, uint8_t tag_length, uint32_t offset,
           overlay_file_count + (file == nullptr ? 1u : 0u),
           overlay_bytes_used + 1 + record_key_length + existing_length)) {
     report_fs_write_failure("update", tag, tag_length, existing_length);
-    return false;
+    return FS_STATUS_OUT_OF_FLASH;
   }
   file = allocate_overlay(tag, tag_length);
   if (file == nullptr) {
     report_fs_write_rejection("index-full", tag, tag_length, offset, length,
                               existing_length);
-    return false;
+    return FS_STATUS_OUT_OF_FLASH;
   }
   set_overlay_offset(*file, static_cast<uint32_t>(overlay_bytes_used));
   if (!append_overlay(*file, tag, existing, existing_length)) {
     report_fs_write_rejection("overlay-capacity", tag, tag_length, offset,
                               length, existing_length);
-    return false;
+    return FS_STATUS_OUT_OF_FLASH;
   }
   std::memcpy(overlay_data(*file) + offset, data, length);
   overlay_dirty = true;
-  return true;
+  return FS_STATUS_OK;
 }
 
 void set_path(uint8_t (*tag)[128], uint8_t *length,
@@ -1076,13 +1085,14 @@ extern "C" uint8_t fs_init(void) {
 }
 
 extern "C" uint8_t fs_sync(void) {
-  if (choupi_persistent_write_transaction_active() != 0) return 0;
-  return persist_overlay() ? 0 : 1;
+  if (choupi_persistent_write_transaction_active() != 0) return FS_STATUS_OK;
+  return persist_overlay() ? FS_STATUS_OK : FS_STATUS_IO_UNKNOWN;
 }
 
 extern "C" void fs_drop(void) { (void)fs_sync(); }
 
 extern "C" uint8_t fs_exists(const uint8_t *tag, uint8_t tag_length) {
+  if (validate_tag(tag, tag_length) != FS_STATUS_OK) return 0;
   const uint8_t *data = nullptr;
   uint32_t length = 0;
   return find_file(tag, tag_length, &data, &length) ? 1 : 0;
@@ -1128,31 +1138,41 @@ extern "C" uint8_t fs_next_tag(const uint8_t *prefix, uint8_t prefix_length,
 
 extern "C" uint8_t fs_length(const uint8_t *tag, uint8_t tag_length,
                               uint32_t *length) {
+  const uint8_t tag_status = validate_tag(tag, tag_length);
+  if (tag_status != FS_STATUS_OK) return tag_status;
   const uint8_t *data = nullptr;
-  return find_file(tag, tag_length, &data, length) ? 0 : 1;
+  return find_file(tag, tag_length, &data, length) ? FS_STATUS_OK
+                                                   : FS_STATUS_NO_SUCH_TAG;
 }
 
 extern "C" uint8_t fs_read_inplace(const uint8_t *tag, uint8_t tag_length,
                                    const uint8_t **data, uint32_t *length) {
-  return find_file(tag, tag_length, data, length) ? 0 : 1;
+  const uint8_t tag_status = validate_tag(tag, tag_length);
+  if (tag_status != FS_STATUS_OK) return tag_status;
+  return find_file(tag, tag_length, data, length) ? FS_STATUS_OK
+                                                  : FS_STATUS_NO_SUCH_TAG;
 }
 
 extern "C" uint8_t fs_read(const uint8_t *tag, uint8_t tag_length,
                            uint8_t *destination, uint32_t length) {
+  const uint8_t tag_status = validate_tag(tag, tag_length);
+  if (tag_status != FS_STATUS_OK) return tag_status;
   const uint8_t *source = nullptr;
   uint32_t source_length = 0;
   if (!find_file(tag, tag_length, &source, &source_length)) {
-    return 1;
+    return FS_STATUS_NO_SUCH_TAG;
   }
   const uint32_t copy_length = std::min(length, source_length);
   if (copy_length != 0) {
     std::memcpy(destination, source, copy_length);
   }
-  return 0;
+  return FS_STATUS_OK;
 }
 
 extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
                             const uint8_t *data, uint32_t length) {
+  const uint8_t tag_status = validate_tag(tag, tag_length);
+  if (tag_status != FS_STATUS_OK) return tag_status;
   auto *file = find_overlay(tag, tag_length);
   const size_t old_record_size =
       file == nullptr ? 0 : 1 + stored_tag_length(*file) + file->size;
@@ -1166,17 +1186,17 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
   if (!filesystem_payload_fits(new_file_count, new_bytes_used) ||
       (file == nullptr && overlay_file_count == kMaxOverlayFiles)) {
     report_fs_write_failure("new", tag, tag_length, length);
-    return 1;
+    return FS_STATUS_OUT_OF_FLASH;
   }
   if (file == nullptr) {
     file = allocate_overlay(tag, tag_length);
   }
   if (file == nullptr || !append_overlay(*file, tag, data, length)) {
     report_fs_write_failure("new", tag, tag_length, length);
-    return 1;
+    return FS_STATUS_OUT_OF_FLASH;
   }
   overlay_dirty = true;
-  return 0;
+  return FS_STATUS_OK;
 }
 
 #ifdef RP2350_FS_OVERLAY_TEST
@@ -1196,12 +1216,12 @@ extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
 
 namespace {
 uint8_t erase_overlay_slot(uint16_t slot) {
-  if (slot >= kMaxOverlayFiles) return 1;
+  if (slot >= kMaxOverlayFiles) return FS_STATUS_IO_UNKNOWN;
   auto &file = overlay[slot];
   if (!overlay_is_used(file) || !overlay_has_record(file) ||
       !overlay_has_storage(file) ||
       overlay_offset(file) >= overlay_bytes_used) {
-    return 1;
+    return FS_STATUS_IO_UNKNOWN;
   }
 
   // Re-encode the existing key bytes verbatim. In particular, a compressed
@@ -1213,9 +1233,10 @@ uint8_t erase_overlay_slot(uint16_t slot) {
   const uint8_t key_header = overlay_bytes[file_offset];
   const size_t key_length = key_header & 0x7f;
   const size_t old_record_size = 1 + key_length + file.size;
-  if (old_record_size > overlay_bytes_used - file_offset) return 1;
+  if (old_record_size > overlay_bytes_used - file_offset)
+    return FS_STATUS_IO_UNKNOWN;
   uint8_t encoded_key[128]{};
-  if (key_length + 1 > sizeof(encoded_key)) return 1;
+  if (key_length + 1 > sizeof(encoded_key)) return FS_STATUS_IO_UNKNOWN;
   std::memcpy(encoded_key, overlay_bytes + file_offset, key_length + 1);
 
   const size_t old_offset = file_offset;
@@ -1239,28 +1260,31 @@ uint8_t erase_overlay_slot(uint16_t slot) {
   file.size = 0;
   file.flags |= kOverlayHasRecord | kOverlayDeleted | kOverlaySerialized;
   overlay_dirty = true;
-  return 0;
+  return FS_STATUS_OK;
 }
 } // namespace
 
 extern "C" uint8_t fs_erase(const uint8_t *tag, uint8_t tag_length) {
+  const uint8_t tag_status = validate_tag(tag, tag_length);
+  if (tag_status != FS_STATUS_OK) return tag_status;
   auto *file = find_overlay(tag, tag_length);
   if (file == nullptr) {
     const uint8_t *ignored_data = nullptr;
     uint32_t ignored_length = 0;
     if (!find_file(tag, tag_length, &ignored_data, &ignored_length)) {
-      return 1;
+      return FS_STATUS_NO_SUCH_TAG;
     }
     file = allocate_overlay(tag, tag_length);
     if (file == nullptr) {
-      return 1;
+      return FS_STATUS_OUT_OF_FLASH;
     }
-    if (!append_overlay(*file, tag, nullptr, 0)) return 1;
+    if (!append_overlay(*file, tag, nullptr, 0))
+      return FS_STATUS_OUT_OF_FLASH;
     file->flags |= kOverlayHasRecord | kOverlayDeleted;
     overlay_dirty = true;
-    return 0;
+    return FS_STATUS_OK;
   } else if (!overlay_has_record(*file)) {
-    return 1;
+    return FS_STATUS_NO_SUCH_TAG;
   }
 
   return erase_overlay_slot(static_cast<uint16_t>(file - overlay));
@@ -1307,7 +1331,7 @@ uint8_t erase_overlay_records(Match matches) {
                       static_cast<unsigned>(length));
           std::fflush(stdout);
 #endif
-          return 1;
+          return FS_STATUS_IO_UNKNOWN;
         }
         if (erase_overlay_slot(slot) != 0) {
 #ifndef RP2350_FS_OVERLAY_TEST
@@ -1323,7 +1347,7 @@ uint8_t erase_overlay_records(Match matches) {
           std::printf("\r\n");
           std::fflush(stdout);
 #endif
-          return 1;
+          return FS_STATUS_IO_UNKNOWN;
         }
       }
     }
@@ -1334,10 +1358,8 @@ uint8_t erase_overlay_records(Match matches) {
 
 extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
                                     uint8_t prefix_length) {
-  if (prefix == nullptr || prefix_length == 0 ||
-      prefix_length > kMaxOverlayTagLength) {
-    return 1;
-  }
+  const uint8_t prefix_status = validate_tag(prefix, prefix_length);
+  if (prefix_status != FS_STATUS_OK) return prefix_status;
   return erase_overlay_records([prefix, prefix_length](const uint8_t *tag,
                                                         uint8_t length) {
     return length >= prefix_length &&
@@ -1396,66 +1418,76 @@ extern "C" const uint8_t *choupi_cap_store_data_for_package(
 
 extern "C" uint8_t fs_read_1b_at(const uint8_t *tag, uint8_t tag_length,
                                  uint32_t offset, uint8_t *value) {
+  const uint8_t tag_status = validate_tag(tag, tag_length);
+  if (tag_status != FS_STATUS_OK) return tag_status;
   const uint8_t *data = nullptr;
   uint32_t length = 0;
-  if (!find_file(tag, tag_length, &data, &length) || offset >= length) {
-    return 1;
-  }
+  if (!find_file(tag, tag_length, &data, &length))
+    return FS_STATUS_NO_SUCH_TAG;
+  if (offset >= length) return FS_STATUS_IO_OUT_OF_BOUNDS;
   *value = data[offset];
-  return 0;
+  return FS_STATUS_OK;
 }
 
 extern "C" uint8_t fs_read_2b_at(const uint8_t *tag, uint8_t tag_length,
                                  uint32_t offset, uint16_t *value) {
+  const uint8_t tag_status = validate_tag(tag, tag_length);
+  if (tag_status != FS_STATUS_OK) return tag_status;
+  if (offset > UINT32_MAX / 2u) return FS_STATUS_IO_OUT_OF_BOUNDS;
   const uint8_t *data = nullptr;
   uint32_t length = 0;
   offset *= 2;
-  if (!find_file(tag, tag_length, &data, &length) || offset > length ||
-      length - offset < 2) {
-    return 1;
-  }
+  if (!find_file(tag, tag_length, &data, &length))
+    return FS_STATUS_NO_SUCH_TAG;
+  if (offset > length || length - offset < 2)
+    return FS_STATUS_IO_OUT_OF_BOUNDS;
   *value = static_cast<uint16_t>(data[offset]) |
            static_cast<uint16_t>(data[offset + 1] << 8);
-  return 0;
+  return FS_STATUS_OK;
 }
 
 extern "C" uint8_t fs_read_4b_at(const uint8_t *tag, uint8_t tag_length,
                                  uint32_t offset, uint32_t *value) {
+  const uint8_t tag_status = validate_tag(tag, tag_length);
+  if (tag_status != FS_STATUS_OK) return tag_status;
+  if (offset > UINT32_MAX / 4u) return FS_STATUS_IO_OUT_OF_BOUNDS;
   const uint8_t *data = nullptr;
   uint32_t length = 0;
   offset *= 4;
-  if (!find_file(tag, tag_length, &data, &length) || offset > length ||
-      length - offset < 4) {
-    return 1;
-  }
+  if (!find_file(tag, tag_length, &data, &length))
+    return FS_STATUS_NO_SUCH_TAG;
+  if (offset > length || length - offset < 4)
+    return FS_STATUS_IO_OUT_OF_BOUNDS;
   *value = static_cast<uint32_t>(data[offset]) |
            (static_cast<uint32_t>(data[offset + 1]) << 8) |
            (static_cast<uint32_t>(data[offset + 2]) << 16) |
            (static_cast<uint32_t>(data[offset + 3]) << 24);
-  return 0;
+  return FS_STATUS_OK;
 }
 
 extern "C" uint8_t fs_write_1b_at(const uint8_t *tag, uint8_t tag_length,
                                   uint32_t offset, uint8_t value) {
-  return write_at(tag, tag_length, offset, &value, sizeof(value)) ? 0 : 1;
+  return write_at(tag, tag_length, offset, &value, sizeof(value));
 }
 
 extern "C" uint8_t fs_write_2b_at(const uint8_t *tag, uint8_t tag_length,
                                   uint32_t offset, uint16_t value) {
+  if (offset > UINT32_MAX / 2u) return FS_STATUS_IO_OUT_OF_BOUNDS;
   offset *= 2;
   const uint8_t bytes[] = {static_cast<uint8_t>(value),
                            static_cast<uint8_t>(value >> 8)};
-  return write_at(tag, tag_length, offset, bytes, sizeof(bytes)) ? 0 : 1;
+  return write_at(tag, tag_length, offset, bytes, sizeof(bytes));
 }
 
 extern "C" uint8_t fs_write_4b_at(const uint8_t *tag, uint8_t tag_length,
                                   uint32_t offset, uint32_t value) {
+  if (offset > UINT32_MAX / 4u) return FS_STATUS_IO_OUT_OF_BOUNDS;
   offset *= 4;
   const uint8_t bytes[] = {static_cast<uint8_t>(value),
                            static_cast<uint8_t>(value >> 8),
                            static_cast<uint8_t>(value >> 16),
                            static_cast<uint8_t>(value >> 24)};
-  return write_at(tag, tag_length, offset, bytes, sizeof(bytes)) ? 0 : 1;
+  return write_at(tag, tag_length, offset, bytes, sizeof(bytes));
 }
 
 extern "C" void path_package_list(uint8_t (*tag)[128], uint8_t *length) {

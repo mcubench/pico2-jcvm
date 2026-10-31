@@ -2748,3 +2748,19 @@ original terminology/status; check current summary and later fixes before reuse.
   encoded lengths, and 128-byte syscall I/O. PC/ARM/RISC-V max_crypto wrapper
   builds pass. Keep old record compatibility; do not reinterpret any old valid
   header as an extended tag because code 30 was previously rejected.
+
+## Filesystem error-code parity — 2026-10-31
+
+- Pico previously collapsed missing tags, invalid lengths, out-of-range typed
+  access, overlay capacity failures, and snapshot I/O failures into status `1`.
+  This made cross-backend diagnostics ambiguous and hid an offset multiplication
+  overflow in Pico typed reads/writes.
+- Viable fix: use the OS FFI's established codes in Pico: `1` OutOfFlash, `2`
+  NoSuchTag, `3` InvalidLengthForTag, `0x81` locked flash, `0x82` out-of-bounds,
+  and `0x83` unknown flash/snapshot I/O. Preserve separate `fs_exists`,
+  `fs_next_tag`, and `fs_init` contracts. Check typed offset multiplication
+  before scaling. OS `edit_at` must validate bounds before removing the record
+  from its index; otherwise an invalid update can panic or lose it.
+- Verification: Pico overlay fault/capacity tests, Rust OS filesystem and
+  syscall tests, and PC/ARM/RISC-V max_crypto builds passed. Keep this code table
+  synchronized if either backend adds an error class.

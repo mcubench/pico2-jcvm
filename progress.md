@@ -18730,3 +18730,32 @@
   `23ab3b1` (`Align OS filesystem tag capacity with Pico`).
 - Artifacts/logs: No persistent test logs; test and build outputs are ignored
   under `choupi/os/target` and `build/`.
+
+## 2026-10-31 Align filesystem error statuses 16 minutes
+
+- Step/experiment: `filesystem-error-code-alignment-20261031`
+- When: '2026-10-31 21:18 UTC' - '2026-10-31 21:34 UTC'
+- Change: Defined a shared C ABI status table and aligned the Pico overlay with
+  the OS FFI for missing tags, invalid tag lengths, out-of-flash, typed bounds,
+  and unknown flash/snapshot failures. Added checked 2/4-byte offset scaling,
+  made OS edits validate their ranges before removing indexed records, and
+  aligned OS prefix erase bounds to 128 bytes. Updated ABI docs, TODO, QKB,
+  handoff, and overlay/OS regressions.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with
+  `TEST:SUMMARY fail=0`, including new shared-code checks for missing, empty,
+  oversized, out-of-range, overflow, capacity, and injected sync failures.
+  Rust OS filesystem tests passed 28/28 (two ignored); syscall emulator tests
+  passed 4/4 with ptrace access; the Rust FFI status-table test passed 1/1.
+  `./tools/build-pc --profile max_crypto`, ARM, and RISC-V max_crypto wrappers
+  passed. `git diff --check` passed for changed task files. Existing upstream
+  Rust and packed-member warnings remain. No physical flash was run; the Pico
+  storage behavior is covered by the fake-flash overlay integration harness.
+- Result: OS and Pico now expose consistent filesystem error classes through
+  the C ABI while preserving the special `fs_exists`, `fs_next_tag`, and
+  `fs_init` conventions.
+- Decision: Close detailed filesystem status parity. Keep PC emulator disk
+  checkpoint durability as the remaining ARCH-02 discrepancy.
+- Commit: OS `7362164` (`Align filesystem error statuses across backends`);
+  root commit pending.
+- Artifacts/logs: No persistent logs; test and build outputs are ignored under
+  `build/` and `choupi/os/target/`.
