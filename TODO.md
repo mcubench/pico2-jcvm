@@ -1842,6 +1842,15 @@ rollback and duplicate/invalid registration handling also remain unverified.
   validation.
 - [ ] Complete remaining GET STATUS / GET DATA behavior, including accurate
   package and applet lifecycle state.
+  - [x] Bind `P2=03` continuation to the preceding GET STATUS P1/search query
+    in both the Pico CCID handler and PC VPCD. A changed category or AID search
+    returns `6985`; a matching continuation still succeeds. The PC VPCD
+    multipackage suite passes 39/39, and on physical Pico 2
+    `2BED26ED20556535` GPPro observed `9000` for the first query, `6985` for
+    category and search mismatches, then `9000` for the unchanged continuation.
+    ARM/RISC-V max-profile builds and a full ARM flash/runtime cycle pass.
+    Physical monitor showed repeated `TEST:PASS choupi_runtime`; PC/SC remained
+    registered after the sequence.
   GET DATA for Card Recognition Data (`0066`) and CPLC (`9F7F`) is implemented
   in the Pico CCID handler and PC VPCD; `./tools/test-gp-get-data` passes 14/14
   exact-TLV, status-word, unknown-tag, and output-capacity checks. Fresh-state

@@ -262,6 +262,27 @@ int main() {
   expect(gp::validate_get_status_next(true, 0x08, wildcard_search,
                                       sizeof(wildcard_search)) == 0x6a86,
          "reject_next_with_unsupported_category");
+
+  constexpr uint8_t exact_search[] = {0x4f, 0x05, 0x4a, 0x43, 0x41,
+                                      0x6c, 0x67};
+  constexpr uint8_t other_search[] = {0x4f, 0x05, 0xa0, 0x00, 0x00,
+                                      0x01, 0x51};
+  expect(gp::get_status_query_matches(
+             0x40, exact_search, sizeof(exact_search), 0x40,
+             exact_search, sizeof(exact_search)),
+         "allow_next_for_exact_prior_query");
+  expect(!gp::get_status_query_matches(
+             0x40, exact_search, sizeof(exact_search), 0x20,
+             exact_search, sizeof(exact_search)),
+         "reject_next_with_changed_category");
+  expect(!gp::get_status_query_matches(
+             0x40, exact_search, sizeof(exact_search), 0x40,
+             other_search, sizeof(other_search)),
+         "reject_next_with_changed_aid_search");
+  expect(!gp::get_status_query_matches(
+             0x40, exact_search, sizeof(exact_search), 0x40, nullptr, 0),
+         "reject_next_with_missing_search");
+
   std::printf("TEST:SUMMARY pass=%d fail=0\n", checks);
   return EXIT_SUCCESS;
 }

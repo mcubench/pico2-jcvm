@@ -245,6 +245,22 @@ inline bool get_status_next_allowed(bool first_query_seen,
   return first_query_seen && next_query_p1 != 0x80;
 }
 
+inline bool get_status_query_matches(uint8_t previous_p1,
+                                     const uint8_t *previous_search_data,
+                                     size_t previous_search_length,
+                                     uint8_t next_p1,
+                                     const uint8_t *next_search_data,
+                                     size_t next_search_length) noexcept {
+  if (previous_p1 != next_p1 ||
+      previous_search_length != next_search_length) {
+    return false;
+  }
+  if (next_search_length == 0) return true;
+  return previous_search_data != nullptr && next_search_data != nullptr &&
+         std::memcmp(previous_search_data, next_search_data,
+                     next_search_length) == 0;
+}
+
 inline uint16_t validate_get_status_next(bool first_query_seen, uint8_t p1,
                                          const uint8_t *search_data,
                                          size_t search_data_length) noexcept {

@@ -17,6 +17,21 @@ commit `0f80232`; the implementation and validation record are in
 continue the APDU/API backlog and pursue physical validation when a reader is
 registered. Preserve the unrelated worktree snapshot listed below.
 
+## GET STATUS continuation query binding — 2026-10-31
+
+Pico CCID and PC VPCD now require a GET STATUS `P2=03` command to repeat the
+previous query category and search bytes. The authenticated VPCD regression
+passes 39/39. The ARM and RISC-V `max_crypto` builds pass, and the ARM
+`max_crypto` image was flashed to Pico 2 `2BED26ED20556535`. GPPro sent four
+secure APDUs in one physical session: the initial query returned `9000`,
+changed category and changed AID search each returned `6985`, and the unchanged
+continuation returned `9000`. The post-test CDC monitor passed. PC/SC is
+currently registering that Pico. Logs:
+`artifacts/logs/physical-get-status-continuation-2BED-20261031.log` and
+`artifacts/logs/cycle-choupi-20261031T022105Z.log`. Continue the remaining
+GET STATUS pagination/lifecycle audit and the rest of TODO; the continuation
+query gate itself is covered.
+
 ## GPPro empty-card VPCD integration and reader discovery retry — 2026-10-31
 
 The unchanged upstream JCAlgTest 1.8.2 CAP installs successfully through GPPro

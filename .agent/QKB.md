@@ -24,6 +24,27 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - Successful output is under
   `artifacts/results/gppro-empty-install-vpcd-20261031T021340Z/`.
 
+## GET STATUS next occurrence must keep the original query — 2026-10-31
+
+- The PC VPCD card manager already stored GET STATUS P1 and search bytes, but
+  the Pico CCID handler only checked that a prior first/all query existed. The
+  two paths could therefore differ when a caller changed category or AID
+  criteria on `P2=03`.
+- Viable fix: share `gp::get_status_query_matches()` and retain the previous
+  P1 and bounded short-APDU search bytes in the CCID handler. Reject changed
+  queries with `6985`; preserve the previous cursor so a matching continuation
+  can still proceed. Unit coverage checks exact query, category mismatch, AID
+  mismatch, and missing search data.
+- Validation: GP registry unit suite passes 54/54; VPCD multipackage suite
+  passes 39/39. On physical `2BED26ED20556535`, a single GPPro SCP session
+  returned `9000`, `6985`, `6985`, then `9000` for initial, changed-category,
+  changed-AID, and matching-continuation queries. The post-sequence 8-second
+  CDC monitor passed. ARM/RISC-V builds and ARM flash/runtime cycle passed.
+- Physical APDU log:
+  `artifacts/logs/physical-get-status-continuation-2BED-20261031.log`,
+  SHA-256 `1dc6e481c90e05eb7fb37be8d6544cce892525fc8263e74a5ee98005901e3435`.
+  VPCD APDU/restart hashes are recorded in the matching progress entry.
+
 ## APDU context unit-test harness missing `fs_exists` declaration — 2026-10-31
 
 - `./tools/test-short-apdu` initially failed to compile `heap.cpp`: the test's

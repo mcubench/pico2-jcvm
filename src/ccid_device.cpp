@@ -1,3 +1,4 @@
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -139,6 +140,9 @@ Scp03Session secure_channel;
 CapLoadSession cap_load_session;
 bool get_status_first_seen = false;
 uint16_t get_status_cursor = 0;
+uint8_t get_status_p1 = 0;
+std::array<uint8_t, 255> get_status_search_data{};
+size_t get_status_search_length = 0;
 // GET STATUS is handled synchronously by the single CCID task. Keep the
 // maximum module-AID scratch list out of the Pico main stack (127 entries use
 // over 2 KiB by themselves).
@@ -573,9 +577,25 @@ void process_message(uint8_t rhport) {
           if (p2 == 0x03) {
             status = gp::validate_get_status_next(
                 get_status_first_seen, p1, apdu + 5, command_data_length);
+            if (status == 0x9000 && !gp::get_status_query_matches(
+                    get_status_p1, get_status_search_data.data(),
+                    get_status_search_length, p1, apdu + 5,
+                    command_data_length)) {
+              status = 0x6985;
+            }
           } else {
             get_status_cursor = 0;
             get_status_first_seen = false;
+            if (command_data_length > get_status_search_data.size()) {
+              status = 0x6a80;
+            } else {
+              get_status_p1 = p1;
+              get_status_search_length = command_data_length;
+              if (command_data_length != 0) {
+                std::memcpy(get_status_search_data.data(), apdu + 5,
+                            command_data_length);
+              }
+            }
           }
           bool more_entries = false;
           response_length = 0;

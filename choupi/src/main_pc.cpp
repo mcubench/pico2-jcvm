@@ -1220,12 +1220,10 @@ uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
       return vpcd_card_manager_status(next_status, response,
                                       response_capacity, response_length);
     }
-    if (p1 != vpcd_get_status_p1 ||
-        search_length != vpcd_get_status_search_data.size() ||
-        (search_length != 0 &&
-         (search_data == nullptr ||
-          std::memcmp(search_data, vpcd_get_status_search_data.data(),
-                      search_length) != 0)))
+    if (!gp::get_status_query_matches(
+            vpcd_get_status_p1, vpcd_get_status_search_data.data(),
+            vpcd_get_status_search_data.size(), p1, search_data,
+            search_length))
       return vpcd_card_manager_status(0x6985, response, response_capacity,
                                       response_length);
   }

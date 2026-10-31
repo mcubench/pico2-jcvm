@@ -374,6 +374,17 @@ def main() -> int:
                            lookup_second_aid)
             print("TEST:PASS loaded Core, Multi, and lookup packages; installed 5 instances")
 
+            scp.command(0xF2, 0x20, 0x02, b"\x4f\x00",
+                        "GET STATUS continuation baseline")
+            scp.command(0xF2, 0x40, 0x03, b"\x4f\x00",
+                        "GET STATUS continuation category mismatch",
+                        (0x6985,))
+            print("TEST:PASS GET STATUS continuation rejects changed category")
+            scp.command(0xF2, 0x20, 0x03,
+                        b"\x4f\x05" + core_package[:5],
+                        "GET STATUS continuation AID mismatch", (0x6985,))
+            print("TEST:PASS GET STATUS continuation rejects changed AID search")
+
             packages = get_status(scp, 0x20)
             applets = get_status(scp, 0x40)
             modules = get_status(scp, 0x10)
@@ -768,7 +779,7 @@ def main() -> int:
             if get_status(scp, 0x20) or get_status(scp, 0x40):
                 raise RuntimeError("registry is not empty after deleting Core")
             print("TEST:PASS DELETE leaves registry empty")
-            print("TEST:SUMMARY pass=37 fail=0")
+            print("TEST:SUMMARY pass=39 fail=0")
             return 0
         finally:
             if connection is not None:
