@@ -18388,10 +18388,10 @@
 - Artifacts/logs: `artifacts/firmware/README-max_crypto.txt`, `TODO.md`, and
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`.
 
-## 2026-10-31 ISO GET DATA value responses 10 minutes
+## 2026-10-31 ISO GET DATA value responses 12 minutes
 
 - Step/experiment: `iso-get-data-values-20261031`
-- When: '2026-10-31 08:43 UTC' - '2026-10-31 08:53 UTC'
+- When: '2026-10-31 08:43 UTC' - '2026-10-31 08:55 UTC'
 - Change: Added ISO `00 CB` GET DATA response handling to the Pico CCID and PC
   VPCD paths. ISO responses strip the BER-TLV tag and length while GP
   proprietary `80 CA` responses retain the complete object. Extended unit/APDU
@@ -18412,5 +18412,5 @@
 - Decision: Keep ISO `00 CB` and GP `80 CA` response forms distinct. Retry the
   recorded VPCD wrapper when `Virtual PCD 00 00` is available; continue other
   offline project work meanwhile.
-- Commit: pending
+- Commit: `827a0ba`
 - Artifacts/logs: `artifacts/results/gp-get-data-vpcd-20261031T085055Z/`.
