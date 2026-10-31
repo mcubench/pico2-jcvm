@@ -17965,3 +17965,36 @@
   smoke-target cycle log
   `artifacts/logs/cycle-arm-20261031T035301Z.log`, SHA-256
   `a1769aecc78473c9fc9779a33f5757cc6eef39c21ea63e5be18347121cf58b8e`.
+
+## 2026-10-31 complete standalone symm_crypto_ctr physical report 33 minutes
+
+- Step/experiment: `standalone-symm-crypto-ctr-jcalgtest-2BED-20261031`
+- When: '2026-10-31 03:56 UTC' - '2026-10-31 04:28 UTC'
+- Change: Completed exact-profile physical validation for `symm_crypto_ctr`
+  on Pico 2 `2BED26ED20556535`; marked the AES-CTR physical acceptance item
+  complete and updated TODO, QKB, and HANDOFF.
+- Validation: The already running unchanged JCAlgTest 1.8.2
+  `ALG_SUPPORT_EXTENDED` command exited 0. `tools/compare-jcalgtest-support.py`
+  passed: all 4,525 row identities match jCardSim and all 48 generated
+  `symm_crypto_ctr` capabilities are reported, with no unexpected positives.
+  The Cipher `ALG_AES_CTR` and `CIPHER_AES_CTR PAD_NOPAD` factory rows both
+  report yes. The filtered simulator comparison shows 1,415 jCardSim-positive
+  identities not supported by this intentionally narrow profile and 21
+  CHOUPI-positive identities not yes in jCardSim; the project acceptance is
+  the generated profile comparison, which passed exactly. Both wrapper builds
+  and the prior physical finite monitor are recorded in the preceding
+  build/flash step.
+- Result: Physical CSV has 4,525 rows, 75 yes, 4,450 no, zero other. Exact
+  profile parity is 48/48. Full unchanged client completed without transport
+  errors.
+- Decision: Standalone profile support-report acceptance is complete. Physical
+  NIST vectors were previously run on the `max_crypto` superset; repeat them on
+  this exact profile only if CTR dispatch or profile linking changes. Broader
+  project acceptance remains open.
+- Commit: `3f26ff9` (support result/TODO/handoff; progress closeout follows)
+- Artifacts/logs: CSV
+  `artifacts/results/jcalgtest/symm_crypto_ctr_full_2BED_20261031/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv`,
+  SHA-256 `4dd12ac4de12f0cc127b0af090d5fab32a4eb7ce8cb3d8bfd178b4ecb4ec1f98`;
+  raw client log `ALGTEST_log_1793418960505.log`, SHA-256
+  `3b190ad422fe0752255f8b8397a5ab796199875845058df14be26f521480cf8d`.
+  These results are ignored by Git under `artifacts/results/`.
