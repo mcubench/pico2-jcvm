@@ -1,5 +1,19 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Physical API 3.0.5 NO_MEMORY is bounded by persistent overlay size — 2026-10-31
+
+- On Pico 2 `2BED26ED20556535`, API 3.0.5 Security hit 94 `NO_MEMORY`
+  responses. A bounded CDC capture identified the underlying storage failure:
+  `FS_WRITE_FAIL op=new ... files=7246 bytes=77823/77824`. A temporary image
+  enabling `PICO2_DEBUG_PERSISTENT_GC=1` produced the same 94 failures; these
+  records were still reachable, so persistent reclamation is not the remedy.
+- Viable direction: increase the COW snapshot capacity using the RP2350 board's
+  second 2 MiB flash half, preserve the old snapshot until a wider-offset new
+  snapshot validates, and retain bounded SRAM use. The release reclaimer stays
+  disabled. See the Priority 1 task in root `TODO.md`.
+- Release was restored and finite monitor passed. Debug Security CSV SHA-256:
+  `0cb6789cb206ad1a5161dacd3d10c5cfff2e66eb6766eb6230c925baf015837d`.
+
 Use this summary first, then the recent issue records or historical topic index.
 Full original: [archived QKB](archive/2026-10-29-pre-compaction/QKB.md).
 Archive text is immutable historical evidence; later fixes supersede earlier

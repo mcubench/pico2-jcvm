@@ -1,5 +1,27 @@
 # Session handoff — updated 2026-10-31
 
+## Current blocker diagnosis — max_crypto persistent storage capacity
+
+On Pico 2 `2BED26ED20556535`, the temporary diagnostic image compiled with
+`PICO2_DEBUG_PERSISTENT_GC=1` reran the unchanged API 3.0.5 Security suite and
+returned exactly the same 302 `OK`, 504 `UNSUPPORTED_PER_SPEC`, 94
+`NO_MEMORY`, and one `WRONG_RESULT` as release. A bounded CDC capture exposed
+`FS_WRITE_FAIL op=new ... files=7246 bytes=77823/77824`; the applet-owned
+records remained reachable. Persistent GC therefore cannot recover these
+bytes. The normal `max_crypto` release image was restored afterward, with
+successful ARM/RISC-V builds, finite monitor, and `TEST:SUMMARY pass=1 fail=0`.
+Its external UF2 remains `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
+(2,088,448 bytes, SHA-256
+`3331edcb99400e774ad3e7678d0626fd9ab3986bde163077226a552dbe198213`).
+
+Next implementation: use the Pico 2's second 2 MiB flash half for new larger
+COW filesystem snapshots, add a versioned wider-offset format, and migrate
+existing 2 MiB snapshots only after a new snapshot validates. Preserve old
+CAP and snapshot locations; keep SRAM usage bounded. Host overlay power-cut
+tests and both architecture builds must pass before physical validation. Then
+rerun the physical Security and Crypto deploy suites and refresh the external
+image only after validation.
+
 ## Current max_crypto physical API Crypto rerun — 2026-10-31
 
 On Pico 2 `2BED26ED20556535`, the unchanged deploy API 3.0.5 Crypto area

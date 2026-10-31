@@ -407,6 +407,24 @@ cryptographic algorithms must still be implemented natively in C++ and
 dispatched through the Java Card API. Do not add Java crypto providers or
 adapters, and do not change upstream applet CAP files.
 
+### Priority 1 — use the full Pico 2 flash for persistent card storage
+
+- [ ] Expand the filesystem snapshot/overlay to use the Pico 2 board's full
+  4 MiB QSPI flash while preserving CAP slots and existing 2 MiB card data.
+  The current build hard-codes `PICO_FLASH_SIZE_BYTES=2097152`; the current
+  filesystem reserves only 77,824 overlay bytes because its two COW snapshots
+  occupy fixed 160 KiB slots in the first 2 MiB. Physical API 3.0.5 Security
+  reached 77,823/77,824 bytes across 7,246 records and then reported 94
+  `NO_MEMORY` calls. A temporary debug-persistent-reclaimer image completed
+  all 901 calls with the same 94 `NO_MEMORY`, showing the test's persisted
+  records remained reachable and GC was not a remedy. The Raspberry Pi Pico 2
+  specification confirms 4 MiB flash. Use the second 2 MiB for larger COW
+  snapshot slots, widen serialized overlay offsets/version the snapshot, and
+  migrate existing 2 MiB snapshots without erasing their source until the new
+  snapshot validates. Bound SRAM use and verify maximum-crypto heap/stack after
+  increasing the in-RAM overlay. Add host recovery/power-cut tests, then rerun
+  physical Security and Crypto before updating the external max_crypto image.
+
 ### Priority 1 — selectable Java Card firmware capabilities
 
 Make `config/javacard-support.json` the only user-edited capability selection
@@ -1062,8 +1080,17 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   was at call 161, and errors span Signature, KeyAgreement, Cipher, and AEAD.
   Three Signature IV initialization known-answer checks returned unexpected
   values; one RSA-PSS case raised `ILLEGAL_USE`. Crypto cleanup and final
-  GPPro listing passed. The resource and result findings remain open. Current
-  ARM and host builds pass. Fresh VPCD select-only smoke checks pass for
+  GPPro listing passed. The resource and result findings remain open.
+  The storage limit is now confirmed as the primary source of the clustered
+  `NO_MEMORY`: CDC reported `FS_WRITE_FAIL op=new ... files=7246
+  bytes=77823/77824` on the physical card. A temporary image with
+  `PICO2_DEBUG_PERSISTENT_GC=1` completed the same 901-call Security stage with
+  94 `NO_MEMORY` and the same transient-reset wrong result; it did not reduce
+  failures. The test records were reachable, so the 77,824-byte capacity is
+  the actionable limit. The debug image was replaced by the regular release
+  `max_crypto` image; ARM and RISC-V builds and the finite monitor passed.
+  Resolve storage capacity in the new Priority 1 task above. Current ARM and
+  host builds pass. Fresh VPCD select-only smoke checks pass for
   Security, Crypto, JavacardxExt, JavacardxSec, Service, Biometry, and each
   Multi AID independently. Core's own-AID Shareable probe returns `0000`, and
   its Shareable tagging-interface probe returns `000101`, both with `9000`.

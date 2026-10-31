@@ -18263,3 +18263,25 @@
 - Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-crypto-20261031.csv`
   (ignored; SHA-256
   `3a7859bb1f8283e1ce88578ea601aa3c7d39acd5d448a4526506a3c6e9593c10`).
+## 2026-10-31 Diagnose max_crypto persistent storage exhaustion 56 minutes
+
+- Step/experiment: `max-crypto-persistent-capacity-diagnostic-20261031`
+- When: '2026-10-31 06:50 UTC' - '2026-10-31 07:46 UTC'
+- Change: Recorded the confirmed filesystem-capacity cause in STATUS, TODO,
+  QKB, and session handoff. No firmware or CAP source was changed.
+- Validation: Debug persistent-GC image had previously passed ARM and RISC-V
+  wrapper builds, physical cycle, and finite monitor. Physical Security rerun
+  completed all 901 calls with 302 `OK`, 504 `UNSUPPORTED_PER_SPEC`, 94
+  `NO_MEMORY`, and one `WRONG_RESULT`, identical to release. Bounded CDC
+  captured `FS_WRITE_FAIL op=new ... files=7246 bytes=77823/77824`. Restored
+  release `max_crypto` image; ARM/RISC-V builds and finite monitor passed with
+  `TEST:SUMMARY pass=1 fail=0`. No power interruption was tested.
+- Result: Persistent reclaimer does not help because the test records remain
+  reachable; the 77,824-byte overlay limit is the primary storage issue.
+- Decision: Add versioned larger COW snapshots in the second 2 MiB flash half,
+  preserve old data through migration, and rerun the physical suites.
+- Commit: pending
+- Artifacts/logs: Debug Security CSV SHA-256
+  `0cb6789cb206ad1a5161dacd3d10c5cfff2e66eb6766eb6230c925baf015837d`;
+  release restore log `artifacts/logs/cycle-choupi-20261031T074104Z.log`,
+  SHA-256 `693309fafe7c71a4c7ac9cab9303eb78ea0588cecb1f89dd39625368abeee326`.

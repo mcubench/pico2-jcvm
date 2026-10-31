@@ -56,8 +56,11 @@ card registry is empty.
   94 `NO_MEMORY`, and one `WRONG_RESULT`. `NO_MEMORY` starts at call 460 and
   spans key families and EC accessors; one AES transient-reset state check
   returned the unexpected uninitialized value. The runner removed the Security
-  CAP successfully. Treat resource exhaustion and transient reset semantics as
-  open findings pending diagnosis. CSV SHA-256 is
+  CAP successfully. The storage cause is confirmed: CDC showed a failed 3-byte
+  filesystem write at 77,823/77,824 bytes across 7,246 records. A temporary
+  `PICO2_DEBUG_PERSISTENT_GC=1` image repeated all 901 calls with the same 94
+  `NO_MEMORY`; its records remained reachable. The transient-reset mismatch is
+  a separate finding. CSV SHA-256 is
   `c6ba9233e27584280bd5632b1ca281509fedd2cc19c08fbd4184b01179694045` under
   ignored `artifacts/results/deploy/`.
 
