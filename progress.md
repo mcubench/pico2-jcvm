@@ -17345,3 +17345,24 @@
 - Artifacts/logs: max ARM image
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no dedicated
   build logs archived.
+
+## 2026-10-31 multipackage INSTALL regression after linker validation 2 minutes
+
+- Step/experiment: `cap22-linker-multipackage-regression`
+- When: '2026-10-31 00:14 UTC' - '2026-10-31 00:16 UTC'
+- Change: Revalidated authenticated GP LOAD/INSTALL and multipackage lifecycle
+  after extracting the CAP 2.2 remote-interface target traversal.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed
+  all 25 checks via the required elevated host-access path. Both CAP packages
+  and three applets installed; fresh emulator restart, three owner roots,
+  deletion/cascade deletion, and final empty registry passed.
+- Result: Existing CAP 2.1 multipackage flows remain operational. This test
+  does not contain CAP 2.2 external remote-interface references and therefore
+  does not close the cross-package target-link fixture gap.
+- Decision: Continue with an install-level CAP 2.2 external-reference fixture.
+- Commit: `pending`.
+- Artifacts/logs: APDU log SHA-256
+  `3f4a508c2f4f4b3376e737d6172100962c39cf2308d1d19b8d80885980d3afe1`;
+  restart log SHA-256
+  `70abcfd61bb9c04c5008edd6cc0a54fb4da9cbf58dc598c3b3278cb36c53a711`;
+  rejection logs under `artifacts/logs/host-vpcd-multipackage-*-20261031T001559Z.log`.

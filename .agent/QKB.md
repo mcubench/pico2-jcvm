@@ -53,6 +53,18 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   corpus CAPs. `./tools/build arm --profile max_crypto` and
   `./tools/build riscv --profile max_crypto` pass. No board was flashed.
 
+## Multipackage INSTALL regression after remote-link refactor — 2026-10-31
+
+- `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 25/25 after
+  the shared CAP 2.2 Class traversal was extracted. Existing two-package,
+  three-applet GP LOAD/INSTALL, SELECT, fresh-process restore, owner inventory,
+  and delete/cascade-delete behavior passed. These CAPs do not exercise CAP
+  2.2 external remote-interface targets.
+- APDU log SHA-256:
+  `3f4a508c2f4f4b3376e737d6172100962c39cf2308d1d19b8d80885980d3afe1`;
+  restart log SHA-256:
+  `70abcfd61bb9c04c5008edd6cc0a54fb4da9cbf58dc598c3b3278cb36c53a711`.
+
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 
 - The parser now cross-checks each external remote-interface reference's
