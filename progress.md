@@ -17460,5 +17460,6 @@
   Java Card 3.0.5 conformance or close the open API test audit.
 - Decision: Keep the per-API behavior audit and physical acceptance open;
   continue with offline implementation gaps while PC/SC is unavailable.
-- Commit: `pending`
+- Commit: `5ebbfe5` (this progress pointer is recorded in the follow-up
+  closeout commit)
 - Artifacts/logs: `docs/supported-profile.md`; no dedicated test log.

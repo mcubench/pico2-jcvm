@@ -14,7 +14,8 @@ test was needed for this documentation step. Physical PC/SC remains
 unavailable: the approved helper grants pcscd access to two USB nodes, while
 bounded `pcsc_scan -r` returns no readers. Continue with offline correctness
 work; do not enable persistent-record deletion until USB cold-power recovery
-passes on hardware.
+passes on hardware. Profile declaration commit: `5ebbfe5`; its progress-SHA
+closeout is a separate follow-up commit.
 
 ## CAP 2.2 external remote-interface linking and VPCD test recovery — 2026-10-31
 
