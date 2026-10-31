@@ -17902,3 +17902,36 @@
   probe log (expected mismatch at RSA-SHA1)
   `artifacts/logs/jcalgtest-sha256-static-probe-2BED-20261031.log`, SHA-256
   `a0e72d63b85cdf29382423751913e689f5097a19d3978640ef0cf3e3129c7170`.
+
+## 2026-10-31 complete physical max_crypto JCAlgTest support run 44 minutes
+
+- Step/experiment: `max-crypto-full-jcalgtest-2BED-20261031`
+- When: '2026-10-31 03:04 UTC' - '2026-10-31 03:48 UTC'
+- Change: Completed the unchanged JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED`
+  client on the refreshed ARM `max_crypto` firmware on Pico 2
+  `2BED26ED20556535`. Updated TODO, QKB, and session handoff with results and
+  the known upstream RSA-3072 KeyPair query defect.
+- Validation: `PICO2_HOST_USB_ACCESS=1 JCALGTEST_TIMEOUT_SECONDS=5400
+  ./tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI CCID [JCVM CCID]
+  (2BED26ED20556535) 00 00' -op ALG_SUPPORT_EXTENDED -fresh -outpath
+  artifacts/results/jcalgtest/max_crypto_full_2BED_20261031` exited 0.
+  `tools/compare-jcalgtest-support.py` matched all 4,525 row identities against
+  jCardSim; with a temporary expected-support CSV omitting only the known
+  mislabeled RSA and RSA-CRT 3072 KeyPair entries, the generated profile
+  comparison passed 145/145. The unfiltered generated-manifest comparison
+  reports only those two missing capabilities. No architecture build was
+  repeated because this step made no source change.
+- Result: The physical report contains 198 yes, 4,327 no, and zero other
+  statuses. The full unchanged client completed without transport error. The
+  upstream CAP's two 3072 KeyPair queries encode 4096; firmware and CAP were
+  left unchanged.
+- Decision: Full `max_crypto` physical support reporting is now verified except
+  the documented upstream query mismatch. Exact standalone `symm_crypto_ctr`,
+  Windows checks, and wider AC1–AC5 integration remain open.
+- Commit: `5a49d46` (evidence/handoff update; progress closeout follows)
+- Artifacts/logs: CSV
+  `artifacts/results/jcalgtest/max_crypto_full_2BED_20261031/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv`,
+  SHA-256 `b3aa5964c499a16e812c9b336712415127874a7a3d638d8989404dca51b30d81`;
+  raw client log `ALGTEST_log_1793415896947.log`, SHA-256
+  `641a9057fc990f6a717190880902bec74a242764aec2d3018cd0bc53e451c09f`.
+  These results are ignored by Git under `artifacts/results/`.
