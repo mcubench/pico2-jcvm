@@ -38,17 +38,13 @@
 #include "../jc_types/jc_instance.hpp"
 #include "../stack.hpp"
 #include "bytecodes.hpp"
+#include "../../src/vm_diagnostics.h"
 #include "javacard-class-token-map.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <optional>
-
-#ifndef PC_VERSION
-extern "C" void choupi_install_stage(uint8_t stage);
-extern "C" void choupi_install_context(uint32_t context);
-#endif
 
 namespace jcvm {
 

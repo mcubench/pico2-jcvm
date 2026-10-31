@@ -34,6 +34,7 @@
 #include "../jc_types/jc_instance.hpp"
 #include "../jc_utils.hpp"
 #include "ffi.h"
+#include "../../../src/vm_diagnostics.h"
 
 #include <cassert>
 #include <algorithm>
@@ -43,11 +44,6 @@
 #include <utility>
 #include <vector>
 
-#ifndef PC_VERSION
-extern "C" void choupi_vm_record_array_write_failure(
-    uint8_t stage, uint16_t index, uint16_t size, uint16_t ref,
-    uint8_t type, uint8_t exception_id);
-#endif
 extern "C" void choupi_record_transaction_buffer_full(void);
 
 extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length);

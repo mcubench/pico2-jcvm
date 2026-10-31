@@ -18547,3 +18547,27 @@
   nested OS submodule `08f78a6` (`Fix filesystem syscall bounds and empty
   reads`). The root SHA is recorded in the progress-only follow-up commit.
 - Artifacts/logs: No persistent logs; test and build results are recorded above.
+
+## 2026-10-31 Centralize diagnostic ABI declarations 10 minutes
+
+- Step/experiment: `arch-03-diagnostic-declarations-20261031`
+- When: '2026-10-31 19:58 UTC' - '2026-10-31 20:08 UTC'
+- Change: Added `src/vm_diagnostics.h` for VM diagnostic accessors and record
+  hooks, Pico installation trace state, and CCID debug state. Replaced
+  scattered declarations across the Pico shim, CCID transport, VM main,
+  context, heap, interpreter, bytecodes, instance and handler sources. Kept
+  every diagnostic implementation and output format unchanged.
+- Validation: `CHOUPI_JCVM_DEBUG=ON ./tools/build-pc --profile max_crypto`
+  passed. `PICO2_DEBUG=0 ./tools/build arm --profile max_crypto` and the
+  corresponding RISC-V wrapper passed, including incremental rebuilds after
+  the final cleanup. Diagnostic declaration definitions and callers compile
+  across the configurations. `git -c core.whitespace=cr-at-eol diff --check`
+  passed for the changed C++ sources. No physical serial monitor was run.
+- Result: VM, Pico, and transport diagnostic declarations now use one C ABI
+  source; debug-enabled PC and release target builds agree on the signatures.
+  Runtime diagnostic behavior is unchanged by the refactor.
+- Decision: ARCH-03 is complete. Continue with ARCH-04; no output behavior
+  change or physical validation is claimed.
+- Commit: Root implementation commit to be recorded in the immediate
+  progress-only follow-up.
+- Artifacts/logs: No persistent logs; build results are recorded above.

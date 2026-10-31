@@ -29,17 +29,11 @@
 #include "exceptions.hpp"
 #include "jc_handlers/flashmemory.hpp"
 #include "jc_types/jc_array.hpp"
+#include "../../src/vm_diagnostics.h"
 
 #include <algorithm>
 #include <cstdio>
 #include <utility>
-
-#ifndef PC_VERSION
-extern "C" void choupi_vm_persistent_restore_failure_state(
-    uint8_t *recorded, uint16_t *package_id, uint16_t *class_index,
-    uint16_t *field_index, uint8_t *field_type, uint8_t *stage,
-    uint8_t *exception_id);
-#endif
 
 namespace jcvm {
 

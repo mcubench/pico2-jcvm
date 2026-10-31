@@ -32,27 +32,11 @@
 #include "../jc_utils.hpp"
 #include "jc_array.hpp"
 #include "ffi.h"
+#include "../../../src/vm_diagnostics.h"
 
 #include <cstdio>
 #include <cstring>
 #include <memory>
-
-#ifndef PC_VERSION
-extern "C" void choupi_install_stage(uint8_t stage);
-extern "C" void choupi_install_origin(uint32_t origin);
-extern "C" void choupi_vm_record_field_bounds(uint16_t field_index,
-                                                uint16_t field_count,
-                                                uint16_t field_package,
-                                                uint16_t field_class,
-                                                uint16_t field_value_ref);
-extern "C" void choupi_vm_record_persistent_restore_failure(
-    uint16_t package_id, uint16_t class_index, uint16_t field_index,
-    uint8_t field_type, uint8_t stage, uint8_t exception_id);
-extern "C" void choupi_vm_record_field_write(
-    uint8_t stage, uint16_t package_id, uint16_t class_index,
-    uint16_t field_index, uint16_t value, uint16_t field_count,
-    uint8_t flags, uint8_t exception_id);
-#endif
 
 namespace jcvm {
 

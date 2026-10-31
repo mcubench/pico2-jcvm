@@ -1,5 +1,26 @@
 # Session handoff — updated 2026-10-31
 
+## Current ARCH-03 diagnostic declarations — 2026-10-31
+
+Added `src/vm_diagnostics.h` as the authoritative C ABI declaration source for
+VM diagnostic state accessors/recorders, installation tracing state, and CCID
+diagnostic accessors. Replaced duplicate prototypes across the Pico shim,
+transport, VM main, context, heap, bytecode and handler sources. The diagnostic
+implementations and output formatting did not change.
+
+Validation: PC debug-enabled build passed with
+`CHOUPI_JCVM_DEBUG=ON ./tools/build-pc --profile max_crypto`; release ARM and
+RISC-V `max_crypto` wrappers passed. Rebuilt PC, ARM and RISC-V once more after
+removing an empty preprocessor guard. Definitions and header declarations
+compile together on all target paths. No serial monitor/physical reader check
+was run because this was declarations-only; runtime output behavior is
+unchanged by source inspection. The normal GCC/Rust builds still emit existing
+packed-member and upstream Rust lint warnings, with no new warnings from this
+header.
+
+Next: ARCH-04 in `TODO.md` (define progress callback execution and reentry
+rules). Keep the user’s unrelated worktree edits untouched.
+
 ## Current ARCH-02 filesystem ABI contract — 2026-10-31
 
 Added `docs/FILESYSTEM_ABI.md` documenting filesystem status values, tag and

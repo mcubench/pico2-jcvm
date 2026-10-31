@@ -23,6 +23,7 @@
 #include "jc_handlers/flashmemory.hpp"
 #include "reader_led.hpp"
 #include "vm_lifecycle.h"
+#include "vm_diagnostics.h"
 
 extern "C" char __StackLimit;
 
@@ -32,61 +33,10 @@ extern "C" const uint8_t __flash_binary_end[];
 #ifdef RP2350_FS_OVERLAY_TEST
 extern "C" const uint8_t *rp2350_fs_test_flash_base(void);
 #endif
-extern "C" void choupi_vm_runtime_debug_state(
-    uint16_t *status, uint16_t *exception_id, uint8_t *opcode, uint32_t *pc,
-    uint16_t *stack_depth, uint32_t *opcode_history,
-    uint32_t *depth_history, uint8_t *field_bounds_failure,
-    uint16_t *field_index, uint16_t *field_count, uint16_t *field_package,
-    uint16_t *field_class, uint16_t *field_value_ref);
-extern "C" void choupi_vm_field_cp_state(
-    uint8_t *recorded, uint8_t *succeeded, uint8_t *package_id,
-    uint16_t *cp_index, uint8_t *token, uint8_t *exception_id);
-extern "C" void choupi_vm_field_heap_ref_state(
-    uint8_t *recorded, uint16_t *objectref, uint16_t *offset,
-    uint8_t *is_array);
-extern "C" void choupi_vm_persistent_restore_failure_state(
-    uint8_t *recorded, uint16_t *package_id, uint16_t *class_index,
-    uint16_t *field_index, uint8_t *field_type, uint8_t *stage,
-    uint8_t *exception_id);
-extern "C" void choupi_vm_putfield_stage_state(
-    uint8_t *stage, uint16_t *objectref, uint16_t *value,
-    uint8_t *exception_id);
-extern "C" void choupi_vm_field_write_state(
-    uint8_t *stage, uint16_t *package_id, uint16_t *class_index,
-    uint16_t *field_index, uint16_t *value, uint16_t *field_count,
-    uint8_t *flags, uint8_t *exception_id);
-extern "C" void choupi_vm_array_write_failure_state(
-    uint8_t *recorded, uint8_t *stage, uint16_t *index, uint16_t *size,
-    uint16_t *ref, uint8_t *type, uint8_t *exception_id);
 extern "C" uint8_t choupi_persistent_write_transaction_active(void);
 extern "C" void choupi_ccid_task(void);
 extern "C" void choupi_ccid_native_crypto_progress(void);
 extern "C" void choupi_vm_native_progress(void);
-extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,
-                                         uint16_t *rx_events,
-                                         uint16_t *task_count,
-                                         uint8_t *last_apdu_length,
-                                         uint8_t *last_apdu_header,
-                                         uint8_t *last_message_type,
-                                         uint8_t *last_payload_length,
-                                         uint16_t *xfr_block_count,
-                                         uint16_t *out_xfer_errors,
-                                         uint16_t *in_xfer_errors,
-                                         uint16_t *out_rearm_errors,
-                                         uint16_t *in_submit_errors,
-                                         uint16_t *invalid_messages,
-                                         uint8_t *last_xfer_result);
-extern "C" void choupi_ccid_debug_response(uint8_t *apdu_header,
-                                             uint16_t *response_length,
-                                             uint16_t *status_word);
-extern "C" bool choupi_ccid_debug_take_response_data(uint8_t *data,
-                                                        uint8_t capacity,
-                                                        uint8_t *length);
-extern "C" void choupi_ccid_debug_unknown(uint8_t *last_message,
-                                            uint16_t *message_count);
-extern "C" void choupi_ccid_debug_recent(uint8_t *commands,
-                                           uint8_t command_capacity,
-                                           uint16_t *command_count);
 
 extern "C" void choupi_watchdog_update(void) { watchdog_update(); }
 extern "C" void choupi_native_crypto_progress(void) {

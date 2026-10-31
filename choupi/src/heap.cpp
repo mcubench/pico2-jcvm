@@ -30,6 +30,7 @@
 #include "ffi.h"
 #include "jc_handlers/jc_cp.hpp"
 #include "jc_types/jc_array.hpp"
+#include "../../src/vm_diagnostics.h"
 
 #include <cstring>
 #if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_HEAP_GC_TRACE)
@@ -38,10 +39,6 @@
 
 #include <algorithm>
 #include <utility>
-
-#ifndef PC_VERSION
-extern "C" void choupi_install_stage(uint8_t stage);
-#endif
 
 namespace jcvm {
 

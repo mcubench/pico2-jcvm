@@ -42,6 +42,7 @@
 #include "../../src/short_apdu.hpp"
 #include "../../src/cap_store.hpp"
 #include "../../src/vm_lifecycle.h"
+#include "../../src/vm_diagnostics.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -690,12 +691,6 @@ uint8_t choupi_pc_initialize_storage(void);
 #endif
 
 uint16_t choupi_vm_last_native_method_index();
-#ifndef PC_VERSION
-void choupi_install_stage(uint8_t stage);
-void choupi_install_context(uint32_t context);
-uint8_t choupi_install_debug_stage(void);
-uint32_t choupi_install_debug_context(void);
-#endif
 
 void choupi_ccid_task(void);
 

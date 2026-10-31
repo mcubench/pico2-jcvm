@@ -29,15 +29,11 @@
 #include "jc_cp.hpp"
 #include "jc_import.hpp"
 #include "flashmemory.hpp"
+#include "../../../src/vm_diagnostics.h"
 
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
-
-#ifndef PC_VERSION
-extern "C" void choupi_install_stage(uint8_t stage);
-extern "C" void choupi_install_context(uint32_t context);
-#endif
 
 namespace jcvm {
 

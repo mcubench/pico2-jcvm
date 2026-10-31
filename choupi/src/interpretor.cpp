@@ -33,6 +33,7 @@
 #include "jc_handlers/flashmemory.hpp"
 #include "jc_handlers/jc_export.hpp"
 #include "jc_handlers/jc_method.hpp"
+#include "../../src/vm_diagnostics.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -41,8 +42,6 @@
 #ifndef PC_VERSION
 extern "C" void choupi_watchdog_update(void);
 extern "C" uint32_t choupi_time_us_32(void);
-extern "C" void choupi_install_trace(uint32_t pc, uint8_t opcode,
-                                      uint32_t instruction_count);
 static volatile uint32_t applet_execution_progress_us = 0;
 
 extern "C" void choupi_vm_native_progress(void) {

@@ -18,6 +18,7 @@
 #include "cap_store.hpp"
 #include "reader_led.hpp"
 #include "vm_lifecycle.h"
+#include "vm_diagnostics.h"
 
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,

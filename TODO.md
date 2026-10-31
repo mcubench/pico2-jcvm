@@ -47,12 +47,17 @@ hardware-access, progress and handoff requirements for implementation changes.
   - [ ] Define and align detailed filesystem error codes across backends.
   - [ ] Define a disk-checkpoint durability contract for PC emulator memory;
     current `fs_sync()` is a no-op and persistence depends on VPCD sidecar flow.
-- [ ] **ARCH-03 — Consolidate diagnostic declarations (small).**
+- [x] **ARCH-03 — Consolidate diagnostic declarations (small).**
   Introduce a shared diagnostic header and replace scattered declarations
   across VM, Pico shim and transport. Preserve existing diagnostic output and
   optional feature behavior. Acceptance: declarations/signatures agree across
   callers and providers; enabled/disabled diagnostic configurations build and
-  relevant serial diagnostics retain their behavior.
+  relevant serial diagnostics retain their behavior. Added
+  `src/vm_diagnostics.h`; VM, Pico shim, and CCID transport now share its VM
+  state, install trace, and CCID state declarations. PC debug-enabled plus ARM
+  and RISC-V release builds pass. Implementations and output formatting were
+  unchanged; no physical serial monitor was run for this declaration-only
+  refactor.
 - [ ] **ARCH-04 — Define progress callback rules (small).**
   Document and enforce which progress callbacks may service USB/watchdog,
   their execution context and bounded-work requirements, and a prohibition on
