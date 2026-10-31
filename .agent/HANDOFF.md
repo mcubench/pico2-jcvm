@@ -10,7 +10,8 @@ with Lc=13, and the full VPCD multipackage lifecycle passes 37/37. The PC
 `max_crypto` build and ARM/RISC-V `max_crypto` wrapper builds pass. No physical
 test was possible: the approved PC/SC helper granted access to two USB nodes,
 but bounded `pcsc_scan -r` found no reader. The bug fix and regression are in
-the current worktree; record/commit details follow in `progress.md`. Next,
+commit `0f80232`; the implementation and validation record are in
+`progress.md`. Next,
 continue the APDU/API backlog and pursue physical validation when a reader is
 registered. Preserve the unrelated worktree snapshot listed below.
 

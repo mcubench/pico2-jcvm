@@ -17533,3 +17533,33 @@
   restart log `artifacts/logs/host-vpcd-multipackage-restart-20261031T012842Z.log`,
   SHA-256
   `8e67b6dd12d29e82bd432f149a58103b4988c8fd4821eb9414c0a2aee3e93da9`.
+
+## 2026-10-31 correct JC305 APDU incoming-length dispatch 26 minutes
+
+- Step/experiment: `jc305-apdu-incoming-length-virtual-token`
+- When: '2026-10-31 01:20 UTC' - '2026-10-31 01:46 UTC'
+- Change: Corrected the JC305 `APDU` virtual-method token map. Imported token
+  15 (`getIncomingLength`) had resolved to embedded `isValidCLA()` and returned
+  `1`; it now resolves to embedded token 16. Corrected adjacent mappings for
+  `getOffsetCdata()` and `isValidCLA()`. Added a generated CAP fixture command
+  that submits 13 data bytes and verifies both incoming-length APIs. Updated
+  TODO, QKB, and the handoff.
+- Validation: `./tools/build-pc --profile max_crypto`,
+  `./tools/build arm --profile max_crypto`, and
+  `./tools/build riscv --profile max_crypto` passed. The authenticated elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 37/37; the
+  new APDU response was `0D0D9000`. The PC/SC access helper granted two USB
+  nodes, but bounded `timeout --signal=TERM --kill-after=1s 4s pcsc_scan -r`
+  exited 124 without listing a reader, so no physical test was possible.
+- Result: The prior 13-versus-1 mismatch was an imported JC305 token mapping
+  defect, and the corrected behavior passes the full VPCD lifecycle suite.
+  Hardware validation remains open.
+- Decision: Keep physical APDU validation open; proceed with the next
+  prioritized APDU/API backlog item.
+- Commit: `0f80232` (implementation; this validation closeout is committed
+  separately)
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T014336Z.log`,
+  SHA-256 `67f5ec8afb06e974e45181d95fa68cf8ed94cc5da4e80c74faed786dbedc39cf`;
+  restart log
+  `artifacts/logs/host-vpcd-multipackage-restart-20261031T014336Z.log`,
+  SHA-256 `37940d91568ef8040717d0e3e41fe1c054b9116e239acadb25252d15f718732a`.
