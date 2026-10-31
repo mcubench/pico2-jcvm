@@ -18727,6 +18727,6 @@
 - Decision: Close the filesystem tag-limit discrepancy; keep detailed error
   alignment and host disk-checkpoint durability as open ARCH-02 follow-ups.
 - Commit: OS `52772f1` (`Align OS filesystem tag length with Pico`); root
-  commit pending.
+  `23ab3b1` (`Align OS filesystem tag capacity with Pico`).
 - Artifacts/logs: No persistent test logs; test and build outputs are ignored
   under `choupi/os/target` and `build/`.

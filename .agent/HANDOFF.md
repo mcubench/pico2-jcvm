@@ -20,7 +20,8 @@ integration testing still does not directly exercise a GP CAP with a 128-byte
 persistent tag.
 
 OS implementation commit: `52772f1` (`Align OS filesystem tag length with
-Pico`). Root docs/TODO and the gitlink update are pending the root commit.
+Pico`); root integration commit: `23ab3b1` (`Align OS filesystem tag capacity
+with Pico`).
 
 ## Previous filesystem ABI alignment — oversized reads
 
