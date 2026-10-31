@@ -43,7 +43,8 @@ hardware-access, progress and handoff requirements for implementation changes.
   the focused host syscall test passes. PC, ARM, and RISC-V `max_crypto` builds
   pass. PC/Pico discrepancies remain explicit follow-ups:
   - [ ] Unify the maximum persistent tag length (OS 29 bytes, Pico 128 bytes).
-  - [ ] Unify `fs_read` behavior when the requested length exceeds the record.
+  - [x] Unify `fs_read` oversized-buffer behavior: OS and Pico both copy the
+    available prefix and leave the rest of the destination unchanged.
   - [ ] Define and align detailed filesystem error codes across backends.
   - [ ] Define a disk-checkpoint durability contract for PC emulator memory;
     current `fs_sync()` is a no-op and persistence depends on VPCD sidecar flow.

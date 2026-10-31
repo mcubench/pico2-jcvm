@@ -1,6 +1,32 @@
 # Session handoff — updated 2026-10-31
 
-## Current ARCH-06 VM static initialization boundary — 2026-10-31
+## Current filesystem ABI alignment — oversized reads
+
+Aligned Pico `fs_read` with the OS filesystem: both copy the smaller of the
+caller buffer and record length, return success for a larger destination, and
+leave its unused tail unchanged. The Pico overlay regression verifies the
+copied prefix and sentinel tail; the OS syscall regression verifies the same.
+`./tools/test-rp2350-fs-overlay` passes with `TEST:SUMMARY fail=0`. The focused
+OS host syscall test passes 3/3 when run with ptrace access; its first restricted
+attempt failed with `PTRACE_ATTACH EPERM`. PC, ARM, and RISC-V `max_crypto`
+wrapper builds pass. Identified Pico 2 `2BED26ED20556535` was flashed with
+`build/arm/pico2_choupi.uf2`; the 18-second finite monitor reported repeated
+`TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. This validates
+startup, not a filesystem APDU. The generic `cycle arm` briefly flashed and
+tested the smoke target before the explicit `cycle choupi` restored JCVM
+firmware; both final cycles passed.
+
+Implementation source is in root `src/pico_filesystem.cpp`; an OS syscall
+regression is in the `choupi/os` submodule. The FS ABI document and TODO now
+record this discrepancy as resolved. Builds retain existing upstream Rust
+warnings. Physical APDU behavior remains untested for this exact edge case.
+
+Next: continue the highest-priority offline correctness item in `TODO.md`;
+retain physical power-cycle and PC/SC availability gates as open. Preserve the
+unrelated dirty changes present in the worktree, especially `src/cap_load.cpp`,
+`AGENTS.md`, supplied docs/data, and test tool edits.
+
+## Previous ARCH-06 VM static initialization boundary — 2026-10-31
 
 Moved CAP-declared static-array creation and persistent static-reference setup
 from `src/cap_load.cpp` to `choupi/src/vm_cap_initialization.cpp`, declared in

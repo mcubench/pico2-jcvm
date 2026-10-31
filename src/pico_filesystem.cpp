@@ -1141,11 +1141,13 @@ extern "C" uint8_t fs_read(const uint8_t *tag, uint8_t tag_length,
                            uint8_t *destination, uint32_t length) {
   const uint8_t *source = nullptr;
   uint32_t source_length = 0;
-  if (!find_file(tag, tag_length, &source, &source_length) ||
-      length > source_length) {
+  if (!find_file(tag, tag_length, &source, &source_length)) {
     return 1;
   }
-  std::memcpy(destination, source, length);
+  const uint32_t copy_length = std::min(length, source_length);
+  if (copy_length != 0) {
+    std::memcpy(destination, source, copy_length);
+  }
   return 0;
 }
 

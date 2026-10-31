@@ -230,9 +230,12 @@ int main() {
   expect(fs_sync() == 0 && borrowed_data != nullptr &&
              std::memcmp(borrowed_data, first_value, sizeof(first_value)) == 0,
          "sync_keeps_overlay_borrow_address_valid");
-  expect(fs_read(reusable_tag, sizeof(reusable_tag), actual,
-                 sizeof(actual) + 1) != 0,
-         "pico_read_rejects_length_beyond_record");
+  uint8_t oversized_read[4] = {0, 0, 0, 0xa5};
+  expect(fs_read(reusable_tag, sizeof(reusable_tag), oversized_read,
+                 sizeof(oversized_read)) == 0 &&
+             std::memcmp(oversized_read, first_value, sizeof(first_value)) == 0 &&
+             oversized_read[3] == 0xa5,
+         "pico_read_copies_available_bytes_for_oversized_buffer");
   constexpr uint8_t empty_tag[] = {0xa0, 0x01, 0x03};
   expect(fs_write(empty_tag, sizeof(empty_tag), nullptr, 0) == 0,
          "write_empty_record");

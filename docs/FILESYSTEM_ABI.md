@@ -2,7 +2,7 @@
 
 This document records the current `fs_*` contract used by the VM and loader.
 The PC emulator delegates record operations to the CHOUPI OS filesystem; Pico
-uses the bounded filesystem overlay in `src/choupi_pico2.cpp`. They share the
+uses the bounded filesystem overlay in `src/pico_filesystem.cpp`. They share the
 success convention but do not yet share detailed error codes or all bounds.
 
 ## Call and buffer rules
@@ -31,12 +31,12 @@ it returns `1` when present and `0` when absent. `fs_next_tag` returns `0` for
 a result, `1` at end, and `2` for invalid request/cursor state. Its cursor is
 invalid after any filesystem mutation and must be restarted from zero.
 
-For `fs_read`, the OS backend copies `min(requested_length, record_length)`
-bytes and succeeds; Pico rejects a request larger than the record. Prefer
-`fs_length` followed by a read of exactly that length. Scalar reads and writes
-use byte offsets for 1-byte operations and element indexes for 2- and 4-byte
-operations. Reads/writes outside the record fail; integer overflow in scaled
-offsets is rejected.
+For `fs_read`, both backends copy `min(requested_length, record_length)` bytes
+and succeed. Bytes beyond the copied record prefix in a larger destination
+remain unchanged. Call `fs_length` first when the complete record is required.
+Scalar reads and writes use byte offsets for 1-byte operations and element
+indexes for 2- and 4-byte operations. Reads/writes outside the record fail;
+integer overflow in scaled offsets is rejected.
 
 On Pico, most filesystem errors collapse to status `1`. On PC, operations
 using the OS filesystem return `1` for out of flash, `2` for missing tags, `3`
@@ -91,7 +91,6 @@ instead of indexing beyond the record.
 
 - Tag maximum: 29 bytes in the OS filesystem versus 128 bytes in the Pico
   overlay.
-- `fs_read` oversized-buffer behavior differs as described above.
 - Detailed errors differ; most Pico errors collapse to `1`.
 - PC `fs_sync()` only reports that the emulator has no separate flush phase;
   it does not persist the emulated flash image to disk.

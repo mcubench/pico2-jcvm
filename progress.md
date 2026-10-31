@@ -18670,3 +18670,32 @@
   SHA-256 `da2a654c968cb71d5ad3da0d27e08fa10716b90dd6f427d6ebc6fbcb6a8c47fa`
   and matching restart log SHA-256
   `60e1befe003016b9aea25a24f3bbba18042e62f01ce33ccfd0cc7c7974d0f286`.
+
+## 2026-10-31 Align oversized filesystem reads across backends 9 minutes
+
+- Step/experiment: `filesystem-read-oversized-buffer-alignment-20261031`
+- When: '2026-10-31 20:50 UTC' - '2026-10-31 20:59 UTC'
+- Change: Updated Pico `fs_read` to copy `min(requested_length, record_length)`
+  bytes and preserve the rest of a larger destination, matching the OS backend.
+  Added sentinel-tail regressions in the Pico overlay test and OS syscall test;
+  updated the ABI documentation, TODO, QKB, and session handoff. Corrected the
+  documented Pico filesystem implementation path after ARCH-05 extraction.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with
+  `TEST:SUMMARY fail=0`; elevated OS syscall tests passed 3/3. The restricted
+  OS test attempt failed because its host MPU emulator could not `PTRACE_ATTACH`.
+  PC, ARM, and RISC-V `max_crypto` wrapper builds passed. The explicit elevated
+  `PICO2_HOST_USB_ACCESS=1 PICO2_DEBUG=0 ./tools/cycle choupi --profile
+  max_crypto --serial 2BED26ED20556535` passed; its 18-second monitor repeatedly
+  reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. This is
+  startup validation; the changed API edge was not exercised by a hardware
+  APDU. `git diff --check` passed. Existing upstream Rust warnings remain.
+- Result: Pico and OS `fs_read` now have matching oversized-buffer semantics;
+  the destination tail remains caller-owned and unchanged. Physical power-cycle
+  acceptance remains open.
+- Decision: Close the oversized-read discrepancy and continue the remaining
+  filesystem ABI and JCVM backlog items.
+- Commit: pending root implementation commit; OS test commit
+  `c3ccaa5` (`Test oversized filesystem reads preserve buffer tail`).
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261031T205709Z.log` and
+  `artifacts/logs/cycle-arm-20261031T205613Z.log` (the latter is the smoke
+  target cycle, not the JCVM runtime cycle).

@@ -2719,3 +2719,15 @@ original terminology/status; check current summary and later fixes before reuse.
   `tools/test-gp-get-data-vpcd` captures bounded reader scans and logs the
   emulator/probe output once VPCD is available.
 - **Artifacts:** `artifacts/results/gp-get-data-vpcd-20261031T085055Z/`.
+## OS and Pico oversized `fs_read` buffers — 2026-10-31
+
+- The OS filesystem copies `min(buffer_length, record_length)` bytes and leaves
+  the rest of a larger destination untouched. Pico previously rejected a
+  buffer larger than the record, creating a backend mismatch.
+- Viable fix: Pico `fs_read` now copies only the available prefix and returns
+  success, matching the OS API contract. The overlay regression checks both
+  copied bytes and an unchanged sentinel tail; the OS syscall regression
+  checks the same behavior. Focused overlay and OS syscall tests, PC/ARM/RISC-V
+  max_crypto builds, and the identified Pico 2 ARM cycle passed. Keep this
+  behavior and avoid interpreting the untouched destination tail as record
+  data; call `fs_length` first when the full record size is required.
