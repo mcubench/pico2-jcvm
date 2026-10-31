@@ -1529,3 +1529,13 @@ commit IDs, feature-specific tests, and interrupted tasks before resuming them.
   from `pcsc_scan -r`. System journal access is unavailable to this user, so
   the IFD initialization error remains unknown; do not modify driver or
   firmware without that evidence.
+
+## Future backend analysis — 2026-10-31
+
+Added `docs/FUTURE_JCVM_LANGUAGE_BACKENDS.md` at the user's request. This is
+explicitly future work only: do not implement it without a new user request.
+Recommends separate VM/platform contracts and selection, combined presets, and
+an audited all-Rust track covering transport/card manager/crypto/startup too.
+Includes differential tests, fuzzing and persistence switching gates. Source
+inspection and documentation whitespace checks only; no firmware change,
+build, flash or USB/PCSC access. All earlier worktree changes preserved.

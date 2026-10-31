@@ -18414,3 +18414,24 @@
   offline project work meanwhile.
 - Commit: `827a0ba`
 - Artifacts/logs: `artifacts/results/gp-get-data-vpcd-20261031T085055Z/`.
+
+## 2026-10-31 Future language-selectable backend analysis 10 minutes
+
+- Step/experiment: `future-backend-design`
+- When: '2026-10-31 09:56 CET' - '2026-10-31 10:06 CET'
+- Change: Added one future-work-only design document in docs, analyzing current
+  C++ VM, Pico C++ shim, PC Rust OS, ABI/loader/persistence coupling and separate
+  backend/platform selection. Includes all-Rust dependency replacement and
+  conformance, differential, fuzzing and fault-injection validation strategy.
+- Validation: Inspected current CMake, wrappers, FFI and runtime/loader/storage
+  sources; documentation whitespace check passed. Builds and hardware checks
+  intentionally skipped because no source or build configuration changed.
+- Result: Pico does not currently link the Rust OS; C linkage avoids ordinary
+  symbol mangling but does not define a sufficient backend replacement contract.
+  Runtime return declarations differ across the existing Rust/C++ boundary.
+  Runtime/performance metrics were not measured.
+- Decision: Keep VM and platform independently selectable with combined presets;
+  implementation is deferred and requires a separate explicit user request.
+- Commit: This record is included in the documentation commit; resolve its SHA
+  with `git log -1 --format=%H -- docs/FUTURE_JCVM_LANGUAGE_BACKENDS.md`.
+- Artifacts/logs: `docs/FUTURE_JCVM_LANGUAGE_BACKENDS.md`; no hardware logs.
