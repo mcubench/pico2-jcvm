@@ -20,6 +20,24 @@
 - Release was restored and finite monitor passed. Debug Security CSV SHA-256:
   `0cb6789cb206ad1a5161dacd3d10c5cfff2e66eb6766eb6230c925baf015837d`.
 
+## USB-visible Pico CCID devices still fail PC/SC reader registration — 2026-10-31
+
+- Rechecked Pico 2 `8E464F4E2BBC0A19` and `2BED26ED20556535`. The authorized
+  helper reports both USB nodes accessible, and `lsusb -v` reads valid
+  descriptors: interface class 11 (Chip/SmartCard), CCID 1.10, T=1, one slot,
+  bulk endpoints `03/83`, and product name `Pico2 JCVM CCID`.
+- The installed `ifd-ccid.bundle/Contents/Info.plist` has an exact aligned
+  VID/PID/name entry at index 629: `0x2E8A`, `0x0009`, `Pico 2 CHOUPI CCID`.
+  Thus neither a missing CCID interface nor a missing local libccid VID/PID
+  mapping explains the failure.
+- Despite that evidence, an elevated host-access scan
+  `timeout --signal=TERM --kill-after=2s 8s stdbuf -oL -eL pcsc_scan -r`
+  exited 124 after printing only the scanner header. The journal is unreadable
+  to this user, and `/var/log` provided no PC/SC diagnostics. Root cause and
+  any APDU-level behavior remain unverified. Do not change firmware CCID
+  descriptors based on this evidence alone; obtain pcscd/IFD logs or restore a
+  registered physical reader first.
+
 Use this summary first, then the recent issue records or historical topic index.
 Full original: [archived QKB](archive/2026-10-29-pre-compaction/QKB.md).
 Archive text is immutable historical evidence; later fixes supersede earlier

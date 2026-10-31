@@ -1418,9 +1418,11 @@ prioritized backlog above for present status.
   CDC ACM and CCID interfaces; both passed finite serial monitors. The
   installed libccid Info.plist contains an exact VID/PID entry, and the
   approved helper granted `pcscd` access/restarted it, but `pcsc_scan -r`
-  still listed only VPCD. Root cause remains unproven; daemon journal access is
-  unavailable to the current user. Do not alter firmware or CCID mapping
-  without IFD logs.
+  still listed only VPCD. A fresh descriptor inspection found class-11 CCID
+  1.10/T=1 interfaces and confirmed the aligned `0x2E8A`/`0x0009` libccid entry;
+  an 8-second elevated scan then stalled after the scanner header with status
+  124. Root cause remains unproven; daemon journal access is unavailable to
+  the current user. Do not alter firmware or CCID mapping without IFD logs.
 
 - [x] Add a committed install journal to recover CAP registry publication and
   VM filesystem state together. VPCD process-restart cases cover skipped and

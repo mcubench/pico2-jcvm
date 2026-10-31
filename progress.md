@@ -18341,3 +18341,26 @@
   finalized in the following progress-only commit)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; image SHA-256 above.
+
+## 2026-10-31 Diagnose USB-visible Pico CCID registration 3 minutes
+
+- Step/experiment: `physical-pcsc-registration-diagnostic-20261031`
+- When: '2026-10-31 08:32 UTC' - '2026-10-31 08:35 UTC'
+- Change: Added current USB CCID descriptor and libccid VID/PID mapping evidence
+  to QKB and the open physical transport task in TODO. No firmware or driver
+  files were changed.
+- Validation: Through the elevated host-access path, both boards enumerated as
+  `2e8a:0009`. `lsusb -v` showed interface class 11, CCID 1.10, T=1, and bulk
+  endpoints 03/83. Read-only plist parsing confirmed aligned VID `0x2E8A`, PID
+  `0x0009`, and name `Pico 2 CHOUPI CCID` at entry 629. An elevated bounded
+  `pcsc_scan -r` exited 124 after printing only its header. `./tools/doctor`
+  passed host prerequisite checks. Daemon logs were not available.
+- Result: The firmware exposes a CCID interface and the local libccid package
+  has a matching VID/PID rule, yet no physical PC/SC reader was published.
+  Without pcscd/IFD logs, the cause remains unresolved; no APDU was sent.
+- Decision: Leave firmware descriptors unchanged. Resume hardware API testing
+  only after PC/SC registers a physical reader or host diagnostics become
+  available; continue offline project work.
+- Commit: pending (finalized in a follow-up progress record commit)
+- Artifacts/logs: No persistent logs; live `lsusb -v`, plist parse,
+  `pcsc_scan`, and `doctor` outputs were inspected during the session.
