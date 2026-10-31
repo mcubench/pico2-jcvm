@@ -18204,7 +18204,8 @@
   the noted optional Ext limitation. The card was left in its original state.
 - Decision: Continue validation on the same identified board with Security,
   then Crypto using the deploy README's RSA-2048 exclusion.
-- Commit: `<fill after documentation commit>`
+- Commit: `eb4a94b` (validation record; commit reference finalized in the
+  follow-up documentation commit)
 - Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-core-20261031.csv`
   (ignored; SHA-256
   `fdcfbb8423d30df092f2fca7a8045472ebb81feb9f70dabc9173fb8688759a6c`);
