@@ -1,5 +1,41 @@
 # Session handoff — updated 2026-10-30
 
+## Persistent reclaimer primitive — 2026-10-31
+
+Added `PersistentReclaimer::reclaimUnreachableAppletTags` in
+`choupi/src/persistent_inventory.cpp`. It is a bounded-memory opt-in primitive,
+not called from normal runtime collection. It refuses active Java Card
+transactions, performs a full read-only inventory preflight before deletion,
+and then re-traces roots and gathers at most eight candidate tags per batch.
+It erases only after each cursor walk returns, then starts a fresh walk, so
+filesystem mutation never occurs while traversing a cursor. An erase failure
+can leave a subset of already-proven unreachable tags removed; a later call can
+continue safely.
+
+`./tools/test-persistent-transaction` passes the new cases: preserve reachable
+tag subtrees and other owners, reject active transactions, fail closed on
+incomplete roots and cursor stalls, and retry after an injected erase failure
+using a fresh heap. `./tools/build arm --profile max_crypto` passes and
+`./tools/build riscv --profile max_crypto` passes its VM-core build. The test
+harness now explicitly compiles as `PC_VERSION` and supplies the ROM/byte-write
+stubs required by this additional erase path.
+
+The ARM build changed after this addition, so the external max_crypto image
+was refreshed and compared byte-for-byte with `build/arm/pico2_choupi.uf2`.
+The current artifact is 2,087,936 bytes, SHA-256
+`9d32fdfeb19645a016a70f6d0ab9499c4ce2f127d4c737a455a73b2dedbbbd89`.
+`artifacts/firmware/README-max_crypto.txt` records this size and hash.
+
+No physical power cut was tested, no token data was deleted, and this primitive
+is not wired into the normal collector. Keep that gate closed. Next, add
+RP2350-overlay fault injection around the exact owner-tag erase/retry sequence;
+then perform a real USB power interruption and verify applet roots and
+subsequent cleanup before considering runtime activation. Preserve the dirty
+worktree snapshot that predates this step; this change only touches
+`TODO.md`, `.agent/QKB.md`, `.agent/HANDOFF.md`, `progress.md`,
+`choupi/src/persistent_inventory.cpp`, `choupi/src/persistent_inventory.hpp`,
+and the persistent-transaction test harness.
+
 ## Complete physical max_crypto JCAlgTest run — 2026-10-31
 
 The official unchanged JCAlgTest 1.8.2 client completed

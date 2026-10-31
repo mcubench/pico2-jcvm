@@ -18,6 +18,12 @@ bool dynamic_cap_present[8]{};
 const uint8_t dynamic_cap_code[] = {0x01};
 } // namespace persistent_transaction_test
 
+extern "C" const uint8_t *choupi_pc_rom_package_data(uint8_t,
+                                                       uint32_t *length) {
+  if (length != nullptr) *length = 0;
+  return nullptr;
+}
+
 uint16_t persistent_transaction_test_pending_reason = 0;
 extern "C" void choupi_record_transaction_buffer_full(void) {
   persistent_transaction_test_pending_reason = 3;
@@ -90,6 +96,7 @@ bool fail_next_read = false;
 bool fail_next_sync = false;
 bool stall_after_one_cursor_result = false;
 bool cursor_result_returned = false;
+int erase_fail_after = -1;
 unsigned int sync_count = 0;
 unsigned int array_allocation_start = 0;
 unsigned int array_deallocation_start = 0;
@@ -156,7 +163,26 @@ extern "C" uint8_t fs_write(const uint8_t *tag, const uint8_t tag_length,
 }
 
 extern "C" uint8_t fs_erase(const uint8_t *tag, const uint8_t tag_length) {
+  if (erase_fail_after == 0) {
+    erase_fail_after = -1;
+    return 1;
+  }
+  if (erase_fail_after > 0) --erase_fail_after;
   return files.erase(key_for(tag, tag_length)) == 1 ? 0 : 2;
+}
+
+extern "C" uint8_t fs_write_1b_at(const uint8_t *tag,
+                                   const uint8_t tag_length,
+                                   const uint32_t offset,
+                                   const uint8_t value) {
+  if (fail_next_write) {
+    fail_next_write = false;
+    return 1;
+  }
+  const auto found = files.find(key_for(tag, tag_length));
+  if (found == files.end() || offset >= found->second.size()) return 2;
+  found->second[offset] = value;
+  return 0;
 }
 
 extern "C" uint8_t fs_sync(void) {
@@ -202,6 +228,10 @@ namespace persistent_transaction_test {
 void force_cursor_stall_after_one_result() {
   stall_after_one_cursor_result = true;
   cursor_result_returned = false;
+}
+
+void fail_erase_after(unsigned int successful_erases) {
+  erase_fail_after = static_cast<int>(successful_erases);
 }
 
 std::vector<uint8_t> read(const uint8_t *tag, const uint8_t length) {

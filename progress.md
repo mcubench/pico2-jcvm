@@ -18022,3 +18022,42 @@
 - Commit: pending
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`.
+
+## 2026-10-31 Add opt-in persistent tag reclaimer 11 minutes
+
+- Step/experiment: `bounded-persistent-reclaimer-primitive-20261031`
+- When: '2026-10-31 04:37 UTC' - '2026-10-31 04:48 UTC'
+- Change: Added `PersistentReclaimer::reclaimUnreachableAppletTags` as an
+  isolated, non-runtime-called primitive. It guards active Java Card
+  transactions, preflights the full cursor, then re-traces roots and erases
+  fixed batches only after each cursor traversal completes. Updated TODO,
+  QKB, and HANDOFF with the recovery gate and next step. Corrected the
+  persistent-transaction host harness to compile as `PC_VERSION` and provide
+  its ROM and byte-write stubs after the erase path made those dependencies
+  live. Refreshed the external max_crypto ARM UF2 from the new full ARM build.
+- Validation: `./tools/test-persistent-transaction` passed with
+  `TEST:SUMMARY fail=0`, including incomplete-root and cursor-stall fail-closed
+  cases, reachable subtree and owner preservation, active transaction refusal,
+  and injected interruption followed by successful retry on a fresh heap.
+  `./tools/build arm --profile max_crypto` passed and produced the full ARM
+  JCVM image; `cmp` confirms the downloadable UF2 matches it byte-for-byte.
+  The image is 2,087,936 bytes with SHA-256
+  `9d32fdfeb19645a016a70f6d0ab9499c4ce2f127d4c737a455a73b2dedbbbd89`.
+  `./tools/build riscv --profile max_crypto` passed its VM-core build. The
+  first focused-test link failed because the harness lacked
+  `PC_VERSION`, ROM-data, and byte-write stubs; these were added and the final
+  complete test run passed. No physical flash or USB power interruption was
+  performed because the primitive is not connected to runtime collection.
+- Result: Persistent deletion is available only through an explicit API call;
+  normal runtime collection remains unchanged. Mid-pass failures can leave
+  only tags proven unreachable and the operation can be retried. The external
+  max_crypto ARM artifact now matches the post-change firmware image.
+- Decision: Keep the primitive unwired until RP2350 overlay fault injection
+  covers this erase/retry path and actual hardware power-loss recovery proves
+  applet roots survive.
+- Commit: pending
+- Artifacts/logs: `choupi/src/persistent_inventory.cpp`,
+  `choupi/src/persistent_inventory.hpp`, and
+  `tools/tests/persistent_transaction/`,
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, and
+  `artifacts/firmware/README-max_crypto.txt`.

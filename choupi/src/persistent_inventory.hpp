@@ -34,7 +34,9 @@ enum class VisitResult : uint8_t {
   InvalidStaticLayout,
   InvalidArgument,
   ReadFailure,
-  IncompleteReachability
+  IncompleteReachability,
+  TransactionActive,
+  EraseFailure
 };
 
 using TagVisitor = bool (*)(const Tag &tag, void *context);
@@ -113,6 +115,23 @@ VisitResult visitUnreachableAppletTags(
     TagVisitor candidate_visitor, void *candidate_context);
 
 } // namespace PersistentInventory
+
+namespace PersistentReclaimer {
+
+/// Remove owner-scoped persistent records that a complete strict reachability
+/// walk proves unreachable. This primitive is deliberately not wired into the
+/// normal post-APDU collector: callers must serialize filesystem access and
+/// validate the target's per-record power-loss recovery before enabling it.
+/// Deletion is performed in fixed-size batches after a full read-only inventory
+/// preflight, so the active-tag cursor is never mutated while being traversed.
+/// A failure may leave an already-erased prefix of unreachable records; retry
+/// is safe, and only Complete means the entire owner inventory was reclaimed.
+PersistentInventory::VisitResult reclaimUnreachableAppletTags(
+    uint8_t applet_owner, Heap &heap,
+    PersistentInventory::RootReferenceEnumerator enumerate_roots,
+    void *root_context, uint32_t *erased_count = nullptr);
+
+} // namespace PersistentReclaimer
 } // namespace jcvm
 
 #endif

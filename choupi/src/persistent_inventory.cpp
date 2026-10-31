@@ -2,7 +2,9 @@
 
 #include "heap.hpp"
 #include "ffi.h"
+#include "jc_handlers/flashmemory.hpp"
 
+#include <array>
 #include <cstring>
 
 namespace jcvm {
@@ -200,4 +202,93 @@ VisitResult visitUnreachableAppletTags(
 }
 
 } // namespace PersistentInventory
+
+namespace PersistentReclaimer {
+namespace {
+constexpr uint8_t kTagBatchCapacity = 8;
+
+struct CandidateBatch {
+  std::array<PersistentInventory::Tag, kTagBatchCapacity> tags{};
+  uint8_t count = 0;
+};
+
+bool acceptAllCandidates(const PersistentInventory::Tag &, void *) {
+  return true;
+}
+
+bool collectCandidateBatch(const PersistentInventory::Tag &tag,
+                           void *opaque) {
+  auto &batch = *static_cast<CandidateBatch *>(opaque);
+  if (batch.count >= batch.tags.size()) return false;
+  batch.tags[batch.count++] = tag;
+  return batch.count < batch.tags.size();
+}
+} // namespace
+
+PersistentInventory::VisitResult reclaimUnreachableAppletTags(
+    const uint8_t applet_owner, Heap &heap,
+    const PersistentInventory::RootReferenceEnumerator enumerate_roots,
+    void *root_context, uint32_t *erased_count) {
+  using PersistentInventory::VisitResult;
+  if (erased_count != nullptr) *erased_count = 0;
+  if (enumerate_roots == nullptr) return VisitResult::InvalidArgument;
+  if (FlashMemory_Handler::persistentWriteTransactionActive()) {
+    return VisitResult::TransactionActive;
+  }
+
+  // Validate the complete tag cursor before any mutation. Later passes may
+  // stop after a bounded batch, but each restart gets a fresh cursor and a
+  // fresh strict root trace.
+  const VisitResult preflight = PersistentInventory::visitUnreachableAppletTags(
+      applet_owner, heap, enumerate_roots, root_context, acceptAllCandidates,
+      nullptr);
+  if (preflight != VisitResult::Complete) return preflight;
+
+  uint32_t erased = 0;
+  while (true) {
+    if (FlashMemory_Handler::persistentWriteTransactionActive()) {
+      if (erased_count != nullptr) *erased_count = erased;
+      return VisitResult::TransactionActive;
+    }
+
+    CandidateBatch batch;
+    const VisitResult scan =
+        PersistentInventory::visitUnreachableAppletTags(
+            applet_owner, heap, enumerate_roots, root_context,
+            collectCandidateBatch, &batch);
+    if (scan != VisitResult::Complete && scan != VisitResult::Stopped) {
+      if (erased_count != nullptr) *erased_count = erased;
+      return scan;
+    }
+    if (scan == VisitResult::Stopped &&
+        batch.count != kTagBatchCapacity) {
+      if (erased_count != nullptr) *erased_count = erased;
+      return VisitResult::InvalidCursor;
+    }
+    if (batch.count == 0) {
+      if (erased_count != nullptr) *erased_count = erased;
+      return VisitResult::Complete;
+    }
+
+    for (uint8_t index = 0; index < batch.count; ++index) {
+      const auto &candidate = batch.tags[index];
+      if (candidate.len < 2 || candidate.value[0] != 0x03 ||
+          candidate.value[1] != applet_owner ||
+          fs_exists(candidate.value, candidate.len) == 0) {
+        if (erased_count != nullptr) *erased_count = erased;
+        return VisitResult::ReadFailure;
+      }
+      fs::Tag tag{};
+      tag.len = candidate.len;
+      std::memcpy(tag.value, candidate.value, candidate.len);
+      if (!FlashMemory_Handler::erasePersistentTag(tag) ||
+          fs_exists(candidate.value, candidate.len) != 0) {
+        if (erased_count != nullptr) *erased_count = erased;
+        return VisitResult::EraseFailure;
+      }
+      ++erased;
+    }
+  }
+}
+} // namespace PersistentReclaimer
 } // namespace jcvm

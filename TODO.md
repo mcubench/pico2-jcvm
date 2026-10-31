@@ -284,6 +284,15 @@ out explicitly.
     VPCD persistence/GC stress scans pass. Physical multi-owner inventory and
     actual power-cycle recovery remain open acceptance requirements; no
     persistent-record deletion is enabled.
+  - [x] Add a bounded-batch persistent-reclaimer primitive, separate from the
+    normal collector. It preflights a complete owner inventory, re-traces
+    roots for each bounded batch, refuses to run during Java Card transactions,
+    and restarts the tag cursor after each batch so it never erases while
+    iterating. Host fault injection confirms incomplete roots/cursors delete
+    nothing, reachable tag subtrees and other owners are preserved, and an
+    interrupted erase pass can resume from a fresh heap. ARM and RISC-V wrapper
+    builds pass. The primitive is not wired into runtime collection; physical
+    per-record power-loss recovery is still required before enabling it.
 - [x] Resume the physical API 3.0.5 Security sweep on identified Pico 2
   `2BED26ED20556535` with the `asymm_crypto` image. Both full sweeps completed
   901 calls and successful CAP cleanup. The public RSA-4096 `KeyBuilder`

@@ -8,6 +8,29 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## Persistent-object reclamation must fail closed — 2026-10-31
+
+- The normal post-APDU collector only reclaims volatile heap slots. A new
+  `PersistentReclaimer` primitive provides persistent tag deletion but is not
+  called by runtime collection. It refuses active Java Card transactions,
+  requires a complete read-only tag-cursor preflight, traces roots again for
+  each fixed-size batch, and restarts enumeration after each batch. If an erase
+  fails, earlier deletions are restricted to tags proven unreachable; retrying
+  can finish the remaining candidates.
+- `./tools/test-persistent-transaction` passes interrupted-batch retry,
+  reachable-subtree/owner preservation, active-transaction refusal, incomplete
+  root failure, and cursor-stall failure-closed cases. ARM and RISC-V max-profile
+  wrappers pass. The downloadable max_crypto ARM UF2 was refreshed to the
+  matching 2,087,936-byte build, SHA-256
+  `9d32fdfeb19645a016a70f6d0ab9499c4ce2f127d4c737a455a73b2dedbbbd89`.
+  These are host-model and compile checks only; no token data was deleted and
+  no physical power cut was tested.
+- Do not wire this primitive into the normal collector until the RP2350
+  filesystem erase atomicity and recovery are validated on hardware with an
+  actual USB power interruption. If a target power cycle interrupts a batch,
+  confirm reboot preserves all roots and a subsequent collection safely
+  finishes the remaining unreachable tags.
+
 ## VPCD first-reader scan can time out during PC/SC startup — 2026-10-31
 
 - `tools/test-gppro-empty-install-vpcd` previously ran one 8-second

@@ -1,6 +1,7 @@
 Pico 2 JCVM max_crypto ARM image
 Build profile: max_crypto (147 of 150 declared capabilities enabled)
 Target: RP2350, ARM Secure, 2 MiB Pico 2 flash
+Image size: 2,087,936 bytes
 The image boots to an empty card; JCAlgTest is not preinstalled.
 
 Flash from BOOTSEL by copying:
@@ -15,7 +16,7 @@ KeyPair 4096 entries. The provided JCOP4 comparison matrix also excludes
 AES-CTR, so this profile's AES-CTR entry is a JCVM API extension.
 
 SHA-256:
-  f97cb0694a516d6dd0de3e07e868afe95f1b5bbac9e60407733d277761dcd776  pico2-jcvm-max_crypto-arm-empty-card.uf2
+  9d32fdfeb19645a016a70f6d0ab9499c4ce2f127d4c737a455a73b2dedbbbd89  pico2-jcvm-max_crypto-arm-empty-card.uf2
   81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0  pico2-jcvm-max_crypto-arm-supported.csv
 
 Refreshed from current source on 2026-10-31 with

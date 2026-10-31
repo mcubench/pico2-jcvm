@@ -3,6 +3,7 @@
 #include "persistent_inventory.hpp"
 #include "jc_types/jc_array.hpp"
 
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -13,6 +14,7 @@
 
 namespace persistent_transaction_test {
 void force_cursor_stall_after_one_result();
+void fail_erase_after(unsigned int successful_erases);
 extern uint16_t instance_field_count;
 std::vector<uint8_t> read(const uint8_t *tag, uint8_t length);
 void seed(const uint8_t *tag, uint8_t tag_length, std::vector<uint8_t> value);
@@ -83,6 +85,18 @@ bool collect_candidate(const jcvm::PersistentInventory::Tag &tag,
                        void *opaque) {
   auto &captured = *static_cast<CandidateTags *>(opaque);
   captured.tags.emplace_back(tag.value, tag.value + tag.len);
+  return true;
+}
+
+struct RootVectorContext {
+  const std::vector<jcvm::jref_t> *roots;
+};
+
+bool enumerate_root_vector(jcvm::Heap::ReferenceVisitor visitor,
+                           void *visitor_context, void *root_context) {
+  if (visitor == nullptr || root_context == nullptr) return false;
+  const auto &roots = *static_cast<RootVectorContext *>(root_context)->roots;
+  for (const auto &root : roots) visitor(root, visitor_context);
   return true;
 }
 } // namespace
@@ -583,6 +597,21 @@ int main() {
           !persistent_transaction_test::read(root_tag, sizeof(root_tag)).empty() &&
           !persistent_transaction_test::read(orphan_tag,
                                                sizeof(orphan_tag)).empty();
+      const std::vector<jcvm::jref_t> roots{root_reference};
+      RootVectorContext root_context{&roots};
+      uint32_t erased = 99;
+      const auto reclaim_result =
+          jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+              owner, heap, enumerate_root_vector, &root_context, &erased);
+      failed_closed =
+          failed_closed &&
+          reclaim_result ==
+              jcvm::PersistentInventory::VisitResult::IncompleteReachability &&
+          erased == 0 &&
+          !persistent_transaction_test::read(root_tag,
+                                               sizeof(root_tag)).empty() &&
+          !persistent_transaction_test::read(orphan_tag,
+                                               sizeof(orphan_tag)).empty();
     } catch (jcvm::Exceptions) {
       failed_closed = false;
     }
@@ -610,6 +639,131 @@ int main() {
                !persistent_transaction_test::read(second_tag,
                                                     sizeof(second_tag)).empty(),
            "cursor_failure_marks_streamed_candidates_incomplete_without_mutation");
+  }
+
+  {
+    constexpr uint8_t owner = 0x41;
+    const uint8_t root_tag_bytes[] = {0x03, owner, 0x10, 0x01};
+    const uint8_t body_tag_bytes[] = {0x03, owner, 0x10, 0x01, 0xff, 0xff};
+    const uint8_t nested_tag_bytes[] = {0x03, owner, 0x10, 0x01, 0x00};
+    const uint8_t orphan_tag_bytes[] = {0x03, owner, 0x20, 0x01};
+    const uint8_t other_owner_tag_bytes[] = {0x03, 0x42, 0x20, 0x01};
+    const uint8_t static_tag_bytes[] = {0x02, owner, 0x00};
+    seed(root_tag_bytes, sizeof(root_tag_bytes), byte_record(0x01));
+    seed(body_tag_bytes, sizeof(body_tag_bytes), byte_record(0x02));
+    seed(nested_tag_bytes, sizeof(nested_tag_bytes), byte_record(0x03));
+    seed(orphan_tag_bytes, sizeof(orphan_tag_bytes), byte_record(0x04));
+    seed(other_owner_tag_bytes, sizeof(other_owner_tag_bytes), byte_record(0x05));
+    seed(static_tag_bytes, sizeof(static_tag_bytes), byte_record(0x06));
+
+    jcvm::Heap heap(owner);
+    const jcvm::jref_t root = heap.addArray(1, jcvm::JAVA_ARRAY_T_BYTE);
+    jcvm::fs::Tag root_tag{};
+    root_tag.len = sizeof(root_tag_bytes);
+    std::memcpy(root_tag.value, root_tag_bytes, sizeof(root_tag_bytes));
+    heap.getArray(root)->setPersistentTag(root_tag);
+    const std::vector<jcvm::jref_t> root_references{root};
+    RootVectorContext roots{&root_references};
+    uint32_t erased = 0;
+    const auto result = jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+        owner, heap, enumerate_root_vector, &roots, &erased);
+    expect(result == jcvm::PersistentInventory::VisitResult::Complete &&
+               erased == 1 && read(root_tag_bytes, sizeof(root_tag_bytes)) ==
+                                  byte_record(0x01) &&
+               read(body_tag_bytes, sizeof(body_tag_bytes)) == byte_record(0x02) &&
+               read(nested_tag_bytes, sizeof(nested_tag_bytes)) ==
+                   byte_record(0x03) &&
+               read(orphan_tag_bytes, sizeof(orphan_tag_bytes)).empty() &&
+               read(other_owner_tag_bytes, sizeof(other_owner_tag_bytes)) ==
+                   byte_record(0x05) &&
+               read(static_tag_bytes, sizeof(static_tag_bytes)) ==
+                   byte_record(0x06),
+           "reclaimer_deletes_only_unreachable_owner_tags_and_preserves_subtrees");
+  }
+
+  {
+    constexpr uint8_t owner = 0x42;
+    const uint8_t first_tag[] = {0x03, owner, 0x20, 0x01};
+    const uint8_t second_tag[] = {0x03, owner, 0x20, 0x02};
+    seed(first_tag, sizeof(first_tag), byte_record(0x21));
+    seed(second_tag, sizeof(second_tag), byte_record(0x22));
+    persistent_transaction_test::force_cursor_stall_after_one_result();
+    const std::vector<jcvm::jref_t> no_roots;
+    RootVectorContext roots{&no_roots};
+    jcvm::Heap heap(owner);
+    uint32_t erased = 99;
+    const auto result = jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+        owner, heap, enumerate_root_vector, &roots, &erased);
+    expect(result == jcvm::PersistentInventory::VisitResult::InvalidCursor &&
+               erased == 0 && read(first_tag, sizeof(first_tag)) ==
+                                  byte_record(0x21) &&
+               read(second_tag, sizeof(second_tag)) == byte_record(0x22),
+           "reclaimer_cursor_preflight_fails_closed_without_deletion");
+  }
+
+  {
+    constexpr uint8_t owner = 0x43;
+    const uint8_t orphan_tag[] = {0x03, owner, 0x20, 0x01};
+    seed(orphan_tag, sizeof(orphan_tag), byte_record(0x11));
+    jcvm::Heap heap(owner);
+    const std::vector<jcvm::jref_t> no_roots;
+    RootVectorContext roots{&no_roots};
+    expect(FlashMemory_Handler::beginPersistentWriteTransaction(),
+           "reclaimer_guard_begin_transaction");
+    uint32_t erased = 99;
+    const auto result = jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+        owner, heap, enumerate_root_vector, &roots, &erased);
+    expect(result == jcvm::PersistentInventory::VisitResult::TransactionActive &&
+               erased == 0 && read(orphan_tag, sizeof(orphan_tag)) ==
+                                  byte_record(0x11),
+           "reclaimer_refuses_mutation_during_java_card_transaction");
+    expect(FlashMemory_Handler::rollbackPersistentWriteTransaction(),
+           "reclaimer_guard_rollback_transaction");
+  }
+
+  {
+    constexpr uint8_t owner = 0x44;
+    std::array<std::array<uint8_t, 4>, 10> orphan_tags{};
+    for (uint8_t index = 0; index < orphan_tags.size(); ++index) {
+      orphan_tags[index] = {0x03, owner, 0x30, index};
+      seed(orphan_tags[index].data(), orphan_tags[index].size(),
+           byte_record(index));
+    }
+    const std::vector<jcvm::jref_t> no_roots;
+    RootVectorContext roots{&no_roots};
+    jcvm::Heap first_heap(owner);
+    persistent_transaction_test::fail_erase_after(2);
+    uint32_t erased = 0;
+    const auto interrupted =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, first_heap, enumerate_root_vector, &roots, &erased);
+    bool retained_after_interruption = interrupted ==
+                                           jcvm::PersistentInventory::VisitResult::EraseFailure &&
+                                       erased == 2;
+    for (uint8_t index = 0; index < orphan_tags.size(); ++index) {
+      const bool exists =
+          !read(orphan_tags[index].data(), orphan_tags[index].size()).empty();
+      retained_after_interruption &= exists == (index >= 2);
+    }
+
+    // A fresh heap models reboot: the incomplete pass removed only proven
+    // garbage, and a later full scan can safely finish reclaiming the rest.
+    jcvm::Heap recovered_heap(owner);
+    uint32_t recovered_erased = 0;
+    const auto recovered =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            owner, recovered_heap, enumerate_root_vector, &roots,
+            &recovered_erased);
+    bool all_reclaimed = recovered ==
+                             jcvm::PersistentInventory::VisitResult::Complete &&
+                         recovered_erased == 8;
+    for (const auto &tag : orphan_tags) {
+      all_reclaimed &= read(tag.data(), tag.size()).empty();
+    }
+    expect(retained_after_interruption,
+           "reclaimer_interruption_keeps_only_unprocessed_orphans");
+    expect(all_reclaimed,
+           "reclaimer_retry_after_restart_finishes_remaining_orphans");
   }
 
   expect(!FlashMemory_Handler::persistentWriteTransactionActive(),
