@@ -17802,7 +17802,7 @@
 - Decision: Preserve this partial report as evidence, do not call the full
   JCAlgTest acceptance complete, and correct CPLC source plus fixtures before
   the next ARM artifact refresh.
-- Commit: pending closeout
+- Commit: `857717a`
 - Artifacts/logs: CSV
   `artifacts/results/jcalgtest/max_crypto_physical_2BED_20261031/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv`,
   SHA-256 `90e003669f7c90ce64ce83246ce82d4cd68f85de6afe23e2d22252d1b83ed8a9`;
