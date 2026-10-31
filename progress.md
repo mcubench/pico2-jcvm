@@ -17623,3 +17623,24 @@
   separately)
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261031T015450Z.log`,
   SHA-256 `b9c1988f1b8934999bd7470a43c6492b6c2aa733c0c3f23a5a85975d1dd71c75`.
+
+## 2026-10-31 refresh max crypto ARM external-test image 3 minutes
+
+- Step/experiment: `max-crypto-arm-uf2-apdu-map-refresh`
+- When: '2026-10-31 01:57 UTC' - '2026-10-31 02:00 UTC'
+- Change: Replaced the external-test max_crypto ARM UF2 with the latest
+  `build/arm/pico2_choupi.uf2` after the JC305 APDU virtual-method correction.
+  Updated its README size/hash; the generated support CSV did not change.
+- Validation: ARM and RISC-V `max_crypto` wrapper builds passed earlier in
+  this session. `cmp -s` confirmed the packaged UF2 matches the ARM build
+  output byte-for-byte. No hardware flash was attempted because PC/SC currently
+  registers no physical Pico reader.
+- Result: The downloadable image is 2,086,400 bytes, SHA-256
+  `c739e78a21763724596ffb81878447b69038f67f1ff63d83a7d548d0b5c980e9`;
+  expected-support CSV SHA-256 remains
+  `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
+- Decision: External users can test current max_crypto source; retain physical
+  APDU validation as open work and continue the API backlog.
+- Commit: `c73fc70` (artifact; this runtime closeout is committed separately)
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
+  and `artifacts/firmware/README-max_crypto.txt`; no runtime log.

@@ -28,6 +28,14 @@ in 87.427 seconds, including restart restore, API/exception behavior,
 `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261031T015450Z.log` and
 validation commit `63aefd4`. Physical PC/SC remains unavailable.
 
+Refreshed the downloadable max crypto ARM image from the latest passing
+`./tools/build arm --profile max_crypto` output after the APDU token-map fix.
+Artifact: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`,
+2,086,400 bytes, SHA-256
+`c739e78a21763724596ffb81878447b69038f67f1ff63d83a7d548d0b5c980e9`.
+The file compares byte-for-byte with `build/arm/pico2_choupi.uf2`; the expected
+support CSV hash is unchanged. Commit `c73fc70`. No physical flash was done.
+
 ## Current continuation — JCSystem.lookupAID permanent EPO behavior — 2026-10-31
 
 `lookupAID()` and `getAID()` now return runtime-wide JCRE `AID` Entry Point
