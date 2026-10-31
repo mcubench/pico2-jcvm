@@ -41,6 +41,29 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `artifacts/logs/physical-gp-get-data-cplc-2BED-20261031.log`, SHA-256
   `b4a4bb53964e98ee2c8541c00b7f4a0687ae9cedc1e8cd40e90e12b511708e42`.
 
+## Standalone AES-CTR profile physical support comparison — 2026-10-31
+
+- Rebuilt both wrapper targets for `symm_crypto_ctr`, flashed the full ARM
+  `choupi` image to Pico 2 `2BED26ED20556535`, and passed the finite runtime
+  monitor. After reboot, `pcsc_scan -r` initially listed only VPCD; the
+  authorized `pico2-pcsc-reader` helper granted USB-node access and a retry
+  registered the Pico reader.
+- The unchanged JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run completed with exit
+  status 0: 4,525 identities, 75 yes, 4,450 no, zero other. jCardSim identities
+  matched exactly. The generated `symm_crypto_ctr` manifest matched 48/48,
+  with zero unexpected or missing positives. Both `ALG_AES_CTR` in the Cipher
+  section and `CIPHER_AES_CTR PAD_NOPAD` reported yes.
+- CSV SHA-256
+  `4dd12ac4de12f0cc127b0af090d5fab32a4eb7ce8cb3d8bfd178b4ecb4ec1f98`; raw
+  client log SHA-256
+  `3b190ad422fe0752255f8b8397a5ab796199875845058df14be26f521480cf8d`.
+  ARM image SHA-256
+  `8e5e727543fe29d72fa9c6a55d835fef42cdb7d81c8a1e8a26a24e6cf5f0ec8c`.
+- This supersedes the earlier max_crypto-only report note for the standalone
+  profile. The eight NIST CTR physical KATs were previously run on the
+  `max_crypto` superset; exact-profile KAT repetition remains optional unless
+  CTR dispatch or profile linking changes.
+
 ## Physical AES-CTR vectors on max_crypto superset — 2026-10-31
 
 - The current combined `max_crypto` ARM build includes the profile-gated CTR

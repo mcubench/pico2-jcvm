@@ -2044,7 +2044,7 @@ rollback and duplicate/invalid registration handling also remain unverified.
   audit, but establish the target card's expected support independently before
   claiming matrix parity for a row absent from this file.
 
-- [ ] **Validate Java Card 3.0.5 AES-CTR on a physical Pico 2.** Native C++
+- [x] **Validate Java Card 3.0.5 AES-CTR on a physical Pico 2.** Native C++
   dispatch and an isolated `symm_crypto_ctr` profile are implemented; existing
   named profiles retain their prior support sets. The unchanged JCAlgTest 1.8.2
   report exposes `ALG_AES_CTR` and reported `no` on the old image. NIST
@@ -2068,6 +2068,20 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `artifacts/logs/aes-ctr-pcsc-install-2BED-20261031.log`,
   `artifacts/logs/aes-ctr-pcsc-cleanup-2BED-20261031.log`, and
   `artifacts/logs/aes-ctr-pcsc-post-cleanup-list-2BED-20261031.log`.
+  **Standalone physical profile validation (2026-10-31):** built ARM and
+  RISC-V with the repository wrappers, flashed the full ARM image to 2BED, and
+  passed the finite runtime monitor. The unchanged physical JCAlgTest 1.8.2
+  client completed all 4,525 rows with 75 yes, 4,450 no, and zero other; the
+  generated `symm_crypto_ctr` support declaration matched exactly (48/48, no
+  missing or unexpected positives). The `javacardx.crypto.Cipher`
+  `ALG_AES_CTR` row and `CIPHER_AES_CTR PAD_NOPAD` factory row report yes. CSV
+  SHA-256 `4dd12ac4de12f0cc127b0af090d5fab32a4eb7ce8cb3d8bfd178b4ecb4ec1f98`;
+  raw log SHA-256
+  `3b190ad422fe0752255f8b8397a5ab796199875845058df14be26f521480cf8d`;
+  ARM image SHA-256
+  `8e5e727543fe29d72fa9c6a55d835fef42cdb7d81c8a1e8a26a24e6cf5f0ec8c`.
+  The earlier NIST KATs were run on `max_crypto`, which includes the same CTR
+  module; an exact-profile KAT repetition remains optional follow-up.
 
 - [x] Implement and validate the `asymm_crypto` selectable profile against
   `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`

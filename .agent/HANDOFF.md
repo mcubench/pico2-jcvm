@@ -24,7 +24,7 @@ the generated `build/javacard-support/jcalgtest-supported.csv`; its expected
 failure is exactly the two upstream-labeled KeyPair rows. A filtered temporary
 expectation gives `COMPARE:PASS` for the other 145 identities.
 
-## Standalone symm_crypto_ctr physical validation in progress — 2026-10-31
+## Standalone symm_crypto_ctr physical validation — 2026-10-31
 
 Both `./tools/build arm --profile symm_crypto_ctr` and
 `./tools/build riscv --profile symm_crypto_ctr` passed. The first cycle command
@@ -37,11 +37,16 @@ its smoke test but is not JCVM evidence. The correct
 `8e5e727543fe29d72fa9c6a55d835fef42cdb7d81c8a1e8a26a24e6cf5f0ec8c`.
 After reboot, PC/SC initially listed only VPCD readers; the authorized helper
 granted access to the Pico node and a subsequent scan registered the exact
-reader. The unchanged 1.8.2 `ALG_SUPPORT_EXTENDED` run is active against that
-reader in
-`artifacts/results/jcalgtest/symm_crypto_ctr_full_2BED_20261031/`. Continue
-polling that existing process; do not start a competing physical test. Its
-generated 48-entry expected manifest is
+reader. The unchanged 1.8.2 report was saved in
+`artifacts/results/jcalgtest/symm_crypto_ctr_full_2BED_20261031/` and completed
+with exit status 0. The CSV matches all 4,525 jCardSim row identities and
+contains 75 yes, 4,450 no, zero other. The generated 48-entry expected
+manifest matches exactly: 48 expected and actual, zero unexpected or missing.
+Both the Cipher `ALG_AES_CTR` and `CIPHER_AES_CTR PAD_NOPAD` rows report yes.
+CSV SHA-256 `4dd12ac4de12f0cc127b0af090d5fab32a4eb7ce8cb3d8bfd178b4ecb4ec1f98`;
+raw log SHA-256
+`3b190ad422fe0752255f8b8397a5ab796199875845058df14be26f521480cf8d`.
+The generated 48-entry expected manifest is
 `build/javacard-support/jcalgtest-supported.csv` (SHA-256
 `cdfc7ed0923a63740d4da8747e5101078fa66e533f350326a60c2175918791b5`).
 Cycle log: `artifacts/logs/cycle-choupi-20261031T035348Z.log` (SHA-256
@@ -508,7 +513,9 @@ build and test evidence. Usage instructions and file hashes are in
 `artifacts/firmware/README-max_crypto.txt`.
 
 Native `Cipher.ALG_AES_CTR` support and selectable profile `symm_crypto_ctr`
-are implemented. Previous profiles (`current`, `base`, `no_aes`, `minimal`,
+are implemented. The standalone profile's physical report now passes all
+4,525 rows, with exact 48/48 generated-manifest parity on Pico 2 2BED. Previous
+profiles (`current`, `base`, `no_aes`, `minimal`,
 `symm_crypto`, `asymm_crypto`) retain their capability selections. The CTR
 native path stores the counter in the existing Cipher IV array, stream block in
 the otherwise-unused modulus array, and partial-block offset in
@@ -530,10 +537,11 @@ extension and not claimed matrix parity. VPCD log:
 `artifacts/logs/aes-ctr-vpcd-20261030T185802Z.log` (SHA-256
 `f057331e506e4ae1b764915bfdb4c37606f6b65dc0a3e30a649e13eb102555ad`).
 
-Next: when a physical reader returns, flash `symm_crypto_ctr`, run finite
-monitoring and the unchanged JCAlgTest 1.8.2 extended support test, compare the
-CTR rows and full report, then record results. Continue other TODO work while
-physical reader registration is absent. Preserve unrelated dirty changes.
+The requested standalone physical support comparison is complete. The NIST
+CTR KATs were previously run on the `max_crypto` superset; repeat them on the
+exact standalone profile if future changes touch CTR dispatch or profile
+linking. Continue the remaining TODO items and preserve unrelated dirty
+changes.
 
 Full pre-compaction history: [archived handoff](archive/2026-10-29-pre-compaction/HANDOFF.md).
 The archive is historical evidence, not current instructions or current board state.
