@@ -20,11 +20,20 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - `./tools/test-persistent-transaction` passes interrupted-batch retry,
   reachable-subtree/owner preservation, active-transaction refusal, incomplete
   root failure, and cursor-stall failure-closed cases. ARM and RISC-V max-profile
-  wrappers pass. The downloadable max_crypto ARM UF2 was refreshed to the
-  matching 2,087,936-byte build, SHA-256
-  `9d32fdfeb19645a016a70f6d0ab9499c4ce2f127d4c737a455a73b2dedbbbd89`.
-  These are host-model and compile checks only; no token data was deleted and
-  no physical power cut was tested.
+  wrappers pass. A compile-time test hook, disabled by default, was exercised
+  on Pico 2 `2BED26ED20556535` using the temporary `PersistentReclaimerProbe`
+  applet. Clearing a rooted persistent reference deleted exactly one orphan
+  object-body tag; a separate rooted object remained readable, and probe
+  install/cleanup passed. Serial evidence:
+  `artifacts/logs/persistent-reclaimer-monitor-2BED-20261031-fixed.log`, SHA-256
+  `b395ae8298ab06289794071a5b8011c93182fc0e47d1476b2200593b801bce86`; APDU
+  run/cleanup:
+  `artifacts/logs/persistent-reclaimer-physical-20261031T052908Z.log`, SHA-256
+  `d161d673120e22172dcb6ae97f4363049ba0d435c38f72ac4e846d6b1bca936a`.
+  This uncovered a real bug: a reachable object tag prefix incorrectly
+  protected all deeper records. Reachability now covers the exact object tag
+  and its direct two-byte field/element records only; deeper records require
+  their own marked object. The regression and both architecture builds pass.
 - Do not wire this primitive into the normal collector until the RP2350
   filesystem erase atomicity and recovery are validated on hardware with an
   actual USB power interruption. If a target power cycle interrupts a batch,

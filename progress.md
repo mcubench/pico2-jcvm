@@ -18085,3 +18085,14 @@
 - Commit: pending
 - Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`;
   test output ended with `TEST:SUMMARY fail=0`.
+
+## 2026-10-31 Persistent reclaimer physical probe and max_crypto release artifact 11
+
+- Step/experiment: `persistent-reclaimer-physical-and-max-crypto-artifact`
+- When: '2026-10-31 05:29 UTC' - '2026-10-31 05:40 UTC'
+- Change: Fixed persistent tag reachability so a rooted object only protects its own tag and direct two-byte field/element records; added a nested-orphan regression and a debug-only APDU collection hook with a temporary probe applet. The debug hook remains off by default and is not connected to normal collection. Refreshed the external max_crypto ARM empty-card UF2 and its usage/readme from the debug-off build.
+- Validation: `./tools/test-persistent-transaction` passed (`TEST:SUMMARY fail=0`); debug ARM and RISC-V `symm_crypto` wrapper builds passed; the physical probe on Pico 2 `2BED26ED20556535` passed 5/5 APDU checks and package cleanup; standard debug-off `max_crypto` ARM and RISC-V wrapper builds passed; `cmp` confirmed the external UF2 equals the ARM build; both artifact SHA checks passed. No physical power interruption or flash for the release artifact was performed. Existing upstream converter, packed-member, and Rust warnings were observed; no build errors occurred.
+- Result: Physical collection removed one orphan object-body tag after its root was cleared and preserved a separately rooted object. The empty-card ARM image is 2,088,448 bytes, SHA-256 `cf21bae06443f3b7e0e8d6150eb2927cbaecc908fe6cca19fd435791e8d4d2f2`; its expected manifest SHA-256 is `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
+- Decision: Keep persistent deletion test-only until an actual interrupted erase and on-device recovery/retry are verified. The refreshed UF2 is ready for external testing; no hardware flash was done for it.
+- Commit: source/test `1521cda`; this progress, handoff, QKB/TODO update and release artifact are recorded in the following documentation/artifact commit.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`; physical logs `artifacts/logs/persistent-reclaimer-monitor-2BED-20261031-fixed.log` (SHA-256 `b395ae8298ab06289794071a5b8011c93182fc0e47d1476b2200593b801bce86`) and `artifacts/logs/persistent-reclaimer-physical-20261031T052908Z.log` (SHA-256 `d161d673120e22172dcb6ae97f4363049ba0d435c38f72ac4e846d6b1bca936a`).

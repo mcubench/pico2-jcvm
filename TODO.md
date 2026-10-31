@@ -291,8 +291,14 @@ out explicitly.
     iterating. Host fault injection confirms incomplete roots/cursors delete
     nothing, reachable tag subtrees and other owners are preserved, and an
     interrupted erase pass can resume from a fresh heap. ARM and RISC-V wrapper
-    builds pass. The primitive is not wired into runtime collection; physical
-    per-record power-loss recovery is still required before enabling it.
+    builds pass. A test-only runtime hook and a small probe CAP were then used
+    on Pico 2 `2BED26ED20556535`: releasing a persistent object deleted exactly
+    one orphan body tag, while a separately rooted object remained readable;
+    the probe package was removed afterward. This exposed and fixed an
+    overbroad prefix reachability check that let a root pin deeper orphan tags.
+    The hook is disabled by default. The primitive is not wired into normal
+    runtime collection; physical per-record power-loss recovery is still
+    required before enabling it.
   - [x] Fault-inject the RP2350 overlay snapshot commit after staging ten
     owner-scoped candidate erases (more than one reclaimer batch). Across 1,000
     randomized power-cut points, reboot restores either every old candidate or

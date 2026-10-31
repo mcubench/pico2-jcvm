@@ -1,5 +1,34 @@
 # Session handoff — updated 2026-10-30
 
+## Persistent reclaimer physical probe and reachability correction — 2026-10-31
+
+The reclaimer primitive was exercised through a compile-time-only hook on Pico
+2 `2BED26ED20556535`; the hook is disabled in release builds and is not wired
+into ordinary collection. A temporary probe CAP allocated two persistent
+objects, cleared one reference, and verified that collection deleted exactly
+one orphan body tag while the separately rooted value remained readable. The
+test applet/package cleanup passed. This exposed a prefix bug in
+`Heap::hasReachablePersistentTagPrefix`: a marked root incorrectly protected
+all descendants. The check now recognizes only the exact object tag and its
+direct two-byte field/element records; nested objects require their own marked
+record. Host regression and ARM/RISC-V debug builds pass.
+
+Physical evidence is in
+`artifacts/logs/persistent-reclaimer-monitor-2BED-20261031-fixed.log` and
+`artifacts/logs/persistent-reclaimer-physical-20261031T052908Z.log`; hashes and
+details are recorded in `.agent/QKB.md`. No physical power interruption was
+performed. Keep the primitive out of default runtime collection until an
+interrupted erase is tested on hardware and recovery/retry is verified.
+
+The latest `max_crypto` ARM empty-card image is prepared for external testing.
+Both wrapper builds passed with debug flags off. The UF2 at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` is 2,088,448
+bytes, SHA-256 `cf21bae06443f3b7e0e8d6150eb2927cbaecc908fe6cca19fd435791e8d4d2f2`,
+and compares byte-for-byte with `build/arm/pico2_choupi.uf2`. Its README and
+support manifest are alongside it. No physical flash was done for this
+external artifact refresh. The release image has the persistent-GC debug hook
+disabled.
+
 ## Persistent reclaimer primitive — 2026-10-31
 
 Added `PersistentReclaimer::reclaimUnreachableAppletTags` in
