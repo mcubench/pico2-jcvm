@@ -18630,6 +18630,7 @@
   still needs a Pico boot/reboot check.
 - Decision: Keep ARCH-05 open only for physical startup/persistence acceptance.
   Continue with ARCH-06 independently while no physical reader is registered.
-- Commit: Implementation SHA will be recorded in the immediate follow-up.
+- Commit: `ef5552e` (`Extract Pico filesystem implementation`); this SHA is
+  recorded in the progress-only follow-up commit.
 - Artifacts/logs: No persistent logs; overlay test and firmware build outputs
   are ignored under `build/`.

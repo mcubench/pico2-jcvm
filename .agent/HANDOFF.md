@@ -17,7 +17,8 @@ pass. ARM firmware image end remains `0x100ff5cc`. `./tools/build-pc
 rerun afterward. The current elevated `pcsc_scan -r` shows only Virtual PCD 00
 00 and 00 01, so physical startup/reboot persistence and serial checks remain
 unverified. The ARCH-05 code extraction is done; retain its physical gate as
-open in `TODO.md`.
+open in `TODO.md`. Implementation commit: `ef5552e` (`Extract Pico filesystem
+implementation`).
 
 Next: continue ARCH-06 (encapsulate loader access to VM internals) in `TODO.md`.
 ARCH-04's physical crypto callback check is also still open and should be
