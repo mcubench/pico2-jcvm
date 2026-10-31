@@ -18361,6 +18361,6 @@
 - Decision: Leave firmware descriptors unchanged. Resume hardware API testing
   only after PC/SC registers a physical reader or host diagnostics become
   available; continue offline project work.
-- Commit: pending (finalized in a follow-up progress record commit)
+- Commit: `8bdeca8`
 - Artifacts/logs: No persistent logs; live `lsusb -v`, plist parse,
   `pcsc_scan`, and `doctor` outputs were inspected during the session.
