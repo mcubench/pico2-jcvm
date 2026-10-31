@@ -18634,3 +18634,38 @@
   recorded in the progress-only follow-up commit.
 - Artifacts/logs: No persistent logs; overlay test and firmware build outputs
   are ignored under `build/`.
+
+## 2026-10-31 Move CAP static initialization into VM 9 minutes
+
+- Step/experiment: `arch-06-vm-static-initialization-20261031`
+- When: '2026-10-31 20:36 UTC' - '2026-10-31 20:45 UTC'
+- Change: Moved CAP-declared static-array allocation, value initialization,
+  and persistent static-reference setup from the card-manager loader into
+  `choupi/src/vm_cap_initialization.cpp`. Added the focused internal declaration
+  `src/vm_cap_initialization.h`; the loader calls
+  `jcvm::initializeCapStaticArrays()`. Removed heap/array/static-handler
+  includes from `src/cap_load.cpp`. Kept card-manager transfer, transaction,
+  and rollback flow unchanged. Preserved pre-existing unrelated edits in
+  `src/cap_load.cpp` without staging them.
+- Validation: PC max_crypto build, ARM wrapper, and RISC-V wrapper passed.
+  Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd`
+  passed; it installed the unchanged upstream JCAlgTest CAP. Elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed
+  `TEST:SUMMARY pass=42 fail=0`, including multiple packages/instances,
+  transaction-backed persistence restart, selection, and deletion.
+  `pcsc_scan -r` through the elevated host path lists only two virtual readers,
+  so physical install/rollback was not run. Existing upstream packed-member and
+  Rust warnings remain. No physical serial output was collected.
+- Result: VM heap/static initialization is behind a narrow VM-owned operation;
+  card-manager source no longer directly depends on Heap or Static_Handler.
+  PC CAP install and multipackage restart behavior pass. Physical runtime is
+  not yet verified.
+- Decision: Keep ARCH-06 open for physical hardware acceptance; continue with
+  offline implementation while no physical Pico reader is registered.
+- Commit: Implementation SHA will be recorded in the immediate follow-up.
+- Artifacts/logs: GPPro install artifacts in
+  `artifacts/results/gppro-empty-install-vpcd-20261031T204052Z/`;
+  multipackage logs `artifacts/logs/host-vpcd-multipackage-apdu-20261031T204220Z.log`
+  SHA-256 `da2a654c968cb71d5ad3da0d27e08fa10716b90dd6f427d6ebc6fbcb6a8c47fa`
+  and matching restart log SHA-256
+  `60e1befe003016b9aea25a24f3bbba18042e62f01ce33ccfd0cc7c7974d0f286`.

@@ -95,7 +95,15 @@ hardware-access, progress and handoff requirements for implementation changes.
   focused internal functions. Keep GP transfer/authentication policy in card
   management. Acceptance: demonstrably fewer private VM dependencies, unchanged
   install/failure rollback/delete behavior, and passing relevant CAP, registry,
-  transaction and restart tests plus required hardware validation.
+  transaction and restart tests plus required hardware validation. Moved
+  CAP-declared static-array allocation and persistent static-reference setup
+  into `choupi/src/vm_cap_initialization.cpp`, exposed only as
+  `jcvm::initializeCapStaticArrays()`. The loader no longer includes `heap.hpp`,
+  `jc_static.hpp`, `jc_array.hpp`, or the static-field parser header. PC, ARM,
+  and RISC-V max_crypto builds pass; GPPro installed the unchanged upstream
+  JCAlgTest CAP; the multipackage restart/registry/delete regression passes
+  42/42. Physical install/rollback verification remains open because PC/SC
+  currently lists only the two virtual readers.
 
 Do not introduce versioned backend APIs, function tables, opaque backend
 handles, language selection or a Rust rewrite as part of these tasks. The wider

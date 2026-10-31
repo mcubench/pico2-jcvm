@@ -1,5 +1,32 @@
 # Session handoff — updated 2026-10-31
 
+## Current ARCH-06 VM static initialization boundary — 2026-10-31
+
+Moved CAP-declared static-array creation and persistent static-reference setup
+from `src/cap_load.cpp` to `choupi/src/vm_cap_initialization.cpp`, declared in
+`src/vm_cap_initialization.h`. `CapLoadSession` now calls
+`jcvm::initializeCapStaticArrays(package_id)`; `cap_load.cpp` no longer includes
+the heap, static handler, array handler, or static-field component parser
+headers. The card-manager still owns GP LOAD/INSTALL sequencing, transactions,
+and rollback. Existing uncommitted `cap_load.cpp` edits for host erase-prefix
+routing and load diagnostics were preserved and are not part of the ARCH-06
+change.
+
+Validation: PC, ARM, and RISC-V max_crypto builds pass. Elevated
+`tools/test-gppro-empty-install-vpcd` installed the unchanged upstream JCAlgTest
+CAP. Elevated `tools/test-vpcd-multipackage` passed 42/42, including three
+packages, 21 applet instances, restart restore, and deletion. Logs are under
+`artifacts/results/gppro-empty-install-vpcd-20261031T204052Z/` and
+`artifacts/logs/host-vpcd-multipackage-*-20261031T204220Z.log`. The latest
+`pcsc_scan -r` lists only Virtual PCD 00 00 and 00 01; physical install and
+rollback validation is open. Implementation commit: SHA to be recorded in the
+immediate follow-up.
+
+Next: revisit physical gates for ARCH-04/05/06 if a Pico reader returns;
+otherwise continue the highest-priority incomplete implementation in
+`TODO.md`. Preserve unrelated dirty edits, especially `src/cap_load.cpp`'s
+pre-existing host and diagnostic changes.
+
 ## Current ARCH-05 Pico filesystem extraction — 2026-10-31
 
 Moved the complete Pico filesystem/overlay implementation, C ABI functions,
