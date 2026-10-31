@@ -17777,7 +17777,7 @@
   build used on the identified board. It remains an empty-card image.
 - Decision: Keep using this refreshed artifact for external testing. Complete
   the already-running physical JCAlgTest report before claiming its results.
-- Commit: pending closeout
+- Commit: `69e00b2`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   SHA-256 above; physical cycle log
   `artifacts/logs/cycle-choupi-20261031T022105Z.log`, SHA-256
