@@ -1,5 +1,20 @@
 # Session handoff — updated 2026-10-30
 
+## Maximum-support ARM external-test artifact refreshed — 2026-10-31
+
+The downloadable ARM `max_crypto` UF2 was stale relative to the image built
+and flashed in the latest cycle. Refreshed
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` from
+`build/arm/pico2_choupi.uf2`. Both are 2,086,400 bytes and have SHA-256
+`2bc214ba3fdb3d020a549233bdaeb9c22fa71774118c97e742ec39219a26bd29`; `cmp`
+passed. The board is Pico 2 `2BED26ED20556535`, flashed successfully with a
+passing finite runtime monitor. A physical JCAlgTest `ALG_SUPPORT_EXTENDED`
+run is active in tool session 53389, writing
+`artifacts/results/jcalgtest/max_crypto_physical_2BED_20261031/`; resume by
+polling that existing session, then assess completeness and compare the CSV.
+Do not restart the live reader session. Latest worktree snapshot includes
+unrelated dirty files listed in prior handoff sections; preserve them.
+
 ## APDU incoming-length virtual dispatch fixed — 2026-10-31
 
 The JC305 `APDU.getIncomingLength()` discrepancy is fixed. JC305 APDU token 15

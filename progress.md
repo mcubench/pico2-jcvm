@@ -17757,3 +17757,28 @@
   and `artifacts/logs/host-vpcd-multipackage-restart-20261031T022400Z.log`
   (`40f1551ce79ab467708adb825c468ad43c9f23077c3587d53c3173bc51cd78d6`).
   The post-sequence CDC monitor output was not saved separately.
+
+## 2026-10-31 refresh maximum-support ARM external-test artifact 3 minutes
+
+- Step/experiment: `refresh-max-crypto-arm-external-artifact`
+- When: '2026-10-31 02:30 UTC' - '2026-10-31 02:33 UTC'
+- Change: Replaced the stale tracked max_crypto ARM external-test UF2 with the
+  latest `build/arm/pico2_choupi.uf2`, produced by the current ARM build and
+  flashed to Pico 2 `2BED26ED20556535`. Updated the current artifact reference
+  in TODO and session handoff.
+- Validation: `cmp artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2
+  build/arm/pico2_choupi.uf2` passed. Both files are 2,086,400 bytes with
+  SHA-256 `2bc214ba3fdb3d020a549233bdaeb9c22fa71774118c97e742ec39219a26bd29`.
+  The preceding ARM/RISC-V wrapper builds and physical ARM cycle passed; the
+  board finite monitor returned repeated `TEST:PASS choupi_runtime` and no
+  `FAULT`. Current physical JCAlgTest suite remains active and is recorded as
+  such; no suite completion is claimed here.
+- Result: The named downloadable image now exactly matches the current ARM
+  build used on the identified board. It remains an empty-card image.
+- Decision: Keep using this refreshed artifact for external testing. Complete
+  the already-running physical JCAlgTest report before claiming its results.
+- Commit: pending closeout
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
+  SHA-256 above; physical cycle log
+  `artifacts/logs/cycle-choupi-20261031T022105Z.log`, SHA-256
+  `7a3b5c48d5b7eab392c7136554095a50e8724aaa2b5f7af77dd90c91f3bea344`.

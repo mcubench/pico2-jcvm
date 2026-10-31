@@ -1980,10 +1980,11 @@ rollback and duplicate/invalid registration handling also remain unverified.
   passed 71/71). The provided
   JCOP4 matrix does not include AES-CTR, so it is an API extension. The UF2 is
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no applet is
-  preinstalled. Rebuilt on 2026-10-30 from current source: 2,074,112 bytes,
-  SHA-256
-  `8ef6492df92514d9a677f25d8d2bb1eff59c28160fe2609063b9b311d8ed2727`.
-  Physical validation remains open. The previously incomplete
+  preinstalled. Refreshed on 2026-10-31 from the ARM `max_crypto` build that
+  was flashed to Pico 2 `2BED26ED20556535`: 2,086,400 bytes, SHA-256
+  `2bc214ba3fdb3d020a549233bdaeb9c22fa71774118c97e742ec39219a26bd29`.
+  The artifact matches the build byte-for-byte. Physical JCAlgTest support
+  validation on that board is in progress. The previously incomplete
   all-disabled `minimal` selection now builds on both wrapper targets; the
   optional AES-CTR object is absent in those configurations and present in
   `max_crypto`.
