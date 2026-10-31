@@ -16,7 +16,8 @@ compile together on all target paths. No serial monitor/physical reader check
 was run because this was declarations-only; runtime output behavior is
 unchanged by source inspection. The normal GCC/Rust builds still emit existing
 packed-member and upstream Rust lint warnings, with no new warnings from this
-header.
+header. Root implementation commit: `54bcb3f` (`Centralize VM and transport
+diagnostic declarations`).
 
 Next: ARCH-04 in `TODO.md` (define progress callback execution and reentry
 rules). Keep the user’s unrelated worktree edits untouched.

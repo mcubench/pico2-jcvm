@@ -18568,6 +18568,6 @@
   Runtime diagnostic behavior is unchanged by the refactor.
 - Decision: ARCH-03 is complete. Continue with ARCH-04; no output behavior
   change or physical validation is claimed.
-- Commit: Root implementation commit to be recorded in the immediate
-  progress-only follow-up.
+- Commit: Root `54bcb3f` (`Centralize VM and transport diagnostic
+  declarations`); the SHA is recorded in the progress-only follow-up.
 - Artifacts/logs: No persistent logs; build results are recorded above.
