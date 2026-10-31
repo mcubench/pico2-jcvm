@@ -18518,3 +18518,31 @@
   `artifacts/logs/host-vpcd-multipackage-restart-20261031T094555Z.log`,
   `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261031T094555Z.log`,
   `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261031T094555Z.log`.
+
+## 2026-10-31 Filesystem ABI contract and bounds 18 minutes
+
+- Step/experiment: `arch-02-filesystem-abi-20261031`
+- When: '2026-10-31 19:39 UTC' - '2026-10-31 19:57 UTC'
+- Change: Added `docs/FILESYSTEM_ABI.md` covering status values, tag/record
+  bounds, borrowed buffers, `fs_read_inplace` lifetime, and sync/transaction
+  durability. Fixed the OS syscall path for empty in-place records, checked
+  bounds in typed 1/2/4-byte reads, and rejected overflow in scaled 2/4-byte
+  write offsets. Added focused overlay and OS syscall regressions. Documented
+  outstanding PC/Pico discrepancies and added them to `TODO.md`.
+- Validation: `tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`);
+  OS filesystem tests passed 22/22 (2 ignored); focused `fs_syscalls` test
+  passed 1/1 with required host `ptrace` access (the restricted attempt failed
+  with EPERM). `./tools/build-pc --profile max_crypto`,
+  `PICO2_DEBUG=0 ./tools/build arm --profile max_crypto`, and the corresponding
+  RISC-V wrapper passed. `git diff --check` passed for changed root files and
+  the OS submodule. `rustfmt --check` was unavailable because the toolchain
+  lacks the rustfmt component; no physical test was run.
+- Result: Empty records no longer panic in the OS in-place-read syscall, and
+  typed out-of-range reads now return an error rather than indexing beyond the
+  record. PC/Pico tag limits, oversized-read behavior, detailed errors, and PC
+  disk checkpointing remain backend discrepancies.
+- Decision: ARCH-02 is complete. Continue with ARCH-03; retain the four
+  explicitly tracked backend-alignment follow-ups.
+- Commit: OS submodule `08f78a6`; root implementation commit to be recorded in
+  the immediate progress-only follow-up.
+- Artifacts/logs: No persistent logs; test and build results are recorded above.

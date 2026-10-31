@@ -27,7 +27,7 @@ hardware-access, progress and handoff requirements for implementation changes.
   preserve their existing zero remote-call result. PC, ARM, and RISC-V
   `max_crypto` builds and the VPCD multipackage lifecycle regression pass
   (42/42). No physical check was possible because PC/SC published no reader.
-- [ ] **ARCH-02 — Specify filesystem contracts (small; before storage moves).**
+- [x] **ARCH-02 — Specify filesystem contracts (small; before storage moves).**
   Document `fs_*` return codes, buffer ownership, bounds, `fs_read_inplace`
   pointer validity/invalidation, and `fs_sync` durability and transaction rules.
   Inspect actual PC and Pico behavior rather than assuming equivalence. Add
@@ -35,6 +35,18 @@ hardware-access, progress and handoff requirements for implementation changes.
   discrepancies as explicit follow-up fixes. Acceptance: callers can determine
   when borrowed data expires and when writes become durable; relevant existing
   storage/transaction/recovery tests pass. No storage-format migration here.
+  `docs/FILESYSTEM_ABI.md` now records ownership, bounds, error conventions,
+  pointer invalidation, sync/transaction behavior and the observed backend
+  differences. Fixed the OS syscall path for empty `fs_read_inplace` records
+  and made typed offset reads and scaled write offsets bounds/overflow-safe.
+  Overlay regression passes; OS filesystem tests pass 22/22 (two ignored), and
+  the focused host syscall test passes. PC, ARM, and RISC-V `max_crypto` builds
+  pass. PC/Pico discrepancies remain explicit follow-ups:
+  - [ ] Unify the maximum persistent tag length (OS 29 bytes, Pico 128 bytes).
+  - [ ] Unify `fs_read` behavior when the requested length exceeds the record.
+  - [ ] Define and align detailed filesystem error codes across backends.
+  - [ ] Define a disk-checkpoint durability contract for PC emulator memory;
+    current `fs_sync()` is a no-op and persistence depends on VPCD sidecar flow.
 - [ ] **ARCH-03 — Consolidate diagnostic declarations (small).**
   Introduce a shared diagnostic header and replace scattered declarations
   across VM, Pico shim and transport. Preserve existing diagnostic output and

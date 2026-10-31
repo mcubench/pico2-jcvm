@@ -1,5 +1,36 @@
 # Session handoff — updated 2026-10-31
 
+## Current ARCH-02 filesystem ABI contract — 2026-10-31
+
+Added `docs/FILESYSTEM_ABI.md` documenting filesystem status values, tag and
+record bounds, buffer ownership, `fs_read_inplace` pointer lifetime, Pico sync
+and persistent-transaction durability, and the PC emulator's no-op `fs_sync`
+behavior. Inspection found backend differences in maximum tag length,
+oversized `fs_read`, detailed status codes, and host-side disk checkpointing;
+all four are recorded as unchecked follow-ups in `TODO.md`.
+
+Fixed OS syscall `fs_read_inplace` for valid empty records (previously indexed
+byte zero and panicked). Typed offset reads now check record bounds before
+loading, and 2/4-byte write offset scaling rejects integer overflow. Added
+regressions for borrowed data, empty records, out-of-range typed reads, Pico
+in-place lifetime across `fs_sync`, oversized Pico read, plus a snapshot-test
+isolation reset because the new early sync changed slot parity.
+
+Validation: `tools/test-rp2350-fs-overlay` passes with `TEST:SUMMARY fail=0`;
+`tools/env cargo test --manifest-path choupi/os/Cargo.toml
+--no-default-features --features host fs::tests -- --nocapture` passes 22/22
+(2 ignored); the focused `fs_syscalls` test passes 1/1 when run with host
+`ptrace` access. The sandbox-only attempt failed with `PTRACE_ATTACH` EPERM.
+`./tools/build-pc --profile max_crypto`, `PICO2_DEBUG=0 ./tools/build arm
+--profile max_crypto`, and its RISC-V counterpart pass. No physical test was
+run; this was ABI/storage-contract work and no hardware path was requested.
+Nested OS source commit: `08f78a6` (`Fix filesystem syscall bounds and empty
+reads`). Root implementation/progress commit SHA is recorded by the progress
+follow-up commit.
+
+Next: ARCH-03 in `TODO.md` (consolidate diagnostic declarations). Preserve the
+remaining unrelated worktree changes and the nested OS submodule commit.
+
 ## Current ARCH-01 runtime/lifecycle ABI — 2026-10-31
 
 Added `src/vm_lifecycle.h` as the shared C ABI declaration source for VM entry,
@@ -20,9 +51,9 @@ in the preceding step found no registered reader. The Rust FFI change is in
 submodule `choupi/os`; its local commit and the root gitlink update must both be
 preserved.
 
-Next if work resumes: ARCH-02 in `TODO.md` (document filesystem return codes,
-borrowed-buffer lifetime, and sync durability). The user requested stopping
-after ARCH-01, so do not start that item in this session.
+ARCH-02 is complete; see the current handoff section above. The original stop
+instruction applied after ARCH-01 and has since been superseded by the user
+request to continue the project.
 
 ## Current GET DATA application list — 2026-10-31
 

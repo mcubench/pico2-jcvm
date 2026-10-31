@@ -220,6 +220,30 @@ int main() {
   expect(fs_write(reusable_tag, sizeof(reusable_tag), first_value,
                   sizeof(first_value)) == 0,
          "write_before_erase");
+  const uint8_t *borrowed_data = nullptr;
+  uint32_t borrowed_length = 0;
+  expect(fs_read_inplace(reusable_tag, sizeof(reusable_tag), &borrowed_data,
+                         &borrowed_length) == 0 &&
+             borrowed_data != nullptr && borrowed_length == sizeof(first_value) &&
+             std::memcmp(borrowed_data, first_value, sizeof(first_value)) == 0,
+         "inplace_read_borrows_record_bytes");
+  expect(fs_sync() == 0 && borrowed_data != nullptr &&
+             std::memcmp(borrowed_data, first_value, sizeof(first_value)) == 0,
+         "sync_keeps_overlay_borrow_address_valid");
+  expect(fs_read(reusable_tag, sizeof(reusable_tag), actual,
+                 sizeof(actual) + 1) != 0,
+         "pico_read_rejects_length_beyond_record");
+  constexpr uint8_t empty_tag[] = {0xa0, 0x01, 0x03};
+  expect(fs_write(empty_tag, sizeof(empty_tag), nullptr, 0) == 0,
+         "write_empty_record");
+  borrowed_data = nullptr;
+  borrowed_length = 1;
+  expect(fs_read_inplace(empty_tag, sizeof(empty_tag), &borrowed_data,
+                         &borrowed_length) == 0 &&
+             borrowed_data != nullptr && borrowed_length == 0,
+         "inplace_read_accepts_empty_record");
+  expect(fs_erase(empty_tag, sizeof(empty_tag)) == 0,
+         "erase_empty_record_after_borrow");
   expect(fs_erase(reusable_tag, sizeof(reusable_tag)) == 0,
          "erase_overlay_record");
   expect(fs_exists(reusable_tag, sizeof(reusable_tag)) == 0,
@@ -434,6 +458,10 @@ int main() {
              actual[0] == second_value[0],
          "compress_16_bit_class_array_element_tag");
 
+  // Start the snapshot-slot fallback test from a known generation. Earlier
+  // contract checks intentionally committed a snapshot to cover sync.
+  fake_flash.fill(0xff);
+  expect(fs_init() == 0, "reset_before_snapshot_fallback_test");
   constexpr uint8_t persistent_tag[] = {0xa1, 0x22, 0x33};
   constexpr uint8_t persisted_first[] = {0x11, 0x22, 0x33, 0x44};
   constexpr uint8_t persisted_second[] = {0xaa, 0xbb, 0xcc, 0xdd};
