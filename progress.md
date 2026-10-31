@@ -17713,3 +17713,47 @@
   inventory SHA-256 `fb0167c87354f218d690dbbb16b5276f5e507f60910a3284af5d4f72f31906de`,
   install SHA-256 `fbf01704b262c6ffa9bf18b9ec2b01a83c390bb50f4e96e8c683da09dfb7ce5a`,
   emulator SHA-256 `198a482fa9bb862cddb0e37c7ab2665bded0fa124f8bbc53b760fb68bcb60c93`.
+
+## 2026-10-31 bind GET STATUS continuation to its prior query 12 minutes
+
+- Step/experiment: `gp-get-status-continuation-query-binding`
+- When: '2026-10-31 02:15 UTC' - '2026-10-31 02:27 UTC'
+- Change: Added shared matching for GET STATUS P1 and search bytes. The Pico
+  CCID handler now retains the first/all query and returns `6985` when a
+  `P2=03` continuation changes category or search criteria; the PC VPCD path
+  uses the same matcher. Added native unit and authenticated multipackage
+  regressions, and updated TODO, QKB, and handoff.
+- Validation: `./tools/test-gp-registry` passed 54/54;
+  `./tools/build-pc --profile max_crypto`,
+  `./tools/build arm --profile max_crypto`, and
+  `./tools/build riscv --profile max_crypto` passed. The elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 39/39.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial
+  2BED26ED20556535` flashed and verified the ARM image and passed its 18-second
+  runtime monitor. The initial picotool reset interface was unavailable; the
+  flash wrapper recovered through its CDC BOOTSEL fallback. Startup emitted a
+  retained `WATCHDOG_RECOVERY` diagnostic, then repeated runtime summaries
+  passed without `FAULT`. The authorized PC/SC scan subsequently registered
+  the physical Pico. A single GPPro SCP03 session on that card returned
+  `9000`, `6985`, `6985`, and `9000` for initial, changed-category,
+  changed-AID, and unchanged-continuation queries. The post-sequence
+  eight-second CDC monitor passed. No applet CAP was modified.
+- Result: Both VPCD and physical firmware enforce continuation query
+  consistency, and a valid unchanged continuation remains usable after
+  rejected mismatches. Physical card identity was Pico 2
+  `2BED26ED20556535`.
+- Decision: Keep the exact-query check. Continue the remaining GET STATUS
+  pagination/lifecycle audit and TODO items; physical PC/SC is presently
+  available on 2BED.
+- Commit: `0885372`
+- Artifacts/logs: Physical SCP03 transcript
+  `artifacts/logs/physical-get-status-continuation-2BED-20261031.log`,
+  SHA-256 `1dc6e481c90e05eb7fb37be8d6544cce892525fc8263e74a5ee98005901e3435`;
+  cycle `artifacts/logs/cycle-choupi-20261031T022105Z.log`, SHA-256
+  `7a3b5c48d5b7eab392c7136554095a50e8724aaa2b5f7af77dd90c91f3bea344`;
+  VPCD APDU/restart logs
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261031T022400Z.log`
+  (`1a914863c79f1d44e933f229f8292c4e8a0a2195fa7e477d39b8012c4f9e03fd`)
+  and `artifacts/logs/host-vpcd-multipackage-restart-20261031T022400Z.log`
+  (`40f1551ce79ab467708adb825c468ad43c9f23077c3587d53c3173bc51cd78d6`).
+  The post-sequence CDC monitor output was not saved separately.

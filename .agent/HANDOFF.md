@@ -28,7 +28,8 @@ changed category and changed AID search each returned `6985`, and the unchanged
 continuation returned `9000`. The post-test CDC monitor passed. PC/SC is
 currently registering that Pico. Logs:
 `artifacts/logs/physical-get-status-continuation-2BED-20261031.log` and
-`artifacts/logs/cycle-choupi-20261031T022105Z.log`. Continue the remaining
+`artifacts/logs/cycle-choupi-20261031T022105Z.log`. Commit `0885372` contains
+the implementation and regression. Continue the remaining
 GET STATUS pagination/lifecycle audit and the rest of TODO; the continuation
 query gate itself is covered.
 
