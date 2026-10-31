@@ -16,7 +16,8 @@ and the CCID long-operation extension path through final APDU response. The
 subsequent 8-second serial capture repeatedly reported
 `TEST:SUMMARY pass=1 fail=0`. The firmware has no direct counter for extension
 frames, so no exact frame count is claimed. Logs and hashes are recorded in
-`.agent/QKB.md` and `progress.md`.
+`.agent/QKB.md` and `progress.md`. Root documentation/progress commit:
+`d53c10f` (`Verify native progress path on Pico 2`).
 
 The cycle log contained one `WATCHDOG_RECOVERY ... cause=other` trace during
 the intentional CDC-to-BOOTSEL reset; the flash cycle and runtime checks

@@ -1427,7 +1427,7 @@
   been exercised.
 - Decision: Next add a persistent instance index and cleanup/reload semantics,
   then connect the object to SELECT and APDU lifecycle dispatch.
-- Commit: pending
+- Commit: `d53c10f` (`Verify native progress path on Pico 2`)
 - Artifacts/logs: ARM UF2 `build/arm/pico2_choupi.uf2` (SHA-256
   `003a2a2d6fc7c936740dab4199c99bb01987c3c1d7ece7322006c2badb720cc6`); no
   serial log because flashing was blocked before device access.
