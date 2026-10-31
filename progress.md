@@ -1226,7 +1226,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` both passed. The real-board `./tools/cycle choupi` was attempted after both builds; it could not reset the stalled board. Picotool saw no BOOTSEL/reset interface, the initial BOOTSEL wait timed out after 45 seconds, three reboot requests failed, and CDC 1200-baud reset did not re-enumerate BOOTSEL. No hardware result for this change is available; the candidate was not flashed.
 - Result: Long VM/install work no longer runs in the TinyUSB USB worker IRQ in the candidate firmware. This is a concrete concurrency fix based on the Pico SDK call path, but hardware impact remains unverified.
 - Decision: Restore USB passthrough or power-cycle the board, flash this image, confirm the runtime self-test, then retry JCAlgTest v1.8.2 INSTALL. Keep the install status unconfirmed unless GPPro receives `9000` and GET STATUS/SELECT confirm it.
-- Commit: pending
+- Commit: `972a7ac` (checksum/documentation; this closeout records its SHA)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T153015Z.log` (SHA-256 `6c0412947bb6d39e26210f5ff214ca26bae5709bd3b9e7190978d244e56dde1f`); candidate UF2 `build/arm/pico2_choupi.uf2` (SHA-256 `f34f79fce442792fb099e00977521c73e3d03f7892d7f9483cb34e4038016fab`)
 
 ## 2026-10-11 — Serialize CCID endpoint operations with TinyUSB polling
