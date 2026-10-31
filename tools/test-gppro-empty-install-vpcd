@@ -13,8 +13,8 @@ cap="${repo_root}/AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap"
 load_code="${repo_root}/build/algtest-v182-load-code.bin"
 emulator="${repo_root}/build/choupi-pc/choupi"
 rom_mask="${repo_root}/build/choupi-pc/flash"
-reader="Virtual PCD 00 01"
-endpoint="127.0.0.1:35964"
+reader="Virtual PCD 00 00"
+endpoint="127.0.0.1:35963"
 applet_aid="4A43416C675465737431"
 
 for input in "${gp_jar}" "${cap}" "${load_code}" "${emulator}" "${rom_mask}"; do
@@ -30,7 +30,12 @@ flash_image="${out_dir}/empty-card.bin"
 # Start/refresh pcscd and the vpcd reader service before the emulator makes
 # its one-shot TCP connection. Without this, pcscd's auto-exit startup race can
 # make the first emulator connect fail with ECONNREFUSED.
-"${repo_root}/tools/env" pcsc_scan -r > "${out_dir}/reader-inventory.log" 2>&1
+if ! timeout --signal=TERM --kill-after=2s 8s \
+    "${repo_root}/tools/env" pcsc_scan -r \
+    > "${out_dir}/reader-inventory.log" 2>&1; then
+  cat "${out_dir}/reader-inventory.log" >&2
+  die "PC/SC reader scan did not complete"
+fi
 grep -Fq "${reader}" "${out_dir}/reader-inventory.log" || {
   cat "${out_dir}/reader-inventory.log" >&2
   die "configured VPCD reader is not available"

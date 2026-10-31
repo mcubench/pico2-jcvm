@@ -1,5 +1,32 @@
 # Session handoff — updated 2026-10-30
 
+## CAP 2.2 external remote-interface linking and VPCD test recovery — 2026-10-31
+
+Applet installation now resolves each external CAP 2.2 remote-interface
+reference with `ConstantPool_Handler::classref2interface`, requiring an
+exported interface in an installed package; CAP 2.1 is skipped before reading
+the CAP 2.2 signature-pool offset. ARM and RISC-V `max_crypto` wrapper builds
+pass. `./tools/test-cap-parser` passes 4,205 checks, 100,000 fuzz inputs, and
+48 corpus CAPs. The official SDK JCRMI VPCD client passes 18/18 on final source,
+but its fixture only has internal remote-interface refs, so valid external
+targets and rejected class/missing-export targets still need direct coverage.
+
+The unchanged JCAlgTest GPPro LOAD/INSTALL check is currently blocked by host
+VPCD registration. `Virtual PCD 00 01` reported present but GPPro returned
+`Unpowered card`; the wrapper now targets the usual `Virtual PCD 00 00` port
+35963 and bounds the discovery scan, but that scan returned no output. After
+the authorized reader helper restarted `pcscd`, service status was active yet a
+bounded `pcsc_scan -r` found no readers. No physical card was flashed. Inspect
+the VPCD backend/service and rerun GPPro install before claiming CAP 2.1
+installation regression coverage. Preserve unrelated `src/cap_load.cpp`
+changes; this step adds one loader call to that file.
+
+Current external-test ARM image:
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, 2,077,184
+bytes, SHA-256 `5ca83fe79b55670870699e2a5a319dd422f2a3be3104e869d12071beff40b675`.
+Continue with external-ref direct tests, then return to safe persistent-object
+reclamation and actual USB power-cycle recovery.
+
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 
 CAP 2.2 external remote-interface references now validate their seven-bit

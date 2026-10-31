@@ -962,9 +962,11 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   to descriptor starts; and virtual-method tokens must be public and fall
   within the class public-method table. Internal remote-interface references
   must target an interface record boundary; external references must use an
-  in-range Import-component token. Still verify at installation that each
-  imported class token resolves to an exported interface in the referenced
-  installed package.
+  in-range Import-component token. Installation now resolves each external
+  remote-interface token through the installed package's Export component and
+  rejects non-interface targets. Add an integration fixture that exercises a
+  valid external interface, a class target, and a missing export token; the
+  current generated JCRMI fixture only exercises internal remote interfaces.
   The converter-built fixture is loaded and exercised through current-source
   VPCD for SELECT, primitive INVOKE, primitive-array INVOKE, and protocol-error
   responses. The supplied Service CAP is format 2.1 and cannot validate the

@@ -8,6 +8,39 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## CAP 2.2 external remote-interface target linking and VPCD registration — 2026-10-31
+
+- Applet installation now walks CAP 2.2 class records and resolves external
+  remote-interface references through the importing package's existing
+  Import/Export resolver. The target must be an exported interface. CAP 2.1
+  packages skip this CAP 2.2 signature-pool walk.
+- `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. The parser suite remains
+  4,205 checks / 100,000 fuzz inputs / 48 corpus CAPs. The official SDK
+  2.2.1 VPCD client passed 18/18 after the final version guard. That generated
+  fixture has internal remote-interface refs; direct coverage of the new
+  external target success/non-interface/missing-export branches is still open.
+- GPPro JCAlgTest install validation did not complete. On reader
+  `Virtual PCD 00 01` / port 35964, the presence probe reported present but
+  GPPro returned `Unpowered card`. The test was moved to the repository's
+  usual `Virtual PCD 00 00` / port 35963, with an eight-second bound around
+  initial PC/SC discovery; that scan timed out with no output. After the
+  approved `sudo -n /usr/local/sbin/pico2-pcsc-reader` refresh, `pcscd.service`
+  was active but bounded `pcsc_scan -r` still timed out with no readers.
+  This is a VPCD/PC-SC environment failure; no JCAlgTest CAP load or firmware
+  flash was proven in these attempts.
+- Final-source ARM image:
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, 2,077,184
+  bytes, SHA-256
+  `5ca83fe79b55670870699e2a5a319dd422f2a3be3104e869d12071beff40b675`.
+  RMI client log hash
+  `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`;
+  emulator log hash
+  `90160ab231073098dbe0a0e227411b87a64862fd6398f4c5c2f3adda916d52df`.
+  GPPro failure artifacts are under
+  `artifacts/results/gppro-empty-install-vpcd-20261030T235658Z/` and
+  `artifacts/results/gppro-empty-install-vpcd-20261031T000302Z/`.
+
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 
 - The parser now cross-checks each external remote-interface reference's

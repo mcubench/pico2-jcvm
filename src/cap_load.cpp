@@ -565,6 +565,7 @@ CapImportValidation validate_cap_imports(uint8_t package_id) noexcept {
         return CapImportValidation::internal_error;
       }
     }
+    imports.validateRemoteInterfaceReferences();
   } catch (...) {
     return CapImportValidation::internal_error;
   }

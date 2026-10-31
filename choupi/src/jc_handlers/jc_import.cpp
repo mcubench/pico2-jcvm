@@ -28,6 +28,7 @@
 #include "jc_import.hpp"
 #include "../debug.hpp"
 #include "../jc_cap/jc_cap_import.hpp"
+#include "jc_cp.hpp"
 #include "flashmemory.hpp"
 
 #include <cstring>
@@ -154,6 +155,57 @@ const jpackage_ID_t
 Import_Handler::getPackageIndexFromOffset(const uint8_t offset) {
   auto aid = this->getPackageAID(offset);
   return this->getPackageIndex(aid);
+}
+
+void Import_Handler::validateRemoteInterfaceReferences() {
+  const JC_Cap cap = this->package.getCap();
+  const jc_cap_header_component *header = cap.getHeader();
+  if (header == nullptr || header->major_version != 2 ||
+      header->minor_version < 2) {
+    return;
+  }
+  const jc_cap_class_component *component = cap.getClass();
+  if (component == nullptr) {
+    return;
+  }
+  const auto class_bytes = component->claz();
+  uint16_t offset = component->classInfoStartOffset();
+  if (offset > class_bytes.size()) {
+    throw Exceptions::SecurityException;
+  }
+  ConstantPool_Handler resolver(this->package);
+  while (offset < class_bytes.size()) {
+    const uint8_t *record = class_bytes.data() + offset;
+    if (IS_INTERFACE(record)) {
+      const auto *interface_info =
+          reinterpret_cast<const jc_cap_interface_info *>(record);
+      offset = static_cast<uint16_t>(offset + interface_info->getSize());
+      continue;
+    }
+
+    const auto *class_info =
+        reinterpret_cast<const jc_cap_class_info *>(record);
+    if (const auto *remote_info = class_info->remoteInterfaceInfo();
+        remote_info != nullptr) {
+      for (uint8_t index = 0; index < remote_info->remoteInterfacesCount();
+           ++index) {
+        const jc_cap_class_ref reference =
+            remote_info->remoteInterfaces()[index];
+        if (!reference.isExternalClassRef()) {
+          continue;
+        }
+        const auto resolved = resolver.classref2interface(reference);
+        if (resolved.second == nullptr ||
+            IS_CLASS(reinterpret_cast<const uint8_t *>(resolved.second))) {
+          throw Exceptions::SecurityException;
+        }
+      }
+    }
+    offset = static_cast<uint16_t>(offset + class_info->getSize());
+  }
+  if (offset != class_bytes.size()) {
+    throw Exceptions::SecurityException;
+  }
 }
 
 } // namespace jcvm

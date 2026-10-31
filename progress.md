@@ -17279,3 +17279,42 @@
   `daddde74f22aaa65a885c2527f0096d306eefc83ee2e3c7ebc4c925ef36d0231`;
   build log SHA-256
   `4b4192ccf60af000e8ff7aba39a8702963f2526a705a31b23d65ddbbf5d05129`.
+
+## 2026-10-31 CAP 2.2 external remote-interface target linking 19 minutes
+
+- Step/experiment: `cap22-external-remote-interface-target-link`
+- When: '2026-10-30 23:43 UTC' - '2026-10-31 00:02 UTC'
+- Change: Validate CAP 2.2 external remote-interface tokens at applet install by
+  resolving them through the importing package's Import/Export handlers and
+  requiring an interface target. Skip CAP 2.1 before reading CAP 2.2 offsets.
+  Update the GPPro VPCD test to use the established reader/endpoint and bound
+  initial PC/SC discovery. Refresh max ARM image and project records.
+- Validation: `./tools/test-cap-parser` passed 4,205 checks, 100,000 fuzz
+  inputs, and 48 corpus CAPs. ARM and RISC-V `max_crypto` wrapper builds passed.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` passed 18/18 on final
+  source. External-target resolution branches were not directly exercised:
+  this generated fixture references its remote interface internally.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` did not pass:
+  on reader 00 01 GPPro reported `Unpowered card`; after switching to 00 00,
+  PC/SC discovery timed out without output. The authorized reader helper
+  restarted `pcscd`, but a separate bounded `pcsc_scan -r` still timed out.
+  No firmware was flashed.
+- Result: Both architecture builds and official CAP 2.2 JCRMI client checks
+  pass. CAP 2.1 GPPro LOAD/INSTALL and direct external-interface target tests
+  remain unverified due the VPCD setup failure and fixture coverage gap. The
+  max ARM UF2 is 2,077,184 bytes, SHA-256
+  `5ca83fe79b55670870699e2a5a319dd422f2a3be3104e869d12071beff40b675`.
+- Decision: Keep the loader validation; add explicit external target fixtures
+  and restore VPCD registration before claiming GPPro install regression
+  coverage. Then continue safe persistent-object reclamation.
+- Commit: implementation commit SHA is recorded in the following closeout
+  entry.
+- Artifacts/logs: official RMI client SHA-256
+  `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`;
+  emulator SHA-256
+  `90160ab231073098dbe0a0e227411b87a64862fd6398f4c5c2f3adda916d52df`;
+  build log SHA-256
+  `85c6a8f40535ba7f03b3ef87a6e0b9642b6dda46330f999c11542de610eb1921`;
+  GPPro failure evidence is under
+  `artifacts/results/gppro-empty-install-vpcd-20261030T235658Z/` and
+  `artifacts/results/gppro-empty-install-vpcd-20261031T000302Z/`.

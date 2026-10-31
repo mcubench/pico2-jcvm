@@ -54,6 +54,9 @@ public:
 
   /// Get the package index in the flash from import component offset.
   const jpackage_ID_t getPackageIndexFromOffset(const uint8_t offset);
+
+  /// Resolve remote-interface references to exported interfaces.
+  void validateRemoteInterfaceReferences();
 };
 
 } // namespace jcvm
