@@ -17,6 +17,25 @@ commit `0f80232`; the implementation and validation record are in
 continue the APDU/API backlog and pursue physical validation when a reader is
 registered. Preserve the unrelated worktree snapshot listed below.
 
+## GPPro empty-card VPCD integration and reader discovery retry — 2026-10-31
+
+The unchanged upstream JCAlgTest 1.8.2 CAP installs successfully through GPPro
+from a fresh empty VPCD image. The latest test confirms the card starts with no
+JCAlgTest package/applet, then GPPro LOAD/INSTALL completes and `--list` shows
+the package `LOADED` and applet `SELECTABLE`. The focused GET DATA unit suite
+passes 14/14 for Card Recognition Data (`0066`), CPLC (`9F7F`), unknown tags,
+and response-capacity handling.
+
+The first test attempt timed out during its single PC/SC discovery scan. After
+a direct line-buffered scan enumerated both VPCD readers, a rerun passed. The
+preflight now uses line-buffered logs and up to three bounded scans; its latest
+full integration passed at
+`artifacts/results/gppro-empty-install-vpcd-20261031T021340Z/`. Retry exhaustion
+was not fault-injected. Physical access remains unavailable: the helper grants
+two Pico USB nodes, but PC/SC does not register either as a physical reader.
+Next continue offline with remaining GET STATUS continuation and API gaps; do
+not claim this VPCD test as physical validation.
+
 The `./tools/test-short-apdu` harness also needed its local FFI stub updated
 after the heap tracer began using `fs_exists`; that harness fix is committed as
 `3e1bcbd`, and its 26 cases plus the 250,000-input parser fuzz run pass.

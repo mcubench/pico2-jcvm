@@ -8,6 +8,22 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## VPCD first-reader scan can time out during PC/SC startup — 2026-10-31
+
+- `tools/test-gppro-empty-install-vpcd` previously ran one 8-second
+  `pcsc_scan -r` and aborted on timeout with an empty redirected log. After a
+  direct line-buffered scan, both Virtual PCD readers appeared and GPPro
+  LOAD/INSTALL succeeded. The physical access helper can grant Pico USB-node
+  ACLs while PC/SC still has no physical reader; that is a separate condition.
+- Viable script improvement: use line-buffered inventories, retain a log per
+  attempt, and allow up to three bounded discovery attempts before failing.
+  With the change, syntax validation and the full fresh-image GPPro test pass;
+  GPPro lists the empty card, loads/installs the unchanged upstream JCAlgTest
+  CAP, and lists the package/app as loaded/selectable. Retry exhaustion has
+  not been fault-injected yet.
+- Successful output is under
+  `artifacts/results/gppro-empty-install-vpcd-20261031T021340Z/`.
+
 ## APDU context unit-test harness missing `fs_exists` declaration — 2026-10-31
 
 - `./tools/test-short-apdu` initially failed to compile `heap.cpp`: the test's

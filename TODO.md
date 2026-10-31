@@ -1842,6 +1842,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   validation.
 - [ ] Complete remaining GET STATUS / GET DATA behavior, including accurate
   package and applet lifecycle state.
+  GET DATA for Card Recognition Data (`0066`) and CPLC (`9F7F`) is implemented
+  in the Pico CCID handler and PC VPCD; `./tools/test-gp-get-data` passes 14/14
+  exact-TLV, status-word, unknown-tag, and output-capacity checks. Fresh-state
+  GPPro LOAD/INSTALL/SELECTABLE listing passed over VPCD on 2026-10-31. This
+  is not a physical card-manager test; the helper currently grants access to
+  two Pico USB nodes, but `pcsc_scan -r` lists only virtual readers.
   GET STATUS now handles ISD (`P1=80`), applications (`40`), executable load
   files (`20`), and load files with modules (`10`), with mandatory leading AID
   search criteria, wildcard/RID matching, and basic first/next request state.
