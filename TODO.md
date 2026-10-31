@@ -81,7 +81,14 @@ hardware-access, progress and handoff requirements for implementation changes.
   responsibilities clear. Preserve ABI, flash layout, transaction ordering and
   recovery behavior. Acceptance: existing overlay/transaction tests and both
   architecture builds pass; required physical startup and persistence checks
-  pass. Keep this structural change separate from storage bug fixes.
+  pass. Keep this structural change separate from storage bug fixes. Extracted
+  the filesystem implementation and its persistent-memory reporting into
+  `src/pico_filesystem.cpp`; the startup source now retains watchdog, USB boot,
+  transient-memory reporting, and VM startup/main-loop responsibilities. The
+  overlay/power-cut suite passes (`TEST:SUMMARY fail=0`), ARM and RISC-V
+  `max_crypto` builds pass, and the ARM image end address remains `0x100ff5cc`.
+  Physical startup/persistence validation remains open because `pcsc_scan -r`
+  currently lists only the two virtual readers.
 - [ ] **ARCH-06 — Reduce loader dependence on VM internals (moderate).**
   After ARCH-01, encapsulate specific heap/static initialization operations
   currently reached through private VM headers in `src/cap_load.cpp` behind

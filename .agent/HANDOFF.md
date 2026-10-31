@@ -1,5 +1,28 @@
 # Session handoff — updated 2026-10-31
 
+## Current ARCH-05 Pico filesystem extraction — 2026-10-31
+
+Moved the complete Pico filesystem/overlay implementation, C ABI functions,
+CAP-store adapter and persistent-memory availability function from
+`src/choupi_pico2.cpp` into `src/pico_filesystem.cpp`. The Pico startup source
+now contains watchdog/USB initialization, transient-memory reporting, VM
+startup and the main loop. Root CMake and the isolated overlay test now compile
+the new module. No ABI, flash constants, transaction order or storage-format
+logic changed.
+
+Validation: `./tools/test-rp2350-fs-overlay` passes all storage, migration and
+power-cut checks with `TEST:SUMMARY fail=0`; max_crypto ARM and RISC-V wrappers
+pass. ARM firmware image end remains `0x100ff5cc`. `./tools/build-pc
+--profile max_crypto` passed before this Pico-only source extraction; it was not
+rerun afterward. The current elevated `pcsc_scan -r` shows only Virtual PCD 00
+00 and 00 01, so physical startup/reboot persistence and serial checks remain
+unverified. The ARCH-05 code extraction is done; retain its physical gate as
+open in `TODO.md`.
+
+Next: continue ARCH-06 (encapsulate loader access to VM internals) in `TODO.md`.
+ARCH-04's physical crypto callback check is also still open and should be
+rerun if a Pico reader becomes available. Preserve unrelated worktree edits.
+
 ## Current ARCH-04 native progress reentry — 2026-10-31
 
 Added `src/native_progress_guard.hpp`; `choupi_ccid_native_crypto_progress()`

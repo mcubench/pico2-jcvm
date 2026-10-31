@@ -18605,3 +18605,31 @@
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`
   SHA-256 `723f9d2d5b55e4cc6e697149f75dd5dc7b7e4a5a7c2d252fdf785f7631b845d6`;
   generated test image and flash copies are ignored build artifacts.
+
+## 2026-10-31 Extract Pico filesystem module 11 minutes
+
+- Step/experiment: `arch-05-pico-filesystem-extraction-20261031`
+- When: '2026-10-31 20:25 UTC' - '2026-10-31 20:36 UTC'
+- Change: Moved Pico overlay serialization, COW persistence, filesystem C ABI,
+  CAP-store adapters and persistent-memory reporting into
+  `src/pico_filesystem.cpp`. Kept watchdog/USB boot and VM startup/main-loop
+  code in `src/choupi_pico2.cpp`. Updated the ARM firmware and overlay test
+  source lists. Preserved storage code and flash-layout constants unchanged.
+- Validation: `./tools/test-rp2350-fs-overlay` passed all overlay, transaction,
+  migration and power-cut cases (`TEST:SUMMARY fail=0`) after extraction and
+  again after include cleanup. `PICO2_DEBUG=0 ./tools/build arm --profile
+  max_crypto` passed after the final source cleanup; RISC-V max_crypto build
+  passed after module extraction. ARM firmware end remained `0x100ff5cc`.
+  `./tools/build-pc --profile max_crypto` had passed immediately before the
+  Pico-only extraction and was not rerun afterward. `pcsc_scan -r` through the
+  elevated host path listed only two virtual readers; no hardware monitor or
+  persistence reboot check was possible. `git diff --check` passed.
+- Result: The filesystem and startup responsibilities are now in separate
+  translation units with unchanged external ABI and identical ARM image end.
+  Host simulated power-cut coverage passes. Physical flash recovery behavior
+  still needs a Pico boot/reboot check.
+- Decision: Keep ARCH-05 open only for physical startup/persistence acceptance.
+  Continue with ARCH-06 independently while no physical reader is registered.
+- Commit: Implementation SHA will be recorded in the immediate follow-up.
+- Artifacts/logs: No persistent logs; overlay test and firmware build outputs
+  are ignored under `build/`.

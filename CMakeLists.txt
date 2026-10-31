@@ -165,6 +165,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   add_executable(pico2_choupi
     choupi/src/main.cpp
     src/choupi_pico2.cpp
+    src/pico_filesystem.cpp
     src/ccid_device.cpp
     src/reader_led.cpp
     src/cap_load.cpp
