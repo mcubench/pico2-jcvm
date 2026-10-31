@@ -17439,3 +17439,26 @@
   `1d28ae265a57d53368e6b38ffcd3cf9860c08e45c99fd312fd8bc615ed1e259e`;
   restore emulator SHA-256
   `ed9f8eb603185e8e4b10feee5aae86eabf37eb3b541b46744221e288e6f2495c`.
+
+## 2026-10-31 declare Java Card compatibility target 4 minutes
+
+- Step/experiment: `declare-javacard-compatibility-target`
+- When: '2026-10-31 00:43 UTC' - '2026-10-31 00:47 UTC'
+- Change: Added `docs/supported-profile.md` to state the Java Card Classic
+  3.0.5 compatibility target, CAP 2.1/2.2 input scope, native JCVM execution
+  boundary, profile-selected crypto support, and known runtime exclusions.
+  Updated TODO so the profile declaration is closed while the per-API behavior
+  audit remains open. Updated session handoff with current reader limitation.
+- Validation: Inspected the checked-in JCDK 3.0.5u3 kit, CAP 2.1/2.2 parser
+  implementation/evidence, `config/javacard-support.json`, and current TODO
+  evidence. `PICO2_HOST_USB_ACCESS=1 ./tools/doctor` passed. The approved
+  reader helper granted access to two USB nodes, but bounded
+  `timeout 8s pcsc_scan -r` timed out without listing readers. No build or
+  firmware test was needed for this documentation change.
+- Result: The project's compatibility target and explicit known exclusions
+  are now discoverable in one concise document. This does not claim complete
+  Java Card 3.0.5 conformance or close the open API test audit.
+- Decision: Keep the per-API behavior audit and physical acceptance open;
+  continue with offline implementation gaps while PC/SC is unavailable.
+- Commit: `pending`
+- Artifacts/logs: `docs/supported-profile.md`; no dedicated test log.

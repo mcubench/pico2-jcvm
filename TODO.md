@@ -1187,8 +1187,9 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   DELETE, PC build, and ARM build checks pass. The latest three-reader physical
   run also cleaned up Core/Multi, Crypto, and Service CAPs successfully after
   their tests, confirming physical deletion on the current firmware.
-- [ ] **Declare the supported Java Card profile and audit its API contract.**
-  State the supported Java Card Classic version and APIs, then add applet-level
+- [ ] **Audit the declared Java Card profile API contract.** The compatibility
+  target and known exclusions are stated in `docs/supported-profile.md`:
+  Java Card Classic 3.0.5 with accepted CAP 2.1/2.2 input. Add applet-level
   behavior tests for each implemented API. Existing tests cover JCSystem,
   APDU, lifecycle, exceptions, and persistence but do not establish broad
   profile compatibility.

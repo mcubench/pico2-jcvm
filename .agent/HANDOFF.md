@@ -1,5 +1,21 @@
 # Session handoff — updated 2026-10-30
 
+## Declared Java Card compatibility target — 2026-10-31
+
+`docs/supported-profile.md` now states the Java Card Classic 3.0.5
+compatibility target, accepted CAP 2.1/2.2 input scope, native JCVM/CAP
+execution boundary, selected crypto-profile behavior, and known exclusions.
+This is explicitly a compatibility target rather than full specification
+conformance. The TODO profile item now tracks the remaining per-API behavior
+test audit.
+
+Validation was by source/configuration inspection only; no firmware build or
+test was needed for this documentation step. Physical PC/SC remains
+unavailable: the approved helper grants pcscd access to two USB nodes, while
+bounded `pcsc_scan -r` returns no readers. Continue with offline correctness
+work; do not enable persistent-record deletion until USB cold-power recovery
+passes on hardware.
+
 ## CAP 2.2 external remote-interface linking and VPCD test recovery — 2026-10-31
 
 Applet installation now resolves each external CAP 2.2 remote-interface
