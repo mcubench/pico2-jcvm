@@ -19,7 +19,8 @@ endpoint="127.0.0.1:35963"
 emulator="${repo_root}/build/choupi-pc/choupi"
 rom_mask="${repo_root}/build/choupi-pc/flash"
 empty_flash="${repo_root}/build/algtest-v182-empty-flash.bin"
-for input in "${emulator}" "${rom_mask}" "${empty_flash}"; do
+load_code="${repo_root}/build/algtest-v182-load-code.bin"
+for input in "${emulator}" "${rom_mask}" "${empty_flash}" "${load_code}"; do
   [[ -s "${input}" ]] || die "required input is missing: ${input}"
 done
 
@@ -44,7 +45,9 @@ if [[ "${reader_found}" != true ]]; then
 fi
 
 "${repo_root}/tools/env" "${emulator}" -m "${flash_image}" -s \
-  --vpcd "${endpoint}" --vpcd-idle-timeout 30 --rom-mask "${rom_mask}" \
+  --vpcd "${endpoint}" --vpcd-idle-timeout 30 \
+  --applet-aid 4A43416C675465737431 --package-id 63 \
+  --cap-code "${load_code}" --rom-mask "${rom_mask}" \
   > "${out_dir}/emulator.log" 2>&1 &
 emulator_pid=$!
 cleanup() {

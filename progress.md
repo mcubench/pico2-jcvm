@@ -18452,3 +18452,37 @@
 - Commit: Included in this scheduling commit; obtain SHA with
   `git log -1 --format=%H -- TODO.md`.
 - Artifacts/logs: `TODO.md`; none generated.
+
+## 2026-10-31 Implement GET DATA application list and response chaining 26 minutes
+
+- Step/experiment: `gp-get-data-2f00-20261031`
+- When: '2026-10-31 09:14 UTC' - '2026-10-31 09:40 UTC'
+- Change: Implemented GP and ISO GET DATA `2F00` with required `5C00`, listing
+  the ISD and all registered applet-instance AIDs as Application Templates.
+  Added short-APDU Le handling and `61xx`/GET RESPONSE continuation for long
+  lists in both Pico CCID and PC VPCD paths, including SCP03-protected
+  continuation. Missing/malformed tag lists return `6A80`. Added unit and
+  multipackage regressions and updated TODO/handoff.
+- Validation: `./tools/test-gp-get-data` passed 25/25;
+  `./tools/test-short-apdu` passed; Python syntax and Java SmartcardIO probe
+  compilation passed. `./tools/build-pc --profile max_crypto`,
+  `PICO2_DEBUG=0 ./tools/build arm --profile max_crypto`, and the corresponding
+  RISC-V wrapper passed. Elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed
+  `TEST:SUMMARY pass=42 fail=0`, including 21 installed applets, malformed
+  request rejection, chained authenticated GET DATA, and process restart.
+  An elevated bounded `pcsc_scan -r` timed out (exit 124) without listing a
+  reader; no physical flash/test was run. `git diff --check` passed.
+- Result: Long `2F00` results remain within short-APDU response limits and can
+  be collected through GET RESPONSE; open and authenticated VPCD paths restore
+  all application AIDs after restart. Physical CCID and SmartcardIO behavior
+  remain unverified because PC/SC published no reader.
+- Decision: Keep the VPCD and firmware implementations aligned. Continue with
+  ARCH-01 from the scheduled TODO block; retry PC/SC validation when a reader
+  is registered.
+- Commit: Pending; source and this record will be committed together, with the
+  resulting SHA recorded in a follow-up progress-only commit.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T093729Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-restart-20261031T093729Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261031T093729Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261031T093729Z.log`.

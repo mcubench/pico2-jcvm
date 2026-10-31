@@ -79,12 +79,35 @@ def send_message(connection: socket.socket, payload: bytes) -> None:
     connection.sendall(len(payload).to_bytes(2, "big") + payload)
 
 
+def application_template(aid: bytes) -> bytes:
+    if not 5 <= len(aid) <= 16:
+        raise ValueError("application AID length must be between 5 and 16")
+    return bytes((0x61, len(aid) + 2, 0x4f, len(aid))) + aid
+
+
 def exchange(connection: socket.socket, command: bytes, label: str) -> bytes:
     send_message(connection, command)
     response = receive_message(connection)
     if len(response) < 2:
         raise RuntimeError(f"{label}: response is shorter than SW1/SW2")
     return response
+
+
+def collect_response_chain(response: bytes, fetch_next, label: str,
+                           expect_chaining: bool = False) -> bytes:
+    data = bytearray()
+    if expect_chaining and (len(response) < 2 or response[-2] != 0x61):
+        raise RuntimeError(f"{label}: expected initial 61xx, got {response.hex().upper()}")
+    while True:
+        if len(response) < 2:
+            raise RuntimeError(f"{label}: response is shorter than SW1/SW2")
+        data.extend(response[:-2])
+        status = int.from_bytes(response[-2:], "big")
+        if status == 0x9000:
+            return bytes(data) + b"\x90\x00"
+        if status >> 8 != 0x61:
+            raise RuntimeError(f"{label}: response chaining failed: {response.hex().upper()}")
+        response = fetch_next(status & 0xff)
 
 
 def aes_cmac(key: bytes, message: bytes) -> bytes:
@@ -156,7 +179,7 @@ class Scp03:
         response = exchange(self.connection, header + data + full_mac[:8] + b"\x00",
                             label)
         status = int.from_bytes(response[-2:], "big")
-        if status not in expected_statuses:
+        if status not in expected_statuses and status >> 8 != 0x61:
             raise RuntimeError(f"{label} failed: {response.hex().upper()}")
         return response
 
@@ -359,6 +382,43 @@ def main() -> int:
                 )
             print("TEST:PASS SELECT default ISD")
 
+            bootstrap_application_list = application_template(ISD_AID) + b"\x90\x00"
+            for cla, ins, label in (
+                (0x80, 0xca, "open GP GET DATA list"),
+                (0x00, 0xcb, "open ISO GET DATA list"),
+            ):
+                response = collect_response_chain(
+                    exchange(
+                        connection,
+                        bytes((cla, ins, 0x2f, 0x00, 0x02, 0x5c, 0x00, 0x00)),
+                        label,
+                    ),
+                    lambda le: exchange(
+                        connection, bytes((0x00, 0xc0, 0x00, 0x00, le)),
+                        label + " GET RESPONSE",
+                    ),
+                    label,
+                )
+                if response != bootstrap_application_list:
+                    raise RuntimeError(
+                        f"{label} returned {response.hex().upper()}, expected "
+                        f"{bootstrap_application_list.hex().upper()}"
+                    )
+            print("TEST:PASS open GP and ISO GET DATA return bootstrap application list")
+            for cla, ins, bad_data, label in (
+                (0x80, 0xca, None, "missing GP 2F00 tag list"),
+                (0x00, 0xcb, None, "missing ISO 2F00 tag list"),
+                (0x80, 0xca, b"\x5c\x01", "malformed GP 2F00 tag list"),
+                (0x00, 0xcb, b"\x5c\x01", "malformed ISO 2F00 tag list"),
+            ):
+                command = (bytes((cla, ins, 0x2f, 0x00, 0x00))
+                           if bad_data is None else
+                           bytes((cla, ins, 0x2f, 0x00, len(bad_data))) +
+                           bad_data + b"\x00")
+                if exchange(connection, command, label) != b"\x6a\x80":
+                    raise RuntimeError(f"{label}: expected 6A80")
+            print("TEST:PASS GP and ISO 2F00 reject missing or malformed tag lists")
+
             scp = Scp03(connection)
             scp.authenticate()
             print("TEST:PASS SCP03 authentication")
@@ -420,6 +480,25 @@ def main() -> int:
                 core_applets[0:1] + multi_applets +
                 lookup_applets[0:1] + [lookup_second_aid] + pagination_aids
             )
+            expected_application_list = (
+                application_template(ISD_AID) +
+                b"".join(application_template(aid)
+                         for aid in expected_instance_aids)
+            )
+            response = collect_response_chain(
+                scp.command(0xca, 0x2f, 0x00, b"\x5c\x00",
+                            "authenticated GET DATA list"),
+                lambda le: scp.command(0xc0, 0x00, 0x00, b"",
+                                       "authenticated GET RESPONSE"),
+                "authenticated GET DATA list",
+                expect_chaining=True,
+            )
+            if response != expected_application_list + b"\x90\x00":
+                raise RuntimeError(
+                    "authenticated GET DATA application list omitted, duplicated, "
+                    "or reordered AIDs: " + response.hex().upper()
+                )
+            print("TEST:PASS authenticated GET DATA lists all 21 installed applications")
             if (len(applet_page_statuses) < 2 or
                     applet_page_statuses[-1] != 0x9000 or
                     any(status != 0x6310
@@ -710,6 +789,20 @@ def main() -> int:
             scp = Scp03(connection)
             scp.authenticate()
             print("TEST:PASS restart SCP03 authentication")
+            response = collect_response_chain(
+                scp.command(0xca, 0x2f, 0x00, b"\x5c\x00",
+                            "restart authenticated GET DATA list"),
+                lambda le: scp.command(0xc0, 0x00, 0x00, b"",
+                                       "restart authenticated GET RESPONSE"),
+                "restart authenticated GET DATA list",
+                expect_chaining=True,
+            )
+            if response != expected_application_list + b"\x90\x00":
+                raise RuntimeError(
+                    "restart GET DATA application list changed: " +
+                    response.hex().upper()
+                )
+            print("TEST:PASS restart GET DATA restores all 21 application AIDs")
             packages = get_status(scp, 0x20)
             applets, restart_page_statuses = get_status_pages(scp, 0x40)
             modules = get_status(scp, 0x10)
@@ -840,7 +933,7 @@ def main() -> int:
             if get_status(scp, 0x20) or get_status(scp, 0x40):
                 raise RuntimeError("registry is not empty after deleting Core")
             print("TEST:PASS DELETE leaves registry empty")
-            print("TEST:SUMMARY pass=41 fail=0")
+            print("TEST:SUMMARY pass=42 fail=0")
             return 0
         finally:
             if connection is not None:

@@ -10,6 +10,7 @@
 #include "tusb.h"
 #include "scp03.hpp"
 #include "apdu_status.hpp"
+#include "short_apdu.hpp"
 #include "cap_load.hpp"
 #include "gp_registry.hpp"
 #include "gp_delete.hpp"
@@ -147,12 +148,68 @@ size_t get_status_search_length = 0;
 // maximum module-AID scratch list out of the Pico main stack (127 entries use
 // over 2 KiB by themselves).
 gp::ExecutableModuleAid get_status_modules[127]{};
+pico2_jcvm::ShortApduResponseChain pending_card_manager_response;
+
+bool segment_card_manager_response(const uint8_t *command,
+                                  size_t command_length, uint8_t *response,
+                                  size_t response_capacity,
+                                  size_t &response_length) noexcept {
+  if (response == nullptr || response_length < 2 ||
+      response_length > response_capacity) {
+    return false;
+  }
+  const size_t data_length = response_length - 2;
+  const size_t data_limit = short_apdu_response_data_limit(
+      command, command_length, response_capacity - 2);
+  if (data_length <= data_limit) return true;
+  const size_t remaining = data_length - data_limit;
+  if (remaining > pico2_jcvm::ShortApduResponseChain::capacity ||
+      !pending_card_manager_response.queue(response + data_limit,
+                                           static_cast<uint16_t>(remaining))) {
+    response_length = 0;
+    return false;
+  }
+  const uint16_t sw2 = remaining >= 256 ? 0 : static_cast<uint16_t>(remaining);
+  response[data_limit] = 0x61;
+  response[data_limit + 1] = static_cast<uint8_t>(sw2);
+  response_length = data_limit + 2;
+  return true;
+}
 
 uint32_t read_le32(const uint8_t *p) {
   return static_cast<uint32_t>(p[0]) |
          (static_cast<uint32_t>(p[1]) << 8) |
          (static_cast<uint32_t>(p[2]) << 16) |
          (static_cast<uint32_t>(p[3]) << 24);
+}
+
+uint16_t build_dynamic_get_applications_response(
+    uint8_t *output, size_t capacity, size_t &output_length) noexcept {
+  const bool written = gp::write_get_applications_response(
+      output, capacity, output_length, [&](auto append_aid) {
+        for (uint8_t package_id = 56; package_id < 64; ++package_id) {
+          uint32_t code_length = 0;
+          if (cap_store_data_for_package(package_id, &code_length) == nullptr)
+            continue;
+          const uint8_t instance_count =
+              cap_store_package_instance_count(package_id);
+          for (uint8_t index = 0; index < instance_count; ++index) {
+            uint8_t applet_aid[16]{};
+            uint8_t applet_aid_length = 0;
+            uint8_t instance_aid[16]{};
+            uint8_t instance_aid_length = 0;
+            uint16_t class_index = 0xffff;
+            if (!cap_store_package_instance_at(
+                    package_id, index, applet_aid, applet_aid_length,
+                    instance_aid, instance_aid_length, class_index) ||
+                !append_aid(instance_aid, instance_aid_length)) {
+              return false;
+            }
+          }
+        }
+        return true;
+      });
+  return written ? 0x9000 : 0x6f00;
 }
 
 uint16_t build_dynamic_get_status_page(
@@ -370,6 +427,7 @@ void process_message(uint8_t rhport) {
     get_status_first_seen = false;
     cap_load_session.abortTransfer();
     cap_load_session.restoreInstalled();
+    pending_card_manager_response.queue(nullptr, 0);
     send_response(rhport, 0x80, kAtr, sizeof(kAtr));
     break;
   case 0x63: // PC_to_RDR_IccPowerOff
@@ -378,6 +436,7 @@ void process_message(uint8_t rhport) {
     secure_channel.reset();
     get_status_first_seen = false;
     cap_load_session.abortTransfer();
+    pending_card_manager_response.queue(nullptr, 0);
     send_response(rhport, 0x81, nullptr, 0, slot_state);
     break;
   case 0x65: // PC_to_RDR_GetSlotStatus
@@ -423,16 +482,54 @@ void process_message(uint8_t rhport) {
     }
     // Card Recognition Data is used to discover the card and its secure
     // channel before authentication, so expose GET DATA on the open channel.
-    const bool gp_get_data = apdu_length == 5 && apdu[0] == 0x80 &&
+    const bool gp_get_data = apdu_length >= 5 && apdu[0] == 0x80 &&
                              apdu[1] == 0xca;
-    const bool iso_get_data = apdu_length == 5 && apdu[0] == 0x00 &&
+    const bool iso_get_data = apdu_length >= 5 && apdu[0] == 0x00 &&
                               apdu[1] == 0xcb;
+    const bool get_response = apdu_length >= 5 && apdu[1] == 0xc0 &&
+                              (apdu[0] == 0x00 || apdu[0] == 0x84);
+    if (!get_response) pending_card_manager_response.queue(nullptr, 0);
+    if (!secure_channel.active() && apdu_length >= 5 &&
+        apdu[0] == 0x00 && apdu[1] == 0xc0 &&
+        pending_card_manager_response.has_pending()) {
+      pico2_jcvm::ShortApduCommand parsed{};
+      uint16_t status = 0x6a86;
+      size_t data_length = 0;
+      if (pico2_jcvm::parse_short_apdu(apdu, apdu_length, parsed) &&
+          apdu[2] == 0x00 && apdu[3] == 0x00 &&
+          parsed.has_expected_response_length) {
+        status = 0x9000;
+        data_length = pending_card_manager_response.take(
+            parsed.expected_response_length, response,
+            static_cast<uint16_t>(sizeof(response) - 2), status);
+      }
+      response[data_length++] = static_cast<uint8_t>(status >> 8);
+      response[data_length++] = static_cast<uint8_t>(status);
+      send_response(rhport, 0x80, response, data_length);
+      break;
+    }
     if (!secure_channel.active() && (gp_get_data || iso_get_data)) {
-      if (!gp::write_get_data_response(apdu[2], apdu[3], response,
-                                       sizeof(response), response_length,
-                                       gp_get_data)) {
+      const bool application_list = apdu[2] == 0x2f && apdu[3] == 0x00;
+      const bool valid_command = application_list
+          ? apdu_length == 8 && apdu[4] == 0x02 && apdu[7] == 0x00 &&
+                gp::valid_get_applications_tag_list(apdu + 5, 2)
+          : apdu_length == 5;
+      const bool written = valid_command &&
+          (application_list
+               ? build_dynamic_get_applications_response(
+                     response, sizeof(response), response_length) == 0x9000
+               : gp::write_get_data_response(apdu[2], apdu[3], response,
+                                             sizeof(response), response_length,
+                                             gp_get_data));
+      if (written && !segment_card_manager_response(
+                         apdu, apdu_length, response, sizeof(response),
+                         response_length)) {
         response[0] = 0x6f;
         response[1] = 0x00;
+        response_length = 2;
+      } else if (!written) {
+        response[0] = valid_command ? 0x6f : 0x6a;
+        response[1] = valid_command ? 0x00 : 0x80;
         response_length = 2;
       }
       send_response(rhport, 0x80, response, response_length);
@@ -472,7 +569,22 @@ void process_message(uint8_t rhport) {
       const uint8_t instruction = apdu[1];
       const uint8_t p1 = apdu[2];
       const uint8_t p2 = apdu[3];
-      if (instruction == 0xe4) {
+      if (instruction == 0xc0 && pending_card_manager_response.has_pending()) {
+        pico2_jcvm::ShortApduCommand parsed{};
+        uint16_t status = 0x6a86;
+        size_t data_length = 0;
+        if (p1 == 0x00 && p2 == 0x00 &&
+            pico2_jcvm::parse_short_apdu(apdu, apdu_length, parsed) &&
+            parsed.has_expected_response_length) {
+          status = 0x9000;
+          data_length = pending_card_manager_response.take(
+              parsed.expected_response_length, response,
+              static_cast<uint16_t>(sizeof(response) - 2), status);
+        }
+        response[data_length++] = static_cast<uint8_t>(status >> 8);
+        response[data_length++] = static_cast<uint8_t>(status);
+        response_length = data_length;
+      } else if (instruction == 0xe4) {
         gp::DeleteRequest request;
         const bool valid_request =
             apdu_length >= 5 &&
@@ -623,11 +735,26 @@ void process_message(uint8_t rhport) {
           }
         }
       } else if (instruction == 0xca || instruction == 0xcb) {
-        if (!gp::write_get_data_response(p1, p2, response,
-                                         sizeof(response), response_length,
-                                         instruction == 0xca)) {
+        const bool application_list = p1 == 0x2f && p2 == 0x00;
+        const bool valid_command = !application_list ||
+            gp::valid_get_applications_tag_list(apdu + 5,
+                                                command_data_length);
+        const bool written = valid_command &&
+            (application_list
+                 ? build_dynamic_get_applications_response(
+                       response, sizeof(response), response_length) == 0x9000
+                 : gp::write_get_data_response(p1, p2, response,
+                                               sizeof(response), response_length,
+                                               instruction == 0xca));
+        if (written && !segment_card_manager_response(
+                           apdu, apdu_length, response, sizeof(response),
+                           response_length)) {
           response[0] = 0x6f;
           response[1] = 0x00;
+          response_length = 2;
+        } else if (!written) {
+          response[0] = valid_command ? 0x6f : 0x6a;
+          response[1] = valid_command ? 0x00 : 0x80;
           response_length = 2;
         }
       } else {

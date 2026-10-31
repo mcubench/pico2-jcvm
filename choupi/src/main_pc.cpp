@@ -67,6 +67,7 @@
 #include "gp_get_data.hpp"
 #include "gp_registry.hpp"
 #include "apdu_status.hpp"
+#include "short_apdu.hpp"
 
 bool isSaving = false;
 uint8_t *flash = nullptr;
@@ -92,6 +93,7 @@ bool vpcd_restore_applet_requested = false;
 CapLoadSession vpcd_cap_load_session;
 Scp03Session vpcd_secure_channel;
 bool vpcd_get_status_first_seen = false;
+pico2_jcvm::ShortApduResponseChain vpcd_pending_card_manager_response;
 uint16_t vpcd_get_status_cursor = 0;
 uint8_t vpcd_get_status_p1 = 0;
 std::vector<uint8_t> vpcd_get_status_search_data;
@@ -1173,6 +1175,7 @@ uint16_t vpcd_deselect_applet(void *, const bool selecting_same_applet) {
 
 void vpcd_reset_card_manager(void *) {
   vpcd_secure_channel.reset();
+  vpcd_pending_card_manager_response.queue(nullptr, 0);
   vpcd_get_status_first_seen = false;
   vpcd_get_status_cursor = 0;
   vpcd_get_status_search_data.clear();
@@ -1190,6 +1193,33 @@ uint16_t vpcd_card_manager_status(uint16_t status, uint8_t *response,
   response[1] = static_cast<uint8_t>(status);
   *response_length = 2;
   return status;
+}
+
+bool vpcd_write_get_applications_response(uint8_t *response,
+                                          size_t response_capacity,
+                                          size_t &response_length) {
+  return gp::write_get_applications_response(
+      response, response_capacity, response_length, [&](auto append_aid) {
+        for (const HostCapPackage &package : host_cap_packages) {
+          const uint8_t count =
+              cap_store_package_instance_count(package.package_id);
+          for (uint8_t index = 0; index < count; ++index) {
+            uint8_t applet_aid[16]{};
+            uint8_t applet_aid_length = 0;
+            uint8_t instance_aid[16]{};
+            uint8_t instance_aid_length = 0;
+            uint16_t class_index = 0xffff;
+            if (!cap_store_package_instance_at(
+                    package.package_id, index, applet_aid,
+                    applet_aid_length, instance_aid, instance_aid_length,
+                    class_index) ||
+                !append_aid(instance_aid, instance_aid_length)) {
+              return false;
+            }
+          }
+        }
+        return true;
+      });
 }
 
 uint16_t vpcd_get_status_page(uint8_t p1, uint8_t p2,
@@ -1373,16 +1403,68 @@ uint16_t vpcd_process_card_manager(
                                     response_length);
   };
 
-  const bool gp_get_data = command_length == 5 && command[0] == 0x80 &&
+  const bool get_response = command_length >= 5 && command[1] == 0xc0 &&
+                            (command[0] == 0x00 || command[0] == 0x84);
+  if (!get_response) vpcd_pending_card_manager_response.queue(nullptr, 0);
+  if (!vpcd_secure_channel.active() && command_length >= 5 &&
+      command[0] == 0x00 && command[1] == 0xc0 &&
+      vpcd_pending_card_manager_response.has_pending()) {
+    pico2_jcvm::ShortApduCommand parsed{};
+    uint16_t status = 0x6a86;
+    uint16_t data_length = 0;
+    if (pico2_jcvm::parse_short_apdu(command, command_length, parsed) &&
+        command[2] == 0x00 && command[3] == 0x00 &&
+        parsed.has_expected_response_length) {
+      status = 0x9000;
+      data_length = vpcd_pending_card_manager_response.take(
+          parsed.expected_response_length, response,
+          static_cast<uint16_t>(response_capacity - 2), status);
+    }
+    response[data_length++] = static_cast<uint8_t>(status >> 8);
+    response[data_length++] = static_cast<uint8_t>(status);
+    *response_length = data_length;
+    return status;
+  }
+
+  const bool gp_get_data = command_length >= 5 && command[0] == 0x80 &&
                            command[1] == 0xca;
-  const bool iso_get_data = command_length == 5 && command[0] == 0x00 &&
+  const bool iso_get_data = command_length >= 5 && command[0] == 0x00 &&
                             command[1] == 0xcb;
   if (!vpcd_secure_channel.active() && (gp_get_data || iso_get_data)) {
     size_t output_length = 0;
-    if (!gp::write_get_data_response(command[2], command[3], response,
-                                     response_capacity, output_length,
-                                     gp_get_data)) {
-      return status_response(0x6f00);
+    const bool application_list = command[2] == 0x2f && command[3] == 0x00;
+    const bool valid_command = application_list
+        ? command_length == 8 && command[4] == 0x02 && command[7] == 0x00 &&
+              gp::valid_get_applications_tag_list(command + 5, 2)
+        : command_length == 5;
+    const bool written = valid_command &&
+        (application_list
+             ? vpcd_write_get_applications_response(
+                   response, response_capacity, output_length)
+             : gp::write_get_data_response(command[2], command[3], response,
+                                           response_capacity, output_length,
+                                           gp_get_data));
+    if (!written) {
+      return status_response(valid_command ? 0x6f00 : 0x6a80);
+    }
+    if (written && application_list) {
+      const size_t data_length = output_length - 2;
+      const size_t data_limit = short_apdu_response_data_limit(
+          command, command_length, response_capacity - 2);
+      if (data_length > data_limit) {
+        const size_t remaining = data_length - data_limit;
+        if (remaining > pico2_jcvm::ShortApduResponseChain::capacity ||
+            !vpcd_pending_card_manager_response.queue(
+                response + data_limit, static_cast<uint16_t>(remaining))) {
+          return status_response(0x6f00);
+        }
+        const uint16_t sw2 = remaining >= 256
+                                 ? 0
+                                 : static_cast<uint16_t>(remaining);
+        response[data_limit] = 0x61;
+        response[data_limit + 1] = static_cast<uint8_t>(sw2);
+        output_length = data_limit + 2;
+      }
     }
     *response_length = static_cast<uint16_t>(output_length);
     return static_cast<uint16_t>(
@@ -1424,6 +1506,23 @@ uint16_t vpcd_process_card_manager(
   const uint8_t p1 = command[2];
   const uint8_t p2 = command[3];
   const uint8_t *data = command + 5;
+  if (instruction == 0xc0 && vpcd_pending_card_manager_response.has_pending()) {
+    pico2_jcvm::ShortApduCommand parsed{};
+    uint16_t status = 0x6a86;
+    uint16_t data_length = 0;
+    if (p1 == 0 && p2 == 0 &&
+        pico2_jcvm::parse_short_apdu(command, command_length, parsed) &&
+        parsed.has_expected_response_length) {
+      status = 0x9000;
+      data_length = vpcd_pending_card_manager_response.take(
+          parsed.expected_response_length, response,
+          static_cast<uint16_t>(response_capacity - 2), status);
+    }
+    response[data_length++] = static_cast<uint8_t>(status >> 8);
+    response[data_length++] = static_cast<uint8_t>(status);
+    *response_length = data_length;
+    return status;
+  }
   if (instruction == 0xf2) {
     const size_t response_data_limit =
         short_apdu_response_data_limit(command, command_length,
@@ -1483,9 +1582,37 @@ uint16_t vpcd_process_card_manager(
   }
   if (instruction == 0xca || instruction == 0xcb) {
     size_t output_length = 0;
-    if (!gp::write_get_data_response(p1, p2, response, response_capacity,
-                                     output_length, instruction == 0xca)) {
-      return status_response(0x6f00);
+    const bool application_list = p1 == 0x2f && p2 == 0x00;
+    const bool valid_command = !application_list ||
+        gp::valid_get_applications_tag_list(data, command_data_length);
+    const bool written = valid_command &&
+        (application_list
+             ? vpcd_write_get_applications_response(
+                   response, response_capacity, output_length)
+             : gp::write_get_data_response(p1, p2, response, response_capacity,
+                                           output_length,
+                                           instruction == 0xca));
+    if (!written) {
+      return status_response(valid_command ? 0x6f00 : 0x6a80);
+    }
+    if (written && application_list) {
+      const size_t data_length = output_length - 2;
+      const size_t data_limit = short_apdu_response_data_limit(
+          command, command_length, response_capacity - 2);
+      if (data_length > data_limit) {
+        const size_t remaining = data_length - data_limit;
+        if (remaining > pico2_jcvm::ShortApduResponseChain::capacity ||
+            !vpcd_pending_card_manager_response.queue(
+                response + data_limit, static_cast<uint16_t>(remaining))) {
+          return status_response(0x6f00);
+        }
+        const uint16_t sw2 = remaining >= 256
+                                 ? 0
+                                 : static_cast<uint16_t>(remaining);
+        response[data_limit] = 0x61;
+        response[data_limit + 1] = static_cast<uint8_t>(sw2);
+        output_length = data_limit + 2;
+      }
     }
     *response_length = static_cast<uint16_t>(output_length);
     return static_cast<uint16_t>(

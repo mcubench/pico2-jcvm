@@ -1,5 +1,27 @@
 # Session handoff — updated 2026-10-31
 
+## Current GET DATA application list — 2026-10-31
+
+Implemented GET DATA `2F00` in the Pico CCID and PC VPCD card-manager routes.
+Both GP `80 CA` and ISO `00 CB` require `5C00` and return the ISD plus all
+registered applet-instance AIDs as Application Templates. Responses obey
+short-APDU Le and support `61xx`/GET RESPONSE, including SCP03-protected GET
+RESPONSE. Missing/malformed tag lists return `6A80`.
+
+Validation: `./tools/test-gp-get-data` 25/25; `./tools/test-short-apdu` passed;
+Python syntax and Java probe compilation passed. PC, ARM, and RISC-V
+`max_crypto` builds passed. The elevated raw VPCD multipackage test passed
+42/42 with 21 instances, checking open GP/ISO requests, malformed lists, a
+chained authenticated list, and full list restoration after process restart.
+Log artifacts: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T093126Z.log`
+and matching restart/reject logs. A bounded elevated `pcsc_scan -r` timed out
+without listing readers, so SmartcardIO and physical CCID GET DATA remain
+unverified. No board was flashed.
+
+Next: follow the highest-priority unchecked implementation task in `TODO.md`
+(ARCH-01 is first in the scheduled architecture maintenance block); continue
+offline while no PC/SC reader is registered.
+
 ## Current GET DATA ISO response change — 2026-10-31
 
 `src/gp_get_data.hpp` now emits raw data-object values for ISO `00 CB`; GP

@@ -168,11 +168,16 @@ public final class GPGetDataApduProbe {
     byte[] sessionMacKey = Arrays.copyOfRange(sessionState, 0, 16);
     byte[] chainingValue = Arrays.copyOfRange(sessionState, 16, 32);
     byte[] plain = command.getBytes();
-    byte[] header = { (byte)0x84, plain[1], plain[2], plain[3], 0x08 };
+    byte[] data = plain.length > 5
+        ? Arrays.copyOfRange(plain, 5, plain.length - 1) : new byte[0];
+    int lc = data.length + 8;
+    byte[] header = { (byte)0x84, plain[1], plain[2], plain[3], (byte)lc };
     byte[] mac = aesCmac(sessionMacKey,
-        concat(chainingValue, header, new byte[0]));
+        concat(chainingValue, Arrays.copyOf(header, 4),
+               new byte[] { (byte)lc }, data));
     System.arraycopy(mac, 0, sessionState, 16, mac.length);
-    byte[] protectedCommand = concat(header, firstEight(mac), new byte[] {0x00});
+    byte[] protectedCommand = concat(header, data, firstEight(mac),
+                                     new byte[] {0x00});
     ResponseAPDU response = transmit(channel, name,
         new CommandAPDU(protectedCommand));
     if (response.getSW() != 0x9000 ||
@@ -231,11 +236,32 @@ public final class GPGetDataApduProbe {
                          Arrays.copyOfRange(CPLC_DATA, 3, CPLC_DATA.length))) {
         throw new IllegalStateException("unexpected ISO CPLC value");
       }
+      byte[] expectedApplications = fromHex(
+          "610A4F08A000000151000000");
+      ResponseAPDU applications = transmit(channel, "GET_DATA_APPLICATIONS",
+          new CommandAPDU(0x80, 0xCA, 0x2F, 0x00,
+                          new byte[] {0x5c, 0x00}, 256));
+      if (applications.getSW() != 0x9000 ||
+          !Arrays.equals(applications.getData(), expectedApplications)) {
+        throw new IllegalStateException("unexpected GP application list");
+      }
+      ResponseAPDU applicationsIso = transmit(channel,
+          "ISO_GET_DATA_APPLICATIONS",
+          new CommandAPDU(0x00, 0xCB, 0x2F, 0x00,
+                          new byte[] {0x5c, 0x00}, 256));
+      if (applicationsIso.getSW() != 0x9000 ||
+          !Arrays.equals(applicationsIso.getData(), expectedApplications)) {
+        throw new IllegalStateException("unexpected ISO application list");
+      }
       byte[] session = establishScp03(channel);
       transmitProtected(channel, session, "GET_DATA_CARD_RECOGNITION_AUTHENTICATED",
           new CommandAPDU(0x80, 0xCA, 0x00, 0x66, 256), CARD_DATA);
       transmitProtected(channel, session, "GET_DATA_CPLC_AUTHENTICATED",
           new CommandAPDU(0x80, 0xCA, 0x9F, 0x7F, 256), CPLC_DATA);
+      transmitProtected(channel, session, "GET_DATA_APPLICATIONS_AUTHENTICATED",
+          new CommandAPDU(0x80, 0xCA, 0x2F, 0x00,
+                          new byte[] {0x5c, 0x00}, 256),
+          expectedApplications);
       System.out.println("TEST:PASS gp_get_data_open_and_authenticated");
     } finally {
       card.disconnect(false);

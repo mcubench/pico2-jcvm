@@ -2018,6 +2018,15 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `artifacts/results/gp-get-data-vpcd-20261031T085055Z/`. Repeat VPCD APDU
   validation when `Virtual PCD 00 00` is registered; physical card-manager
   validation remains separate and pending.
+  - [x] Implement dynamic GET DATA `2F00` with the required `5C00` command
+    data: return the ISD and every installed applet-instance AID as consecutive
+    `61`/`4F` Application Templates for both GP `80 CA` and ISO `00 CB`.
+    Responses honor short-APDU Le and use `61xx` plus GET RESPONSE when the
+    list exceeds 256 bytes; open and SCP03-authenticated lists survive emulator
+    process restart. Missing/malformed tag lists return `6A80`. Host unit tests
+    pass 25/25; the PC VPCD multipackage suite passes 42/42 with 21 instances;
+    PC, ARM, and RISC-V `max_crypto` builds pass. No PC/SC VPCD or physical
+    reader was available for SmartcardIO/CCID validation.
   GET STATUS now handles ISD (`P1=80`), applications (`40`), executable load
   files (`20`), and load files with modules (`10`), with mandatory leading AID
   search criteria, wildcard/RID matching, and basic first/next request state.
