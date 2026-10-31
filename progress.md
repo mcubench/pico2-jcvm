@@ -17837,7 +17837,7 @@
 - Decision: Use this UF2 for external `max_crypto` testing. The full JCAlgTest
   run on the prior image remains partial (1,155/4,525 rows); it is not claimed
   to be complete evidence for the refreshed image.
-- Commit: pending closeout
+- Commit: `c5f8bc2`
 - Artifacts/logs: Cycle log
   `artifacts/logs/cycle-choupi-20261031T024632Z.log`, SHA-256
   `eb245d3a2a7b6170b3cee1a2961ee3737951b39d81e64d97f8de12688c4fe3bf`;
