@@ -48,6 +48,20 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - Log: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261031T015450Z.log`,
   SHA-256 `b9c1988f1b8934999bd7470a43c6492b6c2aa733c0c3f23a5a85975d1dd71c75`.
 
+## Pico CDC startup available while PC/SC reader is absent — 2026-10-31
+
+- Identified Pico 2 `2BED26ED20556535` is visible at
+  `/dev/serial/by-id/usb-Pico2_Pico2_JCVM_CCID_2BED26ED20556535-if00`.
+  `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial 2BED26ED20556535
+  --seconds 8` exited 0 and reported repeated `TEST:PASS choupi_runtime` /
+  `TEST:SUMMARY pass=1 fail=0`, with no `FAULT`. The trace also showed an
+  active CCID task loop (`rx_events=2761`, `tasks=1945`). No flash or APDU was
+  performed.
+- The authorized PC/SC helper grants USB access to two nodes, but bounded
+  `pcsc_scan -r` still returns no readers. CDC startup evidence therefore
+  establishes runtime liveness only; physical applet/APDU validation remains
+  blocked on PC/SC reader registration.
+
 ## `JCSystem.lookupAID()` peer lookup and short-APDU length diagnostic — 2026-10-31
 
 - The native implementation now scans installed package instance AIDs and

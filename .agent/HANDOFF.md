@@ -36,6 +36,11 @@ Artifact: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`,
 The file compares byte-for-byte with `build/arm/pico2_choupi.uf2`; the expected
 support CSV hash is unchanged. Commit `c73fc70`. No physical flash was done.
 
+An eight-second CDC monitor on identified Pico 2 `2BED26ED20556535` then
+returned success with repeated `TEST:PASS choupi_runtime` and no `FAULT`
+(`CHOUPI:CCID rx_events=2761 tasks=1945`). This verifies startup liveness only;
+PC/SC still lists no reader, and no APDU or flash was done.
+
 ## Current continuation — JCSystem.lookupAID permanent EPO behavior — 2026-10-31
 
 `lookupAID()` and `getAID()` now return runtime-wide JCRE `AID` Entry Point
