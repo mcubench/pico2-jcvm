@@ -17782,3 +17782,30 @@
   SHA-256 above; physical cycle log
   `artifacts/logs/cycle-choupi-20261031T022105Z.log`, SHA-256
   `7a3b5c48d5b7eab392c7136554095a50e8724aaa2b5f7af77dd90c91f3bea344`.
+
+## 2026-10-31 bounded physical max_crypto JCAlgTest run 15 minutes
+
+- Step/experiment: `jcalgtest-max-crypto-physical-2bed`
+- When: '2026-10-31 02:28 UTC' - '2026-10-31 02:43 UTC'
+- Change: Ran the unchanged JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` client against
+  the flashed maximum-support ARM image on Pico 2 `2BED26ED20556535`. Recorded
+  the bounded physical result and the CPLC date discrepancy in TODO and handoff.
+- Validation: The approved host USB path and exact-reader selection were used.
+  The client reached `JCALGTEST_TIMEOUT_SECONDS=900` and exited 124. Its CSV
+  contains 1,155 of 4,525 algorithm rows: 179 `yes`, 976 `no`, and no other
+  algorithm-result values. The log contains no transport error, exception, or
+  card-runtime failure. The suite is partial and was not compared as complete.
+- Result: The maximum-support image responds to the physical extended test
+  through the captured rows. Its metadata read identified CPLC dates `6302`
+  (year 2026, day 302 / October 29), stale against the requested date
+  2026-10-31 (day 304 / `6304`).
+- Decision: Preserve this partial report as evidence, do not call the full
+  JCAlgTest acceptance complete, and correct CPLC source plus fixtures before
+  the next ARM artifact refresh.
+- Commit: pending closeout
+- Artifacts/logs: CSV
+  `artifacts/results/jcalgtest/max_crypto_physical_2BED_20261031/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(2BED26ED20556535)_00_00_ALGSUPPORT__3b_80_01_81.csv`,
+  SHA-256 `90e003669f7c90ce64ce83246ce82d4cd68f85de6afe23e2d22252d1b83ed8a9`;
+  client log
+  `artifacts/results/jcalgtest/max_crypto_physical_2BED_20261031/ALGTEST_log_1793413734514.log`,
+  SHA-256 `5308eb5997510c55e6270d887e5694ad10fd64128f429a96be6d94788db6069f`.

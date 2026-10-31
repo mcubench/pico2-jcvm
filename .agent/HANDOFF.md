@@ -8,12 +8,15 @@ and flashed in the latest cycle. Refreshed
 `build/arm/pico2_choupi.uf2`. Both are 2,086,400 bytes and have SHA-256
 `2bc214ba3fdb3d020a549233bdaeb9c22fa71774118c97e742ec39219a26bd29`; `cmp`
 passed. The board is Pico 2 `2BED26ED20556535`, flashed successfully with a
-passing finite runtime monitor. A physical JCAlgTest `ALG_SUPPORT_EXTENDED`
-run is active in tool session 53389, writing
-`artifacts/results/jcalgtest/max_crypto_physical_2BED_20261031/`; resume by
-polling that existing session, then assess completeness and compare the CSV.
-Do not restart the live reader session. Latest worktree snapshot includes
-unrelated dirty files listed in prior handoff sections; preserve them.
+passing finite runtime monitor. Its physical JCAlgTest
+`ALG_SUPPORT_EXTENDED` run hit the 900-second wrapper limit at 1,155/4,525
+rows (179 yes, 976 no), without a logged transport error; it is partial.
+Artifacts are in `artifacts/results/jcalgtest/max_crypto_physical_2BED_20261031/`.
+The physical CPLC readback showed dates `6302` (October 29), although the user
+requested today’s date, October 31 (`6304`). Next fix the CPLC bytes and all
+fixtures, run GET DATA tests, build ARM and RISC-V, flash the ARM image, inspect
+its finite monitor, and verify physical GET DATA before refreshing the external
+UF2. Preserve the unrelated dirty worktree files listed in prior sections.
 
 ## APDU incoming-length virtual dispatch fixed — 2026-10-31
 

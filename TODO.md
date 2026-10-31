@@ -1983,8 +1983,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   preinstalled. Refreshed on 2026-10-31 from the ARM `max_crypto` build that
   was flashed to Pico 2 `2BED26ED20556535`: 2,086,400 bytes, SHA-256
   `2bc214ba3fdb3d020a549233bdaeb9c22fa71774118c97e742ec39219a26bd29`.
-  The artifact matches the build byte-for-byte. Physical JCAlgTest support
-  validation on that board is in progress. The previously incomplete
+  The artifact matches the build byte-for-byte. The physical
+  `ALG_SUPPORT_EXTENDED` sweep reached its explicit 900-second bound at
+  1,155/4,525 rows (179 yes, 976 no; all saved algorithm results were yes/no,
+  with no transport error logged). It is partial, not a complete support
+  report. The run also read CPLC dates `6302`, revealing that the requested
+  synthetic dates still encode October 29 rather than October 31; update the
+  CPLC source and fixtures before the next artifact refresh. The previously
+  incomplete
   all-disabled `minimal` selection now builds on both wrapper targets; the
   optional AES-CTR object is absent in those configurations and present in
   `max_crypto`.
