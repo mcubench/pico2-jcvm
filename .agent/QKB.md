@@ -30,6 +30,13 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   actual USB power interruption. If a target power cycle interrupts a batch,
   confirm reboot preserves all roots and a subsequent collection safely
   finishes the remaining unreachable tags.
+- The fake-flash RP2350 overlay suite now stages ten owner-tag erases and injects
+  1,000 randomized cuts during the single COW snapshot commit. Every reboot
+  restores either all ten old records or none; the live applet-root record is
+  preserved in both states. When the old snapshot wins, retry removes all ten
+  candidates. `./tools/test-rp2350-fs-overlay` ends with `TEST:SUMMARY fail=0`.
+  This verifies overlay snapshot atomicity, not a physical Pico power loss or
+  the end-to-end VM reclaimer invocation.
 
 ## VPCD first-reader scan can time out during PC/SC startup — 2026-10-31
 

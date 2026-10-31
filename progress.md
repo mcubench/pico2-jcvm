@@ -18061,3 +18061,27 @@
   `tools/tests/persistent_transaction/`,
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, and
   `artifacts/firmware/README-max_crypto.txt`.
+
+## 2026-10-31 Fault-inject persistent reclamation snapshot 3 minutes
+
+- Step/experiment: `rp2350-reclaimer-snapshot-powercuts-20261031`
+- When: '2026-10-31 04:48 UTC' - '2026-10-31 04:51 UTC'
+- Change: Extended the fake-flash RP2350 overlay test with ten owner-scoped
+  candidate tombstones, a preserved live applet-root record, randomized cuts
+  during the single COW snapshot commit, and retry after reboot when the old
+  snapshot wins. Updated TODO, QKB, and HANDOFF with the simulated recovery
+  result and remaining physical gate.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with
+  `TEST:SUMMARY fail=0`. Across 1,000 injected power-cut points, reboot
+  recovered either all ten original candidates or none, preserved the live
+  root in both states, and retry removed all candidates when the old snapshot
+  was selected. `git diff --check` passed. No firmware source or physical card
+  was changed.
+- Result: RP2350 overlay COW snapshot commit is atomic for a multi-tag erase
+  batch in the host fake-flash model. The VM reclaimer was not invoked by this
+  test, and no actual board power interruption was performed.
+- Decision: Keep persistent deletion disabled in normal runtime. Continue with
+  end-to-end reclaimer recovery on a Pico after an actual USB power cycle.
+- Commit: pending
+- Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`;
+  test output ended with `TEST:SUMMARY fail=0`.

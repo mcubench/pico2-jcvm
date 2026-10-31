@@ -603,6 +603,128 @@ int main() {
   expect(journal_clear_recovers_atomically,
          "install_journal_clear_1000_power_cuts_recover_old_or_cleared_state");
 
+  // Persistent reclamation removes confirmed-unreachable tags in bounded
+  // batches, then the CCID APDU boundary commits one COW snapshot. A reset
+  // during that commit must recover every candidate or none of them, preserve
+  // the live applet root, and allow retry when the old snapshot wins.
+  constexpr uint8_t reclamation_owner = 0x45;
+  constexpr uint8_t reclamation_root_tag[] = {
+      0x03, reclamation_owner, 0x01, 0x23, 0xff};
+  constexpr uint8_t reclamation_root_value[] = {0x51, 0x52, 0x53};
+  std::array<std::array<uint8_t, 4>, 10> reclamation_candidates{};
+  std::array<uint8_t, 2> reclamation_candidate_value{};
+  fake_flash.fill(0xff);
+  reset_flash_failure();
+  bool reclamation_baseline =
+      fs_init() == 0 &&
+      fs_write(reclamation_root_tag, sizeof(reclamation_root_tag),
+               reclamation_root_value, sizeof(reclamation_root_value)) == 0;
+  for (uint8_t index = 0; index < reclamation_candidates.size(); ++index) {
+    reclamation_candidates[index] = {
+        0x03, reclamation_owner, 0x30, index};
+    reclamation_candidate_value = {index, static_cast<uint8_t>(~index)};
+    reclamation_baseline = reclamation_baseline &&
+        fs_write(reclamation_candidates[index].data(),
+                 reclamation_candidates[index].size(),
+                 reclamation_candidate_value.data(),
+                 reclamation_candidate_value.size()) == 0;
+  }
+  reclamation_baseline = reclamation_baseline && fs_sync() == 0;
+  committed_flash = fake_flash;
+
+  reset_flash_failure();
+  bool reclamation_stage = reclamation_baseline;
+  for (const auto &tag : reclamation_candidates) {
+    reclamation_stage = reclamation_stage &&
+        fs_erase(tag.data(), tag.size()) == 0;
+  }
+  reclamation_stage = reclamation_stage && fs_sync() == 0;
+  const size_t reclamation_snapshot_mutations = flash_mutation_count;
+
+  bool reclamation_cut_recovery = reclamation_stage &&
+                                  reclamation_snapshot_mutations > 0;
+  uint32_t reclamation_cut_state = 0x45a23550;
+  for (size_t trial = 0; trial < 1000 && reclamation_cut_recovery; ++trial) {
+    fake_flash = committed_flash;
+    reset_flash_failure();
+    if (fs_init() != 0) {
+      reclamation_cut_recovery = false;
+      break;
+    }
+    bool erased_staged = true;
+    for (const auto &tag : reclamation_candidates) {
+      erased_staged = erased_staged && fs_erase(tag.data(), tag.size()) == 0;
+    }
+    if (!erased_staged) {
+      reclamation_cut_recovery = false;
+      break;
+    }
+    reclamation_cut_state ^= reclamation_cut_state << 13;
+    reclamation_cut_state ^= reclamation_cut_state >> 17;
+    reclamation_cut_state ^= reclamation_cut_state << 5;
+    reset_flash_failure(reclamation_cut_state %
+                        reclamation_snapshot_mutations);
+    if (fs_sync() == 0) {
+      reclamation_cut_recovery = false;
+      break;
+    }
+    reset_flash_failure();
+    if (fs_init() != 0) {
+      reclamation_cut_recovery = false;
+      break;
+    }
+    uint8_t recovered_root[sizeof(reclamation_root_value)]{};
+    bool old_candidates = true;
+    bool no_candidates = true;
+    for (uint8_t index = 0; index < reclamation_candidates.size(); ++index) {
+      uint8_t recovered_value[sizeof(reclamation_candidate_value)]{};
+      const bool exists =
+          fs_exists(reclamation_candidates[index].data(),
+                    reclamation_candidates[index].size()) != 0;
+      old_candidates = old_candidates && exists &&
+          fs_read(reclamation_candidates[index].data(),
+                  reclamation_candidates[index].size(), recovered_value,
+                  sizeof(recovered_value)) == 0 &&
+          recovered_value[0] == index &&
+          recovered_value[1] == static_cast<uint8_t>(~index);
+      no_candidates = no_candidates && !exists;
+    }
+    const bool live_root_intact =
+        fs_read(reclamation_root_tag, sizeof(reclamation_root_tag),
+                recovered_root, sizeof(recovered_root)) == 0 &&
+        std::memcmp(recovered_root, reclamation_root_value,
+                    sizeof(recovered_root)) == 0;
+    if ((!old_candidates && !no_candidates) || !live_root_intact) {
+      reclamation_cut_recovery = false;
+      break;
+    }
+
+    // If reboot selected the old snapshot, retry the same bounded deletion
+    // work and confirm that the next committed snapshot frees every candidate.
+    if (old_candidates) {
+      bool retry_staged = true;
+      for (const auto &tag : reclamation_candidates) {
+        retry_staged = retry_staged && fs_erase(tag.data(), tag.size()) == 0;
+      }
+      retry_staged = retry_staged && fs_sync() == 0 && fs_init() == 0;
+      if (!retry_staged) {
+        reclamation_cut_recovery = false;
+        break;
+      }
+      for (const auto &tag : reclamation_candidates) {
+        reclamation_cut_recovery = reclamation_cut_recovery &&
+            fs_exists(tag.data(), tag.size()) == 0;
+      }
+      reclamation_cut_recovery = reclamation_cut_recovery &&
+          fs_read(reclamation_root_tag, sizeof(reclamation_root_tag),
+                  recovered_root, sizeof(recovered_root)) == 0 &&
+          std::memcmp(recovered_root, reclamation_root_value,
+                      sizeof(recovered_root)) == 0;
+    }
+  }
+  expect(reclamation_cut_recovery,
+         "persistent_reclamation_1000_power_cuts_recover_old_or_clean_state_and_retry");
+
   constexpr uint8_t cross_store_journal_tag[] = {0x02, 0xff, 56, 3};
   constexpr uint8_t cross_store_journal_value[] = {
       'I', 'N', 'S', '1', 56, 5, 5, 5, 0x01, 0x23};

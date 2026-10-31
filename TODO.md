@@ -293,6 +293,12 @@ out explicitly.
     interrupted erase pass can resume from a fresh heap. ARM and RISC-V wrapper
     builds pass. The primitive is not wired into runtime collection; physical
     per-record power-loss recovery is still required before enabling it.
+  - [x] Fault-inject the RP2350 overlay snapshot commit after staging ten
+    owner-scoped candidate erases (more than one reclaimer batch). Across 1,000
+    randomized power-cut points, reboot restores either every old candidate or
+    none, always preserves the live applet root, and retry removes all remaining
+    candidates. This is fake-flash overlay evidence; actual hardware power loss
+    and invocation through the VM reclaimer remain unverified.
 - [x] Resume the physical API 3.0.5 Security sweep on identified Pico 2
   `2BED26ED20556535` with the `asymm_crypto` image. Both full sweeps completed
   901 calls and successful CAP cleanup. The public RSA-4096 `KeyBuilder`

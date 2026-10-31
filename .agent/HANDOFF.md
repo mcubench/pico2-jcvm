@@ -28,13 +28,15 @@ The current artifact is 2,087,936 bytes, SHA-256
 
 No physical power cut was tested, no token data was deleted, and this primitive
 is not wired into the normal collector. Keep that gate closed. Next, add
-RP2350-overlay fault injection around the exact owner-tag erase/retry sequence;
-then perform a real USB power interruption and verify applet roots and
-subsequent cleanup before considering runtime activation. Preserve the dirty
-worktree snapshot that predates this step; this change only touches
-`TODO.md`, `.agent/QKB.md`, `.agent/HANDOFF.md`, `progress.md`,
-`choupi/src/persistent_inventory.cpp`, `choupi/src/persistent_inventory.hpp`,
-and the persistent-transaction test harness.
+The RP2350-overlay model now stages ten owner-tag erases (more than one
+reclaimer batch) and injects 1,000 randomized power cuts during COW snapshot
+commit. `./tools/test-rp2350-fs-overlay` passes: every reboot restores either
+all ten old candidates or none, the live root remains intact, and a retry after
+the old snapshot wins removes every candidate. This still does not call the VM
+reclaimer or establish physical board power-loss behavior. Next, validate an
+actual USB power interruption with an identified Pico, confirm the applet root
+survives, then verify cleanup can resume before considering runtime activation.
+Preserve the dirty worktree snapshot that predates these steps.
 
 ## Complete physical max_crypto JCAlgTest run — 2026-10-31
 
