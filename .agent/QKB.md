@@ -8,6 +8,27 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## `JCSystem.lookupAID()` peer lookup and short-APDU length diagnostic — 2026-10-31
+
+- The native implementation now scans installed package instance AIDs and
+  returns a cached framework `AID` object for a peer. The authenticated VPCD
+  multipackage lifecycle regression passes 33/33, including exact peer match,
+  repeated-call object identity, unknown-AID null, process restart, and cleanup.
+  This is same-context emulator evidence; Java Card requires runtime-owned
+  permanent Entry Point Objects, so cross-context and persistent-reference
+  behavior is still open in TODO.
+- While writing the fixture, an APDU with 13 data bytes yielded
+  `setIncomingAndReceive() == 13` but `getIncomingLength() == 1`. A temporary
+  native diagnostic saw the receive entry point only; the root cause is not
+  established. The committed lookup fixture obtains short Lc from the APDU
+  header and does not validate `getIncomingLength()`. Keep this as a separate
+  APDU API investigation; do not infer general APDU length behavior from the
+  lookup test.
+- Final passing logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T011006Z.log`
+  SHA-256 `be3729bfd76833d476a948eccdeab2771c2e795ac75c06cffeb1165114fd5637`;
+  restart log `artifacts/logs/host-vpcd-multipackage-restart-20261031T011006Z.log`
+  SHA-256 `b0ec9aa58f3f13e0d175b46d0d49a8804d50dc537cf7ed97ba8ccc0073718941`.
+
 ## CAP 2.2 external remote-interface target linking and VPCD registration — 2026-10-31
 
 - Applet installation now walks CAP 2.2 class records and resolves external

@@ -42,6 +42,7 @@
 #include "jc_types/jref_t.hpp"
 #include "types.hpp"
 #include "javacard-class-token-map.h"
+#include "../../src/cap_store.hpp"
 
 #include <algorithm>
 #include <array>
@@ -1708,6 +1709,131 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAID() {
   context.setAppletAIDObjectRef(aid_object_ref);
   context.setSensitiveResultObject(aid_object_ref);
   return aid_object_ref;
+}
+
+jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_lookupAID(
+    const std::shared_ptr<JC_Array> buffer, const jshort_t offset,
+    const jbyte_t length) {
+  Context &context = Context::getActiveContext();
+  context.resetSensitiveResult();
+  if (!buffer) {
+    throw Exceptions::NullPointerException;
+  }
+  if (buffer->getType() != JAVA_ARRAY_T_BYTE) {
+    throw Exceptions::ArrayStoreException;
+  }
+  if (offset < 0 || length < 0 ||
+      static_cast<uint32_t>(offset) + static_cast<uint8_t>(length) >
+          buffer->size()) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (length > 16) {
+    const jref_t result{};
+    context.setSensitiveResultObject(result);
+    return result;
+  }
+
+  uint8_t requested_aid[16]{};
+  for (uint8_t index = 0; index < static_cast<uint8_t>(length); ++index) {
+    requested_aid[index] = static_cast<uint8_t>(
+        buffer->getByteEntry(static_cast<uint16_t>(offset + index)));
+  }
+
+  uint8_t active_aid[16]{};
+  uint8_t active_aid_length = 0;
+  if (context.copyAppletAID(active_aid, active_aid_length) &&
+      active_aid_length == static_cast<uint8_t>(length) &&
+      std::equal(requested_aid, requested_aid + active_aid_length,
+                 active_aid)) {
+    return fr_gouv_ssi_nativeimpl_NativeImplementation_getAID();
+  }
+
+  for (uint8_t package_id = 0; package_id < 64; ++package_id) {
+    const uint8_t instance_count =
+        cap_store_package_instance_count(package_id);
+    for (uint8_t instance_index = 0; instance_index < instance_count;
+         ++instance_index) {
+      uint8_t applet_aid[16]{};
+      uint8_t instance_aid[16]{};
+      uint8_t applet_aid_length = 0;
+      uint8_t instance_aid_length = 0;
+      uint16_t class_index = 0;
+      if (!cap_store_package_instance_at(
+              package_id, instance_index, applet_aid, applet_aid_length,
+              instance_aid, instance_aid_length, class_index)) {
+        throw Exceptions::RuntimeException;
+      }
+      if (instance_aid_length != static_cast<uint8_t>(length) ||
+          !std::equal(requested_aid, requested_aid + instance_aid_length,
+                      instance_aid)) {
+        continue;
+      }
+
+      const jref_t cached = context.findLookedUpAIDObject(
+          instance_aid, instance_aid_length);
+      if (!cached.isNullPointer()) {
+        context.setSensitiveResultObject(cached);
+        return cached;
+      }
+
+      Package applet_package(context.getAppletPackageID());
+      const JC_Cap applet_cap = applet_package.getCap();
+      const auto *imports = applet_cap.getImport();
+      if (imports == nullptr) throw Exceptions::RuntimeException;
+      constexpr uint8_t framework_aid[] = {0xa0, 0x00, 0x00, 0x00,
+                                           0x62, 0x01, 0x01};
+      Import_Handler import_handler(applet_package);
+      const jc_cap_package_info *framework_info = nullptr;
+      for (uint8_t index = 0; index < imports->count; ++index) {
+        const auto *candidate = import_handler.getPackageAID(index);
+        if (candidate != nullptr &&
+            candidate->AID_length == sizeof(framework_aid) &&
+            std::memcmp(candidate->AID, framework_aid,
+                        sizeof(framework_aid)) == 0) {
+          framework_info = candidate;
+          break;
+        }
+      }
+      if (framework_info == nullptr) throw Exceptions::RuntimeException;
+      const jpackage_ID_t framework_package_id =
+          import_handler.getPackageIndex(framework_info);
+      Package framework_package(framework_package_id);
+      constexpr uint8_t aid_class_export_token = 6;
+      const uint8_t aid_class_token =
+          remap_imported_class_token(*framework_info,
+                                     aid_class_export_token);
+      const jclass_index_t aid_class_index = HTONS(
+          Export_Handler(framework_package)
+              .getExportedClassOffset(aid_class_token));
+
+      Heap &heap = context.getHeap();
+      const jref_t aid_bytes_ref =
+          heap.addArray(instance_aid_length, JAVA_ARRAY_T_BYTE);
+      const auto aid_bytes = heap.getArray(aid_bytes_ref);
+      for (uint8_t index = 0; index < instance_aid_length; ++index) {
+        aid_bytes->setByteEntry(index,
+                                static_cast<jbyte_t>(instance_aid[index]));
+      }
+      const jref_t aid_object_ref =
+          heap.addInstance(framework_package_id, aid_class_index);
+      const auto aid_object = heap.getInstance(aid_object_ref);
+      if (aid_object->getNumberOfFields() != 1) {
+        throw Exceptions::RuntimeException;
+      }
+      aid_object->setField_Reference(0, aid_bytes_ref);
+      if (!context.cacheLookedUpAIDObject(instance_aid, instance_aid_length,
+                                           aid_object_ref)) {
+        context.setPendingSystemExceptionReason(2);
+        throw Exceptions::SystemException;
+      }
+      context.setSensitiveResultObject(aid_object_ref);
+      return aid_object_ref;
+    }
+  }
+
+  const jref_t result{};
+  context.setSensitiveResultObject(result);
+  return result;
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_beginTransaction() {

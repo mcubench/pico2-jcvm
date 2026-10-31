@@ -1286,9 +1286,16 @@ prioritized backlog above for present status.
   `1` instead of incorrectly returning `-1`; nested API commit `6dceb7e`.
 - [x] Limit the default target build to two parallel jobs to avoid saturating
   all VM cores; override with `PICO_BUILD_JOBS` when desired.
-- [x] Implement `JCSystem.lookupAID()` null/range validation and matching for
-  the active applet AID; VPCD cases 65–66 pass. Lookup across additional applet
-  contexts remains open with the single-context runtime limitation.
+- [x] Implement `JCSystem.lookupAID()` null/range validation, active-instance
+  matching, and lookup of installed peer-instance AIDs. The authenticated
+  three-package VPCD regression passes peer lookup, repeated-call identity,
+  unknown-AID null, process restart, and deletion (33/33 checks).
+- [ ] Return permanent JCRE-owned `AID` entry-point objects from
+  `JCSystem.lookupAID()`. The current implementation caches peer AID objects
+  as roots in the active applet `Context`; it does not yet provide Java Card's
+  cross-context accessibility or safe persistent-reference/reboot semantics.
+  Preserve object identity across contexts and reset before considering this
+  API complete.
 - [x] Implement `Applet.register()` and `Applet.register(byte[],short,byte)`:
   registration is limited to the active install entry, only one successful
   registration is accepted, explicit AID lengths and bounds are checked, and
@@ -1759,6 +1766,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   using `61xx`. Parser, response-chain, and Context state tests pass; the Pico
   cycle also passed after flashing this implementation. Host VPCD applet
   exchanges now pass; physical APDU/PCSC validation remains outstanding.
+  A focused multipackage fixture observed `setIncomingAndReceive()` returning
+  13 while a following `getIncomingLength()` returned 1; the cause is not yet
+  isolated. The current `lookupAID` fixture reads short Lc directly and does
+  not cover `getIncomingLength()`.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
   remaining transient array variants, `Util` helpers, `JCSystem` queries,
   `AID`, and

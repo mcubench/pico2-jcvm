@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_root="${repo_root}/tools/tests/lookup_aid"
+build_dir="${repo_root}/build/lookup-aid-fixture"
+kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
+package_aid='0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x04'
+applet_aid='0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x04:0x01'
+
+[[ -x "${java8_home}/bin/javac" ]] || {
+  printf 'ERROR: Java 8 compiler not found: %s\n' "${java8_home}" >&2
+  exit 1
+}
+rm -rf "${build_dir}"
+mkdir -p "${build_dir}/classes" "${build_dir}/cap"
+"${repo_root}/tools/env" "${java8_home}/bin/javac" \
+  -source 1.7 -target 1.7 -Xlint:-options \
+  -classpath "${kit}/lib/api_classic.jar" \
+  -d "${build_dir}/classes" "${source_root}"/*.java
+"${repo_root}/tools/env" java -cp "${kit}/lib/tools.jar" \
+  com.sun.javacard.converter.Main -nobanner \
+  -classdir "${build_dir}/classes" \
+  -exportpath "${kit}/api_export_files" \
+  -d "${build_dir}/cap" -out CAP \
+  -applet "${applet_aid}" lookup.LookupAIDApplet lookup "${package_aid}" 1.0
+
+cap_file="${build_dir}/cap/lookup/javacard/lookup.cap"
+[[ -s "${cap_file}" ]] || {
+  printf 'ERROR: converted lookup fixture CAP missing: %s\n' "${cap_file}" >&2
+  exit 1
+}
+printf 'LOOKUP_AID_FIXTURE:PASS cap=%s\n' "${cap_file}"

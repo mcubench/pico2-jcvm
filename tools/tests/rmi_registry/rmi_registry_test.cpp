@@ -102,7 +102,17 @@ int main() {
   const auto apdu_object = make_reference(6);
   const auto root_return = make_reference(7);
   const auto static_reference = make_reference(8);
+  const auto looked_up_aid_reference = make_reference(9);
+  constexpr uint8_t looked_up_aid[] = {0xA0, 0x00, 0x00, 0x00, 0x62, 0x55};
   context.setAppletAIDObjectRef(applet_aid_object);
+  assert(context.cacheLookedUpAIDObject(
+      looked_up_aid, sizeof(looked_up_aid), looked_up_aid_reference));
+  assert(context.findLookedUpAIDObject(looked_up_aid,
+                                       sizeof(looked_up_aid)) ==
+         looked_up_aid_reference);
+  constexpr uint8_t different_aid[] = {0xA0, 0x00, 0x00, 0x00, 0x62, 0x56};
+  assert(context.findLookedUpAIDObject(different_aid,
+                                       sizeof(different_aid)).isNullPointer());
   context.markAppletRegistered(registered_applet);
   context.setAPDUBufferRef(apdu_buffer, 0, 0, false);
   context.setAPDUObjectRef(apdu_object);
@@ -113,6 +123,7 @@ int main() {
   VisitedReferences lifecycle_roots;
   context.visitRootReferences(record_reference, &lifecycle_roots);
   assert(contains(lifecycle_roots, applet_aid_object));
+  assert(contains(lifecycle_roots, looked_up_aid_reference));
   assert(contains(lifecycle_roots, registered_applet));
   assert(contains(lifecycle_roots, apdu_buffer));
   assert(contains(lifecycle_roots, apdu_object));
@@ -131,6 +142,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=7 session_cleanup=1 sensitive_result_cross_context=1 aid_lookup_cache=1");
   return 0;
 }

@@ -1,5 +1,26 @@
 # Session handoff — updated 2026-10-30
 
+## Current continuation — JCSystem.lookupAID peer behavior — 2026-10-31
+
+The native implementation now searches installed applet instance AIDs and
+returns a cached framework `AID` object. The authenticated three-package VPCD
+multipackage test passes 33/33, including peer lookup, repeated identity,
+unknown AID, fresh-process restart, and deletion. `./tools/test-rmi-registry`,
+`./tools/build arm --profile max_crypto`, and
+`./tools/build riscv --profile max_crypto` pass. The Java API submodule change
+is committed at `5785fb1`; root implementation and test changes are still
+uncommitted at this point.
+
+This does not yet satisfy the specified permanent JCRE Entry Point Object
+contract. The current cache is held by an applet `Context`; cross-context
+accessibility and references safely retained across reset remain open and are
+tracked in TODO. A separate APDU diagnostic observed `setIncomingAndReceive()`
+returning 13 while `getIncomingLength()` returned 1; cause unresolved, logged
+in QKB. No physical hardware was used. Next, settle the `lookupAID` EPO/heap
+ownership model and add cross-context/reboot tests, then investigate the APDU
+getter independently. Preserve unrelated worktree changes listed in the
+session snapshot below.
+
 ## Declared Java Card compatibility target — 2026-10-31
 
 `docs/supported-profile.md` now states the Java Card Classic 3.0.5
