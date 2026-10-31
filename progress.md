@@ -16904,7 +16904,7 @@
   packed-structure alignment warnings appeared during compilation; no errors.
 - Decision: Provide the refreshed UF2 and matching expected-support CSV for
   external test setup. Physical flash and runtime validation were not run.
-- Commit: pending.
+- Commit: `3b2d03f`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`,
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`,
   `artifacts/firmware/README-max_crypto.txt`.

@@ -72,6 +72,7 @@ bounded `pcsc_scan -r` still times out without readers. No physical APDU or
 flash was possible. Continue offline with remaining independent work; do not
 enable persistent-object deletion until actual cold USB power-cycle recovery
 has been verified.
+Recovery evidence record commit: `3b2d03f`.
 
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 
