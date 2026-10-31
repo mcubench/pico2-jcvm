@@ -423,10 +423,14 @@ void process_message(uint8_t rhport) {
     }
     // Card Recognition Data is used to discover the card and its secure
     // channel before authentication, so expose GET DATA on the open channel.
-    if (!secure_channel.active() && apdu_length == 5 && apdu[0] == 0x80 &&
-        apdu[1] == 0xca) {
+    const bool gp_get_data = apdu_length == 5 && apdu[0] == 0x80 &&
+                             apdu[1] == 0xca;
+    const bool iso_get_data = apdu_length == 5 && apdu[0] == 0x00 &&
+                              apdu[1] == 0xcb;
+    if (!secure_channel.active() && (gp_get_data || iso_get_data)) {
       if (!gp::write_get_data_response(apdu[2], apdu[3], response,
-                                       sizeof(response), response_length)) {
+                                       sizeof(response), response_length,
+                                       gp_get_data)) {
         response[0] = 0x6f;
         response[1] = 0x00;
         response_length = 2;
@@ -618,9 +622,10 @@ void process_message(uint8_t rhport) {
             response_length = 2;
           }
         }
-      } else if (instruction == 0xca) {
+      } else if (instruction == 0xca || instruction == 0xcb) {
         if (!gp::write_get_data_response(p1, p2, response,
-                                         sizeof(response), response_length)) {
+                                         sizeof(response), response_length,
+                                         instruction == 0xca)) {
           response[0] = 0x6f;
           response[1] = 0x00;
           response_length = 2;

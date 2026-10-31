@@ -1373,11 +1373,15 @@ uint16_t vpcd_process_card_manager(
                                     response_length);
   };
 
-  if (!vpcd_secure_channel.active() && command_length == 5 &&
-      command[0] == 0x80 && command[1] == 0xca) {
+  const bool gp_get_data = command_length == 5 && command[0] == 0x80 &&
+                           command[1] == 0xca;
+  const bool iso_get_data = command_length == 5 && command[0] == 0x00 &&
+                            command[1] == 0xcb;
+  if (!vpcd_secure_channel.active() && (gp_get_data || iso_get_data)) {
     size_t output_length = 0;
     if (!gp::write_get_data_response(command[2], command[3], response,
-                                     response_capacity, output_length)) {
+                                     response_capacity, output_length,
+                                     gp_get_data)) {
       return status_response(0x6f00);
     }
     *response_length = static_cast<uint16_t>(output_length);
@@ -1477,10 +1481,10 @@ uint16_t vpcd_process_card_manager(
     }
     return status_response(0x9000);
   }
-  if (instruction == 0xca) {
+  if (instruction == 0xca || instruction == 0xcb) {
     size_t output_length = 0;
     if (!gp::write_get_data_response(p1, p2, response, response_capacity,
-                                     output_length)) {
+                                     output_length, instruction == 0xca)) {
       return status_response(0x6f00);
     }
     *response_length = static_cast<uint16_t>(output_length);

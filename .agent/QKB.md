@@ -2703,3 +2703,19 @@ original terminology/status; check current summary and later fixes before reuse.
   `758ad126b3e90ba79e92d99021dca3739b553bc130f600a4ed559ea3bdba50fd`
   (missing). Paths are printed by the test under `artifacts/logs/` with suffix
   `20261030T220126Z`.
+
+### PC/SC publishes no VPCD readers despite active pcscd — 2026-10-31
+
+- **Symptom:** The bounded GET DATA VPCD integration preflight found no
+  `Virtual PCD 00 00` reader in three consecutive `pcsc_scan -r` runs. The
+  authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper granted access
+  to two USB nodes and restarted pcscd, but the subsequent bounded scan still
+  timed out without reader output. `systemctl status` confirmed both
+  `pcscd.socket` and `pcscd.service` active; no `vpcd.service` or
+  `vpcd.socket` unit exists. This is host PC/SC reader publication, not a JCVM
+  APDU result.
+- **Workaround:** None established. Do not claim GET DATA APDU integration
+  until a VPCD reader is registered. The wrapper
+  `tools/test-gp-get-data-vpcd` captures bounded reader scans and logs the
+  emulator/probe output once VPCD is available.
+- **Artifacts:** `artifacts/results/gp-get-data-vpcd-20261031T085055Z/`.

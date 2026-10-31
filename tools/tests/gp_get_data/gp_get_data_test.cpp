@@ -50,6 +50,15 @@ int main() {
              response[response_length - 2] == 0x90 &&
              response[response_length - 1] == 0x00,
          "card_data_response_has_success_status");
+  expect(gp::write_get_data_response(0x00, 0x66, response.data(),
+                                     response.size(), response_length, false),
+         "encode_iso_card_data_value");
+  expect(response_length == expected.size() &&
+             std::memcmp(response.data(), expected.data() + 2,
+                         expected.size() - 2) == 0 &&
+             response[response_length - 2] == 0x90 &&
+             response[response_length - 1] == 0x00,
+         "iso_card_data_response_has_value_and_success_status");
 
   expect(gp::get_data_object(0x9f, 0x7f, data, length),
          "recognize_cplc_tag");
@@ -66,6 +75,15 @@ int main() {
              response[response_length - 2] == 0x90 &&
              response[response_length - 1] == 0x00,
          "cplc_response_has_success_status");
+  expect(gp::write_get_data_response(0x9f, 0x7f, response.data(),
+                                     response.size(), response_length, false),
+         "encode_iso_cplc_value");
+  expect(response_length == expected_cplc.size() - 1 &&
+             std::memcmp(response.data(), expected_cplc.data() + 3,
+                         expected_cplc.size() - 3) == 0 &&
+             response[response_length - 2] == 0x90 &&
+             response[response_length - 1] == 0x00,
+         "iso_cplc_response_has_value_and_success_status");
   expect(!gp::get_data_object(0x00, 0x65, data, length),
          "reject_unknown_data_tag");
   expect(data == nullptr && length == 0,

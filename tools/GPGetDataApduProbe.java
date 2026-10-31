@@ -210,12 +210,26 @@ public final class GPGetDataApduProbe {
       if (cardData.getSW() != 0x9000 || !expected.equals(hex(cardData.getData()))) {
         throw new IllegalStateException("unexpected Card Recognition Data response");
       }
+      ResponseAPDU cardDataValue = transmit(channel,
+          "ISO_GET_DATA_CARD_RECOGNITION_VALUE",
+          new CommandAPDU(0x00, 0xCB, 0x00, 0x66, 256));
+      if (cardDataValue.getSW() != 0x9000 ||
+          !expected.substring(4).equals(hex(cardDataValue.getData()))) {
+        throw new IllegalStateException("unexpected ISO Card Data value");
+      }
 
       ResponseAPDU cplc = transmit(channel, "GET_DATA_CPLC",
           new CommandAPDU(0x80, 0xCA, 0x9F, 0x7F, 256));
       if (cplc.getSW() != 0x9000 ||
           !Arrays.equals(cplc.getData(), CPLC_DATA)) {
         throw new IllegalStateException("unexpected CPLC response");
+      }
+      ResponseAPDU cplcValue = transmit(channel, "ISO_GET_DATA_CPLC_VALUE",
+          new CommandAPDU(0x00, 0xCB, 0x9F, 0x7F, 256));
+      if (cplcValue.getSW() != 0x9000 ||
+          !Arrays.equals(cplcValue.getData(),
+                         Arrays.copyOfRange(CPLC_DATA, 3, CPLC_DATA.length))) {
+        throw new IllegalStateException("unexpected ISO CPLC value");
       }
       byte[] session = establishScp03(channel);
       transmitProtected(channel, session, "GET_DATA_CARD_RECOGNITION_AUTHENTICATED",

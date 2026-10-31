@@ -63,7 +63,8 @@ inline bool get_data_object(uint8_t p1, uint8_t p2, const uint8_t *&data,
 inline bool write_get_data_response(uint8_t p1, uint8_t p2,
                                     uint8_t *response,
                                     size_t response_capacity,
-                                    size_t &response_length) noexcept {
+                                    size_t &response_length,
+                                    bool include_tlv = true) noexcept {
   response_length = 0;
   if (response == nullptr || response_capacity < 2) return false;
 
@@ -74,6 +75,20 @@ inline bool write_get_data_response(uint8_t p1, uint8_t p2,
     response[1] = 0x88;
     response_length = 2;
     return true;
+  }
+  if (!include_tlv) {
+    // ISO GET DATA (INS=CB) returns the data-object value. GlobalPlatform's
+    // proprietary form (INS=CA) returns the complete BER-TLV object.
+    const size_t tag_length = p1 == 0x9f && p2 == 0x7f ? 2 : 1;
+    if (data_length <= tag_length) return false;
+    const size_t length_offset = tag_length;
+    const uint8_t value_length = data[length_offset];
+    if ((value_length & 0x80) != 0 ||
+        static_cast<size_t>(value_length) + length_offset + 1 != data_length) {
+      return false;
+    }
+    data += length_offset + 1;
+    data_length = value_length;
   }
   if (data_length + 2 > response_capacity) return false;
 

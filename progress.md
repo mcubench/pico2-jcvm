@@ -18387,3 +18387,30 @@
 - Commit: `1b6b0cb`
 - Artifacts/logs: `artifacts/firmware/README-max_crypto.txt`, `TODO.md`, and
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`.
+
+## 2026-10-31 ISO GET DATA value responses 10 minutes
+
+- Step/experiment: `iso-get-data-values-20261031`
+- When: '2026-10-31 08:43 UTC' - '2026-10-31 08:53 UTC'
+- Change: Added ISO `00 CB` GET DATA response handling to the Pico CCID and PC
+  VPCD paths. ISO responses strip the BER-TLV tag and length while GP
+  proprietary `80 CA` responses retain the complete object. Extended unit/APDU
+  probes and added `tools/test-gp-get-data-vpcd`; updated TODO, QKB, and handoff.
+- Validation: `./tools/test-gp-get-data` passed 18/18. `./tools/build-pc`,
+  `PICO2_DEBUG=0 ./tools/build arm --profile max_crypto`, and
+  `PICO2_DEBUG=0 ./tools/build riscv --profile max_crypto` passed. Relevant
+  `git diff --check` passed. The elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gp-get-data-vpcd` stopped at its
+  bounded PC/SC preflight because no Virtual PCD reader was published.
+  The authorized PC/SC helper granted access to two USB nodes; a subsequent
+  bounded `pcsc_scan -r` timed out. `pcscd.socket` and `pcscd.service` were
+  active, but no VPCD systemd unit exists. No APDU-level VPCD or physical test
+  was possible.
+- Result: PC, ARM, and RISC-V builds include the ISO value response behavior;
+  unit assertions cover Card Recognition Data and CPLC. The Java SmartcardIO
+  integration probe remains unverified until PC/SC registers VPCD.
+- Decision: Keep ISO `00 CB` and GP `80 CA` response forms distinct. Retry the
+  recorded VPCD wrapper when `Virtual PCD 00 00` is available; continue other
+  offline project work meanwhile.
+- Commit: pending
+- Artifacts/logs: `artifacts/results/gp-get-data-vpcd-20261031T085055Z/`.

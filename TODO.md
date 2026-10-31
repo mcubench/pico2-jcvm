@@ -1948,11 +1948,16 @@ rollback and duplicate/invalid registration handling also remain unverified.
     Physical monitor showed repeated `TEST:PASS choupi_runtime`; PC/SC remained
     registered after the sequence.
   GET DATA for Card Recognition Data (`0066`) and CPLC (`9F7F`) is implemented
-  in the Pico CCID handler and PC VPCD; `./tools/test-gp-get-data` passes 14/14
-  exact-TLV, status-word, unknown-tag, and output-capacity checks. Fresh-state
-  GPPro LOAD/INSTALL/SELECTABLE listing passed over VPCD on 2026-10-31. This
-  is not a physical card-manager test; the helper currently grants access to
-  two Pico USB nodes, but `pcsc_scan -r` lists only virtual readers.
+  in the Pico CCID handler and PC VPCD. GP proprietary `80 CA` returns the
+  complete BER-TLV; ISO `00 CB` now returns only the data-object value. The
+  host unit suite passes 18/18, including both ISO response forms. PC, ARM,
+  and RISC-V max_crypto builds pass. An APDU probe and repeatable VPCD wrapper
+  are prepared to check open and authenticated responses, but host PC/SC
+  currently publishes no VPCD reader: three bounded scans timed out, even
+  after the authorized reader helper restarted pcscd. See `.agent/QKB.md` and
+  `artifacts/results/gp-get-data-vpcd-20261031T085055Z/`. Repeat VPCD APDU
+  validation when `Virtual PCD 00 00` is registered; physical card-manager
+  validation remains separate and pending.
   GET STATUS now handles ISD (`P1=80`), applications (`40`), executable load
   files (`20`), and load files with modules (`10`), with mandatory leading AID
   search criteria, wildcard/RID matching, and basic first/next request state.

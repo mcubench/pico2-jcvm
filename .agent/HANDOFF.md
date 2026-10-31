@@ -1,5 +1,17 @@
 # Session handoff — updated 2026-10-31
 
+## Current GET DATA ISO response change — 2026-10-31
+
+`src/gp_get_data.hpp` now emits raw data-object values for ISO `00 CB`; GP
+`80 CA` continues returning complete BER-TLV objects. Pico CCID and PC VPCD
+routes, host tests, and `GPGetDataApduProbe.java` cover both forms. PC,
+max_crypto ARM, and max_crypto RISC-V builds pass; host unit checks pass 18/18.
+The open/authenticated APDU integration has not run: three bounded PC/SC scans
+found no `Virtual PCD 00 00` reader. Even after the authorized reader helper,
+pcscd was active but no VPCD reader was published. See QKB and the new wrapper
+`tools/test-gp-get-data-vpcd`; rerun it when the reader is available. Artifacts
+are under `artifacts/results/gp-get-data-vpcd-20261031T085055Z/`.
+
 ## Current blocker — physical max_crypto API rerun after snapshot v4
 
 The former 77,824-byte filesystem cap is addressed in source by snapshot
