@@ -12,7 +12,8 @@ checks, including RSA/EC key generation and applet APDU completion; this does
 not exercise Pico callbacks. The only PC/SC readers currently listed are the
 two virtual devices, so the required physical check remains open. Do not claim
 watchdog servicing or CCID time extensions verified until a long native crypto
-APDU is run on Pico and its final response is observed.
+APDU is run on Pico and its final response is observed. Implementation commit:
+`6bc468f` (`Guard native progress callback reentry`).
 
 The callback's own work is fixed, but TinyUSB's `tud_task()` drains events
 until empty. The active CCID bulk OUT endpoint is not rearmed until the APDU

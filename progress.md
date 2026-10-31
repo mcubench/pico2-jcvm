@@ -18600,7 +18600,8 @@
 - Decision: Keep ARCH-04 open until a physical long native operation verifies
   watchdog service, recurring CCID time extensions, and final APDU completion.
   Continue with the independent ARCH-05 startup/filesystem split meanwhile.
-- Commit: Implementation SHA will be recorded in the immediate follow-up.
+- Commit: `6bc468f` (`Guard native progress callback reentry`); this SHA is
+  recorded in the progress-only follow-up commit.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log`
   SHA-256 `723f9d2d5b55e4cc6e697149f75dd5dc7b7e4a5a7c2d252fdf785f7631b845d6`;
   generated test image and flash copies are ignored build artifacts.
