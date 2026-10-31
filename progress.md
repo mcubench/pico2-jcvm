@@ -17307,8 +17307,7 @@
 - Decision: Keep the loader validation; add explicit external target fixtures
   and restore VPCD registration before claiming GPPro install regression
   coverage. Then continue safe persistent-object reclamation.
-- Commit: implementation commit SHA is recorded in the following closeout
-  entry.
+- Commit: `ed5511b`.
 - Artifacts/logs: official RMI client SHA-256
   `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`;
   emulator SHA-256

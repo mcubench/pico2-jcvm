@@ -26,6 +26,7 @@ Current external-test ARM image:
 bytes, SHA-256 `5ca83fe79b55670870699e2a5a319dd422f2a3be3104e869d12071beff40b675`.
 Continue with external-ref direct tests, then return to safe persistent-object
 reclamation and actual USB power-cycle recovery.
+Implementation commit: `ed5511b`.
 
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 
