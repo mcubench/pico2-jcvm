@@ -32,6 +32,8 @@ repeat full Security/Crypto. Do not mistake runtime self-test output for API
 suite success. The v4 acceptance item in `TODO.md` is complete only for its
 capacity question; this new API correctness issue remains open.
 
+Documentation/progress commit: `b891643` (`Record v4 API capacity rerun`).
+
 ## Current ARCH-04 physical native-progress validation — 2026-10-31
 
 The focused native progress callback and dispatch reentry tests already passed
