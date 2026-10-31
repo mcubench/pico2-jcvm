@@ -4,6 +4,66 @@ This tracker follows the acceptance criteria in `plan.md`. “Done” means the
 behavior has evidence recorded in `progress.md`; partial results are called
 out explicitly.
 
+## Scheduled architecture maintenance — 2026-10-31
+
+Scheduled for later agents; this documentation change does not implement these
+items. These are improvements to the current implementation, independent of
+alternate language backends. Work in the order below, one validated logical
+step per commit, preserving existing worktree changes. Follow repository build,
+hardware-access, progress and handoff requirements for implementation changes.
+
+- [ ] **ARCH-01 — Centralize runtime/lifecycle declarations (small; first).**
+  Create authoritative shared declarations for runtime, install, restore,
+  select/deselect, process and clear operations; replace duplicated declarations
+  in platform, transport and loader code. Reconcile the Rust OS declaration of
+  `runtime` (currently no return value) with the C++ `uint16_t` return contract,
+  checking both host and embedded call paths and intentional status handling.
+  Preserve behavior and avoid adding backend abstraction machinery.
+  Acceptance: callers use the authoritative contract; Rust bindings match it;
+  PC and both architecture builds pass, followed by relevant lifecycle/APDU and
+  required physical checks. Record any execution paths not exercised.
+- [ ] **ARCH-02 — Specify filesystem contracts (small; before storage moves).**
+  Document `fs_*` return codes, buffer ownership, bounds, `fs_read_inplace`
+  pointer validity/invalidation, and `fs_sync` durability and transaction rules.
+  Inspect actual PC and Pico behavior rather than assuming equivalence. Add
+  focused tests for material lifetime/durability edge cases and record any
+  discrepancies as explicit follow-up fixes. Acceptance: callers can determine
+  when borrowed data expires and when writes become durable; relevant existing
+  storage/transaction/recovery tests pass. No storage-format migration here.
+- [ ] **ARCH-03 — Consolidate diagnostic declarations (small).**
+  Introduce a shared diagnostic header and replace scattered declarations
+  across VM, Pico shim and transport. Preserve existing diagnostic output and
+  optional feature behavior. Acceptance: declarations/signatures agree across
+  callers and providers; enabled/disabled diagnostic configurations build and
+  relevant serial diagnostics retain their behavior.
+- [ ] **ARCH-04 — Define progress callback rules (small).**
+  Document and enforce which progress callbacks may service USB/watchdog,
+  their execution context and bounded-work requirements, and a prohibition on
+  recursively dispatching APDUs. Inspect existing VM/shim/CCID callback chains
+  before choosing enforcement. Acceptance: focused reentry checks plus a
+  representative long native crypto operation retain CCID time extensions,
+  watchdog servicing and correct APDU completion without nested execution.
+- [ ] **ARCH-05 — Separate Pico startup and filesystem code (moderate).**
+  After ARCH-02, extract filesystem/overlay implementation from
+  `src/choupi_pico2.cpp` into a focused module; leave boot/hardware initialization
+  responsibilities clear. Preserve ABI, flash layout, transaction ordering and
+  recovery behavior. Acceptance: existing overlay/transaction tests and both
+  architecture builds pass; required physical startup and persistence checks
+  pass. Keep this structural change separate from storage bug fixes.
+- [ ] **ARCH-06 — Reduce loader dependence on VM internals (moderate).**
+  After ARCH-01, encapsulate specific heap/static initialization operations
+  currently reached through private VM headers in `src/cap_load.cpp` behind
+  focused internal functions. Keep GP transfer/authentication policy in card
+  management. Acceptance: demonstrably fewer private VM dependencies, unchanged
+  install/failure rollback/delete behavior, and passing relevant CAP, registry,
+  transaction and restart tests plus required hardware validation.
+
+Do not introduce versioned backend APIs, function tables, opaque backend
+handles, language selection or a Rust rewrite as part of these tasks. The wider
+[future backend analysis](docs/FUTURE_JCVM_LANGUAGE_BACKENDS.md) remains explicitly
+future work requiring a separate user request. These maintenance tasks may be
+implemented independently within their stated scope.
+
 ## Current prioritized backlog — 2026-10-20
 
 ### Persistent-object reclamation groundwork — 2026-10-30

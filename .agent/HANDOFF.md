@@ -1539,3 +1539,11 @@ an audited all-Rust track covering transport/card manager/crypto/startup too.
 Includes differential tests, fuzzing and persistence switching gates. Source
 inspection and documentation whitespace checks only; no firmware change,
 build, flash or USB/PCSC access. All earlier worktree changes preserved.
+
+## Scheduled architecture maintenance — 2026-10-31
+
+User requested scheduling only: TODO.md now contains ARCH-01 through ARCH-06
+for shared runtime declarations, filesystem contracts, diagnostic declarations,
+progress callback rules, Pico startup/storage separation and loader encapsulation.
+No implementation performed. Start with ARCH-01; keep the wider backend design
+explicitly deferred. Preserve the other sessions' existing worktree changes.

@@ -18435,3 +18435,20 @@
 - Commit: This record is included in the documentation commit; resolve its SHA
   with `git log -1 --format=%H -- docs/FUTURE_JCVM_LANGUAGE_BACKENDS.md`.
 - Artifacts/logs: `docs/FUTURE_JCVM_LANGUAGE_BACKENDS.md`; no hardware logs.
+
+## 2026-10-31 Schedule architecture maintenance 2 minutes
+
+- Step/experiment: `schedule-architecture-maintenance`
+- When: '2026-10-31 10:33 CET' - '2026-10-31 10:35 CET'
+- Change: Added six ordered, unchecked ARCH tasks to TODO.md with scope,
+  dependencies and acceptance criteria; updated handoff. User requested
+  scheduling only, so no implementation or backend development was performed.
+- Validation: Reviewed task coverage against all six recommendations and ran
+  targeted documentation whitespace checks. Builds and hardware validation
+  intentionally skipped for this documentation-only change.
+- Result: Future agents have bounded tasks independent of alternate backends;
+  runtime metrics were not measured.
+- Decision: Prioritize ARCH-01; establish storage contracts before moving code.
+- Commit: Included in this scheduling commit; obtain SHA with
+  `git log -1 --format=%H -- TODO.md`.
+- Artifacts/logs: `TODO.md`; none generated.
