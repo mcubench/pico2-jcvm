@@ -20,6 +20,7 @@ Implementation source is in root `src/pico_filesystem.cpp`; an OS syscall
 regression is in the `choupi/os` submodule. The FS ABI document and TODO now
 record this discrepancy as resolved. Builds retain existing upstream Rust
 warnings. Physical APDU behavior remains untested for this exact edge case.
+Root implementation commit: `7de8aef`; OS test commit: `c3ccaa5`.
 
 Next: continue the highest-priority offline correctness item in `TODO.md`;
 retain physical power-cycle and PC/SC availability gates as open. Preserve the

@@ -18694,8 +18694,9 @@
   acceptance remains open.
 - Decision: Close the oversized-read discrepancy and continue the remaining
   filesystem ABI and JCVM backlog items.
-- Commit: pending root implementation commit; OS test commit
-  `c3ccaa5` (`Test oversized filesystem reads preserve buffer tail`).
+- Commit: Root `7de8aef` (`Align Pico oversized filesystem reads with OS`);
+  OS test commit `c3ccaa5` (`Test oversized filesystem reads preserve buffer
+  tail`).
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261031T205709Z.log` and
   `artifacts/logs/cycle-arm-20261031T205613Z.log` (the latter is the smoke
   target cycle, not the JCVM runtime cycle).
