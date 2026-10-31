@@ -41,6 +41,18 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `artifacts/results/gppro-empty-install-vpcd-20261030T235658Z/` and
   `artifacts/results/gppro-empty-install-vpcd-20261031T000302Z/`.
 
+## CAP 2.2 external remote-interface validation seam coverage — 2026-10-31
+
+- The Class-component traversal called by INSTALL is factored into
+  `jc_remote_interface_validation.hpp`. `./tools/test-rmi-cap-metadata`
+  exercises that same traversal with an external reference accepted as an
+  exported interface and rejected when the injected resolver reports a class
+  or no export. This does not yet exercise real multi-package Import/Export
+  lookup; add an installed-package fixture before claiming end-to-end coverage.
+- `./tools/test-cap-parser` passes 4,205 checks, 100,000 fuzz inputs, and 48
+  corpus CAPs. `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` pass. No board was flashed.
+
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 
 - The parser now cross-checks each external remote-interface reference's

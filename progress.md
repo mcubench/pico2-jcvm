@@ -17317,3 +17317,31 @@
   GPPro failure evidence is under
   `artifacts/results/gppro-empty-install-vpcd-20261030T235658Z/` and
   `artifacts/results/gppro-empty-install-vpcd-20261031T000302Z/`.
+
+## 2026-10-31 CAP 2.2 external target traversal coverage 6 minutes
+
+- Step/experiment: `cap22-external-interface-traversal-test`
+- When: '2026-10-31 00:08 UTC' - '2026-10-31 00:14 UTC'
+- Change: Factored the CAP Class-component remote-interface traversal into
+  `jc_remote_interface_validation.hpp`, shared by install-time linking and a
+  host regression test. The test exercises acceptance through an exported-
+  interface resolver and rejection when the resolver reports a class or
+  missing export. Updated TODO/QKB/HANDOFF and refreshed the max-crypto ARM
+  empty-card UF2 from the final source.
+- Validation: `./tools/test-rmi-cap-metadata` passed;
+  `./tools/test-cap-parser` passed 4,205 checks, 100,000 fuzz inputs, and 48
+  corpus CAPs; `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. Existing packed-member
+  alignment warnings remain. No physical board was flashed. The test injects
+  target outcomes into the shared traversal and does not yet cover real
+  multi-package Import/Export lookup.
+- Result: The external-reference traversal now has accepted and rejected
+  branch coverage. Refreshed ARM UF2 size is 2,077,184 bytes; SHA-256
+  `dbb936c474d408f98755b0882047645b6ebd4b843a6e3cb9d739d1f7314dfd3b`.
+- Decision: Add an install-level multi-package fixture for actual exported
+  interface/class/missing-token lookup, then continue persistent-object
+  reclamation and cold USB power-cycle work.
+- Commit: pending.
+- Artifacts/logs: max ARM image
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no dedicated
+  build logs archived.

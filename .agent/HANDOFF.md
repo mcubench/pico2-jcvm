@@ -8,8 +8,11 @@ exported interface in an installed package; CAP 2.1 is skipped before reading
 the CAP 2.2 signature-pool offset. ARM and RISC-V `max_crypto` wrapper builds
 pass. `./tools/test-cap-parser` passes 4,205 checks, 100,000 fuzz inputs, and
 48 corpus CAPs. The official SDK JCRMI VPCD client passes 18/18 on final source,
-but its fixture only has internal remote-interface refs, so valid external
-targets and rejected class/missing-export targets still need direct coverage.
+but its fixture only has internal remote-interface refs. The shared production
+Class-component traversal now has host regression coverage for an accepted
+interface and rejected class or missing-target outcomes through an injected
+resolver. An installed-package Import/Export integration fixture is still
+needed to verify actual cross-package target resolution.
 
 The unchanged JCAlgTest GPPro LOAD/INSTALL check is currently blocked by host
 VPCD registration. `Virtual PCD 00 01` reported present but GPPro returned
@@ -27,6 +30,20 @@ bytes, SHA-256 `5ca83fe79b55670870699e2a5a319dd422f2a3be3104e869d12071beff40b675
 Continue with external-ref direct tests, then return to safe persistent-object
 reclamation and actual USB power-cycle recovery.
 Implementation commit: `ed5511b`.
+
+## CAP 2.2 external remote-interface traversal tests — 2026-10-31
+
+`validateRemoteInterfaceTargets` now owns the Class-component traversal used
+by install-time remote-interface linking. `./tools/test-rmi-cap-metadata`
+passes accepted-interface, non-interface, and missing-target predicate cases;
+the install callback still resolves through the actual `ConstantPool_Handler`
+Import/Export path. This host test does not construct multiple installed
+packages, so end-to-end target linking remains open. Parser regressions pass
+(4,205 checks / 100,000 fuzz inputs / 48 corpus CAPs), and ARM/RISC-V
+max-profile wrapper builds pass. No physical board was flashed. Next: build an
+install-level two-package fixture for valid external interface, non-interface
+export, and missing export cases, then return to persistent-object reclamation
+and cold USB power-cycle recovery.
 
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 

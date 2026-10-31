@@ -29,6 +29,7 @@
 #include "../debug.hpp"
 #include "../jc_cap/jc_cap_import.hpp"
 #include "jc_cp.hpp"
+#include "jc_remote_interface_validation.hpp"
 #include "flashmemory.hpp"
 
 #include <cstring>
@@ -164,48 +165,13 @@ void Import_Handler::validateRemoteInterfaceReferences() {
       header->minor_version < 2) {
     return;
   }
-  const jc_cap_class_component *component = cap.getClass();
-  if (component == nullptr) {
-    return;
-  }
-  const auto class_bytes = component->claz();
-  uint16_t offset = component->classInfoStartOffset();
-  if (offset > class_bytes.size()) {
-    throw Exceptions::SecurityException;
-  }
   ConstantPool_Handler resolver(this->package);
-  while (offset < class_bytes.size()) {
-    const uint8_t *record = class_bytes.data() + offset;
-    if (IS_INTERFACE(record)) {
-      const auto *interface_info =
-          reinterpret_cast<const jc_cap_interface_info *>(record);
-      offset = static_cast<uint16_t>(offset + interface_info->getSize());
-      continue;
-    }
-
-    const auto *class_info =
-        reinterpret_cast<const jc_cap_class_info *>(record);
-    if (const auto *remote_info = class_info->remoteInterfaceInfo();
-        remote_info != nullptr) {
-      for (uint8_t index = 0; index < remote_info->remoteInterfacesCount();
-           ++index) {
-        const jc_cap_class_ref reference =
-            remote_info->remoteInterfaces()[index];
-        if (!reference.isExternalClassRef()) {
-          continue;
-        }
+  validateRemoteInterfaceTargets(
+      cap.getClass(), [&resolver](const jc_cap_class_ref reference) {
         const auto resolved = resolver.classref2interface(reference);
-        if (resolved.second == nullptr ||
-            IS_CLASS(reinterpret_cast<const uint8_t *>(resolved.second))) {
-          throw Exceptions::SecurityException;
-        }
-      }
-    }
-    offset = static_cast<uint16_t>(offset + class_info->getSize());
-  }
-  if (offset != class_bytes.size()) {
-    throw Exceptions::SecurityException;
-  }
+        return resolved.second != nullptr &&
+               !IS_CLASS(reinterpret_cast<const uint8_t *>(resolved.second));
+      });
 }
 
 } // namespace jcvm

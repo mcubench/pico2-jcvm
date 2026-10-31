@@ -964,9 +964,11 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   must target an interface record boundary; external references must use an
   in-range Import-component token. Installation now resolves each external
   remote-interface token through the installed package's Export component and
-  rejects non-interface targets. Add an integration fixture that exercises a
-  valid external interface, a class target, and a missing export token; the
-  current generated JCRMI fixture only exercises internal remote interfaces.
+  rejects non-interface targets. The shared Class-component traversal has
+  host regression coverage for accepted interfaces and rejected non-interface
+  or missing targets. A package-level fixture that exercises the actual
+  installed Import/Export resolver remains open; the generated JCRMI fixture
+  only exercises internal remote interfaces.
   The converter-built fixture is loaded and exercised through current-source
   VPCD for SELECT, primitive INVOKE, primitive-array INVOKE, and protocol-error
   responses. The supplied Service CAP is format 2.1 and cannot validate the

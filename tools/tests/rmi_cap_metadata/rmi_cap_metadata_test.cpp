@@ -1,5 +1,6 @@
 #include "jc_cap/jc_cap_class.hpp"
 #include "jc_cap/jc_cap_header.hpp"
+#include "jc_handlers/jc_remote_interface_validation.hpp"
 
 #include <array>
 #include <cassert>
@@ -208,6 +209,51 @@ int main() {
   assert(parsed->remoteInterfaces()[0].isExternalClassRef());
   assert(parsed->remoteInterfaces()[0].external_classref.package_token == 0x80);
   assert(parsed->remoteInterfaces()[0].external_classref.class_token == 0x02);
+
+  // Run the exact Class-component traversal used during INSTALL with an
+  // external target. The production resolver supplies this predicate from
+  // installed Export components; the host cases cover valid interface,
+  // exported class, and missing export outcomes.
+  auto external_class_bytes =
+      std::array<uint8_t, sizeof(class_component_bytes)>{};
+  std::memcpy(external_class_bytes.data(), class_component_bytes,
+              sizeof(class_component_bytes));
+  const size_t external_reference_offset =
+      static_cast<size_t>(reinterpret_cast<const uint8_t *>(
+                              emitted_remote_info->remoteInterfaces()) -
+                          class_component_bytes);
+  external_class_bytes[external_reference_offset] = 0x80;
+  external_class_bytes[external_reference_offset + 1] = 0x02;
+  const auto *external_component =
+      reinterpret_cast<const jcvm::jc_cap_class_component *>(
+          external_class_bytes.data());
+  bool resolver_called = false;
+  jcvm::validateRemoteInterfaceTargets(
+      external_component, [&resolver_called](const jcvm::jc_cap_class_ref ref) {
+        resolver_called = true;
+        return ref.isExternalClassRef() &&
+               ref.external_classref.package_token == 0x80 &&
+               ref.external_classref.class_token == 0x02;
+      });
+  assert(resolver_called); // matching exported interface is accepted
+
+  bool rejected_exported_class = false;
+  try {
+    jcvm::validateRemoteInterfaceTargets(
+        external_component, [](const jcvm::jc_cap_class_ref) { return false; });
+  } catch (const jcvm::Exceptions error) {
+    rejected_exported_class = error == jcvm::Exceptions::SecurityException;
+  }
+  assert(rejected_exported_class);
+
+  bool rejected_missing_export = false;
+  try {
+    jcvm::validateRemoteInterfaceTargets(
+        external_component, [](const jcvm::jc_cap_class_ref) { return false; });
+  } catch (const jcvm::Exceptions error) {
+    rejected_missing_export = error == jcvm::Exceptions::SecurityException;
+  }
+  assert(rejected_missing_export);
 
   class_info->flags = 0;
   assert(class_info->remoteInterfaceInfo() == nullptr);
