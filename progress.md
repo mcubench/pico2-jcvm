@@ -17895,7 +17895,7 @@
   host-timed evidence, not a completed full official static-suite report.
 - Decision: Use the new stop option for profile-specific SHA checks; keep full
   `ALG_PERFORMANCE_STATIC` completion open.
-- Commit: pending closeout
+- Commit: `9117bd4`
 - Artifacts/logs: Passing log
   `artifacts/logs/jcalgtest-sha256-static-only-2BED-20261031.log`, SHA-256
   `1f02365a2898bc045004d0ad626ea547dfe2b4e44875453bc3b4b8bb0204a15f`; first
