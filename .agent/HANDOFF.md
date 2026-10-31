@@ -1,5 +1,28 @@
 # Session handoff — updated 2026-10-31
 
+## Physical three-entry GET STATUS pagination — 2026-10-31
+
+Added `tools/test-get-status-multipage-physical` and extended the direct SCP03
+probe to accept a first-page Le and expected AID list. The wrapper preflights
+that the Multi package/AIDs are absent, loads unchanged upstream
+`AlgTestApiMulti_305.cap`, creates its two applet instances, runs an exact
+reader-pinned GET STATUS check, and cleans up only that temporary package.
+Pico 2 `2BED26ED20556535` returned one 32-byte entry with Le=40 and `6310`;
+P2=03 with Le=256 returned both Multi applet entries and `9000`. All three
+expected instance AIDs appeared exactly once. The deletion and final listing
+checks passed, restoring the original JCAlgTest-only state. A separate default
+Le=1 physical check passed after the parameterization.
+
+Logs: `artifacts/logs/physical-get-status-multipage-20261031T061734Z.log`
+(SHA-256
+`4b3e27af31e2387c9b0f320329e1e6fe7d49180ed902a1550d34508bdac5a512`) and
+`artifacts/logs/physical-get-status-le-20261031T061848Z.log` (SHA-256
+`1b7196a61fded893a8b80e456352b2bfc6c285848e8846dee32358be02270522`).
+Test code commit: `01a0805`.
+
+Next: GET DATA beyond CPLC/Card Recognition Data and physical cold-power
+registry reconstruction remain open in TODO.md.
+
 ## Short-APDU-bounded GET STATUS pagination — 2026-10-31
 
 The Pico CCID and PC VPCD GET STATUS response builders now respect short APDU
@@ -17,8 +40,8 @@ pass=41 fail=0`, three pages `236/248/186` bytes with status
 ARM image was flashed to Pico 2 `2BED26ED20556535`; its finite monitor passed
 (`TEST:SUMMARY pass=1 fail=0`). GPPro `--list` succeeded on the physical
 `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00` reader and listed ISD,
-JCAlgTest, and its package. The physical card has one applet, so physical
-multi-entry pagination remains untested. A direct SCP03 PC/SC probe now sends
+JCAlgTest, and its package. The physical card has one applet after the
+temporary Multi package cleanup. A direct SCP03 PC/SC probe sends
 Le=1, verifies empty `6310`, then sends matching P2=03 with Le=256 and verifies
 the JCAlgTest AID plus `9000` (`TEST:SUMMARY pass=2 fail=0`). Do not use GPPro
 `--secure-apdu` for this check: its wrapper transmits Le=00 regardless of the
@@ -34,9 +57,7 @@ README refreshed at `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2
 `3331edcb99400e774ad3e7678d0626fd9ab3986bde163077226a552dbe198213`). Source
 and tests are committed as `5b3a6c7`.
 
-Next: extend the physical GET STATUS test to a multi-entry registry when a safe
-set of upstream multi-applet CAPs is available, then continue the remaining
-GET DATA and package lifecycle gaps in TODO.md.
+Next: continue the remaining GET DATA and package lifecycle gaps in TODO.md.
 
 ## Persistent reclaimer physical probe and reachability correction — 2026-10-31
 

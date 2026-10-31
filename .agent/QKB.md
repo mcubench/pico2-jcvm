@@ -998,6 +998,8 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 ## Recent detailed issue records
 
 The following retained records cover active investigations and recent fixes.
+Their dates and validation scopes remain significant. Later follow-ups in
+HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
 
 ## Physical SCP03 GET STATUS with a requested short Le — 2026-10-31
 
@@ -1015,9 +1017,15 @@ The following retained records cover active investigations and recent fixes.
 - **Selection form:** CHOUPI's default ISD selection is `00 A4 04 00 00`;
   selecting its AID explicitly returned `6A82` in this probe. Preserve the
   supported empty-AID selection in this utility.
-Their dates and validation scopes remain significant. Later follow-ups in
-HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
-
+- **Physical multi-entry check:** Run
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-get-status-multipage-physical
+  '<exact reader name>'`. It refuses pre-existing Multi AIDs, loads the
+  unchanged deploy `AlgTestApiMulti_305.cap`, creates two instances, checks
+  Le=40 pagination over JCAlgTest plus both instances, and removes only those
+  temporary records. On `2BED26ED20556535` the first page held 32 bytes and
+  returned `6310`; the continuation returned both AIDs and `9000`; cleanup
+  passed. Log SHA-256:
+  `4b3e27af31e2387c9b0f320329e1e6fe7d49180ed902a1550d34508bdac5a512`.
 ## OS trusted tag-cursor bridge and persistent-inventory groundwork — 2026-10-30
 
 - **Persistent-storage GC groundwork:** The OS `FileSystem` owns an in-memory

@@ -18155,3 +18155,32 @@
   the follow-up documentation commit.
 - Artifacts/logs: `artifacts/logs/physical-get-status-le-20261031T061319Z.log`,
   SHA-256 `bac3e5e627312edf9be024ffc12ee6761cd6abfb693da384debb099af42fb40f`.
+
+## 2026-10-31 Verify physical multi-entry GET STATUS 7 minutes
+
+- Step/experiment: `physical-get-status-multiple-entries-20261031`
+- When: '2026-10-31 06:14 UTC' - '2026-10-31 06:21 UTC'
+- Change: Extended the raw SCP03 PC/SC probe with configurable short Le and
+  expected applet AIDs. Added an exact-reader wrapper that refuses pre-existing
+  upstream Multi AIDs, loads the unchanged deploy 3.0.5 Multi CAP, creates its
+  two applets, verifies GET STATUS pagination, and removes only the temporary
+  test package.
+- Validation: `bash -n tools/test-get-status-multipage-physical`,
+  `python3 -m py_compile tools/tests/physical_get_status_le.py`, and
+  `git diff --check` passed. Physical Pico 2 `2BED26ED20556535` returned one
+  32-byte instance entry and `6310` for Le=40; matching P2=03 with Le=256
+  returned the other two entries and `9000`. All three expected applet AIDs
+  occurred exactly once. Cleanup and the final listing passed, restoring the
+  original JCAlgTest-only card state. The parameterized Le=1 regression also
+  passed after these changes (`TEST:SUMMARY pass=2 fail=0`).
+- Result: Physical GET STATUS multi-entry paging and continuation are verified
+  on three real applet instances. No firmware source changed in this step.
+- Decision: Continue with the remaining GET DATA and cold-power persistence
+  items; the physical multipage regression is reusable for future changes.
+- Commit: `01a0805` (test code); this progress and tracker/handoff updates are
+  in the follow-up documentation commit.
+- Artifacts/logs: `artifacts/logs/physical-get-status-multipage-20261031T061734Z.log`
+  (SHA-256
+  `4b3e27af31e2387c9b0f320329e1e6fe7d49180ed902a1550d34508bdac5a512`) and
+  `artifacts/logs/physical-get-status-le-20261031T061848Z.log` (SHA-256
+  `1b7196a61fded893a8b80e456352b2bfc6c285848e8846dee32358be02270522`).
