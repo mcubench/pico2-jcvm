@@ -361,6 +361,7 @@ def main() -> int:
                 raise RuntimeError("Core/Multi CAPs do not contain expected applets")
             if len(lookup_applets) != 1:
                 raise RuntimeError("lookup fixture must contain one applet")
+            lookup_second_aid = bytes.fromhex("A00000015100000402")
             load_package(scp, core_code, core_package)
             install_applet(scp, core_package, core_applets[0], core_applets[0])
             load_package(scp, multi_code, multi_package)
@@ -369,7 +370,9 @@ def main() -> int:
             load_package(scp, lookup_code, lookup_package)
             install_applet(scp, lookup_package, lookup_applets[0],
                            lookup_applets[0])
-            print("TEST:PASS loaded Core, Multi, and lookup packages; installed 4 instances")
+            install_applet(scp, lookup_package, lookup_applets[0],
+                           lookup_second_aid)
+            print("TEST:PASS loaded Core, Multi, and lookup packages; installed 5 instances")
 
             packages = get_status(scp, 0x20)
             applets = get_status(scp, 0x40)
@@ -382,6 +385,7 @@ def main() -> int:
                 (multi_applets[0], "Multi applet A", applets),
                 (multi_applets[1], "Multi applet B", applets),
                 (lookup_applets[0], "lookup applet", applets),
+                (lookup_second_aid, "second lookup applet instance", applets),
             ):
                 if aid not in registry:
                     raise RuntimeError(f"{label} absent from GET STATUS")
@@ -399,7 +403,7 @@ def main() -> int:
                         f"{label} {aid.hex().upper()} absent from module GET STATUS; "
                         f"response={modules.hex().upper()}"
                     )
-            print("TEST:PASS GET STATUS lists 3 packages and all 4 instances")
+            print("TEST:PASS GET STATUS lists 3 packages and all 5 instances")
             print("TEST:PASS module GET STATUS lists all packages and module AIDs")
 
             lookup_select = bytes((0x00, 0xA4, 0x04, 0x00,
@@ -428,6 +432,29 @@ def main() -> int:
                     "lookupAID did not return its cached object: "
                     f"{lookup_repeat.hex().upper()}"
                 )
+            lookup_second_select = (
+                bytes((0x00, 0xA4, 0x04, 0x00, len(lookup_second_aid))) +
+                lookup_second_aid + b"\x00"
+            )
+            response = exchange(
+                connection, lookup_second_select,
+                "SELECT second lookup applet context",
+            )
+            if response[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    "SELECT second lookup applet failed: "
+                    f"{response.hex().upper()}"
+                )
+            lookup_cross_context = exchange(
+                connection, lookup_command,
+                "lookupAID returns the same EPO from a second applet context",
+            )
+            if lookup_cross_context != b"\x02" + core_applets[0] + b"\x90\x00":
+                raise RuntimeError(
+                    "lookupAID did not preserve EPO identity across applet "
+                    f"contexts: {lookup_cross_context.hex().upper()}"
+                )
+            print("TEST:PASS JCSystem.lookupAID preserves AID identity across applet contexts")
             unknown_aid = bytes.fromhex("F000000001")
             unknown_command = (bytes((0x00, 0x10, 0x00, 0x00,
                                       len(unknown_aid))) +
@@ -441,15 +468,6 @@ def main() -> int:
                     f"lookupAID unknown result was {unknown_lookup.hex().upper()}"
                 )
             print("TEST:PASS JCSystem.lookupAID resolves peer, preserves identity, and returns null for unknown AID")
-            clear_lookup_cache = exchange(
-                connection, bytes.fromhex("0011000000"),
-                "clear lookup AID identity fixture state",
-            )
-            if clear_lookup_cache[-2:] != b"\x90\x00":
-                raise RuntimeError(
-                    "could not clear lookup fixture state before restart: "
-                    f"{clear_lookup_cache.hex().upper()}"
-                )
 
             unknown_aid = bytes.fromhex("F000000001")
             unknown_select = (bytes((0x00, 0xA4, 0x04, 0x00, len(unknown_aid))) +
@@ -471,18 +489,44 @@ def main() -> int:
                 if response[-2:] != b"\x90\x00":
                     raise RuntimeError(f"SELECT {label} failed: {response.hex().upper()}")
                 print(f"TEST:PASS SELECT {label}")
+            send_message(connection, b"\x02")
+            send_message(connection, b"\x04")
+            reset_atr = receive_message(connection)
+            if reset_atr != bytes.fromhex("3B800181"):
+                raise RuntimeError(
+                    f"card reset returned unexpected ATR: {reset_atr.hex().upper()}"
+                )
+            response = exchange(
+                connection, lookup_second_select,
+                "reselect lookup applet after card reset",
+            )
+            if response[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    "SELECT lookup applet after card reset failed: "
+                    f"{response.hex().upper()}"
+                )
+            lookup_after_reset = exchange(
+                connection, lookup_command,
+                "lookupAID preserves EPO identity across card reset",
+            )
+            if lookup_after_reset != b"\x02" + core_applets[0] + b"\x90\x00":
+                raise RuntimeError(
+                    "lookupAID did not preserve EPO identity after card reset: "
+                    f"{lookup_after_reset.hex().upper()}"
+                )
+            print("TEST:PASS JCSystem.lookupAID preserves permanent AID data and identity after card reset")
             inventory_logs = log_path.read_text(errors="replace")
             if not re.search(
-                    r"PERSISTENT_INVENTORY:.*applet_roots=4 "
-                    r"trace_complete=1 owner_scans=4 "
+                    r"PERSISTENT_INVENTORY:.*applet_roots=5 "
+                    r"trace_complete=1 owner_scans=5 "
                     r"unreachable_complete=1 unreachable_tags=\d+",
                     inventory_logs):
                 raise RuntimeError(
-                    "inventory did not mark all four installed applet roots "
+                    "inventory did not mark all five installed applet roots "
                     "and complete all owner-tag scans; "
                     f"log={log_path}"
                 )
-            print("TEST:PASS inventory marks all 4 applet roots and scans owners")
+            print("TEST:PASS inventory marks all 5 applet roots and scans owners")
 
             # Exit the first process cleanly so it saves VM state, then resume
             # the saved card with all CAP packages and instance records.
@@ -497,7 +541,7 @@ def main() -> int:
             registry_path = Path(f"{memory}.cap-registry")
             registry_bytes = registry_path.read_bytes()
             owner_ids = sidecar_owner_ids(registry_bytes)
-            if len(owner_ids) != 4 or any(owner_id == 0 for owner_id in owner_ids) or \
+            if len(owner_ids) != 5 or any(owner_id == 0 for owner_id in owner_ids) or \
                     len(set(owner_ids)) != len(owner_ids):
                 raise RuntimeError(
                     f"VCR2 did not persist 4 distinct applet owners: {owner_ids}"
@@ -611,6 +655,7 @@ def main() -> int:
                 (multi_applets[0], "Multi applet A after restart", applets),
                 (multi_applets[1], "Multi applet B after restart", applets),
                 (lookup_applets[0], "lookup applet after restart", applets),
+                (lookup_second_aid, "second lookup applet after restart", applets),
             ):
                 if aid not in registry:
                     raise RuntimeError(f"{label} absent from GET STATUS")
@@ -628,13 +673,14 @@ def main() -> int:
                         f"{label} {aid.hex().upper()} absent from module GET STATUS "
                         f"after restart; response={modules.hex().upper()}"
                     )
-            print("TEST:PASS restart GET STATUS lists 3 packages and 4 instances")
+            print("TEST:PASS restart GET STATUS lists 3 packages and 5 instances")
             print("TEST:PASS restart module GET STATUS lists all packages and module AIDs")
             for aid, label in (
                 (core_applets[0], "Core after restart"),
                 (multi_applets[0], "Multi A after restart"),
                 (multi_applets[1], "Multi B after restart"),
                 (lookup_applets[0], "lookup applet after restart"),
+                (lookup_second_aid, "second lookup applet after restart"),
             ):
                 command_apdu = (
                     bytes((0x00, 0xA4, 0x04, 0x00, len(aid))) + aid + b"\x00"
@@ -644,19 +690,29 @@ def main() -> int:
                     raise RuntimeError(
                         f"{label} failed: {response.hex().upper()}"
                     )
-            print("TEST:PASS restart SELECT routes all 3 applets")
+            print("TEST:PASS restart SELECT routes all applet instances")
+            lookup_after_restart = exchange(
+                connection, lookup_command,
+                "lookupAID preserves EPO identity across VM restart",
+            )
+            if lookup_after_restart != b"\x02" + core_applets[0] + b"\x90\x00":
+                raise RuntimeError(
+                    "lookupAID did not restore the permanent EPO identity "
+                    f"after process restart: {lookup_after_restart.hex().upper()}"
+                )
+            print("TEST:PASS JCSystem.lookupAID preserves persistent AID identity after restart")
             restart_inventory_logs = restart_log_path.read_text(errors="replace")
             if not re.search(
-                    r"PERSISTENT_INVENTORY:.*applet_roots=4 "
-                    r"trace_complete=1 owner_scans=4 "
+                    r"PERSISTENT_INVENTORY:.*applet_roots=5 "
+                    r"trace_complete=1 owner_scans=5 "
                     r"unreachable_complete=1 unreachable_tags=\d+",
                     restart_inventory_logs):
                 raise RuntimeError(
-                    "restart inventory did not mark all four applet roots "
+                    "restart inventory did not mark all five applet roots "
                     "and complete all owner-tag scans; "
                     f"log={restart_log_path}"
                 )
-            print("TEST:PASS restart inventory scans all 4 applet owners")
+            print("TEST:PASS restart inventory scans all 5 applet owners")
 
             exchange(connection, bytes.fromhex("00A4040000"), "reselect ISD")
             delete_object(scp, multi_applets[0], False,
@@ -687,6 +743,8 @@ def main() -> int:
 
             delete_object(scp, lookup_applets[0], False,
                           "DELETE lookup applet instance")
+            delete_object(scp, lookup_second_aid, False,
+                          "DELETE second lookup applet instance")
             delete_object(scp, lookup_package, False,
                           "DELETE lookup package")
 
@@ -695,7 +753,7 @@ def main() -> int:
             if get_status(scp, 0x20) or get_status(scp, 0x40):
                 raise RuntimeError("registry is not empty after deleting Core")
             print("TEST:PASS DELETE leaves registry empty")
-            print("TEST:SUMMARY pass=33 fail=0")
+            print("TEST:SUMMARY pass=36 fail=0")
             return 0
         finally:
             if connection is not None:

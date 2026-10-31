@@ -1290,12 +1290,13 @@ prioritized backlog above for present status.
   matching, and lookup of installed peer-instance AIDs. The authenticated
   three-package VPCD regression passes peer lookup, repeated-call identity,
   unknown-AID null, process restart, and deletion (33/33 checks).
-- [ ] Return permanent JCRE-owned `AID` entry-point objects from
-  `JCSystem.lookupAID()`. The current implementation caches peer AID objects
-  as roots in the active applet `Context`; it does not yet provide Java Card's
-  cross-context accessibility or safe persistent-reference/reboot semantics.
-  Preserve object identity across contexts and reset before considering this
-  API complete.
+- [x] Return permanent JCRE-owned `AID` entry-point objects from
+  `JCSystem.lookupAID()` and `getAID()`. Global instance/array handles and a
+  persistent AID-reference encoding preserve identity across distinct applet
+  contexts, a simulated card reset, and a fresh VPCD process. The multipackage
+  regression passes 36/36, including `AID.getBytes()` through the second
+  applet context. Physical-card validation remains unavailable because bounded
+  `pcsc_scan -r` found no readers after the approved access helper.
 - [x] Implement `Applet.register()` and `Applet.register(byte[],short,byte)`:
   registration is limited to the active install entry, only one successful
   registration is accepted, explicit AID lengths and bounds are checked, and

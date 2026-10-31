@@ -40,6 +40,7 @@ enum FieldType : uint8_t {
   FIELD_TYPE_INT = (uint8_t)3,
 #endif /* JCVM_INT_SUPPORTED */
   FIELD_TYPE_OBJECT = (uint8_t)4,
+  FIELD_TYPE_GLOBAL_AID_OBJECT = (uint8_t)5,
 
   FIELD_TYPE_ARRAY_BYTE = (uint8_t)((1 << 7) | FIELD_TYPE_BYTE),
   FIELD_TYPE_ARRAY_BOOLEAN = (uint8_t)((1 << 7) | FIELD_TYPE_BOOLEAN),

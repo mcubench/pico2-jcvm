@@ -11,12 +11,13 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 ## `JCSystem.lookupAID()` peer lookup and short-APDU length diagnostic — 2026-10-31
 
 - The native implementation now scans installed package instance AIDs and
-  returns a cached framework `AID` object for a peer. The authenticated VPCD
-  multipackage lifecycle regression passes 33/33, including exact peer match,
-  repeated-call object identity, unknown-AID null, process restart, and cleanup.
-  This is same-context emulator evidence; Java Card requires runtime-owned
-  permanent Entry Point Objects, so cross-context and persistent-reference
-  behavior is still open in TODO.
+  returns a runtime-wide framework `AID` Entry Point Object for a peer.
+  Global instance/array handles plus a dedicated persistent AID-reference
+  record preserve object identity across two applet contexts, a simulated card
+  reset, and a fresh VPCD process. The authenticated multipackage lifecycle
+  regression passes 36/36. Physical validation remains unavailable: the
+  approved access helper granted two nodes but bounded `pcsc_scan -r` timed
+  out without a reader.
 - While writing the fixture, an APDU with 13 data bytes yielded
   `setIncomingAndReceive() == 13` but `getIncomingLength() == 1`. A temporary
   native diagnostic saw the receive entry point only; the root cause is not
@@ -28,6 +29,10 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   SHA-256 `be3729bfd76833d476a948eccdeab2771c2e795ac75c06cffeb1165114fd5637`;
   restart log `artifacts/logs/host-vpcd-multipackage-restart-20261031T011006Z.log`
   SHA-256 `b0ec9aa58f3f13e0d175b46d0d49a8804d50dc537cf7ed97ba8ccc0073718941`.
+- Global EPO validation logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T012842Z.log`
+  SHA-256 `5de30452bdad8beefc12aa3d3aee6feb3226438a814d72a8068ac5d56e0efbee`;
+  restart log `artifacts/logs/host-vpcd-multipackage-restart-20261031T012842Z.log`
+  SHA-256 `8e67b6dd12d29e82bd432f149a58103b4988c8fd4821eb9414c0a2aee3e93da9`.
 
 ## CAP 2.2 external remote-interface target linking and VPCD registration — 2026-10-31
 

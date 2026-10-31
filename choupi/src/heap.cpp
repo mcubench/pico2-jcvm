@@ -126,6 +126,38 @@ jref_t Heap::addGlobalArray(const uint16_t length, const jc_array_type type) {
   return reference;
 }
 
+jref_t Heap::addGlobalRetainedArray(const uint16_t length,
+                                    const jc_array_type type) {
+  Heap &heap = globalArrayHeap();
+  std::shared_ptr<JC_Array> array;
+  if (type == JAVA_ARRAY_T_REFERENCE) {
+    array = std::make_shared<JC_Array>(
+        heap, length, type, static_cast<jc_cp_offset_t>(0xffff), false,
+        ClearEvent::None);
+  } else {
+    array = std::make_shared<JC_Array>(heap, length, type, false,
+                                       ClearEvent::None);
+  }
+  uint16_t slot = 0;
+  for (auto &existing : heap.arrays) {
+    if (!existing) {
+      existing = std::move(array);
+      break;
+    }
+    ++slot;
+  }
+  if (slot == heap.arrays.size()) {
+    if (heap.arrays.size() >= kMaximumLocalArrayHandles) {
+      throw Exceptions::RuntimeException;
+    }
+    heap.arrays.push_back(std::move(array));
+  }
+  jref_t reference;
+  reference.setOffset(static_cast<uint16_t>((slot + 1) | 0x4000u));
+  reference.setAsGlobalArray();
+  return reference;
+}
+
 std::shared_ptr<JC_Array> Heap::getGlobalArray(const jref_t reference) {
   if (!reference.isGlobalArray()) {
     throw Exceptions::SecurityException;
@@ -160,6 +192,127 @@ void Heap::clearGlobalArrays(const ClearEvent event) {
       array->clearTransientData();
     }
   }
+}
+
+jref_t Heap::addGlobalInstance(const jpackage_ID_t package_id,
+                               const jclass_index_t class_index) {
+  Heap &heap = globalArrayHeap();
+  uint16_t slot = 0;
+  for (auto &existing : heap.instances) {
+    if (!existing) {
+      existing = std::make_shared<JC_Instance>(heap, package_id, class_index);
+      jref_t reference;
+      reference.setOffset(static_cast<uint16_t>((slot + 1) | 0x4000u));
+      reference.setAsGlobalInstance();
+      return reference;
+    }
+    ++slot;
+  }
+  if (heap.instances.size() >= kMaximumLocalArrayHandles) {
+    throw Exceptions::RuntimeException;
+  }
+  heap.instances.push_back(
+      std::make_shared<JC_Instance>(heap, package_id, class_index));
+  jref_t reference;
+  reference.setOffset(static_cast<uint16_t>((heap.instances.size()) | 0x4000u));
+  reference.setAsGlobalInstance();
+  return reference;
+}
+
+std::shared_ptr<JC_Instance> Heap::getGlobalInstance(const jref_t reference) {
+  if (!reference.isGlobalInstance()) {
+    throw Exceptions::SecurityException;
+  }
+  const uint16_t index = reference.getGlobalInstanceIndex();
+  Heap &heap = globalArrayHeap();
+  if (index == 0 || index > heap.instances.size() ||
+      !heap.instances.at(static_cast<uint16_t>(index - 1))) {
+    throw Exceptions::SecurityException;
+  }
+  return heap.instances.at(static_cast<uint16_t>(index - 1));
+}
+
+void Heap::releaseGlobalInstance(const jref_t reference) noexcept {
+  if (!reference.isGlobalInstance()) return;
+  const uint16_t index = reference.getGlobalInstanceIndex();
+  Heap &heap = globalArrayHeap();
+  if (index == 0 || index > heap.instances.size()) return;
+  heap.instances.at(static_cast<uint16_t>(index - 1)).reset();
+  for (auto &entry : heap.global_aid_objects) {
+    if (entry.reference == reference) entry = GlobalAIDObject{};
+  }
+}
+
+jref_t Heap::findGlobalAIDObject(const uint8_t *aid,
+                                 const uint8_t aid_length) noexcept {
+  if (aid == nullptr || aid_length < 5 || aid_length > 16) return jref_t();
+  const Heap &heap = globalArrayHeap();
+  for (const GlobalAIDObject &entry : heap.global_aid_objects) {
+    if (entry.reference.isGlobalInstance() && entry.aid_length == aid_length &&
+        std::equal(aid, aid + aid_length, entry.aid.begin())) {
+      return entry.reference;
+    }
+  }
+  return jref_t();
+}
+
+jref_t Heap::addGlobalAIDObject(const uint8_t *aid, const uint8_t aid_length,
+                                const jpackage_ID_t package_id,
+                                const jclass_index_t class_index) {
+  if (aid == nullptr || aid_length < 5 || aid_length > 16) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  const jref_t cached = findGlobalAIDObject(aid, aid_length);
+  if (!cached.isNullPointer()) return cached;
+
+  Heap &heap = globalArrayHeap();
+  const jref_t object_reference = addGlobalInstance(package_id, class_index);
+  jref_t bytes_reference;
+  try {
+    bytes_reference = addGlobalRetainedArray(aid_length, JAVA_ARRAY_T_BYTE);
+    const auto bytes = getGlobalArray(bytes_reference);
+    for (uint8_t index = 0; index < aid_length; ++index) {
+      bytes->setByteEntry(index, static_cast<jbyte_t>(aid[index]));
+    }
+    const auto object = getGlobalInstance(object_reference);
+    if (object->getNumberOfFields() != 1) {
+      throw Exceptions::RuntimeException;
+    }
+    object->setField_Reference(0, bytes_reference);
+
+    GlobalAIDObject entry{};
+    std::copy_n(aid, aid_length, entry.aid.begin());
+    entry.aid_length = aid_length;
+    entry.package_id = package_id;
+    entry.class_index = class_index;
+    entry.reference = object_reference;
+    heap.global_aid_objects.push_back(entry);
+  } catch (...) {
+    releaseGlobalInstance(object_reference);
+    releaseGlobalArray(bytes_reference);
+    throw;
+  }
+  return object_reference;
+}
+
+bool Heap::describeGlobalAIDObject(const jref_t reference, uint8_t aid[16],
+                                   uint8_t &aid_length,
+                                   jpackage_ID_t &package_id,
+                                   jclass_index_t &class_index) noexcept {
+  aid_length = 0;
+  if (!reference.isGlobalInstance() || aid == nullptr) return false;
+  const Heap &heap = globalArrayHeap();
+  for (const GlobalAIDObject &entry : heap.global_aid_objects) {
+    if (entry.reference == reference && entry.aid_length >= 5 &&
+        entry.aid_length <= 16) {
+      std::copy_n(entry.aid.begin(), entry.aid_length, aid);
+      aid_length = entry.aid_length;
+      package_id = entry.package_id;
+      class_index = entry.class_index;
+      return true;
+    }
+  }
+  return false;
 }
 
 /*
@@ -308,7 +461,7 @@ jref_t Heap::addInstance(const jpackage_ID_t packageID,
       return ref;
     }
   }
-  if (this->instances.size() >= 0x7fff) {
+  if (this->instances.size() >= kMaximumLocalArrayHandles) {
     throw Exceptions::RuntimeException;
   }
 
@@ -346,7 +499,7 @@ jref_t Heap::addInstance(JC_Instance &&instance) {
       return ref;
     }
   }
-  if (this->instances.size() >= 0x7fff) {
+  if (this->instances.size() >= kMaximumLocalArrayHandles) {
     throw Exceptions::RuntimeException;
   }
 
@@ -522,9 +675,9 @@ bool Heap::getPersistentReference(const fs::Tag &tag,
 void Heap::visitChildReferences(const jref_t reference,
                                 const ReferenceVisitor visitor,
                                 void *visitor_context) {
-  // Global arrays belong to the separate JCRE heap and are reclaimed by the
-  // reset lifecycle, not by an applet heap walk.
-  if (reference.isNullPointer() || reference.isGlobalArray()) {
+  // JCRE-owned global objects are not reclaimed by an applet heap walk.
+  if (reference.isNullPointer() || reference.isGlobalArray() ||
+      reference.isGlobalInstance()) {
     return;
   }
   if (reference.isArray()) {
@@ -749,10 +902,10 @@ Heap::ReachabilitySummary Heap::traceAndMark(
   }
   bool found_new_reference = false;
   const auto mark_reference = [&](const jref_t reference) {
-    // Global-array handles use the same reference bit as local arrays, but
-    // their offset belongs to the runtime-wide global heap. Never interpret
-    // that offset as a local applet-heap slot.
-    if (reference.isNullPointer() || reference.isGlobalArray()) {
+    // Global handles belong to the runtime-wide heap. Never interpret their
+    // offset as a local applet-heap slot.
+    if (reference.isNullPointer() || reference.isGlobalArray() ||
+        reference.isGlobalInstance()) {
       return;
     }
     const uint16_t offset = reference.getOffset();
@@ -1075,6 +1228,10 @@ std::shared_ptr<JC_Instance> Heap::getInstance(const jref_t objectref)
 
   if (objectref.isNullPointer()) {
     throw Exceptions::NullPointerException;
+  }
+
+  if (objectref.isGlobalInstance()) {
+    return Heap::getGlobalInstance(objectref);
   }
 
 #ifdef JCVM_SECURE_HEAP_ACCESS

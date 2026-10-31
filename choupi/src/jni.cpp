@@ -1640,34 +1640,18 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_makeGlobalArray(
   }
 }
 
-jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAID() {
-  Context &context = Context::getActiveContext();
-  context.resetSensitiveResult();
-  if (!context.wasAppletRegistered() && !context.hasRestoredAppletInstance()) {
-    const jref_t result{};
-    context.setSensitiveResultObject(result);
-    return result;
-  }
-  const jref_t cached_aid = context.getAppletAIDObjectRef();
-  if (!cached_aid.isNullPointer()) {
-    context.setSensitiveResultObject(cached_aid);
-    return cached_aid;
-  }
-
-  uint8_t aid[16]{};
-  uint8_t aid_length = 0;
-  if (!context.copyAppletAID(aid, aid_length)) {
-    throw Exceptions::RuntimeException;
-  }
+namespace {
+jref_t runtimeAIDObject(Context &context, const uint8_t *aid,
+                         const uint8_t aid_length) {
+  const jref_t cached = Heap::findGlobalAIDObject(aid, aid_length);
+  if (!cached.isNullPointer()) return cached;
 
   constexpr uint8_t framework_aid[] = {0xa0, 0x00, 0x00, 0x00,
                                        0x62, 0x01, 0x01};
   Package applet_package(context.getAppletPackageID());
   const JC_Cap applet_cap = applet_package.getCap();
   const auto *imports = applet_cap.getImport();
-  if (imports == nullptr) {
-    throw Exceptions::RuntimeException;
-  }
+  if (imports == nullptr) throw Exceptions::RuntimeException;
 
   Import_Handler import_handler(applet_package);
   const jc_cap_package_info *framework_info = nullptr;
@@ -1679,9 +1663,7 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAID() {
       break;
     }
   }
-  if (framework_info == nullptr) {
-    throw Exceptions::RuntimeException;
-  }
+  if (framework_info == nullptr) throw Exceptions::RuntimeException;
 
   const jpackage_ID_t framework_package_id =
       import_handler.getPackageIndex(framework_info);
@@ -1691,21 +1673,26 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAID() {
       remap_imported_class_token(*framework_info, aid_class_export_token);
   const jclass_index_t aid_class_index = HTONS(
       Export_Handler(framework_package).getExportedClassOffset(aid_class_token));
+  return Heap::addGlobalAIDObject(aid, aid_length, framework_package_id,
+                                  aid_class_index);
+}
+} // namespace
 
-  Heap &heap = context.getHeap();
-  const jref_t aid_bytes_ref = heap.addArray(aid_length, JAVA_ARRAY_T_BYTE);
-  const auto aid_bytes = heap.getArray(aid_bytes_ref);
-  for (uint8_t index = 0; index < aid_length; ++index) {
-    aid_bytes->setByteEntry(index, static_cast<jbyte_t>(aid[index]));
+jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getAID() {
+  Context &context = Context::getActiveContext();
+  context.resetSensitiveResult();
+  if (!context.wasAppletRegistered() && !context.hasRestoredAppletInstance()) {
+    const jref_t result{};
+    context.setSensitiveResultObject(result);
+    return result;
   }
-
-  const jref_t aid_object_ref =
-      heap.addInstance(framework_package_id, aid_class_index);
-  const auto aid_object = heap.getInstance(aid_object_ref);
-  if (aid_object->getNumberOfFields() != 1) {
+  uint8_t aid[16]{};
+  uint8_t aid_length = 0;
+  if (!context.copyAppletAID(aid, aid_length)) {
     throw Exceptions::RuntimeException;
   }
-  aid_object->setField_Reference(0, aid_bytes_ref);
+
+  const jref_t aid_object_ref = runtimeAIDObject(context, aid, aid_length);
   context.setAppletAIDObjectRef(aid_object_ref);
   context.setSensitiveResultObject(aid_object_ref);
   return aid_object_ref;
@@ -1769,63 +1756,15 @@ jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_lookupAID(
         continue;
       }
 
-      const jref_t cached = context.findLookedUpAIDObject(
+      const jref_t cached = Heap::findGlobalAIDObject(
           instance_aid, instance_aid_length);
       if (!cached.isNullPointer()) {
         context.setSensitiveResultObject(cached);
         return cached;
       }
 
-      Package applet_package(context.getAppletPackageID());
-      const JC_Cap applet_cap = applet_package.getCap();
-      const auto *imports = applet_cap.getImport();
-      if (imports == nullptr) throw Exceptions::RuntimeException;
-      constexpr uint8_t framework_aid[] = {0xa0, 0x00, 0x00, 0x00,
-                                           0x62, 0x01, 0x01};
-      Import_Handler import_handler(applet_package);
-      const jc_cap_package_info *framework_info = nullptr;
-      for (uint8_t index = 0; index < imports->count; ++index) {
-        const auto *candidate = import_handler.getPackageAID(index);
-        if (candidate != nullptr &&
-            candidate->AID_length == sizeof(framework_aid) &&
-            std::memcmp(candidate->AID, framework_aid,
-                        sizeof(framework_aid)) == 0) {
-          framework_info = candidate;
-          break;
-        }
-      }
-      if (framework_info == nullptr) throw Exceptions::RuntimeException;
-      const jpackage_ID_t framework_package_id =
-          import_handler.getPackageIndex(framework_info);
-      Package framework_package(framework_package_id);
-      constexpr uint8_t aid_class_export_token = 6;
-      const uint8_t aid_class_token =
-          remap_imported_class_token(*framework_info,
-                                     aid_class_export_token);
-      const jclass_index_t aid_class_index = HTONS(
-          Export_Handler(framework_package)
-              .getExportedClassOffset(aid_class_token));
-
-      Heap &heap = context.getHeap();
-      const jref_t aid_bytes_ref =
-          heap.addArray(instance_aid_length, JAVA_ARRAY_T_BYTE);
-      const auto aid_bytes = heap.getArray(aid_bytes_ref);
-      for (uint8_t index = 0; index < instance_aid_length; ++index) {
-        aid_bytes->setByteEntry(index,
-                                static_cast<jbyte_t>(instance_aid[index]));
-      }
-      const jref_t aid_object_ref =
-          heap.addInstance(framework_package_id, aid_class_index);
-      const auto aid_object = heap.getInstance(aid_object_ref);
-      if (aid_object->getNumberOfFields() != 1) {
-        throw Exceptions::RuntimeException;
-      }
-      aid_object->setField_Reference(0, aid_bytes_ref);
-      if (!context.cacheLookedUpAIDObject(instance_aid, instance_aid_length,
-                                           aid_object_ref)) {
-        context.setPendingSystemExceptionReason(2);
-        throw Exceptions::SystemException;
-      }
+      const jref_t aid_object_ref = runtimeAIDObject(
+          context, instance_aid, instance_aid_length);
       context.setSensitiveResultObject(aid_object_ref);
       return aid_object_ref;
     }

@@ -39,6 +39,7 @@
 #include "types.hpp"
 
 #include <memory>
+#include <array>
 #include <vector>
 
 namespace jcvm {
@@ -87,10 +88,19 @@ private:
   /// True only for the runtime-wide heap that owns global arrays.
   const bool global_heap;
 
+  struct GlobalAIDObject {
+    std::array<uint8_t, 16> aid{};
+    uint8_t aid_length = 0;
+    jpackage_ID_t package_id = 0;
+    jclass_index_t class_index = 0;
+    jref_t reference;
+  };
+
   /// List of array in the heap.
   List<std::shared_ptr<JC_Array>> arrays;
   /// List of instance in the heap.
   List<std::shared_ptr<JC_Instance>> instances;
+  std::vector<GlobalAIDObject> global_aid_objects;
 
   /// Roots for the ROM and imported class views of the JCRE CryptoException.
   jref_t runtime_crypto_exception_rom;
@@ -124,9 +134,25 @@ public:
 
   /// Allocate and resolve JCRE-owned temporary global arrays.
   static jref_t addGlobalArray(uint16_t length, jc_array_type type);
+  static jref_t addGlobalRetainedArray(uint16_t length,
+                                       jc_array_type type);
   static std::shared_ptr<JC_Array> getGlobalArray(jref_t reference);
   static void releaseGlobalArray(jref_t reference) noexcept;
   static void clearGlobalArrays(ClearEvent event);
+  /// Allocate and resolve runtime-wide JCRE Entry Point Object instances.
+  static jref_t addGlobalInstance(jpackage_ID_t package_id,
+                                  jclass_index_t class_index);
+  static std::shared_ptr<JC_Instance> getGlobalInstance(jref_t reference);
+  static void releaseGlobalInstance(jref_t reference) noexcept;
+  static jref_t findGlobalAIDObject(const uint8_t *aid,
+                                    uint8_t aid_length) noexcept;
+  static jref_t addGlobalAIDObject(const uint8_t *aid, uint8_t aid_length,
+                                   jpackage_ID_t package_id,
+                                   jclass_index_t class_index);
+  static bool describeGlobalAIDObject(jref_t reference, uint8_t aid[16],
+                                      uint8_t &aid_length,
+                                      jpackage_ID_t &package_id,
+                                      jclass_index_t &class_index) noexcept;
 
   /// Adding new array in the transient heap.
   jref_t addArray(const uint16_t nb_entry, const jc_array_type type);

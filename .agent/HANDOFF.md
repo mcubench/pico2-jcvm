@@ -1,25 +1,18 @@
 # Session handoff — updated 2026-10-30
 
-## Current continuation — JCSystem.lookupAID peer behavior — 2026-10-31
+## Current continuation — JCSystem.lookupAID permanent EPO behavior — 2026-10-31
 
-The native implementation now searches installed applet instance AIDs and
-returns a cached framework `AID` object. The authenticated three-package VPCD
-multipackage test passes 33/33, including peer lookup, repeated identity,
-unknown AID, fresh-process restart, and deletion. `./tools/test-rmi-registry`,
-`./tools/build arm --profile max_crypto`, and
-`./tools/build riscv --profile max_crypto` pass. The Java API submodule change
-is committed at `5785fb1`; root implementation and test changes are committed
-at `027c384`.
-
-This does not yet satisfy the specified permanent JCRE Entry Point Object
-contract. The current cache is held by an applet `Context`; cross-context
-accessibility and references safely retained across reset remain open and are
-tracked in TODO. A separate APDU diagnostic observed `setIncomingAndReceive()`
-returning 13 while `getIncomingLength()` returned 1; cause unresolved, logged
-in QKB. No physical hardware was used. Next, settle the `lookupAID` EPO/heap
-ownership model and add cross-context/reboot tests, then investigate the APDU
-getter independently. Preserve unrelated worktree changes listed in the
-session snapshot below.
+`lookupAID()` and `getAID()` now return runtime-wide JCRE `AID` Entry Point
+Objects. Global instance/array handles and dedicated persistent reference
+records preserve identity across applet contexts, a simulated VPCD card reset,
+and a fresh process. The authenticated multipackage lifecycle test passes
+36/36; `./tools/test-rmi-registry`, PC max profile build, and ARM/RISC-V
+max-profile wrapper builds pass. No physical test was possible: the approved
+PC/SC access helper granted two USB nodes, but bounded `pcsc_scan -r` found no
+readers. The `APDU.getIncomingLength()` diagnostic mismatch remains open in
+QKB/TODO. The earlier same-context lookup implementation is committed at
+`027c384`; this EPO extension is in progress. Preserve unrelated worktree
+changes listed in the session snapshot below.
 
 ## Declared Java Card compatibility target — 2026-10-31
 

@@ -864,6 +864,18 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
 
   FieldType type = static_cast<FieldType>(data[0]);
 
+  if (type == FieldType::FIELD_TYPE_GLOBAL_AID_OBJECT) {
+    if (length < 10 || data[4] < 5 || data[4] > 16 ||
+        length != static_cast<uint32_t>(5u + data[4])) {
+      throw Exceptions::SecurityException;
+    }
+    const jpackage_ID_t package_id = data[1];
+    const jclass_index_t class_index =
+        static_cast<jclass_index_t>(BYTES_TO_SHORT(data[2], data[3]));
+    return Heap::addGlobalAIDObject(data + 5, data[4], package_id,
+                                    class_index);
+  }
+
   if (data[0] == kPersistentObjectAlias) {
     if (fail_on_read && alias_depth >= kMaxPersistentAliasDepth) {
       throw Exceptions::SecurityException;
@@ -1110,6 +1122,27 @@ void FlashMemory_Handler::setPersistentField_Reference(const fs::Tag &tag,
         static_cast<uint8_t>(FieldType::FIELD_TYPE_UNINITIALIZED);
     FlashMemory_Handler::setDataFromTag(tag, sizeof(uninitialized),
                                         &uninitialized);
+    return;
+  }
+
+  if (value.isGlobalInstance()) {
+    uint8_t aid[16]{};
+    uint8_t aid_length = 0;
+    jpackage_ID_t package_id = 0;
+    jclass_index_t class_index = 0;
+    if (!Heap::describeGlobalAIDObject(value, aid, aid_length, package_id,
+                                       class_index)) {
+      throw Exceptions::SecurityException;
+    }
+    uint8_t data[5 + sizeof(aid)]{};
+    data[0] = FieldType::FIELD_TYPE_GLOBAL_AID_OBJECT;
+    data[1] = package_id;
+    data[2] = static_cast<uint8_t>(class_index >> 8);
+    data[3] = static_cast<uint8_t>(class_index);
+    data[4] = aid_length;
+    std::memcpy(data + 5, aid, aid_length);
+    FlashMemory_Handler::setDataFromTag(
+        tag, static_cast<uint16_t>(5 + aid_length), data);
     return;
   }
 

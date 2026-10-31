@@ -64,10 +64,16 @@ public:
   void setAsArray(const bool isArray) noexcept;
   /// Is a JCRE-owned global array handle?
   bool isGlobalArray() const noexcept;
+  /// Is a JCRE-owned global instance handle?
+  bool isGlobalInstance() const noexcept;
   /// Mark this array reference as a global array.
   void setAsGlobalArray() noexcept;
+  /// Mark this instance reference as a global instance.
+  void setAsGlobalInstance() noexcept;
   /// Get the one-based global array index.
   uint16_t getGlobalArrayIndex() const noexcept;
+  /// Get the one-based global instance index.
+  uint16_t getGlobalInstanceIndex() const noexcept;
   // Is an instance?
   bool isInstance() const noexcept;
   /// Set as an instance

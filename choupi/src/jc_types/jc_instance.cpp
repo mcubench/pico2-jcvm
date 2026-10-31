@@ -507,7 +507,7 @@ void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
  * @param[value] new value.
  */
 void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
-  if (ref.isGlobalArray()) {
+  if (ref.isGlobalArray() && !this->getOwner().isGlobalHeap()) {
     throw Exceptions::SecurityException;
   }
   const auto record_field_write = [&](uint8_t stage, uint8_t exception_id) {

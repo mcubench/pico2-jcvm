@@ -130,37 +130,6 @@ void Context::setAppletAIDObjectRef(const jref_t reference) noexcept {
   this->applet_aid_object_ref = reference;
 }
 
-jref_t Context::findLookedUpAIDObject(const uint8_t *aid,
-                                      const uint8_t aid_length) const noexcept {
-  if (aid == nullptr || aid_length < 5 || aid_length > 16) return jref_t();
-  for (const AIDObjectEntry &entry : this->looked_up_aid_objects) {
-    if (entry.aid_length == aid_length &&
-        std::equal(aid, aid + aid_length, entry.aid.begin())) {
-      return entry.reference;
-    }
-  }
-  return jref_t();
-}
-
-bool Context::cacheLookedUpAIDObject(const uint8_t *aid,
-                                     const uint8_t aid_length,
-                                     const jref_t reference) noexcept {
-  if (aid == nullptr || aid_length < 5 || aid_length > 16 ||
-      reference.isNullPointer()) {
-    return false;
-  }
-  try {
-    AIDObjectEntry entry{};
-    std::copy_n(aid, aid_length, entry.aid.begin());
-    entry.aid_length = aid_length;
-    entry.reference = reference;
-    this->looked_up_aid_objects.push_back(entry);
-    return true;
-  } catch (...) {
-    return false;
-  }
-}
-
 void Context::markAppletRegistered(const jref_t applet_ref) noexcept {
   this->registered_applet_ref = applet_ref;
   this->applet_registered = true;
@@ -625,11 +594,6 @@ void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
   this->heap.visitRootReferences(visitor, visitor_context);
   for (const auto &entry : this->remote_objects) {
     if (entry.object_id != 0xffff && !entry.reference.isNullPointer()) {
-      visitor(entry.reference, visitor_context);
-    }
-  }
-  for (const AIDObjectEntry &entry : this->looked_up_aid_objects) {
-    if (!entry.reference.isNullPointer()) {
       visitor(entry.reference, visitor_context);
     }
   }

@@ -55,12 +55,6 @@ private:
   std::array<uint8_t, 16> applet_aid{};
   uint8_t applet_aid_length = 0;
   jref_t applet_aid_object_ref;
-  struct AIDObjectEntry {
-    std::array<uint8_t, 16> aid{};
-    uint8_t aid_length = 0;
-    jref_t reference;
-  };
-  std::vector<AIDObjectEntry> looked_up_aid_objects;
   /// Set when the active install method invokes Applet.register().
   bool applet_registered = false;
   /// Applet.register() is legal only while the install entry point runs.
@@ -131,10 +125,6 @@ public:
   bool copyAppletAID(uint8_t aid[16], uint8_t &aid_length) const noexcept;
   jref_t getAppletAIDObjectRef() const noexcept;
   void setAppletAIDObjectRef(jref_t reference) noexcept;
-  jref_t findLookedUpAIDObject(const uint8_t *aid,
-                               uint8_t aid_length) const noexcept;
-  bool cacheLookedUpAIDObject(const uint8_t *aid, uint8_t aid_length,
-                              jref_t reference) noexcept;
   /// Record and query Applet.register() calls during installation.
   void markAppletRegistered(jref_t applet_ref) noexcept;
   bool wasAppletRegistered() const noexcept;
