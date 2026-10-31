@@ -1,5 +1,26 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Physical GPPro install and failed-install rollback verified — 2026-10-31
+
+- On freshly flashed max_crypto firmware, the physical asymmetric probe CAP
+  passed GPPro LOAD/INSTALL, SELECT, and its RSA-3072 API APDU on Pico 2
+  `2BED26ED20556535`; cleanup removed the test applet and package and returned
+  `PHYSICAL:CLEANUP_PASS`.
+- A separate large JCSystem transaction CAP LOAD succeeded but INSTALL
+  returned `6A80` on both visible boards. Its cleanup listed no package/app and
+  returned `JC_SYSTEM_PHYSICAL:CLEANUP_PASS`, verifying failed INSTALL did not
+  leave a registered package. On 2BED this is consistent with the known
+  32,770-byte persistent-record request exceeding the 8,821-byte remaining
+  commit budget. The 8E low-level cause was not captured; do not generalize
+  the 2BED diagnosis to it.
+- These runs validate physical GPPro install, APDU, successful delete, and
+  failed-install cleanup without touching existing JCAlgTest or ApiSec
+  packages. The large transaction fixture remains unsuitable for the current
+  card storage state; prior 8E transaction/power-cycle run passed 9/9.
+- Evidence logs: `artifacts/logs/asymm-crypto-pcsc-20261031T214638Z.log`;
+  `artifacts/logs/jcsystem-transaction-physical-20261031T215221Z.log`;
+  `artifacts/logs/jcsystem-transaction-physical-20261031T215407Z.log`.
+
 ## Full JCSystem transaction fixture exceeds current physical card capacity — 2026-10-31 retest
 
 - The max-profile `JCTransactionProbe` GPPro install returned `6A80` on both

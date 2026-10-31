@@ -127,7 +127,7 @@ hardware-access, progress and handoff requirements for implementation changes.
   test passed 9/9 including card power-cycle persistence; the current 2BED
   checks verify existing applet persistence and startup. Exact logs/hashes are
   in `progress.md` and `.agent/HANDOFF.md`.
-- [ ] **ARCH-06 — Reduce loader dependence on VM internals (moderate).**
+- [x] **ARCH-06 — Reduce loader dependence on VM internals (moderate).**
   After ARCH-01, encapsulate specific heap/static initialization operations
   currently reached through private VM headers in `src/cap_load.cpp` behind
   focused internal functions. Keep GP transfer/authentication policy in card
@@ -140,8 +140,15 @@ hardware-access, progress and handoff requirements for implementation changes.
   `jc_static.hpp`, `jc_array.hpp`, or the static-field parser header. PC, ARM,
   and RISC-V max_crypto builds pass; GPPro installed the unchanged upstream
   JCAlgTest CAP; the multipackage restart/registry/delete regression passes
-  42/42. Physical install/rollback verification remains open because PC/SC
-  currently lists only the two virtual readers.
+  42/42. Physical gate closed on 2026-10-31 using Pico 2
+  `2BED26ED20556535` on the current ARM max_crypto image: GPPro successfully
+  LOADed/INSTALLed the temporary asymmetric probe CAP, its RSA-3072 API APDU
+  passed, and cleanup deleted both applet and package. A second physical
+  GPPro INSTALL reached the applet constructor but returned `6A80` because
+  the full transaction fixture exceeds the card's remaining commit capacity;
+  its cleanup verified rollback left no temporary package. Existing JCAlgTest
+  and ApiSec packages were preserved. Successful physical-install and failed
+  install/cleanup logs are listed in `progress.md` and `.agent/HANDOFF.md`.
 
 Do not introduce versioned backend APIs, function tables, opaque backend
 handles, language selection or a Rust rewrite as part of these tasks. The wider

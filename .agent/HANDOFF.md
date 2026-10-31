@@ -54,8 +54,35 @@ are in the matching `progress.md` record.
 Root validation/tracker commit: `4dfbbd1` (`Verify Pico startup and registry
 persistence`).
 
-Next: proceed with ARCH-06 physical GPPro install and rollback validation on a
-card with sufficient persistent capacity; preserve all installed user applets.
+ARCH-06 physical GPPro install/rollback validation is now complete; see the
+current section below. Next: continue the highest-priority unfinished item in
+the persistent-object reclamation backlog at the start of `TODO.md`. Preserve
+all unrelated worktree changes.
+
+## Current ARCH-06 physical GPPro install/rollback — 2026-10-31
+
+The freshly flashed ARM `max_crypto` 2BED image accepted GPPro LOAD/INSTALL of
+`build/symm-crypto-probe/output/symm-crypto-probe.cap`. The applet selected and
+completed the RSA-3072 generation/signature APDU (`019000`, 49,184 ms); script
+cleanup deleted the temporary applet and package and reported
+`PHYSICAL:CLEANUP_PASS`. The exact CAP is a test-only package; no production
+applet was changed.
+
+The separate physical JCSystem transaction fixture's LOAD succeeded but
+INSTALL returned `6A80`. Cleanup on both 2BED and 8E verified that no temporary
+package remained. For 2BED this matches the known limit: a 32,770-byte
+persistent array exceeds the remaining 8,821-byte commit budget. This exercises
+the failed-install rollback path, not a VM regression. Existing JCAlgTest and
+ApiSec registrations remained present. The full transaction fixture has
+separate historical 9/9 physical pass evidence on 8E (2026-10-30).
+
+Physical install log: `artifacts/logs/asymm-crypto-pcsc-20261031T214638Z.log`
+(SHA-256 `2f20190fdb89991d5aae79bf028ff2bcf4868c28a1e766998fb0fce27686bc81`).
+Failed-install/cleanup logs:
+`artifacts/logs/jcsystem-transaction-physical-20261031T215221Z.log` and
+`...T215407Z.log`; hashes are in `progress.md`. No reader packages were removed
+except the temporary probe package and applet installed by the successful
+test.
 
 ## ARCH-02 PC disk-checkpoint contract — 2026-10-31
 
