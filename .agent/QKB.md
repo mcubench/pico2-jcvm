@@ -24,6 +24,23 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - Successful output is under
   `artifacts/results/gppro-empty-install-vpcd-20261031T021340Z/`.
 
+## Synthetic CPLC dates lagged the requested build date — 2026-10-31
+
+- The CPLC fields were hard-coded to YDDD `6302` (2026 day 302 / October 29),
+  although the requested synthetic dates were “today” and the current date was
+  October 31. The physical extended JCAlgTest metadata read exposed the stale
+  values.
+- Viable fix: update every synthetic date field in `src/gp_get_data.hpp` and
+  keep both `tools/tests/gp_get_data/gp_get_data_test.cpp` and
+  `tools/GPGetDataApduProbe.java` exact-byte fixtures synchronized. For this
+  2026-10-31 build, YDDD is `6304`. `./tools/test-gp-get-data` passes 14/14;
+  ARM and RISC-V wrapper builds pass; open and SCP03-authenticated physical
+  GET DATA return the exact 42-byte CPLC value (45-byte TLV) and `9000` on Pico 2
+  `2BED26ED20556535`.
+- Physical APDU log:
+  `artifacts/logs/physical-gp-get-data-cplc-2BED-20261031.log`, SHA-256
+  `b4a4bb53964e98ee2c8541c00b7f4a0687ae9cedc1e8cd40e90e12b511708e42`.
+
 ## GET STATUS next occurrence must keep the original query — 2026-10-31
 
 - The PC VPCD card manager already stored GET STATUS P1 and search bytes, but

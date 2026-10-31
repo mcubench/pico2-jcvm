@@ -17809,3 +17809,38 @@
   client log
   `artifacts/results/jcalgtest/max_crypto_physical_2BED_20261031/ALGTEST_log_1793413734514.log`,
   SHA-256 `5308eb5997510c55e6270d887e5694ad10fd64128f429a96be6d94788db6069f`.
+
+## 2026-10-31 refresh CPLC date and maximum-support ARM image 7 minutes
+
+- Step/experiment: `cplc-date-20261031`
+- When: '2026-10-31 02:43 UTC' - '2026-10-31 02:50 UTC'
+- Change: Corrected all synthetic CPLC YDDD dates from `6302` (October 29) to
+  `6304` (October 31) in the native GET DATA object and synchronized the exact
+  native unit fixture and host physical-probe fixture. Refreshed the
+  downloadable `max_crypto` ARM UF2 from the rebuilt image and updated TODO,
+  QKB, and the handoff.
+- Validation: `./tools/test-gp-get-data` passed 14/14;
+  `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. The elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial
+  2BED26ED20556535` flashed and verified ARM, then passed its 18-second finite
+  monitor with repeated `TEST:PASS choupi_runtime`, no `TEST:FAIL` or `FAULT`.
+  The first physical APDU probe timed out before Pico PC/SC enumeration; after
+  the approved reader helper and successful `pcsc_scan -r`, the bounded probe
+  passed open and SCP03-authenticated Card Recognition Data and CPLC checks.
+- Result: Physical `GET DATA 9F7F` returned the exact 42-byte CPLC value in its
+  45-byte TLV, with all six dates `6304` and `9000` in both open and
+  authenticated commands. The
+  refreshed external image matches `build/arm/pico2_choupi.uf2`; size
+  2,086,400 bytes, SHA-256
+  `f97cb0694a516d6dd0de3e07e868afe95f1b5bbac9e60407733d277761dcd776`.
+- Decision: Use this UF2 for external `max_crypto` testing. The full JCAlgTest
+  run on the prior image remains partial (1,155/4,525 rows); it is not claimed
+  to be complete evidence for the refreshed image.
+- Commit: pending closeout
+- Artifacts/logs: Cycle log
+  `artifacts/logs/cycle-choupi-20261031T024632Z.log`, SHA-256
+  `eb245d3a2a7b6170b3cee1a2961ee3737951b39d81e64d97f8de12688c4fe3bf`;
+  physical GET DATA log
+  `artifacts/logs/physical-gp-get-data-cplc-2BED-20261031.log`, SHA-256
+  `b4a4bb53964e98ee2c8541c00b7f4a0687ae9cedc1e8cd40e90e12b511708e42`.

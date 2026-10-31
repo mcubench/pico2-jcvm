@@ -745,13 +745,17 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
 - [x] **Complete the selected GlobalPlatform GET DATA / GET STATUS profile.**
   Card Recognition Data (`0066`) remains unchanged. CPLC (`9F7F`) now returns
   a 42-byte CPLC data block with the Feitian marker (`096E`), RP2350 type
-  marker (`2350`), and YDDD dates for 2026-10-29 (`6302`); serial, batch, and
+  marker (`2350`), and YDDD dates for 2026-10-31 (`6304`); serial, batch, and
   equipment identifiers are zero because the firmware has no per-card
   manufacturing source. These are documented synthetic CPLC identifiers, not
   factory-programmed chip identity. The current ARM image was flashed and
   open plus SCP03-authenticated `9F7F` queries passed on physical Pico 2 boards
-  `2BED26ED20556535` and `D92E743D5F640C0F`; see the dated probe log under
-  `artifacts/logs/`. Card Capabilities (`0067`), Key Info
+  `2BED26ED20556535` and `D92E743D5F640C0F`. On 2026-10-31, the current ARM
+  image returned `6304` in both open and authenticated GET DATA probes on
+  `2BED26ED20556535`; probe log:
+  `artifacts/logs/physical-gp-get-data-cplc-2BED-20261031.log` (SHA-256
+  `b4a4bb53964e98ee2c8541c00b7f4a0687ae9cedc1e8cd40e90e12b511708e42`). Card
+  Capabilities (`0067`), Key Info
   Template (`00E0`), and unknown data objects remain unavailable (`6A88`).
   Authenticated GET STATUS first/next pairs
   (`P2=02/03`) now pass for application, package, and module categories with
@@ -1982,14 +1986,15 @@ rollback and duplicate/invalid registration handling also remain unverified.
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no applet is
   preinstalled. Refreshed on 2026-10-31 from the ARM `max_crypto` build that
   was flashed to Pico 2 `2BED26ED20556535`: 2,086,400 bytes, SHA-256
-  `2bc214ba3fdb3d020a549233bdaeb9c22fa71774118c97e742ec39219a26bd29`.
+  `f97cb0694a516d6dd0de3e07e868afe95f1b5bbac9e60407733d277761dcd776`.
   The artifact matches the build byte-for-byte. The physical
   `ALG_SUPPORT_EXTENDED` sweep reached its explicit 900-second bound at
   1,155/4,525 rows (179 yes, 976 no; all saved algorithm results were yes/no,
   with no transport error logged). It is partial, not a complete support
-  report. The run also read CPLC dates `6302`, revealing that the requested
-  synthetic dates still encode October 29 rather than October 31; update the
-  CPLC source and fixtures before the next artifact refresh. The previously
+  report. The run read CPLC dates `6302` from the previous image; this was
+  corrected to `6304` and verified over open and authenticated physical GET
+  DATA after the suite. The refreshed artifact below contains the fix. The
+  previously
   incomplete
   all-disabled `minimal` selection now builds on both wrapper targets; the
   optional AES-CTR object is absent in those configurations and present in

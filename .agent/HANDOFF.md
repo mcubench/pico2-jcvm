@@ -12,11 +12,20 @@ passing finite runtime monitor. Its physical JCAlgTest
 `ALG_SUPPORT_EXTENDED` run hit the 900-second wrapper limit at 1,155/4,525
 rows (179 yes, 976 no), without a logged transport error; it is partial.
 Artifacts are in `artifacts/results/jcalgtest/max_crypto_physical_2BED_20261031/`.
-The physical CPLC readback showed dates `6302` (October 29), although the user
-requested today’s date, October 31 (`6304`). Next fix the CPLC bytes and all
-fixtures, run GET DATA tests, build ARM and RISC-V, flash the ARM image, inspect
-its finite monitor, and verify physical GET DATA before refreshing the external
-UF2. Preserve the unrelated dirty worktree files listed in prior sections.
+The physical run exposed stale CPLC dates `6302` (October 29). Updated the
+native bytes and exact host/native fixtures to `6304` (October 31). The GET DATA
+unit test passes 14/14; ARM and RISC-V `max_crypto` wrapper builds pass. The
+ARM cycle flashed and verified the image on 2BED, and the finite monitor passed
+with repeated `TEST:PASS choupi_runtime`, no `FAULT`. Open and SCP03-authenticated
+physical `9F7F` probes both returned the exact new `6304` bytes and `9000`; the
+reader was enumerated after running the authorized PC/SC helper. The external
+UF2 now matches the flashed ARM build byte-for-byte: 2,086,400 bytes, SHA-256
+`f97cb0694a516d6dd0de3e07e868afe95f1b5bbac9e60407733d277761dcd776`; it
+matches `build/arm/pico2_choupi.uf2`. Physical APDU log:
+`artifacts/logs/physical-gp-get-data-cplc-2BED-20261031.log` (SHA-256
+`b4a4bb53964e98ee2c8541c00b7f4a0687ae9cedc1e8cd40e90e12b511708e42`). The
+JCAlgTest report remains partial at 1,155/4,525 due its 900-second timeout.
+Preserve unrelated dirty files listed in prior handoff sections.
 
 ## APDU incoming-length virtual dispatch fixed — 2026-10-31
 

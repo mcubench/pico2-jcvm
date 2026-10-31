@@ -16,8 +16,8 @@ public final class GPGetDataApduProbe {
   private static final byte[] CARD_DATA =
       fromHex("6618731606072A864886FC6B01640B06092A864886FC6B040310");
   private static final byte[] CPLC_DATA = fromHex(
-      "9F7F2A096E23504A43630200016302000000000000096E6302096E6302" +
-      "096E630200000000096E630200000000");
+      "9F7F2A096E23504A43630400016304000000000000096E6304096E6304" +
+      "096E630400000000096E630400000000");
 
   private static byte[] fromHex(String text) {
     String compact = text.replaceAll("\\s", "");

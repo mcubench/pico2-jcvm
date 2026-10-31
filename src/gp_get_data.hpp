@@ -10,7 +10,7 @@ namespace gp {
 // Card Recognition Data and synthetic CPLC data for the card-manager
 // features exposed by CHOUPI. CPLC identifiers are project-defined markers,
 // not factory-programmed RP2350/Pico manufacturing identifiers. Dates use the
-// GlobalPlatform YDDD encoding; 2026-10-29 is year digit 6, day 302.
+// GlobalPlatform YDDD encoding; 2026-10-31 is year digit 6, day 304.
 constexpr uint8_t kCardRecognitionData[] = {
     0x66, 0x18, 0x73, 0x16,
     0x06, 0x07, 0x2a, 0x86, 0x48, 0x86, 0xfc, 0x6b, 0x01,
@@ -26,20 +26,20 @@ constexpr uint8_t kCplcData[] = {
     0x09, 0x6e, // IC fabricator: Feitian marker
     0x23, 0x50, // IC type: RP2350 marker
     0x4a, 0x43, // OS provider: "JC"
-    0x63, 0x02, // OS release date: 2026 day 302 (October 29)
+    0x63, 0x04, // OS release date: 2026 day 304 (October 31)
     0x00, 0x01, // OS release level
-    0x63, 0x02, // IC fabrication date
+    0x63, 0x04, // IC fabrication date
     0x00, 0x00, 0x00, 0x00, // IC serial number unavailable
     0x00, 0x00, // IC batch identifier unavailable
     0x09, 0x6e, // IC module fabricator: Feitian marker
-    0x63, 0x02, // IC module packaging date
+    0x63, 0x04, // IC module packaging date
     0x09, 0x6e, // ICC manufacturer: Feitian marker
-    0x63, 0x02, // IC embedding date
+    0x63, 0x04, // IC embedding date
     0x09, 0x6e, // IC pre-personalizer: Feitian marker
-    0x63, 0x02, // IC pre-personalization date
+    0x63, 0x04, // IC pre-personalization date
     0x00, 0x00, 0x00, 0x00, // pre-personalization equipment ID unavailable
     0x09, 0x6e, // IC personalizer: Feitian marker
-    0x63, 0x02, // IC personalization date
+    0x63, 0x04, // IC personalization date
     0x00, 0x00, 0x00, 0x00, // personalization equipment ID unavailable
 };
 
