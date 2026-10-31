@@ -18543,6 +18543,7 @@
   disk checkpointing remain backend discrepancies.
 - Decision: ARCH-02 is complete. Continue with ARCH-03; retain the four
   explicitly tracked backend-alignment follow-ups.
-- Commit: OS submodule `08f78a6`; root implementation commit to be recorded in
-  the immediate progress-only follow-up.
+- Commit: Root `6aec961` (`Specify filesystem ABI and harden bounds checks`);
+  nested OS submodule `08f78a6` (`Fix filesystem syscall bounds and empty
+  reads`). The root SHA is recorded in the progress-only follow-up commit.
 - Artifacts/logs: No persistent logs; test and build results are recorded above.

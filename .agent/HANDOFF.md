@@ -25,8 +25,8 @@ Validation: `tools/test-rp2350-fs-overlay` passes with `TEST:SUMMARY fail=0`;
 --profile max_crypto`, and its RISC-V counterpart pass. No physical test was
 run; this was ABI/storage-contract work and no hardware path was requested.
 Nested OS source commit: `08f78a6` (`Fix filesystem syscall bounds and empty
-reads`). Root implementation/progress commit SHA is recorded by the progress
-follow-up commit.
+reads`). Root implementation commit: `6aec961` (`Specify filesystem ABI and
+harden bounds checks`).
 
 Next: ARCH-03 in `TODO.md` (consolidate diagnostic declarations). Preserve the
 remaining unrelated worktree changes and the nested OS submodule commit.
