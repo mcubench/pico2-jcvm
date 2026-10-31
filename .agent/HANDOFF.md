@@ -19,7 +19,7 @@ for method token and receiver reference. Avoid changing crypto arithmetic
 until the failing native entry points are identified. Full results and hashes
 are in `progress.md`.
 
-The focused repro documentation is in commit `<pending>`; the preceding v4
+The focused repro documentation is in commit `456d250`; the preceding v4
 capacity rerun is recorded in `b891643` and linked in `ca19e2a`.
 
 ## Current v4 persistent-capacity API validation — 2026-10-31
