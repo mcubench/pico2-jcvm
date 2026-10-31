@@ -61,6 +61,16 @@ card registry is empty.
   `c6ba9233e27584280bd5632b1ca281509fedd2cc19c08fbd4184b01179694045` under
   ignored `artifacts/results/deploy/`.
 
+- **Current max_crypto API Crypto check (2026-10-31):** The same Pico completed
+  all 466 upstream calls with the documented RSA-2048 key-generation exclusion:
+  263 `OK`, 161 `UNSUPPORTED_PER_SPEC`, 38 `NO_MEMORY`, three `WRONG_RESULT`,
+  and one `EXC_CARDRUNTIME`. `NO_MEMORY` affected Signature, KeyAgreement,
+  Cipher, and AEAD; three Signature IV known-answer checks returned unexpected
+  values, and one RSA-PSS case raised `ILLEGAL_USE`. Cleanup passed, and a final
+  exact-reader listing showed only ISD and the existing JCAlgTest applet/package.
+  CSV SHA-256:
+  `3a7859bb1f8283e1ce88578ea601aa3c7d39acd5d448a4526506a3c6e9593c10`.
+
 - **Symmetric algorithm parity with JCOP4 P71 (2026-10-30):** The supplied
   1.7.9 reference has 41 symmetric support identities. All 41 are selected by
   `symm_crypto` and all 41 were reported on physical Pico 2

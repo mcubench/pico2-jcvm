@@ -1,5 +1,25 @@
 # Session handoff — updated 2026-10-31
 
+## Current max_crypto physical API Crypto rerun — 2026-10-31
+
+On Pico 2 `2BED26ED20556535`, the unchanged deploy API 3.0.5 Crypto area
+completed 466 calls with the deploy README's RSA-2048 key-generation exclusion:
+263 `OK`, 161 `UNSUPPORTED_PER_SPEC`, 38 `NO_MEMORY`, three `WRONG_RESULT`,
+and one `EXC_CARDRUNTIME`. Memory failures affected Signature, KeyAgreement,
+Cipher, and AEAD. Three Signature IV known-answer checks returned unexpected
+values; RSA-PSS raised `ILLEGAL_USE` once. The Crypto CAP cleanup passed, and
+the final exact-reader GPPro listing showed only ISD and the original JCAlgTest
+package/applet. CSV SHA-256:
+`3a7859bb1f8283e1ce88578ea601aa3c7d39acd5d448a4526506a3c6e9593c10` at
+`artifacts/results/deploy/pico2-2BED-max_crypto-crypto-20261031.csv` (ignored).
+
+The current max_crypto image is ready at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (2,088,448 bytes,
+SHA-256 `3331edcb99400e774ad3e7678d0626fd9ab3986bde163077226a552dbe198213`).
+External users must install applets explicitly; no test applet is preinstalled
+by the image. Next: investigate repeated `NO_MEMORY`, transient AES reset, and
+Signature IV results before describing this as a clean API baseline.
+
 ## Current max_crypto physical API Security rerun — 2026-10-31
 
 On Pico 2 `2BED26ED20556535`, the unchanged deploy API 3.0.5 Security area

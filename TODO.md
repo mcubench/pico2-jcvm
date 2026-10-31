@@ -1055,8 +1055,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   `NO_MEMORY` occurred at call 460; later failures span key families and EC
   accessors. One AES transient-reset `isInitialized()` check was a wrong result.
   Resource exhaustion and transient reset behavior need investigation. The
-  Security CAP cleanup passed. Current ARM and host builds pass. Fresh
-  VPCD select-only smoke checks pass for
+  Security CAP cleanup passed.
+  The Crypto stage completed 466 calls (263 `OK`, 161 `UNSUPPORTED_PER_SPEC`,
+  38 `NO_MEMORY`, three `WRONG_RESULT`, one `EXC_CARDRUNTIME`); the documented
+  RSA-2048 key-generation exclusion was applied. The first Crypto `NO_MEMORY`
+  was at call 161, and errors span Signature, KeyAgreement, Cipher, and AEAD.
+  Three Signature IV initialization known-answer checks returned unexpected
+  values; one RSA-PSS case raised `ILLEGAL_USE`. Crypto cleanup and final
+  GPPro listing passed. The resource and result findings remain open. Current
+  ARM and host builds pass. Fresh VPCD select-only smoke checks pass for
   Security, Crypto, JavacardxExt, JavacardxSec, Service, Biometry, and each
   Multi AID independently. Core's own-AID Shareable probe returns `0000`, and
   its Shareable tagging-interface probe returns `000101`, both with `9000`.

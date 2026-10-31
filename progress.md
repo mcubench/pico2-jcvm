@@ -18237,3 +18237,28 @@
 - Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-security-20261031.csv`
   (ignored; SHA-256
   `c6ba9233e27584280bd5632b1ca281509fedd2cc19c08fbd4184b01179694045`).
+
+## 2026-10-31 Run max_crypto physical Crypto API suite 7 minutes
+
+- Step/experiment: `max-crypto-deploy-crypto-physical-20261031`
+- When: '2026-10-31 06:43 UTC' - '2026-10-31 06:50 UTC'
+- Change: Ran unchanged upstream API 3.0.5 Crypto CAP/client on physical Pico 2
+  `2BED26ED20556535`, using the deploy README's RSA-2048 key-generation
+  exclusion. No firmware or CAP changed.
+- Validation: Host-access-gated exact-reader runner exited zero after 466 calls
+  and reported Crypto cleanup OK. Results: 263 `OK`, 161
+  `UNSUPPORTED_PER_SPEC`, 38 `NO_MEMORY`, three `WRONG_RESULT`, and one
+  `EXC_CARDRUNTIME`. The first `NO_MEMORY` was call 161. The three wrong
+  results were Signature MAC initialization with DES/AES IV parameters. One
+  RSA-PSS case returned `ILLEGAL_USE`. Final exact-reader GPPro listing exited
+  zero and showed only ISD and the existing JCAlgTest package/applet.
+  `git diff --check` passed before documentation commit.
+- Result: All requested Crypto calls completed without reader loss, but
+  resource exhaustion and four unexpected behavior rows remain findings.
+- Decision: Keep the combined firmware available for external testing with
+  these limitations documented; investigate memory reclamation and the specific
+  Signature cases before claiming the deploy API suite passes.
+- Commit: `<fill after documentation commit>`
+- Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-crypto-20261031.csv`
+  (ignored; SHA-256
+  `3a7859bb1f8283e1ce88578ea601aa3c7d39acd5d448a4526506a3c6e9593c10`).
