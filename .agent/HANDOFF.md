@@ -43,7 +43,7 @@ packages, so end-to-end target linking remains open. Parser regressions pass
 max-profile wrapper builds pass. No physical board was flashed. Next: build an
 install-level two-package fixture for valid external interface, non-interface
 export, and missing export cases, then return to persistent-object reclamation
-and cold USB power-cycle recovery.
+and cold USB power-cycle recovery. Implementation commit: `c4280c9`.
 
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 

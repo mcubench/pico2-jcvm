@@ -15397,7 +15397,7 @@
 - Validation: `./tools/test-persistent-transaction` passed with `TEST:SUMMARY fail=0`, including malformed object alias, truncated array alias, self-referential array alias, and malformed object-field cases with valid parent/root representation. No ARM/RISC-V build or hardware run was needed for the test-only fixture correction.
 - Result: The collector now reaches malformed child records through valid serialized reference arrays; incomplete traces still reclaim zero handles. Direct recursion-depth behavior remains unverified.
 - Decision: Continue by adding strict alias-chain type resolution and a direct recursion-bound test, then return to persistent-record inventory.
-- Commit: pending.
+- Commit: `c4280c9`.
 - Artifacts/logs: `./tools/test-persistent-transaction` output; no archived log or hardware artifact.
 
 ## 2026-10-30 Resolve nested persistent array aliases consistently 8 minutes
