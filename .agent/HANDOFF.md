@@ -15,6 +15,10 @@ commit `0f80232`; the implementation and validation record are in
 continue the APDU/API backlog and pursue physical validation when a reader is
 registered. Preserve the unrelated worktree snapshot listed below.
 
+The `./tools/test-short-apdu` harness also needed its local FFI stub updated
+after the heap tracer began using `fs_exists`; that harness fix is committed as
+`3e1bcbd`, and its 26 cases plus the 250,000-input parser fuzz run pass.
+
 ## Current continuation — JCSystem.lookupAID permanent EPO behavior — 2026-10-31
 
 `lookupAID()` and `getAID()` now return runtime-wide JCRE `AID` Entry Point

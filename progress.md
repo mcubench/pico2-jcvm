@@ -17563,3 +17563,23 @@
   restart log
   `artifacts/logs/host-vpcd-multipackage-restart-20261031T014336Z.log`,
   SHA-256 `37940d91568ef8040717d0e3e41fe1c054b9116e239acadb25252d15f718732a`.
+
+## 2026-10-31 restore short-APDU context test harness 3 minutes
+
+- Step/experiment: `short-apdu-test-fs-exists-stub`
+- When: '2026-10-31 01:46 UTC' - '2026-10-31 01:49 UTC'
+- Change: Updated the short-APDU context test's local FFI declaration and stub
+  for `fs_exists`, which `heap.cpp` now references. The test-local FFI header
+  shadows the OS header, so adding only the OS include path was insufficient;
+  that unsuccessful diagnostic change was removed. Recorded the failure and
+  viable fix in QKB.
+- Validation: `./tools/test-short-apdu` passed all 13 parser and 13 context
+  cases. `./tools/test-apdu-parser-fuzz` passed 250,000 inputs. The test build
+  still reports pre-existing ignored-qualifier and packed-member warnings from
+  shared VM headers.
+- Result: APDU parser/context unit tests build and run against current heap
+  sources again.
+- Decision: Resume the next prioritized APDU/API implementation gap.
+- Commit: `3e1bcbd` (implementation; this validation closeout is committed
+  separately)
+- Artifacts/logs: no saved logs; command output only.
