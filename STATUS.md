@@ -38,8 +38,8 @@ card registry is empty.
   private-operation hardening are separate from profile parity; see QKB.
 
 - **Current max_crypto physical runtime and API Core check (2026-10-31):** Pico
-  2 `2BED26ED20556535` was flashed with the 2,088,448-byte ARM image
-  (`3331edcb99400e774ad3e7678d0626fd9ab3986bde163077226a552dbe198213`). Its
+  2 `2BED26ED20556535` was flashed with the 2,089,472-byte ARM image
+  (`03ccac6577950f4e280a1a10d3c52b8d15d03ab52165b220a59a0a9a75e4e7df`). Its
   finite runtime monitor and physical GPPro listing passed. The direct SCP03
   GET STATUS test passed with three applet instances and a short Le. Upstream
   API 3.0.5 Core completed 291 calls: 272 `OK`, 15 spec-allowed unsupported,
@@ -63,6 +63,13 @@ card registry is empty.
   a separate finding. CSV SHA-256 is
   `c6ba9233e27584280bd5632b1ca281509fedd2cc19c08fbd4184b01179694045` under
   ignored `artifacts/results/deploy/`.
+
+  **Follow-up:** Snapshot v4 now adds a bounded 96 KiB overlay arena using a
+  compact occupancy bitmap and 8-byte records, while retaining the existing
+  2 MiB layout and v2/v3 copy-on-write migration. Host recovery tests and both
+  architecture builds pass; the flashed image passed its finite runtime
+  monitor. The follow-up Security runner stopped mid-APDU after the physical
+  reader disappeared, so the NO_MEMORY reduction is not yet verified.
 
 - **Current max_crypto API Crypto check (2026-10-31):** The same Pico completed
   all 466 upstream calls with the documented RSA-2048 key-generation exclusion:

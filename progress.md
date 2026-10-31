@@ -18311,9 +18311,32 @@
   remains pending device availability.
 - Decision: Keep the 2 MiB layout; do not use the unverified second flash half.
   Continue physical API validation when an identified Pico reader returns.
-- Commit: pending (finalized in a follow-up progress record commit)
+- Commit: `c876703`
 - Artifacts/logs: ARM image SHA-256
   `03ccac6577950f4e280a1a10d3c52b8d15d03ab52165b220a59a0a9a75e4e7df`;
   finite cycle log `artifacts/logs/cycle-choupi-20261031T081609Z.log` (SHA-256
   `565db8b590479f530da92266a0d9fd91cbd30eaf10508ddb6c88540c0df9ff9d`);
   partial API probe `/tmp/apitest_card_rs27k10h/probe_APISUPPORT_3b800181.csv`.
+
+## 2026-10-31 Refresh max_crypto external image and current guidance 5 minutes
+
+- Step/experiment: `max-crypto-v4-artifact-and-handoff-20261031`
+- When: '2026-10-31 08:27 UTC' - '2026-10-31 08:32 UTC'
+- Change: Refreshed the ignored external ARM UF2 from the validated v4 build and
+  corrected its README, STATUS, TODO, QKB, flash-layout notes, and session
+  handoff. Documentation now records the 2 MiB layout, pending physical API
+  rerun, current image hash, and that reflashing firmware does not erase a
+  card's persistent CAP store. Corrected the previous step's commit reference.
+- Validation: Image copied byte-for-byte from `build/arm/pico2_choupi.uf2`;
+  SHA-256 `03ccac6577950f4e280a1a10d3c52b8d15d03ab52165b220a59a0a9a75e4e7df`,
+  size 2,089,472 bytes. `git diff --check` passed. Physical inventory shows
+  only VPCD readers; the disconnected physical test was not restarted.
+- Result: The externally named max_crypto UF2 now matches the v4 ARM firmware
+  that was flashed and passed its finite monitor. Physical Security/Crypto
+  verification remains open; this package is suitable for external testing,
+  not a claim that the API deployment suite passes.
+- Decision: Retry physical API suites and exact-reader cleanup when a Pico reader
+  is again available.
+- Commit: pending (finalized in a follow-up progress record commit)
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
+  and `artifacts/firmware/README-max_crypto.txt`; image SHA-256 above.

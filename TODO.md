@@ -407,23 +407,23 @@ cryptographic algorithms must still be implemented natively in C++ and
 dispatched through the Java Card API. Do not add Java crypto providers or
 adapters, and do not change upstream applet CAP files.
 
-### Priority 1 — use the full Pico 2 flash for persistent card storage
+### Priority 1 — recover persistent storage capacity for max_crypto
 
-- [ ] Expand the filesystem snapshot/overlay to use the Pico 2 board's full
-  4 MiB QSPI flash while preserving CAP slots and existing 2 MiB card data.
-  The current build hard-codes `PICO_FLASH_SIZE_BYTES=2097152`; the current
-  filesystem reserves only 77,824 overlay bytes because its two COW snapshots
-  occupy fixed 160 KiB slots in the first 2 MiB. Physical API 3.0.5 Security
-  reached 77,823/77,824 bytes across 7,246 records and then reported 94
-  `NO_MEMORY` calls. A temporary debug-persistent-reclaimer image completed
-  all 901 calls with the same 94 `NO_MEMORY`, showing the test's persisted
-  records remained reachable and GC was not a remedy. The Raspberry Pi Pico 2
-  specification confirms 4 MiB flash. Use the second 2 MiB for larger COW
-  snapshot slots, widen serialized overlay offsets/version the snapshot, and
-  migrate existing 2 MiB snapshots without erasing their source until the new
-  snapshot validates. Bound SRAM use and verify maximum-crypto heap/stack after
-  increasing the in-RAM overlay. Add host recovery/power-cut tests, then rerun
-  physical Security and Crypto before updating the external max_crypto image.
+- [x] Increase usable overlay capacity without changing the reported 2 MiB
+  flash layout. The physical Security run reached 77,823/77,824 bytes across
+  7,246 records and returned 94 `NO_MEMORY`; a debug reclaimer build returned
+  the same failures because the records remained reachable. Snapshot format v4
+  replaces 10-byte indexed records with an 8,192-bit occupancy map and compact
+  8-byte records, and supports a 96 KiB data arena subject to a dynamic
+  snapshot-size limit at high index occupancy. Existing v2/v3 snapshots remain
+  readable and are migrated copy-on-write. Host tests cover migration, high
+  offsets, compaction, and interrupted writes; ARM and RISC-V max_crypto builds
+  pass. The current ARM image was flashed and its finite monitor passed.
+- [ ] Rerun physical API 3.0.5 Security and Crypto on the v4 image and confirm
+  whether the additional capacity removes `NO_MEMORY`. The Security attempt on
+  2026-10-31 stopped mid-APDU when the physical reader disappeared; only the
+  two virtual readers are currently visible. Do not use unverified flash
+  beyond the 2 MiB capacity reported by the device/build.
 
 ### Priority 1 — selectable Java Card firmware capabilities
 

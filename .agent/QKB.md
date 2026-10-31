@@ -7,10 +7,16 @@
   `FS_WRITE_FAIL op=new ... files=7246 bytes=77823/77824`. A temporary image
   enabling `PICO2_DEBUG_PERSISTENT_GC=1` produced the same 94 failures; these
   records were still reachable, so persistent reclamation is not the remedy.
-- Viable direction: increase the COW snapshot capacity using the RP2350 board's
-  second 2 MiB flash half, preserve the old snapshot until a wider-offset new
-  snapshot validates, and retain bounded SRAM use. The release reclaimer stays
-  disabled. See the Priority 1 task in root `TODO.md`.
+- Viable fix implemented: snapshot format v4 stores occupancy in a 1 KiB
+  bitmap and uses 8-byte index records instead of 10-byte slot-number records.
+  This raises the data arena to 96 KiB within the existing 160 KiB COW slots
+  while preserving the reported 2 MiB layout. The effective data limit shrinks
+  with record count to keep the serialized snapshot inside its slot. V2/v3
+  remain readable and migrate copy-on-write. Host power-cut tests and ARM/
+  RISC-V builds pass; a physical runtime monitor passed after flashing v4.
+  The Security suite stopped mid-APDU when the reader disappeared, so the
+  reduction in `NO_MEMORY` is still unverified. Do not use the unverified
+  second flash half. The release reclaimer remains disabled.
 - Release was restored and finite monitor passed. Debug Security CSV SHA-256:
   `0cb6789cb206ad1a5161dacd3d10c5cfff2e66eb6766eb6230c925baf015837d`.
 
