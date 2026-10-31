@@ -51,6 +51,8 @@ Artifacts: `artifacts/logs/cycle-choupi-20261031T214423Z.log`,
 `artifacts/logs/ccid-slot-reset-2BED-20261031.log`, and
 `artifacts/logs/pico-powerup-persistence-20261031T220152Z.log`; their hashes
 are in the matching `progress.md` record.
+Root validation/tracker commit: `4dfbbd1` (`Verify Pico startup and registry
+persistence`).
 
 Next: proceed with ARCH-06 physical GPPro install and rollback validation on a
 card with sufficient persistent capacity; preserve all installed user applets.

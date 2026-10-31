@@ -1967,7 +1967,7 @@
   image; this cycle did not exercise CHOUPI, the applet, or JCSystem.
 - Decision: Resume applet-level physical testing only after reflashing CHOUPI.
   Continue the separate `makeGlobalArray()` design work.
-- Commit: pending
+- Commit: `4dfbbd1` (`Verify Pico startup and registry persistence`)
 - Artifacts/logs: `artifacts/logs/cycle-arm-20261018T074707Z.log` (SHA-256
   `eb58edba0a3c95145b4112453485896f959c2b4d2292e033340691b73ed222d3`).
 
