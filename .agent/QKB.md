@@ -1677,6 +1677,12 @@ HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
   both physical readers; the second board then passed open and
   SCP03-authenticated CPLC queries. Do not infer a firmware APDU failure from
   a reader omitted by PC/SC.
+- **Confirmed after a fresh firmware cycle (2026-10-31):** Immediately after
+  flashing Pico 2 `2BED26ED20556535`, GPPro saw only the VPCD readers. Running
+  the approved helper and `pcsc_scan -r` made `Pico 2 CHOUPI CCID [JCVM CCID]
+  (2BED26ED20556535) 00 00` available; a bounded GPPro `--list` then passed.
+  Apply this refresh before diagnosing a post-cycle GPPro reader-selection
+  error.
 - **Artifacts:** `artifacts/logs/cycle-choupi-20261029T143004Z.log`,
   `artifacts/logs/cycle-choupi-20261029T143255Z.log`, and
   `artifacts/logs/gp-cplc-physical-D92E743D5F640C0F-20261029.log`.

@@ -18096,3 +18096,37 @@
 - Decision: Keep persistent deletion test-only until an actual interrupted erase and on-device recovery/retry are verified. The refreshed UF2 is ready for external testing; no hardware flash was done for it.
 - Commit: source/test `1521cda`; this progress, handoff, QKB/TODO update and release artifact are recorded in the following documentation/artifact commit.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`; physical logs `artifacts/logs/persistent-reclaimer-monitor-2BED-20261031-fixed.log` (SHA-256 `b395ae8298ab06289794071a5b8011c93182fc0e47d1476b2200593b801bce86`) and `artifacts/logs/persistent-reclaimer-physical-20261031T052908Z.log` (SHA-256 `d161d673120e22172dcb6ae97f4363049ba0d435c38f72ac4e846d6b1bca936a`).
+
+## 2026-10-31 Bound GET STATUS responses by Le 27 minutes
+
+- Step/experiment: `get-status-short-apdu-le-pagination-20261031`
+- When: '2026-10-31 05:40 UTC' - '2026-10-31 06:07 UTC'
+- Change: Limited physical CCID and PC VPCD GET STATUS response data to short-APDU
+  Le, treating zero as 256 and retaining transport capacity for case-3 and
+  extended/malformed APDUs. Added case-2, case-4, zero-Le, and fallback unit
+  checks. Expanded VPCD regression to 21 applet instances across three pages
+  before and after process restart. Refreshed the downloadable max_crypto ARM
+  UF2 from the validated image.
+- Validation: `./tools/test-short-apdu` passed. Rebuilt PC target, then
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed
+  (`TEST:SUMMARY pass=41 fail=0`); applet pages were 236, 248, and 186 data
+  bytes with `6310`, `6310`, and `9000`, repeated after process restart.
+  `PICO2_DEBUG=0 ./tools/build arm --profile max_crypto` and the RISC-V wrapper
+  build passed. Flashed current ARM image to Pico 2 `2BED26ED20556535`; finite
+  monitor ended `TEST:SUMMARY pass=1 fail=0`. After refreshing PC/SC with the
+  approved helper, physical GPPro `--list` passed and showed ISD, JCAlgTest,
+  and its package. Artifact compares byte-for-byte with `build/arm` and is
+  2,088,448 bytes, SHA-256
+  `3331edcb99400e774ad3e7678d0626fd9ab3986bde163077226a552dbe198213`.
+  Physical pagination remains untested because the card has one applet.
+- Result: Short-Le host pagination is covered across registry restart and the
+  physical reader/GET STATUS path completes GPPro listing. The external ARM
+  image includes the final change.
+- Decision: Continue with physical multi-page GET STATUS and the remaining GET
+  DATA/package lifecycle items in TODO.md.
+- Commit: `5b3a6c7` (source, tests, and firmware artifact); this progress and
+  session documentation are in the follow-up documentation commit.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T060525Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-restart-20261031T060525Z.log`,
+  `artifacts/logs/cycle-choupi-20261031T055936Z.log`,
+  `artifacts/logs/gppro-list-physical-2BED-20261031-current.log`.

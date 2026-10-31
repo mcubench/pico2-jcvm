@@ -1,4 +1,36 @@
-# Session handoff — updated 2026-10-30
+# Session handoff — updated 2026-10-31
+
+## Short-APDU-bounded GET STATUS pagination — 2026-10-31
+
+The Pico CCID and PC VPCD GET STATUS response builders now respect short APDU
+Le. Case-2 and case-4 Le values cap response data (with encoded zero meaning
+256); case-3 and malformed/extended-length frames use the implementation
+buffer limit. The PC multipackage regression installs 21 instances and checks
+that all AIDs occur exactly once across correctly terminated pages both before
+and after a fresh emulator process restores the registry.
+
+Validation passed: `./tools/test-short-apdu`; rebuilt PC emulator followed by
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` (`TEST:SUMMARY
+pass=41 fail=0`, three pages `236/248/186` bytes with status
+`6310/6310/9000` before and after restart); `PICO2_DEBUG=0 ./tools/build arm
+--profile max_crypto`; and the corresponding RISC-V wrapper build. The exact
+ARM image was flashed to Pico 2 `2BED26ED20556535`; its finite monitor passed
+(`TEST:SUMMARY pass=1 fail=0`). GPPro `--list` succeeded on the physical
+`Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00` reader and listed ISD,
+JCAlgTest, and its package. The physical card has one applet, so physical
+multi-page GET STATUS remains untested. Logs:
+`artifacts/logs/host-vpcd-multipackage-apdu-20261031T060525Z.log`,
+`artifacts/logs/host-vpcd-multipackage-restart-20261031T060525Z.log`,
+`artifacts/logs/cycle-choupi-20261031T055936Z.log`, and
+`artifacts/logs/gppro-list-physical-2BED-20261031-current.log`. Firmware and
+README refreshed at `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
+(2,088,448 bytes, SHA-256
+`3331edcb99400e774ad3e7678d0626fd9ab3986bde163077226a552dbe198213`). Source
+and tests are committed as `5b3a6c7`.
+
+Next: extend the physical GET STATUS test to a multi-page registry when a safe
+set of upstream multi-applet CAPs is available, then continue the remaining
+GET DATA and package lifecycle gaps in TODO.md.
 
 ## Persistent reclaimer physical probe and reachability correction — 2026-10-31
 
