@@ -6,13 +6,12 @@ out explicitly.
 
 ## Scheduled architecture maintenance — 2026-10-31
 
-Scheduled for later agents; this documentation change does not implement these
-items. These are improvements to the current implementation, independent of
-alternate language backends. Work in the order below, one validated logical
-step per commit, preserving existing worktree changes. Follow repository build,
+These are improvements to the current implementation, independent of alternate
+language backends. Work in the order below, one validated logical step per
+commit, preserving existing worktree changes. Follow repository build,
 hardware-access, progress and handoff requirements for implementation changes.
 
-- [ ] **ARCH-01 — Centralize runtime/lifecycle declarations (small; first).**
+- [x] **ARCH-01 — Centralize runtime/lifecycle declarations (small; first).**
   Create authoritative shared declarations for runtime, install, restore,
   select/deselect, process and clear operations; replace duplicated declarations
   in platform, transport and loader code. Reconcile the Rust OS declaration of
@@ -22,6 +21,12 @@ hardware-access, progress and handoff requirements for implementation changes.
   Acceptance: callers use the authoritative contract; Rust bindings match it;
   PC and both architecture builds pass, followed by relevant lifecycle/APDU and
   required physical checks. Record any execution paths not exercised.
+  Implemented in `src/vm_lifecycle.h`, included by the native runtime, Pico,
+  loader, CCID, and PC VPCD translation units. Rust embedded and host FFI now
+  declare the `uint16_t` return; both call paths explicitly discard it to
+  preserve their existing zero remote-call result. PC, ARM, and RISC-V
+  `max_crypto` builds and the VPCD multipackage lifecycle regression pass
+  (42/42). No physical check was possible because PC/SC published no reader.
 - [ ] **ARCH-02 — Specify filesystem contracts (small; before storage moves).**
   Document `fs_*` return codes, buffer ownership, bounds, `fs_read_inplace`
   pointer validity/invalidation, and `fs_sync` durability and transaction rules.

@@ -22,6 +22,7 @@
 #include "flash_layout.hpp"
 #include "jc_handlers/flashmemory.hpp"
 #include "reader_led.hpp"
+#include "vm_lifecycle.h"
 
 extern "C" char __StackLimit;
 
@@ -31,8 +32,6 @@ extern "C" const uint8_t __flash_binary_end[];
 #ifdef RP2350_FS_OVERLAY_TEST
 extern "C" const uint8_t *rp2350_fs_test_flash_base(void);
 #endif
-extern "C" uint16_t runtime(uint8_t package_id, uint8_t class_id,
-                             uint8_t method_id);
 extern "C" void choupi_vm_runtime_debug_state(
     uint16_t *status, uint16_t *exception_id, uint8_t *opcode, uint32_t *pc,
     uint16_t *stack_depth, uint32_t *opcode_history,

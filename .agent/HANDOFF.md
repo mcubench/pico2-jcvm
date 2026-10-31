@@ -1,5 +1,29 @@
 # Session handoff — updated 2026-10-31
 
+## Current ARCH-01 runtime/lifecycle ABI — 2026-10-31
+
+Added `src/vm_lifecycle.h` as the shared C ABI declaration source for VM entry,
+installation, applet restore, select/deselect, process, and clear operations.
+The Pico, CCID, loader, VM, and PC VPCD translation units include it instead
+of carrying duplicated lifecycle signatures. Rust host and embedded `runtime`
+FFI declarations now match the C++ `uint16_t` result. Both callers explicitly
+discard that status to preserve the existing zero remote-call return; runtime
+diagnostics retain the VM status.
+
+Validation: `./tools/build-pc --profile max_crypto`, ARM and RISC-V wrappers,
+and the elevated VPCD multipackage lifecycle test all pass; the latter reports
+`TEST:SUMMARY pass=42 fail=0` and exercises install, selection, APDU processing,
+and process restart. Log artifacts:
+`artifacts/logs/host-vpcd-multipackage-apdu-20261031T094555Z.log` and matching
+restart/reject logs. No physical check was run. A bounded elevated PC/SC scan
+in the preceding step found no registered reader. The Rust FFI change is in
+submodule `choupi/os`; its local commit and the root gitlink update must both be
+preserved.
+
+Next if work resumes: ARCH-02 in `TODO.md` (document filesystem return codes,
+borrowed-buffer lifetime, and sync durability). The user requested stopping
+after ARCH-01, so do not start that item in this session.
+
 ## Current GET DATA application list — 2026-10-31
 
 Implemented GET DATA `2F00` in the Pico CCID and PC VPCD card-manager routes.

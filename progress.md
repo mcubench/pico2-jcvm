@@ -18487,3 +18487,33 @@
   `artifacts/logs/host-vpcd-multipackage-restart-20261031T093729Z.log`,
   `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261031T093729Z.log`,
   `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261031T093729Z.log`.
+
+## 2026-10-31 Centralize runtime and lifecycle ABI declarations 9 minutes
+
+- Step/experiment: `arch-01-lifecycle-abi-20261031`
+- When: '2026-10-31 09:40 UTC' - '2026-10-31 09:49 UTC'
+- Change: Added `src/vm_lifecycle.h` for shared C declarations covering VM
+  runtime, applet installation, restore, select/deselect, process, and clear
+  operations. Included it in the VM, loader, Pico, CCID, and PC VPCD code and
+  removed duplicate declarations. Updated both Rust OS `runtime` FFI signatures
+  to return `u16`; the host and embedded paths explicitly discard that value
+  and retain their prior zero remote-call result.
+- Validation: `./tools/build-pc --profile max_crypto`,
+  `PICO2_DEBUG=0 ./tools/build arm --profile max_crypto`, and the corresponding
+  RISC-V wrapper passed. Elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed
+  `TEST:SUMMARY pass=42 fail=0`, including package install, applet selection,
+  APDU processing, and process restart. Physical checks were not run; the
+  preceding bounded PC/SC scan found no registered reader. `git diff --check`
+  passed.
+- Result: Native and Rust declarations now agree on `runtime`'s return type;
+  host and embedded builds compile against the shared lifecycle header. Status
+  propagation remains intentionally unchanged.
+- Decision: ARCH-01 is complete. ARCH-02 remains next in TODO; stop here as
+  requested.
+- Commit: Pending; the Rust change is a nested submodule commit, followed by a
+  root commit containing the shared header and the matching submodule pointer.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T094555Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-restart-20261031T094555Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261031T094555Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261031T094555Z.log`.

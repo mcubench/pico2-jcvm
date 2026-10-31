@@ -41,6 +41,7 @@
 #include "persistent_inventory.hpp"
 #include "../../src/short_apdu.hpp"
 #include "../../src/cap_store.hpp"
+#include "../../src/vm_lifecycle.h"
 
 #include <cstdio>
 #include <cstdlib>

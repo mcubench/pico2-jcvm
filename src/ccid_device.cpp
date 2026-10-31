@@ -17,6 +17,7 @@
 #include "gp_get_data.hpp"
 #include "cap_store.hpp"
 #include "reader_led.hpp"
+#include "vm_lifecycle.h"
 
 extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
                                            uint8_t aid_length,
@@ -26,19 +27,6 @@ extern "C" uint8_t choupi_vm_is_dynamic_package(uint8_t package_id);
 extern "C" uint8_t choupi_cap_package_applet_aid(
     uint8_t package_id, uint8_t applet_index, uint8_t *aid,
     uint8_t *aid_length);
-extern "C" uint8_t choupi_vm_restore_applet(uint8_t package_id,
-                                            uint16_t class_index,
-                                            const uint8_t *aid,
-                                            uint8_t aid_length);
-extern "C" void choupi_vm_clear_selected_applet(void);
-extern "C" void choupi_vm_forget_selected_applet(void);
-extern "C" uint16_t choupi_vm_select_applet(void);
-extern "C" uint16_t choupi_vm_deselect_applet(uint8_t selecting_same_applet);
-extern "C" uint16_t choupi_vm_process_applet(const uint8_t *command,
-                                              uint16_t command_length,
-                                              uint8_t *response,
-                                              uint16_t response_capacity,
-                                              uint16_t *response_length);
 extern "C" uint8_t fs_sync(void);
 
 namespace {
