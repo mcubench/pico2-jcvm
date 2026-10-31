@@ -58,6 +58,7 @@ External-install logs:
 The official SDK client log is
 `artifacts/logs/rmi-client-official-vpcd-client-20261031T002708Z.log`.
 Next: resume persistent-object reclamation and cold USB power-cycle recovery.
+Implementation commit: `1741120`.
 
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 
