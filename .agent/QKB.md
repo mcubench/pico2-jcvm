@@ -116,6 +116,24 @@
   exception originates in the unchanged CAP, native dispatch, or heap object
   lifecycle. Re-run both full areas after the fix.
 
+### Focused reproductions on 2BED
+
+- The unchanged API 3.0.5 Security CAP was uploaded, run with only
+  `KeyPair.genKeyPair()` for `ALG_RSA, LENGTH_RSA_512` enabled, then cleaned up.
+  It returned `EXC_RUNTIME` by itself; serial reported caught exception ID 28
+  (`NullPointerException`) at CAP pc 6387, opcode `83`.
+- The unchanged Crypto CAP was similarly filtered to `ALG_DES_MAC8_NOPAD`.
+  Three factory/getter checks passed; five operation variants returned
+  `EXC_RUNTIME`. Serial reported caught ID 28 at CAP PCs 8624, 9291, 9842, and
+  10317. Upload and cleanup passed.
+- Because each failure reproduces alone, later full-sweep state is not required
+  to trigger it. The evidence is consistent with a null reference at a CAP to
+  native API boundary, but does not yet prove whether the CAP argument, method
+  token mapping, or native object state is responsible. Map each CAP PC to the
+  exact invoke and add narrowly scoped dispatch diagnostics for method token
+  and receiver reference before changing algorithm code. Full CSV/log hashes
+  are in `progress.md`.
+
 ## USB-visible Pico CCID devices still fail PC/SC reader registration — 2026-10-31
 
 - Rechecked Pico 2 `8E464F4E2BBC0A19` and `2BED26ED20556535`. The authorized

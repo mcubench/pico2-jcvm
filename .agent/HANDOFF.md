@@ -1,5 +1,27 @@
 # Session handoff — updated 2026-10-31
 
+## Focused v4 API runtime-failure reproductions — 2026-10-31
+
+On Pico 2 `2BED26ED20556535`, isolated upstream API 3.0.5 tests reproduced
+the two representative failures without a full sweep. Security ran only
+`KeyPair.genKeyPair()` for RSA-512 (900 calls skipped); the single enabled call
+returned `EXC_RUNTIME`. Its serial trace reported caught exception ID 28
+(`NullPointerException`) at CAP pc 6387, opcode `83`. Crypto ran only
+`ALG_DES_MAC8_NOPAD`: three constructor/getter checks passed and five method
+variants returned `EXC_RUNTIME`, with caught ID 28 at CAP PCs 8624, 9291, 9842,
+and 10317. Both applet CAPs were removed successfully afterward.
+
+This shows the errors reproduce independently of prior sweep state and without
+`NO_MEMORY`. A null-reference problem near the CAP/native API boundary is a
+working hypothesis, not a confirmed root cause. Next, disassemble/map these
+CAP PCs to the exact API subcalls, then add bounded native-dispatch diagnostics
+for method token and receiver reference. Avoid changing crypto arithmetic
+until the failing native entry points are identified. Full results and hashes
+are in `progress.md`.
+
+The focused repro documentation is in commit `<pending>`; the preceding v4
+capacity rerun is recorded in `b891643` and linked in `ca19e2a`.
+
 ## Current v4 persistent-capacity API validation — 2026-10-31
 
 The v4 snapshot image removed the prior `NO_MEMORY` outcome on identified Pico

@@ -599,6 +599,16 @@ adapters, and do not change upstream applet CAP files.
   `NullPointerException` enum value); identify the first native/CAP boundary
   that leaves later calls failing, then repeat complete Security and Crypto
   runs. Do not treat `TEST:PASS choupi_runtime` as an API-area pass.
+  Focused physical reproductions on 2BED confirmed isolated failures: RSA-512
+  `KeyPair.genKeyPair()` alone returned `EXC_RUNTIME` (caught exception ID 28,
+  at Security CAP pc 6387); Crypto's DES-MAC-8 case returned three passing
+  construction/getter checks and five `EXC_RUNTIME` method-call variants
+  (caught ID 28 at CAP PCs 8624, 9291, 9842, and 10317). Both temporary CAPs
+  cleaned up successfully. This rules out sweep-order poisoning and the former
+  `NO_MEMORY` condition for these reproductions, but does not yet identify the
+  native entry point or prove a common root cause. Next map these CAP PCs to
+  test subcalls and capture the native method token plus receiver reference.
+  See `progress.md` for CSV/log hashes.
 
 ### Priority 1 — selectable Java Card firmware capabilities
 
