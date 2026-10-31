@@ -18511,8 +18511,9 @@
   propagation remains intentionally unchanged.
 - Decision: ARCH-01 is complete. ARCH-02 remains next in TODO; stop here as
   requested.
-- Commit: Pending; the Rust change is a nested submodule commit, followed by a
-  root commit containing the shared header and the matching submodule pointer.
+- Commit: Root `77b58fa137bcb6c22cffeeac19f914bd87ebeb79`; nested
+  `choupi/os` commit `28dd851c4253386d7adc7402a896593fdef1de14`. These SHAs are
+  recorded in the immediate progress-only follow-up commit.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T094555Z.log`,
   `artifacts/logs/host-vpcd-multipackage-restart-20261031T094555Z.log`,
   `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261031T094555Z.log`,
