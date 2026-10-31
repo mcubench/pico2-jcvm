@@ -1767,10 +1767,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   using `61xx`. Parser, response-chain, and Context state tests pass; the Pico
   cycle also passed after flashing this implementation. Host VPCD applet
   exchanges now pass; physical APDU/PCSC validation remains outstanding.
-  A focused multipackage fixture observed `setIncomingAndReceive()` returning
-  13 while a following `getIncomingLength()` returned 1; the cause is not yet
-  isolated. The current `lookupAID` fixture reads short Lc directly and does
-  not cover `getIncomingLength()`.
+  A focused multipackage regression now exercises a 13-byte short APDU and
+  verifies that both `setIncomingAndReceive()` and `getIncomingLength()` return
+  13. The mismatch was an imported JC 3.0.5 APDU virtual-method token map
+  error: token 15 (`getIncomingLength`) had mapped to embedded `isValidCLA`,
+  which returned 1. The corrected map passes the full 37-check VPCD
+  multipackage lifecycle suite. Physical PC/SC validation is still open; the
+  approved helper granted access to two USB nodes, but a bounded reader scan
+  found no registered readers.
 - [ ] Complete the JCAlgTest v1.8.2-used native API surface, including the
   remaining transient array variants, `Util` helpers, `JCSystem` queries,
   `AID`, and

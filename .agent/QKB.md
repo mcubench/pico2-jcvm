@@ -18,13 +18,15 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   regression passes 36/36. Physical validation remains unavailable: the
   approved access helper granted two nodes but bounded `pcsc_scan -r` timed
   out without a reader.
-- While writing the fixture, an APDU with 13 data bytes yielded
-  `setIncomingAndReceive() == 13` but `getIncomingLength() == 1`. A temporary
-  native diagnostic saw the receive entry point only; the root cause is not
-  established. The committed lookup fixture obtains short Lc from the APDU
-  header and does not validate `getIncomingLength()`. Keep this as a separate
-  APDU API investigation; do not infer general APDU length behavior from the
-  lookup test.
+- Resolved: an APDU with 13 data bytes yielded `setIncomingAndReceive() == 13`
+  but `getIncomingLength() == 1` because the imported JC 3.0.5 APDU virtual
+  method token 15 mapped to embedded `isValidCLA()` (which returns true/1).
+  `remap_imported_virtual_method_token()` now maps the JC305 APDU tail as
+  `getIncomingLength` -> embedded token 16, `getOffsetCdata` -> 17, and
+  `isValidCLA` -> 15. The generated CAP fixture now checks a 13-byte command
+  and VPCD returns `0D0D9000`; the full multipackage lifecycle passes 37/37.
+  Physical PC/SC validation remains unavailable: the approved helper grants
+  access to two USB nodes, but bounded `pcsc_scan -r` finds no readers.
 - Final passing logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T011006Z.log`
   SHA-256 `be3729bfd76833d476a948eccdeab2771c2e795ac75c06cffeb1165114fd5637`;
   restart log `artifacts/logs/host-vpcd-multipackage-restart-20261031T011006Z.log`

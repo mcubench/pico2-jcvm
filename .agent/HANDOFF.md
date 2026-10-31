@@ -1,5 +1,19 @@
 # Session handoff — updated 2026-10-30
 
+## APDU incoming-length virtual dispatch fixed — 2026-10-31
+
+The JC305 `APDU.getIncomingLength()` discrepancy is fixed. JC305 APDU token 15
+had been mapped to embedded `isValidCLA()` and returned `1`. The mapping now
+routes it to embedded token 16; `getOffsetCdata` maps to token 17 and
+`isValidCLA` to token 15. The generated lookup CAP includes a regression APDU
+with Lc=13, and the full VPCD multipackage lifecycle passes 37/37. The PC
+`max_crypto` build and ARM/RISC-V `max_crypto` wrapper builds pass. No physical
+test was possible: the approved PC/SC helper granted access to two USB nodes,
+but bounded `pcsc_scan -r` found no reader. The bug fix and regression are in
+the current worktree; record/commit details follow in `progress.md`. Next,
+continue the APDU/API backlog and pursue physical validation when a reader is
+registered. Preserve the unrelated worktree snapshot listed below.
+
 ## Current continuation — JCSystem.lookupAID permanent EPO behavior — 2026-10-31
 
 `lookupAID()` and `getAID()` now return runtime-wide JCRE `AID` Entry Point

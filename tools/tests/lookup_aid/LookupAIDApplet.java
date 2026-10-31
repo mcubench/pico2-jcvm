@@ -21,6 +21,14 @@ public final class LookupAIDApplet extends Applet {
   public void process(APDU apdu) {
     if (selectingApplet()) return;
     byte[] buffer = apdu.getBuffer();
+    if (buffer[ISO7816.OFFSET_INS] == (byte)0x12) {
+      short incoming = apdu.setIncomingAndReceive();
+      short total = apdu.getIncomingLength();
+      buffer[0] = (byte)incoming;
+      buffer[1] = (byte)total;
+      apdu.setOutgoingAndSend((short)0, (short)2);
+      return;
+    }
     short incoming = apdu.setIncomingAndReceive();
     // The fixture uses a short APDU, so its one-byte Lc is authoritative.
     short length = (short)(buffer[ISO7816.OFFSET_LC] & 0xFF);

@@ -261,7 +261,7 @@ uint8_t remap_imported_virtual_method_token(
   // embedded CHOUPI framework API. Tokens below are from the JC305 APDU
   // export; values are the corresponding CHOUPI framework APDU tokens.
   static constexpr uint8_t framework_apdu_virtual_methods[] = {
-      0, 1, 2, 6, 8, 9, 7, 3, 10, 5, 4, 11, 12, 13, 14, 15, 16, 17};
+      0, 1, 2, 6, 8, 9, 7, 3, 10, 5, 4, 11, 12, 13, 14, 16, 17, 15};
   // JC 3.0.5 assigns MessageDigest's virtual methods a different order from
   // the embedded API. Translate the imported method token before dispatch.
   static constexpr uint8_t security_digest_virtual_methods[] = {

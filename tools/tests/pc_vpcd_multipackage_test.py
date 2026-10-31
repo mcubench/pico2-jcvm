@@ -411,6 +411,21 @@ def main() -> int:
             response = exchange(connection, lookup_select, "SELECT AID lookup applet")
             if response[-2:] != b"\x90\x00":
                 raise RuntimeError(f"SELECT lookup applet failed: {response.hex().upper()}")
+            incoming_data = bytes(range(13))
+            incoming_length_command = (
+                bytes((0x00, 0x12, 0x00, 0x00, len(incoming_data))) +
+                incoming_data + b"\x00"
+            )
+            incoming_length_response = exchange(
+                connection, incoming_length_command,
+                "APDU.getIncomingLength reports short APDU Lc",
+            )
+            if incoming_length_response != b"\x0d\x0d\x90\x00":
+                raise RuntimeError(
+                    "APDU incoming length mismatch: "
+                    f"{incoming_length_response.hex().upper()}"
+                )
+            print("TEST:PASS APDU.getIncomingLength reports the 13-byte short Lc")
             lookup_command = (bytes((0x00, 0x10, 0x00, 0x00,
                                      len(core_applets[0]))) +
                               core_applets[0] + b"\x00")
@@ -753,7 +768,7 @@ def main() -> int:
             if get_status(scp, 0x20) or get_status(scp, 0x40):
                 raise RuntimeError("registry is not empty after deleting Core")
             print("TEST:PASS DELETE leaves registry empty")
-            print("TEST:SUMMARY pass=36 fail=0")
+            print("TEST:SUMMARY pass=37 fail=0")
             return 0
         finally:
             if connection is not None:
