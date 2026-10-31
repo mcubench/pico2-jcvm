@@ -18662,7 +18662,8 @@
   not yet verified.
 - Decision: Keep ARCH-06 open for physical hardware acceptance; continue with
   offline implementation while no physical Pico reader is registered.
-- Commit: Implementation SHA will be recorded in the immediate follow-up.
+- Commit: `26aacef` (`Move CAP static initialization into VM`); this SHA is
+  recorded in the progress-only follow-up commit.
 - Artifacts/logs: GPPro install artifacts in
   `artifacts/results/gppro-empty-install-vpcd-20261031T204052Z/`;
   multipackage logs `artifacts/logs/host-vpcd-multipackage-apdu-20261031T204220Z.log`

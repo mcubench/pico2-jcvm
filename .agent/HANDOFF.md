@@ -19,8 +19,8 @@ packages, 21 applet instances, restart restore, and deletion. Logs are under
 `artifacts/results/gppro-empty-install-vpcd-20261031T204052Z/` and
 `artifacts/logs/host-vpcd-multipackage-*-20261031T204220Z.log`. The latest
 `pcsc_scan -r` lists only Virtual PCD 00 00 and 00 01; physical install and
-rollback validation is open. Implementation commit: SHA to be recorded in the
-immediate follow-up.
+rollback validation is open. Implementation commit: `26aacef` (`Move CAP static
+initialization into VM`); the SHA is recorded in the progress-only follow-up.
 
 Next: revisit physical gates for ARCH-04/05/06 if a Pico reader returns;
 otherwise continue the highest-priority incomplete implementation in
