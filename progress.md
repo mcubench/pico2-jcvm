@@ -17935,3 +17935,33 @@
   raw client log `ALGTEST_log_1793415896947.log`, SHA-256
   `641a9057fc990f6a717190880902bec74a242764aec2d3018cd0bc53e451c09f`.
   These results are ignored by Git under `artifacts/results/`.
+
+## 2026-10-31 build and flash standalone symm_crypto_ctr 12 minutes
+
+- Step/experiment: `physical-symm-crypto-ctr-build-flash-2BED`
+- When: '2026-10-31 03:49 UTC' - '2026-10-31 04:01 UTC'
+- Change: Built the standalone `symm_crypto_ctr` profile for both architectures
+  and flashed its full ARM JCVM image to Pico 2 `2BED26ED20556535`. An initial
+  `./tools/cycle arm` invocation selected the random-stream smoke target and
+  flashed its smoke image; that monitor passed but is not counted as profile
+  validation. Re-ran with the correct `choupi` target.
+- Validation: `./tools/build arm --profile symm_crypto_ctr` and
+  `./tools/build riscv --profile symm_crypto_ctr` passed. The elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile symm_crypto_ctr
+  --serial 2BED26ED20556535` flashed and verified ARM and passed its finite
+  18-second monitor with repeated `TEST:PASS choupi_runtime`, no `TEST:FAIL` or
+  `FAULT`. PC/SC initially showed only VPCD after reboot; the authorized helper
+  restored access and the exact Pico reader appeared. The unchanged physical
+  JCAlgTest support report was then launched and remains active; its outcome is
+  not included in this step.
+- Result: Full ARM image 1,828,352 bytes, SHA-256
+  `8e5e727543fe29d72fa9c6a55d835fef42cdb7d81c8a1e8a26a24e6cf5f0ec8c`.
+- Decision: The standalone profile is running on hardware; await the already
+  active complete JCAlgTest report before deciding parity.
+- Commit: `<recorded in the progress closeout commit>`
+- Artifacts/logs: Full cycle log
+  `artifacts/logs/cycle-choupi-20261031T035348Z.log`, SHA-256
+  `95486ebfff85c265434154f1e71e2bb184062045a816f566209fb66471326c2b`;
+  smoke-target cycle log
+  `artifacts/logs/cycle-arm-20261031T035301Z.log`, SHA-256
+  `a1769aecc78473c9fc9779a33f5757cc6eef39c21ea63e5be18347121cf58b8e`.

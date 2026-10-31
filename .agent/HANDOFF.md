@@ -24,6 +24,29 @@ the generated `build/javacard-support/jcalgtest-supported.csv`; its expected
 failure is exactly the two upstream-labeled KeyPair rows. A filtered temporary
 expectation gives `COMPARE:PASS` for the other 145 identities.
 
+## Standalone symm_crypto_ctr physical validation in progress — 2026-10-31
+
+Both `./tools/build arm --profile symm_crypto_ctr` and
+`./tools/build riscv --profile symm_crypto_ctr` passed. The first cycle command
+used target `arm`, which flashes the small random-stream smoke image; it passed
+its smoke test but is not JCVM evidence. The correct
+`PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile symm_crypto_ctr
+--serial 2BED26ED20556535` then flashed the full ARM JCVM image and passed its
+18-second finite monitor with repeated `TEST:PASS choupi_runtime`, no
+`TEST:FAIL` or `FAULT`. The image is 1,828,352 bytes, SHA-256
+`8e5e727543fe29d72fa9c6a55d835fef42cdb7d81c8a1e8a26a24e6cf5f0ec8c`.
+After reboot, PC/SC initially listed only VPCD readers; the authorized helper
+granted access to the Pico node and a subsequent scan registered the exact
+reader. The unchanged 1.8.2 `ALG_SUPPORT_EXTENDED` run is active against that
+reader in
+`artifacts/results/jcalgtest/symm_crypto_ctr_full_2BED_20261031/`. Continue
+polling that existing process; do not start a competing physical test. Its
+generated 48-entry expected manifest is
+`build/javacard-support/jcalgtest-supported.csv` (SHA-256
+`cdfc7ed0923a63740d4da8747e5101078fa66e533f350326a60c2175918791b5`).
+Cycle log: `artifacts/logs/cycle-choupi-20261031T035348Z.log` (SHA-256
+`95486ebfff85c265434154f1e71e2bb184062045a816f566209fb66471326c2b`).
+
 ## Maximum-support ARM external-test artifact refreshed — 2026-10-31
 
 The downloadable ARM `max_crypto` UF2 was stale relative to the image built
