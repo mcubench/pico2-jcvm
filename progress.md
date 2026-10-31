@@ -17686,3 +17686,30 @@
   SHA-256 `dc1ed42e2bc73b05a9eb1df4697723ab60f672e1065071ff0faeb5b0eb1e3078`;
   restart log SHA-256
   `d810112ea751724d9dd3d54c317c545c1ee9d6e194f6a6b79ed4d9572901ea36`.
+
+## 2026-10-31 make GPPro VPCD reader discovery retryable 5 minutes
+
+- Step/experiment: `gppro-vpcd-reader-discovery-retry`
+- When: '2026-10-31 02:10 UTC' - '2026-10-31 02:15 UTC'
+- Change: Replaced the single-shot PC/SC reader preflight with up to three
+  bounded, line-buffered scans and per-attempt logs. A previous attempt had
+  timed out with an empty redirected log; a direct line-buffered scan then
+  enumerated both VPCD readers. Recorded current GET DATA and physical-reader
+  status in TODO, QKB, and the handoff.
+- Validation: `bash -n tools/test-gppro-empty-install-vpcd` passed;
+  `./tools/test-gp-get-data` passed 14/14. The authorized elevated
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-gppro-empty-install-vpcd` passed after
+  the change: empty-card GPPro list, unchanged upstream JCAlgTest CAP
+  LOAD/INSTALL, then loaded/selectable package/app listing. The retry-exhaustion
+  branch was not fault-injected. The approved PC/SC helper granted two USB
+  nodes, but a bounded physical `pcsc_scan -r` did not enumerate a Pico reader.
+- Result: VPCD integration reports
+  `GPPRO_EMPTY_INSTALL:PASS reader=Virtual PCD 00 00 applet=4A43416C675465737431`.
+  No physical card-manager validation is claimed.
+- Decision: Keep the transient discovery retry; continue offline with remaining
+  GET STATUS continuation and API gaps while physical PC/SC remains absent.
+- Commit: `f2914a5`
+- Artifacts/logs: `artifacts/results/gppro-empty-install-vpcd-20261031T021340Z/`;
+  inventory SHA-256 `fb0167c87354f218d690dbbb16b5276f5e507f60910a3284af5d4f72f31906de`,
+  install SHA-256 `fbf01704b262c6ffa9bf18b9ec2b01a83c390bb50f4e96e8c683da09dfb7ce5a`,
+  emulator SHA-256 `198a482fa9bb862cddb0e37c7ab2665bded0fa124f8bbc53b760fb68bcb60c93`.
