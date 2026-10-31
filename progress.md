@@ -17998,3 +17998,27 @@
   raw client log `ALGTEST_log_1793418960505.log`, SHA-256
   `3b190ad422fe0752255f8b8397a5ab796199875845058df14be26f521480cf8d`.
   These results are ignored by Git under `artifacts/results/`.
+
+## 2026-10-31 Verify max_crypto ARM download 6 minutes
+
+- Step/experiment: `verify-max-crypto-arm-artifact-20261031`
+- When: '2026-10-31 04:31 UTC' - '2026-10-31 04:37 UTC'
+- Change: Corrected the downloadable max-profile README checksum after
+  rebuilding the ARM max_crypto image and checking the published UF2 against
+  the wrapper output.
+- Validation: `./tools/build arm --profile max_crypto` passed. The wrapper
+  produced `build/arm/pico2_choupi.uf2`, 2,086,400 bytes; `cmp` confirmed it
+  matches `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
+  byte-for-byte. Both SHA-256 values are
+  `f97cb0694a516d6dd0de3e07e868afe95f1b5bbac9e60407733d277761dcd776`.
+  The expected support CSV SHA-256 is
+  `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
+  RISC-V build and hardware flashing were not run; no source or firmware
+  behavior changed.
+- Result: The external ARM UF2 was current; its README had an obsolete hash
+  (`c739e78a...`) and now records the verified image hash.
+- Decision: The max_crypto download and checksum are aligned with the current
+  ARM wrapper build. No physical validation is claimed by this artifact check.
+- Commit: pending
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
+  and `artifacts/firmware/README-max_crypto.txt`.

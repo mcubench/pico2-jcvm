@@ -15,7 +15,7 @@ KeyPair 4096 entries. The provided JCOP4 comparison matrix also excludes
 AES-CTR, so this profile's AES-CTR entry is a JCVM API extension.
 
 SHA-256:
-  c739e78a21763724596ffb81878447b69038f67f1ff63d83a7d548d0b5c980e9  pico2-jcvm-max_crypto-arm-empty-card.uf2
+  f97cb0694a516d6dd0de3e07e868afe95f1b5bbac9e60407733d277761dcd776  pico2-jcvm-max_crypto-arm-empty-card.uf2
   81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0  pico2-jcvm-max_crypto-arm-supported.csv
 
 Refreshed from current source on 2026-10-31 with
