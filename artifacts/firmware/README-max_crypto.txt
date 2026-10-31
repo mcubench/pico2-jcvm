@@ -3,6 +3,10 @@ Pico 2 JCVM max_crypto ARM firmware
 Firmware: pico2-jcvm-max_crypto-arm-empty-card.uf2
 Target: Raspberry Pi Pico 2 / RP2350, ARM Secure
 Profile: max_crypto (147 of 150 declared JCAlgTest capabilities enabled)
+Disabled capabilities: EC FP private key size 112 is outside the selected
+JCOP4 reference set; RSA and RSA-CRT KeyPair generation at 4096 bits is not
+supported. The unchanged JCAlgTest CAP has two KeyPair rows labeled 3072 that
+actually request 4096; independent physical 3072-bit generation vectors pass.
 Applet state: no applet is bundled in the firmware image. Reflashing firmware
 does not erase the card's separate persistent CAP store; use a fresh card or
 remove installed applets explicitly with GlobalPlatformPro.

@@ -2076,9 +2076,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
   passed 71/71). The provided
   JCOP4 matrix does not include AES-CTR, so it is an API extension. The UF2 is
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no applet is
-  preinstalled. Refreshed on 2026-10-31 from the ARM `max_crypto` build that
-  was flashed to Pico 2 `2BED26ED20556535`: 2,086,400 bytes, SHA-256
-  `f97cb0694a516d6dd0de3e07e868afe95f1b5bbac9e60407733d277761dcd776`.
+  bundled in the image (existing persistent card CAPs survive reflashing).
+  Refreshed on 2026-10-31 from the ARM `max_crypto` build that was flashed to
+  Pico 2 `2BED26ED20556535`: 2,089,472 bytes, SHA-256
+  `03ccac6577950f4e280a1a10d3c52b8d15d03ab52165b220a59a0a9a75e4e7df`.
   The artifact matches the build byte-for-byte. The physical
   `ALG_SUPPORT_EXTENDED` sweep reached its explicit 900-second bound at
   1,155/4,525 rows (179 yes, 976 no; all saved algorithm results were yes/no,

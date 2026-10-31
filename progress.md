@@ -18364,3 +18364,26 @@
 - Commit: `8bdeca8`
 - Artifacts/logs: No persistent logs; live `lsusb -v`, plist parse,
   `pcsc_scan`, and `doctor` outputs were inspected during the session.
+
+## 2026-10-31 Clarify max_crypto profile limits 2 minutes
+
+- Step/experiment: `max-crypto-profile-coverage-audit-20261031`
+- When: '2026-10-31 08:35 UTC' - '2026-10-31 08:37 UTC'
+- Change: Audited the three false entries in `max_crypto` and aligned the
+  prioritized TODO and external image README with the latest v4 image size and
+  SHA. Documented that EC FP private 112 is outside the selected JCOP4 target,
+  while RSA/RSA-CRT KeyPair 4096 is unsupported; upstream JCAlgTest mislabels
+  two 3072 rows by requesting 4096, and independent 3072 physical vectors pass.
+- Validation: Read the generated profile config, physical result notes, and
+  KeyBuilder/KeyPair dispatch. Verified the external image remains 2,089,472
+  bytes with SHA-256
+  `03ccac6577950f4e280a1a10d3c52b8d15d03ab52165b220a59a0a9a75e4e7df` and the
+  147-entry expected-support CSV retains its recorded hash. No build or hardware
+  test was needed for this documentation-only step.
+- Result: The artifact now explains its 147/150 capability selection and the
+  known upstream report discrepancy without modifying the CAP or support set.
+- Decision: Keep current max_crypto selection; do not enable unsupported 4096
+  keypair generation or add EC-112 absent from the target matrix.
+- Commit: pending (finalized in a follow-up progress record commit)
+- Artifacts/logs: `artifacts/firmware/README-max_crypto.txt`, `TODO.md`, and
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`.
