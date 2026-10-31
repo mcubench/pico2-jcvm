@@ -22,6 +22,19 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   alignment warnings from shared VM headers; this harness-only fix does not
   alter or silence them.
 
+## JC array GC regression uses reserved global-handle bit — 2026-10-31
+
+- After the `fs_exists` link issue was repaired, `./tools/test-jcarray` built
+  but failed its invalid-child test. The fixture used instance offset `0x7ffe`,
+  which now contains the marker bit for a runtime-wide global handle and is
+  intentionally ignored by the applet-local heap collector.
+- Viable fix: choose an out-of-range *local* offset below `0x4000` (`0x3ffe`)
+  so the fixture tests invalid local handles rather than the valid global
+  handle namespace. The filesystem stub also defines the current
+  `JC_Instance::hasLoadedFields()` method for its nonpersistent fixture
+  instances. `./tools/test-jcarray` then passes all 27 cases, including
+  `gc_skips_reclamation_after_invalid_child_ref`.
+
 ## `JCSystem.lookupAID()` peer lookup and short-APDU length diagnostic — 2026-10-31
 
 - The native implementation now scans installed package instance AIDs and

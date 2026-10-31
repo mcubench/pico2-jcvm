@@ -618,7 +618,9 @@ int main() {
   const auto malformedUnvisitedRef = heap.addArray(2, jcvm::JAVA_ARRAY_T_BYTE);
   jcvm::jref_t invalidChild;
   invalidChild.setAsInstance(true);
-  invalidChild.setOffset(0x7ffe);
+  // Local applet instance handles occupy at most 0x3fff. Bit 0x4000 marks a
+  // runtime-wide global object, so use an out-of-range local slot here.
+  invalidChild.setOffset(0x3ffe);
   malformedParent->setReferenceEntry(0, invalidChild, context);
   const std::vector<jcvm::jref_t> malformedRoots{malformedParentRef};
   const auto malformedCollection =

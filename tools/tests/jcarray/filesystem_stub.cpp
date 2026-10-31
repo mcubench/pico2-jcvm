@@ -39,6 +39,10 @@ jclass_index_t JC_Instance::getClassIndex() const noexcept { return 0; }
 
 auto JC_Instance::getFields() const -> decltype(fields) { return fields; }
 
+bool JC_Instance::hasLoadedFields() const noexcept {
+  return !this->isPersistent();
+}
+
 void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref) {
   this->fields->at(index).type = ref.isArray() ? FIELD_TYPE_ARRAY_OBJECT
                                                 : FIELD_TYPE_OBJECT;
