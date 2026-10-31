@@ -16,6 +16,7 @@ needed to verify actual cross-package target resolution.
 The authenticated VPCD multipackage regression passed 25/25 after this
 refactor, including two-package LOAD/INSTALL, three applets, restart restore,
 and deletion. Those CAPs use no CAP 2.2 external remote-interface target.
+Regression record commit: `25a97f4`.
 
 The unchanged JCAlgTest GPPro LOAD/INSTALL check is currently blocked by host
 VPCD registration. `Virtual PCD 00 01` reported present but GPPro returned

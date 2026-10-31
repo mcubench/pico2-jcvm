@@ -7411,7 +7411,7 @@
 - Result: The incomplete Shareable implementation remains uncommitted while
   the handoff notes are traceable.
 - Decision: Resume from the unresolved Shareable APDU diagnosis recorded above.
-- Commit: `pending`.
+- Commit: `25a97f4` (validation record commit `25a97f4`).
 - Artifacts/logs: none.
 
 ## 2026-10-21 — Reassess functionality review against current source
