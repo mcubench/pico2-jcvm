@@ -82,6 +82,10 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `0D0D05019000`. The full multipackage lifecycle passes 37/37.
   Physical PC/SC validation remains unavailable: the approved helper grants
   access to two USB nodes, but bounded `pcsc_scan -r` finds no readers.
+- Latest rerun log: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T020553Z.log`
+  SHA-256 `dc1ed42e2bc73b05a9eb1df4697723ab60f672e1065071ff0faeb5b0eb1e3078`;
+  restart log SHA-256
+  `d810112ea751724d9dd3d54c317c545c1ee9d6e194f6a6b79ed4d9572901ea36`.
 - Final passing logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T011006Z.log`
   SHA-256 `be3729bfd76833d476a948eccdeab2771c2e795ac75c06cffeb1165114fd5637`;
   restart log `artifacts/logs/host-vpcd-multipackage-restart-20261031T011006Z.log`

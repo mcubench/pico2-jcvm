@@ -17664,3 +17664,25 @@
   if PC/SC access becomes available.
 - Commit: `f1992d0` (evidence; this runtime closeout is committed separately)
 - Artifacts/logs: monitor output only; no log was saved.
+
+## 2026-10-31 strengthen JC305 APDU getter regression 2 minutes
+
+- Step/experiment: `jc305-apdu-three-getter-regression`
+- When: '2026-10-31 02:05 UTC' - '2026-10-31 02:07 UTC'
+- Change: Expanded the generated lookup CAP check to verify the short-APDU
+  incoming length (13), C-data offset (5), and `isValidCLA()` result together.
+  Updated TODO, QKB, and handoff evidence to distinguish this broader test
+  from the original incoming-length-only regression.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed
+  all 37 checks, including the three APDU getters and process restart. No
+  physical token was used. `git diff --check` reported an existing trailing
+  whitespace line in unrelated `AGENTS.md`; that file was not modified here.
+- Result: APDU response was `0D0D05019000`; the test returned
+  `TEST:SUMMARY pass=37 fail=0`.
+- Decision: Keep the mapping fix and the three-getter regression; continue with
+  the remaining APDU/API backlog. Physical PC/SC testing remains unavailable.
+- Commit: `ebabbe1`
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T020553Z.log`,
+  SHA-256 `dc1ed42e2bc73b05a9eb1df4697723ab60f672e1065071ff0faeb5b0eb1e3078`;
+  restart log SHA-256
+  `d810112ea751724d9dd3d54c317c545c1ee9d6e194f6a6b79ed4d9572901ea36`.

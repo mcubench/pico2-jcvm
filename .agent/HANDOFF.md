@@ -7,7 +7,8 @@ had been mapped to embedded `isValidCLA()` and returned `1`. The mapping now
 routes it to embedded token 16; `getOffsetCdata` maps to token 17 and
 `isValidCLA` to token 15. The generated lookup CAP includes a regression APDU
 with Lc=13 and asserts incoming length 13, data offset 5, and valid CLA. The
-response is `0D0D05019000`; the VPCD multipackage lifecycle passes 37/37. The PC
+response is `0D0D05019000`; the VPCD multipackage lifecycle passes 37/37.
+Commit `ebabbe1` expands this regression across all three getters. The PC
 `max_crypto` build and ARM/RISC-V `max_crypto` wrapper builds pass. No physical
 test was possible: the approved PC/SC helper granted access to two USB nodes,
 but bounded `pcsc_scan -r` found no reader. The bug fix and regression are in
