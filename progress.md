@@ -17844,3 +17844,29 @@
   physical GET DATA log
   `artifacts/logs/physical-gp-get-data-cplc-2BED-20261031.log`, SHA-256
   `b4a4bb53964e98ee2c8541c00b7f4a0687ae9cedc1e8cd40e90e12b511708e42`.
+
+## 2026-10-31 validate AES-CTR on physical max_crypto image 6 minutes
+
+- Step/experiment: `physical-aes-ctr-kat-max-crypto-2bed`
+- When: '2026-10-31 02:50 UTC' - '2026-10-31 02:56 UTC'
+- Change: Used the existing native-API test CAP and a generated vector list to
+  validate AES-CTR on the flashed `max_crypto` superset image. No firmware or
+  upstream CAP source was changed. Updated the AES-CTR TODO status and added
+  the reusable diagnosis/evidence to QKB and handoff.
+- Validation: `./tools/build-symm-crypto-probe` passed. GPPro installed the
+  temporary package on Pico 2 `2BED26ED20556535`. Eight unchanged NIST
+  SP 800-38A vectors passed: single-shot and 19-byte-split streaming
+  encrypt/decrypt through both single and paired cipher/padding factories.
+  GPPro then deleted the test applet and package. Final `gp --list` shows only
+  the existing JCAlgTest package/applet, which remains selectable.
+- Result: The 1,155-row official JCAlgTest partial from this max image already
+  reports `ALG_AES_CTR;yes` and `CIPHER_AES_CTR PAD_NOPAD;yes`; known-answer
+  behavior now passes physically. The separate `symm_crypto_ctr` profile and
+  complete support report are still unverified.
+- Decision: Keep the standalone-profile and full-suite TODO item open; current
+  evidence validates native CTR behavior on the combined profile only.
+- Commit: pending closeout
+- Artifacts/logs: install, KAT, cleanup, and post-cleanup list logs are in
+  `artifacts/logs/aes-ctr-pcsc-*-2BED-20261031.log`; SHA-256 values are recorded
+  in `.agent/QKB.md`. KAT log SHA-256 is
+  `60ec42ff148b3a27a8b5ed4f6b9954169cf5739a0366dd485802098a83f25d70`.

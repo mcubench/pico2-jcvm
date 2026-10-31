@@ -2033,9 +2033,21 @@ rollback and duplicate/invalid registration handling also remain unverified.
   (8/8); ARM and RISC-V wrapper builds pass.
   CTR is built as its own native module only in the selected profile. The
   supplied JCOP4 P71 CSV is from JCAlgTest 1.7.9 and has no AES-CTR row, so
-  this profile is an API extension, not a claimed matrix-parity result. Flash
-  `symm_crypto_ctr` and run the unchanged 1.8.2 support test when a physical
-  Pico reader is registered again; compare its AES-CTR rows and full report.
+  this profile is an API extension, not a claimed matrix-parity result.
+  **Physical partial validation (2026-10-31):** the combined `max_crypto`
+  image, which includes the same CTR module, was flashed on Pico 2
+  `2BED26ED20556535`. The unchanged support report returned `yes` for both
+  `ALG_AES_CTR` and `CIPHER_AES_CTR PAD_NOPAD` before its separate 900-second
+  overall timeout. A temporary CAP exercising NIST SP 800-38A then passed all
+  eight physical known-answer vectors: single/paired factory and
+  single/19-byte-split streaming encrypt/decrypt. GPPro cleanup removed the
+  temporary applet and package; the post-cleanup list retained JCAlgTest. This
+  validates CTR on the superset image, but does not complete the exact
+  standalone `symm_crypto_ctr` profile acceptance or full 4,525-row report.
+  Logs: `artifacts/logs/aes-ctr-pcsc-kat-2BED-20261031.log`,
+  `artifacts/logs/aes-ctr-pcsc-install-2BED-20261031.log`,
+  `artifacts/logs/aes-ctr-pcsc-cleanup-2BED-20261031.log`, and
+  `artifacts/logs/aes-ctr-pcsc-post-cleanup-list-2BED-20261031.log`.
 
 - [x] Implement and validate the `asymm_crypto` selectable profile against
   `docs/NXP_JCOP4_J3R180_P71_ALGSUPPORT__3b_fa_18_00_ff_10_00_4a_54_61_78_43_6f_72_65_56_31_(provided_by_PetrS).csv`

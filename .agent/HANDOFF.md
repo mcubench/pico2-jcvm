@@ -27,6 +27,18 @@ matches `build/arm/pico2_choupi.uf2`. Physical APDU log:
 JCAlgTest report remains partial at 1,155/4,525 due its 900-second timeout.
 Preserve unrelated dirty files listed in prior handoff sections.
 
+## Physical AES-CTR known-answer check on max_crypto — 2026-10-31
+
+The flashed `max_crypto` superset image passed eight NIST SP 800-38A AES-CTR
+vectors on Pico 2 `2BED26ED20556535`: single-shot and 19-byte-split streaming
+encrypt/decrypt through both the single and cipher/padding factory paths. The
+official support partial also contains `ALG_AES_CTR;yes` and
+`CIPHER_AES_CTR PAD_NOPAD;yes`. The custom probe CAP was installed through
+GPPro and then deleted; a final GPPro list shows the existing JCAlgTest applet
+still selectable and the probe package absent. Logs are listed in TODO and
+QKB. This does not close the exact `symm_crypto_ctr`-only profile acceptance or
+the complete support report.
+
 ## APDU incoming-length virtual dispatch fixed — 2026-10-31
 
 The JC305 `APDU.getIncomingLength()` discrepancy is fixed. JC305 APDU token 15

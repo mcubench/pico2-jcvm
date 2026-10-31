@@ -41,6 +41,27 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `artifacts/logs/physical-gp-get-data-cplc-2BED-20261031.log`, SHA-256
   `b4a4bb53964e98ee2c8541c00b7f4a0687ae9cedc1e8cd40e90e12b511708e42`.
 
+## Physical AES-CTR vectors on max_crypto superset — 2026-10-31
+
+- The current combined `max_crypto` ARM build includes the profile-gated CTR
+  module. A custom CAP built from the existing symmetric API test applet was
+  installed with GPPro on Pico 2 `2BED26ED20556535`.
+- Viable validation: run the unchanged NIST SP 800-38A 128-bit CTR vectors for
+  single-shot and 19-byte-split streaming encrypt/decrypt, using both
+  `Cipher.getInstance(ALG_AES_CTR, false)` and the cipher/padding factory. All
+  eight physical vectors passed. GPPro cleanup removed the temporary applet
+  and package, and the post-cleanup list retained the JCAlgTest applet.
+- This validates CTR on the max-profile superset only. The separate
+  `symm_crypto_ctr` image and complete 4,525-row JCAlgTest run remain open.
+- Logs and hashes: install `artifacts/logs/aes-ctr-pcsc-install-2BED-20261031.log`
+  (`29a196c7c6dfff41dcf718c57ce4f36b565c26b9877a6149e17e77927ea43604`), KAT
+  `artifacts/logs/aes-ctr-pcsc-kat-2BED-20261031.log`
+  (`60ec42ff148b3a27a8b5ed4f6b9954169cf5739a0366dd485802098a83f25d70`),
+  cleanup `artifacts/logs/aes-ctr-pcsc-cleanup-2BED-20261031.log`
+  (`8287da14d42575ecdedc6c318d2396d3129f107c93808d8aa7d8fd5aca7fa785`), and
+  post-cleanup list `artifacts/logs/aes-ctr-pcsc-post-cleanup-list-2BED-20261031.log`
+  (`00df9b0b17d246684706058d183d7e4e5bc187b9bd973630b5c1b387befdeeb5`).
+
 ## GET STATUS next occurrence must keep the original query — 2026-10-31
 
 - The PC VPCD card manager already stored GET STATUS P1 and search bytes, but
