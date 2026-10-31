@@ -16,6 +16,7 @@ SCOPE_SYSTEM = 2
 SHARE_SHARED = 2
 PROTOCOL_T1 = 2
 RESET_CARD = 1
+JCALGTEST_AID = bytes.fromhex("4A43416C675465737431")
 STATIC_KEY = bytes.fromhex("404142434445464748494A4B4C4D4E4F")
 
 
@@ -165,6 +166,10 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reader", required=True,
                         help="exact PC/SC reader name")
+    parser.add_argument("--le", type=int, default=1,
+                        help="first GET STATUS page Le (default: 1)")
+    parser.add_argument("--expected-aid", action="append", default=[],
+                        help="expected applet AID in the concatenated pages; repeatable")
     args = parser.parse_args()
     if os.environ.get("PICO2_HOST_USB_ACCESS") != "1":
         print("PHYSICAL_TEST:FAIL host USB access marker is required",
@@ -182,19 +187,36 @@ def main() -> int:
         scp = Scp03(pcsc)
         scp.authenticate()
 
-        first = scp.get_status(0x02, 1)
-        if first[-2:] != b"\x63\x10" or first[:-2]:
+        first = scp.get_status(0x02, args.le)
+        if first[-2:] != b"\x63\x10":
             raise RuntimeError(
-                "Le=1 should return an empty 6310 page, got "
+                f"Le={args.le} should return 6310 for this pagination probe, got "
                 f"{first.hex().upper()}")
-        print("TEST:PASS physical GET STATUS Le=1 returns 6310 with no data")
+        if args.le == 1 and first[:-2]:
+            raise RuntimeError(
+                "Le=1 should return an empty page, got "
+                f"{first.hex().upper()}")
+        print(f"TEST:PASS physical GET STATUS Le={args.le} returns 6310 "
+              f"with {len(first) - 2} data bytes")
 
         next_page = scp.get_status(0x03, 256)
-        if next_page[-2:] != b"\x90\x00" or b"\x4f\x0a" not in next_page[:-2]:
+        if next_page[-2:] != b"\x90\x00":
             raise RuntimeError(
-                "Le=256 continuation did not return the applet AID: "
+                "Le=256 continuation did not complete successfully: "
                 f"{next_page.hex().upper()}")
-        print("TEST:PASS physical GET STATUS continuation returns applet AID")
+        combined_pages = first[:-2] + next_page[:-2]
+        expected_aids = [bytes.fromhex(value) for value in args.expected_aid]
+        if not expected_aids:
+            expected_aids = [JCALGTEST_AID]
+        for aid in expected_aids:
+            encoded_aid = bytes((0x4f, len(aid))) + aid
+            if combined_pages.count(encoded_aid) != 1:
+                raise RuntimeError(
+                    "GET STATUS pages omitted or duplicated applet AID "
+                    f"{aid.hex().upper()}: count="
+                    f"{combined_pages.count(encoded_aid)}")
+        print("TEST:PASS physical GET STATUS continuation contains all "
+              f"{len(expected_aids)} expected applet AIDs exactly once")
         print("TEST:SUMMARY pass=2 fail=0")
         return 0
     except Exception as exc:  # Report transport and protocol faults uniformly.

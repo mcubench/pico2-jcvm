@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-get-status-multipage-physical 'exact reader name'"
+require_command timeout
+reader="$1"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+multi_cap="${repo_root}/AlgTest_JavaCard/deploy/caps/AlgTestApiMulti_305.cap"
+package_aid="4A43416C675465737441706D"
+multi_a="${package_aid}41"
+multi_b="${package_aid}42"
+jcalgtest="4A43416C675465737431"
+owned=0
+log="${repo_root}/artifacts/logs/physical-get-status-multipage-$(date -u +%Y%m%dT%H%M%SZ).log"
+mkdir -p "${repo_root}/artifacts/logs"
+[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
+[[ -s "${multi_cap}" ]] || die "upstream Multi CAP not found: ${multi_cap}"
+
+gp() {
+  timeout --signal=TERM --kill-after=5s 90s "${repo_root}/tools/env" java \
+    -jar "${gp_jar}" "--reader=${reader}" "$@"
+}
+
+cleanup() {
+  local status=$?
+  local cleanup_status=0
+  trap - EXIT
+  set +e
+  local listing="${log}.cleanup-list"
+  if (( owned == 0 )); then
+    printf 'CLEANUP:SKIP no temporary package was created\n' | tee -a "${log}"
+    printf 'PHYSICAL_TEST:LOG %s\n' "${log#${repo_root}/}"
+    exit "${status}"
+  fi
+  gp --list >"${listing}" 2>&1
+  if (($? != 0)); then
+    cat "${listing}" >>"${log}"
+    cleanup_status=1
+  else
+    for aid in "${multi_a}" "${multi_b}"; do
+      if grep -Fq "APP: ${aid} " "${listing}"; then
+        gp --delete "${aid}" >>"${log}" 2>&1 || cleanup_status=1
+      fi
+    done
+    gp --list >"${listing}" 2>&1
+    if (($? != 0)); then cleanup_status=1; fi
+    if grep -Fq "PKG: ${package_aid} " "${listing}"; then
+      gp --delete "${package_aid}" >>"${log}" 2>&1 || cleanup_status=1
+    fi
+    gp --list >"${listing}" 2>&1
+    if (($? != 0)) || grep -Fq "APP: ${multi_a} " "${listing}" || \
+       grep -Fq "APP: ${multi_b} " "${listing}" || \
+       grep -Fq "PKG: ${package_aid} " "${listing}"; then
+      cat "${listing}" >>"${log}"
+      cleanup_status=1
+    else
+      printf 'CLEANUP:PASS removed only the temporary Multi test package\n' \
+        | tee -a "${log}"
+    fi
+  fi
+  rm -f "${listing}"
+  if (( status == 0 && cleanup_status != 0 )); then status=1; fi
+  printf 'PHYSICAL_TEST:LOG %s\n' "${log#${repo_root}/}"
+  exit "${status}"
+}
+trap cleanup EXIT
+exec > >(tee -a "${log}") 2>&1
+
+printf 'PHYSICAL_TEST:START reader=%s cap=%s\n' "${reader}" \
+  "${multi_cap#${repo_root}/}"
+initial_list="${log}.initial-list"
+gp --list >"${initial_list}" 2>&1 || die "initial GPPro list failed"
+cat "${initial_list}"
+for aid in "${package_aid}" "${multi_a}" "${multi_b}"; do
+  if grep -Fq "PKG: ${aid} " "${initial_list}" || \
+     grep -Fq "APP: ${aid} " "${initial_list}"; then
+    die "refusing to overwrite existing test AID ${aid}"
+  fi
+done
+rm -f "${initial_list}"
+
+owned=1
+gp --load "${multi_cap}"
+gp --create "${multi_a}" --applet "${multi_a}" --package "${package_aid}"
+gp --create "${multi_b}" --applet "${multi_b}" --package "${package_aid}"
+installed_list="${log}.installed-list"
+gp --list >"${installed_list}" 2>&1 || die "GPPro listing failed after Multi installation"
+for aid in "${jcalgtest}" "${multi_a}" "${multi_b}"; do
+  grep -Fq "APP: ${aid} " "${installed_list}" || \
+    die "expected installed applet is missing: ${aid}"
+done
+rm -f "${installed_list}"
+
+PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" python3 \
+  "${repo_root}/tools/tests/physical_get_status_le.py" --reader "${reader}" \
+  --le 40 --expected-aid "${jcalgtest}" --expected-aid "${multi_a}" \
+  --expected-aid "${multi_b}"
