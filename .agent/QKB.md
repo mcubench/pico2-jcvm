@@ -77,8 +77,9 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   method token 15 mapped to embedded `isValidCLA()` (which returns true/1).
   `remap_imported_virtual_method_token()` now maps the JC305 APDU tail as
   `getIncomingLength` -> embedded token 16, `getOffsetCdata` -> 17, and
-  `isValidCLA` -> 15. The generated CAP fixture now checks a 13-byte command
-  and VPCD returns `0D0D9000`; the full multipackage lifecycle passes 37/37.
+  `isValidCLA` -> 15. The generated CAP fixture checks a 13-byte command and
+  verifies incoming length 13, data offset 5, and valid CLA; VPCD returns
+  `0D0D05019000`. The full multipackage lifecycle passes 37/37.
   Physical PC/SC validation remains unavailable: the approved helper grants
   access to two USB nodes, but bounded `pcsc_scan -r` finds no readers.
 - Final passing logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T011006Z.log`

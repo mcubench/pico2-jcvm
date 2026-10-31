@@ -420,12 +420,12 @@ def main() -> int:
                 connection, incoming_length_command,
                 "APDU.getIncomingLength reports short APDU Lc",
             )
-            if incoming_length_response != b"\x0d\x0d\x90\x00":
+            if incoming_length_response != b"\x0d\x0d\x05\x01\x90\x00":
                 raise RuntimeError(
-                    "APDU incoming length mismatch: "
+                    "JC305 APDU getter mapping mismatch: "
                     f"{incoming_length_response.hex().upper()}"
                 )
-            print("TEST:PASS APDU.getIncomingLength reports the 13-byte short Lc")
+            print("TEST:PASS JC305 APDU length, data offset, and CLA getters")
             lookup_command = (bytes((0x00, 0x10, 0x00, 0x00,
                                      len(core_applets[0]))) +
                               core_applets[0] + b"\x00")

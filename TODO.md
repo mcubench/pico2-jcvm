@@ -1768,11 +1768,12 @@ rollback and duplicate/invalid registration handling also remain unverified.
   cycle also passed after flashing this implementation. Host VPCD applet
   exchanges now pass; physical APDU/PCSC validation remains outstanding.
   A focused multipackage regression now exercises a 13-byte short APDU and
-  verifies that both `setIncomingAndReceive()` and `getIncomingLength()` return
-  13. The mismatch was an imported JC 3.0.5 APDU virtual-method token map
-  error: token 15 (`getIncomingLength`) had mapped to embedded `isValidCLA`,
-  which returned 1. The corrected map passes the full 37-check VPCD
-  multipackage lifecycle suite. Physical PC/SC validation is still open; the
+  checks `setIncomingAndReceive() == 13`, `getIncomingLength() == 13`,
+  `getOffsetCdata() == 5`, and `isValidCLA() == true`. This exposed an imported
+  JC 3.0.5 APDU virtual-method token map error: token 15 (`getIncomingLength`)
+  had mapped to embedded `isValidCLA`, which returned 1. The corrected three
+  mappings pass the full 37-check VPCD multipackage lifecycle suite; the APDU
+  response is `0D0D05019000`. Physical PC/SC validation is still open; the
   approved helper granted access to two USB nodes, but a bounded reader scan
   found no registered readers. A full current-source JCSystem transaction CAP
   run also passes 85/85 VPCD checks, covering transactions, persistence,

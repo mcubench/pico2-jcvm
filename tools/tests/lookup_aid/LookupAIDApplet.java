@@ -24,9 +24,13 @@ public final class LookupAIDApplet extends Applet {
     if (buffer[ISO7816.OFFSET_INS] == (byte)0x12) {
       short incoming = apdu.setIncomingAndReceive();
       short total = apdu.getIncomingLength();
+      short offsetCdata = apdu.getOffsetCdata();
+      byte validCla = apdu.isValidCLA() ? (byte)1 : (byte)0;
       buffer[0] = (byte)incoming;
       buffer[1] = (byte)total;
-      apdu.setOutgoingAndSend((short)0, (short)2);
+      buffer[2] = (byte)offsetCdata;
+      buffer[3] = validCla;
+      apdu.setOutgoingAndSend((short)0, (short)4);
       return;
     }
     short incoming = apdu.setIncomingAndReceive();
