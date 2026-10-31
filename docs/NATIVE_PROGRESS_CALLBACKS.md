@@ -32,6 +32,13 @@ that message after the current APDU returns. Final response handling waits at
 most 100 ms for an already submitted time-extension transfer before submitting
 the APDU result.
 
-On the PC backend the Pico watchdog/USB progress callback is not active. A
-physical long-operation check is needed to prove watchdog servicing, recurring
-CCID extensions and final response completion together on RP2350 hardware.
+On the PC backend the Pico watchdog/USB progress callback is not active. On
+2026-10-31, Pico 2 `2BED26ED20556535` ran the ARM `max_crypto` image built from
+the current source and completed RSA-3072 key generation and signature in a
+single 49,184 ms PC/SC APDU, returning `019000`. The 15-second watchdog was
+therefore serviced through the native random-byte progress hook, and the long
+CCID operation reached its final response without a host transport timeout.
+The subsequent finite serial monitor reported `TEST:SUMMARY pass=1 fail=0`.
+Firmware diagnostics do not expose a count of individual CCID extension
+frames; the physical check verifies long-call completion rather than directly
+counting those frames. See `.agent/HANDOFF.md` for image and log hashes.

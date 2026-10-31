@@ -1,5 +1,31 @@
 # Session handoff — updated 2026-10-31
 
+## Current ARCH-04 physical native-progress validation — 2026-10-31
+
+The focused native progress callback and dispatch reentry tests already passed
+6/6, and the VPCD asymmetric suite passed 99/99. Closed the physical gate on
+Pico 2 `2BED26ED20556535`: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi
+--profile max_crypto --serial 2BED26ED20556535` built ARM and RISC-V, flashed
+the ARM image, and passed the 18-second runtime monitor. Build image SHA-256:
+`de06d766469b459c299ce5831a9d3ad5a8139643cf4630e431fe019bd1724719`.
+
+On that fresh image, the physical RSA-3072 key-generation/signature APDU
+returned `019000` in 49,184 ms; temporary CAP cleanup passed. This exceeds the
+15-second watchdog interval, exercising native random-byte progress servicing
+and the CCID long-operation extension path through final APDU response. The
+subsequent 8-second serial capture repeatedly reported
+`TEST:SUMMARY pass=1 fail=0`. The firmware has no direct counter for extension
+frames, so no exact frame count is claimed. Logs and hashes are recorded in
+`.agent/QKB.md` and `progress.md`.
+
+The cycle log contained one `WATCHDOG_RECOVERY ... cause=other` trace during
+the intentional CDC-to-BOOTSEL reset; the flash cycle and runtime checks
+passed, and the long APDU itself did not reset the board. Treat it as a
+reset-retained diagnostic trace unless it recurs during ordinary runtime.
+
+Next: continue ARCH-05's physical startup/persistence gate, then ARCH-06's
+physical install/rollback gate. Preserve unrelated worktree changes.
+
 ## ARCH-02 PC disk-checkpoint contract — 2026-10-31
 
 Documented the PC emulator's disk checkpoint behavior in
@@ -19,8 +45,8 @@ VPCD disconnect/idle-timeout fallthrough, and sidecar CRC checks; `git diff
 not run. Root documentation commit: `6731e03` (`Document PC emulator
 checkpoint durability`).
 
-Next: honor the user's instruction to stop after this task. Preserve unrelated
-worktree changes.
+ARCH-02's contract-definition item is complete; atomic image replacement and
+host power-loss durability remain possible future hardening work.
 
 ## Current filesystem error-code parity — 2026-10-31
 

@@ -77,7 +77,7 @@ hardware-access, progress and handoff requirements for implementation changes.
   and RISC-V release builds pass. Implementations and output formatting were
   unchanged; no physical serial monitor was run for this declaration-only
   refactor.
-- [ ] **ARCH-04 — Define progress callback rules (small).**
+- [x] **ARCH-04 — Define progress callback rules (small).**
   Document and enforce which progress callbacks may service USB/watchdog,
   their execution context and bounded-work requirements, and a prohibition on
   recursively dispatching APDUs. Inspect existing VM/shim/CCID callback chains
@@ -89,11 +89,20 @@ hardware-access, progress and handoff requirements for implementation changes.
   six checks; the PC VPCD asymmetric suite passes 97 vectors (including RSA/EC
   generation and signatures), and PC/ARM/RISC-V `max_crypto` builds pass. PC
   VPCD does not exercise the Pico progress callback, watchdog, or CCID time
-  extensions. Hardware validation remains open: the current PC/SC scan found
-  only two virtual readers. TinyUSB drains all queued events per `tud_task()`
+  extensions. TinyUSB drains all queued events per `tud_task()`
   call; active CCID bulk OUT remains unarmed while an APDU runs, bounding
   compliant CCID traffic, but this is not a strict bound against a hostile
-  stream of USB control events.
+  stream of USB control events. Closed its physical gate on 2026-10-31:
+  rebuilt and flashed the ARM `max_crypto` image to Pico 2
+  `2BED26ED20556535` after ARM and RISC-V wrappers passed. A fresh physical
+  RSA-3072 key-generation/signature APDU returned `019000` in 49,184 ms,
+  followed by serial `TEST:SUMMARY pass=1 fail=0`. The 15-second watchdog
+  remained serviced through the native random-byte progress hook; the
+  >49-second PC/SC completion exercises the recurring CCID extension path.
+  The firmware does not expose a dedicated extension-frame counter, so the
+  physical evidence is successful long-call transport completion, not a
+  separately counted number of extension frames. Artifacts and hashes are in
+  `progress.md` and `.agent/HANDOFF.md`.
 - [ ] **ARCH-05 — Separate Pico startup and filesystem code (moderate).**
   After ARCH-02, extract filesystem/overlay implementation from
   `src/choupi_pico2.cpp` into a focused module; leave boot/hardware initialization

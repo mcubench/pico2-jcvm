@@ -18770,3 +18770,14 @@
 - Decision: Treat successful orderly `--save` completion as a process-level checkpoint only. Atomic image replacement and host power-loss durability remain future hardening work.
 - Commit: pending
 - Artifacts/logs: `docs/FILESYSTEM_ABI.md`; source inspection only.
+
+## 2026-10-31 Verify native progress callbacks on Pico 2 11 minutes
+
+- Step/experiment: `arch-04-physical-native-progress-20261031`
+- When: '2026-10-31 21:37 UTC' - '2026-10-31 21:49 UTC'
+- Change: Closed ARCH-04's physical gate and updated `TODO.md`, `docs/NATIVE_PROGRESS_CALLBACKS.md`, `.agent/QKB.md`, and `.agent/HANDOFF.md`. Rebuilt ARM and RISC-V using the repository wrappers, then flashed the ARM `max_crypto` firmware to identified Pico 2 `2BED26ED20556535`.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed both architecture builds, flash verification, and the finite 18-second monitor (`CYCLE:PASS`). On the fresh image, `./tools/test-asymm-crypto-pcsc 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00' 'RSA 3072-bit generation and signature'` passed with response `019000`, elapsed `49184 ms`, `TEST:SUMMARY pass=1 fail=0`, and CAP cleanup pass. An 8-second serial capture after the APDU repeatedly reported `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`. No PC build was rerun because executable source was unchanged; prior PC/VPCD guard and asymmetric suites remain documented above.
+- Result: A >49-second native RSA operation completed on the freshly built RP2350 image, exceeding the 15-second watchdog interval and exercising the RNG progress hook, watchdog servicing, CCID long-operation path, and final APDU delivery. Firmware does not expose an individual CCID time-extension frame counter, so frame count was not measured. The cycle emitted one `WATCHDOG_RECOVERY ... cause=other` trace on the intentional CDC-to-BOOTSEL reset; flash and subsequent runtime checks passed, and the crypto APDU itself caused no reset.
+- Decision: Mark ARCH-04 complete with this physical long-call evidence; continue to ARCH-05 physical startup/persistence validation.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261031T214423Z.log` SHA-256 `c398105410336334a0553b6c78ce211afe096f7d225dbaf5aa74f9b1ea08e954`; `artifacts/logs/asymm-crypto-pcsc-20261031T214638Z.log` SHA-256 `2f20190fdb89991d5aae79bf028ff2bcf4868c28a1e766998fb0fce27686bc81`; `artifacts/logs/native-progress-max-crypto-2BED-20261031.log` SHA-256 `0a4aefbff99aab138690a993fa552e373496fccb902989241675619d634f88c1`; image SHA-256 `de06d766469b459c299ce5831a9d3ad5a8139643cf4630e431fe019bd1724719`.

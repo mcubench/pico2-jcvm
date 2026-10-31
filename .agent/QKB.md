@@ -1,5 +1,32 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Physical long-native-operation callback validation — 2026-10-31
+
+- Authorized host setup found two real CCID readers: Pico 2
+  `8E464F4E2BBC0A19` and `2BED26ED20556535`. The latter was selected by its
+  exact SmartcardIO name and reflashed with the current ARM `max_crypto`
+  image (`build/arm/pico2_choupi.uf2`, SHA-256
+  `de06d766469b459c299ce5831a9d3ad5a8139643cf4630e431fe019bd1724719`). ARM
+  and RISC-V wrapper builds both passed before the flash.
+- The physical `RSA 3072-bit generation and signature` probe passed on the
+  freshly flashed image: final response `019000`, elapsed 49,184 ms, no
+  transport error, and temporary package cleanup passed. The 15-second RP2350
+  watchdog remained serviced during the long native operation. An 8-second
+  serial capture afterward repeatedly reported `TEST:SUMMARY pass=1 fail=0`.
+  This validates long-operation completion and the CCID extension path, but
+  firmware currently exposes no direct count of emitted extension frames.
+- Logs: `artifacts/logs/cycle-choupi-20261031T214423Z.log` (SHA-256
+  `c398105410336334a0553b6c78ce211afe096f7d225dbaf5aa74f9b1ea08e954`),
+  `artifacts/logs/asymm-crypto-pcsc-20261031T214638Z.log` (SHA-256
+  `2f20190fdb89991d5aae79bf028ff2bcf4868c28a1e766998fb0fce27686bc81`), and
+  `artifacts/logs/native-progress-max-crypto-2BED-20261031.log` (SHA-256
+  `0a4aefbff99aab138690a993fa552e373496fccb902989241675619d634f88c1`).
+- The cycle log reported one retained `WATCHDOG_RECOVERY ... cause=other`
+  marker during the intentional CDC-to-BOOTSEL reset. The cycle completed and
+  later runtime checks passed; this is not evidence that the long APDU caused
+  a watchdog reset. The marker was consumed on startup. Re-investigate only if
+  a watchdog-caused marker or runtime failure appears during normal operation.
+
 ## Physical API 3.0.5 NO_MEMORY is bounded by persistent overlay size — 2026-10-31
 
 - On Pico 2 `2BED26ED20556535`, API 3.0.5 Security hit 94 `NO_MEMORY`
