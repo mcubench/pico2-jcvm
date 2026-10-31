@@ -11,8 +11,10 @@ max-profile wrapper builds pass. No physical test was possible: the approved
 PC/SC access helper granted two USB nodes, but bounded `pcsc_scan -r` found no
 readers. The `APDU.getIncomingLength()` diagnostic mismatch remains open in
 QKB/TODO. The earlier same-context lookup implementation is committed at
-`027c384`; this EPO extension is in progress. Preserve unrelated worktree
-changes listed in the session snapshot below.
+`027c384`; the global EPO implementation and validations are committed at
+`03356ba`. Next, isolate the APDU incoming-length mismatch, then continue the
+prioritized API/native backlog. Preserve unrelated worktree changes listed in
+the session snapshot below.
 
 ## Declared Java Card compatibility target — 2026-10-31
 

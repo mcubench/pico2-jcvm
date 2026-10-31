@@ -17497,3 +17497,39 @@
   restart log `artifacts/logs/host-vpcd-multipackage-restart-20261031T011006Z.log`,
   SHA-256
   `b0ec9aa58f3f13e0d175b46d0d49a8804d50dc537cf7ed97ba8ccc0073718941`.
+
+## 2026-10-31 model AID objects as permanent JCRE EPOs 20 minutes
+
+- Step/experiment: `global-aid-epo-context-reset-and-restart`
+- When: '2026-10-31 01:15 UTC' - '2026-10-31 01:35 UTC'
+- Change: Replaced the applet-context AID cache with runtime-wide global
+  instance and retained-array handles. `lookupAID()` and `getAID()` now share
+  JCRE-owned AID objects; persistent references use a dedicated AID record so
+  a second applet context and a fresh process recover the same EPO identity.
+  Added a second instance of the lookup fixture applet to exercise a distinct
+  context, plus simulated card reset and post-restart identity assertions.
+  Updated TODO, QKB, and handoff.
+- Validation: `./tools/build-pc --profile max_crypto`,
+  `./tools/build arm --profile max_crypto`, and
+  `./tools/build riscv --profile max_crypto` passed. `./tools/test-rmi-registry`
+  passed. Authenticated `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-multipackage` passed 36/36, including cross-context
+  identity, reset, restart, and deletion. `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-jcsystem-transaction-applet --case 65 --case 66` passed 4/4,
+  covering self-AID identity and invalid-input exceptions. The approved PC/SC
+  helper granted nodes 001/015 and 001/017, but bounded `timeout --signal=TERM
+  --kill-after=2s 8s pcsc_scan -r` exited 124 without a reader; no physical
+  board was flashed.
+- Result: JCRE AID objects resolve and retain identity across the tested
+  applet contexts, simulated reset, and fresh-process restore paths. Physical
+  hardware validation remains outstanding. `APDU.getIncomingLength()` still
+  has a separate observed 13-versus-1 mismatch.
+- Decision: Keep physical validation and APDU getter correction open; continue
+  with the next prioritized native/API gap.
+- Commit: `03356ba`
+- Artifacts/logs: Multipackage log
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261031T012842Z.log`, SHA-256
+  `5de30452bdad8beefc12aa3d3aee6feb3226438a814d72a8068ac5d56e0efbee`;
+  restart log `artifacts/logs/host-vpcd-multipackage-restart-20261031T012842Z.log`,
+  SHA-256
+  `8e67b6dd12d29e82bd432f149a58103b4988c8fd4821eb9414c0a2aee3e93da9`.
