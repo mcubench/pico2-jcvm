@@ -17580,6 +17580,24 @@
 - Result: APDU parser/context unit tests build and run against current heap
   sources again.
 - Decision: Resume the next prioritized APDU/API implementation gap.
-- Commit: `3e1bcbd` (implementation; this validation closeout is committed
+- Commit: `3e1bcbd`
+- Artifacts/logs: no saved logs; command output only.
+
+## 2026-10-31 align JC array GC fixture with global handles 5 minutes
+
+- Step/experiment: `jcarray-gc-global-handle-fixture`
+- When: '2026-10-31 01:49 UTC' - '2026-10-31 01:54 UTC'
+- Change: Updated the JC array test FFI fixture with the current
+  `JC_Instance::hasLoadedFields()` method. Changed its invalid child reference
+  from offset `0x7ffe` (reserved global-handle namespace) to out-of-range local
+  offset `0x3ffe`. Added the confirmed cause and fix to QKB.
+- Validation: `./tools/test-jcarray` passed all 27 cases, including the
+  incomplete-root, invalid-child, and persistent-edge failure tests. The test
+  build emits existing ignored-qualifier and packed-member warnings from
+  shared VM headers.
+- Result: The collector regression now tests an invalid local handle and no
+  longer accidentally supplies a handle marked global.
+- Decision: Continue with the next open deploy/API behavior gap.
+- Commit: `f3722bf` (implementation; this validation closeout is committed
   separately)
 - Artifacts/logs: no saved logs; command output only.

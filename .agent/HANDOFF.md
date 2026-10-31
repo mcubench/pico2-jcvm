@@ -18,6 +18,9 @@ registered. Preserve the unrelated worktree snapshot listed below.
 The `./tools/test-short-apdu` harness also needed its local FFI stub updated
 after the heap tracer began using `fs_exists`; that harness fix is committed as
 `3e1bcbd`, and its 26 cases plus the 250,000-input parser fuzz run pass.
+The related JC array test now supplies `JC_Instance::hasLoadedFields()` and
+uses `0x3ffe` for an invalid local handle; `0x7ffe` is in the global-handle
+namespace. `./tools/test-jcarray` passes all 27 cases; commit `f3722bf`.
 
 ## Current continuation — JCSystem.lookupAID permanent EPO behavior — 2026-10-31
 
