@@ -18258,7 +18258,8 @@
 - Decision: Keep the combined firmware available for external testing with
   these limitations documented; investigate memory reclamation and the specific
   Signature cases before claiming the deploy API suite passes.
-- Commit: `<fill after documentation commit>`
+- Commit: `967a731` (validation record; commit reference finalized in the
+  follow-up documentation commit)
 - Artifacts/logs: `artifacts/results/deploy/pico2-2BED-max_crypto-crypto-20261031.csv`
   (ignored; SHA-256
   `3a7859bb1f8283e1ce88578ea601aa3c7d39acd5d448a4526506a3c6e9593c10`).
