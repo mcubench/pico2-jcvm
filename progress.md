@@ -18130,3 +18130,28 @@
   `artifacts/logs/host-vpcd-multipackage-restart-20261031T060525Z.log`,
   `artifacts/logs/cycle-choupi-20261031T055936Z.log`,
   `artifacts/logs/gppro-list-physical-2BED-20261031-current.log`.
+
+## 2026-10-31 Verify short-Le GET STATUS on physical Pico 7 minutes
+
+- Step/experiment: `physical-get-status-short-le-20261031`
+- When: '2026-10-31 06:07 UTC' - '2026-10-31 06:14 UTC'
+- Change: Added a host-gated physical PC/SC regression that performs SCP03
+  directly and can transmit a requested short Le without GPPro rewriting it.
+  It uses the supported empty-AID default ISD selection and writes a bounded
+  transcript to `artifacts/logs/`.
+- Validation: `python3 -m py_compile tools/tests/physical_get_status_le.py`
+  and `bash -n tools/test-get-status-le-physical` passed. The elevated,
+  host-access-gated run against Pico 2 `2BED26ED20556535` authenticated SCP03,
+  sent GET STATUS with Le=1, received empty `6310`, then sent the matching
+  P2=03 continuation with Le=256 and received the JCAlgTest AID with `9000`;
+  `TEST:SUMMARY pass=2 fail=0`. No applet/package state was changed.
+- Result: The physical response builder honors a deliberately short Le and
+  resumes the same query correctly. GPPro `--secure-apdu` is unsuitable for
+  this test because its outgoing trace uses Le=00. This card has only one
+  applet, so multi-entry physical pagination is still open.
+- Decision: Keep the physical multi-entry gate open; use the new direct probe
+  for short-Le semantics and continue with remaining GET DATA/package gaps.
+- Commit: `405b853` (probe); this progress and knowledge/handoff updates are in
+  the follow-up documentation commit.
+- Artifacts/logs: `artifacts/logs/physical-get-status-le-20261031T061319Z.log`,
+  SHA-256 `bac3e5e627312edf9be024ffc12ee6761cd6abfb693da384debb099af42fb40f`.

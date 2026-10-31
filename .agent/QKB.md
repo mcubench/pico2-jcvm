@@ -998,6 +998,23 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 ## Recent detailed issue records
 
 The following retained records cover active investigations and recent fixes.
+
+## Physical SCP03 GET STATUS with a requested short Le — 2026-10-31
+
+- **Use the dedicated probe:** `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-get-status-le-physical '<exact reader name>'` requires host
+  escalation and exercises PC/SC directly. It authenticates SCP03, sends
+  GET STATUS with Le=1, expects empty `6310`, then sends matching P2=03 with
+  Le=256 and expects the applet AID and `9000`.
+- **Do not use GPPro `--secure-apdu` to validate small Le:** its SCP wrapper
+  normalizes the outgoing Le to `00` (256), even if the supplied APDU requests
+  Le=1. A debug trace established this. For the 2026-10-31 physical test on
+  `2BED26ED20556535`, the direct probe passed 2/2; log
+  `artifacts/logs/physical-get-status-le-20261031T061319Z.log` has SHA-256
+  `bac3e5e627312edf9be024ffc12ee6761cd6abfb693da384debb099af42fb40f`.
+- **Selection form:** CHOUPI's default ISD selection is `00 A4 04 00 00`;
+  selecting its AID explicitly returned `6A82` in this probe. Preserve the
+  supported empty-AID selection in this utility.
 Their dates and validation scopes remain significant. Later follow-ups in
 HANDOFF/TODO take precedence over an earlier statement that hardware was absent.
 

@@ -1882,8 +1882,10 @@ rollback and duplicate/invalid registration handling also remain unverified.
     Le decoding and fallback cases. Physical Pico 2 `2BED26ED20556535` was
     reflashed with the current ARM `max_crypto` image and passed the finite
     runtime monitor; GPPro `--list` then succeeded over its JCVM CCID reader.
-    The physical card currently has only one applet, so physical multi-page
-    GET STATUS is not yet exercised.
+    The direct physical SCP03 probe returned empty `6310` for Le=1, then
+    returned the JCAlgTest AID and `9000` for the matching Le=256 continuation
+    (`./tools/test-get-status-le-physical`, 2/2). The card currently has only
+    one applet, so physical multi-entry pagination remains untested.
   - [x] Bind `P2=03` continuation to the preceding GET STATUS P1/search query
     in both the Pico CCID handler and PC VPCD. A changed category or AID search
     returns `6985`; a matching continuation still succeeds. The PC VPCD
@@ -1931,8 +1933,8 @@ rollback and duplicate/invalid registration handling also remain unverified.
   native `--install` and GPPro LOAD/INSTALL when resumed with the allocated
   package ID (56) and class index (148); GPPro listing plus SELECT, GETVERSION,
   and JCSystem all pass after restart. Automatic VPCD registry discovery is
-  implemented; GET DATA coverage beyond GPPro's exercised commands and complete
-  physical multi-entry pagination remain open. Physical CCID GPPro integration is
+  implemented; GET DATA coverage beyond GPPro's exercised commands and physical
+  multi-entry pagination remain open. Physical CCID GPPro integration is
   now verified on Pico 2
   `2BED26ED20556535`: unchanged upstream Core and Multi API 3.0.5 CAPs loaded,
   three instances were listed and selected, and the Core runner completed 291
