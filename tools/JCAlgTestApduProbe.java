@@ -524,6 +524,12 @@ public final class JCAlgTestApduProbe {
             "SHA-256 doFinal after the 50-call workload did not report success");
       }
 
+      if (probeArgs.size() == 1 &&
+          "--sha256-static-only".equals(probeArgs.get(0))) {
+        System.out.println("TEST:PASS sha256_static_only");
+        return;
+      }
+
       ResponseAPDU unsupportedSignature = transmit(channel,
           "UNSUPPORTED_RSA_SHA1_SIGNATURE",
           new CommandAPDU(0xB0, 0x75, 0x12, 0x00,

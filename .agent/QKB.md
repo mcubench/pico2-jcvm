@@ -62,6 +62,27 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   post-cleanup list `artifacts/logs/aes-ctr-pcsc-post-cleanup-list-2BED-20261031.log`
   (`00df9b0b17d246684706058d183d7e4e5bc187b9bd973630b5c1b387befdeeb5`).
 
+## Focused SHA-256 static probe assumed RSA-SHA1 was unsupported — 2026-10-31
+
+- `tools/probe-jc-algtest` default path completed its SHA-256 static checks on
+  the max-profile card, then exited nonzero because its trailing assertion
+  hard-coded `RSA SHA-1 => NO_SUCH_ALGORITHM`. `max_crypto` intentionally
+  supports RSA SHA-1, so the observed supported response was not a firmware
+  defect.
+- Viable fix: use `--sha256-static-only` to stop after the selected digest
+  checks. This is host-side test-probe code; it does not add Java bytecode or
+  crypto implementation to the card.
+- On physical Pico 2 `2BED26ED20556535`, all SHA static prepare/baseline and
+  measurement APDUs returned `AA9000`; the 50-call SHA-256 APDU also returned
+  `AA9000`. Five no-call baselines averaged 1,680.2 ms, and two 50-call
+  measurements averaged 1,979.5 ms, estimating about 5.99 ms per 256-byte
+  `doFinal` after baseline subtraction. This is host elapsed time including
+  transport/VM overhead, not a full official static report.
+- Passing log `artifacts/logs/jcalgtest-sha256-static-only-2BED-20261031.log`
+  SHA-256 `1f02365a2898bc045004d0ad626ea547dfe2b4e44875453bc3b4b8bb0204a15f`;
+  original nonzero exit log SHA-256
+  `a0e72d63b85cdf29382423751913e689f5097a19d3978640ef0cf3e3129c7170`.
+
 ## GET STATUS next occurrence must keep the original query — 2026-10-31
 
 - The PC VPCD card manager already stored GET STATUS P1 and search bytes, but

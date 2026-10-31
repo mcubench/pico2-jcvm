@@ -17870,3 +17870,35 @@
   `artifacts/logs/aes-ctr-pcsc-*-2BED-20261031.log`; SHA-256 values are recorded
   in `.agent/QKB.md`. KAT log SHA-256 is
   `60ec42ff148b3a27a8b5ed4f6b9954169cf5739a0366dd485802098a83f25d70`.
+
+## 2026-10-31 make SHA-256 static probe profile-aware 6 minutes
+
+- Step/experiment: `jcalgtest-sha256-static-only-probe`
+- When: '2026-10-31 02:56 UTC' - '2026-10-31 03:02 UTC'
+- Change: Added `--sha256-static-only` to the host-side JCAlgTest APDU probe so
+  it can exit successfully after SHA checks without applying a later
+  unsupported-RSA-SHA1 assertion that is invalid for the `max_crypto` profile.
+  Updated TODO, QKB, and handoff with the focused physical result.
+- Validation: Elevated `PICO2_HOST_USB_ACCESS=1 PICO2_APDU_TIMEOUT_SECONDS=120
+  ./tools/probe-jc-algtest --reader '<exact Pico 2 reader>'
+  --sha256-static-only` exited 0 with `TEST:PASS sha256_static_only`. On
+  physical Pico 2 `2BED26ED20556535`, SHA-256 prepare, five official-format
+  zero-repeat baselines, two 50-call measurements, ten repeated one-call
+  operations, another 50-call measurement, and a post-static call all returned
+  `AA9000`. The earlier invocation completed those same SHA checks but exited
+  nonzero at a trailing RSA-SHA1 test because that algorithm is supported by
+  this profile. No firmware source changed, so architecture builds/flash were
+  not repeated for this host-only probe change.
+- Result: Five baseline APDUs averaged 1,680.2 ms; two 50-call measurements
+  averaged 1,979.5 ms. Their difference estimates 5.99 ms per 256-byte SHA-256
+  `doFinal`, including PC/SC transport and VM overhead. This is focused
+  host-timed evidence, not a completed full official static-suite report.
+- Decision: Use the new stop option for profile-specific SHA checks; keep full
+  `ALG_PERFORMANCE_STATIC` completion open.
+- Commit: pending closeout
+- Artifacts/logs: Passing log
+  `artifacts/logs/jcalgtest-sha256-static-only-2BED-20261031.log`, SHA-256
+  `1f02365a2898bc045004d0ad626ea547dfe2b4e44875453bc3b4b8bb0204a15f`; first
+  probe log (expected mismatch at RSA-SHA1)
+  `artifacts/logs/jcalgtest-sha256-static-probe-2BED-20261031.log`, SHA-256
+  `a0e72d63b85cdf29382423751913e689f5097a19d3978640ef0cf3e3129c7170`.

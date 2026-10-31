@@ -1473,7 +1473,13 @@ failure separate. The later 72 DES-MAC `CANT_BE_MEASURED` entries now have a
 host VPCD reproducer and a native reset-path fix: unchanged JCAlgTest 1.8.2
 256-byte, 50-repeat DES-MAC APDUs return `AA9000`, and the 73-vector symmetric
 VPCD suite passes. Physical confirmation of those MAC cases and completion of
-the full static suite remain open; see `.agent/QKB.md`.
+the full static suite remain open; see `.agent/QKB.md`. On 2026-10-31, a
+focused SHA-256 static probe on the physical `max_crypto` image passed its
+50-call measurement, ten repeated one-call operations, second 50-call
+measurement, and post-measurement call; all returned `AA9000`. Five 0-repeat
+host baselines averaged 1,680.2 ms; two 50-call APDUs averaged 1,979.5 ms, an
+estimated baseline-corrected 5.99 ms per 256-byte `doFinal`. This is a
+host-timed focused probe, not a complete official static-suite result.
 
 Next actions:
 

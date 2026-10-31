@@ -39,6 +39,20 @@ still selectable and the probe package absent. Logs are listed in TODO and
 QKB. This does not close the exact `symm_crypto_ctr`-only profile acceptance or
 the complete support report.
 
+## Focused SHA-256 static performance on max_crypto — 2026-10-31
+
+The profile-aware host probe `tools/probe-jc-algtest --sha256-static-only`
+completed on physical Pico 2 `2BED26ED20556535`. SHA-256 prepare, five
+zero-repeat baselines, two 50-call static measurements, ten one-call repeats,
+another 50-call measurement, and a post-static call all returned `AA9000`.
+Baselines averaged 1,680.2 ms; the two official-format 50-call APDUs averaged
+1,979.5 ms, giving an approximate host baseline-corrected 5.99 ms per 256-byte
+`doFinal`. This measurement includes PC/SC transport and VM overhead; it is not
+the full official `ALG_PERFORMANCE_STATIC` report. The first attempt ran the
+same SHA sequence successfully but exited nonzero because a later probe
+incorrectly expected RSA-SHA1 to be unsupported on `max_crypto`; the new stop
+option exits after SHA checks. Logs and hashes are in QKB.
+
 ## APDU incoming-length virtual dispatch fixed — 2026-10-31
 
 The JC305 `APDU.getIncomingLength()` discrepancy is fixed. JC305 APDU token 15
