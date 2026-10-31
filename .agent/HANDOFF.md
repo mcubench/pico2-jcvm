@@ -1,5 +1,26 @@
 # Session handoff — updated 2026-10-31
 
+## ARCH-02 PC disk-checkpoint contract — 2026-10-31
+
+Documented the PC emulator's disk checkpoint behavior in
+`docs/FILESYSTEM_ABI.md`. `fs_sync()` only reports success after in-memory
+filesystem writes; `--save` writes the full memory image after normal control
+reaches the save block, then writes the CRC-bound VPCD registry sidecar. The
+image is truncated and rewritten in place; the sidecar uses temp+rename, and
+neither is explicitly fsync'd. This is a process-level save, not an atomic pair
+or host power-loss guarantee. Resume rejects a missing/corrupt/mismatched
+sidecar when dynamic packages are present. TODO ARCH-02 is now complete at the
+contract level; atomic image replacement and host durability are future
+hardening, not implemented here.
+
+Validation: source-path inspection of `main_pc.cpp` confirms save ordering,
+VPCD disconnect/idle-timeout fallthrough, and sidecar CRC checks; `git diff
+--check` passes. No code behavior changed, so builds and hardware tests were
+not run.
+
+Next: honor the user's instruction to stop after this task. Preserve unrelated
+worktree changes.
+
 ## Current filesystem error-code parity — 2026-10-31
 
 Defined shared C ABI filesystem statuses: `0` success, `1` OutOfFlash, `2`

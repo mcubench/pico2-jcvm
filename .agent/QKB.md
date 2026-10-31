@@ -2764,3 +2764,21 @@ original terminology/status; check current summary and later fixes before reuse.
 - Verification: Pico overlay fault/capacity tests, Rust OS filesystem and
   syscall tests, and PC/ARM/RISC-V max_crypto builds passed. Keep this code table
   synchronized if either backend adds an error class.
+
+## PC emulator checkpoint durability contract — 2026-10-31
+
+- PC `fs_sync()` is a no-op status success after synchronous in-process OS
+  filesystem mutation. It does not write the emulated flash image to disk.
+- `--save` checkpoints only when normal control reaches the save block (after
+  VPCD disconnect or idle timeout included). The memory image is truncated and
+  rewritten first; `<memory>.cap-registry` is then written to a temporary file
+  and renamed. Neither file is explicitly fsync'd, and the pair is not atomic.
+- The registry CRC binds dynamic CAP metadata to the full memory image.
+  `--resume` rejects a stale/corrupt/missing registry if dynamic package bits
+  exist. No dynamic packages means a missing sidecar is acceptable.
+- Viable usage rule: treat successful orderly `--save` completion as a process
+  checkpoint only. Do not treat it as host power-loss durability. To recover a
+  mismatch, restore the matching image/sidecar pair or reconstruct dynamic CAP
+  registry state with `--restore-applet`.
+- Root source: `choupi/src/main_pc.cpp`; contract: `docs/FILESYSTEM_ABI.md`.
+  Atomic image replacement plus explicit durability syncing is not implemented.

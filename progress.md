@@ -18759,3 +18759,14 @@
   root `21c8336` (`Align filesystem status codes across backends`).
 - Artifacts/logs: No persistent logs; test and build outputs are ignored under
   `build/` and `choupi/os/target/`.
+
+## 2026-10-31 Specify PC disk checkpoint durability 1 minute
+
+- Step/experiment: `pc-disk-checkpoint-contract-20261031`
+- When: '2026-10-31 21:37 UTC' - '2026-10-31 21:38 UTC'
+- Change: Documented the PC emulator checkpoint contract in `docs/FILESYSTEM_ABI.md`, marked the ARCH-02 contract item complete in `TODO.md`, and recorded the operational recovery rule in `.agent/QKB.md` and `.agent/HANDOFF.md`. The contract distinguishes in-memory `fs_sync()` success from `--save` disk checkpointing and records the image/sidecar ordering and durability limits.
+- Validation: Inspected `choupi/src/main_pc.cpp` save, VPCD timeout/disconnect, and registry resume paths; `git diff --check` passed. No build or hardware test was run because this documentation-only change does not modify executable code.
+- Result: The documented contract matches the implementation: image rewrite precedes CRC-bound sidecar replacement; neither is explicitly fsync'd and the image/sidecar pair is not atomic.
+- Decision: Treat successful orderly `--save` completion as a process-level checkpoint only. Atomic image replacement and host power-loss durability remain future hardening work.
+- Commit: pending
+- Artifacts/logs: `docs/FILESYSTEM_ABI.md`; source inspection only.

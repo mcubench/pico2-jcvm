@@ -99,9 +99,25 @@ instead of indexing beyond the record.
   durability boundary.
 - The PC emulator's `fs_sync()` shim is a no-op returning zero: OS filesystem
   writes synchronously update the process's emulated flash image. This does
-  not by itself checkpoint that image to a host file or make it survive process
-  exit. Persistence across emulator runs depends on the VPCD memory/sidecar
-  save-and-resume path being used.
+  not checkpoint that image to a host file. Disk checkpointing is enabled by
+  `--save` (`--install` requires it). The image is written only after normal
+  control reaches the emulator's save block, including after VPCD disconnect
+  or idle timeout. An abrupt process termination before then loses changes
+  since the previous checkpoint.
+- A checkpoint writes the full emulated flash image to the `--memory` path by
+  truncating and rewriting that file, then saves `<memory>.cap-registry` for
+  dynamic CAP packages and applet instances. The registry sidecar is written
+  through a temporary file and renamed; the image write is not atomic, and
+  neither file is explicitly `fsync`ed. The pair is therefore not atomic or
+  guaranteed durable against host power loss. A write failure can leave a
+  partial image or an image/sidecar mismatch.
+- The sidecar includes a CRC of the saved image. `--resume` validates that CRC
+  and fails closed on a stale, corrupt, or missing sidecar when dynamic
+  packages are present in the image. Such a mismatch requires restoring the
+  dynamic package metadata (for example with `--restore-applet`) or recovering
+  the matching image/sidecar pair. If there are no dynamic packages, an absent
+  sidecar is valid. Treat successful emulator exit with `--save` as a completed
+  process-level checkpoint, not as a host power-loss durability guarantee.
 - `fs_drop()` calls `fs_sync()` and discards its result. It is cleanup, not a
   reliable commit API. Call and check `fs_sync()` explicitly when durability
   matters.
@@ -109,7 +125,9 @@ instead of indexing beyond the record.
 ## Known backend discrepancies to close
 
 - PC `fs_sync()` only reports that the emulator has no separate flush phase;
-  it does not persist the emulated flash image to disk.
+  it does not persist the emulated flash image to disk. Checkpoint atomicity
+  and power-loss durability remain weaker than Pico's copy-on-write snapshot
+  contract.
 
 These differences are documented behavior, not evidence of equivalent backend
 semantics. Portable callers must use the common subset and check every status.

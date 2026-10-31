@@ -57,8 +57,15 @@ hardware-access, progress and handoff requirements for implementation changes.
     `fs_next_tag`, and `fs_init` retain their documented special contracts.
     Overlay fault/capacity tests, OS filesystem and syscall suites, and PC/ARM/
     RISC-V max_crypto builds pass. Disk checkpoint durability remains open.
-  - [ ] Define a disk-checkpoint durability contract for PC emulator memory;
-    current `fs_sync()` is a no-op and persistence depends on VPCD sidecar flow.
+  - [x] Define a disk-checkpoint durability contract for PC emulator memory.
+    `fs_sync()` only completes in-memory OS filesystem writes; `--save` writes
+    the memory image after normal control exits, then atomically replaces the
+    CRC-bound VPCD registry sidecar. The image write is in-place (truncate and
+    rewrite), and neither file is fsync'd, so process-level completion is not
+    an atomic pair or host power-loss durability guarantee. Resume fails closed
+    for dynamic packages if the sidecar is absent, corrupt, or mismatched.
+    Atomic image replacement and host durability remain a possible future
+    hardening task, outside this contract-definition item.
 - [x] **ARCH-03 — Consolidate diagnostic declarations (small).**
   Introduce a shared diagnostic header and replace scattered declarations
   across VM, Pico shim and transport. Preserve existing diagnostic output and
