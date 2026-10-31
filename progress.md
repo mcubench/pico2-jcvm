@@ -18337,6 +18337,7 @@
   not a claim that the API deployment suite passes.
 - Decision: Retry physical API suites and exact-reader cleanup when a Pico reader
   is again available.
-- Commit: pending (finalized in a follow-up progress record commit)
+- Commit: `9597132` (documentation and artifact commit; this record's SHA is
+  finalized in the following progress-only commit)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; image SHA-256 above.
