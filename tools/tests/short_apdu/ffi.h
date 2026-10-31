@@ -3,6 +3,7 @@
 #include <cstdint>
 
 extern "C" {
+uint8_t fs_exists(const uint8_t *tag, uint8_t tag_length);
 int fs_length(...);
 int fs_read(...);
 int fs_read_inplace(...);

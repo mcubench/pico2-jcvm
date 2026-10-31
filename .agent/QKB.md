@@ -8,6 +8,20 @@ opening prioritized backlog in `TODO.md`. Detailed work history: `progress.md`.
 All original bytes, measurements, hashes, commands, and logs are preserved in
 archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 
+## APDU context unit-test harness missing `fs_exists` declaration — 2026-10-31
+
+- `./tools/test-short-apdu` initially failed to compile `heap.cpp`: the test's
+  local `tools/tests/short_apdu/ffi.h` stub did not declare `fs_exists`, which
+  the current heap tracer now calls. Adding the OS include directory did not
+  help because the test-local FFI header intentionally shadows the OS header.
+- Viable fix: declare `fs_exists(const uint8_t *, uint8_t)` in the local FFI
+  stub and provide a `0`-returning implementation in `apdu_context_stubs.cpp`.
+  The standalone test then passes 13 short-APDU parser cases and 13 APDU
+  context cases. `./tools/test-apdu-parser-fuzz` also passes 250,000 inputs.
+- The native build emits existing ignored-qualifier and packed-member
+  alignment warnings from shared VM headers; this harness-only fix does not
+  alter or silence them.
+
 ## `JCSystem.lookupAID()` peer lookup and short-APDU length diagnostic — 2026-10-31
 
 - The native implementation now scans installed package instance AIDs and
