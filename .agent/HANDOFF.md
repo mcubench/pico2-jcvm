@@ -16,7 +16,8 @@ hardening, not implemented here.
 Validation: source-path inspection of `main_pc.cpp` confirms save ordering,
 VPCD disconnect/idle-timeout fallthrough, and sidecar CRC checks; `git diff
 --check` passes. No code behavior changed, so builds and hardware tests were
-not run.
+not run. Root documentation commit: `6731e03` (`Document PC emulator
+checkpoint durability`).
 
 Next: honor the user's instruction to stop after this task. Preserve unrelated
 worktree changes.

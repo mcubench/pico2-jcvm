@@ -1402,7 +1402,7 @@
 - Decision: Continue implementation from the plan. Retry PC build when Cargo
   dependencies are available and retry board flashing when this environment can
   access the VM's USB device.
-- Commit: pending
+- Commit: `6731e03` (`Document PC emulator checkpoint durability`)
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261011T191905Z.log` (SHA-256
   `3f6e644789143bebc2394f7b756f452d417d52bc7d23132a9428f042297f5cb3`); ARM
   UF2 `build/arm/pico2_choupi.uf2` (SHA-256
