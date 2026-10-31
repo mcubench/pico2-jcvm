@@ -17865,7 +17865,7 @@
   complete support report are still unverified.
 - Decision: Keep the standalone-profile and full-suite TODO item open; current
   evidence validates native CTR behavior on the combined profile only.
-- Commit: pending closeout
+- Commit: `a59cca5`
 - Artifacts/logs: install, KAT, cleanup, and post-cleanup list logs are in
   `artifacts/logs/aes-ctr-pcsc-*-2BED-20261031.log`; SHA-256 values are recorded
   in `.agent/QKB.md`. KAT log SHA-256 is
