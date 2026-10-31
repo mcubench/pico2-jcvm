@@ -5,14 +5,15 @@
 Applet installation now resolves each external CAP 2.2 remote-interface
 reference with `ConstantPool_Handler::classref2interface`, requiring an
 exported interface in an installed package; CAP 2.1 is skipped before reading
-the CAP 2.2 signature-pool offset. ARM and RISC-V `max_crypto` wrapper builds
-pass. `./tools/test-cap-parser` passes 4,205 checks, 100,000 fuzz inputs, and
-48 corpus CAPs. The official SDK JCRMI VPCD client passes 18/18 on final source,
-but its fixture only has internal remote-interface refs. The shared production
-Class-component traversal now has host regression coverage for an accepted
-interface and rejected class or missing-target outcomes through an injected
-resolver. An installed-package Import/Export integration fixture is still
-needed to verify actual cross-package target resolution.
+the CAP 2.2 signature-pool offset. Export tokens are bounds-checked before
+lookup. ARM and RISC-V `max_crypto` wrapper builds pass.
+`./tools/test-cap-parser` passes 4,205 checks, 100,000 fuzz inputs, and 48
+corpus CAPs. The official SDK JCRMI VPCD client passes 18/18 on final source.
+`tools/test-rmi-external-link-vpcd` uses two generated CAP packages and passes:
+valid external interface INSTALL (`9000`), exported class rejection (`6F00`),
+and missing Export token rejection (`6F00`).
+The final-source authenticated multipackage VPCD regression also passes 25/25
+after this bounds fix.
 The authenticated VPCD multipackage regression passed 25/25 after this
 refactor, including two-package LOAD/INSTALL, three applets, restart restore,
 and deletion. Those CAPs use no CAP 2.2 external remote-interface target.
@@ -30,24 +31,33 @@ changes; this step adds one loader call to that file.
 
 Current external-test ARM image:
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, 2,077,184
-bytes, SHA-256 `5ca83fe79b55670870699e2a5a319dd422f2a3be3104e869d12071beff40b675`.
-Continue with external-ref direct tests, then return to safe persistent-object
-reclamation and actual USB power-cycle recovery.
+bytes, SHA-256 `5e8a7cb2267312821b4622729d1f3e994ffc4e7f582c964ffdae85a4d491e53a`.
+The missing GPPro/PC-SC registration check remains environmental; return to
+persistent-object reclamation and actual USB power-cycle recovery after the
+cross-package RMI resolver work recorded below.
 Implementation commit: `ed5511b`.
 
-## CAP 2.2 external remote-interface traversal tests — 2026-10-31
+## CAP 2.2 external remote-interface integration tests — 2026-10-31
 
-`validateRemoteInterfaceTargets` now owns the Class-component traversal used
-by install-time remote-interface linking. `./tools/test-rmi-cap-metadata`
-passes accepted-interface, non-interface, and missing-target predicate cases;
-the install callback still resolves through the actual `ConstantPool_Handler`
-Import/Export path. This host test does not construct multiple installed
-packages, so end-to-end target linking remains open. Parser regressions pass
-(4,205 checks / 100,000 fuzz inputs / 48 corpus CAPs), and ARM/RISC-V
-max-profile wrapper builds pass. No physical board was flashed. Next: build an
-install-level two-package fixture for valid external interface, non-interface
-export, and missing export cases, then return to persistent-object reclamation
-and cold USB power-cycle recovery. Implementation commit: `c4280c9`.
+`validateRemoteInterfaceTargets` owns the Class-component traversal used by
+install-time remote-interface linking. The generated two-package VPCD fixture
+exercises its actual Import/Export resolver: a valid external interface
+installs with `9000`; a class target and an out-of-range Export token both
+fail safely with `6F00`. The missing token case found unchecked Export-table
+indexing, fixed by validating the mapped export token against `class_count`
+before calling `classref2interface`. The unchanged SDK JCRMI client passes
+18/18, parser tests pass (4,205 / 100,000 fuzz / 48 CAPs), and ARM/RISC-V
+max-profile builds pass. No physical board was flashed.
+
+The refreshed max-crypto ARM UF2 is 2,077,184 bytes, SHA-256
+`5e8a7cb2267312821b4622729d1f3e994ffc4e7f582c964ffdae85a4d491e53a`.
+External-install logs:
+`artifacts/logs/rmi-external-link-valid-interface-20261031T002457Z.log`,
+`artifacts/logs/rmi-external-link-exported-class-20261031T002523Z.log`, and
+`artifacts/logs/rmi-external-link-missing-export-20261031T002550Z.log`.
+The official SDK client log is
+`artifacts/logs/rmi-client-official-vpcd-client-20261031T002708Z.log`.
+Next: resume persistent-object reclamation and cold USB power-cycle recovery.
 
 ## CAP 2.2 external remote-interface Import indexes — 2026-10-30
 

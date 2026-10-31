@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_root="${repo_root}/tools/tests/rmi_external_fixture"
+build_dir="${repo_root}/build/rmi-external-fixture"
+kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
+
+[[ -x "${java8_home}/bin/javac" ]] || {
+  printf 'ERROR: Java 8 compiler not found: %s\n' "${java8_home}" >&2
+  exit 1
+}
+rm -rf "${build_dir}"
+mkdir -p "${build_dir}/contract-classes" "${build_dir}/contract-cap" \
+  "${build_dir}/contract-exp" "${build_dir}/service-classes" \
+  "${build_dir}/service-cap"
+
+"${repo_root}/tools/env" "${java8_home}/bin/javac" \
+  -source 1.7 -target 1.7 -Xlint:-options \
+  -classpath "${kit}/lib/api_classic.jar" \
+  -d "${build_dir}/contract-classes" "${source_root}/contract"/*.java
+
+converter=("${repo_root}/tools/env" java -cp "${kit}/lib/tools.jar"
+  com.sun.javacard.converter.Main -nobanner
+  -classdir "${build_dir}/contract-classes"
+  -exportpath "${kit}/api_export_files")
+"${converter[@]}" -d "${build_dir}/contract-cap" -out CAP \
+  rmi.contract 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x02 1.0
+"${converter[@]}" -d "${build_dir}/contract-exp" -out EXP \
+  rmi.contract 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x02 1.0
+
+"${repo_root}/tools/env" "${java8_home}/bin/javac" \
+  -source 1.7 -target 1.7 -Xlint:-options \
+  -classpath "${kit}/lib/api_classic.jar:${build_dir}/contract-classes" \
+  -d "${build_dir}/service-classes" "${source_root}/service"/*.java
+
+"${repo_root}/tools/env" java -cp "${kit}/lib/tools.jar" \
+  com.sun.javacard.converter.Main -nobanner \
+  -classdir "${build_dir}/service-classes" \
+  -exportpath "${kit}/api_export_files:${build_dir}/contract-exp" \
+  -d "${build_dir}/service-cap" -out CAP \
+  -applet 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03:0x01 \
+  rmi.service.ServiceApplet rmi.service \
+  0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03 1.0
+
+python3 - "${build_dir}" <<'PY'
+from pathlib import Path
+from zipfile import ZipFile
+import sys
+
+root = Path(sys.argv[1])
+contract = root / "contract-cap/rmi/contract/javacard/contract.cap"
+service = root / "service-cap/rmi/service/javacard/service.cap"
+for path, required in ((contract, "rmi/contract/javacard/Export.cap"),
+                       (service, "rmi/service/javacard/Class.cap")):
+    if not path.is_file():
+        raise SystemExit(f"CAP fixture missing: {path}")
+    with ZipFile(path) as cap:
+        names = set(cap.namelist())
+        if required not in names:
+            raise SystemExit(f"CAP fixture missing component: {required}")
+        if "rmi/service" in required:
+            class_bytes = cap.read(required)
+            remote_class_marker = b"CounterImpl\x01\x82\x00"
+            if class_bytes.count(remote_class_marker) != 1:
+                raise SystemExit("service CAP must have one token-2 external ref")
+print(f"RMI_EXTERNAL_FIXTURE:PASS contract={contract} service={service}")
+PY

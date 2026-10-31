@@ -17,9 +17,10 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - `./tools/build arm --profile max_crypto` and
   `./tools/build riscv --profile max_crypto` passed. The parser suite remains
   4,205 checks / 100,000 fuzz inputs / 48 corpus CAPs. The official SDK
-  2.2.1 VPCD client passed 18/18 after the final version guard. That generated
-  fixture has internal remote-interface refs; direct coverage of the new
-  external target success/non-interface/missing-export branches is still open.
+  2.2.1 VPCD client passed 18/18 after the final version guard. The official
+  fixture has internal remote-interface refs; the separate generated
+  `tools/test-rmi-external-link-vpcd` now verifies cross-package interface
+  success, class-target rejection, and missing-export rejection end to end.
 - GPPro JCAlgTest install validation did not complete. On reader
   `Virtual PCD 00 01` / port 35964, the presence probe reported present but
   GPPro returned `Unpowered card`. The test was moved to the repository's
@@ -32,7 +33,7 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - Final-source ARM image:
   `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, 2,077,184
   bytes, SHA-256
-  `5ca83fe79b55670870699e2a5a319dd422f2a3be3104e869d12071beff40b675`.
+  `5e8a7cb2267312821b4622729d1f3e994ffc4e7f582c964ffdae85a4d491e53a`.
   RMI client log hash
   `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`;
   emulator log hash
@@ -52,6 +53,12 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
 - `./tools/test-cap-parser` passes 4,205 checks, 100,000 fuzz inputs, and 48
   corpus CAPs. `./tools/build arm --profile max_crypto` and
   `./tools/build riscv --profile max_crypto` pass. No board was flashed.
+- Follow-up: `tools/test-rmi-external-link-vpcd` builds two CAP packages and
+  installs them through authenticated GP LOAD/INSTALL. Valid external
+  interface => `9000`; exported class => `6F00`; out-of-range Export token =>
+  `6F00`. The final case exposed unchecked Export-table indexing, now bounded
+  before resolution. Test logs are listed in the 2026-10-31 handoff and
+  progress record.
 
 ## Multipackage INSTALL regression after remote-link refactor — 2026-10-31
 

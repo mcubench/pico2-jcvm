@@ -965,10 +965,12 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   in-range Import-component token. Installation now resolves each external
   remote-interface token through the installed package's Export component and
   rejects non-interface targets. The shared Class-component traversal has
-  host regression coverage for accepted interfaces and rejected non-interface
-  or missing targets. A package-level fixture that exercises the actual
-  installed Import/Export resolver remains open; the generated JCRMI fixture
-  only exercises internal remote interfaces.
+  host regression coverage and a generated two-package VPCD INSTALL fixture
+  exercises the actual installed Import/Export resolver: a valid external
+  interface installs, an exported class and missing export token are rejected.
+  Export-token bounds are checked before table access. The official SDK JCRMI
+  fixture still exercises internal remote references; its 18/18 client probe
+  remains a separate interoperability check.
   The converter-built fixture is loaded and exercised through current-source
   VPCD for SELECT, primitive INVOKE, primitive-array INVOKE, and protocol-error
   responses. The supplied Service CAP is format 2.1 and cannot validate the

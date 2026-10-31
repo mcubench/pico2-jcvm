@@ -166,8 +166,31 @@ void Import_Handler::validateRemoteInterfaceReferences() {
     return;
   }
   ConstantPool_Handler resolver(this->package);
+  Import_Handler imported_packages(this->package);
+  const bool use_jc305_compatibility_tokens =
+      usesJC305CompatibilityTokens(this->package);
   validateRemoteInterfaceTargets(
-      cap.getClass(), [&resolver](const jc_cap_class_ref reference) {
+      cap.getClass(), [&resolver, &imported_packages,
+                       use_jc305_compatibility_tokens](
+                          const jc_cap_class_ref reference) {
+        const uint8_t import_token =
+            reference.external_classref.package_token & 0x7f;
+        const auto *imported_package =
+            imported_packages.getPackageAID(import_token);
+        const uint8_t export_token =
+            use_jc305_compatibility_tokens
+                ? remap_imported_interface_token(
+                      *imported_package,
+                      reference.external_classref.class_token)
+                : reference.external_classref.class_token;
+        const jpackage_ID_t target_id =
+            imported_packages.getPackageIndex(imported_package);
+        const jc_cap_export_component *exports =
+            Package(target_id).getCap().getExport();
+        if (exports == nullptr || export_token >= exports->class_count) {
+          return false;
+        }
+
         const auto resolved = resolver.classref2interface(reference);
         return resolved.second != nullptr &&
                !IS_CLASS(reinterpret_cast<const uint8_t *>(resolved.second));

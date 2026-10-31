@@ -17366,3 +17366,43 @@
   restart log SHA-256
   `70abcfd61bb9c04c5008edd6cc0a54fb4da9cbf58dc598c3b3278cb36c53a711`;
   rejection logs under `artifacts/logs/host-vpcd-multipackage-*-20261031T001559Z.log`.
+
+## 2026-10-31 CAP 2.2 cross-package Export resolution 19 minutes
+
+- Step/experiment: `cap22-cross-package-export-resolution`
+- When: '2026-10-31 00:14 UTC' - '2026-10-31 00:33 UTC'
+- Change: Added a pre-resolution Export token bounds check, including the JC305
+  interface-token mapping path. Added a generated two-package CAP fixture and
+  authenticated VPCD GP LOAD/INSTALL test for valid external interface,
+  exported class, and missing export token. Refreshed the max-crypto ARM UF2.
+- Validation: `./tools/build-rmi-external-fixture` passed with the JC 3.0.5
+  converter. `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-external-link-vpcd`
+  passed 3/3: valid interface INSTALL `9000`; class and missing-token cases
+  `6F00`. `./tools/build-pc --profile max_crypto`, ARM and RISC-V max-profile
+  wrappers, `./tools/test-rmi-cap-metadata`, and `./tools/test-cap-parser`
+  passed (4,205 checks / 100,000 fuzz inputs / 48 corpus CAPs). The official
+  SDK JCRMI VPCD client passed 18/18. The final-source multipackage VPCD test
+  passed 25/25. Existing compiler/packed-member warnings remain. No physical
+  board was flashed.
+- Result: A missing Export token can no longer index past the Export table
+  during install; cross-package interface linking and rejection behavior are
+  verified end to end in VPCD. ARM UF2 size is 2,077,184 bytes, SHA-256
+  `5e8a7cb2267312821b4622729d1f3e994ffc4e7f582c964ffdae85a4d491e53a`.
+- Decision: Continue with persistent-object reclamation and actual USB cold
+  power-cycle recovery; no reclamation is enabled until the latter is proven.
+- Commit: pending.
+- Artifacts/logs: valid INSTALL SHA-256
+  `90358f202b1364270db7c86688f83d288b6ba7ffc8be393b777eeeab6ab31bf6`;
+  class rejection SHA-256
+  `4d39e3cf34012cf9af8e18839db72e1cd95e0fab8acca2c518f1de10b74918b9`;
+  missing-token rejection SHA-256
+  `738e6b55405d190981b53fc82416abfc208dbc7e9592581cd53a3339aaf78c5c`;
+  official SDK client log SHA-256
+  `d2fdfe4894bcb7bb052ef6419e6ad927c1ea505fce1325d12dc6db4974e0cf2f`;
+  emulator log SHA-256
+  `e10bc2da4abb66dfbab4bdf53500e50d9b5594eb98df92f64eae67d669626965`;
+  multipackage APDU log SHA-256
+  `4f5cc261828c52eb5577b601411d9adac47c2ee058ea93b02ae76ff6734758bf`;
+  restart log SHA-256
+  `edb76b7e704dd368e59e92ed06be9a9f530432d13fd4852cf541cd036f0e62c9`;
+  ARM image at `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.
