@@ -3,6 +3,7 @@
 #include "persistent_inventory.hpp"
 #include "jc_types/jc_array.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstdio>
@@ -518,6 +519,8 @@ int main() {
     const uint8_t root_tag[] = {0x03, owner, 0x44, 0x55, 0xff};
     const uint8_t target_tag[] = {0x03, owner, 0x66, 0x77};
     const uint8_t orphan_tag[] = {0x03, owner, 0x88, 0x99};
+    const uint8_t orphan_under_root_tag[] = {
+        0x03, owner, 0x44, 0x55, 0xff, 0x00, 0x00, 0xff, 0xff};
     const uint8_t other_owner_tag[] = {0x03, 0x22, 0x11, 0x33};
     seed(root_tag, sizeof(root_tag),
          {static_cast<uint8_t>(jcvm::FieldType::FIELD_TYPE_ARRAY_OBJECT),
@@ -535,6 +538,8 @@ int main() {
                          target_tag + sizeof(target_tag));
     seed(element_tag.value, element_tag.len, std::move(element_alias));
     seed(orphan_tag, sizeof(orphan_tag), byte_record(0x19));
+    seed(orphan_under_root_tag, sizeof(orphan_under_root_tag),
+         byte_record(0x1a));
     seed(other_owner_tag, sizeof(other_owner_tag), byte_record(0x29));
 
     bool inventory_passed = false;
@@ -550,11 +555,18 @@ int main() {
       const auto result = jcvm::PersistentInventory::visitUnreachableAppletTags(
           owner, heap, std::vector<jcvm::jref_t>{root_reference},
           collect_candidate, &candidates);
+      const std::vector<uint8_t> orphan_bytes(
+          orphan_tag, orphan_tag + sizeof(orphan_tag));
+      const std::vector<uint8_t> nested_orphan_bytes(
+          orphan_under_root_tag,
+          orphan_under_root_tag + sizeof(orphan_under_root_tag));
       inventory_passed =
           result == jcvm::PersistentInventory::VisitResult::Complete &&
-          candidates.tags.size() == 1 &&
-          candidates.tags.front() ==
-              std::vector<uint8_t>(orphan_tag, orphan_tag + sizeof(orphan_tag)) &&
+          candidates.tags.size() == 2 &&
+          std::find(candidates.tags.begin(), candidates.tags.end(),
+                    orphan_bytes) != candidates.tags.end() &&
+          std::find(candidates.tags.begin(), candidates.tags.end(),
+                    nested_orphan_bytes) != candidates.tags.end() &&
           !persistent_transaction_test::read(root_tag, sizeof(root_tag)).empty() &&
           !persistent_transaction_test::read(target_tag, sizeof(target_tag)).empty() &&
           !persistent_transaction_test::read(orphan_tag, sizeof(orphan_tag)).empty() &&
@@ -645,7 +657,8 @@ int main() {
     constexpr uint8_t owner = 0x41;
     const uint8_t root_tag_bytes[] = {0x03, owner, 0x10, 0x01};
     const uint8_t body_tag_bytes[] = {0x03, owner, 0x10, 0x01, 0xff, 0xff};
-    const uint8_t nested_tag_bytes[] = {0x03, owner, 0x10, 0x01, 0x00};
+    const uint8_t nested_tag_bytes[] = {
+        0x03, owner, 0x10, 0x01, 0x00, 0x01};
     const uint8_t orphan_tag_bytes[] = {0x03, owner, 0x20, 0x01};
     const uint8_t other_owner_tag_bytes[] = {0x03, 0x42, 0x20, 0x01};
     const uint8_t static_tag_bytes[] = {0x02, owner, 0x00};

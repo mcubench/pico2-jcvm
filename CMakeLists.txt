@@ -15,6 +15,8 @@ set(JAVACARD_SUPPORT_GENERATED_DIR
 include("${JAVACARD_SUPPORT_GENERATED_DIR}/javacard-support.cmake")
 set(PICO_CXX_ENABLE_EXCEPTIONS 1 CACHE BOOL "Enable C++ exceptions for CHOUPI")
 option(CHOUPI_DEBUG_HEAP_GC "Emit periodic CHOUPI heap GC summaries" OFF)
+option(CHOUPI_DEBUG_PERSISTENT_GC
+  "Exercise experimental persistent tag reclamation after each applet APDU" OFF)
 option(CHOUPI_DEBUG_HEAP_GC_TRACE "Emit per-object CHOUPI heap GC tracing" OFF)
 option(CHOUPI_DEBUG_MALLOC "Emit Pico SDK allocator tracing" OFF)
 add_compile_options(-Wall -Wextra -Werror)
@@ -255,6 +257,10 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
   if(CHOUPI_DEBUG_HEAP_GC)
     target_compile_definitions(choupi_vm_core PRIVATE CHOUPI_DEBUG_HEAP_GC=1)
     target_compile_definitions(pico2_choupi PRIVATE CHOUPI_DEBUG_HEAP_GC=1)
+  endif()
+  if(CHOUPI_DEBUG_PERSISTENT_GC)
+    target_compile_definitions(pico2_choupi PRIVATE
+      CHOUPI_DEBUG_PERSISTENT_GC=1)
   endif()
   if(CHOUPI_DEBUG_HEAP_GC_TRACE)
     target_compile_definitions(choupi_vm_core PRIVATE

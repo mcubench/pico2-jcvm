@@ -507,6 +507,59 @@ void collect_heap_after_apdu() {
 
   SelectedAppletRootContext roots{&context, nullptr, nullptr};
   try {
+#ifdef CHOUPI_DEBUG_PERSISTENT_GC
+    struct PersistentGcCounts {
+      uint32_t count = 0;
+      jcvm::Heap *heap = nullptr;
+      bool report_tags = false;
+    } owner_tag_count{0, &context.getHeap(), true},
+      candidate_tag_count{0, &context.getHeap(), false};
+    const auto count_tag = [](const jcvm::PersistentInventory::Tag &tag,
+                              void *opaque) {
+      auto &counts = *static_cast<PersistentGcCounts *>(opaque);
+      ++counts.count;
+      if (counts.report_tags) {
+        std::printf("CHOUPI:PERSISTENT_TAG owner_tag=");
+        for (uint8_t index = 0; index < tag.len; ++index) {
+          std::printf("%02X", tag.value[index]);
+        }
+        jcvm::fs::Tag heap_tag{};
+        heap_tag.len = tag.len;
+        std::memcpy(heap_tag.value, tag.value, tag.len);
+        std::printf(" reachable=%u\r\n",
+                    counts.heap->hasReachablePersistentTagPrefix(heap_tag)
+                        ? 1u
+                        : 0u);
+      }
+      return true;
+    };
+    const uint8_t applet_owner =
+        static_cast<uint8_t>(context.getAppletID());
+    const auto owner_inventory_result =
+        jcvm::PersistentInventory::visitApplet(applet_owner, count_tag,
+                                                &owner_tag_count);
+    const auto candidate_inventory_result =
+        jcvm::PersistentInventory::visitUnreachableAppletTags(
+            applet_owner, context.getHeap(), enumerate_selected_applet_roots,
+            &roots, count_tag, &candidate_tag_count);
+    uint32_t erased_persistent_tags = 0;
+    const auto persistent_gc_result =
+        jcvm::PersistentReclaimer::reclaimUnreachableAppletTags(
+            applet_owner, context.getHeap(),
+            enumerate_selected_applet_roots, &roots,
+            &erased_persistent_tags);
+    std::printf(
+        "CHOUPI:PERSISTENT_GC owner=%u result=%u erased=%lu "
+        "tags=%lu owner_scan=%u candidates=%lu candidate_scan=%u\r\n",
+        static_cast<unsigned>(applet_owner),
+        static_cast<unsigned>(persistent_gc_result),
+        static_cast<unsigned long>(erased_persistent_tags),
+        static_cast<unsigned long>(owner_tag_count.count),
+        static_cast<unsigned>(owner_inventory_result),
+        static_cast<unsigned long>(candidate_tag_count.count),
+        static_cast<unsigned>(candidate_inventory_result));
+    std::fflush(stdout);
+#endif
     const auto summary = context.getHeap().collectUnreachableFrom(
         enumerate_selected_applet_roots, &roots);
 #ifdef CHOUPI_DEBUG_HEAP_GC

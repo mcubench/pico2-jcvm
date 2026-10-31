@@ -7,10 +7,16 @@ arch_arg="$1"
 shift
 support_profile=current
 debug_heap_gc=OFF
+debug_persistent_gc=OFF
 if [[ "${PICO2_DEBUG_HEAP_GC:-0}" == 1 ]]; then
   debug_heap_gc=ON
 elif [[ "${PICO2_DEBUG_HEAP_GC:-0}" != 0 ]]; then
   die "PICO2_DEBUG_HEAP_GC must be 0 or 1"
+fi
+if [[ "${PICO2_DEBUG_PERSISTENT_GC:-0}" == 1 ]]; then
+  debug_persistent_gc=ON
+elif [[ "${PICO2_DEBUG_PERSISTENT_GC:-0}" != 0 ]]; then
+  die "PICO2_DEBUG_PERSISTENT_GC must be 0 or 1"
 fi
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -96,6 +102,7 @@ cmake -S "${repo_root}" -B "${build_dir}" -G Ninja \
   -DPICO_FLASH_SIZE_BYTES=2097152 \
   -DCMAKE_BUILD_TYPE=Release \
   -DCHOUPI_DEBUG_HEAP_GC="${debug_heap_gc}" \
+  -DCHOUPI_DEBUG_PERSISTENT_GC="${debug_persistent_gc}" \
   -DLOCAL_ARM_NEWLIB_INCLUDE="${arm_newlib_include}" \
   -DLOCAL_ARM_NEWLIB_LIBRARY_DIR="${arm_newlib_dir}" \
   -DCMAKE_EXE_LINKER_FLAGS="${linker_flags}"

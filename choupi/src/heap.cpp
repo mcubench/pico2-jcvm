@@ -1094,15 +1094,25 @@ bool Heap::hasReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept {
     return false;
   }
 
+  const auto owns_tag_or_direct_record = [&tag](const fs::Tag &object_tag) {
+    if (object_tag.len == 0 || object_tag.len > sizeof(object_tag.value) ||
+        object_tag.len > tag.len) {
+      return false;
+    }
+    const bool exact_object_tag = object_tag.len == tag.len;
+    const bool direct_field_or_element =
+        tag.len == static_cast<uint16_t>(object_tag.len + sizeof(uint16_t));
+    return (exact_object_tag || direct_field_or_element) &&
+           std::memcmp(tag.value, object_tag.value, object_tag.len) == 0;
+  };
+
   for (const auto &array : this->arrays) {
     if (!array || array->heap_mark == 0 || !array->isPersistent() ||
         !array->hasPersistentTag()) {
       continue;
     }
     const fs::Tag object_tag = array->getPersistentTag();
-    if (object_tag.len != 0 && object_tag.len <= tag.len &&
-        object_tag.len <= sizeof(object_tag.value) &&
-        std::memcmp(tag.value, object_tag.value, object_tag.len) == 0) {
+    if (owns_tag_or_direct_record(object_tag)) {
       return true;
     }
   }
@@ -1113,9 +1123,7 @@ bool Heap::hasReachablePersistentTagPrefix(const fs::Tag &tag) const noexcept {
       continue;
     }
     const fs::Tag object_tag = instance->getPersistentTag();
-    if (object_tag.len != 0 && object_tag.len <= tag.len &&
-        object_tag.len <= sizeof(object_tag.value) &&
-        std::memcmp(tag.value, object_tag.value, object_tag.len) == 0) {
+    if (owns_tag_or_direct_record(object_tag)) {
       return true;
     }
   }

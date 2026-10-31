@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-persistent-reclaimer-physical 'exact reader name'"
+reader_name="$1"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+cap="${repo_root}/build/persistent-reclaimer-probe/output/PersistentReclaimerProbe.cap"
+package_aid="A0000000620302"
+applet_aid="A000000062030201"
+host_build="${repo_root}/build/persistent-reclaimer-probe/host"
+[[ -s "${gp_jar}" ]] || die "GlobalPlatformPro jar not found: ${gp_jar}"
+
+"${repo_root}/tools/build-persistent-reclaimer-probe"
+mkdir -p "${host_build}" "${repo_root}/artifacts/logs"
+"${repo_root}/tools/env" javac -d "${host_build}" \
+  "${repo_root}/tools/PersistentReclaimerPhysicalProbe.java"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log="${repo_root}/artifacts/logs/persistent-reclaimer-physical-${timestamp}.log"
+list_log="${repo_root}/build/persistent-reclaimer-probe/gp-list-${timestamp}.log"
+install_log="${repo_root}/build/persistent-reclaimer-probe/gp-install-${timestamp}.log"
+delete_applet_log="${repo_root}/build/persistent-reclaimer-probe/gp-delete-applet-${timestamp}.log"
+delete_package_log="${repo_root}/build/persistent-reclaimer-probe/gp-delete-package-${timestamp}.log"
+gp=("${repo_root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
+installed=0
+
+cleanup() {
+  local status=$?
+  trap - EXIT
+  if [[ "${installed}" == 1 ]]; then
+    local cleanup_status=0
+    if timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
+        >"${list_log}" 2>&1; then
+      if grep -Fq "APP: ${applet_aid} " "${list_log}"; then
+        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+          --delete "${applet_aid}" >"${delete_applet_log}" 2>&1 || cleanup_status=1
+      fi
+      if (( cleanup_status == 0 )) && grep -Fq "PKG: ${package_aid} " "${list_log}"; then
+        timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+          --delete "${package_aid}" >"${delete_package_log}" 2>&1 || cleanup_status=1
+      fi
+      if (( cleanup_status == 0 )) && timeout --signal=TERM --kill-after=5s 30s \
+          "${gp[@]}" --list >"${list_log}" 2>&1; then
+        if grep -Fq "APP: ${applet_aid} " "${list_log}" || \
+           grep -Fq "PKG: ${package_aid} " "${list_log}"; then
+          cleanup_status=1
+        fi
+      else
+        cleanup_status=1
+      fi
+    else
+      cleanup_status=1
+    fi
+    if (( cleanup_status == 0 )); then
+      printf 'PERSISTENT_RECLAIMER:CLEANUP_PASS package=%s\n' \
+        "${package_aid}" | tee -a "${log}"
+    else
+      printf 'PERSISTENT_RECLAIMER:CLEANUP_FAIL package=%s log=%s\n' \
+        "${package_aid}" "${list_log}" | tee -a "${log}"
+      status=1
+    fi
+  fi
+  exit "${status}"
+}
+trap cleanup EXIT
+
+exec > >(tee -a "${log}") 2>&1
+printf 'PERSISTENT_RECLAIMER:START reader=%s\n' "${reader_name}"
+PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+timeout --signal=TERM --kill-after=5s 30s "${gp[@]}" --list \
+  >"${list_log}" 2>&1 || die "GPPro list failed; see ${list_log}"
+if grep -Fq "APP: ${applet_aid} " "${list_log}" || \
+   grep -Fq "PKG: ${package_aid} " "${list_log}"; then
+  die "persistent-reclaimer test AID already exists; refusing to replace it"
+fi
+
+installed=1
+timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${cap}" \
+  >"${install_log}" 2>&1 || die "probe install failed; see ${install_log}"
+cat "${install_log}"
+PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" java -cp "${host_build}" \
+  PersistentReclaimerPhysicalProbe "${reader_name}"
+printf 'PERSISTENT_RECLAIMER:PASS log=%s\n' "${log#${repo_root}/}"
