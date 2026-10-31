@@ -17958,7 +17958,7 @@
   `8e5e727543fe29d72fa9c6a55d835fef42cdb7d81c8a1e8a26a24e6cf5f0ec8c`.
 - Decision: The standalone profile is running on hardware; await the already
   active complete JCAlgTest report before deciding parity.
-- Commit: `<recorded in the progress closeout commit>`
+- Commit: `b14e6ca` (build/flash handoff; support report remains active)
 - Artifacts/logs: Full cycle log
   `artifacts/logs/cycle-choupi-20261031T035348Z.log`, SHA-256
   `95486ebfff85c265434154f1e71e2bb184062045a816f566209fb66471326c2b`;
