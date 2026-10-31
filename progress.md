@@ -18480,8 +18480,9 @@
 - Decision: Keep the VPCD and firmware implementations aligned. Continue with
   ARCH-01 from the scheduled TODO block; retry PC/SC validation when a reader
   is registered.
-- Commit: Pending; source and this record will be committed together, with the
-  resulting SHA recorded in a follow-up progress-only commit.
+- Commit: `cc8063d39a4fb8ec3a6a7ccd0c5b09b92ddfb48d`; this SHA is recorded in
+  the immediate follow-up progress-only commit because Git cannot include a
+  commit's own SHA in itself.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261031T093729Z.log`,
   `artifacts/logs/host-vpcd-multipackage-restart-20261031T093729Z.log`,
   `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261031T093729Z.log`,
