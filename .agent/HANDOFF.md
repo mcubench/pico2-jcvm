@@ -24,8 +24,36 @@ the intentional CDC-to-BOOTSEL reset; the flash cycle and runtime checks
 passed, and the long APDU itself did not reset the board. Treat it as a
 reset-retained diagnostic trace unless it recurs during ordinary runtime.
 
-Next: continue ARCH-05's physical startup/persistence gate, then ARCH-06's
-physical install/rollback gate. Preserve unrelated worktree changes.
+Next: continue ARCH-06's physical install/rollback gate. Preserve unrelated
+worktree changes.
+
+## Current ARCH-05 physical startup and persistence — 2026-10-31
+
+On the freshly flashed 2BED `max_crypto` image, the persistent GP registry
+listed the pre-existing JCAlgTest and ApiSec applets. `JCSystemTransactionPhysicalProbe
+--reset-only` caused a PC/SC CCID slot reset (`PCSC:RESET_PASS`); the subsequent
+`tools/test-pico-powerup` run again listed the JCAlgTest package/applet and
+passed applet SELECT (`9000`), GETVERSION (`1.8.2_jc305`), and JCSystem-info
+(`9000`). This verifies startup and registry/applet persistence across firmware
+reflash and an explicit card-slot reset. The script's own log says
+`power_cycle=not_verified_by_script` because reset was a separate preceding
+operation; the sequence is recorded across both logs.
+
+A deeper current JCSystem transaction-fixture install returned GPPro `6A80`
+on both boards and cleanup confirmed no test package remained. 2BED is already
+documented at only 8,821 free persistent bytes while the fixture requires
+32,770; do not repeat the large install without freeing safe space. Earlier
+8E physical evidence passed 9/9 transaction/power-cycle checks on 2026-10-30.
+Root physical startup/persistence acceptance is met; this failed oversized
+fixture is a capacity limitation, not a firmware startup failure.
+
+Artifacts: `artifacts/logs/cycle-choupi-20261031T214423Z.log`,
+`artifacts/logs/ccid-slot-reset-2BED-20261031.log`, and
+`artifacts/logs/pico-powerup-persistence-20261031T220152Z.log`; their hashes
+are in the matching `progress.md` record.
+
+Next: proceed with ARCH-06 physical GPPro install and rollback validation on a
+card with sufficient persistent capacity; preserve all installed user applets.
 
 ## ARCH-02 PC disk-checkpoint contract — 2026-10-31
 

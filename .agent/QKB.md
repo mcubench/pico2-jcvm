@@ -1,5 +1,23 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Full JCSystem transaction fixture exceeds current physical card capacity — 2026-10-31 retest
+
+- The max-profile `JCTransactionProbe` GPPro install returned `6A80` on both
+  visible physical readers, `2BED26ED20556535` and `8E464F4E2BBC0A19`. Cleanup
+  confirmed package `A0000000620301` was not left installed. On 2BED, the
+  established underlying cause remains the persistent store having only 8,821
+  bytes free (`56,714/65,535` used) while the fixture creates a 32,770-byte
+  persistent record. The 8E retest's low-level failure was not separately
+  captured; its identical GPPro status alone does not prove identical capacity.
+- Viable rule: don't retry this large fixture installation unchanged on a full
+  card. Use a smaller fixture or an explicitly reviewed cleanup plan; do not
+  delete user packages/state to make room. Prior 8E hardware evidence includes
+  a 9/9 transaction/power-cycle run (2026-10-30).
+- Despite the oversized-fixture limitation, 2BED startup and installed-state
+  persistence passed after firmware reflash and explicit CCID slot reset. The
+  `JCAlgTest` package/applet remained registered and SELECT, GETVERSION, and
+  JCSystem-info APDUs returned `9000`; see `.agent/HANDOFF.md`.
+
 ## Physical long-native-operation callback validation — 2026-10-31
 
 - Authorized host setup found two real CCID readers: Pico 2

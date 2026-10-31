@@ -103,7 +103,7 @@ hardware-access, progress and handoff requirements for implementation changes.
   physical evidence is successful long-call transport completion, not a
   separately counted number of extension frames. Artifacts and hashes are in
   `progress.md` and `.agent/HANDOFF.md`.
-- [ ] **ARCH-05 — Separate Pico startup and filesystem code (moderate).**
+- [x] **ARCH-05 — Separate Pico startup and filesystem code (moderate).**
   After ARCH-02, extract filesystem/overlay implementation from
   `src/choupi_pico2.cpp` into a focused module; leave boot/hardware initialization
   responsibilities clear. Preserve ABI, flash layout, transaction ordering and
@@ -115,8 +115,18 @@ hardware-access, progress and handoff requirements for implementation changes.
   transient-memory reporting, and VM startup/main-loop responsibilities. The
   overlay/power-cut suite passes (`TEST:SUMMARY fail=0`), ARM and RISC-V
   `max_crypto` builds pass, and the ARM image end address remains `0x100ff5cc`.
-  Physical startup/persistence validation remains open because `pcsc_scan -r`
-  currently lists only the two virtual readers.
+  Physical gate closed on 2026-10-31: the current ARM `max_crypto` image
+  flashed to `2BED26ED20556535` and passed its 18-second runtime monitor. The
+  existing JCAlgTest package and applet remained listed after firmware reboot,
+  an explicit PC/SC `disconnect(true)` card-slot reset, and a subsequent
+  SELECT/GETVERSION/JCSystem APDU probe (`9000`, version `1.8.2_jc305`). The
+  full transaction CAP could not be installed in this current card state:
+  GPPro returned `6A80`; earlier device diagnostics measured only 8,821 bytes
+  free while the test fixture requires a 32,770-byte persistent record. That
+  failed fixture left no package installed. A prior physical 8E transaction
+  test passed 9/9 including card power-cycle persistence; the current 2BED
+  checks verify existing applet persistence and startup. Exact logs/hashes are
+  in `progress.md` and `.agent/HANDOFF.md`.
 - [ ] **ARCH-06 — Reduce loader dependence on VM internals (moderate).**
   After ARCH-01, encapsulate specific heap/static initialization operations
   currently reached through private VM headers in `src/cap_load.cpp` behind
