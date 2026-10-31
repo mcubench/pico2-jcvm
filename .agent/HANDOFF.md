@@ -1,5 +1,37 @@
 # Session handoff — updated 2026-10-31
 
+## Current v4 persistent-capacity API validation — 2026-10-31
+
+The v4 snapshot image removed the prior `NO_MEMORY` outcome on identified Pico
+2 `2BED26ED20556535`: isolated unchanged API 3.0.5 Security completed 901 calls
+(150 `OK`, 206 `UNSUPPORTED_PER_SPEC`, 543 `EXC_RUNTIME`, two skipped), and
+Crypto completed 466 calls (158 `OK`, 102 `UNSUPPORTED_PER_SPEC`, 206
+`EXC_RUNTIME`). Both exact-reader CAP cleanup stages passed. This verifies the
+96 KiB v4 data arena can complete these runs without the former capacity status,
+but the profile does not pass API correctness due to the large runtime-error
+counts. The first runtime rows are Security RSA-512 `KeyPair.genKeyPair()` at
+call 242 and Crypto `Signature.ALG_DES_MAC4_NOPAD` at call 153. The physical
+serial captures include VM-caught exception ID 28 (`NullPointerException` by
+the `Exceptions` enum); runtime `TEST:SUMMARY` output is only the firmware
+self-check.
+
+On 8E `8E464F4E2BBC0A19`, Security failed at transient RSA key allocation with
+`SCARD_E_NOT_TRANSACTED`; excluding that call moved failure to RSA-CRT transient
+reset allocation. Serial remained healthy, but PC/SC stopped registering 8E
+even after `sudo -n /usr/local/sbin/pico2-pcsc-reader`. The failed run left its
+temporary Security CAP installed; preserve and clean it only after that exact
+reader returns. 2BED remains the working physical failover device.
+
+A fresh PC/VPCD comparison successfully uploaded Security but did not finish
+within the 600-second bound; it produced no API call rows and is not evidence.
+The exact result CSVs and capture hashes are recorded in `progress.md`.
+
+Next: diagnose the first runtime exception on 2BED with serial capture during
+the specific API call; inspect native dispatch and heap object lifetime, then
+repeat full Security/Crypto. Do not mistake runtime self-test output for API
+suite success. The v4 acceptance item in `TODO.md` is complete only for its
+capacity question; this new API correctness issue remains open.
+
 ## Current ARCH-04 physical native-progress validation — 2026-10-31
 
 The focused native progress callback and dispatch reentry tests already passed

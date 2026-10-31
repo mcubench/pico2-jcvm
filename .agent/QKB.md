@@ -80,11 +80,41 @@
   with record count to keep the serialized snapshot inside its slot. V2/v3
   remain readable and migrate copy-on-write. Host power-cut tests and ARM/
   RISC-V builds pass; a physical runtime monitor passed after flashing v4.
-  The Security suite stopped mid-APDU when the reader disappeared, so the
-  reduction in `NO_MEMORY` is still unverified. Do not use the unverified
-  second flash half. The release reclaimer remains disabled.
+  The first Security suite stopped mid-APDU when the reader disappeared, so
+  the reduction in `NO_MEMORY` was initially unverified. Isolated physical
+  reruns on the v4 image later completed both areas on 2BED: Security had zero
+  `NO_MEMORY` across 901 calls, and Crypto had zero `NO_MEMORY` across 466
+  calls. Both still showed many `EXC_RUNTIME` results (543 Security, 206
+  Crypto), which are a separate open regression, not a passing API baseline.
+  The complete results and physical trace hashes are recorded in
+  `progress.md`. Do not use the unverified second flash half. The release
+  reclaimer remains disabled.
 - Release was restored and finite monitor passed. Debug Security CSV SHA-256:
   `0cb6789cb206ad1a5161dacd3d10c5cfff2e66eb6766eb6230c925baf015837d`.
+
+## max_crypto v4 API tests report runtime exceptions and transient-key reader loss — 2026-10-31
+
+- Isolated Security and Crypto runs on 2BED completed with no `NO_MEMORY`, but
+  reported 543/901 and 206/466 `EXC_RUNTIME` outcomes. The first rows are RSA-512
+  `KeyPair.genKeyPair()` (Security call 242) and `Signature.ALG_DES_MAC4_NOPAD`
+  (Crypto call 153); subsequent classes also fail. A contemporaneous serial
+  capture showed caught exception ID 28 (`NullPointerException` in the
+  `Exceptions` enum). Runtime `TEST:SUMMARY` lines only validate the firmware
+  self-check and do not validate these API calls.
+- 8E lost its PC/SC session at transient RSA key allocation. Excluding the
+  first 2048-bit RSA private transient case moved the first disconnect to
+  RSA-CRT transient-reset 512-bit allocation. CDC serial remained healthy; the
+  reader did not return after the authorized ACL helper. The temporary
+  Security deploy CAP remains on 8E until its exact reader returns; do not
+  install a duplicate there.
+- A fresh PC/VPCD API Security run successfully LOADed/INSTALLed the CAP but
+  did not finish within the 600-second bound and wrote no call rows. It is not
+  comparative API evidence. The VPCD emulator's repeated missing-tag restore
+  traces need separate interpretation before another long run.
+- Viable next diagnostic: isolate the first runtime exception on 2BED with
+  serial capture across the corresponding API call, then identify whether the
+  exception originates in the unchanged CAP, native dispatch, or heap object
+  lifecycle. Re-run both full areas after the fix.
 
 ## USB-visible Pico CCID devices still fail PC/SC reader registration — 2026-10-31
 

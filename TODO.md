@@ -571,11 +571,34 @@ adapters, and do not change upstream applet CAP files.
   readable and are migrated copy-on-write. Host tests cover migration, high
   offsets, compaction, and interrupted writes; ARM and RISC-V max_crypto builds
   pass. The current ARM image was flashed and its finite monitor passed.
-- [ ] Rerun physical API 3.0.5 Security and Crypto on the v4 image and confirm
-  whether the additional capacity removes `NO_MEMORY`. The Security attempt on
-  2026-10-31 stopped mid-APDU when the physical reader disappeared; only the
-  two virtual readers are currently visible. Do not use unverified flash
-  beyond the 2 MiB capacity reported by the device/build.
+- [x] Rerun physical API 3.0.5 Security and Crypto on the v4 image. On Pico 2
+  `2BED26ED20556535`, Security completed 901 calls (150 `OK`, 206
+  `UNSUPPORTED_PER_SPEC`, 543 `EXC_RUNTIME`, two skipped) and Crypto completed
+  466 calls (158 `OK`, 102 `UNSUPPORTED_PER_SPEC`, 206 `EXC_RUNTIME`). Neither
+  run returned `NO_MEMORY`; both CAP cleanups passed. This confirms the v4
+  arena removes the earlier capacity status on this board, but does not pass
+  broad API correctness because of the new/high `EXC_RUNTIME` results. On 8E
+  `8E464F4E2BBC0A19`, Security lost PC/SC at transient RSA key allocation
+  (first `SCARD_E_NOT_TRANSACTED` at `TYPE_RSA_PRIVATE_TRANSIENT_DESELECT`,
+  2048 bits); after a retry excluding that call, the reader failed at
+  `TYPE_RSA_CRT_PRIVATE_TRANSIENT_RESET`, 512 bits. Its serial monitor remained
+  healthy, but the authorized access refresh did not re-register 8E, so its
+  temporary Security CAP could not be cleaned up. A fresh PC/VPCD Security
+  comparison installed the CAP but did not finish within the 600-second bound
+  and produced no call rows. Exact artifacts and hashes are in `progress.md`
+  and `.agent/HANDOFF.md`. Keep the broader runtime/transport failures open as
+  the next high-priority issue. Do not use unverified flash beyond the 2 MiB
+  capacity reported by the device/build.
+
+- [ ] Investigate API 3.0.5 `EXC_RUNTIME` regressions on the v4 max_crypto
+  image before broadening the profile acceptance claim. Security first shows
+  `EXC_RUNTIME` at call 242 (`KeyPair.genKeyPair`, RSA-512); Crypto first shows
+  it at call 153 (`Signature` `ALG_DES_MAC4_NOPAD`). The 2BED physical reports
+  contain 543 Security and 206 Crypto runtime outcomes despite no `NO_MEMORY`.
+  Physical serial traces include caught VM exception ID 28 (the VM's
+  `NullPointerException` enum value); identify the first native/CAP boundary
+  that leaves later calls failing, then repeat complete Security and Crypto
+  runs. Do not treat `TEST:PASS choupi_runtime` as an API-area pass.
 
 ### Priority 1 — selectable Java Card firmware capabilities
 

@@ -18803,3 +18803,36 @@
 - Decision: Mark ARCH-06 complete. Continue the top unfinished persistent-object reclamation item in `TODO.md`; do not delete installed packages to create room for the oversized transaction fixture.
 - Commit: `99dfe3b` (`Verify physical GPPro install and rollback`)
 - Artifacts/logs: successful install/APDU/cleanup `artifacts/logs/asymm-crypto-pcsc-20261031T214638Z.log` SHA-256 `2f20190fdb89991d5aae79bf028ff2bcf4868c28a1e766998fb0fce27686bc81`; failed-install cleanup logs `artifacts/logs/jcsystem-transaction-physical-20261031T215221Z.log` SHA-256 `e7dfa67d97c98c23f1f5e423555a3ef40b9e1cf1518b3806e6f43a610886c42b` and `...T215407Z.log` SHA-256 `11fc4da7519e5490c964bdd5f1aff0ec6d69dd37ff56d0ecea79708df1ac8210`; uncounted VPCD attempt `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261031T215736Z.log` SHA-256 `1e24acc9c3fe906c6a390d06d705c9edbd7555ece125395a2f82ea3ecf1a202f`.
+
+## 2026-10-31 Rerun max_crypto v4 Security and Crypto 42 minutes
+
+- Step/experiment: `max-crypto-v4-deploy-rerun-20261031`
+- When: '2026-10-31 22:09 UTC' - '2026-10-31 22:51 UTC'
+- Change: Updated `TODO.md`, `.agent/QKB.md`, and `.agent/HANDOFF.md` with
+  physical API 3.0.5 results on the already flashed v4 `max_crypto` image. No
+  firmware source changed and no flash was performed in this step.
+- Validation: `./tools/build-pc --profile max_crypto` passed; existing Rust
+  upstream lint warnings remain. Isolated `PICO2_HOST_USB_ACCESS=1
+  ./tools/run-deploy-parallel --areas Security --max-devices 1 --min-devices 1
+  --out-dir artifacts/results/deploy/isolated-security-v4-2BED-20261031`
+  completed Security on Pico 2 `2BED26ED20556535`: 901 calls, 150 `OK`, 206
+  `UNSUPPORTED_PER_SPEC`, 543 `EXC_RUNTIME`, two skipped, and cleanup passed.
+  Isolated Crypto on the same board completed 466 calls: 158 `OK`, 102
+  `UNSUPPORTED_PER_SPEC`, 206 `EXC_RUNTIME`, and cleanup passed. Both runs
+  returned zero `NO_MEMORY`. On 8E `8E464F4E2BBC0A19`, Security lost PC/SC at
+  transient RSA allocation after 65 calls; retrying with that call excluded
+  moved the loss to RSA-CRT transient-reset 512-bit allocation. Bounded serial
+  captures on both boards showed the firmware self-test pass, but do not prove
+  API success. The authorized PC/SC access refresh re-registered only 2BED;
+  8E's temporary Security CAP could not be removed. Fresh PC/VPCD GPPro
+  LOAD/INSTALL succeeded, but the API Security client exceeded a 600-second
+  bound and emitted no call rows. `git diff --check` passed.
+- Result: The v4 arena allowed complete 2BED Security and Crypto sweeps without
+  the prior `NO_MEMORY` status. API acceptance remains open because runtime
+  exceptions increased sharply; 8E also showed a transient-key transport loss.
+  A VM/VPCD comparison did not finish and is not counted.
+- Decision: Close the v4 storage-capacity question for 2BED only. Diagnose the
+  first Security/Crypto runtime exceptions and retry full physical validation;
+  clean the temporary 8E package only when that exact reader returns.
+- Commit: pending
+- Artifacts/logs: Security CSV `artifacts/results/deploy/isolated-security-v4-2BED-20261031/pico1.csv` SHA-256 `c9996d6300f7732e74ac98c5b6ee4937a18a9ceaf5950618e3267855bca658c7`; Crypto CSV `artifacts/results/deploy/isolated-crypto-v4-2BED-20261031/pico1.csv` SHA-256 `01376ff948b4502bbdfb98e14dc84e2fdc083053793be6534c933314a5ecda97`; 8E Security CSV `artifacts/results/deploy/isolated-security-v4-8E-20261031/security.csv` SHA-256 `319b6a97d1404acd7fabeccfb200259698339744a7d50a96014014dbd00d1d53`; excluded retry CSV SHA-256 `b3c91a9c17676f3051418ed539b42eaef1c2452e98d3a4826a0831de8d13d4e6`; serial captures `artifacts/logs/deploy-isolated-security-progress-2BED-20261031.log` SHA-256 `f31ceee8f58a7613fffe457985ff91822ab08061ee0c1de24c3639faea6f7e07`, `artifacts/logs/deploy-isolated-crypto-progress-2BED-20261031.log` SHA-256 `2da02d4f85045f113c7ada31ff711bf70ef3e2c8a55091090d5ad6191187fbf4`, and `artifacts/logs/deploy-isolated-security-postfailure-8E-20261031.log` SHA-256 `c2b1862dc671eec0ad1fd1f0945ff514c053f3f3a048e8a3541a8cf0c2d51d5c`; VPCD artifacts are in `artifacts/results/deploy/vpcd-maxcrypto-security-20261031/` (no API call rows).
