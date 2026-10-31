@@ -18285,3 +18285,35 @@
   `0cb6789cb206ad1a5161dacd3d10c5cfff2e66eb6766eb6230c925baf015837d`;
   release restore log `artifacts/logs/cycle-choupi-20261031T074104Z.log`,
   SHA-256 `693309fafe7c71a4c7ac9cab9303eb78ea0588cecb1f89dd39625368abeee326`.
+
+## 2026-10-31 Compact RP2350 filesystem snapshot v4 41 minutes
+
+- Step/experiment: `rp2350-fs-snapshot-v4-20261031`
+- When: '2026-10-31 07:46 UTC' - '2026-10-31 08:27 UTC'
+- Change: Reworked the overlay snapshot index to store an 8,192-bit occupancy
+  map and compact eight-byte file records. Added a version-4 snapshot format,
+  two high offset bits, v2/v3 restore and migration, and a dynamically bounded
+  96 KiB data arena within the existing 160 KiB copy-on-write slots. No flash
+  layout expansion or access to unreported flash capacity is used.
+- Validation: `./tools/test-rp2350-fs-overlay` passed with
+  `TEST:SUMMARY fail=0`, including v2 migration, v4 high-offset restoration,
+  interrupted snapshot recovery, compaction, and 1,000 randomized power-cut
+  cases. `PICO2_DEBUG=0 ./tools/build arm --profile max_crypto` and the
+  corresponding RISC-V wrapper build passed. The current ARM image had already
+  been flashed to Pico 2 `2BED26ED20556535`; its finite serial monitor passed.
+  An exact-reader physical API Security attempt stopped mid-APDU when the reader
+  disappeared; this incomplete run is not treated as validation. Current PC/SC
+  inventory has only the two virtual readers. No physical storage-capacity or
+  power-cut test was performed.
+- Result: Host recovery checks and both build gates pass. Version 4 retains the
+  existing 2 MiB layout while allowing up to 96 KiB of overlay data, constrained
+  further by snapshot index occupancy. Full physical Security/Crypto retest
+  remains pending device availability.
+- Decision: Keep the 2 MiB layout; do not use the unverified second flash half.
+  Continue physical API validation when an identified Pico reader returns.
+- Commit: pending (finalized in a follow-up progress record commit)
+- Artifacts/logs: ARM image SHA-256
+  `03ccac6577950f4e280a1a10d3c52b8d15d03ab52165b220a59a0a9a75e4e7df`;
+  finite cycle log `artifacts/logs/cycle-choupi-20261031T081609Z.log` (SHA-256
+  `565db8b590479f530da92266a0d9fd91cbd30eaf10508ddb6c88540c0df9ff9d`);
+  partial API probe `/tmp/apitest_card_rs27k10h/probe_APISUPPORT_3b800181.csv`.

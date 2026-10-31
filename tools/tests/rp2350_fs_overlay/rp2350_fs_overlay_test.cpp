@@ -28,11 +28,24 @@ std::array<uint8_t, 2 * 1024 * 1024> fake_flash;
 std::array<uint8_t, 2 * 1024 * 1024> committed_flash;
 std::array<uint8_t, 2 * 1024 * 1024> cross_store_empty_journal_flash;
 std::array<uint8_t, 2 * 1024 * 1024> cross_store_committed_flash;
+std::array<uint8_t, 0x27000> filesystem_snapshot_scratch;
 size_t flash_mutation_count = 0;
 size_t fail_after_mutations = static_cast<size_t>(-1);
 bool persistent_transaction_active = false;
 
 #pragma pack(push, 1)
+struct FilesystemHeaderTest {
+  uint32_t magic;
+  uint16_t version;
+  uint16_t reserved;
+  uint32_t generation;
+  uint32_t file_count;
+  uint32_t bytes_used;
+  uint32_t payload_length;
+  uint32_t payload_crc32;
+  uint32_t header_crc32;
+};
+
 struct LegacyAppletInstanceRecord {
   uint8_t applet_aid_length;
   uint8_t instance_aid_length;
@@ -80,6 +93,40 @@ uint32_t test_crc32(const uint8_t *data, size_t length) {
     }
   }
   return ~crc;
+}
+
+void convert_v4_snapshot_to_legacy(uint32_t offset, uint16_t version) {
+  auto *header = reinterpret_cast<FilesystemHeaderTest *>(
+      fake_flash.data() + offset);
+  if (header->version != 4 || version < 2 || version > 3) std::abort();
+  const uint8_t *source = fake_flash.data() + offset + 4096;
+  size_t output_length = 0;
+  uint32_t restored_count = 0;
+  for (uint16_t slot = 0; slot < 8192; ++slot) {
+    if ((source[slot / 8] & (1u << (slot % 8))) == 0) continue;
+    const uint8_t *record = source + 1024 + restored_count * 8;
+    std::memcpy(filesystem_snapshot_scratch.data() + output_length, &slot,
+                sizeof(slot));
+    output_length += sizeof(slot);
+    std::memcpy(filesystem_snapshot_scratch.data() + output_length, record, 8);
+    output_length += 8;
+    ++restored_count;
+  }
+  if (restored_count != header->file_count) std::abort();
+  const uint8_t *source_bytes =
+      source + 1024 + restored_count * 8;
+  std::memcpy(filesystem_snapshot_scratch.data() + output_length,
+              source_bytes, header->bytes_used);
+  output_length += header->bytes_used;
+  std::memcpy(fake_flash.data() + offset + 4096,
+              filesystem_snapshot_scratch.data(), output_length);
+  header->version = version;
+  header->payload_length = static_cast<uint32_t>(output_length);
+  header->payload_crc32 = test_crc32(filesystem_snapshot_scratch.data(),
+                                     output_length);
+  header->header_crc32 = test_crc32(
+      reinterpret_cast<const uint8_t *>(header),
+      offsetof(FilesystemHeaderTest, header_crc32));
 }
 }
 
@@ -539,7 +586,7 @@ int main() {
       fs_write(install_journal_tag, sizeof(install_journal_tag),
                install_journal_value, sizeof(install_journal_value)) == 0 &&
       fs_sync() == 0;
-  const auto committed_journal_flash = fake_flash;
+  cross_store_empty_journal_flash = fake_flash;
   if (journal_baseline_ready) {
     persistent_transaction_active = true;
     journal_baseline_ready =
@@ -559,7 +606,7 @@ int main() {
   uint32_t journal_cut_state = 0x1a57c0de;
   for (size_t trial = 0; trial < 1000 && journal_clear_recovers_atomically;
        ++trial) {
-    fake_flash = committed_journal_flash;
+    fake_flash = cross_store_empty_journal_flash;
     if (fs_init() != 0) {
       journal_clear_recovers_atomically = false;
       break;
@@ -1080,18 +1127,18 @@ int main() {
   expect(previous_metadata_survives_cut,
          "cap_registry_metadata_update_recovers_previous_header_after_cut");
 
-  // Simulate a card created by the previous layout: copy a real JFS2 snapshot
-  // to its old address, remove the new copy, then boot and migrate it.
+  // Simulate a previous v3 snapshot in the current COW slots. Migration must
+  // write the compact v4 image to the other slot and preserve the source.
   fake_flash.fill(0xff);
   bool legacy_fixture = fs_init() == 0 &&
       fs_write(shared_tag, sizeof(shared_tag), shared_value,
                sizeof(shared_value)) == 0 && fs_sync() == 0;
   if (legacy_fixture) {
-    std::copy_n(fake_flash.begin() + flash_layout::filesystem_slot(0),
-                flash_layout::filesystem_slot_size,
-                fake_flash.begin() + flash_layout::legacy_filesystem_slot(0));
-    std::fill(fake_flash.begin() + flash_layout::filesystem_offset,
-              fake_flash.begin() + flash_layout::filesystem_end, 0xff);
+    convert_v4_snapshot_to_legacy(flash_layout::filesystem_slot(0), 3);
+    std::fill(fake_flash.begin() + flash_layout::filesystem_slot(1),
+              fake_flash.begin() + flash_layout::filesystem_slot(1) +
+                  flash_layout::filesystem_slot_size,
+              0xff);
     std::fill(fake_flash.begin() + flash_layout::legacy_cap2_offset,
               fake_flash.begin() + flash_layout::legacy_cap2_data_end, 0x5a);
     constexpr uint32_t cap2_magic = 0x32415043;
@@ -1100,7 +1147,7 @@ int main() {
     legacy_fixture = cap_store_write_package(
         63, package_aid, sizeof(package_aid), cap_code, sizeof(cap_code));
   }
-  const auto legacy_flash = fake_flash;
+  committed_flash = fake_flash;
   uint8_t migrated_value[sizeof(shared_value)]{};
   bool migrated = legacy_fixture && fs_init() == 0 &&
       fs_read(shared_tag, sizeof(shared_tag), migrated_value,
@@ -1111,7 +1158,7 @@ int main() {
   expect(migrated && std::equal(
              fake_flash.begin() + flash_layout::legacy_cap2_offset,
              fake_flash.begin() + flash_layout::legacy_cap2_data_end,
-             legacy_flash.begin() + flash_layout::legacy_cap2_offset),
+             committed_flash.begin() + flash_layout::legacy_cap2_offset),
          "migration_preserves_legacy_cap2_bytes");
   uint32_t migrated_cap_length = 0;
   const uint8_t *migrated_cap = cap_store_data_for_package(
@@ -1121,7 +1168,7 @@ int main() {
              std::memcmp(migrated_cap, cap_code, sizeof(cap_code)) == 0,
          "migration_preserves_last_cap_slot");
   if (migrated) {
-    fake_flash[flash_layout::legacy_filesystem_slot(0)] = 0;
+    fake_flash[flash_layout::filesystem_slot(0)] = 0;
     migrated = fs_init() == 0 &&
         fs_read(shared_tag, sizeof(shared_tag), migrated_value,
                 sizeof(migrated_value)) == 0 &&
@@ -1132,7 +1179,7 @@ int main() {
   bool migration_recovers_after_cut = legacy_fixture;
   for (size_t cut : {size_t{0}, size_t{100}, size_t{4096}, size_t{8192}}) {
     if (!migration_recovers_after_cut) break;
-    fake_flash = legacy_flash;
+    fake_flash = committed_flash;
     reset_flash_failure(cut);
     try {
       (void)fs_init();
@@ -1147,25 +1194,26 @@ int main() {
   expect(migration_recovers_after_cut,
          "legacy_migration_recovers_after_power_cut");
 
-  fake_flash = legacy_flash;
-  fake_flash[flash_layout::legacy_filesystem_slot(0) + 4096] ^= 1;
-  const auto damaged_flash = fake_flash;
-  expect(fs_init() != 0 && fake_flash == damaged_flash,
+  fake_flash = committed_flash;
+  fake_flash[flash_layout::filesystem_slot(0) + 4096] ^= 1;
+  cross_store_empty_journal_flash = fake_flash;
+  expect(fs_init() != 0 && fake_flash == cross_store_empty_journal_flash,
          "unrecoverable_legacy_snapshot_fails_without_flash_writes");
 
   constexpr uint8_t updated_value[] = {0x33, 0x44};
+  fake_flash = committed_flash;
   const bool second_slot_preserves_cap2 = migration_recovers_after_cut &&
+      fs_init() == 0 &&
       fs_write(shared_tag, sizeof(shared_tag), updated_value,
                sizeof(updated_value)) == 0 && fs_sync() == 0 &&
       std::equal(fake_flash.begin() + flash_layout::legacy_cap2_offset,
                  fake_flash.begin() + flash_layout::legacy_cap2_data_end,
-                 legacy_flash.begin() + flash_layout::legacy_cap2_offset);
+                 committed_flash.begin() + flash_layout::legacy_cap2_offset);
   expect(second_slot_preserves_cap2,
          "second_filesystem_slot_preserves_legacy_cap2_bytes");
 
-  // Version 3 uses one previously unused record flag bit for offset bit 16.
-  // Keep a hand-downgraded v2 snapshot readable, then prove that the next
-  // committed generation migrates it to v3 without changing its records.
+  // Keep a hand-downgraded v2 snapshot in a current COW slot readable, then
+  // prove that the next committed generation uses the compact v4 format.
   fake_flash.fill(0xff);
   expect(fs_init() == 0, "filesystem_v2_migration_setup");
   constexpr uint8_t v2_tag[] = {0xe0, 0x01, 0x01};
@@ -1173,12 +1221,7 @@ int main() {
   expect(fs_write(v2_tag, sizeof(v2_tag), v2_value, sizeof(v2_value)) == 0 &&
              fs_sync() == 0,
          "filesystem_v2_migration_seed_snapshot");
-  const uint32_t slot0 = flash_layout::filesystem_slot(0);
-  fake_flash[slot0 + 4] = 2;
-  fake_flash[slot0 + 5] = 0;
-  const uint32_t v2_header_crc = test_crc32(fake_flash.data() + slot0, 28);
-  std::memcpy(fake_flash.data() + slot0 + 28, &v2_header_crc,
-              sizeof(v2_header_crc));
+  convert_v4_snapshot_to_legacy(flash_layout::filesystem_slot(0), 2);
   uint8_t v2_actual[sizeof(v2_value)]{};
   expect(fs_init() == 0 &&
              fs_read(v2_tag, sizeof(v2_tag), v2_actual,
@@ -1189,8 +1232,8 @@ int main() {
   constexpr uint8_t v3_value[] = {0x48, 0x57};
   expect(fs_write(v3_tag, sizeof(v3_tag), v3_value, sizeof(v3_value)) == 0 &&
              fs_sync() == 0 &&
-             fake_flash[flash_layout::filesystem_slot(1) + 4] == 3,
-         "filesystem_first_write_migrates_snapshot_to_v3");
+             fake_flash[flash_layout::filesystem_slot(0) + 4] == 4,
+         "filesystem_first_write_migrates_snapshot_to_v4");
   uint8_t v3_actual[sizeof(v3_value)]{};
   expect(fs_init() == 0 &&
              fs_read(v2_tag, sizeof(v2_tag), v2_actual,
@@ -1199,28 +1242,33 @@ int main() {
              fs_read(v3_tag, sizeof(v3_tag), v3_actual,
                      sizeof(v3_actual)) == 0 &&
              std::memcmp(v3_actual, v3_value, sizeof(v3_value)) == 0,
-         "filesystem_v3_migration_restores_v2_and_new_records");
+         "filesystem_v4_migration_restores_v2_and_new_records");
 
-  // Force the second record's serialized offset above 65,535, commit and
-  // restore it, then compact the first record and verify the shifted offset.
+  // Force a record above 64 KiB, requiring the high offset bit. Commit and
+  // restore it, then compact earlier records and verify its shifted offset.
   fake_flash.fill(0xff);
   expect(fs_init() == 0, "filesystem_wide_offset_setup");
   constexpr uint8_t wide_blocker_tag[] = {0xf0, 0x01, 0x01};
   constexpr uint8_t wide_blocker2_tag[] = {0xf0, 0x03, 0x03};
+  constexpr uint8_t wide_blocker3_tag[] = {0xf0, 0x05, 0x05};
   constexpr uint8_t wide_value_tag[] = {0xf0, 0x02, 0x02};
   const std::vector<uint8_t> wide_blocker(40000, 0xa6);
   const std::vector<uint8_t> wide_blocker2(26000, 0xb7);
+  const std::vector<uint8_t> wide_blocker3(0, 0xc8);
   constexpr uint8_t high_offset_value[] = {0x62, 0x73, 0x84, 0x95};
   expect(fs_write(wide_blocker_tag, sizeof(wide_blocker_tag),
                   wide_blocker.data(), wide_blocker.size()) == 0 &&
              fs_write(wide_blocker2_tag, sizeof(wide_blocker2_tag),
                       wide_blocker2.data(), wide_blocker2.size()) == 0 &&
+             fs_write(wide_blocker3_tag, sizeof(wide_blocker3_tag),
+                      wide_blocker3.data(), wide_blocker3.size()) == 0 &&
              fs_write(wide_value_tag, sizeof(wide_value_tag),
                       high_offset_value, sizeof(high_offset_value)) == 0 &&
              fs_sync() == 0,
-         "filesystem_v3_writes_records_past_64k");
+         "filesystem_v4_writes_records_past_64k");
   std::vector<uint8_t> restored_wide_blocker(wide_blocker.size());
   std::vector<uint8_t> restored_wide_blocker2(wide_blocker2.size());
+  std::vector<uint8_t> restored_wide_blocker3(wide_blocker3.size());
   uint8_t restored_high_offset_value[sizeof(high_offset_value)]{};
   const bool wide_restore_init = fs_init() == 0;
   const bool wide_blocker_restore =
@@ -1238,26 +1286,33 @@ int main() {
       fs_read(wide_blocker2_tag, sizeof(wide_blocker2_tag),
               restored_wide_blocker2.data(), restored_wide_blocker2.size()) ==
           0;
-  expect(wide_restore_init, "filesystem_v3_snapshot_reinitializes");
+  const bool wide_blocker3_restore =
+      wide_restore_init &&
+      fs_read(wide_blocker3_tag, sizeof(wide_blocker3_tag),
+              restored_wide_blocker3.data(), restored_wide_blocker3.size()) ==
+          0;
+  expect(wide_restore_init, "filesystem_v4_snapshot_reinitializes");
   expect(wide_blocker_restore && restored_wide_blocker == wide_blocker,
-         "filesystem_v3_restores_low_offset_record");
+         "filesystem_v4_restores_low_offset_record");
   expect(wide_blocker2_restore && restored_wide_blocker2 == wide_blocker2,
-         "filesystem_v3_restores_second_offset_record");
+         "filesystem_v4_restores_second_offset_record");
+  expect(wide_blocker3_restore && restored_wide_blocker3 == wide_blocker3,
+         "filesystem_v4_restores_third_offset_record");
   expect(high_offset_restore &&
              std::memcmp(restored_high_offset_value, high_offset_value,
                          sizeof(high_offset_value)) == 0,
-         "filesystem_v3_restores_high_offset_record");
+         "filesystem_v4_restores_high_offset_record");
 
   // An interrupted generation must recover atomically, including the
-  // high-offset record already in the previous v3 snapshot. Sample cuts
+  // high-offset record already in the previous v4 snapshot. Sample cuts
   // during erase, payload, and header programming.
   committed_flash = fake_flash;
-  constexpr uint8_t interrupted_v3_tag[] = {0xf0, 0x04, 0x04};
-  constexpr uint8_t interrupted_v3_value[] = {0xa9, 0xb8, 0xc7};
+  constexpr uint8_t interrupted_v4_tag[] = {0xf0, 0x04, 0x04};
+  constexpr uint8_t interrupted_v4_value[] = {0xa9, 0xb8, 0xc7};
   reset_flash_failure();
   const bool v3_cut_baseline =
-      fs_write(interrupted_v3_tag, sizeof(interrupted_v3_tag),
-               interrupted_v3_value, sizeof(interrupted_v3_value)) == 0 &&
+      fs_write(interrupted_v4_tag, sizeof(interrupted_v4_tag),
+               interrupted_v4_value, sizeof(interrupted_v4_value)) == 0 &&
       fs_sync() == 0;
   const size_t v3_snapshot_mutations = flash_mutation_count;
   bool v3_high_offset_cuts_are_atomic =
@@ -1274,15 +1329,15 @@ int main() {
     if (!v3_high_offset_cuts_are_atomic) break;
     fake_flash = committed_flash;
     if (fs_init() != 0 ||
-        fs_write(interrupted_v3_tag, sizeof(interrupted_v3_tag),
-                 interrupted_v3_value, sizeof(interrupted_v3_value)) != 0) {
+        fs_write(interrupted_v4_tag, sizeof(interrupted_v4_tag),
+                 interrupted_v4_value, sizeof(interrupted_v4_value)) != 0) {
       v3_high_offset_cuts_are_atomic = false;
       break;
     }
     reset_flash_failure(cut);
     const uint8_t interrupted_sync_status = fs_sync();
     if (interrupted_sync_status == 0) {
-      std::printf("TEST:INFO v3 cut did not interrupt cut=%zu mutations=%zu\n",
+      std::printf("TEST:INFO v4 cut did not interrupt cut=%zu mutations=%zu\n",
                   cut, v3_snapshot_mutations);
       v3_high_offset_cuts_are_atomic = false;
       break;
@@ -1297,20 +1352,20 @@ int main() {
     const bool high_offset_matches =
         std::memcmp(restored_high_offset_value, high_offset_value,
                     sizeof(high_offset_value)) == 0;
-    uint8_t recovered_interrupted_value[sizeof(interrupted_v3_value)]{};
+    uint8_t recovered_interrupted_value[sizeof(interrupted_v4_value)]{};
     const bool interrupted_record_is_new =
-        fs_read(interrupted_v3_tag, sizeof(interrupted_v3_tag),
+        fs_read(interrupted_v4_tag, sizeof(interrupted_v4_tag),
                 recovered_interrupted_value,
                 sizeof(recovered_interrupted_value)) == 0 &&
-        std::memcmp(recovered_interrupted_value, interrupted_v3_value,
-                    sizeof(interrupted_v3_value)) == 0;
+        std::memcmp(recovered_interrupted_value, interrupted_v4_value,
+                    sizeof(interrupted_v4_value)) == 0;
     const bool interrupted_record_is_old =
-        fs_read(interrupted_v3_tag, sizeof(interrupted_v3_tag),
+        fs_read(interrupted_v4_tag, sizeof(interrupted_v4_tag),
                 &recovered_byte, sizeof(recovered_byte)) != 0;
     if (recovered_init_status != 0 || recovered_high_status != 0 ||
         !high_offset_matches ||
         (!interrupted_record_is_old && !interrupted_record_is_new)) {
-      std::printf("TEST:INFO v3 recovery cut=%zu init=%d high=%u match=%u old=%u new=%u\n",
+      std::printf("TEST:INFO v4 recovery cut=%zu init=%d high=%u match=%u old=%u new=%u\n",
                   cut, recovered_init_status, recovered_high_status,
                   high_offset_matches ? 1u : 0u,
                   interrupted_record_is_old ? 1u : 0u,
@@ -1320,9 +1375,10 @@ int main() {
     }
   }
   expect(v3_high_offset_cuts_are_atomic,
-         "filesystem_v3_interrupted_snapshot_preserves_high_offset_record");
+         "filesystem_v4_interrupted_snapshot_preserves_high_offset_record");
   expect(fs_erase(wide_blocker_tag, sizeof(wide_blocker_tag)) == 0 &&
              fs_erase(wide_blocker2_tag, sizeof(wide_blocker2_tag)) == 0 &&
+             fs_erase(wide_blocker3_tag, sizeof(wide_blocker3_tag)) == 0 &&
              fs_read(wide_value_tag, sizeof(wide_value_tag),
                      restored_high_offset_value,
                      sizeof(restored_high_offset_value)) == 0 &&
@@ -1334,7 +1390,7 @@ int main() {
                      sizeof(restored_high_offset_value)) == 0 &&
              std::memcmp(restored_high_offset_value, high_offset_value,
                          sizeof(high_offset_value)) == 0,
-         "filesystem_v3_compacts_high_offset_and_restarts");
+         "filesystem_v4_compacts_high_offset_and_restarts");
 
   // A full overlay needs to erase a data-bearing record before a zero-byte
   // record. Pick tags whose hash slots make the zero-byte entry first in the
