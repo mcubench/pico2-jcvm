@@ -18878,7 +18878,7 @@
 - Decision: Run full current-image Security and Crypto areas next and compare
   exact source/profile/image identity with the 2026-10-31 reports. Then diagnose
   the single DES-MAC8 IV `WRONG_RESULT`.
-- Commit: `<filled after commit>`
+- Commit: `0e2d437` (`Add Java Card null receiver diagnostics`)
 - Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2`; cycle
   `artifacts/logs/cycle-choupi-20261101T074258Z.log` SHA-256
   `258c3041a0448c014a47d65285ec182f511841127e5b2f2edc086ace16ca97fb`;
