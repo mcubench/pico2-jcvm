@@ -6,7 +6,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed: PC build and transaction-probe CAP generation succeeded; install/commit passed 3/3 in 70.009 seconds; a fresh emulator process restored the applet and passed 38/38 checks, including four GC-pressure rounds (8.096 seconds). Build emitted existing upstream Maven/Rust/packed-member warnings but no errors. The helper independently reported zero physical Pico readers, so no hardware test was run.
 - Result: Current applet persistence, aliases, and heap behavior pass in PC VPCD after process restart. This does not test Pico overlay compaction or physical USB power-loss recovery.
 - Decision: Preserve the physical power-cycle and overlay-compaction hardware gates as open; continue on other offline acceptance work until a Pico is enumerated.
-- Commit: pending.
+- Commit: `afea6d0`.
 - Artifacts/logs: build log `artifacts/logs/build-pc-vpcd-persistence-20261101T090958Z.log` SHA-256 `934851bcba5aa93232a3143fc24e5cd28af09e741a44266a5d633480073f7f6d`; install `artifacts/logs/vpcd-persistence-commit-20261101T090958Z.log` SHA-256 `cf6d2dea05127a8a158e6ab17e54184cc843844d0206edabc459e6aebba16608`; restore `artifacts/logs/vpcd-persistence-restore-20261101T090958Z.log` SHA-256 `88b09bed68228baf815f7d1b42cc24acd9367cc5f1179985833e543f1d52c390`; install emulator `artifacts/logs/vpcd-persistence-install-emulator-20261101T090958Z.log` SHA-256 `a59063a9ea41911232371332ac00a0466f3b6ed09ccf0c6685627710ef277a55`; restore emulator `artifacts/logs/vpcd-persistence-restore-emulator-20261101T090958Z.log` SHA-256 `7864218199c8d00946503e126bd0c8fefcec218a555e4d0153ede5b8490ab9fb`.
 
 ## 2026-11-01 — Exercise compaction at the full overlay limit 3 minutes
