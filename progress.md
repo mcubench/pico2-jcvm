@@ -6,7 +6,7 @@
 - Validation: `rg` confirmed no current-status sentence incorrectly describes the old logger as current. `git -c core.whitespace=cr-at-eol diff --check` passed. No builds, tests, or hardware operations were needed for this documentation-only correction.
 - Result: Current diagnostic status no longer contradicts the completed diagnostic item; old result captures remain properly labeled as historical.
 - Decision: Keep old physical measurements as recorded and use the new output format for the next hardware API sweep.
-- Commit: pending.
+- Commit: `708c9d2`; exact commit reference recorded by follow-up metadata commit.
 - Artifacts/logs: TODO/QKB/HANDOFF text only; no runtime logs.
 
 ## 2026-10-26 — Native RSA ISO9796-2 scheme 1
