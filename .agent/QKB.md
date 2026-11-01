@@ -3330,3 +3330,29 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Limit:** Cross-context SIO still rejects arguments, and remains untested
   end to end. Do not copy raw local references or assume a same-context stack
   replacement is valid when server/client contexts differ.
+
+### Cross-context Shareable primitive arguments — 2026-11-01
+
+- CAP `invokeinterface` records the argument word count, while the CAP
+  Descriptor component records the method's logical parameter types. Use the
+  requested interface's Descriptor method entry to recover those types; do not
+  infer types from raw stack words, and do not resolve the proxy placeholder in
+  the client heap.
+- **Current implementation:** Proxy dispatch scans variable-length class
+  descriptor records to locate the requested Shareable interface's method
+  signature, copies boolean/byte/short/int arguments into typed interpreter
+  locals, and then removes the original caller words. Null references may
+  cross; non-null object/array references are rejected until firewall ownership
+  translation exists. Unsupported/malformed signatures fail closed.
+- This code builds for PC, ARM and RISC-V. The existing upstream positive SIO
+  CAP tests only a same-applet call, so they do not execute the cross-context
+  argument branch. Do not claim argument forwarding works on hardware until a
+  positive cross-AID fixture exercises it. Keep all upstream CAP files
+  unchanged.
+- The approved reader helper and `lsusb -d 2e8a:0009` currently find no Pico in
+  the VM, although PC/SC exposes two VPCD readers. Retry hardware only after
+  guest USB enumeration returns.
+- An attempted full multipackage VPCD regression passed its package, restart,
+  lookup and delete phases but timed out while reinstalling the transaction
+  probe (`INSTALL a000000062030101`). Root cause is not established; retain its
+  full logs before attributing it to firmware.

@@ -45,12 +45,93 @@
 #include "bytecodes.hpp"
 #include "../../../src/vm_applet_context.hpp"
 
+#include <array>
 #include <cstring>
 #include <cstdio>
 
 namespace jcvm {
 
 namespace {
+bool getShareableMethodSignature(
+    const Package &package, const jc_cap_interface_info *interface_info,
+    const uint8_t method_token, std::array<uint8_t, 128> &nibbles,
+    uint8_t &nibble_count) {
+  const auto *descriptor = package.getCap().getDescriptor();
+  if (descriptor == nullptr || interface_info == nullptr) return false;
+
+  const auto *descriptor_bytes =
+      reinterpret_cast<const uint8_t *>(descriptor);
+  const uint16_t component_size = NTOHS(descriptor->size);
+  const uint8_t *component_end = descriptor_bytes + 3 + component_size;
+  const uint8_t *cursor = descriptor->data;
+  ConstantPool_Handler cp(package);
+  uint16_t method_type_offset = 0;
+  bool method_found = false;
+
+  for (uint8_t class_index = 0; class_index < descriptor->class_count;
+       ++class_index) {
+    if (cursor + sizeof(jc_cap_class_descriptor_info) > component_end) {
+      return false;
+    }
+    const auto *class_descriptor =
+        reinterpret_cast<const jc_cap_class_descriptor_info *>(cursor);
+    const bool is_interface =
+        (class_descriptor->access_flags & JC_CAP_CLASS_ACC_INTERFACE) != 0;
+    const bool matches_interface =
+        is_interface &&
+        cp.classref2interface(class_descriptor->this_class_ref).second ==
+            interface_info;
+    const auto methods = class_descriptor->methods();
+    if (matches_interface) {
+      for (uint16_t method_index = 0; method_index < methods.size();
+           ++method_index) {
+        const auto &method_descriptor = methods.at(method_index);
+        if (method_descriptor.token == method_token) {
+          if (method_found) return false;
+          method_type_offset = NTOHS(method_descriptor.type_offset);
+          method_found = true;
+        }
+      }
+    }
+
+    const size_t class_record_size =
+        sizeof(jc_cap_class_descriptor_info) +
+        static_cast<size_t>(class_descriptor->interface_count) *
+            sizeof(jc_cap_class_ref) +
+        NTOHS(class_descriptor->field_count) *
+            sizeof(jc_cap_field_descriptor_info) +
+        NTOHS(class_descriptor->method_count) *
+            sizeof(jc_cap_method_descriptor_info);
+    if (class_record_size > static_cast<size_t>(component_end - cursor)) {
+      return false;
+    }
+    cursor += class_record_size;
+  }
+  if (!method_found || cursor > component_end) return false;
+
+  // Type offsets are relative to the TypeDescriptor component body, which
+  // follows the variable-length class descriptor records. Avoid the legacy
+  // accessor's fixed-size class-table assumption here.
+  const uint8_t *types = cursor;
+  const size_t remaining = static_cast<size_t>(component_end - types);
+  if (method_type_offset >= remaining) return false;
+  const uint8_t *signature = types + method_type_offset;
+  if (static_cast<size_t>(component_end - signature) < 1) return false;
+  nibble_count = signature[0];
+  const size_t byte_count = (static_cast<size_t>(nibble_count) + 1) / 2;
+  if (nibble_count == 0 || nibble_count > nibbles.size() ||
+      byte_count > static_cast<size_t>(component_end - signature) - 1) {
+    return false;
+  }
+  for (uint16_t nibble_index = 0; nibble_index < nibble_count;
+       ++nibble_index) {
+    const uint8_t packed = signature[1 + nibble_index / 2];
+    nibbles[nibble_index] = static_cast<uint8_t>(
+        (nibble_index & 1) == 0 ? packed >> 4 : packed & 0x0f);
+  }
+  return true;
+}
+
 bool classImplementsShareableInterface(const Package &package,
                                        const jclass_index_t class_index) {
   Package current_package = package;
@@ -895,20 +976,120 @@ void Bytecodes::bc_invokeinterface() {
       return;
     }
 
-    if (nargs != 1) {
-      // Cross-context arguments still require descriptor-aware copying and
-      // reference ownership conversion.
+    // Cross-context arguments are copied according to the CAP interface
+    // descriptor. Primitive values can safely cross the heap boundary. Object
+    // references are accepted only when null until the firewall can translate
+    // shareable references back to their owning context.
+    std::array<uint8_t, 128> signature_nibbles{};
+    uint8_t signature_nibble_count = 0;
+    if (!getShareableMethodSignature(
+            interface_info.first, interface_info.second, interface_method,
+            signature_nibbles, signature_nibble_count)) {
       throw Exceptions::SecurityException;
     }
 
-    // Consume the proxy receiver; the target receives the real server object
-    // only in its owning context.
-    (void)stack.pop_Reference();
-    const InterpretorInitialLocal initial_locals[] = {
-        {InterpretorLocalType::Reference, server_reference.compact()}};
+    std::array<InterpretorInitialLocal, 255> initial_locals{};
+    uint8_t initial_local_count = 1;
+    initial_locals[0] = {InterpretorLocalType::Reference,
+                         server_reference.compact()};
+    uint16_t signature_cursor = 0;
+    uint16_t argument_word_index = 1; // word zero is the receiver.
+    uint16_t expected_argument_words = 1;
+    bool found_return_type = false;
+    const auto caller_word = [&stack, nargs](const uint16_t position) {
+      return stack.get_Pushed_Element(
+          static_cast<uint16_t>(nargs - position)).compact();
+    };
+    while (signature_cursor < signature_nibble_count) {
+      const uint8_t type = signature_nibbles[signature_cursor++];
+      // Reference types carry a four-nibble class token after their type code.
+      if (type == 0x06 || type == 0x0e) {
+        if (signature_nibble_count - signature_cursor < 4) {
+          throw Exceptions::SecurityException;
+        }
+        signature_cursor = static_cast<uint16_t>(signature_cursor + 4);
+      }
+      const bool is_return = signature_cursor == signature_nibble_count;
+      if (is_return) {
+        found_return_type = true;
+        break;
+      }
+
+      if (initial_local_count == initial_locals.size() ||
+          argument_word_index >= nargs) {
+        throw Exceptions::SecurityException;
+      }
+      switch (type) {
+      case 0x02: // boolean
+      case 0x03: // byte
+        initial_locals[initial_local_count++] = {
+            InterpretorLocalType::Byte,
+            static_cast<uint32_t>(static_cast<int8_t>(
+                caller_word(argument_word_index)))};
+        ++argument_word_index;
+        ++expected_argument_words;
+        break;
+      case 0x04: // short
+        initial_locals[initial_local_count++] = {
+            InterpretorLocalType::Short,
+            static_cast<uint32_t>(static_cast<uint16_t>(
+                caller_word(argument_word_index)))};
+        ++argument_word_index;
+        ++expected_argument_words;
+        break;
+      case 0x05: { // int occupies two stack words and two local slots.
+#ifdef JCVM_INT_SUPPORTED
+        if (static_cast<uint16_t>(argument_word_index + 1) >= nargs) {
+          throw Exceptions::SecurityException;
+        }
+        const uint16_t low_word = caller_word(argument_word_index);
+        const uint16_t high_word =
+            caller_word(static_cast<uint16_t>(argument_word_index + 1));
+        initial_locals[initial_local_count++] = {
+            InterpretorLocalType::Int,
+            static_cast<uint32_t>(SHORTS_TO_INT(high_word, low_word))};
+        argument_word_index = static_cast<uint16_t>(argument_word_index + 2);
+        expected_argument_words =
+            static_cast<uint16_t>(expected_argument_words + 2);
+#else
+        throw Exceptions::SecurityException;
+#endif
+        break;
+      }
+      case 0x06: // object reference
+      case 0x0a: // boolean[]
+      case 0x0b: // byte[]
+      case 0x0c: // short[]
+      case 0x0d: // int[]
+      case 0x0e: { // reference[]
+        const jref_t reference(
+            caller_word(argument_word_index));
+        if (!reference.isNullPointer()) {
+          throw Exceptions::SecurityException;
+        }
+        initial_locals[initial_local_count++] = {
+            InterpretorLocalType::Reference, reference.compact()};
+        ++argument_word_index;
+        ++expected_argument_words;
+        break;
+      }
+      default:
+        throw Exceptions::SecurityException;
+      }
+    }
+    if (!found_return_type || expected_argument_words != nargs ||
+        argument_word_index != nargs) {
+      throw Exceptions::SecurityException;
+    }
+
+    // Pop all caller words only after validation and copying succeeded.
+    for (uint16_t word = 0; word < nargs; ++word) {
+      stack.pop();
+    }
     Interpretor server_interpretor(
         *server_context, target_method.second,
-        target_method.first.getPackageID(), initial_locals, 1);
+        target_method.first.getPackageID(), initial_locals.data(),
+        initial_local_count);
     const uint16_t status = server_interpretor.run();
     if (status != 0x9000) {
       throw Exceptions::SecurityException;

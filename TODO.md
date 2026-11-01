@@ -224,11 +224,13 @@ Archive text is historical evidence, not current device state or priorities.
   JCRE-global references cross directly; server-local reference returns are
   wrapped in new client proxies only when the server class implements a
   Shareable interface. Same-context arguments stay in their owning heap;
-  cross-context calls with arguments still fail closed pending descriptor-aware
-  primitive copying and reference firewall translation. A
-  positive same-applet call is exercised, but cross-AID ownership, context
-  restoration and its firewall path remain unverified end to end. Never return
-  raw server heap references to clients.
+  cross-context arguments are now decoded from the interface CAP Descriptor
+  signature and copied by primitive type. Null reference arguments are allowed;
+  non-null reference arguments still fail closed pending ownership translation.
+  This new argument path builds for PC/ARM/RISC-V but has no positive cross-AID
+  CAP-level test yet. A positive same-applet call is exercised, but cross-AID
+  ownership, context restoration and its firewall path remain unverified end
+  to end. Never return raw server heap references to clients.
   Acceptance: positive cross-AID and denied-call fixtures, correct context/AID
   restoration, stable roots across GC and reset/delete, no cross-heap reference
   leaks; follow with unchanged upstream Multi CAP integration and physical checks.

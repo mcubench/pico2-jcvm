@@ -2606,3 +2606,33 @@ This still does not test cross-AID server context routing, argument conversion
 across contexts, exception propagation, reference ownership/lifetime or
 physical hardware. The preceding authorized reader refresh found zero Pico
 devices. Keep CTX-01 open and preserve upstream CAPs unchanged.
+
+## Cross-context primitive SIO arguments — in progress, 2026-11-01
+
+`invokeinterface` now reads a Shareable interface method signature from the
+CAP Descriptor component for calls whose proxy belongs to another context. It
+copies boolean/byte/short/int arguments into typed initial locals, then removes
+the caller's argument words before entering the server method. Null reference
+arguments are allowed; all non-null object and array references fail closed
+until ownership translation is implemented. Signature lookup walks the
+variable-length class descriptor table; the legacy `jc_cap_descriptor_component::types()`
+accessor assumes fixed-size class records, so this path deliberately does not
+use it.
+
+Validation: `tools/test-rmi-registry`, PC build, ARM firmware build, RISC-V
+build, and scoped whitespace check passed. The full VPCD multipackage suite
+passed its package install, restart, AID lookup, and deletion phases, then
+timed out installing the transaction probe during cleanup/reinstall
+(`INSTALL a000000062030101`); root cause is unknown and the failure is
+preserved in `artifacts/logs/host-vpcd-multipackage-*20261101T191433Z.log`.
+An attempted transaction probe case 48 did not reach VPCD (`timed out waiting
+for emulator VPCD connect`), so it is not counted as SIO validation. The
+approved USB helper and elevated `lsusb -d 2e8a:0009` found no physical Pico in
+the VM; PC/SC only lists the two VPCD readers.
+
+No CAP was created or modified. This primitive argument path has only compiled;
+the existing upstream positive SIO CAP remains same-applet/same-context and
+does not exercise it. Next, design a cross-AID integration test using an
+unchanged upstream CAP if available, add coverage for signature parsing and
+argument layout, then implement safe non-null reference translation and
+cross-context exception restoration. Keep CTX-01 open.
