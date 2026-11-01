@@ -15,7 +15,9 @@ Parent-slot encoded records safely skip compaction.
 covers all eight dynamic package IDs, each with 128 applet-state records plus
 static and lifecycle tags, followed by deletion and restart. It preserves an
 unrelated record and passes 64 randomized snapshot power cuts with old-or-new
-recovery. ARM and RISC-V `max_crypto` builds pass. Latest ARM ELF end is
+recovery. The compactor checks each record offset and encoded-key length before
+reading payload bytes and has no error return after index permutation begins.
+ARM and RISC-V `max_crypto` builds pass. Latest ARM ELF end is
 `0x10100038`; BSS end is
 `0x20048214`. The latest source change has not been physically flashed: the
 authorized helper currently reports zero Pico readers, and an earlier cycle
@@ -25,7 +27,8 @@ hardware in a restricted context; continue offline until a device is available.
 Refreshed the external-test bundle at
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; it is byte-for-
 byte equal to the latest build, 2,098,176 bytes, SHA-256
-`841af227b3dfcd7eaf589c40b042a71e9efdf4d00c82aea296418d3f5d9a1d70`. Its
+`122a172ca7a412881afaa2529f1c1c7c4a782c3adb9f91ca436f5545ca071c2c`. This
+refresh includes the subsequent compaction offset-bounds guard. Its
 README now explicitly says this image has not had a physical runtime check.
 The unchanged support manifest SHA-256 is
 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
