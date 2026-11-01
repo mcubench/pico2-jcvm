@@ -3063,23 +3063,30 @@ original terminology/status; check current summary and later fixes before reuse.
 - Root source: `choupi/src/main_pc.cpp`; contract: `docs/FILESYSTEM_ABI.md`.
   Atomic image replacement plus explicit durability syncing is not implemented.
 
-### Follow-up: VPCD closes on applet reselection after package DELETE
+### Resolved: applet-root inventory mixed separate heaps after DELETE
 
-- **Reproduction:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage`
-  with the test-only JCSystem transaction CAP. The transient arrays survive a
-  cross-AID switch and the probe instance/package DELETE commands complete. A
-  follow-up SELECT of a surviving applet then sees EOF on the VPCD connection.
-  The emulator log ends after `VM_ENTRY stage=call_begin package=0
-  method=1055`, `call_done`, and `locals_ready`; it has no `PC_FS` error or
-  caught exception. This was reproduced with APDU tracing enabled.
-- **Current status:** Context invalidation on successful DELETE works: the
-  active instance context and matching cached package contexts are discarded.
-  The focused suite passes 46/46 with transient-state preservation and cleanup;
-  it does not cover the separately failing post-delete SELECT disconnect.
-  That disconnect is not yet explained. Do not classify it as a PC/SC transport
-  issue or claim post-delete reselection passes. Keep that focused result
-  separate from the failed stricter check.
-- **Next diagnostic:** Isolate the VPCD session transition from card-manager
-  selected state back to applet selection after DELETE; capture the callback
-  status and exact last APDU on a minimal two-package test. Compare with the
-  physical CCID path before changing shared lifecycle semantics.
+- **Reproduction:** With the VPCD test-only JCSystem transaction CAP,
+  transient-state checks passed, but SELECT of a surviving applet after
+  deleting the transaction package closed the session. The emulator had
+  completed the APDU with `9000`; the PC persistent-inventory diagnostic then
+  panicked while reading dynamic package `0x39` (`PC_FS:MISSING_DYNAMIC_CAP` /
+  former tag `0139`).
+- **Root cause:** Root enumeration collected every installed applet's
+  persistent root reference and interpreted all of them in one `Context` heap.
+  Applet-local references are offsets in separate heaps, so this treated an
+  unrelated applet's local handle as a package-57 object. The embedded GC root
+  walk had the same cross-context aggregation.
+- **Viable fix:** Enumerate only the current context's own applet root and its
+  already cached heap roots. Do not import all package static roots into each
+  applet-local heap. Missing dynamic CAP IDs now fail directly rather than
+  falling through to the ROM tag namespace. The VPCD regression passes
+  post-delete selection and cleanup (47/47). ARM and RISC-V wrappers and the
+  PC build pass. Pico 2 `8E464F4E2BBC0A19` was flashed with the ARM image; its
+  finite monitor passed. The physical transaction-probe applet preserved its
+  transient result across an applet switch, then its package was deleted and
+  the surviving Core applet selected successfully (`9000`). GPPro confirmed
+  that the temporary package was removed. Physical log:
+  `artifacts/logs/physical-delete-reselect-8E464F4E2BBC0A19-20261101.log`.
+- **Limit:** Package-wide static sharing across applet contexts is still a
+  separate Java Card semantics issue; keep broader firewall/shareable and
+  static-state behavior tracked independently.

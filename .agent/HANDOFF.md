@@ -1,6 +1,6 @@
 # Session handoff — updated 2026-11-01
 
-## Bounded applet-context retention — in progress (2026-11-01)
+## Bounded applet-context retention — focused lifecycle passes (2026-11-01)
 
 Implemented in the current uncommitted worktree:
 
@@ -13,29 +13,52 @@ Implemented in the current uncommitted worktree:
   get one incremental GC pass per 32 APDUs to cap extra root-walk cost. PC
   diagnostics also trace cached roots.
 - Successful GP DELETE invalidates matching selected and inactive contexts in
-  both physical CCID and PC VPCD card-manager paths. Matching cached global
-  AID objects are also released.
+  both physical CCID and PC VPCD card-manager paths. Canonical global AID
+  objects remain alive because other contexts may still reference them.
 - `tools/tests/pc_vpcd_multipackage_test.py` builds the native JCSystem probe
   CAP and runs transient-array checks at the end of the multipackage suite.
   Earlier registry, lookup, reset, restart, and deletion scenarios remain
   isolated from the fixture.
 
-Validation: `./tools/build-pc --profile current`, `./tools/build arm`, and
-`./tools/build riscv` passed. The authorized
-`PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 46/46,
-including both CLEAR_ON_RESET and CLEAR_ON_DESELECT after switching away and
-back, probe cleanup, and an empty final registry. The active-AID restore path
-preserves the current context instead of replacing it with a fresh heap. A stricter
-post-delete SELECT of a surviving applet failed with VPCD EOF. With APDU trace
-enabled, the log ended after `VM_ENTRY stage=call_begin package=0 method=1055`
-and `call_done/locals_ready`; no PC_FS error or caught exception appeared.
-This remains open; see the new QKB section. The PC test wrapper does not rebuild
-the emulator, so run `./tools/build-pc --profile current` before each rerun.
+Validation: `./tools/build-pc --profile current`, `./tools/build arm`,
+`./tools/build riscv`, `python3 -m py_compile
+tools/tests/pc_vpcd_multipackage_test.py`, and the authorized
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed. VPCD reports
+47/47, including both CLEAR_ON_RESET and CLEAR_ON_DESELECT after switching
+away and back, selecting a surviving applet after package DELETE, probe
+cleanup, and an empty final registry. The physical ARM image was cycled onto
+Pico 2 `8E464F4E2BBC0A19`; finite serial output ended with
+`TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. On that device,
+the transaction probe passed transient-state checks across an applet switch,
+its applet and package were deleted, and SELECT of the surviving Core applet
+returned `9000`. GPPro confirmed the probe package was absent afterward. The
+second Pico reader `2BED26ED20556535` remained available as failover.
 
-The physical-reader helper returned zero Pico devices; hardware validation was
-skipped. Next: isolate VPCD session transition to a surviving applet after
-DELETE; retain the 46/46 regression and do not claim the failed post-delete
-reselection passes.
+The root cause was root enumeration mixing applet-local references from
+separate heaps. Embedded and PC diagnostics now walk only the selected
+context's roots; package-wide static roots are not interpreted in a local
+heap. `getCap()` also rejects missing dynamic CAP data directly. VPCD and
+physical post-delete selection both pass. Broader package static sharing,
+firewall/shareable calls, and logical channels remain open. The PC test wrapper
+does not rebuild the emulator, so run `./tools/build-pc --profile current`
+before each rerun.
+
+Validation artifacts:
+
+- VPCD APDU log: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T125822Z.log`
+  SHA-256 `8179640d2e66b9cf4e023f5732a43117596721943a68c3b077e11bcdc72d19a3`.
+- VPCD restart log: `artifacts/logs/host-vpcd-multipackage-restart-20261101T125822Z.log`
+  SHA-256 `f6d33d34819dfb43099a2aa92b0450f953909f573247b2e583550b27064ee8ee`.
+- Physical post-delete log: `artifacts/logs/physical-delete-reselect-8E464F4E2BBC0A19-20261101.log`.
+- Finite runtime monitor: `artifacts/logs/cycle-choupi-20261101T125044Z.log`
+  SHA-256 `2482238cbfd095886868f14b4e05f662ab0c69b4478f906c0515dd4cf9689f9b`.
+- ARM UF2 SHA-256 `8d341848a4e54e1fd29de067ad0f77888c729726cf72e9724020c088e40dbe02`
+  (1,824,768 bytes). The build includes other pre-existing dirty source
+  changes; this hash is not reproducible from the focused fix commit alone.
+
+Next: continue the TODO's remaining context/firewall work. Keep physical
+testing on either identified reader when available; no additional hardware
+action is needed to establish this post-delete regression.
 
 ## Multi-applet context lifetime audit — 2026-11-01
 

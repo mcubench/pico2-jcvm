@@ -671,16 +671,16 @@ def main() -> int:
             print("TEST:PASS JCSystem.lookupAID preserves permanent AID data and identity after card reset")
             inventory_logs = log_path.read_text(errors="replace")
             if not re.search(
-                    r"PERSISTENT_INVENTORY:.*applet_roots=21 "
-                    r"trace_complete=1 owner_scans=21 "
+                    r"PERSISTENT_INVENTORY: owner=\d+.*applet_roots=1 "
+                    r"trace_complete=1 owner_scans=1 "
                     r"unreachable_complete=1 unreachable_tags=\d+",
                     inventory_logs):
                 raise RuntimeError(
-                    "inventory did not mark all 21 installed applet roots "
-                    "and complete all owner-tag scans; "
+                    "inventory did not trace the selected applet's own root "
+                    "and complete its owner-tag scan; "
                     f"log={log_path}"
                 )
-            print("TEST:PASS inventory marks all 21 applet roots and scans owners")
+            print("TEST:PASS inventory traces selected applet heap independently")
 
             # Exit the first process cleanly so it saves VM state, then resume
             # the saved card with all CAP packages and instance records.
@@ -889,16 +889,16 @@ def main() -> int:
             print("TEST:PASS JCSystem.lookupAID preserves persistent AID identity after restart")
             restart_inventory_logs = restart_log_path.read_text(errors="replace")
             if not re.search(
-                    r"PERSISTENT_INVENTORY:.*applet_roots=21 "
-                    r"trace_complete=1 owner_scans=21 "
+                    r"PERSISTENT_INVENTORY: owner=\d+.*applet_roots=1 "
+                    r"trace_complete=1 owner_scans=1 "
                     r"unreachable_complete=1 unreachable_tags=\d+",
                     restart_inventory_logs):
                 raise RuntimeError(
-                    "restart inventory did not mark all 21 applet roots "
-                    "and complete all owner-tag scans; "
+                    "restart inventory did not trace the selected applet's "
+                    "own root and complete its owner-tag scan; "
                     f"log={restart_log_path}"
                 )
-            print("TEST:PASS restart inventory scans all 21 applet owners")
+            print("TEST:PASS restart inventory traces selected applet heap")
 
             exchange(connection, bytes.fromhex("00A4040000"), "reselect ISD")
             delete_object(scp, multi_applets[0], False,
@@ -992,6 +992,18 @@ def main() -> int:
                           "DELETE transaction probe instance")
             delete_object(scp, transaction_package, False,
                           "DELETE transaction probe package")
+            surviving_core_select = exchange(
+                connection, core_select,
+                "SELECT surviving Core after package DELETE",
+            )
+            if surviving_core_select[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    "surviving Core SELECT after package DELETE returned "
+                    + surviving_core_select.hex().upper()
+                )
+            print("TEST:PASS surviving applet SELECT after package DELETE")
+            exchange(connection, bytes.fromhex("00A4040000"),
+                     "select ISD before final Core cleanup")
             delete_object(scp, core_applets[0], False,
                           "DELETE final Core instance")
             delete_object(scp, core_package, False,
@@ -1001,7 +1013,7 @@ def main() -> int:
                     "registry is not empty after transient probe cleanup"
                 )
             print("TEST:PASS transient probe cleanup leaves registry empty")
-            print("TEST:SUMMARY pass=46 fail=0")
+            print("TEST:SUMMARY pass=47 fail=0")
             return 0
         finally:
             if connection is not None:

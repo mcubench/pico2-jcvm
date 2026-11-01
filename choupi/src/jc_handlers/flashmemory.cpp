@@ -2134,6 +2134,9 @@ JC_Cap FlashMemory_Handler::getCap(const jpackage_ID_t packageID) {
     if (cap_data != nullptr && cap_length != 0 && cap_length <= UINT16_MAX) {
       return JC_Cap(static_cast<uint16_t>(cap_length), cap_data);
     }
+    // A deleted dynamic package must never fall through to the persistent
+    // ROM-package tag namespace (0x01, packageID).
+    throw Exceptions::IOException;
   }
 
   auto &tag = FlashMemory_Handler::getCapTag(packageID);

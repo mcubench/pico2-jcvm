@@ -206,46 +206,26 @@ bool visit_registered_applet_root(uint8_t owner, uint8_t package_id,
   return true;
 }
 
-bool enumerate_all_registered_applet_roots(
-    jcvm::Heap &heap, jcvm::Heap::ReferenceVisitor visitor,
+bool enumerate_applet_context_root(
+    jcvm::Context &context, jcvm::Heap::ReferenceVisitor visitor,
     void *visitor_context) {
-  if (visitor == nullptr) return false;
+  if (visitor == nullptr || context.getRestoredAppletRef().isNullPointer()) {
+    return false;
+  }
   try {
-    for (uint8_t package_id = 0; package_id < JCVM_MAX_PACKAGES;
-         ++package_id) {
-      const uint8_t instance_count =
-          cap_store_package_instance_count(package_id);
-      if (instance_count == 0) continue;
-      if (!jcvm::FlashMemory_Handler::isPackageExist(package_id)) return false;
-      for (uint8_t index = 0; index < instance_count; ++index) {
-        uint8_t applet_aid[16]{};
-        uint8_t applet_aid_length = 0;
-        uint8_t instance_aid[16]{};
-        uint8_t instance_aid_length = 0;
-        uint16_t class_index = 0xffff;
-        uint8_t owner = 0;
-        if (!cap_store_package_instance_at(
-                package_id, index, applet_aid, applet_aid_length,
-                instance_aid, instance_aid_length, class_index) ||
-            applet_aid_length < 5 || applet_aid_length > sizeof(applet_aid) ||
-            instance_aid_length < 5 ||
-            instance_aid_length > sizeof(instance_aid) ||
-            class_index == 0xffff ||
-            !cap_store_applet_owner(instance_aid, instance_aid_length, owner))
-          return false;
-        RegisteredAppletRootContext root_context{
-            visitor, visitor_context, owner, package_id, class_index};
-        const auto result = jcvm::PersistentInventory::visitAppletInstanceRoots(
-            owner, heap, visit_registered_applet_root, &root_context);
-        if (result != jcvm::PersistentInventory::VisitResult::Complete ||
-            !root_context.metadata_matches || root_context.root_count != 1)
-          return false;
-      }
-    }
+    const auto instance = context.getHeap().getInstance(
+        context.getRestoredAppletRef());
+    RegisteredAppletRootContext root_context{
+        visitor, visitor_context, context.getAppletID(),
+        context.getAppletPackageID(), instance->getClassIndex()};
+    const auto result = jcvm::PersistentInventory::visitAppletInstanceRoots(
+        context.getAppletID(), context.getHeap(), visit_registered_applet_root,
+        &root_context);
+    return result == jcvm::PersistentInventory::VisitResult::Complete &&
+           root_context.metadata_matches && root_context.root_count == 1;
   } catch (...) {
     return false;
   }
-  return true;
 }
 
 #ifndef PC_VERSION
@@ -260,15 +240,6 @@ struct SelectedAppletRootContext {
   jcvm::PersistentInventory::VisitResult applet_result =
       jcvm::PersistentInventory::VisitResult::InvalidArgument;
 };
-
-bool visit_selected_package_static_root(uint8_t, uint16_t,
-                                        const uint16_t reference,
-                                        void *opaque) {
-  auto &roots = *static_cast<SelectedAppletRootContext *>(opaque);
-  ++roots.static_root_count;
-  roots.visitor(jcvm::jref_t(reference), roots.visitor_context);
-  return true;
-}
 
 void visit_selected_applet_instance_root(const jcvm::jref_t reference,
                                          void *opaque) {
@@ -288,32 +259,12 @@ bool enumerate_selected_applet_roots(
   roots.visitor = visitor;
   roots.visitor_context = visitor_context;
   roots.static_result = jcvm::PersistentInventory::VisitResult::Complete;
-  try {
-    // Static fields belong to packages, not only to the package containing
-    // the selected applet. Imported packages can retain persistent objects
-    // through their own static reference slots.
-    for (uint8_t package_id = 0; package_id < JCVM_MAX_PACKAGES;
-         ++package_id) {
-      if (!jcvm::FlashMemory_Handler::isPackageExist(package_id)) continue;
-      roots.static_result =
-          jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
-              package_id, selected_context->getHeap(),
-              visit_selected_package_static_root, &roots);
-      if (roots.static_result !=
-          jcvm::PersistentInventory::VisitResult::Complete) {
-        return false;
-      }
-    }
-  } catch (...) {
-    return false;
-  }
-  const bool all_applet_roots = enumerate_all_registered_applet_roots(
-      selected_context->getHeap(), visit_selected_applet_instance_root,
-      &roots);
-  roots.applet_result = all_applet_roots
+  const bool applet_root = enumerate_applet_context_root(
+      *selected_context, visit_selected_applet_instance_root, &roots);
+  roots.applet_result = applet_root
       ? jcvm::PersistentInventory::VisitResult::Complete
       : jcvm::PersistentInventory::VisitResult::ReadFailure;
-  return all_applet_roots;
+  return applet_root;
 }
 
 #ifdef CHOUPI_DEBUG_HEAP_GC
@@ -340,14 +291,6 @@ struct UnreachableTagCount {
   unsigned tags = 0;
 };
 
-bool count_static_inventory_root(uint8_t, uint16_t, const uint16_t reference,
-                                 void *opaque) {
-  auto &counts = *static_cast<PersistentInventoryCounts *>(opaque);
-  ++counts.static_roots;
-  counts.references.emplace_back(reference);
-  return true;
-}
-
 void count_applet_inventory_root(const jcvm::jref_t reference,
                                  void *opaque) {
   auto &counts = *static_cast<PersistentInventoryCounts *>(opaque);
@@ -361,43 +304,19 @@ bool count_unreachable_applet_tag(
   return true;
 }
 
-bool inventory_unreachable_tags_for_all_owners(
-    jcvm::Heap &heap, const std::vector<jcvm::jref_t> &roots,
-    unsigned &owner_scans, unsigned &tag_count) {
+bool inventory_unreachable_tags_for_owner(
+    const uint8_t owner, jcvm::Heap &heap,
+    const std::vector<jcvm::jref_t> &roots, unsigned &owner_scans,
+    unsigned &tag_count) {
   try {
-    for (uint8_t package_id = 0; package_id < JCVM_MAX_PACKAGES;
-         ++package_id) {
-      const uint8_t instance_count =
-          cap_store_package_instance_count(package_id);
-      if (instance_count == 0) continue;
-      if (!jcvm::FlashMemory_Handler::isPackageExist(package_id)) return false;
-      for (uint8_t index = 0; index < instance_count; ++index) {
-        uint8_t applet_aid[16]{};
-        uint8_t applet_aid_length = 0;
-        uint8_t instance_aid[16]{};
-        uint8_t instance_aid_length = 0;
-        uint16_t class_index = 0xffff;
-        uint8_t owner = 0;
-        if (!cap_store_package_instance_at(
-                package_id, index, applet_aid, applet_aid_length,
-                instance_aid, instance_aid_length, class_index) ||
-            applet_aid_length < 5 || applet_aid_length > sizeof(applet_aid) ||
-            instance_aid_length < 5 ||
-            instance_aid_length > sizeof(instance_aid) ||
-            class_index == 0xffff ||
-            !cap_store_applet_owner(instance_aid, instance_aid_length, owner))
-          return false;
-
-        UnreachableTagCount count;
-        const auto result =
-            jcvm::PersistentInventory::visitUnreachableAppletTags(
-                owner, heap, roots, count_unreachable_applet_tag, &count);
-        if (result != jcvm::PersistentInventory::VisitResult::Complete)
-          return false;
-        ++owner_scans;
-        tag_count += count.tags;
-      }
+    UnreachableTagCount count;
+    const auto result = jcvm::PersistentInventory::visitUnreachableAppletTags(
+        owner, heap, roots, count_unreachable_applet_tag, &count);
+    if (result != jcvm::PersistentInventory::VisitResult::Complete) {
+      return false;
     }
+    owner_scans = 1;
+    tag_count = count.tags;
   } catch (...) {
     return false;
   }
@@ -413,23 +332,12 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
   PersistentInventoryCounts counts;
   context.appendRootReferences(counts.references);
   const std::size_t context_roots = counts.references.size();
-  auto static_result = jcvm::PersistentInventory::VisitResult::Complete;
-  try {
-    for (uint8_t package_id = 0; package_id < JCVM_MAX_PACKAGES;
-         ++package_id) {
-      if (!jcvm::FlashMemory_Handler::isPackageExist(package_id)) continue;
-      static_result =
-          jcvm::PersistentInventory::visitInstalledPackageStaticRoots(
-              package_id, context.getHeap(), count_static_inventory_root,
-              &counts);
-      if (static_result != jcvm::PersistentInventory::VisitResult::Complete)
-        break;
-    }
-  } catch (...) {
-    static_result = jcvm::PersistentInventory::VisitResult::ReadFailure;
-  }
-  const auto applet_result = enumerate_all_registered_applet_roots(
-      context.getHeap(), count_applet_inventory_root, &counts)
+  // Roots cached in this applet context are already included above. Walking
+  // every package's static fields into this heap confuses package-global
+  // reference slots with another applet context's local heap handles.
+  const auto static_result = jcvm::PersistentInventory::VisitResult::Complete;
+  const auto applet_result = enumerate_applet_context_root(
+      context, count_applet_inventory_root, &counts)
       ? jcvm::PersistentInventory::VisitResult::Complete
       : jcvm::PersistentInventory::VisitResult::ReadFailure;
   jcvm::Heap::ReachabilitySummary reachability;
@@ -440,20 +348,22 @@ void inventory_persistent_roots_if_enabled(jcvm::Context &context) {
       applet_result == jcvm::PersistentInventory::VisitResult::Complete) {
     reachability = context.getHeap().traceReachableFrom(counts.references);
     if (reachability.complete) {
-      unreachable_complete = inventory_unreachable_tags_for_all_owners(
-          context.getHeap(), counts.references, owner_scans, unreachable_tags);
+      unreachable_complete = inventory_unreachable_tags_for_owner(
+          context.getAppletID(), context.getHeap(), counts.references,
+          owner_scans, unreachable_tags);
     }
   } else {
     reachability.complete = false;
     reachability.root_enumeration_failures = 1;
   }
   std::fprintf(stderr,
-               "PERSISTENT_INVENTORY: static_result=%u static_roots=%u "
+               "PERSISTENT_INVENTORY: owner=%u static_result=%u static_roots=%u "
                "applet_result=%u applet_roots=%u trace_complete=%u "
                "owner_scans=%u unreachable_complete=%u unreachable_tags=%u "
                "reachable_arrays=%u/%u reachable_instances=%u/%u "
                "invalid_refs=%u edge_failures=%u root_failures=%u "
                "context_roots=%u\n",
+               static_cast<unsigned>(context.getAppletID()),
                static_cast<unsigned>(static_result), counts.static_roots,
                static_cast<unsigned>(applet_result), counts.applet_roots,
                reachability.complete ? 1u : 0u,
@@ -1120,29 +1030,18 @@ void choupi_vm_forget_deleted_applet_contexts(
            std::memcmp(context_aid, aid, aid_length) == 0;
   };
   if (selected_applet_context && is_deleted_context(*selected_applet_context)) {
-    uint8_t context_aid[16]{};
-    uint8_t context_aid_length = 0;
-    if (selected_applet_context->copyAppletAID(context_aid,
-                                               context_aid_length)) {
-      jcvm::Heap::releaseGlobalAIDObject(context_aid, context_aid_length);
-    }
     selected_applet_context->setAppletActive(false);
     selected_applet_context.reset();
   }
   for (auto &context : inactive_applet_contexts) {
     if (!context) continue;
     if (is_deleted_context(*context)) {
-      uint8_t context_aid[16]{};
-      uint8_t context_aid_length = 0;
-      if (context->copyAppletAID(context_aid, context_aid_length)) {
-        jcvm::Heap::releaseGlobalAIDObject(context_aid, context_aid_length);
-      }
       context.reset();
     }
   }
-  // The request AID can be a package AID, while a prior instance DELETE may
-  // have left its globally cached AID object alive.
-  jcvm::Heap::releaseGlobalAIDObject(aid, aid_length);
+  // Canonical AID objects live in the process-global heap and may still be
+  // referenced by another applet context. Keep them alive across DELETE;
+  // freeing one here can leave an unrelated context with a dangling handle.
   selected_applet_is_active = false;
 }
 

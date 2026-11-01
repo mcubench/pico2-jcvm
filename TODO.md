@@ -1611,10 +1611,11 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   invalidates cached contexts on successful instance/package DELETE. The
   focused VPCD transaction probe passed both `CLEAR_ON_RESET` and
   `CLEAR_ON_DESELECT` checks after switching away and back; the expanded suite
-  passed 46/46 and ended with an empty registry. A stricter follow-up that
-  selects a surviving unrelated applet after deleting the probe package still
-  closes the VPCD connection, so post-delete reselection is an open regression
-  and the context work is not complete. Cross-applet shareable lookup and
+  passed 47/47 and ended with an empty registry, including selecting a
+  surviving applet after deleting the probe package. The earlier disconnect
+  was caused by root diagnostics mixing applet-local references from separate
+  heaps; root enumeration now uses only the current context's applet root and
+  cached heap roots. Cross-applet shareable lookup and
   firewall ownership checks, general cross-context calls, and logical channels
   remain unimplemented; assigned channel is basic channel 0.
 - [x] **Make commit-capacity reporting consistent with transactions.**
