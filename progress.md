@@ -19088,5 +19088,5 @@
 - Validation: Read-only source trace through `src/ccid_device.cpp` selection dispatch and `choupi/src/main.cpp` restore/deselect/forget paths confirms there is one `selected_applet_context` and it is replaced for a different applet. The authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper returned `found 0`; no USB/PCSC hardware test was attempted. No build was run because source behavior was not changed.
 - Result: Multi-applet switching remains explicitly outside the currently declared supported profile. Retaining multiple applet heaps safely requires collector root enumeration for inactive contexts and a bounded RAM policy; do not enable persistent reclamation or cache contexts without those safeguards.
 - Decision: Design a bounded context registry and identify a regression path using existing deploy CAPs before implementing switching semantics. Physical testing remains pending reader availability.
-- Commit: `pending`
+- Commit: `44a376a` (`Document applet context lifetime gap`)
 - Artifacts/logs: None; source inspection only.
