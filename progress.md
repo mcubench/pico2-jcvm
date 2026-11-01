@@ -17,7 +17,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including restart after each of eight package deletions, unrelated-record preservation, and the existing 64 randomized snapshot power cuts. `git diff --check` passed. Firmware builds were not rerun because only host-test and documentation sources changed.
 - Result: The erase predicate and compactor are exercised against all supported dynamic package slots and all three package-owned persistent namespaces.
 - Decision: Keep this expanded coverage; continue with physical confirmation when a reader is available.
-- Commit: `da568ae` (regression); this progress and tracker update are recorded in the following metadata commit.
+- Commit: `da568ae` (regression); `985b303` (progress and tracker update).
 - Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; test output ended `TEST:SUMMARY fail=0`.
 
 ## 2026-10-26 — Native RSA ISO9796-2 scheme 1
