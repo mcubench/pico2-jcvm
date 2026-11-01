@@ -19032,6 +19032,6 @@
 - Validation: `UPLOAD OK`; seven matching `ALG_RSA_SHA_384_PKCS1` API rows returned `OK`, with 187 unrelated rows skipped. Client timed out at 120 seconds; the outer 180-second command bound then interrupted cleanup. VPCD emulator was started after bounded reader discovery and a passing `VpcdPresenceProbe`. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
 - Result: RSA SHA-384 PKCS#1 calls do not reproduce an API error; the full Crypto client completion issue persists beyond those calls and is not localized to RSA-384. This is a failed overall VPCD area run, not a full-area pass.
 - Decision: Diagnose why the official client / VPCD run fails to return and complete cleanup after filtered runs; physical API confirmation remains pending until a Pico reader is available.
-- Commit: `<pending>`
+- Commit: `0c2b121` (`Record VPCD Crypto timeout follow-up`)
 - Artifacts/logs: API CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-rsa384-followup.csv` SHA-256 `be8ad238b6b99b20099503b8800c6355a0bb32e2b8b37036b0c97f39f4815e62`; reader, presence, and emulator logs `artifacts/logs/vpcd-api-rsa384-20261101T095317Z/`.
 
