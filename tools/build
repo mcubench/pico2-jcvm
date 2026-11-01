@@ -35,6 +35,7 @@ case "${arch_arg}" in
 esac
 
 require_sdk
+"${repo_root}/tools/apply-tinyusb-event-budget"
 require_command cmake
 require_command ninja
 require_command picotool

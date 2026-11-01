@@ -21,6 +21,7 @@
 #include "vm_diagnostics.h"
 #include "native_progress_guard.hpp"
 #include "vm_filesystem.h"
+#include "usb_task_budget.hpp"
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;
@@ -366,7 +367,7 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   if (native_extension_in_flight) {
     const absolute_time_t deadline = make_timeout_time_ms(100);
     while (native_extension_in_flight && !time_reached(deadline)) {
-      tud_task();
+      choupi::service_usb_task();
       if (native_extension_in_flight) sleep_us(100);
     }
   }
@@ -1115,7 +1116,7 @@ extern "C" void choupi_ccid_native_crypto_progress(void) {
 
   // The USB-ICC/CCID status bitmap uses command status 2 (0x80) to request a
   // time extension. Keep the APDU sequence unchanged until its final response.
-  tud_task();
+  choupi::service_usb_task();
   if (!native_operation_active || native_extension_in_flight || !extension_due ||
       usbd_edpt_busy(native_operation_rhport, ep_in))
     return;

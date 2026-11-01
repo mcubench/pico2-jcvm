@@ -14,6 +14,7 @@
 #include "reader_led.hpp"
 #include "vm_lifecycle.h"
 #include "vm_diagnostics.h"
+#include "usb_task_budget.hpp"
 
 extern "C" char __StackLimit;
 
@@ -116,7 +117,7 @@ int main_arm(void) {
     // IRQ background servicing is disabled so TinyUSB and CCID stay on one
     // context. Drive enumeration here too; stdio output alone does not poll
     // TinyUSB before the CDC host has connected.
-    tud_task();
+    choupi::service_usb_task();
     if (stdio_usb_connected()) break;
     printf("BOOT board=pico2 chip=rp2350 arch=arm runtime=choupi\r\n");
     fflush(stdout);
@@ -165,7 +166,7 @@ int main_arm(void) {
     // Keep TinyUSB and the custom CCID callbacks on one thread. In particular,
     // the main-loop CCID handler must queue responses from the same context
     // that owns usbd endpoint state.
-    tud_task();
+    choupi::service_usb_task();
     choupi_ccid_task();
     choupi_reader_led_task();
     watchdog_update();

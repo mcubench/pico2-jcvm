@@ -194,6 +194,19 @@ credited as architectural completion evidence.
   bound. Acceptance: a sustained control-event workload cannot monopolize one
   progress invocation; watchdog service, CCID extensions and eventual response
   remain correct; measure the bound and rerun the physical long-operation gate.
+  Implementation update (2026-11-01): TinyUSB v0.18.0 has no event-count API;
+  the Pico queue ignores its timeout and `tud_task()` drains until empty. Added
+  a repository-owned patch pinned to TinyUSB commit
+  `86ad6e56c1700e85f1c5678607a762cfe3aa2f47`; it adds nonblocking
+  `tud_task_budgeted(max_events)`, which processes no more than the requested
+  FIFO entries and leaves the remainder queued. `tools/build` applies/checks
+  the patch, and all JCVM TinyUSB service points use a budget of eight events.
+  PC, ARM, and RISC-V builds passed. Physical runtime monitor passed on Pico 2
+  `2BED26ED20556535` with `current` and `8E464F4E2BBC0A19` with `max_crypto`.
+  Strict acceptance remains open: a sustained control-event workload and
+  per-invocation wall-time bound have not been measured, and the RSA-3072
+  operation did not complete in this session because the available test applet
+  could not be installed on 2BED (`6A80`) and 8E later disappeared from PC/SC.
 - [ ] **ARCH-09 — Exercise production progress/dispatch boundaries (ARCH-04
   validation follow-up; coordinate with ARCH-08).** The current
   `tools/tests/native_progress_guard_test.cpp` verifies the RAII guard using

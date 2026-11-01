@@ -1,21 +1,46 @@
 # Session handoff — updated 2026-11-01
 
-## Next priority: ARCH-08 native USB progress budget
+## Current priority: finish ARCH-08 native USB progress budget
 
-ARCH-07 is implemented and validated. Shared lifecycle/query declarations now
-live in `src/vm_lifecycle.h`; filesystem backend extensions in
-`src/vm_filesystem.h`; CAP storage adapter declarations in
-`src/cap_store.hpp`; and CAP applet-AID inspection in `src/cap_load.hpp`.
-The pinned OS `ffi.h` and submodule were left untouched. PC, ARM, and RISC-V
-builds, RP2350 filesystem overlay tests, and the 47/47 VPCD multipackage suite
-pass. Pico 2 `8E464F4E2BBC0A19` was flashed and its finite monitor passed.
+ARCH-07 is implemented and validated in commits `a252e73` and `1187442`.
+ARCH-08 now has an implementation but remains open for its stress and timing
+acceptance. The pinned TinyUSB v0.18.0 checkout has no event-count limit and
+its Pico queue ignores timeout values. Added a repository-owned patch pinned to
+commit `86ad6e56c1700e85f1c5678607a762cfe3aa2f47`; the patch adds nonblocking
+`tud_task_budgeted(max_events)`, returns the processed count, and leaves later
+FIFO entries queued. `tools/build` applies/checks this patch through
+`tools/apply-tinyusb-event-budget`. All JCVM call sites use an eight-event
+budget, including startup CDC wait, main loop, crypto progress, and CCID
+time-extension wait. PC, ARM, and RISC-V builds passed.
 
-Next inspect the pinned TinyUSB event-processing facilities and determine how
-to impose a supported finite event/time budget without dropping events or
-breaking control transfers, as required by ARCH-08 in `TODO.md`. Keep ARCH-09
-production-path guard coverage as a later coordinated step. Existing Rust OS
-and packed-CAP compiler warnings remain; this declaration cleanup introduced
-no new warnings.
+Physical evidence: the ARM `current` image passed an 18-second monitor on Pico
+2 `2BED26ED20556535` (`artifacts/logs/cycle-choupi-20261101T132943Z.log`); the
+ARM `max_crypto` image passed on `8E464F4E2BBC0A19`
+(`artifacts/logs/cycle-choupi-20261101T133931Z.log`). Attempts to complete the
+RSA-3072 long-operation gate were inconclusive. The crypto test CAP install on
+2BED returned `6A80` and cleanup confirmed it absent. The upstream JCAlgTest
+CAP was already present on 8E, but PC/SC stopped listing that device before
+its probe could run. A later max_crypto flash to 2BED verified the image, but
+the reader/CDC devices disappeared before the finite monitor; the authorized
+helper then reported zero Pico devices and `lsusb -d 2e8a:` found none. Do not
+interpret these transport/capacity outcomes as an ARCH-08 algorithm failure.
+
+The event-count limit is established by code and both architecture builds, but
+no sustained control-event workload or per-call wall-time maximum has been
+measured. Next, when a board is enumerated, run the non-destructive
+`JCAlgTestApduProbe --rsa-3072-keypair-generation` command on an identified
+`max_crypto` reader, then add a control-request flood during that APDU and
+measure the bounded service duration and response ordering. The host-only
+probe sends the upstream CAP's prepare/generate APDUs and does not install or
+modify a CAP. `tools/flash` now selects a sysfs-identified live board by its
+current bus/address after resolving its serial; syntax checks pass, but the
+multi-device selector change itself still needs a hardware cycle. After ARCH-08
+acceptance, continue with ARCH-09 production progress/dispatch harness work.
+
+Current reader state at the end of the session: no Pico USB devices enumerated.
+Use the authorized helper before the next physical operation. Existing Rust OS
+and packed-CAP warnings remain; none was introduced by the TinyUSB event-budget
+change.
 
 ## Bounded applet-context retention — focused lifecycle passes (2026-11-01)
 

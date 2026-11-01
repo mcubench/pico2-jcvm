@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+tinyusb_dir="${repo_root}/.local-toolchain/sdk/lib/tinyusb"
+patch_file="${repo_root}/tools/patches/tinyusb-0.18.0-event-budget.patch"
+expected_commit=86ad6e56c1700e85f1c5678607a762cfe3aa2f47
+
+[[ -d "${tinyusb_dir}/.git" || -f "${tinyusb_dir}/.git" ]] || {
+  printf 'ERROR: pinned TinyUSB checkout missing at %s\n' "${tinyusb_dir}" >&2
+  exit 1
+}
+actual_commit="$(git -C "${tinyusb_dir}" rev-parse HEAD)"
+[[ "${actual_commit}" == "${expected_commit}" ]] || {
+  printf 'ERROR: TinyUSB revision mismatch: expected %s, found %s\n' \
+    "${expected_commit}" "${actual_commit}" >&2
+  exit 1
+}
+[[ -s "${patch_file}" ]] || {
+  printf 'ERROR: event-budget patch missing: %s\n' "${patch_file}" >&2
+  exit 1
+}
+
+header="${tinyusb_dir}/src/device/usbd.h"
+source="${tinyusb_dir}/src/device/usbd.c"
+if grep -q 'uint32_t tud_task_budgeted(uint32_t max_events);' "${header}"; then
+  grep -q 'while (processed < max_events)' "${source}" || {
+    printf 'ERROR: TinyUSB event-budget patch is only partially applied\n' >&2
+    exit 1
+  }
+  printf 'TINYUSB:EVENT_BUDGET already-applied revision=%s\n' "${actual_commit}"
+  exit 0
+fi
+
+git -C "${tinyusb_dir}" apply --unidiff-zero --check "${patch_file}"
+git -C "${tinyusb_dir}" apply --unidiff-zero "${patch_file}"
+grep -q 'uint32_t tud_task_budgeted(uint32_t max_events);' "${header}"
+grep -q 'while (processed < max_events)' "${source}"
+printf 'TINYUSB:EVENT_BUDGET applied revision=%s\n' "${actual_commit}"

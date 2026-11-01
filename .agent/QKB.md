@@ -1,5 +1,44 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## TinyUSB `tud_task()` could drain indefinitely under replenished USB traffic — 2026-11-01
+
+- **Cause:** The pinned TinyUSB v0.18.0 API processes the device queue until it
+  is empty. On the Pico OSAL, the `timeout_ms` argument does not bound this
+  drain. A sustained setup/control event stream could therefore keep one
+  cooperative JCVM service call busy for an unbounded number of queued events.
+- **Viable event-count fix:** `tools/patches/tinyusb-0.18.0-event-budget.patch`
+  adds `tud_task_budgeted(max_events)` to the exact pinned TinyUSB commit
+  `86ad6e56c1700e85f1c5678607a762cfe3aa2f47`. It returns the processed-event
+  count, never waits, and leaves unprocessed FIFO entries queued. The repository
+  wrapper `tools/apply-tinyusb-event-budget` checks the commit and applies the
+  patch idempotently; `tools/build` invokes it automatically. JCVM service
+  points limit each call to eight events. PC, ARM, and RISC-V builds pass.
+- **Limit:** This bounds the event count, not a measured worst-case duration.
+  The runtime of one callback is not capped by the counter. A sustained USB
+  control-request flood concurrent with the RSA-3072 APDU, extension/final
+  response-order verification, and wall-time measurement remain outstanding.
+  The physical cycle passed on `2BED26ED20556535` (`current`) and
+  `8E464F4E2BBC0A19` (`max_crypto`), but later the 8E PC/SC reader disappeared.
+  The temporary crypto test CAP install on 2BED returned `6A80`; cleanup
+  confirmed the CAP was absent. A later helper refresh reported zero devices
+  and `lsusb -d 2e8a:` found none. Resume hardware validation only after Pico
+  devices enumerate again.
+
+## picotool selection was ambiguous with multiple runtime Picos — 2026-11-01
+
+- **Symptom:** `picotool load --force --ser <firmware USB serial>` returned
+  `Command requires a single RP-series device to be targeted` when multiple
+  RP-series runtime devices were attached. The wrapper had already resolved
+  the intended board using its USB serial, but picotool's `--ser` refers to
+  the bootrom selector and did not uniquely target the CDC serial.
+- **Implemented remedy:** `tools/flash` now resolves the intended serial or
+  chip ID through sysfs, then selects the current device for each picotool
+  invocation by its live bus and address. `target_sysfs_path` is refreshed
+  across USB re-enumeration, so BOOTSEL gets a newly resolved bus/address too.
+  `bash -n tools/flash` passes. The modified multi-device selector has not yet
+  been physically tested because the host lost all Pico USB enumeration during
+  this session; verify it on the next multi-device flash.
+
 ## Signature MAC parameter IV was ignored — 2026-11-01
 
 - **Symptom:** The full API 3.0.5 Crypto run reported `WRONG_RESULT` for

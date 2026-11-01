@@ -20,6 +20,7 @@ Installed or fetched locally:
 - `arm-none-eabi-gcc` 14.2.1, binutils, Newlib, and the ARM C++ runtime
 - `riscv32-pico-elf` GCC 16 and its matching target libraries
 - Raspberry Pi Pico SDK 2.3.1 at commit `079c6f39023649b154152db30f1d781e884879bc`, including its submodules
+- `tools/build` applies the repository patch at `tools/patches/tinyusb-0.18.0-event-budget.patch` to the pinned TinyUSB commit `86ad6e56c1700e85f1c5678607a762cfe3aa2f47`. The patch adds the nonblocking `tud_task_budgeted()` API used to cap JCVM USB event servicing; `tools/apply-tinyusb-event-budget` checks the pin and applies the patch idempotently.
 - Raspberry Pi `picotool` 2.3.1 and `pioasm` 2.3.1 tools
 - Apache Maven 3.10.0, exposed through `./tools/env` and the build wrappers
 - Eclipse Temurin JDK 8u504 under `.local-toolchain/java8` for the legacy Java

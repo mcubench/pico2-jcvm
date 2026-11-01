@@ -48,17 +48,11 @@ require_command timeout
 require_command stty
 
 selector_args=()
-serial_selector_args=()
 target_sysfs_path=""
 target_bus=""
 target_address=""
 target_product=""
 target_device_serial=""
-if [[ -n "$serial" ]]; then
-  serial_selector_args=(--ser "$serial")
-  selector_args=("${serial_selector_args[@]}")
-fi
-
 capture_usb_device() {
   local device="$1"
   target_sysfs_path="${device##*/}"
@@ -160,15 +154,13 @@ refresh_target_usb() {
 }
 
 set_target_selector() {
-  if [[ "$target_product" == 000f ]]; then
-    selector_args=(--bus "$target_bus" --address "$target_address")
-  elif [[ -n "$chipid" && -n "$target_device_serial" ]]; then
-    selector_args=(--ser "$target_device_serial")
-  elif [[ -n "$serial" ]]; then
-    selector_args=("${serial_selector_args[@]}")
-  else
-    selector_args=(--bus "$target_bus" --address "$target_address")
-  fi
+  [[ -n "$target_bus" && -n "$target_address" ]] || \
+    die "cannot select the identified RP-series USB device by bus and address"
+  # Resolve serial/chip ID through sysfs first, then use the live bus/address
+  # for this picotool invocation. picotool's --ser matches the bootrom serial,
+  # not firmware CDC serials, and becomes ambiguous with multiple runtime
+  # devices attached. Refresh this target again after each USB re-enumeration.
+  selector_args=(--bus "$target_bus" --address "$target_address")
 }
 
 rp_usb_present() {

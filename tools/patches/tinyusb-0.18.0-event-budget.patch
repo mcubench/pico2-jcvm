@@ -1,0 +1,50 @@
+diff --git a/src/device/usbd.c b/src/device/usbd.c
+index 2a60816..fd032a3 100644
+--- a/src/device/usbd.c
++++ b/src/device/usbd.c
+@@ -583 +583,2 @@ bool tud_task_event_ready(void) {
+-void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
++static uint32_t tud_task_process(uint32_t timeout_ms, bool in_isr,
++                                uint32_t max_events) {
+@@ -587 +588,3 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
+-  if (!tud_inited()) return;
++  if (!tud_inited() || max_events == 0) return 0;
++
++  uint32_t processed = 0;
+@@ -590 +593 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
+-  while (1) {
++  while (processed < max_events) {
+@@ -592 +595,2 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
+-    if (!osal_queue_receive(_usbd_q, &event, timeout_ms)) return;
++    if (!osal_queue_receive(_usbd_q, &event, timeout_ms)) return processed;
++    processed++;
+@@ -613 +617 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
+-        TU_ASSERT(_usbd_queued_setup > 0,);
++        TU_ASSERT(_usbd_queued_setup > 0, processed);
+@@ -656 +660 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
+-          TU_ASSERT(driver,);
++          TU_ASSERT(driver, processed);
+@@ -704 +708 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
+-    if (osal_queue_empty(_usbd_q)) return;
++    if (osal_queue_empty(_usbd_q)) return processed;
+@@ -706,0 +711,10 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
++
++  return processed;
++}
++
++void tud_task_ext(uint32_t timeout_ms, bool in_isr) {
++  (void) tud_task_process(timeout_ms, in_isr, UINT32_MAX);
++}
++
++uint32_t tud_task_budgeted(uint32_t max_events) {
++  return tud_task_process(0, false, max_events);
+diff --git a/src/device/usbd.h b/src/device/usbd.h
+index de6007f..47b461d 100644
+--- a/src/device/usbd.h
++++ b/src/device/usbd.h
+@@ -65,0 +66,5 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr);
++// Process at most max_events queued events without waiting. Events remaining
++// in the queue are preserved for the next task invocation. Returns the number
++// of events processed.
++uint32_t tud_task_budgeted(uint32_t max_events);
++

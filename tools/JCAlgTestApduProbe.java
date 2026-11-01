@@ -233,6 +233,20 @@ public final class JCAlgTestApduProbe {
       }
 
       if (probeArgs.size() == 1 &&
+          "--rsa-3072-keypair-generation".equals(probeArgs.get(0))) {
+        // Exercise the existing upstream JCAlgTest KeyPair.genKeyPair path
+        // without installing a separate test CAP or changing card contents.
+        byte[] settings = fromHex(
+            "0019 0001 0001 FFFF 0C00 0001 FFFF FFFF FFFF 0001 0001");
+        transmit(channel, "RSA_3072_KEYPAIR_PREPARE",
+            new CommandAPDU(0xB0, 0x36, 0x00, 0x00, settings, 256));
+        transmit(channel, "RSA_3072_KEYPAIR_GENERATE",
+            new CommandAPDU(0xB0, 0x45, 0x00, 0x00, settings, 256));
+        System.out.println("TEST:PASS rsa_3072_keypair_generation");
+        return;
+      }
+
+      if (probeArgs.size() == 1 &&
           "--rsa-512-keypair-support".equals(probeArgs.get(0))) {
         ResponseAPDU response = transmit(channel, "RSA_512_KEYPAIR_SUPPORT",
             new CommandAPDU(0xB0, 0x75, 0x19, 0x00,
