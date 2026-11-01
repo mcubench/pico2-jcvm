@@ -1,4 +1,5 @@
 #include "context.hpp"
+#include "context_registry.hpp"
 
 #include <algorithm>
 #include <array>
@@ -98,6 +99,32 @@ void verify_previous_context_aid() {
                     previous_aid));
   jcvm::Context::setActiveContext(nullptr);
 }
+
+void verify_retained_applet_context_lookup() {
+  jcvm::Context selected(1, 1);
+  jcvm::Context cached_a(2, 1);
+  jcvm::Context cached_b(3, 1);
+  constexpr uint8_t selected_aid[] = {0xa0, 0x00, 0x00, 0x02, 0x01};
+  constexpr uint8_t cached_a_aid[] = {0xa0, 0x00, 0x00, 0x02, 0x02};
+  constexpr uint8_t cached_b_aid[] = {0xa0, 0x00, 0x00, 0x02, 0x03};
+  assert(selected.setAppletAID(selected_aid, sizeof(selected_aid)));
+  assert(cached_a.setAppletAID(cached_a_aid, sizeof(cached_a_aid)));
+  assert(cached_b.setAppletAID(cached_b_aid, sizeof(cached_b_aid)));
+  std::array<std::unique_ptr<jcvm::Context>, 2> inactive{};
+  inactive[0] = std::make_unique<jcvm::Context>(std::move(cached_a));
+  inactive[1] = std::make_unique<jcvm::Context>(std::move(cached_b));
+
+  assert(jcvm::findAppletContext(&selected, inactive, 1, selected_aid,
+                                 sizeof(selected_aid)) == &selected);
+  assert(jcvm::findAppletContext(&selected, inactive, 2, cached_a_aid,
+                                 sizeof(cached_a_aid)) == inactive[0].get());
+  assert(jcvm::findAppletContext(&selected, inactive, 3, cached_b_aid,
+                                 sizeof(cached_b_aid)) == inactive[1].get());
+  assert(jcvm::findAppletContext(&selected, inactive, 9, cached_b_aid,
+                                 sizeof(cached_b_aid)) == nullptr);
+  assert(jcvm::findAppletContext(&selected, inactive, 3, cached_b_aid, 4) ==
+         nullptr);
+}
 } // namespace
 
 int main() {
@@ -105,6 +132,7 @@ int main() {
   jcvm::Context second_context(2, 1);
   verify_sensitive_result_cross_context(context, second_context);
   verify_previous_context_aid();
+  verify_retained_applet_context_lookup();
 
   const auto first = make_reference(1);
   const uint16_t first_id = context.exportRemoteObject(first);
@@ -175,6 +203,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 global_aid_handle=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 global_aid_handle=1");
   return 0;
 }

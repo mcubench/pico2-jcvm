@@ -1635,7 +1635,10 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   heaps; root enumeration now uses only the current context's applet root and
   cached heap roots. Cross-applet shareable lookup and
   firewall ownership checks, general cross-context calls, and logical channels
-  remain unimplemented; assigned channel is basic channel 0. Context switches
+  remain unimplemented; assigned channel is basic channel 0. A native applet
+  context resolver now finds selected/cached contexts or restores an installed
+  applet into an inactive slot without replacing the selected context; its
+  lookup behavior has focused unit coverage. Context switches
   now record the calling applet AID, and native `JCSystem.getPreviousContextAID`
   returns it as a JCRE-owned AID object (tested by the context regression and
   PC/ARM/RISC-V builds). This is groundwork only; SIO lookup/invocation and

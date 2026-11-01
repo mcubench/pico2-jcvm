@@ -3193,3 +3193,18 @@ original terminology/status; check current summary and later fixes before reuse.
   object dispatch, or firewall checks. Hardware validation remains pending:
   the authorized reader helper and elevated `lsusb -d 2e8a:` both found zero
   devices on 2026-11-01.
+
+### Resolve inactive applet contexts without changing selection — 2026-11-01
+
+- Added `choupi/src/context_registry.hpp` for lookup by applet owner and full
+  instance AID, and `choupi_vm_find_or_restore_applet_context()` for resolving
+  a dynamic installed instance to its retained context or restoring its
+  persistent root into an inactive slot. The operation never swaps/replaces
+  the currently selected context; malformed AIDs, missing instances, restore
+  failures, and a full inactive-context table return null.
+- The RMI/context regression covers selected and inactive AID matches, wrong
+  owner, and malformed AID. PC, ARM, and RISC-V builds pass; elevated VPCD
+  multipackage lifecycle passes 47/47 after the change.
+- The resolver is infrastructure only and is not yet called by
+  `JCSystem.getAppletShareableInterfaceObject`. No positive cross-applet
+  SIO test or physical check is claimed.

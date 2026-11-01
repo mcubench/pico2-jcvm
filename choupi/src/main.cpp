@@ -27,6 +27,7 @@
 
 #include "debug.hpp"
 #include "interpretor.hpp"
+#include "context_registry.hpp"
 #include "jc_config.h"
 #include "types.hpp"
 #include "ffi.h"
@@ -42,6 +43,7 @@
 #include "../../src/short_apdu.hpp"
 #include "../../src/cap_store.hpp"
 #include "../../src/vm_lifecycle.h"
+#include "../../src/vm_applet_context.hpp"
 #include "../../src/vm_diagnostics.h"
 
 #include <cstdio>
@@ -1058,6 +1060,49 @@ uint16_t choupi_vm_invoke_applet_method(uint16_t method_offset,
                                 initial_references,
                                 initial_reference_count);
   return interpretor.run();
+}
+
+jcvm::Context *choupi_vm_find_or_restore_applet_context(
+    const uint8_t *aid, const uint8_t aid_length) noexcept {
+  if (aid == nullptr || aid_length < 5 || aid_length > 16) return nullptr;
+
+  uint8_t owner = 0;
+  uint8_t package_id = 0;
+  uint8_t applet_aid[16]{};
+  uint8_t applet_aid_length = 0;
+  uint16_t class_index = 0;
+  if (!cap_store_find_instance(aid, aid_length, package_id, applet_aid,
+                               applet_aid_length, class_index) ||
+      !cap_store_applet_owner(aid, aid_length, owner)) {
+    return nullptr;
+  }
+
+  if (auto *existing = jcvm::findAppletContext(
+          selected_applet_context.get(), inactive_applet_contexts, owner, aid,
+          aid_length)) {
+    return existing;
+  }
+
+  auto free_slot = std::find_if(
+      inactive_applet_contexts.begin(), inactive_applet_contexts.end(),
+      [](const auto &context) { return !context; });
+  if (free_slot == inactive_applet_contexts.end()) return nullptr;
+
+  try {
+    auto context = std::make_unique<jcvm::Context>(
+        owner, static_cast<jcvm::jpackage_ID_t>(package_id));
+    if (!context->setAppletAID(applet_aid, applet_aid_length) ||
+        !context->restoreAppletInstance(
+            static_cast<jcvm::jpackage_ID_t>(package_id),
+            static_cast<jcvm::jclass_index_t>(class_index)) ||
+        !context->hasRestoredAppletInstance()) {
+      return nullptr;
+    }
+    *free_slot = std::move(context);
+    return free_slot->get();
+  } catch (...) {
+    return nullptr;
+  }
 }
 
 namespace {

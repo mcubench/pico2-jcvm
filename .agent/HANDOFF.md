@@ -37,6 +37,31 @@ transaction probe only asserts absent/default-null behavior. The unchanged
 `AlgTestApiMulti_303.cap` is a candidate integration probe after adding a
 positive fixture without modifying the CAP.
 
+## Lazy applet-context resolver — implemented, not yet wired to SIO
+
+Added `choupi/src/context_registry.hpp` plus
+`choupi_vm_find_or_restore_applet_context()` in `choupi/src/main.cpp`. It first
+searches the selected and retained contexts by owner and full AID; if absent, it
+finds an installed dynamic instance, restores its persistent applet root into
+an unused inactive-context slot, and returns that context without changing the
+selected applet. It returns null for invalid/missing AIDs, failed restoration,
+or context-table exhaustion. The helper is not yet invoked by native Shareable
+lookup.
+
+Validation: `./tools/test-rmi-registry` passes with
+`retained_context_lookup=1`; `./tools/build-pc --profile current`,
+`./tools/build arm`, and `./tools/build riscv` pass; the elevated
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passes 47/47. Logs:
+`artifacts/logs/host-vpcd-multipackage-apdu-20261101T155027Z.log` and its
+matching restart/corrupt-sidecar/missing-sidecar logs. The physical reader
+helper still found zero devices; no hardware flash was attempted.
+
+Next: intercept the resolved ROM `NativeImplementation.getAppletShareableInterfaceObject`
+call in `Bytecodes::bc_invokestatic`, invoke the server applet's virtual
+`getShareableInterfaceObject` in the resolved context, then retain a
+context-owned proxy. Follow with `invokeinterface` context switching and
+firewall checks; do not return a server heap reference directly to a client.
+
 ## Latest verification — 2026-11-01
 
 The current worktree snapshot was revalidated on 2026-11-01 after the CAP

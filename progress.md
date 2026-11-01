@@ -19255,3 +19255,14 @@
 - Decision: Add the dispatch interception and context lookup next, then implement a server-owned proxy and firewall-checked `invokeinterface` dispatch. Existing `AlgTestApiMulti_303.cap` is a candidate integration probe, but no positive cross-AID fixture is currently in the repository test harness.
 - Commit: Recorded in this analysis commit.
 - Artifacts/logs: Generated ROM JCA `build/choupi-pc/javacard-api/fr/gouv/ssi/nativeimpl/javacard/nativeimpl.jca`; ROM API JCA `build/choupi-pc/javacard-api/javacard/framework/javacard/framework.jca`; source `tools/tests/jcsystem_transaction_applet/JCTransactionProbe.java`.
+
+## 2026-11-01 Add lazy applet-context resolver 17 minutes
+
+- Step/experiment: `lazy-applet-context-resolver-20261101`
+- When: '2026-11-01 16:39 CET' - '2026-11-01 16:56 CET'
+- Change: Added selected/inactive context lookup by owner and full AID, plus `choupi_vm_find_or_restore_applet_context()` to restore an installed dynamic applet into an unused inactive slot without replacing the selected context. Added focused lookup tests. Updated TODO, QKB, and handoff. This prepares native SIO lookup but is not yet wired into it.
+- Validation: `./tools/test-rmi-registry` passed with `retained_context_lookup=1`; `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. The first PC build exposed a C-vs-C++ linkage mismatch; the resolver declaration was changed to match the existing C-linkage VM hooks, then the build passed. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`. Generated logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T155027Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261101T155027Z.log`, `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261101T155027Z.log`, and `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261101T155027Z.log`. Selected-file whitespace check passed.
+- Result: Context lookup resolves selected and retained contexts and safely restores a missing installed context into available cache space. Existing multipackage lifecycle behavior remains passing. This does not yet execute a server Shareable method or test firewall behavior. Physical reader enumeration still returned zero devices, so no flash ran.
+- Decision: Keep SIO acceptance open. Next wire this resolver into native dispatch of the ROM lookup method, then add a proxy mapping and cross-context `invokeinterface` firewall enforcement.
+- Commit: Recorded in this implementation commit.
+- Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC ROM mask under `build/choupi-pc/`; ARM `build/arm/pico2_choupi.uf2`; RISC-V `build/riscv/pico2_jcvm_smoke.uf2`; VPCD logs listed above; no physical logs.
