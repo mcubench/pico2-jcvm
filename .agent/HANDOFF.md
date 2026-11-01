@@ -1,5 +1,18 @@
 # Session handoff — updated 2026-11-01
 
+## Multi-applet context lifetime audit — 2026-11-01
+
+The physical-reader helper returned zero readers, so no hardware operation was
+attempted. Source inspection found that selecting a different applet AID calls
+`choupi_vm_restore_applet()`, which replaces the sole
+`selected_applet_context` with a new `Context`. The inactive applet heap is
+discarded. This prevents transient arrays and their references from surviving
+applet switching; `CLEAR_ON_RESET` contents are also lost before a card reset.
+The `TODO.md` multi-applet item now records this concrete gap. Do not retain
+inactive heaps without adding their roots to collection and defining a bounded
+RAM policy. Next, design a context registry and a regression using existing
+deploy CAPs; preserve the declared profile exclusion until that work passes.
+
 ## Signature MAC IV fix — 2026-11-01
 
 The full API 3.0.5 Crypto sweep's three `WRONG_RESULT` rows were caused by

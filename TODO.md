@@ -1547,7 +1547,15 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   callback dispatch for the Shareable API now passes focused host VPCD probes,
   but general context switching, cross-applet shareable lookup and ownership
   checks, cross-applet AID lookup, and logical channels are not implemented.
-  Assigned channel is basic channel 0.
+  Assigned channel is basic channel 0. Code inspection also confirms that
+  selecting a different AID replaces the sole `selected_applet_context` during
+  `restore_applet()`. The previous applet heap is discarded, so transient
+  array references and `CLEAR_ON_RESET` contents cannot survive switching
+  away and reselecting that applet. A context registry must retain inactive
+  applet roots for GC and preserve per-instance transient state while applying
+  `CLEAR_ON_DESELECT`; do not solve this by keeping heaps without extending
+  root enumeration and memory limits. Add a regression using existing deploy
+  CAPs where possible before implementing context switching.
 - [x] **Make commit-capacity reporting consistent with transactions.**
   `beginTransaction` / commit / abort now pass the full 80-check JCSystem VPCD
   suite. Abort advances a rollback generation so live persistent field caches

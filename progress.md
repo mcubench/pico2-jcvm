@@ -19079,3 +19079,14 @@
 - Commit: `9dea2eb` (`Record RSA-384 PSS VPCD follow-up`)
 - Artifacts/logs: API CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-pss384-followup.csv` SHA-256 `8a80fdadfdda4d6df847c1c586f1d3bf1f998e284a85c344d1208896de388c17`; logs `artifacts/logs/vpcd-api-pss384-20261101T095909Z/`.
 
+
+## 2026-11-01 Audit multi-applet context lifetime 7 minutes
+
+- Step/experiment: `multi-applet-context-lifetime-audit-20261101`
+- When: '2026-11-01 11:33 CET' - '2026-11-01 11:40 CET'
+- Change: Updated the open multi-applet profile task with a concrete context-lifetime gap: selecting another AID replaces the sole active `Context`, discarding the previous applet heap and its transient state. Recorded the root-enumeration and bounded-RAM requirements for any context registry in TODO and the session handoff.
+- Validation: Read-only source trace through `src/ccid_device.cpp` selection dispatch and `choupi/src/main.cpp` restore/deselect/forget paths confirms there is one `selected_applet_context` and it is replaced for a different applet. The authorized `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper returned `found 0`; no USB/PCSC hardware test was attempted. No build was run because source behavior was not changed.
+- Result: Multi-applet switching remains explicitly outside the currently declared supported profile. Retaining multiple applet heaps safely requires collector root enumeration for inactive contexts and a bounded RAM policy; do not enable persistent reclamation or cache contexts without those safeguards.
+- Decision: Design a bounded context registry and identify a regression path using existing deploy CAPs before implementing switching semantics. Physical testing remains pending reader availability.
+- Commit: `pending`
+- Artifacts/logs: None; source inspection only.
