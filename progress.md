@@ -20,6 +20,17 @@
 - Commit: `7f423b4` (TODO/HANDOFF); progress metadata is committed separately. The generated archive remains under ignored `build/external-test/`.
 - Artifacts/logs: `build/external-test/pico2-jcvm-windows-test.zip` (18 MiB, archive SHA above); member hashes are in `build/external-test/windows-profile-package/SHA256SUMS.txt`.
 
+## 2026-11-01 — Revalidate native symmetric and asymmetric crypto on VPCD 12 minutes
+
+- Step/experiment: `native-crypto-current-vpcd-regression-20261101`
+- When: '2026-11-01 11:22 CET' - '2026-11-01 11:34 CET'
+- Change: Re-ran the repository symmetric and asymmetric native crypto VPCD known-answer suites against current source after refreshing the external profile images. No source code changed. Added the current result and log hashes to HANDOFF.
+- Validation: A default restricted run of `./tools/test-symm-crypto-vpcd` failed at local socket creation with `Operation not permitted`; rerunning the same wrapper as `PICO2_HOST_USB_ACCESS=1 ./tools/test-symm-crypto-vpcd` through elevated host access passed. It reported 32 cipher + 47 MAC vectors, including six IV checks, with `TEST:SUMMARY pass=81 fail=0`. `PICO2_HOST_USB_ACCESS=1 ./tools/test-asymm-crypto-vpcd` through the same path passed 97 asymmetric vectors with `TEST:SUMMARY pass=99 fail=0`. Both wrappers rebuilt their PC profiles successfully. Existing converter, Maven network-metadata, Rust, and packed-member warnings remained nonfatal.
+- Result: Current-source emulator vectors cover the symmetric and asymmetric implementation suites, including MAC IV sign/verify and RSA/EC checks. This does not provide physical Pico or Windows acceptance.
+- Decision: Keep physical-profile validation open; when hardware access is restored, use the max_crypto artifact and check the complete API behavior there.
+- Commit: `d47f9f6` (HANDOFF); this progress entry is committed separately. Implementation files were unchanged.
+- Artifacts/logs: `artifacts/logs/symm-crypto-kat-vpcd-20261026.log` SHA-256 `6b6c6a0dc53828fcb3521e0dc71f124f4da13d9fab7183b5b6f9520958876808`; `artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log` SHA-256 `85528e25f28aeb55050fdfaa8afda5f33b44d893e1afb4f01317292e259acec7`.
+
 ## 2026-11-01 — Re-run VPCD persistence integration 6 minutes
 
 - Step/experiment: `vpcd-persistence-integration-20261101`
