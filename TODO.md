@@ -590,6 +590,24 @@ adapters, and do not change upstream applet CAP files.
   the next high-priority issue. Do not use unverified flash beyond the 2 MiB
   capacity reported by the device/build.
 
+- [x] Identify the current Crypto `NO_MEMORY` source on 2BED. The complete
+  2026-11-01 API 3.0.5 Crypto run's serial log shows persistent `FS_WRITE_FAIL`
+  while the overlay had 8,016 files and 94,573/98,304 bytes used. With the v4
+  snapshot's dynamic index budget, 8,016 records leave only 94,592 payload
+  bytes, so the failing writes had 19 bytes or less remaining. A later exact
+  filter reached the hard 8,192-file ceiling and failed persistent allocations
+  despite 89,801/98,304 payload bytes. These writes map to VM `NO_RESOURCE` and
+  the JCAlgTest `NO_MEMORY` status; this is persistent overlay exhaustion, not
+  a cryptographic algorithm failure. The diagnostic currently prints the
+  fixed 98,304-byte ceiling rather than the dynamic per-index limit.
+- [ ] Fix or mitigate persistent overlay exhaustion during long API sweeps.
+  Determine why per-call persistent records remain after GC and successful CAP
+  uninstall, whether the existing persistent reclaimer can safely reclaim
+  unreachable test objects, and how to preserve selected-applet roots. Also
+  report the actual dynamic payload limit and free file slots in diagnostics.
+  Validate that repeated upstream API 3.0.5 runs do not grow the overlay to its
+  payload or 8,192-record limit.
+
 - [ ] Investigate API 3.0.5 `EXC_RUNTIME` regressions on the v4 max_crypto
   image before broadening the profile acceptance claim. Security first shows
   `EXC_RUNTIME` at call 242 (`KeyPair.genKeyPair`, RSA-512); Crypto first shows

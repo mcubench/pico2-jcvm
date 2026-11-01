@@ -1,6 +1,6 @@
 # Issue knowledge base — compacted 2026-10-29
 
-## Full current-image API sweep: Crypto memory failures do not reproduce in short fresh-class subset — 2026-11-01
+## JCAlgTest NO_MEMORY traced to dynamic persistent-overlay exhaustion — 2026-11-01
 
 - The complete unchanged API 3.0.5 Crypto area on max_crypto Pico 2
   `2BED26ED20556535` completed 466 calls: 292 `OK`, 161
@@ -11,13 +11,27 @@
   calls (25 KeyAgreement, 40 Cipher): 50 `OK`, 15 `UNSUPPORTED_PER_SPEC`,
   zero `NO_MEMORY`. It hit the 150-second client limit before the planned
   filtered run finished (AEADCipher was not reached); CAP cleanup did pass.
-- **Working hypothesis, not yet established:** NO_MEMORY in a full area may
-  depend on accumulated API/suite state or persistent allocation pressure,
-  since the corresponding classes did not fail early in a fresh filtered CAP.
-  Do not increase memory or modify algorithms based only on this comparison.
-  Next use smaller, exact-case filters for the nine original failures and
-  compare ordering; capture allocator/persistent-store state around the first
-  failure.
+- The full Crypto serial capture recorded persistent `FS_WRITE_FAIL` events
+  followed by `PERSIST_EXCEPTION id=20` and `VM_CAUGHT_EXCEPTION id=20`. At
+  first failure there were 8,016 files and 94,573/98,304 bytes used. With a
+  0x28000-byte snapshot slot and 4 KiB header, the v4 data ceiling at that
+  count is `159,744 - 1,024 - 8*8,016 = 94,592` bytes; only 19 bytes remained.
+  This explains why the VM maps the failed persistent write to `NO_RESOURCE`,
+  reported by the API client as `NO_MEMORY`. The current `FS_WRITE_FAIL` field
+  prints the fixed 96 KiB arena, not the effective dynamic payload limit.
+- A later exact-case filter recorded ten calls: eight `OK`, two `NO_MEMORY`.
+  Serial showed `FS_WRITE_FAIL` with `files=8192`, the hard overlay record
+  ceiling, at 89,801 and 90,150 bytes. The full-suite and exact-case evidence
+  therefore confirms persistent overlay exhaustion, not unavailable crypto
+  methods. In that filter, the DES-64 padded CBC case and `AEADCipher()` were
+  the two failures; the other eight selected operations (including all original
+  failing key-size and constructor cases except AEADCipher) passed. Temporary
+  CAP cleanup passed, yet accumulated records remain.
+- **Next:** investigate persistent object lifetime/reclamation and whether
+  applet uninstall removes all package-owned records. Correct diagnostics to
+  report dynamic payload capacity and free record slots. Do not implement
+  algorithms, delete user data, or reset the physical token to work around
+  this storage condition.
 - The parallel Security run on 8E stopped at transient RSA private 2048
   allocation with `SCARD_E_NOT_TRANSACTED`; that exact reader then vanished
   from PC/SC and serial enumeration. Preserve its temporary CAP until 8E is
@@ -26,6 +40,10 @@
   `2996f7e8d5b5cc3ead35620e952b7d28c97915216c1859aee392d5ac8596cd09`;
   serial SHA-256:
   `de0b789f19b046a7ef34d0f7318771c5b972a4ac4da0ef12f6bcf6144f2df77c`.
+- Exact-case CSV SHA-256:
+  `a7d30c2eb7045d5d386b582f4e1a545d48df2fc8a574f7e4a0c48ea69982dbe9`;
+  serial SHA-256:
+  `a28357fee22e19f4d7fac9d51fe8dd5b940377ffe74b482fbbd1308198cea6af`.
 
 ## Focused API NPEs do not reproduce on the 2026-11-01 max_crypto image
 
