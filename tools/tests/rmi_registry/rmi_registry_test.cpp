@@ -171,6 +171,19 @@ void verify_shareable_proxy_registry() {
 } // namespace
 
 int main() {
+  jcvm::Stack argument_stack;
+  argument_stack.push_Frame(0, 0, 3, nullptr);
+  const auto proxy_receiver = make_reference(20);
+  const auto target_receiver = make_reference(21);
+  argument_stack.push_Reference(proxy_receiver);
+  argument_stack.push_Short(0x2468);
+  argument_stack.set_Pushed_Element(2, target_receiver);
+  assert(argument_stack.get_Pushed_Element(2).compact() ==
+         target_receiver.compact());
+  assert(argument_stack.pop_Short() == 0x2468);
+  assert(argument_stack.pop_Reference().compact() ==
+         target_receiver.compact());
+
   jcvm::Context context(1, 1);
   jcvm::Context second_context(2, 1);
   verify_sensitive_result_cross_context(context, second_context);
@@ -261,6 +274,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1");
   return 0;
 }

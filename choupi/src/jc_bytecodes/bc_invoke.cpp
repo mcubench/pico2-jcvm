@@ -839,10 +839,6 @@ void Bytecodes::bc_invokeinterface() {
   // its declared Shareable interface in the server applet's context; never
   // interpret the placeholder object's class or fields in the client heap.
   if (context.isShareableProxy(objectref)) {
-    if (nargs != 1) {
-      // Arguments need descriptor-aware copying and reference firewalling.
-      throw Exceptions::SecurityException;
-    }
     auto interface_info =
         cp_handler.classref2interface(interface_ref);
     if ((interface_info.second->flags & JC_CAP_CLASS_ACC_SHAREABLE) == 0) {
@@ -886,7 +882,22 @@ void Bytecodes::bc_invokeinterface() {
             context.getCurrentPackage());
     Method_Handler target_handler(*server_context);
     target_handler.setPackage(target_method.first);
-    if (target_handler.getArgumentCount(target_method.second) != 1) {
+    if (target_handler.getArgumentCount(target_method.second) != nargs) {
+      throw Exceptions::SecurityException;
+    }
+
+    if (server_context == &context) {
+      // Same-context calls already have all typed operand words in the
+      // caller frame. Replace only the proxy receiver and use normal VM
+      // dispatch, preserving primitive arguments without copying them.
+      stack.set_Pushed_Element(nargs, server_reference);
+      target_handler.callVirtualMethod(target_method.second, true);
+      return;
+    }
+
+    if (nargs != 1) {
+      // Cross-context arguments still require descriptor-aware copying and
+      // reference ownership conversion.
       throw Exceptions::SecurityException;
     }
 
@@ -901,11 +912,6 @@ void Bytecodes::bc_invokeinterface() {
     const uint16_t status = server_interpretor.run();
     if (status != 0x9000) {
       throw Exceptions::SecurityException;
-    }
-
-    if (server_context == &context) {
-      // The nested interpreter returned directly to the caller's frame.
-      return;
     }
 
     Stack &server_stack = server_context->getStack();

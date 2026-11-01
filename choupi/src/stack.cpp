@@ -329,6 +329,25 @@ jref_t Stack::get_Pushed_Element(uint16_t n)
   return jref_t(*value);
 }
 
+void Stack::set_Pushed_Element(const uint16_t n, const jref_t value)
+#if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
+    noexcept
+#endif
+{
+  assert(n > 0);
+
+  Frame &current_frame = this->getCurrentFrame();
+  jword_t *word = current_frame.getTOS() - n;
+
+#ifdef JCRE_STACK_OVERFLOW_PROTECTION
+  if (word < current_frame.getOP()) {
+    throw Exceptions::StackUnderflowException;
+  }
+#endif /* JCRE_STACK_OVERFLOW_PROTECTION */
+
+  *word = value.compact();
+}
+
 /**
  * Reading a local variable as a short value
  *

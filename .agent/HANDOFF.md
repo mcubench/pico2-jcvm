@@ -2586,3 +2586,23 @@ restoration, arguments, nonnull reference returns, exception propagation,
 proxy lifetime across reset/GC, and physical hardware remain open. The latest
 authorized USB reader helper found zero Pico devices; no physical operation
 was attempted. Keep upstream CAPs unchanged.
+
+## Same-context Shareable calls preserve caller operands — 2026-11-01
+
+The same-context branch in `invokeinterface` now replaces the proxy receiver
+in place with the retained server object and uses normal `Method_Handler`
+dispatch. This keeps all caller operand words in their original typed layout,
+so same-context methods may take primitive or reference arguments without
+crossing an applet heap. The cross-context branch remains limited to receiver-
+only methods until descriptor-aware copying and ownership conversion exist.
+
+Validation: `tools/test-rmi-registry` passes its new `stack_receiver_replace=1`
+assertion. A fresh VPCD run of the unchanged `AlgTestApiCore_305.cap` passes all
+three focused Shareable rows and cleanup; the interface call reports
+`returned=1 effect=as expected`. PC, ARM and RISC-V builds pass. Artifacts:
+`artifacts/results/shareable-same-context-stack-20261101T185456Z/`.
+
+This still does not test cross-AID server context routing, argument conversion
+across contexts, exception propagation, reference ownership/lifetime or
+physical hardware. The preceding authorized reader refresh found zero Pico
+devices. Keep CTX-01 open and preserve upstream CAPs unchanged.

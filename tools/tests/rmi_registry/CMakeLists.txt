@@ -6,6 +6,7 @@ add_executable(
   rmi_registry_test
   rmi_registry_test.cpp
   "${CHOUPI_SOURCE_DIR}/context.cpp"
+  "${CHOUPI_SOURCE_DIR}/frame.cpp"
   "${CHOUPI_SOURCE_DIR}/heap.cpp"
   "${CHOUPI_SOURCE_DIR}/jc_types/jref_t.cpp"
   "${CHOUPI_SOURCE_DIR}/stack.cpp")

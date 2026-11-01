@@ -3312,3 +3312,21 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Correction:** The prior “positive CAP fixture missing” assessment was
   wrong; inspect API CAP entries under `APPLET-INF/classes` and deploy CAPs
   before concluding that no upstream fixture exists. Do not modify those CAPs.
+
+### Same-context Shareable methods should use the existing operand frame — 2026-11-01
+
+- **Finding:** Explicit typed-local nested entry fixed the receiver-only call,
+  but same-context proxy methods already have their correctly typed arguments
+  on the caller operand stack and need no cross-context translation.
+- **Viable approach:** Replace the proxy receiver word at its `invokeinterface`
+  stack position with the retained server object reference, then use ordinary
+  `Method_Handler::callVirtualMethod` with caller-stack arguments enabled. Keep
+  exact server-class/interface checking before this substitution. This
+  preserves primitive widths and in-context references, and avoids spinning a
+  second interpreter frame just to make a same-context call.
+- **Validation:** Stack unit assertion `stack_receiver_replace=1`; unchanged
+  upstream Core 3.0.5 CAP passes the three focused Shareable calls with
+  `returned=1` and successful cleanup. PC/ARM/RISC-V builds pass.
+- **Limit:** Cross-context SIO still rejects arguments, and remains untested
+  end to end. Do not copy raw local references or assume a same-context stack
+  replacement is valid when server/client contexts differ.

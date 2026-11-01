@@ -19343,3 +19343,14 @@
 - Decision: Keep CTX-01 open. Add a cross-AID positive fixture or upstream multi-applet service case, then cover argument/reference firewalling and cross-context exception/restoration before broader acceptance.
 - Commit: `7027cd2`
 - Artifacts/logs: `artifacts/results/shareable-vpcd-verified-20261101T183526Z/` (Core CSV; 3 selected calls OK, `returned=1`); `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
+
+## 2026-11-01 Preserve same-context SIO call operands 17 minutes
+
+- Step/experiment: `shareable-same-context-stack-dispatch-20261101`
+- When: '2026-11-01 19:39 CET' - '2026-11-01 19:56 CET'
+- Change: Same-context Shareable proxy calls now replace the client placeholder receiver in the existing operand stack and enter the normal VM method frame. This preserves typed primitive arguments and avoids an unnecessary nested interpreter; cross-context calls with arguments remain fail-closed. Added `Stack::set_Pushed_Element` and a stack receiver/argument regression to the RMI registry test.
+- Validation: `./tools/test-rmi-registry` passed with `stack_receiver_replace=1`; the unchanged upstream `AlgTestApiCore_305.cap` passed all three focused Shareable rows through fresh VPCD storage, with the sub-interface call returning `1` and CAP cleanup OK. `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. Physical reader refresh was not repeated in this step; the immediately preceding authorized refresh found zero Pico devices, and no flash was performed.
+- Result: Same-context SIO proxy dispatch preserves the entire operand stack and has both unit and CAP-level coverage. Cross-AID behavior and cross-context argument conversion are still not covered. Existing Rust/CAP warnings remain; no new warnings were observed.
+- Decision: Keep CTX-01 open. Next add cross-AID server routing coverage from an unchanged upstream CAP if available, then implement descriptor-aware cross-context argument conversion and exception propagation. Physical validation is pending device enumeration.
+- Commit: pending; SHA will be recorded in the follow-up progress commit.
+- Artifacts/logs: `artifacts/results/shareable-same-context-stack-20261101T185456Z/`; `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V build outputs under `build/`; no physical logs.

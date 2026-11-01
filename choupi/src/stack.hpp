@@ -167,6 +167,11 @@ public:
       noexcept
 #endif
       ;
+  void set_Pushed_Element(uint16_t n, jref_t value)
+#if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
+      noexcept
+#endif
+      ;
 
   /// Reading a local variable as a short value
   int16_t readLocal_Short(const uint8_t local_number);
