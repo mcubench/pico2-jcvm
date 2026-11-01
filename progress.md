@@ -19396,5 +19396,5 @@
 - Validation: `./tools/test-rmi-registry` passed; `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. An escalated USB inventory returned no Pico devices in the VM; no physical test was performed.
 - Result: Accepted global reference handles are checked against the declared reference category before server entry. End-to-end cross-AID descriptor lookup remains untested. Existing upstream CHOUPI packed-member and Rust warnings remain.
 - Decision: Keep CTX-01 open. Continue looking for an unchanged upstream CAP capable of cross-AID service invocation; retain local-reference rejection until ownership and firewall semantics are defined.
-- Commit: pending
+- Commit: `9e05b90`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
