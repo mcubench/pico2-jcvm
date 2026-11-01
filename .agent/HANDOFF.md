@@ -2638,3 +2638,19 @@ SIO CAP remains same-applet/same-context and does not exercise the new path.
 Next, design a cross-AID integration test using an unchanged upstream CAP if
 available, then implement safe non-null reference translation and
 cross-context exception restoration. Keep CTX-01 open.
+
+## JCRE-global references in cross-context SIO arguments — 2026-11-01
+
+The cross-context argument marshaller now accepts null, JCRE-global array, and
+JCRE-global instance references. These handles resolve via the shared global
+heap and do not expose applet-private heap objects. Applet-local non-null
+references (including proxy placeholders) still fail closed pending explicit
+ownership translation. `tools/test-rmi-registry` covers the accepted global
+forms and continued local-reference rejection; it does not exercise descriptor
+lookup or cross-AID execution.
+
+Validation: `tools/test-rmi-registry`, PC build, ARM build, and RISC-V build
+passed. The user reports physical devices connected, but the VM's elevated
+`lsusb -d 2e8a:` returned no devices and PC/SC lists only VPCD; no flash or
+physical test was performed. Continue CTX-01 offline until an unchanged
+upstream CAP exercises cross-AID invocation or a valid fixture is available.

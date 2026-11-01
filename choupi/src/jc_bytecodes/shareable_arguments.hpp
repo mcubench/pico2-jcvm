@@ -29,8 +29,9 @@ namespace jcvm {
 
 // Convert a CAP Descriptor method signature and the caller's operand words
 // into initial locals for a nested Shareable method call. Caller words remain
-// untouched. Non-null references are rejected because their ownership cannot
-// be transferred safely between applet heaps yet.
+// untouched. Null and JCRE-global references can cross contexts because they
+// are not owned by either applet heap. Applet-local references remain rejected
+// until ownership can be translated safely.
 inline bool buildShareableInitialLocals(
     const uint8_t *signature_nibbles, const uint8_t signature_nibble_count,
     const uint8_t argument_word_count, const jref_t server_reference,
@@ -117,7 +118,10 @@ inline bool buildShareableInitialLocals(
     case 0x0d: // int[]
     case 0x0e: { // reference[]
       const jref_t reference(caller_word(argument_word_index));
-      if (!reference.isNullPointer()) return false;
+      if (!reference.isNullPointer() && !reference.isGlobalArray() &&
+          !reference.isGlobalInstance()) {
+        return false;
+      }
       initial_locals[initial_local_count++] = {
           InterpretorLocalType::Reference, reference.compact()};
       ++argument_word_index;

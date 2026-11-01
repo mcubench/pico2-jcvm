@@ -238,6 +238,34 @@ void verify_shareable_cross_context_arguments() {
   }
 
   {
+    jcvm::jref_t global_instance;
+    global_instance.setOffset(1);
+    global_instance.setAsGlobalInstance();
+    jcvm::jref_t global_array;
+    global_array.setOffset(2);
+    global_array.setAsGlobalArray();
+
+    jcvm::Stack stack;
+    stack.push_Frame(0, 0, 3, nullptr);
+    stack.push_Reference(receiver);
+    stack.push_Reference(global_instance);
+    stack.push_Reference(global_array);
+    constexpr uint8_t signature[] = {
+        0x06, 0x00, 0x00, 0x00, 0x00, // Object
+        0x0b,                         // byte[]
+        0x04};                         // short return
+    assert(jcvm::buildShareableInitialLocals(
+        signature, sizeof(signature), 3, receiver, stack, locals,
+        local_count));
+    assert(local_count == 3);
+    assert(locals[1].value == global_instance.compact());
+    assert(locals[2].value == global_array.compact());
+    assert(stack.pop_Reference() == global_array);
+    assert(stack.pop_Reference() == global_instance);
+    assert(stack.pop_Reference() == receiver);
+  }
+
+  {
     jcvm::Stack stack;
     stack.push_Frame(0, 0, 1, nullptr);
     stack.push_Reference(receiver);

@@ -3359,3 +3359,18 @@ original terminology/status; check current summary and later fixes before reuse.
   lookup and delete phases but timed out while reinstalling the transaction
   probe (`INSTALL a000000062030101`). Root cause is not established; retain its
   full logs before attributing it to firmware.
+
+### Shareable cross-context argument reference boundary — 2026-11-01
+
+- Null references and JCRE-global array/instance handles are now copied into
+  the server call's typed locals. These handles use the shared global heap and
+  do not identify storage in either applet's private heap.
+- Applet-local object/array references remain rejected. Do not pass client
+  local references or proxy placeholders across contexts until explicit
+  ownership translation and the firewall policy are implemented.
+- `tools/test-rmi-registry` covers null, JCRE-global instance/array, and
+  applet-local rejection. This is a marshaller unit test, not an end-to-end
+  cross-AID SIO test.
+- The user's physical devices were reported connected, but this VM currently
+  enumerates no `2e8a:` USB devices; `pcsc_scan -r` only showed VPCD. Recheck
+  guest USB passthrough before attempting a physical run.
