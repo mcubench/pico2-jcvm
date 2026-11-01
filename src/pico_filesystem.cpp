@@ -25,6 +25,8 @@ extern "C" uint8_t choupi_persistent_write_transaction_active(void);
 namespace {
 constexpr size_t kRomFsOffset = 0x20000;
 constexpr size_t kMaxOverlayFiles = 8192;
+constexpr uint8_t kFirstDynamicPackageId = 56;
+constexpr uint8_t kDynamicPackageCount = 8;
 constexpr uint32_t kFilesystemSlot0 = flash_layout::filesystem_slot(0);
 constexpr uint32_t kFilesystemSlotSize = flash_layout::filesystem_slot_size;
 constexpr uint32_t kFilesystemSlot1 = flash_layout::filesystem_slot(1);
@@ -939,6 +941,178 @@ bool find_rom_file(const uint8_t *tag, uint8_t tag_length,
   return false;
 }
 
+uint8_t compact_deleted_overlay_records() {
+#ifndef RP2350_FS_OVERLAY_TEST
+  const size_t files_before = overlay_file_count;
+  const size_t bytes_before = overlay_bytes_used;
+#endif
+  auto *bitmap = reinterpret_cast<uint8_t *>(erase_bucket_head);
+  std::fill(bitmap, bitmap + kFilesystemBitmapBytes, 0);
+
+  // Parent-slot encoded records contain index references that would need to
+  // be remapped during rehash. Production records use full or root-compressed
+  // tags; retain the old table if a test/legacy parent encoding is present.
+  for (const auto &file : overlay) {
+    if (overlay_is_used(file) && (file.flags & kOverlayParentTag) != 0) {
+      return FS_STATUS_OK;
+    }
+  }
+
+  size_t ordered_count = 0;
+  for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+    const auto &file = overlay[slot];
+    if (!overlay_is_used(file)) continue;
+    if (!overlay_has_storage(file)) {
+      // Failed writes can reserve a hash slot before payload append rejects
+      // them. There is no serialized key and therefore nothing to hide.
+      bitmap[slot / 8] |= static_cast<uint8_t>(1u << (slot % 8));
+      continue;
+    }
+    erase_bucket_next[ordered_count++] = slot;
+  }
+  std::sort(erase_bucket_next, erase_bucket_next + ordered_count,
+            [](uint16_t left, uint16_t right) {
+              return overlay_offset(overlay[left]) <
+                     overlay_offset(overlay[right]);
+            });
+
+  size_t kept_count = 0;
+  size_t compacted_bytes = 0;
+  for (size_t index = 0; index < ordered_count; ++index) {
+    const uint16_t slot = erase_bucket_next[index];
+    const auto &file = overlay[slot];
+    uint8_t tag[kMaxOverlayTagLength]{};
+    uint8_t tag_length = 0;
+    if (!reconstruct_overlay_tag(slot, tag, &tag_length)) {
+      return FS_STATUS_IO_UNKNOWN;
+    }
+    if (!overlay_has_record(file)) {
+      const uint8_t *rom_data = nullptr;
+      uint32_t rom_length = 0;
+      // Package IDs 56-63 are reserved for packages loaded after the ROM is
+      // built, so these namespaces cannot shadow a ROM-backed filesystem tag.
+      const bool dynamic_package_tag =
+          (tag_length >= 2 && tag[0] == 0x02 &&
+           tag[1] >= kFirstDynamicPackageId &&
+           tag[1] < kFirstDynamicPackageId + kDynamicPackageCount) ||
+          (tag_length >= 3 && tag[0] == 0x03 &&
+           tag[2] >= kFirstDynamicPackageId &&
+           tag[2] < kFirstDynamicPackageId + kDynamicPackageCount) ||
+          (tag_length >= 3 && tag[0] == 0x02 && tag[1] == 0xff &&
+           tag[2] >= kFirstDynamicPackageId &&
+           tag[2] < kFirstDynamicPackageId + kDynamicPackageCount);
+      if (dynamic_package_tag ||
+          !find_rom_file(tag, tag_length, &rom_data, &rom_length)) {
+        bitmap[slot / 8] |= static_cast<uint8_t>(1u << (slot % 8));
+        continue;
+      }
+    }
+
+    const uint32_t offset = overlay_offset(file);
+    const size_t key_length = overlay_bytes[offset] & 0x7fu;
+    const size_t record_size = 1 + key_length + file.size;
+    if (offset > overlay_bytes_used ||
+        record_size > overlay_bytes_used - offset ||
+        compacted_bytes > offset) {
+      return FS_STATUS_IO_UNKNOWN;
+    }
+    compacted_bytes += record_size;
+    ++kept_count;
+  }
+  if (!filesystem_payload_fits(kept_count, compacted_bytes)) {
+    return FS_STATUS_OUT_OF_FLASH;
+  }
+
+  // Preflight above is read-only. Drop the identified entries, then compact
+  // payloads in source-offset order so a move never overwrites a later source.
+  for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+    if ((bitmap[slot / 8] & (1u << (slot % 8))) != 0) {
+      overlay[slot] = OverlayFile{};
+    }
+  }
+  size_t write_offset = 0;
+  for (size_t index = 0; index < ordered_count; ++index) {
+    const uint16_t slot = erase_bucket_next[index];
+    auto &file = overlay[slot];
+    if (!overlay_is_used(file)) continue;
+    const uint32_t old_offset = overlay_offset(file);
+    const size_t key_length = overlay_bytes[old_offset] & 0x7fu;
+    const size_t record_size = 1 + key_length + file.size;
+    if (write_offset != old_offset) {
+      std::memmove(overlay_bytes + write_offset,
+                   overlay_bytes + old_offset, record_size);
+    }
+    set_overlay_offset(file, static_cast<uint32_t>(write_offset));
+    write_offset += record_size;
+  }
+
+  // Rehash into the same fixed table using the deleted-entry bitmap as a
+  // temporary occupancy map and the slot-order array as an old->new map.
+  std::fill(bitmap, bitmap + kFilesystemBitmapBytes, 0);
+  std::fill(erase_bucket_next,
+            erase_bucket_next + kMaxOverlayFiles, UINT16_MAX);
+  for (uint16_t old_slot = 0; old_slot < kMaxOverlayFiles; ++old_slot) {
+    const auto &file = overlay[old_slot];
+    if (!overlay_is_used(file)) continue;
+    size_t new_slot = file.hash % kMaxOverlayFiles;
+    while ((bitmap[new_slot / 8] & (1u << (new_slot % 8))) != 0) {
+      new_slot = (new_slot + 1) % kMaxOverlayFiles;
+    }
+    bitmap[new_slot / 8] |= static_cast<uint8_t>(1u << (new_slot % 8));
+    erase_bucket_next[old_slot] = static_cast<uint16_t>(new_slot);
+  }
+
+  // The destination bitmap proves the mapping is injective, so each component
+  // is either a cycle or a path ending at an empty/deleted slot. Move one
+  // OverlayFile at a time; the high map bit records visited sources without
+  // allocating a second full table.
+  constexpr uint16_t kMapVisited = 0x8000;
+  for (uint16_t start = 0; start < kMaxOverlayFiles; ++start) {
+    const uint16_t first_map = erase_bucket_next[start];
+    if (first_map == UINT16_MAX || (first_map & kMapVisited) != 0) continue;
+    OverlayFile carried = overlay[start];
+    uint16_t current = start;
+    while (true) {
+      const uint16_t mapping = erase_bucket_next[current];
+      const uint16_t destination = mapping & ~kMapVisited;
+      const bool cycle_complete = destination == start;
+      std::swap(carried, overlay[destination]);
+      erase_bucket_next[current] = mapping | kMapVisited;
+      if (cycle_complete) break;
+      current = destination;
+      // A path may terminate at an unmapped destination. A mapped source can
+      // only lead to a previously visited source when closing at `start`,
+      // which cycle_complete handles above; the destination bitmap guarantees
+      // injectivity. Thus this phase has no failure path after mutation starts.
+      if (erase_bucket_next[current] == UINT16_MAX) break;
+    }
+  }
+
+  size_t rebuilt_count = 0;
+  for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
+    const bool destination_used =
+        (bitmap[slot / 8] & (1u << (slot % 8))) != 0;
+    if (!destination_used) {
+      overlay[slot] = OverlayFile{};
+    } else {
+      ++rebuilt_count;
+    }
+  }
+
+  overlay_file_count = rebuilt_count;
+  overlay_bytes_used = write_offset;
+  overlay_dirty = true;
+#ifndef RP2350_FS_OVERLAY_TEST
+  std::printf("CHOUPI:FS_COMPACT files=%u->%u bytes=%lu->%lu\r\n",
+              static_cast<unsigned>(files_before),
+              static_cast<unsigned>(overlay_file_count),
+              static_cast<unsigned long>(bytes_before),
+              static_cast<unsigned long>(overlay_bytes_used));
+  std::fflush(stdout);
+#endif
+  return FS_STATUS_OK;
+}
+
 bool find_file(const uint8_t *tag, uint8_t tag_length,
                const uint8_t **data, uint32_t *length) {
   if (auto *file = find_overlay(tag, tag_length)) {
@@ -1208,6 +1382,10 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
 }
 
 #ifdef RP2350_FS_OVERLAY_TEST
+extern "C" uint32_t rp2350_fs_test_overlay_file_count(void) {
+  return static_cast<uint32_t>(overlay_file_count);
+}
+
 extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
     const uint8_t *tag, uint8_t tag_length, const uint8_t *data,
     uint32_t length) {
@@ -1376,8 +1554,8 @@ extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
 }
 
 extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
-  return erase_overlay_records([package_id](const uint8_t *tag,
-                                              uint8_t length) {
+  const uint8_t erase_status = erase_overlay_records([package_id](
+      const uint8_t *tag, uint8_t length) {
     const bool static_field = length >= 2 && tag[0] == 0x02 &&
                               tag[1] == package_id;
     const bool applet_field = length >= 3 && tag[0] == 0x03 &&
@@ -1386,6 +1564,8 @@ extern "C" uint8_t fs_erase_package_state(uint8_t package_id) {
                            tag[2] == package_id;
     return static_field || applet_field || lifecycle;
   });
+  if (erase_status != FS_STATUS_OK) return erase_status;
+  return compact_deleted_overlay_records();
 }
 
 extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,

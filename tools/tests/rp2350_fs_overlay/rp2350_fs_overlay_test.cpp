@@ -22,6 +22,8 @@ extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
 extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
     const uint8_t *tag, uint8_t tag_length, const uint8_t *data,
     uint32_t length);
+extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
+extern "C" uint8_t fs_erase_package_state(uint8_t package_id);
 
 namespace {
 std::array<uint8_t, 2 * 1024 * 1024> fake_flash;
@@ -1517,6 +1519,119 @@ int main() {
              fs_exists(payload_namespace_tag.data(),
                        payload_namespace_tag.size()) == 0,
          "full_overlay_cleanup_erases_all_namespace_records");
+
+  fake_flash.fill(0xff);
+  bool package_delete_reclaims_overlay_slots = fs_init() == 0;
+  constexpr uint8_t dynamic_package_id = 0x39;
+  constexpr std::array<uint8_t, 3> unrelated_package_tag = {0xb2, 0x51, 0x01};
+  constexpr uint8_t unrelated_package_value[] = {0x51};
+  package_delete_reclaims_overlay_slots =
+      package_delete_reclaims_overlay_slots &&
+      fs_write(unrelated_package_tag.data(), unrelated_package_tag.size(),
+               unrelated_package_value, sizeof(unrelated_package_value)) == 0;
+  for (uint8_t generation = 0; generation < 6 &&
+                                package_delete_reclaims_overlay_slots;
+       ++generation) {
+    for (uint16_t item = 0; item < 128 &&
+                             package_delete_reclaims_overlay_slots;
+         ++item) {
+      const std::array<uint8_t, 6> tag = {
+          0x03, 0x07, dynamic_package_id, generation,
+          static_cast<uint8_t>(item >> 8), static_cast<uint8_t>(item)};
+      const uint8_t value[] = {generation, static_cast<uint8_t>(item)};
+      package_delete_reclaims_overlay_slots =
+          fs_write(tag.data(), tag.size(), value, sizeof(value)) == 0;
+    }
+    package_delete_reclaims_overlay_slots =
+        package_delete_reclaims_overlay_slots &&
+        fs_erase_package_state(dynamic_package_id) == 0 &&
+        rp2350_fs_test_overlay_file_count() == 1 &&
+        fs_exists(unrelated_package_tag.data(),
+                  unrelated_package_tag.size()) == 1 &&
+        fs_sync() == 0 && fs_init() == 0 &&
+        rp2350_fs_test_overlay_file_count() == 1 &&
+        fs_exists(unrelated_package_tag.data(),
+                  unrelated_package_tag.size()) == 1;
+  }
+  expect(package_delete_reclaims_overlay_slots,
+         "package_delete_reclaims_tombstone_index_slots_across_restarts");
+
+  fake_flash.fill(0xff);
+  constexpr std::array<uint8_t, 3> compact_unrelated_tag = {0xb2, 0x52, 0x01};
+  constexpr uint8_t compact_unrelated_value[] = {0x52};
+  constexpr uint8_t compact_package_id = 0x39;
+  std::array<std::array<uint8_t, 6>, 24> compact_package_tags{};
+  constexpr uint8_t compact_package_value[] = {0x39, 0x57};
+  bool compact_power_cut_setup = fs_init() == 0 &&
+      fs_write(compact_unrelated_tag.data(), compact_unrelated_tag.size(),
+               compact_unrelated_value, sizeof(compact_unrelated_value)) == 0;
+  for (size_t index = 0; index < compact_package_tags.size() &&
+                          compact_power_cut_setup;
+       ++index) {
+    compact_package_tags[index] = {
+        0x03, 0x08, compact_package_id, 0x11,
+        static_cast<uint8_t>(index >> 8), static_cast<uint8_t>(index)};
+    compact_power_cut_setup =
+        fs_write(compact_package_tags[index].data(),
+                 compact_package_tags[index].size(), compact_package_value,
+                 sizeof(compact_package_value)) == 0;
+  }
+  compact_power_cut_setup = compact_power_cut_setup && fs_sync() == 0;
+  committed_flash = fake_flash;
+  if (compact_power_cut_setup) {
+    persistent_transaction_active = true;
+    compact_power_cut_setup =
+        fs_erase_package_state(compact_package_id) == 0 && fs_sync() == 0;
+    persistent_transaction_active = false;
+    reset_flash_failure();
+    compact_power_cut_setup = compact_power_cut_setup && fs_sync() == 0;
+  }
+  const size_t compact_snapshot_mutations = flash_mutation_count;
+  expect(compact_power_cut_setup && compact_snapshot_mutations > 0,
+         "package_delete_compaction_snapshot_staged");
+
+  bool compact_snapshot_recovers_atomically =
+      compact_power_cut_setup && compact_snapshot_mutations > 0;
+  uint32_t compact_random_state = 0x39c0ffee;
+  for (size_t trial = 0; trial < 64 &&
+                         compact_snapshot_recovers_atomically;
+       ++trial) {
+    fake_flash = committed_flash;
+    persistent_transaction_active = false;
+    if (fs_init() != 0) {
+      compact_snapshot_recovers_atomically = false;
+      break;
+    }
+    persistent_transaction_active = true;
+    const bool deletion_staged =
+        fs_erase_package_state(compact_package_id) == 0 && fs_sync() == 0;
+    persistent_transaction_active = false;
+    if (!deletion_staged) {
+      compact_snapshot_recovers_atomically = false;
+      break;
+    }
+    compact_random_state ^= compact_random_state << 13;
+    compact_random_state ^= compact_random_state >> 17;
+    compact_random_state ^= compact_random_state << 5;
+    reset_flash_failure(compact_random_state % compact_snapshot_mutations);
+    const bool interrupted = fs_sync() != 0;
+    reset_flash_failure();
+    if (!interrupted || fs_init() != 0) {
+      compact_snapshot_recovers_atomically = false;
+      break;
+    }
+    bool old_state =
+        fs_exists(compact_unrelated_tag.data(),
+                  compact_unrelated_tag.size()) == 1;
+    bool new_state = old_state;
+    for (const auto &tag : compact_package_tags) {
+      old_state = old_state && fs_exists(tag.data(), tag.size()) == 1;
+      new_state = new_state && fs_exists(tag.data(), tag.size()) == 0;
+    }
+    if (!old_state && !new_state) compact_snapshot_recovers_atomically = false;
+  }
+  expect(compact_snapshot_recovers_atomically,
+         "package_delete_compaction_recovers_atomically_after_power_cuts");
 
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
