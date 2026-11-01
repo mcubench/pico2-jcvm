@@ -19310,3 +19310,14 @@
 - Decision: Keep CTX-01 open. Add a positive two-applet Shareable regression, then implement descriptor-aware argument copying, nonnull reference translation, exception propagation, and cross-context restoration checks.
 - Commit: `e743c5d`
 - Artifacts/logs: Case-48 output from `tools/test-jcsystem-transaction-applet`; registry binary `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
+
+## 2026-11-01 Verify proxy casts against server type 21 minutes
+
+- Step/experiment: `shareable-proxy-cast-firewall-20261101`
+- When: '2026-11-01 18:12 CET' - '2026-11-01 18:33 CET'
+- Change: Audited existing deploy CAP/source coverage and found no positive Shareable fixture. Tightened proxy `checkcast` and `instanceof`: they now require both an `ACC_SHAREABLE` target interface and that the actual server object's class implements that interface. Updated the test and session findings; no CAPs were created or modified.
+- Validation: `./tools/test-rmi-registry` passed; final `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0` before the final cast-only adjustment; no proxy handles occur in that suite. Positive proxy casts remain untestable without a matching upstream fixture. No physical operation was run.
+- Result: `instanceof` no longer reports true for every Shareable interface merely because the requested interface carries the flag; the server class's actual interface relation is checked. Successful proxy interface calls remain unverified end to end.
+- Decision: Keep CTX-01 open. Continue by checking for any existing upstream applet with a positive SIO export, then add safe global/reference return handling and broader method signatures as permitted by a real fixture.
+- Commit: Recorded in this implementation commit.
+- Artifacts/logs: Multipackage regression `artifacts/logs/host-vpcd-multipackage-apdu-20261101T171653Z.log` and companion restart/reject logs; PC/ARM/RISC-V build outputs under `build/`; no physical logs.

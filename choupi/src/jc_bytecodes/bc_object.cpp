@@ -39,6 +39,7 @@
 #include "../stack.hpp"
 #include "bytecodes.hpp"
 #include "../../src/vm_diagnostics.h"
+#include "../../src/vm_applet_context.hpp"
 #include "javacard-class-token-map.h"
 
 #include <cstdio>
@@ -50,7 +51,8 @@ namespace jcvm {
 
 namespace {
 bool shareableProxyCastTarget(Context &context, const uint8_t atype,
-                              const uint16_t index) {
+                              const uint16_t index,
+                              const jref_t proxy_reference) {
   if (atype != 0) {
     return false;
   }
@@ -62,8 +64,32 @@ bool shareableProxyCastTarget(Context &context, const uint8_t atype,
     if (!IS_INTERFACE(target.second)) {
       return false;
     }
-    return (reinterpret_cast<const jc_cap_interface_info *>(target.second)
-                ->flags & JC_CAP_CLASS_ACC_SHAREABLE) != 0;
+    if ((reinterpret_cast<const jc_cap_interface_info *>(target.second)
+             ->flags & JC_CAP_CLASS_ACC_SHAREABLE) == 0) {
+      return false;
+    }
+
+    uint8_t server_aid[16]{};
+    uint8_t server_aid_length = 0;
+    jref_t server_reference;
+    if (!context.getShareableProxy(proxy_reference, server_aid,
+                                   server_aid_length, server_reference)) {
+      return false;
+    }
+    Context *server_context =
+        choupi_vm_find_or_restore_applet_context(server_aid,
+                                                 server_aid_length);
+    if (server_context == nullptr) {
+      return false;
+    }
+    const auto instance = server_context->getHeap().getInstance(server_reference);
+    const Package instance_package(instance->getPackageID());
+    const auto *instance_class =
+        ConstantPool_Handler(instance_package)
+            .getClassFromClassIndex(instance->getClassIndex());
+    const auto source_type = std::make_pair(
+        instance_package, reinterpret_cast<const uint8_t *>(instance_class));
+    return Class_Handler::docheckcast(source_type, target) == TRUE;
   } catch (Exceptions) {
     return false;
   }
@@ -795,7 +821,7 @@ void Bytecodes::bc_checkcast() {
   TRACE_JCVM_DEBUG("CHECKCAST 0x%02X 0x%02X", atype, index);
 
   if (context.isShareableProxy(objectref)) {
-    if (!shareableProxyCastTarget(context, atype, index)) {
+    if (!shareableProxyCastTarget(context, atype, index, objectref)) {
       throw Exceptions::ClassCastException;
     }
     stack.push_Reference(objectref);
@@ -931,8 +957,9 @@ void Bytecodes::bc_instanceof() {
   TRACE_JCVM_DEBUG("INSTANCEOF 0x%02X 0x%02X", atype, index);
 
   if (context.isShareableProxy(objectref)) {
-    stack.push_Byte(shareableProxyCastTarget(context, atype, index) ? TRUE
-                                                                   : FALSE);
+    stack.push_Byte(shareableProxyCastTarget(context, atype, index, objectref)
+                        ? TRUE
+                        : FALSE);
     return;
   }
 

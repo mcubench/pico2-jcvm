@@ -1,5 +1,22 @@
 # Session handoff — updated 2026-11-01
 
+## Proxy cast validation and integration recheck
+
+Proxy `checkcast`/`instanceof` now verify both that the target is an
+`ACC_SHAREABLE` interface and that the server object's actual class implements
+it. This avoids treating every Shareable interface as implemented by each
+proxy. `./tools/test-rmi-registry` and final PC/ARM/RISC-V builds pass. The
+authorized VPCD multipackage suite passes 47/47; the transaction probe case 48
+passes 3/3 from the preceding final-build validation. None of these probes
+invokes a positive Shareable service. Source/deploy inspection found no
+available positive fixture; keep CTX-01 open. No physical access was used.
+
+The latest firmware size increased slightly due to the cast/runtime checks;
+ARM image end address is `0x100e05d8`. The current source still supports only
+zero-argument Shareable calls and void/short/int/null results; arguments and
+nonnull server-local references fail closed. Next inspect whether an existing
+upstream applet exercises Shareable export; do not create or modify CAP files.
+
 ## Shareable proxy invocation groundwork — current worktree
 
 Native Shareable lookup from the prior step now has a guarded `invokeinterface`

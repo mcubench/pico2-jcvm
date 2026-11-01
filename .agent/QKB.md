@@ -3254,3 +3254,18 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Next:** Add a test fixture for a positive cross-AID lookup and zero-argument
   primitive/void interface calls, then test argument/result reference
   translation and exception/context restoration before calling CTX-01 complete.
+
+### Shareable proxy casts must inspect the server class — 2026-11-01
+
+- A proxy's client placeholder uses the server implementation class for
+  storage. Checking only that a `checkcast`/`instanceof` target has the
+  Shareable flag would make `instanceof` incorrectly succeed for any Shareable
+  interface, even when the server class does not implement it.
+- **Viable fix:** Resolve the proxy's server context and object, require the
+  target interface's `ACC_SHAREABLE`, and apply `Class_Handler::docheckcast`
+  to the actual server class/interface pair. `checkcast` and `instanceof` now
+  share this verification. Ordinary classes, non-Shareable interfaces and
+  array types remain denied for proxy placeholders.
+- Existing VPCD multipackage regression passes 47/47, but it contains no proxy
+  calls. Full PC/ARM/RISC-V builds pass. A positive Shareable fixture is still
+  needed to validate the cast behavior at runtime.
