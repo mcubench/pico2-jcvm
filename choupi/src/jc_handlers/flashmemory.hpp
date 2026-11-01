@@ -77,7 +77,8 @@ private:
   /// Write instance meta data
   static void writeInstanceHeader(const fs::Tag &tag,
                                   const jpackage_ID_t package,
-                                  const jclass_index_t class_index);
+                                  const jclass_index_t class_index,
+                                  bool shareable_proxy = false);
 
   /// Write array data
   static void writeArray(const fs::Tag &tag, const FieldType type,

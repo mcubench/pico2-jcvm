@@ -45,13 +45,17 @@ private:
   bool is_persistent;
   /// Is a static (aka in flash memory) object?
   bool is_static;
+  /// Internal marker for a Shareable proxy placeholder.
+  bool shareable_proxy_placeholder = false;
   /// Temporary collector mark; never serialized or exposed to Java.
   uint8_t heap_mark = 0;
 
 public:
   /// Default constructor
-  JC_Object(Heap &owner, const bool isPersistent) noexcept
-      : owner(owner), is_persistent(isPersistent){};
+  JC_Object(Heap &owner, const bool isPersistent,
+            const bool isShareableProxyPlaceholder = false) noexcept
+      : owner(owner), is_persistent(isPersistent),
+        shareable_proxy_placeholder(isShareableProxyPlaceholder){};
 
   /// Gets the persistant state of the current object
   bool isPersistent(void) const noexcept;
@@ -60,6 +64,12 @@ public:
 
   /// Get heap owner.
   Heap &getOwner() noexcept;
+  bool isShareableProxyPlaceholder() const noexcept {
+    return this->shareable_proxy_placeholder;
+  }
+  void setShareableProxyPlaceholder(const bool value = true) noexcept {
+    this->shareable_proxy_placeholder = value;
+  }
 };
 
 } // namespace jcvm

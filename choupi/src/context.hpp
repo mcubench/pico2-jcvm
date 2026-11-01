@@ -161,6 +161,9 @@ public:
                             uint8_t server_aid_length,
                             jref_t server_reference) const noexcept;
   bool isShareableProxy(jref_t proxy_reference) const noexcept;
+  /// Detect a restored Shareable placeholder whose runtime routing metadata
+  /// is unavailable; never treat it as an ordinary local object.
+  bool isStaleShareableProxy(jref_t reference) noexcept;
   bool registerShareableProxy(jref_t proxy_reference,
                              const uint8_t *server_aid,
                              uint8_t server_aid_length,

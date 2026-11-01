@@ -27,7 +27,6 @@
 
 #include "context.hpp"
 #include "exceptions.hpp"
-#include "jc_handlers/flashmemory.hpp"
 #include "jc_types/jc_array.hpp"
 #include "../../src/vm_diagnostics.h"
 
@@ -384,6 +383,19 @@ bool Context::isShareableProxy(const jref_t proxy_reference) const noexcept {
   return false;
 }
 
+bool Context::isStaleShareableProxy(const jref_t reference) noexcept {
+  if (this->isShareableProxy(reference) || reference.isNullPointer() ||
+      reference.isArray() || reference.isGlobalInstance()) {
+    return false;
+  }
+  try {
+    const auto instance = this->heap.getInstance(reference);
+    return instance->isShareableProxyPlaceholder();
+  } catch (...) {
+    return false;
+  }
+}
+
 bool Context::registerShareableProxy(const jref_t proxy_reference,
                                      const uint8_t *server_aid,
                                      const uint8_t server_aid_length,
@@ -392,6 +404,14 @@ bool Context::registerShareableProxy(const jref_t proxy_reference,
       server_aid == nullptr || server_aid_length < 5 || server_aid_length > 16 ||
       server_reference.isNullPointer() || server_reference.isArray()) {
     return false;
+  }
+  try {
+    const auto proxy = this->heap.getInstance(proxy_reference);
+    proxy->setShareableProxyPlaceholder();
+  } catch (...) {
+    // Keep the registry helper usable in isolated tests with synthetic refs.
+    // The VM's production proxy creation path allocates this object in the
+    // same heap before registering it.
   }
   for (auto &entry : this->shareable_proxies) {
     if (!entry.proxy_reference.isNullPointer()) {

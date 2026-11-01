@@ -241,15 +241,31 @@ Archive text is historical evidence, not current device state or priorities.
   caught by the client, and a subsequent SIO call succeeds. A proxy stored in
   an applet instance field survives the end-of-APDU GC and is reusable on the
   next APDU. Calling `Object.equals` directly on a proxy fails closed with
-  `SecurityException`. On physical 2BED, CAP loading reached the service
-  install, but installation returned `6F00` (internal stage 9);
-  physical cross-AID behavior remains unverified. The unchanged same-applet
+  `SecurityException`. A fresh lookup works after emulator process restart;
+  an old persisted proxy loses its native routing metadata. The instance header
+  now stores an internal Shareable-proxy marker; restoration recreates that
+  marker, and the VM rejects marked placeholders absent from the runtime
+  registry across interface/virtual/special calls, casts and instance-field
+  operations instead of invoking them in the caller context. VPCD confirms the
+  stale placeholder is fail-closed after process restart and card reset.
+  Persisting enough metadata to revive an old proxy remains unimplemented. On
+  physical 2BED `2BED26ED20556535`, the current ARM image passes the finite
+  serial health cycle. The contract and service fixture packages from an
+  earlier attempt are already on this card, so the clean-fixture script refused
+  to replace them. GPPro `--install` returned `6A80` even though GET STATUS
+  then listed the client package. A subsequent `--install-only` returned
+  extended INSTALL stage `09`, VM status `0000`, and final `6F00`. GET STATUS
+  lists the client package but SELECT returns `6A82`, so no client
+  applet instance is usable. Deleting the client package returned `6581`; keep
+  this test-created package state documented and do not remove the pre-existing
+  contract/service packages. Physical cross-AID behavior remains unverified.
+  The unchanged same-applet
   call still passes on physical Pico 2 `8E464F4E2BBC0A19`. Never return raw
   server heap references to clients.
   Acceptance: physical positive cross-AID fixture; denied-call fixtures; correct
   context/AID restoration; stable roots across GC and reset/delete; no cross-heap
-  reference leaks; then unchanged upstream Multi CAP integration and physical
-  checks.
+  reference leaks; durable proxy rehydration or a documented persistence
+  boundary; then unchanged upstream Multi CAP integration and physical checks.
   General cross-context calls and logical-channel policy remain unimplemented;
   basic channel 0 is the current assignment. No blanket firewall acceptance yet.
   Evidence: current HANDOFF, `tools/test-rmi-registry`, context/proxy progress

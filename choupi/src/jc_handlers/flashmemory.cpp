@@ -450,13 +450,16 @@ FlashMemory_Handler::getDataFromTag(const fs::Tag &tag) {
  */
 void FlashMemory_Handler::writeInstanceHeader(
     const fs::Tag &tag, const jpackage_ID_t package,
-    const jclass_index_t class_index) {
+    const jclass_index_t class_index, const bool shareable_proxy) {
   static_assert(sizeof(jpackage_ID_t) == sizeof(uint8_t),
                 "jpackage_ID_t type size must be same as uint8_t");
   static_assert(sizeof(jclass_index_t) == sizeof(uint16_t),
                 "jclass_index_t type size must be same as uint16_t");
 
-  uint8_t data[] = {FieldType::FIELD_TYPE_OBJECT, package,
+  const FieldType instance_type = shareable_proxy
+      ? FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT
+      : FieldType::FIELD_TYPE_OBJECT;
+  uint8_t data[] = {instance_type, package,
                     HIGH_BYTE_SHORT(class_index), LOW_BYTE_SHORT(class_index)};
 
   write_persistent_tag_or_throw(
@@ -869,7 +872,9 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
     const fs::Tag target_tag = read_persistent_alias_target(length, data);
     auto [target_length, target_data] =
         FlashMemory_Handler::getDataInPlaceFromTag(target_tag);
-    if (target_length < 4 || target_data[0] != FieldType::FIELD_TYPE_OBJECT) {
+    if (target_length < 4 ||
+        (target_data[0] != FieldType::FIELD_TYPE_OBJECT &&
+         target_data[0] != FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT)) {
       throw Exceptions::SecurityException;
     }
     const jpackage_ID_t package = target_data[1];
@@ -924,7 +929,9 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
 #endif
 
   if (fail_on_read) {
-    if (type == FieldType::FIELD_TYPE_OBJECT && length < 4) {
+    if ((type == FieldType::FIELD_TYPE_OBJECT ||
+         type == FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT) &&
+        length < 4) {
       throw Exceptions::SecurityException;
     }
     if (type == FieldType::FIELD_TYPE_ARRAY_OBJECT && length < 5) {
@@ -986,6 +993,19 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
     jclass_index_t claz =
         static_cast<jclass_index_t>(BYTES_TO_SHORT(data[2], data[3]));
     return heap.addInstance(JC_Instance(heap, package, claz, tag));
+  }
+
+  case FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT: {
+    static_assert(sizeof(jclass_index_t) == sizeof(uint16_t),
+                  "jclass_index_t type should be equals to uint16_t");
+
+    const jpackage_ID_t package = static_cast<jpackage_ID_t>(data[1]);
+    const jclass_index_t claz =
+        static_cast<jclass_index_t>(BYTES_TO_SHORT(data[2], data[3]));
+    const jref_t reference =
+        heap.addInstance(JC_Instance(heap, package, claz, tag));
+    heap.getInstance(reference)->setShareableProxyPlaceholder();
+    return reference;
   }
 
   case FieldType::FIELD_TYPE_TRANSIENT_ARRAY_BYTE: {
@@ -1059,6 +1079,9 @@ FieldType FlashMemory_Handler::getPersistentField_TypeImpl(
       throw Exceptions::SecurityException;
     }
     return target_type;
+  }
+  if (data[0] == FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT) {
+    return FieldType::FIELD_TYPE_OBJECT;
   }
   return static_cast<FieldType>(data[0]);
 }
@@ -1269,7 +1292,8 @@ void FlashMemory_Handler::setPersistentField_Instance(
   }
 
   FlashMemory_Handler::writeInstanceHeader(tag, instance.getPackageID(),
-                                           instance.getClassIndex());
+                                           instance.getClassIndex(),
+                                           instance.isShareableProxyPlaceholder());
 
   for (uint16_t idx = 0; idx < fields->size(); idx++) {
 

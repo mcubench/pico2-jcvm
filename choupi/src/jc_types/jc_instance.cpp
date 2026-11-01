@@ -168,7 +168,8 @@ JC_Instance::JC_Instance(Heap &owner, const jpackage_ID_t packageID,
 }
 
 JC_Instance::JC_Instance(JC_Instance &&other) noexcept
-    : JC_Object(other.getOwner(), other.isPersistent()),
+    : JC_Object(other.getOwner(), other.isPersistent(),
+                other.isShareableProxyPlaceholder()),
       packageID(other.packageID), claz(other.claz),
       persistent_tag_length(other.persistent_tag_length),
       persistent_tag_compressed(other.persistent_tag_compressed),

@@ -53,11 +53,21 @@ public final class SioCrossAidPhysicalProbe {
       if (!actual.equals("6A109000")) {
         throw new AssertionError("proxy retain expected 6A109000, got " + actual);
       }
+      card.disconnect(true);
+      card = target.connect("*");
+      System.out.println("SIO_PHYSICAL:RESET_ATR " + hex(card.getATR().getBytes()));
+      channel = card.getBasicChannel();
+      selected = channel.transmit(new CommandAPDU(
+          0x00, 0xA4, 0x04, 0x00, APPLET_AID, 256));
+      if (selected.getSW() != 0x9000) {
+        throw new AssertionError("client reselect after reset failed: " +
+                                 hex(selected.getBytes()));
+      }
       response = channel.transmit(new CommandAPDU(hex("8016000000")));
       actual = hex(response.getBytes());
-      System.out.println("SIO_PHYSICAL:retainedProxyAfterApdu response=" + actual);
-      if (!actual.equals("45679000")) {
-        throw new AssertionError("retained proxy expected 45679000, got " + actual);
+      System.out.println("SIO_PHYSICAL:staleProxyAfterReset response=" + actual);
+      if (!actual.equals("6A0A9000")) {
+        throw new AssertionError("stale proxy should fail closed with 6A0A9000, got " + actual);
       }
 
       response = channel.transmit(new CommandAPDU(hex("8013000000")));

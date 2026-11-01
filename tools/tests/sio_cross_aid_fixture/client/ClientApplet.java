@@ -28,7 +28,7 @@ public final class ClientApplet extends Applet {
     byte[] buffer = apdu.getBuffer();
     boolean denial_probe = buffer[1] == 0x11;
     Shareable shareable;
-    if (buffer[1] == 0x16) {
+    if (buffer[1] == 0x16 || buffer[1] == 0x18) {
       shareable = retainedShareable;
     } else {
       AID server = JCSystem.lookupAID(SERVICE_AID, (short) 0,
@@ -45,10 +45,14 @@ public final class ClientApplet extends Applet {
     } else if (shareable == null) {
       result = (short) 0x6A04;
     } else if (buffer[1] == 0x16) {
-      AID callerAID = JCSystem.getAID();
-      Probe probe = (Probe) shareable;
-      result = probe.exercise((byte) 0xA5, (short) 0x1234, (short) 0x2345,
-                              callerAID, null);
+      try {
+        AID callerAID = JCSystem.getAID();
+        Probe probe = (Probe) shareable;
+        result = probe.exercise((byte) 0xA5, (short) 0x1234, (short) 0x2345,
+                                callerAID, null);
+      } catch (SecurityException staleProxy) {
+        result = (short) 0x6A0A;
+      }
     } else if (buffer[1] == 0x13) {
       Probe probe = (Probe) shareable;
       int wide = probe.exerciseWide(0x12345678);
@@ -72,6 +76,13 @@ public final class ClientApplet extends Applet {
         result = (short) 0x6A08;
       } catch (SecurityException expected) {
         result = (short) 0x6A09;
+      }
+    } else if (buffer[1] == 0x18) {
+      try {
+        ((Object) shareable).equals(shareable);
+        result = (short) 0x6A0C;
+      } catch (SecurityException staleProxy) {
+        result = (short) 0x6A0B;
       }
     } else {
       AID callerAID = JCSystem.getAID();

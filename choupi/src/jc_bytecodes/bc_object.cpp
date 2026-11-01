@@ -820,6 +820,10 @@ void Bytecodes::bc_checkcast() {
 
   TRACE_JCVM_DEBUG("CHECKCAST 0x%02X 0x%02X", atype, index);
 
+  if (context.isStaleShareableProxy(objectref)) {
+    throw Exceptions::SecurityException;
+  }
+
   if (context.isShareableProxy(objectref)) {
     if (!shareableProxyCastTarget(context, atype, index, objectref)) {
       throw Exceptions::ClassCastException;
@@ -955,6 +959,10 @@ void Bytecodes::bc_instanceof() {
   jref_t objectref = stack.pop_Reference();
 
   TRACE_JCVM_DEBUG("INSTANCEOF 0x%02X 0x%02X", atype, index);
+
+  if (context.isStaleShareableProxy(objectref)) {
+    throw Exceptions::SecurityException;
+  }
 
   if (context.isShareableProxy(objectref)) {
     stack.push_Byte(shareableProxyCastTarget(context, atype, index, objectref)

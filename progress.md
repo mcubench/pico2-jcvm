@@ -19496,3 +19496,81 @@
 - Decision: Keep broader proxy field/method operation and cast firewall acceptance open; continue CTX-01 and repeat the complete probe on physical hardware after clean-card installation is possible.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T221438Z.log`.
+
+## 2026-11-01 — Fail closed on stale Shareable proxies 25 minutes
+
+- Step/experiment: `ctx01-stale-shareable-proxy-restart-20261101`
+- When: '2026-11-01 22:29 UTC' - '2026-11-01 22:54 UTC'
+- Change: Persisted client references to Shareable placeholders outlive the
+  runtime-only proxy routing registry. Added an applet-import-aware guard for
+  dynamic objects not authorized by the applet package, and applied it to
+  interface/virtual/special calls, casts and instance-field access. Active
+  registered proxies continue through existing guarded dispatch. Extended the
+  test-only three-package fixture to distinguish fresh lookup after process
+  restart from an old stale reference and to probe virtual calls and reset.
+  Updated CTX-01, QKB and handoff. No upstream CAP was changed.
+- Validation: `./tools/build-pc --profile current`, `./tools/build arm
+  --profile current`, and `./tools/build riscv --profile current` passed;
+  `./tools/test-rmi-registry` passed; elevated `python3
+  tools/tests/sio_cross_aid_vpcd_test.py` passed `TEST:SUMMARY pass=14 fail=0`.
+  Fresh lookup after emulator restart returned `45679000`; stale interface and
+  virtual calls after process restart and card reset were caught as
+  `SecurityException`. The authorized physical reader helper and elevated
+  `lsusb -d 2e8a:` showed only one runtime CCID device (`2e8a:0009`); BOOTSEL
+  devices were not guest-visible, so physical flashing/testing was skipped.
+- Result: A stale proxy placeholder no longer executes service code inside the
+  client applet context. The VM currently fails closed; restoring persistent
+  proxy usability remains unimplemented because its server AID/reference
+  metadata is not durably stored. Existing Rust and packed-member warnings
+  remain.
+- Decision: Preserve the fail-closed behavior. Decide the Java Card persistence
+  contract for Shareable references, then add durable routing metadata if
+  persistent proxy reuse across process restart is required. Resume physical
+  fixture testing when a BOOTSEL device is visible through VM USB passthrough.
+- Commit: `pending`.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T224601Z.log`
+  (SHA-256 `ce85e4376191dab6f4d7a2e5b45cfd542fe97bf5bf71bbd2256998eb2ba2863f`);
+  ARM image `build/arm/pico2_choupi.uf2` (SHA-256
+  `2708f78b8f7f247f4e3cd598defe1418fd50e5203cd3ea2076fc431d27e5e71b`);
+  RISC-V smoke image `build/riscv/pico2_jcvm_smoke.uf2` (SHA-256
+  `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`).
+
+## 2026-11-02 Persist Shareable proxy fail-closed marker 56 minutes
+
+- Step/experiment: `ctx01-persisted-shareable-proxy-marker-20261102`
+- When: '2026-11-01 22:54 UTC' - '2026-11-01 23:50 UTC'
+- Change: Replaced heuristic stale-object detection with an internal persistent
+  instance-header marker for Shareable proxy placeholders. Restore reinstates
+  the marker, while Java Card field reads continue to expose ordinary object
+  type. Bytecode invocation, cast and instance-field paths reject marked
+  placeholders absent from the runtime routing registry. Updated the VPCD and
+  physical probes, CTX-01 status, QKB and handoff. No upstream CAP was changed.
+- Validation: `./tools/test-rmi-registry` passed. Elevated VPCD SIO regression
+  passed `TEST:SUMMARY pass=14 fail=0`. `./tools/build-pc --profile current`,
+  `./tools/build arm --profile current` and `./tools/build riscv --profile
+  current` passed; ARM image end `0x100e10ac`, RISC-V image end `0x10009a78`.
+  Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed
+  install/commit `3/3` and fresh-process restore `38/38` with four GC rounds.
+  The physical current-profile cycle on `2BED26ED20556535` recovered via CDC
+  1200-baud BOOTSEL after picotool could not locate the reset interface; flash
+  verified and serial passed (`TEST:SUMMARY pass=1 fail=0`). Physical positive
+  SIO remained blocked: client CAP INSTALL returned stage `09`, VM status
+  `0000`, `6F00`; SELECT returned `6A82`. Deleting the test package returned
+  `6581`, so its loaded package remains. Existing contract/service packages
+  were preserved. No physical SIO call was validated.
+- Result: A serialized stale Shareable proxy cannot be dispatched as an
+  ordinary client object after restart/reset. Persistent routing metadata is
+  still not rehydrated. Emulator persistence and all target builds pass;
+  physical installation has a separate unresolved stage-9 failure.
+- Decision: Keep the fail-closed contract and CTX-01 open. Diagnose physical
+  client package INSTALL stage 9 with a clean/test-safe device before claiming
+  hardware acceptance. Other connected boards were not guest-visible.
+- Commit: `pending`.
+- Artifacts/logs: VPCD SIO
+  `artifacts/logs/sio-cross-aid-vpcd-20261101T233118Z.log` (SHA-256
+  `bde444b99091b7694caf8802b49c59468bf4bc4313e3897384a8bc25ed87e0a7`);
+  persistence install/restore logs at `artifacts/logs/` with timestamp
+  `20261101T233612Z` (SHA-256 `68038caacec6c1496494cbb06a2fb2f9a7985d7485efc985deffd3029f988f8f`,
+  `35d80c9f6d895b787dbe4550d399a8abee0790443ef461748bab61176f3e00e2`);
+  hardware cycle `artifacts/logs/cycle-choupi-20261101T234222Z.log` (SHA-256
+  `c45a7cd9f2eddcc3e526a5f1d7542b5a0242b8e7430e13b773c0fee43cab1984`).

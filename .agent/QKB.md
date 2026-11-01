@@ -1,5 +1,50 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Persisted Shareable proxy loses routing metadata after process restart — 2026-11-01
+
+- **Observed:** The three-package VPCD fixture stores a Shareable proxy in a
+  persistent client-applet field. It works across APDUs and normal heap GC, but
+  after restarting the PC emulator process the old reference no longer has an
+  entry in the runtime-only `Context::shareable_proxies` table. A fresh
+  `getAppletShareableInterfaceObject` lookup still succeeds. Before the fix,
+  invoking the old placeholder dispatched the service implementation in the
+  client context (service marker `6F01`).
+- **Cause:** The client heap persists the placeholder object reference, while
+  proxy routing metadata (server AID and server reference) is only held in
+  process memory and is not serialized or reconstructed.
+- **Viable safety fix:** Persist a reserved internal instance-header type for
+  Shareable proxy placeholders, decode it back into an internal
+  `JC_Object` marker, and normalize it to ordinary `FIELD_TYPE_OBJECT` when
+  Java Card field semantics inspect it. Bytecode paths reject marked
+  placeholders missing from the runtime proxy registry across interface,
+  virtual and special calls, casts, and instance-field operations. Active
+  registered proxies remain eligible for guarded SIO dispatch. The VPCD
+  fixture verifies fresh lookup after restart, caught `SecurityException` for
+  stale proxy calls and virtual dispatch, and fail-closed behavior after card
+  reset. Full VPCD test passes `14/14`; `tools/test-rmi-registry` passes.
+- **Remaining limitation:** This prevents execution in the wrong applet
+  context; it does not rehydrate persistent proxy references. Define whether
+  such references should persist across process restart. If so, store routing
+  metadata using a stable persistent proxy identity and test interrupted writes
+  and deletion. Do not weaken the fail-closed check to make the old reference
+  appear usable.
+- **Physical status:** The user reports three boards in BOOTSEL, but the latest
+  authorized reader helper sees one runtime device (node
+  `/dev/bus/usb/001/041`, serial `2BED26ED20556535`); no other PC/SC reader is
+  available to continue on.
+- **Physical validation:** Current ARM image was flashed to this device using
+  `./tools/cycle choupi --profile current`; picotool's reset-interface path
+  failed, the wrapper recovered with CDC 1200-baud BOOTSEL, and the flash
+  verified. Serial health passed (`TEST:SUMMARY pass=1 fail=0`). Existing
+  contract/service fixture packages made the clean physical test abort safely.
+  GPPro `--install` returned `6A80`, although GET STATUS then listed the client
+  package. A subsequent `--install-only --debug` returned extended INSTALL
+  stage `09`, VM status `0000`, and `6F00`; GET STATUS shows the package but
+  SELECT gives `6A82`. Deleting its noninstalled applet AID returns “not
+  present”; deleting the package returns `6581`. Preserve this test-created
+  package and the pre-existing dependency packages. This physical install issue
+  is separate from USB passthrough and remains unexplained.
+
 ## Cross-AID physical fixture install reaches internal stage 9 — 2026-11-01
 
 - **Observed:** The test-only contract CAP package

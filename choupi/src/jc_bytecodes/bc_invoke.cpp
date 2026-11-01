@@ -333,6 +333,9 @@ void Bytecodes::bc_invokevirtual() {
   if (context.isShareableProxy(receiver)) {
     throw Exceptions::SecurityException;
   }
+  if (context.isStaleShareableProxy(receiver)) {
+    throw Exceptions::SecurityException;
+  }
 
   const auto method_offset = [&]() {
     if (receiver.isArray()) {
@@ -567,6 +570,9 @@ void Bytecodes::bc_invokespecial() {
     throw Exceptions::NullPointerException;
   }
   if (context.isShareableProxy(receiver)) {
+    throw Exceptions::SecurityException;
+  }
+  if (context.isStaleShareableProxy(receiver)) {
     throw Exceptions::SecurityException;
   }
 
@@ -1068,6 +1074,11 @@ void Bytecodes::bc_invokeinterface() {
       throw Exceptions::SecurityException;
     }
     return;
+  }
+
+  if (context.isStaleShareableProxy(objectref)) {
+    TRACE_JCVM_DEBUG("SIO_INVOKE rejecting unregistered foreign object");
+    throw Exceptions::SecurityException;
   }
 
   if (objectref.isArray()) { // Is an array

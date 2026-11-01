@@ -1,4 +1,31 @@
-# Session handoff — updated 2026-11-01
+# Session handoff — updated 2026-11-02
+
+## Latest CTX-01 restart-safety update
+
+Persisted Shareable proxy placeholders now carry an internal marker in their
+persistent instance header. Restore reinstates the marker, while Java Card
+field-type queries still expose an ordinary object. A marked placeholder whose
+runtime routing entry is gone fails closed with `SecurityException` across
+interface/virtual/special invocation, casts, and instance-field bytecodes. This
+is a safety boundary, not proxy rehydration: using a saved proxy after emulator
+process restart remains unsupported. The marker-only VPCD regression passed
+14/14 (`artifacts/logs/sio-cross-aid-vpcd-20261101T233118Z.log`, SHA-256
+`bde444b99091b7694caf8802b49c59468bf4bc4313e3897384a8bc25ed87e0a7`), and
+`./tools/test-rmi-registry` passed. Generic persistence regression also passed
+install/commit 3/3 and fresh-process restore 38/38, including four GC-pressure
+rounds. PC, ARM and RISC-V current-profile builds pass; ARM image end is
+`0x100e10ac`, RISC-V smoke image end is `0x10009a78`. Physical cycle on
+`2BED26ED20556535` succeeded after CDC-1200 BOOTSEL recovery, and serial health
+passed. The positive physical SIO probe is still blocked: pre-existing
+contract/service packages caused the clean fixture guard to refuse replacement;
+GPPro `--install` returned `6A80`, though GET STATUS listed the client package.
+`--install-only --debug` returned stage `09`, VM status `0000`, and `6F00`; its
+SELECT returned `6A82`. Deleting the test-created loaded package returned
+`6581`; do not retry cleanup or alter existing packages without a specific
+safe path. Authorized PC/SC helper now sees one runtime CCID at
+`/dev/bus/usb/001/041`; no other boards are visible in this VM. Update progress,
+then commit only the CTX-01 implementation, fixture, and continuity records.
+Preserve all unrelated worktree changes.
 
 ## Current CTX-01 Shareable status
 
@@ -23,7 +50,13 @@ passes. A proxy saved in the client applet instance survives the VM's
 end-of-APDU GC and works on the following APDU. This validates exception
 unwinding for that case only; identity/status semantics for other server
 exceptions remain open. The fixture also confirms direct `Object.equals` on a
-proxy is rejected. The unchanged upstream `AlgTestApiCore_305.cap` physical
+proxy is rejected. Fresh lookup after PC emulator process restart still works,
+but a proxy reference serialized in the client applet loses its native routing
+metadata. The VM now rejects that unregistered foreign dynamic object for
+interface/virtual/special calls, casts and field access rather than dispatching
+it in the client context. VPCD confirms fail-closed behavior after process
+restart and card reset; persistent proxy metadata rehydration remains open.
+The unchanged upstream `AlgTestApiCore_305.cap` physical
 result below still covers only the same-applet route. A physical attempt on
 `2BED26ED20556535` loaded the contract and service package, but service applet
 installation returned internal stage 9 / `6F00` before the probe could run.
@@ -33,7 +66,11 @@ was flashed during this attempt. Cross-AID behavior is therefore not yet
 physically validated.
 
 The focused `tools/test-rmi-registry` regression and current-profile PC, ARM,
-and RISC-V builds pass. Never alter upstream CAPs. The physical test script now
+and RISC-V builds pass. The expanded VPCD fixture passes 14/14, including
+stale-proxy rejection after emulator restart and card reset. Latest log:
+`artifacts/logs/sio-cross-aid-vpcd-20261101T224601Z.log` (SHA-256
+`ce85e4376191dab6f4d7a2e5b45cfd542fe97bf5bf71bbd2256998eb2ba2863f`). Never
+alter upstream CAPs. The physical test script now
 checks GET STATUS after loading the contract so it stops if GPPro reports LOAD
 success without making the dependency resident. See the current QKB entry for
 the unresolved physical install exception and existing partial test package.
@@ -48,9 +85,13 @@ Logs: `artifacts/logs/cycle-choupi-20261101T201412Z.log` (SHA-256
 (SHA-256 `6045b2d17131fcc7739e437c19bcab153f2164fa76dd8ffa15f7f89414880713`).
 
 Next: diagnose stage-9 physical applet installation, then install the three
-fixture CAPs on a clean physical card and run the cross-AID APDU. Continue with
-exception unwinding, proxy roots through GC/reset/delete, and denied firewall
-cases. Keep CTX-01 open; the VPCD success is not physical acceptance.
+fixture CAPs on a clean physical card and run the cross-AID APDU. Define whether
+persistent Shareable references must be rehydrated after process restart or
+must fail closed; if rehydration is required, persist proxy metadata by a stable
+identity. The authorized reader helper currently reports one runtime reader
+(`/dev/bus/usb/001/038`, `2e8a:0009`); no BOOTSEL devices are guest-visible even
+though the user reports three boards in BOOTSEL. Keep CTX-01 open; VPCD success
+is not physical acceptance.
 
 ## Proxy cast validation and integration recheck
 

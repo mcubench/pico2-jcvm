@@ -154,14 +154,86 @@ def main() -> int:
                     f"proxy retention result {response.hex().upper()}, "
                     "expected 6A109000"
                 )
-            response = vpcd.exchange(connection, bytes.fromhex("8016000000"),
-                                     "invoke retained Shareable proxy")
+            connection.close()
+            connection = None
+            process.wait(timeout=30)
+            if process.returncode != 0:
+                raise RuntimeError(
+                    f"first emulator exited with {process.returncode} before restart"
+                )
+            with log_path.open("ab") as log:
+                process = subprocess.Popen(command, cwd=ROOT, stdout=log,
+                                           stderr=log, start_new_session=True)
+            connection, _ = vpcd.accept_vpcd(
+                listener, process, 45, log_path, "cross-AID SIO restart"
+            )
+            connection.settimeout(30)
+            vpcd.send_message(connection, b"\x01")
+            vpcd.send_message(connection, b"\x04")
+            reset_atr = vpcd.receive_message(connection)
+            if reset_atr != bytes.fromhex("3B800181"):
+                raise RuntimeError(
+                    f"restart ATR {reset_atr.hex().upper()}, expected 3B800181"
+                )
+            response = vpcd.exchange(connection, bytes.fromhex("00A4040000"),
+                                     "SELECT ISD after emulator restart")
+            if response[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    f"SELECT ISD after restart {response.hex().upper()}"
+                )
+            scp = vpcd.Scp03(connection)
+            scp.authenticate()
+            response = vpcd.exchange(connection, select_client,
+                                     "reselect client after emulator restart")
+            if response[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    f"client reselect after restart {response.hex().upper()}"
+                )
+            response = vpcd.exchange(connection, bytes.fromhex("8010000000"),
+                                     "fresh cross-AID lookup after emulator restart")
             if response != bytes.fromhex("45679000"):
                 raise RuntimeError(
-                    f"retained proxy call {response.hex().upper()}, "
+                    f"fresh lookup after restart {response.hex().upper()}, "
                     "expected 45679000"
                 )
-            print("TEST:PASS proxy stored in applet field survives APDU GC")
+            print("TEST:PASS fresh cross-AID lookup works after emulator restart")
+            response = vpcd.exchange(connection, bytes.fromhex("8018000000"),
+                                     "reject stale proxy virtual call after restart")
+            if response != bytes.fromhex("6A0B9000"):
+                raise RuntimeError(
+                    f"stale proxy virtual call {response.hex().upper()}, "
+                    "expected caught SecurityException 6A0B9000"
+                )
+            print("TEST:PASS stale proxy virtual dispatch fails closed")
+            response = vpcd.exchange(connection, bytes.fromhex("8016000000"),
+                                     "reject stale proxy after emulator restart")
+            if response != bytes.fromhex("6A0A9000"):
+                raise RuntimeError(
+                    f"stale proxy after restart {response.hex().upper()}, "
+                    "expected caught fail-closed SecurityException 6A0A9000"
+                )
+            print("TEST:PASS stale proxy after process restart fails closed")
+            vpcd.send_message(connection, b"\x02")
+            vpcd.send_message(connection, b"\x04")
+            reset_atr = vpcd.receive_message(connection)
+            if reset_atr != bytes.fromhex("3B800181"):
+                raise RuntimeError(
+                    f"power-cycle ATR {reset_atr.hex().upper()}, expected 3B800181"
+                )
+            response = vpcd.exchange(connection, select_client,
+                                     "reselect client after card reset")
+            if response[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    f"client reselect after reset {response.hex().upper()}"
+                )
+            response = vpcd.exchange(connection, bytes.fromhex("8016000000"),
+                                     "reject stale proxy after reset")
+            if response != bytes.fromhex("6A0A9000"):
+                raise RuntimeError(
+                    f"stale proxy after reset {response.hex().upper()}, "
+                    "expected caught SecurityException 6A0A9000"
+                )
+            print("TEST:PASS stale proxy remains blocked after card reset")
             response = vpcd.exchange(connection, bytes.fromhex("8013000000"),
                                      "cross-AID int argument and return")
             if response != bytes.fromhex("765432109000"):
@@ -214,7 +286,7 @@ def main() -> int:
                 )
             print("TEST:PASS Object.equals on proxy is blocked; "
                   "response=6A099000")
-            print("TEST:SUMMARY pass=12 fail=0")
+            print("TEST:SUMMARY pass=14 fail=0")
             return 0
         finally:
             if connection is not None:

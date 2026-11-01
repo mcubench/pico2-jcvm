@@ -40,7 +40,8 @@ namespace jcvm {
 
 namespace {
 void rejectShareableProxyFieldAccess(Context &context, const jref_t reference) {
-  if (context.isShareableProxy(reference)) {
+  if (context.isShareableProxy(reference) ||
+      context.isStaleShareableProxy(reference)) {
     throw Exceptions::SecurityException;
   }
 }
