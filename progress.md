@@ -19385,5 +19385,5 @@
 - Validation: `./tools/test-rmi-registry` passed with `shareable_cross_context_arguments=1`; `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. An escalated `lsusb -d 2e8a:` returned no Pico devices, so hardware testing was skipped.
 - Result: The marshaller accepts the explicitly JCRE-global handles and still refuses private applet references. End-to-end Descriptor lookup/cross-AID invocation remains untested. Build output retained existing CHOUPI packed-member and upstream Rust warnings; no new warning was observed.
 - Decision: Keep CTX-01 open. Validate against an unchanged cross-AID CAP fixture and implement explicit local reference ownership translation/firewall checks before accepting applet-local references.
-- Commit: pending
+- Commit: `ffb94ad`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
