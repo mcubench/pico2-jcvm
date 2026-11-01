@@ -1522,16 +1522,26 @@ int main() {
 
   fake_flash.fill(0xff);
   bool package_delete_reclaims_overlay_slots = fs_init() == 0;
-  constexpr uint8_t dynamic_package_id = 0x39;
   constexpr std::array<uint8_t, 3> unrelated_package_tag = {0xb2, 0x51, 0x01};
   constexpr uint8_t unrelated_package_value[] = {0x51};
   package_delete_reclaims_overlay_slots =
       package_delete_reclaims_overlay_slots &&
       fs_write(unrelated_package_tag.data(), unrelated_package_tag.size(),
                unrelated_package_value, sizeof(unrelated_package_value)) == 0;
-  for (uint8_t generation = 0; generation < 6 &&
+  for (uint8_t generation = 0; generation < 8 &&
                                 package_delete_reclaims_overlay_slots;
        ++generation) {
+    const uint8_t dynamic_package_id = static_cast<uint8_t>(56 + generation);
+    const std::array<uint8_t, 3> static_state_tag = {
+        0x02, dynamic_package_id, generation};
+    const std::array<uint8_t, 4> lifecycle_state_tag = {
+        0x02, 0xff, dynamic_package_id, 0x02};
+    const uint8_t package_value[] = {generation, 0x5a};
+    package_delete_reclaims_overlay_slots =
+        fs_write(static_state_tag.data(), static_state_tag.size(),
+                 package_value, sizeof(package_value)) == 0 &&
+        fs_write(lifecycle_state_tag.data(), lifecycle_state_tag.size(),
+                 package_value, sizeof(package_value)) == 0;
     for (uint16_t item = 0; item < 128 &&
                              package_delete_reclaims_overlay_slots;
          ++item) {
@@ -1554,7 +1564,7 @@ int main() {
                   unrelated_package_tag.size()) == 1;
   }
   expect(package_delete_reclaims_overlay_slots,
-         "package_delete_reclaims_tombstone_index_slots_across_restarts");
+         "package_delete_reclaims_all_dynamic_namespaces_across_restarts");
 
   fake_flash.fill(0xff);
   constexpr std::array<uint8_t, 3> compact_unrelated_tag = {0xb2, 0x52, 0x01};
