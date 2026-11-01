@@ -3376,3 +3376,22 @@ original terminology/status; check current summary and later fixes before reuse.
 - The user's physical devices were reported connected, but this VM currently
   enumerates no `2e8a:` USB devices; `pcsc_scan -r` only showed VPCD. Recheck
   guest USB passthrough before attempting a physical run.
+
+### Physical Shareable Core regression restored USB path — 2026-11-01
+
+- Earlier `2e8a:` inventories were stale: all three boards later enumerated as
+  RP2350 BOOTSEL (`2e8a:000f`). Avoid querying multiple bootloaders with
+  concurrent picotool processes; that caused connection errors. Sequential
+  `picotool info --device --bus 1 --address N` returned stable chip IDs.
+- Board `8E464F4E2BBC0A19` was targeted explicitly. `tools/cycle choupi`
+  flashed `build/arm/pico2_choupi.uf2`, and finite serial output passed
+  `TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. The authorized
+  PC/SC helper then exposed it as reader
+  `Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00`.
+- Unchanged upstream `AlgTestApiCore_305.cap` uploaded, completed all 291 Core
+  calls (272 `OK`, 11 `UNSUPPORTED_PER_SPEC`, 8 `APPLET_NOT_INSTALLED` from
+  skipped Multi/Ext scenarios), and cleaned up successfully. Three Shareable
+  rows were `OK`; the positive sub-interface invocation returned `1`.
+- This is physical same-applet SIO coverage only; it does not test cross-AID
+  descriptor-based arguments. Logs and SHA-256 digests are in current
+  `.agent/HANDOFF.md`.

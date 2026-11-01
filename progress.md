@@ -19399,6 +19399,17 @@
 - Commit: `f09d0c6`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T191433Z.log`; no hardware logs.
 
+## 2026-11-01 Validate current SIO path on a physical Pico 2 12 minutes
+
+- Step/experiment: `shareable-physical-core-validation-20261101`
+- When: '2026-11-01 21:08 CET' - '2026-11-01 21:20 CET'
+- Change: Sequentially identified the three RP2350 BOOTSEL boards, flashed full ARM CHOUPI firmware to `8E464F4E2BBC0A19`, then ran the unchanged upstream `AlgTestApiCore_305.cap` through the exact physical PC/SC reader. Updated CTX-01, QKB, and handoff. No CAP file was created or modified.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 8e464f4e2bbc0a19` passed; finite serial output repeatedly reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. `pcsc_scan -r` showed the physical reader. Deploy Core upload, test, and cleanup all passed: 291 calls (272 `OK`, 11 `UNSUPPORTED_PER_SPEC`, 8 `APPLET_NOT_INSTALLED` because Multi/Ext scenarios were skipped). All 3 SIO rows were `OK`; positive sub-interface invocation returned `1`.
+- Result: Confirms real-board firmware boot, reader enumeration, CAP install/cleanup, and unchanged upstream same-applet Shareable invocation. Does not validate cross-AID calls or descriptor-based argument forwarding. Concurrent picotool queries to multiple BOOTSEL devices failed; sequential chip-ID reads worked.
+- Decision: Keep CTX-01 open. Use sequential per-device identification, and continue seeking cross-AID coverage without modifying upstream CAPs.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261101T201412Z.log` SHA-256 `b24d090271acf05a2b2cfa020394d116f25c4d68fb4efdb01d35f45b1252d4fe`; `artifacts/results/shareable-physical-core-8E464F4E2BBC0A19-20261101.csv` SHA-256 `6045b2d17131fcc7739e437c19bcab153f2164fa76dd8ffa15f7f89414880713`.
+
 ## 2026-11-01 Preserve array-to-Object SIO compatibility 8 minutes
 
 - Step/experiment: `shareable-array-object-argument-compat-20261101`

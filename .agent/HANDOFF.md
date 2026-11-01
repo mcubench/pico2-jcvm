@@ -18,10 +18,19 @@ positive same-applet Shareable sub-interface call, but no cross-AID service
 fixture has been found. Descriptor lookup and cross-AID execution therefore
 remain unvalidated end to end. A recent VPCD multipackage run timed out during
 transaction-probe reinstall; retain its logs and do not count it as a pass.
-The latest elevated `lsusb -d 2e8a:` and the authorized reader helper found no
-physical Pico devices inside the VM, despite the user's report that devices
-are connected. Do not claim hardware validation; retry only after the guest
-enumerates a reader. No CAP files were created or changed.
+Physical access is now working: all three RP2350 BOOTSEL devices enumerated and
+were identified sequentially. Full ARM CHOUPI firmware was flashed to
+`8E464F4E2BBC0A19`; its finite serial cycle passed. The unchanged
+`AlgTestApiCore_305.cap` then uploaded and completed 291 Core calls with stage
+status OK; its positive same-applet Shareable sub-interface row returned
+`1/OK`. The CAP was cleaned up successfully. This is hardware coverage for the
+same-applet path only, not cross-AID argument dispatch. No CAP files were
+created or changed.
+
+Logs: `artifacts/logs/cycle-choupi-20261101T201412Z.log` (SHA-256
+`b24d090271acf05a2b2cfa020394d116f25c4d68fb4efdb01d35f45b1252d4fe`) and
+`artifacts/results/shareable-physical-core-8E464F4E2BBC0A19-20261101.csv`
+(SHA-256 `6045b2d17131fcc7739e437c19bcab153f2164fa76dd8ffa15f7f89414880713`).
 
 Next: find an unchanged upstream CAP pair that exercises cross-AID SIO; then
 test descriptor dispatch, caller context/AID restoration, exception unwinding,

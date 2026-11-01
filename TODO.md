@@ -233,10 +233,10 @@ Archive text is historical evidence, not current device state or priorities.
   The local signature-to-typed-local conversion has focused tests for
   byte/short layout, int word order, null/non-null references, and argument
   count mismatch. The new argument path builds for PC/ARM/RISC-V but has no
-  positive cross-AID CAP-level test yet. A positive same-applet call is
-  exercised, but cross-AID ownership, context restoration and its firewall
-  path remain unverified end to end. Never return raw server heap references
-  to clients.
+  positive cross-AID CAP-level test yet. The positive same-applet call passes
+  on physical Pico 2 `8E464F4E2BBC0A19` with unchanged `AlgTestApiCore_305.cap`;
+  cross-AID ownership, context restoration and its firewall path remain
+  unverified end to end. Never return raw server heap references to clients.
   Acceptance: positive cross-AID and denied-call fixtures, correct context/AID
   restoration, stable roots across GC and reset/delete, no cross-heap reference
   leaks; follow with unchanged upstream Multi CAP integration and physical checks.
