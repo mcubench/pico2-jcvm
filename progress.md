@@ -19021,6 +19021,6 @@
 - Validation: The focused official-client run passed all three targeted Signature IV calls (`OK`), skipped 463 unrelated Crypto calls, and removed the test CAP successfully. The full Crypto client run hit the configured 800-second timeout after writing 190 partial client rows (112 `OK`, 78 `UNSUPPORTED_PER_SPEC`); this is a failed full-area validation. Emulator and VPCD reader were shut down. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
 - Result: The three prior physical `WRONG_RESULT` IV cases now pass through both native deterministic vectors and upstream client calls on PC VPCD. Physical confirmation remains pending. Full Crypto VPCD performance/timeout remains unexplained and the PSS case was not reached in that run.
 - Decision: Rerun the three IV rows and full Crypto area on a physical Pico when available; separately diagnose why the full official client does not complete on PC VPCD within 800 seconds.
-- Commit: `<pending>`
+- Commit: `807cd8e` (`Record Signature IV API client validation`)
 - Artifacts/logs: Selected-run CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-iv-filtered.csv` SHA-256 `b085ef9ed89517e8e6d9f467ea9bc63ad7e7a16963c5ef59e66515273be58006`; full-run timeout CSV `crypto.csv`; partial official client output `crypto-full-client-partial.csv` SHA-256 `66637996f43c46ec4c4d254bb6adf899b4fb3ace920db9018e531fb9c2440b3e`; filtered-run emulator log SHA-256 `26e851c466fc454febd7ef7f4364ce4960f313cc54002b96f81b0cf0f3a6a143`.
 
