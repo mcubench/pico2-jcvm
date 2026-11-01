@@ -19319,5 +19319,5 @@
 - Validation: `./tools/test-rmi-registry` passed; final `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0` before the final cast-only adjustment; no proxy handles occur in that suite. Positive proxy casts remain untestable without a matching upstream fixture. No physical operation was run.
 - Result: `instanceof` no longer reports true for every Shareable interface merely because the requested interface carries the flag; the server class's actual interface relation is checked. Successful proxy interface calls remain unverified end to end.
 - Decision: Keep CTX-01 open. Continue by checking for any existing upstream applet with a positive SIO export, then add safe global/reference return handling and broader method signatures as permitted by a real fixture.
-- Commit: Recorded in this implementation commit.
+- Commit: `a4da035`
 - Artifacts/logs: Multipackage regression `artifacts/logs/host-vpcd-multipackage-apdu-20261101T171653Z.log` and companion restart/reject logs; PC/ARM/RISC-V build outputs under `build/`; no physical logs.
