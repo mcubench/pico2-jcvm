@@ -3149,3 +3149,26 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Limit:** Package-wide static sharing across applet contexts is still a
   separate Java Card semantics issue; keep broader firewall/shareable and
   static-state behavior tracked independently.
+
+## Cross-applet Shareable Interface Objects require context-owned proxies — 2026-11-01
+
+- **Observed limitation:** `NativeImplementation.getAppletShareableInterfaceObject`
+  currently returns null unless the requested server AID equals the current
+  client AID, then obtains only the current applet instance. The default
+  `Applet.getShareableInterfaceObject` also returns null unless an applet CAP
+  overrides it. The native `invokeinterface` path resolves its receiver from
+  the active context's heap; it does not switch to another applet's context.
+- **Implication:** Removing the AID equality guard alone would not implement
+  SIO semantics. Applet-local references are heap-relative, so a server object
+  cannot safely be returned as a raw client-context reference. Cross-applet
+  lookup and calls need an explicit proxy/handle mapping, server-context
+  invocation, reference-argument and return-value firewall checks, and a return
+  context switch. `Interpretor` already supports nested execution against an
+  external `Context` and restores the previous active context via RAII; this is
+  a possible execution primitive, not a complete SIO solution.
+- **Validation status:** Current-source VPCD multipackage regression passes
+  47/47, but its existing Shareable probes cover absent servers/default-null
+  behavior, not a successful cross-AID server call. Keep the broad context and
+  firewall TODO open until a positive cross-applet fixture exercises lookup,
+  interface dispatch, allowed object arguments, rejected private references,
+  exceptions, and context restoration.

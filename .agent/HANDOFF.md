@@ -172,8 +172,14 @@ Validation artifacts:
   changes; this hash is not reproducible from the focused fix commit alone.
 
 Next: continue the TODO's remaining context/firewall work. Keep physical
-testing on either identified reader when available; no additional hardware
-action is needed to establish this post-delete regression.
+testing paused until a Pico enumerates in the VM. Source review confirms the
+cross-applet Shareable gap is deeper than lookup: the ROM API helper currently
+rejects a server AID different from the client AID, and `invokeinterface`
+resolves receivers only through the active context's heap. A raw reference
+cannot cross heap boundaries. See the new QKB entry for the required
+context-owned proxy, nested server invocation, and firewall checks. The
+`Interpretor(Context&, ...)` constructor plus `ActiveContextScope` provide a
+potential nested-execution primitive; they do not implement SIO by themselves.
 
 ## Multi-applet context lifetime audit — 2026-11-01
 

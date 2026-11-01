@@ -19222,3 +19222,14 @@
 - Decision: Keep physical validation pending until a Pico enumerates in the VM. Continue with offline work and preserve the existing unrelated worktree changes.
 - Commit: Recorded in this validation commit.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T150907Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261101T150907Z.log`, `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261101T150907Z.log`, `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261101T150907Z.log`; build outputs under `build/`.
+
+## 2026-11-01 Trace cross-applet Shareable dispatch gap 4 minutes
+
+- Step/experiment: `cross-applet-shareable-gap-audit-20261101`
+- When: '2026-11-01 16:14 CET' - '2026-11-01 16:18 CET'
+- Change: No firmware source changed. Traced the unresolved cross-applet Shareable Interface Object path and recorded the implementation constraints in `.agent/QKB.md` and `.agent/HANDOFF.md`.
+- Validation: Read-only inspection of `NativeImplementation.getAppletShareableInterfaceObject`, `Applet.getShareableInterfaceObject`, `Bytecodes::bc_invokeinterface`, `Context`, and `Interpretor`; the immediately preceding current-source VPCD regression passed `47/47`. No dedicated positive cross-AID fixture exists and no SIO implementation was claimed.
+- Result: The ROM API helper returns null for a server AID different from the current client AID; `invokeinterface` resolves objects in the active context heap. Applet-local raw references cannot safely cross contexts. Nested execution using `Interpretor(Context&, ...)` and its active-context scope exists, but safe SIO object/argument proxying and firewall checks remain unimplemented.
+- Decision: Implement a context-owned proxy/handle path with nested server invocation and explicit reference firewall validation; add a positive cross-AID CAP regression before closing the TODO item. Physical hardware remains unavailable in the VM.
+- Commit: Recorded in this analysis commit.
+- Artifacts/logs: Source inspection only; prior multipackage logs `artifacts/logs/host-vpcd-multipackage-apdu-20261101T150907Z.log` and matching restart/sidecar logs.
