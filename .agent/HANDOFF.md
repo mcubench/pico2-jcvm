@@ -53,10 +53,11 @@ filter then reproduced storage failures: the full-suite serial trace had
 at that record count is 94,592 bytes, leaving at most 19; the failure maps to
 `NO_RESOURCE`/`NO_MEMORY`. Later, at 8,192 records, two exact filtered calls
 failed while eight passed. This confirms persistent overlay exhaustion, not a
-missing crypto implementation. The logger currently reports a fixed 96 KiB
-denominator, obscuring the lower dynamic limit. See the priority item in TODO
-for safe persistent reclamation and accurate diagnostics. Crypto IV
-wrong-results and RSA SHA-512 PSS `EXC_CARDRUNTIME` remain unexplained.
+missing crypto implementation. The original captures predate the diagnostic
+fix; current `FS_WRITE_FAIL` output includes the effective dynamic payload
+limit, fixed arena size, file count and free slots. Package-delete compaction
+is recorded in the current handoff section above. Crypto IV wrong-results and
+RSA SHA-512 PSS `EXC_CARDRUNTIME` remain unexplained.
 
 The full Security run assigned to 8E failed transport at transient RSA private
 2048 allocation (`SCARD_E_NOT_TRANSACTED`) after 56 `OK`, 9

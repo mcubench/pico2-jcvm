@@ -598,8 +598,9 @@ adapters, and do not change upstream applet CAP files.
   filter reached the hard 8,192-file ceiling and failed persistent allocations
   despite 89,801/98,304 payload bytes. These writes map to VM `NO_RESOURCE` and
   the JCAlgTest `NO_MEMORY` status; this is persistent overlay exhaustion, not
-  a cryptographic algorithm failure. The diagnostic currently prints the
-  fixed 98,304-byte ceiling rather than the dynamic per-index limit.
+  a cryptographic algorithm failure. The original captures used the old fixed
+  98,304-byte diagnostic; the following completed item records its correction
+  to the effective per-index payload limit.
 - [x] Make `FS_WRITE_FAIL` show dynamic payload limit, fixed arena size,
   current/maximum file count, and free file slots. ARM/RISC-V builds pass and
   the updated max_crypto ARM image passed a physical cycle on 2BED. The

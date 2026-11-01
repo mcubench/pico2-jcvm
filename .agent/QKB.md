@@ -41,8 +41,9 @@
   0x28000-byte snapshot slot and 4 KiB header, the v4 data ceiling at that
   count is `159,744 - 1,024 - 8*8,016 = 94,592` bytes; only 19 bytes remained.
   This explains why the VM maps the failed persistent write to `NO_RESOURCE`,
-  reported by the API client as `NO_MEMORY`. The current `FS_WRITE_FAIL` field
-  prints the fixed 96 KiB arena, not the effective dynamic payload limit.
+  reported by the API client as `NO_MEMORY`. Those original captures predate
+  the diagnostic correction; current `FS_WRITE_FAIL` output includes the
+  effective dynamic payload limit, fixed arena size, file count and free slots.
 - A later exact-case filter recorded ten calls: eight `OK`, two `NO_MEMORY`.
   Serial showed `FS_WRITE_FAIL` with `files=8192`, the hard overlay record
   ceiling, at 89,801 and 90,150 bytes. The full-suite and exact-case evidence

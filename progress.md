@@ -1,3 +1,14 @@
+## 2026-11-01 — Reconcile historical overlay diagnostic notes 1 minute
+
+- Step/experiment: `overlay-diagnostic-notes-reconciliation-20261101`
+- When: '2026-11-01 09:57 CET' - '2026-11-01 09:58 CET'
+- Change: Clarified in TODO, QKB, and HANDOFF that the old full-suite captures used the fixed-arena logger, while the current logger reports effective dynamic payload limit, arena size, file count, and free slots. The historical measurements and hashes remain unchanged.
+- Validation: `rg` confirmed no current-status sentence incorrectly describes the old logger as current. `git -c core.whitespace=cr-at-eol diff --check` passed. No builds, tests, or hardware operations were needed for this documentation-only correction.
+- Result: Current diagnostic status no longer contradicts the completed diagnostic item; old result captures remain properly labeled as historical.
+- Decision: Keep old physical measurements as recorded and use the new output format for the next hardware API sweep.
+- Commit: pending.
+- Artifacts/logs: TODO/QKB/HANDOFF text only; no runtime logs.
+
 ## 2026-10-26 — Native RSA ISO9796-2 scheme 1
 
 - Step/experiment: `asymm-crypto-rsa-iso9796`
