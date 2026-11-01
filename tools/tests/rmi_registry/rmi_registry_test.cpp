@@ -125,6 +125,40 @@ void verify_retained_applet_context_lookup() {
   assert(jcvm::findAppletContext(&selected, inactive, 3, cached_b_aid, 4) ==
          nullptr);
 }
+
+void verify_shareable_proxy_registry() {
+  jcvm::Context client(4, 1);
+  constexpr uint8_t server_aid[] = {0xa0, 0x00, 0x00, 0x03, 0x01};
+  const jcvm::jref_t proxy(0x0010);
+  const jcvm::jref_t server_object(0x0020);
+  assert(client.findShareableProxy(server_aid, sizeof(server_aid),
+                                  server_object)
+             .isNullPointer());
+  assert(client.registerShareableProxy(proxy, server_aid, sizeof(server_aid),
+                                      server_object));
+  assert(client.findShareableProxy(server_aid, sizeof(server_aid),
+                                  server_object) == proxy);
+
+  uint8_t returned_aid[16]{};
+  uint8_t returned_aid_length = 0;
+  jcvm::jref_t returned_server_object;
+  assert(client.getShareableProxy(proxy, returned_aid, returned_aid_length,
+                                  returned_server_object));
+  assert(returned_aid_length == sizeof(server_aid));
+  assert(std::equal(server_aid, server_aid + sizeof(server_aid),
+                    returned_aid));
+  assert(returned_server_object == server_object);
+
+  constexpr uint8_t other_aid[] = {0xa0, 0x00, 0x00, 0x03, 0x02};
+  assert(client.findShareableProxy(other_aid, sizeof(other_aid), server_object)
+             .isNullPointer());
+  assert(!client.registerShareableProxy(proxy, other_aid, sizeof(other_aid),
+                                       server_object));
+  assert(!client.registerShareableProxy(jcvm::jref_t{}, server_aid,
+                                       sizeof(server_aid), server_object));
+  assert(!client.registerShareableProxy(jcvm::jref_t(0x0030), server_aid, 4,
+                                       server_object));
+}
 } // namespace
 
 int main() {
@@ -133,6 +167,7 @@ int main() {
   verify_sensitive_result_cross_context(context, second_context);
   verify_previous_context_aid();
   verify_retained_applet_context_lookup();
+  verify_shareable_proxy_registry();
 
   const auto first = make_reference(1);
   const uint16_t first_id = context.exportRemoteObject(first);
@@ -203,6 +238,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 global_aid_handle=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 shareable_proxy_registry=1 global_aid_handle=1");
   return 0;
 }

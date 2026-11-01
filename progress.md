@@ -19266,3 +19266,14 @@
 - Decision: Keep SIO acceptance open. Next wire this resolver into native dispatch of the ROM lookup method, then add a proxy mapping and cross-context `invokeinterface` firewall enforcement.
 - Commit: Recorded in this implementation commit.
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC ROM mask under `build/choupi-pc/`; ARM `build/arm/pico2_choupi.uf2`; RISC-V `build/riscv/pico2_jcvm_smoke.uf2`; VPCD logs listed above; no physical logs.
+
+## 2026-11-01 Add context-owned Shareable proxy registry 11 minutes
+
+- Step/experiment: `shareable-proxy-registry-20261101`
+- When: '2026-11-01 16:56 CET' - '2026-11-01 17:07 CET'
+- Change: Added a bounded per-context Shareable proxy registry keyed by client-local proxy reference, server applet AID, and server object reference. Proxy references are included in context GC root enumeration. Added unit coverage for registration, lookup, metadata retrieval, duplicate/mismatched registrations, malformed references, and AID validation.
+- Validation: `./tools/test-rmi-registry` passed with `shareable_proxy_registry=1`. `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. Authorized `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` returned `found 0`; no hardware operation was attempted. Build output retains pre-existing Rust, converter, and packed-CAP warnings.
+- Result: Contexts can now retain GC-rooted metadata for bounded Shareable proxy handles. The registry is groundwork only; ROM lookup interception, proxy creation, interface dispatch, and firewall checks are not implemented by this step.
+- Decision: Continue with resolved-ROM lookup interception and safe cross-context interface dispatch. Physical validation remains pending until a Pico enumerates through the authorized host path.
+- Commit: Recorded in this implementation commit.
+- Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; `build/choupi-pc/`; `build/arm/pico2_choupi.uf2`; `build/riscv/pico2_jcvm_smoke.uf2`; no physical logs.

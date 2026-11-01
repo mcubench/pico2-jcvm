@@ -351,6 +351,82 @@ bool Context::remoteObject(const uint16_t object_id,
   return false;
 }
 
+jref_t Context::findShareableProxy(const uint8_t *server_aid,
+                                   const uint8_t server_aid_length,
+                                   const jref_t server_reference) const noexcept {
+  if (server_aid == nullptr || server_aid_length < 5 ||
+      server_aid_length > 16 || server_reference.isNullPointer() ||
+      server_reference.isArray()) {
+    return jref_t{};
+  }
+  for (const auto &entry : this->shareable_proxies) {
+    if (entry.proxy_reference.isNullPointer() ||
+        entry.server_aid_length != server_aid_length ||
+        entry.server_reference != server_reference) {
+      continue;
+    }
+    if (std::equal(server_aid, server_aid + server_aid_length,
+                   entry.server_aid.begin())) {
+      return entry.proxy_reference;
+    }
+  }
+  return jref_t{};
+}
+
+bool Context::registerShareableProxy(const jref_t proxy_reference,
+                                     const uint8_t *server_aid,
+                                     const uint8_t server_aid_length,
+                                     const jref_t server_reference) noexcept {
+  if (proxy_reference.isNullPointer() || proxy_reference.isArray() ||
+      server_aid == nullptr || server_aid_length < 5 || server_aid_length > 16 ||
+      server_reference.isNullPointer() || server_reference.isArray()) {
+    return false;
+  }
+  for (auto &entry : this->shareable_proxies) {
+    if (!entry.proxy_reference.isNullPointer()) {
+      if (entry.proxy_reference == proxy_reference) {
+        return entry.server_reference == server_reference &&
+               entry.server_aid_length == server_aid_length &&
+               std::equal(server_aid, server_aid + server_aid_length,
+                          entry.server_aid.begin());
+      }
+      continue;
+    }
+    entry.proxy_reference = proxy_reference;
+    entry.server_reference = server_reference;
+    std::copy(server_aid, server_aid + server_aid_length,
+              entry.server_aid.begin());
+    entry.server_aid_length = server_aid_length;
+    return true;
+  }
+  return false;
+}
+
+bool Context::getShareableProxy(const jref_t proxy_reference,
+                                uint8_t server_aid[16],
+                                uint8_t &server_aid_length,
+                                jref_t &server_reference) const noexcept {
+  server_aid_length = 0;
+  server_reference = jref_t{};
+  if (proxy_reference.isNullPointer() || proxy_reference.isArray() ||
+      server_aid == nullptr) {
+    return false;
+  }
+  for (const auto &entry : this->shareable_proxies) {
+    if (entry.proxy_reference != proxy_reference ||
+        entry.server_aid_length < 5 || entry.server_aid_length > 16 ||
+        entry.server_reference.isNullPointer() ||
+        entry.server_reference.isArray()) {
+      continue;
+    }
+    std::copy_n(entry.server_aid.begin(), entry.server_aid_length, server_aid);
+    server_aid_length = entry.server_aid_length;
+    server_reference = entry.server_reference;
+    return true;
+  }
+  return false;
+}
+
 void Context::setAPDUBufferRef(const jref_t reference,
                                const uint16_t incoming_length,
                                const uint16_t expected_response_length,
@@ -610,6 +686,11 @@ void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
   for (const auto &entry : this->remote_objects) {
     if (entry.object_id != 0xffff && !entry.reference.isNullPointer()) {
       visitor(entry.reference, visitor_context);
+    }
+  }
+  for (const auto &entry : this->shareable_proxies) {
+    if (!entry.proxy_reference.isNullPointer()) {
+      visitor(entry.proxy_reference, visitor_context);
     }
   }
   const jref_t direct_roots[] = {

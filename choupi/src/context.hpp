@@ -72,9 +72,16 @@ private:
     bool exported = false;
     bool session_reference = false;
   };
+  struct ShareableProxyEntry {
+    jref_t proxy_reference;
+    jref_t server_reference;
+    std::array<uint8_t, 16> server_aid{};
+    uint8_t server_aid_length = 0;
+  };
   // Leave headroom beyond Java Card's 16-object minimum for an applet's
   // already-exported initial reference while a service exercises the limit.
   std::array<RemoteObjectEntry, 32> remote_objects{};
+  std::array<ShareableProxyEntry, 32> shareable_proxies{};
   uint16_t next_remote_object_id = 1;
   jref_t apdu_buffer_ref;
   std::shared_ptr<JC_Array> apdu_java_buffer;
@@ -149,6 +156,16 @@ public:
   bool retainRemoteObjectForSession(jref_t reference) noexcept;
   uint16_t remoteObjectId(jref_t reference) const noexcept;
   bool remoteObject(uint16_t object_id, jref_t &reference) const noexcept;
+  jref_t findShareableProxy(const uint8_t *server_aid,
+                            uint8_t server_aid_length,
+                            jref_t server_reference) const noexcept;
+  bool registerShareableProxy(jref_t proxy_reference,
+                             const uint8_t *server_aid,
+                             uint8_t server_aid_length,
+                             jref_t server_reference) noexcept;
+  bool getShareableProxy(jref_t proxy_reference, uint8_t server_aid[16],
+                         uint8_t &server_aid_length,
+                         jref_t &server_reference) const noexcept;
   /// Set and query the APDU buffer and response window for the current command.
   void setAPDUBufferRef(jref_t reference, uint16_t incoming_length,
                         uint16_t expected_response_length,

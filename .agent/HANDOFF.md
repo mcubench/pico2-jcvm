@@ -2439,3 +2439,26 @@ No implementation changed. Existing progress-guard wrapper passed 6/6; it
 exercises simulated service paths, which motivates ARCH-09. No hardware work
 or builds performed for this documentation review. Preserve ongoing uncommitted
 applet-context work; broader language backend work remains deferred.
+
+## Shareable proxy registry groundwork — validated, not yet connected
+
+Added a bounded 32-entry proxy metadata table to each `Context`, keyed by the
+client-local proxy reference and storing the server applet AID plus the actual
+server reference. Client proxy references are GC roots so the placeholder can
+remain alive while applets retain it. The focused test reports
+`shareable_proxy_registry=1`; PC, ARM, and RISC-V builds pass. This is registry
+infrastructure only: there is no proxy creation or invocation behavior yet.
+The first test run failed because the fabricated `jref_t` examples encoded
+arrays; corrected them to instance references and reran successfully.
+
+The authorized physical-reader helper still returns `found 0` despite the
+user's report that devices are connected. No flash or physical test ran.
+
+Next: inspect heap handle encodings and define an unforgeable proxy handle
+representation, then intercept the resolved ROM
+`NativeImplementation.getAppletShareableInterfaceObject` call in
+`Bytecodes::bc_invokestatic`, resolve/restore the target applet context, and
+invoke its `Applet.getShareableInterfaceObject` override. Ensure no raw server
+reference crosses into the client heap. Follow with proxy `invokeinterface`
+dispatch and field/method firewall checks, plus a positive two-applet emulator
+fixture. Keep the original upstream CAP files unchanged.
