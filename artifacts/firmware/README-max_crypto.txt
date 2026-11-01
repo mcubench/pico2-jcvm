@@ -13,7 +13,7 @@ remove installed applets explicitly with GlobalPlatformPro.
 Debug persistent-GC instrumentation: disabled.
 Filesystem: snapshot v4, with copy-on-write migration from v2/v3 snapshots.
 Image size: 2,098,176 bytes
-Firmware SHA-256: 841af227b3dfcd7eaf589c40b042a71e9efdf4d00c82aea296418d3f5d9a1d70
+Firmware SHA-256: 122a172ca7a412881afaa2529f1c1c7c4a782c3adb9f91ca436f5545ca071c2c
 Build date: 2026-11-01
 
 Flash
