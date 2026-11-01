@@ -1,4 +1,4 @@
-# Session handoff — updated 2026-10-31
+# Session handoff — updated 2026-11-01
 
 ## Signature MAC IV fix — 2026-11-01
 
@@ -29,6 +29,23 @@ transport errors. RSA SHA-512 PSS's one `EXC_CARDRUNTIME reason=0x0001`
 corresponds to the upstream 1024-bit key/64-byte-salt invalid input, already
 confirmed by separate known-answer analysis; do not change the native PSS
 implementation for it.
+
+## Windows crypto-profile bundle refresh — 2026-11-01
+
+Regenerated the ignored external-test archive with the unchanged upstream
+JCAlgTest 1.8.2 CAP, official client and GPPro, current expected CSVs, and ARM
+images for `symm_crypto` and `asymm_crypto`. The wrapper package workflow passed
+both ARM/RISC-V profile build gates, checked all per-file SHA-256 entries, and
+passed `unzip -t`. Archive:
+`build/external-test/pico2-jcvm-windows-test.zip`, SHA-256
+`a26c86489c2fd9887aac58c987585eae8d10410317ca3279c939ff524124c7fa`. The
+profile UF2 hashes are `d36b6128fc2caea130e689614a12d62906ac46fa6add30085b253aa46b01e826`
+(`symm_crypto`) and
+`cda8a3b7dee0d7536575bc3173d00f04848cf9d68a370ae207d595a9a8148e2f`
+(`asymm_crypto`). The CAP retains its pinned upstream SHA-256
+`b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`.
+Windows flashing, PC/SC and client results remain pending. This bundle is in
+the ignored `build/external-test/` directory.
 
 ## Package-delete overlay compaction — 2026-11-01
 

@@ -2524,8 +2524,14 @@ rollback and duplicate/invalid registration handling also remain unverified.
   remains stale; the refreshed archive regenerates both expected CSVs from
   current profiles. Separate ARM UF2s and expected support CSVs are packaged
   for external Windows testing at
-  `build/external-test/pico2-jcvm-windows-test.zip`; Windows results remain
-  pending. Native EC prime-field private key storage is now implemented for
+  `build/external-test/pico2-jcvm-windows-test.zip`. Refreshed on 2026-11-01
+  after the Signature MAC IV fix; ZIP SHA-256 is
+  `a26c86489c2fd9887aac58c987585eae8d10410317ca3279c939ff524124c7fa`.
+  Its `symm_crypto` and `asymm_crypto` ARM UF2 hashes are
+  `d36b6128fc2caea130e689614a12d62906ac46fa6add30085b253aa46b01e826` and
+  `cda8a3b7dee0d7536575bc3173d00f04848cf9d68a370ae207d595a9a8148e2f`.
+  Archive checksums and ZIP integrity passed; Windows results remain pending.
+  Native EC prime-field private key storage is now implemented for
   supported lengths 128–521 bits, including transient reset/deselect storage,
   component setters/getters, key initialization/clear, and domain-parameter
   copying. JC 3.0.5 `ECPrivateKey` interface tokens are explicitly translated
