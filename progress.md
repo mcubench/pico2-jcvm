@@ -9,6 +9,17 @@
 - Commit: `708c9d2`; exact commit reference recorded by follow-up metadata commit.
 - Artifacts/logs: TODO/QKB/HANDOFF text only; no runtime logs.
 
+## 2026-11-01 — Cover all dynamic package state tag forms 3 minutes
+
+- Step/experiment: `pico-overlay-package-namespace-regression-20261101`
+- When: '2026-11-01 09:58 CET' - '2026-11-01 10:01 CET'
+- Change: Expanded the package-delete compaction regression from one dynamic package ID and applet-owned tags to all eight dynamic IDs (56–63), adding package-static and lifecycle tags alongside 128 applet-state records for each ID. Updated current TODO/QKB/HANDOFF coverage summaries.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including restart after each of eight package deletions, unrelated-record preservation, and the existing 64 randomized snapshot power cuts. `git diff --check` passed. Firmware builds were not rerun because only host-test and documentation sources changed.
+- Result: The erase predicate and compactor are exercised against all supported dynamic package slots and all three package-owned persistent namespaces.
+- Decision: Keep this expanded coverage; continue with physical confirmation when a reader is available.
+- Commit: `da568ae` (regression); this progress and tracker update are recorded in the following metadata commit.
+- Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; test output ended `TEST:SUMMARY fail=0`.
+
 ## 2026-10-26 — Native RSA ISO9796-2 scheme 1
 
 - Step/experiment: `asymm-crypto-rsa-iso9796`

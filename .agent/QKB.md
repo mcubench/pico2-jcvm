@@ -13,11 +13,13 @@
   payload bytes while retaining the existing copy-on-write snapshot protocol.
   Parent-slot encoded records cause a safe no-op because their payload refers
   to slot numbers.
-- `./tools/test-rp2350-fs-overlay` passes (`TEST:SUMMARY fail=0`), including six
-  generations of 128 package-state records with restart after each deletion,
-  preservation of unrelated data, and 64 randomized power cuts during the
-  compacted snapshot. The latest in-place implementation uses no extra 64 KiB
-  scratch table; the ARM/RISC-V `max_crypto` builds pass.
+- `./tools/test-rp2350-fs-overlay` passes (`TEST:SUMMARY fail=0`). The expanded
+  regression covers all eight dynamic package IDs; for each it writes 128
+  applet-state records plus package-static and lifecycle tags, deletes and
+  restarts, and verifies unrelated data remains. A separate case injects 64
+  randomized power cuts during the compacted snapshot. The latest in-place
+  implementation uses no extra 64 KiB scratch table; the ARM/RISC-V
+  `max_crypto` builds pass.
 - Physical validation is pending: the approved helper currently reports zero
   Pico 2 readers. The next hardware check should flash a currently enumerated
   board, capture the finite monitor, and repeat temporary CAP deletion cycles

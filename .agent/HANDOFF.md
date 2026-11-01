@@ -11,10 +11,12 @@ ROM-backed tombstones. Payloads are packed in place; the hash table is rebuilt
 using the existing erase scratch arrays, with no extra 64 KiB BSS table.
 Parent-slot encoded records safely skip compaction.
 
-`./tools/test-rp2350-fs-overlay` passes all tests, including six 128-record
-install/delete/restart generations and 64 randomized snapshot power cuts with
-old-or-new recovery and unrelated-record preservation. ARM and RISC-V
-`max_crypto` builds pass. Latest ARM ELF end is `0x10100038`; BSS end is
+`./tools/test-rp2350-fs-overlay` passes all tests. The expanded regression
+covers all eight dynamic package IDs, each with 128 applet-state records plus
+static and lifecycle tags, followed by deletion and restart. It preserves an
+unrelated record and passes 64 randomized snapshot power cuts with old-or-new
+recovery. ARM and RISC-V `max_crypto` builds pass. Latest ARM ELF end is
+`0x10100038`; BSS end is
 `0x20048214`. The latest source change has not been physically flashed: the
 authorized helper currently reports zero Pico readers, and an earlier cycle
 failed its monitor because the device disappeared from guest USB. Do not retry
