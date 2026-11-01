@@ -600,13 +600,17 @@ adapters, and do not change upstream applet CAP files.
   the JCAlgTest `NO_MEMORY` status; this is persistent overlay exhaustion, not
   a cryptographic algorithm failure. The diagnostic currently prints the
   fixed 98,304-byte ceiling rather than the dynamic per-index limit.
+- [x] Make `FS_WRITE_FAIL` show dynamic payload limit, fixed arena size,
+  current/maximum file count, and free file slots. ARM/RISC-V builds pass and
+  the updated max_crypto ARM image passed a physical cycle on 2BED. The
+  capacity-failure branch was not triggered after the flash; the single-class
+  AEADCipher rerun timed out at the client level, though CAP cleanup passed.
 - [ ] Fix or mitigate persistent overlay exhaustion during long API sweeps.
   Determine why per-call persistent records remain after GC and successful CAP
   uninstall, whether the existing persistent reclaimer can safely reclaim
-  unreachable test objects, and how to preserve selected-applet roots. Also
-  report the actual dynamic payload limit and free file slots in diagnostics.
-  Validate that repeated upstream API 3.0.5 runs do not grow the overlay to its
-  payload or 8,192-record limit.
+  unreachable test objects, and how to preserve selected-applet roots. Validate
+  that repeated upstream API 3.0.5 runs do not grow the overlay to its payload
+  or 8,192-record limit.
 
 - [ ] Investigate API 3.0.5 `EXC_RUNTIME` regressions on the v4 max_crypto
   image before broadening the profile acceptance claim. Security first shows

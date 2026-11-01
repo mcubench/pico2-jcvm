@@ -37,6 +37,19 @@ Exact failing-case CSV
 serial `artifacts/logs/max-crypto-nine-memory-isolation-2BED-20261101.serial.log`
 (SHA-256 `a28357fee22e19f4d7fac9d51fe8dd5b940377ffe74b482fbbd1308198cea6af`).
 
+The `FS_WRITE_FAIL` format now reports `files=current/max free_slots=N
+bytes=used/effective_limit arena=fixed_limit`. ARM and RISC-V builds passed;
+`PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial
+2BED26ED20556535` flashed and verified the updated ARM image and passed its
+finite monitor. Image SHA-256:
+`52a6980806b8dcf4b418e5ff75b9e401f010cfe3a14f9206cf8679a50b1b2f13`.
+The failure branch was not hit after flashing. A subsequent AEADCipher-class
+filter returned constructor `OK` plus seven `UNSUPPORTED_PER_SPEC` rows, but
+the client timed out at 60 seconds; temporary CAP cleanup passed. No storage
+failure appeared in the bounded serial capture. Treat the timeout as failed
+validation, not as an API pass. TODO tracks persistent reclamation as the next
+storage task.
+
 Rebuilt ARM, RISC-V, and PC `max_crypto` with bounded build jobs. ARM and
 RISC-V wrapper builds passed. The PC wrapper initially failed linking because
 two stale bytecode object files were zero bytes after an interrupted build;

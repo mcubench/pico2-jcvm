@@ -495,11 +495,19 @@ bool restore_overlay_snapshot(uint32_t offset0, uint32_t offset1,
 
 void report_fs_write_failure(const char *operation, const uint8_t *tag,
                              uint8_t tag_length, uint32_t length) {
-  std::printf("CHOUPI:FS_WRITE_FAIL op=%s tag_len=%u size=%lu files=%u bytes=%lu/%lu tag=",
+  const size_t payload_limit = overlay_byte_limit(overlay_file_count);
+  const size_t free_file_slots =
+      overlay_file_count <= kMaxOverlayFiles
+          ? kMaxOverlayFiles - overlay_file_count
+          : 0;
+  std::printf("CHOUPI:FS_WRITE_FAIL op=%s tag_len=%u size=%lu files=%u/%u free_slots=%u bytes=%lu/%lu arena=%lu tag=",
               operation, static_cast<unsigned>(tag_length),
               static_cast<unsigned long>(length),
               static_cast<unsigned>(overlay_file_count),
+              static_cast<unsigned>(kMaxOverlayFiles),
+              static_cast<unsigned>(free_file_slots),
               static_cast<unsigned long>(overlay_bytes_used),
+              static_cast<unsigned long>(payload_limit),
               static_cast<unsigned long>(kMaxOverlayBytes));
   for (uint8_t index = 0; index < tag_length && index < 8; ++index) {
     std::printf("%02X", tag[index]);

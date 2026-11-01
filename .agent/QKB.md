@@ -28,8 +28,7 @@
   failing key-size and constructor cases except AEADCipher) passed. Temporary
   CAP cleanup passed, yet accumulated records remain.
 - **Next:** investigate persistent object lifetime/reclamation and whether
-  applet uninstall removes all package-owned records. Correct diagnostics to
-  report dynamic payload capacity and free record slots. Do not implement
+  applet uninstall removes all package-owned records. Do not implement
   algorithms, delete user data, or reset the physical token to work around
   this storage condition.
 - The parallel Security run on 8E stopped at transient RSA private 2048
@@ -44,6 +43,19 @@
   `a7d30c2eb7045d5d386b582f4e1a545d48df2fc8a574f7e4a0c48ea69982dbe9`;
   serial SHA-256:
   `a28357fee22e19f4d7fac9d51fe8dd5b940377ffe74b482fbbd1308198cea6af`.
+
+### Diagnostic follow-up
+
+- `src/pico_filesystem.cpp` now reports current/max file count, free file slots,
+  used/effective dynamic payload, and fixed arena size on `FS_WRITE_FAIL`.
+  ARM/RISC-V builds passed; the updated max_crypto ARM image flashed and
+  completed its finite physical monitor on 2BED. Image SHA-256:
+  `52a6980806b8dcf4b418e5ff75b9e401f010cfe3a14f9206cf8679a50b1b2f13`.
+- The failure branch was not exercised after this flash. A later AEADCipher
+  filter returned one constructor `OK` and seven `UNSUPPORTED_PER_SPEC`, but
+  the client timed out at 60s after writing those rows; CAP cleanup succeeded.
+  No current `FS_WRITE_FAIL` appeared in the bounded serial capture. Treat the
+  timeout as a failed validation, not as an API pass.
 
 ## Focused API NPEs do not reproduce on the 2026-11-01 max_crypto image
 

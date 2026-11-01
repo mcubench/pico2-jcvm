@@ -18914,3 +18914,14 @@
 - Decision: Treat current Crypto `NO_MEMORY` as confirmed persistent overlay capacity exhaustion. Next inspect how unreachable API-created records survive collection/uninstall; enable persistent reclamation only after its safety/power-loss behavior is validated. Improve diagnostics to print dynamic payload and free record capacity.
 - Commit: `acbff8d`
 - Artifacts/logs: Full Crypto serial `artifacts/logs/full-current-crypto-2BED-20261101.serial.log` (SHA-256 `402c22976c5e62784a2a8752619e80cc5b8ddb4465c7112a8759b8b1841f1680`); exact-case CSV `artifacts/results/deploy/max-crypto-full-current-20261101/nine-memory-2BED.csv` (SHA-256 `a7d30c2eb7045d5d386b582f4e1a545d48df2fc8a574f7e4a0c48ea69982dbe9`); serial `artifacts/logs/max-crypto-nine-memory-isolation-2BED-20261101.serial.log` (SHA-256 `a28357fee22e19f4d7fac9d51fe8dd5b940377ffe74b482fbbd1308198cea6af`).
+
+## 2026-11-01 — Report effective filesystem capacity 9 minutes
+
+- Step/experiment: `pico-fs-effective-capacity-diagnostics-20261101`
+- When: '2026-11-01 09:24 CET' - '2026-11-01 09:33 CET'
+- Change: Updated `CHOUPI:FS_WRITE_FAIL` to print current/max overlay records, free record slots, used/effective dynamic payload, and fixed arena size. Updated TODO, QKB, and handoff with scope and remaining storage work.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed build gates, flash verification, and finite monitor (`TEST:SUMMARY pass=1 fail=0`). `git diff --check` passed. A follow-up AEADCipher-class physical filter wrote one `OK` and seven `UNSUPPORTED_PER_SPEC` rows, but the client timed out after 60 seconds; its temporary CAP cleanup passed. The failure logger branch was not triggered after flashing.
+- Result: New firmware is on Pico 2 `2BED26ED20556535`. The source diagnostic now exposes the true dynamic limit and count pressure. Runtime formatting of an actual write failure remains unverified; the API-client timeout is recorded as a failure, not a pass.
+- Decision: Keep this diagnostic. Continue investigating persistent object lifetime and safe reclamation before attempting another full Crypto sweep. No user packages or persistent state were removed.
+- Commit: `pending`
+- Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2` SHA-256 `52a6980806b8dcf4b418e5ff75b9e401f010cfe3a14f9206cf8679a50b1b2f13`; physical cycle `artifacts/logs/cycle-choupi-20261101T082713Z.log` SHA-256 `7579e8ce5ebec06af8283b47929e0f025c021b822a71d321879fb88e622a35c9`; client CSV `artifacts/results/deploy/max-crypto-full-current-20261101/aead-limit-correct-2BED.csv` SHA-256 `3cc22a9f95c16340f5bea3d02fd97aa296e91c8e31ef00bccbd7a655e267ad00`; bounded serial `artifacts/logs/max-crypto-effective-limit-2BED-20261101.serial.log` SHA-256 `57ad70e25f4431c657526b7177fd84d47d5d4976731828bf1fbfed3069fc1e8a`.
