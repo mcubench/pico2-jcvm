@@ -1643,6 +1643,42 @@ int main() {
   expect(compact_snapshot_recovers_atomically,
          "package_delete_compaction_recovers_atomically_after_power_cuts");
 
+  fake_flash.fill(0xff);
+  constexpr uint8_t full_overlay_package_id = 56;
+  constexpr std::array<uint8_t, 3> full_overlay_unrelated_tag = {
+      0xb2, 0x53, 0x01};
+  constexpr uint8_t full_overlay_unrelated_value[] = {0x53};
+  constexpr uint8_t full_overlay_package_value[] = {0x56, 0x82};
+  bool full_overlay_package_setup =
+      fs_init() == 0 &&
+      fs_write(full_overlay_unrelated_tag.data(),
+               full_overlay_unrelated_tag.size(),
+               full_overlay_unrelated_value,
+               sizeof(full_overlay_unrelated_value)) == 0;
+  for (uint16_t item = 0; item < 8191 && full_overlay_package_setup; ++item) {
+    const std::array<uint8_t, 6> tag = {
+        0x03, 0x09, full_overlay_package_id, 0x22,
+        static_cast<uint8_t>(item >> 8), static_cast<uint8_t>(item)};
+    full_overlay_package_setup =
+        fs_write(tag.data(), tag.size(), full_overlay_package_value,
+                 sizeof(full_overlay_package_value)) == 0;
+  }
+  expect(full_overlay_package_setup &&
+             rp2350_fs_test_overlay_file_count() == 8192,
+         "package_delete_compaction_reaches_full_overlay_index");
+  const bool full_overlay_package_reclaimed =
+      full_overlay_package_setup &&
+      fs_erase_package_state(full_overlay_package_id) == 0 &&
+      rp2350_fs_test_overlay_file_count() == 1 &&
+      fs_exists(full_overlay_unrelated_tag.data(),
+                full_overlay_unrelated_tag.size()) == 1 &&
+      fs_sync() == 0 && fs_init() == 0 &&
+      rp2350_fs_test_overlay_file_count() == 1 &&
+      fs_exists(full_overlay_unrelated_tag.data(),
+                full_overlay_unrelated_tag.size()) == 1;
+  expect(full_overlay_package_reclaimed,
+         "package_delete_compaction_reclaims_full_index_and_restarts");
+
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
