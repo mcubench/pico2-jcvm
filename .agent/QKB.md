@@ -3166,6 +3166,12 @@ original terminology/status; check current summary and later fixes before reuse.
   context switch. `Interpretor` already supports nested execution against an
   external `Context` and restores the previous active context via RAII; this is
   a possible execution primitive, not a complete SIO solution.
+- **Dispatch constraint:** `NativeImplementation.getAppletShareableInterfaceObject`
+  is not declared native in the ROM API JCA. It compiles to interpreted Java
+  Card bytecode, and the `JCSystem` ROM method invokes it with `invokestatic`.
+  Adding a same-named C++ function cannot override that bytecode call. Keep API
+  sources and CAPs unchanged; the native implementation must intercept the
+  resolved VM invocation before the same-AID guard executes.
 - **Validation status:** Current-source VPCD multipackage regression passes
   47/47, but its existing Shareable probes cover absent servers/default-null
   behavior, not a successful cross-AID server call. Keep the broad context and

@@ -19244,3 +19244,14 @@
 - Decision: Keep the broader multi-applet Shareable/firewall TODO open. Resume physical validation when a Pico is guest-visible; next implement positive cross-AID Shareable lookup and safe proxy dispatch.
 - Commit: Recorded in this implementation commit.
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC ROM mask `build/choupi-pc/flash` and JNI header `build/choupi-pc/jni.hpp`; ARM `build/arm/pico2_choupi.uf2`; RISC-V `build/riscv/pico2_jcvm_smoke.uf2`; no physical logs.
+
+## 2026-11-01 Trace SIO API native-dispatch boundary 6 minutes
+
+- Step/experiment: `sio-native-dispatch-boundary-20261101`
+- When: '2026-11-01 16:32 CET' - '2026-11-01 16:38 CET'
+- Change: No firmware source changed. Traced `JCSystem.getAppletShareableInterfaceObject` through the generated ROM JCA and CAP bytecode. Added the native-interception constraint and next implementation sequence to `.agent/QKB.md` and `.agent/HANDOFF.md`.
+- Validation: Read-only inspection confirmed the ROM JCA method is non-native, its method body invokes `NativeImplementation.getAppletShareableInterfaceObject` through `invokestatic`, and the helper bytecode performs the client/server AID equality check. Confirmed existing transaction probe only tests absent/default-null behavior; no new test was run.
+- Result: A C++ symbol cannot replace this method by name because no native dispatch is generated. Correct native implementation must intercept the resolved ROM method in VM dispatch before its existing bytecode executes; API source and CAP artifacts remain unchanged.
+- Decision: Add the dispatch interception and context lookup next, then implement a server-owned proxy and firewall-checked `invokeinterface` dispatch. Existing `AlgTestApiMulti_303.cap` is a candidate integration probe, but no positive cross-AID fixture is currently in the repository test harness.
+- Commit: Recorded in this analysis commit.
+- Artifacts/logs: Generated ROM JCA `build/choupi-pc/javacard-api/fr/gouv/ssi/nativeimpl/javacard/nativeimpl.jca`; ROM API JCA `build/choupi-pc/javacard-api/javacard/framework/javacard/framework.jca`; source `tools/tests/jcsystem_transaction_applet/JCTransactionProbe.java`.

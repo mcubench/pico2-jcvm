@@ -18,6 +18,25 @@ validation was attempted. Next implement positive cross-AID SIO lookup and a
 context-owned proxy/dispatch path with argument and return firewall checks;
 keep this JCSystem step and the broader SIO behavior separate in acceptance.
 
+## SIO dispatch investigation — native interception required
+
+The generated ROM API JCA confirms `NativeImplementation.getAppletShareableInterfaceObject`
+is a bytecode method, not a native entry. `JCSystem.getAppletShareableInterfaceObject`
+invokes it using `invokestatic`, and its bytecode has the same-AID comparison.
+Do not add a C++ function with the same symbol and assume it will run. The
+native implementation must intercept the resolved ROM method in VM dispatch,
+leaving API source and CAP files unchanged. The `invokestatic` resolver already
+has the external package/class/method reference available. After interception,
+resolve server AID to an installed instance, obtain its retained `Context`,
+execute the server's `Applet.getShareableInterfaceObject` override in that
+context, and return a context-owned proxy. `invokeinterface` must recognize
+that proxy, enforce Shareable interface/method visibility and firewall rules,
+run the target in its owning context, and validate reference arguments/results.
+No positive two-applet fixture is currently present in `tools/tests`; existing
+transaction probe only asserts absent/default-null behavior. The unchanged
+`AlgTestApiMulti_303.cap` is a candidate integration probe after adding a
+positive fixture without modifying the CAP.
+
 ## Latest verification — 2026-11-01
 
 The current worktree snapshot was revalidated on 2026-11-01 after the CAP
