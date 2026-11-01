@@ -19352,5 +19352,5 @@
 - Validation: `./tools/test-rmi-registry` passed with `stack_receiver_replace=1`; the unchanged upstream `AlgTestApiCore_305.cap` passed all three focused Shareable rows through fresh VPCD storage, with the sub-interface call returning `1` and CAP cleanup OK. `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. Physical reader refresh was not repeated in this step; the immediately preceding authorized refresh found zero Pico devices, and no flash was performed.
 - Result: Same-context SIO proxy dispatch preserves the entire operand stack and has both unit and CAP-level coverage. Cross-AID behavior and cross-context argument conversion are still not covered. Existing Rust/CAP warnings remain; no new warnings were observed.
 - Decision: Keep CTX-01 open. Next add cross-AID server routing coverage from an unchanged upstream CAP if available, then implement descriptor-aware cross-context argument conversion and exception propagation. Physical validation is pending device enumeration.
-- Commit: pending; SHA will be recorded in the follow-up progress commit.
+- Commit: `1c6b3e1`
 - Artifacts/logs: `artifacts/results/shareable-same-context-stack-20261101T185456Z/`; `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V build outputs under `build/`; no physical logs.
