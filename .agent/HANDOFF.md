@@ -6,8 +6,10 @@ ARCH-09 production progress/dispatch coverage is implemented in the latest
 worktree. `src/ccid_device.cpp` calls shared production helpers in
 `src/ccid_progress_flow.hpp` for pending-message dispatch, guarded USB progress,
 time-extension waits, and final-response ordering. `tools/test-ccid-progress-flow`
-passes 9/9 focused host checks; PC, ARM, and RISC-V builds pass. No commit or
-progress record has yet been created for this step.
+passes 9/9 focused host checks; PC, ARM, and RISC-V builds pass. Implementation
+commit:
+`309aa5b` (`Exercise production CCID progress flow`); `progress.md` records the
+hash and validation details.
 
 The physical boards are plugged in per the user, but the authorized
 `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper reports `found 0`. Treat that

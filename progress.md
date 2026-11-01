@@ -19177,5 +19177,5 @@
 - Validation: `./tools/test-ccid-progress-flow` passed `TEST:SUMMARY pass=9 fail=0`; `./tools/build-pc --profile current`, `./tools/build arm`, `./tools/build riscv`, `bash -n tools/test-ccid-progress-flow`, and targeted `git diff --check` passed. `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported `found 0`; physical validation was skipped despite the user reporting the boards plugged in.
 - Result: Host regression covers deferred messages and exact-once dispatch, recursive task/progress rejection, endpoint-busy deferral, extension completion, and final-response ordering including a stuck extension. Existing Rust OS, CAP converter and packed-CAP compiler warnings remain. No hardware measurement was made.
 - Decision: ARCH-09 host production-shared logic is covered. Keep ARCH-08 open until identified-board control-event flood, wall-time measurement, RSA long-call extension ordering, and multi-device flash selection pass physically.
-- Commit: `<implementation commit SHA recorded in follow-up metadata commit>`
+- Commit: `309aa5b` (`Exercise production CCID progress flow`)
 - Artifacts/logs: `tools/test-ccid-progress-flow`; build outputs under `build/choupi-pc/`, `build/arm/`, and `build/riscv/`; no physical log.
