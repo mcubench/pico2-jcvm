@@ -12,8 +12,9 @@ does not erase the card's separate persistent CAP store; use a fresh card or
 remove installed applets explicitly with GlobalPlatformPro.
 Debug persistent-GC instrumentation: disabled.
 Filesystem: snapshot v4, with copy-on-write migration from v2/v3 snapshots.
-Image size: 2,089,472 bytes
-Firmware SHA-256: 03ccac6577950f4e280a1a10d3c52b8d15d03ab52165b220a59a0a9a75e4e7df
+Image size: 2,098,176 bytes
+Firmware SHA-256: 841af227b3dfcd7eaf589c40b042a71e9efdf4d00c82aea296418d3f5d9a1d70
+Build date: 2026-11-01
 
 Flash
 1. Hold BOOTSEL while connecting the Pico 2 over USB.
@@ -27,10 +28,12 @@ The expected JCAlgTest support manifest is
 pico2-jcvm-max_crypto-arm-supported.csv
 SHA-256: 81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0
 
-Build validation: `PICO2_DEBUG=0 ./tools/build arm --profile max_crypto` and
-the corresponding RISC-V wrapper build passed. The ARM image was flashed to
-Pico 2 `2BED26ED20556535` and passed its finite runtime monitor. Host overlay
-snapshot/migration tests pass. The full physical API Security retest stopped
-when the reader disappeared, so storage-related `NO_MEMORY` reduction is not
-yet confirmed. The RISC-V wrapper builds the VM core; only the ARM output is a
-complete CHOUPI firmware image.
+Build validation for this image: `./tools/build arm --profile max_crypto`,
+`./tools/build riscv --profile max_crypto`, and
+`./tools/test-rp2350-fs-overlay` passed. The overlay regression includes
+repeated dynamic-package deletion/restart and randomized power-cut recovery.
+This refreshed image has not been flashed or runtime-tested on hardware; the
+authorized reader helper reported no attached Pico 2 devices. Previous
+physical/API results in the project logs refer to earlier image hashes and do
+not validate this image. The RISC-V wrapper builds the VM core; only the ARM
+output is a complete CHOUPI firmware image.
