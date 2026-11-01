@@ -9,6 +9,17 @@
 - Commit: `21eb7d5` (artifact and metadata); this progress entry is recorded in a follow-up metadata commit.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (2,098,176 bytes, SHA-256 above); build outputs under `build/arm/` and `build/riscv/`; no physical log.
 
+## 2026-11-01 — Refresh Windows symmetric/asymmetric test bundle 12 minutes
+
+- Step/experiment: `windows-crypto-profile-bundle-refresh-20261101`
+- When: '2026-11-01 11:08 CET' - '2026-11-01 11:20 CET'
+- Change: Rebuilt the external Windows profile bundle from current `symm_crypto` and `asymm_crypto` ARM images and generated support CSVs. The archive includes the unchanged pinned upstream JCAlgTest 1.8.2 CAP, official client, GPPro, reference CSV, comparator, and run sheet. Updated TODO and HANDOFF with hashes and Windows-validation status.
+- Validation: `./tools/package-asymm-symm-windows-test` passed both ARM and RISC-V wrapper builds for each profile, CAP provenance validation, per-file SHA-256 checks, and ZIP integrity. The build emitted existing Java Card converter warnings, a cached Maven metadata DNS warning, and a logback local-hostname permission diagnostic; ROM-mask generation and all builds completed successfully. Archive SHA-256: `a26c86489c2fd9887aac58c987585eae8d10410317ca3279c939ff524124c7fa`. `unzip -t` reported no errors.
+- Result: The ignored Windows bundle is current with the Signature MAC IV fix. `symm_crypto` UF2 SHA-256 is `d36b6128fc2caea130e689614a12d62906ac46fa6add30085b253aa46b01e826`; `asymm_crypto` UF2 SHA-256 is `cda8a3b7dee0d7536575bc3173d00f04848cf9d68a370ae207d595a9a8148e2f`. Expected CSV hashes are `0e1c3064b9821f9e58103d8110a1a425f8519afba6cb1fb36ea11cb4ac829a61` and `b0ffc08bdac193686ac103bf9b2f9438a2f681403082e5dc744752d37836f2bf`. CAP hash remains `b5a7711c6d1992d38b5dd2c529a41498df3a167c643ca358424e4a1c1fa05169`. No physical Pico reader was available and Windows tests were not run.
+- Decision: Keep the updated archive for external Windows validation; compare each returned support CSV with its packaged expected manifest and reference after the user runs it.
+- Commit: `7f423b4` (TODO/HANDOFF); progress metadata is committed separately. The generated archive remains under ignored `build/external-test/`.
+- Artifacts/logs: `build/external-test/pico2-jcvm-windows-test.zip` (18 MiB, archive SHA above); member hashes are in `build/external-test/windows-profile-package/SHA256SUMS.txt`.
+
 ## 2026-11-01 — Re-run VPCD persistence integration 6 minutes
 
 - Step/experiment: `vpcd-persistence-integration-20261101`
