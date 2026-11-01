@@ -8,6 +8,17 @@
 - Commit: implementation `50b39a7`; progress/handoff follow-up `dbd3ffe`.
 - Artifacts/logs: `artifacts/logs/asymm-crypto-pcsc-20261026T193337Z.log`, `artifacts/logs/cycle-choupi-20261026T193202Z.log`, `artifacts/logs/cycle-choupi-20261026T194306Z.log`, `artifacts/logs/asymm-crypto-digest-vpcd-20261024.log`.
 
+## 2026-11-01 — Reclaim persistent overlay tombstones after package deletion 5 minutes
+
+- Step/experiment: `pico-overlay-package-delete-compaction-20261101`
+- When: '2026-11-01 09:47 CET' - '2026-11-01 09:52 CET'
+- Change: After successful `fs_erase_package_state()`, compact the overlay in place, removing failed nonserialized reservations and tombstones for dynamic package IDs 56–63 or keys absent from ROM. Preserve live records and ROM-backed tombstones; skip safely if parent-slot encoded records are present. Rebuild the open-address index and payload using existing scratch arrays, without increasing BSS. Added restart-cycle and power-cut coverage. Updated TODO, QKB, and HANDOFF with the root cause and validation status.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including six generations of 128 package records with delete/restart and preservation of an unrelated record, plus 64 randomized cuts during compacted snapshot publication with old-or-new recovery. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. Source/test `git diff --check` passed. The approved reader helper reported zero attached Pico 2 CHOUPI CCID devices, so physical flash and runtime validation were skipped.
+- Result: Repeated package-state deletion no longer accumulates index tombstones in host recovery tests. Latest ARM UF2 SHA-256 is `841af227b3dfcd7eaf589c40b042a71e9efdf4d00c82aea296418d3f5d9a1d70`; ELF SHA-256 is `b26559e21002241d9ca971c10431c2e422ae55b7d4e276cc0fd599ac3308eef1`. No new BSS table was added. Hardware validation and complete upstream Crypto-sweep acceptance remain open.
+- Decision: Keep the compaction fix; on an available Pico, flash the latest ARM image, inspect the finite serial monitor, run repeated temporary CAP install/delete cycles and confirm `CHOUPI:FS_COMPACT`, then rerun API 3.0.5 Crypto to measure remaining live-set storage pressure.
+- Commit: `182e768` (implementation and regression tests); this progress record and tracker updates are recorded in the following metadata commit.
+- Artifacts/logs: `build/arm/pico2_choupi.uf2` (SHA-256 above); `build/arm/pico2_choupi.elf` (SHA-256 above); host test output ended `TEST:SUMMARY fail=0`; physical logs: none (no device enumerated).
+
 ## 2026-10-09 — Development environment diagnostics
 
 - Step/experiment: `wp1-host-diagnostics`

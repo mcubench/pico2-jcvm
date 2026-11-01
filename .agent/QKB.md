@@ -1,5 +1,29 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Dynamic overlay tombstones consumed the file index after CAP deletion — 2026-11-01
+
+- `fs_erase_package_state()` marks matching overlay entries deleted, but the
+  tombstones previously stayed in the fixed 8,192-slot hash table indefinitely.
+  Repeated temporary CAP install/delete cycles therefore exhausted index slots
+  even when the package-owned keys had already been removed.
+- After successful package-state deletion, the Pico backend now compacts the
+  overlay in place. It removes failed nonserialized reservations, tombstones
+  for dynamic package IDs 56–63, and tombstones with no ROM backing; it retains
+  live records and ROM-backed tombstones. It rebuilds the hash index and packs
+  payload bytes while retaining the existing copy-on-write snapshot protocol.
+  Parent-slot encoded records cause a safe no-op because their payload refers
+  to slot numbers.
+- `./tools/test-rp2350-fs-overlay` passes (`TEST:SUMMARY fail=0`), including six
+  generations of 128 package-state records with restart after each deletion,
+  preservation of unrelated data, and 64 randomized power cuts during the
+  compacted snapshot. The latest in-place implementation uses no extra 64 KiB
+  scratch table; the ARM/RISC-V `max_crypto` builds pass.
+- Physical validation is pending: the approved helper currently reports zero
+  Pico 2 readers. The next hardware check should flash a currently enumerated
+  board, capture the finite monitor, and repeat temporary CAP deletion cycles
+  while checking `CHOUPI:FS_COMPACT` output. Full API-sweep follow-up is still
+  required to distinguish cumulative tombstones from live-set storage needs.
+
 ## JCAlgTest NO_MEMORY traced to dynamic persistent-overlay exhaustion — 2026-11-01
 
 - The complete unchanged API 3.0.5 Crypto area on max_crypto Pico 2

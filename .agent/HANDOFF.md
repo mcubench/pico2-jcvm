@@ -1,5 +1,32 @@
 # Session handoff — updated 2026-10-31
 
+## Package-delete overlay compaction — 2026-11-01
+
+The persistent `NO_MEMORY` investigation found that successful package deletion
+left dynamic-package tombstones in the 8,192-slot overlay index. Added
+`compact_deleted_overlay_records()` after `fs_erase_package_state()`. It drops
+unused failed-write reservations, tombstones for dynamic package IDs 56–63,
+and tombstones with no ROM record, while preserving live entries and
+ROM-backed tombstones. Payloads are packed in place; the hash table is rebuilt
+using the existing erase scratch arrays, with no extra 64 KiB BSS table.
+Parent-slot encoded records safely skip compaction.
+
+`./tools/test-rp2350-fs-overlay` passes all tests, including six 128-record
+install/delete/restart generations and 64 randomized snapshot power cuts with
+old-or-new recovery and unrelated-record preservation. ARM and RISC-V
+`max_crypto` builds pass. Latest ARM ELF end is `0x10100038`; BSS end is
+`0x20048214`. The latest source change has not been physically flashed: the
+authorized helper currently reports zero Pico readers, and an earlier cycle
+failed its monitor because the device disappeared from guest USB. Do not retry
+hardware in a restricted context; continue offline until a device is available.
+
+Immediate next action: validate source diff and commit this compaction step,
+then rerun a physical cycle on any identified available Pico and a bounded
+temporary CAP install/delete workload, looking for `CHOUPI:FS_COMPACT`. Then
+repeat the upstream full Crypto area and determine how many remaining
+`NO_MEMORY` outcomes are due to live objects rather than stale deleted keys.
+Keep 8E's temporary Security CAP and any existing 2BED packages intact.
+
 ## Current-image API runtime recheck — 2026-11-01
 
 **Latest full-suite update (2026-11-01):** Full API 3.0.5 Crypto on 2BED

@@ -607,12 +607,25 @@ adapters, and do not change upstream applet CAP files.
   `files=4894/8192 free_slots=3298 bytes=98287/98304 arena=98304`. The
   physical failure branch was not triggered after the flash; the single-class
   AEADCipher rerun timed out at the client level, though CAP cleanup passed.
-- [ ] Fix or mitigate persistent overlay exhaustion during long API sweeps.
-  Determine why per-call persistent records remain after GC and successful CAP
-  uninstall, whether the existing persistent reclaimer can safely reclaim
-  unreachable test objects, and how to preserve selected-applet roots. Validate
-  that repeated upstream API 3.0.5 runs do not grow the overlay to its payload
-  or 8,192-record limit.
+- [x] Reclaim package-state tombstones after successful package deletion.
+  Repeated temporary CAP installs had left deleted dynamic-package keys as
+  overlay tombstones, permanently consuming the 8,192-entry index. The Pico
+  filesystem now compacts the overlay after package-state deletion: it drops
+  nonserialized reservations and deleted dynamic-package/ROM-absent entries,
+  preserves live records and ROM-backed tombstones, then rebuilds the hash
+  index and payload in place. Parent-slot encoded test/legacy records make the
+  operation safely retain the old table. Host regression passed six generations
+  of 128 package records across restarts and 64 randomized snapshot power cuts;
+  unrelated data remained intact. ARM/RISC-V max_crypto builds passed. Physical
+  validation of the latest build remains pending because no Pico reader is
+  currently enumerated.
+- [ ] Validate long API sweeps with package-delete compaction on hardware.
+  Confirm that repeated upstream CAP install/run/uninstall cycles reclaim index
+  slots and keep the full API 3.0.5 Crypto run below both payload and 8,192-file
+  limits. Separately determine whether the remaining nine full-suite `NO_MEMORY`
+  results occur while live test objects genuinely exceed the card's storage
+  budget; compaction only runs after package-state deletion and is not an
+  in-run garbage collector.
 
 - [ ] Investigate API 3.0.5 `EXC_RUNTIME` regressions on the v4 max_crypto
   image before broadening the profile acceptance claim. Security first shows
