@@ -18892,3 +18892,14 @@
   (SHA-256 `7b0bc7ff622e4f95ff6405fa5304b8e0128ad749cef060af50b5f4963c31ed1a`)
   and `artifacts/logs/physical-null-receiver-crypto-2BED-20261101.serial.log`
   (SHA-256 `402c22976c5e62784a2a8752619e80cc5b8ddb4465c7112a8759b8b1841f1680`).
+
+## 2026-11-01 — Isolate current Crypto memory failures 5 minutes
+
+- Step/experiment: `max-crypto-memory-isolation-20261101`
+- When: '2026-11-01 09:13 CET' - '2026-11-01 09:19 CET'
+- Change: Recorded the current full Crypto/Security recheck and a fresh-CAP filtered KeyAgreement/Cipher isolation in TODO, QKB, and session handoff. No firmware source changed.
+- Validation: Refreshed the authorized PC/SC helper and confirmed 2BED (`2BED26ED20556535`) available while 8E remained absent. Ran upstream API 3.0.5 Crypto filtered to KeyAgreement/Cipher with exact reader, concurrent 180-second serial capture, 150-second client timeout, and successful temporary CAP cleanup. The filter recorded 65 executed calls: KeyAgreement 25 and Cipher 40; 50 `OK`, 15 `UNSUPPORTED_PER_SPEC`, zero `NO_MEMORY`. `git diff --check` passed. Builds and flashing were intentionally skipped because this was a diagnostic-only run on the already identified image.
+- Result: The nine `NO_MEMORY` results from the complete 466-call Crypto suite (two KeyAgreement, six Cipher, one AEADCipher) did not recur among the 65 completed fresh-CAP calls. The filtered client timed out before the plan completed, so this supports but does not prove cumulative/order-dependent resource pressure. Full Crypto also had three IV-specific `WRONG_RESULT` and one RSA SHA-512 PSS `EXC_CARDRUNTIME`, with no `EXC_RUNTIME`. Security on 8E lost transport at transient RSA private 2048 allocation and became unavailable; its temporary CAP remains for cleanup on return.
+- Decision: Isolate the nine exact memory cases individually and measure allocator/persistent-store state around first failure before changing implementation. Continue on 2BED while 8E is unavailable.
+- Commit: `pending`
+- Artifacts/logs: CSV `artifacts/results/deploy/max-crypto-full-current-20261101/isolated-memory-2BED.csv` SHA-256 `2996f7e8d5b5cc3ead35620e952b7d28c97915216c1859aee392d5ac8596cd09`; serial log `artifacts/logs/max-crypto-isolated-memory-2BED-20261101.serial.log` SHA-256 `de0b789f19b046a7ef34d0f7318771c5b972a4ac4da0ef12f6bcf6144f2df77c`; full Security CSV `artifacts/results/deploy/max-crypto-full-current-20261101/pico1.csv` SHA-256 `28f590545c6c094ed478637a4271b4232955478ad1d0c5cbbe0185e19494479b`; full Crypto CSV `artifacts/results/deploy/max-crypto-full-current-20261101/pico2.csv` SHA-256 `b9bd226b811f3391e6e8d9a9e0c754ec5c5c3af0b195b95c1561ab069e9188f8`.

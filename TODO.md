@@ -619,9 +619,21 @@ adapters, and do not change upstream applet CAP files.
   `EXC_RUNTIME`; captured serial contained no `CHOUPI:NULL_RECEIVER`. These
   observations supersede the earlier isolated-failure result for this image,
   but do not explain the old full-sweep runtime counts or prove the full areas
-  are fixed. Next run complete current-image Security and Crypto areas on the
-  identified reader, then investigate the DES-MAC8 IV `WRONG_RESULT`.
-  Artifacts and exact hashes are in `progress.md` and `.agent/HANDOFF.md`.
+  are fixed. **Full current-image recheck (2026-11-01):** Crypto completed all
+  466 calls on 2BED with 292 `OK`, 161 `UNSUPPORTED_PER_SPEC`, nine
+  `NO_MEMORY`, three `WRONG_RESULT`, and one `EXC_CARDRUNTIME`; no
+  `EXC_RUNTIME` occurred. Security on 8E stopped at transient RSA private
+  2048 allocation (`SCARD_E_NOT_TRANSACTED`) and the reader disappeared before
+  cleanup. A fresh filtered run on 2BED executed 25 KeyAgreement and 40 Cipher
+  calls: 50 `OK`, 15 `UNSUPPORTED_PER_SPEC`, no `NO_MEMORY`; the 150-second
+  client limit expired before AEADCipher calls, but temporary CAP cleanup
+  succeeded. This points toward cumulative/order-dependent memory pressure for
+  the reported constructor/key-size `NO_MEMORY` cases, but the filtered timeout
+  means it is not a complete isolation result. Capture exact first failure and
+  investigate allocator/persistent heap state before implementation changes.
+  The DES-MAC8 IV `WRONG_RESULT`, two other IV-specific wrong results, and PSS
+  SHA-512 `EXC_CARDRUNTIME` remain separate. Artifacts and exact hashes are in
+  `progress.md` and `.agent/HANDOFF.md`.
 
 ### Priority 1 — selectable Java Card firmware capabilities
 

@@ -1,5 +1,32 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Full current-image API sweep: Crypto memory failures do not reproduce in short fresh-class subset — 2026-11-01
+
+- The complete unchanged API 3.0.5 Crypto area on max_crypto Pico 2
+  `2BED26ED20556535` completed 466 calls: 292 `OK`, 161
+  `UNSUPPORTED_PER_SPEC`, nine `NO_MEMORY`, three `WRONG_RESULT`, one
+  `EXC_CARDRUNTIME`, and zero `EXC_RUNTIME`. Wrong results were three IV
+  Signature cases; the runtime exception was RSA SHA-512 PSS.
+- A newly installed Crypto CAP filtered to KeyAgreement and Cipher executed 65
+  calls (25 KeyAgreement, 40 Cipher): 50 `OK`, 15 `UNSUPPORTED_PER_SPEC`,
+  zero `NO_MEMORY`. It hit the 150-second client limit before the planned
+  filtered run finished (AEADCipher was not reached); CAP cleanup did pass.
+- **Working hypothesis, not yet established:** NO_MEMORY in a full area may
+  depend on accumulated API/suite state or persistent allocation pressure,
+  since the corresponding classes did not fail early in a fresh filtered CAP.
+  Do not increase memory or modify algorithms based only on this comparison.
+  Next use smaller, exact-case filters for the nine original failures and
+  compare ordering; capture allocator/persistent-store state around the first
+  failure.
+- The parallel Security run on 8E stopped at transient RSA private 2048
+  allocation with `SCARD_E_NOT_TRANSACTED`; that exact reader then vanished
+  from PC/SC and serial enumeration. Preserve its temporary CAP until 8E is
+  accessible again. 2BED remained available.
+- Filtered CSV SHA-256:
+  `2996f7e8d5b5cc3ead35620e952b7d28c97915216c1859aee392d5ac8596cd09`;
+  serial SHA-256:
+  `de0b789f19b046a7ef34d0f7318771c5b972a4ac4da0ef12f6bcf6144f2df77c`.
+
 ## Focused API NPEs do not reproduce on the 2026-11-01 max_crypto image
 
 - After a fresh ARM `max_crypto` build and verified physical cycle on Pico 2

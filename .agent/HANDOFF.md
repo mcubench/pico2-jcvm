@@ -2,6 +2,29 @@
 
 ## Current-image API runtime recheck — 2026-11-01
 
+**Latest full-suite update (2026-11-01):** Full API 3.0.5 Crypto on 2BED
+completed all 466 rows: 292 `OK`, 161 `UNSUPPORTED_PER_SPEC`, nine
+`NO_MEMORY`, three `WRONG_RESULT`, and one `EXC_CARDRUNTIME`; there were no
+`EXC_RUNTIME` rows. The nine memory failures include KeyAgreement/Cipher
+factory or key-size cases. A fresh filtered run for those two classes executed
+65 calls (50 `OK`, 15 `UNSUPPORTED_PER_SPEC`, no `NO_MEMORY`) and removed the
+CAP successfully, but the client hit its 150-second bound before the filtered
+plan finished; AEADCipher was not reached. This suggests suite-order or
+cumulative state pressure, but is not a full isolation proof. Crypto IV
+wrong-results and RSA SHA-512 PSS `EXC_CARDRUNTIME` remain unexplained.
+
+The full Security run assigned to 8E failed transport at transient RSA private
+2048 allocation (`SCARD_E_NOT_TRANSACTED`) after 56 `OK`, 9
+`UNSUPPORTED_PER_SPEC`, and 5 card errors; 8E then disappeared from PC/SC and
+serial enumeration. Its temporary Security CAP remains installed for cleanup
+when that exact reader returns. Keep using 2BED for current work.
+
+Filtered-run artifacts: CSV
+`artifacts/results/deploy/max-crypto-full-current-20261101/isolated-memory-2BED.csv`
+(SHA-256 `2996f7e8d5b5cc3ead35620e952b7d28c97915216c1859aee392d5ac8596cd09`);
+serial `artifacts/logs/max-crypto-isolated-memory-2BED-20261101.serial.log`
+(SHA-256 `de0b789f19b046a7ef34d0f7318771c5b972a4ac4da0ef12f6bcf6144f2df77c`).
+
 Rebuilt ARM, RISC-V, and PC `max_crypto` with bounded build jobs. ARM and
 RISC-V wrapper builds passed. The PC wrapper initially failed linking because
 two stale bytecode object files were zero bytes after an interrupted build;
