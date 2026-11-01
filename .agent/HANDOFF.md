@@ -65,10 +65,11 @@ RP2350 overlay compactor or prove physical power-cycle recovery. Logs are under
 
 Refreshed the external-test bundle at
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; it is byte-for-
-byte equal to the latest build, 2,098,176 bytes, SHA-256
-`122a172ca7a412881afaa2529f1c1c7c4a782c3adb9f91ca436f5545ca071c2c`. This
-refresh includes the subsequent compaction offset-bounds guard. Its
-README now explicitly says this image has not had a physical runtime check.
+byte equal to the latest ARM build, 2,098,176 bytes, SHA-256
+`1dc6d486f49e9688eedcdf65785f1629cc6de93b23c7931e22d577ed6696d82d`. This
+refresh includes the Signature MAC IV fix. ARM and RISC-V wrappers pass; the
+image has not been flashed or runtime-tested on hardware because the reader
+helper reports zero physical Pico devices. Its README records the limitation.
 The unchanged support manifest SHA-256 is
 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
 The binary was built from the current worktree, including pre-existing

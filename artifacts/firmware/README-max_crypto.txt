@@ -13,8 +13,12 @@ remove installed applets explicitly with GlobalPlatformPro.
 Debug persistent-GC instrumentation: disabled.
 Filesystem: snapshot v4, with copy-on-write migration from v2/v3 snapshots.
 Image size: 2,098,176 bytes
-Firmware SHA-256: 122a172ca7a412881afaa2529f1c1c7c4a782c3adb9f91ca436f5545ca071c2c
+Firmware SHA-256: 1dc6d486f49e9688eedcdf65785f1629cc6de93b23c7931e22d577ed6696d82d
 Build date: 2026-11-01
+Included update: native Signature MAC now honors the IV supplied to
+`Signature.init(key, mode, parameters, ...)`; deterministic nonzero-IV VPCD
+vectors and the three matching upstream API calls pass. See the IV validation
+record in `progress.md`.
 
 Flash
 1. Hold BOOTSEL while connecting the Pico 2 over USB.
@@ -28,10 +32,10 @@ The expected JCAlgTest support manifest is
 pico2-jcvm-max_crypto-arm-supported.csv
 SHA-256: 81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0
 
-Build validation for this image: `./tools/build arm --profile max_crypto`,
-`./tools/build riscv --profile max_crypto`, and
-`./tools/test-rp2350-fs-overlay` passed. The overlay regression includes
-repeated dynamic-package deletion/restart and randomized power-cut recovery.
+Build validation for this image: `./tools/build arm --profile max_crypto` and
+`./tools/build riscv --profile max_crypto` passed. The overlay regression
+includes repeated dynamic-package deletion/restart and randomized power-cut
+recovery; it passed before this rebuild, with no overlay source changes since.
 The build used the current worktree, including pre-existing local changes in
 `src/cap_load.cpp`; those source changes were not included in the artifact
 refresh commit, so this image is not reproducible from a clean checkout of that
