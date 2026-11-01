@@ -19396,7 +19396,7 @@
 - Validation: `./tools/test-rmi-registry` passed, including array-to-Object acceptance and instance-to-array rejection; PC, ARM, and RISC-V current-profile builds passed. USB enumeration still found no Pico devices in the VM.
 - Result: The reference guard no longer rejects an array solely because `Object` is the declared class type, while refusing non-array handles for array parameters. End-to-end cross-AID invocation remains untested.
 - Decision: Keep CTX-01 open; proceed with upstream CAP discovery and cross-context execution coverage.
-- Commit: pending
+- Commit: `d968c67`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
 
 ## 2026-11-01 Enforce SIO argument reference shape 7 minutes
