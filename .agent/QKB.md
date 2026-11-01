@@ -19,7 +19,8 @@
   restarts, and verifies unrelated data remains. A separate case injects 64
   randomized power cuts during the compacted snapshot. The latest in-place
   implementation uses no extra 64 KiB scratch table; the ARM/RISC-V
-  `max_crypto` builds pass.
+  `max_crypto` builds pass. A full-index regression also fills all 8,192 slots,
+  deletes package 56, then verifies restart leaves only an unrelated record.
 - Physical validation is pending: the approved helper currently reports zero
   Pico 2 readers. The next hardware check should flash a currently enumerated
   board, capture the finite monitor, and repeat temporary CAP deletion cycles

@@ -1,3 +1,14 @@
+## 2026-11-01 — Exercise compaction at the full overlay limit 3 minutes
+
+- Step/experiment: `pico-overlay-compaction-full-index-20261101`
+- When: '2026-11-01 10:05 CET' - '2026-11-01 10:08 CET'
+- Change: Added a fake-flash regression that fills all 8,192 overlay slots with 8,191 records owned by dynamic package 56 plus one unrelated record, deletes the package state, then verifies only the unrelated record remains after snapshot commit and restart. Updated TODO/QKB/HANDOFF.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); the new full-capacity setup, delete/compact, and restart assertions all passed. `git diff --check` passed. Firmware builds were not rerun because firmware source did not change.
+- Result: Package deletion reclaims a fully saturated file index and retains unrelated persistent data in the host fake-flash model.
+- Decision: Keep the regression. Physical installation/deletion and API-sweep validation still require an enumerated Pico.
+- Commit: `7c0c5d8` (test); progress/tracker update in the following metadata commit.
+- Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; stdout ended `TEST:SUMMARY fail=0`.
+
 ## 2026-11-01 — Guard compaction offsets and refresh max_crypto image 4 minutes
 
 - Step/experiment: `pico-overlay-compaction-offset-guard-20261101`

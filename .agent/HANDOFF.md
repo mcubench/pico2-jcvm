@@ -15,9 +15,11 @@ Parent-slot encoded records safely skip compaction.
 covers all eight dynamic package IDs, each with 128 applet-state records plus
 static and lifecycle tags, followed by deletion and restart. It preserves an
 unrelated record and passes 64 randomized snapshot power cuts with old-or-new
-recovery. The compactor checks each record offset and encoded-key length before
-reading payload bytes and has no error return after index permutation begins.
-ARM and RISC-V `max_crypto` builds pass. Latest ARM ELF end is
+recovery. A further test fills all 8,192 overlay slots, deletes package 56,
+and verifies restart with only an unrelated record left. The compactor checks
+each record offset and encoded-key length before reading payload bytes and has
+no error return after index permutation begins. ARM and RISC-V `max_crypto`
+builds pass. Latest ARM ELF end is
 `0x10100038`; BSS end is
 `0x20048214`. The latest source change has not been physically flashed: the
 authorized helper currently reports zero Pico readers, and an earlier cycle

@@ -618,9 +618,11 @@ adapters, and do not change upstream applet CAP files.
   operation safely retain the old table. Host regression now covers all eight
   dynamic package IDs, with 128 applet-state records plus static and lifecycle
   records per ID, restarting after each deletion. It also passed 64 randomized
-  snapshot power cuts; unrelated data remained intact. ARM/RISC-V max_crypto
-  builds passed. Physical validation of the latest build remains pending
-  because no Pico reader is currently enumerated.
+  snapshot power cuts; unrelated data remained intact. A full-capacity case
+  filled all 8,192 slots, deleted package 56, and recovered across restart
+  with only the unrelated record left. ARM/RISC-V max_crypto builds passed.
+  Physical validation of the latest build remains pending because no Pico
+  reader is currently enumerated.
 - [ ] Validate long API sweeps with package-delete compaction on hardware.
   Confirm that repeated upstream CAP install/run/uninstall cycles reclaim index
   slots and keep the full API 3.0.5 Crypto run below both payload and 8,192-file
