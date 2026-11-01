@@ -17153,7 +17153,7 @@
   failure remains open.
 - Decision: Continue investigating current VPCD INSTALL failure and remaining
   prioritized TODO items.
-- Commit: pending.
+- Commit: `f2f0859` (proxy retention regression); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-emulator-20261030T222347Z.log`.
 
 ## 2026-10-30 Refresh max-crypto ARM test image 8 minutes
