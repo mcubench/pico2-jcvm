@@ -2,6 +2,9 @@
 
 ## Current priority: finish ARCH-08 physical USB progress acceptance
 
+The high-level project summary in `STATUS.md` was reconciled with current TODO,
+physical API, and USB-enumeration evidence in commit `9364a9b`.
+
 ARCH-09 production progress/dispatch coverage is implemented in the latest
 worktree. `src/ccid_device.cpp` calls shared production helpers in
 `src/ccid_progress_flow.hpp` for pending-message dispatch, guarded USB progress,

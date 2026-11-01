@@ -19187,5 +19187,5 @@
 - Validation: Cross-checked the new summary against `TODO.md`, `.agent/HANDOFF.md`, recent commits, and the current elevated USB/PCSC results. `git diff --check -- STATUS.md` passed. No software tests were needed for this documentation-only change.
 - Result: The file now explicitly distinguishes previous passing physical monitors from the current VM state, where `lsusb -d 2e8a:` found no devices and `pcsc_scan -r` listed only Virtual PCD readers.
 - Decision: Keep the overall project active; next prioritize offline work while restoring physical USB passthrough remains an external gate.
-- Commit: `<implementation commit SHA recorded in follow-up metadata commit>`
+- Commit: `9364a9b` (`Refresh project status snapshot`)
 - Artifacts/logs: `STATUS.md`; host USB/PCSC command output from this session; no new log artifact.
