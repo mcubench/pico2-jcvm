@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_root="${repo_root}/tools/tests/sio_cross_aid_fixture"
+build_dir="${repo_root}/build/sio-cross-aid-fixture"
+kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
+
+[[ -x "${java8_home}/bin/javac" ]] || {
+  printf 'ERROR: Java 8 compiler not found: %s\n' "${java8_home}" >&2
+  exit 1
+}
+rm -rf "${build_dir}"
+mkdir -p "${build_dir}"/{contract-classes,contract-cap,contract-exp,service-classes,service-cap,client-classes,client-cap}
+
+"${repo_root}/tools/env" "${java8_home}/bin/javac" \
+  -source 1.7 -target 1.7 -Xlint:-options \
+  -classpath "${kit}/lib/api_classic.jar" \
+  -d "${build_dir}/contract-classes" "${source_root}/contract"/*.java
+
+converter=(env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}"
+  "${repo_root}/tools/env" java "-Duser.home=${build_dir}" "-Djc.home=${kit}"
+  -cp "${kit}/lib/tools.jar"
+  com.sun.javacard.converter.Main -nobanner
+  -classdir "${build_dir}/contract-classes"
+  -exportpath "${kit}/api_export_files")
+"${converter[@]}" -d "${build_dir}/contract-cap" -out CAP \
+  sio.contract 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x02 1.0
+"${converter[@]}" -d "${build_dir}/contract-exp" -out EXP \
+  sio.contract 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x02 1.0
+
+"${repo_root}/tools/env" "${java8_home}/bin/javac" \
+  -source 1.7 -target 1.7 -Xlint:-options \
+  -classpath "${kit}/lib/api_classic.jar:${build_dir}/contract-classes" \
+  -d "${build_dir}/service-classes" "${source_root}/service"/*.java
+env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}" \
+  "${repo_root}/tools/env" java "-Duser.home=${build_dir}" \
+  "-Djc.home=${kit}" -cp "${kit}/lib/tools.jar" \
+  com.sun.javacard.converter.Main -nobanner \
+  -classdir "${build_dir}/service-classes" \
+  -exportpath "${kit}/api_export_files:${build_dir}/contract-exp" \
+  -d "${build_dir}/service-cap" -out CAP \
+  -applet 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03:0x01 \
+  sio.service.ServiceApplet sio.service \
+  0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03 1.0
+
+"${repo_root}/tools/env" "${java8_home}/bin/javac" \
+  -source 1.7 -target 1.7 -Xlint:-options \
+  -classpath "${kit}/lib/api_classic.jar:${build_dir}/contract-classes" \
+  -d "${build_dir}/client-classes" "${source_root}/client"/*.java
+env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}" \
+  "${repo_root}/tools/env" java "-Duser.home=${build_dir}" \
+  "-Djc.home=${kit}" -cp "${kit}/lib/tools.jar" \
+  com.sun.javacard.converter.Main -nobanner \
+  -classdir "${build_dir}/client-classes" \
+  -exportpath "${kit}/api_export_files:${build_dir}/contract-exp" \
+  -d "${build_dir}/client-cap" -out CAP \
+  -applet 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x04:0x01 \
+  sio.client.ClientApplet sio.client \
+  0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x04 1.0
+
+python3 - "${build_dir}" <<'PY'
+from pathlib import Path
+from zipfile import ZipFile
+import sys
+
+root = Path(sys.argv[1])
+caps = [root / "contract-cap/sio/contract/javacard/contract.cap",
+        root / "service-cap/sio/service/javacard/service.cap",
+        root / "client-cap/sio/client/javacard/client.cap"]
+for path in caps:
+    if not path.is_file():
+        raise SystemExit(f"CAP fixture missing: {path}")
+    with ZipFile(path) as cap:
+        names = set(cap.namelist())
+        if "Descriptor.cap" not in {Path(name).name for name in names}:
+            raise SystemExit(f"CAP fixture has no Descriptor component: {path}")
+print("SIO_CROSS_AID_FIXTURE:PASS " + " ".join(str(p) for p in caps))
+PY

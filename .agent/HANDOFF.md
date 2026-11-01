@@ -12,29 +12,37 @@ client proxies. Same-context calls preserve the caller's complete operand
 stack. Proxy casts validate both the requested Shareable interface and the
 server class implementation.
 
+The test-only three-package fixture now passes the cross-AID VPCD path end to
+end: its client sends byte/short arguments, a JCRE-global AID reference and a
+null array; the service checks `getPreviousContextAID()` and its own AID and
+returns `0x4567`. The unchanged upstream `AlgTestApiCore_305.cap` physical
+result below still covers only the same-applet route. A physical attempt on
+`2BED26ED20556535` loaded the contract and service package, but service applet
+installation returned internal stage 9 / `6F00` before the probe could run.
+The authorized reader refresh and `lsusb` saw only this running CCID board
+(`2e8a:0009`), despite the user reporting all three boards in BOOTSEL; no board
+was flashed during this attempt. Cross-AID behavior is therefore not yet
+physically validated.
+
 The focused `tools/test-rmi-registry` regression and current-profile PC, ARM,
-and RISC-V builds pass. The unchanged upstream `AlgTestApiCore_305.cap` has a
-positive same-applet Shareable sub-interface call, but no cross-AID service
-fixture has been found. Descriptor lookup and cross-AID execution therefore
-remain unvalidated end to end. A recent VPCD multipackage run timed out during
-transaction-probe reinstall; retain its logs and do not count it as a pass.
-Physical access is now working: all three RP2350 BOOTSEL devices enumerated and
-were identified sequentially. Full ARM CHOUPI firmware was flashed to
-`8E464F4E2BBC0A19`; its finite serial cycle passed. The unchanged
-`AlgTestApiCore_305.cap` then uploaded and completed 291 Core calls with stage
-status OK; its positive same-applet Shareable sub-interface row returned
-`1/OK`. The CAP was cleaned up successfully. This is hardware coverage for the
-same-applet path only, not cross-AID argument dispatch. No CAP files were
-created or changed.
+and RISC-V builds pass. Never alter upstream CAPs. The physical test script now
+checks GET STATUS after loading the contract so it stops if GPPro reports LOAD
+success without making the dependency resident. See the current QKB entry for
+the unresolved physical install exception and existing partial test package.
+Earlier same-applet physical result: full ARM CHOUPI firmware on
+`8E464F4E2BBC0A19` passed finite serial output; unchanged
+`AlgTestApiCore_305.cap` completed 291 Core calls and cleaned up. Its positive
+Shareable sub-interface row returned `1/OK`.
 
 Logs: `artifacts/logs/cycle-choupi-20261101T201412Z.log` (SHA-256
 `b24d090271acf05a2b2cfa020394d116f25c4d68fb4efdb01d35f45b1252d4fe`) and
 `artifacts/results/shareable-physical-core-8E464F4E2BBC0A19-20261101.csv`
 (SHA-256 `6045b2d17131fcc7739e437c19bcab153f2164fa76dd8ffa15f7f89414880713`).
 
-Next: find an unchanged upstream CAP pair that exercises cross-AID SIO; then
-test descriptor dispatch, caller context/AID restoration, exception unwinding,
-proxy roots through GC/reset/delete, and the firewall cases. Keep CTX-01 open.
+Next: diagnose stage-9 physical applet installation, then install the three
+fixture CAPs on a clean physical card and run the cross-AID APDU. Continue with
+exception unwinding, proxy roots through GC/reset/delete, and denied firewall
+cases. Keep CTX-01 open; the VPCD success is not physical acceptance.
 
 ## Proxy cast validation and integration recheck
 

@@ -1,5 +1,32 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Cross-AID physical fixture install reaches internal stage 9 — 2026-11-01
+
+- **Observed:** The test-only contract CAP package
+  `A000000151000002` loads on Pico 2 `2BED26ED20556535` and appears in GPPro
+  GET STATUS. The service package `A000000151000003` is also present, but
+  installing its applet through `gp --create` returns an extended install
+  response with failure stage `09`, VM status `0000`, exception/opcode/PC all
+  zero, and final SW `6F00`. GET STATUS shows no selectable service applet.
+  Deleting this test package previously returned `6581`; preserve the card's
+  other packages and do not treat the cleanup failure as unrelated firmware
+  corruption.
+- **Earlier sequence:** Initial `gp --install service.cap` returned `6A80`
+  during the final LOAD block. GPPro had printed success for the contract LOAD,
+  but GET STATUS did not show that package. Explicitly reloading the contract
+  made it resident; a subsequent service install progressed past import
+  validation and failed with stage 9. The physical test script now verifies
+  contract residency immediately after LOAD to catch this earlier condition.
+- **Limit/root cause:** Stage 9 is the catch-all around static initialization,
+  runtime applet installation, and install-journal publication. Zero VM status
+  and zero VM-exception telemetry do not identify which C++ exception or phase
+  failed. The same three-package CAP fixture passes on fresh PC VPCD storage
+  (`45679000`, 4/4), so do not attribute stage 9 to CAP generation or claim the
+  cross-AID VM path physically verified. Next add narrow install-phase
+  diagnostics or repeat on a clean physical card; the current VM view exposes
+  only 2BED as runtime `2e8a:0009`, despite the user reporting three devices in
+  BOOTSEL.
+
 ## CAP Directory sizes describe the original CAP when GP LOAD omits components — 2026-11-01
 
 - **Symptom:** A new strict Directory check caused a VPCD multipackage INSTALL

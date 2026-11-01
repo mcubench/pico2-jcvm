@@ -19431,3 +19431,13 @@
 - Decision: Keep CTX-01 open. Continue looking for an unchanged upstream CAP capable of cross-AID service invocation; retain local-reference rejection until ownership and firewall semantics are defined.
 - Commit: `9e05b90`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
+# 2026-11-01 — Cross-AID Shareable fixture and physical install diagnosis 17 minutes
+
+- Step/experiment: `ctx01-cross-aid-sio-20261101`
+- When: '2026-11-01 21:27 UTC' - '2026-11-01 21:44 UTC'
+- Change: Added a test-only three-package CAP source fixture, VPCD end-to-end regression and exact-reader physical probe. Fixed server AID versus caller AID forwarding and Descriptor `ACC_INTERFACE` parsing; added fail-closed checks for invalid interface metadata and stale server references. The physical script verifies its contract package appears in GET STATUS before proceeding. Updated CTX-01 status, QKB and handoff.
+- Validation: `./tools/test-rmi-registry` passed. `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. Final `SIO_CROSS_AID_REUSE_FIXTURE=1 python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 4/4; response `45679000`, including byte/short arguments, global AID, null array, previous-context AID and service AID checks. `bash -n` and scoped `git diff --check` passed.
+- Result: Positive cross-AID `invokeinterface` and context/AID restoration are now verified end to end on VPCD. Physical 2BED contract LOAD was confirmed in GET STATUS, but service installation failed at internal stage 9 (`6F00`; VM status, exception and PC telemetry zero); no physical cross-AID APDU ran. Package deletion returned `6581`. Current USB view exposes only runtime reader `2BED26ED20556535` (`2e8a:0009`), not the reported BOOTSEL boards, so no new flash was attempted. Existing Rust/upstream and packed-member build warnings remain.
+- Decision: Keep CTX-01 open. Diagnose the stage-9 physical install failure and repeat on a clean identified card before claiming hardware SIO coverage; then test exception unwinding, proxy roots, reset/delete and denied firewall paths.
+- Commit: implementation and this record included in this logical-step commit; SHA is recorded in Git history.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T214236Z.log`; physical GPPro logs under `build/sio-cross-aid-fixture/physical-gp-*20261101T212154Z.log` and `artifacts/logs/sio-cross-aid-gppro-*.log`.

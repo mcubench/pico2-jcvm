@@ -232,14 +232,17 @@ Archive text is historical evidence, not current device state or priorities.
   fail closed pending ownership translation.
   The local signature-to-typed-local conversion has focused tests for
   byte/short layout, int word order, null/non-null references, and argument
-  count mismatch. The new argument path builds for PC/ARM/RISC-V but has no
-  positive cross-AID CAP-level test yet. The positive same-applet call passes
-  on physical Pico 2 `8E464F4E2BBC0A19` with unchanged `AlgTestApiCore_305.cap`;
-  cross-AID ownership, context restoration and its firewall path remain
-  unverified end to end. Never return raw server heap references to clients.
-  Acceptance: positive cross-AID and denied-call fixtures, correct context/AID
-  restoration, stable roots across GC and reset/delete, no cross-heap reference
-  leaks; follow with unchanged upstream Multi CAP integration and physical checks.
+  count mismatch. A new test-only three-package fixture now passes a positive
+  cross-AID VPCD call with byte/short arguments, a global AID argument, and a
+  null array; it verifies `getPreviousContextAID()` and the server AID and
+  returns `4567`. On physical 2BED, CAP loading reached the service install,
+  but installation returned `6F00` (internal stage 9); this does not validate
+  the cross-AID call. The unchanged same-applet call still passes on physical
+  Pico 2 `8E464F4E2BBC0A19`. Never return raw server heap references to clients.
+  Acceptance: physical positive cross-AID fixture; denied-call fixtures; correct
+  context/AID restoration; stable roots across GC and reset/delete; no cross-heap
+  reference leaks; then unchanged upstream Multi CAP integration and physical
+  checks.
   General cross-context calls and logical-channel policy remain unimplemented;
   basic channel 0 is the current assignment. No blanket firewall acceptance yet.
   Evidence: current HANDOFF, `tools/test-rmi-registry`, context/proxy progress

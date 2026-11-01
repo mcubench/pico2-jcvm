@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-physical 'exact reader name'"
+require_command timeout
+reader_name="$1"
+root="${repo_root}"
+build_dir="${root}/build/sio-cross-aid-fixture"
+gp_jar="${root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+probe_source="${root}/tools/tests/sio_cross_aid_physical_probe/SioCrossAidPhysicalProbe.java"
+probe_classes="${build_dir}/physical-probe-classes"
+contract_cap="${build_dir}/contract-cap/sio/contract/javacard/contract.cap"
+service_cap="${build_dir}/service-cap/sio/service/javacard/service.cap"
+client_cap="${build_dir}/client-cap/sio/client/javacard/client.cap"
+
+for input in "${gp_jar}" "${probe_source}"; do
+  [[ -s "${input}" ]] || die "required physical-test input is missing: ${input}"
+done
+"${root}/tools/build-sio-cross-aid-fixture"
+mkdir -p "${probe_classes}" "${root}/artifacts/logs"
+"${root}/tools/env" javac -d "${probe_classes}" "${probe_source}"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log="${root}/artifacts/logs/sio-cross-aid-physical-${timestamp}.log"
+gp_list="${build_dir}/physical-gp-list-${timestamp}.log"
+gp_install="${build_dir}/physical-gp-install-${timestamp}.log"
+gp_delete="${build_dir}/physical-gp-delete-${timestamp}.log"
+gp=("${root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
+
+exec > >(tee "${log}") 2>&1
+printf 'SIO_PHYSICAL:START reader=%s\n' "${reader_name}"
+PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+
+fixture_aids=(A000000151000002 A000000151000003 A00000015100000301 \
+              A000000151000004 A00000015100000401)
+timeout --signal=TERM --kill-after=5s 45s "${gp[@]}" --list \
+  >"${gp_list}" 2>&1 || die "initial GPPro list failed; see ${gp_list}"
+for aid in "${fixture_aids[@]}"; do
+  if grep -Fq "${aid}" "${gp_list}"; then
+    die "fixture AID ${aid} is already present; refusing to replace it"
+  fi
+done
+
+cleanup() {
+  local status=$?
+  trap - EXIT
+  local cleanup_status=0
+  if timeout --signal=TERM --kill-after=5s 45s "${gp[@]}" --list \
+      >"${gp_list}" 2>&1; then
+    for aid in A00000015100000401 A000000151000004 \
+               A00000015100000301 A000000151000003 A000000151000002; do
+      if grep -Fq "${aid}" "${gp_list}"; then
+        if ! timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+             --delete "${aid}" >>"${gp_delete}" 2>&1; then
+          printf 'SIO_PHYSICAL:CLEANUP_FAIL aid=%s\n' "${aid}"
+          cleanup_status=1
+        fi
+        if ! timeout --signal=TERM --kill-after=5s 45s "${gp[@]}" --list \
+             >"${gp_list}" 2>&1; then
+          cleanup_status=1
+          break
+        fi
+      fi
+    done
+  else
+    cleanup_status=1
+  fi
+  if (( cleanup_status == 0 )); then
+    for aid in "${fixture_aids[@]}"; do
+      if grep -Fq "${aid}" "${gp_list}"; then cleanup_status=1; fi
+    done
+  fi
+  if (( cleanup_status == 0 )); then
+    printf 'SIO_PHYSICAL:CLEANUP result=PASS\n'
+  else
+    printf 'SIO_PHYSICAL:CLEANUP result=FAIL list=%s delete=%s\n' \
+      "${gp_list}" "${gp_delete}"
+    status=1
+  fi
+  exit "${status}"
+}
+trap cleanup EXIT
+
+timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --load "${contract_cap}" \
+  >"${gp_install}" 2>&1 || die "contract package LOAD failed; see ${gp_install}"
+printf 'SIO_PHYSICAL:LOAD package=A000000151000002 result=PASS\n'
+timeout --signal=TERM --kill-after=5s 45s "${gp[@]}" --list \
+  >"${gp_list}" 2>&1 || die "GPPro list after contract LOAD failed; see ${gp_list}"
+if ! grep -Fq 'PKG: A000000151000002' "${gp_list}"; then
+  die "contract LOAD returned success but package is absent from GET STATUS; see ${gp_list}"
+fi
+printf 'SIO_PHYSICAL:VERIFY package=A000000151000002 resident=1 result=PASS\n'
+timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${service_cap}" \
+  >>"${gp_install}" 2>&1 || die "service package INSTALL failed; see ${gp_install}"
+printf 'SIO_PHYSICAL:INSTALL package=A000000151000003 applet=A00000015100000301 result=PASS\n'
+timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${client_cap}" \
+  >>"${gp_install}" 2>&1 || die "client package INSTALL failed; see ${gp_install}"
+printf 'SIO_PHYSICAL:INSTALL package=A000000151000004 applet=A00000015100000401 result=PASS\n'
+
+timeout --signal=TERM --kill-after=5s 90s "${root}/tools/env" java \
+  -cp "${probe_classes}" SioCrossAidPhysicalProbe "${reader_name}"
+printf 'SIO_PHYSICAL:PASS log=%s\n' "${log#${root}/}"

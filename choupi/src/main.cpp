@@ -1107,17 +1107,42 @@ jcvm::Context *choupi_vm_find_or_restore_applet_context(
 }
 
 jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
-    jcvm::Context &client_context, const jcvm::jref_t client_aid,
+    jcvm::Context &client_context, const jcvm::jref_t server_aid_reference,
     const int8_t parameter) {
   uint8_t server_aid[16]{};
   uint8_t server_aid_length = 0;
   uint8_t aid_package_id = 0;
   uint16_t aid_class_index = 0;
   if (!jcvm::Heap::describeGlobalAIDObject(
-          client_aid, server_aid, server_aid_length, aid_package_id,
+          server_aid_reference, server_aid, server_aid_length, aid_package_id,
           aid_class_index)) {
+    TRACE_JCVM_DEBUG("SIO_LOOKUP invalid server AID reference");
     return jcvm::jref_t{};
   }
+
+  // The API argument identifies the service applet. Its override receives
+  // the identity of the requesting applet, which must come from the active
+  // client Context rather than from that server-AID argument.
+  uint8_t client_aid[16]{};
+  uint8_t client_aid_length = 0;
+  if (!client_context.copyAppletAID(client_aid, client_aid_length)) {
+    TRACE_JCVM_DEBUG("SIO_LOOKUP missing client AID context=%u",
+                     static_cast<unsigned>(client_context.getAppletID()));
+    return jcvm::jref_t{};
+  }
+  TRACE_JCVM_DEBUG("SIO_LOOKUP client=%02X%02X%02X%02X%02X server=%02X%02X%02X%02X%02X",
+                   client_aid[0], client_aid[1], client_aid[2], client_aid[3],
+                   client_aid[4], server_aid[0], server_aid[1], server_aid[2],
+                   server_aid[3], server_aid[4]);
+  jcvm::jref_t client_aid_reference = jcvm::Heap::findGlobalAIDObject(
+      client_aid, client_aid_length);
+  if (client_aid_reference.isNullPointer()) {
+    client_aid_reference = jcvm::Heap::addGlobalAIDObject(
+        client_aid, client_aid_length,
+        static_cast<jcvm::jpackage_ID_t>(aid_package_id),
+        static_cast<jcvm::jclass_index_t>(aid_class_index));
+  }
+  client_context.setAppletAIDObjectRef(client_aid_reference);
 
   jcvm::Context *server_context =
       choupi_vm_find_or_restore_applet_context(server_aid, server_aid_length);
@@ -1172,13 +1197,17 @@ jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
 
   const jcvm::InterpretorInitialLocal initial_locals[] = {
       {jcvm::InterpretorLocalType::Reference, applet_reference.compact()},
-      {jcvm::InterpretorLocalType::Reference, client_aid.compact()},
+      {jcvm::InterpretorLocalType::Reference,
+       client_aid_reference.compact()},
       {jcvm::InterpretorLocalType::Byte,
        static_cast<uint8_t>(parameter)}};
   jcvm::Interpretor interpretor(
       *server_context, method.second, method.first.getPackageID(),
       initial_locals, sizeof(initial_locals) / sizeof(initial_locals[0]), true);
-  if (interpretor.run() != 0x9000) return jcvm::jref_t{};
+  const uint16_t lookup_status = interpretor.run();
+  TRACE_JCVM_DEBUG("SIO_LOOKUP override status=%04X",
+                   static_cast<unsigned>(lookup_status));
+  if (lookup_status != 0x9000) return jcvm::jref_t{};
 
   jcvm::jref_t server_reference;
   if (server_context == &client_context) {
@@ -1188,6 +1217,7 @@ jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
     return jcvm::jref_t{};
   }
   if (server_reference.isNullPointer()) {
+    TRACE_JCVM_DEBUG("SIO_LOOKUP override returned null");
     return jcvm::jref_t{};
   }
   if (server_reference.isArray() || server_reference.isGlobalInstance()) {
@@ -1208,8 +1238,9 @@ jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
           proxy, server_aid, server_aid_length, server_reference)) {
     throw jcvm::Exceptions::SecurityException;
   }
-  (void)aid_package_id;
-  (void)aid_class_index;
+  TRACE_JCVM_DEBUG("SIO_LOOKUP created proxy=%04X server_ref=%04X",
+                   static_cast<unsigned>(proxy.compact()),
+                   static_cast<unsigned>(server_reference.compact()));
   return proxy;
 }
 

@@ -53,6 +53,10 @@
 namespace jcvm {
 
 namespace {
+// Descriptor access_flags use java.lang.reflect.Modifier bit values, unlike
+// the compact Class component flags used by JC_CAP_CLASS_ACC_INTERFACE.
+constexpr uint8_t JC_CAP_DESCRIPTOR_ACC_INTERFACE = 0x80;
+
 bool getShareableMethodSignature(
     const Package &package, const jc_cap_interface_info *interface_info,
     const uint8_t method_token, std::array<uint8_t, 128> &nibbles,
@@ -77,7 +81,8 @@ bool getShareableMethodSignature(
     const auto *class_descriptor =
         reinterpret_cast<const jc_cap_class_descriptor_info *>(cursor);
     const bool is_interface =
-        (class_descriptor->access_flags & JC_CAP_CLASS_ACC_INTERFACE) != 0;
+        (class_descriptor->access_flags & JC_CAP_DESCRIPTOR_ACC_INTERFACE) !=
+        0;
     const bool matches_interface =
         is_interface &&
         cp.classref2interface(class_descriptor->this_class_ref).second ==
@@ -921,8 +926,19 @@ void Bytecodes::bc_invokeinterface() {
   // its declared Shareable interface in the server applet's context; never
   // interpret the placeholder object's class or fields in the client heap.
   if (context.isShareableProxy(objectref)) {
+    TRACE_JCVM_DEBUG("SIO_INVOKE proxy=%04X nargs=%u method=%u",
+                     static_cast<unsigned>(objectref.compact()),
+                     static_cast<unsigned>(nargs),
+                     static_cast<unsigned>(interface_method));
     auto interface_info =
         cp_handler.classref2interface(interface_ref);
+    if (interface_info.second == nullptr ||
+        IS_CLASS(reinterpret_cast<const uint8_t *>(interface_info.second))) {
+      throw Exceptions::SecurityException;
+    }
+    TRACE_JCVM_DEBUG("SIO_INVOKE interface flags=%02X token=%u",
+                     static_cast<unsigned>(interface_info.second->flags),
+                     static_cast<unsigned>(interface_method));
     if ((interface_info.second->flags & JC_CAP_CLASS_ACC_SHAREABLE) == 0) {
       throw Exceptions::SecurityException;
     }
@@ -932,29 +948,30 @@ void Bytecodes::bc_invokeinterface() {
     jref_t server_reference;
     if (!context.getShareableProxy(objectref, server_aid,
                                    server_aid_length, server_reference)) {
+      TRACE_JCVM_DEBUG("SIO_INVOKE proxy metadata missing");
       throw Exceptions::SecurityException;
     }
+    TRACE_JCVM_DEBUG("SIO_INVOKE target AID len=%u %02X%02X%02X%02X%02X%02X%02X%02X%02X ref=%04X",
+                     static_cast<unsigned>(server_aid_length), server_aid[0],
+                     server_aid[1], server_aid[2], server_aid[3], server_aid[4],
+                     server_aid[5], server_aid[6], server_aid[7], server_aid[8],
+                     static_cast<unsigned>(server_reference.compact()));
     Context *server_context =
         choupi_vm_find_or_restore_applet_context(server_aid,
                                                  server_aid_length);
     if (server_context == nullptr) {
+      TRACE_JCVM_DEBUG("SIO_INVOKE target context missing");
       throw Exceptions::SecurityException;
     }
+    TRACE_JCVM_DEBUG("SIO_INVOKE client_context=%u server_context=%u",
+                     static_cast<unsigned>(context.getAppletID()),
+                     static_cast<unsigned>(server_context->getAppletID()));
     const auto server_object =
         server_context->getHeap().getInstance(server_reference);
-    Package server_package(server_object->getPackageID());
-    const auto target_interface = cp_handler.classref2interface(interface_ref);
-    const auto target_type = std::make_pair(
-        target_interface.first,
-        reinterpret_cast<const uint8_t *>(target_interface.second));
-    const auto *server_class =
-        ConstantPool_Handler(server_package)
-            .getClassFromClassIndex(server_object->getClassIndex());
-    const auto source_type = std::make_pair(
-        server_package, reinterpret_cast<const uint8_t *>(server_class));
-    if (Class_Handler::docheckcast(source_type, target_type) != TRUE) {
+    if (server_object == nullptr) {
       throw Exceptions::SecurityException;
     }
+    Package server_package(server_object->getPackageID());
     ConstantPool_Handler server_cp(server_package);
     const auto server_class_ref = server_cp.getClassRefFromClassIndex(
         server_object->getClassIndex());
@@ -962,6 +979,10 @@ void Bytecodes::bc_invokeinterface() {
         Class_Handler(server_package).getImplementedInterfaceMethodOffset(
             server_class_ref, interface_ref, interface_method, false,
             context.getCurrentPackage());
+    TRACE_JCVM_DEBUG("SIO_INVOKE target method package=%u offset=%u nargs=%u",
+                     static_cast<unsigned>(target_method.first.getPackageID()),
+                     static_cast<unsigned>(target_method.second),
+                     static_cast<unsigned>(nargs));
     Method_Handler target_handler(*server_context);
     target_handler.setPackage(target_method.first);
     if (target_handler.getArgumentCount(target_method.second) != nargs) {
@@ -986,6 +1007,7 @@ void Bytecodes::bc_invokeinterface() {
     if (!getShareableMethodSignature(
             interface_info.first, interface_info.second, interface_method,
             signature_nibbles, signature_nibble_count)) {
+      TRACE_JCVM_DEBUG("SIO_INVOKE descriptor lookup failed");
       throw Exceptions::SecurityException;
     }
 
@@ -994,8 +1016,12 @@ void Bytecodes::bc_invokeinterface() {
     if (!buildShareableInitialLocals(
             signature_nibbles.data(), signature_nibble_count, nargs,
             server_reference, stack, initial_locals, initial_local_count)) {
+      TRACE_JCVM_DEBUG("SIO_INVOKE argument marshalling failed nibbles=%u",
+                       static_cast<unsigned>(signature_nibble_count));
       throw Exceptions::SecurityException;
     }
+    TRACE_JCVM_DEBUG("SIO_INVOKE marshalled locals=%u",
+                     static_cast<unsigned>(initial_local_count));
 
     // Pop all caller words only after validation and copying succeeded.
     for (uint16_t word = 0; word < nargs; ++word) {
@@ -1006,6 +1032,10 @@ void Bytecodes::bc_invokeinterface() {
         target_method.first.getPackageID(), initial_locals.data(),
         initial_local_count);
     const uint16_t status = server_interpretor.run();
+    TRACE_JCVM_DEBUG("SIO_INVOKE server status=%04X return_kind=%u",
+                     static_cast<unsigned>(status),
+                     static_cast<unsigned>(
+                         server_context->getStack().getRootReturnKind()));
     if (status != 0x9000) {
       throw Exceptions::SecurityException;
     }
