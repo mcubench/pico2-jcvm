@@ -50,6 +50,8 @@ Validation artifacts:
 - VPCD restart log: `artifacts/logs/host-vpcd-multipackage-restart-20261101T125822Z.log`
   SHA-256 `f6d33d34819dfb43099a2aa92b0450f953909f573247b2e583550b27064ee8ee`.
 - Physical post-delete log: `artifacts/logs/physical-delete-reselect-8E464F4E2BBC0A19-20261101.log`.
+- Current finite monitor: `artifacts/logs/monitor-choupi-8E464F4E2BBC0A19-20261101.log`
+  SHA-256 `b054d15da01d989b53cb46e9faf7b9acc36d1836760bcfc00ae002ab1863703a`.
 - Finite runtime monitor: `artifacts/logs/cycle-choupi-20261101T125044Z.log`
   SHA-256 `2482238cbfd095886868f14b4e05f662ab0c69b4478f906c0515dd4cf9689f9b`.
 - ARM UF2 SHA-256 `8d341848a4e54e1fd29de067ad0f77888c729726cf72e9724020c088e40dbe02`
