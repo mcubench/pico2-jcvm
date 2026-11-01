@@ -6,7 +6,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); the new full-capacity setup, delete/compact, and restart assertions all passed. `git diff --check` passed. Firmware builds were not rerun because firmware source did not change.
 - Result: Package deletion reclaims a fully saturated file index and retains unrelated persistent data in the host fake-flash model.
 - Decision: Keep the regression. Physical installation/deletion and API-sweep validation still require an enumerated Pico.
-- Commit: `7c0c5d8` (test); progress/tracker update in the following metadata commit.
+- Commit: `7c0c5d8` (test); `b112c04` (progress/tracker update).
 - Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; stdout ended `TEST:SUMMARY fail=0`.
 
 ## 2026-11-01 — Guard compaction offsets and refresh max_crypto image 4 minutes
