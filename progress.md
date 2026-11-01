@@ -19388,10 +19388,10 @@
 - Commit: `ffb94ad`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
 
-## 2026-11-01 Preserve array-to-Object SIO compatibility 6 minutes
+## 2026-11-01 Preserve array-to-Object SIO compatibility 8 minutes
 
 - Step/experiment: `shareable-array-object-argument-compat-20261101`
-- When: '2026-11-01 20:57 CET' - '2026-11-01 21:03 CET'
+- When: '2026-11-01 20:57 CET' - '2026-11-01 21:05 CET'
 - Change: Adjusted SIO reference-shape validation to preserve Java assignability: array-typed parameters require array references, while JCRE-global arrays remain valid for `Object` parameters. The CAP verifier is responsible for the declared class/interface relationship; applet-local references remain rejected. Updated tests, CTX-01, QKB, and handoff.
 - Validation: `./tools/test-rmi-registry` passed, including array-to-Object acceptance and instance-to-array rejection; PC, ARM, and RISC-V current-profile builds passed. USB enumeration still found no Pico devices in the VM.
 - Result: The reference guard no longer rejects an array solely because `Object` is the declared class type, while refusing non-array handles for array parameters. End-to-end cross-AID invocation remains untested.
