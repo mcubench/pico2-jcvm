@@ -19110,5 +19110,5 @@
 - Validation: `./tools/build-pc --profile current`, `./tools/build arm`, `./tools/build riscv`, `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage`, `python3 -m py_compile tools/tests/pc_vpcd_multipackage_test.py` passed. Multipackage suite reported `TEST:SUMMARY pass=46 fail=0`. `git diff --check` reports only pre-existing trailing whitespace in unrelated `AGENTS.md:52`. `sudo -n /usr/local/sbin/pico2-pcsc-reader` returned `found 0`; hardware test was skipped.
 - Result: Cross-AID transient lifecycle regression passes with a final empty registry. ARM produced the full `build/arm/pico2_choupi.uf2`; RISC-V wrapper produced the VM-core smoke image. Post-delete SELECT of a surviving applet remains an open VPCD disconnect; no hardware behavior was assessed.
 - Decision: Keep the post-delete VPCD session transition as the next diagnostic. Do not claim hardware validation or that the broader firewall/logical-channel work is complete.
-- Commit: pending; record implementation commit SHA after commit.
+- Commit: `9c1e328` (`Retain bounded applet contexts across selection`)
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T120306Z.log` SHA-256 `bfaa4c1981b43efef70556259553e462f2b5bc2b119b128d187c5c2792f61057`; restart/reject logs share timestamp `20261101T120306Z`.
