@@ -47,6 +47,18 @@ profile UF2 hashes are `d36b6128fc2caea130e689614a12d62906ac46fa6add30085b253aa4
 Windows flashing, PC/SC and client results remain pending. This bundle is in
 the ignored `build/external-test/` directory.
 
+Current-source PC VPCD known-answer revalidation also passed after the bundle
+refresh: symmetric tests ended `TEST:SUMMARY pass=81 fail=0` and
+`cipher_vectors=32 mac_vectors=47 iv_vectors=6`; asymmetric tests ended
+`TEST:SUMMARY pass=99 fail=0` and `asymmetric_vectors=97`. The initial
+restricted symmetric invocation failed at local socket creation; the same
+test passed through the authorized host-access execution path. These are PC
+VPCD results, not physical-card validation. Logs:
+`artifacts/logs/symm-crypto-kat-vpcd-20261026.log` (SHA-256
+`6b6c6a0dc53828fcb3521e0dc71f124f4da13d9fab7183b5b6f9520958876808`) and
+`artifacts/logs/asymm-crypto-keypair-vpcd-20261027.log` (SHA-256
+`85528e25f28aeb55050fdfaa8afda5f33b44d893e1afb4f01317292e259acec7`).
+
 ## Package-delete overlay compaction — 2026-11-01
 
 The persistent `NO_MEMORY` investigation found that successful package deletion
