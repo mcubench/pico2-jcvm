@@ -19043,6 +19043,6 @@
 - Validation: VPCD reader discovery, `VpcdPresenceProbe`, and `UPLOAD OK` passed. Four selected API checks returned `OK`; 462 unrelated rows were skipped; CAP cleanup passed. Recorded stage timestamps show the client phase took 88 seconds. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
 - Result: This selected PSS case does not reproduce a functional error. The full 466-call area still times out at 800 seconds; the official VPCD API path has substantial per-run overhead, and current evidence does not isolate a specific failing algorithm.
 - Decision: Keep the full-area VPCD timeout as a validation limitation. Retest on a physical Pico and separately profile client/APDU throughput before increasing timeouts further.
-- Commit: `<pending>`
+- Commit: `9dea2eb` (`Record RSA-384 PSS VPCD follow-up`)
 - Artifacts/logs: API CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-pss384-followup.csv` SHA-256 `8a80fdadfdda4d6df847c1c586f1d3bf1f998e284a85c344d1208896de388c17`; logs `artifacts/logs/vpcd-api-pss384-20261101T095909Z/`.
 
