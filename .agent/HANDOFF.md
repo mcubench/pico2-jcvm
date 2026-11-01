@@ -13,6 +13,16 @@ inactive heaps without adding their roots to collection and defining a bounded
 RAM policy. Next, design a context registry and a regression using existing
 deploy CAPs; preserve the declared profile exclusion until that work passes.
 
+The elevated PC VPCD multipackage regression passed 42/42 on 2026-11-01 via
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage`. It loaded 3 packages
+and 21 instances, tested selection of Core/Multi A/Multi B, persistent AID
+identity, restart, owner scans, and deletion. It does not check transient array
+identity or `CLEAR_ON_RESET` contents after an AID switch. Logs:
+`artifacts/logs/host-vpcd-multipackage-apdu-20261101T104132Z.log` (SHA-256
+`36c3633cbab73368b2c8bfd17575d9363a2d52214e8579161724a1dd799e9db7`) and
+`artifacts/logs/host-vpcd-multipackage-restart-20261101T104132Z.log` (SHA-256
+`e938327d476345a034f022364e5a3793845c0c05bfc317284bf34ee2c1ae2fb7`).
+
 ## Signature MAC IV fix — 2026-11-01
 
 The full API 3.0.5 Crypto sweep's three `WRONG_RESULT` rows were caused by

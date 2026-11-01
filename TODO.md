@@ -1555,7 +1555,11 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   applet roots for GC and preserve per-instance transient state while applying
   `CLEAR_ON_DESELECT`; do not solve this by keeping heaps without extending
   root enumeration and memory limits. Add a regression using existing deploy
-  CAPs where possible before implementing context switching.
+  CAPs where possible before implementing context switching. The existing
+  `./tools/test-vpcd-multipackage` passed 42/42 and verifies multiple AID
+  selection, peer lookup identity, restart, and deletion across 21 instances;
+  it does not verify transient-array identity or `CLEAR_ON_RESET` contents
+  after switching away and back, so it does not close this gap.
 - [x] **Make commit-capacity reporting consistent with transactions.**
   `beginTransaction` / commit / abort now pass the full 80-check JCSystem VPCD
   suite. Abort advances a rollback generation so live persistent field caches

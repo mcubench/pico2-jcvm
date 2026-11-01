@@ -19090,3 +19090,14 @@
 - Decision: Design a bounded context registry and identify a regression path using existing deploy CAPs before implementing switching semantics. Physical testing remains pending reader availability.
 - Commit: `44a376a` (`Document applet context lifetime gap`)
 - Artifacts/logs: None; source inspection only.
+
+## 2026-11-01 Recheck multipackage VPCD selection 4 minutes
+
+- Step/experiment: `multipackage-context-switch-vpcd-20261101`
+- When: '2026-11-01 11:41 CET' - '2026-11-01 11:45 CET'
+- Change: Re-ran the existing multipackage VPCD regression and documented the boundary of its applet-selection coverage in TODO/HANDOFF: it tests multiple AIDs and restart identity, but not transient-array preservation across switching away and back.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed with `TEST:SUMMARY pass=42 fail=0`; 3 packages and 21 instances loaded, selection and lookup tests passed, and deletion returned the registry to empty. Run used `sandbox_permissions: require_escalated`. `git diff --check` passed for the edited root docs. Physical helper previously reported zero readers, so no hardware test was attempted.
+- Result: Current VPCD regression exercises package/applet routing and persistent AID identity, but cannot verify the confirmed inactive-context transient-state loss.
+- Decision: Design a context registry with inactive-context roots and bounded RAM behavior, then identify a way to assert transient lifecycle semantics without changing upstream CAPs.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T104132Z.log` SHA-256 `36c3633cbab73368b2c8bfd17575d9363a2d52214e8579161724a1dd799e9db7`; restart log SHA-256 `e938327d476345a034f022364e5a3793845c0c05bfc317284bf34ee2c1ae2fb7`.
