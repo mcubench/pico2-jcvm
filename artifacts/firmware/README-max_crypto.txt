@@ -32,6 +32,10 @@ Build validation for this image: `./tools/build arm --profile max_crypto`,
 `./tools/build riscv --profile max_crypto`, and
 `./tools/test-rp2350-fs-overlay` passed. The overlay regression includes
 repeated dynamic-package deletion/restart and randomized power-cut recovery.
+The build used the current worktree, including pre-existing local changes in
+`src/cap_load.cpp`; those source changes were not included in the artifact
+refresh commit, so this image is not reproducible from a clean checkout of that
+commit alone.
 This refreshed image has not been flashed or runtime-tested on hardware; the
 authorized reader helper reported no attached Pico 2 devices. Previous
 physical/API results in the project logs refer to earlier image hashes and do

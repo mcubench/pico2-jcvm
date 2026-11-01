@@ -19,6 +19,17 @@
 - Commit: `182e768` (implementation and regression tests); this progress record and tracker updates are recorded in the following metadata commit.
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` (SHA-256 above); `build/arm/pico2_choupi.elf` (SHA-256 above); host test output ended `TEST:SUMMARY fail=0`; physical logs: none (no device enumerated).
 
+## 2026-11-01 — Refresh max_crypto ARM external-test bundle 4 minutes
+
+- Step/experiment: `max-crypto-external-image-refresh-20261101`
+- When: '2026-11-01 09:53 CET' - '2026-11-01 09:57 CET'
+- Change: Replaced the stale tracked external-test UF2 with the latest ARM `max_crypto` build and updated its README with the exact size/hash and the current physical-validation limitation. The support manifest was not regenerated because the capability selection did not change.
+- Validation: `cmp build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` passed. Image size is 2,098,176 bytes and SHA-256 is `841af227b3dfcd7eaf589c40b042a71e9efdf4d00c82aea296418d3f5d9a1d70`. Manifest SHA-256 remains `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`. The build used the current worktree, which included pre-existing uncommitted `src/cap_load.cpp` changes; the README records that this image is not reproducible from a clean checkout of the artifact commit alone. Build gates and overlay tests are recorded in the preceding compaction step. Physical validation was intentionally not attempted because no Pico was enumerated.
+- Result: The download artifact now matches the latest ARM build byte-for-byte; README does not imply that this image has already passed hardware runtime checks.
+- Decision: Provide this artifact for external tests; resume physical validation when a Pico 2 reader is available.
+- Commit: `1411107` (artifact); this progress/handoff record is in the following metadata commit.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` and `artifacts/firmware/README-max_crypto.txt`; no hardware log.
+
 ## 2026-10-09 — Development environment diagnostics
 
 - Step/experiment: `wp1-host-diagnostics`

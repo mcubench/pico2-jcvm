@@ -20,12 +20,23 @@ authorized helper currently reports zero Pico readers, and an earlier cycle
 failed its monitor because the device disappeared from guest USB. Do not retry
 hardware in a restricted context; continue offline until a device is available.
 
-Immediate next action: validate source diff and commit this compaction step,
-then rerun a physical cycle on any identified available Pico and a bounded
-temporary CAP install/delete workload, looking for `CHOUPI:FS_COMPACT`. Then
-repeat the upstream full Crypto area and determine how many remaining
-`NO_MEMORY` outcomes are due to live objects rather than stale deleted keys.
-Keep 8E's temporary Security CAP and any existing 2BED packages intact.
+Refreshed the external-test bundle at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; it is byte-for-
+byte equal to the latest build, 2,098,176 bytes, SHA-256
+`841af227b3dfcd7eaf589c40b042a71e9efdf4d00c82aea296418d3f5d9a1d70`. Its
+README now explicitly says this image has not had a physical runtime check.
+The unchanged support manifest SHA-256 is
+`81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
+The binary was built from the current worktree, including pre-existing
+uncommitted `src/cap_load.cpp` changes; its README records that the artifact
+commit alone is insufficient to reproduce it from a clean checkout.
+
+Immediate next action: when a Pico is enumerated, run a physical cycle using
+the latest `max_crypto` image, then a bounded temporary CAP install/delete
+workload and confirm `CHOUPI:FS_COMPACT`. Repeat the upstream full Crypto area
+and determine how many remaining `NO_MEMORY` outcomes are due to live objects
+rather than stale deleted keys. Keep 8E's temporary Security CAP and any
+existing 2BED packages intact.
 
 ## Current-image API runtime recheck — 2026-11-01
 
