@@ -19112,3 +19112,27 @@
 - Decision: Keep the post-delete VPCD session transition as the next diagnostic. Do not claim hardware validation or that the broader firewall/logical-channel work is complete.
 - Commit: `9c1e328` (`Retain bounded applet contexts across selection`)
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T120306Z.log` SHA-256 `bfaa4c1981b43efef70556259553e462f2b5bc2b119b128d187c5c2792f61057`; restart/reject logs share timestamp `20261101T120306Z`.
+
+## 2026-11-01 Review architecture maintenance completion 6 minutes
+
+- Step/experiment: `architecture-completion-review`
+- When: '2026-11-01 13:25 CET' - '2026-11-01 13:31 CET'
+- Change: Compared ARCH-01–06 implementation commits, current source and
+  validation records with original intent. Added TODO review and ARCH-07–09
+  for remaining shared declarations, bounded USB progress and production-path
+  reentry tests; updated handoff. No implementation changes.
+- Validation: Inspected commits 77b58fa, 6aec961, 54bcb3f, 6bc468f, ef5552e,
+  26aacef and their alignment/physical validation follow-ups. Checked remaining
+  declarations against committed HEAD to avoid crediting uncommitted work.
+  `./tools/test-native-progress-guard` passed 6/6; targeted documentation
+  whitespace check passed. Builds and physical validation intentionally skipped
+  for this review-only change; prior hardware evidence was reviewed, not rerun.
+- Result: Original structural work substantially complete; strict USB event-work
+  bound and production callback-chain coverage remain incomplete. Selected
+  lifecycle/filesystem extension signatures remain duplicated. No performance
+  or hardware metrics measured in this review.
+- Decision: Retain completed task history and schedule three scoped follow-ups;
+  do not expand into backend abstractions or optional checkpoint redesign.
+- Commit: Included in this review commit; resolve SHA with
+  `git log -1 --format=%H -- TODO.md`.
+- Artifacts/logs: TODO.md review and task descriptions; no new hardware logs.

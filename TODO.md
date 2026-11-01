@@ -156,6 +156,67 @@ handles, language selection or a Rust rewrite as part of these tasks. The wider
 future work requiring a separate user request. These maintenance tasks may be
 implemented independently within their stated scope.
 
+### Architecture completion review — 2026-11-01
+
+Reviewed implementation commits against the original six maintenance tasks:
+ARCH-01 `77b58fa`, ARCH-02 `6aec961` plus alignment/contract follow-ups
+`7de8aef`, `23ab3b1`, `21c8336`, `6731e03`; ARCH-03 `54bcb3f`;
+ARCH-04 `6bc468f`; ARCH-05 `ef5552e`; ARCH-06 `26aacef`.
+Physical validation is recorded separately in `d53c10f`, `4dfbbd1`, and
+`99dfe3b`. The original structural changes are substantially covered; keep
+those completed records and track the narrower remaining gaps below. This
+review schedules work only and does not authorize alternate backend development.
+Uncommitted applet-context changes are a separate ongoing task and were not
+credited as architectural completion evidence.
+
+- [ ] **ARCH-07 — Finish shared boundary declarations (small; ARCH-01/02
+  follow-up).** `src/vm_lifecycle.h` covers the main operations, but committed
+  `src/ccid_device.cpp` still hand-declares `choupi_vm_find_applet()` and
+  `choupi_vm_is_dynamic_package()`; `choupi/src/jni.cpp` separately declares
+  `choupi_vm_is_selecting_applet()` and `choupi_vm_is_reselecting_applet()`.
+  Put these lifecycle/query signatures in the appropriate shared header and
+  include it in both callers and definitions. Likewise give filesystem
+  extensions (`fs_sync`, prefix/package erase) authoritative shared declarations;
+  `ffi.h` currently omits them while loader, CCID and flash-memory code declare
+  them independently. Keep platform-specific operations explicit, without
+  claiming Rust OS exports functions it does not implement. Audit remaining
+  shared CAP-store declarations for the same duplication and use their owning
+  header where applicable. Preserve behavior and ownership; no new dispatch
+  layer. Acceptance: relevant cross-module declarations have one authority,
+  callers and definitions include it, PC/ARM/RISC-V builds and lifecycle/storage
+  regressions pass, with required physical checks recorded or marked pending.
+- [ ] **ARCH-08 — Bound native USB progress work (ARCH-04 follow-up).**
+  `docs/NATIVE_PROGRESS_CALLBACKS.md` correctly acknowledges that `tud_task()`
+  drains its event queue and can run indefinitely under replenished USB control
+  traffic. The original bounded-work goal is therefore only partially met.
+  Inspect the pinned TinyUSB event-processing facilities and implement a
+  supported finite event/time budget without dropping events or breaking USB
+  control transfers. If that cannot be achieved locally, record the concrete
+  dependency limitation and keep this task open rather than claiming a strict
+  bound. Acceptance: a sustained control-event workload cannot monopolize one
+  progress invocation; watchdog service, CCID extensions and eventual response
+  remain correct; measure the bound and rerun the physical long-operation gate.
+- [ ] **ARCH-09 — Exercise production progress/dispatch boundaries (ARCH-04
+  validation follow-up; coordinate with ARCH-08).** The current
+  `tools/tests/native_progress_guard_test.cpp` verifies the RAII guard using
+  local `service_usb`/`dispatch_apdu` simulations, not the production CCID entry
+  points. Keep this useful unit test and add a focused harness exercising the
+  actual progress/task paths with injected USB/time/endpoint services. Cover
+  attempted recursive progress and APDU dispatch, a message queued during an
+  active operation, queue draining after return, busy extension endpoints and
+  final-response ordering. Acceptance: removing/misplacing production guards
+  makes the regression fail; nested execution stays blocked, queued work is
+  eventually processed exactly once, and extension/final response handling
+  remains correct. Host checks complement rather than replace physical tests.
+
+ARCH-02 intentionally defined the weaker PC disk-checkpoint durability contract;
+atomic image/sidecar checkpoint replacement is optional future hardening, not
+an unfulfilled part of that original task. ARCH-05's capacity-limited physical
+transaction fixture remains a recorded coverage limit, not evidence that the
+module extraction itself needs reimplementation. ARCH-06 deliberately removed
+specific heap/static-array dependencies; remaining package/import handlers are
+not a requirement to create a backend abstraction now.
+
 ## Current prioritized backlog — 2026-10-20
 
 ### Persistent-object reclamation groundwork — 2026-10-30

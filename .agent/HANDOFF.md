@@ -2222,3 +2222,14 @@ for shared runtime declarations, filesystem contracts, diagnostic declarations,
 progress callback rules, Pico startup/storage separation and loader encapsulation.
 No implementation performed. Start with ARCH-01; keep the wider backend design
 explicitly deferred. Preserve the other sessions' existing worktree changes.
+
+## Architecture completion review — 2026-11-01
+
+Reviewed committed ARCH-01–06 implementations and later validation records.
+Most original intent is covered. TODO.md now schedules ARCH-07 (remaining
+shared lifecycle/filesystem declarations), ARCH-08 (strictly bounded USB
+progress work), and ARCH-09 (production CCID progress/dispatch regression).
+No implementation changed. Existing progress-guard wrapper passed 6/6; it
+exercises simulated service paths, which motivates ARCH-09. No hardware work
+or builds performed for this documentation review. Preserve ongoing uncommitted
+applet-context work; broader language backend work remains deferred.
