@@ -19321,3 +19321,14 @@
 - Decision: Keep CTX-01 open. Continue by checking for any existing upstream applet with a positive SIO export, then add safe global/reference return handling and broader method signatures as permitted by a real fixture.
 - Commit: `a4da035`
 - Artifacts/logs: Multipackage regression `artifacts/logs/host-vpcd-multipackage-apdu-20261101T171653Z.log` and companion restart/reject logs; PC/ARM/RISC-V build outputs under `build/`; no physical logs.
+
+## 2026-11-01 Translate Shareable reference returns 24 minutes
+
+- Step/experiment: `shareable-reference-return-firewall-20261101`
+- When: '2026-11-01 18:33 CET' - '2026-11-01 18:57 CET'
+- Change: Cross-context interface calls now transfer null and JCRE-global references directly. Server-local results are retained as server-context GC roots and wrapped in client-context proxy handles only when the returned object's class implements a Shareable interface. Updated CTX-01 and handoff. Arguments remain fail-closed until descriptor-aware value/reference conversion is available.
+- Validation: `./tools/test-rmi-registry` passed; `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`. The authorized physical reader helper returned `found 0`; no board could be flashed or monitored. The upstream multipackage suite does not create or use proxy handles, so this does not prove positive SIO reference returns.
+- Result: Cross-heap references are no longer returned raw. A positive Shareable return/interface fixture is still absent; zero-argument primitive/void service calls and reference conversions remain unexercised by CAP-level tests.
+- Decision: Keep CTX-01 open. Find an existing upstream positive SIO applet if one exists; then validate proxy returns, descriptor-aware arguments, exception propagation, GC/reset lifetime, and physical behavior when a board enumerates.
+- Commit: Recorded in this implementation commit.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T175352Z.log` (SHA-256 `ce1216bc0c358f0e63f91e924b3976bc4a8076a0001af4381e3c4099071e0d95`); restart log `artifacts/logs/host-vpcd-multipackage-restart-20261101T175352Z.log` (SHA-256 `f22beb56a13d0770dea92af4f58e0636ab6fe19b04cb506cfd74dd3132c40283`); companion corrupt/missing-sidecar logs with same timestamp; build outputs under `build/`; no physical logs.

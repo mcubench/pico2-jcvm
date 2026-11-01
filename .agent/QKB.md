@@ -3269,3 +3269,18 @@ original terminology/status; check current summary and later fixes before reuse.
 - Existing VPCD multipackage regression passes 47/47, but it contains no proxy
   calls. Full PC/ARM/RISC-V builds pass. A positive Shareable fixture is still
   needed to validate the cast behavior at runtime.
+
+### Translate cross-context Shareable reference returns — 2026-11-01
+
+- Never push a server applet's local `jref_t` directly onto the client
+  context's operand stack: its offset refers to a different heap.
+- Null and JCRE-global references (`isGlobalArray()` or
+  `isGlobalInstance()`) are runtime-wide handles and may cross unchanged.
+  Server-local references must be rooted in the server context and represented
+  by a proxy allocated/registered in the client context. Reject arrays and
+  classes without a Shareable interface.
+- **Current implementation:** `invokeinterface` follows these rules for
+  reference results. It still rejects all arguments; no positive CAP fixture
+  tests the behavior yet. Existing host VPCD multipackage tests pass 47/47 but
+  do not exercise Shareable calls. The authorized PC/SC helper currently sees
+  zero Pico readers, so physical validation is pending.

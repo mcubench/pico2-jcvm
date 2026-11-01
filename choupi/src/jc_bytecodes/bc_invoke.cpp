@@ -50,6 +50,74 @@
 
 namespace jcvm {
 
+namespace {
+bool classImplementsShareableInterface(const Package &package,
+                                       const jclass_index_t class_index) {
+  Package current_package = package;
+  const auto *current_class =
+      ConstantPool_Handler(current_package).getClassFromClassIndex(class_index);
+  while (!current_class->isObjectClass()) {
+    ConstantPool_Handler class_cp(current_package);
+    for (uint8_t index = 0; index < current_class->interface_count; ++index) {
+      try {
+        const auto interface_info = class_cp.classref2interface(
+            current_class->interfaces(index).interface);
+        if ((interface_info.second->flags & JC_CAP_CLASS_ACC_SHAREABLE) != 0) {
+          return true;
+        }
+      } catch (Exceptions) {
+        // Ignore malformed/unresolvable entries here; the call remains
+        // fail-closed unless another resolved interface proves Shareable.
+      }
+    }
+    const auto superclass =
+        class_cp.classref2class(current_class->super_class_ref);
+    current_package = superclass.first;
+    current_class = superclass.second;
+  }
+  return false;
+}
+
+jref_t wrapShareableReference(Context &client_context,
+                              Context &server_context,
+                              const uint8_t *server_aid,
+                              const uint8_t server_aid_length,
+                              const jref_t server_reference) {
+  if (server_reference.isNullPointer() ||
+      server_reference.isGlobalArray() ||
+      server_reference.isGlobalInstance()) {
+    return server_reference;
+  }
+  if (server_reference.isArray()) {
+    throw Exceptions::SecurityException;
+  }
+
+  const auto server_object =
+      server_context.getHeap().getInstance(server_reference);
+  const Package server_package(server_object->getPackageID());
+  if (!classImplementsShareableInterface(server_package,
+                                         server_object->getClassIndex())) {
+    throw Exceptions::SecurityException;
+  }
+
+  const jref_t existing = client_context.findShareableProxy(
+      server_aid, server_aid_length, server_reference);
+  if (!existing.isNullPointer()) {
+    return existing;
+  }
+  if (!server_context.retainShareableObjectRoot(server_reference)) {
+    throw Exceptions::SecurityException;
+  }
+  const jref_t proxy = client_context.getHeap().addInstance(
+      server_object->getPackageID(), server_object->getClassIndex());
+  if (!client_context.registerShareableProxy(
+          proxy, server_aid, server_aid_length, server_reference)) {
+    throw Exceptions::SecurityException;
+  }
+  return proxy;
+}
+} // namespace
+
 /**
  * Invoke instance method; dispatch based on class
  *
@@ -843,13 +911,12 @@ void Bytecodes::bc_invokeinterface() {
       break;
     case Stack::ReturnKind::Reference: {
       jref_t returned_reference;
-      if (!server_stack.getRootReferenceReturnValue(returned_reference) ||
-          !returned_reference.isNullPointer()) {
-        // A server-local reference must itself be translated to a proxy;
-        // until that translation is available, fail closed.
+      if (!server_stack.getRootReferenceReturnValue(returned_reference)) {
         throw Exceptions::SecurityException;
       }
-      stack.push_Reference(returned_reference);
+      stack.push_Reference(wrapShareableReference(
+          context, *server_context, server_aid, server_aid_length,
+          returned_reference));
       break;
     }
     case Stack::ReturnKind::None:

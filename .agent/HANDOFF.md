@@ -1,5 +1,29 @@
 # Session handoff — updated 2026-11-01
 
+## Cross-context Shareable reference returns
+
+The current proxy method dispatch now converts a returned server-local
+instance into a client proxy when its class implements a Shareable interface,
+roots the object in the server Context, and registers the proxy in the client
+Context. Null and JCRE-global array/instance handles pass directly; local
+arrays and non-Shareable objects fail closed. `invokeinterface` still accepts
+only zero-argument methods. Typed void/short/int and reference results are
+tracked by `Stack::ReturnKind`.
+
+Validation: `./tools/test-rmi-registry` passes; the PC `current`, ARM `current`,
+and RISC-V `current` builds pass; elevated VPCD multipackage test passes
+47/47. This integration suite does not use a proxy. An immediate authorized
+reader refresh returned `found 0` despite the user's report that physical
+boards are connected; no flash or serial monitor was attempted. The existing
+upstream CAP set and source search did not find a positive SIO probe. No CAP
+was created or modified.
+
+Next: continue searching for an existing upstream Shareable service CAP. If
+none exists, keep positive-call acceptance blocked by the CAP-only test
+constraint; proceed with bytecode-level argument descriptor checks and preserve
+fail-closed behavior until conversions are testable. Then validate on a
+physical board once the authorized reader helper enumerates it.
+
 ## Proxy cast validation and integration recheck
 
 Proxy `checkcast`/`instanceof` now verify both that the target is an
