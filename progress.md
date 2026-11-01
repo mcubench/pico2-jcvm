@@ -19565,7 +19565,7 @@
 - Decision: Keep the fail-closed contract and CTX-01 open. Diagnose physical
   client package INSTALL stage 9 with a clean/test-safe device before claiming
   hardware acceptance. Other connected boards were not guest-visible.
-- Commit: `pending`.
+- Commit: `12e17b7`.
 - Artifacts/logs: VPCD SIO
   `artifacts/logs/sio-cross-aid-vpcd-20261101T233118Z.log` (SHA-256
   `bde444b99091b7694caf8802b49c59468bf4bc4313e3897384a8bc25ed87e0a7`);
