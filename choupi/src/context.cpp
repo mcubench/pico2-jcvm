@@ -49,6 +49,15 @@ jref_t Context::sensitive_result_object;
 
 Context *Context::setActiveContext(Context *context) noexcept {
   Context *previous = active_context;
+  if (context != nullptr && context != previous) {
+    context->previous_context_aid.fill(0);
+    context->previous_context_aid_length = 0;
+    if (previous != nullptr && previous->applet_aid_length >= 5 &&
+        previous->applet_aid_length <= previous->applet_aid.size()) {
+      context->previous_context_aid = previous->applet_aid;
+      context->previous_context_aid_length = previous->applet_aid_length;
+    }
+  }
   active_context = context;
   return previous;
 }
@@ -113,6 +122,18 @@ bool Context::copyAppletAID(uint8_t aid[16],
     return false;
   }
   std::copy_n(this->applet_aid.begin(), aid_length, aid);
+  return true;
+}
+
+bool Context::copyPreviousContextAID(uint8_t aid[16],
+                                     uint8_t &aid_length) const noexcept {
+  aid_length = this->previous_context_aid_length;
+  if (aid == nullptr || aid_length < 5 ||
+      aid_length > this->previous_context_aid.size()) {
+    aid_length = 0;
+    return false;
+  }
+  std::copy_n(this->previous_context_aid.begin(), aid_length, aid);
   return true;
 }
 

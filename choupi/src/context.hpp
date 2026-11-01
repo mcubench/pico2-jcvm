@@ -54,6 +54,9 @@ private:
   /// Selected/installed applet instance AID, shared with Java Card APIs.
   std::array<uint8_t, 16> applet_aid{};
   uint8_t applet_aid_length = 0;
+  /// Applet AID active immediately before the last context switch.
+  std::array<uint8_t, 16> previous_context_aid{};
+  uint8_t previous_context_aid_length = 0;
   jref_t applet_aid_object_ref;
   /// Set when the active install method invokes Applet.register().
   bool applet_registered = false;
@@ -123,6 +126,8 @@ public:
   jpackage_ID_t getAppletPackageID() const noexcept;
   bool setAppletAID(const uint8_t *aid, uint8_t aid_length) noexcept;
   bool copyAppletAID(uint8_t aid[16], uint8_t &aid_length) const noexcept;
+  bool copyPreviousContextAID(uint8_t aid[16],
+                              uint8_t &aid_length) const noexcept;
   jref_t getAppletAIDObjectRef() const noexcept;
   void setAppletAIDObjectRef(jref_t reference) noexcept;
   /// Record and query Applet.register() calls during installation.

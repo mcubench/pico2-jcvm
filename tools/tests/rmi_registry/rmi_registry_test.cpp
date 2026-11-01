@@ -1,5 +1,6 @@
 #include "context.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstdint>
@@ -61,12 +62,49 @@ void verify_sensitive_result_cross_context(jcvm::Context &producer,
   assert(reset_rejected);
   jcvm::Context::setActiveContext(previous);
 }
+
+void verify_previous_context_aid() {
+  jcvm::Context client(2, 1);
+  jcvm::Context server(3, 1);
+  constexpr uint8_t client_aid[] = {0xa0, 0x00, 0x00, 0x01, 0x01};
+  constexpr uint8_t server_aid[] = {0xa0, 0x00, 0x00, 0x01, 0x02};
+  assert(client.setAppletAID(client_aid, sizeof(client_aid)));
+  assert(server.setAppletAID(server_aid, sizeof(server_aid)));
+
+  jcvm::Context::setActiveContext(&client);
+  uint8_t previous_aid[16]{};
+  uint8_t previous_aid_length = 0;
+  assert(!client.copyPreviousContextAID(previous_aid, previous_aid_length));
+  assert(previous_aid_length == 0);
+
+  jcvm::Context::setActiveContext(&server);
+  assert(server.copyPreviousContextAID(previous_aid, previous_aid_length));
+  assert(previous_aid_length == sizeof(client_aid));
+  assert(std::equal(client_aid, client_aid + sizeof(client_aid),
+                    previous_aid));
+
+  jcvm::Context::setActiveContext(&client);
+  assert(client.copyPreviousContextAID(previous_aid, previous_aid_length));
+  assert(previous_aid_length == sizeof(server_aid));
+  assert(std::equal(server_aid, server_aid + sizeof(server_aid),
+                    previous_aid));
+
+  // Re-entering the same context is not a context switch and must preserve the
+  // most recent caller AID.
+  jcvm::Context::setActiveContext(&client);
+  assert(client.copyPreviousContextAID(previous_aid, previous_aid_length));
+  assert(previous_aid_length == sizeof(server_aid));
+  assert(std::equal(server_aid, server_aid + sizeof(server_aid),
+                    previous_aid));
+  jcvm::Context::setActiveContext(nullptr);
+}
 } // namespace
 
 int main() {
   jcvm::Context context(1, 1);
   jcvm::Context second_context(2, 1);
   verify_sensitive_result_cross_context(context, second_context);
+  verify_previous_context_aid();
 
   const auto first = make_reference(1);
   const uint16_t first_id = context.exportRemoteObject(first);
@@ -137,6 +175,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 global_aid_handle=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 global_aid_handle=1");
   return 0;
 }

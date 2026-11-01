@@ -3172,3 +3172,18 @@ original terminology/status; check current summary and later fixes before reuse.
   firewall TODO open until a positive cross-applet fixture exercises lookup,
   interface dispatch, allowed object arguments, rejected private references,
   exceptions, and context restoration.
+
+### Previous-context AID is now tracked for applet context switches — 2026-11-01
+
+- `Context::setActiveContext()` now copies the active caller applet AID into a
+  newly entered context. Re-entering the same context preserves the last
+  previous AID; entry from JCRE (`nullptr`) clears it. Native
+  `JCSystem.getPreviousContextAID()` returns null when there is no previous
+  applet, otherwise creates/uses the JCRE-owned global AID object and exposes
+  it through `SensitiveResult`.
+- The native RMI/context regression checks client-to-server and return switches,
+  JCRE entry, and same-context re-entry. PC, ARM, and RISC-V builds pass.
+- This does not implement `getAppletShareableInterfaceObject`, cross-context
+  object dispatch, or firewall checks. Hardware validation remains pending:
+  the authorized reader helper and elevated `lsusb -d 2e8a:` both found zero
+  devices on 2026-11-01.

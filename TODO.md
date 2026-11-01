@@ -1584,11 +1584,11 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   and the same-context assertions pass. A native two-`Context` regression now
   verifies boolean, short, and object results survive switching the active
   context, verifies the object remains GC-rooted, and verifies reset rejects
-  stale assertions. The VM still has one applet context and does not implement
-  cross-applet Shareable Interface Object dispatch, so Java-level SIO behavior
-  remains unverified. Implement true multi-applet contexts before claiming that
-  acceptance; then cover any remaining sensitive-result producers outside the
-  JavacardxSec deploy suite.
+  stale assertions. Multi-applet contexts are now retained, but cross-applet
+  Shareable Interface Object dispatch is still missing, so Java-level SIO
+  behavior remains unverified. Implement the proxy/dispatch/firewall path before
+  claiming that acceptance; then cover any remaining sensitive-result
+  producers outside the JavacardxSec deploy suite.
 - [x] **Fix remaining Core API failures found by physical deploy coverage.**
   Same-array overlapping-range behavior in `Util.arrayCopy` and
   `arrayCopyNonAtomic` and `OwnerPIN`/`PIN` dispatch pass on the physical Pico.
@@ -1635,7 +1635,11 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   heaps; root enumeration now uses only the current context's applet root and
   cached heap roots. Cross-applet shareable lookup and
   firewall ownership checks, general cross-context calls, and logical channels
-  remain unimplemented; assigned channel is basic channel 0.
+  remain unimplemented; assigned channel is basic channel 0. Context switches
+  now record the calling applet AID, and native `JCSystem.getPreviousContextAID`
+  returns it as a JCRE-owned AID object (tested by the context regression and
+  PC/ARM/RISC-V builds). This is groundwork only; SIO lookup/invocation and
+  firewall validation remain open.
 - [x] **Make commit-capacity reporting consistent with transactions.**
   `beginTransaction` / commit / abort now pass the full 80-check JCSystem VPCD
   suite. Abort advances a rollback generation so live persistent field caches

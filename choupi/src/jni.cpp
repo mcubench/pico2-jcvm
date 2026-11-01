@@ -1804,11 +1804,18 @@ extern "C" void choupi_record_transaction_buffer_full(void) {
 }
 
 jref_t fr_gouv_ssi_nativeimpl_NativeImplementation_getPreviousContextAID() {
-  // This runtime has no cross-applet shareable-interface context switches.
-  // Consequently there is no previous applet context to report.
   Context &context = Context::getActiveContext();
   context.resetSensitiveResult();
-  const jref_t result{};
+  uint8_t previous_aid[16]{};
+  uint8_t previous_aid_length = 0;
+  if (!context.copyPreviousContextAID(previous_aid, previous_aid_length)) {
+    const jref_t result{};
+    context.setSensitiveResultObject(result);
+    return result;
+  }
+
+  const jref_t result =
+      runtimeAIDObject(context, previous_aid, previous_aid_length);
   context.setSensitiveResultObject(result);
   return result;
 }

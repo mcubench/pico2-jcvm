@@ -19233,3 +19233,14 @@
 - Decision: Implement a context-owned proxy/handle path with nested server invocation and explicit reference firewall validation; add a positive cross-AID CAP regression before closing the TODO item. Physical hardware remains unavailable in the VM.
 - Commit: Recorded in this analysis commit.
 - Artifacts/logs: Source inspection only; prior multipackage logs `artifacts/logs/host-vpcd-multipackage-apdu-20261101T150907Z.log` and matching restart/sidecar logs.
+
+## 2026-11-01 Implement previous-context AID native behavior 14 minutes
+
+- Step/experiment: `jc-system-previous-context-aid-20261101`
+- When: '2026-11-01 16:18 CET' - '2026-11-01 16:32 CET'
+- Change: Context switches now retain the immediately previous applet AID, and native `JCSystem.getPreviousContextAID()` returns a JCRE-owned global AID object through the existing sensitive-result mechanism (or null when entered from JCRE). Added regression checks for JCRE entry, client/server entry and return, and same-context re-entry. Updated TODO, QKB, and handoff; cross-applet SIO lookup, invocation, and firewall behavior remain open.
+- Validation: `./tools/test-rmi-registry` passed with `previous_context_aid=1`; `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. `git -c core.whitespace=cr-at-eol diff --check` passed for the step. Fresh authorized `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` reported `found 0`; elevated `lsusb -d 2e8a:` returned no devices. No physical flash/validation was possible.
+- Result: The context model exposes the previous applet AID across context transitions in native code; all three build targets compile. Existing converter, Rust, and packed-CAP warnings remain. Hardware behavior is unverified.
+- Decision: Keep the broader multi-applet Shareable/firewall TODO open. Resume physical validation when a Pico is guest-visible; next implement positive cross-AID Shareable lookup and safe proxy dispatch.
+- Commit: Recorded in this implementation commit.
+- Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC ROM mask `build/choupi-pc/flash` and JNI header `build/choupi-pc/jni.hpp`; ARM `build/arm/pico2_choupi.uf2`; RISC-V `build/riscv/pico2_jcvm_smoke.uf2`; no physical logs.

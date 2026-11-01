@@ -1,5 +1,23 @@
 # Session handoff — updated 2026-11-01
 
+## Previous-context AID native behavior — implemented offline (2026-11-01)
+
+`Context::setActiveContext()` now stores the source applet AID on context entry;
+`JCSystem.getPreviousContextAID()` returns a JCRE-owned global AID through the
+existing `SensitiveResult` channel, or null when the prior context was JCRE.
+The context regression reports `previous_context_aid=1` (JCRE entry,
+client/server switches, return switch, and same-context re-entry).
+
+Validation passed: `./tools/test-rmi-registry`, `./tools/build-pc --profile
+current`, `./tools/build arm`, and `./tools/build riscv`. Build output still
+contains pre-existing Java Card converter, packed-CAP-member, and Rust warnings.
+The user reports that boards are connected, but a fresh authorized
+`PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` returned
+`found 0`; elevated `lsusb -d 2e8a:` also found none. No flash or physical
+validation was attempted. Next implement positive cross-AID SIO lookup and a
+context-owned proxy/dispatch path with argument and return firewall checks;
+keep this JCSystem step and the broader SIO behavior separate in acceptance.
+
 ## Latest verification — 2026-11-01
 
 The current worktree snapshot was revalidated on 2026-11-01 after the CAP
