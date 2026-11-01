@@ -6,7 +6,7 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including all eight dynamic package IDs and 64 power-cut recovery cases. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. The external artifact compared byte-for-byte with the ARM build. UF2 size is 2,098,176 bytes; SHA-256 `122a172ca7a412881afaa2529f1c1c7c4a782c3adb9f91ca436f5545ca071c2c`. The approved reader helper had reported zero physical Pico readers earlier in this session; no flash/monitor was attempted.
 - Result: The preflight cannot read payload outside `overlay_bytes_used`, and validated latest firmware is again the downloadable artifact. No additional BSS was introduced.
 - Decision: Keep the guard. Wait for an identified Pico before hardware validation and full Crypto API rerun.
-- Commit: source `e1cf05b`; artifact `3217b51`; progress/handoff in the following metadata commit.
+- Commit: source `e1cf05b`; artifact `3217b51`; progress/handoff `a53dcdf`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` SHA-256 above; overlay test stdout ended `TEST:SUMMARY fail=0`; no physical log.
 
 ## 2026-11-01 — Reconcile historical overlay diagnostic notes 1 minute
