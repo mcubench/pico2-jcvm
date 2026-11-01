@@ -19374,5 +19374,5 @@
 - Validation: `./tools/test-rmi-registry` passed with `shareable_cross_context_arguments=1`; `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed; scoped `git diff --check` passed. Hardware testing was skipped because the authorized reader helper and host USB listing found no Pico USB nodes in the VM.
 - Result: The local signature-to-local conversion has unit coverage and compiles for all configured targets. Descriptor-method lookup and the actual cross-context interpreter invocation are still not exercised by an upstream CAP. Firmware image size was not compared.
 - Decision: Keep CTX-01 open. Add an unchanged-CAP cross-AID invocation if an existing fixture supports it; then cover non-null ownership translation and cross-context exception restoration.
-- Commit: `467d1ff`
+- Commit: `467d1ff` (progress hash correction: `dc51768`)
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; builds under `build/`; no hardware logs.
