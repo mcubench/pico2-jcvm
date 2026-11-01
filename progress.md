@@ -1,3 +1,14 @@
+## 2026-11-01 — Refresh max_crypto external image after Signature IV fix 5 minutes
+
+- Step/experiment: `max-crypto-image-signature-iv-refresh-20261101`
+- When: '2026-11-01 11:03 CET' - '2026-11-01 11:08 CET'
+- Change: Rebuilt the ARM firmware and RISC-V VM core with the repository wrappers, then refreshed the tracked max_crypto ARM UF2, README checksum, TODO status, and session handoff. The artifact now includes the native Signature MAC initialization-IV fix.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` both passed. `cmp build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` passed. Image size is 2,098,176 bytes; SHA-256 is `1dc6d486f49e9688eedcdf65785f1629cc6de93b23c7931e22d577ed6696d82d`. `git diff --check` passed for changed text files. The authorized reader helper returned zero physical Pico devices, so flashing and hardware monitoring were skipped.
+- Result: The downloadable UF2 exactly matches the validated current ARM build and contains the IV fix. The unchanged support manifest SHA-256 remains `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`. The image is built from the current worktree, including unrelated pre-existing `src/cap_load.cpp` changes, and is not reproducible from a clean checkout of the artifact commit alone.
+- Decision: Use this image for external testing; revalidate it on a Pico when one enumerates. The reader inventory is currently empty.
+- Commit: `21eb7d5` (artifact and metadata); this progress entry is recorded in a follow-up metadata commit.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (2,098,176 bytes, SHA-256 above); build outputs under `build/arm/` and `build/riscv/`; no physical log.
+
 ## 2026-11-01 — Re-run VPCD persistence integration 6 minutes
 
 - Step/experiment: `vpcd-persistence-integration-20261101`
