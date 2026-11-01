@@ -14,7 +14,11 @@ official client ran via PCSC Virtual PCD with only the three IV calls selected:
 all 3 returned `OK`, 463 unrelated calls were skipped, and cleanup passed. A
 full Crypto VPCD sweep separately timed out at 800 seconds after 190 partial
 client rows (112 `OK`, 78 `UNSUPPORTED_PER_SPEC`) and before reaching the IV
-calls. CSVs and hashes are in `artifacts/results/deploy/vpcd-iv-fix-20261101/`.
+calls. A follow-up selecting `ALG_RSA_SHA_384_PKCS1` completed all seven
+matching API rows as `OK`, but its client also timed out afterward; the outer
+180-second bound interrupted cleanup. Do not attribute that timeout to RSA
+SHA-384 itself. CSVs and hashes are in
+`artifacts/results/deploy/vpcd-iv-fix-20261101/`.
 Physical confirmation is still pending because the authorized reader helper
 found zero physical Pico readers; no flash was attempted. Next, when a Pico
 appears, rerun the full Crypto area and check for residual `WRONG_RESULT` or

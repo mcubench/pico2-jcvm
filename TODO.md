@@ -693,8 +693,12 @@ adapters, and do not change upstream applet CAP files.
   `OK`, 463 unrelated calls were skipped, and cleanup passed. A complete
   Crypto VPCD run separately timed out at 800 seconds after 190 partial client
   rows (112 `OK`, 78 `UNSUPPORTED_PER_SPEC`), before reaching these IV cases;
-  treat that as failed full-area validation. Retest the IV rows on physical
-  hardware when a board is available.
+  treat that as failed full-area validation. A follow-up selected
+  `ALG_RSA_SHA_384_PKCS1` run returned `OK` for all seven matching API rows,
+  but the client again timed out afterward; the outer bound also interrupted
+  cleanup. This indicates broader API-client/VPCD completion trouble, not a
+  demonstrated RSA-SHA-384 failure. Retest the IV rows on physical hardware
+  when a board is available, and diagnose the VPCD full-run timeout separately.
 
 ### Priority 1 — selectable Java Card firmware capabilities
 

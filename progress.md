@@ -19024,3 +19024,14 @@
 - Commit: `807cd8e` (`Record Signature IV API client validation`)
 - Artifacts/logs: Selected-run CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-iv-filtered.csv` SHA-256 `b085ef9ed89517e8e6d9f467ea9bc63ad7e7a16963c5ef59e66515273be58006`; full-run timeout CSV `crypto.csv`; partial official client output `crypto-full-client-partial.csv` SHA-256 `66637996f43c46ec4c4d254bb6adf899b4fb3ace920db9018e531fb9c2440b3e`; filtered-run emulator log SHA-256 `26e851c466fc454febd7ef7f4364ce4960f313cc54002b96f81b0cf0f3a6a143`.
 
+## 2026-11-01 Isolate VPCD Crypto client timeout 6 minutes
+
+- Step/experiment: `vpcd-crypto-timeout-rsa384-followup-20261101`
+- When: '2026-11-01 10:52 CET' - '2026-11-01 10:58 CET'
+- Change: Used the unchanged API 3.0.5 Crypto CAP/client over PCSC Virtual PCD, selecting only `ALG_RSA_SHA_384_PKCS1` to check the first area immediately following the 190-row partial full-run capture. Updated TODO/QKB/HANDOFF with the distinction between successful algorithm rows and the client-level timeout.
+- Validation: `UPLOAD OK`; seven matching `ALG_RSA_SHA_384_PKCS1` API rows returned `OK`, with 187 unrelated rows skipped. Client timed out at 120 seconds; the outer 180-second command bound then interrupted cleanup. VPCD emulator was started after bounded reader discovery and a passing `VpcdPresenceProbe`. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
+- Result: RSA SHA-384 PKCS#1 calls do not reproduce an API error; the full Crypto client completion issue persists beyond those calls and is not localized to RSA-384. This is a failed overall VPCD area run, not a full-area pass.
+- Decision: Diagnose why the official client / VPCD run fails to return and complete cleanup after filtered runs; physical API confirmation remains pending until a Pico reader is available.
+- Commit: `<pending>`
+- Artifacts/logs: API CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-rsa384-followup.csv` SHA-256 `be8ad238b6b99b20099503b8800c6355a0bb32e2b8b37036b0c97f39f4815e62`; reader, presence, and emulator logs `artifacts/logs/vpcd-api-rsa384-20261101T095317Z/`.
+

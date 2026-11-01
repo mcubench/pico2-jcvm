@@ -22,6 +22,11 @@
   (SHA-256 `b085ef9ed89517e8e6d9f467ea9bc63ad7e7a16963c5ef59e66515273be58006`)
   and partial client output is `crypto-full-client-partial.csv` (SHA-256
   `66637996f43c46ec4c4d254bb6adf899b4fb3ace920db9018e531fb9c2440b3e`).
+- A separate API run selecting only `ALG_RSA_SHA_384_PKCS1` produced seven
+  `OK` matching rows, then the client timed out; the outer bound interrupted
+  cleanup. This argues against treating RSA-384 itself as the timeout cause.
+  The full Crypto timeout remains unexplained and requires its own diagnostic;
+  the deterministic and selected IV checks are independent.
 - **Separate observation:** The full Crypto sweep's RSA SHA-512 PSS
   `EXC_CARDRUNTIME reason=0x0001` uses a 1024-bit key with a 64-byte salt. The
   PSS operation cannot fit that salt with SHA-512; separate known-answer
