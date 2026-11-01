@@ -66,6 +66,13 @@ public final class ClientApplet extends Applet {
       } catch (SecurityException expected) {
         result = (short) 0x6A07;
       }
+    } else if (buffer[1] == 0x17) {
+      try {
+        ((Object) shareable).equals(shareable);
+        result = (short) 0x6A08;
+      } catch (SecurityException expected) {
+        result = (short) 0x6A09;
+      }
     } else {
       AID callerAID = JCSystem.getAID();
       Probe probe = (Probe) shareable;

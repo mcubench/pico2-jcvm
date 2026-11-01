@@ -62,6 +62,9 @@
   invokes the stored proxy on the next APDU. Fresh VPCD install passes and the
   second call returns `45679000`; the service context and proxy metadata remain
   usable across the collection boundary.
+- The same fixture's direct `Object.equals` invocation on the proxy is rejected
+  with `SecurityException`, confirming that ordinary virtual methods cannot
+  inspect the placeholder.
 - This covers the active emulator context only. It does not verify context
   eviction, reset/process restart, persistent restoration of proxy metadata, or
   physical heap collection.

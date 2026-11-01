@@ -93,8 +93,16 @@ public final class SioCrossAidPhysicalProbe {
       if (!actual.equals("6A039000")) {
         throw new AssertionError("expected 6A039000, got " + actual);
       }
+
+      response = channel.transmit(new CommandAPDU(hex("8017000000")));
+      actual = hex(response.getBytes());
+      System.out.println("SIO_PHYSICAL:proxyEquals response=" + actual);
+      if (!actual.equals("6A099000")) {
+        throw new AssertionError("expected 6A099000, got " + actual);
+      }
       System.out.println("SIO_PHYSICAL:PASS int_argument_return exception_unwind " +
-                         "context_restore denied_lookup local_reference_firewall");
+                         "context_restore denied_lookup local_reference_firewall " +
+                         "proxy_method_firewall");
     } finally {
       card.disconnect(false);
     }

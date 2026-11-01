@@ -21,11 +21,10 @@ return round-trip as `0x12345678` → `0x76543210`. A server-thrown
 `SecurityException` is caught in the client context, and a subsequent SIO call
 passes. A proxy saved in the client applet instance survives the VM's
 end-of-APDU GC and works on the following APDU. This validates exception
-unwinding for that case only; exception
-identity/status semantics for other server exceptions remain open. The
-unchanged upstream `AlgTestApiCore_305.cap` physical result below still covers
-only the same-applet
-route. A physical attempt on
+unwinding for that case only; identity/status semantics for other server
+exceptions remain open. The fixture also confirms direct `Object.equals` on a
+proxy is rejected. The unchanged upstream `AlgTestApiCore_305.cap` physical
+result below still covers only the same-applet route. A physical attempt on
 `2BED26ED20556535` loaded the contract and service package, but service applet
 installation returned internal stage 9 / `6F00` before the probe could run.
 The authorized reader refresh and `lsusb` saw only this running CCID board

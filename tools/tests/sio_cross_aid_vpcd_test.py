@@ -205,7 +205,16 @@ def main() -> int:
                 )
             print("TEST:PASS applet-local array rejected across contexts; "
                   "response=6A039000")
-            print("TEST:SUMMARY pass=11 fail=0")
+            response = vpcd.exchange(connection, bytes.fromhex("8017000000"),
+                                     "proxy Object.equals firewall")
+            if response != bytes.fromhex("6A099000"):
+                raise RuntimeError(
+                    f"proxy Object.equals result {response.hex().upper()}, "
+                    "expected 6A099000"
+                )
+            print("TEST:PASS Object.equals on proxy is blocked; "
+                  "response=6A099000")
+            print("TEST:SUMMARY pass=12 fail=0")
             return 0
         finally:
             if connection is not None:

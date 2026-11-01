@@ -19485,3 +19485,14 @@
 - Decision: Keep proxy reset/restart lifecycle acceptance open. Continue with GC/context eviction and hardware once a clean card can accept the fixture.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T220939Z.log`.
+
+## 2026-11-01 — Verify proxy method firewall on VPCD 8 minutes
+
+- Step/experiment: `ctx01-cross-aid-proxy-method-firewall-20261101`
+- When: '2026-11-01 22:09 UTC' - '2026-11-01 22:17 UTC'
+- Change: Extended the client fixture to call `Object.equals` directly on a Shareable proxy and assert that the VM raises a catchable `SecurityException`. Added the APDU to the VPCD and physical probes; updated CTX-01 notes.
+- Validation: Fresh three-package CAP generation succeeded with zero errors (int-support warning expected). VPCD regression passed 12/12; `Object.equals` returned the expected client catch marker `6A099000`. Proxy survives end-of-APDU GC; cross-context int, exception unwinding, context restoration, lookup denial and local-reference rejection remain passing. Physical probe compile/syntax and scoped whitespace checks pass. No firmware build needed for fixture-only changes.
+- Result: Ordinary `invokevirtual` access on the proxy placeholder is rejected on the tested call path; valid Shareable `invokeinterface` remains operational.
+- Decision: Keep broader proxy field/method operation and cast firewall acceptance open; continue CTX-01 and repeat the complete probe on physical hardware after clean-card installation is possible.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T221438Z.log`.
