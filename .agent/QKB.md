@@ -3229,3 +3229,28 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Limit:** Only null, unknown-AID and default-null paths are tested. Positive
   cross-AID lookup/invocation and firewall argument/result checks remain open;
   the authorized physical-reader helper reports zero devices.
+
+### Fail-closed Shareable proxy dispatch — 2026-11-01
+
+- Proxy references are ordinary local handles only until `invokeinterface`.
+  Resolve their server applet by stored full AID, verify the requested
+  interface has `ACC_SHAREABLE`, and resolve the method against the server
+  object's concrete class before entering the server context. Do not call
+  `Heap::getInstance()` on the client placeholder to resolve methods.
+- `Stack::ReturnKind` distinguishes void, short, int, and reference results
+  across nested interpretation. The nested server call returns primitive and
+  void values safely; arguments are currently accepted only when the receiver
+  is the sole argument. Nonnull server-local reference returns are rejected
+  until converted into client-owned proxies. Null reference returns are safe.
+- A proxy must not be usable as an ordinary instance. `invokevirtual`,
+  `invokespecial`, direct instance field bytecodes, and array casts are denied;
+  `checkcast`/`instanceof` accept only interfaces marked Shareable. This keeps
+  the placeholder's implementation class and fields private.
+- **Validation:** PC/ARM/RISC-V builds pass. The registry unit test covers
+  typed root/method return bookkeeping and proxy metadata. The unchanged
+  transaction CAP case 48 passes 3/3, covering null/unknown/default lookup
+  behavior only. No positive two-applet CAP fixture is available, so forwarding
+  has not been exercised end to end or on physical hardware.
+- **Next:** Add a test fixture for a positive cross-AID lookup and zero-argument
+  primitive/void interface calls, then test argument/result reference
+  translation and exception/context restoration before calling CTX-01 complete.

@@ -61,6 +61,7 @@ void Bytecodes::bc_areturn() {
   TRACE_JCVM_DEBUG("ARETURN");
 
   returned_value = stack.pop_Reference();
+  stack.recordMethodReturn(Stack::ReturnKind::Reference);
 
   const bool root_frame = stack.isRootFrame();
   stack.pop_Frame();
@@ -104,13 +105,15 @@ void Bytecodes::bc_sreturn() {
   TRACE_JCVM_DEBUG("SRETURN");
 
   returned_value = stack.pop_Short();
+  stack.recordMethodReturn(Stack::ReturnKind::Short);
 
   const bool root_frame = stack.isRootFrame();
   stack.pop_Frame();
   context.backToPreviousPackageID();
 
   if (root_frame) {
-    stack.setRootReturnValue(static_cast<uint16_t>(returned_value));
+    stack.setRootReturnValue(static_cast<uint16_t>(returned_value),
+                             Stack::ReturnKind::Short);
   } else {
     stack.push_Short(returned_value);
   }
@@ -154,13 +157,15 @@ void Bytecodes::bc_ireturn() {
   TRACE_JCVM_DEBUG("IRETURN");
 
   returned_value = stack.pop_Int();
+  stack.recordMethodReturn(Stack::ReturnKind::Int);
 
   const bool root_frame = stack.isRootFrame();
   stack.pop_Frame();
   context.backToPreviousPackageID();
 
   if (root_frame) {
-    stack.setRootReturnValue(static_cast<uint32_t>(returned_value));
+    stack.setRootReturnValue(static_cast<uint32_t>(returned_value),
+                             Stack::ReturnKind::Int);
   } else {
     stack.push_Int(returned_value);
   }
@@ -192,9 +197,14 @@ void Bytecodes::bc_return() {
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("RETURN");
+  stack.recordMethodReturn(Stack::ReturnKind::Void);
 
+  const bool root_frame = stack.isRootFrame();
   stack.pop_Frame();
   context.backToPreviousPackageID();
+  if (root_frame) {
+    stack.setRootReturnValue(0, Stack::ReturnKind::Void);
+  }
 
   return;
 }

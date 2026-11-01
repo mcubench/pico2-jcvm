@@ -210,9 +210,15 @@ Archive text is historical evidence, not current device state or priorities.
   server, executes its Applet override in the retained context, and creates a
   separate client-heap placeholder with context-owned proxy metadata. The
   unchanged upstream probe passes null, unknown-AID and default-method cases.
-  This is not yet a usable cross-applet Shareable call: proxy `invokeinterface`
-  routing and firewall checks remain. Never return raw server heap references
-  to clients.
+  Proxy `invokeinterface` now checks the requested interface is marked
+  Shareable, resolves the server method in its owning context, and forwards
+  zero-argument calls. Virtual/special calls and direct instance-field access
+  on proxy handles are rejected; casts are limited to Shareable interfaces.
+  Cross-context primitive and void returns are transferred by type. Nonnull
+  server-local reference returns and all arguments fail closed until safe
+  reference translation and descriptor-aware copying are implemented. A
+  positive two-applet fixture is still missing, so invocation remains
+  unverified end to end. Never return raw server heap references to clients.
   Acceptance: positive two-applet and denied-call fixtures, correct context/AID
   restoration, stable roots across GC and reset/delete, no cross-heap reference
   leaks; follow with unchanged upstream Multi CAP integration and physical checks.

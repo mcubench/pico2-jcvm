@@ -139,6 +139,8 @@ void verify_shareable_proxy_registry() {
                                       server_object));
   assert(client.findShareableProxy(server_aid, sizeof(server_aid),
                                   server_object) == proxy);
+  assert(client.isShareableProxy(proxy));
+  assert(!client.isShareableProxy(server_object));
 
   uint8_t returned_aid[16]{};
   uint8_t returned_aid_length = 0;
@@ -221,6 +223,8 @@ int main() {
   context.setAPDUBufferRef(apdu_buffer, 0, 0, false);
   context.setAPDUObjectRef(apdu_object);
   context.getStack().setRootReferenceReturnValue(root_return);
+  assert(context.getStack().getRootReturnKind() ==
+         jcvm::Stack::ReturnKind::Reference);
   context.getHeap().reserveStaticReferenceRoot(2, 9);
   context.getHeap().setStaticReferenceRoot(2, 9, static_reference);
 
@@ -234,6 +238,18 @@ int main() {
   assert(contains(lifecycle_roots, static_reference));
 
   context.getStack().setRootReturnValue(0x1234);
+  assert(context.getStack().getRootReturnKind() ==
+         jcvm::Stack::ReturnKind::Short);
+  context.getStack().setRootReturnValue(0x12345678,
+                                       jcvm::Stack::ReturnKind::Int);
+  assert(context.getStack().getRootReturnKind() ==
+         jcvm::Stack::ReturnKind::Int);
+  context.getStack().setRootReturnValue(0, jcvm::Stack::ReturnKind::Void);
+  assert(context.getStack().getRootReturnKind() ==
+         jcvm::Stack::ReturnKind::Void);
+  context.getStack().recordMethodReturn(jcvm::Stack::ReturnKind::Void);
+  assert(context.getStack().getLastMethodReturnKind() ==
+         jcvm::Stack::ReturnKind::Void);
   VisitedReferences primitive_return_roots;
   context.visitRootReferences(record_reference, &primitive_return_roots);
   assert(!contains(primitive_return_roots, root_return));

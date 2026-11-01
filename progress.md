@@ -19299,3 +19299,14 @@
 - Decision: Keep CTX-01 open. Implement proxy-aware `invokeinterface` routing and reject private field/virtual access before any placeholder can be used by client bytecode. Do not modify upstream CAPs.
 - Commit: Recorded in this implementation commit.
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261101T162939Z.log` (SHA-256 `3c3874af47e199abb3785881d31a23fb4a645a5adc6805765be66b09f7a33195`); multipackage logs `artifacts/logs/host-vpcd-multipackage-apdu-20261101T163135Z.log` (SHA-256 `cf9d0a266e7c4619067fa4d92adededa4666d459f6a37b7c5358d98becf96694`) and matching restart log (SHA-256 `ddfdb66a990babcfcc05af0770738f73d0d6e31dc9c1b46d768cb6a25431d0ef`); build outputs under `build/`.
+
+## 2026-11-01 Add guarded Shareable proxy dispatch 37 minutes
+
+- Step/experiment: `shareable-proxy-invokeinterface-20261101`
+- When: '2026-11-01 17:35 CET' - '2026-11-01 18:12 CET'
+- Change: Added typed return tracking for nested VM calls. `invokeinterface` now recognizes client proxy handles, requires an `ACC_SHAREABLE` interface, resolves the implementation against the server object's class, and invokes zero-argument methods in the server context. Void/short/int and null reference results can cross back; argument calls and nonnull server-local reference results fail closed. Ordinary virtual/special calls, direct instance fields, and casts to non-Shareable types are denied on proxy handles. Added unit assertions and updated CTX-01, QKB, and handoff.
+- Validation: `./tools/test-rmi-registry` passed with typed root/method return and proxy-root assertions. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --case 48` passed the unchanged upstream CAP (`TEST:SUMMARY pass=3 fail=0 elapsed_s=74.206`). Final `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. Initial PC build caught a missing `Interpretor` include; a later review found and fixed root `void` return-kind capture before final validation. Physical validation intentionally not run; the existing transaction CAP has no positive Shareable implementation path.
+- Result: Proxy dispatch and basic firewall gates compile across targets, but successful cross-AID method forwarding is not proven without a positive fixture. ARM firmware image ends at `0x100e04dc`. Existing converter, Rust OS, and packed-CAP warnings remain.
+- Decision: Keep CTX-01 open. Add a positive two-applet Shareable regression, then implement descriptor-aware argument copying, nonnull reference translation, exception propagation, and cross-context restoration checks.
+- Commit: Recorded in this implementation commit.
+- Artifacts/logs: Case-48 output from `tools/test-jcsystem-transaction-applet`; registry binary `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.

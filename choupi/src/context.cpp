@@ -373,6 +373,17 @@ jref_t Context::findShareableProxy(const uint8_t *server_aid,
   return jref_t{};
 }
 
+bool Context::isShareableProxy(const jref_t proxy_reference) const noexcept {
+  if (proxy_reference.isNullPointer() || proxy_reference.isArray()) return false;
+  for (const auto &entry : this->shareable_proxies) {
+    if (entry.proxy_reference == proxy_reference &&
+        !entry.proxy_reference.isNullPointer()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool Context::registerShareableProxy(const jref_t proxy_reference,
                                      const uint8_t *server_aid,
                                      const uint8_t server_aid_length,

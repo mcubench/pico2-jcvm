@@ -26,6 +26,7 @@
 */
 
 #include "../debug.hpp"
+#include "../exceptions.hpp"
 #include "../heap.hpp"
 #include "../jc_handlers/flashmemory.hpp"
 #include "../jc_handlers/jc_class.hpp"
@@ -38,6 +39,12 @@
 namespace jcvm {
 
 namespace {
+void rejectShareableProxyFieldAccess(Context &context, const jref_t reference) {
+  if (context.isShareableProxy(reference)) {
+    throw Exceptions::SecurityException;
+  }
+}
+
 uint16_t resolveInstanceFieldToken(Context &context, const uint16_t cp_index) {
   ConstantPool_Handler constant_pool(context.getCurrentPackage());
   const jc_cap_instance_field_ref_info field_ref =
@@ -124,6 +131,7 @@ void Bytecodes::bc_getfield_a() {
   TRACE_JCVM_DEBUG("GETFIELD_A 0x%02X", index);
 
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
   if (objectref.isNullPointer()) {
     const auto &frame = stack.getCurrentFrame();
     const auto *method_component =
@@ -221,6 +229,7 @@ void Bytecodes::bc_getfield_b() {
   TRACE_JCVM_DEBUG("GETFIELD_B 0x%02X", index);
 
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   value = instance->getField_Byte(resolveInstanceFieldToken(this->context, index));
@@ -292,6 +301,7 @@ void Bytecodes::bc_getfield_s() {
   TRACE_JCVM_DEBUG("GETFIELD_S 0x%02X", index);
 
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   value = instance->getField_Short(
@@ -368,6 +378,7 @@ void Bytecodes::bc_getfield_i() {
   TRACE_JCVM_DEBUG("GETFIELD_I 0x%02X", index);
 
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   value = instance->getField_Int(resolveInstanceFieldToken(this->context, index));
@@ -448,6 +459,7 @@ void Bytecodes::bc_putfield_a() {
 
   value = stack.pop_Reference();
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   instance->setField_Reference(resolveInstanceFieldToken(this->context, index),
@@ -526,6 +538,7 @@ void Bytecodes::bc_putfield_b() {
 
   value = stack.pop_Byte();
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   instance->setField_Byte(resolveInstanceFieldToken(this->context, index), value);
@@ -603,6 +616,7 @@ void Bytecodes::bc_putfield_s() {
 
   value = stack.pop_Short();
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   instance->setField_Short(resolveInstanceFieldToken(this->context, index), value);
@@ -684,6 +698,7 @@ void Bytecodes::bc_putfield_i() {
 
   value = stack.pop_Int();
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   instance->setField_Int(resolveInstanceFieldToken(this->context, index), value);
@@ -763,6 +778,7 @@ void Bytecodes::bc_getfield_a_w() {
   TRACE_JCVM_DEBUG("GETFIELD_A_W 0x%04X", index);
 
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   ref = instance->getField_Reference(resolveInstanceFieldToken(this->context, index));
@@ -843,6 +859,7 @@ void Bytecodes::bc_getfield_b_w() {
   TRACE_JCVM_DEBUG("GETFIELD_B_W 0x%04X", index);
 
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   value = instance->getField_Byte(resolveInstanceFieldToken(this->context, index));
@@ -923,6 +940,7 @@ void Bytecodes::bc_getfield_s_w() {
   TRACE_JCVM_DEBUG("GETFIELD_S_W 0x%04X", index);
 
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   value = instance->getField_Short(resolveInstanceFieldToken(this->context, index));
@@ -1007,6 +1025,7 @@ void Bytecodes::bc_getfield_i_w() {
   TRACE_JCVM_DEBUG("GETFIELD_I_W 0x%04X", index);
 
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   value = instance->getField_Int(resolveInstanceFieldToken(this->context, index));
@@ -1093,6 +1112,7 @@ void Bytecodes::bc_getfield_a_this() {
    * currently executing method's this parameter."
    */
   objectref = stack.readLocal_Reference(0);
+  rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
   const auto field_token = resolveInstanceFieldToken(this->context, index);
   ref = instance->getField_Reference(field_token);
@@ -1177,6 +1197,7 @@ void Bytecodes::bc_getfield_b_this() {
    * currently executing method's this parameter."
    */
   objectref = stack.readLocal_Reference(0);
+  rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
   value = instance->getField_Byte(resolveInstanceFieldToken(this->context, index));
   stack.push_Byte(value);
@@ -1258,6 +1279,7 @@ void Bytecodes::bc_getfield_s_this() {
    * currently executing method's this parameter."
    */
   objectref = stack.readLocal_Reference(0);
+  rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
   const uint16_t field_token = resolveInstanceFieldToken(this->context, index);
   value = instance->getField_Short(field_token);
@@ -1341,6 +1363,7 @@ void Bytecodes::bc_getfield_i_this() {
    * currently executing method's this parameter."
    */
   objectref = stack.readLocal_Reference(0);
+  rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
   value = instance->getField_Int(resolveInstanceFieldToken(this->context, index));
   stack.push_Int(value);
@@ -1423,6 +1446,7 @@ void Bytecodes::bc_putfield_a_w() {
 
   value = stack.pop_Reference();
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   instance->setField_Reference(resolveInstanceFieldToken(this->context, index), value);
@@ -1503,6 +1527,7 @@ void Bytecodes::bc_putfield_b_w() {
 
   value = stack.pop_Byte();
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   instance->setField_Byte(resolveInstanceFieldToken(this->context, index), value);
@@ -1584,6 +1609,7 @@ void Bytecodes::bc_putfield_s_w() {
   value = stack.pop_Short();
 
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
   auto instance = heap.getInstance(objectref);
 
   instance->setField_Short(resolveInstanceFieldToken(this->context, index), value);
@@ -1665,6 +1691,7 @@ void Bytecodes::bc_putfield_i_w() {
 
   value = stack.pop_Int();
   objectref = stack.pop_Reference();
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   auto instance = heap.getInstance(objectref);
   instance->setField_Int(resolveInstanceFieldToken(this->context, index), value);
@@ -1748,6 +1775,7 @@ void Bytecodes::bc_putfield_a_this() {
    * currently executing method's this parameter."
    */
   objectref = stack.readLocal_Reference(0);
+  rejectShareableProxyFieldAccess(this->context, objectref);
   value = stack.pop_Reference();
   auto instance = heap.getInstance(objectref);
   instance->setField_Reference(resolveInstanceFieldToken(this->context, index), value);
@@ -1826,6 +1854,7 @@ void Bytecodes::bc_putfield_b_this() {
   TRACE_JCVM_DEBUG("PUFIELD_B_THIS 0x%02X", index);
 
   objectref = stack.readLocal_Reference(0);
+  rejectShareableProxyFieldAccess(this->context, objectref);
 
   value = stack.pop_Byte();
   auto instance = heap.getInstance(objectref);
@@ -1905,6 +1934,7 @@ void Bytecodes::bc_putfield_s_this() {
   TRACE_JCVM_DEBUG("PUFIELD_S_THIS 0x%02X", index);
 
   objectref = stack.readLocal_Reference(0);
+  rejectShareableProxyFieldAccess(this->context, objectref);
   value = stack.pop_Short();
 
   auto instance = heap.getInstance(objectref);
@@ -1985,6 +2015,7 @@ void Bytecodes::bc_putfield_i_this() {
   TRACE_JCVM_DEBUG("PUFIELD_I_THIS 0x%02X", index);
 
   objectref = stack.readLocal_Reference(0);
+  rejectShareableProxyFieldAccess(this->context, objectref);
   value = stack.pop_Int();
 
   auto instance = heap.getInstance(objectref);

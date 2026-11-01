@@ -57,12 +57,17 @@ static_assert(sizeof(std::declval<jref_t &>().compact()) == sizeof(jword_t),
               "jref_t class has a wrong size.");
 
 class Stack {
+public:
+  enum class ReturnKind : uint8_t { None, Void, Short, Int, Reference };
+
 private:
   jword_t jc_stack[JCVM_STACK_SIZE];
   List<Frame> frames;
   bool root_return_value_available = false;
   bool root_return_value_is_reference = false;
   uint32_t root_return_value = 0;
+  ReturnKind root_return_kind = ReturnKind::None;
+  ReturnKind last_method_return_kind = ReturnKind::None;
 
 public:
   // Pushing a new frame regarding the invoked method header.
@@ -82,6 +87,8 @@ public:
     this->root_return_value_available = false;
     this->root_return_value_is_reference = false;
     this->root_return_value = 0;
+    this->root_return_kind = ReturnKind::None;
+    this->last_method_return_kind = ReturnKind::None;
   }
   /// Discard only frames above an existing interpreter caller.
   void unwindToDepth(const uint16_t depth) noexcept {
@@ -92,6 +99,8 @@ public:
       this->root_return_value_available = false;
       this->root_return_value_is_reference = false;
       this->root_return_value = 0;
+      this->root_return_kind = ReturnKind::None;
+      this->last_method_return_kind = ReturnKind::None;
     }
   }
   uint16_t frameDepth() const noexcept {
@@ -103,8 +112,16 @@ public:
   bool isRootFrame() const noexcept;
   /// Save a typed method result when the top-level entry returns.
   void setRootReturnValue(uint32_t value) noexcept;
+  void setRootReturnValue(uint32_t value, ReturnKind kind) noexcept;
   /// Save a reference result so root enumeration preserves its heap handle.
   void setRootReferenceReturnValue(jref_t value) noexcept;
+  void recordMethodReturn(ReturnKind kind) noexcept {
+    this->last_method_return_kind = kind;
+  }
+  ReturnKind getRootReturnKind() const noexcept { return root_return_kind; }
+  ReturnKind getLastMethodReturnKind() const noexcept {
+    return last_method_return_kind;
+  }
   bool hasRootReturnValue() const noexcept;
   uint32_t getRootReturnValue() const noexcept;
   bool getRootReferenceReturnValue(jref_t &value) const noexcept;

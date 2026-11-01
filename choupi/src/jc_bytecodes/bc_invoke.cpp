@@ -40,6 +40,7 @@
 #include "../jc_handlers/jc_import.hpp"
 #include "../jc_handlers/jc_method.hpp"
 #include "../jc_handlers/package.hpp"
+#include "../interpretor.hpp"
 #include "../stack.hpp"
 #include "bytecodes.hpp"
 #include "../../../src/vm_applet_context.hpp"
@@ -173,6 +174,9 @@ void Bytecodes::bc_invokevirtual() {
         static_cast<unsigned>(receiver.compact()));
     std::fflush(stdout);
     throw Exceptions::NullPointerException;
+  }
+  if (context.isShareableProxy(receiver)) {
+    throw Exceptions::SecurityException;
   }
 
   const auto method_offset = [&]() {
@@ -406,6 +410,9 @@ void Bytecodes::bc_invokespecial() {
   const jref_t receiver = stack.get_Pushed_Element(nargs);
   if (receiver.isNullPointer()) {
     throw Exceptions::NullPointerException;
+  }
+  if (context.isShareableProxy(receiver)) {
+    throw Exceptions::SecurityException;
   }
 
   // Calling the method after validating its receiver.
@@ -758,6 +765,97 @@ void Bytecodes::bc_invokeinterface() {
         static_cast<unsigned>(objectref.compact()));
     std::fflush(stdout);
     throw Exceptions::NullPointerException;
+  }
+
+  // A Shareable proxy is only a client-side handle. It must be invoked via
+  // its declared Shareable interface in the server applet's context; never
+  // interpret the placeholder object's class or fields in the client heap.
+  if (context.isShareableProxy(objectref)) {
+    if (nargs != 1) {
+      // Arguments need descriptor-aware copying and reference firewalling.
+      throw Exceptions::SecurityException;
+    }
+    auto interface_info =
+        cp_handler.classref2interface(interface_ref);
+    if ((interface_info.second->flags & JC_CAP_CLASS_ACC_SHAREABLE) == 0) {
+      throw Exceptions::SecurityException;
+    }
+
+    uint8_t server_aid[16]{};
+    uint8_t server_aid_length = 0;
+    jref_t server_reference;
+    if (!context.getShareableProxy(objectref, server_aid,
+                                   server_aid_length, server_reference)) {
+      throw Exceptions::SecurityException;
+    }
+    Context *server_context =
+        choupi_vm_find_or_restore_applet_context(server_aid,
+                                                 server_aid_length);
+    if (server_context == nullptr) {
+      throw Exceptions::SecurityException;
+    }
+    const auto server_object =
+        server_context->getHeap().getInstance(server_reference);
+    Package server_package(server_object->getPackageID());
+    ConstantPool_Handler server_cp(server_package);
+    const auto server_class_ref = server_cp.getClassRefFromClassIndex(
+        server_object->getClassIndex());
+    const auto target_method =
+        Class_Handler(server_package).getImplementedInterfaceMethodOffset(
+            server_class_ref, interface_ref, interface_method, false,
+            context.getCurrentPackage());
+    Method_Handler target_handler(*server_context);
+    target_handler.setPackage(target_method.first);
+    if (target_handler.getArgumentCount(target_method.second) != 1) {
+      throw Exceptions::SecurityException;
+    }
+
+    // Consume the proxy receiver; the target receives the real server object
+    // only in its owning context.
+    (void)stack.pop_Reference();
+    const jref_t initial_references[] = {server_reference};
+    Interpretor server_interpretor(
+        *server_context, target_method.second,
+        target_method.first.getPackageID(), initial_references, 1);
+    const uint16_t status = server_interpretor.run();
+    if (status != 0x9000) {
+      throw Exceptions::SecurityException;
+    }
+
+    if (server_context == &context) {
+      // The nested interpreter returned directly to the caller's frame.
+      return;
+    }
+
+    Stack &server_stack = server_context->getStack();
+    switch (server_stack.getRootReturnKind()) {
+    case Stack::ReturnKind::Void:
+      break;
+    case Stack::ReturnKind::Short:
+      stack.push_Short(static_cast<jshort_t>(server_stack.getRootReturnValue()));
+      break;
+    case Stack::ReturnKind::Int:
+#ifdef JCVM_INT_SUPPORTED
+      stack.push_Int(static_cast<jint_t>(server_stack.getRootReturnValue()));
+#else
+      throw Exceptions::SecurityException;
+#endif
+      break;
+    case Stack::ReturnKind::Reference: {
+      jref_t returned_reference;
+      if (!server_stack.getRootReferenceReturnValue(returned_reference) ||
+          !returned_reference.isNullPointer()) {
+        // A server-local reference must itself be translated to a proxy;
+        // until that translation is available, fail closed.
+        throw Exceptions::SecurityException;
+      }
+      stack.push_Reference(returned_reference);
+      break;
+    }
+    case Stack::ReturnKind::None:
+      throw Exceptions::SecurityException;
+    }
+    return;
   }
 
   if (objectref.isArray()) { // Is an array

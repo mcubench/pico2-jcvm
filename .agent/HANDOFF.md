@@ -1,5 +1,38 @@
 # Session handoff — updated 2026-11-01
 
+## Shareable proxy invocation groundwork — current worktree
+
+Native Shareable lookup from the prior step now has a guarded `invokeinterface`
+path. A proxy call requires the target interface to carry `ACC_SHAREABLE`,
+resolves the implementation against the actual server object, and executes it
+through nested `Interpretor` in the server context. This step supports only
+zero-argument service methods. Typed return tracking transfers void, short and
+int values across contexts; null references transfer safely, while nonnull
+server-local reference returns are rejected until proxy translation is added.
+All arguments currently fail closed.
+
+Ordinary access to proxy implementation details is blocked: virtual/special
+calls, all direct instance-field opcodes, and casts outside Shareable interfaces
+are denied. This has not been tested with a positive two-applet fixture; the
+existing upstream transaction probe only verifies absent/unknown/default-null
+lookup behavior. No CAP was changed. Physical devices are reported connected,
+but no hardware operation was needed or run in this step.
+
+Validation on the final source: `./tools/test-rmi-registry` passes including
+typed return bookkeeping and proxy roots; elevated
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --case 48`
+passes `TEST:SUMMARY pass=3 fail=0 elapsed_s=74.206`; `./tools/build-pc
+--profile current`, `./tools/build arm`, and `./tools/build riscv` pass. ARM
+image end address is `0x100e04dc`. Root `void` return-kind capture is tested
+in the registry unit. Existing Java Card converter, Rust OS, and
+packed-CAP warnings remain.
+
+Next implement an unchanged/upstream-compatible positive Shareable fixture or
+find an existing deploy CAP exercising successful cross-AID lookup and
+interface calls. Then cover argument descriptors, safe reference result
+translation, denied references, exceptions, and context restoration. Do not
+claim CTX-01 complete from this groundwork.
+
 ## Previous-context AID native behavior — implemented offline (2026-11-01)
 
 `Context::setActiveContext()` now stores the source applet AID on context entry;

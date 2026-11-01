@@ -49,6 +49,26 @@
 namespace jcvm {
 
 namespace {
+bool shareableProxyCastTarget(Context &context, const uint8_t atype,
+                              const uint16_t index) {
+  if (atype != 0) {
+    return false;
+  }
+  try {
+    const Package package = context.getCurrentPackage();
+    ConstantPool_Handler constant_pool(package);
+    const auto class_ref = constant_pool.getClassRef(index);
+    const auto target = constant_pool.resolveClassref(class_ref, true);
+    if (!IS_INTERFACE(target.second)) {
+      return false;
+    }
+    return (reinterpret_cast<const jc_cap_interface_info *>(target.second)
+                ->flags & JC_CAP_CLASS_ACC_SHAREABLE) != 0;
+  } catch (Exceptions) {
+    return false;
+  }
+}
+
 // NativeKey has one ROM class whose declared interfaces are the union of
 // supported key families. JC305 instanceof must refine those interfaces by
 // the instance's actual Key.getType() value.
@@ -764,6 +784,7 @@ jbool_t Bytecodes::docheck(const jref_t objectref, const uint8_t atype,
  *
  */
 void Bytecodes::bc_checkcast() {
+  Context &context = this->context;
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
@@ -772,6 +793,14 @@ void Bytecodes::bc_checkcast() {
   jref_t objectref = stack.pop_Reference();
 
   TRACE_JCVM_DEBUG("CHECKCAST 0x%02X 0x%02X", atype, index);
+
+  if (context.isShareableProxy(objectref)) {
+    if (!shareableProxyCastTarget(context, atype, index)) {
+      throw Exceptions::ClassCastException;
+    }
+    stack.push_Reference(objectref);
+    return;
+  }
 
   if (objectref.isNullPointer() == FALSE) {
     if (this->docheck(objectref, atype, index) == FALSE) {
@@ -891,6 +920,7 @@ void Bytecodes::bc_checkcast() {
  *   atype may not be 13 (array type = T_INT).
  */
 void Bytecodes::bc_instanceof() {
+  Context &context = this->context;
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
@@ -899,6 +929,12 @@ void Bytecodes::bc_instanceof() {
   jref_t objectref = stack.pop_Reference();
 
   TRACE_JCVM_DEBUG("INSTANCEOF 0x%02X 0x%02X", atype, index);
+
+  if (context.isShareableProxy(objectref)) {
+    stack.push_Byte(shareableProxyCastTarget(context, atype, index) ? TRUE
+                                                                   : FALSE);
+    return;
+  }
 
   const jbool_t result = objectref.isNullPointer()
                              ? FALSE

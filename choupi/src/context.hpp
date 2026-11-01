@@ -160,6 +160,7 @@ public:
   jref_t findShareableProxy(const uint8_t *server_aid,
                             uint8_t server_aid_length,
                             jref_t server_reference) const noexcept;
+  bool isShareableProxy(jref_t proxy_reference) const noexcept;
   bool registerShareableProxy(jref_t proxy_reference,
                              const uint8_t *server_aid,
                              uint8_t server_aid_length,

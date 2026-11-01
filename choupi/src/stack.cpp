@@ -57,6 +57,8 @@ void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
     this->root_return_value_available = false;
     this->root_return_value_is_reference = false;
     this->root_return_value = 0;
+    this->root_return_kind = ReturnKind::None;
+    this->last_method_return_kind = ReturnKind::None;
     new_fp = &(this->jc_stack[0]);
   } else {
 
@@ -135,15 +137,24 @@ bool Stack::empty() noexcept { return this->frames.empty(); }
 bool Stack::isRootFrame() const noexcept { return this->frames.size() == 1; }
 
 void Stack::setRootReturnValue(const uint32_t value) noexcept {
+  this->setRootReturnValue(value, ReturnKind::Short);
+}
+
+void Stack::setRootReturnValue(const uint32_t value,
+                               const ReturnKind kind) noexcept {
   this->root_return_value = value;
   this->root_return_value_available = true;
   this->root_return_value_is_reference = false;
+  this->root_return_kind = kind;
+  this->last_method_return_kind = kind;
 }
 
 void Stack::setRootReferenceReturnValue(const jref_t value) noexcept {
   this->root_return_value = value.compact();
   this->root_return_value_available = true;
   this->root_return_value_is_reference = true;
+  this->root_return_kind = ReturnKind::Reference;
+  this->last_method_return_kind = ReturnKind::Reference;
 }
 
 bool Stack::hasRootReturnValue() const noexcept {
