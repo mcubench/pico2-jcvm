@@ -11,8 +11,12 @@ This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
   available build, test, or inspection, append to root `progress.md`, and make a
   new commit containing the step. Do not amend earlier commits.
 - Do not claim hardware validation unless an attached Pico 2 was actually
-  flashed and its finite serial log inspected. The Pico 2 is now connected;
-  follow root `AGENTS.md` build gates before flashing and record bounded logs.
+  flashed and its finite serial log inspected. Physical pool availability is
+  volatile: refresh the authorized reader helper immediately before hardware
+  work, and treat the current HANDOFF as the source for the last observed
+  state. On 2026-11-01 the helper reported zero Pico readers; continue offline
+  until a board is enumerated, then follow root `AGENTS.md` build gates and
+  record bounded logs.
 - Treat multiple identified physical Pico 2 devices as a failover pool. If one
   becomes unavailable, fails to enumerate, or stops responding, record its
   board-level failure and continue on another usable board without waiting for

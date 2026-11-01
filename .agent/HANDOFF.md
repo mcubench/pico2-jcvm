@@ -26,6 +26,13 @@ authorized helper currently reports zero Pico readers, and an earlier cycle
 failed its monitor because the device disappeared from guest USB. Do not retry
 hardware in a restricted context; continue offline until a device is available.
 
+The elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` workflow
+passed on 2026-11-01 using the PC VPCD backend: install/commit 3/3, then
+fresh-process restore plus four GC-pressure rounds 38/38. It confirms the
+current applet persistence and heap behavior in VPCD; it does not exercise the
+RP2350 overlay compactor or prove physical power-cycle recovery. Logs are under
+`artifacts/logs/vpcd-persistence-*-20261101T090958Z.log`.
+
 Refreshed the external-test bundle at
 `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; it is byte-for-
 byte equal to the latest build, 2,098,176 bytes, SHA-256

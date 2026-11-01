@@ -26,6 +26,12 @@
   board, capture the finite monitor, and repeat temporary CAP deletion cycles
   while checking `CHOUPI:FS_COMPACT` output. Full API-sweep follow-up is still
   required to distinguish cumulative tombstones from live-set storage needs.
+- The independent PC VPCD `./tools/test-vpcd-persistence` workflow passed on
+  2026-11-01 (install/commit 3/3; fresh-process restore and four GC-pressure
+  rounds 38/38). This verifies applet data/heap behavior on the emulator, not
+  the RP2350 overlay compactor or physical power-loss recovery. Logs:
+  `artifacts/logs/vpcd-persistence-commit-20261101T090958Z.log` and
+  `artifacts/logs/vpcd-persistence-restore-20261101T090958Z.log`.
 
 ## JCAlgTest NO_MEMORY traced to dynamic persistent-overlay exhaustion — 2026-11-01
 

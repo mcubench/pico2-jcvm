@@ -299,6 +299,12 @@ implemented independently within their stated scope.
       `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed install /
       commit 3/3 plus restore and four GC-pressure rounds 38/38. These remain
       host model/emulator checks; the actual USB cold power-cycle gate is open.
+    - [x] Repeat the full VPCD persistence workflow on 2026-11-01 through the
+      required elevated host-access path. PC build and probe build passed;
+      install/commit passed 3/3 and fresh-process restore with four GC-pressure
+      rounds passed 38/38. This still does not exercise Pico overlay compaction
+      or actual USB power loss. Logs are recorded in `progress.md` and
+      `.agent/HANDOFF.md`.
     - [ ] Verify recovery after an actual USB power cycle; PC/SC card reset
       does not remove USB power or establish loss-of-power behavior.
       `tools/test-pico-powerup` is read-only; its success marker now says
