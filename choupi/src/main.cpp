@@ -27,6 +27,7 @@
 
 #include "debug.hpp"
 #include "interpretor.hpp"
+#include "context.hpp"
 #include "context_registry.hpp"
 #include "jc_config.h"
 #include "types.hpp"
@@ -1103,6 +1104,113 @@ jcvm::Context *choupi_vm_find_or_restore_applet_context(
   } catch (...) {
     return nullptr;
   }
+}
+
+jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
+    jcvm::Context &client_context, const jcvm::jref_t client_aid,
+    const int8_t parameter) {
+  uint8_t server_aid[16]{};
+  uint8_t server_aid_length = 0;
+  uint8_t aid_package_id = 0;
+  uint16_t aid_class_index = 0;
+  if (!jcvm::Heap::describeGlobalAIDObject(
+          client_aid, server_aid, server_aid_length, aid_package_id,
+          aid_class_index)) {
+    return jcvm::jref_t{};
+  }
+
+  jcvm::Context *server_context =
+      choupi_vm_find_or_restore_applet_context(server_aid, server_aid_length);
+  if (server_context == nullptr) return jcvm::jref_t{};
+  const jcvm::jref_t applet_reference = server_context->getRestoredAppletRef();
+  if (applet_reference.isNullPointer() || applet_reference.isArray()) {
+    return jcvm::jref_t{};
+  }
+
+  const auto applet = server_context->getHeap().getInstance(applet_reference);
+  jcvm::Package applet_package(applet->getPackageID());
+  jcvm::Import_Handler imports(applet_package);
+  const auto *import_component = applet_package.getCap().getImport();
+  if (import_component == nullptr) return jcvm::jref_t{};
+
+  constexpr uint8_t framework_aid[] = {0xa0, 0x00, 0x00, 0x00,
+                                       0x62, 0x01, 0x01};
+  uint8_t framework_import_token = 0xff;
+  uint8_t applet_class_token = 0xff;
+  for (uint8_t import_index = 0; import_index < import_component->count;
+       ++import_index) {
+    const auto *package_info = imports.getPackageAID(import_index);
+    if (package_info == nullptr || package_info->AID_length !=
+                                       sizeof(framework_aid) ||
+        std::memcmp(package_info->AID, framework_aid,
+                    sizeof(framework_aid)) != 0) {
+      continue;
+    }
+    for (uint8_t class_token = 0; class_token < 0x80; ++class_token) {
+      if (jcvm::remap_imported_class_token(*package_info, class_token) == 13) {
+        framework_import_token = import_index;
+        applet_class_token = class_token;
+        break;
+      }
+    }
+    break;
+  }
+  if (framework_import_token == 0xff || applet_class_token == 0xff) {
+    return jcvm::jref_t{};
+  }
+
+  jcvm::jc_cap_virtual_method_ref_info method_ref{};
+  method_ref.class_ref.external_classref.package_token =
+      static_cast<uint8_t>(framework_import_token | 0x80u);
+  method_ref.class_ref.external_classref.class_token = applet_class_token;
+  // This callback originates in the embedded ROM. The concrete applet's
+  // method table uses the imported CAP token, so request the embedded Applet
+  // export token and ask Class_Handler to reverse-map it for the override.
+  method_ref.token = 6;
+  const auto method = jcvm::Class_Handler(applet_package).getMethodOffset(
+      method_ref, applet->getPackageID(), applet->getClassIndex(), true);
+
+  const jcvm::InterpretorInitialLocal initial_locals[] = {
+      {jcvm::InterpretorLocalType::Reference, applet_reference.compact()},
+      {jcvm::InterpretorLocalType::Reference, client_aid.compact()},
+      {jcvm::InterpretorLocalType::Byte,
+       static_cast<uint8_t>(parameter)}};
+  jcvm::Interpretor interpretor(
+      *server_context, method.second, method.first.getPackageID(),
+      initial_locals, sizeof(initial_locals) / sizeof(initial_locals[0]), true);
+  if (interpretor.run() != 0x9000) return jcvm::jref_t{};
+
+  jcvm::jref_t server_reference;
+  if (server_context == &client_context) {
+    server_reference = server_context->getStack().pop_Reference();
+  } else if (!server_context->getStack().getRootReferenceReturnValue(
+                 server_reference)) {
+    return jcvm::jref_t{};
+  }
+  if (server_reference.isNullPointer()) {
+    return jcvm::jref_t{};
+  }
+  if (server_reference.isArray() || server_reference.isGlobalInstance()) {
+    throw jcvm::Exceptions::SecurityException;
+  }
+  const auto server_object =
+      server_context->getHeap().getInstance(server_reference);
+  const jcvm::jref_t existing = client_context.findShareableProxy(
+      server_aid, server_aid_length, server_reference);
+  if (!existing.isNullPointer()) return existing;
+
+  if (!server_context->retainShareableObjectRoot(server_reference)) {
+    throw jcvm::Exceptions::SecurityException;
+  }
+  const jcvm::jref_t proxy = client_context.getHeap().addInstance(
+      server_object->getPackageID(), server_object->getClassIndex());
+  if (!client_context.registerShareableProxy(
+          proxy, server_aid, server_aid_length, server_reference)) {
+    throw jcvm::Exceptions::SecurityException;
+  }
+  (void)aid_package_id;
+  (void)aid_class_index;
+  return proxy;
 }
 
 namespace {

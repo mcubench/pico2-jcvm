@@ -128,6 +128,7 @@ void verify_retained_applet_context_lookup() {
 
 void verify_shareable_proxy_registry() {
   jcvm::Context client(4, 1);
+  jcvm::Context server(5, 1);
   constexpr uint8_t server_aid[] = {0xa0, 0x00, 0x00, 0x03, 0x01};
   const jcvm::jref_t proxy(0x0010);
   const jcvm::jref_t server_object(0x0020);
@@ -148,6 +149,12 @@ void verify_shareable_proxy_registry() {
   assert(std::equal(server_aid, server_aid + sizeof(server_aid),
                     returned_aid));
   assert(returned_server_object == server_object);
+  assert(server.retainShareableObjectRoot(server_object));
+  VisitedReferences server_roots;
+  server.visitRootReferences(record_reference, &server_roots);
+  assert(contains(server_roots, server_object));
+  assert(!server.retainShareableObjectRoot(jcvm::jref_t{}));
+  assert(!server.retainShareableObjectRoot(jcvm::jref_t(0x0031)));
 
   constexpr uint8_t other_aid[] = {0xa0, 0x00, 0x00, 0x03, 0x02};
   assert(client.findShareableProxy(other_aid, sizeof(other_aid), server_object)
@@ -238,6 +245,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 shareable_proxy_registry=1 global_aid_handle=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1");
   return 0;
 }

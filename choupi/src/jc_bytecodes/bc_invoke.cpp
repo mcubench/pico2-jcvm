@@ -42,6 +42,7 @@
 #include "../jc_handlers/package.hpp"
 #include "../stack.hpp"
 #include "bytecodes.hpp"
+#include "../../../src/vm_applet_context.hpp"
 
 #include <cstring>
 #include <cstdio>
@@ -471,6 +472,7 @@ void Bytecodes::bc_invokestatic() {
   Class_Handler class_handler(context.getCurrentPackage());
 
   uint16_t method_offset = 0;
+  bool intercept_shareable_lookup = false;
   pc_t &pc = stack.getPC();
 
   uint16_t index = pc.getNextShort();
@@ -521,6 +523,11 @@ void Bytecodes::bc_invokestatic() {
                   *package_aid, imported_class_token,
                   method_ref.static_method_ref.external_ref.token)
             : method_ref.static_method_ref.external_ref.token;
+    intercept_shareable_lookup =
+        package_aid->AID_length == 7 &&
+        std::memcmp(package_aid->AID,
+                    "\xA0\x00\x00\x00\x60\x00\x01", 7) == 0 &&
+        class_token == 0 && method_token == 53;
     bool trace_security_call = false;
 #ifndef PC_VERSION
     trace_security_call =
@@ -592,6 +599,19 @@ void Bytecodes::bc_invokestatic() {
   }
 
   // Calling the method
+  if (intercept_shareable_lookup) {
+    constexpr uint8_t expected_arguments = 2;
+    if (method_handler.getArgumentCount(method_offset) !=
+        expected_arguments) {
+      throw Exceptions::SecurityException;
+    }
+    const jref_t client_aid = stack.get_Pushed_Element(expected_arguments);
+    const int8_t parameter = static_cast<int8_t>(stack.pop_Byte());
+    (void)stack.pop_Reference();
+    stack.push_Reference(choupi_vm_get_applet_shareable_interface_object(
+        context, client_aid, parameter));
+    return;
+  }
   method_handler.callStaticMethod(method_offset);
 
   } catch (Exceptions) {

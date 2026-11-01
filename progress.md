@@ -19288,3 +19288,14 @@
 - Decision: Maintain TODO as remaining outcomes/acceptance, progress as chronology, and QKB as reusable diagnoses. Physical USB stress, actual power-loss recovery, safe reclamation enablement, API retests, Windows and three-pass integration gates remain open; ongoing SIO work stays under CTX-01.
 - Commit: This documentation commit; resolve SHA with `git log -1 --format=%H -- .agent/archive/2026-11-01-todo-pre-compaction/manifest.json`.
 - Artifacts/logs: `.agent/archive/2026-11-01-todo-pre-compaction/TODO.md`, `manifest.json`, `checkboxes.json`, and `MIGRATION.md`; no new runtime logs.
+
+## 2026-11-01 Intercept native Shareable lookup 28 minutes
+
+- Step/experiment: `native-shareable-lookup-dispatch-20261101`
+- When: '2026-11-01 17:07 CET' - '2026-11-01 17:35 CET'
+- Change: Intercepted the resolved ROM `NativeImplementation.getAppletShareableInterfaceObject` invocation. The native path reads canonical global AIDs, resolves/restores the target applet context, invokes the target Applet override, and returns a client-heap placeholder backed by bounded proxy metadata; the server context roots the returned server object. Added tests for server-object root retention. Updated CTX-01, QKB, and handoff. Proxy `invokeinterface` dispatch and firewall checks remain unimplemented.
+- Validation: `./tools/test-rmi-registry` passed with `shareable_proxy_registry=1 shareable_object_roots=1`; unchanged `JCTransactionProbe.cap` case 48 passed `TEST:SUMMARY pass=3 fail=0`; elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`; `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. The authorized reader helper returned `found 0`, so no physical test or flash ran. Initial case-48 run failed with `6F00` until ROM-versus-imported callback token mapping and same-context nested return handling were corrected.
+- Result: Null, unknown-AID and default-null Shareable lookup paths work through the native interception, including the same-context callback path. No positive cross-AID lookup/invocation, argument/result firewall, or physical behavior is established. Existing Rust, converter, and packed-CAP warnings remain.
+- Decision: Keep CTX-01 open. Implement proxy-aware `invokeinterface` routing and reject private field/virtual access before any placeholder can be used by client bytecode. Do not modify upstream CAPs.
+- Commit: Recorded in this implementation commit.
+- Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261101T162939Z.log` (SHA-256 `3c3874af47e199abb3785881d31a23fb4a645a5adc6805765be66b09f7a33195`); multipackage logs `artifacts/logs/host-vpcd-multipackage-apdu-20261101T163135Z.log` (SHA-256 `cf9d0a266e7c4619067fa4d92adededa4666d459f6a37b7c5358d98becf96694`) and matching restart log (SHA-256 `ddfdb66a990babcfcc05af0770738f73d0d6e31dc9c1b46d768cb6a25431d0ef`); build outputs under `build/`.

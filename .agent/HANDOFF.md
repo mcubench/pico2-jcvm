@@ -2440,28 +2440,39 @@ exercises simulated service paths, which motivates ARCH-09. No hardware work
 or builds performed for this documentation review. Preserve ongoing uncommitted
 applet-context work; broader language backend work remains deferred.
 
-## Shareable proxy registry groundwork — validated, not yet connected
+## Native Shareable lookup and client proxy — implemented, invocation pending
 
-Added a bounded 32-entry proxy metadata table to each `Context`, keyed by the
-client-local proxy reference and storing the server applet AID plus the actual
-server reference. Client proxy references are GC roots so the placeholder can
-remain alive while applets retain it. The focused test reports
-`shareable_proxy_registry=1`; PC, ARM, and RISC-V builds pass. This is registry
-infrastructure only: there is no proxy creation or invocation behavior yet.
-The first test run failed because the fabricated `jref_t` examples encoded
-arrays; corrected them to instance references and reran successfully.
+`Bytecodes::bc_invokestatic` now intercepts only the resolved ROM
+`NativeImplementation.getAppletShareableInterfaceObject` entry. It reads the
+requested AID from the JCRE global-AID registry, resolves/restores the matching
+server applet context, calls that applet's virtual
+`Applet.getShareableInterfaceObject` override, and returns a new placeholder
+instance in the client heap. The server reference stays in per-context proxy
+metadata; the server context retains it as a GC root. The callback uses the
+embedded Applet token then reverse-maps to the imported CAP override token.
+When client and server are the same context, the nested callback returns on the
+existing caller operand stack rather than the root-result slot; the helper
+consumes that result before returning to the intercepted call.
 
-The authorized physical-reader helper still returns `found 0` despite the
-user's report that devices are connected. No flash or physical test ran.
+The unchanged transaction-probe CAP passes case 48 (null AID, unknown AID,
+and the default null-returning own-applet callback): `TEST:SUMMARY pass=3
+fail=0`. The native registry/root test passes, the full VPCD multipackage suite
+passes 47/47, and PC/ARM/RISC-V builds pass. The first case-48 run failed with
+`6F00`; the cause was passing an imported token into a ROM-origin callback
+resolution and not consuming the same-context nested result correctly. Both
+cases are fixed and the unchanged probe passes on the final source.
 
-Next: inspect heap handle encodings and define an unforgeable proxy handle
-representation, then intercept the resolved ROM
-`NativeImplementation.getAppletShareableInterfaceObject` call in
-`Bytecodes::bc_invokestatic`, resolve/restore the target applet context, and
-invoke its `Applet.getShareableInterfaceObject` override. Ensure no raw server
-reference crosses into the client heap. Follow with proxy `invokeinterface`
-dispatch and field/method firewall checks, plus a positive two-applet emulator
-fixture. Keep the original upstream CAP files unchanged.
+Still missing: cross-AID positive lookup, proxy `invokeinterface` dispatch,
+interface visibility validation, argument/result ownership conversion, and
+field/virtual-method firewall checks. The existing upstream Multi CAP exercises
+multiple applets but does not provide a positive Shareable service fixture.
+Keep all upstream CAP files unchanged. The authorized reader helper reports
+`found 0`; no physical flash or check was possible.
+
+Next: implement and test proxy-aware `invokeinterface` dispatch. Reject direct
+field access, `invokevirtual`, and other object operations on proxy placeholders
+unless the JC firewall explicitly permits them. Add cross-context exception,
+return and ownership checks before claiming CTX-01 complete.
 
 ## TODO backlog compaction — 2026-11-01
 

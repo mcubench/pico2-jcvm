@@ -206,11 +206,13 @@ Archive text is historical evidence, not current device state or priorities.
   instance AID, preserve transient lifecycle across switches, and invalidate on
   successful DELETE. VPCD multipackage tests pass 47/47. Native lazy context
   resolution and previous-context AID reporting are implemented and tested.
-  A GC-rooted 32-entry per-context proxy metadata registry is groundwork only.
-  Remaining: intercept the resolved ROM Shareable lookup in native VM dispatch,
-  execute the server override in its owning context, create an unforgeable
-  client-local proxy, then route `invokeinterface` with visibility, argument,
-  result and ownership checks. Never return raw server heap references to clients.
+  ROM `getAppletShareableInterfaceObject` dispatch now resolves an installed
+  server, executes its Applet override in the retained context, and creates a
+  separate client-heap placeholder with context-owned proxy metadata. The
+  unchanged upstream probe passes null, unknown-AID and default-method cases.
+  This is not yet a usable cross-applet Shareable call: proxy `invokeinterface`
+  routing and firewall checks remain. Never return raw server heap references
+  to clients.
   Acceptance: positive two-applet and denied-call fixtures, correct context/AID
   restoration, stable roots across GC and reset/delete, no cross-heap reference
   leaks; follow with unchanged upstream Multi CAP integration and physical checks.

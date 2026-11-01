@@ -3205,6 +3205,27 @@ original terminology/status; check current summary and later fixes before reuse.
 - The RMI/context regression covers selected and inactive AID matches, wrong
   owner, and malformed AID. PC, ARM, and RISC-V builds pass; elevated VPCD
   multipackage lifecycle passes 47/47 after the change.
-- The resolver is infrastructure only and is not yet called by
-  `JCSystem.getAppletShareableInterfaceObject`. No positive cross-applet
-  SIO test or physical check is claimed.
+- The resolver was infrastructure only; it is now called by native dispatch
+  for `JCSystem.getAppletShareableInterfaceObject`. Positive cross-applet
+  service invocation and physical behavior are still untested.
+
+### Native Shareable lookup callback token and same-context return — 2026-11-01
+
+- **Symptom:** The upstream transaction probe's null/unknown/default Shareable
+  lookup case returned `6F00` after adding native interception.
+- **Cause:** A ROM-origin callback into a dynamic applet must resolve the
+  embedded `Applet.getShareableInterfaceObject` token and then reverse-map it
+  into the applet CAP's imported override token. Passing the imported token
+  directly to the dynamic-class resolver produced `SecurityException`. Also,
+  when client and server are the same `Context`, a nested `Interpretor` returns
+  its reference on the existing caller operand stack; it does not populate the
+  root-result slot used when running an inactive server context.
+- **Viable fix:** Resolve the Applet callback with the embedded ROM token and
+  request reverse mapping for the dynamic receiver. For same-context nested
+  calls, pop the callback result from the current operand stack; for a separate
+  server context, use its root reference result. `tools/test-jcsystem-transaction-applet
+  --case 48` passes 3/3 on the unchanged CAP after both fixes. Preserve this
+  distinction in other nested cross-context calls.
+- **Limit:** Only null, unknown-AID and default-null paths are tested. Positive
+  cross-AID lookup/invocation and firewall argument/result checks remain open;
+  the authorized physical-reader helper reports zero devices.

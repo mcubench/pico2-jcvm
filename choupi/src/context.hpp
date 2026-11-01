@@ -82,6 +82,7 @@ private:
   // already-exported initial reference while a service exercises the limit.
   std::array<RemoteObjectEntry, 32> remote_objects{};
   std::array<ShareableProxyEntry, 32> shareable_proxies{};
+  std::array<jref_t, 32> shareable_object_roots{};
   uint16_t next_remote_object_id = 1;
   jref_t apdu_buffer_ref;
   std::shared_ptr<JC_Array> apdu_java_buffer;
@@ -166,6 +167,7 @@ public:
   bool getShareableProxy(jref_t proxy_reference, uint8_t server_aid[16],
                          uint8_t &server_aid_length,
                          jref_t &server_reference) const noexcept;
+  bool retainShareableObjectRoot(jref_t reference) noexcept;
   /// Set and query the APDU buffer and response window for the current command.
   void setAPDUBufferRef(jref_t reference, uint16_t incoming_length,
                         uint16_t expected_response_length,

@@ -427,6 +427,21 @@ bool Context::getShareableProxy(const jref_t proxy_reference,
   return false;
 }
 
+bool Context::retainShareableObjectRoot(const jref_t reference) noexcept {
+  if (reference.isNullPointer() || reference.isArray() ||
+      reference.isGlobalInstance()) {
+    return false;
+  }
+  for (auto &existing : this->shareable_object_roots) {
+    if (existing == reference) return true;
+    if (existing.isNullPointer()) {
+      existing = reference;
+      return true;
+    }
+  }
+  return false;
+}
+
 void Context::setAPDUBufferRef(const jref_t reference,
                                const uint16_t incoming_length,
                                const uint16_t expected_response_length,
@@ -692,6 +707,9 @@ void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
     if (!entry.proxy_reference.isNullPointer()) {
       visitor(entry.proxy_reference, visitor_context);
     }
+  }
+  for (const auto &reference : this->shareable_object_roots) {
+    if (!reference.isNullPointer()) visitor(reference, visitor_context);
   }
   const jref_t direct_roots[] = {
       this->applet_aid_object_ref, this->registered_applet_ref,
