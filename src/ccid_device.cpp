@@ -585,16 +585,20 @@ void process_message(uint8_t rhport) {
                                      command_data_length, request);
         uint16_t status = 0x6a80;
         if (valid_request) {
+          uint8_t deleted_package_id = 0xff;
+          const bool deleting_package = cap_store_find_package(
+              request.aid, request.aid_length, deleted_package_id);
           (void)choupi_vm_deselect_applet(0);
           get_status_first_seen = false;
           status = cap_load_session.deleteObject(
               request.aid, request.aid_length,
               request.delete_related_objects);
           if (status == 0x9000) {
-            // DELETE removes persistent fields and child arrays. Discard the
-            // selected applet's in-memory object graph too, so a later
-            // reinstall with the same AID cannot reuse its now-stale fields.
-            choupi_vm_forget_selected_applet();
+            // DELETE removes persistent fields and child arrays. Discard only
+            // cached contexts belonging to the deleted instance/package.
+            choupi_vm_forget_deleted_applet_contexts(
+                request.aid, request.aid_length, deleted_package_id,
+                deleting_package ? 1 : 0);
           }
         }
         response[0] = static_cast<uint8_t>(status >> 8);
@@ -819,8 +823,8 @@ void process_message(uint8_t rhport) {
                         static_cast<unsigned>(restore_status));
             std::fflush(stdout);
             if (restore_status != 0) {
-              response[0] = 0x6f;
-              response[1] = 0x00;
+              response[0] = restore_status == 2 ? 0x6a : 0x6f;
+              response[1] = restore_status == 2 ? 0x84 : 0x00;
               response_length = 2;
             select_failed = true;
             }

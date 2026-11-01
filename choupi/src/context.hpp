@@ -119,7 +119,7 @@ public:
   /// Get the context ID.
   jpackage_ID_t getCurrentPackageID() noexcept;
   /// Get applet ID
-  japplet_ID_t getAppletID() noexcept;
+  japplet_ID_t getAppletID() const noexcept;
   jpackage_ID_t getAppletPackageID() const noexcept;
   bool setAppletAID(const uint8_t *aid, uint8_t aid_length) noexcept;
   bool copyAppletAID(uint8_t aid[16], uint8_t &aid_length) const noexcept;

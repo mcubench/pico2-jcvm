@@ -1542,24 +1542,20 @@ step with an appended `progress.md` entry and an updated `.agent/HANDOFF.md`.
   behavior tests for each implemented API. Existing tests cover JCSystem,
   APDU, lifecycle, exceptions, and persistence but do not establish broad
   profile compatibility.
-- [ ] **Implement multi-applet contexts and firewall semantics if the declared
-  profile requires them.** The runtime has one applet context. Same-context
-  callback dispatch for the Shareable API now passes focused host VPCD probes,
-  but general context switching, cross-applet shareable lookup and ownership
-  checks, cross-applet AID lookup, and logical channels are not implemented.
-  Assigned channel is basic channel 0. Code inspection also confirms that
-  selecting a different AID replaces the sole `selected_applet_context` during
-  `restore_applet()`. The previous applet heap is discarded, so transient
-  array references and `CLEAR_ON_RESET` contents cannot survive switching
-  away and reselecting that applet. A context registry must retain inactive
-  applet roots for GC and preserve per-instance transient state while applying
-  `CLEAR_ON_DESELECT`; do not solve this by keeping heaps without extending
-  root enumeration and memory limits. Add a regression using existing deploy
-  CAPs where possible before implementing context switching. The existing
-  `./tools/test-vpcd-multipackage` passed 42/42 and verifies multiple AID
-  selection, peer lookup identity, restart, and deletion across 21 instances;
-  it does not verify transient-array identity or `CLEAR_ON_RESET` contents
-  after switching away and back, so it does not close this gap.
+- [ ] **Complete multi-applet contexts and firewall semantics if the declared
+  profile requires them.** A bounded cache now retains the selected applet
+  `Context` plus up to 39 inactive contexts, keyed by owner and full instance
+  AID. It preserves transient arrays across switches, clears `CLEAR_ON_RESET`
+  across cached contexts on reset, incrementally collects inactive heaps, and
+  invalidates cached contexts on successful instance/package DELETE. The
+  focused VPCD transaction probe passed both `CLEAR_ON_RESET` and
+  `CLEAR_ON_DESELECT` checks after switching away and back; the expanded suite
+  passed 46/46 and ended with an empty registry. A stricter follow-up that
+  selects a surviving unrelated applet after deleting the probe package still
+  closes the VPCD connection, so post-delete reselection is an open regression
+  and the context work is not complete. Cross-applet shareable lookup and
+  firewall ownership checks, general cross-context calls, and logical channels
+  remain unimplemented; assigned channel is basic channel 0.
 - [x] **Make commit-capacity reporting consistent with transactions.**
   `beginTransaction` / commit / abort now pass the full 80-check JCSystem VPCD
   suite. Abort advances a rollback generation so live persistent field caches

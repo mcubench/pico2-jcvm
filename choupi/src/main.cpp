@@ -47,6 +47,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
+#include <array>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -73,6 +75,12 @@ int main
 
 namespace {
 std::unique_ptr<jcvm::Context> selected_applet_context;
+// The selected context plus this bounded inactive table cover the runtime's
+// configured applet-instance limit. Keeping contexts alive preserves transient
+// arrays across deselection; reset and deletion paths must explicitly clear
+// or discard the affected entries.
+std::array<std::unique_ptr<jcvm::Context>, JCVM_MAX_APPLETS - 1>
+    inactive_applet_contexts{};
 bool selected_applet_is_active = false;
 bool selected_applet_reselection_pending = false;
 bool selected_applet_is_reselecting = false;
@@ -80,6 +88,43 @@ bool selected_applet_is_selecting = false;
 bool selected_applet_select_process_pending = false;
 bool selected_applet_reselection_process_pending = false;
 pico2_jcvm::ShortApduResponseChain pending_apdu_response;
+
+bool context_matches_applet(const jcvm::Context &context,
+                            const uint8_t owner,
+                            const uint8_t *aid,
+                            const uint8_t aid_length) noexcept {
+  uint8_t context_aid[16]{};
+  uint8_t context_aid_length = 0;
+  return context.getAppletID() == owner &&
+         context.copyAppletAID(context_aid, context_aid_length) &&
+         context_aid_length == aid_length &&
+         std::memcmp(context_aid, aid, aid_length) == 0;
+}
+
+std::size_t find_inactive_applet_context(const uint8_t owner,
+                                         const uint8_t *aid,
+                                         const uint8_t aid_length) noexcept {
+  for (std::size_t index = 0; index < inactive_applet_contexts.size();
+       ++index) {
+    if (inactive_applet_contexts[index] &&
+        context_matches_applet(*inactive_applet_contexts[index], owner, aid,
+                               aid_length)) {
+      return index;
+    }
+  }
+  return inactive_applet_contexts.size();
+}
+
+bool cache_selected_applet_context() noexcept {
+  if (!selected_applet_context) return true;
+  for (auto &context : inactive_applet_contexts) {
+    if (!context) {
+      context = std::move(selected_applet_context);
+      return true;
+    }
+  }
+  return false;
+}
 
 bool is_select_for_applet(const uint8_t *command, const uint16_t length,
                           const jcvm::Context &context) noexcept {
@@ -448,21 +493,24 @@ void trace_heap_after_apdu_if_enabled() {
     repeat_count = 4;
   }
 
-  jcvm::Context &context = *selected_applet_context;
-  if (!context.getStack().empty()) {
-    if (trace_enabled || collect_enabled) {
-      std::fprintf(stderr, "HEAP_TRACE:SKIP reason=active_java_frames\n");
+  const auto trace_context = [&](jcvm::Context &context) {
+    if (!context.getStack().empty()) {
+      if (trace_enabled || collect_enabled) {
+        std::fprintf(stderr,
+                     "HEAP_TRACE:SKIP owner=%u reason=active_java_frames\n",
+                     static_cast<unsigned>(context.getAppletID()));
+      }
+      return;
     }
-    return;
-  }
+    try {
+      inventory_persistent_roots_if_enabled(context);
+    } catch (...) {
+      std::fprintf(stderr,
+                   "PERSISTENT_INVENTORY:ERROR owner=%u root_walk_failed\n",
+                   static_cast<unsigned>(context.getAppletID()));
+    }
 
-  try {
-    inventory_persistent_roots_if_enabled(context);
-  } catch (...) {
-    std::fprintf(stderr, "PERSISTENT_INVENTORY:ERROR root_walk_failed\n");
-  }
-
-  for (unsigned long pass = 1; pass <= repeat_count; ++pass) {
+    for (unsigned long pass = 1; pass <= repeat_count; ++pass) {
     try {
       std::vector<jcvm::jref_t> roots;
       context.appendRootReferences(roots);
@@ -470,11 +518,12 @@ void trace_heap_after_apdu_if_enabled() {
                                ? context.getHeap().collectUnreachableFrom(roots)
                                : context.getHeap().traceReachableFrom(roots);
       std::fprintf(stderr,
-                   "HEAP_TRACE: pass=%lu roots=%u arrays=%u/%u "
+                   "HEAP_TRACE: owner=%u pass=%lu roots=%u arrays=%u/%u "
                    "instances=%u/%u reclaimed_arrays=%u "
                    "reclaimed_instances=%u invalid=%u edge_failures=%u "
                    "complete=%u\n",
-                   pass, static_cast<unsigned>(roots.size()),
+                   static_cast<unsigned>(context.getAppletID()), pass,
+                   static_cast<unsigned>(roots.size()),
                    static_cast<unsigned>(summary.arrays_reachable),
                    static_cast<unsigned>(summary.arrays_total),
                    static_cast<unsigned>(summary.instances_reachable),
@@ -489,6 +538,11 @@ void trace_heap_after_apdu_if_enabled() {
                    pass);
       break;
     }
+    }
+  };
+  trace_context(*selected_applet_context);
+  for (auto &context : inactive_applet_contexts) {
+    if (context) trace_context(*context);
   }
 }
 #else
@@ -624,6 +678,47 @@ void collect_heap_after_apdu() {
     }
   } catch (...) {
     std::printf("CHOUPI:HEAP_GC_SKIP reason=root_enumeration_failed\r\n");
+  }
+
+  // Inactive contexts need collection too, but scanning every registered root
+  // set for up to 39 heaps on each APDU is excessive. Visit one cached heap
+  // every 32 APDUs, rotating through the bounded table.
+  static uint32_t inactive_gc_sequence = 0;
+  static std::size_t inactive_gc_cursor = 0;
+  if (++inactive_gc_sequence % 32 == 0) {
+    for (std::size_t visited = 0; visited < inactive_applet_contexts.size();
+         ++visited) {
+      const std::size_t index = inactive_gc_cursor++ %
+                                inactive_applet_contexts.size();
+      auto &inactive_context = inactive_applet_contexts[index];
+      if (!inactive_context || !inactive_context->getStack().empty()) continue;
+      SelectedAppletRootContext inactive_roots{
+          inactive_context.get(), nullptr, nullptr};
+      try {
+#ifdef CHOUPI_DEBUG_HEAP_GC
+        const auto inactive_summary =
+            inactive_context->getHeap().collectUnreachableFrom(
+                enumerate_selected_applet_roots, &inactive_roots);
+        if (!inactive_summary.complete) {
+          std::printf(
+              "CHOUPI:HEAP_GC_SKIP owner=%u invalid=%u edge_failures=%u "
+              "root_failures=%u\r\n",
+              static_cast<unsigned>(inactive_context->getAppletID()),
+              static_cast<unsigned>(inactive_summary.invalid_references),
+              static_cast<unsigned>(inactive_summary.edge_load_failures),
+              static_cast<unsigned>(inactive_summary.root_enumeration_failures));
+        }
+#else
+        (void)inactive_context->getHeap().collectUnreachableFrom(
+            enumerate_selected_applet_roots, &inactive_roots);
+#endif
+      } catch (...) {
+        std::printf(
+            "CHOUPI:HEAP_GC_SKIP owner=%u reason=root_enumeration_failed\r\n",
+            static_cast<unsigned>(inactive_context->getAppletID()));
+      }
+      break;
+    }
   }
 }
 #endif
@@ -899,6 +994,7 @@ void choupi_vm_array_write_failure_state(uint8_t *recorded, uint8_t *stage,
 uint8_t choupi_vm_restore_applet(uint8_t package_id,
                                  uint16_t class_index, const uint8_t *aid,
                                  uint8_t aid_length) {
+  if (aid == nullptr || aid_length < 5 || aid_length > 16) return 1;
   pending_apdu_response.queue(nullptr, 0);
   selected_applet_is_selecting = false;
   selected_applet_select_process_pending = false;
@@ -926,6 +1022,38 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
     uint8_t applet_owner = 0;
     if (!cap_store_applet_owner(aid, aid_length, applet_owner)) return 1;
 
+    // SELECT may be repeated for the active AID (including reselect after
+    // deselect). Keep its current heap and transient arrays in that case.
+    if (selected_applet_context &&
+        context_matches_applet(*selected_applet_context, applet_owner, aid,
+                               aid_length)) {
+      selected_applet_is_active = false;
+      return 0;
+    }
+
+    const std::size_t cached_index =
+        find_inactive_applet_context(applet_owner, aid, aid_length);
+    if (cached_index < inactive_applet_contexts.size()) {
+      // A direct swap also permits switching between cached contexts when the
+      // registry is full, without temporarily dropping either applet heap.
+      std::swap(selected_applet_context,
+                inactive_applet_contexts[cached_index]);
+      selected_applet_is_active = false;
+      return 0;
+    }
+
+    const bool cache_active = selected_applet_context &&
+        !context_matches_applet(*selected_applet_context, applet_owner, aid,
+                                aid_length);
+    if (cache_active &&
+        std::none_of(inactive_applet_contexts.begin(),
+                     inactive_applet_contexts.end(),
+                     [](const auto &context) { return !context; })) {
+      // Do not discard the current applet context when the bounded context
+      // table is full. The caller maps this resource condition to 6A84.
+      return 2;
+    }
+
     auto context = std::make_unique<jcvm::Context>(
         applet_owner, static_cast<jcvm::jpackage_ID_t>(package_id));
     if (!context->setAppletAID(aid, aid_length) ||
@@ -933,16 +1061,17 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
             static_cast<jcvm::jpackage_ID_t>(package_id),
             static_cast<jcvm::jclass_index_t>(class_index)) ||
         !context->hasRestoredAppletInstance()) {
-      selected_applet_context.reset();
-      selected_applet_is_active = false;
       return 1;
     }
+    if (cache_active && !cache_selected_applet_context()) return 2;
     selected_applet_context = std::move(context);
     selected_applet_is_active = false;
     return 0;
+  } catch (const std::bad_alloc &) {
+    // Preserve the prior context on memory exhaustion.
+    return 2;
   } catch (...) {
-    selected_applet_context.reset();
-    selected_applet_is_active = false;
+    // A malformed persistent object or other restore error is not capacity.
     return 1;
   }
 }
@@ -959,12 +1088,61 @@ void choupi_vm_clear_selected_applet(void) {
     selected_applet_context->getHeap().clearTransientArrays(
         jcvm::ClearEvent::CLEAR_ON_RESET);
   }
+  for (auto &context : inactive_applet_contexts) {
+    if (context) {
+      context->setAppletActive(false);
+      context->getHeap().clearTransientArrays(
+          jcvm::ClearEvent::CLEAR_ON_RESET);
+    }
+  }
   selected_applet_is_active = false;
 }
 
-void choupi_vm_forget_selected_applet(void) {
-  choupi_vm_clear_selected_applet();
-  selected_applet_context.reset();
+void choupi_vm_forget_deleted_applet_contexts(
+    const uint8_t *aid, const uint8_t aid_length,
+    const uint8_t package_id, const uint8_t deleting_package) {
+  pending_apdu_response.queue(nullptr, 0);
+  selected_applet_reselection_pending = false;
+  selected_applet_is_reselecting = false;
+  selected_applet_is_selecting = false;
+  selected_applet_select_process_pending = false;
+  selected_applet_reselection_process_pending = false;
+  const auto is_deleted_context = [&](const jcvm::Context &context) {
+    if (deleting_package != 0 && context.getAppletPackageID() == package_id) {
+      return true;
+    }
+    uint8_t context_aid[16]{};
+    uint8_t context_aid_length = 0;
+    return aid != nullptr && aid_length >= 5 &&
+           aid_length <= sizeof(context_aid) &&
+           context.copyAppletAID(context_aid, context_aid_length) &&
+           context_aid_length == aid_length &&
+           std::memcmp(context_aid, aid, aid_length) == 0;
+  };
+  if (selected_applet_context && is_deleted_context(*selected_applet_context)) {
+    uint8_t context_aid[16]{};
+    uint8_t context_aid_length = 0;
+    if (selected_applet_context->copyAppletAID(context_aid,
+                                               context_aid_length)) {
+      jcvm::Heap::releaseGlobalAIDObject(context_aid, context_aid_length);
+    }
+    selected_applet_context->setAppletActive(false);
+    selected_applet_context.reset();
+  }
+  for (auto &context : inactive_applet_contexts) {
+    if (!context) continue;
+    if (is_deleted_context(*context)) {
+      uint8_t context_aid[16]{};
+      uint8_t context_aid_length = 0;
+      if (context->copyAppletAID(context_aid, context_aid_length)) {
+        jcvm::Heap::releaseGlobalAIDObject(context_aid, context_aid_length);
+      }
+      context.reset();
+    }
+  }
+  // The request AID can be a package AID, while a prior instance DELETE may
+  // have left its globally cached AID object alive.
+  jcvm::Heap::releaseGlobalAIDObject(aid, aid_length);
   selected_applet_is_active = false;
 }
 
@@ -1039,14 +1217,12 @@ uint16_t choupi_vm_select_applet(void) {
   selected_applet_is_reselecting = false;
   if (status != 0x9000) {
     selected_applet_context->setAppletActive(false);
-    selected_applet_context.reset();
     selected_applet_is_active = false;
     selected_applet_reselection_process_pending = false;
     return status;
   }
   if (selected == 0) {
     selected_applet_context->setAppletActive(false);
-    selected_applet_context.reset();
     selected_applet_is_active = false;
     selected_applet_reselection_process_pending = false;
     return 0x6999;

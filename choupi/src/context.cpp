@@ -86,7 +86,7 @@ jpackage_ID_t Context::getCurrentPackageID() noexcept {
  *
  * @return current applet class ID
  */
-jpackage_ID_t Context::getAppletID() noexcept { return this->applet_ID; }
+jpackage_ID_t Context::getAppletID() const noexcept { return this->applet_ID; }
 
 jpackage_ID_t Context::getAppletPackageID() const noexcept {
   return this->applet_package_ID;

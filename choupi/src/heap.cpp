@@ -292,6 +292,33 @@ jref_t Heap::addGlobalAIDObject(const uint8_t *aid, const uint8_t aid_length,
   return object_reference;
 }
 
+void Heap::releaseGlobalAIDObject(const uint8_t *aid,
+                                 const uint8_t aid_length) noexcept {
+  if (aid == nullptr || aid_length < 5 || aid_length > 16) return;
+  Heap &heap = globalArrayHeap();
+  for (GlobalAIDObject &entry : heap.global_aid_objects) {
+    if (!entry.reference.isGlobalInstance() ||
+        entry.aid_length != aid_length ||
+        !std::equal(aid, aid + aid_length, entry.aid.begin())) {
+      continue;
+    }
+    jref_t bytes_reference;
+    try {
+      const auto object = getGlobalInstance(entry.reference);
+      if (object->getNumberOfFields() == 1) {
+        bytes_reference = object->getField_Reference(0);
+      }
+    } catch (...) {
+      // Drop the canonical handle even if a damaged cached object cannot be
+      // inspected; a later lookup can rebuild it from the installed registry.
+    }
+    const jref_t object_reference = entry.reference;
+    releaseGlobalArray(bytes_reference);
+    releaseGlobalInstance(object_reference);
+    return;
+  }
+}
+
 bool Heap::describeGlobalAIDObject(const jref_t reference, uint8_t aid[16],
                                    uint8_t &aid_length,
                                    jpackage_ID_t &package_id,

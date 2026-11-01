@@ -19101,3 +19101,14 @@
 - Decision: Design a context registry with inactive-context roots and bounded RAM behavior, then identify a way to assert transient lifecycle semantics without changing upstream CAPs.
 - Commit: `105fe4d` (`Record multipackage context coverage gap`)
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T104132Z.log` SHA-256 `36c3633cbab73368b2c8bfd17575d9363a2d52214e8579161724a1dd799e9db7`; restart log SHA-256 `e938327d476345a034f022364e5a3793845c0c05bfc317284bf34ee2c1ae2fb7`.
+
+## 2026-11-01 Preserve bounded applet contexts 64 minutes
+
+- Step/experiment: `bounded-multi-applet-contexts-20261101`
+- When: '2026-11-01 12:04 CET' - '2026-11-01 13:08 CET'
+- Change: Added a bounded inactive applet-context cache keyed by owner and full instance AID; preserved the active context on same-AID restore, cleared `CLEAR_ON_RESET` in cached heaps, incrementally collected inactive heaps, and invalidated deleted instance/package contexts and canonical global AID objects. Extended the PC VPCD multipackage test with transient array persistence across AID switches and cleanup. Updated TODO, QKB, and handoff.
+- Validation: `./tools/build-pc --profile current`, `./tools/build arm`, `./tools/build riscv`, `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage`, `python3 -m py_compile tools/tests/pc_vpcd_multipackage_test.py` passed. Multipackage suite reported `TEST:SUMMARY pass=46 fail=0`. `git diff --check` reports only pre-existing trailing whitespace in unrelated `AGENTS.md:52`. `sudo -n /usr/local/sbin/pico2-pcsc-reader` returned `found 0`; hardware test was skipped.
+- Result: Cross-AID transient lifecycle regression passes with a final empty registry. ARM produced the full `build/arm/pico2_choupi.uf2`; RISC-V wrapper produced the VM-core smoke image. Post-delete SELECT of a surviving applet remains an open VPCD disconnect; no hardware behavior was assessed.
+- Decision: Keep the post-delete VPCD session transition as the next diagnostic. Do not claim hardware validation or that the broader firewall/logical-channel work is complete.
+- Commit: pending; record implementation commit SHA after commit.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T120306Z.log` SHA-256 `bfaa4c1981b43efef70556259553e462f2b5bc2b119b128d187c5c2792f61057`; restart/reject logs share timestamp `20261101T120306Z`.

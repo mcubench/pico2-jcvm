@@ -86,8 +86,11 @@ def application_template(aid: bytes) -> bytes:
 
 
 def exchange(connection: socket.socket, command: bytes, label: str) -> bytes:
-    send_message(connection, command)
-    response = receive_message(connection)
+    try:
+        send_message(connection, command)
+        response = receive_message(connection)
+    except (OSError, RuntimeError, socket.timeout) as exc:
+        raise RuntimeError(f"{label}: {exc}") from exc
     if len(response) < 2:
         raise RuntimeError(f"{label}: response is shorter than SW1/SW2")
     return response
@@ -323,11 +326,14 @@ def main() -> int:
     lookup_fixture = root / "tools/build-lookup-aid-fixture"
     subprocess.run([str(lookup_fixture)], cwd=root, check=True, timeout=120)
     lookup_cap = root / "build/lookup-aid-fixture/cap/lookup/javacard/lookup.cap"
+    transaction_fixture = root / "tools/build-jcsystem-transaction-probe"
+    subprocess.run([str(transaction_fixture)], cwd=root, check=True, timeout=120)
+    transaction_cap = root / "build/jcsystem-transaction-probe/output/JCTransactionProbe.cap"
     rom_mask = root / "build/choupi-pc/flash"
     emulator = root / "build/choupi-pc/choupi"
     dummy_code = root / "build/algtest-v182-load-code.bin"
-    for required in (core_cap, multi_cap, lookup_cap, rom_mask, emulator,
-                    dummy_code):
+    for required in (core_cap, multi_cap, lookup_cap, transaction_cap,
+                    rom_mask, emulator, dummy_code):
         if not required.is_file():
             raise RuntimeError(f"required input is missing: {required}")
 
@@ -426,6 +432,9 @@ def main() -> int:
             core_code, core_package, core_applets = load_code(core_cap)
             multi_code, multi_package, multi_applets = load_code(multi_cap)
             lookup_code, lookup_package, lookup_applets = load_code(lookup_cap)
+            transaction_code, transaction_package, transaction_applets = load_code(
+                transaction_cap
+            )
             if not core_applets or len(multi_applets) < 2:
                 raise RuntimeError("Core/Multi CAPs do not contain expected applets")
             if len(lookup_applets) != 1:
@@ -933,7 +942,66 @@ def main() -> int:
             if get_status(scp, 0x20) or get_status(scp, 0x40):
                 raise RuntimeError("registry is not empty after deleting Core")
             print("TEST:PASS DELETE leaves registry empty")
-            print("TEST:SUMMARY pass=42 fail=0")
+
+            # Exercise transient-array lifecycle after the existing registry,
+            # lookup, reset, and deletion cases have completed. This keeps the
+            # test-only CAP isolated from those earlier scenarios.
+            if len(transaction_applets) != 1:
+                raise RuntimeError("transaction probe CAP must contain one applet")
+            load_package(scp, core_code, core_package)
+            install_applet(scp, core_package, core_applets[0], core_applets[0])
+            load_package(scp, transaction_code, transaction_package)
+            transaction_aid = transaction_applets[0]
+            install_applet(scp, transaction_package, transaction_aid,
+                           transaction_aid)
+            transaction_select = (
+                bytes((0x00, 0xA4, 0x04, 0x00, len(transaction_aid))) +
+                transaction_aid + b"\x00"
+            )
+            if exchange(connection, transaction_select,
+                        "SELECT transaction probe")[-2:] != b"\x90\x00":
+                raise RuntimeError("transaction probe SELECT failed")
+            prepared = exchange(
+                connection, bytes((0x80, 0x00, 30, 0x00, 0x00)),
+                "prepare transient lifecycle values",
+            )
+            if prepared != b"\x01\x90\x00":
+                raise RuntimeError(
+                    "transient preparation returned " + prepared.hex().upper()
+                )
+            core_select = (
+                bytes((0x00, 0xA4, 0x04, 0x00, len(core_applets[0]))) +
+                core_applets[0] + b"\x00"
+            )
+            exchange(connection, core_select, "switch to Core applet context")
+            exchange(connection, transaction_select,
+                     "switch back to transaction applet context")
+            transient_after_switch = exchange(
+                connection, bytes((0x80, 0x00, 31, 0x00, 0x00)),
+                "check transient lifecycle after cross-AID switch",
+            )
+            if transient_after_switch != b"\x03\x90\x00":
+                raise RuntimeError(
+                    "cross-AID switch lost transient lifecycle state: "
+                    + transient_after_switch.hex().upper()
+                )
+            print("TEST:PASS transient lifecycle survives cross-AID switch")
+            exchange(connection, bytes.fromhex("00A4040000"),
+                     "select ISD before transient fixture cleanup")
+            delete_object(scp, transaction_aid, False,
+                          "DELETE transaction probe instance")
+            delete_object(scp, transaction_package, False,
+                          "DELETE transaction probe package")
+            delete_object(scp, core_applets[0], False,
+                          "DELETE final Core instance")
+            delete_object(scp, core_package, False,
+                          "DELETE final Core package")
+            if get_status(scp, 0x20) or get_status(scp, 0x40):
+                raise RuntimeError(
+                    "registry is not empty after transient probe cleanup"
+                )
+            print("TEST:PASS transient probe cleanup leaves registry empty")
+            print("TEST:SUMMARY pass=46 fail=0")
             return 0
         finally:
             if connection is not None:

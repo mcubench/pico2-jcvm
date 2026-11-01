@@ -149,6 +149,8 @@ public:
   static jref_t addGlobalAIDObject(const uint8_t *aid, uint8_t aid_length,
                                    jpackage_ID_t package_id,
                                    jclass_index_t class_index);
+  static void releaseGlobalAIDObject(const uint8_t *aid,
+                                     uint8_t aid_length) noexcept;
   static bool describeGlobalAIDObject(jref_t reference, uint8_t aid[16],
                                       uint8_t &aid_length,
                                       jpackage_ID_t &package_id,

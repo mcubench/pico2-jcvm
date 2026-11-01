@@ -1,5 +1,42 @@
 # Session handoff — updated 2026-11-01
 
+## Bounded applet-context retention — in progress (2026-11-01)
+
+Implemented in the current uncommitted worktree:
+
+- `choupi/src/main.cpp` retains the active context and a bounded table of up
+  to `JCVM_MAX_APPLETS - 1` inactive contexts, keyed by applet owner and full
+  AID. Context restore reuses a cache entry or restores a fresh heap before
+  moving the previous context into the cache. Table exhaustion reports
+  `6A84`; other restore failures report `6F00`.
+- Card reset clears `CLEAR_ON_RESET` arrays in all cached heaps. Inactive heaps
+  get one incremental GC pass per 32 APDUs to cap extra root-walk cost. PC
+  diagnostics also trace cached roots.
+- Successful GP DELETE invalidates matching selected and inactive contexts in
+  both physical CCID and PC VPCD card-manager paths. Matching cached global
+  AID objects are also released.
+- `tools/tests/pc_vpcd_multipackage_test.py` builds the native JCSystem probe
+  CAP and runs transient-array checks at the end of the multipackage suite.
+  Earlier registry, lookup, reset, restart, and deletion scenarios remain
+  isolated from the fixture.
+
+Validation: `./tools/build-pc --profile current`, `./tools/build arm`, and
+`./tools/build riscv` passed. The authorized
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 46/46,
+including both CLEAR_ON_RESET and CLEAR_ON_DESELECT after switching away and
+back, probe cleanup, and an empty final registry. The active-AID restore path
+preserves the current context instead of replacing it with a fresh heap. A stricter
+post-delete SELECT of a surviving applet failed with VPCD EOF. With APDU trace
+enabled, the log ended after `VM_ENTRY stage=call_begin package=0 method=1055`
+and `call_done/locals_ready`; no PC_FS error or caught exception appeared.
+This remains open; see the new QKB section. The PC test wrapper does not rebuild
+the emulator, so run `./tools/build-pc --profile current` before each rerun.
+
+The physical-reader helper returned zero Pico devices; hardware validation was
+skipped. Next: isolate VPCD session transition to a surviving applet after
+DELETE; retain the 46/46 regression and do not claim the failed post-delete
+reselection passes.
+
 ## Multi-applet context lifetime audit — 2026-11-01
 
 The physical-reader helper returned zero readers, so no hardware operation was

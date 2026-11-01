@@ -1528,8 +1528,18 @@ uint16_t vpcd_process_card_manager(
                                   request)) {
       return status_response(0x6a80);
     }
-    return status_response(vpcd_cap_load_session.deleteObject(
-        request.aid, request.aid_length, request.delete_related_objects));
+    uint8_t deleted_package_id = 0xff;
+    const bool deleting_package = cap_store_find_package(
+        request.aid, request.aid_length, deleted_package_id);
+    (void)choupi_vm_deselect_applet(0);
+    const uint16_t status = vpcd_cap_load_session.deleteObject(
+        request.aid, request.aid_length, request.delete_related_objects);
+    if (status == 0x9000) {
+      choupi_vm_forget_deleted_applet_contexts(
+          request.aid, request.aid_length, deleted_package_id,
+          deleting_package ? 1 : 0);
+    }
+    return status_response(status);
   }
   if (instruction == 0xe6 && p1 == 0x02 && p2 == 0x00) {
     return status_response(vpcd_cap_load_session.beginInstallForLoad(

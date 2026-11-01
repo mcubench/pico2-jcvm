@@ -3062,3 +3062,24 @@ original terminology/status; check current summary and later fixes before reuse.
   registry state with `--restore-applet`.
 - Root source: `choupi/src/main_pc.cpp`; contract: `docs/FILESYSTEM_ABI.md`.
   Atomic image replacement plus explicit durability syncing is not implemented.
+
+### Follow-up: VPCD closes on applet reselection after package DELETE
+
+- **Reproduction:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage`
+  with the test-only JCSystem transaction CAP. The transient arrays survive a
+  cross-AID switch and the probe instance/package DELETE commands complete. A
+  follow-up SELECT of a surviving applet then sees EOF on the VPCD connection.
+  The emulator log ends after `VM_ENTRY stage=call_begin package=0
+  method=1055`, `call_done`, and `locals_ready`; it has no `PC_FS` error or
+  caught exception. This was reproduced with APDU tracing enabled.
+- **Current status:** Context invalidation on successful DELETE works: the
+  active instance context and matching cached package contexts are discarded.
+  The focused suite passes 46/46 with transient-state preservation and cleanup;
+  it does not cover the separately failing post-delete SELECT disconnect.
+  That disconnect is not yet explained. Do not classify it as a PC/SC transport
+  issue or claim post-delete reselection passes. Keep that focused result
+  separate from the failed stricter check.
+- **Next diagnostic:** Isolate the VPCD session transition from card-manager
+  selected state back to applet selection after DELETE; capture the callback
+  status and exact last APDU on a minimal two-package test. Compare with the
+  physical CCID path before changing shared lifecycle semantics.
