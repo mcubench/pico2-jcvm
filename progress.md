@@ -17093,7 +17093,7 @@
   deletion remain green in the current worktree. This is VPCD evidence only.
 - Decision: Keep physical power-loss recovery and enabled persistent-record
   reclamation open; the test does not validate USB power removal.
-- Commit: pending.
+- Commit: `9e61860` (fixture and converter option); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261030T220126Z.log`
   (SHA-256
   `67fc5ac0901290ac0db8120eed1078784dbbb115999879a1e711b6a0b7c257cf`),
