@@ -17175,7 +17175,7 @@
   reader visibility was not confirmed.
 - Decision: Keep the image available for external testing. Resume physical
   acceptance when a Pico is registered by PC/SC; continue offline backlog work.
-- Commit: pending.
+- Commit: `bc0e4f3` (proxy method firewall regression); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`
   and `artifacts/firmware/README-max_crypto.txt`; image SHA-256 above, expected
   CSV SHA-256 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`.
