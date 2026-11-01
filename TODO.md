@@ -2818,8 +2818,17 @@ rollback and duplicate/invalid registration handling also remain unverified.
   passes a separate
   ASan/UBSan harness over 250,000 randomized inputs, comparing results and
   decoded lengths to ISO 7816 short APDU case rules; no bug surfaced. Remaining
-  here: full CAP nested-table validation and fuzzing, plus interrupted
-  persistent-write recovery / fuzzing.
+  here: broader CAP nested-table validation and fuzzing, plus interrupted
+  persistent-write recovery / fuzzing. The Directory component's declared
+  payload sizes are now checked against framed lengths for components actually
+  present in the parsed load file. GP LOAD input may omit original CAP
+  components while retaining their nonzero Directory entries, so absent
+  components are not required to have zero sizes. ASan/UBSan parser coverage
+  passes 4,208 checks, all 48 supplied deploy CAPs, and 100,000 randomized
+  inputs; the VPCD multipackage LOAD/INSTALL/restart/delete suite passes
+  47/47. ARM and RISC-V current builds and the PC max_crypto build pass.
+  Physical flash/monitor remains pending because the authorized reader helper
+  reports zero Pico devices in the VM.
 
 
 - [x] Physical asymmetric known-answer coverage on combined profile: after

@@ -324,7 +324,17 @@ void test_class_component_22() {
     const std::vector<uint8_t> header_only = make_cap(
         {0x00, 0x02, 0x01, 0x10, 0x80}, 2, minor);
     std::vector<uint8_t> cap(header_only.begin(), header_only.begin() + 19);
-    append_component(cap, 2, directory);
+    std::vector<uint8_t> consistent_directory = directory;
+    const size_t size_count = minor >= 2 ? 12 : 11;
+    for (size_t index = 0; index < size_count; ++index) {
+      consistent_directory[index * 2] = 0;
+      consistent_directory[index * 2 + 1] = 0;
+    }
+    consistent_directory[0] = 0;
+    consistent_directory[1] = 16; // Header component payload size.
+    consistent_directory[2] = static_cast<uint8_t>(directory.size() >> 8);
+    consistent_directory[3] = static_cast<uint8_t>(directory.size());
+    append_component(cap, 2, consistent_directory);
     return cap;
   };
 
@@ -386,6 +396,20 @@ void test_class_component_22() {
       make_cap_with_directory(converter_directory_22, 2);
   expect(parses(directory_22_parses.data(), directory_22_parses.size()),
          "class_component_22_converter_directory_with_12_sizes_parses");
+  auto mismatched_header_size = directory_22_parses;
+  mismatched_header_size[23]++;
+  expect(!parses(mismatched_header_size.data(), mismatched_header_size.size()),
+         "directory_component_header_size_must_match_frame");
+  auto mismatched_directory_size = directory_22_parses;
+  mismatched_directory_size[25]++;
+  expect(!parses(mismatched_directory_size.data(),
+                 mismatched_directory_size.size()),
+         "directory_component_self_size_must_match_frame");
+  auto absent_component_size = directory_22_parses;
+  absent_component_size[26] = 0;
+  absent_component_size[27] = 1;
+  expect(parses(absent_component_size.data(), absent_component_size.size()),
+         "directory_component_may_describe_omitted_load_component");
 
   const std::vector<uint8_t> legacy_directory_21(31, 0);
   const auto directory_21_parses =

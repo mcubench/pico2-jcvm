@@ -17,6 +17,19 @@ elevated `lsusb -d 2e8a:` found no Pico devices in the VM. No flash or physical
 test was attempted. Resume physical validation only after the authorized path
 enumerates a reader; continue offline otherwise.
 
+## CAP Directory cross-component size validation — implemented
+
+`choupi/src/jc_handlers/jc_cap.cpp` now verifies each present CAP component's
+payload length against the corresponding Directory size entry after all
+component frames are parsed. GP LOAD may omit components while leaving their
+original nonzero Directory entries, so absent components are skipped. The
+initial strict-zero rule failed against stale PC emulator output; after
+rebuilding with the subset-aware rule, the elevated VPCD multipackage suite
+passed 47/47. The ASan/UBSan parser harness passed 4,208 checks across all 48
+deploy CAPs and 100,000 random inputs. PC `max_crypto`, ARM `current`, and RISC-V
+`current` builds passed. The reader helper still reports zero devices; do not
+claim physical validation or flash until it enumerates a board.
+
 ## Current priority: finish ARCH-08 physical USB progress acceptance
 
 The high-level project summary in `STATUS.md` was reconciled with current TODO,

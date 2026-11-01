@@ -651,6 +651,36 @@ bool validate_component_payload(const uint8_t tag, const uint8_t *payload,
   }
 }
 
+bool validate_directory_component_sizes(
+    const uint8_t *directory_component,
+    const std::array<const uint8_t *, 12> &components,
+    const uint8_t cap_major, const uint8_t cap_minor) {
+  if (directory_component == nullptr) return true;
+  const size_t component_count =
+      cap_major == 2 && cap_minor >= 2 ? 12 : 11;
+  const size_t directory_payload_size =
+      read_be16(directory_component + 1);
+  const uint8_t *directory_payload = directory_component + 3;
+  if (directory_payload_size < component_count * sizeof(uint16_t))
+    return false;
+
+  // Directory component_sizes are indexed by the standard CAP component tag
+  // and contain payload lengths (excluding each component's three-byte frame).
+  // Components may appear in any order in the archive, so compare only after
+  // all component views have been collected. GP LOAD input may contain only a
+  // selected subset of the original CAP components; a missing component does
+  // not mean its original Directory entry must be zero.
+  for (size_t index = 0; index < component_count; ++index) {
+    const uint16_t declared_size = read_be16(directory_payload + index * 2);
+    const uint8_t *component = components[index];
+    if (component != nullptr &&
+        declared_size != read_be16(component + 1)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 } // namespace
 
 /// CAP File component tag values
@@ -865,6 +895,27 @@ JC_Cap::JC_Cap(uint16_t length, const uint8_t *cap_file,
     if (!validate_class_component_22(
             this->class_comp->infos, NTOHS(this->class_comp->size),
             import_count)) {
+      throw Exceptions::SecurityException;
+    }
+  }
+
+  if (validate_payloads) {
+    const std::array<const uint8_t *, 12> components = {
+        reinterpret_cast<const uint8_t *>(this->header_comp),
+        reinterpret_cast<const uint8_t *>(this->directory_comp),
+        reinterpret_cast<const uint8_t *>(this->applet_comp),
+        reinterpret_cast<const uint8_t *>(this->import_comp),
+        reinterpret_cast<const uint8_t *>(this->constantPool_comp),
+        reinterpret_cast<const uint8_t *>(this->class_comp),
+        reinterpret_cast<const uint8_t *>(this->method_comp),
+        reinterpret_cast<const uint8_t *>(this->staticField_comp),
+        reinterpret_cast<const uint8_t *>(this->referenceLocation_comp),
+        reinterpret_cast<const uint8_t *>(this->export_comp),
+        reinterpret_cast<const uint8_t *>(this->descriptor_comp),
+        nullptr}; // Debug component tag 12 is not accepted by this VM.
+    if (!validate_directory_component_sizes(
+            reinterpret_cast<const uint8_t *>(this->directory_comp),
+            components, cap_major, cap_minor)) {
       throw Exceptions::SecurityException;
     }
   }

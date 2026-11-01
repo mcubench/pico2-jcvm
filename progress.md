@@ -19200,3 +19200,14 @@
 - Decision: Keep persistent reclamation disabled pending actual hardware power-cycle validation. Continue offline implementation and retry physical checks only after the authorized reader helper enumerates a device.
 - Commit: Recorded in this validation/handoff commit.
 - Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261101T141917Z.log`, `artifacts/logs/vpcd-persistence-restore-20261101T141917Z.log`, `artifacts/logs/vpcd-persistence-install-emulator-20261101T141917Z.log`, and `artifacts/logs/vpcd-persistence-restore-emulator-20261101T141917Z.log`.
+
+## 2026-11-01 Validate CAP Directory component sizes 33 minutes
+
+- Step/experiment: `cap-directory-component-size-validation-20261101`
+- When: '2026-11-01 15:27 CET' - '2026-11-01 16:00 CET'
+- Change: The dynamic CAP parser now checks each present component's framed payload size against the matching Directory component size entry after collecting all components. It permits GP LOAD subsets to omit Export/Descriptor or other original components while retaining nonzero size entries for those absent components. Added regression cases for mismatched Header/Directory sizes and retained size metadata for an omitted component. Updated TODO, QKB, and handoff.
+- Validation: `./tools/test-cap-parser` passed under ASan/UBSan with `TEST:PASS cap_parser_framing checks=4208 fuzz_inputs=100000 corpus_files=48`. `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed against the final source. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`, including three package loads, 21 instances, fresh-process restore, and final cleanup. The first VPCD attempt returned `6F00` because the PC emulator had not been rebuilt after the subset adjustment; after rebuilding, the complete suite passed. The authorized reader helper reported zero Pico devices, so no physical flash or monitor ran.
+- Result: Directory sizes are cross-checked for present components while valid partial GP LOAD inputs remain accepted. Existing warnings remain from Java Card converters, pinned Rust OS sources, packed CAP members, and offline Maven metadata.
+- Decision: Close this parser consistency subtask. Keep the broader WP9 CAP nested-table/fuzzing item open and physical ARM validation pending until a board enumerates.
+- Commit: Recorded in this implementation commit.
+- Artifacts/logs: `tools/test-cap-parser`; `artifacts/logs/host-vpcd-multipackage-apdu-20261101T145042Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261101T145042Z.log`; corrupt/missing-sidecar logs with the same timestamp; PC, ARM, and RISC-V build outputs under `build/`.

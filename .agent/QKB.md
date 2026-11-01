@@ -1,5 +1,25 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## CAP Directory sizes describe the original CAP when GP LOAD omits components — 2026-11-01
+
+- **Symptom:** A new strict Directory check caused a VPCD multipackage INSTALL
+  to return `6F00` when GP LOAD data was assembled from only selected CAP
+  components.
+- **Cause:** GP LOAD input can omit components from the original CAP while
+  retaining the original Directory component, whose size table still records
+  those omitted components. For example, the multipackage harness omits Export
+  and Descriptor while loading the upstream Core package.
+- **Viable validation rule:** After parsing all frames, require each present
+  component's declared Directory size to equal its actual payload size. Do not
+  require absent components to have a zero Directory entry. The implementation
+  is in `choupi/src/jc_handlers/jc_cap.cpp`. The ASan/UBSan parser harness
+  accepts all 48 supplied deploy CAPs and its GP LOAD subset fixture; the
+  authenticated VPCD multipackage lifecycle passes 47/47. Keep this distinction
+  when adding further cross-component CAP checks.
+- **Physical follow-up:** ARM/RISC-V builds passed, but flash/monitor validation
+  remains open because the authorized PC/SC helper reported zero guest-visible
+  Pico readers on 2026-11-01.
+
 ## TinyUSB `tud_task()` could drain indefinitely under replenished USB traffic — 2026-11-01
 
 - **Cause:** The pinned TinyUSB v0.18.0 API processes the device queue until it
