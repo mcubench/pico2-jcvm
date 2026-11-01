@@ -20,16 +20,7 @@
 #include "vm_lifecycle.h"
 #include "vm_diagnostics.h"
 #include "native_progress_guard.hpp"
-
-extern "C" uint8_t choupi_vm_find_applet(const uint8_t *aid,
-                                           uint8_t aid_length,
-                                           uint8_t *package_id,
-                                           uint16_t *install_offset);
-extern "C" uint8_t choupi_vm_is_dynamic_package(uint8_t package_id);
-extern "C" uint8_t choupi_cap_package_applet_aid(
-    uint8_t package_id, uint8_t applet_index, uint8_t *aid,
-    uint8_t *aid_length);
-extern "C" uint8_t fs_sync(void);
+#include "vm_filesystem.h"
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;

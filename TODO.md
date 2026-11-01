@@ -169,22 +169,20 @@ review schedules work only and does not authorize alternate backend development.
 Uncommitted applet-context changes are a separate ongoing task and were not
 credited as architectural completion evidence.
 
-- [ ] **ARCH-07 — Finish shared boundary declarations (small; ARCH-01/02
-  follow-up).** `src/vm_lifecycle.h` covers the main operations, but committed
-  `src/ccid_device.cpp` still hand-declares `choupi_vm_find_applet()` and
-  `choupi_vm_is_dynamic_package()`; `choupi/src/jni.cpp` separately declares
-  `choupi_vm_is_selecting_applet()` and `choupi_vm_is_reselecting_applet()`.
-  Put these lifecycle/query signatures in the appropriate shared header and
-  include it in both callers and definitions. Likewise give filesystem
-  extensions (`fs_sync`, prefix/package erase) authoritative shared declarations;
-  `ffi.h` currently omits them while loader, CCID and flash-memory code declare
-  them independently. Keep platform-specific operations explicit, without
-  claiming Rust OS exports functions it does not implement. Audit remaining
-  shared CAP-store declarations for the same duplication and use their owning
-  header where applicable. Preserve behavior and ownership; no new dispatch
-  layer. Acceptance: relevant cross-module declarations have one authority,
-  callers and definitions include it, PC/ARM/RISC-V builds and lifecycle/storage
-  regressions pass, with required physical checks recorded or marked pending.
+- [x] **ARCH-07 — Finish shared boundary declarations (small; ARCH-01/02
+  follow-up).** `src/vm_lifecycle.h` now owns the VM lookup/select query
+  signatures used by CCID, JNI, CAP loader, and runtime definitions. Filesystem
+  backend extensions are declared in repository-owned `src/vm_filesystem.h`,
+  separate from the pinned Rust OS `ffi.h` so it does not imply Rust exports.
+  CAP storage adapters are declared by `src/cap_store.hpp`, and CAP applet-AID
+  inspection by `src/cap_load.hpp`; independent local declarations were
+  removed from callers. No behavior or storage ownership changed and no
+  dispatch layer was added. Validation passed `./tools/build-pc --profile
+  current`, `./tools/build arm`, `./tools/build riscv`,
+  `./tools/test-rp2350-fs-overlay` (`fail=0`), and
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` (`47/47`). The ARM
+  `current` image was cycled on Pico 2 `8E464F4E2BBC0A19`; finite serial output
+  reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`.
 - [ ] **ARCH-08 — Bound native USB progress work (ARCH-04 follow-up).**
   `docs/NATIVE_PROGRESS_CALLBACKS.md` correctly acknowledges that `tud_task()`
   drains its event queue and can run indefinitely under replenished USB control

@@ -4,6 +4,10 @@
 #include <cstddef>
 #include <cstdint>
 
+extern "C" uint8_t choupi_cap_package_applet_aid(
+    uint8_t package_id, uint8_t applet_index, uint8_t *aid,
+    uint8_t *aid_length);
+
 class CapLoadSession {
 public:
   void reset() noexcept;

@@ -43,6 +43,7 @@
 #include "types.hpp"
 #include "javacard-class-token-map.h"
 #include "../../src/cap_store.hpp"
+#include "../../src/vm_lifecycle.h"
 
 #include <algorithm>
 #include <array>
@@ -52,9 +53,6 @@
 #include <vector>
 
 namespace jcvm {
-
-extern "C" uint8_t choupi_vm_is_reselecting_applet(void);
-extern "C" uint8_t choupi_vm_is_selecting_applet(void);
 
 #ifndef PC_VERSION
 extern "C" uint32_t choupi_available_transient_memory_bytes(void);

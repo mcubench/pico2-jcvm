@@ -22,7 +22,12 @@ uint16_t runtime_install_method(
 
 uint8_t choupi_vm_restore_applet(uint8_t package_id, uint16_t class_index,
                                  const uint8_t *aid, uint8_t aid_length);
+uint8_t choupi_vm_find_applet(const uint8_t *aid, uint8_t aid_length,
+                              uint8_t *package_id, uint16_t *install_offset);
+uint8_t choupi_vm_is_dynamic_package(uint8_t package_id);
 void choupi_vm_clear_selected_applet(void);
+uint8_t choupi_vm_is_selecting_applet(void);
+uint8_t choupi_vm_is_reselecting_applet(void);
 void choupi_vm_forget_deleted_applet_contexts(
     const uint8_t *aid, uint8_t aid_length, uint8_t package_id,
     uint8_t deleting_package);

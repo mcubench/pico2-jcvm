@@ -3,6 +3,7 @@
 #include "gp_delete.hpp"
 #include "ffi.h"
 #include "vm_lifecycle.h"
+#include "vm_filesystem.h"
 #include "vm_cap_initialization.h"
 
 #ifdef PC_VERSION
@@ -30,11 +31,6 @@ extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
   return fs_erase(prefix, prefix_length);
 }
 extern "C" uint8_t fs_erase_package_state(uint8_t) { return 0; }
-#else
-extern "C" uint8_t fs_sync(void);
-extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
-                                    uint8_t prefix_length);
-extern "C" uint8_t fs_erase_package_state(uint8_t package_id);
 #endif
 #include "jc_handlers/flashmemory.hpp"
 #include "jc_handlers/jc_import.hpp"
@@ -44,18 +40,6 @@ extern "C" uint8_t fs_erase_package_state(uint8_t package_id);
 #include <cstddef>
 #include <cstdio>
 
-extern "C" uint8_t choupi_store_cap_package(uint8_t package_id,
-                                             const uint8_t *package_aid,
-                                             uint8_t package_aid_length,
-                                             const uint8_t *data,
-                                             uint32_t length);
-extern "C" uint8_t choupi_store_cap_instance(uint8_t package_id,
-                                              const uint8_t *applet_aid,
-                                              uint8_t applet_aid_length,
-                                              const uint8_t *instance_aid,
-                                              uint8_t instance_aid_length,
-                                              uint16_t applet_class_index,
-                                              uint8_t owner_id);
 namespace {
 bool find_cap_applet_install_offset(const uint8_t *code, size_t length,
                                     const uint8_t *aid, uint8_t aid_length,

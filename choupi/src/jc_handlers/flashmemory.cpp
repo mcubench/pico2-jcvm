@@ -35,6 +35,8 @@
 #include "../jc_utils.hpp"
 #include "ffi.h"
 #include "../../../src/vm_diagnostics.h"
+#include "../../../src/vm_filesystem.h"
+#include "../../../src/cap_store.hpp"
 
 #include <cassert>
 #include <algorithm>
@@ -45,18 +47,6 @@
 #include <vector>
 
 extern "C" void choupi_record_transaction_buffer_full(void);
-
-extern "C" const uint8_t *choupi_cap_store_data(uint32_t *length);
-extern "C" const uint8_t *choupi_cap_store_data_for_package(
-    uint8_t package_id, uint32_t *length);
-extern "C" uint8_t fs_sync(void);
-extern "C" void path_applet_field16(uint8_t applet, uint8_t package,
-                                    uint16_t class_index, uint8_t field,
-                                    uint8_t (*tag)[128], uint8_t *length);
-#ifdef PC_VERSION
-extern "C" const uint8_t *choupi_pc_rom_package_data(uint8_t package_id,
-                                                       uint32_t *length);
-#endif
 
 namespace jcvm {
 

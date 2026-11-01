@@ -1,6 +1,7 @@
 #include "ffi.h"
 #include "cap_store.hpp"
 #include "flash_layout.hpp"
+#include "vm_filesystem.h"
 
 #include <algorithm>
 #include <array>
@@ -16,15 +17,10 @@
 extern "C" const uint8_t choupi_rommask_start[] = {0};
 extern "C" const uint8_t choupi_rommask_end[] = {0};
 
-extern "C" uint8_t fs_sync(void);
-extern "C" uint8_t fs_erase_prefix(const uint8_t *prefix,
-                                    uint8_t prefix_length);
 extern "C" uint8_t rp2350_fs_test_write_parent_encoded(
     const uint8_t *tag, uint8_t tag_length, const uint8_t *data,
     uint32_t length);
 extern "C" uint32_t rp2350_fs_test_overlay_file_count(void);
-extern "C" uint8_t fs_erase_package_state(uint8_t package_id);
-
 namespace {
 std::array<uint8_t, 2 * 1024 * 1024> fake_flash;
 std::array<uint8_t, 2 * 1024 * 1024> committed_flash;

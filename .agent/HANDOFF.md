@@ -1,5 +1,22 @@
 # Session handoff — updated 2026-11-01
 
+## Next priority: ARCH-08 native USB progress budget
+
+ARCH-07 is implemented and validated. Shared lifecycle/query declarations now
+live in `src/vm_lifecycle.h`; filesystem backend extensions in
+`src/vm_filesystem.h`; CAP storage adapter declarations in
+`src/cap_store.hpp`; and CAP applet-AID inspection in `src/cap_load.hpp`.
+The pinned OS `ffi.h` and submodule were left untouched. PC, ARM, and RISC-V
+builds, RP2350 filesystem overlay tests, and the 47/47 VPCD multipackage suite
+pass. Pico 2 `8E464F4E2BBC0A19` was flashed and its finite monitor passed.
+
+Next inspect the pinned TinyUSB event-processing facilities and determine how
+to impose a supported finite event/time budget without dropping events or
+breaking control transfers, as required by ARCH-08 in `TODO.md`. Keep ARCH-09
+production-path guard coverage as a later coordinated step. Existing Rust OS
+and packed-CAP compiler warnings remain; this declaration cleanup introduced
+no new warnings.
+
 ## Bounded applet-context retention — focused lifecycle passes (2026-11-01)
 
 Implemented in the current uncommitted worktree:

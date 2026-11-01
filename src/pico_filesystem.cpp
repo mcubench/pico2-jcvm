@@ -11,6 +11,7 @@
 #include "pico/flash.h"
 #include "pico/platform.h"
 #include "cap_store.hpp"
+#include "vm_filesystem.h"
 #include "flash_layout.hpp"
 #include "jc_handlers/flashmemory.hpp"
 
