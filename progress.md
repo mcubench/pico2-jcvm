@@ -17055,7 +17055,7 @@
 - Decision: Treat the archived OwnerPINBuilder failures as historical and
   resolved for the current source; retain the fresh report as emulator-only
   evidence.
-- Commit: pending.
+- Commit: `4af21b6` (fixture and regressions); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/results/jcalgtest-base-vpcd-current-20261030-rerun3/`
   (CSV SHA-256
   `a76dd25089b50e0269388c057098eafdbb434b5a96bbcdeb4b868b75b9537fac`; client
