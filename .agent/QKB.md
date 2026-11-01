@@ -3346,9 +3346,12 @@ original terminology/status; check current summary and later fixes before reuse.
   translation exists. Unsupported/malformed signatures fail closed.
 - This code builds for PC, ARM and RISC-V. The existing upstream positive SIO
   CAP tests only a same-applet call, so they do not execute the cross-context
-  argument branch. Do not claim argument forwarding works on hardware until a
-  positive cross-AID fixture exercises it. Keep all upstream CAP files
-  unchanged.
+  argument branch. `tools/test-rmi-registry` directly tests the local
+  signature-to-local conversion for byte/short order, int high/low word order,
+  null versus non-null reference handling, and argument-count mismatch. This
+  does not test Descriptor lookup or a cross-context VM call. Do not claim
+  argument forwarding works on hardware until a positive cross-AID fixture
+  exercises it. Keep all upstream CAP files unchanged.
 - The approved reader helper and `lsusb -d 2e8a:0009` currently find no Pico in
   the VM, although PC/SC exposes two VPCD readers. Retry hardware only after
   guest USB enumeration returns.

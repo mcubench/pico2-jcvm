@@ -42,6 +42,7 @@
 #include "../jc_handlers/package.hpp"
 #include "../interpretor.hpp"
 #include "../stack.hpp"
+#include "shareable_arguments.hpp"
 #include "bytecodes.hpp"
 #include "../../../src/vm_applet_context.hpp"
 
@@ -989,96 +990,10 @@ void Bytecodes::bc_invokeinterface() {
     }
 
     std::array<InterpretorInitialLocal, 255> initial_locals{};
-    uint8_t initial_local_count = 1;
-    initial_locals[0] = {InterpretorLocalType::Reference,
-                         server_reference.compact()};
-    uint16_t signature_cursor = 0;
-    uint16_t argument_word_index = 1; // word zero is the receiver.
-    uint16_t expected_argument_words = 1;
-    bool found_return_type = false;
-    const auto caller_word = [&stack, nargs](const uint16_t position) {
-      return stack.get_Pushed_Element(
-          static_cast<uint16_t>(nargs - position)).compact();
-    };
-    while (signature_cursor < signature_nibble_count) {
-      const uint8_t type = signature_nibbles[signature_cursor++];
-      // Reference types carry a four-nibble class token after their type code.
-      if (type == 0x06 || type == 0x0e) {
-        if (signature_nibble_count - signature_cursor < 4) {
-          throw Exceptions::SecurityException;
-        }
-        signature_cursor = static_cast<uint16_t>(signature_cursor + 4);
-      }
-      const bool is_return = signature_cursor == signature_nibble_count;
-      if (is_return) {
-        found_return_type = true;
-        break;
-      }
-
-      if (initial_local_count == initial_locals.size() ||
-          argument_word_index >= nargs) {
-        throw Exceptions::SecurityException;
-      }
-      switch (type) {
-      case 0x02: // boolean
-      case 0x03: // byte
-        initial_locals[initial_local_count++] = {
-            InterpretorLocalType::Byte,
-            static_cast<uint32_t>(static_cast<int8_t>(
-                caller_word(argument_word_index)))};
-        ++argument_word_index;
-        ++expected_argument_words;
-        break;
-      case 0x04: // short
-        initial_locals[initial_local_count++] = {
-            InterpretorLocalType::Short,
-            static_cast<uint32_t>(static_cast<uint16_t>(
-                caller_word(argument_word_index)))};
-        ++argument_word_index;
-        ++expected_argument_words;
-        break;
-      case 0x05: { // int occupies two stack words and two local slots.
-#ifdef JCVM_INT_SUPPORTED
-        if (static_cast<uint16_t>(argument_word_index + 1) >= nargs) {
-          throw Exceptions::SecurityException;
-        }
-        const uint16_t low_word = caller_word(argument_word_index);
-        const uint16_t high_word =
-            caller_word(static_cast<uint16_t>(argument_word_index + 1));
-        initial_locals[initial_local_count++] = {
-            InterpretorLocalType::Int,
-            static_cast<uint32_t>(SHORTS_TO_INT(high_word, low_word))};
-        argument_word_index = static_cast<uint16_t>(argument_word_index + 2);
-        expected_argument_words =
-            static_cast<uint16_t>(expected_argument_words + 2);
-#else
-        throw Exceptions::SecurityException;
-#endif
-        break;
-      }
-      case 0x06: // object reference
-      case 0x0a: // boolean[]
-      case 0x0b: // byte[]
-      case 0x0c: // short[]
-      case 0x0d: // int[]
-      case 0x0e: { // reference[]
-        const jref_t reference(
-            caller_word(argument_word_index));
-        if (!reference.isNullPointer()) {
-          throw Exceptions::SecurityException;
-        }
-        initial_locals[initial_local_count++] = {
-            InterpretorLocalType::Reference, reference.compact()};
-        ++argument_word_index;
-        ++expected_argument_words;
-        break;
-      }
-      default:
-        throw Exceptions::SecurityException;
-      }
-    }
-    if (!found_return_type || expected_argument_words != nargs ||
-        argument_word_index != nargs) {
+    uint8_t initial_local_count = 0;
+    if (!buildShareableInitialLocals(
+            signature_nibbles.data(), signature_nibble_count, nargs,
+            server_reference, stack, initial_locals, initial_local_count)) {
       throw Exceptions::SecurityException;
     }
 

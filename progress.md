@@ -19209,7 +19209,7 @@
 - Validation: `./tools/test-cap-parser` passed under ASan/UBSan with `TEST:PASS cap_parser_framing checks=4208 fuzz_inputs=100000 corpus_files=48`. `./tools/build-pc --profile max_crypto`, `./tools/build arm`, and `./tools/build riscv` passed against the final source. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`, including three package loads, 21 instances, fresh-process restore, and final cleanup. The first VPCD attempt returned `6F00` because the PC emulator had not been rebuilt after the subset adjustment; after rebuilding, the complete suite passed. The authorized reader helper reported zero Pico devices, so no physical flash or monitor ran.
 - Result: Directory sizes are cross-checked for present components while valid partial GP LOAD inputs remain accepted. Existing warnings remain from Java Card converters, pinned Rust OS sources, packed CAP members, and offline Maven metadata.
 - Decision: Close this parser consistency subtask. Keep the broader WP9 CAP nested-table/fuzzing item open and physical ARM validation pending until a board enumerates.
-- Commit: `39bda86`
+- Commit: `eff5b38`
 - Artifacts/logs: `tools/test-cap-parser`; `artifacts/logs/host-vpcd-multipackage-apdu-20261101T145042Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261101T145042Z.log`; corrupt/missing-sidecar logs with the same timestamp; PC, ARM, and RISC-V build outputs under `build/`.
 
 ## 2026-11-01 Revalidate current-source multipackage integration 12 minutes
@@ -19363,5 +19363,16 @@
 - Validation: `./tools/test-rmi-registry` passed (`stack_receiver_replace=1` and all registry assertions); `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed; scoped `git diff --check` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed package load, restart, peer AID lookup, and deletion cases, then failed with `INSTALL a000000062030101: timed out` while reinstalling the transaction probe; the cause is unknown. `PICO2_HOST_USB_ACCESS=1 ./tools/test-jcsystem-transaction-applet --case 48` failed before APDUs with `timed out waiting for emulator VPCD connect`; not counted as SIO validation. The authorized reader helper and elevated `lsusb -d 2e8a:0009` found zero physical Pico devices in the VM; `pcsc_scan -r` listed only two VPCD readers. No physical test was run.
 - Result: Descriptor-driven primitive copying compiles for all repository targets. No positive cross-AID CAP-level test exercises the new branch; existing upstream Shareable coverage is same-context only. Firmware image size was not compared for this step.
 - Decision: Keep CTX-01 open. Add a regression for descriptor signature and word layout, find or identify an unchanged upstream fixture for a cross-AID call, then add safe reference translation and cross-context exception restoration. Continue physical validation when a Pico is enumerated in the VM.
-- Commit: Recorded in this implementation commit.
+- Commit: `39bda86`
 - Artifacts/logs: Multipackage logs `artifacts/logs/host-vpcd-multipackage-apdu-20261101T191433Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261101T191433Z.log`, and companion corrupt/missing-sidecar logs; transaction probe log `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261101T192506Z.log`; builds under `build/`; no physical logs.
+
+## 2026-11-01 Test Shareable argument marshalling 8 minutes
+
+- Step/experiment: `shareable-argument-marshalling-unit-test-20261101`
+- When: '2026-11-01 20:29 CET' - '2026-11-01 20:37 CET'
+- Change: Extracted descriptor-signature-to-initial-local conversion into `choupi/src/jc_bytecodes/shareable_arguments.hpp` and added focused cases to `tools/tests/rmi_registry/rmi_registry_test.cpp`. Tests cover byte/short ordering and sign extension, int low/high word reconstruction, null-reference acceptance, non-null cross-heap reference rejection, and argument-word-count mismatch. Updated CTX-01, QKB, and handoff. CAP fixtures remain unchanged.
+- Validation: `./tools/test-rmi-registry` passed with `shareable_cross_context_arguments=1`; `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed; scoped `git diff --check` passed. Hardware testing was skipped because the authorized reader helper and host USB listing found no Pico USB nodes in the VM.
+- Result: The local signature-to-local conversion has unit coverage and compiles for all configured targets. Descriptor-method lookup and the actual cross-context interpreter invocation are still not exercised by an upstream CAP. Firmware image size was not compared.
+- Decision: Keep CTX-01 open. Add an unchanged-CAP cross-AID invocation if an existing fixture supports it; then cover non-null ownership translation and cross-context exception restoration.
+- Commit: Recorded in this implementation commit.
+- Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; builds under `build/`; no hardware logs.

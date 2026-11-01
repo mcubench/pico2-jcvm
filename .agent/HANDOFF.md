@@ -2630,9 +2630,11 @@ for emulator VPCD connect`), so it is not counted as SIO validation. The
 approved USB helper and elevated `lsusb -d 2e8a:0009` found no physical Pico in
 the VM; PC/SC only lists the two VPCD readers.
 
-No CAP was created or modified. This primitive argument path has only compiled;
-the existing upstream positive SIO CAP remains same-applet/same-context and
-does not exercise it. Next, design a cross-AID integration test using an
-unchanged upstream CAP if available, add coverage for signature parsing and
-argument layout, then implement safe non-null reference translation and
+No CAP was created or modified. `tools/test-rmi-registry` now covers the local
+signature-to-local conversion for byte/short layout, int word order, null and
+non-null reference behavior, and argument-count mismatch. This does not cover
+Descriptor lookup or a cross-context VM call. The existing upstream positive
+SIO CAP remains same-applet/same-context and does not exercise the new path.
+Next, design a cross-AID integration test using an unchanged upstream CAP if
+available, then implement safe non-null reference translation and
 cross-context exception restoration. Keep CTX-01 open.

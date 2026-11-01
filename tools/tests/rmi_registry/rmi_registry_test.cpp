@@ -1,5 +1,6 @@
 #include "context.hpp"
 #include "context_registry.hpp"
+#include "jc_bytecodes/shareable_arguments.hpp"
 
 #include <algorithm>
 #include <array>
@@ -168,6 +169,84 @@ void verify_shareable_proxy_registry() {
   assert(!client.registerShareableProxy(jcvm::jref_t(0x0030), server_aid, 4,
                                        server_object));
 }
+
+void verify_shareable_cross_context_arguments() {
+  const auto receiver = make_reference(22);
+  std::array<jcvm::InterpretorInitialLocal, 255> locals{};
+  uint8_t local_count = 0;
+
+  {
+    jcvm::Stack stack;
+    stack.push_Frame(0, 0, 3, nullptr);
+    stack.push_Reference(receiver);
+    stack.push_Byte(-2);
+    stack.push_Short(0x7bcd);
+    constexpr uint8_t signature[] = {0x03, 0x04, 0x04}; // (byte, short) short
+    assert(jcvm::buildShareableInitialLocals(
+        signature, sizeof(signature), 3, receiver, stack, locals,
+        local_count));
+    assert(local_count == 3);
+    assert(locals[0].type == jcvm::InterpretorLocalType::Reference);
+    assert(locals[0].value == receiver.compact());
+    assert(locals[1].type == jcvm::InterpretorLocalType::Byte);
+    assert(static_cast<int32_t>(locals[1].value) == -2);
+    assert(locals[2].type == jcvm::InterpretorLocalType::Short);
+    assert(locals[2].value == 0x7bcd);
+    // Conversion does not consume or rearrange caller words.
+    assert(stack.pop_Short() == 0x7bcd);
+    assert(stack.pop_Byte() == -2);
+    assert(stack.pop_Reference() == receiver);
+  }
+
+#ifdef JCVM_INT_SUPPORTED
+  {
+    jcvm::Stack stack;
+    stack.push_Frame(0, 0, 3, nullptr);
+    stack.push_Reference(receiver);
+    stack.push_Int(static_cast<jcvm::jint_t>(0x12345678));
+    constexpr uint8_t signature[] = {0x05, 0x04}; // (int) short
+    assert(jcvm::buildShareableInitialLocals(
+        signature, sizeof(signature), 3, receiver, stack, locals,
+        local_count));
+    assert(local_count == 2);
+    assert(locals[1].type == jcvm::InterpretorLocalType::Int);
+    assert(locals[1].value == 0x12345678);
+  }
+#endif
+
+  {
+    jcvm::Stack stack;
+    stack.push_Frame(0, 0, 2, nullptr);
+    stack.push_Reference(receiver);
+    stack.push_Reference(jcvm::jref_t{});
+    constexpr uint8_t signature[] = {
+        0x06, 0x00, 0x00, 0x00, 0x00, 0x04}; // (Object) short
+    assert(jcvm::buildShareableInitialLocals(
+        signature, sizeof(signature), 2, receiver, stack, locals,
+        local_count));
+    assert(local_count == 2);
+    assert(locals[1].type == jcvm::InterpretorLocalType::Reference);
+    assert(locals[1].value == 0);
+
+    stack.pop_Reference();
+    stack.pop_Reference();
+    stack.push_Reference(receiver);
+    stack.push_Reference(make_reference(23));
+    assert(!jcvm::buildShareableInitialLocals(
+        signature, sizeof(signature), 2, receiver, stack, locals,
+        local_count));
+  }
+
+  {
+    jcvm::Stack stack;
+    stack.push_Frame(0, 0, 1, nullptr);
+    stack.push_Reference(receiver);
+    constexpr uint8_t signature[] = {0x03, 0x04}; // (byte) short
+    assert(!jcvm::buildShareableInitialLocals(
+        signature, sizeof(signature), 1, receiver, stack, locals,
+        local_count));
+  }
+}
 } // namespace
 
 int main() {
@@ -190,6 +269,7 @@ int main() {
   verify_previous_context_aid();
   verify_retained_applet_context_lookup();
   verify_shareable_proxy_registry();
+  verify_shareable_cross_context_arguments();
 
   const auto first = make_reference(1);
   const uint16_t first_id = context.exportRemoteObject(first);
@@ -274,6 +354,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1");
   return 0;
 }

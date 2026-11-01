@@ -227,10 +227,13 @@ Archive text is historical evidence, not current device state or priorities.
   cross-context arguments are now decoded from the interface CAP Descriptor
   signature and copied by primitive type. Null reference arguments are allowed;
   non-null reference arguments still fail closed pending ownership translation.
-  This new argument path builds for PC/ARM/RISC-V but has no positive cross-AID
-  CAP-level test yet. A positive same-applet call is exercised, but cross-AID
-  ownership, context restoration and its firewall path remain unverified end
-  to end. Never return raw server heap references to clients.
+  The local signature-to-typed-local conversion has focused tests for
+  byte/short layout, int word order, null/non-null references, and argument
+  count mismatch. The new argument path builds for PC/ARM/RISC-V but has no
+  positive cross-AID CAP-level test yet. A positive same-applet call is
+  exercised, but cross-AID ownership, context restoration and its firewall
+  path remain unverified end to end. Never return raw server heap references
+  to clients.
   Acceptance: positive cross-AID and denied-call fixtures, correct context/AID
   restoration, stable roots across GC and reset/delete, no cross-heap reference
   leaks; follow with unchanged upstream Multi CAP integration and physical checks.
