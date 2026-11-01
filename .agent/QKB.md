@@ -27,6 +27,11 @@
   cleanup. This argues against treating RSA-384 itself as the timeout cause.
   The full Crypto timeout remains unexplained and requires its own diagnostic;
   the deterministic and selected IV checks are independent.
+- A narrower `ALG_RSA_SHA_384_PKCS1_PSS` run completed four selected API
+  checks as `OK` and cleaned up successfully; the run took 88 seconds. The
+  overall VPCD API client path has low throughput, and the 800-second Crypto
+  bound may be insufficient for the complete area. The full-area timeout is
+  not an algorithm support result.
 - **Separate observation:** The full Crypto sweep's RSA SHA-512 PSS
   `EXC_CARDRUNTIME reason=0x0001` uses a 1024-bit key with a 64-byte salt. The
   PSS operation cannot fit that salt with SHA-512; separate known-answer

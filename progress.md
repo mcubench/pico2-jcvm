@@ -19035,3 +19035,14 @@
 - Commit: `0c2b121` (`Record VPCD Crypto timeout follow-up`)
 - Artifacts/logs: API CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-rsa384-followup.csv` SHA-256 `be8ad238b6b99b20099503b8800c6355a0bb32e2b8b37036b0c97f39f4815e62`; reader, presence, and emulator logs `artifacts/logs/vpcd-api-rsa384-20261101T095317Z/`.
 
+## 2026-11-01 Check RSA-384 PSS VPCD follow-up 5 minutes
+
+- Step/experiment: `vpcd-crypto-timeout-pss384-20261101`
+- When: '2026-11-01 10:58 CET' - '2026-11-01 11:03 CET'
+- Change: Ran the unchanged API 3.0.5 Crypto CAP/client over Virtual PCD with only `ALG_RSA_SHA_384_PKCS1_PSS` matching, to discriminate the full-area timeout from a particular PSS case. Updated TODO/QKB/HANDOFF with outcome and runtime.
+- Validation: VPCD reader discovery, `VpcdPresenceProbe`, and `UPLOAD OK` passed. Four selected API checks returned `OK`; 462 unrelated rows were skipped; CAP cleanup passed. Recorded stage timestamps show the client phase took 88 seconds. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
+- Result: This selected PSS case does not reproduce a functional error. The full 466-call area still times out at 800 seconds; the official VPCD API path has substantial per-run overhead, and current evidence does not isolate a specific failing algorithm.
+- Decision: Keep the full-area VPCD timeout as a validation limitation. Retest on a physical Pico and separately profile client/APDU throughput before increasing timeouts further.
+- Commit: `<pending>`
+- Artifacts/logs: API CSV `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-pss384-followup.csv` SHA-256 `8a80fdadfdda4d6df847c1c586f1d3bf1f998e284a85c344d1208896de388c17`; logs `artifacts/logs/vpcd-api-pss384-20261101T095909Z/`.
+

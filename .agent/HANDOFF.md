@@ -16,8 +16,11 @@ full Crypto VPCD sweep separately timed out at 800 seconds after 190 partial
 client rows (112 `OK`, 78 `UNSUPPORTED_PER_SPEC`) and before reaching the IV
 calls. A follow-up selecting `ALG_RSA_SHA_384_PKCS1` completed all seven
 matching API rows as `OK`, but its client also timed out afterward; the outer
-180-second bound interrupted cleanup. Do not attribute that timeout to RSA
-SHA-384 itself. CSVs and hashes are in
+180-second bound interrupted cleanup. A narrower `ALG_RSA_SHA_384_PKCS1_PSS`
+run completed four matching API checks as `OK` and cleaned up in 88 seconds.
+This points to slow full-area VPCD/client throughput rather than an isolated
+RSA-384 error; the full-run timeout still needs an adequate timeout or a more
+efficient test route. CSVs and hashes are in
 `artifacts/results/deploy/vpcd-iv-fix-20261101/`.
 Physical confirmation is still pending because the authorized reader helper
 found zero physical Pico readers; no flash was attempted. Next, when a Pico

@@ -696,9 +696,11 @@ adapters, and do not change upstream applet CAP files.
   treat that as failed full-area validation. A follow-up selected
   `ALG_RSA_SHA_384_PKCS1` run returned `OK` for all seven matching API rows,
   but the client again timed out afterward; the outer bound also interrupted
-  cleanup. This indicates broader API-client/VPCD completion trouble, not a
-  demonstrated RSA-SHA-384 failure. Retest the IV rows on physical hardware
-  when a board is available, and diagnose the VPCD full-run timeout separately.
+  cleanup. A narrower `ALG_RSA_SHA_384_PKCS1_PSS` filter completed four
+  matching API checks as `OK` and cleanup passed in 88 seconds. The long
+  duration appears to be VPCD/client test throughput, not a demonstrated
+  RSA-SHA-384 failure. Retest the IV rows on physical hardware when a board is
+  available, and diagnose/raise the full VPCD area timeout separately.
 
 ### Priority 1 — selectable Java Card firmware capabilities
 
