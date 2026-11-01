@@ -19137,6 +19137,17 @@
   `git log -1 --format=%H -- TODO.md`.
 - Artifacts/logs: TODO.md review and task descriptions; no new hardware logs.
 
+## 2026-11-01 Centralize VM and storage boundary declarations 16 minutes
+
+- Step/experiment: `architecture-shared-boundary-declarations-20261101`
+- When: '2026-11-01 14:06 CET' - '2026-11-01 14:22 CET'
+- Change: Moved VM lookup and applet-selection query declarations into `src/vm_lifecycle.h`; added repository-owned `src/vm_filesystem.h` for filesystem adapter extensions; put CAP storage adapters in `src/cap_store.hpp` and CAP applet-AID lookup in `src/cap_load.hpp`. Removed duplicated local declarations from CCID, JNI, loader, flash memory and filesystem tests. Left the pinned Rust OS FFI header/submodule unchanged. Marked ARCH-07 complete in TODO and set ARCH-08 as the handoff's next priority.
+- Validation: `./tools/build-pc --profile current`, `./tools/build arm`, and `./tools/build riscv` passed. `./tools/test-rp2350-fs-overlay` passed with `TEST:SUMMARY fail=0`. The authorized `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`. The helper enumerated two Pico 2 readers; `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --chipid 8E464F4E2BBC0A19` flashed the ARM image and ended `CYCLE:PASS`; the finite monitor reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. One retained `WATCHDOG_RECOVERY marker=INSTALL cause=other` diagnostic appeared, which existing QKB/TODO evidence says is not by itself proof of a watchdog reset. Targeted staged diff whitespace check passed with CRLF recognized. Build output retains existing warnings from the pinned Rust OS and packed CAP members.
+- Result: The shared declarations have a single repository-owned authority without changing runtime/storage behavior or asserting that Rust exports the C++ filesystem extensions. PC, both architecture wrappers, filesystem storage regression, VPCD lifecycle regression, and physical runtime cycle pass.
+- Decision: Close ARCH-07. Begin ARCH-08: inspect pinned TinyUSB event processing and find a supported finite service budget that does not drop events or break control transfers; if unsupported locally, document the concrete limitation. ARCH-09 remains coordinated follow-up work.
+- Commit: `a252e73` (`Centralize VM and storage boundary declarations`)
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T131130Z.log` SHA-256 `52ad6cc4506ffced4d03629a31dd1734608ad648f545bb4b3e83839c429c71f8`; restart log SHA-256 `5702175f4ba1d3b4883d37f684c899e74ce944e952a881a778ad228a3db60587`; `artifacts/logs/cycle-choupi-20261101T131543Z.log` SHA-256 `22072e5e2af890c29909d34f5ece736e2d812908076f19a36852d5a7ffe481b6`; ARM UF2 SHA-256 `8d341848a4e54e1fd29de067ad0f77888c729726cf72e9724020c088e40dbe02`.
+
 ## 2026-11-01 Fix applet root enumeration after package deletion 16 minutes
 
 - Step/experiment: `multi-applet-delete-root-enumeration-20261101`
