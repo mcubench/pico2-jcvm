@@ -19387,3 +19387,14 @@
 - Decision: Keep CTX-01 open. Validate against an unchanged cross-AID CAP fixture and implement explicit local reference ownership translation/firewall checks before accepting applet-local references.
 - Commit: `ffb94ad`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
+
+## 2026-11-01 Enforce SIO argument reference shape 7 minutes
+
+- Step/experiment: `shareable-global-argument-shape-20261101`
+- When: '2026-11-01 20:50 CET' - '2026-11-01 20:57 CET'
+- Change: Non-null JCRE-global handles passed across SIO contexts must match the CAP Descriptor parameter's object-versus-array shape. Added negative coverage for passing a global array as `Object` and a global instance as `byte[]`; updated CTX-01, QKB, and handoff. No CAP files changed.
+- Validation: `./tools/test-rmi-registry` passed; `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. An escalated USB inventory returned no Pico devices in the VM; no physical test was performed.
+- Result: Accepted global reference handles are checked against the declared reference category before server entry. End-to-end cross-AID descriptor lookup remains untested. Existing upstream CHOUPI packed-member and Rust warnings remain.
+- Decision: Keep CTX-01 open. Continue looking for an unchanged upstream CAP capable of cross-AID service invocation; retain local-reference rejection until ownership and firewall semantics are defined.
+- Commit: pending
+- Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.

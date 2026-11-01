@@ -122,6 +122,10 @@ inline bool buildShareableInitialLocals(
           !reference.isGlobalInstance()) {
         return false;
       }
+      const bool expected_array = type != 0x06;
+      if (!reference.isNullPointer() && reference.isArray() != expected_array) {
+        return false;
+      }
       initial_locals[initial_local_count++] = {
           InterpretorLocalType::Reference, reference.compact()};
       ++argument_word_index;

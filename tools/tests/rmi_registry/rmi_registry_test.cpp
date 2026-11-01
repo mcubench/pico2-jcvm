@@ -263,6 +263,25 @@ void verify_shareable_cross_context_arguments() {
     assert(stack.pop_Reference() == global_array);
     assert(stack.pop_Reference() == global_instance);
     assert(stack.pop_Reference() == receiver);
+
+    stack.push_Reference(receiver);
+    stack.push_Reference(global_array);
+    constexpr uint8_t object_signature[] = {
+        0x06, 0x00, 0x00, 0x00, 0x00, 0x04};
+    assert(!jcvm::buildShareableInitialLocals(
+        object_signature, sizeof(object_signature), 2, receiver, stack,
+        locals, local_count));
+    stack.pop_Reference();
+    stack.pop_Reference();
+
+    stack.push_Reference(receiver);
+    stack.push_Reference(global_instance);
+    constexpr uint8_t array_signature[] = {0x0b, 0x04};
+    assert(!jcvm::buildShareableInitialLocals(
+        array_signature, sizeof(array_signature), 2, receiver, stack,
+        locals, local_count));
+    stack.pop_Reference();
+    stack.pop_Reference();
   }
 
   {

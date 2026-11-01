@@ -2645,9 +2645,10 @@ The cross-context argument marshaller now accepts null, JCRE-global array, and
 JCRE-global instance references. These handles resolve via the shared global
 heap and do not expose applet-private heap objects. Applet-local non-null
 references (including proxy placeholders) still fail closed pending explicit
-ownership translation. `tools/test-rmi-registry` covers the accepted global
-forms and continued local-reference rejection; it does not exercise descriptor
-lookup or cross-AID execution.
+ownership translation. Non-null global references must match the method
+descriptor's object-versus-array shape. `tools/test-rmi-registry` covers the
+accepted global forms, shape mismatches, and continued local-reference
+rejection; it does not exercise descriptor lookup or cross-AID execution.
 
 Validation: `tools/test-rmi-registry`, PC build, ARM build, and RISC-V build
 passed. The user reports physical devices connected, but the VM's elevated

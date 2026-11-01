@@ -3364,7 +3364,8 @@ original terminology/status; check current summary and later fixes before reuse.
 
 - Null references and JCRE-global array/instance handles are now copied into
   the server call's typed locals. These handles use the shared global heap and
-  do not identify storage in either applet's private heap.
+  do not identify storage in either applet's private heap. Non-null handles
+  must also match the descriptor's object-versus-array shape.
 - Applet-local object/array references remain rejected. Do not pass client
   local references or proxy placeholders across contexts until explicit
   ownership translation and the firewall policy are implemented.
