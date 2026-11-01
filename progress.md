@@ -19396,7 +19396,7 @@
 - Validation: Reviewed the handoff against `TODO.md`, QKB and the current code/test state; no source changed. `git diff --check -- .agent/HANDOFF.md progress.md` passed.
 - Result: The handoff now leads with accurate implementation state and concrete next acceptance checks; no physical test was possible because no Pico is enumerated in the VM.
 - Decision: Keep CTX-01 open and preserve all unrelated worktree changes.
-- Commit: pending
+- Commit: `f09d0c6`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T191433Z.log`; no hardware logs.
 
 ## 2026-11-01 Preserve array-to-Object SIO compatibility 8 minutes
