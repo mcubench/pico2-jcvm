@@ -1009,10 +1009,13 @@ uint8_t compact_deleted_overlay_records() {
     }
 
     const uint32_t offset = overlay_offset(file);
+    if (offset >= overlay_bytes_used) return FS_STATUS_IO_UNKNOWN;
     const size_t key_length = overlay_bytes[offset] & 0x7fu;
+    if (key_length > overlay_bytes_used - offset - 1) {
+      return FS_STATUS_IO_UNKNOWN;
+    }
     const size_t record_size = 1 + key_length + file.size;
-    if (offset > overlay_bytes_used ||
-        record_size > overlay_bytes_used - offset ||
+    if (record_size > overlay_bytes_used - offset ||
         compacted_bytes > offset) {
       return FS_STATUS_IO_UNKNOWN;
     }
