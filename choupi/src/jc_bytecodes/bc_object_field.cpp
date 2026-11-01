@@ -33,6 +33,8 @@
 #include "../stack.hpp"
 #include "bytecodes.hpp"
 
+#include <cstdio>
+
 namespace jcvm {
 
 namespace {
@@ -122,6 +124,31 @@ void Bytecodes::bc_getfield_a() {
   TRACE_JCVM_DEBUG("GETFIELD_A 0x%02X", index);
 
   objectref = stack.pop_Reference();
+  if (objectref.isNullPointer()) {
+    const auto &frame = stack.getCurrentFrame();
+    const auto *method_component =
+        this->context.getCurrentPackage().getCap().getMethod();
+    const auto methods = method_component->methods();
+    const auto *instruction = frame.getInstructionPC();
+    const auto *method_start = frame.getMethodStartPC();
+    const auto local_zero = stack.readLocal_Reference(0);
+    std::printf(
+        "CHOUPI:NULL_RECEIVER op=GETFIELD_A package=%u pc=%u method_pc=%u "
+        "cp_index=%u receiver=%04X local0=%04X\r\n",
+        static_cast<unsigned>(this->context.getCurrentPackageID()),
+        instruction >= methods.data() &&
+                instruction < methods.data() + methods.size()
+            ? static_cast<unsigned>(instruction - methods.data())
+            : 0xFFFFFFFFu,
+        instruction >= method_start
+            ? static_cast<unsigned>(instruction - method_start)
+            : 0xFFFFFFFFu,
+        static_cast<unsigned>(index),
+        static_cast<unsigned>(objectref.compact()),
+        static_cast<unsigned>(local_zero.compact()));
+    std::fflush(stdout);
+    throw Exceptions::NullPointerException;
+  }
   auto instance = heap.getInstance(objectref);
   const auto field_token = resolveInstanceFieldToken(this->context, index);
   ref = instance->getField_Reference(field_token);

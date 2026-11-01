@@ -18847,3 +18847,48 @@
 - Decision: Map the recorded CAP PCs to API subcalls and inspect dispatch receiver/method-token values before modifying algorithm implementations. Keep API correctness open.
 - Commit: `456d250` (`Record focused v4 API exception reproductions`)
 - Artifacts/logs: Security CSV `artifacts/results/deploy/focused-runtime-v4-20261031/security-rsa512.csv` SHA-256 `4847189649c47c212001a9d7dcadccb993a570759f5892303fd267091e5d0161`; serial log `artifacts/logs/focused-security-v4-2BED-20261031.log` SHA-256 `7735c76a0c088d624887980a95ab9ccb54f77c99441d633d1b81e74f56e0fdba`; Crypto CSV `artifacts/results/deploy/focused-runtime-v4-20261031/crypto-des-mac8.csv` SHA-256 `448146a8865687d0603b2fe6b15fbe4619edaa2d0994fce7c716b1d6f82301d5`; serial log `artifacts/logs/focused-crypto-v4-2BED-20261031.log` SHA-256 `974249930095e5a615eaf10833e89d67b2bd46d8f9aeef21a12d13ce211ee94e`.
+
+## 2026-11-01 Recheck API null-receiver failures on flashed image 29 minutes
+
+- Step/experiment: `max-crypto-null-recheck-20261101`
+- When: '2026-11-01 08:25 CET' - '2026-11-01 08:54 CET'
+- Change: Added bounded CAP method/PC/receiver diagnostics to null `GETFIELD_A`,
+  `INVOKEVIRTUAL`, and `INVOKEINTERFACE` paths. The GETFIELD_A guard explicitly
+  raises the specified `NullPointerException` before heap lookup. Updated TODO,
+  QKB, and handoff to supersede the previous isolated-failure conclusion with
+  current-image evidence.
+- Validation: `./tools/build-pc --profile max_crypto` initially encountered
+  undefined references because the two affected cached objects were zero
+  bytes; touching only those source timestamps forced rebuild, and the PC
+  wrapper then passed. `PICO_BUILD_JOBS=2 ./tools/build arm --profile
+  max_crypto` and the corresponding RISC-V wrapper passed. `PICO2_HOST_USB_ACCESS=1
+  ./tools/cycle choupi --profile max_crypto --serial 2BED26ED20556535` passed
+  both build gates, flash verification, and its finite 18-second monitor.
+  Physical API 3.0.5 Security RSA-512-only passed 1/1 selected calls (900
+  skipped); the broader filter passed RSA-512 and RSA-CRT-512 and reported
+  DSA-512 unsupported. Crypto DES-MAC8 returned seven OK, one IV-specific
+  WRONG_RESULT, and zero EXC_RUNTIME. CAP cleanup passed in both areas. The
+  60-second Security and 90-second Crypto serial captures had no
+  `CHOUPI:NULL_RECEIVER`; runtime summary was pass=1 fail=0. VPCD remained
+  unavailable: its readers enumerated, but port 35963 refused the connection.
+- Result: The historical focused NPEs did not reproduce on this freshly flashed
+  image. Their cause and the old broad API runtime counts remain unresolved;
+  the DES-MAC8 IV wrong result is a separate current finding. Physical flash
+  SHA-256: `986c432afeaba6562844c3d62208b30da9b9667f8afb23411a21a4d277fa2581`.
+- Decision: Run full current-image Security and Crypto areas next and compare
+  exact source/profile/image identity with the 2026-10-31 reports. Then diagnose
+  the single DES-MAC8 IV `WRONG_RESULT`.
+- Commit: `<filled after commit>`
+- Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2`; cycle
+  `artifacts/logs/cycle-choupi-20261101T074258Z.log` SHA-256
+  `258c3041a0448c014a47d65285ec182f511841127e5b2f2edc086ace16ca97fb`;
+  exact RSA CSV SHA-256
+  `fb1bf4a6e962b6626ecfe136739bb29a7b3b7aefac7195d29c908ecc1964fd72`;
+  focused Security CSV SHA-256
+  `0652af1a2df34f93b7987ee6fd2736561c3ca34df0342cea266f40fbb89b959d`;
+  Crypto CSV SHA-256
+  `de8edc4d011a6df39e4d24b56651000cbad0dd96bed611072ffbe0c0648a28cd`;
+  serial logs `artifacts/logs/physical-null-receiver-security-2BED-20261101.serial.log`
+  (SHA-256 `7b0bc7ff622e4f95ff6405fa5304b8e0128ad749cef060af50b5f4963c31ed1a`)
+  and `artifacts/logs/physical-null-receiver-crypto-2BED-20261101.serial.log`
+  (SHA-256 `402c22976c5e62784a2a8752619e80cc5b8ddb4465c7112a8759b8b1841f1680`).

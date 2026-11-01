@@ -1,5 +1,39 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Focused API NPEs do not reproduce on the 2026-11-01 max_crypto image
+
+- After a fresh ARM `max_crypto` build and verified physical cycle on Pico 2
+  `2BED26ED20556535`, the unchanged API 3.0.5 RSA-512 `KeyPair.genKeyPair()`
+  call passed (`OK`); the isolated Security CAP was removed successfully.
+  The broader filter ran RSA-CRT-512 too (also `OK`) and reported DSA-512 as
+  `UNSUPPORTED_PER_SPEC`.
+- The filtered DES-MAC8 Crypto CAP completed without `EXC_RUNTIME`; seven of
+  eight selected calls were `OK`. The IV-specific `Signature.init(...)` case
+  remains `WRONG_RESULT` (`returned=0x0008`, effect unexpected). CAP cleanup
+  passed.
+- Bounded serial captures during these APDU tests show no
+  `CHOUPI:NULL_RECEIVER`; runtime self-checks reported
+  `TEST:SUMMARY pass=1 fail=0`. These are different scopes: the self-check is
+  not the API result.
+- **Current decision:** The 2026-10-31 NPE findings are historical and were
+  not reproduced on the newly flashed image. No common cause or code fix has
+  been established. Do not attribute the change to diagnostics alone. Run
+  complete current-image Security and Crypto areas and compare exact source,
+  ROM-mask, and image hashes before closing the broad regressions.
+- **VPCD environment note:** PC/SC enumerated Virtual PCD 00 00/00 01, but the
+  PC emulator still failed to connect to `127.0.0.1:35963` with
+  `Connection refused`. The historical 81,920-byte empty flash image also had
+  a package bit without its registry sidecar; use the 524,288-byte
+  `algtest-v182-current-empty-flash.bin` for clean runs. This image alone did
+  not restore the missing listener.
+- Artifacts: `physical-null-receiver-security-rsa512-only-2BED-20261101.csv`
+  SHA-256 `fb1bf4a6e962b6626ecfe136739bb29a7b3b7aefac7195d29c908ecc1964fd72`;
+  `physical-null-receiver-security-2BED-20261101.csv` SHA-256
+  `0652af1a2df34f93b7987ee6fd2736561c3ca34df0342cea266f40fbb89b959d`;
+  `physical-null-receiver-crypto-2BED-20261101.csv` SHA-256
+  `de8edc4d011a6df39e4d24b56651000cbad0dd96bed611072ffbe0c0648a28cd`;
+  serial log SHA-256 `7b0bc7ff622e4f95ff6405fa5304b8e0128ad749cef060af50b5f4963c31ed1a`.
+
 ## Physical GPPro install and failed-install rollback verified — 2026-10-31
 
 - On freshly flashed max_crypto firmware, the physical asymmetric probe CAP

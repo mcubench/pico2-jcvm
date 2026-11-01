@@ -1,5 +1,43 @@
 # Session handoff — updated 2026-10-31
 
+## Current-image API runtime recheck — 2026-11-01
+
+Rebuilt ARM, RISC-V, and PC `max_crypto` with bounded build jobs. ARM and
+RISC-V wrapper builds passed. The PC wrapper initially failed linking because
+two stale bytecode object files were zero bytes after an interrupted build;
+touching the two modified sources forced regeneration, after which
+`./tools/build-pc --profile max_crypto` passed. Physical cycle on Pico 2
+`2BED26ED20556535` passed both architecture build gates, flash verification,
+and the finite 18-second monitor; current ARM UF2 SHA-256 is
+`986c432afeaba6562844c3d62208b30da9b9667f8afb23411a21a4d277fa2581`.
+
+On that image, the exact API 3.0.5 RSA-512-only test returned `OK` (900 calls
+skipped), and its temporary CAP cleanup passed. A wider Security filter
+returned `OK` for RSA-512 and RSA-CRT-512 and `UNSUPPORTED_PER_SPEC` for
+DSA-512. The filtered DES-MAC8 Crypto test returned seven `OK`, one
+`WRONG_RESULT` on the IV test, and no `EXC_RUNTIME`; both temporary CAPs were
+removed. The 60-second Security serial capture and 90-second Crypto serial
+capture contain no `CHOUPI:NULL_RECEIVER` line, while their runtime
+self-checks repeatedly reported `TEST:SUMMARY pass=1 fail=0`.
+
+This supersedes the earlier claim that these focused cases currently reproduce
+the full-sweep NPEs. It does not establish why the old results differed and
+does not prove full Security/Crypto correctness. Run complete current-image
+Security and Crypto areas next, then inspect the DES-MAC8 IV wrong result. The
+small API CSVs and serial log hashes are recorded in `progress.md`.
+
+VPCD is not currently usable for comparison: the approved reader helper and
+`pcsc_scan -r` enumerate two Virtual PCD readers, but `choupi` cannot connect to
+`127.0.0.1:35963` (`Connection refused`). The old 81,920-byte
+`algtest-v182-empty-flash.bin` also has a stale dynamic-package bit without a
+registry sidecar; use the 524,288-byte
+`algtest-v182-current-empty-flash.bin` for clean emulation. Even with that
+image, the endpoint still refused connections. No emulator API results were
+produced.
+
+The previous section below records the historical 2026-10-31 failure and is
+retained for audit; its conclusion is not current-image evidence.
+
 ## Focused v4 API runtime-failure reproductions — 2026-10-31
 
 On Pico 2 `2BED26ED20556535`, isolated upstream API 3.0.5 tests reproduced

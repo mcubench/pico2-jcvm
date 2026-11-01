@@ -608,7 +608,20 @@ adapters, and do not change upstream applet CAP files.
   `NO_MEMORY` condition for these reproductions, but does not yet identify the
   native entry point or prove a common root cause. Next map these CAP PCs to
   test subcalls and capture the native method token plus receiver reference.
-  See `progress.md` for CSV/log hashes.
+  See `progress.md` for the historical CSV/log hashes.
+
+  **Current-image recheck (2026-11-01):** After rebuilding and flashing
+  `max_crypto` to Pico 2 `2BED26ED20556535`, the exact RSA-512-only API 3.0.5
+  run returned `OK` (900 calls skipped; CAP cleanup passed). A wider filtered
+  Security run also returned `OK` for RSA-512 and RSA-CRT-512, and correctly
+  reported DSA-512 `UNSUPPORTED_PER_SPEC`. The filtered DES-MAC8 Crypto run
+  returned seven `OK`, one `WRONG_RESULT` for the IV test, and no
+  `EXC_RUNTIME`; captured serial contained no `CHOUPI:NULL_RECEIVER`. These
+  observations supersede the earlier isolated-failure result for this image,
+  but do not explain the old full-sweep runtime counts or prove the full areas
+  are fixed. Next run complete current-image Security and Crypto areas on the
+  identified reader, then investigate the DES-MAC8 IV `WRONG_RESULT`.
+  Artifacts and exact hashes are in `progress.md` and `.agent/HANDOFF.md`.
 
 ### Priority 1 — selectable Java Card firmware capabilities
 

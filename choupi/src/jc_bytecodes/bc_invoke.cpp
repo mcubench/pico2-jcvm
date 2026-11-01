@@ -151,6 +151,26 @@ void Bytecodes::bc_invokevirtual() {
   }
   const jref_t receiver = stack.get_Pushed_Element(nargs);
   if (receiver.isNullPointer()) {
+    const auto &frame = stack.getCurrentFrame();
+    const auto *method_component =
+        context.getCurrentPackage().getCap().getMethod();
+    const auto methods = method_component->methods();
+    const auto *instruction = frame.getInstructionPC();
+    const auto *method_start = frame.getMethodStartPC();
+    std::printf(
+        "CHOUPI:NULL_RECEIVER op=INVOKEVIRTUAL package=%u pc=%u "
+        "method_pc=%u cp_index=%u nargs=%u receiver=%04X\r\n",
+        static_cast<unsigned>(context.getCurrentPackageID()),
+        instruction >= methods.data() &&
+                instruction < methods.data() + methods.size()
+            ? static_cast<unsigned>(instruction - methods.data())
+            : 0xFFFFFFFFu,
+        instruction >= method_start
+            ? static_cast<unsigned>(instruction - method_start)
+            : 0xFFFFFFFFu,
+        static_cast<unsigned>(index), static_cast<unsigned>(nargs),
+        static_cast<unsigned>(receiver.compact()));
+    std::fflush(stdout);
     throw Exceptions::NullPointerException;
   }
 
@@ -695,6 +715,28 @@ void Bytecodes::bc_invokeinterface() {
   jref_t objectref = stack.get_Pushed_Element(nargs);
 
   if (objectref.isNullPointer()) {
+    const auto &frame = stack.getCurrentFrame();
+    const auto *method_component =
+        context.getCurrentPackage().getCap().getMethod();
+    const auto methods = method_component->methods();
+    const auto *instruction = frame.getInstructionPC();
+    const auto *method_start = frame.getMethodStartPC();
+    std::printf(
+        "CHOUPI:NULL_RECEIVER op=INVOKEINTERFACE package=%u pc=%u "
+        "method_pc=%u cp_index=%u nargs=%u interface_method=%u "
+        "receiver=%04X\r\n",
+        static_cast<unsigned>(context.getCurrentPackageID()),
+        instruction >= methods.data() &&
+                instruction < methods.data() + methods.size()
+            ? static_cast<unsigned>(instruction - methods.data())
+            : 0xFFFFFFFFu,
+        instruction >= method_start
+            ? static_cast<unsigned>(instruction - method_start)
+            : 0xFFFFFFFFu,
+        static_cast<unsigned>(index), static_cast<unsigned>(nargs),
+        static_cast<unsigned>(method),
+        static_cast<unsigned>(objectref.compact()));
+    std::fflush(stdout);
     throw Exceptions::NullPointerException;
   }
 
