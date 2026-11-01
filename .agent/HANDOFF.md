@@ -2,6 +2,18 @@
 
 ## Latest verification — 2026-11-01
 
+The current worktree snapshot was revalidated on 2026-11-01 after the CAP
+Directory parser commit. Elevated `PICO2_HOST_USB_ACCESS=1
+./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`, covering
+three loaded packages, 21 applet instances, fresh-process restore, selection,
+deletion, cross-AID transient lifecycle, and final registry cleanup. The ARM
+`current` and RISC-V `current` repository builds also passed. These checks ran
+against the current worktree, which still contains unrelated uncommitted source
+edits; those edits were not staged or committed by this validation. The
+authorized PC/SC helper (with the host-access marker) found zero readers, and
+elevated `lsusb -d 2e8a:` returned no devices. `./tools/doctor` confirms build
+prerequisites only. No physical flash or hardware test was possible.
+
 The current-source host persistence regression passed again via the required
 elevated path: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence`.
 Install/commit passed 3/3; a fresh emulator process restored the persistent

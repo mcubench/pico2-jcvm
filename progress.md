@@ -19211,3 +19211,14 @@
 - Decision: Close this parser consistency subtask. Keep the broader WP9 CAP nested-table/fuzzing item open and physical ARM validation pending until a board enumerates.
 - Commit: Recorded in this implementation commit.
 - Artifacts/logs: `tools/test-cap-parser`; `artifacts/logs/host-vpcd-multipackage-apdu-20261101T145042Z.log`; `artifacts/logs/host-vpcd-multipackage-restart-20261101T145042Z.log`; corrupt/missing-sidecar logs with the same timestamp; PC, ARM, and RISC-V build outputs under `build/`.
+
+## 2026-11-01 Revalidate current-source multipackage integration 12 minutes
+
+- Step/experiment: `current-worktree-multipackage-revalidation-20261101`
+- When: '2026-11-01 16:02 CET' - '2026-11-01 16:14 CET'
+- Change: No firmware source was changed. Revalidated the current worktree snapshot after recent CAP-loader and applet-context edits; preserved all existing source changes. Updated the handoff with the result and hardware-access status.
+- Validation: Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed `TEST:SUMMARY pass=47 fail=0`. `./tools/build arm` passed for `current` and emitted `build/arm/pico2_choupi.uf2`; `./tools/build riscv` passed for `current` and emitted `build/riscv/pico2_jcvm_smoke.uf2`. `PICO2_HOST_USB_ACCESS=1 ./tools/doctor` passed build prerequisites. Elevated `lsusb -d 2e8a:` and `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` found no guest-visible Pico devices; no flash or physical test was possible.
+- Result: The current source snapshot builds for both architectures and its multipackage VPCD lifecycle passes. This does not validate the uncommitted source changes on physical hardware.
+- Decision: Keep physical validation pending until a Pico enumerates in the VM. Continue with offline work and preserve the existing unrelated worktree changes.
+- Commit: Recorded in this validation commit.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T150907Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261101T150907Z.log`, `artifacts/logs/host-vpcd-multipackage-corrupt-sidecar-20261101T150907Z.log`, `artifacts/logs/host-vpcd-multipackage-missing-sidecar-20261101T150907Z.log`; build outputs under `build/`.
