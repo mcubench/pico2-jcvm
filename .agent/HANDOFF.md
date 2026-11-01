@@ -9,14 +9,19 @@ Signature instance. The native MAC path now reads that array. The deterministic
 PC VPCD suite adds nonzero-IV sign and verify vectors for DES-MAC8-NOPAD,
 DES-MAC8-ISO9797-M2, and AES-MAC-128-NOPAD; all 79 vectors passed
 (`TEST:SUMMARY pass=81 fail=0`, counting selection/emulator phases). ARM and
-RISC-V `max_crypto` builds also passed. Physical API-suite confirmation is
-still pending: the authorized helper currently finds zero readers, so no flash
-was attempted. Next, when a Pico appears, rerun these three API 3.0.5 IV rows
-and then the Crypto area to check for residual `WRONG_RESULT` or transport
-errors. RSA SHA-512 PSS's one `EXC_CARDRUNTIME reason=0x0001` corresponds to
-the upstream 1024-bit key/64-byte-salt invalid input, already confirmed by
-separate known-answer analysis; do not change the native PSS implementation
-for it.
+RISC-V `max_crypto` builds also passed. The unchanged API 3.0.5 Crypto CAP and
+official client ran via PCSC Virtual PCD with only the three IV calls selected:
+all 3 returned `OK`, 463 unrelated calls were skipped, and cleanup passed. A
+full Crypto VPCD sweep separately timed out at 800 seconds after 190 partial
+client rows (112 `OK`, 78 `UNSUPPORTED_PER_SPEC`) and before reaching the IV
+calls. CSVs and hashes are in `artifacts/results/deploy/vpcd-iv-fix-20261101/`.
+Physical confirmation is still pending because the authorized reader helper
+found zero physical Pico readers; no flash was attempted. Next, when a Pico
+appears, rerun the full Crypto area and check for residual `WRONG_RESULT` or
+transport errors. RSA SHA-512 PSS's one `EXC_CARDRUNTIME reason=0x0001`
+corresponds to the upstream 1024-bit key/64-byte-salt invalid input, already
+confirmed by separate known-answer analysis; do not change the native PSS
+implementation for it.
 
 ## Package-delete overlay compaction — 2026-11-01
 

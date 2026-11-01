@@ -14,6 +14,14 @@
   symmetric cipher/MAC suite passes 79 vectors; ARM and RISC-V `max_crypto`
   wrappers pass. Physical rerun of the API 3.0.5 rows remains required because
   the authorized device helper enumerated zero readers on 2026-11-01.
+- The unchanged API 3.0.5 Crypto CAP and official client also passed all three
+  IV calls over PCSC Virtual PCD (463 other calls skipped; CAP cleanup passed).
+  A full Crypto VPCD run timed out at its 800-second client limit with 190
+  partial rows and no completed API-area CSV rows; this is not a pass. Captured
+  output is `artifacts/results/deploy/vpcd-iv-fix-20261101/crypto-iv-filtered.csv`
+  (SHA-256 `b085ef9ed89517e8e6d9f467ea9bc63ad7e7a16963c5ef59e66515273be58006`)
+  and partial client output is `crypto-full-client-partial.csv` (SHA-256
+  `66637996f43c46ec4c4d254bb6adf899b4fb3ace920db9018e531fb9c2440b3e`).
 - **Separate observation:** The full Crypto sweep's RSA SHA-512 PSS
   `EXC_CARDRUNTIME reason=0x0001` uses a 1024-bit key with a 64-byte salt. The
   PSS operation cannot fit that salt with SHA-512; separate known-answer

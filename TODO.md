@@ -688,7 +688,13 @@ adapters, and do not change upstream applet CAP files.
   pending because no Pico reader was enumerated. The RSA SHA-512 PSS test uses
   a 1024-bit key that is too small for the requested 64-byte salt; existing
   known-answer evidence shows this is an invalid test input, not a native PSS
-  defect. Retest the IV rows on hardware when a board is available.
+  defect. The unchanged API 3.0.5 Crypto CAP and official client then ran over
+  PCSC Virtual PCD with only the three IV rows selected: all three returned
+  `OK`, 463 unrelated calls were skipped, and cleanup passed. A complete
+  Crypto VPCD run separately timed out at 800 seconds after 190 partial client
+  rows (112 `OK`, 78 `UNSUPPORTED_PER_SPEC`), before reaching these IV cases;
+  treat that as failed full-area validation. Retest the IV rows on physical
+  hardware when a board is available.
 
 ### Priority 1 — selectable Java Card firmware capabilities
 
