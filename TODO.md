@@ -207,7 +207,7 @@ credited as architectural completion evidence.
   per-invocation wall-time bound have not been measured, and the RSA-3072
   operation did not complete in this session because the available test applet
   could not be installed on 2BED (`6A80`) and 8E later disappeared from PC/SC.
-- [ ] **ARCH-09 — Exercise production progress/dispatch boundaries (ARCH-04
+- [x] **ARCH-09 — Exercise production progress/dispatch boundaries (ARCH-04
   validation follow-up; coordinate with ARCH-08).** The current
   `tools/tests/native_progress_guard_test.cpp` verifies the RAII guard using
   local `service_usb`/`dispatch_apdu` simulations, not the production CCID entry
@@ -219,6 +219,13 @@ credited as architectural completion evidence.
   makes the regression fail; nested execution stays blocked, queued work is
   eventually processed exactly once, and extension/final response handling
   remains correct. Host checks complement rather than replace physical tests.
+  Implemented (2026-11-01): extracted production task dispatch, native
+  progress, extension wait, and final-response ordering into
+  `src/ccid_progress_flow.hpp`; the CCID entry points call these helpers with
+  hardware hooks. `tools/test-ccid-progress-flow` tests this shared logic with
+  injected USB/time/endpoint hooks and passes 9/9 checks. PC, ARM, and RISC-V
+  builds pass. Physical CCID traffic was unavailable; this does not replace
+  ARCH-08 physical acceptance.
 
 ARCH-02 intentionally defined the weaker PC disk-checkpoint durability contract;
 atomic image/sidecar checkpoint replacement is optional future hardening, not

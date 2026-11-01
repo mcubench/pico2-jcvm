@@ -20,6 +20,7 @@
 #include "vm_lifecycle.h"
 #include "vm_diagnostics.h"
 #include "native_progress_guard.hpp"
+#include "ccid_progress_flow.hpp"
 #include "vm_filesystem.h"
 #include "usb_task_budget.hpp"
 
@@ -364,14 +365,18 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   // host can distinguish completion from a longer CCID response. TinyUSB's
   // low-level endpoint API leaves this class-specific framing to the driver.
   tx_zlp_pending = response_requires_zlp(transfer_length);
-  if (native_extension_in_flight) {
-    const absolute_time_t deadline = make_timeout_time_ms(100);
-    while (native_extension_in_flight && !time_reached(deadline)) {
-      choupi::service_usb_task();
-      if (native_extension_in_flight) sleep_us(100);
-    }
-  }
-  if (!usbd_edpt_xfer(rhport, ep_in, tx_buffer, transfer_length)) {
+  const bool submitted = choupi::submit_final_after_ccid_extension(
+      native_extension_in_flight,
+      [&] {
+        const absolute_time_t deadline = make_timeout_time_ms(100);
+        choupi::wait_for_ccid_extension(
+            native_extension_in_flight, deadline,
+            [](absolute_time_t until) { return time_reached(until); },
+            [] { choupi::service_usb_task(); },
+            [](unsigned delay) { sleep_us(delay); });
+      },
+      [&] { return usbd_edpt_xfer(rhport, ep_in, tx_buffer, transfer_length); });
+  if (!submitted) {
     tx_zlp_pending = false;
     ++debug_in_submit_errors;
   }
@@ -1092,53 +1097,51 @@ const usbd_class_driver_t kDriver = {
 } // namespace
 
 extern "C" void choupi_ccid_task(void) {
-  choupi::NativeProgressGuard task_guard(ccid_task_active);
-  if (!task_guard) return;
-  if (!message_pending) {
-    return;
-  }
   const uint8_t rhport = pending_rhport;
-  message_pending = false;
-  ++debug_task_count;
-  debug_stage = 5;
-  process_message(rhport);
+  choupi::dispatch_pending_ccid_task(
+      ccid_task_active, message_pending, [&] {
+        ++debug_task_count;
+        debug_stage = 5;
+        process_message(rhport);
+      });
 }
 
-extern "C" void choupi_ccid_native_crypto_progress(void) {
-  choupi::NativeProgressGuard progress_guard(ccid_progress_active);
-  if (!progress_guard) return;
-  if (!native_operation_active || ep_in == 0) return;
-  const uint32_t now = time_us_32();
-  const bool extension_due =
-      static_cast<uint32_t>(now - native_last_extension_us) >= 1000000U;
-  if (!native_extension_in_flight && !extension_due)
-    return;
-
-  // The USB-ICC/CCID status bitmap uses command status 2 (0x80) to request a
-  // time extension. Keep the APDU sequence unchanged until its final response.
-  choupi::service_usb_task();
-  if (!native_operation_active || native_extension_in_flight || !extension_due ||
-      usbd_edpt_busy(native_operation_rhport, ep_in))
-    return;
-  native_extension_response[0] = 0x80; // RDR_to_PC_DataBlock
-  native_extension_response[1] = 0;
-  native_extension_response[2] = 0;
-  native_extension_response[3] = 0;
-  native_extension_response[4] = 0;
-  native_extension_response[5] = 0; // slot
-  native_extension_response[6] = native_operation_sequence;
-  native_extension_response[7] = 0x80; // present/active + time extension
-  native_extension_response[8] = 0;
-  native_extension_response[9] = 0;
-  if (usbd_edpt_xfer(native_operation_rhport, ep_in,
-                     native_extension_response,
-                     sizeof(native_extension_response))) {
-    native_extension_in_flight = true;
-    native_last_extension_us = now;
-    debug_stage = 6;
-  } else {
-    ++debug_in_submit_errors;
+namespace {
+struct CcidProgressHooks {
+  bool endpoint_ready() const { return ep_in != 0; }
+  uint32_t now_us() const { return time_us_32(); }
+  void service_usb() const { choupi::service_usb_task(); }
+  bool endpoint_busy() const {
+    return usbd_edpt_busy(native_operation_rhport, ep_in);
   }
+  bool submit_extension(uint8_t sequence) const {
+    native_extension_response[0] = 0x80; // RDR_to_PC_DataBlock
+    native_extension_response[1] = 0;
+    native_extension_response[2] = 0;
+    native_extension_response[3] = 0;
+    native_extension_response[4] = 0;
+    native_extension_response[5] = 0; // slot
+    native_extension_response[6] = sequence;
+    native_extension_response[7] = 0x80; // present/active + time extension
+    native_extension_response[8] = 0;
+    native_extension_response[9] = 0;
+    if (usbd_edpt_xfer(native_operation_rhport, ep_in,
+                       native_extension_response,
+                       sizeof(native_extension_response))) {
+      debug_stage = 6;
+      return true;
+    }
+    ++debug_in_submit_errors;
+    return false;
+  }
+};
+} // namespace
+
+extern "C" void choupi_ccid_native_crypto_progress(void) {
+  choupi::service_ccid_native_progress(
+      ccid_progress_active, native_operation_active,
+      native_extension_in_flight, native_last_extension_us,
+      native_operation_sequence, CcidProgressHooks{});
 }
 
 extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,

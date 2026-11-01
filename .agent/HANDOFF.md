@@ -1,6 +1,28 @@
 # Session handoff — updated 2026-11-01
 
-## Current priority: finish ARCH-08 native USB progress budget
+## Current priority: finish ARCH-08 physical USB progress acceptance
+
+ARCH-09 production progress/dispatch coverage is implemented in the latest
+worktree. `src/ccid_device.cpp` calls shared production helpers in
+`src/ccid_progress_flow.hpp` for pending-message dispatch, guarded USB progress,
+time-extension waits, and final-response ordering. `tools/test-ccid-progress-flow`
+passes 9/9 focused host checks; PC, ARM, and RISC-V builds pass. No commit or
+progress record has yet been created for this step.
+
+The physical boards are plugged in per the user, but the authorized
+`sudo -n /usr/local/sbin/pico2-pcsc-reader` helper reports `found 0`. Treat that
+as missing guest-visible USB passthrough, not firmware failure; do not run a
+flash or restricted-context USB probe. Refresh the helper again immediately
+before any hardware attempt.
+
+Next, finish ARCH-08 when a board enumerates: run the non-destructive
+`JCAlgTestApduProbe --rsa-3072-keypair-generation` on an identified `max_crypto`
+reader while flooding benign USB control requests, then measure the bounded
+service duration, queue drain, and CCID extension/final-response ordering.
+Validate the `tools/flash` multi-device selector on identified boards. Keep
+ARCH-08 open until these stress/timing/physical checks pass.
+
+## ARCH-08 implementation evidence and open physical gates
 
 ARCH-07 is implemented and validated in commits `a252e73` and `1187442`.
 ARCH-08 now has an implementation but remains open for its stress and timing
@@ -35,10 +57,12 @@ probe sends the upstream CAP's prepare/generate APDUs and does not install or
 modify a CAP. `tools/flash` now selects a sysfs-identified live board by its
 current bus/address after resolving its serial; syntax checks pass, but the
 multi-device selector change itself still needs a hardware cycle. After ARCH-08
-acceptance, continue with ARCH-09 production progress/dispatch harness work.
+acceptance, continue with the next TODO task; ARCH-09's host production-path
+harness is now in place.
 
-Current reader state at the end of the session: no Pico USB devices enumerated.
-Use the authorized helper before the next physical operation. Existing Rust OS
+At the last refresh, no Pico USB devices were enumerated despite the boards
+being physically connected. Use the authorized helper before the next physical
+operation. Existing Rust OS
 and packed-CAP warnings remain; none was introduced by the TinyUSB event-budget
 change.
 
