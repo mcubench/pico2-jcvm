@@ -1,5 +1,23 @@
 # Session handoff — updated 2026-10-31
 
+## Signature MAC IV fix — 2026-11-01
+
+The full API 3.0.5 Crypto sweep's three `WRONG_RESULT` rows were caused by
+`runMac()` constructing a zero IV unconditionally, even after
+`Signature.init(key, mode, parameters, ...)` stored a supplied IV on the
+Signature instance. The native MAC path now reads that array. The deterministic
+PC VPCD suite adds nonzero-IV sign and verify vectors for DES-MAC8-NOPAD,
+DES-MAC8-ISO9797-M2, and AES-MAC-128-NOPAD; all 79 vectors passed
+(`TEST:SUMMARY pass=81 fail=0`, counting selection/emulator phases). ARM and
+RISC-V `max_crypto` builds also passed. Physical API-suite confirmation is
+still pending: the authorized helper currently finds zero readers, so no flash
+was attempted. Next, when a Pico appears, rerun these three API 3.0.5 IV rows
+and then the Crypto area to check for residual `WRONG_RESULT` or transport
+errors. RSA SHA-512 PSS's one `EXC_CARDRUNTIME reason=0x0001` corresponds to
+the upstream 1024-bit key/64-byte-salt invalid input, already confirmed by
+separate known-answer analysis; do not change the native PSS implementation
+for it.
+
 ## Package-delete overlay compaction — 2026-11-01
 
 The persistent `NO_MEMORY` investigation found that successful package deletion

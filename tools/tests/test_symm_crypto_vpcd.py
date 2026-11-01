@@ -71,8 +71,9 @@ def cipher_vectors() -> list[tuple[bytes, bytes, str]]:
     return results
 
 
-def cbc_mac(key: bytes, data: bytes, block: int, algorithm3: bool) -> bytes:
-    state = bytes(block)
+def cbc_mac(key: bytes, data: bytes, block: int, algorithm3: bool,
+            iv: bytes | None = None) -> bytes:
+    state = bytes(block) if iv is None else iv
     if algorithm3:
         k1, k2 = key[:8], key[8:16]
         primitive = TripleDES(k1)
@@ -141,10 +142,28 @@ def mac_vectors() -> list[tuple[bytes, bytes, str]]:
     verify_input = AES_MAC_MESSAGE + incorrect
     apdu = bytes((0x80, 0x11, 49, 1, len(verify_input))) + verify_input + b"\x00"
     results.append((apdu, b"\x00\x90\x00", "AES-CMAC reject"))
+
+    # The Java Card Signature overload taking init parameters must apply the
+    # caller-provided IV to the first MAC block, for both sign and verify.
+    for algorithm, key, block, padding, message, iv in (
+        (2, MAC_DES_KEY, 8, "nopad", AES_MAC_MESSAGE[:8], bytes.fromhex("0102030405060708")),
+        (6, MAC_DES_KEY, 8, "m2", b"abc", bytes.fromhex("8877665544332211")),
+        (18, AES_MAC_KEY, 16, "nopad", AES_MAC_MESSAGE, bytes.fromhex("00112233445566778899aabbccddeeff")),
+    ):
+        prepared = pad(message, block, padding)
+        calculated = cbc_mac(key, prepared, block, algorithm3=False, iv=iv)
+        signed_input = iv + message
+        apdu = bytes((0x80, 0x11, algorithm, 4, len(signed_input))) + signed_input + b"\x00"
+        results.append((apdu, calculated + b"\x90\x00", f"MAC {algorithm} sign with IV"))
+        verified_input = iv + message + calculated
+        apdu = bytes((0x80, 0x11, algorithm, 5, len(verified_input))) + verified_input + b"\x00"
+        results.append((apdu, b"\x01\x90\x00", f"MAC {algorithm} verify with IV"))
     return results
 
 
 def main() -> int:
+    cipher_count = len(cipher_vectors())
+    mac_count = len(mac_vectors())
     vectors = cipher_vectors() + mac_vectors()
     log = ROOT / "artifacts/logs/symm-crypto-kat-vpcd-20261026.log"
     command = [
@@ -163,7 +182,8 @@ def main() -> int:
     completed = subprocess.run(command, cwd=ROOT, check=False)
     if completed.returncode:
         return completed.returncode
-    print(f"TEST:SUMMARY symmetric_cipher_vectors=32 mac_sign_vectors=13 mac_verify_vectors=26 total={len(vectors)} fail=0")
+    print(f"TEST:SUMMARY cipher_vectors={cipher_count} mac_vectors={mac_count} "
+          f"iv_vectors=6 total={len(vectors)} fail=0")
     print(f"TEST:LOG {log}")
     return 0
 

@@ -807,7 +807,29 @@ public final class SymmCryptoProbe extends Applet {
       ((DESKey)key).setKey(keyBytes, (short)0);
     }
     Signature signature = Signature.getInstance(algorithm, false);
-    signature.init(key, operation == 1 ? Signature.MODE_VERIFY : Signature.MODE_SIGN);
+    boolean withIv = operation == 4 || operation == 5;
+    short blockLength = (short)(aes ? 16 : 8);
+    short messageOffset = withIv ? blockLength : (short)0;
+    short ivMessageLength = (short)(inputLength - messageOffset);
+    if (ivMessageLength < 0) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+    if (withIv) {
+      signature.init(key, operation == 5 ? Signature.MODE_VERIFY : Signature.MODE_SIGN,
+          input, (short)0, blockLength);
+    } else {
+      signature.init(key, operation == 1 ? Signature.MODE_VERIFY : Signature.MODE_SIGN);
+    }
+    if (withIv) {
+      if (operation == 5) {
+        short signatureLength = signature.getLength();
+        short plainLength = (short)(ivMessageLength - signatureLength);
+        if (plainLength < 0) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+        output[0] = signature.verify(input, messageOffset, plainLength,
+            input, (short)(messageOffset + plainLength), signatureLength)
+            ? (byte)1 : (byte)0;
+        return 1;
+      }
+      return signature.sign(input, messageOffset, ivMessageLength, output, (short)0);
+    }
     if (operation == 3) {
       short bufferedLength = (short)(inputLength / 2);
       signature.update(input, (short)0, bufferedLength);

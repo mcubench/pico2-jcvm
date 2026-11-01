@@ -1,5 +1,25 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Signature MAC parameter IV was ignored — 2026-11-01
+
+- **Symptom:** The full API 3.0.5 Crypto run reported `WRONG_RESULT` for
+  `ALG_DES_MAC8_NOPAD` with IV, `ALG_AES_MAC_128_NOPAD` with IV, and
+  `ALG_DES_MAC8_ISO9797_M2` with IV.
+- **Cause:** `javacard_security_Signature_init(..., parameters, ...)` copied
+  the provided block IV into the Signature instance, but `runMac()` discarded
+  it and always supplied an all-zero vector to `computeSymmetricMac()`.
+- **Viable resolution:** Read the block-sized IV from the Signature
+  `INITIALVECTOR` field when computing a MAC. Regression coverage for all
+  three algorithms uses nonzero IVs for sign and verify. The complete PC VPCD
+  symmetric cipher/MAC suite passes 79 vectors; ARM and RISC-V `max_crypto`
+  wrappers pass. Physical rerun of the API 3.0.5 rows remains required because
+  the authorized device helper enumerated zero readers on 2026-11-01.
+- **Separate observation:** The full Crypto sweep's RSA SHA-512 PSS
+  `EXC_CARDRUNTIME reason=0x0001` uses a 1024-bit key with a 64-byte salt. The
+  PSS operation cannot fit that salt with SHA-512; separate known-answer
+  analysis established this is an invalid test input. Do not conflate it with
+  the IV fix.
+
 ## Dynamic overlay tombstones consumed the file index after CAP deletion — 2026-11-01
 
 - `fs_erase_package_state()` marks matching overlay entries deleted, but the

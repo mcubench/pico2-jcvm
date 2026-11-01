@@ -19002,3 +19002,14 @@
 - Decision: Keep this diagnostic. Continue investigating persistent object lifetime and safe reclamation before attempting another full Crypto sweep. No user packages or persistent state were removed.
 - Commit: `9c940d4`
 - Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2` SHA-256 `52a6980806b8dcf4b418e5ff75b9e401f010cfe3a14f9206cf8679a50b1b2f13`; physical cycle `artifacts/logs/cycle-choupi-20261101T082713Z.log` SHA-256 `7579e8ce5ebec06af8283b47929e0f025c021b822a71d321879fb88e622a35c9`; client CSV `artifacts/results/deploy/max-crypto-full-current-20261101/aead-limit-correct-2BED.csv` SHA-256 `3cc22a9f95c16340f5bea3d02fd97aa296e91c8e31ef00bccbd7a655e267ad00`; bounded serial `artifacts/logs/max-crypto-effective-limit-2BED-20261101.serial.log` SHA-256 `57ad70e25f4431c657526b7177fd84d47d5d4976731828bf1fbfed3069fc1e8a`.
+## 2026-11-01 Honor Signature MAC initialization IV 13 minutes
+
+- Step/experiment: `signature-mac-parameter-iv-20261101`
+- When: '2026-11-01 10:15 CET' - '2026-11-01 10:28 CET'
+- Change: Fixed native `Signature` MAC execution to pass the block-sized IV saved by the parameterized `init(...)` call into the symmetric MAC backend. Extended the deterministic PC probe with nonzero-IV sign/verify vectors for DES-MAC8-NOPAD, DES-MAC8-ISO9797-M2, and AES-MAC-128-NOPAD. Recorded the PSS invalid-input distinction and physical retest gate in TODO/QKB/handoff.
+- Validation: `./tools/test-symm-crypto-vpcd` passed the complete probe: 79 vectors, `TEST:SUMMARY pass=81 fail=0` counting select and emulator phases. The three added algorithms each passed both sign and verify with nonzero IVs. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. The authorized Pico reader helper returned `found 0`, so hardware flashing and physical JCAlgTest rerun were not attempted. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
+- Result: All three full Crypto `WRONG_RESULT` cases share this cause and are fixed in the PC VM regression. The SHA-512 PSS `EXC_CARDRUNTIME reason=0x0001` is the upstream 1024-bit/64-byte-salt invalid test input, not this implementation defect.
+- Decision: Re-run the three API 3.0.5 IV cases and full Crypto sweep on physical hardware when a reader is available; continue offline meanwhile.
+- Commit: `<pending>`
+- Artifacts/logs: VPCD log `artifacts/logs/symm-crypto-kat-vpcd-20261026.log`, SHA-256 `1fd4b52a93999cbb01925868cab637b13a6be218ab256977163714ac33e32198`.
+

@@ -678,9 +678,17 @@ adapters, and do not change upstream applet CAP files.
   the reported constructor/key-size `NO_MEMORY` cases, but the filtered timeout
   means it is not a complete isolation result. Capture exact first failure and
   investigate allocator/persistent heap state before implementation changes.
-  The DES-MAC8 IV `WRONG_RESULT`, two other IV-specific wrong results, and PSS
-  SHA-512 `EXC_CARDRUNTIME` remain separate. Artifacts and exact hashes are in
-  `progress.md` and `.agent/HANDOFF.md`.
+  **IV initialization fix (2026-11-01):** `runMac()` previously always passed
+  a zero IV to the native MAC implementation, ignoring the `Signature` IV
+  saved by `init(key, mode, parameters, ...)`. It now reads the initialized
+  Signature IV. Three deterministic VPCD vectors each for DES-MAC8-NOPAD,
+  DES-MAC8-ISO9797-M2, and AES-MAC-128-NOPAD passed (nonzero-IV sign and
+  verify); the complete symmetric VPCD harness passed 79 vectors. ARM and
+  RISC-V `max_crypto` builds passed. Physical API 3.0.5 confirmation remains
+  pending because no Pico reader was enumerated. The RSA SHA-512 PSS test uses
+  a 1024-bit key that is too small for the requested 64-byte salt; existing
+  known-answer evidence shows this is an invalid test input, not a native PSS
+  defect. Retest the IV rows on hardware when a board is available.
 
 ### Priority 1 — selectable Java Card firmware capabilities
 

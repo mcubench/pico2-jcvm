@@ -837,7 +837,15 @@ std::vector<unsigned char> runMac(
     throw Exceptions::ArrayIndexOutOfBoundsException;
   std::vector<unsigned char> keyBytes(key->size());
   const bool aes = algorithm == 18 || algorithm == 49;
-  std::vector<unsigned char> ivBytes(aes ? 16 : 8, 0);
+  const size_t blockSize = aes ? 16 : 8;
+  std::vector<unsigned char> ivBytes(blockSize, 0);
+  auto initialVector = byteArray(signature,
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_INITIALVECTOR);
+  if (!initialVector || initialVector->size() < blockSize)
+    throw Exceptions::ArrayStoreException;
+  for (size_t i = 0; i < blockSize; ++i)
+    ivBytes[i] = static_cast<uint8_t>(initialVector->getByteEntry(
+        static_cast<uint16_t>(i)));
   std::vector<unsigned char> input(combinedLength);
   for (uint16_t i = 0; i < key->size(); ++i)
     keyBytes[i] = static_cast<uint8_t>(key->getByteEntry(i));
