@@ -17133,7 +17133,7 @@
 - Decision: Retain the parser validation and regressions. Investigate the
   helper-install failure and why temporary stage diagnostics did not appear in
   captured emulator output before claiming current SDK interoperability.
-- Commit: pending.
+- Commit: `5ed8ede` (fixture and exception regression); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/logs/rmi-client-official-vpcd-emulator-20261030T222347Z.log`
   (SHA-256
   `0883d2596271a2233ee256744dac7a663d0c8c88abb1cc93fe5e8c85d706a5bd`);
