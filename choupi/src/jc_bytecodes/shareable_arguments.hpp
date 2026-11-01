@@ -123,7 +123,8 @@ inline bool buildShareableInitialLocals(
         return false;
       }
       const bool expected_array = type != 0x06;
-      if (!reference.isNullPointer() && reference.isArray() != expected_array) {
+      if (!reference.isNullPointer() && expected_array &&
+          !reference.isArray()) {
         return false;
       }
       initial_locals[initial_local_count++] = {

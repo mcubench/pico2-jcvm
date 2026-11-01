@@ -2646,8 +2646,9 @@ JCRE-global instance references. These handles resolve via the shared global
 heap and do not expose applet-private heap objects. Applet-local non-null
 references (including proxy placeholders) still fail closed pending explicit
 ownership translation. Non-null global references must match the method
-descriptor's object-versus-array shape. `tools/test-rmi-registry` covers the
-accepted global forms, shape mismatches, and continued local-reference
+descriptor category: array parameters require array handles, while arrays may
+also satisfy `Object` parameters. `tools/test-rmi-registry` covers the accepted
+global forms, array-parameter mismatch, and continued local-reference
 rejection; it does not exercise descriptor lookup or cross-AID execution.
 
 Validation: `tools/test-rmi-registry`, PC build, ARM build, and RISC-V build

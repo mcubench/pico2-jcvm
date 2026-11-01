@@ -227,8 +227,9 @@ Archive text is historical evidence, not current device state or priorities.
   cross-context arguments are now decoded from the interface CAP Descriptor
   signature and copied by primitive type. Null and JCRE-global array/instance
   arguments may cross because their handles resolve through the shared global
-  heap and must match the parameter's object-versus-array shape; applet-local
-  references still fail closed pending ownership translation.
+  heap; array-typed parameters require an array handle, while arrays may also
+  be passed where the declared type is `Object`. Applet-local references still
+  fail closed pending ownership translation.
   The local signature-to-typed-local conversion has focused tests for
   byte/short layout, int word order, null/non-null references, and argument
   count mismatch. The new argument path builds for PC/ARM/RISC-V but has no
