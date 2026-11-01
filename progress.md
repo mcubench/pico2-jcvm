@@ -19366,13 +19366,13 @@
 - Commit: `39bda86`
 - Artifacts/logs: Multipackage logs `artifacts/logs/host-vpcd-multipackage-apdu-20261101T191433Z.log`, `artifacts/logs/host-vpcd-multipackage-restart-20261101T191433Z.log`, and companion corrupt/missing-sidecar logs; transaction probe log `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261101T192506Z.log`; builds under `build/`; no physical logs.
 
-## 2026-11-01 Test Shareable argument marshalling 8 minutes
+## 2026-11-01 Test Shareable argument marshalling 13 minutes
 
 - Step/experiment: `shareable-argument-marshalling-unit-test-20261101`
-- When: '2026-11-01 20:29 CET' - '2026-11-01 20:37 CET'
+- When: '2026-11-01 20:29 CET' - '2026-11-01 20:42 CET'
 - Change: Extracted descriptor-signature-to-initial-local conversion into `choupi/src/jc_bytecodes/shareable_arguments.hpp` and added focused cases to `tools/tests/rmi_registry/rmi_registry_test.cpp`. Tests cover byte/short ordering and sign extension, int low/high word reconstruction, null-reference acceptance, non-null cross-heap reference rejection, and argument-word-count mismatch. Updated CTX-01, QKB, and handoff. CAP fixtures remain unchanged.
 - Validation: `./tools/test-rmi-registry` passed with `shareable_cross_context_arguments=1`; `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed; scoped `git diff --check` passed. Hardware testing was skipped because the authorized reader helper and host USB listing found no Pico USB nodes in the VM.
 - Result: The local signature-to-local conversion has unit coverage and compiles for all configured targets. Descriptor-method lookup and the actual cross-context interpreter invocation are still not exercised by an upstream CAP. Firmware image size was not compared.
 - Decision: Keep CTX-01 open. Add an unchanged-CAP cross-AID invocation if an existing fixture supports it; then cover non-null ownership translation and cross-context exception restoration.
-- Commit: `467d1ff` (progress hash correction: `dc51768`)
+- Commit: `467d1ff`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; builds under `build/`; no hardware logs.
