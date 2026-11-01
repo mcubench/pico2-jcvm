@@ -1,5 +1,22 @@
 # Session handoff — updated 2026-11-01
 
+## Latest verification — 2026-11-01
+
+The current-source host persistence regression passed again via the required
+elevated path: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence`.
+Install/commit passed 3/3; a fresh emulator process restored the persistent
+heap and passed 38/38 assertions across four GC-pressure rounds. Logs:
+`artifacts/logs/vpcd-persistence-commit-20261101T141917Z.log`,
+`artifacts/logs/vpcd-persistence-restore-20261101T141917Z.log`, and the
+associated emulator logs with the same timestamp. This does not establish Pico
+power-loss recovery.
+
+Although the user reports that physical boards are connected, the authorized
+`sudo -n /usr/local/sbin/pico2-pcsc-reader` helper returned `found 0` and an
+elevated `lsusb -d 2e8a:` found no Pico devices in the VM. No flash or physical
+test was attempted. Resume physical validation only after the authorized path
+enumerates a reader; continue offline otherwise.
+
 ## Current priority: finish ARCH-08 physical USB progress acceptance
 
 The high-level project summary in `STATUS.md` was reconciled with current TODO,

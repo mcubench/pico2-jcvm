@@ -19189,3 +19189,14 @@
 - Decision: Keep the overall project active; next prioritize offline work while restoring physical USB passthrough remains an external gate.
 - Commit: `9364a9b` (`Refresh project status snapshot`)
 - Artifacts/logs: `STATUS.md`; host USB/PCSC command output from this session; no new log artifact.
+
+## 2026-11-01 Repeat VPCD persistence recovery verification 14 minutes
+
+- Step/experiment: `vpcd-persistence-recovery-recheck-20261101`
+- When: '2026-11-01 15:13 CET' - '2026-11-01 15:27 CET'
+- Change: Rebuilt the `current` PC ROM mask and reran the unchanged upstream JCSystem transaction probe through install, commit, fresh-process restore, and four GC-pressure rounds. Updated the session handoff with this result and the current USB visibility check.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-persistence` passed. Install/commit reported `TEST:SUMMARY pass=3 fail=0`; fresh-process restore reported `TEST:SUMMARY pass=38 fail=0`. The approved `sudo -n /usr/local/sbin/pico2-pcsc-reader` helper returned `found 0`; elevated `lsusb -d 2e8a:` found no Pico nodes. No physical test or flash was attempted. Build emitted existing Java Card converter, Rust OS, Maven metadata, and packed-CAP warnings.
+- Result: Persistent references, aliases, and GC behavior survived a fresh VPCD process with all checks passing. This is emulator/process-restart evidence only; actual Pico power-loss recovery remains unverified. The boards are not guest-visible despite the user reporting them connected.
+- Decision: Keep persistent reclamation disabled pending actual hardware power-cycle validation. Continue offline implementation and retry physical checks only after the authorized reader helper enumerates a device.
+- Commit: Recorded in this validation/handoff commit.
+- Artifacts/logs: `artifacts/logs/vpcd-persistence-commit-20261101T141917Z.log`, `artifacts/logs/vpcd-persistence-restore-20261101T141917Z.log`, `artifacts/logs/vpcd-persistence-install-emulator-20261101T141917Z.log`, and `artifacts/logs/vpcd-persistence-restore-emulator-20261101T141917Z.log`.
