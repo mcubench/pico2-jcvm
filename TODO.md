@@ -236,7 +236,8 @@ Archive text is historical evidence, not current device state or priorities.
   cross-AID VPCD call with byte/short arguments, a global AID argument, and a
   null array; it verifies `getPreviousContextAID()` and the server AID and
   returns `4567`. It also verifies denied lookup returns null and applet-local
-  array arguments fail closed (`6A03`). On physical 2BED, CAP loading reached
+  array arguments fail closed (`6A03`), and a cross-context int argument and
+  return round-trip produces `76543210`. On physical 2BED, CAP loading reached
   the service install, but installation returned `6F00` (internal stage 9);
   physical cross-AID behavior remains unverified. The unchanged same-applet
   call still passes on physical Pico 2 `8E464F4E2BBC0A19`. Never return raw

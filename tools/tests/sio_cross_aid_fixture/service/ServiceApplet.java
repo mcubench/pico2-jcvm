@@ -46,5 +46,9 @@ public final class ServiceApplet extends Applet implements Probe {
     return (short) 0x4567;
   }
 
+  public int exerciseWide(int value) {
+    return value == 0x12345678 ? 0x76543210 : 0x6F010001;
+  }
+
   public void process(APDU apdu) {}
 }

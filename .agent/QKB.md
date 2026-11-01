@@ -27,6 +27,20 @@
   only 2BED as runtime `2e8a:0009`, despite the user reporting three devices in
   BOOTSEL.
 
+## JC 3.0.5 converter int signatures require `-i` — 2026-11-01
+
+- **Symptom:** The JC 3.0.5 converter rejected an `int` method in the
+  test-only Shareable contract with `unsupported int type parameter`.
+- **Cause and viable option:** This kit's converter defaults optional 32-bit
+  integer support off. Put `-i` after `com.sun.javacard.converter.Main` (it is
+  a converter argument, not a JVM argument) for each package that declares or
+  implements the int method. CAP generation then succeeds; it emits the
+  expected warning `This package requires int support.` Keep the option in
+  generated test fixture builds when exercising VM int descriptors.
+- **Validation:** Three fixture packages generated with zero errors; the
+  positive VPCD cross-AID int argument/return probe passed, returning
+  `765432109000`. Upstream CAPs remain untouched.
+
 ## CAP Directory sizes describe the original CAP when GP LOAD omits components — 2026-11-01
 
 - **Symptom:** A new strict Directory check caused a VPCD multipackage INSTALL

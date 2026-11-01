@@ -19,25 +19,23 @@ mkdir -p "${build_dir}"/{contract-classes,contract-cap,contract-exp,service-clas
   -classpath "${kit}/lib/api_classic.jar" \
   -d "${build_dir}/contract-classes" "${source_root}/contract"/*.java
 
-converter=(env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}"
+converter_int=(env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}"
   "${repo_root}/tools/env" java "-Duser.home=${build_dir}" "-Djc.home=${kit}"
   -cp "${kit}/lib/tools.jar"
-  com.sun.javacard.converter.Main -nobanner
-  -classdir "${build_dir}/contract-classes"
-  -exportpath "${kit}/api_export_files")
-"${converter[@]}" -d "${build_dir}/contract-cap" -out CAP \
+  com.sun.javacard.converter.Main -nobanner -i
+  -exportpath "${kit}/api_export_files:${build_dir}/contract-exp")
+"${converter_int[@]}" -classdir "${build_dir}/contract-classes" \
+  -d "${build_dir}/contract-cap" -out CAP \
   sio.contract 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x02 1.0
-"${converter[@]}" -d "${build_dir}/contract-exp" -out EXP \
+"${converter_int[@]}" -classdir "${build_dir}/contract-classes" \
+  -d "${build_dir}/contract-exp" -out EXP \
   sio.contract 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x02 1.0
 
 "${repo_root}/tools/env" "${java8_home}/bin/javac" \
   -source 1.7 -target 1.7 -Xlint:-options \
   -classpath "${kit}/lib/api_classic.jar:${build_dir}/contract-classes" \
   -d "${build_dir}/service-classes" "${source_root}/service"/*.java
-env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}" \
-  "${repo_root}/tools/env" java "-Duser.home=${build_dir}" \
-  "-Djc.home=${kit}" -cp "${kit}/lib/tools.jar" \
-  com.sun.javacard.converter.Main -nobanner \
+"${converter_int[@]}" \
   -classdir "${build_dir}/service-classes" \
   -exportpath "${kit}/api_export_files:${build_dir}/contract-exp" \
   -d "${build_dir}/service-cap" -out CAP \
@@ -49,10 +47,7 @@ env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}" \
   -source 1.7 -target 1.7 -Xlint:-options \
   -classpath "${kit}/lib/api_classic.jar:${build_dir}/contract-classes" \
   -d "${build_dir}/client-classes" "${source_root}/client"/*.java
-env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}" \
-  "${repo_root}/tools/env" java "-Duser.home=${build_dir}" \
-  "-Djc.home=${kit}" -cp "${kit}/lib/tools.jar" \
-  com.sun.javacard.converter.Main -nobanner \
+"${converter_int[@]}" \
   -classdir "${build_dir}/client-classes" \
   -exportpath "${kit}/api_export_files:${build_dir}/contract-exp" \
   -d "${build_dir}/client-cap" -out CAP \

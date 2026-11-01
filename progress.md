@@ -19452,3 +19452,14 @@
 - Decision: Keep CTX-01 open. Preserve both denial regressions and resume physical execution after stage-9 install is diagnosed or a clean card is available.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T214753Z.log`.
+
+## 2026-11-01 — Verify cross-AID 32-bit argument and return 10 minutes
+
+- Step/experiment: `ctx01-cross-aid-sio-int-roundtrip-20261101`
+- When: '2026-11-01 21:49 UTC' - '2026-11-01 21:59 UTC'
+- Change: Extended the test-only Shareable contract, service and client with an int argument/return method and added matching VPCD and physical-probe APDUs. Enabled the JC 3.0.5 converter's optional int support with `-i`; recorded its expected warning in QKB. Updated CTX-01 status.
+- Validation: `./tools/build-sio-cross-aid-fixture` generated all CAPs with zero errors (the expected `This package requires int support.` warning is emitted). `SIO_CROSS_AID_REUSE_FIXTURE=1 python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 7/7; int round-trip response was `765432109000`, alongside positive short/byte/ref call, denied lookup and local-array rejection. Physical Java probe compiles; fixture scripts pass `bash -n`.
+- Result: Cross-context int argument word order and int result transfer pass through actual CAP Descriptor dispatch on VPCD. Physical exercise still cannot proceed: the current VM USB view exposes only the running 2BED reader and its earlier applet install failed at internal stage 9.
+- Decision: Retain this as test-only CAP coverage; no firmware or upstream CAP was modified. Continue CTX-01 with exception unwinding, proxy-root lifecycle and then repeat on a clean identified physical card.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T215809Z.log`.
