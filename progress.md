@@ -19277,3 +19277,14 @@
 - Decision: Continue with resolved-ROM lookup interception and safe cross-context interface dispatch. Physical validation remains pending until a Pico enumerates through the authorized host path.
 - Commit: Recorded in this implementation commit.
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; `build/choupi-pc/`; `build/arm/pico2_choupi.uf2`; `build/riscv/pico2_jcvm_smoke.uf2`; no physical logs.
+
+## 2026-11-01 Compact TODO backlog with lossless task mapping 6 minutes
+
+- Step/experiment: `todo-backlog-compaction-20261101`
+- When: '2026-11-01 16:09 UTC' - '2026-11-01 16:15 UTC'
+- Change: Compacted TODO into current priorities, 18 stable open/conditional task IDs, explicit remaining acceptance criteria, and a brief completed baseline. Consolidated repeated persistence, API, Windows and three-pass integration items. Preserved the original TODO byte-for-byte with an integrity manifest; indexed every checkbox and mapped every original unchecked item to its retained task(s). Added a continuity note without rewriting earlier handoff records.
+- Validation: Python verified original archive SHA-256/byte/line counts, all 181 original checkbox records and indentation, all 31 unchecked-item dispositions, unique task IDs and complete target coverage, and authored local links/task anchors. Scoped whitespace checks passed. Builds/hardware intentionally skipped for this documentation-only change; no firmware/source edits or USB/PCSC commands ran.
+- Result: TODO reduced from 2,860 lines / 201,495 bytes to 377 lines / 24,770 bytes (87.7% fewer bytes). All 150 completed checkboxes and detailed historical measurements remain in the archive; none of the 31 original unchecked items was marked complete by compaction. Original SHA-256: `a3b8b94124d0a7bfd8566e609339c0387e08b32c1ea9d1fa41e3bd34474f974c`. Runtime performance not measured. Unrelated pre-existing and concurrently evolving source changes preserved.
+- Decision: Maintain TODO as remaining outcomes/acceptance, progress as chronology, and QKB as reusable diagnoses. Physical USB stress, actual power-loss recovery, safe reclamation enablement, API retests, Windows and three-pass integration gates remain open; ongoing SIO work stays under CTX-01.
+- Commit: This documentation commit; resolve SHA with `git log -1 --format=%H -- .agent/archive/2026-11-01-todo-pre-compaction/manifest.json`.
+- Artifacts/logs: `.agent/archive/2026-11-01-todo-pre-compaction/TODO.md`, `manifest.json`, `checkboxes.json`, and `MIGRATION.md`; no new runtime logs.

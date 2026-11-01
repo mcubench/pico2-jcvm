@@ -2462,3 +2462,16 @@ invoke its `Applet.getShareableInterfaceObject` override. Ensure no raw server
 reference crosses into the client heap. Follow with proxy `invokeinterface`
 dispatch and field/method firewall checks, plus a positive two-applet emulator
 fixture. Keep the original upstream CAP files unchanged.
+
+## TODO backlog compaction — 2026-11-01
+
+`TODO.md` now uses 18 stable task IDs and separates remaining acceptance from
+implemented groundwork. Every one of the original 31 unchecked items maps to an
+open/conditional owner in `.agent/archive/2026-11-01-todo-pre-compaction/MIGRATION.md`.
+The full original and all 150 completed records are preserved byte-for-byte with
+a SHA-256 manifest and a 181-checkbox index. Use the compacted TODO for current
+priorities; archived checklists may describe superseded source or board state.
+Only documentation was changed; no build, flash or USB/PCSC validation was run.
+Existing source changes and ongoing SIO work were preserved. Continue the task
+already in progress using its new TODO owner (CTX-01 for SIO); compaction does
+not authorize persistent-GC enablement or close any physical acceptance gate.

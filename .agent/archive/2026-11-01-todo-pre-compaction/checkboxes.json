@@ -1,0 +1,1827 @@
+[
+  {
+    "line": 14,
+    "indent": 0,
+    "checked": true,
+    "title": "**ARCH-01 \u2014 Centralize runtime/lifecycle declarations (small; first).**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 30,
+    "indent": 0,
+    "checked": true,
+    "title": "**ARCH-02 \u2014 Specify filesystem contracts (small; before storage moves).**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 45,
+    "indent": 2,
+    "checked": true,
+    "title": "Unify the maximum persistent tag length at 128 bytes. The OS record",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 49,
+    "indent": 2,
+    "checked": true,
+    "title": "Unify `fs_read` oversized-buffer behavior: OS and Pico both copy the",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 51,
+    "indent": 2,
+    "checked": true,
+    "title": "Define and align detailed filesystem error codes across backends.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 60,
+    "indent": 2,
+    "checked": true,
+    "title": "Define a disk-checkpoint durability contract for PC emulator memory.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 69,
+    "indent": 0,
+    "checked": true,
+    "title": "**ARCH-03 \u2014 Consolidate diagnostic declarations (small).**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 80,
+    "indent": 0,
+    "checked": true,
+    "title": "**ARCH-04 \u2014 Define progress callback rules (small).**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 106,
+    "indent": 0,
+    "checked": true,
+    "title": "**ARCH-05 \u2014 Separate Pico startup and filesystem code (moderate).**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 130,
+    "indent": 0,
+    "checked": true,
+    "title": "**ARCH-06 \u2014 Reduce loader dependence on VM internals (moderate).**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 172,
+    "indent": 0,
+    "checked": true,
+    "title": "**ARCH-07 \u2014 Finish shared boundary declarations (small; ARCH-01/02",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 186,
+    "indent": 0,
+    "checked": false,
+    "title": "**ARCH-08 \u2014 Bound native USB progress work (ARCH-04 follow-up).**",
+    "disposition": "retained-open",
+    "targets": [
+      "ARCH-08"
+    ]
+  },
+  {
+    "line": 210,
+    "indent": 0,
+    "checked": true,
+    "title": "**ARCH-09 \u2014 Exercise production progress/dispatch boundaries (ARCH-04",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 242,
+    "indent": 0,
+    "checked": true,
+    "title": "Add a bounded-memory OS filesystem tag visitor and cursor syscall for",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 245,
+    "indent": 0,
+    "checked": true,
+    "title": "Add native read-only visitors for applet-owner (`0x03, owner`) and",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 248,
+    "indent": 0,
+    "checked": true,
+    "title": "Derive package static-reference slot tags from CAP `reference_count`:",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 251,
+    "indent": 0,
+    "checked": false,
+    "title": "Implement a native trusted-VM inventory consumer with explicit owner",
+    "disposition": "retained-open",
+    "targets": [
+      "PERSIST-01",
+      "PERSIST-02"
+    ]
+  },
+  {
+    "line": 255,
+    "indent": 2,
+    "checked": true,
+    "title": "Add a strict reference restore that treats absent static slots as",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 258,
+    "indent": 2,
+    "checked": true,
+    "title": "Load static-slot layout from the installed CAP and decode both",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 260,
+    "indent": 2,
+    "checked": true,
+    "title": "Directly exercise the installed-CAP static-root and registered",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 264,
+    "indent": 2,
+    "checked": true,
+    "title": "Exercise both inventory entry points on physical hardware. The ARM",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 272,
+    "indent": 2,
+    "checked": true,
+    "title": "Run the existing heap reachability tracer from selected-context roots",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 276,
+    "indent": 2,
+    "checked": true,
+    "title": "Traverse serialized persistent object fields and reference-array",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 281,
+    "indent": 2,
+    "checked": true,
+    "title": "Make root enumeration report completion and fail the mark pass closed",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 285,
+    "indent": 2,
+    "checked": true,
+    "title": "Scan static reference roots from every package reported installed by",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 288,
+    "indent": 2,
+    "checked": true,
+    "title": "Persist a stable unique owner for each newly installed applet",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 295,
+    "indent": 2,
+    "checked": true,
+    "title": "Enumerate registered applet roots for every installed applet instance,",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 301,
+    "indent": 2,
+    "checked": true,
+    "title": "Add a read-only owner-scoped inventory consumer that traces roots",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 319,
+    "indent": 2,
+    "checked": true,
+    "title": "Run the JCSystem transaction workload with the read-only inventory",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 329,
+    "indent": 2,
+    "checked": true,
+    "title": "Audit live context and native-held roots at post-APDU collection.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 337,
+    "indent": 2,
+    "checked": false,
+    "title": "Add malformed serialized edge/alias tests and prove an incomplete walk",
+    "disposition": "retained-open",
+    "targets": [
+      "PERSIST-01",
+      "PERSIST-02"
+    ]
+  },
+  {
+    "line": 339,
+    "indent": 4,
+    "checked": true,
+    "title": "Host heap test confirms a partial root enumerator and an invalid",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 343,
+    "indent": 4,
+    "checked": true,
+    "title": "FlashMemory host test rejects truncated and length-mismatched array",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 345,
+    "indent": 4,
+    "checked": true,
+    "title": "Inject malformed object-field and reference-array alias records,",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 348,
+    "indent": 4,
+    "checked": true,
+    "title": "Resolve valid nested array-alias chains consistently in both the",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 352,
+    "indent": 4,
+    "checked": true,
+    "title": "Recreate the volatile heap over retained persistent records and",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 355,
+    "indent": 4,
+    "checked": true,
+    "title": "Verify persistent alias restoration and heap collection across a",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 361,
+    "indent": 4,
+    "checked": true,
+    "title": "Exercise the PC/SC card-interface reset on physical board 2BED.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 365,
+    "indent": 4,
+    "checked": true,
+    "title": "Re-run multipackage VPCD restart inventory: 25/25 checks passed;",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 371,
+    "indent": 4,
+    "checked": true,
+    "title": "Validate the RP2350 overlay's simulated reset and interrupted",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 376,
+    "indent": 4,
+    "checked": true,
+    "title": "Re-run current-source recovery tests on 2026-10-31:",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 381,
+    "indent": 4,
+    "checked": true,
+    "title": "Repeat the full VPCD persistence workflow on 2026-11-01 through the",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 387,
+    "indent": 4,
+    "checked": false,
+    "title": "Verify recovery after an actual USB power cycle; PC/SC card reset",
+    "disposition": "retained-open",
+    "targets": [
+      "PERSIST-02"
+    ]
+  },
+  {
+    "line": 392,
+    "indent": 0,
+    "checked": true,
+    "title": "Re-run the host persistence/recovery regression after the latest native",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 399,
+    "indent": 0,
+    "checked": false,
+    "title": "Preserve stable Java Card handles and validate interrupted-update and",
+    "disposition": "retained-open",
+    "targets": [
+      "PERSIST-01",
+      "PERSIST-02",
+      "PERSIST-03"
+    ]
+  },
+  {
+    "line": 405,
+    "indent": 0,
+    "checked": true,
+    "title": "Repair `current`-profile firmware builds when SHA-256 is the only",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 412,
+    "indent": 0,
+    "checked": true,
+    "title": "Finish the official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run on",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 430,
+    "indent": 0,
+    "checked": true,
+    "title": "Reproduce and fix Security `KeyPair(byte, short)` calls returning",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 447,
+    "indent": 0,
+    "checked": true,
+    "title": "Correct native Java Card marker-interface checks for JC305 Security:",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 460,
+    "indent": 0,
+    "checked": true,
+    "title": "Reproduce and fix EC key API timeouts caused by per-byte persistent",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 466,
+    "indent": 0,
+    "checked": true,
+    "title": "Re-run focused EC key cases on a physical ARM Pico when one enumerates.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 476,
+    "indent": 0,
+    "checked": true,
+    "title": "Map persistent filesystem capacity exhaustion to Java Card",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 487,
+    "indent": 0,
+    "checked": true,
+    "title": "Increase the persistent overlay arena without changing snapshot index",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 497,
+    "indent": 0,
+    "checked": false,
+    "title": "Implement safe persistent-object reclamation/GC for repeated API",
+    "disposition": "retained-open",
+    "targets": [
+      "PERSIST-01"
+    ]
+  },
+  {
+    "line": 509,
+    "indent": 2,
+    "checked": true,
+    "title": "Add a bounded-memory, read-only active-tag visitor to the OS filesystem",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 513,
+    "indent": 2,
+    "checked": true,
+    "title": "Bridge tag inventory into trusted VM code with a bounded cursor syscall,",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 517,
+    "indent": 2,
+    "checked": true,
+    "title": "Enumerate serialized static/applet roots and prove reference/alias",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 524,
+    "indent": 2,
+    "checked": true,
+    "title": "Add a bounded-batch persistent-reclaimer primitive, separate from the",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 539,
+    "indent": 2,
+    "checked": true,
+    "title": "Fault-inject the RP2350 overlay snapshot commit after staging ten",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 545,
+    "indent": 0,
+    "checked": true,
+    "title": "Resume the physical API 3.0.5 Security sweep on identified Pico 2",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 554,
+    "indent": 0,
+    "checked": true,
+    "title": "Resolve the physical Core `Applet.deselect()` discrepancy. On the",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 560,
+    "indent": 0,
+    "checked": true,
+    "title": "Diagnose and fix the repeated physical API 3.0.5 Core `6F00` cluster.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 572,
+    "indent": 0,
+    "checked": true,
+    "title": "Correct `SignatureMessageRecovery.beginVerify()` after initialization in",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 577,
+    "indent": 0,
+    "checked": true,
+    "title": "Make parameterized `Signature.init()` on a message-recovery algorithm",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 580,
+    "indent": 0,
+    "checked": true,
+    "title": "Fix RSA `ALG_RSA_NOPAD` mode validation. The upstream API test exercises",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 593,
+    "indent": 0,
+    "checked": false,
+    "title": "Re-run the remaining affected deploy cases after each fix on VPCD;",
+    "disposition": "retained-open",
+    "targets": [
+      "API-03",
+      "EMU-01"
+    ]
+  },
+  {
+    "line": 649,
+    "indent": 0,
+    "checked": true,
+    "title": "Increase usable overlay capacity without changing the reported 2 MiB",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 659,
+    "indent": 0,
+    "checked": true,
+    "title": "Rerun physical API 3.0.5 Security and Crypto on the v4 image. On Pico 2",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 678,
+    "indent": 0,
+    "checked": true,
+    "title": "Identify the current Crypto `NO_MEMORY` source on 2BED. The complete",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 689,
+    "indent": 0,
+    "checked": true,
+    "title": "Make `FS_WRITE_FAIL` show dynamic payload limit, fixed arena size,",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 696,
+    "indent": 0,
+    "checked": true,
+    "title": "Reclaim package-state tombstones after successful package deletion.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 711,
+    "indent": 0,
+    "checked": false,
+    "title": "Validate long API sweeps with package-delete compaction on hardware.",
+    "disposition": "retained-open",
+    "targets": [
+      "STORE-01"
+    ]
+  },
+  {
+    "line": 719,
+    "indent": 0,
+    "checked": false,
+    "title": "Investigate API 3.0.5 `EXC_RUNTIME` regressions on the v4 max_crypto",
+    "disposition": "retained-open",
+    "targets": [
+      "API-01",
+      "API-02",
+      "EMU-01"
+    ]
+  },
+  {
+    "line": 796,
+    "indent": 0,
+    "checked": true,
+    "title": "Add the single JSON support file, schema/validation, and generated",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 798,
+    "indent": 0,
+    "checked": true,
+    "title": "Move optional algorithm implementations and OwnerPINBuilder variants",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 802,
+    "indent": 0,
+    "checked": true,
+    "title": "Extract AES CBC, DES CBC, SHA-256, and random-data native implementations",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 807,
+    "indent": 0,
+    "checked": true,
+    "title": "Regenerate the ROM mask and JNI header whenever the JSON changes. Check",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 809,
+    "indent": 0,
+    "checked": true,
+    "title": "Generate the expected JCAlgTest support CSV from the same JSON. Update",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 812,
+    "indent": 0,
+    "checked": true,
+    "title": "Finish the `/deploy` physical acceptance matrix for all three capability",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 839,
+    "indent": 0,
+    "checked": true,
+    "title": "Compare the `symm_crypto` generated support manifest with the official",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 856,
+    "indent": 0,
+    "checked": true,
+    "title": "Ensure the current physical D92 card is empty before leaving the",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 861,
+    "indent": 0,
+    "checked": true,
+    "title": "Rebuild and flash `symm_crypto` to physical D92 `D92E743D5F640C0F`;",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 868,
+    "indent": 0,
+    "checked": true,
+    "title": "Prepare and validate a named empty-card `symm_crypto` image on Pico 2",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 886,
+    "indent": 0,
+    "checked": true,
+    "title": "Run the upstream `/deploy` Core, Security, and Crypto 3.0.5 areas on",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 903,
+    "indent": 0,
+    "checked": true,
+    "title": "Fix and physically verify the OwnerPINx Core regression. The root cause",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 913,
+    "indent": 0,
+    "checked": true,
+    "title": "Complete the remaining `/deploy` 3.0.5 area checks on `symm_crypto`:",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 920,
+    "indent": 0,
+    "checked": true,
+    "title": "Build and inspect all three capability profiles on physical Pico 2",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 924,
+    "indent": 0,
+    "checked": true,
+    "title": "Inspect profile build outputs. Active ROM-mask sizes are 36,574 / 36,169 /",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 932,
+    "indent": 0,
+    "checked": true,
+    "title": "Re-run the `base` profile's full JCAlgTest support report against the",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 948,
+    "indent": 0,
+    "checked": true,
+    "title": "Keep the physical card state empty until the requested GPPro install.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 974,
+    "indent": 0,
+    "checked": true,
+    "title": "**AC4: compare physical support results to the generated manifest and",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 995,
+    "indent": 0,
+    "checked": true,
+    "title": "**AC5: prove the installed applet survives a real power cycle.**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1008,
+    "indent": 0,
+    "checked": false,
+    "title": "**AC1: verify GPPro on Windows.** Linux PC/SC and GPPro were verified on",
+    "disposition": "retained-open",
+    "targets": [
+      "AC-01"
+    ]
+  },
+  {
+    "line": 1012,
+    "indent": 0,
+    "checked": true,
+    "title": "**AC2: cleanly install and select the supplied JCAlgTest 1.8.2 JC305",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1025,
+    "indent": 0,
+    "checked": true,
+    "title": "**AC3: run JCAlgTest 1.8.2 supported-algorithms mode on the current",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1032,
+    "indent": 0,
+    "checked": false,
+    "title": "**AC1\u2013AC5: run the plan's clean-flash integration sequence three times.**",
+    "disposition": "retained-open",
+    "targets": [
+      "AC-02"
+    ]
+  },
+  {
+    "line": 1044,
+    "indent": 0,
+    "checked": true,
+    "title": "**Investigate `JCSystem.getAvailableMemory()` accounting around object",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1073,
+    "indent": 0,
+    "checked": true,
+    "title": "Preserve timestamps of unchanged generated build inputs. The Java Card",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1082,
+    "indent": 0,
+    "checked": true,
+    "title": "**Keep ROM-mask payload bypass isolated from dynamic CAP validation.**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1091,
+    "indent": 0,
+    "checked": true,
+    "title": "**Add Pico reader LED idle and applet-activity indication.** In CCID",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1100,
+    "indent": 0,
+    "checked": false,
+    "title": "**Make CAP installation and filesystem updates recover atomically.** CAP",
+    "disposition": "retained-open",
+    "targets": [
+      "PERSIST-03"
+    ]
+  },
+  {
+    "line": 1134,
+    "indent": 0,
+    "checked": true,
+    "title": "**Verify authenticated GlobalPlatform DELETE and reinstall lifecycle.**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1140,
+    "indent": 0,
+    "checked": true,
+    "title": "**Complete the selected GlobalPlatform GET DATA / GET STATUS profile.**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1221,
+    "indent": 0,
+    "checked": false,
+    "title": "**Broaden garbage-collector root and persistence-alias coverage.** The",
+    "disposition": "retained-open",
+    "targets": [
+      "PERSIST-02"
+    ]
+  },
+  {
+    "line": 1268,
+    "indent": 0,
+    "checked": true,
+    "title": "**Expose all three Pico 2 devices through PC/SC.** The installed helper",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1274,
+    "indent": 0,
+    "checked": true,
+    "title": "**Validate CAP imports before applet execution.** INSTALL resolves each",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1288,
+    "indent": 0,
+    "checked": true,
+    "title": "**Complete JC305 Service framework behavior.** Current-source VPCD",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1399,
+    "indent": 0,
+    "checked": true,
+    "title": "**Run deploy API areas on three physical Pico readers concurrently.**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1414,
+    "indent": 0,
+    "checked": false,
+    "title": "**Complete deploy-folder API coverage on the Pico 2.** Runtime loading",
+    "disposition": "retained-open",
+    "targets": [
+      "API-03",
+      "API-01",
+      "API-02"
+    ]
+  },
+  {
+    "line": 1535,
+    "indent": 0,
+    "checked": true,
+    "title": "**Allow CAP static initializers past offset 255.** The 3.0.5",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1541,
+    "indent": 0,
+    "checked": true,
+    "title": "**Run deploy API areas concurrently on three Picos.** Added exact",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1563,
+    "indent": 0,
+    "checked": true,
+    "title": "**Verify physical coexistence of independently loaded packages and",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1572,
+    "indent": 0,
+    "checked": true,
+    "title": "**Verify the current-source `JavacardxSec` profile.** Its CAP Import",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1583,
+    "indent": 0,
+    "checked": false,
+    "title": "**Complete general SensitiveResult coverage.** The result slot is VM-wide",
+    "disposition": "retained-open",
+    "targets": [
+      "CTX-02"
+    ]
+  },
+  {
+    "line": 1592,
+    "indent": 0,
+    "checked": true,
+    "title": "**Fix remaining Core API failures found by physical deploy coverage.**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1609,
+    "indent": 0,
+    "checked": true,
+    "title": "**Fix package deletion after applet tests.** GPPro DELETE returned `6581`",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1618,
+    "indent": 0,
+    "checked": false,
+    "title": "**Audit the declared Java Card profile API contract.** The compatibility",
+    "disposition": "retained-open",
+    "targets": [
+      "PROFILE-01"
+    ]
+  },
+  {
+    "line": 1624,
+    "indent": 0,
+    "checked": false,
+    "title": "**Complete multi-applet contexts and firewall semantics if the declared",
+    "disposition": "retained-open",
+    "targets": [
+      "CTX-01"
+    ]
+  },
+  {
+    "line": 1646,
+    "indent": 0,
+    "checked": true,
+    "title": "**Make commit-capacity reporting consistent with transactions.**",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1671,
+    "indent": 0,
+    "checked": false,
+    "title": "**Add extended APDUs only if required by the selected profile.** The",
+    "disposition": "retained-conditional",
+    "targets": [
+      "PROFILE-02"
+    ]
+  },
+  {
+    "line": 1717,
+    "indent": 0,
+    "checked": true,
+    "title": "Build and flash the CHOUPI image for RP2350 ARM through repository wrappers.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1718,
+    "indent": 0,
+    "checked": true,
+    "title": "Provide USB CDC + CCID transport and bring up the Pico as a PC/SC reader.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1719,
+    "indent": 0,
+    "checked": true,
+    "title": "Implement SCP03 authentication and enough GlobalPlatform card-manager",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1721,
+    "indent": 0,
+    "checked": true,
+    "title": "Persist the supplied JCAlgTest v1.8.2 CAP blob across firmware reboot.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1722,
+    "indent": 0,
+    "checked": true,
+    "title": "Resolve the persisted CAP through CHOUPI package lookup and return the",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1725,
+    "indent": 0,
+    "checked": true,
+    "title": "Build the RP2350 ARM M33 target through the repository wrapper. ARM is",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1729,
+    "indent": 0,
+    "checked": true,
+    "title": "Correct `Util.arrayCompare()` so the first greater source byte returns",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1731,
+    "indent": 0,
+    "checked": true,
+    "title": "Limit the default target build to two parallel jobs to avoid saturating",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1733,
+    "indent": 0,
+    "checked": true,
+    "title": "Implement `JCSystem.lookupAID()` null/range validation, active-instance",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1737,
+    "indent": 0,
+    "checked": true,
+    "title": "Return permanent JCRE-owned `AID` entry-point objects from",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1744,
+    "indent": 0,
+    "checked": true,
+    "title": "Implement `Applet.register()` and `Applet.register(byte[],short,byte)`:",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1750,
+    "indent": 0,
+    "checked": true,
+    "title": "Restore the registered applet instance AID independently of the CAP",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1756,
+    "indent": 0,
+    "checked": true,
+    "title": "Match `JCSystem.isAppletActive(AID)` to the JC 3.0.5 registration and",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1761,
+    "indent": 0,
+    "checked": true,
+    "title": "Match `JCSystem.getAID()` registration semantics: return null before",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1765,
+    "indent": 0,
+    "checked": true,
+    "title": "Keep an applet selected when its SELECT APDU returns `61xx`; dispatch the",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1770,
+    "indent": 0,
+    "checked": true,
+    "title": "Release temporary buffers after persistent byte/short/int field reads.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1778,
+    "indent": 0,
+    "checked": false,
+    "title": "Diagnose intermittent Pico PC/SC/USB transport loss. The package and",
+    "disposition": "retained-open",
+    "targets": [
+      "HOST-01"
+    ]
+  },
+  {
+    "line": 1799,
+    "indent": 0,
+    "checked": true,
+    "title": "Add a committed install journal to recover CAP registry publication and",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 1807,
+    "indent": 0,
+    "checked": true,
+    "title": "Implement `Applet.selectingApplet()` and deliver a successful applet",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2106,
+    "indent": 0,
+    "checked": true,
+    "title": "Parse the INSTALL [for install and make selectable] parameter field and",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2109,
+    "indent": 0,
+    "checked": true,
+    "title": "Verify the installation-parameter byte array and length in a valid VM",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2116,
+    "indent": 0,
+    "checked": true,
+    "title": "Resolve JC 3.0.5 imported class and method tokens against the embedded",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2121,
+    "indent": 0,
+    "checked": true,
+    "title": "Use fresh install diagnostics to identify the `6A80` cause: the v1.8.2",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2128,
+    "indent": 0,
+    "checked": true,
+    "title": "Reflash and retry installation with the corrected Applet method mapping.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2132,
+    "indent": 0,
+    "checked": true,
+    "title": "Track calls to the imported JC305 `Applet.register` virtual methods during",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2134,
+    "indent": 0,
+    "checked": true,
+    "title": "Store the registered applet class index beside the persistent AID using a",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2136,
+    "indent": 0,
+    "checked": true,
+    "title": "Implement `Applet.register()` and `register(byte[], short, byte)` so a",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2138,
+    "indent": 0,
+    "checked": false,
+    "title": "Validate failed-install rollback and status words on hardware, then close",
+    "disposition": "retained-open",
+    "targets": [
+      "PERSIST-03"
+    ]
+  },
+  {
+    "line": 2151,
+    "indent": 0,
+    "checked": true,
+    "title": "Persist the registered applet object and its fields after Java install.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2152,
+    "indent": 0,
+    "checked": false,
+    "title": "Reconstruct the persisted applet object after reboot using its stored",
+    "disposition": "retained-open",
+    "targets": [
+      "PERSIST-02",
+      "PROFILE-01"
+    ]
+  },
+  {
+    "line": 2161,
+    "indent": 0,
+    "checked": false,
+    "title": "Dispatch SELECT, `select()`, `deselect()`, and `process()` through the",
+    "disposition": "retained-open",
+    "targets": [
+      "PROFILE-01"
+    ]
+  },
+  {
+    "line": 2175,
+    "indent": 0,
+    "checked": true,
+    "title": "Treat CCID `IccPowerOn` and USB bus reset as Java Card resets: drop",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2180,
+    "indent": 0,
+    "checked": false,
+    "title": "Implement the remaining Java Card APDU buffer and incoming/outgoing",
+    "disposition": "retained-open",
+    "targets": [
+      "PROFILE-01",
+      "PROFILE-02"
+    ]
+  },
+  {
+    "line": 2234,
+    "indent": 0,
+    "checked": false,
+    "title": "Complete the JCAlgTest v1.8.2-used native API surface, including the",
+    "disposition": "retained-open",
+    "targets": [
+      "PROFILE-01",
+      "CTX-01"
+    ]
+  },
+  {
+    "line": 2266,
+    "indent": 0,
+    "checked": true,
+    "title": "Implement `JCSystem.makeTransientObjectArray()` with Java-null default",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2269,
+    "indent": 0,
+    "checked": false,
+    "title": "Verify that an installed applet instance and its persistent fields survive",
+    "disposition": "retained-open",
+    "targets": [
+      "PERSIST-02"
+    ]
+  },
+  {
+    "line": 2282,
+    "indent": 0,
+    "checked": true,
+    "title": "Make PC Java API and ROM-mask generation incremental, keyed to their",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2285,
+    "indent": 0,
+    "checked": true,
+    "title": "Complete GlobalPlatform APDU routing in the PC VPCD session and validate",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2295,
+    "indent": 0,
+    "checked": false,
+    "title": "Complete remaining GET STATUS / GET DATA behavior, including accurate",
+    "disposition": "retained-open",
+    "targets": [
+      "GP-01",
+      "PERSIST-02"
+    ]
+  },
+  {
+    "line": 2297,
+    "indent": 2,
+    "checked": true,
+    "title": "Bound GET STATUS response data by short-APDU Le in both the Pico CCID",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2313,
+    "indent": 2,
+    "checked": true,
+    "title": "Bind `P2=03` continuation to the preceding GET STATUS P1/search query",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2333,
+    "indent": 2,
+    "checked": true,
+    "title": "Implement dynamic GET DATA `2F00` with the required `5C00` command",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2386,
+    "indent": 0,
+    "checked": true,
+    "title": "Integrate the PC-build vpcd frame transport with power controls, ATR,",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2400,
+    "indent": 0,
+    "checked": false,
+    "title": "Add golden applet coverage for exceptions, transient arrays, statics,",
+    "disposition": "retained-open",
+    "targets": [
+      "PROFILE-01"
+    ]
+  },
+  {
+    "line": 2405,
+    "indent": 0,
+    "checked": true,
+    "title": "Run the matching JCAlgTest v1.8.2 client in supported-algorithms mode and",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2415,
+    "indent": 0,
+    "checked": true,
+    "title": "Generate a simulator reference using the official v1.8.2 client and its",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2418,
+    "indent": 0,
+    "checked": true,
+    "title": "Compare the CHOUPI supported-algorithms CSV against the jCardSim",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2424,
+    "indent": 0,
+    "checked": false,
+    "title": "Complete hardware integration: the current ARM `current` profile was",
+    "disposition": "retained-open",
+    "targets": [
+      "AC-01",
+      "AC-02",
+      "API-03"
+    ]
+  },
+  {
+    "line": 2435,
+    "indent": 0,
+    "checked": true,
+    "title": "On 2026-10-25, ran unchanged upstream API 3.0.5 Core area on the flashed",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2441,
+    "indent": 0,
+    "checked": true,
+    "title": "On 2026-10-25, unchanged upstream Security and Crypto 3.0.5 areas",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2448,
+    "indent": 0,
+    "checked": true,
+    "title": "On 2026-10-25, current-profile `JavacardxSec` passed 84/84 and Service",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2453,
+    "indent": 0,
+    "checked": false,
+    "title": "Pass AC1\u2013AC5 and the plan's clean-flash integration sequence three times.",
+    "disposition": "retained-open",
+    "targets": [
+      "AC-02"
+    ]
+  },
+  {
+    "line": 2457,
+    "indent": 0,
+    "checked": true,
+    "title": "Prepare a combined `max_crypto` profile for external ARM testing.",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2497,
+    "indent": 0,
+    "checked": true,
+    "title": "**Complete symmetric Java Card algorithm coverage against the JCOP4",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2521,
+    "indent": 0,
+    "checked": true,
+    "title": "**Validate Java Card 3.0.5 AES-CTR on a physical Pico 2.** Native C++",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2560,
+    "indent": 0,
+    "checked": true,
+    "title": "Implement and validate the `asymm_crypto` selectable profile against",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2648,
+    "indent": 0,
+    "checked": false,
+    "title": "Run the packaged Windows workflow in `docs/windows-asymm-symm-test.md`;",
+    "disposition": "retained-open",
+    "targets": [
+      "AC-01"
+    ]
+  },
+  {
+    "line": 2651,
+    "indent": 0,
+    "checked": true,
+    "title": "User-requested symmetric-only package is available at",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2787,
+    "indent": 0,
+    "checked": true,
+    "title": "Implement RP2350 entropy-backed `SecureRandom` and native SHA-256 with",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  },
+  {
+    "line": 2794,
+    "indent": 0,
+    "checked": false,
+    "title": "Complete deferred hardening and robustness work (plan WP9). CAP",
+    "disposition": "retained-open",
+    "targets": [
+      "HARD-01"
+    ]
+  },
+  {
+    "line": 2841,
+    "indent": 0,
+    "checked": true,
+    "title": "Physical asymmetric known-answer coverage on combined profile: after",
+    "disposition": "archived-completed",
+    "targets": [
+      "completed-baseline--preserve-evidence-do-not-reopen-as-missing-features"
+    ]
+  }
+]
