@@ -19474,3 +19474,14 @@
 - Decision: Keep broader exception semantics open pending Java Card firewall review and more tests; retain the fail-closed conversion to caller SecurityException until then.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T220333Z.log`.
+
+## 2026-11-01 — Verify client-stored proxy across APDU GC 5 minutes
+
+- Step/experiment: `ctx01-cross-aid-proxy-gc-root-20261101`
+- When: '2026-11-01 22:04 UTC' - '2026-11-01 22:09 UTC'
+- Change: The test client now stores a Shareable proxy in an applet instance field, returns from the APDU, and invokes the same proxy on the next APDU. Extended the exact-reader physical probe and updated CTX-01, QKB and HANDOFF.
+- Validation: Fresh generated CAP fixture and VPCD cross-AID regression passed 11/11. Proxy retention APDU returned `6A109000`; after the end-of-APDU heap GC, invocation returned `45679000`. Int transfer, thrown SecurityException unwinding, lookup denial and local-array rejection remained passing. Physical Java probe compiles, shell syntax and scoped diff checks pass. Firmware builds were not repeated (test-only fixture change).
+- Result: The client context's registered proxy/root metadata remains usable through the normal per-APDU heap collection in PC VPCD. This does not cover context eviction, reset/restart or physical GC.
+- Decision: Keep proxy reset/restart lifecycle acceptance open. Continue with GC/context eviction and hardware once a clean card can accept the fixture.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T220939Z.log`.

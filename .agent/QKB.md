@@ -55,6 +55,17 @@
   broadening the claim. Physical exception coverage is blocked by the current
   stage-9 applet-install failure.
 
+## Client-stored Shareable proxy survives end-of-APDU heap GC — 2026-11-01
+
+- A generated client applet stores a Shareable proxy in one of its own
+  instance fields, returns from the APDU so normal heap collection runs, then
+  invokes the stored proxy on the next APDU. Fresh VPCD install passes and the
+  second call returns `45679000`; the service context and proxy metadata remain
+  usable across the collection boundary.
+- This covers the active emulator context only. It does not verify context
+  eviction, reset/process restart, persistent restoration of proxy metadata, or
+  physical heap collection.
+
 ## CAP Directory sizes describe the original CAP when GP LOAD omits components — 2026-11-01
 
 - **Symptom:** A new strict Directory check caused a VPCD multipackage INSTALL

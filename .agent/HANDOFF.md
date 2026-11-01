@@ -19,7 +19,9 @@ returns `0x4567`. The same fixture also verifies that a denied lookup returns
 null, applet-local array arguments fail closed, and a 32-bit int argument and
 return round-trip as `0x12345678` → `0x76543210`. A server-thrown
 `SecurityException` is caught in the client context, and a subsequent SIO call
-passes. This validates exception unwinding for that case only; exception
+passes. A proxy saved in the client applet instance survives the VM's
+end-of-APDU GC and works on the following APDU. This validates exception
+unwinding for that case only; exception
 identity/status semantics for other server exceptions remain open. The
 unchanged upstream `AlgTestApiCore_305.cap` physical result below still covers
 only the same-applet

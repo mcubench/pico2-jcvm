@@ -11,6 +11,7 @@ public final class ClientApplet extends Applet {
   private static final byte[] SERVICE_AID = {
     (byte) 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x03, 0x01
   };
+  private Shareable retainedShareable;
 
   private ClientApplet() {
     register();
@@ -25,16 +26,29 @@ public final class ClientApplet extends Applet {
       return;
     }
     byte[] buffer = apdu.getBuffer();
-    AID server = JCSystem.lookupAID(SERVICE_AID, (short) 0,
-                                    (byte) SERVICE_AID.length);
     boolean denial_probe = buffer[1] == 0x11;
-    Shareable shareable = JCSystem.getAppletShareableInterfaceObject(
-        server, denial_probe ? (byte) 0x5B : (byte) 0x5A);
+    Shareable shareable;
+    if (buffer[1] == 0x16) {
+      shareable = retainedShareable;
+    } else {
+      AID server = JCSystem.lookupAID(SERVICE_AID, (short) 0,
+                                      (byte) SERVICE_AID.length);
+      shareable = JCSystem.getAppletShareableInterfaceObject(
+          server, denial_probe ? (byte) 0x5B : (byte) 0x5A);
+    }
     short result;
     if (denial_probe) {
       result = shareable == null ? (short) 0x6A01 : (short) 0x6A02;
+    } else if (buffer[1] == 0x15) {
+      retainedShareable = shareable;
+      result = shareable == null ? (short) 0x6A11 : (short) 0x6A10;
     } else if (shareable == null) {
       result = (short) 0x6A04;
+    } else if (buffer[1] == 0x16) {
+      AID callerAID = JCSystem.getAID();
+      Probe probe = (Probe) shareable;
+      result = probe.exercise((byte) 0xA5, (short) 0x1234, (short) 0x2345,
+                              callerAID, null);
     } else if (buffer[1] == 0x13) {
       Probe probe = (Probe) shareable;
       int wide = probe.exerciseWide(0x12345678);

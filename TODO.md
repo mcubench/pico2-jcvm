@@ -238,8 +238,10 @@ Archive text is historical evidence, not current device state or priorities.
   returns `4567`. It also verifies denied lookup returns null and applet-local
   array arguments fail closed (`6A03`), and a cross-context int argument and
   return round-trip produces `76543210`. A server-thrown SecurityException is
-  caught by the client, and a subsequent SIO call succeeds. On physical 2BED,
-  CAP loading reached the service install, but installation returned `6F00`
+  caught by the client, and a subsequent SIO call succeeds. A proxy stored in
+  an applet instance field survives the end-of-APDU GC and is reusable on the
+  next APDU. On physical 2BED, CAP loading reached the service install, but
+  installation returned `6F00`
   (internal stage 9);
   physical cross-AID behavior remains unverified. The unchanged same-applet
   call still passes on physical Pico 2 `8E464F4E2BBC0A19`. Never return raw

@@ -147,6 +147,21 @@ def main() -> int:
                 )
             print("TEST:PASS cross-AID SIO byte/short args, global AID and "
                   "null array; response=45679000")
+            response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
+                                     "retain Shareable proxy across APDUs")
+            if response != bytes.fromhex("6A109000"):
+                raise RuntimeError(
+                    f"proxy retention result {response.hex().upper()}, "
+                    "expected 6A109000"
+                )
+            response = vpcd.exchange(connection, bytes.fromhex("8016000000"),
+                                     "invoke retained Shareable proxy")
+            if response != bytes.fromhex("45679000"):
+                raise RuntimeError(
+                    f"retained proxy call {response.hex().upper()}, "
+                    "expected 45679000"
+                )
+            print("TEST:PASS proxy stored in applet field survives APDU GC")
             response = vpcd.exchange(connection, bytes.fromhex("8013000000"),
                                      "cross-AID int argument and return")
             if response != bytes.fromhex("765432109000"):
@@ -190,7 +205,7 @@ def main() -> int:
                 )
             print("TEST:PASS applet-local array rejected across contexts; "
                   "response=6A039000")
-            print("TEST:SUMMARY pass=9 fail=0")
+            print("TEST:SUMMARY pass=11 fail=0")
             return 0
         finally:
             if connection is not None:

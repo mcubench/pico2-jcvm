@@ -48,6 +48,18 @@ public final class SioCrossAidPhysicalProbe {
       }
       System.out.println("SIO_PHYSICAL:PASS cross_aid_shareable");
 
+      response = channel.transmit(new CommandAPDU(hex("8015000000")));
+      actual = hex(response.getBytes());
+      if (!actual.equals("6A109000")) {
+        throw new AssertionError("proxy retain expected 6A109000, got " + actual);
+      }
+      response = channel.transmit(new CommandAPDU(hex("8016000000")));
+      actual = hex(response.getBytes());
+      System.out.println("SIO_PHYSICAL:retainedProxyAfterApdu response=" + actual);
+      if (!actual.equals("45679000")) {
+        throw new AssertionError("retained proxy expected 45679000, got " + actual);
+      }
+
       response = channel.transmit(new CommandAPDU(hex("8013000000")));
       actual = hex(response.getBytes());
       System.out.println("SIO_PHYSICAL:intArgumentReturn response=" + actual);
