@@ -50,5 +50,9 @@ public final class ServiceApplet extends Applet implements Probe {
     return value == 0x12345678 ? 0x76543210 : 0x6F010001;
   }
 
+  public short throwSecurityException() {
+    throw new SecurityException();
+  }
+
   public void process(APDU apdu) {}
 }

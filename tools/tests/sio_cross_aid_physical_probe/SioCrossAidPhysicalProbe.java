@@ -55,6 +55,19 @@ public final class SioCrossAidPhysicalProbe {
         throw new AssertionError("expected 765432109000, got " + actual);
       }
 
+      response = channel.transmit(new CommandAPDU(hex("8014000000")));
+      actual = hex(response.getBytes());
+      System.out.println("SIO_PHYSICAL:exceptionUnwind response=" + actual);
+      if (!actual.equals("6A079000")) {
+        throw new AssertionError("expected 6A079000, got " + actual);
+      }
+
+      response = channel.transmit(new CommandAPDU(hex("8010000000")));
+      actual = hex(response.getBytes());
+      if (!actual.equals("45679000")) {
+        throw new AssertionError("post-exception expected 45679000, got " + actual);
+      }
+
       response = channel.transmit(new CommandAPDU(hex("8011000000")));
       actual = hex(response.getBytes());
       System.out.println("SIO_PHYSICAL:deniedLookup response=" + actual);
@@ -68,8 +81,8 @@ public final class SioCrossAidPhysicalProbe {
       if (!actual.equals("6A039000")) {
         throw new AssertionError("expected 6A039000, got " + actual);
       }
-      System.out.println("SIO_PHYSICAL:PASS int_argument_return denied_lookup " +
-                         "local_reference_firewall");
+      System.out.println("SIO_PHYSICAL:PASS int_argument_return exception_unwind " +
+                         "context_restore denied_lookup local_reference_firewall");
     } finally {
       card.disconnect(false);
     }

@@ -41,6 +41,20 @@
   positive VPCD cross-AID int argument/return probe passed, returning
   `765432109000`. Upstream CAPs remain untouched.
 
+## Nested SIO exception unwinding — partial VPCD coverage — 2026-11-01
+
+- **Validation:** A test service throws an uncaught Java Card
+  `SecurityException`; the cross-context proxy converts the failed nested call
+  into a caller-context `SecurityException`, which the client catches. A
+  second SIO call then succeeds (`45679000`), proving the tested exception path
+  restores usable client and service contexts.
+- **Limit:** This does not establish preservation of exception object identity,
+  ISOException status words, or arbitrary checked/runtime exception semantics.
+  The proxy currently raises `SecurityException` for any non-`9000` nested
+  status; review Java Card firewall rules and test other exception types before
+  broadening the claim. Physical exception coverage is blocked by the current
+  stage-9 applet-install failure.
+
 ## CAP Directory sizes describe the original CAP when GP LOAD omits components — 2026-11-01
 
 - **Symptom:** A new strict Directory check caused a VPCD multipackage INSTALL

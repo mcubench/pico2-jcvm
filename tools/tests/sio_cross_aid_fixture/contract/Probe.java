@@ -7,4 +7,5 @@ public interface Probe extends Shareable {
   short exercise(byte marker, short offset, short wide, AID callerAID,
                  byte[] nullable);
   int exerciseWide(int value);
+  short throwSecurityException();
 }

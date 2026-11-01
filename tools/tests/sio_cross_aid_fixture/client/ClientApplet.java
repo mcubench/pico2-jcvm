@@ -44,6 +44,14 @@ public final class ClientApplet extends Applet {
       buffer[3] = (byte) wide;
       apdu.setOutgoingAndSend((short) 0, (short) 4);
       return;
+    } else if (buffer[1] == 0x14) {
+      Probe probe = (Probe) shareable;
+      try {
+        probe.throwSecurityException();
+        result = (short) 0x6A06;
+      } catch (SecurityException expected) {
+        result = (short) 0x6A07;
+      }
     } else {
       AID callerAID = JCSystem.getAID();
       Probe probe = (Probe) shareable;

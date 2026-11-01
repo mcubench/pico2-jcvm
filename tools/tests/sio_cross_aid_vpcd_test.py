@@ -156,6 +156,23 @@ def main() -> int:
                 )
             print("TEST:PASS cross-AID int argument and return; "
                   "response=765432109000")
+            response = vpcd.exchange(connection, bytes.fromhex("8014000000"),
+                                     "cross-context exception unwinding")
+            if response != bytes.fromhex("6A079000"):
+                raise RuntimeError(
+                    f"cross-context exception result {response.hex().upper()}, "
+                    "expected 6A079000"
+                )
+            print("TEST:PASS server exception is caught in client; "
+                  "response=6A079000")
+            response = vpcd.exchange(connection, bytes.fromhex("8010000000"),
+                                     "context restored after server exception")
+            if response != bytes.fromhex("45679000"):
+                raise RuntimeError(
+                    f"post-exception SIO result {response.hex().upper()}, "
+                    "expected 45679000"
+                )
+            print("TEST:PASS client/service contexts restored after exception")
             response = vpcd.exchange(connection, bytes.fromhex("8011000000"),
                                      "denied Shareable lookup")
             if response != bytes.fromhex("6A019000"):
@@ -173,7 +190,7 @@ def main() -> int:
                 )
             print("TEST:PASS applet-local array rejected across contexts; "
                   "response=6A039000")
-            print("TEST:SUMMARY pass=7 fail=0")
+            print("TEST:SUMMARY pass=9 fail=0")
             return 0
         finally:
             if connection is not None:

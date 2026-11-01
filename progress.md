@@ -19463,3 +19463,14 @@
 - Decision: Retain this as test-only CAP coverage; no firmware or upstream CAP was modified. Continue CTX-01 with exception unwinding, proxy-root lifecycle and then repeat on a clean identified physical card.
 - Commit: pending.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T215809Z.log`.
+
+## 2026-11-01 — Exercise nested Shareable exception unwinding 5 minutes
+
+- Step/experiment: `ctx01-cross-aid-sio-exception-unwind-20261101`
+- When: '2026-11-01 21:59 UTC' - '2026-11-01 22:04 UTC'
+- Change: Added an uncaught server-side `SecurityException` path to the test contract and fixture; the client catches the resulting `SecurityException`. The VPCD and physical probes now issue a second positive call after the exception. Updated CTX-01 handoff/status and recorded exception semantics limits in QKB.
+- Validation: Fixture CAPs regenerated with the converter's `-i` flag (zero errors; expected int-support warning). VPCD passed 9/9: server exception caught by client, then another cross-AID call returned `45679000`; positive int round-trip `765432109000`, denied lookup `6A019000`, and local-reference rejection `6A039000` also passed. Physical probe Java source and shell scripts compile/parse cleanly. Firmware builds were not repeated because only test CAP sources/docs changed.
+- Result: The tested SecurityException case unwinds nested server execution and leaves both contexts usable. This does not establish ISOException status propagation, exception identity or behavior for other exception types. Physical execution remains blocked at stage-9 service applet installation on 2BED.
+- Decision: Keep broader exception semantics open pending Java Card firewall review and more tests; retain the fail-closed conversion to caller SecurityException until then.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T220333Z.log`.
