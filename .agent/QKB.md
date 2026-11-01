@@ -51,7 +51,10 @@
   ARM/RISC-V builds passed; the updated max_crypto ARM image flashed and
   completed its finite physical monitor on 2BED. Image SHA-256:
   `52a6980806b8dcf4b418e5ff75b9e401f010cfe3a14f9206cf8679a50b1b2f13`.
-- The failure branch was not exercised after this flash. A later AEADCipher
+- `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`) and exercised
+  the new output at `files=4894/8192 free_slots=3298
+  bytes=98287/98304 arena=98304`. The physical failure branch was not hit
+  after flashing. A later AEADCipher
   filter returned one constructor `OK` and seven `UNSUPPORTED_PER_SPEC`, but
   the client timed out at 60s after writing those rows; CAP cleanup succeeded.
   No current `FS_WRITE_FAIL` appeared in the bounded serial capture. Treat the

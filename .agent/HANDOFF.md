@@ -43,8 +43,11 @@ bytes=used/effective_limit arena=fixed_limit`. ARM and RISC-V builds passed;
 2BED26ED20556535` flashed and verified the updated ARM image and passed its
 finite monitor. Image SHA-256:
 `52a6980806b8dcf4b418e5ff75b9e401f010cfe3a14f9206cf8679a50b1b2f13`.
-The failure branch was not hit after flashing. A subsequent AEADCipher-class
-filter returned constructor `OK` plus seven `UNSUPPORTED_PER_SPEC` rows, but
+`./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`) and exercised
+the new fields at `files=4894/8192 free_slots=3298 bytes=98287/98304
+arena=98304`. The physical failure branch was not hit after flashing. A
+subsequent AEADCipher-class filter returned constructor `OK` plus seven
+`UNSUPPORTED_PER_SPEC` rows, but
 the client timed out at 60 seconds; temporary CAP cleanup passed. No storage
 failure appeared in the bounded serial capture. Treat the timeout as failed
 validation, not as an API pass. TODO tracks persistent reclamation as the next

@@ -603,7 +603,9 @@ adapters, and do not change upstream applet CAP files.
 - [x] Make `FS_WRITE_FAIL` show dynamic payload limit, fixed arena size,
   current/maximum file count, and free file slots. ARM/RISC-V builds pass and
   the updated max_crypto ARM image passed a physical cycle on 2BED. The
-  capacity-failure branch was not triggered after the flash; the single-class
+  Pico overlay regression passes and exercised the new fields at
+  `files=4894/8192 free_slots=3298 bytes=98287/98304 arena=98304`. The
+  physical failure branch was not triggered after the flash; the single-class
   AEADCipher rerun timed out at the client level, though CAP cleanup passed.
 - [ ] Fix or mitigate persistent overlay exhaustion during long API sweeps.
   Determine why per-call persistent records remain after GC and successful CAP
