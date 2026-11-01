@@ -19332,3 +19332,14 @@
 - Decision: Keep CTX-01 open. Find an existing upstream positive SIO applet if one exists; then validate proxy returns, descriptor-aware arguments, exception propagation, GC/reset lifetime, and physical behavior when a board enumerates.
 - Commit: `c90df31`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T175352Z.log` (SHA-256 `ce1216bc0c358f0e63f91e924b3976bc4a8076a0001af4381e3c4099071e0d95`); restart log `artifacts/logs/host-vpcd-multipackage-restart-20261101T175352Z.log` (SHA-256 `f22beb56a13d0770dea92af4f58e0636ab6fe19b04cb506cfd74dd3132c40283`); companion corrupt/missing-sidecar logs with same timestamp; build outputs under `build/`; no physical logs.
+
+## 2026-11-01 Exercise positive Shareable proxy on upstream CAP 31 minutes
+
+- Step/experiment: `shareable-proxy-upstream-cap-20261101`
+- When: '2026-11-01 19:08 CET' - '2026-11-01 19:39 CET'
+- Change: Proxy `invokeinterface` now validates the concrete server class against the requested Shareable interface and enters nested server methods with explicit typed locals after consuming the client proxy receiver. This fixes a same-context `StackUnderflowException`; arguments beyond the receiver remain fail-closed. Updated CTX-01 and the knowledge base with the first positive CAP result.
+- Validation: Focused run of unchanged `AlgTestApiCore_305.cap` on fresh VPCD passed its three selected Shareable calls; the sub-interface call returned `1` as expected and CAP cleanup passed. `./tools/test-rmi-registry`, `./tools/build-pc --profile current`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. An initial runner attempt was rejected by its host-access guard; a later VPCD startup attempt hit a known idle socket-activation refusal. The final run primed PC/SC first and passed. No physical flash/test was run; the latest authorized reader inventory found zero Pico readers.
+- Result: The existing upstream fixture does exercise a same-applet positive Shareable proxy call end to end, correcting the earlier “fixture missing” note. Cross-AID calls, argument conversion, exception propagation, GC/reset lifetime and physical behavior remain unverified. Existing unrelated SDK/CAP warnings remain; no new warning was observed.
+- Decision: Keep CTX-01 open. Add a cross-AID positive fixture or upstream multi-applet service case, then cover argument/reference firewalling and cross-context exception/restoration before broader acceptance.
+- Commit: pending; SHA will be recorded in the follow-up continuity commit.
+- Artifacts/logs: `artifacts/results/shareable-vpcd-verified-20261101T183526Z/` (Core CSV; 3 selected calls OK, `returned=1`); `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.

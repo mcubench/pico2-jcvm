@@ -3284,3 +3284,31 @@ original terminology/status; check current summary and later fixes before reuse.
   tests the behavior yet. Existing host VPCD multipackage tests pass 47/47 but
   do not exercise Shareable calls. The authorized PC/SC helper currently sees
   zero Pico readers, so physical validation is pending.
+
+### Same-context Shareable proxy call entered with stack underflow — fixed 2026-11-01
+
+- **Symptom:** The positive Shareable test in the unchanged upstream
+  `AlgTestApiCore_305.cap` returned `EXC_RUNTIME` on its
+  `getAppletShareableInterfaceObject` → sub-interface `ping()` path.
+- **Cause:** Proxy dispatch pops the client-side proxy receiver before creating
+  the nested interpreter call. Constructing that call with initial references
+  selects the interpreter mode that expects arguments on the caller operand
+  stack. The caller's receiver had already been consumed, so entry raised
+  `Exceptions::StackUnderflowException` (enum value 1) before executing the
+  server method.
+- **Viable fix:** Enter nested Shareable methods with an explicit typed
+  `InterpretorInitialLocal` receiver. Before dispatch, validate the concrete
+  server class against the exact requested interface, as well as requiring
+  `ACC_SHAREABLE` on the interface. Preserve fail-closed behavior for calls
+  with unimplemented argument translation.
+- **Validation:** Fresh VPCD run of the three selected Shareable calls from
+  unchanged `AlgTestApiCore_305.cap` passed; the sub-interface call returned
+  `1` as expected. `tools/test-rmi-registry`, PC build, ARM build and RISC-V
+  build passed. Artifact:
+  `artifacts/results/shareable-vpcd-verified-20261101T183526Z/`.
+- **Limit:** Same-applet/same-context path only. Cross-AID routing, argument
+  conversion, exception propagation, GC/reset lifetime and physical validation
+  remain open. Latest approved reader enumeration found zero Pico readers.
+- **Correction:** The prior “positive CAP fixture missing” assessment was
+  wrong; inspect API CAP entries under `APPLET-INF/classes` and deploy CAPs
+  before concluding that no upstream fixture exists. Do not modify those CAPs.

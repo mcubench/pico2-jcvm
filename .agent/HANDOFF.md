@@ -2560,3 +2560,29 @@ Only documentation was changed; no build, flash or USB/PCSC validation was run.
 Existing source changes and ongoing SIO work were preserved. Continue the task
 already in progress using its new TODO owner (CTX-01 for SIO); compaction does
 not authorize persistent-GC enablement or close any physical acceptance gate.
+
+## Positive Shareable proxy call on unchanged upstream CAP — 2026-11-01
+
+The positive fixture was found in the unchanged
+`AlgTest_JavaCard/deploy/caps/AlgTestApiCore_305.cap`; the earlier note that no
+positive fixture existed is superseded. Its applet returns itself for SIO
+parameter 1 and implements `ApiTestShareable.ping()`, which returns `0x1234`.
+On fresh VPCD storage, the focused API 3.0.5 Core run completed all three
+selected Shareable rows with status OK, including
+`tagging interface Shareable ... usable through a sub-interface` with
+`returned=1 effect=as expected`. Artifact:
+`artifacts/results/shareable-vpcd-verified-20261101T183526Z/`.
+
+The first positive attempt produced `EXC_RUNTIME`. VM trace identified enum
+exception 1 (`StackUnderflowException`): after popping the proxy handle, the
+nested `Interpretor` was constructed with initial references, which selects
+the “arguments remain on caller stack” entry mode. Use an explicit
+`InterpretorInitialLocal` receiver instead. The final code also checks the
+concrete server class against the requested Shareable interface before method
+resolution. RMI registry test and PC/ARM/RISC-V builds pass.
+
+This only verifies the same-applet, same-context route. Cross-AID context
+restoration, arguments, nonnull reference returns, exception propagation,
+proxy lifetime across reset/GC, and physical hardware remain open. The latest
+authorized USB reader helper found zero Pico devices; no physical operation
+was attempted. Keep upstream CAPs unchanged.

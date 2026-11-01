@@ -865,6 +865,18 @@ void Bytecodes::bc_invokeinterface() {
     const auto server_object =
         server_context->getHeap().getInstance(server_reference);
     Package server_package(server_object->getPackageID());
+    const auto target_interface = cp_handler.classref2interface(interface_ref);
+    const auto target_type = std::make_pair(
+        target_interface.first,
+        reinterpret_cast<const uint8_t *>(target_interface.second));
+    const auto *server_class =
+        ConstantPool_Handler(server_package)
+            .getClassFromClassIndex(server_object->getClassIndex());
+    const auto source_type = std::make_pair(
+        server_package, reinterpret_cast<const uint8_t *>(server_class));
+    if (Class_Handler::docheckcast(source_type, target_type) != TRUE) {
+      throw Exceptions::SecurityException;
+    }
     ConstantPool_Handler server_cp(server_package);
     const auto server_class_ref = server_cp.getClassRefFromClassIndex(
         server_object->getClassIndex());
@@ -881,10 +893,11 @@ void Bytecodes::bc_invokeinterface() {
     // Consume the proxy receiver; the target receives the real server object
     // only in its owning context.
     (void)stack.pop_Reference();
-    const jref_t initial_references[] = {server_reference};
+    const InterpretorInitialLocal initial_locals[] = {
+        {InterpretorLocalType::Reference, server_reference.compact()}};
     Interpretor server_interpretor(
         *server_context, target_method.second,
-        target_method.first.getPackageID(), initial_references, 1);
+        target_method.first.getPackageID(), initial_locals, 1);
     const uint16_t status = server_interpretor.run();
     if (status != 0x9000) {
       throw Exceptions::SecurityException;

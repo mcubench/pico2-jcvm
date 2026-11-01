@@ -212,16 +212,22 @@ Archive text is historical evidence, not current device state or priorities.
   unchanged upstream probe passes null, unknown-AID and default-method cases.
   Proxy `invokeinterface` now checks the requested interface is marked
   Shareable, resolves the server method in its owning context, and forwards
-  zero-argument calls. Virtual/special calls and direct instance-field access
+  zero-argument calls. Same-context dispatch uses explicit typed locals; the
+  unchanged upstream `AlgTestApiCore_305.cap` now completes its positive
+  Shareable sub-interface call through VPCD, returning `1` as expected.
+  Virtual/special calls and direct instance-field access
   on proxy handles are rejected; casts are limited to Shareable interfaces.
+  Invocation also checks the actual server class against the requested
+  interface before dispatch.
   Cross-context primitive and void returns are transferred by type. Null and
   JCRE-global references cross directly; server-local reference returns are
   wrapped in new client proxies only when the server class implements a
   Shareable interface. All arguments fail closed until descriptor-aware
   primitive copying and reference firewall translation are implemented. A
-  positive two-applet fixture is still missing, so invocation remains
-  unverified end to end. Never return raw server heap references to clients.
-  Acceptance: positive two-applet and denied-call fixtures, correct context/AID
+  positive same-applet call is exercised, but cross-AID ownership, context
+  restoration and its firewall path remain unverified end to end. Never return
+  raw server heap references to clients.
+  Acceptance: positive cross-AID and denied-call fixtures, correct context/AID
   restoration, stable roots across GC and reset/delete, no cross-heap reference
   leaks; follow with unchanged upstream Multi CAP integration and physical checks.
   General cross-context calls and logical-channel policy remain unimplemented;
