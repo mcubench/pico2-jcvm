@@ -1,28 +1,31 @@
 # Session handoff — updated 2026-11-01
 
-## Cross-context Shareable reference returns
+## Current CTX-01 Shareable status
 
-The current proxy method dispatch now converts a returned server-local
-instance into a client proxy when its class implements a Shareable interface,
-roots the object in the server Context, and registers the proxy in the client
-Context. Null and JCRE-global array/instance handles pass directly; local
-arrays and non-Shareable objects fail closed. `invokeinterface` still accepts
-only zero-argument methods. Typed void/short/int and reference results are
-tracked by `Stack::ReturnKind`.
+Proxy `invokeinterface` supports typed cross-context primitive arguments and
+returns. Null and JCRE-global array/instance references may cross; an array
+parameter requires an array handle, while arrays may also satisfy `Object`.
+Applet-local object/array arguments remain rejected because client-heap
+ownership translation and firewall behavior are not implemented. Server-local
+Shareable reference results are rooted in the server Context and returned as
+client proxies. Same-context calls preserve the caller's complete operand
+stack. Proxy casts validate both the requested Shareable interface and the
+server class implementation.
 
-Validation: `./tools/test-rmi-registry` passes; the PC `current`, ARM `current`,
-and RISC-V `current` builds pass; elevated VPCD multipackage test passes
-47/47. This integration suite does not use a proxy. An immediate authorized
-reader refresh returned `found 0` despite the user's report that physical
-boards are connected; no flash or serial monitor was attempted. The existing
-upstream CAP set and source search did not find a positive SIO probe. No CAP
-was created or modified.
+The focused `tools/test-rmi-registry` regression and current-profile PC, ARM,
+and RISC-V builds pass. The unchanged upstream `AlgTestApiCore_305.cap` has a
+positive same-applet Shareable sub-interface call, but no cross-AID service
+fixture has been found. Descriptor lookup and cross-AID execution therefore
+remain unvalidated end to end. A recent VPCD multipackage run timed out during
+transaction-probe reinstall; retain its logs and do not count it as a pass.
+The latest elevated `lsusb -d 2e8a:` and the authorized reader helper found no
+physical Pico devices inside the VM, despite the user's report that devices
+are connected. Do not claim hardware validation; retry only after the guest
+enumerates a reader. No CAP files were created or changed.
 
-Next: continue searching for an existing upstream Shareable service CAP. If
-none exists, keep positive-call acceptance blocked by the CAP-only test
-constraint; proceed with bytecode-level argument descriptor checks and preserve
-fail-closed behavior until conversions are testable. Then validate on a
-physical board once the authorized reader helper enumerates it.
+Next: find an unchanged upstream CAP pair that exercises cross-AID SIO; then
+test descriptor dispatch, caller context/AID restoration, exception unwinding,
+proxy roots through GC/reset/delete, and the firewall cases. Keep CTX-01 open.
 
 ## Proxy cast validation and integration recheck
 

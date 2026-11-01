@@ -19388,6 +19388,17 @@
 - Commit: `ffb94ad`
 - Artifacts/logs: `build/tests/rmi-registry/rmi_registry_test`; PC/ARM/RISC-V outputs under `build/`; no physical logs.
 
+## 2026-11-01 Refresh current SIO handoff summary 3 minutes
+
+- Step/experiment: `refresh-ctx01-handoff-current-state-20261101`
+- When: '2026-11-01 21:05 CET' - '2026-11-01 21:08 CET'
+- Change: Replaced the stale opening CTX-01 summary in `.agent/HANDOFF.md` with the committed current state: primitive and JCRE-global argument support, local-reference rejection, same-applet positive CAP coverage, cross-AID validation gap, recent VPCD timeout, and current lack of guest USB enumeration.
+- Validation: Reviewed the handoff against `TODO.md`, QKB and the current code/test state; no source changed. `git diff --check -- .agent/HANDOFF.md progress.md` passed.
+- Result: The handoff now leads with accurate implementation state and concrete next acceptance checks; no physical test was possible because no Pico is enumerated in the VM.
+- Decision: Keep CTX-01 open and preserve all unrelated worktree changes.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261101T191433Z.log`; no hardware logs.
+
 ## 2026-11-01 Preserve array-to-Object SIO compatibility 8 minutes
 
 - Step/experiment: `shareable-array-object-argument-compat-20261101`
