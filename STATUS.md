@@ -1,32 +1,57 @@
 # Project status
 
-Updated: 2026-10-31
+Updated: 2026-11-01
 
 ## Summary
 
 CHOUPI is an experimental Java Card VM port targeting the Raspberry Pi Pico 2
-(RP2350, Cortex-M33). It runs the JCAlgTest 1.8.2 JC305 applet on the PC/VPCD
-path and implements a tested subset of Java Card runtime behavior. It is **not
-a complete or Java Card certified VM**. Unsupported algorithms may correctly
-report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a project goal.
-The physical deployment target is ARM Cortex-M33. ARM, RISC-V, and PC build
-wrappers pass; RISC-V has not been tested on hardware. On 2026-10-27, D92
-`D92E743D5F640C0F` was flashed with the combined `asymm_crypto` ARM image and
-passed the finite runtime monitor, 53/53 selected RSA-signature and EC-key
-storage vectors, and 71/71 symmetric crypto known-answer vectors over PC/SC.
-The combined profile also passed the full 79-vector asymmetric API suite and
-the complete physical JCAlgTest report (4,525 rows; 196 yes, 4,329 no, zero
-other). Two expected KeyPair-3072 results remain mismatched because the
-unchanged upstream CAP sends 4096 as the requested length for those rows;
-direct 3072-bit RSA and RSA-CRT generation vectors pass. The profile is not
-fully accepted until physical `/deploy` coverage completes and this upstream
-report limitation remains explicit. Pico 2 `2BED26ED20556535` was last
-confirmed running `symm_crypto` with an ISD-only GPPro listing on 2026-10-25.
-Firmware images do not preload JCAlgTest, and reflashing preserves the separate
-persistent CAP store; install CAPs explicitly with GPPro after confirming the
-card registry is empty.
+(RP2350, Cortex-M33). The Pico firmware interprets Java Card CAP bytecode; it
+does not execute Java `.class` files. The tested implementation is substantial
+but **not a complete or Java Card certified VM**. Unsupported algorithms may
+correctly report `NO_SUCH_ALGORITHM`; implementing every algorithm is not a
+project goal. ARM Cortex-M33 is the physical target. ARM, RISC-V and PC build
+wrappers pass; RISC-V has not been tested on hardware.
+
+The `symm_crypto` and `asymm_crypto` profiles have physical JCAlgTest support
+reports and known-answer coverage. `asymm_crypto` matches 136 shared positive
+algorithm identities in the supplied JCOP4 P71 matrix; the upstream client
+report differs on two RSA-3072 KeyPair rows because its unchanged CAP requests
+4096 bits. The broad `max_crypto` API 3.0.5 results are mixed: the latest full
+Crypto run completed 466 calls with 292 `OK`, 161 expected unsupported, nine
+`NO_MEMORY`, three `WRONG_RESULT`, and one `EXC_CARDRUNTIME`. A current full
+Security rerun is still outstanding after storage-layout changes.
+
+The VM now retains bounded applet contexts across selection and has tested
+multi-package CAP load/install/delete, JCSystem persistence, and native
+reachability/reclaimer primitives. Persistent-record deletion remains disabled
+until physical power-loss recovery is proven. Cross-applet SIO/firewall
+semantics and logical channels remain incomplete. A bounded TinyUSB event
+budget is implemented, but its flood/timing and long-operation acceptance is
+still open. At the latest host check on 2026-11-01, the physically connected
+Picos were not visible inside the VM: elevated `lsusb -d 2e8a:` found none and
+`pcsc_scan -r` listed only Virtual PCD readers. No hardware test was attempted
+from that state. Firmware images do not preload JCAlgTest; reflashing preserves
+the separate persistent CAP store, so install CAPs explicitly with GPPro.
 
 ## Verified
+
+- **Current implementation and validation snapshot (2026-11-01):** ARCH-09
+  production CCID progress/dispatch logic is covered by a host harness (9/9)
+  and PC, ARM, and RISC-V builds. Commits `309aa5b` and `0b72613` record this
+  step. ARCH-08's eight-event TinyUSB budget is present and both architecture
+  builds pass, but no sustained control-event flood, per-invocation wall-time
+  maximum, or final-response ordering measurement has been captured. Previous
+  physical finite monitors passed on identified boards; the current USB pool
+  is absent from the VM, so no new physical evidence is available.
+
+- **Latest full physical API results:** The latest complete current-image
+  Crypto report on 2BED contains 466 rows: 292 `OK`, 161
+  `UNSUPPORTED_PER_SPEC`, nine `NO_MEMORY`, three `WRONG_RESULT`, and one
+  `EXC_CARDRUNTIME`, with no `EXC_RUNTIME`. The latest full Security data from
+  the v4 image is not an acceptance pass; a later full current-image Security
+  run did not complete because the reader disappeared. Use `TODO.md` and
+  `.agent/HANDOFF.md` for the current run chronology and per-run artifacts;
+  older dated results below are historical baselines.
 
 - **Asymmetric algorithm profile parity with JCOP4 P71 (2026-10-30):** The
   current generated `asymm_crypto` manifest has 145 entries and matches all 136
@@ -454,58 +479,45 @@ this does not test the new JCSystem behavior on hardware. See
 
 ## Main gaps
 
-1. **Applet contexts and firewall:** only one applet context is modeled. There
-   is no general multi-applet registry/context switching, logical-channel
-   support, or custom shareable-interface callback and ownership model. The
-   current shareable lookup fallback is verified only for the default-null
-   probe applet.
-2. **Memory lifecycle:** basic stable-slot reclamation is enabled. The collector
-   walks static/context roots and exported native RMI references; persistent
-   records remain in flash and can be restored lazily. Current-source two-process
-   VPCD persistence passes 7/7 checks for committed fields, static identity,
-   persistent child identity, aliases, and restored array type. Broader forced-GC
-   pressure coverage now includes current-source VPCD checks of static roots
-   and an exported RMI child retained while 256 temporary arrays are collected;
-   the child remains callable after collection. A fresh-process persistence
-   test also rechecks static roots, persistent array/object aliases, and restored
-   array type through four 256-array/256-object collection rounds (31/31 checks).
-   Lazy flash-record restoration after its corresponding RAM object is actually
-   reclaimed remains open. Persistent primitive field reads release temporary
-   buffers on success and error.
-3. **Physical end-to-end validation:** the latest static run reached 544 rows,
-   passed the earlier collector OOM point, and then stopped when PC/SC lost the
-   reader. A historical static run completed its matrix with many `6F00`
-   results. Do not report either matrix as passing.
-4. **Profile/API completeness:** several APIs are deliberately unsupported,
-   including object deletion and integrity-sensitive arrays. Remaining runtime
-   behavior needs systematic comparison against a selected Java Card profile.
-5. **Card-management and persistence assurance:** storage rollback and
-   randomized power-cut recovery have focused native coverage, applet
-   persistence has a two-process VPCD check, and GET DATA Card Recognition Data
-  has encoder/status unit coverage and direct physical open-channel and
-  SCP03-authenticated APDU checks. On the Pico, authenticated applet DELETE
-  left the package loaded; related-object package DELETE removed both; the
-  supplied CAP was reinstalled, and both entries survived a firmware restart.
-  The post-restart applet SELECT, GETVERSION, JCSystem, SHA-256, and static
-  calls passed. `tools/test-pico-powerup` now checks registry persistence and
-  applet execution after a boot. The physical five-second power-off/on and
-  post-cycle support-sweep check passed on 2026-10-20 (see `TODO.md`). Broader
-  CAP restore and general card compatibility assurance remain open.
+1. **Bounded USB progress acceptance:** the eight-event TinyUSB budget and
+   production CCID reentry guards build for PC/ARM/RISC-V. A sustained control
+   event load, measured per-call wall-time, and physical long-operation
+   extension/final-response ordering have not been verified.
+2. **Persistent storage safety:** owner-scoped inventory and a bounded-batch
+   persistent reclaimer exist, with VPCD and fake-flash fault coverage. Do not
+   enable persistent record deletion until RP2350 recovery after an actual power
+   loss and the VM-level reclaimer path are validated. Stable Java Card handles
+   and interrupted update behavior remain acceptance constraints.
+3. **API behavior:** the latest full `max_crypto` Crypto report still includes
+   nine `NO_MEMORY`, three `WRONG_RESULT`, and one `EXC_CARDRUNTIME` result.
+   The latest full Security retest is incomplete. Core/JCSystem, multipackage,
+   crypto KAT, and JCAlgTest results prove tested subsets, not full Java Card
+   3.0.5 compatibility.
+4. **Applet isolation:** bounded multi-applet context retention and transient
+   array lifetimes are covered in VPCD, but cross-applet Shareable Interface
+   Object dispatch and firewall ownership checks remain incomplete. Logical
+   channels are unsupported.
+5. **Physical and host integration:** the last host check found no Pico USB
+   device in the VM and PC/SC exposed only Virtual PCD readers. Current-image
+   physical API retests, multi-device flashing validation, and Windows GPPro/
+   PCSC acceptance remain open.
 6. **Conformance and hardening:** no full Java Card conformance suite or
    certification-grade security assessment has been completed.
 
 ## Next priorities
 
-1. Restore Pico USB passthrough into the VM, confirm board identity, flash the
-   latest ARM image, and restore PC/SC APDU access. The previous PC/SC trace
-   stopped after SELECT (`9000`) without a host GETVERSION APDU; the latest
-   `lsusb` showed only Linux root hubs. The streamed collector passed 544 rows
-   without the earlier allocation failures, but its static matrix remains
-   incomplete. The direct VPCD bridge also needs an available USB interface
-   and a live VPCD endpoint.
-2. Define the supported Java Card version/profile, then audit runtime APIs,
-   applet lifecycle, and firewall behavior against it.
-3. Expand power-cycle, CAP-validation, and host/physical regression coverage.
+1. Restore VM USB passthrough and enumerate an identified Pico before physical
+   work. Then complete ARCH-08's control-event flood, wall-time measurement,
+   RSA-3072 long-call transport, and multi-device flash-selector checks.
+2. Complete a current-image full Security API run and investigate the remaining
+   Crypto outcomes against the unchanged 3.0.5 CAP, preserving expected
+   unsupported results and upstream test limitations.
+3. Finish safe persistent-reclamation acceptance, especially VM-level
+   invocation and actual power-loss recovery; keep deletion disabled until all
+   safeguards pass.
+4. Continue the declared-profile audit for applet firewall/SIO and remaining
+   deploy APIs, then rerun the clean-flash integration sequence and external
+   Windows workflow.
 
 ## Project notes
 

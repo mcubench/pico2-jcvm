@@ -19179,3 +19179,13 @@
 - Decision: ARCH-09 host production-shared logic is covered. Keep ARCH-08 open until identified-board control-event flood, wall-time measurement, RSA long-call extension ordering, and multi-device flash selection pass physically.
 - Commit: `309aa5b` (`Exercise production CCID progress flow`)
 - Artifacts/logs: `tools/test-ccid-progress-flow`; build outputs under `build/choupi-pc/`, `build/arm/`, and `build/riscv/`; no physical log.
+## 2026-11-01 Refresh high-level project status 4 minutes
+
+- Step/experiment: `status-snapshot-refresh-20261101`
+- When: '2026-11-01 15:02 CET' - '2026-11-01 15:06 CET'
+- Change: Updated `STATUS.md` to match current TODO and handoff evidence: corrected obsolete single-context claims, summarized the latest max_crypto outcomes and ARCH-08/09 state, and listed remaining persistence, firewall, physical, and profile-coverage gates.
+- Validation: Cross-checked the new summary against `TODO.md`, `.agent/HANDOFF.md`, recent commits, and the current elevated USB/PCSC results. `git diff --check -- STATUS.md` passed. No software tests were needed for this documentation-only change.
+- Result: The file now explicitly distinguishes previous passing physical monitors from the current VM state, where `lsusb -d 2e8a:` found no devices and `pcsc_scan -r` listed only Virtual PCD readers.
+- Decision: Keep the overall project active; next prioritize offline work while restoring physical USB passthrough remains an external gate.
+- Commit: `<implementation commit SHA recorded in follow-up metadata commit>`
+- Artifacts/logs: `STATUS.md`; host USB/PCSC command output from this session; no new log artifact.
