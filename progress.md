@@ -19010,6 +19010,6 @@
 - Validation: `./tools/test-symm-crypto-vpcd` passed the complete probe: 79 vectors, `TEST:SUMMARY pass=81 fail=0` counting select and emulator phases. The three added algorithms each passed both sign and verify with nonzero IVs. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. The authorized Pico reader helper returned `found 0`, so hardware flashing and physical JCAlgTest rerun were not attempted. `git diff --check` reports only pre-existing trailing whitespace in `AGENTS.md`.
 - Result: All three full Crypto `WRONG_RESULT` cases share this cause and are fixed in the PC VM regression. The SHA-512 PSS `EXC_CARDRUNTIME reason=0x0001` is the upstream 1024-bit/64-byte-salt invalid test input, not this implementation defect.
 - Decision: Re-run the three API 3.0.5 IV cases and full Crypto sweep on physical hardware when a reader is available; continue offline meanwhile.
-- Commit: `<pending>`
+- Commit: `7628e4e` (`Honor Signature MAC initialization IV`)
 - Artifacts/logs: VPCD log `artifacts/logs/symm-crypto-kat-vpcd-20261026.log`, SHA-256 `1fd4b52a93999cbb01925868cab637b13a6be218ab256977163714ac33e32198`.
 
