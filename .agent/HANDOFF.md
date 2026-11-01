@@ -15,8 +15,10 @@ server class implementation.
 The test-only three-package fixture now passes the cross-AID VPCD path end to
 end: its client sends byte/short arguments, a JCRE-global AID reference and a
 null array; the service checks `getPreviousContextAID()` and its own AID and
-returns `0x4567`. The unchanged upstream `AlgTestApiCore_305.cap` physical
-result below still covers only the same-applet route. A physical attempt on
+returns `0x4567`. The same fixture also verifies that a denied lookup returns
+null and applet-local array arguments fail closed. The unchanged upstream
+`AlgTestApiCore_305.cap` physical result below still covers only the same-applet
+route. A physical attempt on
 `2BED26ED20556535` loaded the contract and service package, but service applet
 installation returned internal stage 9 / `6F00` before the probe could run.
 The authorized reader refresh and `lsusb` saw only this running CCID board

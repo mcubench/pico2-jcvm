@@ -47,6 +47,21 @@ public final class SioCrossAidPhysicalProbe {
         throw new AssertionError("expected 45679000, got " + actual);
       }
       System.out.println("SIO_PHYSICAL:PASS cross_aid_shareable");
+
+      response = channel.transmit(new CommandAPDU(hex("8011000000")));
+      actual = hex(response.getBytes());
+      System.out.println("SIO_PHYSICAL:deniedLookup response=" + actual);
+      if (!actual.equals("6A019000")) {
+        throw new AssertionError("expected 6A019000, got " + actual);
+      }
+
+      response = channel.transmit(new CommandAPDU(hex("8012000000")));
+      actual = hex(response.getBytes());
+      System.out.println("SIO_PHYSICAL:localReference response=" + actual);
+      if (!actual.equals("6A039000")) {
+        throw new AssertionError("expected 6A039000, got " + actual);
+      }
+      System.out.println("SIO_PHYSICAL:PASS denied_lookup local_reference_firewall");
     } finally {
       card.disconnect(false);
     }

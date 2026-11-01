@@ -27,12 +27,30 @@ public final class ClientApplet extends Applet {
     byte[] buffer = apdu.getBuffer();
     AID server = JCSystem.lookupAID(SERVICE_AID, (short) 0,
                                     (byte) SERVICE_AID.length);
-    Shareable shareable = JCSystem.getAppletShareableInterfaceObject(server,
-                                                                     (byte) 0x5A);
-    AID callerAID = JCSystem.getAID();
-    Probe probe = (Probe) shareable;
-    short result = probe.exercise((byte) 0xA5, (short) 0x1234,
-                                  (short) 0x2345, callerAID, null);
+    boolean denial_probe = buffer[1] == 0x11;
+    Shareable shareable = JCSystem.getAppletShareableInterfaceObject(
+        server, denial_probe ? (byte) 0x5B : (byte) 0x5A);
+    short result;
+    if (denial_probe) {
+      result = shareable == null ? (short) 0x6A01 : (short) 0x6A02;
+    } else if (shareable == null) {
+      result = (short) 0x6A04;
+    } else {
+      AID callerAID = JCSystem.getAID();
+      Probe probe = (Probe) shareable;
+      if (buffer[1] == 0x12) {
+        try {
+          probe.exercise((byte) 0xA5, (short) 0x1234, (short) 0x2345,
+                         callerAID, new byte[] { 0x01 });
+          result = (short) 0x6A05;
+        } catch (SecurityException expected) {
+          result = (short) 0x6A03;
+        }
+      } else {
+        result = probe.exercise((byte) 0xA5, (short) 0x1234,
+                                (short) 0x2345, callerAID, null);
+      }
+    }
     buffer[0] = (byte) (result >> 8);
     buffer[1] = (byte) result;
     apdu.setOutgoingAndSend((short) 0, (short) 2);

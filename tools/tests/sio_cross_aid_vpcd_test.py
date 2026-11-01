@@ -147,7 +147,24 @@ def main() -> int:
                 )
             print("TEST:PASS cross-AID SIO byte/short args, global AID and "
                   "null array; response=45679000")
-            print("TEST:SUMMARY pass=4 fail=0")
+            response = vpcd.exchange(connection, bytes.fromhex("8011000000"),
+                                     "denied Shareable lookup")
+            if response != bytes.fromhex("6A019000"):
+                raise RuntimeError(
+                    f"denied lookup result {response.hex().upper()}, "
+                    "expected 6A019000"
+                )
+            print("TEST:PASS service denial returns null; response=6A019000")
+            response = vpcd.exchange(connection, bytes.fromhex("8012000000"),
+                                     "applet-local reference firewall")
+            if response != bytes.fromhex("6A039000"):
+                raise RuntimeError(
+                    f"applet-local reference result {response.hex().upper()}, "
+                    "expected 6A039000"
+                )
+            print("TEST:PASS applet-local array rejected across contexts; "
+                  "response=6A039000")
+            print("TEST:SUMMARY pass=6 fail=0")
             return 0
         finally:
             if connection is not None:

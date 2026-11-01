@@ -19441,3 +19441,14 @@
 - Decision: Keep CTX-01 open. Diagnose the stage-9 physical install failure and repeat on a clean identified card before claiming hardware SIO coverage; then test exception unwinding, proxy roots, reset/delete and denied firewall paths.
 - Commit: `c2685d3` (implementation and fixture); this progress record is committed in the following metadata commit.
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T214236Z.log`; physical GPPro logs under `build/sio-cross-aid-fixture/physical-gp-*20261101T212154Z.log` and `artifacts/logs/sio-cross-aid-gppro-*.log`.
+
+## 2026-11-01 — Exercise cross-AID denial and reference firewall 5 minutes
+
+- Step/experiment: `ctx01-cross-aid-sio-firewall-20261101`
+- When: '2026-11-01 21:44 UTC' - '2026-11-01 21:49 UTC'
+- Change: Extended the isolated contract/service/client fixture with a rejected Shareable lookup and an applet-local byte-array argument. The client reports whether lookup correctly returned null and catches the expected cross-context `SecurityException`. Extended both the VPCD regression and exact-reader physical probe; refreshed TODO and HANDOFF.
+- Validation: `python3 tools/tests/sio_cross_aid_vpcd_test.py` regenerated all three JC 3.0.5 CAPs (zero converter errors/warnings) and passed six assertions. Positive call returned `45679000`; denied service lookup returned `6A019000`; local array was rejected and caught, returning `6A039000`. Physical probe compiles with `tools/env javac`; shell syntax and scoped diff checks pass. Firmware builds were not repeated because only test fixture and documentation changed.
+- Result: VPCD now covers positive cross-AID arguments/context AIDs, explicit service denial and applet-local reference rejection. The same image's physical fixture remains blocked at service applet installation stage 9; the new negative APDUs have not run on hardware.
+- Decision: Keep CTX-01 open. Preserve both denial regressions and resume physical execution after stage-9 install is diagnosed or a clean card is available.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261101T214753Z.log`.
