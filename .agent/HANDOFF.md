@@ -16,6 +16,7 @@ delete/reinstall VPCD (`TEST:SUMMARY pass=4 fail=0`); multipackage VPCD
 ends at `0x100e75f4`, using 947,700/1,048,576 bytes and leaving 100,876 bytes.
 UF2 is 1,895,936 bytes, SHA-256
 `db74bd5a3efe95df2594957e3b9f5932456e40c883fade5319e23ddeb791c497`.
+Implementation commit: `b33d401`.
 Latest authorized USB refresh found two runtime CCID devices at USB nodes
 `/dev/bus/usb/001/003` and `/dev/bus/usb/001/004`; no BOOTSEL device, so no
 physical flash was attempted. Preserve unrelated worktree changes, especially
