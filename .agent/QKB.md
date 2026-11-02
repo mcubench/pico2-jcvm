@@ -1,5 +1,21 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Reported BOOTSEL devices may enumerate as runtime JCVM CCIDs — 2026-11-02
+
+- **Latest observation:** `PICO2_HOST_USB_ACCESS=1 sudo -n
+  /usr/local/sbin/pico2-pcsc-reader && lsusb -d 2e8a:` granted two USB nodes;
+  both were runtime `2e8a:0009 Pico2 Pico2 JCVM CCID` at bus 001 devices 003
+  and 004. No BOOTSEL device appeared, despite the report of three inserted
+  boards.
+- **Viable inventory procedure:** Use the authorized helper first, followed
+  by `lsusb -d 2e8a:` through elevated host access. Treat the returned USB
+  node/device identities as current truth; a host or user report of BOOTSEL
+  does not establish that the VM can flash those boards. Re-enumerate before
+  each operation because bus/device addresses change after reconnects.
+- **Action:** No flash was attempted. Keep the two visible runtime readers
+  available as a failover pool, and refresh the inventory before physical
+  testing.
+
 ## Firewall context is per CAP file, not per installed applet instance — 2026-11-02
 
 - **Observed implementation:** `findAppletContext()` matches an inactive

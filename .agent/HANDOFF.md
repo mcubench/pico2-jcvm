@@ -1,5 +1,14 @@
 # Session handoff — updated 2026-11-02
 
+## Latest USB inventory — 2026-11-02 07:48 UTC
+
+The authorized helper granted access to two USB nodes. `lsusb -d 2e8a:` shows
+both as runtime `2e8a:0009 Pico2 Pico2 JCVM CCID` devices at bus 001 devices
+003 and 004; no BOOTSEL device is visible. This supersedes the earlier
+one-reader inventory, but does not confirm the third reported token. No flash
+or PC/SC applet test was attempted. Re-run the helper and identify devices
+before any hardware test; keep both visible readers available for failover.
+
 ## Latest host MPU correction — privileged region-update fault
 
 Resumed the host MPU regression after PC SIO boot failed at RAM offset
