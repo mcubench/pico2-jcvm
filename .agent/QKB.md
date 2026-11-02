@@ -1,5 +1,24 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Current-source VPCD multipackage regression baseline — 2026-11-02
+
+- **Procedure/result:** Ran `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-multipackage --timeout 60` through elevated host access,
+  because the wrapper enforces that path. It passed `TEST:SUMMARY pass=47
+  fail=0`, covering three packages, 21 applet instances, process restart,
+  AID lookup identity, GET STATUS pagination, per-instance and cascade DELETE,
+  and transient-array lifecycle. This is VPCD, not physical validation.
+- **Logs:** APDU `artifacts/logs/host-vpcd-multipackage-apdu-20261102T085227Z.log`
+  SHA-256 `1edcb100128fafc0e8b3f977dc85525da12ae69d55d6950ed65448c2aa6dfe18`;
+  restart SHA-256 `ab85917449251b462b24a86338d9eed1c32fe2b5d6cf9d56b3a12bdfb2050fd3`;
+  corrupt sidecar SHA-256
+  `f10d8daf8102b648efda95463d539fb3904b11f673bdcbf36356255f59ed8972`;
+  missing sidecar SHA-256
+  `e32b3a65a2b49ad1fae1b3b90dab66773ae51bedddf342b9f41671d5bb2215fb`.
+- **Limit:** This checks multi-package registry/lifecycle behavior only. It
+  does not test sibling applets within a CAP sharing static state, heap, or
+  firewall context; keep CTX-03 open.
+
 ## ARM firmware crossed the CAP partition boundary — 2026-11-02
 
 - **Observed:** The 2 MiB layout in `src/flash_layout.hpp` reserves the first

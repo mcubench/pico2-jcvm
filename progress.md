@@ -20145,3 +20145,14 @@
 - Decision: Provide as an external-test candidate with exact source and hardware limitations disclosed. Do not describe it as hardware-validated.
 - Commit: `ded91a7`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, `artifacts/firmware/README-max_crypto.txt`; no hardware log.
+
+## 2026-11-02 Recheck multipackage VPCD baseline on current source 5 minutes
+
+- Step/experiment: `current-source-multipackage-vpcd-20261102`
+- When: '2026-11-02 09:51 CET' - '2026-11-02 09:56 CET'
+- Change: Reran the multipackage VPCD integration suite against the current shared source and documented its scope in TODO, QKB, and HANDOFF before CTX-03 implementation.
+- Validation: The wrapper required the authorized route; `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` passed `TEST:SUMMARY pass=47 fail=0`. No physical device operation occurred.
+- Result: Three packages and 21 applet instances passed restart recovery, AID lookup identity, GET STATUS paging, per-instance/cascade DELETE, and transient lifecycle. The suite does not establish static, heap, or firewall-context sharing between sibling instances in one CAP.
+- Decision: Keep CTX-03 open; use this suite as a regression baseline while adding same-CAP behavior coverage.
+- Commit: `pending`
+- Artifacts/logs: APDU `artifacts/logs/host-vpcd-multipackage-apdu-20261102T085227Z.log` SHA-256 `1edcb100128fafc0e8b3f977dc85525da12ae69d55d6950ed65448c2aa6dfe18`; restart and sidecar log hashes in `.agent/QKB.md`.

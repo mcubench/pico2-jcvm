@@ -381,6 +381,9 @@ Archive text is historical evidence, not current device state or priorities.
   both currently visible physical tokens; physical Le-limited GET STATUS passed
   and the temporary package was cleaned. This verifies CAP LOAD/INSTALL and
   registry behavior only; no sibling object or static-state access was tested.
+  Current VPCD multipackage regression passes 47/47 across three packages and
+  21 installed instances, including restart, lookupAID, paging, DELETE, and
+  transient lifecycle. It still does not test same-CAP sibling state sharing.
   Acceptance: an unchanged or test-only multi-applet CAP proves sibling
   instances share static/heap context and can access objects as specified,
   while separate CAPs remain isolated; AID reporting and per-instance DELETE

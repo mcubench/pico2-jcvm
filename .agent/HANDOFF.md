@@ -1,5 +1,19 @@
 # Session handoff — updated 2026-11-02
 
+## Current VPCD multipackage regression — 2026-11-02 08:56 UTC
+
+The current shared source passed `PICO2_HOST_USB_ACCESS=1
+./tools/test-vpcd-multipackage --timeout 60` with `TEST:SUMMARY pass=47 fail=0`.
+It exercised three packages, 21 applet instances, restart recovery, lookupAID,
+GET STATUS pagination, instance/cascade deletion, and transient lifecycle.
+This remains a PC VPCD regression and does not establish shared context/state
+for sibling applets inside one CAP. Logs and hashes are in `.agent/QKB.md`.
+
+Next: proceed with CTX-03 context/owner separation, preserving source edits from
+other sessions. ARM/RISC-V max_crypto builds and the new flash-window guard pass;
+the refreshed size-fit ARM artifact remains physically untested, and USB
+inventory still exposes only two runtime CCID readers.
+
 ## Max profile firmware partition fit — 2026-11-02 08:48 UTC
 
 The previous max_crypto ARM image ended at `0x101000c4`, 196 bytes past the
