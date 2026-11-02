@@ -17191,7 +17191,7 @@
   checksum. Physical testing remains pending PC/SC reader registration.
 - Decision: Continue with the offline prioritized backlog while hardware access
   remains unavailable.
-- Commit: pending.
+- Commit: `a6fdb0f`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.
 
 ## 2026-10-30 Recheck cryptographic VPCD known-answer suites 11 minutes
