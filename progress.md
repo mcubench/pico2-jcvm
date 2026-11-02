@@ -19619,7 +19619,7 @@
 - Decision: Keep the existing card packages untouched. Repeat the physical
   fixture on a clean-safe card or add firmware-side diagnostics before changing
   install validation.
-- Commit: `pending`.
+- Commit: `e937b88`.
 - Artifacts/logs: `artifacts/logs/rmi-external-link-valid-interface-20261102T000421Z.log`
   (SHA-256 `aac5570d8c5cbc8caa812996f8d9eb6951c49e9a2487dcbe1a6ce76fa72965a2`),
   `artifacts/logs/rmi-external-link-exported-class-20261102T000459Z.log`
