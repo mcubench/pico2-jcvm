@@ -115,6 +115,8 @@ void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
   for (auto word = (new_fp + nargs); word < new_op; word++) {
     *word = 0;
     this->setValueKind(word, ValueKind::Unknown);
+    this->jc_stack_reference_owners[word - this->jc_stack] =
+        kCurrentReferenceOwner;
   }
 }
 
@@ -227,12 +229,19 @@ void Stack::push_Int(const jint_t value) noexcept(
  *
  * @param[value] the reference value to push.
  */
-void Stack::push_Reference(const jref_t value) noexcept(
+void Stack::push_Reference(const jref_t value, const uint8_t owner) noexcept(
     noexcept(std::declval<Frame &>().push_Value(value.compact()))) {
   Frame &current_frame = this->getCurrentFrame();
   jword_t *slot = current_frame.getTOS();
   current_frame.push_Value(value.compact());
   this->setValueKind(slot, ValueKind::Reference);
+  const uint8_t effective_owner =
+      owner == kCurrentReferenceOwner &&
+              (value.isGlobalArray() || value.isGlobalInstance() ||
+               value.isNullPointer())
+          ? kGlobalReferenceOwner
+          : owner;
+  this->jc_stack_reference_owners[slot - this->jc_stack] = effective_owner;
 }
 
 /**
@@ -317,6 +326,10 @@ jint_t Stack::pop_Int() {
  * @return the top of stack element as a reference value.
  */
 jref_t Stack::pop_Reference() {
+  return this->pop_ReferenceValue().reference;
+}
+
+Stack::ReferenceValue Stack::pop_ReferenceValue() {
   Frame &current_frame = this->getCurrentFrame();
   if (current_frame.getTOS() <= current_frame.getOP()) {
     throw Exceptions::StackUnderflowException;
@@ -324,7 +337,10 @@ jref_t Stack::pop_Reference() {
   if (this->getValueKind(current_frame.getTOS() - 1) != ValueKind::Reference) {
     throw Exceptions::SecurityException;
   }
-  return jref_t(current_frame.pop_Value());
+  jword_t *slot = current_frame.getTOS() - 1;
+  const uint8_t owner =
+      this->jc_stack_reference_owners[slot - this->jc_stack];
+  return {jref_t(current_frame.pop_Value()), owner};
 }
 
 /**
@@ -373,7 +389,8 @@ jref_t Stack::get_Pushed_Element(uint16_t n)
   return jref_t(*value);
 }
 
-void Stack::set_Pushed_Element(const uint16_t n, const jref_t value)
+void Stack::set_Pushed_Element(const uint16_t n, const jref_t value,
+                               const uint8_t owner)
 #if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
     noexcept
 #endif
@@ -391,6 +408,28 @@ void Stack::set_Pushed_Element(const uint16_t n, const jref_t value)
 
   *word = value.compact();
   this->setValueKind(word, ValueKind::Reference);
+  const uint8_t effective_owner =
+      owner == kCurrentReferenceOwner &&
+              (value.isGlobalArray() || value.isGlobalInstance() ||
+               value.isNullPointer())
+          ? kGlobalReferenceOwner
+          : owner;
+  this->jc_stack_reference_owners[word - this->jc_stack] = effective_owner;
+}
+
+uint8_t Stack::get_Pushed_ReferenceOwner(const uint16_t n) {
+  assert(n > 0);
+  Frame &current_frame = this->getCurrentFrame();
+  jword_t *word = current_frame.getTOS() - n;
+#ifdef JCRE_STACK_OVERFLOW_PROTECTION
+  if (word < current_frame.getOP()) {
+    throw Exceptions::StackUnderflowException;
+  }
+#endif
+  if (this->getValueKind(word) != ValueKind::Reference) {
+    throw Exceptions::SecurityException;
+  }
+  return this->jc_stack_reference_owners[word - this->jc_stack];
 }
 
 Stack::ValueKind Stack::get_Pushed_ValueKind(const uint16_t n)
@@ -449,12 +488,18 @@ jint_t Stack::readLocal_Int(const uint8_t local_number) {
  * @return the local variable value at 'local_number' position.
  */
 jref_t Stack::readLocal_Reference(const uint8_t local_number) {
+  return this->readLocal_ReferenceValue(local_number).reference;
+}
+
+Stack::ReferenceValue
+Stack::readLocal_ReferenceValue(const uint8_t local_number) {
   Frame &current_frame = this->getCurrentFrame();
-  if (this->getValueKind(current_frame.getFP() + local_number) !=
-      ValueKind::Reference) {
+  jword_t *local = current_frame.getFP() + local_number;
+  if (this->getValueKind(local) != ValueKind::Reference) {
     throw Exceptions::SecurityException;
   }
-  return jref_t(current_frame.readLocal_Value(local_number));
+  return {jref_t(current_frame.readLocal_Value(local_number)),
+          this->jc_stack_reference_owners[local - this->jc_stack]};
 }
 
 /**
@@ -509,11 +554,18 @@ void Stack::writeLocal_Int(const uint8_t local_number, const jint_t value) {
  * @param[local_number] the local variable position.
  */
 void Stack::writeLocal_Reference(const uint8_t local_number,
-                                 const jref_t value) {
+                                 const jref_t value, const uint8_t owner) {
   Frame &current_frame = this->getCurrentFrame();
   jword_t *local = current_frame.getFP() + local_number;
   current_frame.writeLocal_Value(local_number, value.compact());
   this->setValueKind(local, ValueKind::Reference);
+  const uint8_t effective_owner =
+      owner == kCurrentReferenceOwner &&
+              (value.isGlobalArray() || value.isGlobalInstance() ||
+               value.isNullPointer())
+          ? kGlobalReferenceOwner
+          : owner;
+  this->jc_stack_reference_owners[local - this->jc_stack] = effective_owner;
 }
 
 /**
@@ -592,6 +644,8 @@ void Stack::dup(const uint8_t m, const uint8_t n) {
     jword_t *destination = current_frame.getTOS();
     *destination = *mnpart;
     this->setValueKind(destination, this->getValueKind(mnpart));
+    this->jc_stack_reference_owners[destination - this->jc_stack] =
+        this->jc_stack_reference_owners[mnpart - this->jc_stack];
     current_frame.setTOS(current_frame.getTOS() + 1);
 #endif
   }
@@ -629,6 +683,7 @@ void Stack::dup(const uint8_t m, const uint8_t n) {
 void Stack::swap(const uint8_t m, const uint8_t n) {
   jword_t tmp[4];
   ValueKind tmp_kinds[4];
+  uint8_t tmp_reference_owners[4];
   jword_t *bar;
   uint8_t foo, tmp_index;
   Frame &current_frame = this->getCurrentFrame();
@@ -668,6 +723,8 @@ void Stack::swap(const uint8_t m, const uint8_t n) {
     jword_t *word = current_frame.getTOS() - foo;
     tmp[tmp_index] = *word;
     tmp_kinds[tmp_index] = this->getValueKind(word);
+    tmp_reference_owners[tmp_index] =
+        this->jc_stack_reference_owners[word - this->jc_stack];
     tmp_index++;
   }
 
@@ -676,6 +733,8 @@ void Stack::swap(const uint8_t m, const uint8_t n) {
     jword_t *word = current_frame.getTOS() - foo;
     tmp[tmp_index] = *word;
     tmp_kinds[tmp_index] = this->getValueKind(word);
+    tmp_reference_owners[tmp_index] =
+        this->jc_stack_reference_owners[word - this->jc_stack];
     tmp_index++;
   }
 
@@ -684,6 +743,8 @@ void Stack::swap(const uint8_t m, const uint8_t n) {
   for (foo = 0; foo < n + m; foo++) {
     *bar = tmp[foo];
     this->setValueKind(bar, tmp_kinds[foo]);
+    this->jc_stack_reference_owners[bar - this->jc_stack] =
+        tmp_reference_owners[foo];
     bar++;
   }
 

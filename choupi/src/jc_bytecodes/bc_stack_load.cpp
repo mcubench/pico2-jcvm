@@ -70,9 +70,10 @@ void Bytecodes::bc_aload() {
 
   TRACE_JCVM_DEBUG("ALOAD 0x%02X", index);
 
-  objectref = stack.readLocal_Reference(index);
+  const auto reference = stack.readLocal_ReferenceValue(index);
+  objectref = reference.reference;
 
-  stack.push_Reference(objectref);
+  stack.push_Reference(objectref, reference.owner);
 
   return;
 }

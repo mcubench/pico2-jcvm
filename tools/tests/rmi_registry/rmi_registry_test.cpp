@@ -546,6 +546,34 @@ void verify_shareable_cross_context_arguments() {
     assert(!jcvm::buildShareableTaggedInitialLocals(
         2, receiver, private_reference_stack, locals, local_count));
 
+    jcvm::Stack reference_provenance_stack;
+    reference_provenance_stack.push_Frame(0, 2, 8, nullptr);
+    const auto foreign_reference = make_reference(24);
+    reference_provenance_stack.writeLocal_Reference(0, foreign_reference, 17);
+    const auto local_reference =
+        reference_provenance_stack.readLocal_ReferenceValue(0);
+    assert(local_reference.reference == foreign_reference);
+    assert(local_reference.owner == 17);
+    reference_provenance_stack.push_Reference(foreign_reference, 17);
+    reference_provenance_stack.dup(1, 0);
+    assert(reference_provenance_stack.get_Pushed_ReferenceOwner(1) == 17);
+    assert(reference_provenance_stack.get_Pushed_ReferenceOwner(2) == 17);
+    const auto duplicated_reference =
+        reference_provenance_stack.pop_ReferenceValue();
+    assert(duplicated_reference.reference == foreign_reference);
+    assert(duplicated_reference.owner == 17);
+    (void)reference_provenance_stack.pop_ReferenceValue();
+    reference_provenance_stack.push_Reference(foreign_reference, 17);
+    reference_provenance_stack.push_Reference(make_reference(25), 23);
+    reference_provenance_stack.swap(1, 1);
+    assert(reference_provenance_stack.pop_ReferenceValue().owner == 17);
+    assert(reference_provenance_stack.pop_ReferenceValue().owner == 23);
+    reference_provenance_stack.push_Reference(global_instance);
+    assert(reference_provenance_stack.get_Pushed_ReferenceOwner(1) ==
+           jcvm::Stack::kGlobalReferenceOwner);
+    assert(reference_provenance_stack.pop_ReferenceValue().owner ==
+           jcvm::Stack::kGlobalReferenceOwner);
+
 #ifdef JCVM_INT_SUPPORTED
     jcvm::Stack malformed_int_stack;
     malformed_int_stack.push_Frame(0, 0, 8, nullptr);

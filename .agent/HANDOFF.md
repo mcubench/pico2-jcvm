@@ -1,3 +1,26 @@
+## Current session — reference-owner provenance sidecar — 2026-11-02 19:29 UTC
+
+Added one byte of owner provenance alongside each VM operand-stack word.
+Owner-aware APIs preserve it through reference pushes/pops, local reads/writes,
+`aload`/`astore`, `dup`, `swap`, and typed nested-call locals. Null and
+JCRE-global references are tagged global. Updated CTX-01 in TODO and added the
+collision constraint and validation record to QKB. The added sidecar costs 256
+bytes per 256-word stack, in addition to the existing 96-byte three-bit word
+type tags.
+
+`./tools/test-rmi-registry`, ARM `max_crypto`, and RISC-V `max_crypto` builds
+pass. ARM firmware ends at `0x100e8160`, within the 1 MiB firmware window. The
+user reported three BOOTSEL boards, but elevated `lsusb -d 2e8a:000f` returned
+no device; no hardware flash was attempted.
+
+This is only provenance plumbing. Existing marshalling still rejects private
+reference arguments, and access-site firewall enforcement/equality semantics
+are not implemented. Next: thread provenance through reference comparisons,
+returns, and dereference operations, reject foreign-owner use as required, then
+add collision and private-array SIO fixtures before allowing private refs to
+cross. Commit: pending. Preserve unrelated edits in `src/cap_load.cpp`, heap,
+import handling, scripts, docs and AGENTS.md.
+
 ## Current session — refresh max_crypto ARM external-test image — 2026-11-02 19:18 UTC
 
 Rebuilt `max_crypto` using `./tools/build arm --profile max_crypto` and

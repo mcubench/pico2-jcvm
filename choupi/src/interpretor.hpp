@@ -41,6 +41,7 @@ enum class InterpretorLocalType : uint8_t { Reference, Byte, Short, Int };
 struct InterpretorInitialLocal {
   InterpretorLocalType type;
   uint32_t value;
+  uint8_t reference_owner = 0xFF;
 };
 
 class Interpretor {

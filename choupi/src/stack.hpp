@@ -60,6 +60,15 @@ static_assert(sizeof(std::declval<jref_t &>().compact()) == sizeof(jword_t),
 class Stack {
 public:
   enum class ReturnKind : uint8_t { None, Void, Short, Int, Reference };
+  // Package provenance is carried beside a compact reference while values
+  // move through operand words and locals. Heap-local handles alone do not
+  // identify their owner across Java Card contexts.
+  static constexpr uint8_t kCurrentReferenceOwner = 0xFF;
+  static constexpr uint8_t kGlobalReferenceOwner = 0xFE;
+  struct ReferenceValue {
+    jref_t reference;
+    uint8_t owner;
+  };
   // Runtime type category for operand words. This compact tag is used by
   // cross-context calls when optional CAP Descriptor metadata is unavailable.
   enum class ValueKind : uint8_t {
@@ -77,6 +86,7 @@ private:
       (JCVM_STACK_SIZE * value_kind_bits + 7) / 8;
   jword_t jc_stack[JCVM_STACK_SIZE];
   uint8_t jc_stack_value_kinds[value_kind_bytes]{};
+  uint8_t jc_stack_reference_owners[JCVM_STACK_SIZE]{};
   List<Frame> frames;
   bool root_return_value_available = false;
   bool root_return_value_is_reference = false;
@@ -186,7 +196,9 @@ public:
       noexcept(std::declval<Frame &>().push_Value(value)));
 #endif /* JCVM_INT_SUPPORTED */
   // Pushing a reference to the operand the stack
-  void push_Reference(const jref_t value) noexcept(
+  void push_Reference(
+      const jref_t value,
+      const uint8_t owner = kCurrentReferenceOwner) noexcept(
       noexcept(std::declval<Frame &>().push_Value(value.compact())));
   // Pushing a return address element to the operand the stack
   void push_ReturnAddress(const jreturnaddress_t value) noexcept(
@@ -204,6 +216,8 @@ public:
 #endif /* JCVM_INT_SUPPORTED */
   // Popping a reference from the stack
   jref_t pop_Reference();
+  /// Pop a reference while retaining its package provenance.
+  ReferenceValue pop_ReferenceValue();
   // Popping a return address element from the stack
   jreturnaddress_t pop_ReturnAddress();
   // Get a pushing element which as not the last pushed element. This function
@@ -213,7 +227,9 @@ public:
       noexcept
 #endif
       ;
-  void set_Pushed_Element(uint16_t n, jref_t value)
+  void set_Pushed_Element(
+      uint16_t n, jref_t value,
+      uint8_t owner = kCurrentReferenceOwner)
 #if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
       noexcept
 #endif
@@ -225,6 +241,8 @@ public:
       noexcept
 #endif
       ;
+  /// Return the owner tag for the n-th pushed reference word.
+  uint8_t get_Pushed_ReferenceOwner(uint16_t n);
 
   /// Reading a local variable as a short value
   int16_t readLocal_Short(const uint8_t local_number);
@@ -234,6 +252,8 @@ public:
 #endif /* JCVM_INT_SUPPORTED */
   /// Reading a local variable as a reference
   jref_t readLocal_Reference(const uint8_t local_number);
+  /// Read a local reference and retain its package provenance.
+  ReferenceValue readLocal_ReferenceValue(const uint8_t local_number);
   /// Reading a local variable as a return address element
   jreturnaddress_t readLocal_ReturnAddress(const uint8_t local_number);
 
@@ -244,7 +264,9 @@ public:
   void writeLocal_Int(const uint8_t local_number, const jint_t value);
 #endif /* JCVM_INT_SUPPORTED */
   /// Saving a reference to a specific local variable
-  void writeLocal_Reference(const uint8_t local_number, const jref_t value);
+  void writeLocal_Reference(
+      const uint8_t local_number, const jref_t value,
+      const uint8_t owner = kCurrentReferenceOwner);
   /// Saving a return address element to a specific local variable
   void writeLocal_ReturnAddress(const uint8_t local_number,
                                 const jreturnaddress_t value);

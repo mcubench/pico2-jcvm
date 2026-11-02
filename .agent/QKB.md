@@ -4384,3 +4384,30 @@ original terminology/status; check current summary and later fixes before reuse.
   would collapse applet owner tags or leave object owner references dangling
   when an applet is deleted. Design shared package handle/root storage with
   stable per-owner heap facades before implementing package-scoped contexts.
+
+
+## Cross-context reference provenance must accompany compact handles — 2026-11-02
+
+- **Finding:** `jref_t` is only a 16-bit heap-relative handle. Sending its raw
+  value to another package can resolve to an unrelated object when heap slot
+  numbers collide. Owner metadata therefore must accompany references through
+  operand words, locals, nested-call arguments/returns, and any supported
+  reference storage. The compact value alone is not an identity across heaps.
+- **Implementation progress:** The VM operand stack now has a one-byte owner
+  sidecar per word and APIs that read/pop references with provenance. Owner tags
+  are preserved by reference local loads/stores, `dup`, `swap`, and
+  `InterpretorInitialLocal`; null and JCRE-global references are tagged as
+  global. This is groundwork, not a firewall fix. Existing applet-private
+  cross-context arguments remain rejected; no raw cross-heap handles should be
+  enabled until every object access checks provenance and reference identity
+  comparisons and permitted returns/storage preserve it.
+- **Validation:** `./tools/test-rmi-registry`, ARM `max_crypto`, and RISC-V
+  `max_crypto` wrapper builds passed. The focused test covers local, stack,
+  duplicate/swap and global-owner propagation. At 2026-11-02 19:27 UTC,
+  elevated `lsusb -d 2e8a:000f` returned no devices despite the user reporting
+  three boards in BOOTSEL; no physical flash was attempted. Continue offline and
+  re-enumerate through host access before hardware validation.
+- **Next:** Carry owner tags across accepted reference arguments, enforce them
+  on dereference and equality, then cover return/storage/GC/delete and global
+  `Object[]` access. Preserve fail-closed behavior until the end-to-end checks
+  pass.

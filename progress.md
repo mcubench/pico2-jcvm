@@ -20572,3 +20572,15 @@
 - Decision: The refreshed max_crypto ARM image is ready for external testing. It was built with current local changes including `src/cap_load.cpp`; README records that provenance and the physical-validation limitation.
 - Commit: `ec395d9`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`; `artifacts/firmware/README-max_crypto.txt`.
+
+
+## 2026-11-02 Add operand reference-owner provenance 10 minutes
+
+- Step/experiment: `ctx01-reference-provenance-sidecar-20261102`
+- When: '2026-11-02 19:19 UTC' - '2026-11-02 19:29 UTC'
+- Change: Added a one-byte owner sidecar for each operand-stack word and owner-aware reference push/pop/local APIs. Preserved provenance across `aload`/`astore`, `dup`, `swap`, and `InterpretorInitialLocal`; null and JCRE-global references receive the global owner tag. Updated CTX-01/TODO and QKB with the memory cost and remaining firewall work.
+- Validation: `./tools/test-rmi-registry` passed with owner checks for locals, pop, duplicate/swap, and global references. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed (147/150 capabilities). ARM image end `0x100e8160`; flash-boundary guard passed. Elevated `lsusb -d 2e8a:000f` returned no device, so no flash or physical monitor was run. Scoped `git diff --check` passed.
+- Result: Owner provenance can now move with a reference across the immediate stack/local/nested-call paths without changing `jref_t` or exposing a local heap slot as a cross-heap identity. This step does not yet enforce owner tags at dereference sites and does not enable private-reference SIO arguments; they remain rejected.
+- Decision: Next make consumers firewall-aware, including equality semantics and arrays, before enabling private references. Preserve fail-closed marshalling until that work and end-to-end tests pass.
+- Commit: `pending`
+- Artifacts/logs: No hardware artifacts; focused test output `RMI_REGISTRY:PASS`; ARM/RISC-V build output was not archived.

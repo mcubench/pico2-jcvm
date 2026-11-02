@@ -81,6 +81,8 @@ inline bool buildShareableTaggedInitialLocals(
       }
       initial_locals[initial_local_count++] = {
           InterpretorLocalType::Reference, reference.compact()};
+      initial_locals[initial_local_count - 1].reference_owner =
+          caller_stack.get_Pushed_ReferenceOwner(stack_position);
       ++word_index;
       break;
     }
@@ -218,6 +220,9 @@ inline bool buildShareableInitialLocals(
       }
       initial_locals[initial_local_count++] = {
           InterpretorLocalType::Reference, reference.compact()};
+      initial_locals[initial_local_count - 1].reference_owner =
+          caller_stack.get_Pushed_ReferenceOwner(static_cast<uint16_t>(
+              argument_word_count - argument_word_index));
       ++argument_word_index;
       ++expected_argument_words;
       break;

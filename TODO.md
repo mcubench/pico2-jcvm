@@ -309,8 +309,13 @@ Archive text is historical evidence, not current device state or priorities.
   split int pair fails closed. Tags are maintained by typed
   pushes, local writes, frame-local initialization, `dup`, `swap`, and
   `set_Pushed_Element`; unknown values and applet-private references fail
-  closed. Null and JCRE-global references may cross. Three-bit tag storage
-  costs 96 bytes per 256-word Stack. Java Card RE 3.0.5 permits parameters to
+  closed. Null and JCRE-global references may cross. Three-bit type-tag storage
+  costs 96 bytes per 256-word Stack. A one-byte-per-word reference-owner
+  sidecar now follows references through `aload`/`astore`, operand duplication
+  and swapping, and typed nested-call locals; this adds 256 bytes per
+  256-word Stack. This is provenance plumbing only: access-site enforcement and
+  private-reference transport remain open, so private references still fail
+  closed. Java Card RE 3.0.5 permits parameters to
   cross an SIO call but still applies caller-context firewall checks to later
   object access (§§6.1.4, 6.2.4.3, 6.2.8). Do not copy private compact
   references between heaps: handles are heap-local and can alias a different

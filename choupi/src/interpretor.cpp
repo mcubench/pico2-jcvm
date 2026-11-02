@@ -305,7 +305,8 @@ uint16_t Interpretor::run() noexcept {
           case InterpretorLocalType::Reference:
             startup_stack.writeLocal_Reference(
                 static_cast<uint8_t>(local_index),
-                jref_t(static_cast<uint16_t>(local.value)));
+                jref_t(static_cast<uint16_t>(local.value)),
+                local.reference_owner);
             ++local_index;
             break;
           case InterpretorLocalType::Byte:
