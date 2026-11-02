@@ -15,6 +15,7 @@ to `.agent/HANDOFF.md`.
 | `readme.md` | [Physical JCAlgTest runbook](jcalgtest-physical-runbook.md); [README.md](../README.md) is the new entry point |
 | `perf_tips.md` | [Development performance notes](development-performance.md); a root compatibility link remains |
 | `reference/autonomous_physical_dev.md` | [Archived upstream note](../.agent/archive/2026-11-02-stale-reference/autonomous_physical_dev.md) |
+| `CHOUPI JCVM → Raspberry Pi Pico 2 (Cortex-M33) Port Plan.pdf` | [Initial port plan PDF](initial-pico2-jcvm-port-plan-2026-10-09.pdf); this draft names JCAlgTest 1.8.4, while the current `plan.md` uses 1.8.2 |
 
 `HUMAN.md` was a six-line incomplete stub with no project guidance or incoming
 references. It was removed. The root `SKILL.md` remains at its existing path

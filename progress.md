@@ -20617,3 +20617,14 @@
 - Decision: Keep the imported root `SKILL.md` in place pending a separate skill-packaging decision. Preserve unrelated uncommitted architecture/practical-guide work.
 - Commit: `pending (see commit containing this record)`
 - Artifacts/logs: `docs/documentation-moves-2026-11-02.md`, `docs/development-performance.md`, `.agent/archive/2026-11-02-stale-reference/`; no runtime artifacts.
+
+## 2026-11-02 File initial Pico 2 port plan PDF 2 minutes
+
+- Step/experiment: `markdown-tidy-initial-pdf`
+- When: '2026-11-02 20:48 UTC' - '2026-11-02 20:50 UTC'
+- Change: Moved the October 9 original port-plan PDF from the repository root to `docs/initial-pico2-jcvm-port-plan-2026-10-09.pdf` and added links in README and the documentation relocation index. Distinguished its JCAlgTest 1.8.4 draft target from the current `plan.md`/`TODO.md` 1.8.2 target.
+- Validation: Original and relocated PDF SHA-256 both `a8d26af03fc0d3ccbfd64f1466e73ad814dc5d6ca258d9bb4d5189ca08d6b1cb`; README and relocation-index local links resolve; scoped `git diff --check` passed. No firmware build, flash, or runtime test was run for this documentation move.
+- Result: The initial plan is filed under docs without changing its bytes or treating its older version requirement as current.
+- Decision: Keep `plan.md` and `TODO.md` authoritative for current acceptance.
+- Commit: `pending (see commit containing this record)`
+- Artifacts/logs: `docs/initial-pico2-jcvm-port-plan-2026-10-09.pdf` (SHA-256 above).

@@ -11,6 +11,9 @@ RISC-V is maintained as a build check; ARM Cortex-M33 is the physical target.
 - [Development rules](AGENTS.md): build wrappers, hardware access, safety, and commits.
 - [Project plan](plan.md): original scope and AC1–AC5 acceptance criteria; early
   baseline descriptions may be historical.
+- [Initial PDF draft](docs/initial-pico2-jcvm-port-plan-2026-10-09.pdf): dated
+  2026-10-09 and names JCAlgTest 1.8.4. Use `plan.md` and `TODO.md` for the
+  current 1.8.2 acceptance work.
 - [Active backlog](TODO.md): current priorities, task IDs, acceptance gaps, and
   links to evidence. This is the source of truth for open work.
 - [Session handoff](.agent/HANDOFF.md): last observed environment and next action.

@@ -1,3 +1,12 @@
+## Initial plan PDF filing — 2026-11-02
+
+- Moved the October 9 original port-plan PDF, unchanged, to
+  `docs/initial-pico2-jcvm-port-plan-2026-10-09.pdf`; its SHA-256 is
+  `a8d26af03fc0d3ccbfd64f1466e73ad814dc5d6ca258d9bb4d5189ca08d6b1cb`.
+  The draft names JCAlgTest 1.8.4; current `plan.md` and `TODO.md` use 1.8.2.
+  README and the relocation index now distinguish them. No build or physical
+  operation was run for this documentation-only move.
+
 ## Markdown tidy-up — 2026-11-02
 
 - Archived completed fixes and dated reviews in `artifacts/reviews/` (commit
