@@ -1,5 +1,25 @@
 # Session handoff — updated 2026-11-02
 
+## Host emulator expected-fault logging
+
+The host MPU emulator now suppresses warning formatting for SIGSEGVs whose
+fault address lies within emulated RAM; these are expected page-protection
+traps. Set `CHOUPI_LOG_HOST_MPU_FAULTS=1` to restore their detailed trace.
+Addresses outside emulated RAM continue to be warned. PC build passed, the
+focused transaction probe case 41 passed, and the cross-AID SIO VPCD regression
+passed 15/15. The focused log shrank from 37,441 bytes / 322 warnings to 591
+bytes / zero warnings. Runtime changed from 85.593 s to 83.362 s across two
+single samples, so ptrace stepping remains the likely performance bottleneck;
+no CPU profile was collected. SIO log:
+`artifacts/logs/sio-cross-aid-vpcd-20261102T043717Z.log` (SHA-256
+`a152f71bb608fc1af8ee132f71bda30a3685e8f67fa4174bdd39d28c7cae6a14`).
+
+Latest authorized USB inventory still sees one running CCID and no BOOTSEL
+devices, despite the user's report of three boards in BOOTSEL. Continue offline;
+do not flash until BOOTSEL is visible and the required builds pass. The source
+change is in the `choupi/os` submodule and requires its own commit before the
+root progress/handoff commit. See `perf_tips.md` for measurement details.
+
 ## SIO reference argument boundary clarified
 
 The user reports three physical Pico 2 boards in BOOTSEL, but the latest

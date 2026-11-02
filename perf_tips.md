@@ -77,6 +77,22 @@ CPU bottleneck. The task timer reports wall time only. Upload remains
 unmeasured. Older measurements and failure locations below describe prior code
 states; the checkpoint above is the current status.
 
+## Host MPU emulator logging check — 2026-11-02
+
+Expected SIGSEGVs on emulated RAM pages are part of the host MPU mechanism.
+`choupi/os/src/arch/host/emulator.rs` now suppresses those warnings by default;
+set `CHOUPI_LOG_HOST_MPU_FAULTS=1` to restore the detailed fault trace. Faults
+outside the emulated RAM range remain logged.
+
+The transaction probe case 41 log fell from 37,441 bytes and 322 expected-fault
+warnings to 591 bytes and zero warnings. Its elapsed time changed from 85.593 s
+to 83.362 s (about 2.6% faster in two single-run samples). This is strong
+evidence that diagnostic output was noisy, but not evidence of a substantial
+runtime speedup. The full SIO cross-AID VPCD regression passed 15/15 after the
+change. The next performance task is to profile host ptrace single-step and
+protection-fault counts; do not attribute remaining latency to CPU spinning
+without per-process CPU measurements.
+
 ## Current measurements
 
 From `artifacts/metrics/development-time.csv` and the host install log below:
