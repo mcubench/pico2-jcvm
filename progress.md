@@ -19741,3 +19741,41 @@
   correction are committed separately.
 - Artifacts/logs: VPCD logs above; `build/arm/pico2_choupi.uf2` and
   `build/riscv/pico2_jcvm_smoke.uf2` with hashes above.
+
+## 2026-11-02 Enforce SIO argument kinds when server code loads locals 21 minutes
+
+- Step/experiment: `sio-server-local-kind-enforcement-20261102`
+- When: '2026-11-02 03:53 CET' - '2026-11-02 04:14 CET'
+- Change: Added runtime kind checks to local short, int, reference, and return
+  address reads. Mismatched or uninitialized local kinds raise
+  `SecurityException`, preventing descriptor-free caller tags from being used
+  as a different server-side type. Added a return-address tag; `astore` now
+  preserves reference versus return-address values so `ret` can validate its
+  local. Extended the registry test with valid and invalid local accesses.
+  Updated CTX-01, QKB, and HANDOFF.
+- Validation: `./tools/test-rmi-registry` passed. PC current build, ARM build,
+  and RISC-V build passed. Descriptor-free SIO VPCD passed 14/14
+  (`artifacts/logs/sio-cross-aid-vpcd-20261102T025926Z.log`); Descriptor-present
+  SIO VPCD passed 14/14
+  (`artifacts/logs/sio-cross-aid-vpcd-20261102T030801Z.log`). The VPCD
+  multipackage lifecycle/GlobalPlatform suite passed 47/47; transcript log is
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261102T030138Z.log`. Transaction
+  probe case 48 passed 3/3 in 71.978 s. Scoped diff checks passed. The final
+  reader refresh found only runtime CCID `2e8a:0009` at `/dev/bus/usb/001/055`;
+  no BOOTSEL devices were guest-visible, so no flash or hardware validation was
+  performed.
+- Result: Caller-derived runtime kinds now have a second check at the server's
+  actual local load. The broader multipackage, transaction, and both SIO modes
+  continue passing. ARM image is 1,853,440 bytes, end `0x100e2224`, SHA-256
+  `29d2b2dbc5149a47550194a62cb85acf904b7e595e57167dd79e45f3ed6f939f`; RISC-V
+  smoke image is 79,872 bytes, end `0x10009a78`, SHA-256
+  `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+  PC build emits existing Rust/C++ dependency warnings; no new warning from
+  this change remained after handling the new `ReturnAddress` switch case.
+- Decision: CTX-01 remains open for physical positive cross-AID tests, stable
+  proxy rehydration/persistence policy, and remaining ownership/firewall gates.
+  Continue on offline acceptance while BOOTSEL hardware is not guest-visible.
+- Commit: `738dd87` (implementation); this progress record is committed
+  separately.
+- Artifacts/logs: VPCD logs above, multipackage log above, and firmware images
+  `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`.
