@@ -20345,5 +20345,5 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-restart` passed (`TEST:SUMMARY pass=7 fail=0`). The test fixture CAP converted with one existing int-support warning. No firmware source changed; no architecture rebuild or physical flash/test.
 - Result: After restart both sibling AIDs were present in GET STATUS, the reader restored the same static scalar/array values, SIO returned identity success for the writer's restored array, and a writer update was visible to the reader. Log: `artifacts/logs/same-cap-restart-vpcd-20261102T121015Z.log`.
 - Decision: Same-CAP clean-process restart state restoration is now covered. This does not verify hardware power loss or corrupted storage. Continue remaining CTX-03 GC/reset and persistence cases.
-- Commit: `<implementation commit recorded in follow-up>`
+- Commit: `624f266` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/test-same-cap-restart`, `tools/tests/same_cap_restart_vpcd_test.py`, and `artifacts/logs/same-cap-restart-vpcd-20261102T121015Z.log`.

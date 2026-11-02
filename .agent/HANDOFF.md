@@ -37,8 +37,8 @@ restart, both same-CAP applet registrations restore, the reader sees the same
 static scalar and array content, SIO resolves the restored writer array by
 identity, and subsequent writer changes remain visible to the reader. Log:
 `artifacts/logs/same-cap-restart-vpcd-20261102T121015Z.log`. The wrapper and
-test are pending commit with a progress record; this is process-restart VPCD
-evidence, not physical power-loss validation.
+test are committed in `624f266`; this is process-restart VPCD evidence, not
+physical power-loss validation.
 
 `tools/test-rmi-registry` now allocates owner facades for IDs 1 through 255,
 retains one live array for each, confirms all remain reserved, then collects
