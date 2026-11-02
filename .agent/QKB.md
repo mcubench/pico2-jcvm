@@ -43,7 +43,10 @@
   SELECT gives `6A82`. Deleting its noninstalled applet AID returns “not
   present”; deleting the package returns `6581`. Preserve this test-created
   package and the pre-existing dependency packages. This physical install issue
-  is separate from USB passthrough and remains unexplained.
+  is separate from USB passthrough and remains unexplained. A read-only SELECT
+  of the pre-existing service AID `A00000015100000301` also returns `6A82`;
+  GPPro's APP rows here describe applets in loaded CAP packages and do not
+  prove that applet instances were installed.
 
 ## Cross-AID physical fixture install reaches internal stage 9 — 2026-11-01
 

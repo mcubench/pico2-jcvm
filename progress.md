@@ -19574,3 +19574,28 @@
   `35d80c9f6d895b787dbe4550d399a8abee0790443ef461748bab61176f3e00e2`);
   hardware cycle `artifacts/logs/cycle-choupi-20261101T234222Z.log` (SHA-256
   `c45a7cd9f2eddcc3e526a5f1d7542b5a0242b8e7430e13b773c0fee43cab1984`).
+
+## 2026-11-02 Confirm physical fixture applet state 10 minutes
+
+- Step/experiment: `ctx01-physical-fixture-select-diagnostic-20261102`
+- When: '2026-11-01 23:50 UTC' - '2026-11-02 00:00 UTC'
+- Change: Followed the client install stage-9 failure with read-only GET STATUS
+  and SELECT probes to distinguish loaded CAP descriptors from installed
+  applet instances. Updated QKB, TODO and HANDOFF with the confirmed device
+  state. No further package or applet mutation was attempted.
+- Validation: GPPro GET STATUS shows client package
+  `A000000151000004` but SELECT of its applet returns `6A82`; SELECT of the
+  pre-existing service AID `A00000015100000301` also returns `6A82`. The
+  current package's `--install-only --debug` response remains stage `09`, VM
+  status `0000`, SW `6F00`. The helper and elevated `lsusb -d 2e8a:` show only
+  the single runtime board `2BED26ED20556535`.
+- Result: GPPro APP entries are CAP applet descriptors and do not establish
+  that an applet instance is installed. The clean physical SIO fixture cannot
+  run against this card state; no positive physical SIO call was tested.
+- Decision: Keep all pre-existing packages untouched. Diagnose the physical
+  import/install validation failure with a clean-safe board or equivalent
+  firmware-side trace; other claimed boards are not currently guest-visible.
+- Commit: `pending`.
+- Artifacts/logs: No dedicated raw GPPro transcript was saved; responses are
+  recorded above. Existing physical cycle log:
+  `artifacts/logs/cycle-choupi-20261101T234222Z.log`.

@@ -20,7 +20,10 @@ passed. The positive physical SIO probe is still blocked: pre-existing
 contract/service packages caused the clean fixture guard to refuse replacement;
 GPPro `--install` returned `6A80`, though GET STATUS listed the client package.
 `--install-only --debug` returned stage `09`, VM status `0000`, and `6F00`; its
-SELECT returned `6A82`. Deleting the test-created loaded package returned
+SELECT returned `6A82`. A read-only SELECT of the existing service AID
+`A00000015100000301` also returns `6A82`; GET STATUS APP rows in this state
+describe CAP applet descriptors, not installed instances. Deleting the
+test-created loaded package returned
 `6581`; do not retry cleanup or alter existing packages without a specific
 safe path. Authorized PC/SC helper now sees one runtime CCID at
 `/dev/bus/usb/001/041`; no other boards are visible in this VM. Update progress,

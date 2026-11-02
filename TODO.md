@@ -258,7 +258,9 @@ Archive text is historical evidence, not current device state or priorities.
   lists the client package but SELECT returns `6A82`, so no client
   applet instance is usable. Deleting the client package returned `6581`; keep
   this test-created package state documented and do not remove the pre-existing
-  contract/service packages. Physical cross-AID behavior remains unverified.
+  contract/service packages. A read-only SELECT of the listed service applet
+  also returned `6A82`; GPPro APP rows do not prove an applet instance is
+  installed. Physical cross-AID behavior remains unverified.
   The unchanged same-applet
   call still passes on physical Pico 2 `8E464F4E2BBC0A19`. Never return raw
   server heap references to clients.
