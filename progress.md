@@ -20560,3 +20560,15 @@
 - Decision: Keep power-loss/multi-owner gates open; continue CTX-01/03. Re-enumerate before using exact PC/SC reader names because slot numbers change.
 - Commit: `982a802`
 - Artifacts/logs: APDU `artifacts/logs/persistent-reclaimer-physical-20261102T185839Z.log` SHA-256 `65a060fd983ab98c408761abad656d9f5b0e52387c0de18973b1f2ab1704aa66`; serial `artifacts/logs/persistent-reclaimer-serial-2BED26ED20556535-20261102T185839Z.log` SHA-256 `81c454dec8a9411846aac84e8698e8b5dd187543ec59437e073dabcb4a1f9258`. Failed stale-name GPPro log: `build/persistent-reclaimer-probe/gp-list-20261102T185749Z.log`.
+
+
+## 2026-11-02 Refresh max_crypto ARM external-test image 7 minutes
+
+- Step/experiment: `max-crypto-external-arm-image-20261102`
+- When: '2026-11-02 19:11 UTC' - '2026-11-02 19:18 UTC'
+- Change: Rebuilt the max_crypto ARM firmware from the current worktree and refreshed the tracked external-test UF2 plus its README. Refreshed the expected JCAlgTest support manifest from the generated profile output. The image contains no preinstalled applet; applets remain separately installed with GPPro.
+- Validation: `./tools/build arm --profile max_crypto` passed (147/150 selectable capabilities enabled). `./tools/build riscv --profile max_crypto` passed its VM-core build. ARM linker boundary check passed. `cmp` confirmed the published UF2 and support CSV match the build outputs byte-for-byte.
+- Result: ARM firmware ends at `0x100e7df8`, uses 949,752/1,048,576 bytes (98,824 bytes remain in the firmware window). Published UF2 is 1,900,032 bytes, SHA-256 `7456bf4826c0aa9578e989992f566fd58878c8f212d06ed23e9b27ac756b114d`. Support CSV SHA-256 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`. No physical flashing or runtime validation was performed; BOOTSEL devices were left untouched.
+- Decision: The refreshed max_crypto ARM image is ready for external testing. It was built with current local changes including `src/cap_load.cpp`; README records that provenance and the physical-validation limitation.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`; `artifacts/firmware/README-max_crypto.txt`.

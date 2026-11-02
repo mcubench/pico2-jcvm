@@ -1,3 +1,22 @@
+## Current session — refresh max_crypto ARM external-test image — 2026-11-02 19:18 UTC
+
+Rebuilt `max_crypto` using `./tools/build arm --profile max_crypto` and
+`./tools/build riscv --profile max_crypto`; both passed (147 of 150 declared
+capabilities enabled). The ARM image ends at `0x100e7df8`, leaving 98,824 bytes
+in the 1 MiB firmware window. Refreshed the tracked external-test artifact
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (1,900,032 bytes,
+SHA-256 `7456bf4826c0aa9578e989992f566fd58878c8f212d06ed23e9b27ac756b114d`) and
+confirmed it matches the build output byte-for-byte. The generated support CSV
+was also compared and copied; its existing tracked copy already matched.
+
+The image has no applet preinstalled. `README-max_crypto.txt` now records the
+current hash/size and explicitly says this refreshed hash has not been flashed
+or runtime-tested. It was built from the shared worktree, including local
+`src/cap_load.cpp` changes, so it is not reproducible from a clean checkout
+until those changes are integrated. No device was touched. The user's external
+test task is complete; next resume the open CTX-01/03 work after that task is
+resumed.
+
 ## Current session — require physical reclaimer telemetry — 2026-11-02 19:01 UTC
 
 Updated `tools/test-persistent-reclaimer-physical` to parse the stable 16-digit

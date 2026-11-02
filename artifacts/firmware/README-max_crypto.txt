@@ -12,15 +12,15 @@ does not erase the card's separate persistent CAP store; use a fresh card or
 remove installed applets explicitly with GlobalPlatformPro.
 Debug persistent-GC instrumentation: disabled.
 Filesystem: snapshot v4, with copy-on-write migration from v2/v3 snapshots.
-Image size: 1,887,232 bytes
-Firmware SHA-256: f0187cc260839d2905a868b2babdad71f84f7819ffcaf190d437077296c76159
+Image size: 1,900,032 bytes
+Firmware SHA-256: 7456bf4826c0aa9578e989992f566fd58878c8f212d06ed23e9b27ac756b114d
 Build date: 2026-11-02
 Included update: native Signature MAC now honors the IV supplied to
 `Signature.init(key, mode, parameters, ...)`; deterministic nonzero-IV VPCD
 vectors and the three matching upstream API calls pass. See the IV validation
 record in `progress.md`.
 
-Flash layout: the image ends at `0x100e648c`, 105,332 bytes below the reserved
+Flash layout: the image ends at `0x100e7df8`, 98,824 bytes below the reserved
 1 MiB firmware boundary at `0x10100000`. The RP2350 has 2 MiB total flash; CAP,
 filesystem, metadata, and legacy regions occupy the rest. The UF2 file size
 includes transfer block overhead and is not the amount written contiguously.
@@ -39,17 +39,11 @@ pico2-jcvm-max_crypto-arm-supported.csv
 SHA-256: 81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0
 
 Build validation for this image: `./tools/build arm --profile max_crypto` and
-`./tools/build riscv --profile max_crypto` passed. The overlay regression
-includes repeated dynamic-package deletion/restart and randomized power-cut
-recovery; it passed before this rebuild, with no overlay source changes since.
-The build used the current worktree, including pre-existing local changes in
-`src/cap_load.cpp`; those source changes were not included in the artifact
-refresh commit, so this image is not reproducible from a clean checkout of that
-commit alone.
-This size-fit candidate has not been flashed or runtime/performance-tested on
-hardware. Previous physical/API results refer to earlier image hashes and do
-not validate this image. It was built from the current shared worktree,
-including uncommitted source changes in `src/cap_load.cpp`; it is not
-reproducible from a clean checkout of the artifact commit alone. The RISC-V
-wrapper builds the VM core; only the ARM output is a complete CHOUPI firmware
-image.
+`./tools/build riscv --profile max_crypto` both passed on 2026-11-02. The ARM
+linker map places the image end at `0x100e7df8`, leaving 98,824 bytes in the
+1 MiB firmware window. This refreshed build has not been flashed or runtime-
+tested on physical hardware; earlier physical/API results refer to prior image
+hashes. The image was built from the current shared worktree, including local
+changes in `src/cap_load.cpp`, so it is not reproducible from a clean checkout
+until those changes are integrated. The RISC-V wrapper builds the VM core; only
+the ARM output is a complete CHOUPI firmware image.
