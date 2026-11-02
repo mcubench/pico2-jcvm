@@ -62,6 +62,7 @@ private:
     bool restored = false;
     jref_t restored_applet_ref;
     bool active = false;
+    std::shared_ptr<Heap> owner_heap;
   };
   std::vector<AppletInstanceState> applet_instances;
   std::size_t active_applet_index = 0;
@@ -237,6 +238,7 @@ public:
   Stack &getStack() noexcept;
   /// Get context heap.
   Heap &getHeap() noexcept;
+  const Heap &getHeap() const noexcept;
   /// Get current current package.
   Package getCurrentPackage();
   /// Shift context package ID

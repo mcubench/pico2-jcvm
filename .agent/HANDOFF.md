@@ -1,3 +1,21 @@
+## CTX-03 shared heap owner facades — 2026-11-02 10:30 UTC
+
+Per-owner Heap facades now share array/instance handle tables and package
+reference-root storage. Each applet-instance record owns a stable facade; VM
+objects allocated through it keep their original owner identity while sibling
+facades resolve the same handle. `tools/test-rmi-registry` verifies that
+identity and owner retention.
+
+PC max_crypto, RMI registry test, ARM max_crypto, and RISC-V max_crypto pass.
+ARM end `0x100e6d38` leaves 103,112 bytes in the 1 MiB firmware window. UF2
+1,891,840 bytes, SHA-256
+`8691a8141ecc8a7d123590cdd33770fedfe73eae48f97d310cbd305f259405c6`. The
+firmware registry still keys Context by applet AID and does not activate sibling
+state from one package context. Same-CAP SIO probe remains `6F00`/SecurityException
+at `invokeinterface`; no hardware flash/test. Next: change registry matching to
+package ID and safely restore/activate sibling AID records, then prove SIO object
+identity, per-owner access, deletion, reset/transient and restart behavior.
+
 ## CTX-03 sibling state groundwork — 2026-11-02 10:13 UTC
 
 `Context` now stores multiple `AppletInstanceState` records, can select or

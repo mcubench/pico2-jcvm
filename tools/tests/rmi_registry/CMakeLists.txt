@@ -8,8 +8,11 @@ add_executable(
   "${CHOUPI_SOURCE_DIR}/context.cpp"
   "${CHOUPI_SOURCE_DIR}/frame.cpp"
   "${CHOUPI_SOURCE_DIR}/heap.cpp"
+  "${CHOUPI_SOURCE_DIR}/jc_types/jc_array.cpp"
+  "${CHOUPI_SOURCE_DIR}/jc_types/jc_object.cpp"
   "${CHOUPI_SOURCE_DIR}/jc_types/jref_t.cpp"
-  "${CHOUPI_SOURCE_DIR}/stack.cpp")
+  "${CHOUPI_SOURCE_DIR}/stack.cpp"
+  "${CMAKE_SOURCE_DIR}/../jcarray/filesystem_stub.cpp")
 target_compile_features(rmi_registry_test PRIVATE cxx_std_17)
 target_compile_definitions(rmi_registry_test PRIVATE PC_VERSION=1)
 target_compile_options(rmi_registry_test PRIVATE

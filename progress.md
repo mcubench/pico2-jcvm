@@ -20231,3 +20231,31 @@
 - Commit: `84ebacb`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`;
   `build/arm/pico2_choupi.uf2`.
+
+## 2026-11-02 Share heap handles across applet owner facades 11 minutes
+
+- Step/experiment: `ctx03-shared-heap-owner-facades-20261102`
+- When: '2026-11-02 11:18 CET' - '2026-11-02 11:29 CET'
+- Change: Moved per-context array/instance handle tables and static/runtime
+  reference roots into shared Heap storage. Added per-AID Heap facades with
+  distinct stable owner IDs, attached to Context applet-instance state, and
+  routed active Context heap access through that instance facade. Extended the
+  registry test to allocate a byte array through one sibling owner and resolve
+  the same handle/object through another. Updated CTX-03 TODO/QKB/HANDOFF.
+- Validation: `./tools/test-rmi-registry` and `./tools/build-pc
+  --profile max_crypto` passed. `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. An exploratory
+  `./tools/test-jcarray` invocation failed linking its existing fake-JNI target
+  (`Package::getCap`, `JC_Cap::getImport`, and imported-export helpers undefined);
+  the focused test was instead added to the RMI target with the existing
+  jcarray filesystem stubs. The earlier same-CAP VPCD identity probe still
+  returns `6F00`/SecurityException because firmware registry remains per-AID.
+  No physical flash/test occurred.
+- Result: ARM image end `0x100e6d38`; 945,464 bytes of 1,048,576 used and
+  103,112 bytes remain. UF2 size 1,891,840 bytes, SHA-256
+  `8691a8141ecc8a7d123590cdd33770fedfe73eae48f97d310cbd305f259405c6`.
+- Decision: Keep local-reference rejection fail-closed until firmware lookup
+  selects a shared package context and ownership behavior is proven end-to-end.
+- Commit: `pending`
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`; prior SIO probe log
+  `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`.

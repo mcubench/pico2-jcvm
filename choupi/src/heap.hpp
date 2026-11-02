@@ -88,6 +88,14 @@ private:
   /// True only for the runtime-wide heap that owns global arrays.
   const bool global_heap;
 
+  struct SharedStorage {
+    List<std::shared_ptr<JC_Array>> arrays;
+    List<std::shared_ptr<JC_Instance>> instances;
+    std::vector<RuntimeExceptionRoot> runtime_exception_roots;
+    std::vector<StaticReferenceRoot> static_reference_roots;
+  };
+  std::shared_ptr<SharedStorage> shared_storage;
+
   struct GlobalAIDObject {
     std::array<uint8_t, 16> aid{};
     uint8_t aid_length = 0;
@@ -96,19 +104,11 @@ private:
     jref_t reference;
   };
 
-  /// List of array in the heap.
-  List<std::shared_ptr<JC_Array>> arrays;
-  /// List of instance in the heap.
-  List<std::shared_ptr<JC_Instance>> instances;
   std::vector<GlobalAIDObject> global_aid_objects;
 
   /// Roots for the ROM and imported class views of the JCRE CryptoException.
   jref_t runtime_crypto_exception_rom;
   jref_t runtime_crypto_exception_imported;
-  std::vector<RuntimeExceptionRoot> runtime_exception_roots;
-  /// Canonical handles for serialized Java static reference fields.
-  std::vector<StaticReferenceRoot> static_reference_roots;
-
   /// Mark roots and typed children into stable-slot bitmaps.
   ReachabilitySummary traceAndMark(
       RootReferenceEnumerator enumerate_roots, void *root_context);
@@ -126,7 +126,9 @@ private:
 
 public:
   /// Default constructor.
-  Heap(const japplet_ID_t owner, bool global_heap = false) noexcept;
+  Heap(const japplet_ID_t owner, bool global_heap = false);
+  /// Create a stable owner facade over another applet heap's shared storage.
+  Heap(const japplet_ID_t owner, const Heap &shared_heap);
 
   /// Getting the applet ID owner
   japplet_ID_t getOwner() const;

@@ -104,7 +104,8 @@ bool Context::activateAppletInstance(const japplet_ID_t owner,
     instance.owner = owner;
     std::copy_n(aid, aid_length, instance.aid.begin());
     instance.aid_length = aid_length;
-    this->applet_instances.push_back(instance);
+    instance.owner_heap = std::make_shared<Heap>(owner, this->heap);
+    this->applet_instances.push_back(std::move(instance));
     this->active_applet_index = this->applet_instances.size() - 1;
     return true;
   } catch (...) {
@@ -123,6 +124,8 @@ Context::Context(const japplet_ID_t appletID,
     : applet_instances(1), applet_package_ID(packageID), stack(),
       packagesID(), heap(appletID) {
   this->activeAppletInstance().owner = appletID;
+  this->activeAppletInstance().owner_heap =
+      std::make_shared<Heap>(appletID, this->heap);
   this->packagesID.push_front(packageID);
 }
 
@@ -140,7 +143,9 @@ jpackage_ID_t Context::getCurrentPackageID() noexcept {
  *
  * @return current applet class ID
  */
-jpackage_ID_t Context::getAppletID() const noexcept { return this->activeAppletInstance().owner; }
+jpackage_ID_t Context::getAppletID() const noexcept {
+  return this->activeAppletInstance().owner;
+}
 
 jpackage_ID_t Context::getAppletPackageID() const noexcept {
   return this->applet_package_ID;
@@ -219,7 +224,7 @@ bool Context::restoreAppletInstance(const jpackage_ID_t package_id,
     const fs::Tag tag = FlashMemory_Handler::getAppletInstanceTag(
         this->activeAppletInstance().owner, package_id, class_index);
     const jref_t reference =
-        FlashMemory_Handler::getPersistentField_Reference(tag, this->heap);
+        FlashMemory_Handler::getPersistentField_Reference(tag, this->getHeap());
     if (reference.isNullPointer() || reference.isArray()) {
       std::printf("CHOUPI:RESTORE_REF null=%u array=%u package=%u class=%04X\r\n",
                   reference.isNullPointer() ? 1u : 0u,
@@ -229,7 +234,7 @@ bool Context::restoreAppletInstance(const jpackage_ID_t package_id,
       std::fflush(stdout);
       return false;
     }
-    const auto instance = this->heap.getInstance(reference);
+    const auto instance = this->getHeap().getInstance(reference);
     if (instance->getPackageID() != package_id ||
         instance->getClassIndex() != class_index) {
       std::printf("CHOUPI:RESTORE_MISMATCH got=%u/%04X want=%u/%04X\r\n",
@@ -435,7 +440,7 @@ bool Context::isStaleShareableProxy(const jref_t reference) noexcept {
     return false;
   }
   try {
-    const auto instance = this->heap.getInstance(reference);
+    const auto instance = this->getHeap().getInstance(reference);
     return instance->isShareableProxyPlaceholder();
   } catch (...) {
     return false;
@@ -452,7 +457,7 @@ bool Context::registerShareableProxy(const jref_t proxy_reference,
     return false;
   }
   try {
-    const auto proxy = this->heap.getInstance(proxy_reference);
+    const auto proxy = this->getHeap().getInstance(proxy_reference);
     proxy->setShareableProxyPlaceholder();
   } catch (...) {
     // Keep the registry helper usable in isolated tests with synthetic refs.
@@ -774,7 +779,7 @@ void Context::appendRootReferences(
 
 void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
                                   void *visitor_context) const {
-  this->heap.visitRootReferences(visitor, visitor_context);
+  this->getHeap().visitRootReferences(visitor, visitor_context);
   for (const auto &entry : this->remote_objects) {
     if (entry.object_id != 0xffff && !entry.reference.isNullPointer()) {
       visitor(entry.reference, visitor_context);
@@ -815,7 +820,7 @@ void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
       return;
     }
     jref_t reference;
-    if (!this->heap.getArrayReference(array.get(), reference)) {
+    if (!this->getHeap().getArrayReference(array.get(), reference)) {
       throw Exceptions::SecurityException;
     }
     visitor(reference, visitor_context);
@@ -836,7 +841,13 @@ Stack &Context::getStack() noexcept { return this->stack; }
  *
  * @return context Java Card stack.
  */
-Heap &Context::getHeap() noexcept { return this->heap; }
+Heap &Context::getHeap() noexcept {
+  return *this->activeAppletInstance().owner_heap;
+}
+
+const Heap &Context::getHeap() const noexcept {
+  return *this->activeAppletInstance().owner_heap;
+}
 
 /**
  * Get current package.

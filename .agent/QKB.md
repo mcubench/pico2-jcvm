@@ -1,5 +1,26 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Package heap storage can share handles without merging applet owners — 2026-11-02
+
+- **Change:** `Heap` facades now retain distinct owner IDs while sharing a
+  `SharedStorage` containing array/instance handle tables and package reference
+  roots. Each `Context::AppletInstanceState` owns a stable shared pointer to its
+  facade; switching active AID switches `Context::getHeap()` to that owner
+  facade. Java objects still retain the allocating facade through `JC_Object`.
+- **Validation:** `./tools/test-rmi-registry` passes, including sibling state
+  switching and a byte array allocated in one owner facade and resolved by the
+  other to the identical `shared_ptr`; the array still reports its allocating
+  owner ID. PC, ARM, and RISC-V max_crypto builds pass. ARM image ends at
+  `0x100e6d38`, using 945,464 of the 1,048,576-byte firmware window and leaving
+  103,112 bytes. Full UF2 is 1,891,840 bytes, SHA-256
+  `8691a8141ecc8a7d123590cdd33770fedfe73eae48f97d310cbd305f259405c6`.
+- **Limit:** Firmware registry still creates a different Context per AID, so
+  this storage is only shared when code explicitly creates sibling facades from
+  one Context. Same-CAP VPCD identity is still failing at SIO `invokeinterface`
+  (`6F00`, SecurityException). No physical flash/test occurred. Next: index
+  retained Contexts by package ID and select/restore the per-AID state safely;
+  preserve SIO caller/server state and DELETE behavior before relaxing checks.
+
 ## Same-CAP SIO cannot pass sibling-owned array identity — 2026-11-02
 
 - **Reproduction:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings`

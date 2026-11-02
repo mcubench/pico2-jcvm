@@ -1,6 +1,7 @@
 #include "context.hpp"
 #include "context_registry.hpp"
 #include "jc_bytecodes/shareable_arguments.hpp"
+#include "jc_types/jc_array.hpp"
 
 #include <algorithm>
 #include <array>
@@ -143,6 +144,13 @@ void verify_context_retains_sibling_instance_state() {
   assert(active_aid_length == sizeof(second_aid));
   assert(std::equal(second_aid, second_aid + sizeof(second_aid), active_aid));
   assert(!package_context.wasAppletRegistered());
+  assert(package_context.getHeap().getOwner() == 8);
+  const auto sibling_array_reference =
+      package_context.getHeap().addArray(3, jcvm::JAVA_ARRAY_T_BYTE);
+  const auto sibling_array =
+      package_context.getHeap().getArray(sibling_array_reference);
+  sibling_array->setByteEntry(0, 0x5a);
+  package_context.getHeap().setStaticReferenceRoot(4, 3, make_reference(35));
   const auto second_root = make_reference(31);
   package_context.setAppletAIDObjectRef(second_root);
   package_context.markAppletRegistered(second_root);
@@ -155,6 +163,16 @@ void verify_context_retains_sibling_instance_state() {
   assert(active_aid_length == sizeof(first_aid));
   assert(std::equal(first_aid, first_aid + sizeof(first_aid), active_aid));
   assert(!package_context.wasAppletRegistered());
+  assert(package_context.getHeap().getOwner() == 7);
+  const auto shared_sibling_array =
+      package_context.getHeap().getArray(sibling_array_reference);
+  assert(shared_sibling_array == sibling_array);
+  assert(shared_sibling_array->getByteEntry(0) == 0x5a);
+  assert(shared_sibling_array->getOwner().getOwner() == 8);
+  jcvm::jref_t shared_static_reference;
+  assert(package_context.getHeap().getStaticReferenceRoot(
+      4, 3, shared_static_reference));
+  assert(shared_static_reference == make_reference(35));
 
   assert(package_context.activateAppletInstance(8, second_aid,
                                                  sizeof(second_aid)));
@@ -163,6 +181,18 @@ void verify_context_retains_sibling_instance_state() {
   package_context.visitRootReferences(record_reference, &roots);
   assert(contains(roots, first_root));
   assert(contains(roots, second_root));
+}
+
+void verify_heap_owner_facades_share_package_roots() {
+  jcvm::Heap writer_heap(7);
+  jcvm::Heap reader_heap(8, writer_heap);
+  assert(writer_heap.getOwner() == 7);
+  assert(reader_heap.getOwner() == 8);
+  const auto static_reference = make_reference(34);
+  writer_heap.setStaticReferenceRoot(4, 2, static_reference);
+  jcvm::jref_t resolved;
+  assert(reader_heap.getStaticReferenceRoot(4, 2, resolved));
+  assert(resolved == static_reference);
 }
 
 void verify_shareable_proxy_registry() {
@@ -547,6 +577,7 @@ int main() {
   verify_previous_context_aid();
   verify_retained_applet_context_lookup();
   verify_context_retains_sibling_instance_state();
+  verify_heap_owner_facades_share_package_roots();
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
   verify_typed_local_access();
@@ -635,6 +666,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 sibling_instance_state=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 sibling_instance_state=1 package_heap_arrays=1 package_heap_roots=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
   return 0;
 }
