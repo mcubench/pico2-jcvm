@@ -19595,7 +19595,7 @@
 - Decision: Keep all pre-existing packages untouched. Diagnose the physical
   import/install validation failure with a clean-safe board or equivalent
   firmware-side trace; other claimed boards are not currently guest-visible.
-- Commit: `pending`.
+- Commit: `ad8f22a`.
 - Artifacts/logs: No dedicated raw GPPro transcript was saved; responses are
   recorded above. Existing physical cycle log:
   `artifacts/logs/cycle-choupi-20261101T234222Z.log`.
