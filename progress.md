@@ -20165,5 +20165,5 @@
 - Validation: `./tools/test-rmi-registry` passed. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `./tools/test-firmware-flash-boundary` passed (`below_limit=1 at_limit=0 above_limit=0`). `git diff --check -- choupi/src/context.cpp choupi/src/context.hpp` passed. Fresh authorized host USB inventory found two runtime CCID devices and no BOOTSEL device; no flash/runtime test.
 - Result: ARM image end `0x100e648c` (943,244 bytes from flash base), leaving 105,332 bytes in the 1 MiB firmware window. UF2 is 1,887,232 bytes, SHA-256 `029f4a7cc1dd38d0f77fc52cc733f90b7599e01606f934068318fd2a4a505d62`.
 - Decision: Keep the refactor as groundwork only; next define and test package firewall context semantics before changing lifetimes.
-- Commit: pending.
+- Commit: `2fc060f`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no physical log.
