@@ -445,8 +445,10 @@ Archive text is historical evidence, not current device state or priorities.
   static values and sibling SIO identity after package reinstall. A separate
   physical transient fixture passed on this board: switching to the sibling
   cleared `CLEAR_ON_DESELECT` (`00`) and retained `CLEAR_ON_RESET` (`6B`), then
-  PC/SC reset cleared both (`0000`). The VPCD transient suite passes 5/5. GC
-  and cold-power persistence remain open. The first probe omitted the explicit
+  PC/SC reset cleared both (`0000`). The same physical results were reproduced
+  on Pico 2 `2BED26ED20556535`: `5A6B9000`, `006B9000`, then `00009000`; cleanup
+  passed on both cards. The VPCD transient suite passes 5/5. GC and cold-power
+  persistence remain open. The first probe omitted the explicit
   reader reselect used by the VPCD test; after aligning the APDU sequence,
   physical results matched VPCD.
   Two repeated instance DELETE/reinstall cycles keep array-owning owner 1
