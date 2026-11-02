@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_command python3
+checker="${repo_root}/tools/check-firmware-flash-boundary"
+temporary_dir="$(mktemp -d)"
+trap 'rm -rf "${temporary_dir}"' EXIT
+
+check_map="${temporary_dir}/test.map"
+printf '  0x100fffff PROVIDE (__flash_binary_end = .)\n' > "${check_map}"
+python3 "${checker}" "${check_map}" >/dev/null
+
+for end_address in 0x10100000 0x10100001; do
+  printf '  %s PROVIDE (__flash_binary_end = .)\n' "${end_address}" > "${check_map}"
+  if python3 "${checker}" "${check_map}" >/dev/null 2>&1; then
+    die "firmware boundary checker accepted end address ${end_address}"
+  fi
+done
+
+printf 'FIRMWARE_FLASH_BOUNDARY:PASS below_limit=1 at_limit=0 above_limit=0\n'

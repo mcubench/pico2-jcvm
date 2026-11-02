@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""Reject CHOUPI firmware images that overlap reserved CAP storage."""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+
+XIP_BASE = 0x10000000
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("linker_map", type=Path)
+    parser.add_argument(
+        "--layout",
+        type=Path,
+        default=Path(__file__).resolve().parents[1] / "src/flash_layout.hpp",
+    )
+    args = parser.parse_args()
+
+    try:
+        map_text = args.linker_map.read_text(encoding="utf-8")
+        layout_text = args.layout.read_text(encoding="utf-8")
+    except OSError as error:
+        print(f"FLASH_LAYOUT:ERROR {error}", file=sys.stderr)
+        return 2
+
+    end_match = re.search(
+        r"^\s*(0x[0-9a-fA-F]+)\s+PROVIDE\s*\(\s*__flash_binary_end\s*=\s*\.\s*\)",
+        map_text,
+        re.MULTILINE,
+    )
+    limit_match = re.search(
+        r"\bfirmware_end_limit\s*=\s*(0x[0-9a-fA-F]+)\s*;", layout_text
+    )
+    if end_match is None or limit_match is None:
+        print("FLASH_LAYOUT:ERROR missing firmware end or layout limit", file=sys.stderr)
+        return 2
+
+    image_end = int(end_match.group(1), 16)
+    limit_address = XIP_BASE + int(limit_match.group(1), 16)
+    remaining = limit_address - image_end
+    if remaining <= 0:
+        print(
+            "FLASH_LAYOUT:FAIL "
+            f"firmware_end=0x{image_end:08x} "
+            f"limit=0x{limit_address:08x} overlap={-remaining} bytes",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(
+        "FLASH_LAYOUT:PASS "
+        f"firmware_end=0x{image_end:08x} "
+        f"limit=0x{limit_address:08x} remaining={remaining} bytes"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

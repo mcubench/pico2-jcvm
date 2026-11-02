@@ -129,5 +129,7 @@ if [[ "${arch}" == arm ]]; then
   choupi_image="${build_dir}/pico2_choupi.uf2"
   [[ -s "${choupi_image}" ]] || die "build did not produce ${choupi_image}"
   picotool info -a "${choupi_image}"
+  python3 "${repo_root}/tools/check-firmware-flash-boundary" \
+    "${build_dir}/pico2_choupi.elf.map"
   printf 'BUILD:PASS target=choupi image=%s\n' "${choupi_image#${repo_root}/}"
 fi

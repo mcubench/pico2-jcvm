@@ -20123,3 +20123,14 @@
 - Decision: Preserve the external-test artifact and unrelated worktree edits. Continue CTX-03 offline; require a fresh authorized inventory before physical actions.
 - Commit: `ce03233`
 - Artifacts/logs: build outputs under `build/arm/` and `build/riscv/`; artifact comparison against `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no serial log.
+
+## 2026-11-02 Keep max firmware inside the 1 MiB flash window 18 minutes
+
+- Step/experiment: `max-crypto-firmware-window-guard-20261102`
+- When: '2026-11-02 09:30 CET' - '2026-11-02 09:48 CET'
+- Change: Optimized the Pico VM/core firmware targets with `-Os`, added a linker-map check that rejects ARM firmware overlapping CAP storage, and added boundary tests. Updated API-03, `.agent/QKB.md`, and `.agent/HANDOFF.md` with the discovered partition overflow and validation limit.
+- Validation: `./tools/test-firmware-flash-boundary` passed below/at/above-limit cases; `./tools/build arm --profile max_crypto` passed and reported `FLASH_LAYOUT:PASS`; `./tools/build riscv --profile max_crypto` passed. Fresh elevated USB inventory found two runtime readers and no BOOTSEL device. No flash attempted. An LTO build was tried, failed at ARM link with assembler `offset out of range`, and its CMake changes were reverted.
+- Result: Previous max image ended at `0x101000c4`, 196 bytes over the 1 MiB boundary; the first shared-tree rebuild ended at `0x10103b28`, 15,144 bytes over. Size-optimized build ends at `0x100e64cc` (943,308 bytes from base), leaving 105,268 bytes in the 1 MiB firmware window. The 2 MiB data layout ends at `0x1f0000`, leaving 65,536 bytes unallocated. Current UF2 is 1,887,232 bytes, SHA-256 `76de3ba3f02bc5ac26d293f469071766dc4a2b36e96edebe248e865acd4ec828`; this UF2 file size includes transfer overhead. Physical runtime and crypto-throughput impact of `-Os` remain unverified.
+- Decision: Keep the partition guard and size optimization. Do not replace the tracked external-test artifact until the optimized image passes physical runtime/crypto tests; continue CTX-03 offline while no BOOTSEL board is visible.
+- Commit: `pending`
+- Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/pico2_choupi.elf.map`, `build/riscv/pico2_jcvm_smoke.uf2`; no hardware log.

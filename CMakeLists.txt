@@ -138,6 +138,10 @@ if(CHOUPI_VM_SOURCES)
   # root smoke target's strict warning policy while excluding these legacy
   # diagnostics from this compatibility compile.
   target_compile_options(choupi_vm_core PRIVATE
+    # CAP and the filesystem occupy fixed regions immediately after the 1 MiB
+    # firmware window. Favor the smallest release code while retaining the
+    # standard Release optimization level for all non-firmware builds.
+    -Os
     -Wno-ignored-qualifiers
     -Wno-address-of-packed-member
     -Wno-unused-parameter
@@ -201,6 +205,7 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     "${CMAKE_CURRENT_BINARY_DIR}/choupi-generated"
     "${JAVACARD_SUPPORT_GENERATED_DIR}")
   target_compile_options(pico2_choupi PRIVATE
+    -Os
     -Wno-ignored-qualifiers
     -Wno-address-of-packed-member
     -Wno-unused-parameter

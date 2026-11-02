@@ -1,5 +1,35 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## ARM firmware crossed the CAP partition boundary — 2026-11-02
+
+- **Observed:** The 2 MiB layout in `src/flash_layout.hpp` reserves the first
+  1 MiB for firmware and places the first CAP slot at absolute XIP address
+  `0x10100000`. The prior tracked max_crypto image ended at `0x101000c4`, 196
+  bytes into CAP storage. A rebuild from the current worktree ended at
+  `0x10103b28`, overlapping that partition by 15,144 bytes. The firmware's
+  `fs_init()` rejects images whose end reaches the 1 MiB boundary, but the build
+  wrapper previously reported success without checking the linked image end.
+- **Cause and resolution:** The current firmware targets used `-O3` without LTO.
+  LTO was tried and reverted because ARM linking failed with assembler
+  `offset out of range`. Applying `-Os` to the firmware VM/core target reduced
+  the image end to `0x100e64cc` (943,308 bytes from flash base), leaving 105,268
+  bytes in the firmware window. `tools/check-firmware-flash-boundary` now reads
+  `__flash_binary_end` from the linker map and compares it with
+  `flash_layout.hpp`; `tools/build arm` invokes it and rejects overlap.
+- **Validation:** Both max_crypto ARM and RISC-V wrappers passed. The boundary
+  test accepts an end below the limit and rejects end addresses at and above
+  it. Current UF2 is 1,887,232 bytes, SHA-256
+  `76de3ba3f02bc5ac26d293f469071766dc4a2b36e96edebe248e865acd4ec828`.
+  UF2 transport size includes block overhead; the linked address range is the
+  flash-occupancy measure. No BOOTSEL device was visible in the VM, so the new
+  image has not been flashed or timed on hardware. The tracked external-test
+  artifact remains unchanged and is still the older boundary-overflowing file.
+- **Next:** Flash only after the authorized inventory exposes an identified
+  BOOTSEL board. Verify runtime and crypto throughput under the size-optimized
+  build before publishing it as a tested external image. Do not increase the
+  firmware partition without revising the CAP/filesystem layout and proving all
+  static bounds against 2 MiB.
+
 ## BOOTSEL report differs from VM-visible USB inventory — 2026-11-02
 
 - **Observed:** The user reported three Pico 2 boards in BOOTSEL. The required

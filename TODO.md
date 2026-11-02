@@ -181,14 +181,20 @@ Archive text is historical evidence, not current device state or priorities.
   unsupported, four optional Ext scenarios unavailable after `6A88`); cleanup
   passed. Older deselect and deleted-context 6F00 defects are fixed.
   Security/Crypto coverage and remaining failures are tracked by API-01/02.
+  The previous max_crypto UF2 exceeded the firmware's 1 MiB flash window
+  (its end address was `0x101000c4`); the current ARM build uses `-Os`, ends at
+  `0x100e64cc`, and the build wrapper now rejects firmware/CAP overlap. The
+  optimized image has not yet been flashed or runtime/performance-tested.
   Optional Javacardx/Ext/Int/Biometry imports may remain unavailable for the
   declared profile; prior rejection is not evidence of implemented coverage.
   Remaining: maintain an area/profile/result matrix, retest changed native paths,
   and account explicitly for all unavailable scenarios and unsupported setup
   dependencies. Verify current-source Service/JavacardxSec results where affected.
-  Acceptance: complete bounded runs and cleanup on identified images; separate
-  expected unsupported outcomes from wrong results, runtime errors and capacity
-  failures. Do not count serial `choupi_runtime` heartbeat as API conformance.
+  Acceptance: complete bounded runs and cleanup on identified images; require
+  every ARM image to fit the 1 MiB firmware window enforced by `tools/build`;
+  separate expected unsupported outcomes from wrong results, runtime errors and
+  capacity failures. Do not count serial `choupi_runtime` heartbeat as API
+  conformance.
   Dependencies: API-01/02, PROFILE-01, GP-01; EMU-01 handles host throughput.
   Evidence: current progress/QKB; original deploy and focused retest entries
   retain exact CSV/log paths, hashes, selected calls and historical baselines.

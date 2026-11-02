@@ -1,5 +1,27 @@
 # Session handoff — updated 2026-11-02
 
+## Max profile firmware partition fit — 2026-11-02 08:48 UTC
+
+The previous max_crypto ARM image ended at `0x101000c4`, 196 bytes past the
+1 MiB firmware boundary; a rebuild from the shared tree ended at `0x10103b28`,
+15,144 bytes past it. LTO did not link (`offset out of range`) and was removed.
+Firmware CMake targets now compile with `-Os`, reducing the current max image
+to end at `0x100e64cc` (943,308 bytes from flash base), leaving 105,268 bytes in
+the firmware window. ARM and RISC-V wrappers pass. The build wrapper now checks
+the linker map against `src/flash_layout.hpp`; its synthetic below/at/above
+boundary test passes. Current build output `build/arm/pico2_choupi.uf2` is
+1,887,232 bytes, SHA-256
+`76de3ba3f02bc5ac26d293f469071766dc4a2b36e96edebe248e865acd4ec828`.
+The old tracked external-test artifact remains unchanged and is invalid for
+this layout. Do not publish the optimized build until physical runtime and
+crypto throughput are checked.
+
+Fresh authorized USB inventory again found only runtime CCID readers
+`8E464F4E2BBC0A19` and `2BED26ED20556535`; no BOOTSEL device is VM-visible.
+No image was flashed. Continue CTX-03 offline; on a future BOOTSEL enumeration,
+flash this build only after reconfirming identity and run a finite monitor plus
+focused/max crypto acceptance.
+
 ## Max profile build and live USB refresh — 2026-11-02 08:30 UTC
 
 Both `./tools/build arm --profile max_crypto` and
