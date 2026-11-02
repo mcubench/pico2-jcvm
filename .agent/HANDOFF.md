@@ -1,3 +1,27 @@
+## CTX-03 applet-local RMI/SIO registries — 2026-11-02 11:13 UTC
+
+The package Context no longer shares RMI exports, remote IDs, Shareable proxy
+mappings, or exported service roots across sibling applets. These now live in
+`AppletInstanceState`; root enumeration covers every sibling, instance DELETE
+clears only its state, and deleting a service AID invalidates proxies in
+remaining siblings. Same-package SIO reactivates the server state to retain
+its object root, then restores the client before proxy allocation.
+
+Validation: RMI registry regression passes with new sibling isolation and
+delete assertions. PC, ARM and RISC-V max_crypto builds pass. Same-CAP VPCD
+`pass=6 fail=0`; cross-AID SIO VPCD `pass=15 fail=0`; multipackage restart,
+delete and transient suite `pass=47 fail=0`. Latest ARM image end is
+`0x100e7380`: 947,072/1,048,576 bytes used, 101,504 bytes remaining. UF2
+1,894,912 bytes, SHA-256
+`af4101c0012773b366979ea85a6c05d0b31bf1e130326001b8e8cce4c321cba6`.
+
+The latest authorized USB refresh still sees two runtime CCID devices at
+`/dev/bus/usb/001/003` and `/dev/bus/usb/001/004`; no BOOTSEL board is visible.
+Do not flash until one enumerates. Next investigate owner-ID reuse and
+tombstoned Heap facade lifetime across delete/reinstall, then test the same-CAP
+delete/reinstall and reset/transient cases. Preserve unrelated dirty files and
+the user's removal of `Heap::releaseGlobalAIDObject` in `heap.cpp/.hpp`.
+
 ## CTX-03 package context routing and same-CAP SIO — 2026-11-02 10:54 UTC
 
 Firmware now looks up one `Context` per package/CAP ID and activates the

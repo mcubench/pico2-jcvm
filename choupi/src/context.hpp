@@ -48,6 +48,18 @@ class JC_Array;
 class Context {
 private:
   enum class SensitiveResultKind : uint8_t { Unassigned, Boolean, Short, Object };
+  struct RemoteObjectEntry {
+    jref_t reference;
+    uint16_t object_id = 0xffff;
+    bool exported = false;
+    bool session_reference = false;
+  };
+  struct ShareableProxyEntry {
+    jref_t proxy_reference;
+    jref_t server_reference;
+    std::array<uint8_t, 16> server_aid{};
+    uint8_t server_aid_length = 0;
+  };
   /// State owned by one installed applet instance. Kept separate from the
   /// CAP execution context so one context can later retain sibling AIDs,
   /// lifecycle roots, and registration state without merging ownership.
@@ -63,6 +75,14 @@ private:
     jref_t restored_applet_ref;
     bool active = false;
     std::shared_ptr<Heap> owner_heap;
+    // RMI identities and SIO routing belong to the applet instance. Siblings
+    // share a firewall Context and Heap storage, not these registries.
+    // Keep headroom beyond Java Card's 16-object minimum for the applet's
+    // already-exported initial reference while it exercises the limit.
+    std::array<RemoteObjectEntry, 32> remote_objects{};
+    std::array<ShareableProxyEntry, 32> shareable_proxies{};
+    std::array<jref_t, 32> shareable_object_roots{};
+    uint16_t next_remote_object_id = 1;
   };
   std::vector<AppletInstanceState> applet_instances;
   std::size_t active_applet_index = 0;
@@ -71,24 +91,6 @@ private:
   /// Applet AID active immediately before the last context switch.
   std::array<uint8_t, 16> previous_context_aid{};
   uint8_t previous_context_aid_length = 0;
-  struct RemoteObjectEntry {
-    jref_t reference;
-    uint16_t object_id = 0xffff;
-    bool exported = false;
-    bool session_reference = false;
-  };
-  struct ShareableProxyEntry {
-    jref_t proxy_reference;
-    jref_t server_reference;
-    std::array<uint8_t, 16> server_aid{};
-    uint8_t server_aid_length = 0;
-  };
-  // Leave headroom beyond Java Card's 16-object minimum for an applet's
-  // already-exported initial reference while a service exercises the limit.
-  std::array<RemoteObjectEntry, 32> remote_objects{};
-  std::array<ShareableProxyEntry, 32> shareable_proxies{};
-  std::array<jref_t, 32> shareable_object_roots{};
-  uint16_t next_remote_object_id = 1;
   jref_t apdu_buffer_ref;
   std::shared_ptr<JC_Array> apdu_java_buffer;
   jref_t apdu_object_ref;

@@ -116,6 +116,8 @@ bool Context::activateAppletInstance(const japplet_ID_t owner,
 bool Context::forgetAppletInstance(const uint8_t *aid,
                                    const uint8_t aid_length) noexcept {
   if (aid == nullptr || aid_length < 5 || aid_length > 16) return false;
+  auto deleted_aid = std::array<uint8_t, 16>{};
+  std::copy_n(aid, aid_length, deleted_aid.begin());
   for (auto &instance : this->applet_instances) {
     if (instance.aid_length != aid_length ||
         !std::equal(aid, aid + aid_length, instance.aid.begin())) {
@@ -130,6 +132,20 @@ bool Context::forgetAppletInstance(const uint8_t *aid,
     instance.restored = false;
     instance.restored_applet_ref = jref_t{};
     instance.active = false;
+    instance.remote_objects = {};
+    instance.shareable_proxies = {};
+    instance.shareable_object_roots.fill(jref_t{});
+    instance.next_remote_object_id = 1;
+    for (auto &sibling : this->applet_instances) {
+      for (auto &proxy : sibling.shareable_proxies) {
+        if (proxy.server_aid_length == aid_length &&
+            std::equal(deleted_aid.begin(),
+                       deleted_aid.begin() + aid_length,
+                       proxy.server_aid.begin())) {
+          proxy = ShareableProxyEntry{};
+        }
+      }
+    }
     return true;
   }
   return false;
@@ -318,7 +334,7 @@ void Context::setAppletActive(const bool active) noexcept {
   if (active) {
     return;
   }
-  for (auto &entry : this->remote_objects) {
+  for (auto &entry : this->activeAppletInstance().remote_objects) {
     entry.session_reference = false;
     if (!entry.exported) {
       entry.reference = jref_t();
@@ -332,7 +348,7 @@ bool Context::isAppletActive() const noexcept {
 }
 
 uint16_t Context::exportRemoteObject(const jref_t reference) {
-  for (auto &entry : this->remote_objects) {
+  for (auto &entry : this->activeAppletInstance().remote_objects) {
     if (entry.object_id != 0xffff && entry.reference == reference) {
       entry.exported = true;
       return entry.object_id;
@@ -340,7 +356,7 @@ uint16_t Context::exportRemoteObject(const jref_t reference) {
   }
 
   RemoteObjectEntry *free_entry = nullptr;
-  for (auto &entry : this->remote_objects) {
+  for (auto &entry : this->activeAppletInstance().remote_objects) {
     if (entry.object_id == 0xffff) {
       free_entry = &entry;
       break;
@@ -351,12 +367,12 @@ uint16_t Context::exportRemoteObject(const jref_t reference) {
   }
 
   for (uint32_t attempt = 0; attempt < 0xffffu; ++attempt) {
-    const uint16_t candidate = this->next_remote_object_id++;
-    if (this->next_remote_object_id == 0xffff) {
-      this->next_remote_object_id = 1;
+    const uint16_t candidate = this->activeAppletInstance().next_remote_object_id++;
+    if (this->activeAppletInstance().next_remote_object_id == 0xffff) {
+      this->activeAppletInstance().next_remote_object_id = 1;
     }
     bool in_use = false;
-    for (const auto &entry : this->remote_objects) {
+    for (const auto &entry : this->activeAppletInstance().remote_objects) {
       if (entry.object_id == candidate) {
         in_use = true;
         break;
@@ -373,7 +389,7 @@ uint16_t Context::exportRemoteObject(const jref_t reference) {
 }
 
 void Context::unexportRemoteObject(const jref_t reference) noexcept {
-  for (auto &entry : this->remote_objects) {
+  for (auto &entry : this->activeAppletInstance().remote_objects) {
     if (entry.object_id != 0xffff && entry.reference == reference) {
       entry.exported = false;
       if (!this->activeAppletInstance().active || !entry.session_reference) {
@@ -387,7 +403,7 @@ void Context::unexportRemoteObject(const jref_t reference) noexcept {
 }
 
 bool Context::retainRemoteObjectForSession(const jref_t reference) noexcept {
-  for (auto &entry : this->remote_objects) {
+  for (auto &entry : this->activeAppletInstance().remote_objects) {
     if (entry.object_id != 0xffff && entry.reference == reference &&
         entry.exported) {
       entry.session_reference = true;
@@ -398,7 +414,7 @@ bool Context::retainRemoteObjectForSession(const jref_t reference) noexcept {
 }
 
 uint16_t Context::remoteObjectId(const jref_t reference) const noexcept {
-  for (const auto &entry : this->remote_objects) {
+  for (const auto &entry : this->activeAppletInstance().remote_objects) {
     if (entry.object_id != 0xffff && entry.reference == reference &&
         entry.exported) {
       return entry.object_id;
@@ -412,7 +428,7 @@ bool Context::remoteObject(const uint16_t object_id,
   if (object_id == 0xffff) {
     return false;
   }
-  for (const auto &entry : this->remote_objects) {
+  for (const auto &entry : this->activeAppletInstance().remote_objects) {
     if (entry.object_id == object_id &&
         (entry.exported ||
          (this->activeAppletInstance().active && entry.session_reference))) {
@@ -431,7 +447,7 @@ jref_t Context::findShareableProxy(const uint8_t *server_aid,
       server_reference.isArray()) {
     return jref_t{};
   }
-  for (const auto &entry : this->shareable_proxies) {
+  for (const auto &entry : this->activeAppletInstance().shareable_proxies) {
     if (entry.proxy_reference.isNullPointer() ||
         entry.server_aid_length != server_aid_length ||
         entry.server_reference != server_reference) {
@@ -447,7 +463,7 @@ jref_t Context::findShareableProxy(const uint8_t *server_aid,
 
 bool Context::isShareableProxy(const jref_t proxy_reference) const noexcept {
   if (proxy_reference.isNullPointer() || proxy_reference.isArray()) return false;
-  for (const auto &entry : this->shareable_proxies) {
+  for (const auto &entry : this->activeAppletInstance().shareable_proxies) {
     if (entry.proxy_reference == proxy_reference &&
         !entry.proxy_reference.isNullPointer()) {
       return true;
@@ -486,7 +502,7 @@ bool Context::registerShareableProxy(const jref_t proxy_reference,
     // The VM's production proxy creation path allocates this object in the
     // same heap before registering it.
   }
-  for (auto &entry : this->shareable_proxies) {
+  for (auto &entry : this->activeAppletInstance().shareable_proxies) {
     if (!entry.proxy_reference.isNullPointer()) {
       if (entry.proxy_reference == proxy_reference) {
         return entry.server_reference == server_reference &&
@@ -516,7 +532,7 @@ bool Context::getShareableProxy(const jref_t proxy_reference,
       server_aid == nullptr) {
     return false;
   }
-  for (const auto &entry : this->shareable_proxies) {
+  for (const auto &entry : this->activeAppletInstance().shareable_proxies) {
     if (entry.proxy_reference != proxy_reference ||
         entry.server_aid_length < 5 || entry.server_aid_length > 16 ||
         entry.server_reference.isNullPointer() ||
@@ -536,7 +552,7 @@ bool Context::retainShareableObjectRoot(const jref_t reference) noexcept {
       reference.isGlobalInstance()) {
     return false;
   }
-  for (auto &existing : this->shareable_object_roots) {
+  for (auto &existing : this->activeAppletInstance().shareable_object_roots) {
     if (existing == reference) return true;
     if (existing.isNullPointer()) {
       existing = reference;
@@ -802,20 +818,20 @@ void Context::appendRootReferences(
 void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
                                   void *visitor_context) const {
   this->getHeap().visitRootReferences(visitor, visitor_context);
-  for (const auto &entry : this->remote_objects) {
-    if (entry.object_id != 0xffff && !entry.reference.isNullPointer()) {
-      visitor(entry.reference, visitor_context);
-    }
-  }
-  for (const auto &entry : this->shareable_proxies) {
-    if (!entry.proxy_reference.isNullPointer()) {
-      visitor(entry.proxy_reference, visitor_context);
-    }
-  }
-  for (const auto &reference : this->shareable_object_roots) {
-    if (!reference.isNullPointer()) visitor(reference, visitor_context);
-  }
   for (const auto &instance : this->applet_instances) {
+    for (const auto &entry : instance.remote_objects) {
+      if (entry.object_id != 0xffff && !entry.reference.isNullPointer()) {
+        visitor(entry.reference, visitor_context);
+      }
+    }
+    for (const auto &entry : instance.shareable_proxies) {
+      if (!entry.proxy_reference.isNullPointer()) {
+        visitor(entry.proxy_reference, visitor_context);
+      }
+    }
+    for (const auto &reference : instance.shareable_object_roots) {
+      if (!reference.isNullPointer()) visitor(reference, visitor_context);
+    }
     const jref_t instance_roots[] = {
         instance.aid_object_ref, instance.registered_applet_ref,
         instance.restored_applet_ref};

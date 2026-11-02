@@ -1,3 +1,14 @@
+## 2026-11-02 Scope RMI and Shareable state to applet instances 19 minutes
+
+- Step/experiment: `ctx03-applet-local-rmi-state-20261102`
+- When: '2026-11-02 11:54 CET' - '2026-11-02 12:13 CET'
+- Change: Moved RMI object registrations, object-ID counters, Shareable proxy mappings, and service-object roots from package-wide `Context` fields into each `AppletInstanceState`. Root enumeration now visits retained sibling registries. Deleting an instance clears its state and invalidates sibling proxies targeting the deleted AID. Same-package SIO temporarily reactivates the service applet to retain its exported object, then restores the client before proxy allocation.
+- Validation: `./tools/test-rmi-registry` passed with new sibling registry isolation, deletion root cleanup, independent object-ID namespace, and proxy invalidation checks. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed `6/6`; elevated cross-AID SIO VPCD passed `15/15`; elevated `./tools/test-vpcd-multipackage --timeout 60` passed `47/47`. USB refresh still found two runtime CCID devices and no BOOTSEL; no physical flash/runtime test.
+- Result: Package siblings share heap/firewall context but keep distinct RMI/SIO registries. Same-CAP lookup, cross-AID SIO, restart, deletion, and transient lifecycle regressions remain green. ARM image ends at `0x100e7380`, using 947,072/1,048,576 firmware-window bytes and leaving 101,504 bytes. UF2 size 1,894,912 bytes, SHA-256 `af4101c0012773b366979ea85a6c05d0b31bf1e130326001b8e8cce4c321cba6`.
+- Decision: Continue CTX-03 by resolving owner-ID reuse and tombstoned owner-facade lifetime across repeated delete/reinstall. Physical validation remains pending until BOOTSEL enumerates.
+- Commit: recorded in the follow-up metadata commit.
+- Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T110633Z.log` SHA-256 `83044b9393582fd428fe372d65fd2f1ecff99fd898e401f9895390835e86f402`; `artifacts/logs/sio-cross-aid-vpcd-20261102T110722Z.log` SHA-256 `94efba3581458c6af6970f5cd2eb4c48a90f900b0f705bf7d6937ff03804c68c`; `artifacts/logs/host-vpcd-multipackage-apdu-20261102T110903Z.log` SHA-256 `f8b5d72ee7ab43a38e9d724b43958546f069cace6b00cc016239206d6c397571`; UF2 `build/arm/pico2_choupi.uf2`.
+
 ## 2026-11-02 Wire package-scoped contexts into SIO and lifecycle 24 minutes
 
 - Step/experiment: `ctx03-package-context-routing-20261102`

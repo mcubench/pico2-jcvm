@@ -376,10 +376,15 @@ Archive text is historical evidence, not current device state or priorities.
   and retained-sibling visibility. The cross-AID SIO VPCD regression passes
   15/15, including context restoration after exceptions and fail-closed stale
   references. The three-package install/restart/delete/transient suite passes
-  47/47. PC, ARM and RISC-V max_crypto builds pass. The ARM image ends at
-  `0x100e70ec`: 946,412 bytes in the 1 MiB firmware window, leaving 102,164
-  bytes. The UF2 is 1,893,376 bytes, SHA-256
-  `93b9f5770d349ba1b1d8a8f1ea8abea243e07b999d3317908589e0b9a0be6124`.
+  47/47. RMI exports, SIO proxy mappings, and server roots now live in each
+  applet-instance state; deletion removes that applet's entries and invalidates
+  sibling proxies targeting its AID. RMI registry tests prove sibling
+  isolation, per-applet ID reuse, DELETE root removal, and proxy invalidation.
+  The same-CAP suite remains 6/6, cross-AID suite 15/15, and multipackage suite
+  47/47. PC, ARM and RISC-V max_crypto builds pass. The latest ARM image ends at
+  `0x100e7380`: 947,072 bytes in the 1 MiB firmware window, leaving 101,504
+  bytes. The UF2 is 1,894,912 bytes, SHA-256
+  `af4101c0012773b366979ea85a6c05d0b31bf1e130326001b8e8cce4c321cba6`.
   Physical flash/runtime validation remains open: the latest approved host
   inventory exposed two runtime CCID readers and no BOOTSEL device despite the
   user report of three boards in BOOTSEL. Further acceptance must cover same-CAP

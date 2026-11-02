@@ -195,6 +195,61 @@ void verify_context_retains_sibling_instance_state() {
   assert(contains(roots, second_root));
 }
 
+void verify_sibling_rmi_state_isolation_and_delete() {
+  jcvm::Context package_context(7, 4);
+  constexpr uint8_t first_aid[] = {0xa0, 0x00, 0x00, 0x04, 0x11};
+  constexpr uint8_t second_aid[] = {0xa0, 0x00, 0x00, 0x04, 0x12};
+  assert(package_context.setAppletAID(first_aid, sizeof(first_aid)));
+  const auto first_server = make_reference(40);
+  const auto first_proxy = make_reference(41);
+  const uint16_t first_object_id =
+      package_context.exportRemoteObject(first_server);
+  assert(first_object_id != 0xffff);
+  assert(package_context.registerShareableProxy(
+      first_proxy, second_aid, sizeof(second_aid), first_server));
+  assert(package_context.retainShareableObjectRoot(first_server));
+
+  assert(package_context.activateAppletInstance(8, second_aid,
+                                                 sizeof(second_aid)));
+  const auto second_client_proxy = make_reference(43);
+  assert(package_context.registerShareableProxy(
+      second_client_proxy, first_aid, sizeof(first_aid), first_server));
+  assert(package_context.remoteObjectId(first_server) == 0xffff);
+  jcvm::jref_t resolved;
+  assert(!package_context.remoteObject(first_object_id, resolved));
+  assert(!package_context.isShareableProxy(first_proxy));
+  uint8_t server_aid[16]{};
+  uint8_t server_aid_length = 0;
+  jcvm::jref_t server_reference;
+  assert(!package_context.getShareableProxy(first_proxy, server_aid,
+                                            server_aid_length,
+                                            server_reference));
+
+  const auto second_server = make_reference(42);
+  const uint16_t second_object_id =
+      package_context.exportRemoteObject(second_server);
+  assert(second_object_id == first_object_id);
+  assert(package_context.activateAppletInstance(7, first_aid,
+                                                 sizeof(first_aid)));
+  assert(package_context.remoteObjectId(first_server) == first_object_id);
+  assert(package_context.isShareableProxy(first_proxy));
+  VisitedReferences roots;
+  package_context.visitRootReferences(record_reference, &roots);
+  assert(contains(roots, first_server));
+  assert(contains(roots, first_proxy));
+
+  assert(package_context.forgetAppletInstance(first_aid, sizeof(first_aid)));
+  assert(!package_context.hasAppletInstance(7, first_aid, sizeof(first_aid)));
+  assert(package_context.activateAppletInstance(8, second_aid,
+                                                 sizeof(second_aid)));
+  assert(package_context.remoteObjectId(second_server) == second_object_id);
+  assert(!package_context.isShareableProxy(second_client_proxy));
+  roots.count = 0;
+  package_context.visitRootReferences(record_reference, &roots);
+  assert(!contains(roots, first_server));
+  assert(!contains(roots, first_proxy));
+}
+
 void verify_heap_owner_facades_share_package_roots() {
   jcvm::Heap writer_heap(7);
   jcvm::Heap reader_heap(8, writer_heap);
@@ -590,6 +645,7 @@ int main() {
   verify_retained_applet_context_lookup();
   verify_package_context_lookup();
   verify_context_retains_sibling_instance_state();
+  verify_sibling_rmi_state_isolation_and_delete();
   verify_heap_owner_facades_share_package_roots();
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
@@ -679,6 +735,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 package_heap_arrays=1 package_heap_roots=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 package_heap_arrays=1 package_heap_roots=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
   return 0;
 }

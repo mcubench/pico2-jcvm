@@ -1,5 +1,25 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## RMI and Shareable state must be per applet inside package Context — 2026-11-02
+
+- **Observed risk:** After moving sibling applets into one package Context,
+  remote-object IDs, Shareable proxy mappings, and exported server-object roots
+  were still Context-wide. One sibling could resolve another's registry state;
+  deletion could leave unrelated roots or stale proxy mappings. Same-package
+  SIO also restored the client before rooting the service object, which would
+  root it under the wrong applet once roots became per-instance.
+- **Viable fix:** Store these registries in `AppletInstanceState`, enumerate
+  roots for every retained sibling, clear only the deleted instance's entries,
+  invalidate remaining proxies targeting the deleted server AID, and briefly
+  reactivate the server instance when retaining a same-package service object.
+- **Validation:** `tools/test-rmi-registry` passes new sibling-isolation,
+  deletion-root, and proxy-invalidation assertions. PC/ARM/RISC-V max_crypto
+  builds pass. Same-CAP VPCD passes 6/6; cross-AID SIO passes 15/15; the
+  multipackage install/restart/delete/transient suite passes 47/47.
+- **Limit:** No hardware test because approved enumeration sees two runtime
+  CCID readers and no BOOTSEL interface. Owner-facade tombstone growth and
+  repeated delete/reinstall identity reuse remain open lifecycle risks.
+
 ## Same-CAP sibling SIO failed with SecurityException — fixed in VPCD — 2026-11-02
 
 - **Cause:** Firmware retained a separate `Context` per applet AID. A sibling

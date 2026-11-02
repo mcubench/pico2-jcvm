@@ -1307,14 +1307,23 @@ jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
   }
   const auto server_object =
       server_context->getHeap().getInstance(server_reference);
+  const uint8_t server_owner =
+      static_cast<uint8_t>(server_context->getAppletID());
   restore_client_state();
   const jcvm::jref_t existing = client_context.findShareableProxy(
       server_aid, server_aid_length, server_reference);
   if (!existing.isNullPointer()) return existing;
 
-  if (!server_context->retainShareableObjectRoot(server_reference)) {
+  if (server_context == &client_context &&
+      !server_context->activateAppletInstance(server_owner, server_aid,
+                                               server_aid_length)) {
     throw jcvm::Exceptions::SecurityException;
   }
+  if (!server_context->retainShareableObjectRoot(server_reference)) {
+    restore_client_state();
+    throw jcvm::Exceptions::SecurityException;
+  }
+  restore_client_state();
   const jcvm::jref_t proxy = client_context.getHeap().addInstance(
       server_object->getPackageID(), server_object->getClassIndex());
   if (!client_context.registerShareableProxy(
