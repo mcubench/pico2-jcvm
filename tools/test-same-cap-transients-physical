@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_host_usb_access
+[[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients-physical 'exact reader name'"
+require_command timeout
+
+reader="$1"
+gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
+cap="${repo_root}/build/same-cap-transient-fixture/cap/samecaptransient/javacard/samecaptransient.cap"
+probe_source="${repo_root}/tools/tests/same_cap_transient_physical_probe/SameCapTransientPhysicalProbe.java"
+probe_classes="${repo_root}/build/same-cap-transient-fixture/physical-probe-classes"
+package_aid="A000000151000006"
+writer_aid="A00000015100000601"
+reader_aid="A00000015100000602"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+log="${repo_root}/artifacts/logs/same-cap-transient-physical-${timestamp}.log"
+list_log="${repo_root}/build/same-cap-transient-fixture/physical-list-${timestamp}.log"
+delete_log="${repo_root}/build/same-cap-transient-fixture/physical-delete-${timestamp}.log"
+owned=0
+
+for input in "${gp_jar}" "${probe_source}"; do
+  [[ -s "${input}" ]] || die "required physical-test input is missing: ${input}"
+done
+"${repo_root}/tools/build-same-cap-transient-fixture"
+"${repo_root}/tools/env" javac -d "${probe_classes}" "${probe_source}"
+mkdir -p "${repo_root}/artifacts/logs"
+
+gp() {
+  timeout --signal=TERM --kill-after=5s 90s "${repo_root}/tools/env" java \
+    -jar "${gp_jar}" "--reader=${reader}" "$@"
+}
+
+cleanup() {
+  local status=$?
+  local cleanup_status=0
+  trap - EXIT
+  set +e
+  if (( owned == 0 )); then
+    printf 'SAME_CAP_TRANSIENT:CLEANUP skipped=no_fixture_loaded\n' | tee -a "${log}"
+    exit "${status}"
+  fi
+  if gp --list >"${list_log}" 2>&1; then
+    for aid in "${reader_aid}" "${writer_aid}"; do
+      if grep -Fq "APP: ${aid} " "${list_log}"; then
+        gp --delete "${aid}" >>"${delete_log}" 2>&1 || cleanup_status=1
+      fi
+      gp --list >"${list_log}" 2>&1 || cleanup_status=1
+    done
+    if grep -Fq "PKG: ${package_aid} " "${list_log}"; then
+      gp --delete "${package_aid}" >>"${delete_log}" 2>&1 || cleanup_status=1
+    fi
+    gp --list >"${list_log}" 2>&1 || cleanup_status=1
+    if grep -Fq "APP: ${reader_aid} " "${list_log}" || \
+       grep -Fq "APP: ${writer_aid} " "${list_log}" || \
+       grep -Fq "PKG: ${package_aid} " "${list_log}"; then
+      cleanup_status=1
+    fi
+  else
+    cleanup_status=1
+  fi
+  if (( cleanup_status == 0 )); then
+    printf 'SAME_CAP_TRANSIENT:CLEANUP result=PASS\n' | tee -a "${log}"
+  else
+    printf 'SAME_CAP_TRANSIENT:CLEANUP result=FAIL list=%s delete=%s\n' \
+      "${list_log}" "${delete_log}" | tee -a "${log}"
+    status=1
+  fi
+  printf 'SAME_CAP_TRANSIENT:LOG %s\n' "${log#${repo_root}/}"
+  exit "${status}"
+}
+trap cleanup EXIT
+exec > >(tee -a "${log}") 2>&1
+
+printf 'SAME_CAP_TRANSIENT:START reader=%s package=%s\n' "${reader}" "${package_aid}"
+PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
+gp --list >"${list_log}" 2>&1 || die "initial GPPro list failed; see ${list_log}"
+for aid in "${package_aid}" "${writer_aid}" "${reader_aid}"; do
+  if grep -Fq "PKG: ${aid} " "${list_log}" || \
+     grep -Fq "APP: ${aid} " "${list_log}"; then
+    die "fixture AID ${aid} is already present; refusing to replace it"
+  fi
+done
+
+owned=1
+gp --load "${cap}"
+printf 'SAME_CAP_TRANSIENT:LOAD package=%s result=PASS\n' "${package_aid}"
+gp --create "${writer_aid}" --applet "${writer_aid}" --package "${package_aid}"
+gp --create "${reader_aid}" --applet "${reader_aid}" --package "${package_aid}"
+printf 'SAME_CAP_TRANSIENT:CREATE applets=2 result=PASS\n'
+gp --list >"${list_log}" 2>&1 || die "GPPro list after CREATE failed; see ${list_log}"
+for aid in "${writer_aid}" "${reader_aid}"; do
+  grep -Fq "${aid}" "${list_log}" || die "installed applet is missing: ${aid}"
+done
+PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" java \
+  -cp "${probe_classes}" SameCapTransientPhysicalProbe "${reader}"
+printf 'SAME_CAP_TRANSIENT:PASS log=%s\n' "${log#${repo_root}/}"

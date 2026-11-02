@@ -442,15 +442,19 @@ Archive text is historical evidence, not current device state or priorities.
   package static values (`000012350157123456799000`). Instance DELETE/recreate
   is physically covered. A third run deleted both applets and the whole
   package, LOADed the CAP again, CREATEd both applets, and confirmed initial
-  static values and sibling SIO identity after package reinstall. Reset/
-  transient behavior, GC and cold-power persistence remain open. The first
-  probe omitted the explicit reader reselect used by the VPCD test; after
-  aligning the APDU sequence, physical results matched VPCD.
+  static values and sibling SIO identity after package reinstall. A separate
+  physical transient fixture passed on this board: switching to the sibling
+  cleared `CLEAR_ON_DESELECT` (`00`) and retained `CLEAR_ON_RESET` (`6B`), then
+  PC/SC reset cleared both (`0000`). The VPCD transient suite passes 5/5. GC
+  and cold-power persistence remain open. The first probe omitted the explicit
+  reader reselect used by the VPCD test; after aligning the APDU sequence,
+  physical results matched VPCD.
   Two repeated instance DELETE/reinstall cycles keep array-owning owner 1
   reserved while reclaiming object-free owner 3; full package DELETE/reinstall
   releases and reuses owner 1. Same-CAP transient tests show sibling selection
   clears `CLEAR_ON_DESELECT` while preserving `CLEAR_ON_RESET`, and card reset
-  clears both. The owner lifecycle suite passes 9/9 and transient suite 5/5.
+  clears both; the same behavior has now passed on physical hardware. The owner
+  lifecycle suite passes 9/9 and transient suite 5/5.
   A same-CAP restart VPCD test passes 7/7: both applet registrations restore,
   sibling static scalar/array state survives emulator restart, and SIO resolves
   the same restored array identity. The multi-package restart suite passes

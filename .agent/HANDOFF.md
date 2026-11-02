@@ -1,3 +1,18 @@
+## CTX-03 physical same-CAP transient reset — 2026-11-02 14:52 UTC
+
+Added `tools/test-same-cap-transients-physical` and a host SmartcardIO probe
+for the existing unchanged test CAP. The physical run on Pico 2
+`8E464F4E2BBC0A19` passed: writer set both arrays (`5A6B9000`), selecting the
+sibling cleared `CLEAR_ON_DESELECT` and retained `CLEAR_ON_RESET`
+(`006B9000`), and PC/SC reset cleared both (`00009000`). Cleanup passed. The
+VPCD suite passed `TEST:SUMMARY pass=5 fail=0`. Physical log SHA-256:
+`904aab987b954ef4846e7ba480d90704e8f79e567afc2c3a40c18aa53d4976b7`; VPCD
+log SHA-256:
+`ec92680ca2d78aa928e39d03b2787160867481eabf7f22cb72eef059efff662d`.
+Harness and record are not yet committed. Remaining same-CAP physical acceptance
+is GC and cold-power persistence; the TODO also tracks global-reference
+ownership and other CTX-01 gaps.
+
 # CTX-03 physical same-CAP sibling selection/static state — 2026-11-02 14:34 UTC
 
 The guarded physical harness installed the same test CAP once with GPPro, then
@@ -12,8 +27,7 @@ a firmware failure. Log SHA-256:
 `0a8551584c163700174dd6fe767f09d146db1b30726df8e98f3027d207fca5fe`.
 VPCD same-CAP regression rerun passed `TEST:SUMMARY pass=6 fail=0`.
 
-Remaining CTX-03 physical acceptance: instance/package DELETE and reinstall,
-reset/transient behavior, GC and persistence. Latest ARM image remains
+Remaining CTX-03 physical acceptance: GC and persistence. Latest ARM image remains
 948,368 bytes with 100,208 bytes left in the 1 MiB firmware window. Preserve
 unrelated dirty files. Harness and validation record are committed as
 `17b9e4a`; the progress SHA reference is recorded in the follow-up metadata
@@ -29,7 +43,7 @@ reader returned `000012350157123456799000`, confirming package-level static
 state stayed visible across instance removal and recreation. Final cleanup
 passed. Log SHA-256:
 `b1ba3eb64e4144fbd7e974bc1304a5168b584c2af23f8d90bdfb90d52480d7a0`.
-The test script/probe changes are not committed yet. Remaining physical
+The test script/probe changes were committed as `28a18f8`. Remaining physical
 same-CAP gaps: reset/transient, GC and cold-power persistence.
 
 ## Same-CAP package DELETE/LOAD/INSTALL — 2026-11-02 14:46 UTC
@@ -39,8 +53,8 @@ the package is absent, LOAD the CAP again, and CREATE both siblings. On Pico 2
 `8E464F4E2BBC0A19`, sibling SIO identity again returned `019000`, and initial
 package static state returned `000012340056123456789000`. Cleanup passed. Log
 SHA-256: `76a13511ff8b972d0b46e52d485be7c12b02d6878a5b2597a88aa1ca92957e7b`.
-This harness change is not committed yet. Remaining physical same-CAP gaps:
-reset/transient, GC and cold-power persistence.
+This harness change was committed as `36a519b`. Remaining physical same-CAP
+gaps: reset/transient, GC and cold-power persistence.
 Harness and progress record are committed as `36a519b`; the progress SHA
 reference is in the metadata commit.
 Harness and progress record are committed as `28a18f8`; the progress SHA
