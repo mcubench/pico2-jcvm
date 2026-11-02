@@ -20154,5 +20154,5 @@
 - Validation: The wrapper required the authorized route; `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` passed `TEST:SUMMARY pass=47 fail=0`. No physical device operation occurred.
 - Result: Three packages and 21 applet instances passed restart recovery, AID lookup identity, GET STATUS paging, per-instance/cascade DELETE, and transient lifecycle. The suite does not establish static, heap, or firewall-context sharing between sibling instances in one CAP.
 - Decision: Keep CTX-03 open; use this suite as a regression baseline while adding same-CAP behavior coverage.
-- Commit: `pending`
+- Commit: `73f9667`
 - Artifacts/logs: APDU `artifacts/logs/host-vpcd-multipackage-apdu-20261102T085227Z.log` SHA-256 `1edcb100128fafc0e8b3f977dc85525da12ae69d55d6950ed65448c2aa6dfe18`; restart and sidecar log hashes in `.agent/QKB.md`.
