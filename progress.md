@@ -20143,5 +20143,5 @@
 - Validation: `cmp build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` passed. Artifact size is 1,887,232 bytes, SHA-256 `76de3ba3f02bc5ac26d293f469071766dc4a2b36e96edebe248e865acd4ec828`; linker end is `0x100e64cc`, below the `0x10100000` firmware limit. ARM/RISC-V builds and boundary tests are recorded in the preceding step. No hardware test; VM inventory had no BOOTSEL device.
 - Result: The named external-test UF2 now fits the firmware partition. It has not been flashed or runtime/performance-tested; the current shared worktree includes uncommitted source edits from another session.
 - Decision: Provide as an external-test candidate with exact source and hardware limitations disclosed. Do not describe it as hardware-validated.
-- Commit: `pending`
+- Commit: `ded91a7`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, `artifacts/firmware/README-max_crypto.txt`; no hardware log.
