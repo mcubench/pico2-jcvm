@@ -140,6 +140,9 @@ public:
                               uint8_t aid_length) noexcept;
   bool hasAppletInstance(const japplet_ID_t owner, const uint8_t *aid,
                          uint8_t aid_length) const noexcept;
+  /// Forget one deleted applet while retaining its owner facade for heap objects.
+  bool forgetAppletInstance(const uint8_t *aid,
+                            uint8_t aid_length) noexcept;
   /// Get the context ID.
   jpackage_ID_t getCurrentPackageID() noexcept;
   /// Get applet ID

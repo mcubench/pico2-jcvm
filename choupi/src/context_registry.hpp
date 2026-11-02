@@ -12,6 +12,22 @@
 namespace jcvm {
 
 template <std::size_t Count>
+Context *findPackageContext(
+    Context *selected,
+    std::array<std::unique_ptr<Context>, Count> &inactive,
+    const jpackage_ID_t package_id) noexcept {
+  if (selected != nullptr && selected->getAppletPackageID() == package_id) {
+    return selected;
+  }
+  for (auto &context : inactive) {
+    if (context && context->getAppletPackageID() == package_id) {
+      return context.get();
+    }
+  }
+  return nullptr;
+}
+
+template <std::size_t Count>
 Context *findAppletContext(
     Context *selected,
     std::array<std::unique_ptr<Context>, Count> &inactive,

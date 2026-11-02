@@ -966,6 +966,24 @@ void Bytecodes::bc_invokeinterface() {
       TRACE_JCVM_DEBUG("SIO_INVOKE proxy metadata missing");
       throw Exceptions::SecurityException;
     }
+    uint8_t client_aid[16]{};
+    uint8_t client_aid_length = 0;
+    if (!context.copyAppletAID(client_aid, client_aid_length)) {
+      throw Exceptions::SecurityException;
+    }
+    const uint8_t client_owner = static_cast<uint8_t>(context.getAppletID());
+    bool client_state_restored = false;
+    const auto restore_client_state = [&]() {
+      if (!client_state_restored) {
+        client_state_restored = true;
+        (void)context.activateAppletInstance(client_owner, client_aid,
+                                             client_aid_length);
+      }
+    };
+    struct ClientStateRestore {
+      decltype(restore_client_state) &restore;
+      ~ClientStateRestore() { this->restore(); }
+    } client_state_restore{restore_client_state};
     TRACE_JCVM_DEBUG("SIO_INVOKE target AID len=%u %02X%02X%02X%02X%02X%02X%02X%02X%02X ref=%04X",
                      static_cast<unsigned>(server_aid_length), server_aid[0],
                      server_aid[1], server_aid[2], server_aid[3], server_aid[4],

@@ -128,6 +128,18 @@ void verify_retained_applet_context_lookup() {
          nullptr);
 }
 
+void verify_package_context_lookup() {
+  jcvm::Context selected(1, 10);
+  std::array<std::unique_ptr<jcvm::Context>, 3> inactive{};
+  inactive[0] = std::make_unique<jcvm::Context>(2, 20);
+  inactive[1] = std::make_unique<jcvm::Context>(3, 10);
+  inactive[2] = std::make_unique<jcvm::Context>(4, 30);
+  assert(jcvm::findPackageContext(&selected, inactive, 10) == &selected);
+  assert(jcvm::findPackageContext(&selected, inactive, 20) == inactive[0].get());
+  assert(jcvm::findPackageContext(&selected, inactive, 30) == inactive[2].get());
+  assert(jcvm::findPackageContext(&selected, inactive, 99) == nullptr);
+}
+
 void verify_context_retains_sibling_instance_state() {
   jcvm::Context package_context(7, 4);
   constexpr uint8_t first_aid[] = {0xa0, 0x00, 0x00, 0x04, 0x01};
@@ -576,6 +588,7 @@ int main() {
   verify_sensitive_result_cross_context(context, second_context);
   verify_previous_context_aid();
   verify_retained_applet_context_lookup();
+  verify_package_context_lookup();
   verify_context_retains_sibling_instance_state();
   verify_heap_owner_facades_share_package_roots();
   verify_shareable_proxy_registry();
@@ -666,6 +679,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 sibling_instance_state=1 package_heap_arrays=1 package_heap_roots=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 package_heap_arrays=1 package_heap_roots=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
   return 0;
 }

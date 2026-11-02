@@ -1,5 +1,26 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Same-CAP sibling SIO failed with SecurityException — fixed in VPCD — 2026-11-02
+
+- **Cause:** Firmware retained a separate `Context` per applet AID. A sibling
+  service call therefore crossed heaps, and applet-local references were
+  correctly rejected as unsafe.
+- **Viable fix:** Find/retain the package `Context` by CAP package ID and switch
+  its active `AppletInstanceState` by owner plus full AID. Owner-specific Heap
+  facades share package handles/roots while each object keeps its allocating
+  owner facade. Save and restore the caller sibling around SIO lookup and
+  invocation, including exceptional returns. Instance DELETE clears only its
+  AID state and recollects from roots of remaining siblings.
+- **Validation:** `tools/test-same-cap-siblings` passes 6/6, including shared
+  array delivery to the sibling service and visibility of updates. Cross-AID
+  SIO passes 15/15, including state restoration after server exceptions and
+  fail-closed stale references. VPCD multipackage lifecycle passes 47/47.
+  PC/ARM/RISC-V max_crypto builds and the RMI registry test pass.
+- **Limit:** No hardware validation: approved USB refresh saw two runtime CCID
+  devices and no BOOTSEL device although the user reported three in BOOTSEL.
+  Tombstoned owner facades are retained for object lifetime safety; repeated
+  deletion/reinstallation needs a bounded-growth design and regression.
+
 ## Package heap storage can share handles without merging applet owners — 2026-11-02
 
 - **Change:** `Heap` facades now retain distinct owner IDs while sharing a

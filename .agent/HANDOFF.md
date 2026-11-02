@@ -1,3 +1,28 @@
+## CTX-03 package context routing and same-CAP SIO — 2026-11-02 10:54 UTC
+
+Firmware now looks up one `Context` per package/CAP ID and activates the
+requested per-AID `AppletInstanceState`. SIO lookup/invocation restores the
+caller sibling after normal return and exceptions. Instance deletion forgets
+only that AID and traces remaining package roots; package deletion drops the
+whole package context. `context_registry.hpp` retains package-level lookup.
+
+Validation passed: RMI registry test; PC, ARM, and RISC-V max_crypto builds;
+same-CAP sibling VPCD `pass=6 fail=0`; cross-AID SIO VPCD `pass=15 fail=0`; and
+VPCD multi-package install/restart/delete/transient regression `pass=47 fail=0`.
+Latest ARM image ends at `0x100e70ec`: 946,412/1,048,576 bytes in firmware's
+window, with 102,164 bytes remaining. UF2 is 1,893,376 bytes, SHA-256
+`93b9f5770d349ba1b1d8a8f1ea8abea243e07b999d3317908589e0b9a0be6124`.
+
+Physical test remains pending. Although the user reports three boards in
+BOOTSEL, the approved host refresh found only two running CCID devices at USB
+nodes `/dev/bus/usb/001/003` and `/dev/bus/usb/001/004`, with no BOOTSEL device.
+Do not flash the new image until a BOOTSEL board is actually enumerated. Next:
+continue review of tombstoned owner-facade growth and per-sibling reset,
+transient, deletion/reinstall semantics, then flash and test when host access
+shows a board. Preserve unrelated dirty worktree changes; the user-owned
+`Heap::releaseGlobalAIDObject` removal in `choupi/src/heap.cpp/.hpp` is not part
+of this change and must remain unstaged.
+
 ## CTX-03 shared heap owner facades — 2026-11-02 10:30 UTC
 
 Per-owner Heap facades now share array/instance handle tables and package

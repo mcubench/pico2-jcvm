@@ -113,6 +113,28 @@ bool Context::activateAppletInstance(const japplet_ID_t owner,
   }
 }
 
+bool Context::forgetAppletInstance(const uint8_t *aid,
+                                   const uint8_t aid_length) noexcept {
+  if (aid == nullptr || aid_length < 5 || aid_length > 16) return false;
+  for (auto &instance : this->applet_instances) {
+    if (instance.aid_length != aid_length ||
+        !std::equal(aid, aid + aid_length, instance.aid.begin())) {
+      continue;
+    }
+    instance.aid.fill(0);
+    instance.aid_length = 0;
+    instance.aid_object_ref = jref_t{};
+    instance.registered = false;
+    instance.installation_active = false;
+    instance.registered_applet_ref = jref_t{};
+    instance.restored = false;
+    instance.restored_applet_ref = jref_t{};
+    instance.active = false;
+    return true;
+  }
+  return false;
+}
+
 
 /**
  * Default constructor

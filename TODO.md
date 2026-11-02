@@ -365,39 +365,28 @@ Archive text is historical evidence, not current device state or priorities.
 ### CTX-03
 
 - [ ] **Use one firewall context per CAP file while retaining per-applet ownership.**
-  Status: current runtime allocates a `Context` and `Heap` per installed applet
-  instance. `findAppletContext()` matches both the applet owner ID and the full
-  instance AID, and `choupi_vm_find_or_restore_applet_context()` creates a new
-  `Context` for another instance. Java Card RE 3.0.5 §6.1.2 instead assigns one
-  context to each CAP file; applets from the same CAP share that context, while
-  each object still has an applet-instance owner (§6.1.3). The current model
-  therefore conflates firewall context with object owner and applet instance.
-  `Context` now retains sibling AID/lifecycle/restore-root state. Per-owner
-  `Heap` facades share stable array, instance, static-root and runtime-root
-  storage; objects retain the facade of their allocating owner. A host regression
-  verifies that sibling applet states resolve one array handle to the same array
-  while owner IDs remain distinct. Firmware lookup still makes one `Context` per
-  AID, so same-CAP objects are not yet shared by the real call path. Remaining:
-  share one Context by package/CAP in firmware lookup, then update SIO routing
-  and preserve per-instance persistence/deletion semantics. Define
-  deletion, transient-array, selection, and previous-context AID behavior for
-  sibling instances before changing context lifetime. The unchanged upstream
-  `AlgTestApiMulti_305.cap` was loaded and two applet instances installed on
-  both visible physical tokens; physical Le-limited GET STATUS passed and the
-  temporary package was cleaned. A new test-only same-CAP fixture installs two
-  applets and passes VPCD checks for shared static short/byte-array values after
-  AID switches, including a repeated switch with both contexts retained. This
-  confirms current static value visibility but does not prove shared object
-  identity, heap identity, or firewall context. The original multipackage VPCD
-  regression passes 47/47 across three packages and 21 installed instances,
-  including restart, lookupAID, paging, DELETE, and transient lifecycle.
-  Remaining: implement and test a package-scoped firewall context while keeping
-  per-object owner identity and per-instance lifecycle. Extend the fixture to
-  test shared object identity and cross-sibling object references. CAP
-  StaticField primitive initial values are now read lazily from the retained CAP
-  image whenever no persistent field record exists. This covers default-zero
-  bytes and packed non-default byte, short, and int values without relying on
-  the optional Descriptor component.
+  Status: package-level Context lookup is now wired by package ID. One Context
+  retains sibling AID/lifecycle/root records; owner-specific Heap facades share
+  handle tables and roots while Java objects preserve their allocating owner.
+  SELECT and SIO lookup activate the target sibling state, and SIO restores the
+  client state on return and exceptions. Instance deletion forgets only the
+  deleted AID and traces the shared heap; package deletion drops the package
+  Context. The same-CAP VPCD fixture now passes 6/6, including a sibling SIO
+  call receiving the shared static array, default/non-default statics, writes,
+  and retained-sibling visibility. The cross-AID SIO VPCD regression passes
+  15/15, including context restoration after exceptions and fail-closed stale
+  references. The three-package install/restart/delete/transient suite passes
+  47/47. PC, ARM and RISC-V max_crypto builds pass. The ARM image ends at
+  `0x100e70ec`: 946,412 bytes in the 1 MiB firmware window, leaving 102,164
+  bytes. The UF2 is 1,893,376 bytes, SHA-256
+  `93b9f5770d349ba1b1d8a8f1ea8abea243e07b999d3317908589e0b9a0be6124`.
+  Physical flash/runtime validation remains open: the latest approved host
+  inventory exposed two runtime CCID readers and no BOOTSEL device despite the
+  user report of three boards in BOOTSEL. Further acceptance must cover same-CAP
+  selection, instance/package deletion and reinstall, reset/transient behavior,
+  and persistence on hardware. Tombstoned owner facades currently remain held
+  for heap-object lifetime safety; bounded repeated delete/reinstall behavior
+  needs explicit review.
   Acceptance: an unchanged or test-only multi-applet CAP proves sibling
   instances share static/heap context and can access objects as specified,
   while separate CAPs remain isolated; AID reporting and per-instance DELETE

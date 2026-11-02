@@ -104,31 +104,6 @@ bool context_matches_applet(const jcvm::Context &context,
          std::memcmp(context_aid, aid, aid_length) == 0;
 }
 
-std::size_t find_inactive_applet_context(const uint8_t owner,
-                                         const uint8_t *aid,
-                                         const uint8_t aid_length) noexcept {
-  for (std::size_t index = 0; index < inactive_applet_contexts.size();
-       ++index) {
-    if (inactive_applet_contexts[index] &&
-        context_matches_applet(*inactive_applet_contexts[index], owner, aid,
-                               aid_length)) {
-      return index;
-    }
-  }
-  return inactive_applet_contexts.size();
-}
-
-bool cache_selected_applet_context() noexcept {
-  if (!selected_applet_context) return true;
-  for (auto &context : inactive_applet_contexts) {
-    if (!context) {
-      context = std::move(selected_applet_context);
-      return true;
-    }
-  }
-  return false;
-}
-
 bool is_select_for_applet(const uint8_t *command, const uint16_t length,
                           const jcvm::Context &context) noexcept {
   uint8_t aid[16]{};
@@ -913,57 +888,93 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
   selected_applet_select_process_pending = false;
   selected_applet_reselection_process_pending = false;
   try {
-    if (selected_applet_context &&
-        selected_applet_context->hasRestoredAppletInstance()) {
-      uint8_t retained_aid[16]{};
-      uint8_t retained_aid_length = 0;
-      const jcvm::jref_t applet_ref =
-          selected_applet_context->getRestoredAppletRef();
-      const auto applet =
-          selected_applet_context->getHeap().getInstance(applet_ref);
-      if (applet->getPackageID() == package_id &&
-          applet->getClassIndex() == class_index &&
-          selected_applet_context->copyAppletAID(retained_aid,
-                                                 retained_aid_length) &&
-          retained_aid_length == aid_length &&
-          std::memcmp(retained_aid, aid, aid_length) == 0) {
-        selected_applet_is_active = false;
-        return 0;
-      }
-    }
-
     uint8_t applet_owner = 0;
     if (!cap_store_applet_owner(aid, aid_length, applet_owner)) return 1;
 
-    // SELECT may be repeated for the active AID (including reselect after
-    // deselect). Keep its current heap and transient arrays in that case.
-    if (selected_applet_context &&
-        context_matches_applet(*selected_applet_context, applet_owner, aid,
-                               aid_length)) {
+    const auto restore_instance = [&](jcvm::Context &context) -> uint8_t {
+      if (!context.activateAppletInstance(applet_owner, aid, aid_length)) {
+        return 2;
+      }
+      if (!context.hasRestoredAppletInstance() &&
+          (!context.restoreAppletInstance(
+               static_cast<jcvm::jpackage_ID_t>(package_id),
+               static_cast<jcvm::jclass_index_t>(class_index)) ||
+           !context.hasRestoredAppletInstance())) {
+        return 1;
+      }
+      try {
+        const auto applet = context.getHeap().getInstance(
+            context.getRestoredAppletRef());
+        if (applet->getPackageID() != package_id ||
+            applet->getClassIndex() != class_index) {
+          return 1;
+        }
+      } catch (...) {
+        return 1;
+      }
+      return 0;
+    };
+
+    jcvm::Context *package_context = jcvm::findPackageContext(
+        selected_applet_context.get(), inactive_applet_contexts,
+        static_cast<jcvm::jpackage_ID_t>(package_id));
+    if (package_context != nullptr) {
+      if (package_context == selected_applet_context.get() &&
+          context_matches_applet(*package_context, applet_owner, aid,
+                                 aid_length) &&
+          package_context->hasRestoredAppletInstance()) {
+        selected_applet_is_active = false;
+        return 0;
+      }
+
+      std::size_t inactive_index = inactive_applet_contexts.size();
+      if (package_context != selected_applet_context.get()) {
+        const auto found = std::find_if(
+            inactive_applet_contexts.begin(), inactive_applet_contexts.end(),
+            [&](const auto &context) { return context.get() == package_context; });
+        if (found == inactive_applet_contexts.end()) return 1;
+        inactive_index = static_cast<std::size_t>(
+            std::distance(inactive_applet_contexts.begin(), found));
+        if (selected_applet_context) {
+          selected_applet_context->setAppletActive(false);
+        }
+        std::swap(selected_applet_context,
+                  inactive_applet_contexts[inactive_index]);
+      } else {
+        uint8_t previous_aid[16]{};
+        uint8_t previous_aid_length = 0;
+        const uint8_t previous_owner =
+            static_cast<uint8_t>(package_context->getAppletID());
+        const bool have_previous = package_context->copyAppletAID(
+            previous_aid, previous_aid_length);
+        package_context->setAppletActive(false);
+        const uint8_t status = restore_instance(*package_context);
+        if (status != 0) {
+          if (have_previous) {
+            (void)package_context->activateAppletInstance(
+                previous_owner, previous_aid, previous_aid_length);
+          }
+          return status;
+        }
+        selected_applet_is_active = false;
+        return 0;
+      }
+
+      const uint8_t status = restore_instance(*selected_applet_context);
+      if (status != 0) {
+        std::swap(selected_applet_context,
+                  inactive_applet_contexts[inactive_index]);
+        return status;
+      }
       selected_applet_is_active = false;
       return 0;
     }
 
-    const std::size_t cached_index =
-        find_inactive_applet_context(applet_owner, aid, aid_length);
-    if (cached_index < inactive_applet_contexts.size()) {
-      // A direct swap also permits switching between cached contexts when the
-      // registry is full, without temporarily dropping either applet heap.
-      std::swap(selected_applet_context,
-                inactive_applet_contexts[cached_index]);
-      selected_applet_is_active = false;
-      return 0;
-    }
-
-    const bool cache_active = selected_applet_context &&
-        !context_matches_applet(*selected_applet_context, applet_owner, aid,
-                                aid_length);
-    if (cache_active &&
-        std::none_of(inactive_applet_contexts.begin(),
-                     inactive_applet_contexts.end(),
-                     [](const auto &context) { return !context; })) {
-      // Do not discard the current applet context when the bounded context
-      // table is full. The caller maps this resource condition to 6A84.
+    const auto free_slot = std::find_if(
+        inactive_applet_contexts.begin(), inactive_applet_contexts.end(),
+        [](const auto &context) { return !context; });
+    const bool cache_active = selected_applet_context != nullptr;
+    if (cache_active && free_slot == inactive_applet_contexts.end()) {
       return 2;
     }
 
@@ -976,7 +987,16 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
         !context->hasRestoredAppletInstance()) {
       return 1;
     }
-    if (cache_active && !cache_selected_applet_context()) return 2;
+    const auto applet = context->getHeap().getInstance(
+        context->getRestoredAppletRef());
+    if (applet->getPackageID() != package_id ||
+        applet->getClassIndex() != class_index) {
+      return 1;
+    }
+    if (cache_active) {
+      selected_applet_context->setAppletActive(false);
+      *free_slot = std::move(selected_applet_context);
+    }
     selected_applet_context = std::move(context);
     selected_applet_is_active = false;
     return 0;
@@ -988,7 +1008,6 @@ uint8_t choupi_vm_restore_applet(uint8_t package_id,
     return 1;
   }
 }
-
 void choupi_vm_clear_selected_applet(void) {
   pending_apdu_response.queue(nullptr, 0);
   selected_applet_reselection_pending = false;
@@ -1020,26 +1039,37 @@ void choupi_vm_forget_deleted_applet_contexts(
   selected_applet_is_selecting = false;
   selected_applet_select_process_pending = false;
   selected_applet_reselection_process_pending = false;
-  const auto is_deleted_context = [&](const jcvm::Context &context) {
-    if (deleting_package != 0 && context.getAppletPackageID() == package_id) {
-      return true;
+  const auto collect_context = [](jcvm::Context &context) {
+    try {
+      std::vector<jcvm::jref_t> roots;
+      context.appendRootReferences(roots);
+      (void)context.getHeap().collectUnreachableFrom(roots);
+    } catch (...) {
+      // Keep owner facades and heap objects intact if root enumeration fails.
     }
-    uint8_t context_aid[16]{};
-    uint8_t context_aid_length = 0;
-    return aid != nullptr && aid_length >= 5 &&
-           aid_length <= sizeof(context_aid) &&
-           context.copyAppletAID(context_aid, context_aid_length) &&
-           context_aid_length == aid_length &&
-           std::memcmp(context_aid, aid, aid_length) == 0;
   };
-  if (selected_applet_context && is_deleted_context(*selected_applet_context)) {
-    selected_applet_context->setAppletActive(false);
-    selected_applet_context.reset();
+  if (selected_applet_context) {
+    if (deleting_package != 0 &&
+        selected_applet_context->getAppletPackageID() == package_id) {
+      selected_applet_context->setAppletActive(false);
+      selected_applet_context.reset();
+    } else if (deleting_package == 0 && aid != nullptr &&
+               aid_length >= 5 && aid_length <= 16 &&
+               selected_applet_context->forgetAppletInstance(aid, aid_length)) {
+      selected_applet_context->setAppletActive(false);
+      collect_context(*selected_applet_context);
+    }
   }
   for (auto &context : inactive_applet_contexts) {
     if (!context) continue;
-    if (is_deleted_context(*context)) {
+    if (deleting_package != 0 &&
+        context->getAppletPackageID() == package_id) {
       context.reset();
+    } else if (deleting_package == 0 && aid != nullptr && aid_length >= 5 &&
+               aid_length <= 16 &&
+               context->forgetAppletInstance(aid, aid_length)) {
+      context->setAppletActive(false);
+      collect_context(*context);
     }
   }
   // Canonical AID objects live in the process-global heap and may still be
@@ -1078,10 +1108,49 @@ jcvm::Context *choupi_vm_find_or_restore_applet_context(
     return nullptr;
   }
 
-  if (auto *existing = jcvm::findAppletContext(
-          selected_applet_context.get(), inactive_applet_contexts, owner, aid,
-          aid_length)) {
-    return existing;
+  if (auto *package_context = jcvm::findPackageContext(
+          selected_applet_context.get(), inactive_applet_contexts,
+          static_cast<jcvm::jpackage_ID_t>(package_id))) {
+    uint8_t previous_aid[16]{};
+    uint8_t previous_aid_length = 0;
+    const uint8_t previous_owner =
+        static_cast<uint8_t>(package_context->getAppletID());
+    const bool have_previous =
+        package_context->copyAppletAID(previous_aid, previous_aid_length);
+    if (!package_context->activateAppletInstance(owner, applet_aid,
+                                                  applet_aid_length)) {
+      return nullptr;
+    }
+    if (!package_context->hasRestoredAppletInstance() &&
+        (!package_context->restoreAppletInstance(
+             static_cast<jcvm::jpackage_ID_t>(package_id),
+             static_cast<jcvm::jclass_index_t>(class_index)) ||
+         !package_context->hasRestoredAppletInstance())) {
+      if (have_previous) {
+        (void)package_context->activateAppletInstance(
+            previous_owner, previous_aid, previous_aid_length);
+      }
+      return nullptr;
+    }
+    try {
+      const auto applet = package_context->getHeap().getInstance(
+          package_context->getRestoredAppletRef());
+      if (applet->getPackageID() != package_id ||
+          applet->getClassIndex() != class_index) {
+        if (have_previous) {
+          (void)package_context->activateAppletInstance(
+              previous_owner, previous_aid, previous_aid_length);
+        }
+        return nullptr;
+      }
+    } catch (...) {
+      if (have_previous) {
+        (void)package_context->activateAppletInstance(
+            previous_owner, previous_aid, previous_aid_length);
+      }
+      return nullptr;
+    }
+    return package_context;
   }
 
   auto free_slot = std::find_if(
@@ -1105,7 +1174,6 @@ jcvm::Context *choupi_vm_find_or_restore_applet_context(
     return nullptr;
   }
 }
-
 jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
     jcvm::Context &client_context, const jcvm::jref_t server_aid_reference,
     const int8_t parameter) {
@@ -1130,6 +1198,20 @@ jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
                      static_cast<unsigned>(client_context.getAppletID()));
     return jcvm::jref_t{};
   }
+  const uint8_t client_owner =
+      static_cast<uint8_t>(client_context.getAppletID());
+  bool client_state_restored = false;
+  const auto restore_client_state = [&]() {
+    if (!client_state_restored) {
+      client_state_restored = true;
+      (void)client_context.activateAppletInstance(
+          client_owner, client_aid, client_aid_length);
+    }
+  };
+  struct ClientStateRestore {
+    decltype(restore_client_state) &restore;
+    ~ClientStateRestore() { this->restore(); }
+  } client_state_restore{restore_client_state};
   TRACE_JCVM_DEBUG("SIO_LOOKUP client=%02X%02X%02X%02X%02X server=%02X%02X%02X%02X%02X",
                    client_aid[0], client_aid[1], client_aid[2], client_aid[3],
                    client_aid[4], server_aid[0], server_aid[1], server_aid[2],
@@ -1225,6 +1307,7 @@ jcvm::jref_t choupi_vm_get_applet_shareable_interface_object(
   }
   const auto server_object =
       server_context->getHeap().getInstance(server_reference);
+  restore_client_state();
   const jcvm::jref_t existing = client_context.findShareableProxy(
       server_aid, server_aid_length, server_reference);
   if (!existing.isNullPointer()) return existing;
