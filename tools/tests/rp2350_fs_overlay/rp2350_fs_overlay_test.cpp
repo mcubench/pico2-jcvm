@@ -1682,7 +1682,7 @@ int main() {
                full_overlay_unrelated_tag.size(),
                full_overlay_unrelated_value,
                sizeof(full_overlay_unrelated_value)) == 0;
-  for (uint16_t item = 0; item < 8191 && auto_compact_setup; ++item) {
+  for (uint16_t item = 0; item < 8189 && auto_compact_setup; ++item) {
     const std::array<uint8_t, 6> tag = {
         0x03, 0x09, auto_compact_package_id, 0x22,
         static_cast<uint8_t>(item >> 8), static_cast<uint8_t>(item)};
@@ -1690,6 +1690,18 @@ int main() {
                                   full_overlay_package_value,
                                   sizeof(full_overlay_package_value)) == 0;
   }
+  const std::array<uint8_t, 6> auto_compact_parent_tag = {
+      0x03, 0x09, auto_compact_package_id, 0x44, 0x01, 0x01};
+  const std::array<uint8_t, 8> auto_compact_child_tag = {
+      0x03, 0x09, auto_compact_package_id, 0x44, 0x01, 0x01, 0xaa, 0xaa};
+  auto_compact_setup = auto_compact_setup &&
+      fs_write(auto_compact_parent_tag.data(), auto_compact_parent_tag.size(),
+               full_overlay_package_value,
+               sizeof(full_overlay_package_value)) == 0 &&
+      rp2350_fs_test_write_parent_encoded(
+          auto_compact_child_tag.data(), auto_compact_child_tag.size(),
+          full_overlay_package_value,
+          sizeof(full_overlay_package_value)) == 0;
   const std::array<uint8_t, 6> auto_compact_deleted_tag = {
       0x03, 0x09, auto_compact_package_id, 0x22, 0x00, 0x00};
   const std::array<uint8_t, 6> auto_compact_new_tag = {
@@ -1705,7 +1717,11 @@ int main() {
       rp2350_fs_test_overlay_file_count() == 8192 &&
       fs_exists(auto_compact_deleted_tag.data(),
                 auto_compact_deleted_tag.size()) == 0 &&
-      fs_exists(auto_compact_new_tag.data(), auto_compact_new_tag.size()) == 1;
+      fs_exists(auto_compact_new_tag.data(), auto_compact_new_tag.size()) == 1 &&
+      fs_exists(auto_compact_parent_tag.data(),
+                auto_compact_parent_tag.size()) == 1 &&
+      fs_exists(auto_compact_child_tag.data(),
+                auto_compact_child_tag.size()) == 1;
   expect(new_write_compacts_full_index,
          "new_write_compacts_deleted_records_at_full_index");
 

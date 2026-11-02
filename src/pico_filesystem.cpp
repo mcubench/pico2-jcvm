@@ -949,15 +949,15 @@ uint8_t compact_deleted_overlay_records() {
 #endif
   auto *bitmap = reinterpret_cast<uint8_t *>(erase_bucket_head);
   std::fill(bitmap, bitmap + kFilesystemBitmapBytes, 0);
-
-  // Parent-slot encoded records contain index references that would need to
-  // be remapped during rehash. Production records use full or root-compressed
-  // tags; retain the old table if a test/legacy parent encoding is present.
-  for (const auto &file : overlay) {
-    if (overlay_is_used(file) && (file.flags & kOverlayParentTag) != 0) {
-      return FS_STATUS_OK;
-    }
-  }
+  auto is_marked = [bitmap](uint16_t slot) {
+    return (bitmap[slot / 8] & (1u << (slot % 8))) != 0;
+  };
+  auto mark = [bitmap](uint16_t slot) {
+    bitmap[slot / 8] |= static_cast<uint8_t>(1u << (slot % 8));
+  };
+  auto unmark = [bitmap](uint16_t slot) {
+    bitmap[slot / 8] &= static_cast<uint8_t>(~(1u << (slot % 8)));
+  };
 
   size_t ordered_count = 0;
   for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
@@ -966,7 +966,7 @@ uint8_t compact_deleted_overlay_records() {
     if (!overlay_has_storage(file)) {
       // Failed writes can reserve a hash slot before payload append rejects
       // them. There is no serialized key and therefore nothing to hide.
-      bitmap[slot / 8] |= static_cast<uint8_t>(1u << (slot % 8));
+      mark(slot);
       continue;
     }
     erase_bucket_next[ordered_count++] = slot;
@@ -977,8 +977,6 @@ uint8_t compact_deleted_overlay_records() {
                      overlay_offset(overlay[right]);
             });
 
-  size_t kept_count = 0;
-  size_t compacted_bytes = 0;
   for (size_t index = 0; index < ordered_count; ++index) {
     const uint16_t slot = erase_bucket_next[index];
     const auto &file = overlay[slot];
@@ -1004,11 +1002,48 @@ uint8_t compact_deleted_overlay_records() {
            tag[2] < kFirstDynamicPackageId + kDynamicPackageCount);
       if (dynamic_package_tag ||
           !find_rom_file(tag, tag_length, &rom_data, &rom_length)) {
-        bitmap[slot / 8] |= static_cast<uint8_t>(1u << (slot % 8));
-        continue;
+        mark(slot);
       }
     }
+  }
 
+  // Parent-slot records encode their parent by hash-table index. Retain any
+  // ancestor needed by a kept record, including a deleted parent tombstone,
+  // then remap each stored reference after the table is rehashed.
+  for (size_t index = 0; index < ordered_count; ++index) {
+    uint16_t child_slot = erase_bucket_next[index];
+    if (is_marked(child_slot)) continue;
+    for (uint8_t depth = 0; depth < 64; ++depth) {
+      const auto &child = overlay[child_slot];
+      if ((child.flags & kOverlayParentTag) == 0) break;
+      const uint32_t offset = overlay_offset(child);
+      if (offset >= overlay_bytes_used ||
+          (overlay_bytes[offset] & 0x7fu) != 3 ||
+          overlay_bytes_used - offset < 4) {
+        return FS_STATUS_IO_UNKNOWN;
+      }
+      const uint16_t parent_slot =
+          static_cast<uint16_t>(overlay_bytes[offset + 1]) |
+          static_cast<uint16_t>(overlay_bytes[offset + 2] << 8);
+      if (parent_slot >= kMaxOverlayFiles ||
+          !overlay_is_used(overlay[parent_slot]) ||
+          !overlay_has_storage(overlay[parent_slot])) {
+        return FS_STATUS_IO_UNKNOWN;
+      }
+      unmark(parent_slot);
+      child_slot = parent_slot;
+    }
+    if ((overlay[child_slot].flags & kOverlayParentTag) != 0) {
+      return FS_STATUS_IO_UNKNOWN;
+    }
+  }
+
+  size_t kept_count = 0;
+  size_t compacted_bytes = 0;
+  for (size_t index = 0; index < ordered_count; ++index) {
+    const uint16_t slot = erase_bucket_next[index];
+    if (is_marked(slot)) continue;
+    const auto &file = overlay[slot];
     const uint32_t offset = overlay_offset(file);
     if (offset >= overlay_bytes_used) return FS_STATUS_IO_UNKNOWN;
     const size_t key_length = overlay_bytes[offset] & 0x7fu;
@@ -1030,7 +1065,7 @@ uint8_t compact_deleted_overlay_records() {
   // Preflight above is read-only. Drop the identified entries, then compact
   // payloads in source-offset order so a move never overwrites a later source.
   for (uint16_t slot = 0; slot < kMaxOverlayFiles; ++slot) {
-    if ((bitmap[slot / 8] & (1u << (slot % 8))) != 0) {
+    if (is_marked(slot)) {
       overlay[slot] = OverlayFile{};
     }
   }
@@ -1090,6 +1125,27 @@ uint8_t compact_deleted_overlay_records() {
       // injectivity. Thus this phase has no failure path after mutation starts.
       if (erase_bucket_next[current] == UINT16_MAX) break;
     }
+  }
+
+  // Parent references still contain old hash-slot numbers. The old-to-new
+  // map remains available until this pass completes; every required ancestor
+  // was retained during the read-only preflight above.
+  for (uint16_t old_slot = 0; old_slot < kMaxOverlayFiles; ++old_slot) {
+    const uint16_t mapping = erase_bucket_next[old_slot];
+    if (mapping == UINT16_MAX) continue;
+    const uint16_t new_slot =
+        static_cast<uint16_t>(mapping & ~kMapVisited);
+    auto &file = overlay[new_slot];
+    if ((file.flags & kOverlayParentTag) == 0) continue;
+    const uint32_t offset = overlay_offset(file);
+    const uint16_t old_parent =
+        static_cast<uint16_t>(overlay_bytes[offset + 1]) |
+        static_cast<uint16_t>(overlay_bytes[offset + 2] << 8);
+    const uint16_t parent_mapping = erase_bucket_next[old_parent];
+    const uint16_t new_parent =
+        static_cast<uint16_t>(parent_mapping & ~kMapVisited);
+    overlay_bytes[offset + 1] = static_cast<uint8_t>(new_parent);
+    overlay_bytes[offset + 2] = static_cast<uint8_t>(new_parent >> 8);
   }
 
   size_t rebuilt_count = 0;
