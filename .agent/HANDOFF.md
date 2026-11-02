@@ -1,4 +1,4 @@
-# CTX-03 retained owner IDs after DELETE — 2026-11-02 11:55 UTC
+# CTX-03 owner and transient lifecycle checks — 2026-11-02 12:02 UTC
 
 Fixed owner-ID reuse while package-shared VM objects remain alive. A new
 same-CAP VPCD regression installs writer and reader applets as owners 1 and 2,
@@ -26,9 +26,16 @@ Latest authorized USB refresh found two runtime CCID devices at USB nodes
 physical flash was attempted. Preserve unrelated worktree changes, especially
 the user's `releaseGlobalAIDObject` removal in `heap.cpp/.hpp`.
 
-Next: review owner exhaustion and GC/reset edge cases, then continue the open
-CTX-03 transient and persistence acceptance. Only flash after a fresh
-authorized inventory finds BOOTSEL and both architectures build.
+The focused `tools/test-same-cap-transients` VPCD regression passes 5/5: a
+same-package sibling switch clears `CLEAR_ON_DESELECT` but retains
+`CLEAR_ON_RESET`, and card reset clears both. Log:
+`artifacts/logs/same-cap-transient-vpcd-20261102T120128Z.log`. Its new test-only
+CAP and build/test wrappers are uncommitted pending the progress record and
+validation commit.
+
+Next: review owner exhaustion and remaining GC/reset edge cases, then continue
+the open persistence acceptance. Only flash after a fresh authorized
+inventory finds BOOTSEL and both architectures build.
 
 ## CTX-03 applet-local RMI/SIO registries — 2026-11-02 11:13 UTC
 

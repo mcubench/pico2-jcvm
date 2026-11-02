@@ -20303,3 +20303,14 @@
 - Decision: Repeated instance lifecycle does not monotonically consume owner IDs in the tested case, and deleting the package releases the owner-bound objects. Still test owner-ID exhaustion and interaction with reset/transient GC, then continue CTX-03 acceptance.
 - Commit: `a4d5cfe` (recorded in follow-up metadata commit)
 - Artifacts/logs: `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T115429Z.log`.
+
+## 2026-11-02 Verify transient clear events across sibling applets 7 minutes
+
+- Step/experiment: `ctx03-same-package-transient-lifecycle-20261102`
+- When: '2026-11-02 11:55 UTC' - '2026-11-02 12:02 UTC'
+- Change: Added a separate test-only CAP with two applets that share package static `CLEAR_ON_DESELECT` and `CLEAR_ON_RESET` arrays. Added repository build/test wrappers and an authenticated VPCD regression; updated CTX-03 TODO, QKB, and handoff.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients --timeout 60` passed (`TEST:SUMMARY pass=5 fail=0`). The first converter attempt rejected `invokestatic` from `<clinit>`; moving transient allocation to an explicit install helper produced a valid CAP. The test-only source changed but firmware source did not, so no ARM/RISC-V rebuild was required for this step. No physical flash/test because the last approved USB inventory found no BOOTSEL board.
+- Result: Writer set the arrays to `5A` (`CLEAR_ON_DESELECT`) and `6B` (`CLEAR_ON_RESET`). Selecting the same-CAP reader returned `00 6B`, proving deselection clears only the former. A simulated card reset followed by writer selection returned `00 00`, proving reset clears both. Log: `artifacts/logs/same-cap-transient-vpcd-20261102T120128Z.log`.
+- Decision: Shared package heap transient lifecycle behaves correctly for single-channel sibling selection and reset in PC VPCD. Physical validation and multi-logical-channel behavior remain open. Next review owner exhaustion and other GC/reset edges, then continue persistence acceptance.
+- Commit: `<implementation commit recorded in follow-up>`
+- Artifacts/logs: `tools/tests/same_cap_transient_fixture/`, `tools/build-same-cap-transient-fixture`, `tools/test-same-cap-transients`, and `artifacts/logs/same-cap-transient-vpcd-20261102T120128Z.log`.

@@ -26,6 +26,21 @@
   two running CCID readers but no BOOTSEL board. Owner exhaustion and every
   garbage-collection/reset edge are not yet covered.
 
+## Transient clear events across same-package applet selection — verified 2026-11-02
+
+- **Check:** A test-only two-applet CAP creates one `CLEAR_ON_DESELECT` and one
+  `CLEAR_ON_RESET` byte array in package static state, writes both through the
+  writer applet, then selects its sibling reader.
+- **Result:** PC VPCD confirms the sibling selection clears only the
+  `CLEAR_ON_DESELECT` array (`00 6B`) and retains the reset array. A card reset
+  clears both. `tools/test-same-cap-transients` passes 5/5.
+- **Implementation boundary:** Transient arrays reside in shared package heap
+  storage, and VM deselection/reset clear operations traverse that storage.
+  This test exercises the Java Card CAP and VM lifecycle path, not just the
+  native `Heap` helper.
+- **Limit:** PC VPCD only; physical same-package transient behavior and
+  multi-logical-channel applet activation remain unverified.
+
 ## RMI and Shareable state must be per applet inside package Context — 2026-11-02
 
 - **Observed risk:** After moving sibling applets into one package Context,

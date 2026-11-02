@@ -385,18 +385,20 @@ Archive text is historical evidence, not current device state or priorities.
   sibling owners 1 and 2 become 3 and 2 after deleting and reinstalling owner
   1, and the reader still sees the shared array. The PC backend and RP2350
   allocator both consult retained VM owner state. RMI registry test, filesystem
-  overlay suite, same-CAP delete/reinstall VPCD (4/4), and multipackage VPCD
+  overlay suite, same-CAP delete/reinstall VPCD (9/9), and multipackage VPCD
   (47/47) pass; PC, ARM and RISC-V max_crypto builds pass. Latest ARM image ends
   at `0x100e75f4`, using 947,700 of the 1 MiB firmware window and leaving
   100,876 bytes. Physical flash/runtime validation remains open: the latest
   approved host inventory exposed two runtime CCID readers and no BOOTSEL
   device. Further acceptance must cover same-CAP selection, instance/package
   deletion and reinstall, reset/transient behavior, and persistence on hardware.
-  Two repeated instance DELETE/reinstall cycles now keep array-owning owner 1
+  Two repeated instance DELETE/reinstall cycles keep array-owning owner 1
   reserved while reclaiming object-free owner 3; full package DELETE/reinstall
-  releases and reuses owner 1. The focused VPCD suite passes 9/9. Still review
-  owner exhaustion and all GC/reset paths, then complete transient, persistence,
-  and physical acceptance.
+  releases and reuses owner 1. Same-CAP transient tests show sibling selection
+  clears `CLEAR_ON_DESELECT` while preserving `CLEAR_ON_RESET`, and card reset
+  clears both. The owner lifecycle suite passes 9/9 and transient suite 5/5.
+  Still review owner exhaustion and remaining GC/reset paths, then complete
+  persistence and physical acceptance.
   Acceptance: an unchanged or test-only multi-applet CAP proves sibling
   instances share static/heap context and can access objects as specified,
   while separate CAPs remain isolated; AID reporting and per-instance DELETE
