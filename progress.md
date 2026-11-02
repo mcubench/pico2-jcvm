@@ -6,7 +6,7 @@
 - Validation: `/usr/bin/time -v ./tools/test-jcsystem-transaction-applet --case 41` passed: `TEST:SUMMARY pass=3 fail=0 elapsed_s=71.198`. Outer command time was 87.56 s wall, 26.84 s user, 59.61 s system, 98% CPU; max RSS 98,432 KiB. `perf stat` availability check failed because performance events are restricted (`perf_event_paranoid=4`).
 - Result: This run averaged roughly one logical CPU and spent more time in system than user mode, consistent with syscall/ptrace overhead. It does not explain the separate report of all eight VM cores being busy. No host security setting was changed.
 - Decision: Preserve the existing MPU behavior. Next measure per-process CPU during an actual saturation reproduction and collect ptrace/fault counts before attempting optimization.
-- Commit: `<recorded in follow-up metadata commit>`.
+- Commit: `236a7ce771b8e4d3084977ee010711bd3c88e404`; metadata reference in the follow-up commit.
 - Artifacts/logs: Transaction emulator output `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T043156Z.log` (591 bytes; SHA-256 `d2fd036dc2260aabd9c25efa80350521ab22dd55bc2a82c6f467b45083bd5806`); timing printed by `/usr/bin/time -v`, not archived separately.
 
 ## 2026-11-02 — Quiet expected host MPU fault warnings 12 minutes
