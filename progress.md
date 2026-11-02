@@ -19856,5 +19856,5 @@
 - Validation: Reviewed Oracle Java Card RE Specification 3.0.5 §§6.1.4, 6.2.2, 6.2.4.3 and 6.2.8 against the current marshaller, `jref_t`, and per-applet heap model; `git diff --check` passed. No build/test run; no source code changed.
 - Result: Existing private-reference rejection remains necessary until references preserve originating context and handle and every access path enforces ownership. No BOOTSEL device was visible in the authorized USB refresh; no flash performed.
 - Decision: Retain fail-closed marshalling. Next implement and test explicit foreign-reference tracking and compact-handle collision rejection, then resume physical acceptance when BOOTSEL enumerates in the VM.
-- Commit: `<pending>`
+- Commit: `c23c87a`
 - Artifacts/logs: None.
