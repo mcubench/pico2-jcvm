@@ -9,9 +9,10 @@ VPCD suite passed `TEST:SUMMARY pass=5 fail=0`. Physical log SHA-256:
 `904aab987b954ef4846e7ba480d90704e8f79e567afc2c3a40c18aa53d4976b7`; VPCD
 log SHA-256:
 `ec92680ca2d78aa928e39d03b2787160867481eabf7f22cb72eef059efff662d`.
-Harness and record are not yet committed. Remaining same-CAP physical acceptance
-is GC and cold-power persistence; the TODO also tracks global-reference
-ownership and other CTX-01 gaps.
+Harness and record are committed as `0a6110a`; the progress SHA reference is
+in the metadata commit. Remaining same-CAP physical acceptance is GC and
+cold-power persistence; the TODO also tracks global-reference ownership and
+other CTX-01 gaps.
 
 # CTX-03 physical same-CAP sibling selection/static state — 2026-11-02 14:34 UTC
 

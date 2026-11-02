@@ -6,7 +6,7 @@
 - Validation: `bash -n tools/test-same-cap-transients-physical` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients` passed `TEST:SUMMARY pass=5 fail=0`. Physical `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients-physical '<exact Pico 2 reader>'` passed on `8E464F4E2BBC0A19`; GPPro cleanup passed.
 - Result: Physical APDUs returned `5A6B9000` after initialization, `006B9000` after sibling switch, and `00009000` after PC/SC reset. Thus deselect cleared only its array, and reset cleared both. No firmware rebuild or flash occurred.
 - Decision: Same-CAP transient deselect/reset behavior has direct physical evidence. Continue CTX-01/03 with GC and cold-power persistence coverage.
-- Commit: `<recorded in follow-up metadata commit>`
+- Commit: `0a6110a`; this progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: Physical `artifacts/logs/same-cap-transient-physical-20261102T145117Z.log` SHA-256 `904aab987b954ef4846e7ba480d90704e8f79e567afc2c3a40c18aa53d4976b7`; VPCD `artifacts/logs/same-cap-transient-vpcd-20261102T145043Z.log` SHA-256 `ec92680ca2d78aa928e39d03b2787160867481eabf7f22cb72eef059efff662d`.
 
 ## 2026-11-02 Validate physical same-CAP package reinstall 4 minutes
