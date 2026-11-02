@@ -17,10 +17,14 @@
   any future backend-specific allocator.
 - **Validation:** `tools/test-same-cap-delete-reinstall` passes: owners
   `[1, 2]` become `[3, 2]` after writer DELETE/reinstall, and the reader still
-  sees the package-shared array. RMI registry and filesystem overlay suites,
-  multipackage VPCD (47/47), and PC/ARM/RISC-V max_crypto builds pass.
+  sees the package-shared array. Two further instance delete/reinstall cycles
+  reuse owner 3 while keeping owner 1 reserved. Deleting the package releases
+  the array and allows owner 1 to be reused after reload. The expanded test
+  passes 9/9. RMI registry and filesystem overlay suites, multipackage VPCD
+  (47/47), and PC/ARM/RISC-V max_crypto builds pass.
 - **Limit:** Physical testing remains pending; authorized USB refresh found
-  two running CCID readers but no BOOTSEL board.
+  two running CCID readers but no BOOTSEL board. Owner exhaustion and every
+  garbage-collection/reset edge are not yet covered.
 
 ## RMI and Shareable state must be per applet inside package Context — 2026-11-02
 

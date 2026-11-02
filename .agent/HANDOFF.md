@@ -1,17 +1,20 @@
-# CTX-03 retained owner IDs after DELETE — 2026-11-02 11:49 UTC
+# CTX-03 retained owner IDs after DELETE — 2026-11-02 11:55 UTC
 
 Fixed owner-ID reuse while package-shared VM objects remain alive. A new
 same-CAP VPCD regression installs writer and reader applets as owners 1 and 2,
 checks the reader sees the shared static array, deletes the writer, reinstalls
 it, and verifies the new owner is 3 while the reader remains owner 2 and can
-still access the array. The PC emulator had a separate allocator in
+still access the array. Two more instance DELETE/reinstall cycles produce
+owner history `[1, 3, 3, 3]`: ID 1 stays reserved for the live array, while
+object-free ID 3 is reclaimed. Full package DELETE/reinstall drops the heap
+and makes ID 1 reusable. The PC emulator had a separate allocator in
 `choupi/src/main_pc.cpp` that bypassed the VM owner-retention callback; it now
 uses the same callback as the RP2350 allocator. In normal builds the callback
 is required; it stays weak only for the standalone filesystem-overlay target.
 
 Validation passed: PC max_crypto build; `tools/test-rmi-registry`;
 `tools/test-rp2350-fs-overlay` (`TEST:SUMMARY fail=0`); same-CAP
-delete/reinstall VPCD (`TEST:SUMMARY pass=4 fail=0`); multipackage VPCD
+delete/reinstall VPCD (`TEST:SUMMARY pass=9 fail=0`); multipackage VPCD
 (`TEST:SUMMARY pass=47 fail=0`); ARM and RISC-V max_crypto builds. ARM image
 ends at `0x100e75f4`, using 947,700/1,048,576 bytes and leaving 100,876 bytes.
 UF2 is 1,895,936 bytes, SHA-256
@@ -22,10 +25,9 @@ Latest authorized USB refresh found two runtime CCID devices at USB nodes
 physical flash was attempted. Preserve unrelated worktree changes, especially
 the user's `releaseGlobalAIDObject` removal in `heap.cpp/.hpp`.
 
-Next: finish the bounded-growth analysis for tombstoned owner facades and add
-repeat DELETE/reinstall plus package DELETE/reinstall coverage. Then continue
-the open CTX-03 reset/transient and persistence acceptance. Only flash after a
-fresh authorized inventory finds BOOTSEL and both architectures build.
+Next: review owner exhaustion and GC/reset edge cases, then continue the open
+CTX-03 transient and persistence acceptance. Only flash after a fresh
+authorized inventory finds BOOTSEL and both architectures build.
 
 ## CTX-03 applet-local RMI/SIO registries — 2026-11-02 11:13 UTC
 

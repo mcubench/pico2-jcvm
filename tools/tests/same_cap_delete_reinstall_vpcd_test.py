@@ -157,7 +157,67 @@ def main() -> int:
                 )
             print("TEST:PASS shared object remains valid after sibling reinstall")
 
-            print("TEST:SUMMARY pass=4 fail=0")
+            pass_count = 4
+            writer_owner_history = [old_writer_owner, new_writer_owner]
+            for iteration in range(2):
+                vpcd.exchange(connection, bytes.fromhex("00A4040000"),
+                              f"reselect ISD for reinstall {iteration + 2}")
+                vpcd.delete_object(
+                    scp, writer_aid, False,
+                    f"DELETE writer instance {iteration + 2}")
+                vpcd.install_applet(scp, package_aid, writer_aid, writer_aid)
+                writer_owners = wait_for_owner_ids(
+                    log_path, writer_aid, iteration + 3)
+                repeated_owner = writer_owners[-1]
+                if repeated_owner == old_writer_owner or repeated_owner == reader_owner:
+                    raise RuntimeError(
+                        "repeated reinstall reused an owner ID still assigned "
+                        f"to a live sibling/object: history={writer_owners}, "
+                        f"reader={reader_owner}"
+                    )
+                writer_owner_history.append(repeated_owner)
+                select(connection, reader_aid,
+                       f"SELECT reader after reinstall {iteration + 2}")
+                response = vpcd.exchange(
+                    connection, bytes.fromhex("8021000000"),
+                    f"verify shared array after reinstall {iteration + 2}")
+                if response != bytes.fromhex("019000"):
+                    raise RuntimeError(
+                        "shared array lost after repeated reinstall: "
+                        f"{response.hex().upper()}"
+                    )
+                pass_count += 2
+            print(
+                "TEST:PASS repeated DELETE/reinstall owners "
+                f"{writer_owner_history}; retained owner={old_writer_owner}"
+            )
+
+            vpcd.exchange(connection, bytes.fromhex("00A4040000"),
+                          "reselect ISD before package DELETE")
+            vpcd.delete_object(scp, writer_aid, False,
+                               "DELETE final writer instance")
+            vpcd.delete_object(scp, reader_aid, False,
+                               "DELETE reader instance")
+            vpcd.delete_object(scp, package_aid, True,
+                               "DELETE package and shared heap")
+            vpcd.load_package(scp, code, package_aid)
+            vpcd.install_applet(scp, package_aid, writer_aid, writer_aid)
+            writer_owners = wait_for_owner_ids(
+                log_path, writer_aid, len(writer_owner_history) + 1)
+            package_reinstall_owner = writer_owners[-1]
+            if package_reinstall_owner != old_writer_owner:
+                raise RuntimeError(
+                    "owner ID was not reusable after package DELETE reclaimed "
+                    f"the package heap: expected={old_writer_owner}, "
+                    f"got={package_reinstall_owner}, history={writer_owners}"
+                )
+            pass_count += 1
+            print(
+                "TEST:PASS package DELETE/reinstall reclaimed owner ID "
+                f"{package_reinstall_owner}"
+            )
+
+            print(f"TEST:SUMMARY pass={pass_count} fail=0")
         finally:
             if connection is not None:
                 connection.close()

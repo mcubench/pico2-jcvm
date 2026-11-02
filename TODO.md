@@ -392,8 +392,11 @@ Archive text is historical evidence, not current device state or priorities.
   approved host inventory exposed two runtime CCID readers and no BOOTSEL
   device. Further acceptance must cover same-CAP selection, instance/package
   deletion and reinstall, reset/transient behavior, and persistence on hardware.
-  Tombstoned owner facades remain retained while their objects exist; bounded
-  repeated delete/reinstall behavior still needs explicit review.
+  Two repeated instance DELETE/reinstall cycles now keep array-owning owner 1
+  reserved while reclaiming object-free owner 3; full package DELETE/reinstall
+  releases and reuses owner 1. The focused VPCD suite passes 9/9. Still review
+  owner exhaustion and all GC/reset paths, then complete transient, persistence,
+  and physical acceptance.
   Acceptance: an unchanged or test-only multi-applet CAP proves sibling
   instances share static/heap context and can access objects as specified,
   while separate CAPs remain isolated; AID reporting and per-instance DELETE

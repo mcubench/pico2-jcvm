@@ -20292,3 +20292,14 @@
 - Decision: Keep deleted owner facades reserved for as long as VM objects reference them. Next analyze bounded facade/object reclamation and add repeated instance/package DELETE/reinstall coverage, then complete CTX-03 reset, transient, persistence and hardware acceptance.
 - Commit: `b33d401` (recorded in follow-up metadata commit)
 - Artifacts/logs: `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T114313Z.log`; multipackage logs at `artifacts/logs/host-vpcd-multipackage-*20261102T114510Z.log`; `build/arm/pico2_choupi.uf2`.
+
+## 2026-11-02 Verify owner reclamation across repeated and package deletion 6 minutes
+
+- Step/experiment: `ctx03-repeat-delete-reinstall-20261102`
+- When: '2026-11-02 11:49 UTC' - '2026-11-02 11:55 UTC'
+- Change: Extended the same-CAP VPCD owner lifecycle regression with two further instance DELETE/reinstall cycles and full package DELETE/reload/reinstall. Updated CTX-03 TODO, QKB and handoff with the observed reclamation behavior.
+- Validation: `./tools/build-pc --profile max_crypto` passed; `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-delete-reinstall --timeout 60` passed (`TEST:SUMMARY pass=9 fail=0`). ARM and RISC-V builds had passed in the immediately preceding owner-reservation commit; no firmware source changed in this step. No physical flash/test because authorized USB refresh found two runtime CCID devices and no BOOTSEL board.
+- Result: Writer owner history was `[1, 3, 3, 3]`: owner 1 stayed reserved while its shared array remained live, while object-free replacement owner 3 was reclaimed after each DELETE. Full package DELETE/reinstall reclaimed the shared heap and reused owner 1. Log: `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T115429Z.log`.
+- Decision: Repeated instance lifecycle does not monotonically consume owner IDs in the tested case, and deleting the package releases the owner-bound objects. Still test owner-ID exhaustion and interaction with reset/transient GC, then continue CTX-03 acceptance.
+- Commit: `<implementation commit recorded in follow-up>`
+- Artifacts/logs: `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T115429Z.log`.
