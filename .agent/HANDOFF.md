@@ -41,6 +41,8 @@ package static state returned `000012340056123456789000`. Cleanup passed. Log
 SHA-256: `76a13511ff8b972d0b46e52d485be7c12b02d6878a5b2597a88aa1ca92957e7b`.
 This harness change is not committed yet. Remaining physical same-CAP gaps:
 reset/transient, GC and cold-power persistence.
+Harness and progress record are committed as `36a519b`; the progress SHA
+reference is in the metadata commit.
 Harness and progress record are committed as `28a18f8`; the progress SHA
 reference is in the metadata commit.
 
