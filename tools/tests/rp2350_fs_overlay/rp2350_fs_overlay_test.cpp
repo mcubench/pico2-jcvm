@@ -1675,6 +1675,40 @@ int main() {
   expect(full_overlay_package_reclaimed,
          "package_delete_compaction_reclaims_full_index_and_restarts");
 
+  fake_flash.fill(0xff);
+  constexpr uint8_t auto_compact_package_id = 57;
+  bool auto_compact_setup = fs_init() == 0 &&
+      fs_write(full_overlay_unrelated_tag.data(),
+               full_overlay_unrelated_tag.size(),
+               full_overlay_unrelated_value,
+               sizeof(full_overlay_unrelated_value)) == 0;
+  for (uint16_t item = 0; item < 8191 && auto_compact_setup; ++item) {
+    const std::array<uint8_t, 6> tag = {
+        0x03, 0x09, auto_compact_package_id, 0x22,
+        static_cast<uint8_t>(item >> 8), static_cast<uint8_t>(item)};
+    auto_compact_setup = fs_write(tag.data(), tag.size(),
+                                  full_overlay_package_value,
+                                  sizeof(full_overlay_package_value)) == 0;
+  }
+  const std::array<uint8_t, 6> auto_compact_deleted_tag = {
+      0x03, 0x09, auto_compact_package_id, 0x22, 0x00, 0x00};
+  const std::array<uint8_t, 6> auto_compact_new_tag = {
+      0x03, 0x09, auto_compact_package_id, 0x23, 0x00, 0x01};
+  const bool new_write_compacts_full_index = auto_compact_setup &&
+      rp2350_fs_test_overlay_file_count() == 8192 &&
+      fs_erase(auto_compact_deleted_tag.data(),
+               auto_compact_deleted_tag.size()) == 0 &&
+      fs_write(auto_compact_new_tag.data(), auto_compact_new_tag.size(),
+               full_overlay_package_value,
+               sizeof(full_overlay_package_value)) == 0 &&
+      fs_sync() == 0 && fs_init() == 0 &&
+      rp2350_fs_test_overlay_file_count() == 8192 &&
+      fs_exists(auto_compact_deleted_tag.data(),
+                auto_compact_deleted_tag.size()) == 0 &&
+      fs_exists(auto_compact_new_tag.data(), auto_compact_new_tag.size()) == 1;
+  expect(new_write_compacts_full_index,
+         "new_write_compacts_deleted_records_at_full_index");
+
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

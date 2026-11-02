@@ -1360,20 +1360,35 @@ extern "C" uint8_t fs_write(const uint8_t *tag, uint8_t tag_length,
   const uint8_t tag_status = validate_tag(tag, tag_length);
   if (tag_status != FS_STATUS_OK) return tag_status;
   auto *file = find_overlay(tag, tag_length);
-  const size_t old_record_size =
-      file == nullptr ? 0 : 1 + stored_tag_length(*file) + file->size;
-  const size_t record_key_length =
-      file == nullptr ? encoded_tag_length(tag, tag_length)
-                      : overlay_key_length(*file);
-  const size_t new_file_count =
-      overlay_file_count + (file == nullptr ? 1u : 0u);
-  const size_t new_bytes_used =
-      overlay_bytes_used - old_record_size + 1 + record_key_length + length;
-  if (!filesystem_payload_fits(new_file_count, new_bytes_used) ||
-      (file == nullptr && overlay_file_count == kMaxOverlayFiles)) {
-    report_fs_write_failure("new", tag, tag_length, length);
-    return FS_STATUS_OUT_OF_FLASH;
+  auto can_write = [&]() {
+    const size_t old_record_size =
+        file == nullptr ? 0 : 1 + stored_tag_length(*file) + file->size;
+    const size_t record_key_length =
+        file == nullptr ? encoded_tag_length(tag, tag_length)
+                        : overlay_key_length(*file);
+    const size_t new_file_count =
+        overlay_file_count + (file == nullptr ? 1u : 0u);
+    const size_t new_bytes_used =
+        overlay_bytes_used - old_record_size + 1 + record_key_length + length;
+    return filesystem_payload_fits(new_file_count, new_bytes_used) &&
+           !(file == nullptr && overlay_file_count == kMaxOverlayFiles);
+  };
+
+  // Deleted records keep their hash slots until compaction. Reclaim them on
+  // demand before rejecting a new record, then resolve the tag again because
+  // compaction rehashes the overlay table and invalidates the old pointer.
+  if (!can_write()) {
+    if (compact_deleted_overlay_records() != FS_STATUS_OK) {
+      report_fs_write_failure("new", tag, tag_length, length);
+      return FS_STATUS_OUT_OF_FLASH;
+    }
+    file = find_overlay(tag, tag_length);
+    if (!can_write()) {
+      report_fs_write_failure("new", tag, tag_length, length);
+      return FS_STATUS_OUT_OF_FLASH;
+    }
   }
+
   if (file == nullptr) {
     file = allocate_overlay(tag, tag_length);
   }
