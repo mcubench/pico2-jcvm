@@ -19876,5 +19876,5 @@
 - Validation: Read-only comparison of the current array store, global heap/reference representation, and Java Card RE 3.0.5 §§6.2.2 and 6.2.8.2. Prior current-worktree SIO tests (15/15 with Descriptor absent and present) and ARM/RISC-V builds passed. `git diff --check` passed. No source/test code changed.
 - Result: Directly relaxing the check is unsafe because compact object handles are allocated independently in applet heaps. The implementation must preserve owner identity and integrate GC, applet deletion, persistence, reset, and stale-owner handling.
 - Decision: Keep the current check fail-closed while designing the full ownership representation. Update transaction probe case 41 only with the implementation and corresponding lifecycle regressions.
-- Commit: `<pending>`
+- Commit: `3afee1e`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261102T040952Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261102T041201Z.log` (hashes in `.agent/HANDOFF.md`).
