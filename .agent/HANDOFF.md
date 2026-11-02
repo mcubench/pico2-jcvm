@@ -36,7 +36,8 @@ wrappers are committed in `c201188`.
 retains one live array for each, confirms all remain reserved, then collects
 the arrays and confirms those owner states are reclaimable. It passes with
 `owner_id_exhaustion=1`. This is Context-level evidence; actual rejection of
-INSTALL when all 255 CAP owner IDs are occupied remains untested.
+INSTALL when all 255 CAP owner IDs are occupied remains untested. Regression
+and progress record are committed in `6b20d05`.
 
 Next: exercise CAP allocator rejection at 255 occupied IDs if a practical
 fixture is available, then review remaining GC/reset edges and continue the

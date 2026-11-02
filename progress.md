@@ -20323,5 +20323,5 @@
 - Validation: `./tools/test-rmi-registry` passed with `owner_id_exhaustion=1`; it confirmed all 255 owner identities remained reserved with live arrays and were no longer retained after roots were dropped and GC completed. No firmware source changed; no hardware test.
 - Result: Owner retention and tombstone pruning work across the full 8-bit nonzero ID range in the Context/Heap model. This does not exercise the CAP store allocator's INSTALL failure when every ID is persisted as live.
 - Decision: Keep actual allocator no-free-ID INSTALL behavior open; continue CTX-03 remaining reset/GC/persistence acceptance.
-- Commit: `<implementation commit recorded in follow-up>`
+- Commit: `6b20d05` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/tests/rmi_registry/rmi_registry_test.cpp`; no external log.
