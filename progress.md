@@ -20198,5 +20198,5 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` passed `TEST:SUMMARY pass=47 fail=0`.
 - Result: Three packages and 21 applet instances passed pagination, restart recovery, lookupAID identity, transient lifecycle, and DELETE cases. This is PC emulator evidence only. Static initializer work remains untested on physical hardware because the current live USB refresh found runtime CCID readers and no BOOTSEL device.
 - Decision: Continue CTX-03 by designing package-shared heap/handle/root storage with stable per-applet owner facades; do not alias the current Context or immutable-owner Heap objects.
-- Commit: pending (recorded in follow-up metadata commit)
+- Commit: `1d5c5f5`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261102T094628Z.log`; `host-vpcd-multipackage-restart-20261102T094628Z.log`; corrupt/missing-sidecar logs with same timestamp.
