@@ -58,9 +58,16 @@ Archive text is historical evidence, not current device state or priorities.
 ### STORE-01
 
 - [ ] **Validate package-delete compaction over repeated physical API sweeps.**
-  Status: package-state tombstone compaction is implemented; long-run acceptance
-  remains open. Earlier 77,824-byte arena exhaustion is distinct from later
-  v4 capacity/index pressure and from persistent-object reclamation.
+  Status: package-state compaction is implemented, and new writes now trigger
+  compaction when deleted records block a write at the index or payload limit.
+  An 8,192-record fake-flash regression verifies that a new write reclaims a
+  deleted dynamic tag and survives restart. The physical stage-9 INSTALL
+  failure was traced to `FS_WRITE_FAIL files=8192/8192 free_slots=0` while
+  writing package lifecycle state. This does not establish that every full
+  card has reclaimable tombstones; a fully live set still requires owner-scoped
+  cleanup or a capacity change.
+  Earlier 77,824-byte arena exhaustion is distinct from later v4
+  capacity/index pressure and from persistent-object reclamation.
   Remaining: repeat upstream CAP install/run/uninstall cycles; monitor payload
   usage and the 8,192-file limit, reclaim index slots after package deletion,
   and identify whether live test data legitimately exceeds capacity.

@@ -19626,3 +19626,14 @@
   (SHA-256 `eb47dd4fb5ac3e62e938d73b82ee4f2a677a34f6005ca448419a8b931bdf34b2`),
   and `artifacts/logs/rmi-external-link-missing-export-20261102T000533Z.log`
   (SHA-256 `3fae07042f5865e22119b808ca7fcd7fa7e3a1b8684e1719988d55748af18e52`).
+
+## 2026-11-02 Reclaim tombstones on persistent write pressure 25 minutes
+
+- Step/experiment: `overlay-reclaim-on-write-pressure-20261102`
+- When: '2026-11-02 01:10 CET' - '2026-11-02 01:35 CET'
+- Change: `fs_write()` now runs the existing safe overlay compactor if the requested record would exceed the slot or payload limit. It resolves the target tag again after compaction rehashes the table. Added a fake-flash regression that fills all 8,192 slots, erases a dynamic tag, writes a different tag, commits and restores, and verifies the replacement remains visible while the erased tag stays absent. Updated STORE-01, QKB, and the session handoff with the physical diagnosis and remaining limits.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `./tools/build arm --profile current` and `./tools/build riscv --profile current` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 2BED26ED20556535` passed both build gates, flash verification, and finite monitor (`TEST:SUMMARY pass=1 fail=0`). The cycle used CDC-1200 BOOTSEL recovery after picotool could not locate the reset interface. `git diff --check` passed. Physical GPPro INSTALL was not repeated; that board-level acceptance remains open. The VM enumerated one runtime CCID (`2BED26ED20556535`), not the three BOOTSEL boards reported by the user.
+- Result: The regression demonstrates on-demand recovery when deleted records occupy the full index. A fully live 8,192-record set still cannot be compacted to make room. ARM image size is 1,846,784 bytes, end address `0x100e1598`, SHA-256 `b8e3f894001ca6304e26e55684ffc2f5e9cdec642191f0e39f6c30665d847936`; RISC-V smoke image end is `0x10009a78`.
+- Decision: Keep physical INSTALL acceptance open and do not delete unrelated card data. Next inspect the currently loaded fixture package inventory read-only; continue hardware installation only through a package-scoped safe path or another clean, identified board.
+- Commit: `fe6dea2` (implementation and regression); this record and tracker updates are committed separately.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T003214Z.log` (SHA-256 `52f1e5093c08c32a0515bfe17b9261cd588f595f8d7c7de04b9e2e25bb87019e`); image `build/arm/pico2_choupi.uf2`; focused regression stdout ended `TEST:SUMMARY fail=0`.

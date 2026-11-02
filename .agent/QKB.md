@@ -1,5 +1,28 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Physical GP INSTALL stage 9 caused by full filesystem index — 2026-11-02
+
+- **Observed:** Repeating GPPro `--install-only --debug` for the loaded SIO
+  client package returned INSTALL stage `09` and SW `6F00`. Concurrent finite
+  CDC capture showed `CHOUPI:FS_WRITE_FAIL op=new tag_len=4 size=2
+  files=8192/8192 free_slots=0 ... tag=02FF3D01` while writing lifecycle
+  state. This is direct evidence of overlay-index exhaustion; the earlier
+  stale/mismatched dependency hypothesis is not supported by this attempt.
+- **Fix:** `fs_write()` now retries a capacity-blocked write after running the
+  existing safe tombstone compactor, then looks up the target tag again because
+  compaction rehashes the index. If compaction cannot create capacity, the
+  write still fails with `FS_STATUS_OUT_OF_FLASH`.
+- **Validation:** `./tools/test-rp2350-fs-overlay` passes. The regression fills
+  8,192 slots, erases a dynamic record, writes a different tag, commits and
+  restores the filesystem, then checks the old tag is absent and new tag is
+  present. ARM and RISC-V current builds pass. Current ARM firmware flashed to
+  `2BED26ED20556535`; flash verification and finite monitor passed
+  (`TEST:SUMMARY pass=1 fail=0`).
+- **Limit:** Physical GPPro INSTALL has not yet been rerun with this fix. The
+  attached board may have a fully live index, which compaction cannot reduce;
+  do not delete unrelated package data to test that case. At this refresh the
+  VM exposes one runtime CCID device, not three BOOTSEL devices.
+
 ## Persisted Shareable proxy loses routing metadata after process restart — 2026-11-01
 
 - **Observed:** The three-package VPCD fixture stores a Shareable proxy in a

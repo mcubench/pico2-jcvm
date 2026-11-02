@@ -1,5 +1,30 @@
 # Session handoff — updated 2026-11-02
 
+## 2026-11-02 persistent-index exhaustion diagnosis and reclaim-on-write
+
+The physical GPPro INSTALL stage-9 failure was captured directly: while
+installing the already loaded SIO client package, the card returned stage `09`
+and `6F00`; concurrent CDC output reported
+`FS_WRITE_FAIL op=new tag_len=4 size=2 files=8192/8192 free_slots=0` for
+lifecycle tag `02FF3D01`. This is filesystem index exhaustion, not evidence of
+a stale dependency CAP. `fs_write()` now invokes the existing safe tombstone
+compactor when the requested write would exceed index or payload capacity,
+re-resolves the target tag after the rehash, and rejects the write if live
+records still leave insufficient space.
+
+The fake-flash regression fills all 8,192 index records, erases one dynamic
+record, creates a different tag, commits and restores the snapshot, and checks
+both tag visibility and the unchanged full record count. The filesystem suite
+passes. ARM and RISC-V current builds pass. ARM image was flashed to identified
+Pico 2 `2BED26ED20556535`; CDC-1200 recovered BOOTSEL after the reset interface
+was unavailable, flash verification passed, and the bounded serial monitor
+passed (`TEST:SUMMARY pass=1 fail=0`). This was a boot-health check, not a
+physical full-index compaction or GPPro INSTALL test. The VM presently sees one
+runtime CCID device; no other reported BOOTSEL boards enumerated. Do not erase
+card data or delete unrelated packages to make room. Re-run physical GPPro
+installation only through a safe package-scoped fixture path and interpret a
+remaining full-index failure as potentially all-live storage.
+
 ## Latest CTX-01 restart-safety update
 
 Persisted Shareable proxy placeholders now carry an internal marker in their
