@@ -1,16 +1,35 @@
 package samecap;
 
 import javacard.framework.APDU;
+import javacard.framework.AID;
 import javacard.framework.Applet;
 import javacard.framework.ISOException;
+import javacard.framework.Shareable;
 
-public final class WriterApplet extends Applet {
+public final class WriterApplet extends Applet implements Probe {
+  private static final byte[] READER_AID = {
+    (byte) 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x05, 0x02
+  };
+
   private WriterApplet() {
     register();
   }
 
   public static void install(byte[] buffer, short offset, byte length) {
     new WriterApplet();
+  }
+
+  public Shareable getShareableInterfaceObject(AID clientAID,
+                                                byte parameter) {
+    if (parameter == 0x51 && clientAID != null &&
+        clientAID.equals(READER_AID, (short) 0, (byte) READER_AID.length)) {
+      return this;
+    }
+    return null;
+  }
+
+  public boolean isShared(byte[] candidate) {
+    return candidate == SharedState.bytes;
   }
 
   public void process(APDU apdu) {

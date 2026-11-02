@@ -427,9 +427,12 @@ Archive text is historical evidence, not current device state or priorities.
   1, and the reader still sees the shared array. The PC backend and RP2350
   allocator both consult retained VM owner state. RMI registry test, filesystem
   overlay suite, same-CAP delete/reinstall VPCD (9/9), and multipackage VPCD
-  (47/47) pass; PC, ARM and RISC-V max_crypto builds pass. Latest ARM image ends
-  at `0x100e75f4`, using 947,700 of the 1 MiB firmware window and leaving
-  100,876 bytes. Physical flash/runtime validation remains open: the latest
+  (47/47) pass; PC, ARM and RISC-V max_crypto builds pass. The same-CAP
+  fixture explicitly calls `getAppletShareableInterfaceObject` from the reader
+  sibling and verifies the returned writer proxy sees the identical package
+  static byte array; `tools/test-same-cap-siblings` passes 6/6. Latest ARM
+  image ends at `0x100e7890`, using 948,368 of the 1 MiB firmware window and
+  leaving 100,208 bytes. Physical flash/runtime validation remains open: the latest
   approved host inventory exposed two runtime CCID readers and no BOOTSEL
   device. Further acceptance must cover same-CAP selection, instance/package
   deletion and reinstall, reset/transient behavior, and persistence on hardware.

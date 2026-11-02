@@ -90,6 +90,16 @@ def main() -> int:
             vpcd.install_applet(scp, package_aid, READER_AID, READER_AID)
             print("TEST:PASS loaded one CAP and installed its writer and reader applets")
 
+            select(connection, READER_AID, "SELECT reader for shared object identity")
+            response = vpcd.exchange(connection, bytes.fromhex("8021000000"),
+                                     "compare static array identity across siblings")
+            if response != bytes.fromhex("019000"):
+                raise RuntimeError(
+                    "same-CAP sibling applets did not observe one static array "
+                    f"identity: {response.hex().upper()} expected 019000"
+                )
+            print("TEST:PASS sibling SIO call received the shared static array")
+
             select(connection, READER_AID, "SELECT reader for static initializers")
             response = vpcd.exchange(connection, bytes.fromhex("8020000000"),
                                      "read CAP static initial values")
@@ -134,7 +144,7 @@ def main() -> int:
                     f"{response.hex().upper()} expected 0000123602581234567A9000"
                 )
             print("TEST:PASS retained sibling contexts observe updated package static state")
-            print("TEST:SUMMARY pass=5 fail=0")
+            print("TEST:SUMMARY pass=6 fail=0")
         finally:
             if connection is not None:
                 connection.close()

@@ -32,6 +32,23 @@ remaining same-CAP/multi-package physical lifecycle and global/reference
 firewall coverage, then move to open STORE/API/PERSIST acceptance. Preserve the
 other dirty worktree edits; this step has not been committed yet.
 
+## CTX-03 same-CAP sibling Shareable identity — 2026-11-02 14:25 UTC
+
+Validated the pending same-CAP sibling fixture extension. Writer now implements
+the fixture's Shareable `Probe`; reader calls
+`JCSystem.getAppletShareableInterfaceObject` and invokes `isShared` with the
+package static array. This checks that sibling applets in one CAP package
+receive the same static-array identity through SIO. The guarded
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed 6/6: positive
+sibling SIO identity, static primitive defaults, package static writes, and
+retained-sibling visibility. Log:
+`artifacts/logs/same-cap-sibling-vpcd-20261102T142314Z.log` SHA-256
+`e0d86e0ebcaf3cae104caa73369816d6398cbf9516ed7ad51c92dcce07574f50`.
+This is VPCD evidence only; no physical same-CAP install was run. The fixture
+changes and this progress record are to be committed separately from other
+pre-existing dirty files. Next is a guarded physical same-CAP lifecycle test,
+then remaining CTX-01 global-reference and GC/delete behavior.
+
 # ARCH-08 physical USB progress gate accepted — 2026-11-02 13:43 UTC
 
 Instrumented `choupi_ccid_native_crypto_progress()` to record call duration,

@@ -20424,3 +20424,14 @@
 - Decision: Close the clean channel-0 physical SIO positive path and stale-route reset boundary. CTX-01 remains open for same-CAP/multi-package physical lifecycle, GC/delete and global-array/reference ownership coverage; continue the next open project priority after those checks.
 - Commit: `4bb785b`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T141341Z.log` SHA-256 `8a5a9287f124916fcbd302bb17f8b5ff2bff167b874ba71dec4b286cb6390e13`; `artifacts/logs/sio-cross-aid-physical-20261102T141553Z.log` SHA-256 `4504e1371df260b2ddcea535d2ae9ddf546aab55d0ded385eb212aad1460cfa2`; `artifacts/logs/sio-reset-monitor-8E-20261102.log` SHA-256 `e95eddc87adcc7b534d1d0635a1979d02daed4457149a9324d3ae0c75c0fe21c`; VPCD log `artifacts/logs/sio-cross-aid-vpcd-20261102T140857Z.log`.
+
+## 2026-11-02 Verify same-CAP sibling Shareable identity 7 minutes
+
+- Step/experiment: `ctx03-same-cap-sibling-sio-identity-20261102`
+- When: '2026-11-02 14:18 UTC' - '2026-11-02 14:25 UTC'
+- Change: Validated the pending same-CAP test fixture update: the writer applet implements a Shareable interface; the reader looks it up and invokes a method comparing the received array with its package static array. Updated CTX-03 status and handoff.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed (`TEST:SUMMARY pass=6 fail=0`). Fixture conversion completed with only its existing int-support warning. No physical reader was used; this wrapper's host gate was followed for its local VPCD run.
+- Result: Writer/reader applets installed from one CAP. Cross-sibling SIO invocation observed identical package static byte-array identity (`019000`); default/non-default static values and subsequent cross-sibling writes also passed. This remains emulator evidence and does not close physical same-CAP acceptance.
+- Decision: Keep CTX-03 open. Add a separate guarded physical LOAD/INSTALL/select/delete test, then continue GC/restart and broader firewall coverage.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T142314Z.log` SHA-256 `e0d86e0ebcaf3cae104caa73369816d6398cbf9516ed7ad51c92dcce07574f50`; test fixture sources under `tools/tests/same_cap_sibling_fixture/`.
