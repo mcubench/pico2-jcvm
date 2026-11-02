@@ -23,8 +23,10 @@
   passes 9/9. RMI registry and filesystem overlay suites, multipackage VPCD
   (47/47), and PC/ARM/RISC-V max_crypto builds pass.
 - **Limit:** Physical testing remains pending; authorized USB refresh found
-  two running CCID readers but no BOOTSEL board. Owner exhaustion and every
-  garbage-collection/reset edge are not yet covered.
+  two running CCID readers but no BOOTSEL board. The native Context regression
+  now covers all 255 owner IDs through object retention and GC reclamation, but
+  the CAP allocator's no-free-ID INSTALL response and every GC/reset edge are
+  not yet covered.
 
 ## Transient clear events across same-package applet selection — verified 2026-11-02
 

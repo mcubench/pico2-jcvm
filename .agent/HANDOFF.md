@@ -1,4 +1,4 @@
-# CTX-03 owner and transient lifecycle checks — 2026-11-02 12:02 UTC
+# CTX-03 owner and transient lifecycle checks — 2026-11-02 12:04 UTC
 
 Fixed owner-ID reuse while package-shared VM objects remain alive. A new
 same-CAP VPCD regression installs writer and reader applets as owners 1 and 2,
@@ -32,9 +32,16 @@ same-package sibling switch clears `CLEAR_ON_DESELECT` but retains
 `artifacts/logs/same-cap-transient-vpcd-20261102T120128Z.log`. Test-only CAP and
 wrappers are committed in `c201188`.
 
-Next: review owner exhaustion and remaining GC/reset edge cases, then continue
-the open persistence acceptance. Only flash after a fresh authorized
-inventory finds BOOTSEL and both architectures build.
+`tools/test-rmi-registry` now allocates owner facades for IDs 1 through 255,
+retains one live array for each, confirms all remain reserved, then collects
+the arrays and confirms those owner states are reclaimable. It passes with
+`owner_id_exhaustion=1`. This is Context-level evidence; actual rejection of
+INSTALL when all 255 CAP owner IDs are occupied remains untested.
+
+Next: exercise CAP allocator rejection at 255 occupied IDs if a practical
+fixture is available, then review remaining GC/reset edges and continue the
+open persistence acceptance. Only flash after a fresh authorized inventory
+finds BOOTSEL and both architectures build.
 
 ## CTX-03 applet-local RMI/SIO registries — 2026-11-02 11:13 UTC
 

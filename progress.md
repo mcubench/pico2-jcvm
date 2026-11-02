@@ -20314,3 +20314,14 @@
 - Decision: Shared package heap transient lifecycle behaves correctly for single-channel sibling selection and reset in PC VPCD. Physical validation and multi-logical-channel behavior remain open. Next review owner exhaustion and other GC/reset edges, then continue persistence acceptance.
 - Commit: `c201188` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/tests/same_cap_transient_fixture/`, `tools/build-same-cap-transient-fixture`, `tools/test-same-cap-transients`, and `artifacts/logs/same-cap-transient-vpcd-20261102T120128Z.log`.
+
+## 2026-11-02 Exercise all applet owner IDs through GC reclamation 3 minutes
+
+- Step/experiment: `ctx03-owner-id-space-gc-20261102`
+- When: '2026-11-02 12:02 UTC' - '2026-11-02 12:04 UTC'
+- Change: Extended `tools/test-rmi-registry` to create a live owner facade and rooted array for each ID from 1 through 255, then collect them and verify all tombstoned owners become reclaimable. Updated CTX-03 TODO, QKB, and handoff with the distinction between Context liveness coverage and untested CAP allocator rejection.
+- Validation: `./tools/test-rmi-registry` passed with `owner_id_exhaustion=1`; it confirmed all 255 owner identities remained reserved with live arrays and were no longer retained after roots were dropped and GC completed. No firmware source changed; no hardware test.
+- Result: Owner retention and tombstone pruning work across the full 8-bit nonzero ID range in the Context/Heap model. This does not exercise the CAP store allocator's INSTALL failure when every ID is persisted as live.
+- Decision: Keep actual allocator no-free-ID INSTALL behavior open; continue CTX-03 remaining reset/GC/persistence acceptance.
+- Commit: `<implementation commit recorded in follow-up>`
+- Artifacts/logs: `tools/tests/rmi_registry/rmi_registry_test.cpp`; no external log.

@@ -282,6 +282,43 @@ void verify_deleted_owner_is_reserved_until_objects_are_collected() {
   assert(!package_context.isAppletOwnerRetained(7));
 }
 
+void verify_owner_id_space_exhaustion_and_reclamation() {
+  jcvm::Context package_context(0, 4);
+  std::array<std::array<uint8_t, 5>, UINT8_MAX> aids{};
+  for (uint16_t owner = 1; owner <= UINT8_MAX; ++owner) {
+    auto &aid = aids[owner - 1];
+    aid = {0xa0, 0x00, 0x00, 0x04, static_cast<uint8_t>(owner)};
+    assert(package_context.activateAppletInstance(
+        static_cast<uint8_t>(owner), aid.data(), aid.size()));
+    const auto reference = package_context.getHeap().addArray(
+        1, jcvm::JAVA_ARRAY_T_BYTE);
+    package_context.getHeap().setStaticReferenceRoot(
+        4, static_cast<uint16_t>(owner), reference);
+    assert(package_context.forgetAppletInstance(aid.data(), aid.size()));
+    assert(package_context.isAppletOwnerRetained(
+        static_cast<uint8_t>(owner)));
+  }
+
+  for (uint16_t owner = 1; owner <= UINT8_MAX; ++owner) {
+    assert(package_context.isAppletOwnerRetained(
+        static_cast<uint8_t>(owner)));
+  }
+
+  for (uint16_t owner = 1; owner <= UINT8_MAX; ++owner) {
+    package_context.getHeap().setStaticReferenceRoot(
+        4, static_cast<uint16_t>(owner), jcvm::jref_t{});
+  }
+  std::vector<jcvm::jref_t> roots;
+  package_context.appendRootReferences(roots);
+  const auto reclaimed = package_context.getHeap().collectUnreachableFrom(roots);
+  assert(reclaimed.complete);
+  assert(reclaimed.arrays_reclaimed == UINT8_MAX);
+  for (uint16_t owner = 1; owner <= UINT8_MAX; ++owner) {
+    assert(!package_context.isAppletOwnerRetained(
+        static_cast<uint8_t>(owner)));
+  }
+}
+
 void verify_heap_owner_facades_share_package_roots() {
   jcvm::Heap writer_heap(7);
   jcvm::Heap reader_heap(8, writer_heap);
@@ -679,6 +716,7 @@ int main() {
   verify_context_retains_sibling_instance_state();
   verify_sibling_rmi_state_isolation_and_delete();
   verify_deleted_owner_is_reserved_until_objects_are_collected();
+  verify_owner_id_space_exhaustion_and_reclamation();
   verify_heap_owner_facades_share_package_roots();
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
@@ -768,6 +806,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 package_heap_arrays=1 package_heap_roots=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
   return 0;
 }
