@@ -254,11 +254,12 @@ Archive text is historical evidence, not current device state or priorities.
   Since standard GPPro LOAD omits Descriptor, the operand stack now maintains
   compact runtime word-kind tags (primitive, reference, int-word, unknown).
   Descriptor-free cross-context calls use these tags to construct typed
-  initial locals, including int word pairing. Tags are maintained by typed
+  initial locals, including ordered low/high int word pairing. A malformed or
+  split int pair fails closed. Tags are maintained by typed
   pushes, local writes, frame-local initialization, `dup`, `swap`, and
   `set_Pushed_Element`; unknown values and applet-private references fail
-  closed. Null and JCRE-global references may cross. Tag storage costs 64
-  bytes per 256-word Stack. No types are inferred from raw values. The
+  closed. Null and JCRE-global references may cross. Three-bit tag storage
+  costs 96 bytes per 256-word Stack. No types are inferred from raw values. The
   descriptor-free VPCD fixture passes 14/14; the Descriptor-present regression
   also passes 14/14 through the existing signature path. Physical typed
   cross-AID execution remains unverified.

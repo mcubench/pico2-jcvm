@@ -13,22 +13,24 @@ APDU stream was not separately captured. Trace and probe logs are
 `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log` and
 `artifacts/logs/sio-two-package-probe-20261102T013345Z.log`.
 
-The operand stack now carries compact runtime word-kind tags (unknown,
-primitive, reference, int-word) maintained by typed pushes, local writes,
-frame-local initialization, `dup`, `swap`, and stack element replacement. When
-the Descriptor is absent, cross-context `invokeinterface` uses these tags to
-construct server locals. Int pairs are checked; null and JCRE-global references
-may cross; unknown words and applet-private references fail closed. Storage is
-64 bytes per 256-word stack. Present Descriptor signatures continue through the
-existing checked path; malformed present data does not fall back to tags.
+The operand stack now carries compact three-bit word-kind tags (unknown,
+primitive, reference, int-low, int-high) maintained by typed pushes, local
+writes, frame-local initialization, `dup`, `swap`, and stack element
+replacement. When the Descriptor is absent, cross-context `invokeinterface`
+uses these tags to construct server locals. Int pairs must have low/high order;
+null and JCRE-global references may cross; unknown words and applet-private
+references fail closed. Storage is 96 bytes per 256-word stack. Present
+Descriptor signatures continue through the existing checked path; malformed
+present data does not fall back to tags.
 
 Validation: `tools/test-rmi-registry` passes. The three-package VPCD suite
-passes 14/14 with Descriptor omitted and 14/14 with Descriptor present. Logs:
-`artifacts/logs/sio-cross-aid-vpcd-20261102T021632Z.log` and
-`artifacts/logs/sio-cross-aid-vpcd-20261102T022037Z.log`. Current ARM and RISC-V
-wrapper builds pass; ARM image size 1,850,368 bytes, SHA-256
-`ea5a24a4544965a534b4bbbfa713d3ad093f432f75d8fb9607bb0b8a617c2a04`; RISC-V
-smoke image 79,872 bytes, SHA-256
+passes 14/14 with Descriptor omitted and 14/14 with Descriptor present,
+including a negative int-word-order regression. Logs:
+`artifacts/logs/sio-cross-aid-vpcd-20261102T024802Z.log` and
+`artifacts/logs/sio-cross-aid-vpcd-20261102T024959Z.log`. PC, ARM and RISC-V
+wrapper builds pass. ARM image size is 1,852,416 bytes, end `0x100e2038`,
+SHA-256 `53f6e554bcf18c490618a958754d997d9234c48ddecc814f9212d82bf3396682`;
+RISC-V smoke image size is 79,872 bytes, end `0x10009a78`, SHA-256
 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
 
 The user reports three boards in BOOTSEL, but the latest authorized helper and

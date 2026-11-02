@@ -84,12 +84,12 @@ inline bool buildShareableTaggedInitialLocals(
       ++word_index;
       break;
     }
-    case Stack::ValueKind::IntWord: {
+    case Stack::ValueKind::IntLowWord: {
 #ifdef JCVM_INT_SUPPORTED
       if (word_index + 1 >= argument_word_count ||
           caller_stack.get_Pushed_ValueKind(
               static_cast<uint16_t>(stack_position - 1)) !=
-              Stack::ValueKind::IntWord) {
+              Stack::ValueKind::IntHighWord) {
         return false;
       }
       const uint16_t low = raw;
@@ -106,6 +106,8 @@ inline bool buildShareableTaggedInitialLocals(
       return false;
 #endif
     }
+    case Stack::ValueKind::IntHighWord:
+      return false;
     case Stack::ValueKind::Unknown:
       return false;
     }

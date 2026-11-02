@@ -62,10 +62,18 @@ public:
   enum class ReturnKind : uint8_t { None, Void, Short, Int, Reference };
   // Runtime type category for operand words. This compact tag is used by
   // cross-context calls when optional CAP Descriptor metadata is unavailable.
-  enum class ValueKind : uint8_t { Unknown, Primitive, Reference, IntWord };
+  enum class ValueKind : uint8_t {
+    Unknown,
+    Primitive,
+    Reference,
+    IntLowWord,
+    IntHighWord
+  };
 
 private:
-  static constexpr size_t value_kind_bytes = (JCVM_STACK_SIZE + 3) / 4;
+  static constexpr size_t value_kind_bits = 3;
+  static constexpr size_t value_kind_bytes =
+      (JCVM_STACK_SIZE * value_kind_bits + 7) / 8;
   jword_t jc_stack[JCVM_STACK_SIZE];
   uint8_t jc_stack_value_kinds[value_kind_bytes]{};
   List<Frame> frames;
@@ -77,18 +85,35 @@ private:
 
   ValueKind getValueKind(const jword_t *word) const noexcept {
     const size_t index = static_cast<size_t>(word - jc_stack);
-    const uint8_t shift = static_cast<uint8_t>((index & 3u) * 2u);
-    return static_cast<ValueKind>(
-        (jc_stack_value_kinds[index / 4u] >> shift) & 0x03u);
+    const size_t bit_index = index * value_kind_bits;
+    const size_t byte_index = bit_index / 8u;
+    const uint8_t shift = static_cast<uint8_t>(bit_index & 7u);
+    uint16_t packed = jc_stack_value_kinds[byte_index];
+    if (byte_index + 1 < value_kind_bytes) {
+      packed |= static_cast<uint16_t>(jc_stack_value_kinds[byte_index + 1])
+                << 8;
+    }
+    return static_cast<ValueKind>((packed >> shift) & 0x07u);
   }
   void setValueKind(jword_t *word, const ValueKind kind) noexcept {
     const size_t index = static_cast<size_t>(word - jc_stack);
-    const uint8_t shift = static_cast<uint8_t>((index & 3u) * 2u);
-    const uint8_t mask = static_cast<uint8_t>(0x03u << shift);
-    auto &packed = jc_stack_value_kinds[index / 4u];
-    packed = static_cast<uint8_t>(
-        (packed & static_cast<uint8_t>(~mask)) |
-        (static_cast<uint8_t>(kind) << shift));
+    const size_t bit_index = index * value_kind_bits;
+    const size_t byte_index = bit_index / 8u;
+    const uint8_t shift = static_cast<uint8_t>(bit_index & 7u);
+    uint16_t packed = jc_stack_value_kinds[byte_index];
+    if (byte_index + 1 < value_kind_bytes) {
+      packed |= static_cast<uint16_t>(jc_stack_value_kinds[byte_index + 1])
+                << 8;
+    }
+    constexpr uint16_t mask = 0x07u;
+    packed = static_cast<uint16_t>(
+        (packed & static_cast<uint16_t>(~(mask << shift))) |
+        (static_cast<uint16_t>(kind) << shift));
+    jc_stack_value_kinds[byte_index] = static_cast<uint8_t>(packed);
+    if (byte_index + 1 < value_kind_bytes) {
+      jc_stack_value_kinds[byte_index + 1] =
+          static_cast<uint8_t>(packed >> 8);
+    }
   }
 
 public:

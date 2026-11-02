@@ -1,22 +1,25 @@
 # Issue knowledge base — compacted 2026-10-29
 
-## Descriptor-free cross-context SIO now uses runtime operand kinds — 2026-11-02
+## Descriptor-free SIO preserves int word order in runtime tags — 2026-11-02
 
 - **Implementation:** The VM stack tracks each word as unknown, primitive,
-  reference, or part of an int. Cross-context `invokeinterface` uses these
+  reference, int-low, or int-high. Cross-context `invokeinterface` uses these
   tags when GPPro has omitted the optional Descriptor component. Typed pushes,
   local writes, frame-local initialization, `dup`, `swap`, and stack element
-  replacement maintain the tags. Storage is 64 bytes for a 256-word stack.
+  replacement maintain the tags. Three-bit storage costs 96 bytes for a
+  256-word stack.
 - **Firewall:** Unknown values and applet-private object/array references are
   rejected. Null and JCRE-global references may cross. Int words must appear
-  as a valid tagged pair. No type is guessed from the payload bits. Present
+  as an ordered low/high pair; isolated or reversed words are rejected. No
+  type is guessed from payload bits. Present
   Descriptor data continues through its existing signature validation path;
   malformed Descriptor data does not fall back to tags.
-- **Validation:** `./tools/test-rmi-registry` passes. The three-package VPCD
-  suite passes 14/14 with Descriptor omitted (the normal GPPro path) and 14/14
-  with Descriptor explicitly present. Logs:
-  `artifacts/logs/sio-cross-aid-vpcd-20261102T021632Z.log` and
-  `artifacts/logs/sio-cross-aid-vpcd-20261102T022037Z.log`. ARM and RISC-V
+- **Validation:** `./tools/test-rmi-registry` passes, including a negative
+  fixture that swaps adjacent int words into invalid order. The three-package
+  VPCD suite passes 14/14 with Descriptor omitted (normal GPPro path) and
+  14/14 with Descriptor present. Logs:
+  `artifacts/logs/sio-cross-aid-vpcd-20261102T024802Z.log` and
+  `artifacts/logs/sio-cross-aid-vpcd-20261102T024959Z.log`. PC, ARM and RISC-V
   wrapper builds pass. No hardware validation was performed.
 - **Physical state:** The user reports three devices in BOOTSEL. The latest
   authorized helper/USB refresh still sees one runtime `2e8a:0009` CCID and no

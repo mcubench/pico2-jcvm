@@ -215,10 +215,10 @@ void Stack::push_Int(const jint_t value) noexcept(
   Frame &current_frame = this->getCurrentFrame();
   jword_t *low_word = current_frame.getTOS();
   current_frame.push_Value((jword_t)INT_2_LSSHORTS(value));
-  this->setValueKind(low_word, ValueKind::IntWord);
+  this->setValueKind(low_word, ValueKind::IntLowWord);
   jword_t *high_word = current_frame.getTOS();
   current_frame.push_Value((jword_t)INT_2_MSSHORTS(value));
-  this->setValueKind(high_word, ValueKind::IntWord);
+  this->setValueKind(high_word, ValueKind::IntHighWord);
 }
 #endif /* JCVM_INT_SUPPORTED */
 
@@ -448,8 +448,8 @@ void Stack::writeLocal_Int(const uint8_t local_number, const jint_t value) {
   current_frame.writeLocal_Value(local_number, INT_2_LSSHORTS(value));
   current_frame.writeLocal_Value((uint8_t)(local_number + 1),
                                  INT_2_MSSHORTS(value));
-  this->setValueKind(local, ValueKind::IntWord);
-  this->setValueKind(local + 1, ValueKind::IntWord);
+  this->setValueKind(local, ValueKind::IntLowWord);
+  this->setValueKind(local + 1, ValueKind::IntHighWord);
 }
 #endif /* JCVM_INT_SUPPORTED */
 

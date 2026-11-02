@@ -190,9 +190,9 @@ void verify_shareable_cross_context_arguments() {
     assert(stack.get_Pushed_ValueKind(4) ==
            jcvm::Stack::ValueKind::Primitive);
     assert(stack.get_Pushed_ValueKind(3) ==
-           jcvm::Stack::ValueKind::IntWord);
+           jcvm::Stack::ValueKind::IntLowWord);
     assert(stack.get_Pushed_ValueKind(2) ==
-           jcvm::Stack::ValueKind::IntWord);
+           jcvm::Stack::ValueKind::IntHighWord);
     assert(stack.get_Pushed_ValueKind(1) ==
            jcvm::Stack::ValueKind::Reference);
     assert(jcvm::buildShareableTaggedInitialLocals(
@@ -230,6 +230,17 @@ void verify_shareable_cross_context_arguments() {
     private_reference_stack.push_Reference(make_reference(23));
     assert(!jcvm::buildShareableTaggedInitialLocals(
         2, receiver, private_reference_stack, locals, local_count));
+
+#ifdef JCVM_INT_SUPPORTED
+    jcvm::Stack malformed_int_stack;
+    malformed_int_stack.push_Frame(0, 0, 8, nullptr);
+    malformed_int_stack.push_Reference(receiver);
+    malformed_int_stack.push_Int(static_cast<jcvm::jint_t>(0x12345678));
+    malformed_int_stack.push_Int(static_cast<jcvm::jint_t>(0x76543210));
+    malformed_int_stack.swap(1, 1);
+    assert(!jcvm::buildShareableTaggedInitialLocals(
+        5, receiver, malformed_int_stack, locals, local_count));
+#endif
   }
 
   assert(jcvm::buildShareableReceiverOnlyInitialLocals(
