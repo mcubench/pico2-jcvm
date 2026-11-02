@@ -19886,5 +19886,5 @@
 - Validation: `./tools/test-jcsystem-transaction-applet --case 41` completed with `TEST:SUMMARY pass=3 fail=0 elapsed_s=85.593`; it observed APDU response `019000` because the applet caught `SecurityException` from `global[0] = this`. This confirms the current implementation's behavior, while the Java Card 3.0.5 spec review confirms the restriction is over-strict. `git diff --check` passed.
 - Result: Reproduced the global Object[] compatibility gap in the PC emulator. Log: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log`, SHA-256 `8cf6cb16df35f096ee1fa3c3befcc3a99adb48ef5e13e307aab1c1f2f114e1e4`. No physical test was possible: latest USB refresh still showed one runtime CCID and no BOOTSEL devices.
 - Decision: Keep the runtime restriction until owner-preserving handles, garbage-collection roots, deletion protection, persistence, and reset semantics are implemented. Replace the current case 41 expectation only with those changes.
-- Commit: `<pending>`
+- Commit: `24b9761`
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log` (hash above).
