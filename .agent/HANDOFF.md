@@ -1,5 +1,25 @@
 # Session handoff — updated 2026-11-02
 
+## Max profile build and live USB refresh — 2026-11-02 08:30 UTC
+
+Both `./tools/build arm --profile max_crypto` and
+`./tools/build riscv --profile max_crypto` passed; support selection is 147/150.
+The current ARM output is 2,128,384 bytes (SHA-256
+`7fc09911123bf8cfd8f596c45a810391ed1a4a385d1ed621267600acb5259caa`) and does
+not match the tracked external-test artifact at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (2,098,176 bytes,
+SHA-256 `1dc6d486f49e9688eedcdf65785f1629cc6de93b23c7931e22d577ed6696d82d`).
+Do not replace the artifact: current shared-tree changes are uncommitted and
+belong to another session; the size difference has not been isolated. RISC-V
+smoke output is 79,872 bytes, SHA-256
+`7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+
+The user reported three devices in BOOTSEL, but the authorized live refresh
+returned two runtime CCID devices (`8E464F4E2BBC0A19`,
+`2BED26ED20556535`), no BOOTSEL device. No flash occurred. Next continue CTX-03
+package-context ownership design offline; refresh the USB path again before any
+physical operation and preserve all dirty source/doc files.
+
 ## Latest physical Multi CAP test — 2026-11-02 08:18 UTC
 
 Both runtime cards passed `tools/test-get-status-multipage-physical` using the

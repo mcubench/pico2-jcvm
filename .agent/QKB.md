@@ -1,5 +1,38 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## BOOTSEL report differs from VM-visible USB inventory — 2026-11-02
+
+- **Observed:** The user reported three Pico 2 boards in BOOTSEL. The required
+  elevated refresh command, `PICO2_HOST_USB_ACCESS=1 sudo -n
+  /usr/local/sbin/pico2-pcsc-reader`, granted two nodes, both runtime VID:PID
+  `2e8a:0009`; `pcsc_scan -r` identified serials `8E464F4E2BBC0A19` and
+  `2BED26ED20556535`. No BOOTSEL volume/device appeared to the VM.
+- **Viable procedure:** Trust the fresh VM-visible inventory, not the host or
+  user report, before flashing. No flash was attempted. Continue offline or
+  test the two runtime cards read-only; refresh through the authorized path
+  again before any operation.
+
+## Current max_crypto ARM build differs from downloadable artifact — 2026-11-02
+
+- **Observed:** `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` both passed. Current ARM UF2 is
+  2,128,384 bytes, SHA-256
+  `7fc09911123bf8cfd8f596c45a810391ed1a4a385d1ed621267600acb5259caa`;
+  tracked external-test UF2 is 2,098,176 bytes, SHA-256
+  `1dc6d486f49e9688eedcdf65785f1629cc6de93b23c7931e22d577ed6696d82d`.
+  The support generator selected 147/150 capabilities and emitted a 34,996
+  byte ROM mask. RISC-V smoke UF2 remains 79,872 bytes, SHA-256
+  `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+- **Interpretation:** The downloadable ARM image does not byte-match the image
+  built from the current shared worktree. The tree has another session's
+  pending source and documentation edits, including `src/cap_load.cpp` changes;
+  their relationship to the size difference is not isolated. Preserve the
+  tracked artifact and dirty source. Do not replace the download until the
+  owner authorizes incorporating those changes or a clean reproducible build
+  establishes the intended artifact.
+- **Validation limits:** Builds passed; no image was flashed. The BOOTSEL
+  inventory above showed only two runtime CCID devices.
+
 ## Upstream Multi CAP install and Le-limited GET STATUS pass on both tokens — 2026-11-02
 
 - **Procedure:** Ran `tools/test-get-status-multipage-physical` independently
