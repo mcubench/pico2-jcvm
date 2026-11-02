@@ -268,10 +268,16 @@ Archive text is historical evidence, not current device state or priorities.
   cross an SIO call but still applies caller-context firewall checks to later
   object access (§§6.1.4, 6.2.4.3, 6.2.8). Do not copy private compact
   references between heaps: handles are heap-local and can alias a different
-  server object. Add an invocation-scoped foreign-reference representation
-  that retains source context and handle, then verify attempted accesses fail
-  with `SecurityException`; define safe return/storage rules before enabling
-  transport. See `.agent/QKB.md`.
+  server object. Applet-local reference arguments currently fail closed before
+  entering the server. Keep that as the safe incomplete behavior until
+  invocation arguments can carry an owner-tagged opaque reference without
+  aliasing a server-local handle. The SIO parameter contract permits receiving
+  parameters, but array operations remain subject to §6.2.8.2: only arrays
+  owned in the active context or designated global arrays are accessible. Add
+  a fixture proving private-array argument transport followed by caught
+  `SecurityException` on server access, along with equal-handle collision,
+  return, storage, GC and deletion tests. Never copy raw handles between
+  independent heaps. See `.agent/QKB.md`.
   A separate firewall gap remains: Java Card RE 3.0.5 §6.2.8.2 permits
   ordinary applet references to be stored in global Object[] arrays, while the
   current implementation rejects all non-null entries (and transaction probe

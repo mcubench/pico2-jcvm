@@ -19981,3 +19981,26 @@
   retain both visible readers for failover.
 - Commit: `96c2495`.
 - Artifacts/logs: USB inventory output only; no saved log.
+
+## 2026-11-02 Clarify SIO argument access rules 5 minutes
+
+- Step/experiment: `sio-argument-firewall-rule-review-20261102`
+- When: '2026-11-02 08:48 CET' - '2026-11-02 08:53 CET'
+- Change: Reconciled Java Card RE 3.0.5 §6.2.4.3's SIO parameter statement
+  with §6.2.8.2's array-access rule. Updated CTX-01 to require owner-tagged
+  opaque references rather than raw cross-heap handles, with a regression for
+  server-side access to a private client array. Updated QKB and HANDOFF. No
+  source code, tests or CAPs changed.
+- Validation: Read official Oracle spec §§6.1.4, 6.2.4.3 and 6.2.8.2; reviewed
+  current SIO marshalling and heap handle ownership; `git diff --check` passed.
+  No build/test was run because this was a documentation-only clarification.
+- Result: Current call-boundary rejection remains memory-safe but may be
+  stricter than the SIO parameter contract; executable reference transport and
+  access behavior still need a regression. The authorized USB inventory
+  showed two runtime readers and no BOOTSEL device.
+- Decision: Preserve fail-closed behavior until an opaque owner-tagged
+  reference and the collision/access/lifetime tests exist. Continue CTX-01
+  offline.
+- Commit: pending.
+- Artifacts/logs: Official specification
+  `https://docs.oracle.com/cd/E59935_01/JCCRE.pdf`; no test log.

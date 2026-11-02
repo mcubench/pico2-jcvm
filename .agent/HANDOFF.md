@@ -1,5 +1,24 @@
 # Session handoff — updated 2026-11-02
 
+## SIO parameter/access-rule clarification — 2026-11-02 07:53 UTC
+
+Rechecked Java Card RE 3.0.5 §6.2.4.3 against its specific array access rules.
+§6.2.4.3 says an SIO method can receive/access call parameters, while
+§6.2.8.2 allows array access only when the array belongs to an applet in the
+currently active context or is designated global. A private client array must
+remain inaccessible in the server context; accepting a reference as an
+argument must not copy its compact heap-local handle. The current call-boundary
+rejection is memory-safe but may be stricter than the parameter contract.
+CTX-01 now tracks an owner-tagged opaque argument and a fixture that attempts
+server-side access and expects `SecurityException`, plus collision, return,
+storage, GC and deletion checks. No source, test, or CAP changed.
+
+The user's latest report says all three boards are in BOOTSEL. The authorized
+USB refresh at 07:52 UTC instead granted two runtime readers at
+`/dev/bus/usb/001/003` and `/dev/bus/usb/001/004` (`2e8a:0009`); no BOOTSEL
+device was enumerated. Hardware remains untouched. Refresh the helper again
+before any hardware action; continue offline in the meantime.
+
 ## Latest USB inventory — 2026-11-02 07:48 UTC
 
 The authorized helper granted access to two USB nodes. `lsusb -d 2e8a:` shows

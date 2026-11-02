@@ -113,19 +113,24 @@
 - **Current implementation risk:** Each applet `Heap` allocates compact
   `jref_t` handles independently. Copying a client-private handle unchanged
   into a server frame could resolve to a different server-owned object with
-  the same compact value. The current marshaller therefore correctly rejects
-  applet-private reference arguments; it must not be relaxed to raw-handle
-  copying.
+  the same compact value. Rejecting it at the call boundary avoids that alias,
+  but may be stricter than the SIO parameter contract: preserve the argument
+  as an opaque reference and test the specified bytecode access behavior.
 - **Viable implementation direction:** Introduce an explicit cross-context
   reference representation or invocation-scoped handle table that preserves
-  the originating context and original handle. All operations on such a handle
-  in the callee must throw `SecurityException` unless the reference is one of
-  the standard permitted cross-context object categories. Define return and
-  storage behavior, and test collisions between equal compact handles in two
-  heaps before enabling transport. Until then, retain fail-closed marshalling.
-- **Validation:** Read-only review of the 3.0.5 specification and the SIO
-  marshaller, `jref_t`, and per-applet heap ownership model. No source change,
-  build, or test was performed in this research step.
+  the originating context and original handle. Do not let the server dereference
+  a client-private object: §6.2.8.2 permits array operations only for arrays
+  owned by an applet in the currently active context or designated global
+  arrays. Verify that a private reference can be passed without aliasing and
+  that attempted array/object access throws `SecurityException`. Define safe
+  return and storage behavior, and test collisions between equal compact
+  handles in two heaps before enabling transport. Until then, retain the
+  existing call-boundary rejection as the safe incomplete behavior.
+- **Validation:** Read-only review of official Oracle Java Card RE 3.0.5
+  §§6.1.4, 6.2.4.3, and 6.2.8.2, plus the SIO marshaller, `jref_t`, and
+  per-applet heap ownership model. The parameter statement does not override
+  the array ownership rule. No source change, build, or test was performed in
+  this research step.
 
 ## Typed operand pops must preserve SIO runtime kinds — 2026-11-02
 
