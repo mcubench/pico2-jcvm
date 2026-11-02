@@ -19910,3 +19910,33 @@
 - Decision: Keep the runtime restriction until owner-preserving handles, garbage-collection roots, deletion protection, persistence, and reset semantics are implemented. Replace the current case 41 expectation only with those changes.
 - Commit: `24b9761`
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log` (hash above).
+
+## 2026-11-02 Fix privileged host MPU access during region updates 15 minutes
+
+- Step/experiment: `host-mpu-privileged-lock-bypass-20261102`
+- When: '2026-11-02 08:22 CET' - '2026-11-02 08:37 CET'
+- Change: Diagnosed the SIO host-emulator boot fault at RAM offset `0x17e98`.
+  The fault occurred in privileged mode while the MPU region registry was
+  locked; permission lookup incorrectly returned `PROT_NONE` because it tried
+  the nonblocking lock before checking privilege. Both permission paths now
+  grant RWX immediately to privileged accesses, while unprivileged accesses
+  remain fail-closed. Added a regression that holds the registry lock while
+  forcing a privileged RAM fault. Added opt-in region diagnostics and
+  configurable SIO fixture timeouts. Updated EMU-01, QKB and HANDOFF.
+- Validation: `./tools/build-pc --profile current` passed. Focused host MPU
+  tests passed 11/11 using the elevated ptrace path; the restricted attempt
+  failed as expected with `PTRACE_ATTACH: Operation not permitted`. The SIO
+  cross-AID VPCD suite passed 15/15. Earlier SIO attempts reproduced the bug
+  and identified a busy registry while privileged. Build output retains 58
+  pre-existing Rust warnings. ARM/RISC-V builds and hardware were not checked
+  because the change is host-emulator-only; no hardware operation was run.
+- Result: The PC emulator boots and completes the cross-AID SIO suite after the
+  MPU fix. Log `artifacts/logs/sio-cross-aid-vpcd-20261102T073510Z.log`,
+  SHA-256 `e0ebc035db665d9e8b1b5a9020204b46820e61e0a991b852fabf65c82f934877`.
+  Performance impact was not measured.
+- Decision: Keep EMU-01 open for the full Crypto VPCD deadline and throughput
+  acceptance. Continue with the next high-priority JCVM task; physical testing
+  still requires host-visible devices and the repository build gates.
+- Commit: `041882e` (`choupi/os` submodule; root tracking commit follows).
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261102T073510Z.log`;
+  PC image `build/choupi-pc/choupi`.

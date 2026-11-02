@@ -24,6 +24,9 @@ SERVICE_PACKAGE = bytes.fromhex("A000000151000003")
 SERVICE_APPLET = bytes.fromhex("A00000015100000301")
 CLIENT_PACKAGE = bytes.fromhex("A000000151000004")
 CLIENT_APPLET = bytes.fromhex("A00000015100000401")
+CONNECT_TIMEOUT = float(os.environ.get("SIO_CROSS_AID_CONNECT_TIMEOUT_S", "45"))
+APDU_TIMEOUT = float(os.environ.get("SIO_CROSS_AID_APDU_TIMEOUT_S", "30"))
+SHUTDOWN_TIMEOUT = float(os.environ.get("SIO_CROSS_AID_SHUTDOWN_TIMEOUT_S", "30"))
 
 
 def cap_components(path: Path) -> tuple[bytes, bytes, list[bytes]]:
@@ -116,9 +119,9 @@ def main() -> int:
                                        stderr=log, start_new_session=True)
         connection = None
         try:
-            connection, _ = vpcd.accept_vpcd(listener, process, 45,
+            connection, _ = vpcd.accept_vpcd(listener, process, CONNECT_TIMEOUT,
                                               log_path, "cross-AID SIO")
-            connection.settimeout(30)
+            connection.settimeout(APDU_TIMEOUT)
             vpcd.send_message(connection, b"\x01")
             vpcd.send_message(connection, b"\x04")
             atr = vpcd.receive_message(connection)
@@ -161,7 +164,7 @@ def main() -> int:
                 )
             connection.close()
             connection = None
-            process.wait(timeout=30)
+            process.wait(timeout=SHUTDOWN_TIMEOUT)
             if process.returncode != 0:
                 raise RuntimeError(
                     f"first emulator exited with {process.returncode} before restart"
@@ -170,9 +173,10 @@ def main() -> int:
                 process = subprocess.Popen(command, cwd=ROOT, stdout=log,
                                            stderr=log, start_new_session=True)
             connection, _ = vpcd.accept_vpcd(
-                listener, process, 45, log_path, "cross-AID SIO restart"
+                listener, process, CONNECT_TIMEOUT, log_path,
+                "cross-AID SIO restart"
             )
-            connection.settimeout(30)
+            connection.settimeout(APDU_TIMEOUT)
             vpcd.send_message(connection, b"\x01")
             vpcd.send_message(connection, b"\x04")
             reset_atr = vpcd.receive_message(connection)

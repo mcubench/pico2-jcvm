@@ -201,6 +201,11 @@ Archive text is historical evidence, not current device state or priorities.
   in 88 s. No RSA-SHA-384 defect was demonstrated.
   Remaining: diagnose setup/client/emulator throughput and cleanup, select a
   justified finite area deadline, and rerun the complete intended selection.
+  The host MPU emulator also had a privileged-access failure when a memory
+  fault interrupted an MPU region update: permission lookup tried the busy
+  region lock and denied the access. Privileged accesses now bypass that lock;
+  focused MPU tests and the 15-case SIO VPCD suite pass. Performance impact has
+  not been measured.
   Acceptance: normal exit, all requested rows, correct statuses and CAP cleanup;
   partial CSVs retain partial classification even when all emitted rows pass.
   Use fresh VPCD storage for isolated sweeps; restart tests retain matched image

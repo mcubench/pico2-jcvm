@@ -1,5 +1,30 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Host MPU emulator must bypass the region lock for privileged accesses — 2026-11-02
+
+- **Observed:** The PC SIO VPCD emulator exited before accepting a connection
+  while running its first filesystem remote call. The fault was at emulated RAM
+  offset `0x17e98`; diagnostics showed `privileged=true`, but both effective
+  permission lookups returned `PROT_NONE` because the MPU region registry was
+  busy.
+- **Cause:** `uniform_page_protection()` and `allows_addr()` attempted a
+  nonblocking lock before checking the privilege state. A privileged fault can
+  interrupt a region update while that lock is held. The host MPU model must
+  grant privileged RWX access without consulting the unprivileged region map.
+- **Viable fix:** Check privilege first in both permission lookup paths and
+  return RWX before touching the registry. Keep the registry fail-closed for
+  unprivileged accesses. A focused regression deliberately holds the region
+  lock, protects a RAM page, and verifies a privileged read/write succeeds.
+- **Validation:** `RUST_TEST_THREADS=1 ./tools/env cargo test --manifest-path
+  choupi/os/Cargo.toml --no-default-features --features host,big_ram --lib
+  arch::host::mpu_ll::speculate_0` passed 11/11 with host ptrace permissions.
+  `./tools/build-pc --profile current` passed. The cross-AID SIO VPCD suite
+  passed 15/15 after this fix. The test log is
+  `artifacts/logs/sio-cross-aid-vpcd-20261102T073510Z.log`; performance impact
+  was not measured. Build output still has pre-existing Rust warnings.
+- **Diagnostic aid:** Set `CHOUPI_LOG_HOST_MPU_PERMISSIONS=1` to log the
+  permission result and matching region entries at a host MPU fault.
+
 ## Global Object[] must preserve foreign-reference ownership — 2026-11-02
 
 - **Specification finding:** Java Card RE 3.0.5 §6.2.8.2 explicitly permits

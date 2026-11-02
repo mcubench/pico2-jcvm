@@ -1,5 +1,27 @@
 # Session handoff — updated 2026-11-02
 
+## Latest host MPU correction — privileged region-update fault
+
+Resumed the host MPU regression after PC SIO boot failed at RAM offset
+`0x17e98`. Opt-in diagnostic `CHOUPI_LOG_HOST_MPU_PERMISSIONS=1` showed the
+fault occurred with `privileged=true` while the MPU region registry was busy;
+the old permission path attempted a nonblocking registry lock first and
+incorrectly returned `PROT_NONE`. Both `uniform_page_protection()` and
+`allows_addr()` now return RWX immediately for privileged accesses, before
+consulting the unprivileged region registry. Unprivileged accesses continue to
+fail closed if that registry is busy. Added a regression that holds the region
+lock while forcing a privileged RAM page fault.
+
+Validation: focused host MPU tests pass 11/11 (ptrace tests require the
+elevated host execution path); `./tools/build-pc --profile current` passes;
+the SIO cross-AID VPCD integration passes 15/15. Latest log:
+`artifacts/logs/sio-cross-aid-vpcd-20261102T073510Z.log`. No hardware operation
+was performed and no speedup was measured. The full ARM/RISC-V wrappers were
+not rerun because this change is confined to the host emulator. The source is
+committed in `choupi/os` as `041882e`; root progress, TODO, QKB, and handoff
+tracking are ready for the separate root commit. Preserve all unrelated root
+worktree changes.
+
 ## Host emulator expected-fault logging
 
 The host MPU emulator now suppresses warning formatting for SIGSEGVs whose
