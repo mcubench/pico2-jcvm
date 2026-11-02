@@ -1,3 +1,28 @@
+# JCAlgTest max_crypto physical support validation — 2026-11-02 13:18 UTC
+
+The current ARM `max_crypto` image was rebuilt for ARM and RISC-V and reflashed
+to Pico 2 `2BED26ED20556535` after its PC/SC reader disappeared during an
+extended support run. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile
+max_crypto --chipid 2BED26ED20556535` recovered the board through its CDC
+1200-baud BOOTSEL path; flash verification reached 100% and the finite monitor
+passed. The startup log contained a retained `WATCHDOG_RECOVERY ... cause=other`
+marker, but a targeted exact APDU from the interrupted extended test returned
+`9000` in 163 ms after reflash. Exact-reader SELECT, GETVERSION and
+JCSystem-info probes also passed.
+
+The official JCAlgTest 1.8.2 `ALG_SUPPORT_BASIC` run completed on 2BED:
+362 rows, 148 yes, 214 no, zero other. Comparator gaps are explained by two
+known upstream RSA-3072/4096 mislabeled KeyPair queries and three
+`Cipher.getInstance` aliases not covered by BASIC. The separate
+`ALG_SUPPORT_EXTENDED` run timed out at 900 seconds after 2,094 CSV lines; do
+not count it complete. Current result CSV SHA-256 is
+`eb56504b226a92ac5f34a8ff97569e307211d189b079ed612bf26178343a4ade`; current
+UF2 SHA-256 remains `16fd3afabc24b447a9eaf94989b676bdaa8e929b399cea5056b5b9be7b906b4c`.
+Details are in TODO.md, QKB and progress.md. Continue with a bounded extended-
+mode plan, then return to API-01/03 and remaining persistence, storage and
+context acceptance. Refresh exact reader enumeration before the next physical
+operation.
+
 # API-02 physical Signature-IV acceptance — 2026-11-02 12:42 UTC
 
 Flashed the current ARM `max_crypto` image to identified Pico 2

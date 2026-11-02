@@ -12,7 +12,7 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 2. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
    firewall contexts from applet-instance ownership; retained per-instance
    contexts and a proxy registry are groundwork, not complete SIO semantics.
-3. Finish **STORE-01**, **API-01/02** and **PERSIST-01/02/03** to distinguish
+3. Finish **STORE-01**, **API-01/03** and **PERSIST-01/02/03** to distinguish
    live storage limits, reclaimable records, API results, and power-loss safety.
 4. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
@@ -197,11 +197,24 @@ Archive text is historical evidence, not current device state or priorities.
   1,895,936 bytes (SHA-256
   `16fd3afabc24b447a9eaf94989b676bdaa8e929b399cea5056b5b9be7b906b4c`); linked
   firmware uses 947,700 of 1,048,576 bytes, leaving 100,876 bytes.
+  On 2026-11-02, the official JCAlgTest 1.8.2 `ALG_SUPPORT_BASIC` run on this
+  image completed 362 rows (148 yes, 214 no, no other statuses). All 142
+  expected support identities covered by BASIC reported yes. Two RSA/RSA-CRT
+  3072 rows are the known upstream CAP/client defect: the rows are labeled
+  3072 but send 4096, correctly receiving no because 4096 is disabled. Three
+  expected `Cipher.getInstance` aliases are absent from BASIC and remain to be
+  checked by EXTENDED. A separate `ALG_SUPPORT_EXTENDED` run hit its
+  900-second wrapper timeout after 2,094 CSV lines; its last in-flight query
+  returned `9000` in 163 ms when isolated after reflash. This is an incomplete
+  matrix, not evidence of a repeatable APDU hang. The board was recovered by
+  chip-ID-targeted flash and passed its monitor.
   Optional Javacardx/Ext/Int/Biometry imports may remain unavailable for the
   declared profile; prior rejection is not evidence of implemented coverage.
-  Remaining: maintain an area/profile/result matrix, retest changed native paths,
-  and account explicitly for all unavailable scenarios and unsupported setup
-  dependencies. Verify current-source Service/JavacardxSec results where affected.
+  Remaining: finish `ALG_SUPPORT_EXTENDED` with a suitable total deadline;
+  explicitly verify the three `Cipher.getInstance` aliases, maintain an
+  area/profile/result matrix, retest changed native paths, and account for
+  unavailable scenarios and unsupported setup dependencies. Verify current-
+  source Service/JavacardxSec results where affected.
   Acceptance: complete bounded runs and cleanup on identified images; require
   every ARM image to fit the 1 MiB firmware window enforced by `tools/build`;
   separate expected unsupported outcomes from wrong results, runtime errors and

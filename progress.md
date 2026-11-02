@@ -20391,3 +20391,14 @@
 - Decision: API-02 physical acceptance is closed. Use stable chip-ID selection when this VM path loses serial-based BOOTSEL selection; continue API-03 and remaining acceptance with fresh device identification.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T123918Z.log`; `artifacts/results/Pico2_2BED_api305_signature-iv_maxcrypto_20261102.csv` SHA-256 `0c88385d492e08d0c1dd40c8328176b08fe86fc01abd9929695848635332cbba`.
+
+## 2026-11-02 Complete JCAlgTest BASIC support and diagnose EXTENDED timeout 34 minutes
+
+- Step/experiment: `api03-jcalgtest-basic-and-extended-timeout-20261102`
+- When: '2026-11-02 12:44 UTC' - '2026-11-02 13:18 UTC'
+- Change: Recovered the identified 2BED board after the physical JCAlgTest EXTENDED run reached its wrapper timeout, then completed the BASIC support matrix on the current `max_crypto` image. Updated API-03, QKB and session handoff with the scope and result.
+- Validation: `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 2BED26ED20556535` passed flash verification and finite serial monitor (`TEST:SUMMARY pass=1 fail=0`). Exact-reader SELECT, GETVERSION and JCSystem-info passed; raw `B07526000309051300` returned `9000` in 163 ms. Official `ALG_SUPPORT_BASIC` completed on exact reader 2BED. EXTENDED had timed out at 900 seconds with exit 124 after 2,094 CSV lines.
+- Result: BASIC contains 362 result rows: 148 yes, 214 no, zero other. Of 147 expected support identities, the 142 covered in BASIC all returned yes; two RSA/RSA-CRT-3072 rows are the known upstream CAP/client bug that sends 4096, and three `Cipher.getInstance` aliases are not tested by BASIC. Image end `0x100e75f4`, 947,700/1,048,576 bytes, leaves 100,876; UF2 1,895,936 bytes, SHA-256 `16fd3afabc24b447a9eaf94989b676bdaa8e929b399cea5056b5b9be7b906b4c`.
+- Decision: BASIC support conformance is established for the 142 expected identities it exercises. EXTENDED remains incomplete; the last sent APDU did not reproduce a hang when isolated. Choose an explicit longer deadline or a narrower EXTENDED plan to check factory aliases. Continue API-01/03 and remaining acceptance work.
+- Commit: `pending`
+- Artifacts/logs: BASIC CSV SHA-256 `eb56504b226a92ac5f34a8ff97569e307211d189b079ed612bf26178343a4ade`; EXTENDED partial CSV and client log under `artifacts/results/jcalgtest-maxcrypto-2BED-20261102/`; recovery log `artifacts/logs/cycle-choupi-20261102T130445Z.log`, SHA-256 `96bc300f0fd785ebbdb9c6392e27a0dccf4e69ffcd6ebd3a3200c658473da063`.

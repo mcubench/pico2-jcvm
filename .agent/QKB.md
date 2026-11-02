@@ -1,5 +1,34 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## JCAlgTest extended support exceeds the 900-second wrapper timeout — 2026-11-02
+
+- **Observed:** The official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run on
+  max_crypto board `2BED26ED20556535` was terminated with exit 124 at the
+  configured 900-second limit after 2,094 CSV lines. Its log ended immediately
+  after sending `B07526000309051300`, without the client recording a response.
+  After a chip-ID-targeted recovery/reflash, that exact APDU returned `9000` in
+  163 ms; SELECT, GETVERSION and JCSystem-info also passed. This APDU does not
+  reproduce a firmware hang. The retained `WATCHDOG_RECOVERY` marker in the
+  reboot log is not proven to have been caused by this query.
+- **BASIC validation:** `ALG_SUPPORT_BASIC` completed 362 result rows on the
+  same image (148 yes, 214 no, zero other). The comparator's five missing
+  expected identities are explained: two KeyPair rows labeled RSA/RSA-CRT
+  3072 send 4096 (`B07519000301100000` / `B07519000302100000`), a known
+  unchanged upstream CAP/client bug; three `Cipher.getInstance` aliases are
+  not present in BASIC mode. The other 142 expected identities covered by
+  BASIC all reported yes, with no unexpected yes.
+- **Viable approach:** Use `ALG_SUPPORT_BASIC` for a compact support report.
+  Run EXTENDED with a separately chosen total deadline and retain partial CSVs
+  as incomplete; a missing response at process termination is not by itself
+  proof of a card hang. Continue selecting exact reader names because multiple
+  physical cards are present.
+- **Artifacts:** Complete BASIC CSV is
+  `artifacts/results/jcalgtest-maxcrypto-basic-2BED-20261102/CHOUPI_MAX_CRYPTO_2BED_ALGSUPPORT__3b_80_01_81.csv`
+  (SHA-256 `eb56504b226a92ac5f34a8ff97569e307211d189b079ed612bf26178343a4ade`).
+  EXTENDED partial CSV/log are under
+  `artifacts/results/jcalgtest-maxcrypto-2BED-20261102/`; recovery log is
+  `artifacts/logs/cycle-choupi-20261102T130445Z.log`.
+
 ## Serial-targeted flash may lose selection after entering BOOTSEL — worked around 2026-11-02
 
 - **Observed:** `tools/cycle choupi --profile max_crypto --serial
