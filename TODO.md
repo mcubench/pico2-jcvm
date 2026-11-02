@@ -266,6 +266,13 @@ Archive text is historical evidence, not current device state or priorities.
   that retains source context and handle, then verify attempted accesses fail
   with `SecurityException`; define safe return/storage rules before enabling
   transport. See `.agent/QKB.md`.
+  A separate firewall gap remains: Java Card RE 3.0.5 §6.2.8.2 permits
+  ordinary applet references to be stored in global Object[] arrays, while the
+  current implementation rejects all non-null entries (and transaction probe
+  case 41 codifies that restriction). Do not relax it until global-array reads
+  preserve the referenced object's owning context across independently
+  allocated heap-local handles, with GC, deletion, persistence, reset, and
+  stale-owner coverage. Update case 41 only with that implementation.
   No types are inferred from raw values. The
   descriptor-free VPCD fixture passes 15/15; the Descriptor-present regression
   also passes 14/14 through the existing signature path. Physical typed

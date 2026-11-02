@@ -33,6 +33,19 @@ The restricted VPCD run initially failed to bind its loopback listener with
 The follow-up remains foreign-reference design and collision/access
 regressions. Preserve all unrelated worktree changes.
 
+### Additional global Object[] firewall gap
+
+Review of the same Java Card RE 3.0.5 spec found that §6.2.8.2 permits
+ordinary applet-owned references to be stored in global Object[] arrays; only
+temporary JCRE entry-point references and global-array references are excluded
+from `aastore`. The current `JC_Array::setReferenceEntry` rejects every
+non-null value when the destination array is in the global heap, and the
+transaction probe case 41 expects that behavior. This is stricter than the
+specification. Do not simply remove the rejection: another applet's heap may
+have an unrelated object at the same compact handle. Correct support needs
+owner-preserving reference indirection plus GC, deletion, persistence, reset,
+and collision coverage. See `.agent/QKB.md` and CTX-01 in `TODO.md`.
+
 ## Latest CTX-01 update: proxy markers survive persistent alias restore
 
 `getPersistentField_ReferenceImpl()` rebuilt persistent object aliases without

@@ -1,5 +1,35 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Global Object[] must preserve foreign-reference ownership — 2026-11-02
+
+- **Specification finding:** Java Card RE 3.0.5 §6.2.8.2 explicitly permits
+  access to a global array from any context. Its `aastore` exclusions are
+  references to temporary JCRE entry-point objects and global arrays; ordinary
+  applet-owned references are not excluded. A later operation on a stored
+  applet reference remains subject to normal ownership checks. Thus the current
+  rule rejecting every non-null value stored in a global Object[] is stricter
+  than the specified behavior. Source: [Oracle Java Card RE Specification
+  3.0.5, §§6.2.2 and 6.2.8.2](https://docs.oracle.com/cd/E59935_01/JCCRE.pdf).
+- **Current test mismatch:** transaction probe case 41 currently expects
+  `global[0] = this` to throw `SecurityException`; that assertion should change
+  only with an ownership-safe implementation, not as a standalone test edit.
+- **Why direct relaxation is unsafe:** global arrays use shared 16-bit
+  references, while each applet heap independently allocates the same compact
+  handle range. Returning a foreign handle unchanged in another context could
+  resolve to an unrelated local object. In addition, persistent references
+  require GC roots, deletion protection, reset behavior, and stale-owner
+  handling.
+- **Viable implementation direction:** add an ownership-preserving reference
+  indirection for global Object[] entries and other cross-context parameter
+  paths. Reads in the owner context may resolve to the original handle; reads
+  in another context must remain opaque and fail every unauthorized object
+  access. Keep the existing restriction until the indirection, GC, deletion,
+  persistence, and collision tests are complete.
+- **Validation:** Read-only comparison of `JC_Array::setReferenceEntry`, the
+  transaction applet's case 41, and the 3.0.5 access rules. The current
+  SIO VPCD suite passes 15/15 with Descriptor omitted and included; ARM and
+  RISC-V wrapper builds pass. No implementation change was made in this step.
+
 ## SIO reference parameters cross the call, not the firewall — 2026-11-02
 
 - **Specification finding:** Java Card RE 3.0.5 §6.2.4.3 says an SIO method

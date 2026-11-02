@@ -19868,3 +19868,13 @@
 - Decision: Keep CTX-01 open. Proceed with foreign-reference/global-array ownership analysis and fixture coverage; refresh USB visibility before physical testing.
 - Commit: `c9d013b`
 - Artifacts/logs: VPCD logs listed above; build images in `build/arm` and `build/riscv`.
+## 2026-11-02 Identify global Object[] firewall mismatch 4 minutes
+
+- Step/experiment: `global-object-array-firewall-spec-review-20261102`
+- When: '2026-11-02 05:13 CET' - '2026-11-02 05:17 CET'
+- Change: Recorded that Java Card RE 3.0.5 permits applet-owned references in global Object[] arrays, while the current native implementation rejects every non-null entry and transaction probe case 41 expects that restriction. Updated `TODO.md`, `.agent/QKB.md`, and `.agent/HANDOFF.md`; left the safety check and test unchanged pending ownership-safe reference indirection.
+- Validation: Read-only comparison of the current array store, global heap/reference representation, and Java Card RE 3.0.5 §§6.2.2 and 6.2.8.2. Prior current-worktree SIO tests (15/15 with Descriptor absent and present) and ARM/RISC-V builds passed. `git diff --check` passed. No source/test code changed.
+- Result: Directly relaxing the check is unsafe because compact object handles are allocated independently in applet heaps. The implementation must preserve owner identity and integrate GC, applet deletion, persistence, reset, and stale-owner handling.
+- Decision: Keep the current check fail-closed while designing the full ownership representation. Update transaction probe case 41 only with the implementation and corresponding lifecycle regressions.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261102T040952Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261102T041201Z.log` (hashes in `.agent/HANDOFF.md`).
