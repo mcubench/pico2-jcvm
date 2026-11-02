@@ -372,9 +372,13 @@ Archive text is historical evidence, not current device state or priorities.
   context to each CAP file; applets from the same CAP share that context, while
   each object still has an applet-instance owner (§6.1.3). The current model
   therefore conflates firewall context with object owner and applet instance.
-  Remaining: separate package/CAP execution context and heap from per-instance
-  AID, lifecycle state, persistent roots, and object owner identity; update SIO
-  routing so same-CAP applet calls do not cross an artificial firewall. Define
+  A behavior-preserving state container now supports multiple sibling AID,
+  lifecycle, and restore-root records inside one `Context`, with focused registry
+  coverage. It is not yet connected to the firmware's per-AID Context lookup,
+  and its `Heap` still has one immutable owner. Remaining: separate package/CAP
+  execution context and heap from per-instance AID, lifecycle state, persistent
+  roots, and object owner identity; update SIO routing so same-CAP applet calls
+  do not cross an artificial firewall. Define
   deletion, transient-array, selection, and previous-context AID behavior for
   sibling instances before changing context lifetime. The unchanged upstream
   `AlgTestApiMulti_305.cap` was loaded and two applet instances installed on

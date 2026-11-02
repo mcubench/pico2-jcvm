@@ -1,3 +1,23 @@
+## CTX-03 sibling state groundwork — 2026-11-02 10:13 UTC
+
+`Context` now stores multiple `AppletInstanceState` records, can select or
+create one by `(owner, full AID)`, and enumerates direct roots for every retained
+instance. `tools/test-rmi-registry` covers independent active AID/registration
+state and both sibling roots. This preserves the existing runtime because
+firmware lookup still creates one Context per AID; it does not implement
+package-shared firewall context or heap ownership.
+
+Validation: `./tools/build-pc --profile max_crypto`,
+`./tools/test-rmi-registry`, `./tools/build arm --profile max_crypto`, and
+`./tools/build riscv --profile max_crypto` passed. ARM image end is
+`0x100e6b10`: 944,912 bytes used and 103,664 bytes remain in its 1 MiB firmware
+window; full UF2 is 1,890,816 bytes (SHA-256
+`1b4f93c39c39b12df620ac9ce78db30ccc943cc4592dcc1428fc3eacb5e18407`). The
+same-CAP identity diagnostic still fails with `6F00`, exception 29 at
+`invokeinterface`: `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`.
+No physical flash/test occurred. Next: redesign package-level heap/handle storage
+and per-object owner facades; do not relax local-reference rejection first.
+
 ## CAP StaticField primitive initial values — 2026-11-02 09:40 UTC
 
 Static primitive getters now consult the retained CAP StaticField image when
@@ -23,6 +43,26 @@ therefore needs stable per-object owner facades and a shared handle/root store;
 do not alias Context or Heap objects directly.
 
 # Session handoff — updated 2026-11-02
+
+## CTX-03 sibling state groundwork — 2026-11-02 10:13 UTC
+
+`Context` now stores multiple `AppletInstanceState` records, can select or
+create one by `(owner, full AID)`, and enumerates direct roots for every retained
+instance. `tools/test-rmi-registry` covers independent active AID/registration
+state and both sibling roots. This preserves the existing runtime because
+firmware lookup still creates one Context per AID; it does not implement
+package-shared firewall context or heap ownership.
+
+Validation: `./tools/build-pc --profile max_crypto`,
+`./tools/test-rmi-registry`, `./tools/build arm --profile max_crypto`, and
+`./tools/build riscv --profile max_crypto` passed. ARM image end is
+`0x100e6b10`: 944,912 bytes used and 103,664 bytes remain in its 1 MiB firmware
+window; full UF2 is 1,890,816 bytes (SHA-256
+`1b4f93c39c39b12df620ac9ce78db30ccc943cc4592dcc1428fc3eacb5e18407`). The
+same-CAP identity diagnostic still fails with `6F00`, exception 29 at
+`invokeinterface`: `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`.
+No physical flash/test occurred. Next: redesign package-level heap/handle storage
+and per-object owner facades; do not relax local-reference rejection first.
 
 ## Same-CAP static state probe and default primitive fix — 2026-11-02 09:21 UTC
 

@@ -127,6 +127,44 @@ void verify_retained_applet_context_lookup() {
          nullptr);
 }
 
+void verify_context_retains_sibling_instance_state() {
+  jcvm::Context package_context(7, 4);
+  constexpr uint8_t first_aid[] = {0xa0, 0x00, 0x00, 0x04, 0x01};
+  constexpr uint8_t second_aid[] = {0xa0, 0x00, 0x00, 0x04, 0x02};
+  assert(package_context.setAppletAID(first_aid, sizeof(first_aid)));
+  const auto first_root = make_reference(30);
+  package_context.setAppletAIDObjectRef(first_root);
+  assert(package_context.activateAppletInstance(8, second_aid,
+                                                 sizeof(second_aid)));
+  assert(package_context.getAppletID() == 8);
+  uint8_t active_aid[16]{};
+  uint8_t active_aid_length = 0;
+  assert(package_context.copyAppletAID(active_aid, active_aid_length));
+  assert(active_aid_length == sizeof(second_aid));
+  assert(std::equal(second_aid, second_aid + sizeof(second_aid), active_aid));
+  assert(!package_context.wasAppletRegistered());
+  const auto second_root = make_reference(31);
+  package_context.setAppletAIDObjectRef(second_root);
+  package_context.markAppletRegistered(second_root);
+
+  assert(package_context.hasAppletInstance(7, first_aid, sizeof(first_aid)));
+  assert(package_context.activateAppletInstance(7, first_aid,
+                                                 sizeof(first_aid)));
+  assert(package_context.getAppletID() == 7);
+  assert(package_context.copyAppletAID(active_aid, active_aid_length));
+  assert(active_aid_length == sizeof(first_aid));
+  assert(std::equal(first_aid, first_aid + sizeof(first_aid), active_aid));
+  assert(!package_context.wasAppletRegistered());
+
+  assert(package_context.activateAppletInstance(8, second_aid,
+                                                 sizeof(second_aid)));
+  assert(package_context.wasAppletRegistered());
+  VisitedReferences roots;
+  package_context.visitRootReferences(record_reference, &roots);
+  assert(contains(roots, first_root));
+  assert(contains(roots, second_root));
+}
+
 void verify_shareable_proxy_registry() {
   jcvm::Context client(4, 1);
   jcvm::Context server(5, 1);
@@ -508,6 +546,7 @@ int main() {
   verify_sensitive_result_cross_context(context, second_context);
   verify_previous_context_aid();
   verify_retained_applet_context_lookup();
+  verify_context_retains_sibling_instance_state();
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
   verify_typed_local_access();
@@ -596,6 +635,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 sibling_instance_state=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
   return 0;
 }

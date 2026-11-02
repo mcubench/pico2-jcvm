@@ -20200,3 +20200,34 @@
 - Decision: Continue CTX-03 by designing package-shared heap/handle/root storage with stable per-applet owner facades; do not alias the current Context or immutable-owner Heap objects.
 - Commit: `1d5c5f5`
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261102T094628Z.log`; `host-vpcd-multipackage-restart-20261102T094628Z.log`; corrupt/missing-sidecar logs with same timestamp.
+
+## 2026-11-02 Retain sibling applet lifecycle state 21 minutes
+
+- Step/experiment: `ctx03-sibling-state-container-20261102`
+- When: '2026-11-02 10:52 CET' - '2026-11-02 11:13 CET'
+- Change: Changed `Context` to retain multiple applet-instance records keyed by
+  owner and full AID, select active state, and enumerate every retained
+  instance's AID/registration/restore roots. Added a registry regression for
+  independent sibling AID/registration state and root retention. Updated CTX-03
+  handoff, issue record, and TODO. Firmware lookup is not yet wired to this
+  container; no heap sharing or owner behavior changed.
+- Validation: `./tools/build-pc --profile max_crypto`,
+  `./tools/test-rmi-registry`, `./tools/build arm --profile max_crypto`, and
+  `./tools/build riscv --profile max_crypto` passed. The authorized
+  `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` diagnostic built its
+  CAP but failed the shared identity APDU with `6F00`, exception 29
+  (`SecurityException`) at opcode `8E` (`invokeinterface`); this confirms the
+  known package-context gap. `git diff --check` was noisy for repository CRLF
+  files and unrelated pre-existing edits; source validation used compiler
+  `-Werror` builds. No physical operation was run.
+- Result: ARM image end `0x100e6b10`; 944,912 bytes used of the 1,048,576-byte
+  firmware window, leaving 103,664 bytes. UF2 size 1,890,816 bytes, SHA-256
+  `1b4f93c39c39b12df620ac9ce78db30ccc943cc4592dcc1428fc3eacb5e18407`.
+  Diagnostic log `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`,
+  SHA-256 `a275a80a590352aeb8f9355b7c5f98d81d4ce09fd1ad3fb6c6b8c8a616760fe0`.
+- Decision: Keep the cross-sibling reference path fail-closed. Next implement
+  a package-scoped heap/handle store with stable per-object owners and deletion
+  semantics, then wire package context lookup and rerun the fixture.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`;
+  `build/arm/pico2_choupi.uf2`.

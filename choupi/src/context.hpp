@@ -37,6 +37,7 @@
 #include "types.hpp"
 
 #include <array>
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -61,7 +62,9 @@ private:
     bool restored = false;
     jref_t restored_applet_ref;
     bool active = false;
-  } applet_instance;
+  };
+  std::vector<AppletInstanceState> applet_instances;
+  std::size_t active_applet_index = 0;
   /// Package containing the active applet instance.
   jpackage_ID_t applet_package_ID;
   /// Applet AID active immediately before the last context switch.
@@ -120,6 +123,9 @@ private:
   /// Context's heap
   Heap heap;
 
+  AppletInstanceState &activeAppletInstance() noexcept;
+  const AppletInstanceState &activeAppletInstance() const noexcept;
+
 public:
   /// Set the active VM context and return the context previously active.
   static Context *setActiveContext(Context *context) noexcept;
@@ -127,7 +133,12 @@ public:
   static Context &getActiveContext();
 
   /// Default constructor
-  Context(const uint8_t appletID, const jpackage_ID_t packageID) noexcept;
+  Context(const uint8_t appletID, const jpackage_ID_t packageID);
+  /// Select or create per-applet lifecycle state held by this CAP context.
+  bool activateAppletInstance(const japplet_ID_t owner, const uint8_t *aid,
+                              uint8_t aid_length) noexcept;
+  bool hasAppletInstance(const japplet_ID_t owner, const uint8_t *aid,
+                         uint8_t aid_length) const noexcept;
   /// Get the context ID.
   jpackage_ID_t getCurrentPackageID() noexcept;
   /// Get applet ID

@@ -1,5 +1,27 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Same-CAP SIO cannot pass sibling-owned array identity — 2026-11-02
+
+- **Reproduction:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings`
+  loads one test-only CAP and installs writer and reader applets. The reader
+  passes the package static byte array to a Shareable service in its sibling.
+  The APDU returns `6F00`; emulator diagnostics show
+  `exception=29 (SecurityException) opcode=8E (invokeinterface)`. Log:
+  `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`, SHA-256
+  `a275a80a590352aeb8f9355b7c5f98d81d4ce09fd1ad3fb6c6b8c8a616760fe0`.
+- **Cause:** Current `Context` lookup still keys per applet AID and the
+  cross-context argument path rejects applet-local references. Allowing the raw
+  reference through is unsafe because separate `Heap`s can allocate colliding
+  handles. One CAP-scoped heap/context plus stable per-instance object owners is
+  required before relaxing this check.
+- **Progress:** `Context` now has a tested vector of sibling applet lifecycle
+  states and retains all their direct roots. That state container is not wired
+  into firmware lookup; `Heap` owner remains immutable and per Context. PC,
+  ARM, and RISC-V builds pass. The ARM image ends at `0x100e6b10`, using
+  944,912 of the 1,048,576-byte firmware window (103,664 bytes remain). No
+  physical flash occurred. The shared-identity probe remains a known failure;
+  continue with shared heap storage/ownership design.
+
 ## Static primitive defaults and same-CAP sibling values — 2026-11-02
 
 - **Observed:** The first same-CAP writer/reader probe returned `6F00` on its
