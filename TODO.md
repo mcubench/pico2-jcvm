@@ -9,8 +9,9 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 
 1. Finish **ARCH-08** physical USB progress stress/timing acceptance when a
    board enumerates. Existing eight-event budgeting is not a measured time bound.
-2. Continue **CTX-01** SIO lookup/proxy/firewall work from the current handoff;
-   retained contexts and a proxy registry are groundwork, not working SIO dispatch.
+2. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
+   firewall contexts from applet-instance ownership; retained per-instance
+   contexts and a proxy registry are groundwork, not complete SIO semantics.
 3. Finish **STORE-01**, **API-01/02** and **PERSIST-01/02/03** to distinguish
    live storage limits, reclaimable records, API results, and power-loss safety.
 4. Close the current-image coverage and integration gates in **API-03**,
@@ -347,6 +348,28 @@ Archive text is historical evidence, not current device state or priorities.
   Acceptance: correct result ownership/lifetime across cross-applet call/return,
   GC and reset; preserve tests distinguishing native simulation from applet calls.
   Evidence: original SensitiveResult task and `tools/test-rmi-registry`.
+
+### CTX-03
+
+- [ ] **Use one firewall context per CAP file while retaining per-applet ownership.**
+  Status: current runtime allocates a `Context` and `Heap` per installed applet
+  instance. `findAppletContext()` matches both the applet owner ID and the full
+  instance AID, and `choupi_vm_find_or_restore_applet_context()` creates a new
+  `Context` for another instance. Java Card RE 3.0.5 §6.1.2 instead assigns one
+  context to each CAP file; applets from the same CAP share that context, while
+  each object still has an applet-instance owner (§6.1.3). The current model
+  therefore conflates firewall context with object owner and applet instance.
+  Remaining: separate package/CAP execution context and heap from per-instance
+  AID, lifecycle state, persistent roots, and object owner identity; update SIO
+  routing so same-CAP applet calls do not cross an artificial firewall. Define
+  deletion, transient-array, selection, and previous-context AID behavior for
+  sibling instances before changing context lifetime.
+  Acceptance: an unchanged or test-only multi-applet CAP proves sibling
+  instances share static/heap context and can access objects as specified,
+  while separate CAPs remain isolated; AID reporting and per-instance DELETE
+  preserve only the intended applet state. Include multi-package and restart
+  regressions before physical testing.
+  Dependencies: CTX-01, STORE-01, PERSIST-01/02. See `.agent/QKB.md`.
 
 ### PROFILE-01
 

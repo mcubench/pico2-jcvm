@@ -1,5 +1,30 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Firewall context is per CAP file, not per installed applet instance — 2026-11-02
+
+- **Observed implementation:** `findAppletContext()` matches an inactive
+  `Context` by owner ID and complete instance AID. On an absent match,
+  `choupi_vm_find_or_restore_applet_context()` creates a new `Context` and
+  `Heap` for that installed instance. Persistent owner IDs are likewise
+  allocated per installed applet instance.
+- **Specification:** Java Card RE 3.0.5 §6.1.2 requires a context for each CAP
+  file and says applet instances within one CAP file share that context, with
+  no firewall between them. Section 6.1.3 separately associates each object
+  with an owning applet instance. The current runtime therefore conflates
+  firewall context, object owner, and installed applet instance. This affects
+  same-package object access, static state, SIO context switching, and DELETE.
+  Source: [Oracle Java Card RE Specification 3.0.5, §§6.1.2–6.1.3](https://docs.oracle.com/cd/E59935_01/JCCRE.pdf).
+- **Viable direction:** Introduce CAP/package-scoped execution heaps and
+  firewall contexts, with separate per-instance AID/lifecycle/owner records.
+  Same-CAP sibling calls should not cross a firewall, but object ownership and
+  per-instance deletion must still be enforced where required. Treat this as
+  prerequisite architecture for cross-context foreign-reference transport;
+  do not relax the current fail-closed behavior before the separation exists.
+- **Validation:** Read-only review of `context_registry.hpp`, the context
+  retention/restoration path in `main.cpp`, owner allocation in `cap_load.cpp`,
+  and the official 3.0.5 RE specification. No code, build, or hardware change
+  was made in this review.
+
 ## Host MPU emulator must bypass the region lock for privileged accesses — 2026-11-02
 
 - **Observed:** The PC SIO VPCD emulator exited before accepting a connection

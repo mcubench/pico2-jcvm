@@ -22,6 +22,19 @@ committed in `choupi/os` as `041882e`; root progress, TODO, QKB, and handoff
 tracking are ready for the separate root commit. Preserve all unrelated root
 worktree changes.
 
+## CTX-03 architecture prerequisite — package context versus applet owner
+
+Read-only review found the runtime currently allocates/restores a separate
+`Context` and `Heap` per installed applet AID: `findAppletContext()` matches
+owner ID plus full instance AID, and `choupi_vm_find_or_restore_applet_context()`
+constructs a new Context on a miss. Java Card RE 3.0.5 §§6.1.2–6.1.3 define one
+firewall context per CAP file, shared by its applets, while object ownership
+remains per applet instance. This conflation affects same-CAP object access,
+static state, SIO routing and deletion. The finding is recorded as CTX-03 in
+TODO/QKB. Design package-scoped heaps/contexts plus separate per-instance AID,
+lifecycle, root and owner state before broadening foreign-reference transport.
+No code, build, or physical test was performed in this review.
+
 ## Host emulator expected-fault logging
 
 The host MPU emulator now suppresses warning formatting for SIGSEGVs whose
