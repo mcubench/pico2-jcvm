@@ -1,3 +1,22 @@
+## Current session — current-profile reader recheck — 2026-11-02 16:04 UTC
+
+Both required current-profile builds pass. ARM firmware end is `0x100cf988`;
+850,312 of the 1,048,576-byte firmware window is used (198,264 bytes remain).
+The user's latest note said three boards were in BOOTSEL, but elevated
+`picotool info` found no BOOTSEL device and saw two runtime Pico 2 USB devices.
+`pcsc_scan -r` confirmed readers `8E464F4E2BBC0A19` and `2BED26ED20556535`.
+The bounded read-only `tools/test-pico-powerup` probe passed on both: ATR
+`3B800181`, JCAlgTest 1.8.2_jc305, SELECT and JCSystem info returned `9000`.
+Their installed package inventories differ. No firmware was flashed, no card
+state was modified, and no cold-power removal was tested. Logs and hashes are
+recorded in the latest `progress.md` entry.
+
+Continue CTX-01 global Object[] ownership work. The setReferenceEntry guard in
+`choupi/src/jc_types/jc_array.cpp` remains intentional: raw local handles alias
+across package heaps, and safe support needs opaque owner-aware references,
+GC roots, deletion, reset and stale-owner handling. Do not simply remove the
+guard. Preserve all currently unrelated worktree changes.
+
 ## Current session — CTX-03 allocation pressure and exception token mapping — 2026-11-02 15:55 UTC
 
 Fixed `bc_exceptions.cpp` to derive ISOException's embedded class token from the

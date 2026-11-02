@@ -20512,3 +20512,15 @@
 - Decision: Keep CTX-03 open. Add a separate guarded physical LOAD/INSTALL/select/delete test, then continue GC/restart and broader firewall coverage.
 - Commit: `2d899a1`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T142314Z.log` SHA-256 `e0d86e0ebcaf3cae104caa73369816d6398cbf9516ed7ad51c92dcce07574f50`; test fixture sources under `tools/tests/same_cap_sibling_fixture/`.
+
+
+## 2026-11-02 Recheck physical readers and current-profile build 4 minutes
+
+- Step/experiment: `persist02-current-reader-rerun-20261102`
+- When: '2026-11-02 16:00 UTC' - '2026-11-02 16:04 UTC'
+- Change: Rebuilt the current ARM and RISC-V configurations and reran the bounded read-only registry/JCAlgTest probe on both Pico 2 readers actually exposed to the VM. No firmware was flashed and no card contents were changed.
+- Validation: `./tools/build arm --profile current` and `./tools/build riscv --profile current` passed. Elevated `picotool info` found no BOOTSEL devices; `pcsc_scan -r` found runtime readers `8E464F4E2BBC0A19` and `2BED26ED20556535`. `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup '<exact reader>'` passed for each board. Both returned ATR `3B800181`, SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem info `9000`. ARM firmware end `0x100cf988`, using 850,312/1,048,576 bytes with 198,264 bytes remaining (80.9% used).
+- Result: Both available cards are responsive. Their installed package inventories differ, but the JCAlgTest/power-up probe results match. This is not a cold-power test and the flashed image hash was not measured.
+- Decision: Continue using identified runtime boards for read-only checks. Do not flash until a specific BOOTSEL target is visible; continue global Object[] reference ownership work offline.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261102T160303Z.log` SHA-256 `50d66044c9d3ceca4caf9b2e11bbf23a6bddda940dd80af35554ca5060e207f2`; `artifacts/logs/pico-powerup-persistence-20261102T160327Z.log` SHA-256 `e8ecf4a053d5b39aa1795c8fd20a18a01ac97a0bdb6ac478f267a16b5d9aadbd`.
