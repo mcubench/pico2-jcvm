@@ -168,16 +168,19 @@ Archive text is historical evidence, not current device state or priorities.
 
 ### API-02
 
-- [ ] **Physically confirm the native Signature MAC IV correction.**
+- [x] **Physically confirm the native Signature MAC IV correction.**
   Status: `runMac()` now uses the initialized Signature IV instead of always
   zero. Three deterministic vectors each for DES-MAC8-NOPAD, DES-MAC8-ISO9797-M2
   and AES-MAC-128-NOPAD pass; the symmetric VPCD harness passes 79 vectors.
-  The unchanged API 3.0.5 Crypto CAP's three selected IV rows pass with cleanup
-  over PCSC VPCD. ARM/RISC-V max_crypto builds pass; physical retest is pending.
-  Remaining/acceptance: run the three unchanged upstream IV rows on an identified
-  current-image Pico, verify all expected results and cleanup, then feed the
-  result into API-03. Earlier physical WRONG_RESULT is not yet closed.
-  Evidence: original IV initialization fix and corresponding progress/QKB records.
+  On 2026-11-02, flashed current ARM `max_crypto` UF2 to Pico 2
+  `2BED26ED20556535`; the verified flash and finite monitor passed. The
+  unchanged API 3.0.5 Crypto CAP then passed all three targeted Signature-IV
+  rows as `OK` with expected output lengths (8, 16, 8 bytes) and removed the
+  test CAP successfully. The other 463 rows were intentionally skipped.
+  Remaining: include these rows in API-03's full coverage accounting; this
+  focused run alone does not complete the full Crypto area.
+  Evidence: `artifacts/results/Pico2_2BED_api305_signature-iv_maxcrypto_20261102.csv`
+  and `artifacts/logs/cycle-choupi-20261102T123918Z.log`.
 
 ### API-03
 
@@ -188,8 +191,12 @@ Archive text is historical evidence, not current device state or priorities.
   Security/Crypto coverage and remaining failures are tracked by API-01/02.
   The previous max_crypto UF2 exceeded the firmware's 1 MiB flash window
   (its end address was `0x101000c4`); the current ARM build uses `-Os`, ends at
-  `0x100e64cc`, and the build wrapper now rejects firmware/CAP overlap. The
-  optimized image has not yet been flashed or runtime/performance-tested.
+  `0x100e75f4`, and the build wrapper rejects firmware/CAP overlap. This exact
+  image was flashed to Pico 2 `2BED26ED20556535` on 2026-11-02, flash
+  verification reached 100%, and finite runtime monitor passed. Its UF2 is
+  1,895,936 bytes (SHA-256
+  `16fd3afabc24b447a9eaf94989b676bdaa8e929b399cea5056b5b9be7b906b4c`); linked
+  firmware uses 947,700 of 1,048,576 bytes, leaving 100,876 bytes.
   Optional Javacardx/Ext/Int/Biometry imports may remain unavailable for the
   declared profile; prior rejection is not evidence of implemented coverage.
   Remaining: maintain an area/profile/result matrix, retest changed native paths,

@@ -1,5 +1,21 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Serial-targeted flash may lose selection after entering BOOTSEL — worked around 2026-11-02
+
+- **Observed:** `tools/cycle choupi --profile max_crypto --serial
+  2BED26ED20556535` detected the runtime card and requested BOOTSEL via CDC
+  1200 baud, but its later serial-filtered BOOTSEL polls failed even while
+  `lsusb` showed `2e8a:000f`. Unfiltered pinned `picotool info -a` identified
+  that BOOTSEL board as chip ID `0x2bed26ed20556535`.
+- **Viable workaround:** Use `tools/cycle ... --chipid 2BED26ED20556535` when
+  flashing an RP2350 board whose stable chip ID is known. The wrapper used
+  bus/address selection after verifying the ROM-reported chip ID, flashed and
+  verified the ARM image to 100%, then passed its finite runtime monitor.
+- **Validation:** Current max_crypto cycle log is
+  `artifacts/logs/cycle-choupi-20261102T123918Z.log`. This does not prove the
+  serial-based failure is universal; retain the identity-filtered chip-ID
+  route for this observed VM/board path.
+
 ## Owner-ID search could drift between RP2350 and PC/VPCD allocators — fixed 2026-11-02
 
 - **Risk:** The RP2350 CAP store and PC emulator independently implemented

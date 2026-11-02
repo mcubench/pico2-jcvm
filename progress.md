@@ -20380,3 +20380,14 @@
 - Decision: Both current runtime cards are reachable and the JCAlgTest read path works; use their exact reader identities for later physical acceptance. Keep BOOTSEL/flash tasks gated on actual enumeration.
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261102T122841Z.log`, `artifacts/logs/pico-powerup-persistence-20261102T122908Z.log`.
+
+## 2026-11-02 Flash max_crypto and close Signature IV physical retest 10 minutes
+
+- Step/experiment: `api02-signature-iv-physical-20261102`
+- When: '2026-11-02 12:32 UTC' - '2026-11-02 12:42 UTC'
+- Change: Flashed the freshly built ARM max_crypto image to identified 2BED, then ran the unchanged upstream API 3.0.5 Crypto CAP/client filtered to the three Signature MAC-IV cases. Marked API-02 complete and updated API-03, QKB and handoff.
+- Validation: ARM and RISC-V wrappers passed before flash. A serial-targeted cycle entered BOOTSEL but timed out while polling; `picotool info -a` then identified BOOTSEL chip ID `2BED26ED20556535`. Chip-ID-targeted `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 2BED26ED20556535` passed: flash write and verification reached 100%, monitor showed repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. API runner uploaded `AlgTestApiCrypto_305.cap`, ran 466 catalog rows with 463 intentionally skipped and the three target rows all `OK`, and removed the CAP (`CLEANUP OK`).
+- Result: On flashed board 2BED, DES-MAC8-NOPAD IV row returned 8 bytes, AES-MAC-128 IV row 16 bytes, and DES-MAC8-ISO9797-M2 IV row 8 bytes; each matched expected behavior. UF2 is 1,895,936 bytes, SHA-256 `16fd3afabc24b447a9eaf94989b676bdaa8e929b399cea5056b5b9be7b906b4c`; firmware uses 947,700/1,048,576 bytes and leaves 100,876 bytes. Full Crypto sweep remains open.
+- Decision: API-02 physical acceptance is closed. Use stable chip-ID selection when this VM path loses serial-based BOOTSEL selection; continue API-03 and remaining acceptance with fresh device identification.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T123918Z.log`; `artifacts/results/Pico2_2BED_api305_signature-iv_maxcrypto_20261102.csv` SHA-256 `0c88385d492e08d0c1dd40c8328176b08fe86fc01abd9929695848635332cbba`.

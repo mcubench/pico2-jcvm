@@ -1,3 +1,32 @@
+# API-02 physical Signature-IV acceptance — 2026-11-02 12:42 UTC
+
+Flashed the current ARM `max_crypto` image to identified Pico 2
+`2BED26ED20556535`. The first cycle targeted firmware serial and failed to
+match BOOTSEL after the 1200-baud reset. `picotool info -a` read chip ID
+`0x2bed26ed20556535` from the visible BOOTSEL interface; rerunning
+`PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid
+2BED26ED20556535` succeeded. Both ARM and RISC-V build gates passed, flash
+verification reached 100%, and the 18-second monitor passed repeated
+`TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. Cycle log:
+`artifacts/logs/cycle-choupi-20261102T123918Z.log`.
+
+The unchanged API 3.0.5 Crypto CAP was then loaded, run through its official
+client with only the three Signature MAC-IV calls enabled, and cleaned up.
+All three returned `OK` with expected lengths: DES-MAC8-NOPAD 8, AES-MAC-128
+16, DES-MAC8-ISO9797-M2 8 bytes. The CSV records `OK=3`, `SKIPPED_BY_USER=463`,
+and successful cleanup:
+`artifacts/results/Pico2_2BED_api305_signature-iv_maxcrypto_20261102.csv`
+(SHA-256 `0c88385d492e08d0c1dd40c8328176b08fe86fc01abd9929695848635332cbba`).
+API-02 is closed; API-03 full area coverage remains open. UF2 size is 1,895,936
+bytes, SHA-256 `16fd3afabc24b447a9eaf94989b676bdaa8e929b399cea5056b5b9be7b906b4c`;
+linked image uses 947,700/1,048,576 bytes and leaves 100,876 bytes.
+
+Flash note: a serial-targeted run failed to select BOOTSEL, but chip-ID-targeted
+cycle succeeded for the same board. The observed workaround and limits are in
+`.agent/QKB.md`. Latest inventory before flash showed two runtime readers; one
+was used and is now back in runtime mode. Continue API-03 / remaining project
+acceptance with physical access refreshed before each operation.
+
 # Physical read-only persistence probes on both runtime boards — 2026-11-02 12:30 UTC
 
 The authorized PC/SC inventory found two runtime readers:
