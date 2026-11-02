@@ -20628,3 +20628,15 @@
 - Decision: Keep `plan.md` and `TODO.md` authoritative for current acceptance.
 - Commit: `pending (see commit containing this record)`
 - Artifacts/logs: `docs/initial-pico2-jcvm-port-plan-2026-10-09.pdf` (SHA-256 above).
+
+
+## 2026-11-02 Test upstream JCAlgTest 1.8.4 CAP on Pico 2 18 minutes
+
+- Step/experiment: `jcalgtest-184-cap-physical-20261102`
+- When: '2026-11-02 20:50 UTC' - '2026-11-02 21:08 UTC'
+- Change: Temporarily removed only Pico 2 `8E464F4E2BBC0A19`'s installed JCAlgTest 1.8.2 package, installed the unchanged upstream `AlgTest_v1.8.4_jc305.cap`, and restored 1.8.2 after testing. No firmware or CAP file was modified.
+- Validation: Refreshed readers through `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`; GPPro showed two physical Pico readers and their existing package inventories. GPPro `--uninstall` of the existing 1.8.2 CAP, `--install AlgTest_JavaCard/AlgTest_v1.8.4_jc305.cap`, and `--list` passed on exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00`. `PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00' -op ALG_SUPPORT_BASIC -fresh -outpath artifacts/results/jcalgtest-1.8.4-cap-on-8e-basic` completed. The local client is 1.8.2; CSV reports applet version `1.8.4_jc305`. GPPro restore and SELECT/GETVERSION verified `1.8.2_jc305` afterward.
+- Result: The 1.8.4 CAP loads, installs, selects, and executes the basic support suite on physical Pico 2. The CSV has 362 algorithm result rows (148 yes, 214 no, zero values other than yes/no) plus 20 section labels. The support rows are a basic subset only; extended support and static performance were not run. A matching 1.8.4 host client was unavailable locally, so this is not full 1.8.4 client acceptance.
+- Decision: Treat basic CAP/runtime compatibility as passed. Obtain a matching 1.8.4 client before claiming complete 1.8.4 suite acceptance; retain 1.8.2 as the card's installed applet.
+- Commit: `pending (recorded in metadata follow-up)`
+- Artifacts/logs: `artifacts/results/jcalgtest-1.8.4-cap-on-8e-basic/ALGTEST_log_1793653373952.log` (SHA-256 `b5bfe394f51c4c535b80dee965f6065220246d3b55cc501e026b637c93d72a70`); `artifacts/results/jcalgtest-1.8.4-cap-on-8e-basic/Pico_2_CHOUPI_CCID_[JCVM_CCID]_(8E464F4E2BBC0A19)_00_00_ALGSUPPORT__3b_80_01_81.csv` (SHA-256 `494a2d2bef6b602b633c002a9e4dbfb5420fb18737bac663a40c407b581a115a`); upstream CAP SHA-256 `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`.

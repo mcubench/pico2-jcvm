@@ -1,3 +1,22 @@
+## Current session — physical JCAlgTest 1.8.4 CAP test — 2026-11-02 21:08 UTC
+
+On Pico 2 `8E464F4E2BBC0A19`, temporarily replaced only the installed upstream
+JCAlgTest package with the unchanged `AlgTest_v1.8.4_jc305.cap` (SHA-256
+`cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`). GPPro
+LOAD/INSTALL and `--list` succeeded; the official local 1.8.2 host client
+selected the applet, read version `1.8.4_jc305`, and completed
+`ALG_SUPPORT_BASIC`. CSV: 362 algorithm rows, 148 `yes`, 214 `no`, zero other
+statuses; the 20 remaining rows are section headers. This validates basic
+1.8.4 CAP execution with the 1.8.2 client, not a matching 1.8.4 client or the
+extended/performance suites. Logs and CSV hashes are in the 2026-11-02 progress
+record. Restored the unchanged 1.8.2 CAP; GPPro inventory and SELECT/GETVERSION
+confirm 1.8.2 is back. No firmware was flashed.
+
+Next, if full 1.8.4 acceptance is required, obtain/use the matching 1.8.4
+client and run extended support/performance separately; do not treat this
+basic subset as full-version acceptance. Preserve the existing unrelated dirty
+worktree changes.
+
 ## Initial plan PDF filing — 2026-11-02
 
 - Moved the October 9 original port-plan PDF, unchanged, to
