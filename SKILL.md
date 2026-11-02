@@ -32,7 +32,7 @@ measurement finds that; only method does.
 ## Compilation
 
 For the repository's concrete ARM and Hazard3 build commands, dependency lookup,
-and artifact paths, use [the compilation guide](compilation.md).
+and artifact paths, use [the compilation guide](reference/compilation.md).
 The repository `AGENTS.md` build and flashing rules remain authoritative.
 
 ## Java Card runtime boundary

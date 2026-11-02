@@ -632,7 +632,7 @@ Full original checklists, measurements, image hashes and exceptions remain in
 | Completed area | Established baseline / remaining task |
 | --- | --- |
 | Initial APDU and VM review fixes | All eight items in the [2026-10-14 fix checklist](artifacts/reviews/fixes-20261014.md) were implemented; the dated [functionality reviews](artifacts/reviews/functionality-review-20261019.md) and [update](artifacts/reviews/functionality-review-20261021.md) remain historical evidence. Current acceptance belongs to the task IDs above. |
-| ARCH-01–07, ARCH-09 | Shared runtime/filesystem/diagnostic contracts, Pico storage extraction, loader encapsulation, production progress tests; ARCH-08 physical gate stays open. |
+| ARCH-01–09 | Shared runtime/filesystem/diagnostic contracts, Pico storage extraction, loader encapsulation, and production progress tests; ARCH-08 physical gate was accepted on 2026-11-02 as recorded above. |
 | Storage capacity and error mapping | Arena/snapshot improvements and package-state compaction implemented; live-limit/reclamation gates STORE-01, API-01, PERSIST-01. |
 | Native API corrections | Key-interface/marker maps, EC batched writes, NOPAD directions, MessageRecovery reasons, digest continuation; preserve API-03 retest scope. |
 | Core defects | OwnerPINx/reset/deselection and deleted-context invalidation fixed; latest full Core has only declared unsupported/unavailable rows. |

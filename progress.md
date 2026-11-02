@@ -20606,3 +20606,14 @@
 - Decision: Next relocate performance notes and resolve the root skill/reference placement and links.
 - Commit: `pending (see commit containing this record)`
 - Artifacts/logs: `.agent/archive/2026-11-02-status-pre-tidy/`, `README.md`, `docs/jcalgtest-physical-runbook.md`; no runtime artifacts.
+
+## 2026-11-02 Relocate performance notes and stale reference 2 minutes
+
+- Step/experiment: `markdown-tidy-notes`
+- When: '2026-11-02 20:27 UTC' - '2026-11-02 20:29 UTC'
+- Change: Moved development timing history to `docs/development-performance.md` with a small root compatibility link for pre-existing references. Archived the obsolete autonomous-firmware reference unchanged, removed the incomplete `HUMAN.md` stub, corrected the root skill's compilation link, reconciled the ARCH-08 completed-baseline row in `TODO.md`, and added a historical-path index and current handoff note.
+- Validation: Checked local links in six affected active Markdown files with zero missing targets; verified the archived reference SHA-256 `8a02962d82af7d3f58e1d0ed7f5c92d8e8b79c149c91d9bfcf1e030507de5cb7`; scoped `git diff --check` passed. No firmware build, flash, or runtime test was run for documentation-only changes.
+- Result: Performance notes are grouped with technical docs; stale hardware instructions are outside the active reference set. Historical paths remain traceable without rewriting append-only evidence.
+- Decision: Keep the imported root `SKILL.md` in place pending a separate skill-packaging decision. Preserve unrelated uncommitted architecture/practical-guide work.
+- Commit: `pending (see commit containing this record)`
+- Artifacts/logs: `docs/documentation-moves-2026-11-02.md`, `docs/development-performance.md`, `.agent/archive/2026-11-02-stale-reference/`; no runtime artifacts.

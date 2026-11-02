@@ -1,3 +1,18 @@
+## Markdown tidy-up — 2026-11-02
+
+- Archived completed fixes and dated reviews in `artifacts/reviews/` (commit
+  `ebc253f`). Replaced the root command-heavy readme with `README.md`, moved
+  its physical workflow into `docs/`, and archived the superseded STATUS
+  snapshot (commit `be0b2fc`). The active backlog remains root `TODO.md`.
+- Moved development performance history into `docs/` with a small root
+  compatibility link; archived an obsolete autonomous-firmware reference,
+  removed the incomplete `HUMAN.md` stub, fixed the root skill's compilation
+  link, and added `docs/documentation-moves-2026-11-02.md` for old paths.
+- Documentation links and scoped whitespace checks passed. No firmware build,
+  physical operation, or runtime test was performed for these documentation
+  changes. Preserve unrelated pre-existing source and documentation edits,
+  including the uncommitted firmware-architecture move and practical guide.
+
 ## Current session — reference-owner provenance sidecar — 2026-11-02 19:29 UTC
 
 Added one byte of owner provenance alongside each VM operand-stack word.

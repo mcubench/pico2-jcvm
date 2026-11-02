@@ -38,5 +38,7 @@ acceptance before using the guide.
 
 - [Filesystem ABI](docs/FILESYSTEM_ABI.md) and [flash layout](docs/flash-layout-migration.md)
 - [Native progress callback contract](docs/NATIVE_PROGRESS_CALLBACKS.md)
+- [Development performance notes](docs/development-performance.md)
 - [Dated reviews](artifacts/reviews/)
+- [Historical Markdown path index](docs/documentation-moves-2026-11-02.md)
 - [Historical status snapshot](.agent/archive/2026-11-02-status-pre-tidy/STATUS.md)
