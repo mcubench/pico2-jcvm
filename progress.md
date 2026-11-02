@@ -19964,3 +19964,20 @@
 - Commit: `6deb788` (finding); this progress entry follows in the root log.
 - Artifacts/logs: Official spec PDF `https://docs.oracle.com/cd/E59935_01/JCCRE.pdf`;
   no test logs.
+
+## 2026-11-02 Refresh Pico host USB inventory 3 minutes
+
+- Step/experiment: `pico-host-usb-inventory-20261102`
+- When: '2026-11-02 08:45 CET' - '2026-11-02 08:48 CET'
+- Change: Refreshed the authorized reader helper and elevated `lsusb`, then
+  updated the physical-device state in HANDOFF and QKB.
+- Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n
+  /usr/local/sbin/pico2-pcsc-reader && lsusb -d 2e8a:` completed successfully.
+- Result: Two nodes were granted and enumerated as runtime
+  `2e8a:0009 Pico2 Pico2 JCVM CCID` at bus 001 devices 003 and 004. No BOOTSEL
+  device was visible, despite the report of three inserted boards. No flash or
+  PC/SC test was attempted.
+- Decision: Refresh and identify devices before the next hardware operation;
+  retain both visible readers for failover.
+- Commit: `96c2495`.
+- Artifacts/logs: USB inventory output only; no saved log.
