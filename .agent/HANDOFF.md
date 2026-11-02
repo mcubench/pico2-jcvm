@@ -32,6 +32,8 @@ passed. Log SHA-256:
 The test script/probe changes are not committed yet. Remaining physical
 same-CAP gaps: delete/reinstall the whole package, reset/transient, GC and
 cold-power persistence.
+Harness and progress record are committed as `28a18f8`; the progress SHA
+reference is in the metadata commit.
 
 # CTX-01 physical cross-AID SIO/reset acceptance — 2026-11-02 14:18 UTC
 
