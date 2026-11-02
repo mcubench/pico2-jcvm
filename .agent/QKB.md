@@ -1,5 +1,27 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Multipackage VPCD regression needs a realistic socket timeout — 2026-11-02
+
+- **Result:** After rebuilding the PC emulator from the current shared source,
+  `./tools/test-rmi-registry` passed all reported registry, proxy, argument,
+  typed-stack and retained-context checks. `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-multipackage --timeout 60` passed `TEST:SUMMARY pass=47
+  fail=0`, including 21 instances in 3 packages, VCR2 restore, context lookup,
+  DELETE, and transient lifecycle across an AID switch.
+- **Timeout behavior:** A manually interrupted first run was still progressing
+  through final transaction-fixture cleanup. A 15-second socket bound failed
+  earlier at LOAD block 42, so it is too short for this suite. A 60-second
+  bound passed the full run. The 60-second setting bounds individual VPCD
+  socket waits; the full test's wall time is longer.
+- **Logs:** `artifacts/logs/host-vpcd-multipackage-apdu-20261102T080935Z.log`
+  (SHA-256 `cec4c3fed14d26d89b37ce7c7e9d70eaf64baf69b070398e426fbb378a958642`),
+  restart log `artifacts/logs/host-vpcd-multipackage-restart-20261102T080935Z.log`
+  (SHA-256 `0414c3fa864509e7e473ccbb3fa1aead988c90659fd2c56939a79f7d015ef76e`),
+  corrupt-sidecar and missing-sidecar logs use the same timestamp.
+- **Limits:** This is PC VPCD validation, not physical SIO acceptance or proof
+  of the package-context architecture. No hardware or CAP modification occurred
+  during this step.
+
 ## Two physical JCVM readers pass read-only runtime checks — 2026-11-02
 
 - **Inventory:** After the user reported three boards in BOOTSEL, the

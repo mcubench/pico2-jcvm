@@ -20035,3 +20035,35 @@
 - Commit: pending.
 - Artifacts/logs: The two physical logs above; build images under `build/arm/`
   and `build/riscv/` (not flashed).
+
+## 2026-11-02 Validate current-source multipackage VPCD 14 minutes
+
+- Step/experiment: `current-source-vpcd-multipackage-20261102`
+- When: '2026-11-02 08:59 CET' - '2026-11-02 09:13 CET'
+- Change: Rebuilt the PC emulator after refreshing the physical pool. Ran the
+  native RMI registry regression and the existing upstream multipackage VPCD
+  lifecycle suite. Recorded results and the empirically suitable socket bound
+  in QKB/HANDOFF. No runtime source, CAP or card contents changed.
+- Validation: `./tools/build-pc --profile current` passed with 58 existing Rust
+  warnings. `./tools/test-rmi-registry` passed, including retained context,
+  Shareable proxy, typed argument/local/stack checks. A first VPCD run was
+  interrupted during final cleanup; a 15-second timeout failed too early at
+  LOAD block 42. `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage
+  --timeout 60` passed `TEST:SUMMARY pass=47 fail=0`. Logs include emulator
+  restart and corrupt/missing sidecar cases. No physical token was touched in
+  this step.
+- Result: Current-source VPCD passes multipackage installation, 21 applet
+  instances in 3 packages, restart/registry restoration, owner identity,
+  GET STATUS pagination, deletion, and transient lifecycle across applet AIDs.
+  The 60-second per-socket timeout is required; 15 seconds is insufficient.
+  This does not implement one shared firewall context per CAP and does not
+  replace physical SIO validation.
+- Decision: Keep CTX-03 open; design CAP-scoped context with per-instance owner
+  and lifecycle state before modifying runtime context allocation. Preserve all
+  unrelated shared worktree changes.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261102T080935Z.log`
+  (SHA-256 `cec4c3fed14d26d89b37ce7c7e9d70eaf64baf69b070398e426fbb378a958642`),
+  `artifacts/logs/host-vpcd-multipackage-restart-20261102T080935Z.log` (SHA-256
+  `0414c3fa864509e7e473ccbb3fa1aead988c90659fd2c56939a79f7d015ef76e`), and
+  corrupt/missing sidecar logs at the same timestamp.

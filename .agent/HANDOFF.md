@@ -1,5 +1,25 @@
 # Session handoff — updated 2026-11-02
 
+## Latest current-source VPCD check — 2026-11-02 08:13 UTC
+
+Rebuilt the host emulator using `./tools/build-pc --profile current`; it passed
+with 58 existing Rust warnings. `./tools/test-rmi-registry` passed and reported
+`shareable_cross_context_arguments=1`, `typed_local_access=1`,
+`typed_operand_pop=1`, plus retained-context and proxy-root checks. The first
+upstream multipackage VPCD attempt was manually interrupted while still
+progressing through the transaction-fixture cleanup. A 15-second socket bound
+was too short (it timed out at LOAD block 42). Rebuilt PC emulator plus
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` then
+passed `TEST:SUMMARY pass=47 fail=0`, including restart recovery, GET STATUS,
+DELETE, and transient lifecycle across an AID switch. Logs and hashes are in
+`.agent/QKB.md`. This was PC VPCD, not physical hardware validation. No source
+change or CAP modification was made.
+
+Next: proceed with CTX-03 package-scoped context design/implementation while
+preserving per-instance owner and lifecycle semantics. Keep the owner's
+uncommitted source/doc changes untouched. Physical inventory currently has two
+runtime readers and no BOOTSEL device.
+
 ## Latest physical pool check — 2026-11-02 07:59 UTC
 
 The user reports three boards in BOOTSEL. The authorized helper and `lsusb`
