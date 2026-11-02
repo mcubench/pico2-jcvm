@@ -20433,5 +20433,5 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed (`TEST:SUMMARY pass=6 fail=0`). Fixture conversion completed with only its existing int-support warning. No physical reader was used; this wrapper's host gate was followed for its local VPCD run.
 - Result: Writer/reader applets installed from one CAP. Cross-sibling SIO invocation observed identical package static byte-array identity (`019000`); default/non-default static values and subsequent cross-sibling writes also passed. This remains emulator evidence and does not close physical same-CAP acceptance.
 - Decision: Keep CTX-03 open. Add a separate guarded physical LOAD/INSTALL/select/delete test, then continue GC/restart and broader firewall coverage.
-- Commit: `pending`
+- Commit: `2d899a1`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T142314Z.log` SHA-256 `e0d86e0ebcaf3cae104caa73369816d6398cbf9516ed7ad51c92dcce07574f50`; test fixture sources under `tools/tests/same_cap_sibling_fixture/`.
