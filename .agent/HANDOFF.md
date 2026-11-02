@@ -1,3 +1,22 @@
+# JCAlgTest VPCD regression — 2026-11-02 12:18 UTC
+
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet` completed with exit 0,
+`TEST:SUMMARY pass=30 fail=0`, over two fresh emulator passes. Each pass
+completed ATR, applet SELECT, JCSystem info, supported-algorithm probes,
+SHA-256 final and static-performance calls, AES/RSA support, and the expected
+`NO_SUCH_ALGORITHM` case. First-pass connect took 29.258 s and GETVERSION APDU
+16.570 s; second-pass connect took 0.181 s and GETVERSION APDU 0.349 s. This is
+host VPCD integration evidence, not physical acceptance. The log
+`artifacts/logs/host-vpcd-jcalgtest-20261014.log` currently hashes to
+`b612c9f275c898a73221d1694e21f7b8dda06d9d986b8cb54eff5918383ee7c0`.
+
+Next: review remaining CTX-03 GC/reset edges and continue PERSIST-02 cold-power
+acceptance when an identified board is available. Latest earlier authorized
+inventory found two runtime CCID devices and no BOOTSEL; refresh via the
+approved helper before any hardware operation. The project remains far from
+complete: physical persistence, storage/API coverage, cross-applet semantics,
+and external Windows workflow gates remain open.
+
 # CTX-03 owner, transient, and restart lifecycle checks — 2026-11-02 12:10 UTC
 
 Fixed owner-ID reuse while package-shared VM objects remain alive. A new

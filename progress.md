@@ -20337,6 +20337,17 @@
 - Commit: `8281870` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; test output only.
 
+# 2026-11-02 JCAlgTest VPCD integration regression 3 minutes
+
+- Step/experiment: `jc-algtest-vpcd-integration-20261102`
+- When: '2026-11-02 12:15 UTC' - '2026-11-02 12:18 UTC'
+- Change: Recorded the existing full host VPCD JCAlgTest regression after the authorized host-access rerun completed. No source or CAP changes.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet` exited 0 after two clean emulator passes. It reported `TEST:SUMMARY pass=30 fail=0`; both passes completed ATR, applet SELECT, JCSystem info, support probes, SHA-256 final and static performance calls, and expected `NO_SUCH_ALGORITHM` behavior. No hardware was accessed.
+- Result: Full selected JCAlgTest APDU sequence passed twice, including emulator process restart between passes. First-pass connection took 29.258 s and GETVERSION APDU 16.570 s; second-pass connection took 0.181 s and GETVERSION APDU 0.349 s. The broad run is emulator evidence only; physical acceptance remains open.
+- Decision: Keep the test as a broad integration baseline. Continue CTX-03 reset/GC edge review and PERSIST-02 actual cold-power acceptance when an identified board is available.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/host-vpcd-jcalgtest-20261014.log` SHA-256 `b612c9f275c898a73221d1694e21f7b8dda06d9d986b8cb54eff5918383ee7c0`; the wrapper's final console summary is the authoritative per-run pass count.
+
 ## 2026-11-02 Verify same-CAP sibling restoration after restart 3 minutes
 
 - Step/experiment: `ctx03-same-cap-restart-20261102`
