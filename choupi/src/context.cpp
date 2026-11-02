@@ -373,6 +373,13 @@ bool Context::isAppletActive() const noexcept {
   return this->activeAppletInstance().active;
 }
 
+void Context::clearShareableSessionState() noexcept {
+  for (auto &instance : this->applet_instances) {
+    instance.shareable_proxies = {};
+    instance.shareable_object_roots.fill(jref_t{});
+  }
+}
+
 uint16_t Context::exportRemoteObject(const jref_t reference) {
   for (auto &entry : this->activeAppletInstance().remote_objects) {
     if (entry.object_id != 0xffff && entry.reference == reference) {

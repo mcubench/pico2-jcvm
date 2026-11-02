@@ -354,7 +354,7 @@ Archive text is historical evidence, not current device state or priorities.
   marker, and the VM rejects marked placeholders absent from the runtime
   registry across interface/virtual/special calls, casts and instance-field
   operations instead of invoking them in the caller context. VPCD confirms the
-  stale placeholder is fail-closed after process restart and card reset.
+  stale placeholder is fail-closed after process restart and VPCD card reset.
   Persistent object aliases now also preserve the internal proxy marker: an
   alias restored before its canonical target can no longer become an unmarked
   object and dispatch in the client context. The three-package VPCD fixture
@@ -364,16 +364,26 @@ Archive text is historical evidence, not current device state or priorities.
   physical 2BED `2BED26ED20556535`, full-index compaction now succeeds and
   GPPro INSTALL for the already-loaded client and service applets returns
   `9000`. The cross-AID probe selects the client, but its SIO APDU returns
-  `6F00` with `SecurityException` at `invokeinterface`. The pre-existing
-  package CAP identities are unknown, so clean physical cross-AID acceptance
-  remains open; preserve these packages and test with distinct package AIDs.
+  `6F00` with `SecurityException` at `invokeinterface` before flashing the
+  current source. A clean fixture on physical Pico 2 `8E464F4E2BBC0A19` then
+  reproduced a reset boundary bug: cross-AID SIO returned `45679000`, and a
+  retained proxy still worked after PC/SC reset. `choupi_vm_clear_selected_applet()`
+  cleared transient arrays but kept runtime proxy routes and server roots. It
+  now clears those routes/roots across selected and inactive applet contexts;
+  the persistent proxy placeholder stays marked and fails closed. After
+  rebuilding and flashing that source, the clean physical fixture returned
+  `45679000` for SIO and `6A0A9000` for the retained proxy after reset. Integer
+  argument/return, exception unwind, denied lookup (`6A019000`), applet-local
+  reference denial (`6A039000`), proxy method firewall (`6A099000`), and cleanup
+  also passed. The earlier unknown-package failure is not current evidence.
   A fresh external-interface VPCD fixture passes a valid exported interface
   install and rejects a class/missing export (3/3).
   The unchanged same-applet
   call still passes on physical Pico 2 `8E464F4E2BBC0A19`. Never return raw
   server heap references to clients.
-  Acceptance: physical positive cross-AID fixture; denied-call fixtures; correct
-  context/AID restoration; stable roots across GC and reset/delete; no cross-heap
+  Acceptance: physical positive cross-AID and reset-stale-proxy fixtures now
+  pass on channel 0. Remaining: same-CAP/multi-package physical lifecycle,
+  stable roots across GC and reset/delete, no cross-heap
   reference leaks; retain the tested fail-closed persistence boundary or add
   standards-compatible proxy rehydration; then unchanged upstream Multi CAP
   integration and physical checks.

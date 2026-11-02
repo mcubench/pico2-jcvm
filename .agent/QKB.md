@@ -1,5 +1,33 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Physical Shareable proxy routes must be cleared on card reset — 2026-11-02
+
+- **Symptom:** On Pico 2 `8E464F4E2BBC0A19`, clean GPPro LOAD/INSTALL of three
+  distinct cross-AID test packages succeeded and the SIO call returned
+  `45679000`, but a retained proxy continued working after PC/SC card reset.
+  The stale proxy should fail closed. The earlier `6F00` was from the image
+  before this source was reflashed and did not reproduce on the current image.
+- **Cause:** `choupi_vm_clear_selected_applet()` cleared transient arrays and
+  deactivated contexts but kept each applet's runtime `shareable_proxies` map
+  and server `shareable_object_roots`. Physical `PC_to_RDR_IccPowerOn` runs
+  this callback before restoring applet state, so the persisted placeholder
+  still had a live runtime route.
+- **Viable fix:** `Context::clearShareableSessionState()` clears proxy routes
+  and server roots for every applet instance. Invoke it for selected and
+  inactive contexts during card reset. Keep the persistent placeholder marker;
+  after reset it has no route and method dispatch must throw
+  `SecurityException`.
+- **Validation:** Native RMI registry test passes with reset-route/root checks;
+  updated cross-AID VPCD suite passes 15/15; ARM/RISC-V max_crypto and PC
+  builds pass. On the reflashed physical board the positive SIO response was
+  `45679000`, retained-proxy-after-reset was `6A0A9000`, int argument/return
+  `765432109000`, exception unwind `6A079000`, denied lookup `6A019000`,
+  local-reference firewall `6A039000`, and proxy-method firewall `6A099000`.
+  Temporary packages were removed successfully.
+- **Rule:** Test a proxy acquired and retained immediately before an actual
+  PC/SC reset; a process-restart stale-proxy check does not cover retained
+  runtime route invalidation. Preserve distinct fixture AIDs and clean up.
+
 ## Host control-traffic overlap must be counted after the APDU end marker — 2026-11-02
 
 - **Symptom:** The first physical traffic run reported only one control request

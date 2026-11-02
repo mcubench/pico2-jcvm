@@ -1,3 +1,37 @@
+# CTX-01 physical cross-AID SIO/reset acceptance — 2026-11-02 14:18 UTC
+
+Implemented reset invalidation for runtime Shareable proxy routes. A clean
+physical fixture using contract package `A000000151000002`, service
+`A000000151000003`, and client `A000000151000004` was LOADed/INSTALLed on Pico
+2 `8E464F4E2BBC0A19`. The client cross-AID call returned `45679000`; after
+retaining the proxy and PC/SC reset, its call failed closed as `6A0A9000`.
+Int argument/return returned `765432109000`; caught service exception
+`6A079000`; denied lookup `6A019000`; private-array firewall `6A039000`; proxy
+method firewall `6A099000`; cleanup passed. This closes the clean physical
+channel-0 positive SIO and reset-staleness checks, not all CTX-01 acceptance.
+
+Cause: card reset deactivated selected/inactive contexts and cleared transient
+arrays but left runtime proxy routes and server object roots. Added
+`Context::clearShareableSessionState()` and call it for every retained context
+on card reset; persistent proxy markers remain, so unmapped placeholders throw
+`SecurityException`. `tools/test-rmi-registry` and the updated SIO VPCD suite
+pass. PC/ARM/RISC-V max_crypto builds pass. The ARM image ends at `0x100e7890`,
+leaving 100,208 bytes in the 1 MiB firmware window. Current UF2 SHA-256:
+`ea72d4ac21a28ccadcf6328d90f9d4e4ced47d58c4c4a5b027ad6e6abfce745e`.
+
+Logs: `artifacts/logs/cycle-choupi-20261102T141341Z.log` SHA-256
+`8a5a9287f124916fcbd302bb17f8b5ff2bff167b874ba71dec4b286cb6390e13`;
+`artifacts/logs/sio-cross-aid-physical-20261102T141553Z.log` SHA-256
+`4504e1371df260b2ddcea535d2ae9ddf546aab55d0ded385eb212aad1460cfa2`;
+serial capture `artifacts/logs/sio-reset-monitor-8E-20261102.log` SHA-256
+`e95eddc87adcc7b534d1d0635a1979d02daed4457149a9324d3ae0c75c0fe21c`.
+It records the post-reset CCID power-on message, 120 successful runtime
+monitor summaries, and no watchdog recovery, `TEST:FAIL`, or `FAULT`.
+Fixture cleanup confirmed all test packages removed. Next: continue the
+remaining same-CAP/multi-package physical lifecycle and global/reference
+firewall coverage, then move to open STORE/API/PERSIST acceptance. Preserve the
+other dirty worktree edits; this step has not been committed yet.
+
 # ARCH-08 physical USB progress gate accepted — 2026-11-02 13:43 UTC
 
 Instrumented `choupi_ccid_native_crypto_progress()` to record call duration,

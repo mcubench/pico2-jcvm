@@ -172,6 +172,8 @@ public:
   jref_t getRestoredAppletRef() const noexcept;
   void setAppletActive(bool active) noexcept;
   bool isAppletActive() const noexcept;
+  /// Invalidate runtime Shareable routes and server roots on card reset.
+  void clearShareableSessionState() noexcept;
   /// Track exported Java Card RMI objects in the applet context and as GC roots.
   uint16_t exportRemoteObject(jref_t reference);
   void unexportRemoteObject(jref_t reference) noexcept;

@@ -1028,12 +1028,14 @@ void choupi_vm_clear_selected_applet(void) {
   selected_applet_reselection_process_pending = false;
   if (selected_applet_context) {
     selected_applet_context->setAppletActive(false);
+    selected_applet_context->clearShareableSessionState();
     selected_applet_context->getHeap().clearTransientArrays(
         jcvm::ClearEvent::CLEAR_ON_RESET);
   }
   for (auto &context : inactive_applet_contexts) {
     if (context) {
       context->setAppletActive(false);
+      context->clearShareableSessionState();
       context->getHeap().clearTransientArrays(
           jcvm::ClearEvent::CLEAR_ON_RESET);
     }

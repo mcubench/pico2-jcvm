@@ -233,6 +233,21 @@ def main() -> int:
                     "expected caught fail-closed SecurityException 6A0A9000"
                 )
             print("TEST:PASS stale proxy after process restart fails closed")
+            response = vpcd.exchange(connection, bytes.fromhex("8010000000"),
+                                     "lookup Shareable proxy before card reset")
+            if response != bytes.fromhex("45679000"):
+                raise RuntimeError(
+                    f"lookup before reset {response.hex().upper()}, "
+                    "expected 45679000"
+                )
+            response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
+                                     "retain Shareable proxy before card reset")
+            if response != bytes.fromhex("6A109000"):
+                raise RuntimeError(
+                    f"proxy retention before reset {response.hex().upper()}, "
+                    "expected 6A109000"
+                )
+            print("TEST:PASS fresh Shareable proxy retained before card reset")
             vpcd.send_message(connection, b"\x02")
             vpcd.send_message(connection, b"\x04")
             reset_atr = vpcd.receive_message(connection)

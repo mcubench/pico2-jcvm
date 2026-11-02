@@ -404,6 +404,18 @@ void verify_shareable_proxy_registry() {
                                        sizeof(server_aid), server_object));
   assert(!client.registerShareableProxy(jcvm::jref_t(0x0030), server_aid, 4,
                                        server_object));
+
+  client.clearShareableSessionState();
+  assert(!client.isShareableProxy(proxy));
+  assert(client.findShareableProxy(server_aid, sizeof(server_aid),
+                                  server_object)
+             .isNullPointer());
+  assert(!client.getShareableProxy(proxy, returned_aid, returned_aid_length,
+                                   returned_server_object));
+  server.clearShareableSessionState();
+  server_roots.count = 0;
+  server.visitRootReferences(record_reference, &server_roots);
+  assert(!contains(server_roots, server_object));
 }
 
 void verify_shareable_cross_context_arguments() {
@@ -838,6 +850,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 shareable_proxy_registry=1 shareable_object_roots=1 shareable_reset=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
   return 0;
 }
