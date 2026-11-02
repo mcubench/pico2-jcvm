@@ -380,18 +380,20 @@ Archive text is historical evidence, not current device state or priorities.
   applet-instance state; deletion removes that applet's entries and invalidates
   sibling proxies targeting its AID. RMI registry tests prove sibling
   isolation, per-applet ID reuse, DELETE root removal, and proxy invalidation.
-  The same-CAP suite remains 6/6, cross-AID suite 15/15, and multipackage suite
-  47/47. PC, ARM and RISC-V max_crypto builds pass. The latest ARM image ends at
-  `0x100e7380`: 947,072 bytes in the 1 MiB firmware window, leaving 101,504
-  bytes. The UF2 is 1,894,912 bytes, SHA-256
-  `af4101c0012773b366979ea85a6c05d0b31bf1e130326001b8e8cce4c321cba6`.
-  Physical flash/runtime validation remains open: the latest approved host
-  inventory exposed two runtime CCID readers and no BOOTSEL device despite the
-  user report of three boards in BOOTSEL. Further acceptance must cover same-CAP
-  selection, instance/package deletion and reinstall, reset/transient behavior,
-  and persistence on hardware. Tombstoned owner facades currently remain held
-  for heap-object lifetime safety; bounded repeated delete/reinstall behavior
-  needs explicit review.
+  A same-process VPCD delete/reinstall test now proves a deleted owner ID is
+  skipped while a package-shared object allocated by that owner remains live:
+  sibling owners 1 and 2 become 3 and 2 after deleting and reinstalling owner
+  1, and the reader still sees the shared array. The PC backend and RP2350
+  allocator both consult retained VM owner state. RMI registry test, filesystem
+  overlay suite, same-CAP delete/reinstall VPCD (4/4), and multipackage VPCD
+  (47/47) pass; PC, ARM and RISC-V max_crypto builds pass. Latest ARM image ends
+  at `0x100e75f4`, using 947,700 of the 1 MiB firmware window and leaving
+  100,876 bytes. Physical flash/runtime validation remains open: the latest
+  approved host inventory exposed two runtime CCID readers and no BOOTSEL
+  device. Further acceptance must cover same-CAP selection, instance/package
+  deletion and reinstall, reset/transient behavior, and persistence on hardware.
+  Tombstoned owner facades remain retained while their objects exist; bounded
+  repeated delete/reinstall behavior still needs explicit review.
   Acceptance: an unchanged or test-only multi-applet CAP proves sibling
   instances share static/heap context and can access objects as specified,
   while separate CAPs remain isolated; AID reporting and per-instance DELETE

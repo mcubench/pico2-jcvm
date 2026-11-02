@@ -13,6 +13,12 @@ extern "C" const uint8_t *rp2350_fs_test_flash_base(void);
 #endif
 
 extern "C" const uint8_t choupi_rommask_end[];
+#ifdef RP2350_FS_OVERLAY_TEST
+extern "C" bool choupi_vm_applet_owner_in_use(uint8_t owner_id) noexcept
+    __attribute__((weak));
+#else
+extern "C" bool choupi_vm_applet_owner_in_use(uint8_t owner_id) noexcept;
+#endif
 
 namespace {
 // The first 1 MiB is reserved for the firmware and ROM mask. Dynamic CAPs
@@ -532,7 +538,15 @@ bool cap_store_allocate_applet_owner(uint8_t &owner_id) noexcept {
     }
   }
   for (uint16_t candidate = 1; candidate <= UINT8_MAX; ++candidate) {
-    if (!used[candidate]) {
+#ifdef RP2350_FS_OVERLAY_TEST
+    const bool retained_by_vm = choupi_vm_applet_owner_in_use != nullptr &&
+                                choupi_vm_applet_owner_in_use(
+                                    static_cast<uint8_t>(candidate));
+#else
+    const bool retained_by_vm = choupi_vm_applet_owner_in_use(
+        static_cast<uint8_t>(candidate));
+#endif
+    if (!used[candidate] && !retained_by_vm) {
       owner_id = static_cast<uint8_t>(candidate);
       return true;
     }

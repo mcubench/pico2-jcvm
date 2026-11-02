@@ -151,6 +151,32 @@ bool Context::forgetAppletInstance(const uint8_t *aid,
   return false;
 }
 
+void Context::pruneForgottenAppletInstances() noexcept {
+  for (std::size_t index = this->applet_instances.size(); index > 0;) {
+    --index;
+    if (index == this->active_applet_index ||
+        this->applet_instances[index].aid_length != 0 ||
+        (this->applet_instances[index].owner_heap &&
+         this->applet_instances[index].owner_heap->hasLiveObjects())) {
+      continue;
+    }
+    this->applet_instances.erase(this->applet_instances.begin() + index);
+    if (index < this->active_applet_index) --this->active_applet_index;
+  }
+}
+
+bool Context::isAppletOwnerRetained(const japplet_ID_t owner) noexcept {
+  this->pruneForgottenAppletInstances();
+  for (const auto &instance : this->applet_instances) {
+    if (instance.owner == owner &&
+        (instance.aid_length != 0 ||
+         (instance.owner_heap && instance.owner_heap->hasLiveObjects()))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 
 /**
  * Default constructor

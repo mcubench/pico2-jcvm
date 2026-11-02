@@ -91,6 +91,16 @@ japplet_ID_t Heap::getOwner() const { return this->owner; }
 
 bool Heap::isGlobalHeap() const noexcept { return this->global_heap; }
 
+bool Heap::hasLiveObjects() const noexcept {
+  for (const auto &array : this->shared_storage->arrays) {
+    if (array && &array->getOwner() == this) return true;
+  }
+  for (const auto &instance : this->shared_storage->instances) {
+    if (instance && &instance->getOwner() == this) return true;
+  }
+  return false;
+}
+
 jref_t Heap::addGlobalArray(const uint16_t length, const jc_array_type type) {
   Heap &heap = globalArrayHeap();
   constexpr ClearEvent clear_on_reset = ClearEvent::CLEAR_ON_RESET;

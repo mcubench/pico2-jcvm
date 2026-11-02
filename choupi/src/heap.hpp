@@ -133,6 +133,8 @@ public:
   /// Getting the applet ID owner
   japplet_ID_t getOwner() const;
   bool isGlobalHeap() const noexcept;
+  /// Whether this facade still owns objects retained in the shared handle table.
+  bool hasLiveObjects() const noexcept;
 
   /// Allocate and resolve JCRE-owned temporary global arrays.
   static jref_t addGlobalArray(uint16_t length, jc_array_type type);

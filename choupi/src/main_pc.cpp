@@ -70,6 +70,8 @@
 #include "short_apdu.hpp"
 #include "../../src/vm_lifecycle.h"
 
+extern "C" bool choupi_vm_applet_owner_in_use(uint8_t owner_id) noexcept;
+
 bool isSaving = false;
 uint8_t *flash = nullptr;
 uint32_t flash_length = 0;
@@ -358,7 +360,8 @@ bool cap_store_allocate_applet_owner(uint8_t &owner_id) noexcept {
     for (const auto &instance : package.instances)
       if (instance.owner_id != 0) used[instance.owner_id] = true;
   for (uint16_t candidate = 1; candidate <= UINT8_MAX; ++candidate) {
-    if (!used[candidate]) {
+    if (!used[candidate] &&
+        !choupi_vm_applet_owner_in_use(static_cast<uint8_t>(candidate))) {
       owner_id = static_cast<uint8_t>(candidate);
       return true;
     }

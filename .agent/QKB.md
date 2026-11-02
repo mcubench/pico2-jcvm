@@ -1,5 +1,27 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Deleted applet owner ID can be reused while package objects remain live — fixed 2026-11-02
+
+- **Observed:** A same-CAP VPCD test installed writer and reader siblings with
+  owner IDs 1 and 2, deleted the writer, then reinstalled it. The new writer
+  incorrectly received owner ID 1 while its package-shared static byte array
+  was still readable from the reader.
+- **Cause:** The PC backend has its own `cap_store_allocate_applet_owner`
+  implementation in `choupi/src/main_pc.cpp`; the retained-owner callback had
+  only been added to the RP2350 allocator in `src/cap_store.cpp`. The emulator
+  therefore skipped only persisted IDs, not IDs retained by live VM objects.
+- **Viable fix:** Both allocators now consult
+  `choupi_vm_applet_owner_in_use`. The device build requires the callback;
+  only the standalone filesystem overlay test keeps it weak because that test
+  links the storage module without the VM runtime. Keep the callback wired in
+  any future backend-specific allocator.
+- **Validation:** `tools/test-same-cap-delete-reinstall` passes: owners
+  `[1, 2]` become `[3, 2]` after writer DELETE/reinstall, and the reader still
+  sees the package-shared array. RMI registry and filesystem overlay suites,
+  multipackage VPCD (47/47), and PC/ARM/RISC-V max_crypto builds pass.
+- **Limit:** Physical testing remains pending; authorized USB refresh found
+  two running CCID readers but no BOOTSEL board.
+
 ## RMI and Shareable state must be per applet inside package Context — 2026-11-02
 
 - **Observed risk:** After moving sibling applets into one package Context,

@@ -92,6 +92,17 @@ bool selected_applet_select_process_pending = false;
 bool selected_applet_reselection_process_pending = false;
 pico2_jcvm::ShortApduResponseChain pending_apdu_response;
 
+extern "C" bool choupi_vm_applet_owner_in_use(const uint8_t owner_id) noexcept {
+  if (selected_applet_context &&
+      selected_applet_context->isAppletOwnerRetained(owner_id)) {
+    return true;
+  }
+  for (auto &context : inactive_applet_contexts) {
+    if (context && context->isAppletOwnerRetained(owner_id)) return true;
+  }
+  return false;
+}
+
 bool context_matches_applet(const jcvm::Context &context,
                             const uint8_t owner,
                             const uint8_t *aid,

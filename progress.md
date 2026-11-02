@@ -20281,3 +20281,14 @@
 - Commit: `4f2c206`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; prior SIO probe log
   `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`.
+
+## 2026-11-02 Prevent owner-ID reuse while package objects survive deletion 30 minutes
+
+- Step/experiment: `ctx03-deleted-owner-id-reuse-20261102`
+- When: '2026-11-02 11:19 UTC' - '2026-11-02 11:49 UTC'
+- Change: Added `Heap::hasLiveObjects` and Context owner-retention checks so tombstoned applet owner facades remain reserved while objects allocated by them are still in the shared handle store. Wired owner-retention checks into both the RP2350 and PC/VPCD owner allocators. Added a same-CAP delete/reinstall integration test that checks shared static-array visibility and owner IDs. Updated CTX-03 status, QKB, and session handoff.
+- Validation: `./tools/test-rmi-registry` passed with `deleted_owner_reservation=1`; `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`); `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-delete-reinstall --timeout 60` passed (`TEST:SUMMARY pass=4 fail=0`); `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` passed (`TEST:SUMMARY pass=47 fail=0`); PC, ARM and RISC-V `max_crypto` builds passed. Latest authorized USB inventory found two runtime CCID readers and no BOOTSEL interface; no physical flash/test was run.
+- Result: Same-process VPCD initially exposed a real PC backend bug: after writer owner 1 was deleted, reinstall reused ID 1 despite its package-shared array still being live. Root cause was a separate allocator in `main_pc.cpp` that did not call the runtime reservation callback. After wiring it, IDs `[1, 2]` became `[3, 2]`, and the reader still observed the shared array. ARM image end `0x100e75f4` uses 947,700 of 1,048,576 firmware bytes, leaving 100,876. UF2 size 1,895,936 bytes, SHA-256 `db74bd5a3efe95df2594957e3b9f5932456e40c883fade5319e23ddeb791c497`. Physical acceptance remains pending because no BOOTSEL device enumerated.
+- Decision: Keep deleted owner facades reserved for as long as VM objects reference them. Next analyze bounded facade/object reclamation and add repeated instance/package DELETE/reinstall coverage, then complete CTX-03 reset, transient, persistence and hardware acceptance.
+- Commit: `<implementation commit recorded in follow-up>`
+- Artifacts/logs: `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T114313Z.log`; multipackage logs at `artifacts/logs/host-vpcd-multipackage-*20261102T114510Z.log`; `build/arm/pico2_choupi.uf2`.
