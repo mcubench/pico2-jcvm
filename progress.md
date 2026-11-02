@@ -20121,5 +20121,5 @@
 - Validation: `./tools/build arm --profile max_crypto` passed; `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader && lsusb -d 2e8a: && pcsc_scan -r` ran with elevated host access and found two runtime cards, no BOOTSEL device. No flash attempted.
 - Result: Support generator selected 147/150 capabilities; generated ROM mask was 34,996 bytes. Current ARM UF2 is 2,128,384 bytes, SHA-256 `7fc09911123bf8cfd8f596c45a810391ed1a4a385d1ed621267600acb5259caa`; tracked external-test image is 2,098,176 bytes, SHA-256 `1dc6d486f49e9688eedcdf65785f1629cc6de93b23c7931e22d577ed6696d82d`. RISC-V smoke UF2 is 79,872 bytes, SHA-256 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`. Identity difference has not been isolated; shared tree contains another session's uncommitted changes.
 - Decision: Preserve the external-test artifact and unrelated worktree edits. Continue CTX-03 offline; require a fresh authorized inventory before physical actions.
-- Commit: `pending`
+- Commit: `ce03233`
 - Artifacts/logs: build outputs under `build/arm/` and `build/riscv/`; artifact comparison against `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no serial log.
