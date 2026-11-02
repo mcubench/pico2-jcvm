@@ -15,9 +15,10 @@ VPCD same-CAP regression rerun passed `TEST:SUMMARY pass=6 fail=0`.
 Remaining CTX-03 physical acceptance: instance/package DELETE and reinstall,
 reset/transient behavior, GC and persistence. Latest ARM image remains
 948,368 bytes with 100,208 bytes left in the 1 MiB firmware window. Preserve
-unrelated dirty files; this validation work is not yet committed. Next inspect
-CTX-01/03 for a safe offline/high-value gap while physical readers remain in
-runtime mode.
+unrelated dirty files. Harness and validation record are committed as
+`17b9e4a`; the progress SHA reference is recorded in the follow-up metadata
+commit. Next inspect CTX-01/03 for a safe offline/high-value gap while physical
+readers remain in runtime mode.
 
 # CTX-01 physical cross-AID SIO/reset acceptance — 2026-11-02 14:18 UTC
 

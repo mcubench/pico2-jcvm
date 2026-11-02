@@ -6,7 +6,7 @@
 - Validation: `bash -n tools/test-same-cap-siblings-physical` and targeted `git diff --check` passed. The physical harness installed the fixture CAP once on Pico 2 `8E464F4E2BBC0A19`; applet creates, channel-0 APDUs and cleanup passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed `TEST:SUMMARY pass=6 fail=0`.
 - Result: SIO static-array identity returned `019000`; initialized static fields returned `000012340056123456789000`; writer update and sibling read returned `000012350157123456799000`. An initial physical sequence without the VPCD test's reader reselect returned `6D00`; matching its sequence passed, so no firmware defect was established. Firmware image size was not remeasured in this test.
 - Decision: Basic same-CAP physical selection, SIO identity and static sharing pass. Continue remaining physical delete/reinstall, reset/transient, GC and cold-power acceptance.
-- Commit: `<recorded in follow-up metadata commit>`
+- Commit: `17b9e4a`; this progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-physical-20261102T143223Z.log` SHA-256 `0a8551584c163700174dd6fe767f09d146db1b30726df8e98f3027d207fca5fe`; VPCD `artifacts/logs/same-cap-sibling-vpcd-20261102T143438Z.log`; failed sequence diagnostic `artifacts/logs/same-cap-sibling-physical-20261102T142905Z.log`.
 
 ## 2026-11-02 Scope RMI and Shareable state to applet instances 19 minutes
