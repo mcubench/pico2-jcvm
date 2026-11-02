@@ -426,8 +426,13 @@ void Bytecodes::doThrow(jref_t objectref) {
     if (package_info->package.AID_length == sizeof(framework_aid) &&
         std::memcmp(package_info->package.AID, framework_aid,
                     sizeof(framework_aid)) == 0) {
-      // JC305's ISOException import token 7 maps to ROM-mask export token 18.
-      static constexpr uint8_t iso_exception_export_token = 18;
+      // Resolve ISOException through the generated JC305-to-ROM token map.
+      // The ROM-mask API order changes with its selected capabilities, so a
+      // fixed export token can alias a different exception class.
+      constexpr uint8_t jc305_iso_exception_token = 7;
+      constexpr uint8_t iso_exception_export_token =
+          jc305_javacard_framework_class_tokens[
+              jc305_iso_exception_token];
       const uint16_t iso_exception_index = HTONS(
           Export_Handler(exception_package)
               .getExportedClassOffset(iso_exception_export_token));

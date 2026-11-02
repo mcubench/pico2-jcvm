@@ -50,6 +50,12 @@ public final class RmiPhysicalProbe {
       System.out.println("RMI_PHYSICAL:SELECT response=" + hex(selected.getBytes()));
       if (selected.getSW() != 0x9000) throw new AssertionError("SELECT failed");
 
+      expect(channel, "allocationPressure", "80380202040001178900",
+          "81FF809000");
+      for (int pass = 2; pass <= 4; pass++) {
+        expect(channel, "allocationPressure" + pass,
+            "80380202040001178900", "81FF809000");
+      }
       expect(channel, "sumInts", "803802020D0001BB6C0200000005FFFFFFFE00", "8100039000");
       expect(channel, "echoInts", "803802020D0001A33602123456789ABCDEF000",
           "8102123456789ABCDEF09000");
