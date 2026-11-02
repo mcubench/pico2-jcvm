@@ -378,12 +378,19 @@ Archive text is historical evidence, not current device state or priorities.
   deletion, transient-array, selection, and previous-context AID behavior for
   sibling instances before changing context lifetime. The unchanged upstream
   `AlgTestApiMulti_305.cap` was loaded and two applet instances installed on
-  both currently visible physical tokens; physical Le-limited GET STATUS passed
-  and the temporary package was cleaned. This verifies CAP LOAD/INSTALL and
-  registry behavior only; no sibling object or static-state access was tested.
-  Current VPCD multipackage regression passes 47/47 across three packages and
-  21 installed instances, including restart, lookupAID, paging, DELETE, and
-  transient lifecycle. It still does not test same-CAP sibling state sharing.
+  both visible physical tokens; physical Le-limited GET STATUS passed and the
+  temporary package was cleaned. A new test-only same-CAP fixture installs two
+  applets and passes VPCD checks for shared static short/byte-array values after
+  AID switches, including a repeated switch with both contexts retained. This
+  confirms current static value visibility but does not prove shared object
+  identity, heap identity, or firewall context. The original multipackage VPCD
+  regression passes 47/47 across three packages and 21 installed instances,
+  including restart, lookupAID, paging, DELETE, and transient lifecycle.
+  Remaining: implement and test a package-scoped firewall context while keeping
+  per-object owner identity and per-instance lifecycle. Extend the fixture to
+  test shared object identity and cross-sibling object references. Also apply
+  CAP StaticField non-default primitive initial values; the current initializer
+  validates their byte count but does not persist the values.
   Acceptance: an unchanged or test-only multi-applet CAP proves sibling
   instances share static/heap context and can access objects as specified,
   while separate CAPs remain isolated; AID reporting and per-instance DELETE

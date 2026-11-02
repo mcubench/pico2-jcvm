@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_root="${repo_root}/tools/tests/same_cap_sibling_fixture"
+build_dir="${repo_root}/build/same-cap-sibling-fixture"
+kit="${repo_root}/AlgTest_JavaCard/ext/jc305u3_kit"
+java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
+package_aid="0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x05"
+writer_aid="0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x05:0x01"
+reader_aid="0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x05:0x02"
+
+[[ -x "${java8_home}/bin/javac" ]] || {
+  printf 'ERROR: Java 8 compiler not found: %s\n' "${java8_home}" >&2
+  exit 1
+}
+rm -rf "${build_dir}"
+mkdir -p "${build_dir}/classes" "${build_dir}/cap"
+
+"${repo_root}/tools/env" "${java8_home}/bin/javac" \
+  -source 1.7 -target 1.7 -Xlint:-options \
+  -classpath "${kit}/lib/api_classic.jar" \
+  -d "${build_dir}/classes" "${source_root}"/*.java
+
+env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}" \
+  "${repo_root}/tools/env" java "-Duser.home=${build_dir}" "-Djc.home=${kit}" \
+  -cp "${kit}/lib/tools.jar" com.sun.javacard.converter.Main -nobanner -i \
+  -exportpath "${kit}/api_export_files" \
+  -classdir "${build_dir}/classes" -d "${build_dir}/cap" -out CAP \
+  -applet "${writer_aid}" samecap.WriterApplet \
+  -applet "${reader_aid}" samecap.ReaderApplet \
+  samecap "${package_aid}" 1.0
+
+python3 - "${build_dir}/cap/samecap/javacard/samecap.cap" <<'PY'
+from pathlib import Path
+from zipfile import ZipFile
+import sys
+
+path = Path(sys.argv[1])
+if not path.is_file():
+    raise SystemExit(f"same-CAP fixture missing: {path}")
+with ZipFile(path) as cap:
+    names = set(cap.namelist())
+    if not any(name.endswith("/Applet.cap") for name in names):
+        raise SystemExit("same-CAP fixture has no Applet component")
+print(f"SAME_CAP_SIBLING_FIXTURE:PASS {path}")
+PY

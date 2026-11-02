@@ -20167,3 +20167,14 @@
 - Decision: Keep the refactor as groundwork only; next define and test package firewall context semantics before changing lifetimes.
 - Commit: `2fc060f`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no physical log.
+
+## 2026-11-02 Probe same-CAP static state and correct default reads 16 minutes
+
+- Step/experiment: `same-cap-static-state-and-default-zero-20261102`
+- When: '2026-11-02 09:05 UTC' - '2026-11-02 09:21 UTC'
+- Change: Added a test-only same-CAP writer/reader fixture and VPCD harness. Corrected Java Card static byte, short, and int reads to return zero when their persistent tag is absent; malformed existing records remain subject to strict checks. Updated CTX-03 acceptance to distinguish static value visibility from shared heap/object identity and record that non-default CAP static primitive values are not yet initialized. Refreshed the applet-free max_crypto ARM artifact to the current build.
+- Validation: Fixture conversion passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed `TEST:SUMMARY pass=4 fail=0`, proving static short/array visibility over sibling AID switches, including retained contexts. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, `./tools/build riscv --profile max_crypto`, `./tools/test-rmi-registry`, and `./tools/test-firmware-flash-boundary` passed. `./tools/check-firmware-flash-boundary build/arm/pico2_choupi.elf.map` passed with end `0x100e64bc`. Fresh host-access inventory found two runtime CCID readers and no BOOTSEL devices; no physical flash/test.
+- Result: ARM firmware occupies 943,292 bytes of the 1 MiB firmware partition and leaves 105,284 bytes. UF2 is 1,887,232 bytes, SHA-256 `f0187cc260839d2905a868b2babdad71f84f7819ffcaf190d437077296c76159`. Probe log: `artifacts/logs/same-cap-sibling-vpcd-20261102T091916Z.log`. The test does not establish single-heap identity or owner isolation.
+- Decision: Keep CTX-03 open. Next implement same-CAP object identity and per-object owner behavior; include CAP static non-default initialization in the same acceptance suite.
+- Commit: pending.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; `artifacts/logs/same-cap-sibling-vpcd-20261102T091916Z.log`.

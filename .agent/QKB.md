@@ -1,5 +1,29 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Static primitive defaults and same-CAP sibling values — 2026-11-02
+
+- **Observed:** The first same-CAP writer/reader probe returned `6F00` on its
+  first `GETSTATIC_S`; the exception was `IOException` because a default-zero
+  static field had no persistent filesystem record. A missing record represents
+  the Java Card default value, not an I/O error.
+- **Viable fix:** `Static_Handler::getPersistentByte`, `getPersistentShort`, and
+  `getPersistentInt` check `fs_exists` and return zero only when the tag is
+  absent. Present but malformed records still go through the existing strict
+  decode/type checks.
+- **Validation:** A new test-only single-CAP fixture installs writer and reader
+  applets. Via PC VPCD it verifies a default-zero short and static byte array
+  are shared across AID switches and remain visible after reselecting retained
+  contexts: `TEST:SUMMARY pass=4 fail=0`. ARM and RISC-V max_crypto builds and
+  the firmware window guard passed. No physical test; host inventory exposed
+  two runtime CCID devices but no BOOTSEL device. Log:
+  `artifacts/logs/same-cap-sibling-vpcd-20261102T091916Z.log`.
+- **Remaining context limit:** This checks values only; it does not prove shared
+  static-object handle identity, a single CAP heap/firewall context, or
+  per-object owner isolation. The current CAP static initializer checks the
+  `non_default_value_count` but ignores the actual non-default initializer
+  bytes. Add those to CTX-03 acceptance and test them before claiming complete
+  CAP context semantics.
+
 ## CTX-03 instance-state groundwork and updated max_crypto image — 2026-11-02
 
 - **Change:** Existing applet owner, AID, lifecycle flags, registration state,

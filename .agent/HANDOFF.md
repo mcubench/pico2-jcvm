@@ -1,5 +1,27 @@
 # Session handoff — updated 2026-11-02
 
+## Same-CAP static state probe and default primitive fix — 2026-11-02 09:21 UTC
+
+A test-only CAP containing a writer and reader applet from one package now
+proves VPCD visibility of package static short and byte-array values after
+AID switches. It passed four checks, including revisiting retained applet
+contexts after a second write. The first probe exposed that an absent static
+primitive record threw `IOException`, producing `6F00`; static byte/short/int
+reads now return Java Card zero defaults when no stored value exists. The
+current CAP initializer still validates but ignores `non_default_values`; add
+that to CTX-03 acceptance. This fixture does not prove shared object identity,
+heap identity, or package-scoped firewall context.
+
+PC max_crypto build, ARM and RISC-V firmware builds, RMI registry regression,
+and firmware boundary checks pass. ARM image end is `0x100e64bc`, leaving
+105,284 bytes in the 1 MiB firmware window. The refreshed applet-free artifact
+SHA-256 is
+`f0187cc260839d2905a868b2babdad71f84f7819ffcaf190d437077296c76159`. Fresh
+authorized USB inventory found two runtime CCID devices and no BOOTSEL device,
+so no flash or physical runtime test occurred. Next: design a shared CAP
+context/heap that preserves per-object applet owners; extend the fixture to
+check object identity and owner isolation before changing runtime lifetimes.
+
 ## CTX-03 instance-state refactor — 2026-11-02 09:02 UTC
 
 Grouped the existing per-applet owner, AID, registration/install state, restore

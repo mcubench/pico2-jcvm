@@ -29,6 +29,7 @@
 #include "../exceptions.hpp"
 #include "../heap.hpp"
 #include "flashmemory.hpp"
+#include "ffi.h"
 
 namespace jcvm {
 
@@ -41,6 +42,9 @@ namespace jcvm {
 jbyte_t Static_Handler::getPersistentByte(const uint16_t index) const {
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
+  if (fs_exists(tag.value, tag.len) == 0) {
+    return 0;
+  }
   return FlashMemory_Handler::getPersistentField_Byte(tag);
 }
 
@@ -53,6 +57,9 @@ jbyte_t Static_Handler::getPersistentByte(const uint16_t index) const {
 jshort_t Static_Handler::getPersistentShort(const uint16_t index) const {
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
+  if (fs_exists(tag.value, tag.len) == 0) {
+    return 0;
+  }
   return FlashMemory_Handler::getPersistentField_Short(tag);
 }
 
@@ -66,6 +73,9 @@ jshort_t Static_Handler::getPersistentShort(const uint16_t index) const {
 jint_t Static_Handler::getPersistentInt(const uint16_t index) const {
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
+  if (fs_exists(tag.value, tag.len) == 0) {
+    return 0;
+  }
   return FlashMemory_Handler::getPersistentField_Int(tag);
 }
 #endif /* JCVM_INT_SUPPORTED */

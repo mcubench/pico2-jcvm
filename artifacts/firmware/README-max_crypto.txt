@@ -13,7 +13,7 @@ remove installed applets explicitly with GlobalPlatformPro.
 Debug persistent-GC instrumentation: disabled.
 Filesystem: snapshot v4, with copy-on-write migration from v2/v3 snapshots.
 Image size: 1,887,232 bytes
-Firmware SHA-256: 029f4a7cc1dd38d0f77fc52cc733f90b7599e01606f934068318fd2a4a505d62
+Firmware SHA-256: f0187cc260839d2905a868b2babdad71f84f7819ffcaf190d437077296c76159
 Build date: 2026-11-02
 Included update: native Signature MAC now honors the IV supplied to
 `Signature.init(key, mode, parameters, ...)`; deterministic nonzero-IV VPCD
@@ -24,7 +24,7 @@ Flash layout: the image ends at `0x100e648c`, 105,332 bytes below the reserved
 1 MiB firmware boundary at `0x10100000`. The RP2350 has 2 MiB total flash; CAP,
 filesystem, metadata, and legacy regions occupy the rest. The UF2 file size
 includes transfer block overhead and is not the amount written contiguously.
-The build wrapper checks this boundary and fails on overlap.
+The build wrapper checks this boundary and fails on overlap. The native static-field reads return Java Card default zero when no persistent value exists; same-CAP sibling static-state VPCD coverage passes. This firmware update has not been validated on a physical board.
 
 Flash
 1. Hold BOOTSEL while connecting the Pico 2 over USB.
