@@ -20256,6 +20256,6 @@
   `8691a8141ecc8a7d123590cdd33770fedfe73eae48f97d310cbd305f259405c6`.
 - Decision: Keep local-reference rejection fail-closed until firmware lookup
   selects a shared package context and ownership behavior is proven end-to-end.
-- Commit: `pending`
+- Commit: `4f2c206`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`; prior SIO probe log
   `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`.
