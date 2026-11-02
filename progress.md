@@ -20584,3 +20584,14 @@
 - Decision: Next make consumers firewall-aware, including equality semantics and arrays, before enabling private references. Preserve fail-closed marshalling until that work and end-to-end tests pass.
 - Commit: `2c2cf93`
 - Artifacts/logs: No hardware artifacts; focused test output `RMI_REGISTRY:PASS`; ARM/RISC-V build output was not archived.
+
+## 2026-11-02 Archive completed fix checklist and dated reviews 6 minutes
+
+- Step/experiment: `markdown-tidy-reviews`
+- When: '2026-11-02 20:18 UTC' - '2026-11-02 20:24 UTC'
+- Change: Moved the completed 2026-10-14 fix checklist and three dated reviews into `artifacts/reviews/`; linked their historical findings from active `TODO.md` task ownership. Rebased relative links in the moved checklist.
+- Validation: Scoped `git diff --check` passed; checked local Markdown links in the four moved files and `TODO.md`, with zero missing targets. No firmware build, flash, or runtime test was run for documentation-only moves.
+- Result: Root review/checklist clutter is removed while completed work remains traceable and HARD-01 retains the malformed-CAP review as historical evidence. No current-source defect status was inferred from old reviews.
+- Decision: Next consolidate the project entry point and retire duplicated status notes.
+- Commit: `pending (see commit containing this record)`
+- Artifacts/logs: `artifacts/reviews/` and `TODO.md`; no runtime artifacts.

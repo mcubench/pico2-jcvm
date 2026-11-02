@@ -599,6 +599,9 @@ Archive text is historical evidence, not current device state or priorities.
 ### HARD-01
 
 - [ ] **Complete deferred robustness and private-operation hardening (plan WP9).**
+  The [2026-10-23 malformed-CAP review](artifacts/reviews/malformed-cap-review-20261023.md)
+  is historical source-inspection evidence for this task; its findings require
+  current-source verification before treating them as open defects.
   Status: framed/count/type/Class/Directory CAP validation and APDU fuzzing exist.
   Latest CAP sanitizer run passes 4,208 checks / 48 supplied CAPs / 100,000 random
   inputs; short APDU fuzzing covered 250,000 inputs. Directory validation respects
@@ -628,6 +631,7 @@ Full original checklists, measurements, image hashes and exceptions remain in
 
 | Completed area | Established baseline / remaining task |
 | --- | --- |
+| Initial APDU and VM review fixes | All eight items in the [2026-10-14 fix checklist](artifacts/reviews/fixes-20261014.md) were implemented; the dated [functionality reviews](artifacts/reviews/functionality-review-20261019.md) and [update](artifacts/reviews/functionality-review-20261021.md) remain historical evidence. Current acceptance belongs to the task IDs above. |
 | ARCH-01–07, ARCH-09 | Shared runtime/filesystem/diagnostic contracts, Pico storage extraction, loader encapsulation, production progress tests; ARCH-08 physical gate stays open. |
 | Storage capacity and error mapping | Arena/snapshot improvements and package-state compaction implemented; live-limit/reclamation gates STORE-01, API-01, PERSIST-01. |
 | Native API corrections | Key-interface/marker maps, EC batched writes, NOPAD directions, MessageRecovery reasons, digest continuation; preserve API-03 retest scope. |

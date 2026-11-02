@@ -1,6 +1,6 @@
 # Functionality review update — 2026-10-21
 
-This checks the current worktree against `review_20261019.md`, the intervening
+This checks the current worktree against `artifacts/reviews/functionality-review-20261019.md`, the intervening
 `progress.md` entries, and the implementation itself. Source files were not
 changed for this review. The current worktree has many pre-existing uncommitted
 changes, including VM and card-manager files; observations below apply to the
