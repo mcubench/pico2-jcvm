@@ -15,7 +15,7 @@ or runtime-tested. It was built from the shared worktree, including local
 `src/cap_load.cpp` changes, so it is not reproducible from a clean checkout
 until those changes are integrated. No device was touched. The user's external
 test task is complete; next resume the open CTX-01/03 work after that task is
-resumed.
+resumed. Artifact refresh commit: `ec395d9`.
 
 ## Current session — require physical reclaimer telemetry — 2026-11-02 19:01 UTC
 

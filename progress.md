@@ -20570,5 +20570,5 @@
 - Validation: `./tools/build arm --profile max_crypto` passed (147/150 selectable capabilities enabled). `./tools/build riscv --profile max_crypto` passed its VM-core build. ARM linker boundary check passed. `cmp` confirmed the published UF2 and support CSV match the build outputs byte-for-byte.
 - Result: ARM firmware ends at `0x100e7df8`, uses 949,752/1,048,576 bytes (98,824 bytes remain in the firmware window). Published UF2 is 1,900,032 bytes, SHA-256 `7456bf4826c0aa9578e989992f566fd58878c8f212d06ed23e9b27ac756b114d`. Support CSV SHA-256 `81824f2bdde2f48f39cf3a3e3da942bf89a81317f32f218a8955dce8b455dee0`. No physical flashing or runtime validation was performed; BOOTSEL devices were left untouched.
 - Decision: The refreshed max_crypto ARM image is ready for external testing. It was built with current local changes including `src/cap_load.cpp`; README records that provenance and the physical-validation limitation.
-- Commit: `pending`
+- Commit: `ec395d9`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; `artifacts/firmware/pico2-jcvm-max_crypto-arm-supported.csv`; `artifacts/firmware/README-max_crypto.txt`.
