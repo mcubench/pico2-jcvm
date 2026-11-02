@@ -1,5 +1,25 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## CTX-03 instance-state groundwork and updated max_crypto image — 2026-11-02
+
+- **Change:** Existing applet owner, AID, lifecycle flags, registration state,
+  and restore roots are grouped in `Context::AppletInstanceState`. This keeps
+  the current per-applet behavior intact and prepares a later context/instance
+  split; it does not implement package-shared firewall contexts.
+- **Validation:** `./tools/test-rmi-registry` passed. Both
+  `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. The ARM linker end is
+  `0x100e648c`, leaving 105,332 bytes below the `0x10100000` CAP boundary;
+  `./tools/test-firmware-flash-boundary` passed. No physical flash/test because
+  the latest host-access inventory found two runtime readers, not BOOTSEL.
+- **Artifact:** The applet-free ARM UF2 at
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` is 1,887,232
+  bytes, SHA-256
+  `029f4a7cc1dd38d0f77fc52cc733f90b7599e01606f934068318fd2a4a505d62`. It is
+  rebuilt from the current shared worktree, which also contains unrelated
+  uncommitted source edits from another session; it has not been physically
+  validated.
+
 ## Current-source VPCD multipackage regression baseline — 2026-11-02
 
 - **Procedure/result:** Ran `PICO2_HOST_USB_ACCESS=1

@@ -20156,3 +20156,14 @@
 - Decision: Keep CTX-03 open; use this suite as a regression baseline while adding same-CAP behavior coverage.
 - Commit: `73f9667`
 - Artifacts/logs: APDU `artifacts/logs/host-vpcd-multipackage-apdu-20261102T085227Z.log` SHA-256 `1edcb100128fafc0e8b3f977dc85525da12ae69d55d6950ed65448c2aa6dfe18`; restart and sidecar log hashes in `.agent/QKB.md`.
+
+## 2026-11-02 Group applet instance state ahead of CTX-03 6 minutes
+
+- Step/experiment: `ctx03-applet-instance-state-grouping-20261102`
+- When: '2026-11-02 08:56 UTC' - '2026-11-02 09:02 UTC'
+- Change: Grouped per-applet owner, AID, install/registration state, restored applet roots, and active flag into `Context::AppletInstanceState`. This is preparatory refactoring; no shared package context behavior is implemented. Refreshed the max_crypto applet-free ARM test artifact and metadata to the just-built source.
+- Validation: `./tools/test-rmi-registry` passed. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed. `./tools/test-firmware-flash-boundary` passed (`below_limit=1 at_limit=0 above_limit=0`). `git diff --check -- choupi/src/context.cpp choupi/src/context.hpp` passed. Fresh authorized host USB inventory found two runtime CCID devices and no BOOTSEL device; no flash/runtime test.
+- Result: ARM image end `0x100e648c` (943,244 bytes from flash base), leaving 105,332 bytes in the 1 MiB firmware window. UF2 is 1,887,232 bytes, SHA-256 `029f4a7cc1dd38d0f77fc52cc733f90b7599e01606f934068318fd2a4a505d62`.
+- Decision: Keep the refactor as groundwork only; next define and test package firewall context semantics before changing lifetimes.
+- Commit: pending.
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; no physical log.

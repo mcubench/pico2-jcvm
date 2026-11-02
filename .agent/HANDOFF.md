@@ -1,5 +1,20 @@
 # Session handoff — updated 2026-11-02
 
+## CTX-03 instance-state refactor — 2026-11-02 09:02 UTC
+
+Grouped the existing per-applet owner, AID, registration/install state, restore
+roots, and active flag into `Context::AppletInstanceState`. This is only a
+behavior-preserving ownership boundary to prepare future separation of CAP
+firewall context from applet-instance state; it does not yet introduce shared
+package contexts or alter semantics. `tools/test-rmi-registry`, ARM max_crypto,
+RISC-V max_crypto, and the synthetic firmware-boundary test passed. The ARM
+image ends at `0x100e648c`, leaving 105,332 bytes in the 1 MiB firmware window.
+The refreshed artifact is applet-free and has SHA-256
+`029f4a7cc1dd38d0f77fc52cc733f90b7599e01606f934068318fd2a4a505d62`; physical
+runtime test is still pending. A fresh authorized USB check found two runtime
+CCID devices and no BOOTSEL device. Next: continue CTX-03 design and add tests
+that distinguish same-CAP sibling state from firewall context.
+
 ## Current VPCD multipackage regression — 2026-11-02 08:56 UTC
 
 The current shared source passed `PICO2_HOST_USB_ACCESS=1

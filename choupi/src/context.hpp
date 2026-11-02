@@ -47,25 +47,26 @@ class JC_Array;
 class Context {
 private:
   enum class SensitiveResultKind : uint8_t { Unassigned, Boolean, Short, Object };
-  /// Applet ID.
-  japplet_ID_t applet_ID;
+  /// State owned by one installed applet instance. Kept separate from the
+  /// CAP execution context so one context can later retain sibling AIDs,
+  /// lifecycle roots, and registration state without merging ownership.
+  struct AppletInstanceState {
+    japplet_ID_t owner = 0;
+    std::array<uint8_t, 16> aid{};
+    uint8_t aid_length = 0;
+    jref_t aid_object_ref;
+    bool registered = false;
+    bool installation_active = false;
+    jref_t registered_applet_ref;
+    bool restored = false;
+    jref_t restored_applet_ref;
+    bool active = false;
+  } applet_instance;
   /// Package containing the active applet instance.
   jpackage_ID_t applet_package_ID;
-  /// Selected/installed applet instance AID, shared with Java Card APIs.
-  std::array<uint8_t, 16> applet_aid{};
-  uint8_t applet_aid_length = 0;
   /// Applet AID active immediately before the last context switch.
   std::array<uint8_t, 16> previous_context_aid{};
   uint8_t previous_context_aid_length = 0;
-  jref_t applet_aid_object_ref;
-  /// Set when the active install method invokes Applet.register().
-  bool applet_registered = false;
-  /// Applet.register() is legal only while the install entry point runs.
-  bool applet_installation_active = false;
-  jref_t registered_applet_ref;
-  bool applet_instance_restored = false;
-  jref_t restored_applet_ref;
-  bool applet_active = false;
   struct RemoteObjectEntry {
     jref_t reference;
     uint16_t object_id = 0xffff;

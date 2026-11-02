@@ -13,14 +13,14 @@ remove installed applets explicitly with GlobalPlatformPro.
 Debug persistent-GC instrumentation: disabled.
 Filesystem: snapshot v4, with copy-on-write migration from v2/v3 snapshots.
 Image size: 1,887,232 bytes
-Firmware SHA-256: 76de3ba3f02bc5ac26d293f469071766dc4a2b36e96edebe248e865acd4ec828
+Firmware SHA-256: 029f4a7cc1dd38d0f77fc52cc733f90b7599e01606f934068318fd2a4a505d62
 Build date: 2026-11-02
 Included update: native Signature MAC now honors the IV supplied to
 `Signature.init(key, mode, parameters, ...)`; deterministic nonzero-IV VPCD
 vectors and the three matching upstream API calls pass. See the IV validation
 record in `progress.md`.
 
-Flash layout: the image ends at `0x100e64cc`, 105,268 bytes below the reserved
+Flash layout: the image ends at `0x100e648c`, 105,332 bytes below the reserved
 1 MiB firmware boundary at `0x10100000`. The RP2350 has 2 MiB total flash; CAP,
 filesystem, metadata, and legacy regions occupy the rest. The UF2 file size
 includes transfer block overhead and is not the amount written contiguously.

@@ -51,10 +51,10 @@ Context *Context::setActiveContext(Context *context) noexcept {
   if (context != nullptr && context != previous) {
     context->previous_context_aid.fill(0);
     context->previous_context_aid_length = 0;
-    if (previous != nullptr && previous->applet_aid_length >= 5 &&
-        previous->applet_aid_length <= previous->applet_aid.size()) {
-      context->previous_context_aid = previous->applet_aid;
-      context->previous_context_aid_length = previous->applet_aid_length;
+    if (previous != nullptr && previous->applet_instance.aid_length >= 5 &&
+        previous->applet_instance.aid_length <= previous->applet_instance.aid.size()) {
+      context->previous_context_aid = previous->applet_instance.aid;
+      context->previous_context_aid_length = previous->applet_instance.aid_length;
     }
   }
   active_context = context;
@@ -75,8 +75,8 @@ Context &Context::getActiveContext() {
  */
 Context::Context(const japplet_ID_t appletID,
                  const jpackage_ID_t packageID) noexcept
-    : applet_ID(appletID), applet_package_ID(packageID), stack(), packagesID(),
-      heap(appletID) {
+    : applet_package_ID(packageID), stack(), packagesID(), heap(appletID) {
+  this->applet_instance.owner = appletID;
   this->packagesID.push_front(packageID);
 }
 
@@ -94,7 +94,7 @@ jpackage_ID_t Context::getCurrentPackageID() noexcept {
  *
  * @return current applet class ID
  */
-jpackage_ID_t Context::getAppletID() const noexcept { return this->applet_ID; }
+jpackage_ID_t Context::getAppletID() const noexcept { return this->applet_instance.owner; }
 
 jpackage_ID_t Context::getAppletPackageID() const noexcept {
   return this->applet_package_ID;
@@ -102,25 +102,25 @@ jpackage_ID_t Context::getAppletPackageID() const noexcept {
 
 bool Context::setAppletAID(const uint8_t *aid,
                            const uint8_t aid_length) noexcept {
-  this->applet_aid.fill(0);
-  this->applet_aid_length = 0;
-  this->applet_aid_object_ref = jref_t();
-  if (aid == nullptr || aid_length < 5 || aid_length > this->applet_aid.size()) {
+  this->applet_instance.aid.fill(0);
+  this->applet_instance.aid_length = 0;
+  this->applet_instance.aid_object_ref = jref_t();
+  if (aid == nullptr || aid_length < 5 || aid_length > this->applet_instance.aid.size()) {
     return false;
   }
-  std::copy(aid, aid + aid_length, this->applet_aid.begin());
-  this->applet_aid_length = aid_length;
+  std::copy(aid, aid + aid_length, this->applet_instance.aid.begin());
+  this->applet_instance.aid_length = aid_length;
   return true;
 }
 
 bool Context::copyAppletAID(uint8_t aid[16],
                             uint8_t &aid_length) const noexcept {
-  aid_length = this->applet_aid_length;
-  if (aid == nullptr || aid_length < 5 || aid_length > this->applet_aid.size()) {
+  aid_length = this->applet_instance.aid_length;
+  if (aid == nullptr || aid_length < 5 || aid_length > this->applet_instance.aid.size()) {
     aid_length = 0;
     return false;
   }
-  std::copy_n(this->applet_aid.begin(), aid_length, aid);
+  std::copy_n(this->applet_instance.aid.begin(), aid_length, aid);
   return true;
 }
 
@@ -137,41 +137,41 @@ bool Context::copyPreviousContextAID(uint8_t aid[16],
 }
 
 jref_t Context::getAppletAIDObjectRef() const noexcept {
-  return this->applet_aid_object_ref;
+  return this->applet_instance.aid_object_ref;
 }
 
 void Context::setAppletAIDObjectRef(const jref_t reference) noexcept {
-  this->applet_aid_object_ref = reference;
+  this->applet_instance.aid_object_ref = reference;
 }
 
 void Context::markAppletRegistered(const jref_t applet_ref) noexcept {
-  this->registered_applet_ref = applet_ref;
-  this->applet_registered = true;
+  this->applet_instance.registered_applet_ref = applet_ref;
+  this->applet_instance.registered = true;
 }
 
 bool Context::wasAppletRegistered() const noexcept {
-  return this->applet_registered;
+  return this->applet_instance.registered;
 }
 
 jref_t Context::getRegisteredAppletRef() const noexcept {
-  return this->registered_applet_ref;
+  return this->applet_instance.registered_applet_ref;
 }
 
 void Context::setAppletInstallationActive(const bool active) noexcept {
-  this->applet_installation_active = active;
+  this->applet_instance.installation_active = active;
 }
 
 bool Context::isAppletInstallationActive() const noexcept {
-  return this->applet_installation_active;
+  return this->applet_instance.installation_active;
 }
 
 bool Context::restoreAppletInstance(const jpackage_ID_t package_id,
                                    const jclass_index_t class_index) noexcept {
-  this->applet_instance_restored = false;
-  this->restored_applet_ref = jref_t();
+  this->applet_instance.restored = false;
+  this->applet_instance.restored_applet_ref = jref_t();
   try {
     const fs::Tag tag = FlashMemory_Handler::getAppletInstanceTag(
-        this->applet_ID, package_id, class_index);
+        this->applet_instance.owner, package_id, class_index);
     const jref_t reference =
         FlashMemory_Handler::getPersistentField_Reference(tag, this->heap);
     if (reference.isNullPointer() || reference.isArray()) {
@@ -195,8 +195,8 @@ bool Context::restoreAppletInstance(const jpackage_ID_t package_id,
       return false;
     }
     (void)instance->getFields();
-    this->restored_applet_ref = reference;
-    this->applet_instance_restored = true;
+    this->applet_instance.restored_applet_ref = reference;
+    this->applet_instance.restored = true;
     return true;
   } catch (Exceptions exception) {
     std::printf("CHOUPI:RESTORE_EXCEPTION id=%u\r\n",
@@ -233,15 +233,15 @@ bool Context::restoreAppletInstance(const jpackage_ID_t package_id,
 }
 
 bool Context::hasRestoredAppletInstance() const noexcept {
-  return this->applet_instance_restored;
+  return this->applet_instance.restored;
 }
 
 jref_t Context::getRestoredAppletRef() const noexcept {
-  return this->restored_applet_ref;
+  return this->applet_instance.restored_applet_ref;
 }
 
 void Context::setAppletActive(const bool active) noexcept {
-  this->applet_active = active;
+  this->applet_instance.active = active;
   if (active) {
     return;
   }
@@ -255,7 +255,7 @@ void Context::setAppletActive(const bool active) noexcept {
 }
 
 bool Context::isAppletActive() const noexcept {
-  return this->applet_active;
+  return this->applet_instance.active;
 }
 
 uint16_t Context::exportRemoteObject(const jref_t reference) {
@@ -303,7 +303,7 @@ void Context::unexportRemoteObject(const jref_t reference) noexcept {
   for (auto &entry : this->remote_objects) {
     if (entry.object_id != 0xffff && entry.reference == reference) {
       entry.exported = false;
-      if (!this->applet_active || !entry.session_reference) {
+      if (!this->applet_instance.active || !entry.session_reference) {
         entry.reference = jref_t();
         entry.object_id = 0xffff;
         entry.session_reference = false;
@@ -342,7 +342,7 @@ bool Context::remoteObject(const uint16_t object_id,
   for (const auto &entry : this->remote_objects) {
     if (entry.object_id == object_id &&
         (entry.exported ||
-         (this->applet_active && entry.session_reference))) {
+         (this->applet_instance.active && entry.session_reference))) {
       reference = entry.reference;
       return true;
     }
@@ -743,8 +743,8 @@ void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
     if (!reference.isNullPointer()) visitor(reference, visitor_context);
   }
   const jref_t direct_roots[] = {
-      this->applet_aid_object_ref, this->registered_applet_ref,
-      this->restored_applet_ref, this->apdu_buffer_ref,
+      this->applet_instance.aid_object_ref, this->applet_instance.registered_applet_ref,
+      this->applet_instance.restored_applet_ref, this->apdu_buffer_ref,
       this->apdu_object_ref, this->apdu_outgoing_buffer_ref,
       this->sensitive_result_object};
   for (const jref_t &reference : direct_roots) {
