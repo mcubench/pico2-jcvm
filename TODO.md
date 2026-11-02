@@ -451,6 +451,10 @@ Archive text is historical evidence, not current device state or priorities.
   persistence remain open. The first probe omitted the explicit
   reader reselect used by the VPCD test; after aligning the APDU sequence,
   physical results matched VPCD.
+  The complete same-CAP selection/instance-delete/package-delete/reinstall
+  sequence was repeated on `2BED26ED20556535` with the same status words and
+  values and successful cleanup. Its installed image hash was not captured, so
+  this is a device-behavior comparison rather than a same-image comparison.
   Two repeated instance DELETE/reinstall cycles keep array-owning owner 1
   reserved while reclaiming object-free owner 3; full package DELETE/reinstall
   releases and reuses owner 1. Same-CAP transient tests show sibling selection

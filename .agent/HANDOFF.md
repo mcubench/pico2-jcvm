@@ -1,3 +1,14 @@
+## CTX-03 same-CAP lifecycle replicated on second Pico — 2026-11-02 15:01 UTC
+
+Ran the extended physical sibling harness on `2BED26ED20556535`. SIO identity
+(`019000`), initial and writer-updated static values, applet DELETE/recreate,
+package DELETE/LOAD/CREATE, fresh static initialization, and cleanup all
+matched `8E464F4E2BBC0A19`. Log SHA-256:
+`c7ca0453911b758544a8a5dce5572a7df8f825f6f41ea2784de638affe6187db`.
+The flashed firmware hash on 2BED was not captured; do not infer both devices
+ran the same image. No status/result differences were observed. This comparison
+is not yet in a progress commit.
+
 ## CTX-03 second-board transient replication — 2026-11-02 14:56 UTC
 
 Repeated the same physical same-CAP transient test on Pico 2
