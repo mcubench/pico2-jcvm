@@ -11,11 +11,13 @@
   resolved). The captured CDC evidence is
   `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log`; the probe result is
   `artifacts/logs/sio-two-package-probe-20261102T013345Z.log`.
-- **Inference, not yet confirmed at the wire level:** GPPro's normal LOAD stream
-  appears to omit optional `Descriptor.cap`. The GP LOAD frames were not
-  captured, so verify component omission directly before treating GPPro as the
-  cause. Existing CAP loading also permits omitted components while retaining
-  the original Directory sizes; see the CAP Directory note below.
+- **Cause confirmed in the pinned GPPro loader:** `GPSession.loadCapFile()`
+  passes `cap.getCode()` into LOAD block `C4`. In the local `capfile-26.02.22`
+  library, `CAPFile.getCode()` invokes `_getCode(false)`, which explicitly
+  skips both `Descriptor` and `Debug` components. Thus standard GPPro LOAD
+  intentionally omits Descriptor; the physical APDU stream was not separately
+  captured. Existing CAP loading permits omitted components while retaining
+  original Directory sizes; see the CAP Directory note below.
 - **Safe partial fix:** `invokeinterface` distinguishes unavailable Descriptor
   from malformed/present Descriptor data. If it is unavailable, a cross-context
   method may proceed only with one operand word (the receiver) and a target
@@ -24,6 +26,11 @@
   Malformed present Descriptor data also fails closed. The focused registry
   test checks receiver-local construction and rejects extra words/null receivers;
   ARM and RISC-V current builds pass.
+- **Next type-source requirement:** Since standard GPPro LOAD omits Descriptor,
+  general cross-context typed arguments cannot depend on it. Investigate
+  runtime operand/local type tracking or another on-card-verifiable source;
+  never infer primitive/reference types from raw words. Keep explicit arguments
+  fail-closed until that source is implemented and tested.
 - **Limit:** This fallback has not yet been exercised by a positive physical
   receiver-only call. Existing physical fixtures were cleaned up without
   removing baseline card packages. At the latest check the VM exposed only one

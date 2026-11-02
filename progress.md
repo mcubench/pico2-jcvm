@@ -19660,3 +19660,14 @@
 - Commit: `1c4729e` (implementation, regression and tracker updates); this
   entry's exact hash is finalized in a metadata commit.
 - Artifacts/logs: `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log` and `artifacts/logs/sio-two-package-probe-20261102T013345Z.log` contain the preceding descriptor-missing hardware trace; current test/build outputs are not retained as separate logs.
+
+## 2026-11-02 Confirm GPPro omits optional CAP Descriptor 8 minutes
+
+- Step/experiment: `gp-pro-load-omits-cap-descriptor-20261102`
+- When: '2026-11-02 02:48 CET' - '2026-11-02 02:56 CET'
+- Change: Traced the missing runtime Descriptor component through the pinned GPPro loader and updated CTX-01's TODO, QKB and handoff with the confirmed cause and the need for a different trusted type source for general cross-context arguments.
+- Validation: Inspected `.local-toolchain/globalplatformpro/library/src/main/java/pro/javacard/gp/GPSession.java`: `loadCapFile()` assigns `cap.getCode()` to the LOAD `C4` block. Decompiled the pinned `capfile-26.02.22` `CAPFile` class using the repository Java environment: default `getCode()` calls `_getCode(false)`, which skips `Descriptor` and `Debug`. This confirms the normal client path; no physical APDU capture was made and no card was accessed.
+- Result: Descriptor absence is expected from standard GPPro LOAD rather than a firmware parse defect. General typed forwarding cannot rely on optional Descriptor metadata.
+- Decision: Keep the receiver-only fallback and reject explicit arguments until runtime operand/local type metadata or another trustworthy on-card source is available. Do not infer types from raw stack words.
+- Commit: documentation and this record will be committed as a separate investigation step.
+- Artifacts/logs: dependency source `.local-toolchain/globalplatformpro/library/src/main/java/pro/javacard/gp/GPSession.java`; bytecode inspection target `.local-toolchain/m2/com/github/martinpaljak/capfile/26.02.22/capfile-26.02.22.jar`; prior physical trace `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log`.

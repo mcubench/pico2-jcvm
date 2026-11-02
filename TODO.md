@@ -241,14 +241,19 @@ Archive text is historical evidence, not current device state or priorities.
   fail closed pending ownership translation.
   Physical GPPro LOAD testing found `getDescriptor()==nullptr` for both
   pre-existing packages and fresh packages whose generated CAP archives include
-  `Descriptor.cap`. This suggests the normal GPPro LOAD stream omits the
-  optional Descriptor component; the exact LOAD payload was not captured.
+  `Descriptor.cap`. This is confirmed GPPro behavior: pinned
+  `GPSession.loadCapFile()` sends `CAPFile.getCode()`, and the local
+  `capfile-26.02.22` implementation's default `_getCode(false)` excludes
+  Descriptor (and Debug). The actual physical APDU stream was not captured.
   Cross-context calls now have a bounded fallback for receiver-only methods
   when Descriptor is absent, after checking the server method header. Calls
   with explicit arguments remain rejected without type metadata, and malformed
   present Descriptors do not use the fallback. The fallback has registry-unit
   coverage and passes ARM/RISC-V builds, but has not yet passed a positive
   physical call.
+  Since standard GPPro LOAD omits Descriptor, general typed cross-context
+  arguments need another trustworthy on-card type source; do not infer types
+  from raw words.
   The local signature-to-typed-local conversion has focused tests for
   byte/short layout, int word order, null/non-null references, and argument
   count mismatch. A new test-only three-package fixture now passes a positive

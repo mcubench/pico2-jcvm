@@ -5,9 +5,11 @@
 The physical trace from a fresh two-package probe shows both packages installed
 and the client selected, but `invokeinterface` returned `6F00` because the
 interface package's runtime CAP had no Descriptor component. The generated CAP
-archive did contain `Descriptor.cap`. The exact GP LOAD payload was not
-captured, so GPPro's omission of this optional component is the current
-hypothesis, not a wire-level confirmation. Trace and probe logs are
+archive did contain `Descriptor.cap`. GPPro's omission is confirmed in the
+pinned local source: `GPSession.loadCapFile()` sends `cap.getCode()`, and the
+local `capfile-26.02.22` implementation's `CAPFile.getCode()` delegates to
+`_getCode(false)`, which explicitly excludes Descriptor and Debug. The physical
+APDU stream was not separately captured. Trace and probe logs are
 `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log` and
 `artifacts/logs/sio-two-package-probe-20261102T013345Z.log`.
 
@@ -20,12 +22,12 @@ This fallback is not yet positively tested on a Pico. At the latest refreshed
 USB check only one device was visible, as runtime CCID `2e8a:0009`; no BOOTSEL
 device was enumerated, despite the report of three boards. No flash was done.
 
-Next: capture the LOAD component stream to confirm Descriptor omission, then
-exercise a positive receiver-only cross-AID call using an unchanged CAP/test
-path that does not replace baseline packages. Continue to reject explicit
-arguments without reliable type metadata. Preserve unrelated uncommitted
-changes; commit only the fallback, focused regression, and corresponding
-progress/tracker updates.
+Next: exercise a positive receiver-only cross-AID call using an unchanged
+CAP/test path that does not replace baseline packages. For general explicit
+arguments, design runtime operand/local type tracking or another trustworthy
+source; standard GPPro CAP LOAD does not carry Descriptor metadata. Continue to
+reject explicit arguments without reliable type metadata. Preserve unrelated
+uncommitted changes.
 
 ## 2026-11-02 persistent-index exhaustion diagnosis and reclaim-on-write
 
