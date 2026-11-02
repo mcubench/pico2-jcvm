@@ -20369,3 +20369,14 @@
 - Decision: Close selection-loop parity and full search-boundary coverage. Keep serialized PC registry exhaustion and remaining GC/reset/persistence acceptance open; hardware work waits for BOOTSEL enumeration.
 - Commit: `pending`
 - Artifacts/logs: `tools/test-rmi-registry`, `tools/test-rp2350-fs-overlay`, `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T122308Z.log`; no board image was written.
+
+## 2026-11-02 Run physical read-only persistence probes on two boards 2 minutes
+
+- Step/experiment: `persist02-runtime-probe-two-boards-20261102`
+- When: '2026-11-02 12:28 UTC' - '2026-11-02 12:30 UTC'
+- Change: Ran the repository's read-only GPPro registry and JCAlgTest power-up probe against each currently enumerated runtime Pico 2; no firmware write or applet mutation.
+- Validation: After authorized helper refresh and `pcsc_scan -r`, readers `8E464F4E2BBC0A19` and `2BED26ED20556535` each passed `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup '<exact reader>'`. Both showed JCAlgTest package/applet, ATR `3B800181`, SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem info `9000`.
+- Result: SELECT/GETVERSION/JCSystem timings were 75/59/129 ms on 8E and 47/73/121 ms on 2BED. Existing package inventories differ between devices. The probe did not verify firmware hash or remove USB power, so PERSIST-02 cold-power acceptance remains open.
+- Decision: Both current runtime cards are reachable and the JCAlgTest read path works; use their exact reader identities for later physical acceptance. Keep BOOTSEL/flash tasks gated on actual enumeration.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261102T122841Z.log`, `artifacts/logs/pico-powerup-persistence-20261102T122908Z.log`.

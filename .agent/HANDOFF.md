@@ -1,3 +1,22 @@
+# Physical read-only persistence probes on both runtime boards — 2026-11-02 12:30 UTC
+
+The authorized PC/SC inventory found two runtime readers:
+`8E464F4E2BBC0A19` and `2BED26ED20556535` (both firmware-mode CCID; no BOOTSEL).
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup '<exact reader>'` passed on
+both. Each GPPro `--list` showed the JCAlgTest package/applet; each reader
+returned ATR `3B800181`, SELECT `9000`, GETVERSION `1.8.2_jc305` / `9000`, and
+JCSystem info `9000`. Timings (SELECT / GETVERSION / JCSystem info): 8E =
+75/59/129 ms; 2BED = 47/73/121 ms. Logs:
+`artifacts/logs/pico-powerup-persistence-20261102T122841Z.log` and
+`artifacts/logs/pico-powerup-persistence-20261102T122908Z.log`.
+
+This validates the currently deployed runtime cards, but the script did not
+identify firmware image hashes and did not remove USB power. Cold-power
+restoration remains open; no flash occurred. Next: continue open offline
+acceptance and use these identified devices for physical follow-up when the
+specific test is safe. Current max_crypto ARM build is available at
+`build/arm/pico2_choupi.uf2`; it was not installed as part of these probes.
+
 # CTX-03 shared owner-ID allocator and regression — 2026-11-02 12:25 UTC
 
 The RP2350 CAP store and PC/VPCD backend now call the same bounded first-free

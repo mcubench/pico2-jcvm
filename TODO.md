@@ -112,7 +112,12 @@ Archive text is historical evidence, not current device state or priorities.
   malformed roots/aliases block collection. Multipackage restart tests cover
   distinct owners, root inventory and retained contexts. These are host checks.
   Physical 2BED scalar and 32,767-byte array checks passed 9/9 across card reset
-  and firmware cycle; those do not remove USB power.
+  and firmware cycle; those do not remove USB power. On 2026-11-02, identified
+  runtime boards `8E464F4E2BBC0A19` and `2BED26ED20556535` both passed the
+  read-only `tools/test-pico-powerup` registry and JCAlgTest probe; each
+  returned ATR `3B800181`, SELECT `9000`, version `1.8.2_jc305`, and JCSystem
+  info `9000`. This was not a USB power-removal test and the deployed image hash
+  was not identified by the probe.
   Remaining: cold-power restoration of instance identity/fields, nested aliases,
   static roots and multi-instance owner state; verify corrupted/incomplete
   records cannot authorize reclamation after restart.
