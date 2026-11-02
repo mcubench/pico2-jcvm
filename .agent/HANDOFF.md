@@ -30,6 +30,34 @@ attempted. Retry the physical fixture once BOOTSEL is guest-visible, then
 continue with reference ownership/firewall cases and unchanged upstream Multi
 CAP coverage. Preserve all unrelated worktree changes.
 
+## Latest CTX-01 runtime-tag check: typed pops enforce value kinds
+
+The static stack audit found that typed operand pops could bypass the runtime
+kind tags: malformed bytecode could consume a reference through `pop_Short()`
+and repush the raw word as a primitive. Typed byte, short, int, reference and
+return-address pops now check the kind before consuming it. Int pops require a
+low/high pair and read the words in explicit sequence. A mismatch throws
+`SecurityException` without consuming the value; underflow is checked before
+tag access. Untyped `pop` remains valid for `pop`/`pop2` bytecodes.
+
+`tools/test-rmi-registry` passes valid and invalid typed-pop cases. PC current,
+ARM and RISC-V wrapper builds pass. The focused cross-AID VPCD fixture passes
+15/15 (`artifacts/logs/sio-cross-aid-vpcd-20261102T034712Z.log`, SHA-256
+`624cc196eb4417cf1e6948bc28e0d61aacdc231a5d396b9f3077ccd9e20bb786`); the
+multipackage lifecycle suite passes 47/47
+(`artifacts/logs/host-vpcd-multipackage-apdu-20261102T035136Z.log`, SHA-256
+`54a6fa69c91cc49c50db2abcfb2d0196d115018df3767224d678e1778f5f95d1`). Latest
+ARM UF2 is 1,854,464 bytes, SHA-256
+`7a7fea7b44ff8ebbd11f0439f0870ee95c51d59d8e31116c388150197e5c481c`; RISC-V
+smoke UF2 is 79,872 bytes, SHA-256
+`7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+
+The final authorized reader/USB refresh still shows one runtime CCID
+(`2e8a:0009`, `/dev/bus/usb/001/055`) and no BOOTSEL boards despite the user's
+report of three connected BOOTSEL devices. No flash was attempted. Continue
+offline until the boards enumerate, then run physical cross-AID and stack-kind
+validation on an identified card.
+
 ## Current CTX-01 state: descriptor-free typed arguments pass VPCD
 
 The physical trace from a fresh two-package probe shows both packages installed

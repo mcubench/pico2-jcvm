@@ -1,5 +1,31 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Typed operand pops must preserve SIO runtime kinds — 2026-11-02
+
+- **Observed risk:** Runtime type tags protected cross-context SIO arguments at
+  marshalling and server-local reads, but `pop_Short()`, `pop_Reference()`,
+  `pop_Int()`, and `pop_ReturnAddress()` consumed raw words without checking
+  their tags. Malformed CAP bytecode could pop a reference as a short and push
+  it back as a primitive, defeating the metadata firewall.
+- **Viable fix:** Typed pop methods validate the top category before changing
+  TOS. Int pops additionally require ordered low/high words; mismatches throw
+  `SecurityException`, and insufficient operands throw
+  `StackUnderflowException`. Typed pops can now throw, so their prior
+  conditional `noexcept` declarations were removed. Untyped `pop` remains
+  available for the Java Card `pop`/`pop2` instructions.
+- **Validation:** `./tools/test-rmi-registry` passes valid pops and rejects
+  reference-as-short, primitive-as-reference, primitive-as-return-address,
+  and reversed int words without consuming the value. `./tools/build-pc
+  --profile current`, `./tools/build arm`, and `./tools/build riscv` pass. The
+  SIO VPCD fixture passes 15/15 and VPCD multipackage lifecycle passes 47/47.
+  Logs: `artifacts/logs/sio-cross-aid-vpcd-20261102T034712Z.log` (SHA-256
+  `624cc196eb4417cf1e6948bc28e0d61aacdc231a5d396b9f3077ccd9e20bb786`) and
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261102T035136Z.log` (SHA-256
+  `54a6fa69c91cc49c50db2abcfb2d0196d115018df3767224d678e1778f5f95d1`).
+- **Hardware:** Final helper/USB refresh still finds only runtime CCID
+  `2e8a:0009` at `/dev/bus/usb/001/055`; the three reported BOOTSEL boards are
+  not guest-visible. No flash or physical check was attempted.
+
 ## Persistent object aliases must retain the Shareable proxy marker — 2026-11-02
 
 - **Observed:** After process restart, a saved Shareable proxy returned through

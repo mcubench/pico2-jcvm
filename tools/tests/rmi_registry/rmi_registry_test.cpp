@@ -430,6 +430,63 @@ void verify_typed_local_access() {
   }
   assert(rejected);
 }
+
+void verify_typed_operand_pops() {
+  const auto reference = make_reference(28);
+  bool rejected = false;
+
+  jcvm::Stack primitive_stack;
+  primitive_stack.push_Frame(0, 0, 2, nullptr);
+  primitive_stack.push_Reference(reference);
+  try {
+    (void)primitive_stack.pop_Short();
+  } catch (jcvm::Exceptions error) {
+    rejected = error == jcvm::SecurityException;
+  }
+  assert(rejected);
+  assert(primitive_stack.pop_Reference() == reference);
+
+  jcvm::Stack reference_stack;
+  reference_stack.push_Frame(0, 0, 2, nullptr);
+  reference_stack.push_Short(0x2468);
+  rejected = false;
+  try {
+    (void)reference_stack.pop_Reference();
+  } catch (jcvm::Exceptions error) {
+    rejected = error == jcvm::SecurityException;
+  }
+  assert(rejected);
+  assert(reference_stack.pop_Short() == 0x2468);
+
+  jcvm::Stack return_address_stack;
+  return_address_stack.push_Frame(0, 0, 2, nullptr);
+  return_address_stack.push_Short(0x1357);
+  rejected = false;
+  try {
+    (void)return_address_stack.pop_ReturnAddress();
+  } catch (jcvm::Exceptions error) {
+    rejected = error == jcvm::SecurityException;
+  }
+  assert(rejected);
+  assert(return_address_stack.pop_Short() == 0x1357);
+
+#ifdef JCVM_INT_SUPPORTED
+  jcvm::Stack int_stack;
+  int_stack.push_Frame(0, 0, 4, nullptr);
+  constexpr jcvm::jint_t expected = 0x12345678;
+  int_stack.push_Int(expected);
+  assert(int_stack.pop_Int() == expected);
+  int_stack.push_Int(expected);
+  int_stack.swap(1, 1);
+  rejected = false;
+  try {
+    (void)int_stack.pop_Int();
+  } catch (jcvm::Exceptions error) {
+    rejected = error == jcvm::SecurityException;
+  }
+  assert(rejected);
+#endif
+}
 } // namespace
 
 int main() {
@@ -454,6 +511,7 @@ int main() {
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
   verify_typed_local_access();
+  verify_typed_operand_pops();
 
   const auto first = make_reference(1);
   const uint16_t first_id = context.exportRemoteObject(first);
@@ -538,6 +596,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 shareable_proxy_registry=1 shareable_object_roots=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
   return 0;
 }

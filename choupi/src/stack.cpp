@@ -261,9 +261,14 @@ void Stack::pop() noexcept(noexcept(std::declval<Frame &>().pop_Value())) {
  *
  * @return the top of stack element as a short value.
  */
-jbyte_t
-Stack::pop_Byte() noexcept(noexcept(std::declval<Frame &>().pop_Value())) {
+jbyte_t Stack::pop_Byte() {
   Frame &current_frame = this->getCurrentFrame();
+  if (current_frame.getTOS() <= current_frame.getOP()) {
+    throw Exceptions::StackUnderflowException;
+  }
+  if (this->getValueKind(current_frame.getTOS() - 1) != ValueKind::Primitive) {
+    throw Exceptions::SecurityException;
+  }
   return (jbyte_t)current_frame.pop_Value();
 }
 
@@ -272,9 +277,14 @@ Stack::pop_Byte() noexcept(noexcept(std::declval<Frame &>().pop_Value())) {
  *
  * @return the top of stack element as a short value.
  */
-jshort_t
-Stack::pop_Short() noexcept(noexcept(std::declval<Frame &>().pop_Value())) {
+jshort_t Stack::pop_Short() {
   Frame &current_frame = this->getCurrentFrame();
+  if (current_frame.getTOS() <= current_frame.getOP()) {
+    throw Exceptions::StackUnderflowException;
+  }
+  if (this->getValueKind(current_frame.getTOS() - 1) != ValueKind::Primitive) {
+    throw Exceptions::SecurityException;
+  }
   return (jshort_t)current_frame.pop_Value();
 }
 
@@ -284,10 +294,20 @@ Stack::pop_Short() noexcept(noexcept(std::declval<Frame &>().pop_Value())) {
  *
  * @return the top of stack element as an integer value.
  */
-jint_t
-Stack::pop_Int() noexcept(noexcept(std::declval<Frame &>().pop_Value())) {
+jint_t Stack::pop_Int() {
   Frame &current_frame = this->getCurrentFrame();
-  return SHORTS_TO_INT(current_frame.pop_Value(), current_frame.pop_Value());
+  if (current_frame.getTOS() - current_frame.getOP() < 2) {
+    throw Exceptions::StackUnderflowException;
+  }
+  if (this->getValueKind(current_frame.getTOS() - 1) !=
+          ValueKind::IntHighWord ||
+      this->getValueKind(current_frame.getTOS() - 2) !=
+          ValueKind::IntLowWord) {
+    throw Exceptions::SecurityException;
+  }
+  const jword_t high_word = current_frame.pop_Value();
+  const jword_t low_word = current_frame.pop_Value();
+  return SHORTS_TO_INT(high_word, low_word);
 }
 #endif /* JCVM_INT_SUPPORTED */
 
@@ -296,9 +316,14 @@ Stack::pop_Int() noexcept(noexcept(std::declval<Frame &>().pop_Value())) {
  *
  * @return the top of stack element as a reference value.
  */
-jref_t
-Stack::pop_Reference() noexcept(noexcept(std::declval<Frame &>().pop_Value())) {
+jref_t Stack::pop_Reference() {
   Frame &current_frame = this->getCurrentFrame();
+  if (current_frame.getTOS() <= current_frame.getOP()) {
+    throw Exceptions::StackUnderflowException;
+  }
+  if (this->getValueKind(current_frame.getTOS() - 1) != ValueKind::Reference) {
+    throw Exceptions::SecurityException;
+  }
   return jref_t(current_frame.pop_Value());
 }
 
@@ -307,9 +332,15 @@ Stack::pop_Reference() noexcept(noexcept(std::declval<Frame &>().pop_Value())) {
  *
  * @return the top of stack element as a return address value.
  */
-jreturnaddress_t Stack::pop_ReturnAddress() noexcept(
-    noexcept(std::declval<Frame &>().pop_Value())) {
+jreturnaddress_t Stack::pop_ReturnAddress() {
   Frame &current_frame = this->getCurrentFrame();
+  if (current_frame.getTOS() <= current_frame.getOP()) {
+    throw Exceptions::StackUnderflowException;
+  }
+  if (this->getValueKind(current_frame.getTOS() - 1) !=
+      ValueKind::ReturnAddress) {
+    throw Exceptions::SecurityException;
+  }
   return (jreturnaddress_t)current_frame.pop_Value();
 }
 

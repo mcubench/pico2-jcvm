@@ -17191,7 +17191,7 @@
   checksum. Physical testing remains pending PC/SC reader registration.
 - Decision: Continue with the offline prioritized backlog while hardware access
   remains unavailable.
-- Commit: `a6fdb0f`.
+- Commit: `c9aa6c4`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`.
 
 ## 2026-10-30 Recheck cryptographic VPCD known-answer suites 11 minutes
@@ -19810,6 +19810,41 @@
 - Decision: Keep CTX-01 open for physical cross-AID acceptance, server-reference
   ownership/firewall cases, and upstream Multi CAP integration. Retry hardware
   when BOOTSEL devices become guest-visible.
-- Commit: pending.
+- Commit: `a6fdb0f`.
 - Artifacts/logs: VPCD log above; `build/arm/pico2_choupi.uf2`,
+  `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-11-02 Enforce runtime kinds at typed operand pops 27 minutes
+
+- Step/experiment: `sio-typed-operand-pop-enforcement-20261102`
+- When: '2026-11-02 04:29 CET' - '2026-11-02 04:56 CET'
+- Change: Audited runtime stack-tag writes and found typed pop APIs could
+  consume values without checking their tags. Added pre-consumption checks for
+  primitive, reference, int-low/high, and return-address words. A mismatch
+  throws `SecurityException` without consuming the word; underflow is checked
+  before tag access. Int pop reads high and low words in explicit sequence.
+  Added regressions for valid pops and type mismatch/reversed-int rejection;
+  kept untyped pop for Java Card `pop`/`pop2`. Updated CTX-01, QKB and HANDOFF.
+- Validation: `./tools/test-rmi-registry`, `./tools/build-pc --profile current`,
+  `./tools/build arm`, and `./tools/build riscv` passed. Final-source SIO VPCD
+  passed 15/15 (`artifacts/logs/sio-cross-aid-vpcd-20261102T034712Z.log`,
+  SHA-256 `624cc196eb4417cf1e6948bc28e0d61aacdc231a5d396b9f3077ccd9e20bb786`).
+  Final-source VPCD multipackage lifecycle passed 47/47, including transaction/
+  transient cleanup (`artifacts/logs/host-vpcd-multipackage-apdu-20261102T035136Z.log`,
+  SHA-256 `54a6fa69c91cc49c50db2abcfb2d0196d115018df3767224d678e1778f5f95d1`).
+  Final authorized USB refresh still showed one runtime `2e8a:0009` CCID at
+  `/dev/bus/usb/001/055` and no BOOTSEL devices; no hardware flash or test was
+  performed. Scoped whitespace check passed with CRLF-aware handling for
+  `stack.cpp` and `stack.hpp`.
+- Result: Malformed bytecode can no longer reclassify a reference or reversed
+  int pair through typed pops before descriptor-free SIO argument validation.
+  ARM UF2 is 1,854,464 bytes, SHA-256
+  `7a7fea7b44ff8ebbd11f0439f0870ee95c51d59d8e31116c388150197e5c481c`; RISC-V
+  smoke UF2 is 79,872 bytes, SHA-256
+  `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+- Decision: Keep CTX-01 open for physical cross-AID testing and remaining
+  reference-ownership/firewall acceptance. Continue offline until reported
+  BOOTSEL devices are visible in the VM.
+- Commit: pending.
+- Artifacts/logs: VPCD logs above; `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.

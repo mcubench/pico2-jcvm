@@ -259,14 +259,16 @@ Archive text is historical evidence, not current device state or priorities.
   `set_Pushed_Element`; unknown values and applet-private references fail
   closed. Null and JCRE-global references may cross. Three-bit tag storage
   costs 96 bytes per 256-word Stack. No types are inferred from raw values. The
-  descriptor-free VPCD fixture passes 14/14; the Descriptor-present regression
+  descriptor-free VPCD fixture passes 15/15; the Descriptor-present regression
   also passes 14/14 through the existing signature path. Physical typed
   cross-AID execution remains unverified. Typed local reads now check their
   stored kind and throw `SecurityException` on a mismatch, so caller-derived
   metadata is checked against the server bytecodes' actual local use. `astore`
   preserves a return-address tag for valid `jsr`/`ret` use and rejects other
-  kinds. The VPCD multipackage suite passes 47/47 and the transaction probe
-  passes 3/3 with these local checks enabled.
+  kinds. Typed operand pops now validate primitive, reference, ordered int, and
+  return-address tags before consuming words, preventing malformed bytecode
+  from relabeling a reference as a primitive. The VPCD multipackage suite
+  passes 47/47 with these checks enabled.
   The local signature-to-typed-local conversion has focused tests for
   byte/short layout, int word order, null/non-null references, and argument
   count mismatch. A new test-only three-package fixture now passes a positive

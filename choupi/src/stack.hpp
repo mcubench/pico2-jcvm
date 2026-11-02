@@ -195,19 +195,17 @@ public:
   // Popping to the trash, an untyped element
   void pop() noexcept(noexcept(std::declval<Frame &>().pop_Value()));
   // Popping a byte from the stack
-  jbyte_t pop_Byte() noexcept(noexcept(std::declval<Frame &>().pop_Value()));
+  jbyte_t pop_Byte();
   // Popping a short from the stack
-  jshort_t pop_Short() noexcept(noexcept(std::declval<Frame &>().pop_Value()));
+  jshort_t pop_Short();
 #ifdef JCVM_INT_SUPPORTED
   // Popping an integer from the stack
-  jint_t pop_Int() noexcept(noexcept(std::declval<Frame &>().pop_Value()));
+  jint_t pop_Int();
 #endif /* JCVM_INT_SUPPORTED */
   // Popping a reference from the stack
-  jref_t
-  pop_Reference() noexcept(noexcept(std::declval<Frame &>().pop_Value()));
+  jref_t pop_Reference();
   // Popping a return address element from the stack
-  jreturnaddress_t
-  pop_ReturnAddress() noexcept(noexcept(std::declval<Frame &>().pop_Value()));
+  jreturnaddress_t pop_ReturnAddress();
   // Get a pushing element which as not the last pushed element. This function
   // returns the n-th pushed word without popped it.
   jref_t get_Pushed_Element(uint16_t n)
