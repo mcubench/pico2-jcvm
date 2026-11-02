@@ -122,6 +122,8 @@ uint8_t native_operation_rhport = 0;
 uint8_t native_operation_sequence = 0;
 uint32_t native_last_extension_us = 0;
 uint8_t native_extension_response[10]{};
+choupi_ccid_native_progress_stats_t native_progress_stats{};
+bool native_progress_report_pending = false;
 Scp03Session secure_channel;
 CapLoadSession cap_load_session;
 bool get_status_first_seen = false;
@@ -389,8 +391,14 @@ public:
     native_operation_rhport = rhport;
     native_operation_sequence = sequence;
     native_last_extension_us = time_us_32();
+    native_progress_stats = {};
+    native_progress_stats.sequence = sequence;
+    native_progress_report_pending = false;
   }
-  ~NativeOperationScope() { native_operation_active = false; }
+  ~NativeOperationScope() {
+    native_operation_active = false;
+    native_progress_report_pending = native_progress_stats.calls != 0;
+  }
   NativeOperationScope(const NativeOperationScope &) = delete;
   NativeOperationScope &operator=(const NativeOperationScope &) = delete;
 };
@@ -1030,6 +1038,7 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
   if (endpoint == ep_in) {
     if (native_extension_in_flight) {
       native_extension_in_flight = false;
+      ++native_progress_stats.extensions_completed;
       debug_stage = 7;
       // Keep Bulk-OUT unarmed until the original XfrBlock gets its final
       // response. Reusing rx_buffer for a concurrent slot-status command
@@ -1110,7 +1119,18 @@ namespace {
 struct CcidProgressHooks {
   bool endpoint_ready() const { return ep_in != 0; }
   uint32_t now_us() const { return time_us_32(); }
-  void service_usb() const { choupi::service_usb_task(); }
+  void service_usb() const {
+    const uint32_t started_us = time_us_32();
+    const uint32_t events = tud_task_budgeted(choupi::kUsbTaskEventBudget);
+    const uint32_t elapsed_us = time_us_32() - started_us;
+    ++native_progress_stats.usb_service_calls;
+    native_progress_stats.usb_service_total_us += elapsed_us;
+    native_progress_stats.usb_events += events;
+    if (elapsed_us > native_progress_stats.usb_service_max_us)
+      native_progress_stats.usb_service_max_us = elapsed_us;
+    if (events > native_progress_stats.usb_events_max)
+      native_progress_stats.usb_events_max = events;
+  }
   bool endpoint_busy() const {
     return usbd_edpt_busy(native_operation_rhport, ep_in);
   }
@@ -1128,6 +1148,7 @@ struct CcidProgressHooks {
     if (usbd_edpt_xfer(native_operation_rhport, ep_in,
                        native_extension_response,
                        sizeof(native_extension_response))) {
+      ++native_progress_stats.extensions_submitted;
       debug_stage = 6;
       return true;
     }
@@ -1138,10 +1159,24 @@ struct CcidProgressHooks {
 } // namespace
 
 extern "C" void choupi_ccid_native_crypto_progress(void) {
+  const uint32_t started_us = time_us_32();
   choupi::service_ccid_native_progress(
       ccid_progress_active, native_operation_active,
       native_extension_in_flight, native_last_extension_us,
       native_operation_sequence, CcidProgressHooks{});
+  const uint32_t elapsed_us = time_us_32() - started_us;
+  ++native_progress_stats.calls;
+  native_progress_stats.total_us += elapsed_us;
+  if (elapsed_us > native_progress_stats.max_call_us)
+    native_progress_stats.max_call_us = elapsed_us;
+}
+
+extern "C" bool choupi_ccid_debug_take_native_progress_stats(
+    choupi_ccid_native_progress_stats_t *stats) {
+  if (stats == nullptr || !native_progress_report_pending) return false;
+  *stats = native_progress_stats;
+  native_progress_report_pending = false;
+  return true;
 }
 
 extern "C" void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,

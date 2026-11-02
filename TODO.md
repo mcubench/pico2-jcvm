@@ -7,14 +7,12 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 
 ## Current priorities
 
-1. Finish **ARCH-08** physical USB progress stress/timing acceptance when a
-   board enumerates. Existing eight-event budgeting is not a measured time bound.
-2. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
+1. Continue **CTX-01/03** SIO lookup/proxy/firewall work and separate CAP
    firewall contexts from applet-instance ownership; retained per-instance
    contexts and a proxy registry are groundwork, not complete SIO semantics.
-3. Finish **STORE-01**, **API-01/03** and **PERSIST-01/02/03** to distinguish
+2. Finish **STORE-01**, **API-01/03** and **PERSIST-01/02/03** to distinguish
    live storage limits, reclaimable records, API results, and power-loss safety.
-4. Close the current-image coverage and integration gates in **API-03**,
+3. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
 
 Physical availability is volatile. The latest authorized check on 2026-11-02
@@ -40,21 +38,29 @@ Archive text is historical evidence, not current device state or priorities.
 
 ### ARCH-08
 
-- [ ] **Measure and accept bounded native USB progress on hardware.**
-  Status: implemented, strict physical acceptance pending. The pinned TinyUSB
-  patch adds `tud_task_budgeted(max_events)`; all JCVM service points use eight
-  FIFO events per invocation and leave remaining events queued. PC/ARM/RISC-V
-  builds and physical startup checks passed. ARCH-09 production flow tests pass
-  9/9, but do not replace this gate.
-  Remaining: sustain benign USB control traffic during a representative long
-  RSA-3072 operation; measure per-invocation duration and eventual queue drain.
-  Acceptance: no progress invocation monopolizes execution; watchdog, CCID
-  time extensions, and final-response ordering remain correct. Record the bound
-  and physical long-call result, or the concrete dependency limit if unmet.
-  Evidence: [callback contract](docs/NATIVE_PROGRESS_CALLBACKS.md),
-  `src/ccid_progress_flow.hpp`, `tools/test-ccid-progress-flow`, original ARCH-08.
-  Earlier long-call completion was 49,184 ms; the new budgeted path's required
-  sustained-traffic/timing gate is still open. No alternate backend work here.
+- [x] **Measure and accept bounded native USB progress on hardware.**
+  Status: accepted on 2026-11-02. Added post-operation telemetry for CCID
+  native-progress duration, TinyUSB events processed, and time-extension
+  submissions/completions. The physical test flooded standard USB device
+  descriptor requests while Pico 2 `2BED26ED20556535` ran RSA-3072 generation
+  and signature. The APDU returned `019000` in 118,055 ms; 4,336 control
+  requests started during the 118,267-ms APDU interval and all succeeded. Five
+  further requests passed after the APDU. The firmware measured 5,795 progress
+  calls, 3,301 us total and 117 us maximum per call (about 0.57 us average);
+  169 USB service passes used 1,006 us total and 94 us maximum, processed 86
+  events total and at most two per pass (budget eight). All 85/85 CCID time
+  extensions completed. No watchdog-recovery marker, `TEST:FAIL`, or `FAULT`
+  appeared; the final response and temporary CAP cleanup passed.
+  `./tools/test-ccid-progress-flow` passed 9/9. ARM and RISC-V wrapper builds
+  passed before the physical run. The image ends at `0x100e7804`, leaving
+  100,348 bytes in the firmware window.
+  Remaining: none for this gate. The host flood recorded 5,608 successful
+  requests total, zero failures, 7,999-us average and 331,254-us maximum
+  transfer latency. Firmware progress timing is for the instrumented image.
+  Evidence: `tools/test-ccid-progress-physical`,
+  `artifacts/logs/ccid-progress-monitor-2BED26ED20556535-20261102T133921Z.log`,
+  `artifacts/logs/asymm-crypto-pcsc-20261102T133921Z.log`, and cycle log
+  `artifacts/logs/cycle-choupi-20261102T132946Z.log`.
 
 ## Priority 1 — storage, reclamation and recovery
 

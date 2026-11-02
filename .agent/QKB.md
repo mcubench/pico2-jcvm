@@ -1,5 +1,25 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Host control-traffic overlap must be counted after the APDU end marker — 2026-11-02
+
+- **Symptom:** The first physical traffic run reported only one control request
+  during a 94-second APDU even though thousands of requests succeeded. The
+  worker checked each completion while `apdu_end` was still unset and discarded
+  valid in-window start times.
+- **Viable fix:** Retain successful request start timestamps and count them
+  after both APDU markers have been observed. `tools/test-ccid-progress-physical`
+  now applies that method and enforces at least five successful control
+  transfers per second of APDU duration plus five tail/drain requests.
+- **Validation:** On 2BED, corrected run counted 4,336 successful
+  GET_DESCRIPTOR requests during the 118,267-ms RSA-3072 APDU, with zero
+  failures and 5/5 tail requests. The APDU returned `019000` in 118,055 ms;
+  firmware telemetry showed 117-us maximum native-progress duration, 94-us
+  maximum USB service duration, and 85/85 time extensions completed.
+- **Rule:** Do not count a request online only when its completion arrives after
+  an end marker; defer window membership calculation until the full interval is
+  known. Keep the event-stress result and progress duration separate from total
+  APDU elapsed time.
+
 ## JCAlgTest extended support exceeds the 900-second wrapper timeout — 2026-11-02
 
 - **Observed:** The official JCAlgTest 1.8.2 `ALG_SUPPORT_EXTENDED` run on

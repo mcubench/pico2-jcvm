@@ -55,6 +55,9 @@ public final class SymmCryptoPcscProbe {
           byte[] command = fromHex(fields[1]);
           byte[] expected = fromHex(fields[2]);
           long started = System.nanoTime();
+          System.out.printf("APDU:START label=%s command=%s%n",
+              fields[0], fields[1]);
+          System.out.flush();
           ResponseAPDU response = channel.transmit(new CommandAPDU(command));
           long elapsedMillis = (System.nanoTime() - started) / 1_000_000L;
           byte[] actual = response.getBytes();

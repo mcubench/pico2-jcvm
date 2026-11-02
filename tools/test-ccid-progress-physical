@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+require_host_usb_access
+exec "${repo_root}/tools/env" python3 \
+  "${repo_root}/tools/test-ccid-progress-physical.py" "$@"

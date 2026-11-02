@@ -68,6 +68,21 @@ void choupi_ccid_debug_state(uint8_t *stage, uint8_t *endpoint,
                              uint16_t *in_submit_errors,
                              uint16_t *invalid_messages,
                              uint8_t *last_xfer_result);
+typedef struct choupi_ccid_native_progress_stats {
+  uint32_t calls;
+  uint32_t total_us;
+  uint32_t max_call_us;
+  uint32_t usb_service_calls;
+  uint32_t usb_service_total_us;
+  uint32_t usb_service_max_us;
+  uint32_t usb_events;
+  uint32_t usb_events_max;
+  uint32_t extensions_submitted;
+  uint32_t extensions_completed;
+  uint8_t sequence;
+} choupi_ccid_native_progress_stats_t;
+bool choupi_ccid_debug_take_native_progress_stats(
+    choupi_ccid_native_progress_stats_t *stats);
 void choupi_ccid_debug_response(uint8_t *apdu_header,
                                 uint16_t *response_length,
                                 uint16_t *status_word);

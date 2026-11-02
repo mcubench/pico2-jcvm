@@ -168,6 +168,30 @@ int main_arm(void) {
     // that owns usbd endpoint state.
     choupi::service_usb_task();
     choupi_ccid_task();
+    choupi_ccid_native_progress_stats_t native_progress_stats{};
+    if (choupi_ccid_debug_take_native_progress_stats(
+            &native_progress_stats)) {
+      const uint32_t average_call_us = native_progress_stats.calls == 0
+          ? 0
+          : native_progress_stats.total_us / native_progress_stats.calls;
+      printf("CHOUPI:USB_PROGRESS seq=%u calls=%lu total_us=%lu "
+             "max_call_us=%lu avg_call_us=%lu usb_calls=%lu "
+             "usb_total_us=%lu usb_max_us=%lu events=%lu events_max=%lu "
+             "extensions=%lu completed=%lu\r\n",
+             static_cast<unsigned>(native_progress_stats.sequence),
+             static_cast<unsigned long>(native_progress_stats.calls),
+             static_cast<unsigned long>(native_progress_stats.total_us),
+             static_cast<unsigned long>(native_progress_stats.max_call_us),
+             static_cast<unsigned long>(average_call_us),
+             static_cast<unsigned long>(native_progress_stats.usb_service_calls),
+             static_cast<unsigned long>(native_progress_stats.usb_service_total_us),
+             static_cast<unsigned long>(native_progress_stats.usb_service_max_us),
+             static_cast<unsigned long>(native_progress_stats.usb_events),
+             static_cast<unsigned long>(native_progress_stats.usb_events_max),
+             static_cast<unsigned long>(native_progress_stats.extensions_submitted),
+             static_cast<unsigned long>(native_progress_stats.extensions_completed));
+      fflush(stdout);
+    }
     choupi_reader_led_task();
     watchdog_update();
     if (time_reached(next_report)) {

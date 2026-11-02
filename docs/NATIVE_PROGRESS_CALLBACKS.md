@@ -40,6 +40,16 @@ single 49,184 ms PC/SC APDU, returning `019000`. The 15-second watchdog was
 therefore serviced through the native random-byte progress hook, and the long
 CCID operation reached its final response without a host transport timeout.
 The subsequent finite serial monitor reported `TEST:SUMMARY pass=1 fail=0`.
-Firmware diagnostics do not expose a count of individual CCID extension
-frames; the physical check verifies long-call completion rather than directly
-counting those frames. See `.agent/HANDOFF.md` for image and log hashes.
+
+On 2026-11-02, added post-operation counters and repeated a physical RSA-3072
+generation/signature APDU on the same chip while the host sent USB device-
+descriptor control requests every 20 ms. The APDU returned `019000` in
+118,055 ms. Of 5,608 successful host requests, 4,336 began during the
+118,267-ms APDU interval; zero failed and five more passed after it. Firmware
+measured 5,795 progress calls, 3,301 us cumulative and 117 us maximum per
+call. Its 169 USB service passes took 1,006 us cumulative and 94 us maximum,
+processed 86 TinyUSB events total with a maximum of two in any pass, and
+completed all 85 submitted CCID time extensions. There was no watchdog
+recovery marker, `TEST:FAIL`, or `FAULT`. The final response arrived and the
+temporary CAP cleanup passed. Logs, image hash, and the test wrapper are in
+`.agent/HANDOFF.md` and the 2026-11-02 progress entry.

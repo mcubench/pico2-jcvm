@@ -1,3 +1,33 @@
+# ARCH-08 physical USB progress gate accepted — 2026-11-02 13:43 UTC
+
+Instrumented `choupi_ccid_native_crypto_progress()` to record call duration,
+TinyUSB service duration/event counts, and CCID time-extension submission and
+completion counts. The summary is emitted from the main loop after the APDU.
+Built ARM max_crypto and RISC-V smoke successfully, then flashed identified
+Pico 2 `2BED26ED20556535` with `tools/cycle`; flash verification and finite
+monitor passed.
+
+The physical `tools/test-ccid-progress-physical` run sent standard USB
+GET_DESCRIPTOR requests while the existing physical RSA-3072 generation and
+signature CAP ran. APDU returned `019000` in 118,055 ms. Host sent 4,336
+successful control requests during the 118,267-ms APDU interval, with zero
+failures; all five post-APDU drain requests succeeded. Firmware telemetry:
+5,795 progress calls, 3,301 us total, 117 us max; 169 USB service passes,
+1,006 us total, 94 us max; 86 events processed, max two per pass; 85 time
+extensions submitted and 85 completed. No watchdog-recovery marker,
+`TEST:FAIL`, or `FAULT`; cleanup passed. `tools/test-ccid-progress-flow`
+passed 9/9. The old 49,184-ms RSA-3072 timing remains a different run; the
+new workload's comparison point is its 118,055-ms measured response under
+sustained traffic.
+
+ARM firmware end is `0x100e7804`, leaving 100,348 bytes in the 1 MiB firmware
+window. UF2 SHA-256:
+`50e9ed105bb3a933ce1dc44313a0b2987747524e1af3cb028690daab132b1334`.
+Logs: `artifacts/logs/cycle-choupi-20261102T132946Z.log`,
+`artifacts/logs/ccid-progress-monitor-2BED26ED20556535-20261102T133921Z.log`,
+and `artifacts/logs/asymm-crypto-pcsc-20261102T133921Z.log`. ARCH-08 is now
+closed; continue CTX-01/03 and the open storage, API, and persistence gates.
+
 # JCAlgTest max_crypto physical support validation — 2026-11-02 13:18 UTC
 
 The current ARM `max_crypto` image was rebuilt for ARM and RISC-V and reflashed
