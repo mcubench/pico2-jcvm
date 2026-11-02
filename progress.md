@@ -19669,5 +19669,6 @@
 - Validation: Inspected `.local-toolchain/globalplatformpro/library/src/main/java/pro/javacard/gp/GPSession.java`: `loadCapFile()` assigns `cap.getCode()` to the LOAD `C4` block. Decompiled the pinned `capfile-26.02.22` `CAPFile` class using the repository Java environment: default `getCode()` calls `_getCode(false)`, which skips `Descriptor` and `Debug`. This confirms the normal client path; no physical APDU capture was made and no card was accessed.
 - Result: Descriptor absence is expected from standard GPPro LOAD rather than a firmware parse defect. General typed forwarding cannot rely on optional Descriptor metadata.
 - Decision: Keep the receiver-only fallback and reject explicit arguments until runtime operand/local type metadata or another trustworthy on-card source is available. Do not infer types from raw stack words.
-- Commit: documentation and this record will be committed as a separate investigation step.
+- Commit: `de501c8` (QKB/TODO/HANDOFF and this investigation record); this
+  record's exact hash is finalized in a metadata commit.
 - Artifacts/logs: dependency source `.local-toolchain/globalplatformpro/library/src/main/java/pro/javacard/gp/GPSession.java`; bytecode inspection target `.local-toolchain/m2/com/github/martinpaljak/capfile/26.02.22/capfile-26.02.22.jar`; prior physical trace `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log`.
