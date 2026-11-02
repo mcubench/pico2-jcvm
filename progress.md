@@ -19657,5 +19657,6 @@
 - Validation: `./tools/test-rmi-registry` passed (`RMI_REGISTRY:PASS ... shareable_cross_context_arguments=1`); `./tools/build arm` passed with full CHOUPI image end `0x100e1790`; `./tools/build riscv` passed with smoke image end `0x10009a78`. Reader refresh (`PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`) found one USB node, and elevated `lsusb -d 2e8a:` identified only runtime CCID `2e8a:0009`; physical fallback testing and flashing were skipped. Scoped diff checks allow the source's existing CRLF line endings.
 - Result: Descriptor-free zero-argument SIO calls can enter the server context without guessing argument types. Typed calls with missing Descriptor data and any malformed present Descriptor remain rejected. No positive runtime/hardware invocation has yet verified this fallback.
 - Decision: Keep CTX-01 open. Capture a physical GP LOAD stream and find a safe positive receiver-only test route; preserve existing package AIDs and continue cross-context firewall work.
-- Commit: implementation and regression commit recorded below; this entry and tracker updates will be committed in a follow-up metadata commit.
+- Commit: `1c4729e` (implementation, regression and tracker updates); this
+  entry's exact hash is finalized in a metadata commit.
 - Artifacts/logs: `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log` and `artifacts/logs/sio-two-package-probe-20261102T013345Z.log` contain the preceding descriptor-missing hardware trace; current test/build outputs are not retained as separate logs.
