@@ -107,4 +107,27 @@ gp --create "${reader_aid}" --applet "${reader_aid}" --package "${package_aid}"
 printf 'SAME_CAP_PHYSICAL:RECREATE applet=%s result=PASS\n' "${reader_aid}"
 PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" java \
   -cp "${probe_classes}" SameCapSiblingPhysicalProbe "${reader}" reinstalled
+for aid in "${reader_aid}" "${writer_aid}"; do
+  gp --delete "${aid}"
+  printf 'SAME_CAP_PHYSICAL:DELETE applet=%s result=PASS\n' "${aid}"
+done
+gp --list >"${list_log}" 2>&1 || die "GPPro list before package DELETE failed; see ${list_log}"
+for aid in "${reader_aid}" "${writer_aid}"; do
+  if grep -Fq "APP: ${aid} " "${list_log}"; then
+    die "applet remains before package DELETE: ${aid}"
+  fi
+done
+gp --delete "${package_aid}"
+printf 'SAME_CAP_PHYSICAL:DELETE package=%s result=PASS\n' "${package_aid}"
+gp --list >"${list_log}" 2>&1 || die "GPPro list after package DELETE failed; see ${list_log}"
+if grep -Fq "PKG: ${package_aid} " "${list_log}"; then
+  die "package remains after DELETE: ${package_aid}"
+fi
+gp --load "${cap}"
+printf 'SAME_CAP_PHYSICAL:RELOAD package=%s result=PASS\n' "${package_aid}"
+gp --create "${writer_aid}" --applet "${writer_aid}" --package "${package_aid}"
+gp --create "${reader_aid}" --applet "${reader_aid}" --package "${package_aid}"
+printf 'SAME_CAP_PHYSICAL:RECREATE package_applets=2 result=PASS\n'
+PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" java \
+  -cp "${probe_classes}" SameCapSiblingPhysicalProbe "${reader}" package-reinstalled
 printf 'SAME_CAP_PHYSICAL:PASS log=%s\n' "${log#${repo_root}/}"

@@ -53,13 +53,28 @@ public final class SameCapSiblingPhysicalProbe {
       CardChannel channel = card.getBasicChannel();
 
       if (args.length == 2) {
-        if (!"reinstalled".equals(args[1])) {
+        if (!"reinstalled".equals(args[1]) &&
+            !"package-reinstalled".equals(args[1])) {
           throw new IllegalArgumentException("unknown probe mode: " + args[1]);
         }
         ResponseAPDU selected = select(channel, READER_AID);
         if (selected.getSW() != 0x9000) {
           throw new AssertionError("reinstalled reader SELECT failed: " +
                                    hex(selected.getBytes()));
+        }
+        if ("package-reinstalled".equals(args[1])) {
+          expect(channel.transmit(new CommandAPDU(hex("8021000000"))),
+                 "019000", "reinstalledPackageSiblingSioIdentity");
+          selected = select(channel, READER_AID);
+          if (selected.getSW() != 0x9000) {
+            throw new AssertionError("reader reselect after SIO failed: " +
+                                     hex(selected.getBytes()));
+          }
+          expect(channel.transmit(new CommandAPDU(hex("8020000000"))),
+                 "000012340056123456789000",
+                 "reinstalledPackageInitialStaticValues");
+          System.out.println("SAME_CAP_PHYSICAL:PASS package_delete_reload");
+          return;
         }
         expect(channel.transmit(new CommandAPDU(hex("8020000000"))),
                "000012350157123456799000", "reinstalledReaderRetainsPackageState");

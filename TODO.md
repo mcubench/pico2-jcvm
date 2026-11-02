@@ -440,10 +440,12 @@ Archive text is historical evidence, not current device state or priorities.
   and the package. A second physical run also deleted and recreated the reader
   applet from the loaded CAP; its reinstalled instance read the writer-updated
   package static values (`000012350157123456799000`). Instance DELETE/recreate
-  is physically covered; package DELETE/reinstall as a cycle, reset/transient
-  behavior, GC and cold-power persistence remain open. The first probe omitted
-  the explicit reader reselect used by the VPCD test; after aligning the APDU
-  sequence, physical results matched VPCD.
+  is physically covered. A third run deleted both applets and the whole
+  package, LOADed the CAP again, CREATEd both applets, and confirmed initial
+  static values and sibling SIO identity after package reinstall. Reset/
+  transient behavior, GC and cold-power persistence remain open. The first
+  probe omitted the explicit reader reselect used by the VPCD test; after
+  aligning the APDU sequence, physical results matched VPCD.
   Two repeated instance DELETE/reinstall cycles keep array-owning owner 1
   reserved while reclaiming object-free owner 3; full package DELETE/reinstall
   releases and reuses owner 1. Same-CAP transient tests show sibling selection

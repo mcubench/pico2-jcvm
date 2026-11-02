@@ -1,3 +1,14 @@
+## 2026-11-02 Validate physical same-CAP package reinstall 4 minutes
+
+- Step/experiment: `ctx03-same-cap-physical-package-reinstall-20261102`
+- When: '2026-11-02 14:42 UTC' - '2026-11-02 14:46 UTC'
+- Change: Extended the guarded physical same-CAP harness to DELETE both applet instances and their package, verify removal, LOAD the unchanged fixture CAP again, CREATE both siblings, and probe the fresh package.
+- Validation: `bash -n tools/test-same-cap-siblings-physical` passed. On identified Pico 2 `8E464F4E2BBC0A19`, physical GPPro package DELETE, CAP LOAD, both CREATE operations, PC/SC sibling-SIO probe and final cleanup all passed.
+- Result: After package reinstall, sibling static-array identity returned `019000` and initial state returned `000012340056123456789000`; prior package mutation was gone. Reset/transient, GC and cold-power cases were not exercised.
+- Decision: Physical same-CAP instance and package delete/reinstall paths now pass. Continue the remaining reset/transient, GC and persistence gates.
+- Commit: `<recorded in follow-up metadata commit>`
+- Artifacts/logs: `artifacts/logs/same-cap-sibling-physical-20261102T144405Z.log` SHA-256 `76a13511ff8b972d0b46e52d485be7c12b02d6878a5b2597a88aa1ca92957e7b`.
+
 ## 2026-11-02 Verify physical same-CAP instance reinstall 8 minutes
 
 - Step/experiment: `ctx03-same-cap-physical-instance-reinstall-20261102`

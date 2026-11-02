@@ -30,8 +30,17 @@ state stayed visible across instance removal and recreation. Final cleanup
 passed. Log SHA-256:
 `b1ba3eb64e4144fbd7e974bc1304a5168b584c2af23f8d90bdfb90d52480d7a0`.
 The test script/probe changes are not committed yet. Remaining physical
-same-CAP gaps: delete/reinstall the whole package, reset/transient, GC and
-cold-power persistence.
+same-CAP gaps: reset/transient, GC and cold-power persistence.
+
+## Same-CAP package DELETE/LOAD/INSTALL — 2026-11-02 14:46 UTC
+
+Extended the physical harness to delete both instances and the package, verify
+the package is absent, LOAD the CAP again, and CREATE both siblings. On Pico 2
+`8E464F4E2BBC0A19`, sibling SIO identity again returned `019000`, and initial
+package static state returned `000012340056123456789000`. Cleanup passed. Log
+SHA-256: `76a13511ff8b972d0b46e52d485be7c12b02d6878a5b2597a88aa1ca92957e7b`.
+This harness change is not committed yet. Remaining physical same-CAP gaps:
+reset/transient, GC and cold-power persistence.
 Harness and progress record are committed as `28a18f8`; the progress SHA
 reference is in the metadata commit.
 
