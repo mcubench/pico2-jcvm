@@ -1,3 +1,9 @@
+## Current session — matching JCAlgTest 1.8.4 client runs — 2026-11-02 21:08–23:41 UTC
+
+Used `AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar` with the unchanged upstream 1.8.4 CAP. Runs on 8E and 2BED are recorded with hashes and row counts in the matching 2026-11-02 `progress.md` entry. Extended support on 8E ended with `SCARD_E_NOT_TRANSACTED` after 7,875 result rows and the reader disappeared; root cause is unknown. On 2BED, extended reached 5,836 rows in its 3,600-second bound, BASIC reached 1,421 rows in its 900-second bound, and static performance reached 170 timing values in its 900-second bound. No transport errors occurred on 2BED. The matching jar’s help/banner says 1.8.4, but generated CSV metadata says client 1.8.3; applet metadata correctly says 1.8.4.
+
+2BED was restored via GPPro to the unchanged 1.8.2 CAP and verified by SELECT/GETVERSION, JCSystem info, and the SHA-256 physical probe (`TEST:PASS`). It is the only Pico reader currently visible; 8E remains absent. No firmware was flashed. Continue future performance/support tests from separate saved output paths without `-fresh` so completed rows can resume; respect the repository USB host-access gate.
+
 ## Current session — physical JCAlgTest 1.8.4 CAP test — 2026-11-02 21:08 UTC
 
 On Pico 2 `8E464F4E2BBC0A19`, temporarily replaced only the installed upstream

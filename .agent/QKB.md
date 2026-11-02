@@ -1,5 +1,12 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Long JCAlgTest 1.8.4 runs can lose a physical PC/SC reader — 2026-11-02
+
+- **Symptom:** On Pico 2 `8E464F4E2BBC0A19`, the matching 1.8.4 client’s `ALG_SUPPORT_EXTENDED` run ended with `SCARD_E_NOT_TRANSACTED` after 7,881 successful responses, and that reader disappeared from PC/SC. A second physical reader `2BED26ED20556535` continued responding to bounded 1.8.4 support and static-performance runs.
+- **Cause:** Unknown. The observed failure does not establish whether the client, VM, USB/PCSC stack, or board caused the transaction error.
+- **Workaround:** Keep per-reader output directories and bounded runs. If one reader disappears, refresh `sudo -n /usr/local/sbin/pico2-pcsc-reader`, enumerate PC/SC through the authorized host-access path, and continue on another identified reader. The 2BED card was restored to 1.8.2 and verified with SELECT/GETVERSION. Resume supported client operations from saved output paths without `-fresh`; do not treat `NO_SUCH_ALGORITHM` as an error.
+- **Validation status:** Workaround exercised on 2026-11-02. No root-cause fix is known.
+
 ## ROM-mask class token changes can misclassify ISOException — 2026-11-02
 
 - **Symptom:** RMI `CardException.throwIt(0x1234)` returned type `0x23`
