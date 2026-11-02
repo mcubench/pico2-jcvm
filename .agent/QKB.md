@@ -4015,3 +4015,31 @@ original terminology/status; check current summary and later fixes before reuse.
 - This is physical same-applet SIO coverage only; it does not test cross-AID
   descriptor-based arguments. Logs and SHA-256 digests are in current
   `.agent/HANDOFF.md`.
+
+## CAP StaticField primitive initial values are available without Descriptor — 2026-11-02
+
+- **Observed:** A converted test CAP with `static short zero`, non-default
+  short/byte/int fields, and a static array encodes `image_size=11`,
+  `reference_count=1`, `default_value_count=2`, and
+  `non_default_value_count=7`. Its StaticField image contains the default
+  primitive bytes implicitly as zero followed by packed bytes
+  `12 34 56 12 34 56 78`. The StaticField image layout is enough to answer
+  typed static reads by byte offset; optional Descriptor metadata is not needed.
+- **Viable fix:** When the persistent field tag is absent, static primitive
+  getters read the requested bytes from the retained CAP StaticField image.
+  Existing persistent typed records continue to take precedence and use their
+  strict type/format validation. This avoids creating persistent writes just to
+  materialize CAP initial values and supports the Descriptor-free code image
+  used by the GPPro LOAD path.
+- **Validation:** `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings`
+  passed `TEST:SUMMARY pass=5 fail=0`. It loads the same CAP without Descriptor,
+  reads default short plus non-default short/byte/int values, increments the
+  non-default values, and verifies sibling applets see the updated persistent
+  values. `./tools/build-pc --profile max_crypto`, ARM and RISC-V max_crypto
+  builds, `./tools/test-rmi-registry`, and
+  `./tools/test-firmware-flash-boundary` passed. ARM binary is 943,592 bytes
+  and leaves 104,984 bytes below the 1 MiB firmware boundary.
+- **Physical limit:** A fresh authorized inventory found only two runtime CCID
+  readers (`2e8a:0009`) and no BOOTSEL devices. No hardware flash or physical
+  runtime validation was performed. VPCD log:
+  `artifacts/logs/same-cap-sibling-vpcd-20261102T093948Z.log`.

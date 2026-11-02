@@ -20178,3 +20178,14 @@
 - Decision: Keep CTX-03 open. Next implement same-CAP object identity and per-object owner behavior; include CAP static non-default initialization in the same acceptance suite.
 - Commit: `a2c56ae`.
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`; `artifacts/logs/same-cap-sibling-vpcd-20261102T091916Z.log`.
+
+## 2026-11-02 Read CAP static primitive initial values lazily 20 minutes
+
+- Step/experiment: `cap-static-primitive-image-read-20261102`
+- When: '2026-11-02 09:21 UTC' - '2026-11-02 09:40 UTC'
+- Change: Static byte, short, and int getters now return primitive initial bytes from the CAP StaticField image when no persistent value is stored. Added default and non-default short/byte/int fields to the same-CAP sibling fixture and verified persistent writes supersede initial CAP values.
+- Validation: `./tools/build-pc --profile max_crypto` passed; `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed (`TEST:SUMMARY pass=5 fail=0`) with Descriptor omitted; `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed; `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-registry` passed; `./tools/test-firmware-flash-boundary` passed. Fresh elevated inventory found two runtime CCID devices and no BOOTSEL device, so no physical flash or serial monitor was run.
+- Result: Converter fixture encodes 2 default primitive bytes followed by 7 non-default bytes `12 34 56 12 34 56 78`; the VPCD applets read the expected static short/byte/int values and see subsequent writes across sibling AIDs. ARM binary is 943,592 bytes, ends at `0x100e65e8`, and leaves 104,984 bytes below the 1 MiB firmware boundary. Build UF2 SHA-256: `b5d240cc067b1cbd38a22bfdfb5f83dbb970027c64a2017730dd3c768bfc6daf`. Physical behavior remains unverified.
+- Decision: Keep CTX-03 open for package-scoped firewall context, shared object identity, and per-object owner isolation; the optional Descriptor is not needed for static primitive initial values.
+- Commit: pending (recorded in follow-up metadata commit)
+- Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T093948Z.log`; ARM/RISC-V/PC build outputs under `build/`

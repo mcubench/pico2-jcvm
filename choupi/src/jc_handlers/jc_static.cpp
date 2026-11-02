@@ -27,11 +27,69 @@
 
 #include "jc_static.hpp"
 #include "../exceptions.hpp"
+#include "../jc_cap/jc_cap_static_field.hpp"
 #include "../heap.hpp"
 #include "flashmemory.hpp"
 #include "ffi.h"
 
 namespace jcvm {
+namespace {
+
+uint16_t readStaticU16(const uint8_t *data) noexcept {
+  return static_cast<uint16_t>((static_cast<uint16_t>(data[0]) << 8) |
+                               data[1]);
+}
+
+void getInitialPrimitiveBytes(const Package &package, const size_t index,
+                              uint8_t *output,
+                              const size_t output_size) noexcept {
+  if (output == nullptr) return;
+  for (size_t byte = 0; byte < output_size; ++byte) output[byte] = 0;
+
+  const auto *component = package.getCap().getStaticField();
+  if (component == nullptr) return;
+
+  const auto *component_bytes = reinterpret_cast<const uint8_t *>(component);
+  const uint16_t component_size = readStaticU16(component_bytes + 1);
+  if (component_size < 10) return;
+
+  const uint16_t image_size = readStaticU16(component_bytes + 3);
+  const uint16_t reference_count = readStaticU16(component_bytes + 5);
+  const uint16_t array_count = readStaticU16(component_bytes + 7);
+
+  const uint8_t *cursor = component_bytes + 9;
+  size_t remaining = component_size - 6;
+  for (uint16_t array = 0; array < array_count; ++array) {
+    if (remaining < 3) return;
+    const uint16_t byte_count = readStaticU16(cursor + 1);
+    if (static_cast<size_t>(byte_count) > remaining - 3) return;
+    cursor += 3 + byte_count;
+    remaining -= 3 + byte_count;
+  }
+
+  if (remaining < 4) return;
+  const uint16_t default_value_count = readStaticU16(cursor);
+  const uint16_t non_default_value_count = readStaticU16(cursor + 2);
+  if (non_default_value_count != remaining - 4) return;
+
+  const size_t primitive_base = static_cast<size_t>(reference_count) * 2;
+  if (primitive_base + default_value_count + non_default_value_count !=
+      image_size) {
+    return;
+  }
+  for (size_t byte = 0; byte < output_size; ++byte) {
+    const size_t image_offset = index + byte;
+    if (image_offset >= image_size || image_offset < primitive_base) continue;
+    const size_t primitive_offset = image_offset - primitive_base;
+    if (primitive_offset < default_value_count) continue;
+    const size_t non_default_offset = primitive_offset - default_value_count;
+    if (non_default_offset < non_default_value_count) {
+      output[byte] = cursor[4 + non_default_offset];
+    }
+  }
+}
+
+} // namespace
 
 /**
  * Get static byte value.
@@ -43,7 +101,9 @@ jbyte_t Static_Handler::getPersistentByte(const uint16_t index) const {
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   if (fs_exists(tag.value, tag.len) == 0) {
-    return 0;
+    uint8_t value[1];
+    getInitialPrimitiveBytes(this->package, index, value, sizeof(value));
+    return static_cast<jbyte_t>(value[0]);
   }
   return FlashMemory_Handler::getPersistentField_Byte(tag);
 }
@@ -58,7 +118,10 @@ jshort_t Static_Handler::getPersistentShort(const uint16_t index) const {
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   if (fs_exists(tag.value, tag.len) == 0) {
-    return 0;
+    uint8_t bytes[2];
+    getInitialPrimitiveBytes(this->package, index, bytes, sizeof(bytes));
+    const uint16_t value = readStaticU16(bytes);
+    return static_cast<jshort_t>(value);
   }
   return FlashMemory_Handler::getPersistentField_Short(tag);
 }
@@ -74,7 +137,12 @@ jint_t Static_Handler::getPersistentInt(const uint16_t index) const {
   fs::Tag tag = FlashMemory_Handler::getStaticFieldTag(
       this->package.getPackageID(), index);
   if (fs_exists(tag.value, tag.len) == 0) {
-    return 0;
+    uint8_t bytes[4];
+    getInitialPrimitiveBytes(this->package, index, bytes, sizeof(bytes));
+    const uint32_t value = (static_cast<uint32_t>(bytes[0]) << 24) |
+                           (static_cast<uint32_t>(bytes[1]) << 16) |
+                           (static_cast<uint32_t>(bytes[2]) << 8) | bytes[3];
+    return static_cast<jint_t>(value);
   }
   return FlashMemory_Handler::getPersistentField_Int(tag);
 }

@@ -90,38 +90,51 @@ def main() -> int:
             vpcd.install_applet(scp, package_aid, READER_AID, READER_AID)
             print("TEST:PASS loaded one CAP and installed its writer and reader applets")
 
+            select(connection, READER_AID, "SELECT reader for static initializers")
+            response = vpcd.exchange(connection, bytes.fromhex("8020000000"),
+                                     "read CAP static initial values")
+            if response != bytes.fromhex("000012340056123456789000"):
+                raise RuntimeError(
+                    "CAP static primitive initial values were not observed: "
+                    f"{response.hex().upper()} expected 000012340056123456789000"
+                )
+            print("TEST:PASS reader observed default and non-default static values")
+
             select(connection, WRITER_AID, "SELECT writer")
             response = vpcd.exchange(connection, bytes.fromhex("8010000000"),
                                      "write package static state")
-            if response != bytes.fromhex("0001019000"):
-                raise RuntimeError(f"first writer response: {response.hex().upper()}")
+            if response != bytes.fromhex("000012350157123456799000"):
+                raise RuntimeError(
+                    f"first writer response: {response.hex().upper()} "
+                    "expected 000012350157123456799000"
+                )
             print("TEST:PASS writer changed static scalar and byte array")
 
             select(connection, READER_AID, "SELECT reader after first write")
             response = vpcd.exchange(connection, bytes.fromhex("8020000000"),
                                      "read sibling package static state")
-            if response != bytes.fromhex("0001019000"):
+            if response != bytes.fromhex("000012350157123456799000"):
                 raise RuntimeError(
                     "reader did not observe writer's shared array: "
-                    f"{response.hex().upper()} expected 0001019000"
+                    f"{response.hex().upper()} expected 000012350157123456799000"
                 )
             print("TEST:PASS reader observed first sibling static scalar and array")
 
             select(connection, WRITER_AID, "reselect writer")
             response = vpcd.exchange(connection, bytes.fromhex("8010000000"),
                                      "write sibling static state again")
-            if response != bytes.fromhex("0002029000"):
+            if response != bytes.fromhex("0000123602581234567A9000"):
                 raise RuntimeError(f"second writer response: {response.hex().upper()}")
             select(connection, READER_AID, "reselect reader")
             response = vpcd.exchange(connection, bytes.fromhex("8020000000"),
                                      "read updated sibling package state")
-            if response != bytes.fromhex("0002029000"):
+            if response != bytes.fromhex("0000123602581234567A9000"):
                 raise RuntimeError(
                     "reader observed stale or isolated sibling static array: "
-                    f"{response.hex().upper()} expected 0002029000"
+                    f"{response.hex().upper()} expected 0000123602581234567A9000"
                 )
             print("TEST:PASS retained sibling contexts observe updated package static state")
-            print("TEST:SUMMARY pass=4 fail=0")
+            print("TEST:SUMMARY pass=5 fail=0")
         finally:
             if connection is not None:
                 connection.close()

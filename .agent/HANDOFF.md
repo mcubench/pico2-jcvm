@@ -1,3 +1,23 @@
+## CAP StaticField primitive initial values — 2026-11-02 09:40 UTC
+
+Static primitive getters now consult the retained CAP StaticField image when
+no persistent field record exists. This lazily reproduces default-zero and
+non-default byte/short/int initial values without requiring the optional
+Descriptor component or writing every initial value to flash. Existing typed
+persistent records still take precedence. The test-only same-CAP fixture now
+checks default and non-default scalar values, writes, and sibling visibility
+with Descriptor omitted; `TEST:SUMMARY pass=5 fail=0`.
+
+Validation passed: PC max_crypto build; focused same-CAP VPCD test; ARM and
+RISC-V max_crypto builds; `tools/test-rmi-registry`; and firmware-boundary
+test. Current ARM binary is 943,592 bytes, ending at `0x100e65e8`, leaving
+104,984 bytes in the 1 MiB firmware window. Current build UF2 SHA-256 is
+`b5d240cc067b1cbd38a22bfdfb5f83dbb970027c64a2017730dd3c768bfc6daf`.
+Fresh authorized USB inventory exposed two runtime CCID devices and no BOOTSEL,
+so there was no physical flash/test. The external-test artifact was not
+refreshed. Next: continue CTX-03 package-context/owner separation and extend the
+fixture to prove shared object identity and per-object owner isolation.
+
 # Session handoff — updated 2026-11-02
 
 ## Same-CAP static state probe and default primitive fix — 2026-11-02 09:21 UTC

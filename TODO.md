@@ -388,9 +388,11 @@ Archive text is historical evidence, not current device state or priorities.
   including restart, lookupAID, paging, DELETE, and transient lifecycle.
   Remaining: implement and test a package-scoped firewall context while keeping
   per-object owner identity and per-instance lifecycle. Extend the fixture to
-  test shared object identity and cross-sibling object references. Also apply
-  CAP StaticField non-default primitive initial values; the current initializer
-  validates their byte count but does not persist the values.
+  test shared object identity and cross-sibling object references. CAP
+  StaticField primitive initial values are now read lazily from the retained CAP
+  image whenever no persistent field record exists. This covers default-zero
+  bytes and packed non-default byte, short, and int values without relying on
+  the optional Descriptor component.
   Acceptance: an unchanged or test-only multi-applet CAP proves sibling
   instances share static/heap context and can access objects as specified,
   while separate CAPs remain isolated; AID reporting and per-instance DELETE
