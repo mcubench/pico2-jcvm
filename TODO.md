@@ -272,7 +272,10 @@ Archive text is historical evidence, not current device state or priorities.
   case 41 codifies that restriction). Do not relax it until global-array reads
   preserve the referenced object's owning context across independently
   allocated heap-local handles, with GC, deletion, persistence, reset, and
-  stale-owner coverage. Update case 41 only with that implementation.
+  stale-owner coverage. Update case 41 only with that implementation. Current
+  case 41 reproducibly returns caught `SecurityException` (`019000`) in
+  `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log`;
+  the focused run took 85.593 s.
   No types are inferred from raw values. The
   descriptor-free VPCD fixture passes 15/15; the Descriptor-present regression
   also passes 14/14 through the existing signature path. Physical typed

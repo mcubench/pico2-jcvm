@@ -46,6 +46,14 @@ have an unrelated object at the same compact handle. Correct support needs
 owner-preserving reference indirection plus GC, deletion, persistence, reset,
 and collision coverage. See `.agent/QKB.md` and CTX-01 in `TODO.md`.
 
+Focused reproduction: `./tools/test-jcsystem-transaction-applet --case 41`
+passes the current test in 85.593 s because the applet catches
+`SecurityException` when writing itself to the global Object[]; APDU result is
+`019000`. Log: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log`
+(SHA-256 `8cf6cb16df35f096ee1fa3c3befcc3a99adb48ef5e13e307aab1c1f2f114e1e4`).
+This is a reproducible spec-compatibility failure, not a passing acceptance
+result for global object references.
+
 ## Latest CTX-01 update: proxy markers survive persistent alias restore
 
 `getPersistentField_ReferenceImpl()` rebuilt persistent object aliases without

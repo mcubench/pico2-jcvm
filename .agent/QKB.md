@@ -25,10 +25,14 @@
   in another context must remain opaque and fail every unauthorized object
   access. Keep the existing restriction until the indirection, GC, deletion,
   persistence, and collision tests are complete.
-- **Validation:** Read-only comparison of `JC_Array::setReferenceEntry`, the
-  transaction applet's case 41, and the 3.0.5 access rules. The current
-  SIO VPCD suite passes 15/15 with Descriptor omitted and included; ARM and
-  RISC-V wrapper builds pass. No implementation change was made in this step.
+- **Reproduction:** `./tools/test-jcsystem-transaction-applet --case 41`
+  passed in 85.593 s because the applet caught `SecurityException` on
+  `global[0] = this`; APDU response was `019000`. Log:
+  `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log`
+  (SHA-256 `8cf6cb16df35f096ee1fa3c3befcc3a99adb48ef5e13e307aab1c1f2f114e1e4`).
+  This proves the implementation/test behavior but also confirms the spec gap.
+  ARM/RISC-V builds and both Descriptor-mode SIO suites passed in the preceding
+  worktree validation. No implementation change was made in this step.
 
 ## SIO reference parameters cross the call, not the firewall — 2026-11-02
 

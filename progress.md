@@ -19878,3 +19878,13 @@
 - Decision: Keep the current check fail-closed while designing the full ownership representation. Update transaction probe case 41 only with the implementation and corresponding lifecycle regressions.
 - Commit: `3afee1e`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261102T040952Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261102T041201Z.log` (hashes in `.agent/HANDOFF.md`).
+## 2026-11-02 Reproduce global Object[] restriction 5 minutes
+
+- Step/experiment: `global-object-array-case41-vpcd-20261102`
+- When: '2026-11-02 05:20 CET' - '2026-11-02 05:25 CET'
+- Change: Ran the focused existing transaction VPCD case for applet references in global Object[] and recorded the result in `TODO.md`, `.agent/QKB.md`, and `.agent/HANDOFF.md`. No source or test code changed.
+- Validation: `./tools/test-jcsystem-transaction-applet --case 41` completed with `TEST:SUMMARY pass=3 fail=0 elapsed_s=85.593`; it observed APDU response `019000` because the applet caught `SecurityException` from `global[0] = this`. This confirms the current implementation's behavior, while the Java Card 3.0.5 spec review confirms the restriction is over-strict. `git diff --check` passed.
+- Result: Reproduced the global Object[] compatibility gap in the PC emulator. Log: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log`, SHA-256 `8cf6cb16df35f096ee1fa3c3befcc3a99adb48ef5e13e307aab1c1f2f114e1e4`. No physical test was possible: latest USB refresh still showed one runtime CCID and no BOOTSEL devices.
+- Decision: Keep the runtime restriction until owner-preserving handles, garbage-collection roots, deletion protection, persistence, and reset semantics are implemented. Replace the current case 41 expectation only with those changes.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log` (hash above).
