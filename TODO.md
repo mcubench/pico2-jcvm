@@ -432,10 +432,17 @@ Archive text is historical evidence, not current device state or priorities.
   sibling and verifies the returned writer proxy sees the identical package
   static byte array; `tools/test-same-cap-siblings` passes 6/6. Latest ARM
   image ends at `0x100e7890`, using 948,368 of the 1 MiB firmware window and
-  leaving 100,208 bytes. Physical flash/runtime validation remains open: the latest
-  approved host inventory exposed two runtime CCID readers and no BOOTSEL
-  device. Further acceptance must cover same-CAP selection, instance/package
-  deletion and reinstall, reset/transient behavior, and persistence on hardware.
+  leaving 100,208 bytes. A physical same-CAP sibling check on Pico 2
+  `8E464F4E2BBC0A19` passed: GPPro LOADed one CAP and CREATEd both applets,
+  static defaults were `000012340056123456789000`, a writer update returned
+  `000012350157123456799000`, and the sibling reader observed the update.
+  Shareable array identity returned `019000`; cleanup removed both instances
+  and the package. This covers basic same-CAP selection and static visibility,
+  not deletion/reinstall, reset/transient behavior, GC or cold-power
+  persistence. The first probe omitted the explicit reader reselect used by the
+  VPCD test; after aligning the APDU sequence, physical results matched VPCD.
+  Further acceptance must cover same-CAP instance/package deletion and
+  reinstall, reset/transient behavior, GC and persistence on hardware.
   Two repeated instance DELETE/reinstall cycles keep array-owning owner 1
   reserved while reclaiming object-free owner 3; full package DELETE/reinstall
   releases and reuses owner 1. Same-CAP transient tests show sibling selection

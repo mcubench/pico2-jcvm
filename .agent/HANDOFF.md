@@ -1,3 +1,24 @@
+# CTX-03 physical same-CAP sibling selection/static state — 2026-11-02 14:34 UTC
+
+The guarded physical harness installed the same test CAP once with GPPro, then
+created writer and reader instances on Pico 2 `8E464F4E2BBC0A19`. Shareable
+array identity returned `019000`; initial static values returned
+`000012340056123456789000`; writer mutation returned
+`000012350157123456799000`; the sibling reader observed those changed values.
+Fixture cleanup deleted both instances and the package. The first probe got
+`6D00` because it did not reselect the reader after SIO, unlike the existing
+VPCD sequence; matching the sequence made the physical check pass. This is not
+a firmware failure. Log SHA-256:
+`0a8551584c163700174dd6fe767f09d146db1b30726df8e98f3027d207fca5fe`.
+VPCD same-CAP regression rerun passed `TEST:SUMMARY pass=6 fail=0`.
+
+Remaining CTX-03 physical acceptance: instance/package DELETE and reinstall,
+reset/transient behavior, GC and persistence. Latest ARM image remains
+948,368 bytes with 100,208 bytes left in the 1 MiB firmware window. Preserve
+unrelated dirty files; this validation work is not yet committed. Next inspect
+CTX-01/03 for a safe offline/high-value gap while physical readers remain in
+runtime mode.
+
 # CTX-01 physical cross-AID SIO/reset acceptance — 2026-11-02 14:18 UTC
 
 Implemented reset invalidation for runtime Shareable proxy routes. A clean
