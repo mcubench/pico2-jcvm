@@ -19709,3 +19709,35 @@
 - Commit: `be28faa`.
 - Artifacts/logs: VPCD logs above; ARM image `build/arm/pico2_choupi.uf2`;
   RISC-V smoke image `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-11-02 Preserve int word order in SIO runtime tags 27 minutes
+
+- Step/experiment: `sio-ordered-int-word-tags-20261102`
+- When: '2026-11-02 03:26 CET' - '2026-11-02 03:53 CET'
+- Change: Refined the packed operand tags to distinguish int-low from int-high,
+  rejecting split, isolated, or reversed pairs during descriptor-free
+  cross-context marshalling. Added a regression that swaps adjacent words from
+  two int values and verifies the malformed sequence is rejected. Updated
+  CTX-01, QKB, HANDOFF, and removed a stale TODO statement that still described
+  explicit arguments as unsupported.
+- Validation: `./tools/test-rmi-registry` passed, including the new negative
+  pair-order case. PC build and `./tools/build arm`, `./tools/build riscv`
+  passed. VPCD integration passed `TEST:SUMMARY pass=14 fail=0` with Descriptor
+  omitted (`artifacts/logs/sio-cross-aid-vpcd-20261102T024802Z.log`) and present
+  (`artifacts/logs/sio-cross-aid-vpcd-20261102T024959Z.log`). Scoped whitespace
+  checks passed. Physical testing was not performed; current USB enumeration
+  still showed only one runtime CCID, not BOOTSEL devices.
+- Result: Each int pair transferred without Descriptor must now have the
+  correct low/high word order. Three-bit tags use 96 bytes per 256-word stack.
+  ARM image size is 1,852,416 bytes, end `0x100e2038`, SHA-256
+  `53f6e554bcf18c490618a958754d997d9234c48ddecc814f9212d82bf3396682`; RISC-V
+  smoke image size is 79,872 bytes, end `0x10009a78`, SHA-256
+  `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+  The PC build emits existing Rust/C++ dependency warnings; the build exits
+  successfully and no new warning attributable to this change was identified.
+- Decision: Keep CTX-01 open. Next continue firewall/type-tag path coverage and
+  physical positive cross-AID acceptance when a board is guest-visible.
+- Commit: `e78cb7b` (implementation); this progress record and stale TODO
+  correction are committed separately.
+- Artifacts/logs: VPCD logs above; `build/arm/pico2_choupi.uf2` and
+  `build/riscv/pico2_jcvm_smoke.uf2` with hashes above.

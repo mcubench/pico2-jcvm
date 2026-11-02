@@ -245,14 +245,13 @@ Archive text is historical evidence, not current device state or priorities.
   `GPSession.loadCapFile()` sends `CAPFile.getCode()`, and the local
   `capfile-26.02.22` implementation's default `_getCode(false)` excludes
   Descriptor (and Debug). The actual physical APDU stream was not captured.
-  Cross-context calls now have a bounded fallback for receiver-only methods
-  when Descriptor is absent, after checking the server method header. Calls
-  with explicit arguments remain rejected without type metadata, and malformed
-  present Descriptors do not use the fallback. The fallback has registry-unit
-  coverage and passes ARM/RISC-V builds, but has not yet passed a positive
-  physical call.
+  An initial receiver-only fallback for absent Descriptor data was superseded
+  by the runtime type-tag path below. Present Descriptor signatures remain
+  validated through the existing path; malformed Descriptor data never falls
+  back to tags. The remaining physical acceptance gaps are listed below.
   Since standard GPPro LOAD omits Descriptor, the operand stack now maintains
-  compact runtime word-kind tags (primitive, reference, int-word, unknown).
+  compact runtime word-kind tags (primitive, reference, int-low, int-high,
+  unknown).
   Descriptor-free cross-context calls use these tags to construct typed
   initial locals, including ordered low/high int word pairing. A malformed or
   split int pair fails closed. Tags are maintained by typed
