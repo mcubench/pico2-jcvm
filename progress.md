@@ -20001,7 +20001,7 @@
 - Decision: Preserve fail-closed behavior until an opaque owner-tagged
   reference and the collision/access/lifetime tests exist. Continue CTX-01
   offline.
-- Commit: pending.
+- Commit: `07fc0ad`.
 - Artifacts/logs: Official specification
   `https://docs.oracle.com/cd/E59935_01/JCCRE.pdf`; no test log.
 
@@ -20032,7 +20032,7 @@
 - Decision: Use both runtime boards for later physical checks and fail over by
   serial if one disappears. Do not attempt flashing until BOOTSEL enumerates.
   Continue CTX-01/03 implementation offline.
-- Commit: pending.
+- Commit: `30d83ec`.
 - Artifacts/logs: The two physical logs above; build images under `build/arm/`
   and `build/riscv/` (not flashed).
 
@@ -20061,7 +20061,7 @@
 - Decision: Keep CTX-03 open; design CAP-scoped context with per-instance owner
   and lifecycle state before modifying runtime context allocation. Preserve all
   unrelated shared worktree changes.
-- Commit: pending.
+- Commit: `cdca37c`.
 - Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261102T080935Z.log`
   (SHA-256 `cec4c3fed14d26d89b37ce7c7e9d70eaf64baf69b070398e426fbb378a958642`),
   `artifacts/logs/host-vpcd-multipackage-restart-20261102T080935Z.log` (SHA-256
@@ -20088,7 +20088,7 @@
   persistence. No firmware was flashed.
 - Decision: Keep CTX-03 acceptance open; add same-CAP sibling object/static
   access coverage before claiming package-context correctness.
-- Commit: pending.
+- Commit: `2709d41`.
 - Artifacts/logs: `artifacts/logs/physical-get-status-multipage-20261102T081605Z.log`
   (SHA-256 `8d385e1043b3909317f2b0a5f219ba06cdc173316426a9be2d5ea9310f24c12c`)
   and `artifacts/logs/physical-get-status-multipage-20261102T081719Z.log`
@@ -20109,6 +20109,6 @@
   physical package registry validation from the still-open CTX-03 semantics.
 - Decision: Keep CTX-03 open and preserve both runtime devices for future
   physical tests; no BOOTSEL device has been enumerated.
-- Commit: pending.
+- Commit: `471dfe4`.
 - Artifacts/logs: The two `physical-get-status-multipage-20261102T081605Z.log`
   and `...081719Z.log` runs documented above.
