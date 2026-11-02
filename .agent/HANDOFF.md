@@ -1,3 +1,33 @@
+## Current session — persistent reclaimer physical telemetry — 2026-11-02 18:54 UTC
+
+Built both architectures with `PICO2_DEBUG_PERSISTENT_GC=1` and flashed the
+hook-enabled current ARM image to Pico 2 `2BED26ED20556535`. The first picotool
+attempt lacked a reset interface; the cycle wrapper recovered through its
+CDC-1200 BOOTSEL path, then flash write/verify reached 100% and the 18-second
+monitor passed. Firmware ends at `0x100d0138`, using 852,280/1,048,576 bytes
+and leaving 196,296 bytes. UF2 SHA-256:
+`38d585f20414648427011e5a21a78f3acfa13bce3bb442eeb7861ad38d267604`.
+
+Ran `tools/test-persistent-reclaimer-physical` while capturing serial. All five
+APDU assertions and temporary package cleanup passed. On the release APDU,
+serial showed `CHOUPI:PERSISTENT_GC owner=4 result=0 erased=1 ... candidates=1`;
+subsequent rooted-array read passed. This proves one live single-owner erase
+case on hardware. It does not prove concurrent/multi-owner protection or
+power-loss recovery during an erase; leave the reclaimer disabled in normal
+collection. QKB/TODO now distinguish APDU behavior from tag-erasure evidence.
+
+Logs: physical APDUs `artifacts/logs/persistent-reclaimer-physical-20261102T170042Z.log`
+(SHA-256 `833d036b146cbb87723a0663e6b117be0a90245e62d0fbf656f5c1fad7cb5fd3`),
+serial `artifacts/logs/persistent-reclaimer-serial-2BED-20261102T171000Z.log`
+(SHA-256 `3e89318190f7a290db287e50ae9e0497c1fedb332e54fa032a68acf22bd86bff`),
+cycle `artifacts/logs/cycle-choupi-20261102T165652Z.log` (SHA-256
+`dea23a2e06ee37be165115c2f74e6034cec9c2f4a4fc0debbb0d284ea753c4e1`).
+
+Next: make the physical harness require captured `PERSISTENT_GC erased>0`
+telemetry so a non-hook image cannot be reported as reclaimer validation; then
+continue CTX-01/03 cross-context reference semantics. Keep physical power-loss
+acceptance open until an actual interruption can be performed and verified.
+
 ## Current session — package-owned references in global Object[] — 2026-11-02 16:50 UTC
 
 Implemented per-slot owner tags for local object/array references stored in

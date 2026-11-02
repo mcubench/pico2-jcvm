@@ -1332,6 +1332,25 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   candidates. `./tools/test-rp2350-fs-overlay` ends with `TEST:SUMMARY fail=0`.
   This verifies overlay snapshot atomicity, not a physical Pico power loss or
   the end-to-end VM reclaimer invocation.
+- **Hook-enabled physical recheck (2026-11-02):** current-profile ARM and
+  RISC-V wrappers passed with `PICO2_DEBUG_PERSISTENT_GC=1`; ARM firmware used
+  852,280 bytes and left 196,296 bytes in the firmware window. The debug image
+  was flashed and verified on Pico 2 `2BED26ED20556535`; the finite monitor
+  passed. With serial capture running during `tools/test-persistent-reclaimer-physical`,
+  the release APDU was followed by
+  `CHOUPI:PERSISTENT_GC owner=4 result=0 erased=1 ... candidates=1`.
+  The remaining root read passed and temporary package cleanup succeeded.
+  UF2 SHA-256 `38d585f20414648427011e5a21a78f3acfa13bce3bb442eeb7861ad38d267604`;
+  physical APDU log `artifacts/logs/persistent-reclaimer-physical-20261102T170042Z.log`
+  SHA-256 `833d036b146cbb87723a0663e6b117be0a90245e62d0fbf656f5c1fad7cb5fd3`;
+  serial log `artifacts/logs/persistent-reclaimer-serial-2BED-20261102T171000Z.log`
+  SHA-256 `3e89318190f7a290db287e50ae9e0497c1fedb332e54fa032a68acf22bd86bff`;
+  cycle log `artifacts/logs/cycle-choupi-20261102T165652Z.log` SHA-256
+  `dea23a2e06ee37be165115c2f74e6034cec9c2f4a4fc0debbb0d284ea753c4e1`.
+  This is single-owner erase evidence, not interrupted-erase or multi-owner
+  power-loss acceptance. A probe run on a firmware without the debug hook can
+  pass its APDU assertions without proving physical tag deletion; require the
+  serial `PERSISTENT_GC` erase record when claiming reclaimer validation.
 
 ## VPCD first-reader scan can time out during PC/SC startup — 2026-10-31
 
