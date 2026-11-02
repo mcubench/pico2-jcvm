@@ -175,6 +175,63 @@ void verify_shareable_cross_context_arguments() {
   std::array<jcvm::InterpretorInitialLocal, 255> locals{};
   uint8_t local_count = 0;
 
+  {
+    jcvm::jref_t global_instance;
+    global_instance.setOffset(1);
+    global_instance.setAsGlobalInstance();
+    jcvm::Stack stack;
+    stack.push_Frame(0, 0, 8, nullptr);
+    stack.push_Reference(receiver);
+    stack.push_Byte(-2);
+    stack.push_Int(static_cast<jcvm::jint_t>(0x12345678));
+    stack.push_Reference(global_instance);
+    assert(stack.get_Pushed_ValueKind(5) ==
+           jcvm::Stack::ValueKind::Reference);
+    assert(stack.get_Pushed_ValueKind(4) ==
+           jcvm::Stack::ValueKind::Primitive);
+    assert(stack.get_Pushed_ValueKind(3) ==
+           jcvm::Stack::ValueKind::IntWord);
+    assert(stack.get_Pushed_ValueKind(2) ==
+           jcvm::Stack::ValueKind::IntWord);
+    assert(stack.get_Pushed_ValueKind(1) ==
+           jcvm::Stack::ValueKind::Reference);
+    assert(jcvm::buildShareableTaggedInitialLocals(
+        5, receiver, stack, locals, local_count));
+    assert(local_count == 4);
+    assert(locals[1].type == jcvm::InterpretorLocalType::Short);
+    assert(static_cast<int32_t>(locals[1].value) == -2);
+    assert(locals[2].type == jcvm::InterpretorLocalType::Int);
+    assert(locals[2].value == 0x12345678);
+    assert(locals[3].type == jcvm::InterpretorLocalType::Reference);
+    assert(locals[3].value == global_instance.compact());
+
+    jcvm::Stack shuffled_stack;
+    shuffled_stack.push_Frame(0, 0, 8, nullptr);
+    shuffled_stack.push_Reference(receiver);
+    shuffled_stack.push_Short(0x2468);
+    shuffled_stack.dup(1, 0);
+    assert(shuffled_stack.get_Pushed_ValueKind(1) ==
+           jcvm::Stack::ValueKind::Primitive);
+    assert(shuffled_stack.pop_Short() == 0x2468);
+    assert(shuffled_stack.pop_Short() == 0x2468);
+    assert(shuffled_stack.pop_Reference() == receiver);
+
+    shuffled_stack.push_Reference(receiver);
+    shuffled_stack.push_Short(0x1357);
+    shuffled_stack.swap(1, 1);
+    assert(shuffled_stack.get_Pushed_ValueKind(1) ==
+           jcvm::Stack::ValueKind::Reference);
+    assert(shuffled_stack.pop_Reference() == receiver);
+    assert(shuffled_stack.pop_Short() == 0x1357);
+
+    jcvm::Stack private_reference_stack;
+    private_reference_stack.push_Frame(0, 0, 2, nullptr);
+    private_reference_stack.push_Reference(receiver);
+    private_reference_stack.push_Reference(make_reference(23));
+    assert(!jcvm::buildShareableTaggedInitialLocals(
+        2, receiver, private_reference_stack, locals, local_count));
+  }
+
   assert(jcvm::buildShareableReceiverOnlyInitialLocals(
       1, receiver, locals, local_count));
   assert(local_count == 1);

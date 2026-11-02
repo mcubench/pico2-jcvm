@@ -1,6 +1,6 @@
 # Session handoff — updated 2026-11-02
 
-## Current CTX-01 finding: GPPro-loaded CAPs can lack Descriptor data
+## Current CTX-01 state: descriptor-free typed arguments pass VPCD
 
 The physical trace from a fresh two-package probe shows both packages installed
 and the client selected, but `invokeinterface` returned `6F00` because the
@@ -13,21 +13,31 @@ APDU stream was not separately captured. Trace and probe logs are
 `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log` and
 `artifacts/logs/sio-two-package-probe-20261102T013345Z.log`.
 
-The interpreter now has a guarded fallback for descriptor-free cross-context
-calls with no explicit parameters: the operand count and server method header
-must both show only the receiver. Calls with explicit arguments fail closed
-without type metadata; malformed present Descriptor data also fails closed.
-`tools/test-rmi-registry`, ARM current build, and RISC-V current build pass.
-This fallback is not yet positively tested on a Pico. At the latest refreshed
-USB check only one device was visible, as runtime CCID `2e8a:0009`; no BOOTSEL
-device was enumerated, despite the report of three boards. No flash was done.
+The operand stack now carries compact runtime word-kind tags (unknown,
+primitive, reference, int-word) maintained by typed pushes, local writes,
+frame-local initialization, `dup`, `swap`, and stack element replacement. When
+the Descriptor is absent, cross-context `invokeinterface` uses these tags to
+construct server locals. Int pairs are checked; null and JCRE-global references
+may cross; unknown words and applet-private references fail closed. Storage is
+64 bytes per 256-word stack. Present Descriptor signatures continue through the
+existing checked path; malformed present data does not fall back to tags.
 
-Next: exercise a positive receiver-only cross-AID call using an unchanged
-CAP/test path that does not replace baseline packages. For general explicit
-arguments, design runtime operand/local type tracking or another trustworthy
-source; standard GPPro CAP LOAD does not carry Descriptor metadata. Continue to
-reject explicit arguments without reliable type metadata. Preserve unrelated
-uncommitted changes.
+Validation: `tools/test-rmi-registry` passes. The three-package VPCD suite
+passes 14/14 with Descriptor omitted and 14/14 with Descriptor present. Logs:
+`artifacts/logs/sio-cross-aid-vpcd-20261102T021632Z.log` and
+`artifacts/logs/sio-cross-aid-vpcd-20261102T022037Z.log`. Current ARM and RISC-V
+wrapper builds pass; ARM image size 1,850,368 bytes, SHA-256
+`ea5a24a4544965a534b4bbbfa713d3ad093f432f75d8fb9607bb0b8a617c2a04`; RISC-V
+smoke image 79,872 bytes, SHA-256
+`7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+
+The user reports three boards in BOOTSEL, but the latest authorized helper and
+USB enumeration still see one runtime CCID (`2e8a:0009`) and no BOOTSEL boards.
+No flash or physical SIO validation was performed. Refresh USB visibility
+before hardware work. Next, exercise descriptor-free typed calls on a physical
+card when BOOTSEL becomes guest-visible; continue checking stack-tag coverage
+and cross-context ownership/firewall cases. Preserve unrelated uncommitted
+changes.
 
 ## 2026-11-02 persistent-index exhaustion diagnosis and reclaim-on-write
 

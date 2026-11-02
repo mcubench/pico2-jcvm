@@ -43,6 +43,76 @@ inline bool buildShareableReceiverOnlyInitialLocals(
   return true;
 }
 
+// Marshal a descriptor-free call from runtime operand type tags. One-word
+// primitive values and int pairs retain their widths; only null/global refs
+// may cross applet heaps. Unknown words and private references fail closed.
+inline bool buildShareableTaggedInitialLocals(
+    const uint8_t argument_word_count, const jref_t server_reference,
+    Stack &caller_stack,
+    std::array<InterpretorInitialLocal, 255> &initial_locals,
+    uint8_t &initial_local_count) {
+  if (argument_word_count == 0 || server_reference.isNullPointer()) {
+    return false;
+  }
+  initial_locals[0] = {InterpretorLocalType::Reference,
+                       server_reference.compact()};
+  initial_local_count = 1;
+
+  uint16_t word_index = 1;
+  while (word_index < argument_word_count) {
+    if (initial_local_count == initial_locals.size()) return false;
+    const uint16_t stack_position =
+        static_cast<uint16_t>(argument_word_count - word_index);
+    const auto kind = caller_stack.get_Pushed_ValueKind(stack_position);
+    const uint16_t raw =
+        caller_stack.get_Pushed_Element(stack_position).compact();
+    switch (kind) {
+    case Stack::ValueKind::Primitive:
+      initial_locals[initial_local_count++] = {
+          InterpretorLocalType::Short,
+          static_cast<uint32_t>(static_cast<int16_t>(raw))};
+      ++word_index;
+      break;
+    case Stack::ValueKind::Reference: {
+      const jref_t reference(raw);
+      if (!reference.isNullPointer() && !reference.isGlobalArray() &&
+          !reference.isGlobalInstance()) {
+        return false;
+      }
+      initial_locals[initial_local_count++] = {
+          InterpretorLocalType::Reference, reference.compact()};
+      ++word_index;
+      break;
+    }
+    case Stack::ValueKind::IntWord: {
+#ifdef JCVM_INT_SUPPORTED
+      if (word_index + 1 >= argument_word_count ||
+          caller_stack.get_Pushed_ValueKind(
+              static_cast<uint16_t>(stack_position - 1)) !=
+              Stack::ValueKind::IntWord) {
+        return false;
+      }
+      const uint16_t low = raw;
+      const uint16_t high = caller_stack
+                                .get_Pushed_Element(
+                                    static_cast<uint16_t>(stack_position - 1))
+                                .compact();
+      initial_locals[initial_local_count++] = {
+          InterpretorLocalType::Int,
+          static_cast<uint32_t>(SHORTS_TO_INT(high, low))};
+      word_index = static_cast<uint16_t>(word_index + 2);
+      break;
+#else
+      return false;
+#endif
+    }
+    case Stack::ValueKind::Unknown:
+      return false;
+    }
+  }
+  return true;
+}
+
 // Convert a CAP Descriptor method signature and the caller's operand words
 // into initial locals for a nested Shareable method call. Caller words remain
 // untouched. Null and JCRE-global references can cross contexts because they

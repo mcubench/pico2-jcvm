@@ -33,6 +33,7 @@
 #include "jc_config.h"
 #include "jc_types/jref_t.hpp"
 #include "types.hpp"
+#include <cstddef>
 
 // TODO: Move the PC to the context.hpp file (in the packagesID list)
 
@@ -59,15 +60,36 @@ static_assert(sizeof(std::declval<jref_t &>().compact()) == sizeof(jword_t),
 class Stack {
 public:
   enum class ReturnKind : uint8_t { None, Void, Short, Int, Reference };
+  // Runtime type category for operand words. This compact tag is used by
+  // cross-context calls when optional CAP Descriptor metadata is unavailable.
+  enum class ValueKind : uint8_t { Unknown, Primitive, Reference, IntWord };
 
 private:
+  static constexpr size_t value_kind_bytes = (JCVM_STACK_SIZE + 3) / 4;
   jword_t jc_stack[JCVM_STACK_SIZE];
+  uint8_t jc_stack_value_kinds[value_kind_bytes]{};
   List<Frame> frames;
   bool root_return_value_available = false;
   bool root_return_value_is_reference = false;
   uint32_t root_return_value = 0;
   ReturnKind root_return_kind = ReturnKind::None;
   ReturnKind last_method_return_kind = ReturnKind::None;
+
+  ValueKind getValueKind(const jword_t *word) const noexcept {
+    const size_t index = static_cast<size_t>(word - jc_stack);
+    const uint8_t shift = static_cast<uint8_t>((index & 3u) * 2u);
+    return static_cast<ValueKind>(
+        (jc_stack_value_kinds[index / 4u] >> shift) & 0x03u);
+  }
+  void setValueKind(jword_t *word, const ValueKind kind) noexcept {
+    const size_t index = static_cast<size_t>(word - jc_stack);
+    const uint8_t shift = static_cast<uint8_t>((index & 3u) * 2u);
+    const uint8_t mask = static_cast<uint8_t>(0x03u << shift);
+    auto &packed = jc_stack_value_kinds[index / 4u];
+    packed = static_cast<uint8_t>(
+        (packed & static_cast<uint8_t>(~mask)) |
+        (static_cast<uint8_t>(kind) << shift));
+  }
 
 public:
   // Pushing a new frame regarding the invoked method header.
@@ -168,6 +190,13 @@ public:
 #endif
       ;
   void set_Pushed_Element(uint16_t n, jref_t value)
+#if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
+      noexcept
+#endif
+      ;
+
+  /// Return the runtime type category for the n-th pushed operand word.
+  ValueKind get_Pushed_ValueKind(uint16_t n)
 #if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
       noexcept
 #endif

@@ -27,13 +27,18 @@ CLIENT_APPLET = bytes.fromhex("A00000015100000401")
 
 
 def cap_components(path: Path) -> tuple[bytes, bytes, list[bytes]]:
+    components = COMPONENTS
+    # GPPro's standard CAPFile.getCode() omits this optional component. Set the
+    # override to retain coverage for installations that include it explicitly.
+    if os.environ.get("SIO_CROSS_AID_INCLUDE_DESCRIPTOR") != "1":
+        components = tuple(name for name in COMPONENTS if name != "Descriptor")
     with ZipFile(path) as cap:
         names = set(cap.namelist())
         header_name = next(n for n in names if n.endswith("/Header.cap"))
         folder = header_name.rsplit("/", 1)[0]
         code = b"".join(
             cap.read(f"{folder}/{name}.cap")
-            for name in COMPONENTS
+            for name in components
             if f"{folder}/{name}.cap" in names
         )
         header = cap.read(header_name)

@@ -114,6 +114,7 @@ void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
   // cleaning the local variables area
   for (auto word = (new_fp + nargs); word < new_op; word++) {
     *word = 0;
+    this->setValueKind(word, ValueKind::Unknown);
   }
 }
 
@@ -185,7 +186,9 @@ void Stack::push_Byte(const jbyte_t value) noexcept(
   // arrives. For example, the value 0xFF in byte is casted to the value
   // 0xFFFF in short, and so on.
   Frame &frame = this->getCurrentFrame();
+  jword_t *slot = frame.getTOS();
   frame.push_Value((jword_t)value);
+  this->setValueKind(slot, ValueKind::Primitive);
 }
 
 /**
@@ -196,7 +199,9 @@ void Stack::push_Byte(const jbyte_t value) noexcept(
 void Stack::push_Short(const jshort_t value) noexcept(
     noexcept(std::declval<Frame &>().push_Value(value))) {
   Frame &frame = this->getCurrentFrame();
+  jword_t *slot = frame.getTOS();
   frame.push_Value((jword_t)value);
+  this->setValueKind(slot, ValueKind::Primitive);
 }
 
 #ifdef JCVM_INT_SUPPORTED
@@ -208,8 +213,12 @@ void Stack::push_Short(const jshort_t value) noexcept(
 void Stack::push_Int(const jint_t value) noexcept(
     noexcept(std::declval<Frame &>().push_Value(value))) {
   Frame &current_frame = this->getCurrentFrame();
+  jword_t *low_word = current_frame.getTOS();
   current_frame.push_Value((jword_t)INT_2_LSSHORTS(value));
+  this->setValueKind(low_word, ValueKind::IntWord);
+  jword_t *high_word = current_frame.getTOS();
   current_frame.push_Value((jword_t)INT_2_MSSHORTS(value));
+  this->setValueKind(high_word, ValueKind::IntWord);
 }
 #endif /* JCVM_INT_SUPPORTED */
 
@@ -221,7 +230,9 @@ void Stack::push_Int(const jint_t value) noexcept(
 void Stack::push_Reference(const jref_t value) noexcept(
     noexcept(std::declval<Frame &>().push_Value(value.compact()))) {
   Frame &current_frame = this->getCurrentFrame();
+  jword_t *slot = current_frame.getTOS();
   current_frame.push_Value(value.compact());
+  this->setValueKind(slot, ValueKind::Reference);
 }
 
 /**
@@ -232,7 +243,9 @@ void Stack::push_Reference(const jref_t value) noexcept(
 void Stack::push_ReturnAddress(const jreturnaddress_t value) noexcept(
     noexcept(std::declval<Frame &>().push_Value(value))) {
   Frame &current_frame = this->getCurrentFrame();
+  jword_t *slot = current_frame.getTOS();
   current_frame.push_Value(value);
+  this->setValueKind(slot, ValueKind::Unknown);
 }
 
 /**
@@ -346,6 +359,23 @@ void Stack::set_Pushed_Element(const uint16_t n, const jref_t value)
 #endif /* JCRE_STACK_OVERFLOW_PROTECTION */
 
   *word = value.compact();
+  this->setValueKind(word, ValueKind::Reference);
+}
+
+Stack::ValueKind Stack::get_Pushed_ValueKind(const uint16_t n)
+#if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
+    noexcept
+#endif
+{
+  assert(n > 0);
+  Frame &current_frame = this->getCurrentFrame();
+  jword_t *word = current_frame.getTOS() - n;
+#ifdef JCRE_STACK_OVERFLOW_PROTECTION
+  if (word < current_frame.getOP()) {
+    throw Exceptions::StackUnderflowException;
+  }
+#endif
+  return this->getValueKind(word);
 }
 
 /**
@@ -400,7 +430,9 @@ jreturnaddress_t Stack::readLocal_ReturnAddress(const uint8_t local_number) {
  */
 void Stack::writeLocal_Short(const uint8_t local_number, const jshort_t value) {
   Frame &current_frame = this->getCurrentFrame();
+  jword_t *local = current_frame.getFP() + local_number;
   current_frame.writeLocal_Value(local_number, value);
+  this->setValueKind(local, ValueKind::Primitive);
 }
 
 #ifdef JCVM_INT_SUPPORTED
@@ -412,9 +444,12 @@ void Stack::writeLocal_Short(const uint8_t local_number, const jshort_t value) {
  */
 void Stack::writeLocal_Int(const uint8_t local_number, const jint_t value) {
   Frame &current_frame = this->getCurrentFrame();
+  jword_t *local = current_frame.getFP() + local_number;
   current_frame.writeLocal_Value(local_number, INT_2_LSSHORTS(value));
   current_frame.writeLocal_Value((uint8_t)(local_number + 1),
                                  INT_2_MSSHORTS(value));
+  this->setValueKind(local, ValueKind::IntWord);
+  this->setValueKind(local + 1, ValueKind::IntWord);
 }
 #endif /* JCVM_INT_SUPPORTED */
 
@@ -427,7 +462,9 @@ void Stack::writeLocal_Int(const uint8_t local_number, const jint_t value) {
 void Stack::writeLocal_Reference(const uint8_t local_number,
                                  const jref_t value) {
   Frame &current_frame = this->getCurrentFrame();
+  jword_t *local = current_frame.getFP() + local_number;
   current_frame.writeLocal_Value(local_number, value.compact());
+  this->setValueKind(local, ValueKind::Reference);
 }
 
 /**
@@ -439,7 +476,9 @@ void Stack::writeLocal_Reference(const uint8_t local_number,
 void Stack::writeLocal_ReturnAddress(const uint8_t local_number,
                                      const jreturnaddress_t value) {
   Frame &current_frame = this->getCurrentFrame();
+  jword_t *local = current_frame.getFP() + local_number;
   current_frame.writeLocal_Value(local_number, value);
+  this->setValueKind(local, ValueKind::Unknown);
 }
 
 /**
@@ -501,7 +540,9 @@ void Stack::dup(const uint8_t m, const uint8_t n) {
       // overweight regarding the checks done by the push_Value function
       current_frame.push_Value(*npart);
 #else
-    *(current_frame.getTOS()) = *mnpart;
+    jword_t *destination = current_frame.getTOS();
+    *destination = *mnpart;
+    this->setValueKind(destination, this->getValueKind(mnpart));
     current_frame.setTOS(current_frame.getTOS() + 1);
 #endif
   }
@@ -538,6 +579,7 @@ void Stack::dup(const uint8_t m, const uint8_t n) {
  */
 void Stack::swap(const uint8_t m, const uint8_t n) {
   jword_t tmp[4];
+  ValueKind tmp_kinds[4];
   jword_t *bar;
   uint8_t foo, tmp_index;
   Frame &current_frame = this->getCurrentFrame();
@@ -574,13 +616,17 @@ void Stack::swap(const uint8_t m, const uint8_t n) {
 
   // copy m word(s) from the stack to tmp array.
   for (foo = m; foo > 0; foo--) {
-    tmp[tmp_index] = *((int16_t *)(current_frame.getTOS() - foo));
+    jword_t *word = current_frame.getTOS() - foo;
+    tmp[tmp_index] = *word;
+    tmp_kinds[tmp_index] = this->getValueKind(word);
     tmp_index++;
   }
 
   // copy n word(s) from the stack to tmp array.
   for (foo = (uint8_t)(n + m); foo > m; foo--) {
-    tmp[tmp_index] = *((int16_t *)(current_frame.getTOS() - foo));
+    jword_t *word = current_frame.getTOS() - foo;
+    tmp[tmp_index] = *word;
+    tmp_kinds[tmp_index] = this->getValueKind(word);
     tmp_index++;
   }
 
@@ -588,6 +634,7 @@ void Stack::swap(const uint8_t m, const uint8_t n) {
 
   for (foo = 0; foo < n + m; foo++) {
     *bar = tmp[foo];
+    this->setValueKind(bar, tmp_kinds[foo]);
     bar++;
   }
 

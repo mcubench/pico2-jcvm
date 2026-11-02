@@ -1034,13 +1034,12 @@ void Bytecodes::bc_invokeinterface() {
       }
     } else if (signature_status !=
                    ShareableSignatureStatus::DescriptorUnavailable ||
-               target_handler.getArgumentCount(target_method.second) != 1 ||
-               !buildShareableReceiverOnlyInitialLocals(
-                   nargs, server_reference, initial_locals,
+               !buildShareableTaggedInitialLocals(
+                   nargs, server_reference, stack, initial_locals,
                    initial_local_count)) {
-      // A no-Descriptor CAP cannot prove the types of explicit arguments.
-      // Keep the firewall closed for those calls.
-      TRACE_JCVM_DEBUG("SIO_INVOKE descriptor unavailable for arguments");
+      // Missing type tags or private references fail closed. The method
+      // header above has already verified the target's argument word count.
+      TRACE_JCVM_DEBUG("SIO_INVOKE descriptor-free argument tags rejected");
       throw Exceptions::SecurityException;
     }
     TRACE_JCVM_DEBUG("SIO_INVOKE marshalled locals=%u",

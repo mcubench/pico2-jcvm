@@ -251,9 +251,17 @@ Archive text is historical evidence, not current device state or priorities.
   present Descriptors do not use the fallback. The fallback has registry-unit
   coverage and passes ARM/RISC-V builds, but has not yet passed a positive
   physical call.
-  Since standard GPPro LOAD omits Descriptor, general typed cross-context
-  arguments need another trustworthy on-card type source; do not infer types
-  from raw words.
+  Since standard GPPro LOAD omits Descriptor, the operand stack now maintains
+  compact runtime word-kind tags (primitive, reference, int-word, unknown).
+  Descriptor-free cross-context calls use these tags to construct typed
+  initial locals, including int word pairing. Tags are maintained by typed
+  pushes, local writes, frame-local initialization, `dup`, `swap`, and
+  `set_Pushed_Element`; unknown values and applet-private references fail
+  closed. Null and JCRE-global references may cross. Tag storage costs 64
+  bytes per 256-word Stack. No types are inferred from raw values. The
+  descriptor-free VPCD fixture passes 14/14; the Descriptor-present regression
+  also passes 14/14 through the existing signature path. Physical typed
+  cross-AID execution remains unverified.
   The local signature-to-typed-local conversion has focused tests for
   byte/short layout, int word order, null/non-null references, and argument
   count mismatch. A new test-only three-package fixture now passes a positive
