@@ -16,9 +16,22 @@ foreign-reference representation retaining source context and original
 handle, with all unauthorized accesses denied. Do not weaken marshalling to
 copy raw references. Details recorded in `.agent/QKB.md` and `TODO.md`.
 
-The top-ranked offline follow-up remains that foreign-reference design and
-collision/access regressions. Preserve unrelated worktree changes. No source
-code was changed in this research step.
+The current worktree, including the other session's uncommitted changes, was
+revalidated: `tools/test-rmi-registry` passes; ARM and RISC-V wrapper builds
+pass; the SIO VPCD suite passes 15/15 with Descriptor omitted and 15/15 with
+Descriptor included. Logs:
+`artifacts/logs/sio-cross-aid-vpcd-20261102T040952Z.log` (SHA-256
+`4f12fee93e4d7eb412620e0c0867f100ea2cfc802d267c2065ffc5d3c52d99f0`) and
+`artifacts/logs/sio-cross-aid-vpcd-20261102T041201Z.log` (SHA-256
+`013b6f75fbe8cbd24b627089f96ee78b9ab0a7557348df29a1bfe41b321f3332`). The
+ARM UF2 remains 1,854,464 bytes (SHA-256
+`7a7fea7b44ff8ebbd11f0439f0870ee95c51d59d8e31116c388150197e5c481c`); the
+RISC-V smoke UF2 remains 79,872 bytes (SHA-256
+`7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`).
+The restricted VPCD run initially failed to bind its loopback listener with
+`EPERM`; the same local-only test passed through the elevated execution path.
+The follow-up remains foreign-reference design and collision/access
+regressions. Preserve all unrelated worktree changes.
 
 ## Latest CTX-01 update: proxy markers survive persistent alias restore
 

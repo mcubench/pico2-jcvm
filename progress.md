@@ -19858,3 +19858,13 @@
 - Decision: Retain fail-closed marshalling. Next implement and test explicit foreign-reference tracking and compact-handle collision rejection, then resume physical acceptance when BOOTSEL enumerates in the VM.
 - Commit: `c23c87a`
 - Artifacts/logs: None.
+## 2026-11-02 Revalidate SIO and architecture gates 10 minutes
+
+- Step/experiment: `sio-current-worktree-revalidation-20261102`
+- When: '2026-11-02 05:04 CET' - '2026-11-02 05:14 CET'
+- Change: Revalidated the current shared worktree after the prior SIO firewall review; no source files were changed in this step. Updated the session handoff with exact test/build evidence and the VM's physical-device visibility.
+- Validation: `./tools/test-rmi-registry` passed. `./tools/build arm` and `./tools/build riscv` passed. `python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 15/15 with Descriptor omitted; the same test with `SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1` passed 15/15. The restricted first VPCD attempt failed at loopback bind (`EPERM`); rerunning the same local emulator test through elevated execution passed. Authorized physical refresh (`PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader && lsusb -d 2e8a:`) showed one runtime reader and no BOOTSEL device.
+- Result: Current SIO VPCD coverage and ARM/RISC-V builds are green. ARM UF2 is 1,854,464 bytes, SHA-256 `7a7fea7b44ff8ebbd11f0439f0870ee95c51d59d8e31116c388150197e5c481c`; RISC-V smoke UF2 is 79,872 bytes, SHA-256 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`. VPCD logs: `artifacts/logs/sio-cross-aid-vpcd-20261102T040952Z.log` (SHA-256 `4f12fee93e4d7eb412620e0c0867f100ea2cfc802d267c2065ffc5d3c52d99f0`) and `artifacts/logs/sio-cross-aid-vpcd-20261102T041201Z.log` (SHA-256 `013b6f75fbe8cbd24b627089f96ee78b9ab0a7557348df29a1bfe41b321f3332`). No physical flashing was possible because BOOTSEL was not guest-visible.
+- Decision: Keep CTX-01 open. Proceed with foreign-reference/global-array ownership analysis and fixture coverage; refresh USB visibility before physical testing.
+- Commit: `<pending>`
+- Artifacts/logs: VPCD logs listed above; build images in `build/arm` and `build/riscv`.
