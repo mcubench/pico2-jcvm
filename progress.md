@@ -19845,6 +19845,6 @@
 - Decision: Keep CTX-01 open for physical cross-AID testing and remaining
   reference-ownership/firewall acceptance. Continue offline until reported
   BOOTSEL devices are visible in the VM.
-- Commit: pending.
+- Commit: `ec7a736`.
 - Artifacts/logs: VPCD logs above; `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
