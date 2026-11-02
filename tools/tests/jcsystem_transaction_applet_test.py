@@ -230,7 +230,7 @@ def main() -> int:
                     (38, b"\x01", "global array references cannot be stored in instance fields"),
                     (39, b"\x01", "global array references cannot be stored in static fields"),
                     (40, b"\x01", "global array references cannot be stored in array components"),
-                    (41, b"\x01", "applet objects cannot escape through global object arrays"),
+                    (41, b"\x00", "global Object[] retains and returns a same-package object"),
                     (42, b"\x01", "ordinary byte arrays are not integrity-sensitive"),
                     (43, b"\x03", "assertIntegrity rejects unsupported arrays and null"),
                     (44, b"\x0f", "integrity-sensitive array creation validation and unsupported reason"),

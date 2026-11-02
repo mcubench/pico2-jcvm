@@ -307,6 +307,10 @@ void Bytecodes::bc_aaload() {
 
   auto array = heap.getArray(arrayref);
   jref_t ref = array->getReferenceEntry(index);
+  if (!array->isReferenceEntryAccessible(
+          index, context.getCurrentPackageID())) {
+    throw Exceptions::SecurityException;
+  }
   stack.push_Reference(ref);
 
   return;
@@ -422,12 +426,7 @@ void Bytecodes::bc_aastore() {
   }
 
   auto array = heap.getArray(arrayref);
-  array->setReferenceEntry(index, value
-#ifdef JCVM_FIREWALL_CHECKS
-                           ,
-                           this->context
-#endif /* JCVM_FIREWALL_CHECKS */
-  );
+  array->setReferenceEntry(index, value, context);
 
   return;
 }

@@ -143,6 +143,11 @@ public:
   static std::shared_ptr<JC_Array> getGlobalArray(jref_t reference);
   static void releaseGlobalArray(jref_t reference) noexcept;
   static void clearGlobalArrays(ClearEvent event);
+  static void visitGlobalArrayReferencesForPackage(
+      jpackage_ID_t package_id, ReferenceVisitor visitor,
+      void *visitor_context);
+  static void clearGlobalArrayReferencesForPackage(
+      jpackage_ID_t package_id) noexcept;
   /// Allocate and resolve runtime-wide JCRE Entry Point Object instances.
   static jref_t addGlobalInstance(jpackage_ID_t package_id,
                                   jclass_index_t class_index);

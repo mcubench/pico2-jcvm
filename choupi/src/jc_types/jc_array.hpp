@@ -36,6 +36,8 @@
 #include "jc_object.hpp"
 #include "jref_t.hpp"
 
+#include <vector>
+
 #ifdef JCVM_FIREWALL_CHECKS
 #include "../context.hpp"
 #endif /* JCVM_FIREWALL_CHECKS */
@@ -68,6 +70,10 @@ private:
   bool has_persistent_tag = false;
   /// When to clear data
   ClearEvent clear;
+  /// Applet package owning each non-global reference stored in a JCRE global
+  /// Object[]. 0xFF means the slot is empty; 0xFE denotes a JCRE global
+  /// instance which may be shared across contexts.
+  std::vector<jpackage_ID_t> global_reference_owners;
 
   ///  Get an entry size from the size type.
   static const uint16_t getEntrySize(const jc_array_type type);
@@ -132,6 +138,15 @@ public:
       noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
           ;
+  /// Whether a reference-array entry may be returned to this package.
+  bool isReferenceEntryAccessible(const uint16_t index,
+                                  jpackage_ID_t package_id);
+  /// Visit references retained in this JCRE global Object[] by one package.
+  void visitGlobalReferences(jpackage_ID_t package_id,
+                             void (*visitor)(jref_t, void *),
+                             void *visitor_context);
+  /// Drop references owned by a package before its package ID is reused.
+  void clearGlobalReferences(jpackage_ID_t package_id) noexcept;
 
   /// Write a byte or a boolean element from an array.
   void setByteEntry(const uint16_t index, const jbyte_t value)
@@ -154,12 +169,8 @@ public:
           ;
 #endif /* JCVM_INT_SUPPORTED */
   /// Write a reference element from an array.
-  void setReferenceEntry(const uint16_t index, const jref_t value
-#ifdef JCVM_FIREWALL_CHECKS
-                         ,
-                         Context &context
-#endif /* JCVM_FIREWALL_CHECKS */
-                         );
+  void setReferenceEntry(const uint16_t index, const jref_t value,
+                         Context &context);
 
   /// Get a const pointer to array data
   const uint8_t *getData() const;

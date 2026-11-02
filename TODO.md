@@ -317,16 +317,17 @@ Archive text is historical evidence, not current device state or priorities.
   `SecurityException` on server access, along with equal-handle collision,
   return, storage, GC and deletion tests. Never copy raw handles between
   independent heaps. See `.agent/QKB.md`.
-  A separate firewall gap remains: Java Card RE 3.0.5 §6.2.8.2 permits
-  ordinary applet references to be stored in global Object[] arrays, while the
-  current implementation rejects all non-null entries (and transaction probe
-  case 41 codifies that restriction). Do not relax it until global-array reads
-  preserve the referenced object's owning context across independently
-  allocated heap-local handles, with GC, deletion, persistence, reset, and
-  stale-owner coverage. Update case 41 only with that implementation. Current
-  case 41 reproducibly returns caught `SecurityException` (`019000`) in
-  `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log`;
-  the focused run took 85.593 s.
+  Global `Object[]` support is partially implemented for volatile JCRE global
+  arrays: non-null applet references can be stored and read by their owning
+  package, with per-slot package ownership, package-scoped GC roots, transient
+  reset clearing, and package-delete cleanup. Case 41 now verifies same-package
+  store/read identity and returns `009000`; focused VPCD and physical Pico 2
+  transaction probes passed. Cross-package reads still fail closed because
+  there is not yet an opaque owner-aware reference/proxy that preserves normal
+  firewall checks without exposing aliasing heap-local handles. Persistent
+  global reference slots are not applicable to the current transient global
+  arrays. Add cross-package read/firewall and stale-owner lifecycle coverage
+  before closing CTX-01. See `.agent/QKB.md`.
   No types are inferred from raw values. The
   descriptor-free VPCD fixture passes 15/15; the Descriptor-present regression
   also passes 14/14 through the existing signature path. Physical typed

@@ -103,6 +103,10 @@ public final class JCSystemTransactionPhysicalProbe {
       CardChannel channel = card.getBasicChannel();
       exchange(channel, "SELECT_TRANSACTION_PROBE",
           new CommandAPDU(0x00, 0xA4, 0x04, 0x00, APPLET_AID, 256));
+      if (!probeOnly && !preparePersistence && !verifyPersistence) {
+        expectByte(channel, 41, 0x00,
+            "global Object[] retains and returns a same-package object");
+      }
       if (probeOnly) {
         probe(channel, Integer.parseInt(args[3]));
         return;
@@ -174,7 +178,7 @@ public final class JCSystemTransactionPhysicalProbe {
             "persistent field update did not reduce the active commit budget");
       }
       System.out.println("TEST:PASS physical_commit_capacity_consumption");
-      System.out.println("TEST:SUMMARY pass=9 fail=0");
+      System.out.println("TEST:SUMMARY pass=10 fail=0");
     } finally {
       card.disconnect(false);
     }

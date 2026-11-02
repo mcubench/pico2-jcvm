@@ -206,6 +206,24 @@ void Heap::clearGlobalArrays(const ClearEvent event) {
   }
 }
 
+void Heap::visitGlobalArrayReferencesForPackage(
+    const jpackage_ID_t package_id, const ReferenceVisitor visitor,
+    void *visitor_context) {
+  if (visitor == nullptr) return;
+  for (const auto &array : globalArrayHeap().shared_storage->arrays) {
+    if (array) {
+      array->visitGlobalReferences(package_id, visitor, visitor_context);
+    }
+  }
+}
+
+void Heap::clearGlobalArrayReferencesForPackage(
+    const jpackage_ID_t package_id) noexcept {
+  for (const auto &array : globalArrayHeap().shared_storage->arrays) {
+    if (array) array->clearGlobalReferences(package_id);
+  }
+}
+
 jref_t Heap::addGlobalInstance(const jpackage_ID_t package_id,
                                const jclass_index_t class_index) {
   Heap &heap = globalArrayHeap();

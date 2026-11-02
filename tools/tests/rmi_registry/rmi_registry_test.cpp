@@ -363,6 +363,73 @@ void verify_heap_owner_facades_share_package_roots() {
   assert(resolved == static_reference);
 }
 
+void verify_global_object_array_package_ownership() {
+  constexpr jcvm::jpackage_ID_t owner_package = 20;
+  constexpr jcvm::jpackage_ID_t other_package = 21;
+  jcvm::Context owner_context(7, owner_package);
+  jcvm::Context other_context(8, other_package);
+  const jcvm::jref_t local_array = owner_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_BYTE);
+  const jcvm::jref_t global_array = jcvm::Heap::addGlobalArray(
+      1, jcvm::JAVA_ARRAY_T_REFERENCE);
+  const auto object_array = jcvm::Heap::getGlobalArray(global_array);
+
+  object_array->setReferenceEntry(0, local_array, owner_context);
+  assert(object_array->getReferenceEntry(0) == local_array);
+  assert(object_array->isReferenceEntryAccessible(0, owner_package));
+  assert(!object_array->isReferenceEntryAccessible(0, other_package));
+
+  // Equal compact handles in another package must not alias this entry.
+  const jcvm::jref_t colliding_array = other_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_BYTE);
+  assert(colliding_array == local_array);
+  assert(!object_array->isReferenceEntryAccessible(
+      0, other_context.getCurrentPackageID()));
+
+  VisitedReferences owner_roots;
+  owner_context.visitRootReferences(record_reference, &owner_roots);
+  assert(contains(owner_roots, local_array));
+  std::vector<jcvm::jref_t> owner_root_vector;
+  owner_context.appendRootReferences(owner_root_vector);
+  const auto owner_collection =
+      owner_context.getHeap().collectUnreachableFrom(owner_root_vector);
+  assert(owner_collection.complete);
+  assert(owner_collection.arrays_reachable == 1);
+  assert(owner_collection.arrays_reclaimed == 0);
+
+  VisitedReferences other_roots;
+  other_context.visitRootReferences(record_reference, &other_roots);
+  assert(!contains(other_roots, local_array));
+  std::vector<jcvm::jref_t> other_root_vector;
+  other_context.appendRootReferences(other_root_vector);
+  const auto other_collection =
+      other_context.getHeap().collectUnreachableFrom(other_root_vector);
+  assert(other_collection.complete);
+  assert(other_collection.arrays_reclaimed == 1);
+
+  const jcvm::jref_t retained_again = owner_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_BYTE);
+  object_array->setReferenceEntry(0, retained_again, owner_context);
+  jcvm::Heap::clearGlobalArrays(jcvm::ClearEvent::CLEAR_ON_RESET);
+  assert(object_array->getReferenceEntry(0).isNullPointer());
+  owner_root_vector.clear();
+  owner_context.appendRootReferences(owner_root_vector);
+  const auto reset_collection =
+      owner_context.getHeap().collectUnreachableFrom(owner_root_vector);
+  assert(reset_collection.complete);
+  assert(reset_collection.arrays_reclaimed == 2);
+
+  const jcvm::jref_t package_deleted = owner_context.getHeap().addArray(
+      1, jcvm::JAVA_ARRAY_T_BYTE);
+  object_array->setReferenceEntry(0, package_deleted, owner_context);
+  jcvm::Heap::clearGlobalArrayReferencesForPackage(owner_package);
+  assert(object_array->getReferenceEntry(0).isNullPointer());
+  VisitedReferences cleared_roots;
+  owner_context.visitRootReferences(record_reference, &cleared_roots);
+  assert(!contains(cleared_roots, local_array));
+  jcvm::Heap::releaseGlobalArray(global_array);
+}
+
 void verify_shareable_proxy_registry() {
   jcvm::Context client(4, 1);
   jcvm::Context server(5, 1);
@@ -762,6 +829,7 @@ int main() {
   verify_deleted_owner_is_reserved_until_objects_are_collected();
   verify_owner_id_space_exhaustion_and_reclamation();
   verify_heap_owner_facades_share_package_roots();
+  verify_global_object_array_package_ownership();
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
   verify_typed_local_access();
@@ -850,6 +918,6 @@ int main() {
   }
   assert(context.exportRemoteObject(make_reference(100)) == 0xffff);
 
-  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 shareable_proxy_registry=1 shareable_object_roots=1 shareable_reset=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
+  std::puts("RMI_REGISTRY:PASS ids=32 roots=1 lifecycle_roots=6 session_cleanup=1 sensitive_result_cross_context=1 previous_context_aid=1 retained_context_lookup=1 package_context_lookup=1 sibling_instance_state=1 sibling_rmi_isolation=1 sibling_rmi_delete=1 deleted_owner_reservation=1 owner_id_exhaustion=1 package_heap_arrays=1 package_heap_roots=1 global_object_array_owner=1 shareable_proxy_registry=1 shareable_object_roots=1 shareable_reset=1 global_aid_handle=1 stack_receiver_replace=1 shareable_cross_context_arguments=1 typed_local_access=1 typed_operand_pop=1");
   return 0;
 }

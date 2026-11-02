@@ -1,3 +1,33 @@
+## Current session — package-owned references in global Object[] — 2026-11-02 16:50 UTC
+
+Implemented per-slot owner tags for local object/array references stored in
+volatile JCRE global `Object[]` arrays. Same-package `aaload` resolves the
+original compact reference; cross-package reads throw `SecurityException`
+before exposing a possibly colliding heap-local handle. References are roots
+only in the owning package, reset clears slot data and tags, and package
+removal clears slots before its ID is reused. JCTransactionProbe case 41 now
+checks same-package store/read identity.
+
+Validation in the resumed session: `./tools/test-rmi-registry` passed;
+`./tools/build arm --profile current` and `./tools/build riscv --profile
+current` passed. ARM image ends `0x100cff20` (851,744 / 1,048,576 bytes,
+196,832 remain). Focused VPCD case 41 passed (`009000`, 71.496 s). Earlier in
+this implementation step, physical Pico 2 `2BED26ED20556535` passed the full
+transaction probe 10/10 and cleanup after flash/monitor. The first target
+`8E464F4E2BBC0A19` flashed and verified but did not expose serial afterward;
+work continued on 2BED. Its monitor contained one retained
+`CHOUPI:WATCHDOG_RECOVERY ... cause=other` marker followed by repeated runtime
+passes. Do not attribute that marker to this change without diagnosis.
+
+The cross-package opaque-reference/proxy path remains unimplemented, so this
+closes only same-package global-array retention, GC, reset, and package-delete
+coverage. TODO and QKB are updated; progress record and selective commit are
+being completed. Preserve unrelated edits in AGENTS.md, cap_load/import
+handling, docs, test scripts, and the removal of `releaseGlobalAIDObject` from
+heap.cpp/hpp. Next implementation target: add an owner-aware opaque reference
+representation usable by `aaload` and normal firewall checks, then test
+cross-package read/access, collisions, stale owners, and lifecycle behavior.
+
 ## Current session — current-profile reader recheck — 2026-11-02 16:04 UTC
 
 Both required current-profile builds pass. ARM firmware end is `0x100cf988`;

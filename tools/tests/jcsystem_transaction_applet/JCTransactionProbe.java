@@ -637,10 +637,12 @@ public final class JCTransactionProbe extends Applet {
           break;
         }
         try {
+          buffer[0] = 2;
           global[0] = this;
-          buffer[0] = 0;
+          buffer[0] = 3;
+          buffer[0] = global[0] == this ? (byte)0 : (byte)4;
         } catch (java.lang.SecurityException e) {
-          buffer[0] = 1;
+          buffer[0] = buffer[0] == 2 ? (byte)1 : (byte)5;
         }
         length = 1;
         break;

@@ -554,29 +554,39 @@
   rule rejecting every non-null value stored in a global Object[] is stricter
   than the specified behavior. Source: [Oracle Java Card RE Specification
   3.0.5, §§6.2.2 and 6.2.8.2](https://docs.oracle.com/cd/E59935_01/JCCRE.pdf).
-- **Current test mismatch:** transaction probe case 41 currently expects
-  `global[0] = this` to throw `SecurityException`; that assertion should change
-  only with an ownership-safe implementation, not as a standalone test edit.
+- **Current implementation (partial):** volatile JCRE global `Object[]`
+  entries now carry per-slot owning package IDs. Same-package store/read works;
+  `aaload` from a different package fails closed before exposing the compact
+  heap-local handle. `JCTransactionProbe` case 41 now stores `this`, reads it
+  back, checks identity, and expects success (`009000`).
 - **Why direct relaxation is unsafe:** global arrays use shared 16-bit
   references, while each applet heap independently allocates the same compact
   handle range. Returning a foreign handle unchanged in another context could
   resolve to an unrelated local object. In addition, persistent references
   require GC roots, deletion protection, reset behavior, and stale-owner
   handling.
-- **Viable implementation direction:** add an ownership-preserving reference
-  indirection for global Object[] entries and other cross-context parameter
-  paths. Reads in the owner context may resolve to the original handle; reads
-  in another context must remain opaque and fail every unauthorized object
-  access. Keep the existing restriction until the indirection, GC, deletion,
-  persistence, and collision tests are complete.
-- **Reproduction:** `./tools/test-jcsystem-transaction-applet --case 41`
-  passed in 85.593 s because the applet caught `SecurityException` on
-  `global[0] = this`; APDU response was `019000`. Log:
-  `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T042104Z.log`
-  (SHA-256 `8cf6cb16df35f096ee1fa3c3befcc3a99adb48ef5e13e307aab1c1f2f114e1e4`).
-  This proves the implementation/test behavior but also confirms the spec gap.
-  ARM/RISC-V builds and both Descriptor-mode SIO suites passed in the preceding
-  worktree validation. No implementation change was made in this step.
+- **Implemented safety coverage:** references stored in global arrays are
+  visited as GC roots only for their owning package. Reset clears reference
+  bytes and owner tags; package deletion clears that package's entries before
+  its numeric ID can be reused. Unit coverage checks equal compact handles in
+  independent heaps, owner-only roots, GC retention/reclamation, reset, and
+  package deletion. These global arrays are transient, so persistent-slot
+  behavior is not involved.
+- **Remaining limitation:** cross-package `aaload` still throws
+  `SecurityException`. Full support needs an opaque owner-tagged reference or
+  proxy that does not alias a local handle and continues to enforce the normal
+  firewall on use. Do not relax this fail-closed behavior until cross-package
+  read, unauthorized access, stale-owner, and lifecycle tests exist.
+- **Validation:** `./tools/test-rmi-registry` passed with
+  `global_object_array_owner=1`; current ARM firmware and RISC-V wrapper builds
+  passed. Focused VPCD case 41 returned `009000` and passed in 71.496 s.
+  Physical transaction probe on Pico 2 `2BED26ED20556535` returned `009000`
+  and passed `TEST:SUMMARY pass=10 fail=0`, including cleanup. Log:
+  `artifacts/logs/jcsystem-transaction-physical-20261102T164149Z.log` (SHA-256
+  `97c7d2ebad717b082d3c4ab10fb4c490809c1eb09be0cacdd3254f6e1ffb2e0c`).
+  Physical firmware/monitor cycle log:
+  `artifacts/logs/cycle-choupi-20261102T163612Z.log` (SHA-256
+  `b75f5e863e66953a52216ddfef74ff4ddf7cb5e2d2b4055696ecdb5b538cc07d`).
 
 ## SIO reference parameters cross the call, not the firewall — 2026-11-02
 
