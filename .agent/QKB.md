@@ -1,5 +1,32 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## SIO reference parameters cross the call, not the firewall — 2026-11-02
+
+- **Specification finding:** Java Card RE 3.0.5 §6.2.4.3 says an SIO method
+  may access parameters passed by its client. This does not grant access to
+  client-private objects: §§6.1.4 and 6.2.8 require object-access checks in
+  the currently active context, and deny array, field, and ordinary method
+  access when the referenced object belongs to another applet context. Global
+  arrays are separately accessible; restrictions on storing global references
+  remain in force. Source: [Oracle Java Card RE Specification 3.0.5,
+  §§6.1.4, 6.2.2, 6.2.4.3 and 6.2.8](https://docs.oracle.com/cd/E59935_01/JCCRE.pdf).
+- **Current implementation risk:** Each applet `Heap` allocates compact
+  `jref_t` handles independently. Copying a client-private handle unchanged
+  into a server frame could resolve to a different server-owned object with
+  the same compact value. The current marshaller therefore correctly rejects
+  applet-private reference arguments; it must not be relaxed to raw-handle
+  copying.
+- **Viable implementation direction:** Introduce an explicit cross-context
+  reference representation or invocation-scoped handle table that preserves
+  the originating context and original handle. All operations on such a handle
+  in the callee must throw `SecurityException` unless the reference is one of
+  the standard permitted cross-context object categories. Define return and
+  storage behavior, and test collisions between equal compact handles in two
+  heaps before enabling transport. Until then, retain fail-closed marshalling.
+- **Validation:** Read-only review of the 3.0.5 specification and the SIO
+  marshaller, `jref_t`, and per-applet heap ownership model. No source change,
+  build, or test was performed in this research step.
+
 ## Typed operand pops must preserve SIO runtime kinds — 2026-11-02
 
 - **Observed risk:** Runtime type tags protected cross-context SIO arguments at

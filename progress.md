@@ -19848,3 +19848,13 @@
 - Commit: `ec7a736`.
 - Artifacts/logs: VPCD logs above; `build/arm/pico2_choupi.uf2`,
   `build/riscv/pico2_jcvm_smoke.uf2`.
+## 2026-11-02 Clarify SIO reference firewall boundary 2 minutes
+
+- Step/experiment: `sio-reference-parameter-boundary-20261102`
+- When: '2026-11-02 05:03 CET' - '2026-11-02 05:05 CET'
+- Change: Recorded the Java Card 3.0.5 distinction between passing SIO parameters and accessing caller-private objects. Documented why heap-local compact references cannot be copied raw across applet heaps, and specified an invocation-scoped foreign-reference representation as the safe direction. Updated `.agent/QKB.md`, `TODO.md`, and `.agent/HANDOFF.md`.
+- Validation: Reviewed Oracle Java Card RE Specification 3.0.5 §§6.1.4, 6.2.2, 6.2.4.3 and 6.2.8 against the current marshaller, `jref_t`, and per-applet heap model; `git diff --check` passed. No build/test run; no source code changed.
+- Result: Existing private-reference rejection remains necessary until references preserve originating context and handle and every access path enforces ownership. No BOOTSEL device was visible in the authorized USB refresh; no flash performed.
+- Decision: Retain fail-closed marshalling. Next implement and test explicit foreign-reference tracking and compact-handle collision rejection, then resume physical acceptance when BOOTSEL enumerates in the VM.
+- Commit: `<pending>`
+- Artifacts/logs: None.

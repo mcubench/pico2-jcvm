@@ -258,7 +258,15 @@ Archive text is historical evidence, not current device state or priorities.
   pushes, local writes, frame-local initialization, `dup`, `swap`, and
   `set_Pushed_Element`; unknown values and applet-private references fail
   closed. Null and JCRE-global references may cross. Three-bit tag storage
-  costs 96 bytes per 256-word Stack. No types are inferred from raw values. The
+  costs 96 bytes per 256-word Stack. Java Card RE 3.0.5 permits parameters to
+  cross an SIO call but still applies caller-context firewall checks to later
+  object access (§§6.1.4, 6.2.4.3, 6.2.8). Do not copy private compact
+  references between heaps: handles are heap-local and can alias a different
+  server object. Add an invocation-scoped foreign-reference representation
+  that retains source context and handle, then verify attempted accesses fail
+  with `SecurityException`; define safe return/storage rules before enabling
+  transport. See `.agent/QKB.md`.
+  No types are inferred from raw values. The
   descriptor-free VPCD fixture passes 15/15; the Descriptor-present regression
   also passes 14/14 through the existing signature path. Physical typed
   cross-AID execution remains unverified. Typed local reads now check their

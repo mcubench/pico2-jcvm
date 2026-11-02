@@ -1,5 +1,25 @@
 # Session handoff — updated 2026-11-02
 
+## SIO reference argument boundary clarified
+
+The user reports three physical Pico 2 boards in BOOTSEL, but the latest
+authorized host refresh enumerates only one running CCID (`2e8a:0009` at
+`/dev/bus/usb/001/055`); no BOOTSEL board is visible to this VM, so no flash
+was attempted. Continue offline until passthrough exposes a BOOTSEL device.
+
+Java Card RE 3.0.5 §6.2.4.3 allows SIO methods to receive parameters, while
+§§6.1.4 and 6.2.8 still firewall accesses to client-private objects. Current
+private-reference rejection is safe: applet heaps independently allocate
+compact `jref_t` values, so raw cross-heap copying could resolve to a different
+server object. A future implementation needs an explicit invocation-scoped
+foreign-reference representation retaining source context and original
+handle, with all unauthorized accesses denied. Do not weaken marshalling to
+copy raw references. Details recorded in `.agent/QKB.md` and `TODO.md`.
+
+The top-ranked offline follow-up remains that foreign-reference design and
+collision/access regressions. Preserve unrelated worktree changes. No source
+code was changed in this research step.
+
 ## Latest CTX-01 update: proxy markers survive persistent alias restore
 
 `getPersistentField_ReferenceImpl()` rebuilt persistent object aliases without
