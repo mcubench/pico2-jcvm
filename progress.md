@@ -19940,3 +19940,27 @@
 - Commit: `041882e` (`choupi/os` submodule; root tracking commit follows).
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261102T073510Z.log`;
   PC image `build/choupi-pc/choupi`.
+
+## 2026-11-02 Record CAP-scoped firewall context gap 8 minutes
+
+- Step/experiment: `ctx-package-context-vs-applet-owner-review-20261102`
+- When: '2026-11-02 08:37 CET' - '2026-11-02 08:45 CET'
+- Change: Compared the context registry and per-instance owner allocation with
+  Java Card RE 3.0.5 §§6.1.2–6.1.3. Added CTX-03 to distinguish firewall
+  context (per CAP file) from applet instance identity/object ownership
+  (per instance), and documented this as prerequisite architecture for
+  cross-context foreign references. Updated TODO, QKB and HANDOFF.
+- Validation: Read-only inspection of `context_registry.hpp`, context
+  restoration/lookup in `main.cpp`, owner allocation in `cap_load.cpp`, and the
+  official Oracle specification; scoped `git diff --check` passed. No build,
+  code change, or hardware test was run.
+- Result: Current runtime creates and looks up a distinct `Context`/`Heap` per
+  applet AID, unlike the spec's shared CAP-file context. This affects
+  same-package object access, statics, SIO and DELETE. Details and source are in
+  `.agent/QKB.md`.
+- Decision: Keep this architecture issue open and design package-scoped heap/
+  context with separate per-instance lifecycle/owner records before relaxing
+  foreign-reference checks.
+- Commit: `6deb788` (finding); this progress entry follows in the root log.
+- Artifacts/logs: Official spec PDF `https://docs.oracle.com/cd/E59935_01/JCCRE.pdf`;
+  no test logs.
