@@ -21,8 +21,7 @@ passes. Do not attribute that marker to this change without diagnosis.
 
 The cross-package opaque-reference/proxy path remains unimplemented, so this
 closes only same-package global-array retention, GC, reset, and package-delete
-coverage. TODO and QKB are updated; progress record and selective commit are
-being completed. Preserve unrelated edits in AGENTS.md, cap_load/import
+coverage. TODO and QKB are updated; selective implementation commit is `fffebb8`. Preserve unrelated edits in AGENTS.md, cap_load/import
 handling, docs, test scripts, and the removal of `releaseGlobalAIDObject` from
 heap.cpp/hpp. Next implementation target: add an owner-aware opaque reference
 representation usable by `aaload` and normal firewall checks, then test
