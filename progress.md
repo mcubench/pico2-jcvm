@@ -20558,5 +20558,5 @@
 - Validation: `bash -n tools/test-persistent-reclaimer-physical` and targeted `git diff --check` passed. Hook-enabled physical test on `2BED26ED20556535` passed all five APDU assertions, required telemetry, and cleanup: `PERSISTENT_RECLAIMER:TELEMETRY_PASS`, `PERSISTENT_RECLAIMER:PASS`, `PERSISTENT_RECLAIMER:CLEANUP_PASS`. A stale exact reader suffix (`00 00`) was rejected safely before installation; refreshed suffix (`01 00`) succeeded. No firmware change in this step.
 - Result: The test now cannot claim physical reclaimer success based only on APDU behavior when no completed tag erase was recorded. The physical monitor line reported `owner=4 result=0 erased=1 candidates=1`; no `FAULT` or `TEST:FAIL` was present.
 - Decision: Keep power-loss/multi-owner gates open; continue CTX-01/03. Re-enumerate before using exact PC/SC reader names because slot numbers change.
-- Commit: `pending`
+- Commit: `982a802`
 - Artifacts/logs: APDU `artifacts/logs/persistent-reclaimer-physical-20261102T185839Z.log` SHA-256 `65a060fd983ab98c408761abad656d9f5b0e52387c0de18973b1f2ab1704aa66`; serial `artifacts/logs/persistent-reclaimer-serial-2BED26ED20556535-20261102T185839Z.log` SHA-256 `81c454dec8a9411846aac84e8698e8b5dd187543ec59437e073dabcb4a1f9258`. Failed stale-name GPPro log: `build/persistent-reclaimer-probe/gp-list-20261102T185749Z.log`.
