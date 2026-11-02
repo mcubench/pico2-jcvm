@@ -5,9 +5,9 @@ Repeated the same physical same-CAP transient test on Pico 2
 exactly: set arrays `5A6B9000`, sibling deselect `006B9000`, PC/SC reset
 `00009000`; GPPro cleanup passed. Log SHA-256:
 `b340ba2d91faba8ee42ad49df14b0929221c61731b897c3439941cb5ecd83be5`.
-The device comparison is not yet recorded in a new progress/metadata commit.
-Both are runtime readers. Continue CTX-01 global-reference work offline or
-other persistence acceptance; no need to wait for BOOTSEL.
+This comparison is committed as `2c0c912`; the progress SHA reference is in
+the metadata commit. Both are runtime readers. Continue CTX-01 global-reference
+work offline or other persistence acceptance; no need to wait for BOOTSEL.
 
 ## CTX-03 physical same-CAP transient reset — 2026-11-02 14:52 UTC
 

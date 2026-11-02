@@ -6,7 +6,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-transients-physical 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00'` passed; GPPro cleanup passed.
 - Result: Pico `2BED26ED20556535` matched `8E464F4E2BBC0A19`: initialization `5A6B9000`, sibling deselect `006B9000`, and PC/SC reset `00009000`. No error-code, transient-state or cleanup difference was observed. No flash or rebuild occurred.
 - Decision: Physical transient lifecycle result is replicated on two tokens. Continue GC/persistence acceptance and remaining CTX-01 firewall behavior.
-- Commit: `<recorded in follow-up metadata commit>`
+- Commit: `2c0c912`; this progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-transient-physical-20261102T145504Z.log` SHA-256 `b340ba2d91faba8ee42ad49df14b0929221c61731b897c3439941cb5ecd83be5`.
 
 ## 2026-11-02 Verify same-CAP transient clears on physical Pico 2 6 minutes
