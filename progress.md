@@ -19672,3 +19672,40 @@
 - Commit: `de501c8` (QKB/TODO/HANDOFF and this investigation record); this
   record's exact hash is finalized in a metadata commit.
 - Artifacts/logs: dependency source `.local-toolchain/globalplatformpro/library/src/main/java/pro/javacard/gp/GPSession.java`; bytecode inspection target `.local-toolchain/m2/com/github/martinpaljak/capfile/26.02.22/capfile-26.02.22.jar`; prior physical trace `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log`.
+
+## 2026-11-02 Track runtime operand kinds for descriptor-free SIO 30 minutes
+
+- Step/experiment: `sio-runtime-word-kinds-20261102`
+- When: '2026-11-02 02:56 CET' - '2026-11-02 03:26 CET'
+- Change: Added packed runtime operand word-kind tags (unknown, primitive,
+  reference, int-word), maintained across typed pushes, local writes, frame
+  initialization, `dup`, `swap`, and stack element replacement. Descriptor-free
+  cross-context `invokeinterface` now marshals tagged primitive/int/reference
+  arguments while rejecting unknown values and applet-private references.
+  Updated CTX-01, QKB, and HANDOFF with the contract and remaining physical
+  acceptance.
+- Validation: `./tools/test-rmi-registry` passed. The three-package VPCD test
+  passed 14/14 with Descriptor omitted (normal GPPro LOAD; log
+  `artifacts/logs/sio-cross-aid-vpcd-20261102T021632Z.log`) and 14/14 with
+  Descriptor present (log
+  `artifacts/logs/sio-cross-aid-vpcd-20261102T022037Z.log`). `./tools/build arm`
+  and `./tools/build riscv` passed. Scoped whitespace checks passed. USB refresh
+  through `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`
+  plus elevated `lsusb -d 2e8a:` saw one runtime CCID (`2e8a:0009`) and no
+  BOOTSEL boards; no flash or physical SIO validation was performed.
+- Result: Typed descriptor-free SIO argument transfer works in VPCD, including
+  byte/short, int, null/global references, exceptions, denial, private-reference
+  rejection, stale proxies, restart, and reset. The two test modes each report
+  `TEST:SUMMARY pass=14 fail=0`. ARM image is 1,850,368 bytes, end
+  `0x100e1cb8`, SHA-256
+  `ea5a24a4544965a534b4bbbfa713d3ad093f432f75d8fb9607bb0b8a617c2a04`; RISC-V
+  smoke image is 79,872 bytes, end `0x10009a78`, SHA-256
+  `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+  Tag storage adds 64 bytes to each 256-word Stack. Physical validation remains
+  open because the three user-reported BOOTSEL boards were not guest-visible.
+- Decision: Keep CTX-01 open for physical validation, broader type-tag path
+  coverage, persistent proxy routing, and remaining firewall cases. Preserve
+  all unrelated pre-existing worktree changes; none were staged.
+- Commit: `be28faa`.
+- Artifacts/logs: VPCD logs above; ARM image `build/arm/pico2_choupi.uf2`;
+  RISC-V smoke image `build/riscv/pico2_jcvm_smoke.uf2`.
