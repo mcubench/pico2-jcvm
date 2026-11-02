@@ -1,5 +1,6 @@
 #include "cap_store.hpp"
 #include "flash_layout.hpp"
+#include "applet_owner_allocator.hpp"
 
 #include <cstddef>
 #include <cstring>
@@ -537,21 +538,15 @@ bool cap_store_allocate_applet_owner(uint8_t &owner_id) noexcept {
       if (existing != 0) used[existing] = true;
     }
   }
-  for (uint16_t candidate = 1; candidate <= UINT8_MAX; ++candidate) {
+  return jcvm::allocate_applet_owner_id(
+      used, [](uint8_t candidate) noexcept {
 #ifdef RP2350_FS_OVERLAY_TEST
-    const bool retained_by_vm = choupi_vm_applet_owner_in_use != nullptr &&
-                                choupi_vm_applet_owner_in_use(
-                                    static_cast<uint8_t>(candidate));
+        return choupi_vm_applet_owner_in_use != nullptr &&
+               choupi_vm_applet_owner_in_use(candidate);
 #else
-    const bool retained_by_vm = choupi_vm_applet_owner_in_use(
-        static_cast<uint8_t>(candidate));
+        return choupi_vm_applet_owner_in_use(candidate);
 #endif
-    if (!used[candidate] && !retained_by_vm) {
-      owner_id = static_cast<uint8_t>(candidate);
-      return true;
-    }
-  }
-  return false;
+      }, owner_id);
 }
 
 bool cap_store_applet_owner(const uint8_t *instance_aid,

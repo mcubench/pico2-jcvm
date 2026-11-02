@@ -1,5 +1,22 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Owner-ID search could drift between RP2350 and PC/VPCD allocators — fixed 2026-11-02
+
+- **Risk:** The RP2350 CAP store and PC emulator independently implemented
+  selection of the first unused nonzero owner ID. A future change could fix
+  exhaustion or retention handling in one backend but leave the other with
+  different behavior.
+- **Viable fix:** Both allocators now delegate the bounded 1..255 search to
+  `choupi/src/applet_owner_allocator.hpp`; they continue to construct their
+  backend-specific occupied-ID bitmap and use the VM live-owner callback.
+- **Validation:** `tools/test-rmi-registry` verifies a full occupied bitmap,
+  lowest-free selection, exhaustion while all owners are retained by live
+  objects, and reuse after GC. `tools/test-rp2350-fs-overlay` verifies actual
+  device-store metadata exhaustion/reuse. Same-CAP PC/VPCD delete/reinstall
+  passes 9/9. PC, ARM and RISC-V max_crypto builds pass.
+- **Limit:** Full exhaustion through 255 serialized VCR2 PC registry entries
+  has not been exercised.
+
 ## Deleted applet owner ID can be reused while package objects remain live — fixed 2026-11-02
 
 - **Observed:** A same-CAP VPCD test installed writer and reader siblings with

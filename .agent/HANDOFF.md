@@ -1,3 +1,30 @@
+# CTX-03 shared owner-ID allocator and regression — 2026-11-02 12:25 UTC
+
+The RP2350 CAP store and PC/VPCD backend now call the same bounded first-free
+owner-ID selection helper in `choupi/src/applet_owner_allocator.hpp`. The RMI
+registry test covers all 255 occupied IDs, preserves the caller's output when
+allocation fails, chooses the lowest freed ID, and confirms live Heap objects
+still block allocation after the persisted bitmap is cleared; after GC, ID 1
+is reusable. The filesystem overlay test confirms the device-side metadata
+allocator rejects ID 256 and reuses a deleted ID. The PC/VPCD
+delete/reinstall test passes 9/9, including keeping owner 1 while its shared
+array is live and reclaiming it after package deletion. A full 255-owner PC
+VCR2 serialized-registry restore remains untested.
+
+Validation passed: `./tools/test-rmi-registry`,
+`./tools/test-rp2350-fs-overlay` (`TEST:SUMMARY fail=0`),
+`./tools/build-pc --profile max_crypto`, `./tools/build arm --profile
+max_crypto`, `./tools/build riscv --profile max_crypto`, and the elevated
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-delete-reinstall --timeout 60`
+(`TEST:SUMMARY pass=9 fail=0`). ARM firmware end remains `0x100e75f4`, with
+100,876 bytes in the firmware window. The new broader JCAlgTest VPCD run also
+passed twice, `TEST:SUMMARY pass=30 fail=0` (recorded in progress.md).
+
+Latest authorized USB refresh found two runtime CCID readers and no BOOTSEL
+board. No physical flash was attempted. Next: review remaining CTX-03
+GC/reset edges, then pursue the open PERSIST-02 cold-power acceptance when a
+board is actually available. Preserve all unrelated worktree changes.
+
 # JCAlgTest VPCD regression — 2026-11-02 12:18 UTC
 
 `PICO2_HOST_USB_ACCESS=1 ./tools/test-pc-vpcd-applet` completed with exit 0,

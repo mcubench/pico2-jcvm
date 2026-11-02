@@ -68,6 +68,7 @@
 #include "gp_registry.hpp"
 #include "apdu_status.hpp"
 #include "short_apdu.hpp"
+#include "applet_owner_allocator.hpp"
 #include "../../src/vm_lifecycle.h"
 
 extern "C" bool choupi_vm_applet_owner_in_use(uint8_t owner_id) noexcept;
@@ -359,14 +360,10 @@ bool cap_store_allocate_applet_owner(uint8_t &owner_id) noexcept {
   for (const auto &package : host_cap_packages)
     for (const auto &instance : package.instances)
       if (instance.owner_id != 0) used[instance.owner_id] = true;
-  for (uint16_t candidate = 1; candidate <= UINT8_MAX; ++candidate) {
-    if (!used[candidate] &&
-        !choupi_vm_applet_owner_in_use(static_cast<uint8_t>(candidate))) {
-      owner_id = static_cast<uint8_t>(candidate);
-      return true;
-    }
-  }
-  return false;
+  return jcvm::allocate_applet_owner_id(
+      used, [](uint8_t candidate) noexcept {
+        return choupi_vm_applet_owner_in_use(candidate);
+      }, owner_id);
 }
 
 bool cap_store_applet_owner(const uint8_t *aid, uint8_t aid_length,

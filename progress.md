@@ -20358,3 +20358,14 @@
 - Decision: Same-CAP clean-process restart state restoration is now covered. This does not verify hardware power loss or corrupted storage. Continue remaining CTX-03 GC/reset and persistence cases.
 - Commit: `624f266` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/test-same-cap-restart`, `tools/tests/same_cap_restart_vpcd_test.py`, and `artifacts/logs/same-cap-restart-vpcd-20261102T121015Z.log`.
+
+## 2026-11-02 Unify and exhaustively test applet owner-ID selection 7 minutes
+
+- Step/experiment: `ctx03-shared-owner-allocator-20261102`
+- When: '2026-11-02 12:18 UTC' - '2026-11-02 12:25 UTC'
+- Change: Extracted the bounded first-free owner-ID search into `choupi/src/applet_owner_allocator.hpp` and routed both RP2350 and PC/VPCD CAP-store allocators through it. Expanded the native registry test to cover a full persisted-ID bitmap, first-free selection, live-object retention with an empty persisted bitmap, and reuse after GC. Updated CTX-03 TODO, QKB and handoff.
+- Validation: `./tools/test-rmi-registry` passed (`owner_id_exhaustion=1`); a first tightened assertion failed because the test had left the expected output sentinel at the prior success value, then passed after resetting the sentinel. `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). PC, ARM and RISC-V max_crypto builds passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-delete-reinstall --timeout 60` passed 9/9. Targeted `git diff --check` passed. USB inventory found two runtime readers and no BOOTSEL; no flash or physical card test.
+- Result: Both backends now share one selection algorithm. The test rejects all 255 occupied IDs, chooses ID 17 when it is the only free ID, rejects allocation when all persistent assignments are cleared but objects still retain each owner, then returns ID 1 after GC. RP2350 metadata exhaustion/reuse and PC/VPCD owner lifecycle regressions pass. Full 255-entry serialized PC VCR2 restore remains untested. ARM firmware end `0x100e75f4`, leaving 100,876 bytes in the 1 MiB firmware window.
+- Decision: Close selection-loop parity and full search-boundary coverage. Keep serialized PC registry exhaustion and remaining GC/reset/persistence acceptance open; hardware work waits for BOOTSEL enumeration.
+- Commit: `pending`
+- Artifacts/logs: `tools/test-rmi-registry`, `tools/test-rp2350-fs-overlay`, `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T122308Z.log`; no board image was written.

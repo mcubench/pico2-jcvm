@@ -1,5 +1,6 @@
 #include "context.hpp"
 #include "context_registry.hpp"
+#include "applet_owner_allocator.hpp"
 #include "jc_bytecodes/shareable_arguments.hpp"
 #include "jc_types/jc_array.hpp"
 
@@ -285,6 +286,20 @@ void verify_deleted_owner_is_reserved_until_objects_are_collected() {
 void verify_owner_id_space_exhaustion_and_reclamation() {
   jcvm::Context package_context(0, 4);
   std::array<std::array<uint8_t, 5>, UINT8_MAX> aids{};
+  bool persisted_owner_ids[256]{};
+  uint8_t allocated_owner = 0xa5;
+  const auto never_retained = [](uint8_t) noexcept { return false; };
+  for (uint16_t owner = 1; owner <= UINT8_MAX; ++owner)
+    persisted_owner_ids[owner] = true;
+  assert(!jcvm::allocate_applet_owner_id(
+      persisted_owner_ids, never_retained, allocated_owner));
+  assert(allocated_owner == 0xa5);
+  persisted_owner_ids[17] = false;
+  assert(jcvm::allocate_applet_owner_id(
+      persisted_owner_ids, never_retained, allocated_owner));
+  assert(allocated_owner == 17);
+  persisted_owner_ids[17] = true;
+
   for (uint16_t owner = 1; owner <= UINT8_MAX; ++owner) {
     auto &aid = aids[owner - 1];
     aid = {0xa0, 0x00, 0x00, 0x04, static_cast<uint8_t>(owner)};
@@ -297,12 +312,26 @@ void verify_owner_id_space_exhaustion_and_reclamation() {
     assert(package_context.forgetAppletInstance(aid.data(), aid.size()));
     assert(package_context.isAppletOwnerRetained(
         static_cast<uint8_t>(owner)));
+    persisted_owner_ids[owner] = true;
   }
 
   for (uint16_t owner = 1; owner <= UINT8_MAX; ++owner) {
     assert(package_context.isAppletOwnerRetained(
         static_cast<uint8_t>(owner)));
   }
+
+  const auto is_retained = [&package_context](uint8_t owner) noexcept {
+    return package_context.isAppletOwnerRetained(owner);
+  };
+  allocated_owner = 0xa5;
+  assert(!jcvm::allocate_applet_owner_id(
+      persisted_owner_ids, is_retained, allocated_owner));
+  assert(allocated_owner == 0xa5);
+  std::fill(std::begin(persisted_owner_ids), std::end(persisted_owner_ids),
+            false);
+  assert(!jcvm::allocate_applet_owner_id(
+      persisted_owner_ids, is_retained, allocated_owner));
+  assert(allocated_owner == 0xa5);
 
   for (uint16_t owner = 1; owner <= UINT8_MAX; ++owner) {
     package_context.getHeap().setStaticReferenceRoot(
@@ -317,6 +346,9 @@ void verify_owner_id_space_exhaustion_and_reclamation() {
     assert(!package_context.isAppletOwnerRetained(
         static_cast<uint8_t>(owner)));
   }
+  assert(jcvm::allocate_applet_owner_id(
+      persisted_owner_ids, is_retained, allocated_owner));
+  assert(allocated_owner == 1);
 }
 
 void verify_heap_owner_facades_share_package_roots() {

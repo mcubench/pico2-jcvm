@@ -1,6 +1,6 @@
 # Project TODO
 
-Updated and compacted: 2026-11-01. This is the active backlog for `plan.md`.
+Updated and compacted: 2026-11-02. This is the active backlog for `plan.md`.
 Implementation and validation are separate: an implemented task stays open when
 its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 `AGENTS.md` for native API boundaries, build gates, hardware access and commits.
@@ -404,8 +404,11 @@ Archive text is historical evidence, not current device state or priorities.
   The native registry test retains a live array for every owner ID 1..255,
   then confirms reclamation after GC. Fake-flash CAP metadata tests allocate
   IDs 1..255 across packages, reject the next allocation, and reuse ID 1 after
-  deleting its instance. The PC/VPCD allocator is integration-tested for live
-  owner retention but not full 255-ID exhaustion. Review remaining GC/reset
+  deleting its instance. PC/VPCD and RP2350 now share the same tested
+  first-free owner-selection helper; tests cover a completely occupied 255-ID
+  bitmap, lowest-free selection, retained-object exhaustion and reuse after
+  GC. PC/VPCD delete/reinstall integration passes 9/9. Deserializing a full
+  255-owner VCR2 registry has not been exercised. Review remaining GC/reset
   paths, then complete persistence and physical acceptance.
   Acceptance: an unchanged or test-only multi-applet CAP proves sibling
   instances share static/heap context and can access objects as specified,
