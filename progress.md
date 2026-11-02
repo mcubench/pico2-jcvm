@@ -1,3 +1,14 @@
+## 2026-11-02 Fix generated ISOException token and validate heap pressure 40 minutes
+
+- Step/experiment: `ctx03-rmi-allocation-pressure-and-rom-exception-token-20261102`
+- When: '2026-11-02 15:15 UTC' - '2026-11-02 15:55 UTC'
+- Change: Replaced the stale fixed ISOException export token with the generated JC305-to-ROM class-token mapping. Updated the RMI physical and VPCD probes to issue four allocation-pressure APDUs (each creates 256 short-lived 64-byte arrays). Removed stale explicit `--memory` inputs from the VPCD wrapper so it creates fresh empty flash scratch images. Updated CTX-03 TODO, QKB and handoff.
+- Validation: `./tools/build arm --profile current`, `./tools/build riscv --profile current`, and the full `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-arrays-vpcd` passed; VPCD summaries were 42/42 and 3/3. Exact-chip-ID `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 8E464F4E2BBC0A19` and the same cycle for `2BED26ED20556535` passed flash verification and finite serial monitoring. `tools/test-rmi-arrays-physical` passed on both exact readers with all four pressure calls, all array/exception responses, JCAlgTest preservation, and fixture cleanup. Targeted `git -c core.whitespace=cr-at-eol diff --check` passed.
+- Result: VPCD's first pressure call left 5/261 arrays reachable and reclaimed 256 arrays; the next three pressure APDUs and all remaining array/exception tests passed. Correct CardException RMI result is `822112349000`, distinct from ISOException `82236A829000`. Both boards produced matching responses. Current ARM firmware ends at `0x100cf988`, leaving 198,264 bytes in the 1 MiB firmware region. UF2 SHA-256: `5a105ffd8d4b5171c1ede2c8468bf62d86406983c585556979d3950a69db7e14`.
+- Decision: Close the repeated RMI allocation-pressure APDU and physical exception-type checks on two boards. Cold-power persistence and global Object[] reference ownership remain open. The first serial-targeted flash attempt timed out entering BOOTSEL; stable chip-ID targeting succeeded for both devices.
+- Commit: `ea6a005` (implementation/test); metadata record follows in its own commit.
+- Artifacts/logs: VPCD RMI `artifacts/logs/rmi-array-invoke-vpcd-20261102T155109Z.log` SHA-256 `8c450e4d6d5f885cffc20b5de0ad5d88d35695b0a244f5adf1f7cb50a9333857`; VPCD references `artifacts/logs/rmi-reference-interfaces-vpcd-20261102T155109Z.log` SHA-256 `cc8189d264a054ef1c31e53585d169d6eb402da05c765da2503a3b760b4778b1`; physical 8E `artifacts/logs/rmi-array-physical-20261102T155323Z.log` SHA-256 `3fa3283abaa57d6e503c92edb66730ce8d9bb88d717a52cf06da0c2977971c1a`; physical 2BED `artifacts/logs/rmi-array-physical-20261102T155426Z.log` SHA-256 `af4dfd07b721559e1af1b56b78f3ea2b5fcbcb2fd52731cdbfc0f4a107c90445`; cycles `artifacts/logs/cycle-choupi-20261102T154302Z.log` and `...154730Z.log`.
+
 ## 2026-11-02 Replicate same-CAP lifecycle on second Pico 2 5 minutes
 
 - Step/experiment: `ctx03-same-cap-lifecycle-second-board-20261102`

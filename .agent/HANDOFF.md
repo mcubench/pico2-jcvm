@@ -1,3 +1,43 @@
+## Current session — CTX-03 allocation pressure and exception token mapping — 2026-11-02 15:55 UTC
+
+Fixed `bc_exceptions.cpp` to derive ISOException's embedded class token from the
+generated JC305-to-ROM map. The previous constant 18 now resolves to
+CardException in the current ROM mask and misreported its RMI type as
+ISOException. The RMI VPCD wrapper now creates a fresh empty input image rather
+than reusing a stale build artifact that already contains package 56. The
+unchanged RMI fixture performs four consecutive allocation-pressure APDUs
+(256 short-lived 64-byte arrays each) before the remaining array/exception
+cases.
+
+Validation passed: current ARM and RISC-V builds; VPCD RMI array suite 42/42
+with first pressure collection `arrays=5/261`, `reclaimed_arrays=256`, and
+RMI-reference interface suite 3/3. Current ARM firmware end is `0x100cf988`,
+leaving 198,264 bytes in the 1 MiB firmware window. The UF2 flashed to both
+physical boards has SHA-256
+`5a105ffd8d4b5171c1ede2c8468bf62d86406983c585556979d3950a69db7e14`.
+Exact-chip-ID cycles and finite serial checks passed on
+`8E464F4E2BBC0A19` and `2BED26ED20556535`; four pressure calls and the complete
+physical RMI array/exception probe then passed on each board with cleanup.
+The initial serial-targeted cycle did not reach BOOTSEL; targeting the same
+board by chip ID succeeded.
+
+Logs: VPCD RMI suite
+`artifacts/logs/rmi-array-invoke-vpcd-20261102T155109Z.log` (SHA-256
+`8c450e4d6d5f885cffc20b5de0ad5d88d35695b0a244f5adf1f7cb50a9333857`), second
+VPCD reference check `artifacts/logs/rmi-reference-interfaces-vpcd-20261102T155109Z.log`
+(SHA-256 `cc8189d264a054ef1c31e53585d169d6eb402da05c765da2503a3b760b4778b1`),
+physical probes `artifacts/logs/rmi-array-physical-20261102T155323Z.log` and
+`...155426Z.log` (SHA-256 `3fa3283abaa57d6e503c92edb66730ce8d9bb88d717a52cf06da0c2977971c1a`
+and `af4dfd07b721559e1af1b56b78f3ea2b5fcbcb2fd52731cdbfc0f4a107c90445`).
+Source/test commit: `ea6a005`; append-only progress and this handoff update are
+in the follow-up metadata commit.
+
+Continue the remaining CTX-01/03 and PERSIST acceptance. In particular, design
+ownership-safe global `Object[]` references across independently numbered
+applet heaps before changing the current fail-closed behavior; keep cold-power
+persistence separate from the APDU allocation-pressure result. Preserve all
+other pre-existing dirty worktree changes.
+
 ## CTX-03 same-CAP lifecycle replicated on second Pico — 2026-11-02 15:01 UTC
 
 Ran the extended physical sibling harness on `2BED26ED20556535`. SIO identity

@@ -1,5 +1,34 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## ROM-mask class token changes can misclassify ISOException — 2026-11-02
+
+- **Symptom:** RMI `CardException.throwIt(0x1234)` returned type `0x23`
+  (ISOException) instead of `0x21`; this reproduced in VPCD and on both physical
+  Pico 2 boards. The class-token 18 was hard-coded as ISOException, but the
+  current generated ROM mask resolves token 18 to CardException.
+- **Cause:** The ROM-mask framework class order varies with the selected API
+  capabilities. `bc_exceptions.cpp` retained an old fixed token for ISOException.
+- **Viable fix:** Use
+  `jc305_javacard_framework_class_tokens[7]` to derive the current embedded
+  token for JC305 ISOException. Do not bake ROM-mask class offsets into
+  exception classification.
+- **Validation:** Current-profile PC, ARM and RISC-V builds pass. Full RMI
+  VPCD suite passes 42/42 with correct distinct CardException/ISOException
+  results. Full physical probe passes on `8E464F4E2BBC0A19` and
+  `2BED26ED20556535` after flashing the same image; cleanup passed on both.
+
+## VPCD RMI test must not reuse stale “empty” flash artifact — 2026-11-02
+
+- **Symptom:** `tools/test-rmi-arrays-vpcd` timed out because its hard-coded
+  `build/algtest-v182-empty-flash.bin` already contained package 56 but lacked
+  the required CAP registry sidecar. The emulator correctly refused to start.
+- **Viable fix:** Omit `--memory` for a clean VPCD run. The test helper creates a
+  fresh blank scratch image and removes only that scratch image's stale registry
+  sidecar before testing. Avoid reusing build artifacts described as empty
+  without verifying their contents and matching registry metadata.
+- **Validation:** Updated RMI VPCD wrapper passes the full 42/42 suite and the
+  RMI-reference interface check passes 3/3.
+
 ## Physical Shareable proxy routes must be cleared on card reset — 2026-11-02
 
 - **Symptom:** On Pico 2 `8E464F4E2BBC0A19`, clean GPPro LOAD/INSTALL of three

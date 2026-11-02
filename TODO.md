@@ -447,8 +447,14 @@ Archive text is historical evidence, not current device state or priorities.
   cleared `CLEAR_ON_DESELECT` (`00`) and retained `CLEAR_ON_RESET` (`6B`), then
   PC/SC reset cleared both (`0000`). The same physical results were reproduced
   on Pico 2 `2BED26ED20556535`: `5A6B9000`, `006B9000`, then `00009000`; cleanup
-  passed on both cards. The VPCD transient suite passes 5/5. GC and cold-power
-  persistence remain open. The first probe omitted the explicit
+  passed on both cards. The VPCD transient suite passes 5/5. The unchanged RMI
+  array fixture now also allocates 256 discarded 64-byte arrays per call. Four
+  consecutive pressure APDUs, then the array and exception cases, passed
+  physically on both Pico 2 `8E464F4E2BBC0A19` and `2BED26ED20556535`; cleanup
+  passed. VPCD reports the first collection with 5/261 arrays reachable and 256
+  reclaimed, and all four pressure calls pass. This validates repeated
+  allocation/collection under APDU load; cold-power persistence remains open.
+  The first probe omitted the explicit
   reader reselect used by the VPCD test; after aligning the APDU sequence,
   physical results matched VPCD.
   The complete same-CAP selection/instance-delete/package-delete/reinstall
