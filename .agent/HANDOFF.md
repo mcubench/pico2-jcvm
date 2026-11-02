@@ -1,3 +1,28 @@
+## Current session — require physical reclaimer telemetry — 2026-11-02 19:01 UTC
+
+Updated `tools/test-persistent-reclaimer-physical` to parse the stable 16-digit
+chip ID from the current exact reader name, run a bounded exact-chip serial
+capture during its APDU probe, and fail unless telemetry reports a completed
+erase with at least one candidate. It also rejects `FAULT`/`TEST:FAIL` serial
+output and logs the serial artifact path. `bash -n` and targeted whitespace
+checks passed. The real hardware test passed 5/5 and cleanup after the script
+verified `PERSISTENT_GC owner=4 result=0 erased=1 candidates=1`.
+
+PC/SC renumbered 2BED from slot `00 00` to `01 00` when a second Pico appeared;
+the first stale reader-name attempt stopped at GPPro listing before installation.
+The rerun with the current slot passed. Refresh reader enumeration before tests;
+retain chip IDs, not slot suffixes. Artifacts:
+`artifacts/logs/persistent-reclaimer-physical-20261102T185839Z.log` (SHA-256
+`65a060fd983ab98c408761abad656d9f5b0e52387c0de18973b1f2ab1704aa66`), serial
+`artifacts/logs/persistent-reclaimer-serial-2BED26ED20556535-20261102T185839Z.log`
+(SHA-256 `81c454dec8a9411846aac84e8698e8b5dd187543ec59437e073dabcb4a1f9258`).
+
+Next continue the highest open CTX-01/03 item: cross-context reference ownership
+and firewall semantics. Keep persistent reclamation disabled pending multi-owner
+and power-interruption acceptance. Unrelated pending worktree edits remain
+untouched.
+
+
 ## Current session — persistent reclaimer physical telemetry — 2026-11-02 18:54 UTC
 
 Built both architectures with `PICO2_DEBUG_PERSISTENT_GC=1` and flashed the

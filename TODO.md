@@ -104,8 +104,9 @@ Archive text is historical evidence, not current device state or priorities.
   serial telemetry alongside the APDUs: after releasing the persistent array,
   `PersistentReclaimer` returned `Complete` (`result=0`) with exactly one
   unreachable owner tag erased (`candidates=1 erased=1`); subsequent root
-  creation/read and package cleanup passed. This closes the single-owner
-  live erase check only.
+  creation/read and package cleanup passed. The physical harness now requires
+  matching erase telemetry, preventing a non-hook image from yielding a false
+  reclaimer PASS. This closes the single-owner live erase check only.
   Remaining: physical multi-owner inventory and actual per-record power-loss /
   interrupted-reclaimer acceptance, including restart and retry. Retain stable
   Java Card handles and extend root audits if contexts/native owners change.

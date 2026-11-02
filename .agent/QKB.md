@@ -1349,8 +1349,20 @@ archives with SHA-256 manifests; logs referenced there may be local/Git-ignored.
   `dea23a2e06ee37be165115c2f74e6034cec9c2f4a4fc0debbb0d284ea753c4e1`.
   This is single-owner erase evidence, not interrupted-erase or multi-owner
   power-loss acceptance. A probe run on a firmware without the debug hook can
-  pass its APDU assertions without proving physical tag deletion; require the
-  serial `PERSISTENT_GC` erase record when claiming reclaimer validation.
+  pass its APDU assertions without proving physical tag deletion. The physical
+  harness now starts an exact-chip serial capture and requires a completed
+  `PERSISTENT_GC` erase record before reporting PASS.
+
+## PC/SC reader slot numbers can change after another Pico appears — 2026-11-02
+
+- **Observed:** an exact GPPro reader string for Pico 2 `2BED26ED20556535`
+  ended in `00 00` during one physical test. After another Pico appeared,
+  `pcsc_scan -r`/GPPro enumerated the same chip as slot `01 00`; using the stale
+  name failed at GPPro `--list` before the test AID was installed. The refreshed
+  exact reader `Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00` passed.
+- **Viable response:** refresh the authorized reader helper and enumerate
+  current readers immediately before each test. Preserve the stable 16-digit
+  chip ID, but do not cache PC/SC slot suffixes across enumeration changes.
 
 ## VPCD first-reader scan can time out during PC/SC startup — 2026-10-31
 

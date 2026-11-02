@@ -5,6 +5,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 require_host_usb_access
 [[ $# -eq 1 ]] || die "usage: PICO2_HOST_USB_ACCESS=1 ./tools/test-persistent-reclaimer-physical 'exact reader name'"
 reader_name="$1"
+[[ "${reader_name}" =~ \(([[:xdigit:]]{16})\) ]] || \
+  die "reader name must contain a 16-digit Pico chip ID"
+chip_id="${BASH_REMATCH[1]}"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 cap="${repo_root}/build/persistent-reclaimer-probe/output/PersistentReclaimerProbe.cap"
 package_aid="A0000000620302"
@@ -19,12 +22,14 @@ mkdir -p "${host_build}" "${repo_root}/artifacts/logs"
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 log="${repo_root}/artifacts/logs/persistent-reclaimer-physical-${timestamp}.log"
+serial_log="${repo_root}/artifacts/logs/persistent-reclaimer-serial-${chip_id}-${timestamp}.log"
 list_log="${repo_root}/build/persistent-reclaimer-probe/gp-list-${timestamp}.log"
 install_log="${repo_root}/build/persistent-reclaimer-probe/gp-install-${timestamp}.log"
 delete_applet_log="${repo_root}/build/persistent-reclaimer-probe/gp-delete-applet-${timestamp}.log"
 delete_package_log="${repo_root}/build/persistent-reclaimer-probe/gp-delete-package-${timestamp}.log"
 gp=("${repo_root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
 installed=0
+monitor_pid=""
 
 cleanup() {
   local status=$?
@@ -62,6 +67,16 @@ cleanup() {
       status=1
     fi
   fi
+  if [[ -n "${monitor_pid}" ]]; then
+    local monitor_status=0
+    wait "${monitor_pid}" || monitor_status=$?
+    monitor_pid=""
+    if (( monitor_status != 0 )); then
+      printf 'PERSISTENT_RECLAIMER:SERIAL_CAPTURE_FAIL status=%s log=%s\n' \
+        "${monitor_status}" "${serial_log}" | tee -a "${log}"
+      status=1
+    fi
+  fi
   exit "${status}"
 }
 trap cleanup EXIT
@@ -80,6 +95,35 @@ installed=1
 timeout --signal=TERM --kill-after=5s 90s "${gp[@]}" --install "${cap}" \
   >"${install_log}" 2>&1 || die "probe install failed; see ${install_log}"
 cat "${install_log}"
+PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/monitor" \
+  --serial "${chip_id}" --seconds 60 >"${serial_log}" 2>&1 &
+monitor_pid=$!
+monitor_ready=0
+for _ in $(seq 1 140); do
+  if grep -Fq 'MONITOR:START ' "${serial_log}"; then
+    monitor_ready=1
+    break
+  fi
+  if ! kill -0 "${monitor_pid}" 2>/dev/null; then
+    break
+  fi
+  sleep 0.25
+done
+(( monitor_ready == 1 )) || die "serial monitor did not attach; see ${serial_log}"
 PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" java -cp "${host_build}" \
   PersistentReclaimerPhysicalProbe "${reader_name}"
+monitor_status=0
+wait "${monitor_pid}" || monitor_status=$?
+monitor_pid=""
+(( monitor_status == 0 )) || die "serial capture failed; see ${serial_log}"
+if grep -Eq '(^|[[:space:]])FAULT|TEST:FAIL' "${serial_log}"; then
+  die "serial capture contains a runtime failure; see ${serial_log}"
+fi
+if ! grep -Eq \
+    'CHOUPI:PERSISTENT_GC .*result=0 erased=[1-9][0-9]* .*candidates=[1-9][0-9]*' \
+    "${serial_log}"; then
+  die "no completed persistent-tag erase was reported; ensure the board runs a PERSISTENT_GC-hook image; see ${serial_log}"
+fi
+printf 'PERSISTENT_RECLAIMER:TELEMETRY_PASS log=%s\n' \
+  "${serial_log#${repo_root}/}"
 printf 'PERSISTENT_RECLAIMER:PASS log=%s\n' "${log#${repo_root}/}"
