@@ -12,13 +12,19 @@ does not erase the card's separate persistent CAP store; use a fresh card or
 remove installed applets explicitly with GlobalPlatformPro.
 Debug persistent-GC instrumentation: disabled.
 Filesystem: snapshot v4, with copy-on-write migration from v2/v3 snapshots.
-Image size: 2,098,176 bytes
-Firmware SHA-256: 1dc6d486f49e9688eedcdf65785f1629cc6de93b23c7931e22d577ed6696d82d
-Build date: 2026-11-01
+Image size: 1,887,232 bytes
+Firmware SHA-256: 76de3ba3f02bc5ac26d293f469071766dc4a2b36e96edebe248e865acd4ec828
+Build date: 2026-11-02
 Included update: native Signature MAC now honors the IV supplied to
 `Signature.init(key, mode, parameters, ...)`; deterministic nonzero-IV VPCD
 vectors and the three matching upstream API calls pass. See the IV validation
 record in `progress.md`.
+
+Flash layout: the image ends at `0x100e64cc`, 105,268 bytes below the reserved
+1 MiB firmware boundary at `0x10100000`. The RP2350 has 2 MiB total flash; CAP,
+filesystem, metadata, and legacy regions occupy the rest. The UF2 file size
+includes transfer block overhead and is not the amount written contiguously.
+The build wrapper checks this boundary and fails on overlap.
 
 Flash
 1. Hold BOOTSEL while connecting the Pico 2 over USB.
@@ -40,8 +46,10 @@ The build used the current worktree, including pre-existing local changes in
 `src/cap_load.cpp`; those source changes were not included in the artifact
 refresh commit, so this image is not reproducible from a clean checkout of that
 commit alone.
-This refreshed image has not been flashed or runtime-tested on hardware; the
-authorized reader helper reported no attached Pico 2 devices. Previous
-physical/API results in the project logs refer to earlier image hashes and do
-not validate this image. The RISC-V wrapper builds the VM core; only the ARM
-output is a complete CHOUPI firmware image.
+This size-fit candidate has not been flashed or runtime/performance-tested on
+hardware. Previous physical/API results refer to earlier image hashes and do
+not validate this image. It was built from the current shared worktree,
+including uncommitted source changes in `src/cap_load.cpp`; it is not
+reproducible from a clean checkout of the artifact commit alone. The RISC-V
+wrapper builds the VM core; only the ARM output is a complete CHOUPI firmware
+image.

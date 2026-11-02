@@ -20134,3 +20134,14 @@
 - Decision: Keep the partition guard and size optimization. Do not replace the tracked external-test artifact until the optimized image passes physical runtime/crypto tests; continue CTX-03 offline while no BOOTSEL board is visible.
 - Commit: `e3405df`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2`, `build/arm/pico2_choupi.elf.map`, `build/riscv/pico2_jcvm_smoke.uf2`; no hardware log.
+
+## 2026-11-02 Refresh max_crypto external-test image after flash-fit fix 3 minutes
+
+- Step/experiment: `max-crypto-sizefit-artifact-refresh-20261102`
+- When: '2026-11-02 09:48 CET' - '2026-11-02 09:51 CET'
+- Change: Replaced the boundary-overflowing max_crypto ARM download with the size-fit ARM build and updated its README and handoff/QKB status. Kept the applet-free image; the applet still installs separately through GPPro.
+- Validation: `cmp build/arm/pico2_choupi.uf2 artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` passed. Artifact size is 1,887,232 bytes, SHA-256 `76de3ba3f02bc5ac26d293f469071766dc4a2b36e96edebe248e865acd4ec828`; linker end is `0x100e64cc`, below the `0x10100000` firmware limit. ARM/RISC-V builds and boundary tests are recorded in the preceding step. No hardware test; VM inventory had no BOOTSEL device.
+- Result: The named external-test UF2 now fits the firmware partition. It has not been flashed or runtime/performance-tested; the current shared worktree includes uncommitted source edits from another session.
+- Decision: Provide as an external-test candidate with exact source and hardware limitations disclosed. Do not describe it as hardware-validated.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`, `artifacts/firmware/README-max_crypto.txt`; no hardware log.

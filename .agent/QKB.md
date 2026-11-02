@@ -23,7 +23,10 @@
   UF2 transport size includes block overhead; the linked address range is the
   flash-occupancy measure. No BOOTSEL device was visible in the VM, so the new
   image has not been flashed or timed on hardware. The tracked external-test
-  artifact remains unchanged and is still the older boundary-overflowing file.
+  artifact was refreshed from the size-fit build at
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` (same 1,887,232
+  bytes and SHA-256 above). This is only an external-test candidate until it
+  passes physical runtime and performance checks.
 - **Next:** Flash only after the authorized inventory exposes an identified
   BOOTSEL board. Verify runtime and crypto throughput under the size-optimized
   build before publishing it as a tested external image. Do not increase the

@@ -12,9 +12,10 @@ the linker map against `src/flash_layout.hpp`; its synthetic below/at/above
 boundary test passes. Current build output `build/arm/pico2_choupi.uf2` is
 1,887,232 bytes, SHA-256
 `76de3ba3f02bc5ac26d293f469071766dc4a2b36e96edebe248e865acd4ec828`.
-The old tracked external-test artifact remains unchanged and is invalid for
-this layout. Do not publish the optimized build until physical runtime and
-crypto throughput are checked.
+The tracked external-test artifact now matches this size-fit build at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2`. It is an external
+test candidate, not a physically validated image; runtime and crypto throughput
+still need testing.
 
 Fresh authorized USB inventory again found only runtime CCID readers
 `8E464F4E2BBC0A19` and `2BED26ED20556535`; no BOOTSEL device is VM-visible.
