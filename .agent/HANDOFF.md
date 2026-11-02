@@ -29,9 +29,8 @@ the user's `releaseGlobalAIDObject` removal in `heap.cpp/.hpp`.
 The focused `tools/test-same-cap-transients` VPCD regression passes 5/5: a
 same-package sibling switch clears `CLEAR_ON_DESELECT` but retains
 `CLEAR_ON_RESET`, and card reset clears both. Log:
-`artifacts/logs/same-cap-transient-vpcd-20261102T120128Z.log`. Its new test-only
-CAP and build/test wrappers are uncommitted pending the progress record and
-validation commit.
+`artifacts/logs/same-cap-transient-vpcd-20261102T120128Z.log`. Test-only CAP and
+wrappers are committed in `c201188`.
 
 Next: review owner exhaustion and remaining GC/reset edge cases, then continue
 the open persistence acceptance. Only flash after a fresh authorized
