@@ -2,28 +2,33 @@
 
 ## 2026-11-02 persistent-index exhaustion diagnosis and reclaim-on-write
 
-The physical GPPro INSTALL stage-9 failure was captured directly: while
-installing the already loaded SIO client package, the card returned stage `09`
-and `6F00`; concurrent CDC output reported
+The original physical failure was confirmed: GPPro INSTALL returned stage `09`
+and `6F00`, while CDC reported
 `FS_WRITE_FAIL op=new tag_len=4 size=2 files=8192/8192 free_slots=0` for
-lifecycle tag `02FF3D01`. This is filesystem index exhaustion, not evidence of
-a stale dependency CAP. `fs_write()` now invokes the existing safe tombstone
-compactor when the requested write would exceed index or payload capacity,
-re-resolves the target tag after the rehash, and rejects the write if live
-records still leave insufficient space.
+lifecycle tag `02FF3D01`. The initial on-demand compaction change did not help
+because the card had legacy parent-slot-encoded records and the old compactor
+returned early when it found any. Compaction now retains ancestors required by
+kept parent-tag records and remaps their parent slot references during rehash.
+On-demand compaction retries the requested write and re-resolves its tag after
+rehash; a fully live set still fails safely.
 
-The fake-flash regression fills all 8,192 index records, erases one dynamic
-record, creates a different tag, commits and restores the snapshot, and checks
-both tag visibility and the unchanged full record count. The filesystem suite
-passes. ARM and RISC-V current builds pass. ARM image was flashed to identified
-Pico 2 `2BED26ED20556535`; CDC-1200 recovered BOOTSEL after the reset interface
-was unavailable, flash verification passed, and the bounded serial monitor
-passed (`TEST:SUMMARY pass=1 fail=0`). This was a boot-health check, not a
-physical full-index compaction or GPPro INSTALL test. The VM presently sees one
-runtime CCID device; no other reported BOOTSEL boards enumerated. Do not erase
-card data or delete unrelated packages to make room. Re-run physical GPPro
-installation only through a safe package-scoped fixture path and interpret a
-remaining full-index failure as potentially all-live storage.
+`./tools/test-rp2350-fs-overlay` passes with a full 8,192-slot fake filesystem
+containing a parent/child tag pair, tombstone reclamation, remapped references,
+and snapshot restart. ARM and RISC-V current builds pass. ARM firmware was
+flashed to identified Pico 2 `2BED26ED20556535`; CDC-1200 recovered BOOTSEL,
+flash verification passed, and the finite monitor reported
+`TEST:SUMMARY pass=1 fail=0`. GPPro client INSTALL then succeeded; serial
+reported `FS_COMPACT files=8192->696 bytes=82578->16749`. GPPro INSTALL of the
+already-loaded service applet also returned `9000`.
+
+The follow-up physical SIO APDU selected the client but returned `6F00`; serial
+identified `SecurityException` at the client `invokeinterface`. The existing
+package AIDs were loaded before this test, so their CAP code identity is not
+verified against the newly generated fixture. Do not treat this as proof of a
+current-source SIO defect or delete/replace the existing packages. Next build a
+fixture with distinct package AIDs, load/install it package-scoped, and rerun
+the physical probe. The VM presently exposes one runtime CCID reader; the other
+reported BOOTSEL boards are not guest-visible. No flash erase was performed.
 
 ## Latest CTX-01 restart-safety update
 
@@ -86,14 +91,14 @@ metadata. The VM now rejects that unregistered foreign dynamic object for
 interface/virtual/special calls, casts and field access rather than dispatching
 it in the client context. VPCD confirms fail-closed behavior after process
 restart and card reset; persistent proxy metadata rehydration remains open.
-The unchanged upstream `AlgTestApiCore_305.cap` physical
-result below still covers only the same-applet route. A physical attempt on
-`2BED26ED20556535` loaded the contract and service package, but service applet
-installation returned internal stage 9 / `6F00` before the probe could run.
-The authorized reader refresh and `lsusb` saw only this running CCID board
-(`2e8a:0009`), despite the user reporting all three boards in BOOTSEL; no board
-was flashed during this attempt. Cross-AID behavior is therefore not yet
-physically validated.
+The unchanged upstream `AlgTestApiCore_305.cap` physical result below covers
+only the same-applet route. On 2026-11-02 the full-index condition was fixed on
+`2BED26ED20556535`; client and service applet INSTALLs returned `9000`. The
+generated cross-AID probe selected the client but its first SIO call returned
+`6F00` with `SecurityException` at client `invokeinterface`. Existing package
+CAP identities are unknown, so the positive physical SIO result is still
+unverified. Do not replace/delete the existing package AIDs. Use a fresh set of
+distinct package AIDs for a clean physical probe.
 
 The focused `tools/test-rmi-registry` regression and current-profile PC, ARM,
 and RISC-V builds pass. The expanded VPCD fixture passes 14/14, including
@@ -114,14 +119,13 @@ Logs: `artifacts/logs/cycle-choupi-20261101T201412Z.log` (SHA-256
 `artifacts/results/shareable-physical-core-8E464F4E2BBC0A19-20261101.csv`
 (SHA-256 `6045b2d17131fcc7739e437c19bcab153f2164fa76dd8ffa15f7f89414880713`).
 
-Next: diagnose stage-9 physical applet installation, then install the three
-fixture CAPs on a clean physical card and run the cross-AID APDU. Define whether
+Next: build the SIO fixture with distinct package AIDs, load/install it on this
+card or another identified clean card, and run the cross-AID APDU. Define whether
 persistent Shareable references must be rehydrated after process restart or
 must fail closed; if rehydration is required, persist proxy metadata by a stable
-identity. The authorized reader helper currently reports one runtime reader
-(`/dev/bus/usb/001/038`, `2e8a:0009`); no BOOTSEL devices are guest-visible even
-though the user reports three boards in BOOTSEL. Keep CTX-01 open; VPCD success
-is not physical acceptance.
+identity. The authorized reader helper most recently reported one runtime
+reader (`/dev/bus/usb/001/047`, `2e8a:0009`); no additional BOOTSEL devices are
+guest-visible. Keep CTX-01 open; VPCD success is not physical acceptance.
 
 ## Proxy cast validation and integration recheck
 

@@ -19637,3 +19637,14 @@
 - Decision: Keep physical INSTALL acceptance open and do not delete unrelated card data. Next inspect the currently loaded fixture package inventory read-only; continue hardware installation only through a package-scoped safe path or another clean, identified board.
 - Commit: `fe6dea2` (implementation and regression); this record and tracker updates are committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T003214Z.log` (SHA-256 `52f1e5093c08c32a0515bfe17b9261cd588f595f8d7c7de04b9e2e25bb87019e`); image `build/arm/pico2_choupi.uf2`; focused regression stdout ended `TEST:SUMMARY fail=0`.
+
+## 2026-11-02 Remap parent references during overlay compaction 20 minutes
+
+- Step/experiment: `overlay-parent-slot-remap-20261102`
+- When: '2026-11-02 01:35 CET' - '2026-11-02 01:55 CET'
+- Change: Updated the persistent overlay compactor to retain ancestors referenced by legacy parent-slot records and rewrite those slot references after rehash. Extended the full-index fake-flash regression with a parent/child record and verified the mapping through write-pressure compaction and snapshot restart. Updated QKB, TODO and session handoff with the confirmed GPPro outcome and the remaining clean-fixture limitation.
+- Validation: `./tools/test-rp2350-fs-overlay`, `./tools/build arm --profile current`, and `./tools/build riscv --profile current` passed. Physical current ARM cycle on `2BED26ED20556535` passed flash verification and finite monitor (`TEST:SUMMARY pass=1 fail=0`). GPPro INSTALL of existing client and service CAPs each returned `9000`; serial showed `FS_COMPACT files=8192->696 bytes=82578->16749`. The subsequent cross-AID probe selected the existing client but returned `6F00`, with serial showing `SecurityException` at client `invokeinterface`; package code identity is unknown. `git diff --check` passed.
+- Result: Tombstone compaction now handles the legacy parent-reference format and restored the card's ability to install. Existing package AIDs were preserved. The positive physical SIO result remains unverified; no distinct-AID fixture has yet been installed.
+- Decision: Keep CTX-01 open. Test with new package and applet AIDs before attributing the SIO exception to current code. Current USB enumeration must be refreshed because the user now reports all three Pico 2 boards in BOOTSEL.
+- Commit: `5e13c30` (implementation and regression); this record and tracker updates are committed separately.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T004543Z.log` (SHA-256 `93fa1bda0e6d6d1595d4802ebd6ebb92535b1649000df67c6678434004ad3765`); ARM image `build/arm/pico2_choupi.uf2` (1,847,296 bytes; SHA-256 `0bf2af8f1ecaf97f01e7567bba010293f3ecc1d74b9fc5f2b8482cad307d0248`); RISC-V smoke image end `0x10009a78`.

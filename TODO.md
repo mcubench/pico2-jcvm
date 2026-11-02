@@ -60,12 +60,13 @@ Archive text is historical evidence, not current device state or priorities.
 - [ ] **Validate package-delete compaction over repeated physical API sweeps.**
   Status: package-state compaction is implemented, and new writes now trigger
   compaction when deleted records block a write at the index or payload limit.
-  An 8,192-record fake-flash regression verifies that a new write reclaims a
-  deleted dynamic tag and survives restart. The physical stage-9 INSTALL
-  failure was traced to `FS_WRITE_FAIL files=8192/8192 free_slots=0` while
-  writing package lifecycle state. This does not establish that every full
-  card has reclaimable tombstones; a fully live set still requires owner-scoped
-  cleanup or a capacity change.
+  Compaction retains and remaps legacy parent-slot references. Full-index
+  fake-flash coverage passes, including restart. Physical testing on
+  `2BED26ED20556535` reproduced `FS_WRITE_FAIL files=8192/8192 free_slots=0`
+  and the fixed firmware compacted to 696 records / 16,749 bytes; GPPro client
+  and service applet INSTALLs then returned `9000`. This does not establish
+  that every full card has reclaimable tombstones; a fully live set still
+  requires owner-scoped cleanup or a capacity change.
   Earlier 77,824-byte arena exhaustion is distinct from later v4
   capacity/index pressure and from persistent-object reclamation.
   Remaining: repeat upstream CAP install/run/uninstall cycles; monitor payload
@@ -256,22 +257,14 @@ Archive text is historical evidence, not current device state or priorities.
   operations instead of invoking them in the caller context. VPCD confirms the
   stale placeholder is fail-closed after process restart and card reset.
   Persisting enough metadata to revive an old proxy remains unimplemented. On
-  physical 2BED `2BED26ED20556535`, the current ARM image passes the finite
-  serial health cycle. The contract and service fixture packages from an
-  earlier attempt are already on this card, so the clean-fixture script refused
-  to replace them. GPPro `--install` returned `6A80` even though GET STATUS
-  then listed the client package. A subsequent `--install-only` returned
-  extended INSTALL stage `09`, VM status `0000`, and final `6F00`. GET STATUS
-  lists the client package but SELECT returns `6A82`, so no client
-  applet instance is usable. Deleting the client package returned `6581`; keep
-  this test-created package state documented and do not remove the pre-existing
-  contract/service packages. A read-only SELECT of the listed service applet
-  also returned `6A82`; GPPro APP rows do not prove an applet instance is
-  installed. A fresh external-interface VPCD fixture passes a valid exported
-  interface install and rejects a class/missing export (3/3), supporting a
-  possible mismatch in the pre-existing physical dependency package; verify
-  this hypothesis on a clean-safe card. Physical cross-AID behavior remains
-  unverified.
+  physical 2BED `2BED26ED20556535`, full-index compaction now succeeds and
+  GPPro INSTALL for the already-loaded client and service applets returns
+  `9000`. The cross-AID probe selects the client, but its SIO APDU returns
+  `6F00` with `SecurityException` at `invokeinterface`. The pre-existing
+  package CAP identities are unknown, so clean physical cross-AID acceptance
+  remains open; preserve these packages and test with distinct package AIDs.
+  A fresh external-interface VPCD fixture passes a valid exported interface
+  install and rejects a class/missing export (3/3).
   The unchanged same-applet
   call still passes on physical Pico 2 `8E464F4E2BBC0A19`. Never return raw
   server heap references to clients.

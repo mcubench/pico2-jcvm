@@ -1,6 +1,6 @@
 # Issue knowledge base — compacted 2026-10-29
 
-## Physical GP INSTALL stage 9 caused by full filesystem index — 2026-11-02
+## Physical GP INSTALL stage 9 and parent-encoded compaction — 2026-11-02
 
 - **Observed:** Repeating GPPro `--install-only --debug` for the loaded SIO
   client package returned INSTALL stage `09` and SW `6F00`. Concurrent finite
@@ -8,20 +8,30 @@
   files=8192/8192 free_slots=0 ... tag=02FF3D01` while writing lifecycle
   state. This is direct evidence of overlay-index exhaustion; the earlier
   stale/mismatched dependency hypothesis is not supported by this attempt.
-- **Fix:** `fs_write()` now retries a capacity-blocked write after running the
-  existing safe tombstone compactor, then looks up the target tag again because
-  compaction rehashes the index. If compaction cannot create capacity, the
-  write still fails with `FS_STATUS_OUT_OF_FLASH`.
-- **Validation:** `./tools/test-rp2350-fs-overlay` passes. The regression fills
-  8,192 slots, erases a dynamic record, writes a different tag, commits and
-  restores the filesystem, then checks the old tag is absent and new tag is
-  present. ARM and RISC-V current builds pass. Current ARM firmware flashed to
-  `2BED26ED20556535`; flash verification and finite monitor passed
-  (`TEST:SUMMARY pass=1 fail=0`).
-- **Limit:** Physical GPPro INSTALL has not yet been rerun with this fix. The
-  attached board may have a fully live index, which compaction cannot reduce;
-  do not delete unrelated package data to test that case. At this refresh the
-  VM exposes one runtime CCID device, not three BOOTSEL devices.
+- **Cause of initial non-fix:** `fs_write()` retried compaction, but the old
+  compactor returned without work when any legacy parent-slot-encoded record
+  existed. That prevented reuse of deleted slots on the card.
+- **Fix:** Compaction now retains parent ancestors required by kept records and
+  remaps encoded parent-slot references after rehash. `fs_write()` invokes this
+  compactor on capacity pressure and resolves the target tag again after the
+  rehash. If live records still leave insufficient capacity, it returns
+  `FS_STATUS_OUT_OF_FLASH`.
+- **Validation:** `./tools/test-rp2350-fs-overlay` passes with a full 8,192-slot
+  table containing parent/child encoded records; a new write reclaims one
+  tombstone, preserves and remaps the parent reference, and survives commit and
+  restart. ARM and RISC-V current builds pass. The ARM image passed a physical
+  cycle and finite serial monitor on `2BED26ED20556535`. On that card,
+  GPPro INSTALL initially failed at 8,192 records, then after the remap fix
+  serial reported `FS_COMPACT files=8192->696 bytes=82578->16749`; GPPro
+  `--install-only` for both already-loaded client and service CAPs returned
+  `9000`.
+- **Limit:** A physical cross-AID invocation using these existing package AIDs
+  still returned `6F00` with `SecurityException` at client `invokeinterface`.
+  The packages predated this test and their code identity is unverified, so this
+  is not a valid clean-fixture acceptance result. Preserve them; use distinct
+  package AIDs or a clean identified board for the next physical SIO probe. The
+  VM currently exposes one runtime CCID reader, not the three BOOTSEL devices
+  reported by the user.
 
 ## Persisted Shareable proxy loses routing metadata after process restart — 2026-11-01
 
