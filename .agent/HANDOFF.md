@@ -6,8 +6,8 @@ package DELETE/LOAD/CREATE, fresh static initialization, and cleanup all
 matched `8E464F4E2BBC0A19`. Log SHA-256:
 `c7ca0453911b758544a8a5dce5572a7df8f825f6f41ea2784de638affe6187db`.
 The flashed firmware hash on 2BED was not captured; do not infer both devices
-ran the same image. No status/result differences were observed. This comparison
-is not yet in a progress commit.
+ran the same image. No status/result differences were observed. Comparison is
+committed as `53cd1a2`; the progress SHA reference is in the metadata commit.
 
 ## CTX-03 second-board transient replication — 2026-11-02 14:56 UTC
 

@@ -6,7 +6,7 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings-physical 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 01 00'` passed on Pico 2 `2BED26ED20556535`.
 - Result: All observed status words and static values matched Pico `8E464F4E2BBC0A19`; package cleanup passed. No device-level difference was observed. Firmware image hash on 2BED was not collected, so same-image equivalence is unverified.
 - Decision: Same-CAP basic lifecycle behavior is replicated across two physical devices. Continue GC and persistence coverage; capture firmware identity when comparing boards in future.
-- Commit: `<recorded in follow-up metadata commit>`
+- Commit: `53cd1a2`; this progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-physical-20261102T145819Z.log` SHA-256 `c7ca0453911b758544a8a5dce5572a7df8f825f6f41ea2784de638affe6187db`.
 
 ## 2026-11-02 Replicate transient hardware test on second Pico 2 4 minutes
