@@ -18,7 +18,7 @@ reference arguments, and access-site firewall enforcement/equality semantics
 are not implemented. Next: thread provenance through reference comparisons,
 returns, and dereference operations, reject foreign-owner use as required, then
 add collision and private-array SIO fixtures before allowing private refs to
-cross. Commit: pending. Preserve unrelated edits in `src/cap_load.cpp`, heap,
+cross. Implementation commit: `2c2cf93`. Preserve unrelated edits in `src/cap_load.cpp`, heap,
 import handling, scripts, docs and AGENTS.md.
 
 ## Current session — refresh max_crypto ARM external-test image — 2026-11-02 19:18 UTC

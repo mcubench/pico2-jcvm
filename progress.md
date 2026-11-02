@@ -20582,5 +20582,5 @@
 - Validation: `./tools/test-rmi-registry` passed with owner checks for locals, pop, duplicate/swap, and global references. `./tools/build arm --profile max_crypto` and `./tools/build riscv --profile max_crypto` passed (147/150 capabilities). ARM image end `0x100e8160`; flash-boundary guard passed. Elevated `lsusb -d 2e8a:000f` returned no device, so no flash or physical monitor was run. Scoped `git diff --check` passed.
 - Result: Owner provenance can now move with a reference across the immediate stack/local/nested-call paths without changing `jref_t` or exposing a local heap slot as a cross-heap identity. This step does not yet enforce owner tags at dereference sites and does not enable private-reference SIO arguments; they remain rejected.
 - Decision: Next make consumers firewall-aware, including equality semantics and arrays, before enabling private references. Preserve fail-closed marshalling until that work and end-to-end tests pass.
-- Commit: `pending`
+- Commit: `2c2cf93`
 - Artifacts/logs: No hardware artifacts; focused test output `RMI_REGISTRY:PASS`; ARM/RISC-V build output was not archived.
