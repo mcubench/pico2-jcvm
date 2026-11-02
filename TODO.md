@@ -251,7 +251,7 @@ Archive text is historical evidence, not current device state or priorities.
   back to tags. The remaining physical acceptance gaps are listed below.
   Since standard GPPro LOAD omits Descriptor, the operand stack now maintains
   compact runtime word-kind tags (primitive, reference, int-low, int-high,
-  unknown).
+  return-address, unknown).
   Descriptor-free cross-context calls use these tags to construct typed
   initial locals, including ordered low/high int word pairing. A malformed or
   split int pair fails closed. Tags are maintained by typed
@@ -261,7 +261,12 @@ Archive text is historical evidence, not current device state or priorities.
   costs 96 bytes per 256-word Stack. No types are inferred from raw values. The
   descriptor-free VPCD fixture passes 14/14; the Descriptor-present regression
   also passes 14/14 through the existing signature path. Physical typed
-  cross-AID execution remains unverified.
+  cross-AID execution remains unverified. Typed local reads now check their
+  stored kind and throw `SecurityException` on a mismatch, so caller-derived
+  metadata is checked against the server bytecodes' actual local use. `astore`
+  preserves a return-address tag for valid `jsr`/`ret` use and rejects other
+  kinds. The VPCD multipackage suite passes 47/47 and the transaction probe
+  passes 3/3 with these local checks enabled.
   The local signature-to-typed-local conversion has focused tests for
   byte/short layout, int word order, null/non-null references, and argument
   count mismatch. A new test-only three-package fixture now passes a positive

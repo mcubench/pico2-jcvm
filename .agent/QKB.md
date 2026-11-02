@@ -1,26 +1,31 @@
 # Issue knowledge base — compacted 2026-10-29
 
-## Descriptor-free SIO preserves int word order in runtime tags — 2026-11-02
+## Enforce descriptor-free SIO argument kinds at server local loads — 2026-11-02
 
 - **Implementation:** The VM stack tracks each word as unknown, primitive,
-  reference, int-low, or int-high. Cross-context `invokeinterface` uses these
-  tags when GPPro has omitted the optional Descriptor component. Typed pushes,
+  reference, int-low, int-high, or return-address. Cross-context
+  `invokeinterface` uses these tags when GPPro omits Descriptor. Typed pushes,
   local writes, frame-local initialization, `dup`, `swap`, and stack element
   replacement maintain the tags. Three-bit storage costs 96 bytes for a
-  256-word stack.
+  256-word stack. Typed local reads compare the requested kind with the stored
+  kind and throw `SecurityException` on mismatch. `astore` distinguishes
+  references from return addresses so `ret` can enforce its expected kind.
 - **Firewall:** Unknown values and applet-private object/array references are
   rejected. Null and JCRE-global references may cross. Int words must appear
-  as an ordered low/high pair; isolated or reversed words are rejected. No
-  type is guessed from payload bits. Present
+  as an ordered low/high pair; isolated or reversed words are rejected. The
+  callee's bytecode cannot load a marshalled word under a different primitive,
+  reference, int, or return-address kind. No type is guessed from payload
+  bits. Present
   Descriptor data continues through its existing signature validation path;
   malformed Descriptor data does not fall back to tags.
-- **Validation:** `./tools/test-rmi-registry` passes, including a negative
-  fixture that swaps adjacent int words into invalid order. The three-package
-  VPCD suite passes 14/14 with Descriptor omitted (normal GPPro path) and
-  14/14 with Descriptor present. Logs:
-  `artifacts/logs/sio-cross-aid-vpcd-20261102T024802Z.log` and
-  `artifacts/logs/sio-cross-aid-vpcd-20261102T024959Z.log`. PC, ARM and RISC-V
-  wrapper builds pass. No hardware validation was performed.
+- **Validation:** `./tools/test-rmi-registry` passes kind-accept/reject cases,
+  including invalid int-word order. The three-package VPCD suite passes 14/14
+  with Descriptor omitted and 14/14 with Descriptor present. The broader
+  multipackage VPCD test passes 47/47; transaction probe case 48 passes 3/3.
+  Logs include `artifacts/logs/sio-cross-aid-vpcd-20261102T025926Z.log`,
+  `artifacts/logs/sio-cross-aid-vpcd-20261102T030801Z.log`, and
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261102T030138Z.log`. PC, ARM,
+  and RISC-V builds pass. No hardware validation was performed.
 - **Physical state:** The user reports three devices in BOOTSEL. The latest
   authorized helper/USB refresh still sees one runtime `2e8a:0009` CCID and no
   BOOTSEL devices. No firmware was flashed. Refresh enumeration later; do not

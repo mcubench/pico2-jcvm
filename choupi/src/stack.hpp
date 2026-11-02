@@ -67,7 +67,8 @@ public:
     Primitive,
     Reference,
     IntLowWord,
-    IntHighWord
+    IntHighWord,
+    ReturnAddress
   };
 
 private:

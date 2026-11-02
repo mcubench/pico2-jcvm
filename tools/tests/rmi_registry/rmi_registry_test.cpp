@@ -373,6 +373,63 @@ void verify_shareable_cross_context_arguments() {
         local_count));
   }
 }
+
+void verify_typed_local_access() {
+  jcvm::Stack stack;
+  stack.push_Frame(0, 6, 1, nullptr);
+  stack.writeLocal_Short(0, -9);
+  assert(stack.readLocal_Short(0) == -9);
+
+  bool rejected = false;
+  try {
+    (void)stack.readLocal_Reference(0);
+  } catch (jcvm::Exceptions error) {
+    rejected = error == jcvm::SecurityException;
+  }
+  assert(rejected);
+
+#ifdef JCVM_INT_SUPPORTED
+  constexpr jcvm::jint_t expected_int = 0x12345678;
+  stack.writeLocal_Int(1, expected_int);
+  assert(stack.readLocal_Int(1) == expected_int);
+  rejected = false;
+  try {
+    (void)stack.readLocal_Int(0);
+  } catch (jcvm::Exceptions error) {
+    rejected = error == jcvm::SecurityException;
+  }
+  assert(rejected);
+#endif
+
+  const auto reference = make_reference(27);
+  stack.writeLocal_Reference(3, reference);
+  assert(stack.readLocal_Reference(3) == reference);
+  rejected = false;
+  try {
+    (void)stack.readLocal_Short(3);
+  } catch (jcvm::Exceptions error) {
+    rejected = error == jcvm::SecurityException;
+  }
+  assert(rejected);
+
+  stack.writeLocal_ReturnAddress(4, 0x1234);
+  assert(stack.readLocal_ReturnAddress(4) == 0x1234);
+  rejected = false;
+  try {
+    (void)stack.readLocal_Reference(4);
+  } catch (jcvm::Exceptions error) {
+    rejected = error == jcvm::SecurityException;
+  }
+  assert(rejected);
+
+  rejected = false;
+  try {
+    (void)stack.readLocal_Short(5);
+  } catch (jcvm::Exceptions error) {
+    rejected = error == jcvm::SecurityException;
+  }
+  assert(rejected);
+}
 } // namespace
 
 int main() {
@@ -396,6 +453,7 @@ int main() {
   verify_retained_applet_context_lookup();
   verify_shareable_proxy_registry();
   verify_shareable_cross_context_arguments();
+  verify_typed_local_access();
 
   const auto first = make_reference(1);
   const uint16_t first_id = context.exportRemoteObject(first);

@@ -14,13 +14,16 @@ APDU stream was not separately captured. Trace and probe logs are
 `artifacts/logs/sio-two-package-probe-20261102T013345Z.log`.
 
 The operand stack now carries compact three-bit word-kind tags (unknown,
-primitive, reference, int-low, int-high) maintained by typed pushes, local
-writes, frame-local initialization, `dup`, `swap`, and stack element
-replacement. When the Descriptor is absent, cross-context `invokeinterface`
-uses these tags to construct server locals. Int pairs must have low/high order;
-null and JCRE-global references may cross; unknown words and applet-private
-references fail closed. Storage is 96 bytes per 256-word stack. Present
-Descriptor signatures continue through the existing checked path; malformed
+primitive, reference, int-low, int-high, return-address) maintained by typed
+pushes, local writes, frame-local initialization, `dup`, `swap`, and stack
+element replacement. When Descriptor is absent, cross-context
+`invokeinterface` uses these tags to construct server locals. Int pairs must
+have low/high order; null and JCRE-global references may cross; unknown words
+and applet-private references fail closed. Typed local reads now enforce the
+stored kind and raise `SecurityException` if server bytecode uses an argument
+as a different kind. `astore` preserves reference versus return-address so
+`ret` can validate its local. Storage is 96 bytes per 256-word stack. Present
+Descriptor signatures continue through the checked signature path; malformed
 present data does not fall back to tags.
 
 Validation: `tools/test-rmi-registry` passes. The three-package VPCD suite
@@ -28,18 +31,22 @@ passes 14/14 with Descriptor omitted and 14/14 with Descriptor present,
 including a negative int-word-order regression. Logs:
 `artifacts/logs/sio-cross-aid-vpcd-20261102T024802Z.log` and
 `artifacts/logs/sio-cross-aid-vpcd-20261102T024959Z.log`. PC, ARM and RISC-V
-wrapper builds pass. ARM image size is 1,852,416 bytes, end `0x100e2038`,
-SHA-256 `53f6e554bcf18c490618a958754d997d9234c48ddecc814f9212d82bf3396682`;
-RISC-V smoke image size is 79,872 bytes, end `0x10009a78`, SHA-256
+wrapper builds pass. With local-kind checks, the SIO fixture passes 14/14 in
+both Descriptor modes; the multipackage suite passes 47/47 and transaction
+case 48 passes 3/3. Latest ARM image is 1,853,440 bytes, end `0x100e2224`,
+SHA-256 `29d2b2dbc5149a47550194a62cb85acf904b7e595e57167dd79e45f3ed6f939f`;
+RISC-V smoke image is 79,872 bytes, end `0x10009a78`, SHA-256
 `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
 
 The user reports three boards in BOOTSEL, but the latest authorized helper and
 USB enumeration still see one runtime CCID (`2e8a:0009`) and no BOOTSEL boards.
-No flash or physical SIO validation was performed. Refresh USB visibility
-before hardware work. Next, exercise descriptor-free typed calls on a physical
-card when BOOTSEL becomes guest-visible; continue checking stack-tag coverage
-and cross-context ownership/firewall cases. Preserve unrelated uncommitted
-changes.
+No flash or physical SIO validation was performed. The latest check was
+`PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader` plus
+`lsusb -d 2e8a:`; it returned one reader at `/dev/bus/usb/001/055`,
+`2e8a:0009`. Refresh USB visibility before hardware work. Next, exercise
+descriptor-free typed calls on a physical card when BOOTSEL becomes
+guest-visible; continue checking stack-tag coverage and cross-context
+ownership/firewall cases. Preserve unrelated uncommitted changes.
 
 ## 2026-11-02 persistent-index exhaustion diagnosis and reclaim-on-write
 

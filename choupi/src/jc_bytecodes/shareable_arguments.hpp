@@ -107,6 +107,7 @@ inline bool buildShareableTaggedInitialLocals(
 #endif
     }
     case Stack::ValueKind::IntHighWord:
+    case Stack::ValueKind::ReturnAddress:
       return false;
     case Stack::ValueKind::Unknown:
       return false;

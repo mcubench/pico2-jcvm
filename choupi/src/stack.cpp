@@ -245,7 +245,7 @@ void Stack::push_ReturnAddress(const jreturnaddress_t value) noexcept(
   Frame &current_frame = this->getCurrentFrame();
   jword_t *slot = current_frame.getTOS();
   current_frame.push_Value(value);
-  this->setValueKind(slot, ValueKind::Unknown);
+  this->setValueKind(slot, ValueKind::ReturnAddress);
 }
 
 /**
@@ -385,6 +385,10 @@ Stack::ValueKind Stack::get_Pushed_ValueKind(const uint16_t n)
  */
 jshort_t Stack::readLocal_Short(const uint8_t local_number) {
   Frame &current_frame = this->getCurrentFrame();
+  if (this->getValueKind(current_frame.getFP() + local_number) !=
+      ValueKind::Primitive) {
+    throw Exceptions::SecurityException;
+  }
   return (jshort_t)current_frame.readLocal_Value(local_number);
 }
 
@@ -396,6 +400,12 @@ jshort_t Stack::readLocal_Short(const uint8_t local_number) {
  */
 jint_t Stack::readLocal_Int(const uint8_t local_number) {
   Frame &current_frame = this->getCurrentFrame();
+  if (this->getValueKind(current_frame.getFP() + local_number) !=
+          ValueKind::IntLowWord ||
+      this->getValueKind(current_frame.getFP() + local_number + 1) !=
+          ValueKind::IntHighWord) {
+    throw Exceptions::SecurityException;
+  }
   return (jint_t)SHORTS_TO_INT(
       current_frame.readLocal_Value((uint8_t)(local_number + 1)),
       current_frame.readLocal_Value(local_number));
@@ -409,6 +419,10 @@ jint_t Stack::readLocal_Int(const uint8_t local_number) {
  */
 jref_t Stack::readLocal_Reference(const uint8_t local_number) {
   Frame &current_frame = this->getCurrentFrame();
+  if (this->getValueKind(current_frame.getFP() + local_number) !=
+      ValueKind::Reference) {
+    throw Exceptions::SecurityException;
+  }
   return jref_t(current_frame.readLocal_Value(local_number));
 }
 
@@ -419,6 +433,10 @@ jref_t Stack::readLocal_Reference(const uint8_t local_number) {
  */
 jreturnaddress_t Stack::readLocal_ReturnAddress(const uint8_t local_number) {
   Frame &current_frame = this->getCurrentFrame();
+  if (this->getValueKind(current_frame.getFP() + local_number) !=
+      ValueKind::ReturnAddress) {
+    throw Exceptions::SecurityException;
+  }
   return (jreturnaddress_t)current_frame.readLocal_Value(local_number);
 }
 
@@ -478,7 +496,7 @@ void Stack::writeLocal_ReturnAddress(const uint8_t local_number,
   Frame &current_frame = this->getCurrentFrame();
   jword_t *local = current_frame.getFP() + local_number;
   current_frame.writeLocal_Value(local_number, value);
-  this->setValueKind(local, ValueKind::Unknown);
+  this->setValueKind(local, ValueKind::ReturnAddress);
 }
 
 /**

@@ -73,9 +73,15 @@ void Bytecodes::bc_astore() {
 
   TRACE_JCVM_DEBUG("ASTORE 0x%02X", index);
 
-  objectref = stack.pop_Reference();
-
-  stack.writeLocal_Reference(index, objectref);
+  const auto kind = stack.get_Pushed_ValueKind(1);
+  if (kind == Stack::ValueKind::Reference) {
+    objectref = stack.pop_Reference();
+    stack.writeLocal_Reference(index, objectref);
+  } else if (kind == Stack::ValueKind::ReturnAddress) {
+    stack.writeLocal_ReturnAddress(index, stack.pop_ReturnAddress());
+  } else {
+    throw Exceptions::SecurityException;
+  }
 
   return;
 }
