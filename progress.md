@@ -20228,6 +20228,6 @@
 - Decision: Keep the cross-sibling reference path fail-closed. Next implement
   a package-scoped heap/handle store with stable per-object owners and deletion
   semantics, then wire package context lookup and rerun the fixture.
-- Commit: `pending`
+- Commit: `84ebacb`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T101050Z.log`;
   `build/arm/pico2_choupi.uf2`.
