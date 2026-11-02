@@ -6,7 +6,7 @@
 - Validation: `./tools/build-pc --profile current` passed. `./tools/test-jcsystem-transaction-applet --case 41` passed (`TEST:SUMMARY pass=3 fail=0`, 83.362 s). `python3 tools/tests/sio_cross_aid_vpcd_test.py` passed under elevated execution after the restricted run failed localhost bind with `EPERM`; final result `TEST:SUMMARY pass=15 fail=0`. `git -C choupi/os diff --check -- src/arch/host/emulator.rs` passed. Physical USB refresh found one runtime CCID and no BOOTSEL devices, so hardware testing was skipped.
 - Result: Focused probe output decreased from 37,441 bytes / 322 expected page-fault warnings to 591 bytes / zero. Elapsed time decreased from 85.593 s to 83.362 s (~2.6% across two single runs); this does not establish a meaningful runtime optimization. SIO log SHA-256: `a152f71bb608fc1af8ee132f71bda30a3685e8f67fa4174bdd39d28c7cae6a14`. Transaction log SHA-256: `d2fd036dc2260aabd9c25efa80350521ab22dd55bc2a82c6f467b45083bd5806`.
 - Decision: Keep expected-fault logging quiet by default. Profile ptrace stepping and protection-fault counts next; do not infer a busy loop from wall time alone.
-- Commit: `choupi/os` submodule `0579387b7b1e6a990f6b35054a7e4e213bde5fc4`; root step commit is recorded in the follow-up metadata commit.
+- Commit: root `3e0c840d1634332921228fd599c388afd1e28522`; `choupi/os` submodule `0579387b7b1e6a990f6b35054a7e4e213bde5fc4`.
 - Artifacts/logs: `artifacts/logs/jcsystem-transaction-apdu-vpcd-20261102T043156Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261102T043717Z.log`; PC build output under `build/choupi-pc/`.
 
 ## 2026-11-01 — Refresh max_crypto external image after Signature IV fix 5 minutes
