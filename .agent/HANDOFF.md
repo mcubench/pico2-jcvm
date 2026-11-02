@@ -20,6 +20,19 @@ unrelated dirty files. Harness and validation record are committed as
 commit. Next inspect CTX-01/03 for a safe offline/high-value gap while physical
 readers remain in runtime mode.
 
+## Same-CAP reader applet DELETE/recreate — 2026-11-02 14:42 UTC
+
+Extended `tools/test-same-cap-siblings-physical` to DELETE the reader instance,
+verify it is absent from GPPro listing, CREATE it again from the retained CAP,
+and SELECT/read its package state. On Pico 2 `8E464F4E2BBC0A19`, the recreated
+reader returned `000012350157123456799000`, confirming package-level static
+state stayed visible across instance removal and recreation. Final cleanup
+passed. Log SHA-256:
+`b1ba3eb64e4144fbd7e974bc1304a5168b584c2af23f8d90bdfb90d52480d7a0`.
+The test script/probe changes are not committed yet. Remaining physical
+same-CAP gaps: delete/reinstall the whole package, reset/transient, GC and
+cold-power persistence.
+
 # CTX-01 physical cross-AID SIO/reset acceptance — 2026-11-02 14:18 UTC
 
 Implemented reset invalidation for runtime Shareable proxy routes. A clean

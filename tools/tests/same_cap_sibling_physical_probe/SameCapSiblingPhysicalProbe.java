@@ -40,7 +40,9 @@ public final class SameCapSiblingPhysicalProbe {
   }
 
   public static void main(String[] args) throws Exception {
-    if (args.length != 1) throw new IllegalArgumentException("reader name required");
+    if (args.length < 1 || args.length > 2) {
+      throw new IllegalArgumentException("reader name [reinstalled]");
+    }
     List<CardTerminal> terminals = TerminalFactory.getDefault().terminals().list();
     CardTerminal target = terminals.stream().filter(t -> t.getName().equals(args[0]))
         .findFirst().orElseThrow(() -> new IllegalStateException("reader not found: " + args[0]));
@@ -49,6 +51,21 @@ public final class SameCapSiblingPhysicalProbe {
       System.out.println("SAME_CAP_PHYSICAL:READER " + target.getName());
       System.out.println("SAME_CAP_PHYSICAL:ATR " + hex(card.getATR().getBytes()));
       CardChannel channel = card.getBasicChannel();
+
+      if (args.length == 2) {
+        if (!"reinstalled".equals(args[1])) {
+          throw new IllegalArgumentException("unknown probe mode: " + args[1]);
+        }
+        ResponseAPDU selected = select(channel, READER_AID);
+        if (selected.getSW() != 0x9000) {
+          throw new AssertionError("reinstalled reader SELECT failed: " +
+                                   hex(selected.getBytes()));
+        }
+        expect(channel.transmit(new CommandAPDU(hex("8020000000"))),
+               "000012350157123456799000", "reinstalledReaderRetainsPackageState");
+        System.out.println("SAME_CAP_PHYSICAL:PASS reader_delete_reinstall");
+        return;
+      }
 
       ResponseAPDU selected = select(channel, READER_AID);
       if (selected.getSW() != 0x9000) {

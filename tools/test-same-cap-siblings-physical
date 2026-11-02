@@ -97,4 +97,14 @@ done
 
 PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" java \
   -cp "${probe_classes}" SameCapSiblingPhysicalProbe "${reader}"
+gp --delete "${reader_aid}"
+printf 'SAME_CAP_PHYSICAL:DELETE applet=%s result=PASS\n' "${reader_aid}"
+gp --list >"${list_log}" 2>&1 || die "GPPro list after DELETE failed; see ${list_log}"
+if grep -Fq "APP: ${reader_aid} " "${list_log}"; then
+  die "reader applet remains after DELETE: ${reader_aid}"
+fi
+gp --create "${reader_aid}" --applet "${reader_aid}" --package "${package_aid}"
+printf 'SAME_CAP_PHYSICAL:RECREATE applet=%s result=PASS\n' "${reader_aid}"
+PICO2_HOST_USB_ACCESS=1 "${repo_root}/tools/env" java \
+  -cp "${probe_classes}" SameCapSiblingPhysicalProbe "${reader}" reinstalled
 printf 'SAME_CAP_PHYSICAL:PASS log=%s\n' "${log#${repo_root}/}"

@@ -1,3 +1,14 @@
+## 2026-11-02 Verify physical same-CAP instance reinstall 8 minutes
+
+- Step/experiment: `ctx03-same-cap-physical-instance-reinstall-20261102`
+- When: '2026-11-02 14:34 UTC' - '2026-11-02 14:42 UTC'
+- Change: Extended the guarded physical same-CAP harness to DELETE the reader applet, verify GPPro no longer lists it, CREATE it again from the already loaded package, and check package static state through the new instance.
+- Validation: `bash -n tools/test-same-cap-siblings-physical` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings-physical 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00'` passed sibling SIO/static checks, reader DELETE, CREATE, post-reinstall APDU, and final cleanup. Java probe compilation occurred inside the wrapper.
+- Result: After writer mutation, physical reader DELETE and recreation succeeded. The new reader returned `000012350157123456799000`, preserving package static values across applet instance removal/recreation. Package-level DELETE/reinstall, reset/transient, GC and cold-power persistence were not tested.
+- Decision: Physical same-CAP sibling identity, static visibility, and applet instance DELETE/recreate now have direct hardware evidence. Continue package deletion and reset/lifecycle acceptance.
+- Commit: `<recorded in follow-up metadata commit>`
+- Artifacts/logs: `artifacts/logs/same-cap-sibling-physical-20261102T144016Z.log` SHA-256 `b1ba3eb64e4144fbd7e974bc1304a5168b584c2af23f8d90bdfb90d52480d7a0`.
+
 ## 2026-11-02 Validate same-CAP sibling state on physical Pico 2 7 minutes
 
 - Step/experiment: `ctx03-same-cap-sibling-physical-20261102`

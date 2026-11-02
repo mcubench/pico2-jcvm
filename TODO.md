@@ -437,12 +437,13 @@ Archive text is historical evidence, not current device state or priorities.
   static defaults were `000012340056123456789000`, a writer update returned
   `000012350157123456799000`, and the sibling reader observed the update.
   Shareable array identity returned `019000`; cleanup removed both instances
-  and the package. This covers basic same-CAP selection and static visibility,
-  not deletion/reinstall, reset/transient behavior, GC or cold-power
-  persistence. The first probe omitted the explicit reader reselect used by the
-  VPCD test; after aligning the APDU sequence, physical results matched VPCD.
-  Further acceptance must cover same-CAP instance/package deletion and
-  reinstall, reset/transient behavior, GC and persistence on hardware.
+  and the package. A second physical run also deleted and recreated the reader
+  applet from the loaded CAP; its reinstalled instance read the writer-updated
+  package static values (`000012350157123456799000`). Instance DELETE/recreate
+  is physically covered; package DELETE/reinstall as a cycle, reset/transient
+  behavior, GC and cold-power persistence remain open. The first probe omitted
+  the explicit reader reselect used by the VPCD test; after aligning the APDU
+  sequence, physical results matched VPCD.
   Two repeated instance DELETE/reinstall cycles keep array-owning owner 1
   reserved while reclaiming object-free owner 3; full package DELETE/reinstall
   releases and reuses owner 1. Same-CAP transient tests show sibling selection
