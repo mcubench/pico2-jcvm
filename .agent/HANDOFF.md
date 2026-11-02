@@ -1,5 +1,22 @@
 # Session handoff — updated 2026-11-02
 
+## Latest physical Multi CAP test — 2026-11-02 08:18 UTC
+
+Both runtime cards passed `tools/test-get-status-multipage-physical` using the
+unchanged upstream `AlgTestApiMulti_305.cap`. For each serial-qualified reader,
+the script confirmed its test AIDs were absent, loaded the package, installed
+two applet instances, authenticated SCP03, and sent Le=40 GET STATUS. First
+page returned `6310` with 32 data bytes; continuation included the expected
+three applet AIDs exactly once and ended in `9000`. Cleanup passed and removed
+only the temporary Multi package. Logs and hashes are in `.agent/QKB.md`.
+This validates package install and status pagination on both cards, not
+same-CAP object access or package-context semantics. No firmware flash or
+power-cycle occurred.
+
+Continue CTX-03 with runtime ownership/context design. Do not call this
+test a package-context acceptance pass: the probe checks registry behavior
+only. Two token readers remain active; no BOOTSEL device has been enumerated.
+
 ## Latest current-source VPCD check — 2026-11-02 08:13 UTC
 
 Rebuilt the host emulator using `./tools/build-pc --profile current`; it passed

@@ -20067,3 +20067,29 @@
   `artifacts/logs/host-vpcd-multipackage-restart-20261102T080935Z.log` (SHA-256
   `0414c3fa864509e7e473ccbb3fa1aead988c90659fd2c56939a79f7d015ef76e`), and
   corrupt/missing sidecar logs at the same timestamp.
+
+## 2026-11-02 Test upstream Multi CAP on two physical cards 5 minutes
+
+- Step/experiment: `physical-multi-cap-status-both-tokens-20261102`
+- When: '2026-11-02 09:13 CET' - '2026-11-02 09:18 CET'
+- Change: Ran the existing physical GET STATUS test separately on tokens
+  `8E464F4E2BBC0A19` and `2BED26ED20556535`. The test uses unchanged upstream
+  `AlgTestApiMulti_305.cap`, verifies temporary AIDs are absent, loads the
+  package, installs two applet instances, checks paginated GET STATUS and
+  removes only its test package. Updated QKB and HANDOFF; no source/CAP edits.
+- Validation: Each run completed with `TEST:SUMMARY pass=2 fail=0` after SCP03
+  authentication. Le=40 GET STATUS returned `6310` and 32 bytes, followed by
+  the three expected applet AIDs exactly once and final `9000`. Each ended
+  `CLEANUP:PASS`. Distinct serial-qualified readers were selected explicitly.
+- Result: Both devices passed with identical APDU statuses and cleanup result,
+  despite different preexisting package registries. This exercises upstream
+  LOAD/INSTALL and AID listing for multiple applets in one package, but does
+  not test shared object access, package context behavior, or power-cycle
+  persistence. No firmware was flashed.
+- Decision: Keep CTX-03 acceptance open; add same-CAP sibling object/static
+  access coverage before claiming package-context correctness.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/physical-get-status-multipage-20261102T081605Z.log`
+  (SHA-256 `8d385e1043b3909317f2b0a5f219ba06cdc173316426a9be2d5ea9310f24c12c`)
+  and `artifacts/logs/physical-get-status-multipage-20261102T081719Z.log`
+  (SHA-256 `23ee5719821a8b3448d58a611ec033ef06c43a5390ddabc4fec8bbc65c5be48c`).

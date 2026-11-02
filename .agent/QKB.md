@@ -1,5 +1,28 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Upstream Multi CAP install and Le-limited GET STATUS pass on both tokens — 2026-11-02
+
+- **Procedure:** Ran `tools/test-get-status-multipage-physical` independently
+  on `8E464F4E2BBC0A19` and `2BED26ED20556535`. The script verified its
+  package and applet AIDs were absent, loaded the unchanged upstream
+  `AlgTestApiMulti_305.cap`, installed two distinct applet instances, used
+  SCP03, and queried GET STATUS with Le=40.
+- **Result:** Both passed `TEST:SUMMARY pass=2 fail=0`. First GET STATUS page
+  returned `6310` with 32 data bytes; continuation returned the expected three
+  applet AIDs exactly once and ended with `9000`. `CLEANUP:PASS` removed only
+  the temporary Multi package on each card.
+- **Difference:** The preexisting package registries differ between cards, but
+  both completed the same Multi package install and Le-limited query with no
+  differing status or cleanup error.
+- **Logs:** `artifacts/logs/physical-get-status-multipage-20261102T081605Z.log`
+  (SHA-256 `8d385e1043b3909317f2b0a5f219ba06cdc173316426a9be2d5ea9310f24c12c`)
+  and `artifacts/logs/physical-get-status-multipage-20261102T081719Z.log`
+  (SHA-256 `23ee5719821a8b3448d58a611ec033ef06c43a5390ddabc4fec8bbc65c5be48c`).
+- **Limits:** This confirms on-card GPPro loading/installation and registry
+  enumeration for two applets in one CAP, not same-context object access or
+  package-context semantics. It does not flash firmware or prove power-cycle
+  persistence. The same package AID was cleaned from both cards.
+
 ## Multipackage VPCD regression needs a realistic socket timeout — 2026-11-02
 
 - **Result:** After rebuilding the PC emulator from the current shared source,
