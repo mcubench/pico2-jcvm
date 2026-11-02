@@ -35,14 +35,18 @@ wrappers are committed in `c201188`.
 `tools/test-rmi-registry` now allocates owner facades for IDs 1 through 255,
 retains one live array for each, confirms all remain reserved, then collects
 the arrays and confirms those owner states are reclaimable. It passes with
-`owner_id_exhaustion=1`. This is Context-level evidence; actual rejection of
-INSTALL when all 255 CAP owner IDs are occupied remains untested. Regression
-and progress record are committed in `6b20d05`.
+`owner_id_exhaustion=1`. The expanded fake-flash CAP storage test also assigns
+IDs 1..255 across package slots, rejects the next allocation, then deletes an
+instance and reuses ID 1. `tools/test-rp2350-fs-overlay` passes with
+`cap_owner_allocator_rejects_exhaustion_at_255` and
+`cap_owner_allocator_reuses_id_after_instance_delete`. The separate PC/VPCD
+allocator has not been driven to full exhaustion. The Context regression and
+progress record are committed in `6b20d05`; this storage test update is pending
+its commit.
 
-Next: exercise CAP allocator rejection at 255 occupied IDs if a practical
-fixture is available, then review remaining GC/reset edges and continue the
-open persistence acceptance. Only flash after a fresh authorized inventory
-finds BOOTSEL and both architectures build.
+Next: review remaining GC/reset edges and continue the open persistence
+acceptance. Only flash after a fresh authorized inventory finds BOOTSEL and
+both architectures build.
 
 ## CTX-03 applet-local RMI/SIO registries — 2026-11-02 11:13 UTC
 

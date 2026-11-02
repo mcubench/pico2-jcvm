@@ -1196,6 +1196,56 @@ int main() {
   expect(previous_metadata_survives_cut,
          "cap_registry_metadata_update_recovers_previous_header_after_cut");
 
+  fake_flash.fill(0xff);
+  bool owner_allocator_initialized = fs_init() == 0 && cap_store_initialize();
+  constexpr uint8_t owner_test_code[] = {0xca, 0xfe, 0x56, 0x01};
+  uint16_t assigned_owner_count = 0;
+  uint8_t maximum_owner_assigned = 0;
+  uint8_t first_owner_instance_aid[6]{};
+  bool owner_space_filled = owner_allocator_initialized;
+  for (uint8_t package_id = 56; package_id <= 62 && owner_space_filled;
+       ++package_id) {
+    const uint8_t package_aid[] = {0xa0, 0x00, 0x00, 0x00, package_id};
+    const uint8_t applet_aid[] = {0xa0, 0x10, 0x00, package_id, 0x01};
+    owner_space_filled = cap_store_write_package(
+        package_id, package_aid, sizeof(package_aid), owner_test_code,
+        sizeof(owner_test_code));
+    const uint8_t instance_count = package_id < 62 ? 40 : 15;
+    for (uint8_t index = 0; index < instance_count && owner_space_filled;
+         ++index) {
+      uint8_t instance_aid[] = {
+          0xa0, 0x20, package_id, 0x00, 0x00,
+          static_cast<uint8_t>(index)};
+      if (index == 0 && package_id == 56) {
+        std::memcpy(first_owner_instance_aid, instance_aid,
+                    sizeof(instance_aid));
+      }
+      uint8_t allocated_owner = 0;
+      owner_space_filled = cap_store_allocate_applet_owner(allocated_owner) &&
+          cap_store_mark_package_installed(
+              package_id, applet_aid, sizeof(applet_aid), instance_aid,
+              sizeof(instance_aid), 0x0123, allocated_owner);
+      if (owner_space_filled) {
+        ++assigned_owner_count;
+        maximum_owner_assigned = allocated_owner;
+      }
+    }
+  }
+  uint8_t exhausted_owner = 0;
+  const bool owner_allocator_exhausted = owner_space_filled &&
+      assigned_owner_count == UINT8_MAX && maximum_owner_assigned == UINT8_MAX &&
+      !cap_store_allocate_applet_owner(exhausted_owner);
+  expect(owner_allocator_exhausted,
+         "cap_owner_allocator_rejects_exhaustion_at_255");
+  const bool owner_allocator_reuses_deleted_id =
+      owner_allocator_exhausted &&
+      cap_store_remove_package_instance(56, first_owner_instance_aid,
+                                        sizeof(first_owner_instance_aid)) &&
+      cap_store_allocate_applet_owner(exhausted_owner) &&
+      exhausted_owner == 1;
+  expect(owner_allocator_reuses_deleted_id,
+         "cap_owner_allocator_reuses_id_after_instance_delete");
+
   // Simulate a previous v3 snapshot in the current COW slots. Migration must
   // write the compact v4 image to the other slot and preserve the source.
   fake_flash.fill(0xff);

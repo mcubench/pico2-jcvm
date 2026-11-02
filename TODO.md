@@ -397,11 +397,12 @@ Archive text is historical evidence, not current device state or priorities.
   releases and reuses owner 1. Same-CAP transient tests show sibling selection
   clears `CLEAR_ON_DESELECT` while preserving `CLEAR_ON_RESET`, and card reset
   clears both. The owner lifecycle suite passes 9/9 and transient suite 5/5.
-  The native registry test also retains one live array for every owner ID
-  1..255, confirms all remain reserved, collects them, and confirms reclamation.
-  Actual backend rejection of an INSTALL with all 255 IDs occupied remains
-  untested. Review remaining GC/reset paths, then complete persistence and
-  physical acceptance.
+  The native registry test retains a live array for every owner ID 1..255,
+  then confirms reclamation after GC. Fake-flash CAP metadata tests allocate
+  IDs 1..255 across packages, reject the next allocation, and reuse ID 1 after
+  deleting its instance. The PC/VPCD allocator is integration-tested for live
+  owner retention but not full 255-ID exhaustion. Review remaining GC/reset
+  paths, then complete persistence and physical acceptance.
   Acceptance: an unchanged or test-only multi-applet CAP proves sibling
   instances share static/heap context and can access objects as specified,
   while separate CAPs remain isolated; AID reporting and per-instance DELETE

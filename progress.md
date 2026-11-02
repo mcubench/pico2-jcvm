@@ -20325,3 +20325,14 @@
 - Decision: Keep actual allocator no-free-ID INSTALL behavior open; continue CTX-03 remaining reset/GC/persistence acceptance.
 - Commit: `6b20d05` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/tests/rmi_registry/rmi_registry_test.cpp`; no external log.
+
+## 2026-11-02 Verify CAP owner allocation exhaustion and reuse 3 minutes
+
+- Step/experiment: `cap-owner-id-exhaustion-20261102`
+- When: '2026-11-02 12:04 UTC' - '2026-11-02 12:07 UTC'
+- Change: Extended the RP2350 fake-flash overlay test to populate all 255 nonzero owner IDs across seven CAP packages, verify owner allocation refuses another ID, delete one instance, and verify its ID becomes available. Updated CTX-03 TODO, QKB, and handoff.
+- Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including `cap_owner_allocator_rejects_exhaustion_at_255` and `cap_owner_allocator_reuses_id_after_instance_delete`. No firmware source changed; no hardware operation.
+- Result: The actual `src/cap_store.cpp` allocator handles all 255 assigned IDs and reuses owner 1 after deletion. The separate PC/VPCD allocator is integration-tested for retained live owners but was not filled to exhaustion.
+- Decision: Native CAP store exhaustion/reuse is verified. Continue remaining GC/reset and persistence acceptance; physical validation is still blocked by no BOOTSEL enumeration.
+- Commit: `<implementation commit recorded in follow-up>`
+- Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; test output only.

@@ -24,9 +24,10 @@
   (47/47), and PC/ARM/RISC-V max_crypto builds pass.
 - **Limit:** Physical testing remains pending; authorized USB refresh found
   two running CCID readers but no BOOTSEL board. The native Context regression
-  now covers all 255 owner IDs through object retention and GC reclamation, but
-  the CAP allocator's no-free-ID INSTALL response and every GC/reset edge are
-  not yet covered.
+  covers all 255 owner IDs through object retention and GC reclamation. Fake-
+  flash CAP storage coverage fills all 255 IDs, rejects allocation 256, deletes
+  an instance, and reuses ID 1. The separate PC/VPCD allocator has not been
+  driven to 255 occupied IDs; every GC/reset edge is also not covered.
 
 ## Transient clear events across same-package applet selection — verified 2026-11-02
 
