@@ -93,6 +93,18 @@ change. The next performance task is to profile host ptrace single-step and
 protection-fault counts; do not attribute remaining latency to CPU spinning
 without per-process CPU measurements.
 
+### Process-level CPU sample — 2026-11-02
+
+`/usr/bin/time -v ./tools/test-jcsystem-transaction-applet --case 41` passed
+again (`TEST:SUMMARY pass=3 fail=0`, test-reported 71.198 s). The outer command
+used 87.56 s wall, 26.84 s user, and 59.61 s system (98% CPU), so this focused
+run consumed about one logical CPU on average, with more system than user time.
+This suggests syscall/ptrace overhead, but it does not identify individual
+calls. The sandbox blocks `perf stat` events at `perf_event_paranoid=4`; do not
+change host kernel settings to enable them. This one run does not explain
+earlier reports of all eight VM cores being busy; process-level sampling during
+the original saturation is still needed.
+
 ## Current measurements
 
 From `artifacts/metrics/development-time.csv` and the host install log below:

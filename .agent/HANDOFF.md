@@ -14,6 +14,14 @@ no CPU profile was collected. SIO log:
 `artifacts/logs/sio-cross-aid-vpcd-20261102T043717Z.log` (SHA-256
 `a152f71bb608fc1af8ee132f71bda30a3685e8f67fa4174bdd39d28c7cae6a14`).
 
+Follow-up `/usr/bin/time -v` sample for case 41 passed in 71.198 s test-reported
+time / 87.56 s outer wall, with 26.84 s user, 59.61 s system, and 98% CPU. This
+is about one logical CPU average for the test command and suggests syscall or
+ptrace overhead; it does not explain an eight-core VM saturation report. The
+VM restricts `perf stat` (`perf_event_paranoid=4`), so no kernel setting was
+changed. Next capture per-process CPU during a real saturation reproduction
+and instrument ptrace/fault counts before changing MPU behavior.
+
 Latest authorized USB inventory still sees one running CCID and no BOOTSEL
 devices, despite the user's report of three boards in BOOTSEL. Continue offline;
 do not flash until BOOTSEL is visible and the required builds pass. The source
