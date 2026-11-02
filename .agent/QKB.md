@@ -44,6 +44,18 @@
 - **Limit:** PC VPCD only; physical same-package transient behavior and
   multi-logical-channel applet activation remain unverified.
 
+## Same-CAP sibling state survives emulator restart — verified 2026-11-02
+
+- **Test:** `tools/test-same-cap-restart` installs writer and reader applets
+  from one CAP, mutates package static scalar/array state, shuts down cleanly,
+  and restarts PC VPCD against the same storage image.
+- **Result:** Both applet registrations restore; the reader returns the same
+  static state; its Shareable call resolves the restored writer array by
+  reference identity; and a subsequent writer mutation is visible to the
+  reader. `TEST:SUMMARY pass=7 fail=0`.
+- **Limit:** This verifies clean emulator-process restart, not Pico power loss.
+  The physical boot/recovery path and corruption cases remain open.
+
 ## RMI and Shareable state must be per applet inside package Context — 2026-11-02
 
 - **Observed risk:** After moving sibling applets into one package Context,

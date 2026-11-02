@@ -20336,3 +20336,14 @@
 - Decision: Native CAP store exhaustion/reuse is verified. Continue remaining GC/reset and persistence acceptance; physical validation is still blocked by no BOOTSEL enumeration.
 - Commit: `8281870` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; test output only.
+
+## 2026-11-02 Verify same-CAP sibling restoration after restart 3 minutes
+
+- Step/experiment: `ctx03-same-cap-restart-20261102`
+- When: '2026-11-02 12:07 UTC' - '2026-11-02 12:10 UTC'
+- Change: Added `tools/test-same-cap-restart`, which installs the existing same-CAP writer/reader fixture, persists shared static state, restarts the PC VPCD process against the same storage image, and verifies sibling registration, state, SIO array identity, and post-restart updates. Updated CTX-03 TODO, QKB, and handoff.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-restart` passed (`TEST:SUMMARY pass=7 fail=0`). The test fixture CAP converted with one existing int-support warning. No firmware source changed; no architecture rebuild or physical flash/test.
+- Result: After restart both sibling AIDs were present in GET STATUS, the reader restored the same static scalar/array values, SIO returned identity success for the writer's restored array, and a writer update was visible to the reader. Log: `artifacts/logs/same-cap-restart-vpcd-20261102T121015Z.log`.
+- Decision: Same-CAP clean-process restart state restoration is now covered. This does not verify hardware power loss or corrupted storage. Continue remaining CTX-03 GC/reset and persistence cases.
+- Commit: `<implementation commit recorded in follow-up>`
+- Artifacts/logs: `tools/test-same-cap-restart`, `tools/tests/same_cap_restart_vpcd_test.py`, and `artifacts/logs/same-cap-restart-vpcd-20261102T121015Z.log`.

@@ -1,4 +1,4 @@
-# CTX-03 owner and transient lifecycle checks — 2026-11-02 12:04 UTC
+# CTX-03 owner, transient, and restart lifecycle checks — 2026-11-02 12:10 UTC
 
 Fixed owner-ID reuse while package-shared VM objects remain alive. A new
 same-CAP VPCD regression installs writer and reader applets as owners 1 and 2,
@@ -31,6 +31,14 @@ same-package sibling switch clears `CLEAR_ON_DESELECT` but retains
 `CLEAR_ON_RESET`, and card reset clears both. Log:
 `artifacts/logs/same-cap-transient-vpcd-20261102T120128Z.log`. Test-only CAP and
 wrappers are committed in `c201188`.
+
+`tools/test-same-cap-restart` now passes 7/7. After clean emulator shutdown and
+restart, both same-CAP applet registrations restore, the reader sees the same
+static scalar and array content, SIO resolves the restored writer array by
+identity, and subsequent writer changes remain visible to the reader. Log:
+`artifacts/logs/same-cap-restart-vpcd-20261102T121015Z.log`. The wrapper and
+test are pending commit with a progress record; this is process-restart VPCD
+evidence, not physical power-loss validation.
 
 `tools/test-rmi-registry` now allocates owner facades for IDs 1 through 255,
 retains one live array for each, confirms all remain reserved, then collects

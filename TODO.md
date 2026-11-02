@@ -397,6 +397,10 @@ Archive text is historical evidence, not current device state or priorities.
   releases and reuses owner 1. Same-CAP transient tests show sibling selection
   clears `CLEAR_ON_DESELECT` while preserving `CLEAR_ON_RESET`, and card reset
   clears both. The owner lifecycle suite passes 9/9 and transient suite 5/5.
+  A same-CAP restart VPCD test passes 7/7: both applet registrations restore,
+  sibling static scalar/array state survives emulator restart, and SIO resolves
+  the same restored array identity. The multi-package restart suite passes
+  47/47.
   The native registry test retains a live array for every owner ID 1..255,
   then confirms reclamation after GC. Fake-flash CAP metadata tests allocate
   IDs 1..255 across packages, reject the next allocation, and reuse ID 1 after
