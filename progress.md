@@ -20093,3 +20093,22 @@
   (SHA-256 `8d385e1043b3909317f2b0a5f219ba06cdc173316426a9be2d5ea9310f24c12c`)
   and `artifacts/logs/physical-get-status-multipage-20261102T081719Z.log`
   (SHA-256 `23ee5719821a8b3448d58a611ec033ef06c43a5390ddabc4fec8bbc65c5be48c`).
+
+## 2026-11-02 Refresh active TODO hardware and CTX-03 evidence 2 minutes
+
+- Step/experiment: `todo-physical-pool-and-ctx03-evidence-20261102`
+- When: '2026-11-02 09:18 CET' - '2026-11-02 09:20 CET'
+- Change: Updated the root TODO with the current two-reader runtime inventory
+  and the precise evidence from the upstream Multi CAP physical runs. Clarified
+  that LOAD/INSTALL and GET STATUS do not prove sibling object or static-state
+  access.
+- Validation: Cross-checked the just-completed serial-qualified logs and
+  `CLEANUP:PASS` on both cards; `git diff --check -- TODO.md progress.md`
+  passed.
+- Result: The TODO now distinguishes the latest runtime device state and
+  physical package registry validation from the still-open CTX-03 semantics.
+- Decision: Keep CTX-03 open and preserve both runtime devices for future
+  physical tests; no BOOTSEL device has been enumerated.
+- Commit: pending.
+- Artifacts/logs: The two `physical-get-status-multipage-20261102T081605Z.log`
+  and `...081719Z.log` runs documented above.

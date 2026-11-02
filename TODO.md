@@ -18,9 +18,10 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
 
 Physical availability is volatile. The latest authorized check on 2026-11-02
-found one Pico in runtime CCID mode (`2e8a:0009`), not the three BOOTSEL devices
-reported by the user. Refresh identity and access before hardware work; continue
-useful offline work otherwise.
+found two runtime CCID readers (`8E464F4E2BBC0A19` and `2BED26ED20556535`),
+not BOOTSEL devices. Both pass the finite runtime monitor, read-only JCAlgTest
+probe, and upstream Multi CAP GET STATUS test. Refresh identity and access
+before hardware work; continue useful offline work otherwise.
 See [.agent/HANDOFF.md](.agent/HANDOFF.md) for active continuation and last observations.
 
 ## How to use this backlog
@@ -369,7 +370,11 @@ Archive text is historical evidence, not current device state or priorities.
   AID, lifecycle state, persistent roots, and object owner identity; update SIO
   routing so same-CAP applet calls do not cross an artificial firewall. Define
   deletion, transient-array, selection, and previous-context AID behavior for
-  sibling instances before changing context lifetime.
+  sibling instances before changing context lifetime. The unchanged upstream
+  `AlgTestApiMulti_305.cap` was loaded and two applet instances installed on
+  both currently visible physical tokens; physical Le-limited GET STATUS passed
+  and the temporary package was cleaned. This verifies CAP LOAD/INSTALL and
+  registry behavior only; no sibling object or static-state access was tested.
   Acceptance: an unchanged or test-only multi-applet CAP proves sibling
   instances share static/heap context and can access objects as specified,
   while separate CAPs remain isolated; AID reporting and per-instance DELETE
