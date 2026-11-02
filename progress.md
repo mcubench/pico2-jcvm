@@ -19779,3 +19779,37 @@
   separately.
 - Artifacts/logs: VPCD logs above, multipackage log above, and firmware images
   `build/arm/pico2_choupi.uf2`, `build/riscv/pico2_jcvm_smoke.uf2`.
+
+## 2026-11-02 Preserve proxy markers through persistent aliases 15 minutes
+
+- Step/experiment: `sio-persistent-proxy-alias-marker-20261102`
+- When: '2026-11-02 04:14 CET' - '2026-11-02 04:29 CET'
+- Change: Fixed persistent object alias restoration so a Shareable proxy marker
+  is restored whether the target was already loaded or is first reconstructed
+  through the alias. Extended the test-only client to retain the same proxy in
+  two fields and deliberately read the alias first after emulator restart.
+  Updated CTX-01, QKB and HANDOFF with the alias regression and the tested
+  fail-closed persistence boundary.
+- Validation: `./tools/test-rmi-registry`, `./tools/build-pc --profile current`,
+  `./tools/build arm`, and `./tools/build riscv` passed. The SIO VPCD fixture
+  passed 15/15, including alias-first stale-proxy rejection after restart;
+  log: `artifacts/logs/sio-cross-aid-vpcd-20261102T032628Z.log` (SHA-256
+  `d6925d8315d57309e4f63673f5b8f8ff1fd106c28494ed7c411a1508b4532d49`). The
+  first restricted-context VPCD attempt failed with `Operation not permitted`;
+  rerunning through the elevated loopback execution path passed. Final reader
+  refresh found one runtime CCID (`2e8a:0009`) and no BOOTSEL devices, so no
+  physical flash or test was attempted. Scoped whitespace check passed with
+  CRLF-aware handling for `flashmemory.cpp`.
+- Result: Persistent aliases no longer erase the safety marker; stale proxies
+  restored directly or through an alias fail closed instead of dispatching in
+  the client context. Routing metadata still is not rehydrated. ARM UF2 is
+  1,853,440 bytes, SHA-256
+  `de5f11ad3059ac25903580132a8e41619204c0c3b7428963628a8611793bb0be`; RISC-V
+  smoke UF2 is 79,872 bytes, SHA-256
+  `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+- Decision: Keep CTX-01 open for physical cross-AID acceptance, server-reference
+  ownership/firewall cases, and upstream Multi CAP integration. Retry hardware
+  when BOOTSEL devices become guest-visible.
+- Commit: pending.
+- Artifacts/logs: VPCD log above; `build/arm/pico2_choupi.uf2`,
+  `build/riscv/pico2_jcvm_smoke.uf2`.

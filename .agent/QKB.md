@@ -1,5 +1,35 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Persistent object aliases must retain the Shareable proxy marker — 2026-11-02
+
+- **Observed:** After process restart, a saved Shareable proxy returned through
+  a persistent object alias could be reconstructed as an ordinary instance.
+  Since its runtime route registry is intentionally empty after restart, the
+  missing marker meant firewall checks could fail to recognize it as stale.
+- **Cause:** The direct persistent-object restore path restored the internal
+  `FIELD_TYPE_SHAREABLE_PROXY_OBJECT` marker, but
+  `getPersistentField_ReferenceImpl()`'s `kPersistentObjectAlias` path rebuilt
+  a `JC_Instance` without copying that marker from its canonical target header.
+- **Viable fix:** In both alias cases (target already loaded or rebuilt from
+  storage), check the target header and reapply
+  `setShareableProxyPlaceholder()` for the reserved proxy field type. Keep
+  Java-visible field queries normalized to ordinary `FIELD_TYPE_OBJECT`.
+- **Regression:** The SIO fixture stores one proxy in two persistent client
+  fields, then reads the alias field first after emulator restart. The stale
+  proxy is rejected with a caught `SecurityException`. The complete VPCD SIO
+  fixture passes 15/15, including this alias case;
+  `./tools/test-rmi-registry`, PC, ARM, and RISC-V builds pass. Log:
+  `artifacts/logs/sio-cross-aid-vpcd-20261102T032628Z.log` (SHA-256
+  `d6925d8315d57309e4f63673f5b8f8ff1fd106c28494ed7c411a1508b4532d49`).
+- **Persistence boundary:** Routing metadata is still process-local. After
+  process restart, saved proxies intentionally fail closed; rehydration is not
+  implemented. Do not remove this boundary without stable identity, lifecycle,
+  transaction, and deletion coverage.
+- **Hardware:** The user reports three boards in BOOTSEL; the authorized helper
+  and elevated `lsusb -d 2e8a:` still show only one runtime `2e8a:0009` device
+  at `/dev/bus/usb/001/055`. No BOOTSEL device was guest-visible and no flash
+  was attempted. Retry after passthrough enumeration changes.
+
 ## Enforce descriptor-free SIO argument kinds at server local loads — 2026-11-02
 
 - **Implementation:** The VM stack tracks each word as unknown, primitive,

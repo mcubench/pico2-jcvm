@@ -194,6 +194,17 @@ def main() -> int:
                 raise RuntimeError(
                     f"client reselect after restart {response.hex().upper()}"
                 )
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8019000000"),
+                "reject aliased stale proxy after emulator restart"
+            )
+            if response != bytes.fromhex("6A0B9000"):
+                raise RuntimeError(
+                    f"stale proxy alias after restart {response.hex().upper()}, "
+                    "expected caught fail-closed SecurityException 6A0B9000"
+                )
+            print("TEST:PASS stale proxy restored through an object alias "
+                  "fails closed")
             response = vpcd.exchange(connection, bytes.fromhex("8010000000"),
                                      "fresh cross-AID lookup after emulator restart")
             if response != bytes.fromhex("45679000"):
@@ -291,7 +302,7 @@ def main() -> int:
                 )
             print("TEST:PASS Object.equals on proxy is blocked; "
                   "response=6A099000")
-            print("TEST:SUMMARY pass=14 fail=0")
+            print("TEST:SUMMARY pass=15 fail=0")
             return 0
         finally:
             if connection is not None:

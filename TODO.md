@@ -285,7 +285,12 @@ Archive text is historical evidence, not current device state or priorities.
   registry across interface/virtual/special calls, casts and instance-field
   operations instead of invoking them in the caller context. VPCD confirms the
   stale placeholder is fail-closed after process restart and card reset.
-  Persisting enough metadata to revive an old proxy remains unimplemented. On
+  Persistent object aliases now also preserve the internal proxy marker: an
+  alias restored before its canonical target can no longer become an unmarked
+  object and dispatch in the client context. The three-package VPCD fixture
+  stores the same proxy in two fields and verifies that reading the alias first
+  after restart fails closed. This establishes the documented fail-closed
+  persistence boundary; routing metadata is not rehydrated. On
   physical 2BED `2BED26ED20556535`, full-index compaction now succeeds and
   GPPro INSTALL for the already-loaded client and service applets returns
   `9000`. The cross-AID probe selects the client, but its SIO APDU returns
@@ -299,8 +304,9 @@ Archive text is historical evidence, not current device state or priorities.
   server heap references to clients.
   Acceptance: physical positive cross-AID fixture; denied-call fixtures; correct
   context/AID restoration; stable roots across GC and reset/delete; no cross-heap
-  reference leaks; durable proxy rehydration or a documented persistence
-  boundary; then unchanged upstream Multi CAP integration and physical checks.
+  reference leaks; retain the tested fail-closed persistence boundary or add
+  standards-compatible proxy rehydration; then unchanged upstream Multi CAP
+  integration and physical checks.
   General cross-context calls and logical-channel policy remain unimplemented;
   basic channel 0 is the current assignment. No blanket firewall acceptance yet.
   Evidence: current HANDOFF, `tools/test-rmi-registry`, context/proxy progress

@@ -1,5 +1,35 @@
 # Session handoff — updated 2026-11-02
 
+## Latest CTX-01 update: proxy markers survive persistent alias restore
+
+`getPersistentField_ReferenceImpl()` rebuilt persistent object aliases without
+copying the canonical object's internal Shareable-proxy marker. An aliased stale
+proxy could therefore lose fail-closed recognition after process restart. The
+alias restore path now reapplies the marker whether it resolves an already
+loaded target or constructs the target from its canonical tag. Java-visible
+field type remains ordinary object.
+
+The test-only SIO client stores the same proxy in two persistent fields and
+accesses the alias first after restart. It now catches the expected
+`SecurityException`; the full cross-AID VPCD fixture passes 15/15 at
+`artifacts/logs/sio-cross-aid-vpcd-20261102T032628Z.log` (SHA-256
+`d6925d8315d57309e4f63673f5b8f8ff1fd106c28494ed7c411a1508b4532d49`).
+`tools/test-rmi-registry`, PC, ARM and RISC-V wrapper builds pass. Latest ARM
+UF2 is 1,853,440 bytes, SHA-256
+`de5f11ad3059ac25903580132a8e41619204c0c3b7428963628a8611793bb0be`; RISC-V
+smoke UF2 is 79,872 bytes, SHA-256
+`7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`.
+
+The proxy persistence policy remains fail-closed after VM process restart;
+routing metadata is not rehydrated. This is now tested for both direct and
+aliased persistent references. Physical positive cross-AID acceptance remains
+open. Although the user reports three BOOTSEL boards, the latest authorized
+helper plus elevated USB enumeration still expose only one runtime CCID
+(`2e8a:0009`, `/dev/bus/usb/001/055`) and no BOOTSEL device. No flash was
+attempted. Retry the physical fixture once BOOTSEL is guest-visible, then
+continue with reference ownership/firewall cases and unchanged upstream Multi
+CAP coverage. Preserve all unrelated worktree changes.
+
 ## Current CTX-01 state: descriptor-free typed arguments pass VPCD
 
 The physical trace from a fresh two-package probe shows both packages installed

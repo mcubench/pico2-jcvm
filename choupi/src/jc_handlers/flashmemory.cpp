@@ -881,9 +881,17 @@ jref_t FlashMemory_Handler::getPersistentField_ReferenceImpl(
     const jclass_index_t claz =
         static_cast<jclass_index_t>(BYTES_TO_SHORT(target_data[2], target_data[3]));
     if (heap.getPersistentReference(target_tag, existing_reference)) {
+      if (target_data[0] == FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT) {
+        heap.getInstance(existing_reference)->setShareableProxyPlaceholder();
+      }
       return existing_reference;
     }
-    return heap.addInstance(JC_Instance(heap, package, claz, target_tag));
+    const jref_t reference =
+        heap.addInstance(JC_Instance(heap, package, claz, target_tag));
+    if (target_data[0] == FieldType::FIELD_TYPE_SHAREABLE_PROXY_OBJECT) {
+      heap.getInstance(reference)->setShareableProxyPlaceholder();
+    }
+    return reference;
   }
 
   if (data[0] == kPersistentArrayAlias) {

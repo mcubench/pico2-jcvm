@@ -11,6 +11,9 @@ public final class ClientApplet extends Applet {
   private static final byte[] SERVICE_AID = {
     (byte) 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x03, 0x01
   };
+  // Keep the alias field first so restoration exercises the persistent object
+  // alias path before the canonical field has loaded its target reference.
+  private Shareable retainedShareableAlias;
   private Shareable retainedShareable;
 
   private ClientApplet() {
@@ -28,8 +31,9 @@ public final class ClientApplet extends Applet {
     byte[] buffer = apdu.getBuffer();
     boolean denial_probe = buffer[1] == 0x11;
     Shareable shareable;
-    if (buffer[1] == 0x16 || buffer[1] == 0x18) {
-      shareable = retainedShareable;
+    if (buffer[1] == 0x16 || buffer[1] == 0x18 || buffer[1] == 0x19) {
+      shareable = buffer[1] == 0x19
+          ? retainedShareableAlias : retainedShareable;
     } else {
       AID server = JCSystem.lookupAID(SERVICE_AID, (short) 0,
                                       (byte) SERVICE_AID.length);
@@ -41,6 +45,7 @@ public final class ClientApplet extends Applet {
       result = shareable == null ? (short) 0x6A01 : (short) 0x6A02;
     } else if (buffer[1] == 0x15) {
       retainedShareable = shareable;
+      retainedShareableAlias = shareable;
       result = shareable == null ? (short) 0x6A11 : (short) 0x6A10;
     } else if (shareable == null) {
       result = (short) 0x6A04;
@@ -77,7 +82,7 @@ public final class ClientApplet extends Applet {
       } catch (SecurityException expected) {
         result = (short) 0x6A09;
       }
-    } else if (buffer[1] == 0x18) {
+    } else if (buffer[1] == 0x18 || buffer[1] == 0x19) {
       try {
         ((Object) shareable).equals(shareable);
         result = (short) 0x6A0C;
