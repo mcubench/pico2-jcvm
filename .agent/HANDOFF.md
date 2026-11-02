@@ -16,7 +16,11 @@ test. Current ARM binary is 943,592 bytes, ending at `0x100e65e8`, leaving
 Fresh authorized USB inventory exposed two runtime CCID devices and no BOOTSEL,
 so there was no physical flash/test. The external-test artifact was not
 refreshed. Next: continue CTX-03 package-context/owner separation and extend the
-fixture to prove shared object identity and per-object owner isolation.
+fixture to prove shared object identity and per-object owner isolation. The
+current registry creates a Context per `(owner, full AID)`; Context holds one
+AppletInstanceState and its Heap has an immutable owner. A package-shared heap
+therefore needs stable per-object owner facades and a shared handle/root store;
+do not alias Context or Heap objects directly.
 
 # Session handoff — updated 2026-11-02
 

@@ -20189,3 +20189,14 @@
 - Decision: Keep CTX-03 open for package-scoped firewall context, shared object identity, and per-object owner isolation; the optional Descriptor is not needed for static primitive initial values.
 - Commit: `5102c6e`
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T093948Z.log`; ARM/RISC-V/PC build outputs under `build/`
+
+## 2026-11-02 Revalidate VPCD multipackage lifecycle after static fix 4 minutes
+
+- Step/experiment: `multipackage-vpcd-after-static-initializer-20261102`
+- When: '2026-11-02 09:46 UTC' - '2026-11-02 09:50 UTC'
+- Change: No firmware source change; reran the complete current-source multipackage VPCD integration suite after the static primitive read fallback change and recorded the next CTX-03 ownership constraint.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` passed `TEST:SUMMARY pass=47 fail=0`.
+- Result: Three packages and 21 applet instances passed pagination, restart recovery, lookupAID identity, transient lifecycle, and DELETE cases. This is PC emulator evidence only. Static initializer work remains untested on physical hardware because the current live USB refresh found runtime CCID readers and no BOOTSEL device.
+- Decision: Continue CTX-03 by designing package-shared heap/handle/root storage with stable per-applet owner facades; do not alias the current Context or immutable-owner Heap objects.
+- Commit: pending (recorded in follow-up metadata commit)
+- Artifacts/logs: `artifacts/logs/host-vpcd-multipackage-apdu-20261102T094628Z.log`; `host-vpcd-multipackage-restart-20261102T094628Z.log`; corrupt/missing-sidecar logs with same timestamp.

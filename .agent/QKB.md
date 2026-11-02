@@ -4043,3 +4043,24 @@ original terminology/status; check current summary and later fixes before reuse.
   readers (`2e8a:0009`) and no BOOTSEL devices. No hardware flash or physical
   runtime validation was performed. VPCD log:
   `artifacts/logs/same-cap-sibling-vpcd-20261102T093948Z.log`.
+
+## VPCD multipackage regression after static initializer fix — 2026-11-02
+
+- **Validation:** Re-ran `PICO2_HOST_USB_ACCESS=1
+  ./tools/test-vpcd-multipackage --timeout 60` against the rebuilt max_crypto
+  PC VM after changing the static primitive fallback. It passed
+  `TEST:SUMMARY pass=47 fail=0`, covering three packages, 21 applet instances,
+  GET STATUS pagination, restart recovery, lookupAID identity, transient
+  lifecycle, and DELETE. Logs:
+  `artifacts/logs/host-vpcd-multipackage-apdu-20261102T094628Z.log`,
+  `artifacts/logs/host-vpcd-multipackage-restart-20261102T094628Z.log`, and
+  matching `-corrupt-sidecar-` / `-missing-sidecar-` logs. This is emulator
+  integration evidence, not
+  physical validation.
+- **Next CTX-03 design constraint:** The applet registry matches a Context by
+  owner ID plus complete AID, and each Context currently contains exactly one
+  `AppletInstanceState`. Its Heap has an immutable owner, and heap objects keep
+  a reference to their owner Heap. Sharing Context/Heap instances directly
+  would collapse applet owner tags or leave object owner references dangling
+  when an applet is deleted. Design shared package handle/root storage with
+  stable per-owner heap facades before implementing package-scoped contexts.
