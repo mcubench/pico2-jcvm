@@ -41,8 +41,8 @@ instance and reuses ID 1. `tools/test-rp2350-fs-overlay` passes with
 `cap_owner_allocator_rejects_exhaustion_at_255` and
 `cap_owner_allocator_reuses_id_after_instance_delete`. The separate PC/VPCD
 allocator has not been driven to full exhaustion. The Context regression and
-progress record are committed in `6b20d05`; this storage test update is pending
-its commit.
+progress record are committed in `6b20d05`; the storage exhaustion test is
+committed in `8281870`.
 
 Next: review remaining GC/reset edges and continue the open persistence
 acceptance. Only flash after a fresh authorized inventory finds BOOTSEL and

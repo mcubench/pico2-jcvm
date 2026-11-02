@@ -20334,5 +20334,5 @@
 - Validation: `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`), including `cap_owner_allocator_rejects_exhaustion_at_255` and `cap_owner_allocator_reuses_id_after_instance_delete`. No firmware source changed; no hardware operation.
 - Result: The actual `src/cap_store.cpp` allocator handles all 255 assigned IDs and reuses owner 1 after deletion. The separate PC/VPCD allocator is integration-tested for retained live owners but was not filled to exhaustion.
 - Decision: Native CAP store exhaustion/reuse is verified. Continue remaining GC/reset and persistence acceptance; physical validation is still blocked by no BOOTSEL enumeration.
-- Commit: `<implementation commit recorded in follow-up>`
+- Commit: `8281870` (recorded in follow-up metadata commit)
 - Artifacts/logs: `tools/tests/rp2350_fs_overlay/rp2350_fs_overlay_test.cpp`; test output only.
