@@ -6,7 +6,7 @@
 - Validation: `./tools/test-rmi-registry`, `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-siblings` passed `TEST:SUMMARY pass=6 fail=0`; `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage --timeout 60` passed `pass=47 fail=0`; elevated `PICO2_HOST_USB_ACCESS=1 python3 -u tools/tests/sio_cross_aid_vpcd_test.py` passed `pass=15 fail=0`. Authorized USB refresh found two runtime CCID devices and no BOOTSEL device; physical flash/runtime validation was skipped.
 - Result: Same-CAP sibling SIO, cross-AID SIO state restoration, multi-package restart, deletion and transient lifecycle pass in VPCD. ARM linker end `0x100e70ec`, firmware usage 946,412/1,048,576 bytes, 102,164 bytes remaining. UF2 is 1,893,376 bytes, SHA-256 `93b9f5770d349ba1b1d8a8f1ea8abea243e07b999d3317908589e0b9a0be6124`.
 - Decision: Continue hardware validation when a BOOTSEL Pico enumerates. Review tombstoned owner-facade growth over repeated delete/reinstall and test sibling reset/transient and persistence semantics on hardware.
-- Commit: recorded in the follow-up metadata commit.
+- Commit: `0a746d9`; progress SHA reference is recorded in the metadata commit.
 - Artifacts/logs: `artifacts/logs/same-cap-sibling-vpcd-20261102T104652Z.log`; `artifacts/logs/host-vpcd-multipackage-apdu-20261102T104740Z.log`; `artifacts/logs/sio-cross-aid-vpcd-20261102T105231Z.log`; current ARM build `build/arm/pico2_choupi.uf2`.
 
 ## 2026-11-02 — Measure host VPCD CPU usage 5 minutes
