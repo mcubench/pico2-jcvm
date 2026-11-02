@@ -1,7 +1,14 @@
-# Pico 2 JCVM + JCAlgTest
+# JCAlgTest physical profile comparison runbook
 
-Run these commands from the repository root. The flash wrapper builds both
-architectures as a safety gate and flashes the ARM CHOUPI image.
+Run these commands from the repository root. This is an example workflow, not a
+record of current board state. Identify each board and its installed packages
+before flashing or installing a CAP. Every USB/PCSC command below must use the
+host-access execution path from `AGENTS.md` (elevated sandbox execution plus
+`PICO2_HOST_USB_ACCESS=1`); the marker alone does not grant access. The flash
+wrapper builds both architectures before flashing the ARM CHOUPI image.
+
+Replace the example serials and reader names below with the identities from
+that authorized discovery. Keep per-board results separate.
 
 ```sh
 # One-time: extract the official JCAlgTest 1.8.2 client (archive already downloaded).
@@ -12,7 +19,8 @@ unzip -o build/downloads/AlgTest_dist_1.8.2.zip AlgTestJClient.jar \
 # Build and flash CHOUPI with the `base` profile to a Pico 2. It enables the
 # minimum crypto needed by JCAlgTest's eager startup allocations, plus all
 # OwnerPINBuilder variants so disabled capabilities are reported as `no`.
-PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile base --serial D92E743D5F640C0F
+base_serial='REPLACE_WITH_IDENTIFIED_PICO_SERIAL'
+PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile base --serial "$base_serial"
 
 # Save the expected support set before building another profile (the wrapper
 # regenerates this file for each selected profile).
@@ -25,7 +33,7 @@ PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader
 PICO2_HOST_USB_ACCESS=1 pcsc_scan -r
 
 # Use the exact Pico reader name printed above.
-reader_name='Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'
+reader_name='REPLACE_WITH_EXACT_BASE_PCSC_READER_NAME'
 
 # After a separately performed Pico reboot/power cycle, verify the CAP/applet
 # and JCSystem APDU are available. The script does not initiate or prove USB
@@ -33,23 +41,24 @@ reader_name='Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00'
 PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup "$reader_name"
 
 # Install the supplied JCAlgTest 1.8.2 JC305 CAP (skip if already installed).
-./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar \
+PICO2_HOST_USB_ACCESS=1 ./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar \
   --reader "$reader_name" \
   --install AlgTest_JavaCard/AlgTest_v1.8.2_jc305.cap
 
 # Retrieve the extended algorithm support report.
-./tools/run-jcalgtest --reader-name "$reader_name" \
+PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name" \
   -op ALG_SUPPORT_EXTENDED -fresh \
   -outpath artifacts/results/base-alg-support
 
 # Build and flash the all-enabled current profile to a second Pico, then run
 # the same JCAlgTest operation there for an apples-to-apples report comparison.
-PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --serial 2BED26ED20556535
+current_serial='REPLACE_WITH_SECOND_IDENTIFIED_PICO_SERIAL'
+PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --serial "$current_serial"
 mkdir -p artifacts/results/current-alg-support
 cp build/javacard-support/jcalgtest-supported.csv \
   artifacts/results/current-alg-support/expected.csv
-reader_name_current='Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00'
-./tools/run-jcalgtest --reader-name "$reader_name_current" \
+reader_name_current='REPLACE_WITH_EXACT_CURRENT_PCSC_READER_NAME'
+PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name_current" \
   -op ALG_SUPPORT_EXTENDED -fresh \
   -outpath artifacts/results/current-alg-support
 
@@ -71,13 +80,13 @@ diff -u artifacts/results/base-alg-support/expected.csv \
   artifacts/results/current-alg-support/expected.csv
 
 # Run the static performance suite.
-./tools/run-jcalgtest --reader-name "$reader_name" \
+PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest --reader-name "$reader_name" \
   -op ALG_PERFORMANCE_STATIC -fresh \
   -outpath artifacts/results/physical-perf-static
 ```
 
-If the PC/SC helper is not installed, install its restricted sudo rule once with
-`sudo ./tools/install-pcsc-sudoers`. Re-run the ACL helper after each USB
-re-enumeration. JCAlgTest records unsupported algorithms as
+Use the provisioned restricted PC/SC helper after each USB
+re-enumeration. If it is unavailable, stop physical work and record the access
+limitation; autonomous sessions must not run an installer with `sudo`. JCAlgTest records unsupported algorithms as
 `NO_SUCH_ALGORITHM`; those rows are expected. Static performance may take
 several minutes; the wrapper's default timeout is 900 seconds.

@@ -20595,3 +20595,14 @@
 - Decision: Next consolidate the project entry point and retire duplicated status notes.
 - Commit: `pending (see commit containing this record)`
 - Artifacts/logs: `artifacts/reviews/` and `TODO.md`; no runtime artifacts.
+
+## 2026-11-02 Establish README and archive stale status 3 minutes
+
+- Step/experiment: `markdown-tidy-entrypoint`
+- When: '2026-11-02 20:24 UTC' - '2026-11-02 20:27 UTC'
+- Change: Replaced the root command-heavy `readme.md` with a short `README.md` navigation page, moved the physical JCAlgTest workflow to `docs/jcalgtest-physical-runbook.md`, and preserved the stale `STATUS.md` byte-for-byte under `.agent/archive/2026-11-02-status-pre-tidy/`. Replaced fixed board identifiers in the runbook with explicit placeholders and clarified host-access requirements.
+- Validation: Checked local links in the new README and runbook (zero missing targets), verified the archived STATUS SHA-256 `93c7d8a6e43a3e6746caee45e315decb9101c35b0cb728c4f6d7d1495fcd8f49`, and ran scoped `git diff --check`. No firmware build, flash, or runtime test was run for documentation-only changes.
+- Result: Active status has one owner, `TODO.md`; the historical STATUS snapshot remains available without presenting superseded hardware availability or ARCH-08 status as current.
+- Decision: Next relocate performance notes and resolve the root skill/reference placement and links.
+- Commit: `pending (see commit containing this record)`
+- Artifacts/logs: `.agent/archive/2026-11-02-status-pre-tidy/`, `README.md`, `docs/jcalgtest-physical-runbook.md`; no runtime artifacts.
