@@ -25,10 +25,12 @@ SELECT returned `6A82`. A read-only SELECT of the existing service AID
 describe CAP applet descriptors, not installed instances. Deleting the
 test-created loaded package returned
 `6581`; do not retry cleanup or alter existing packages without a specific
-safe path. Authorized PC/SC helper now sees one runtime CCID at
-`/dev/bus/usb/001/041`; no other boards are visible in this VM. Update progress,
-then commit only the CTX-01 implementation, fixture, and continuity records.
-Preserve all unrelated worktree changes.
+safe path. Fresh `tools/test-rmi-external-link-vpcd` passes a valid exported
+interface INSTALL and rejects an exported class and missing export (`3/3`), so
+the physical stage-9 failure may be caused by stale dependency CAP content;
+this is unconfirmed. Logs and hashes are in the top QKB entry. The authorized
+PC/SC helper now sees one runtime CCID at `/dev/bus/usb/001/041`; no other
+boards are visible in this VM. Preserve all unrelated worktree changes.
 
 ## Current CTX-01 Shareable status
 

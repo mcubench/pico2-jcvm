@@ -46,7 +46,16 @@
   is separate from USB passthrough and remains unexplained. A read-only SELECT
   of the pre-existing service AID `A00000015100000301` also returns `6A82`;
   GPPro's APP rows here describe applets in loaded CAP packages and do not
-  prove that applet instances were installed.
+  prove that applet instances were installed. Fresh VPCD external-link fixtures
+  pass INSTALL for a valid exported interface (`9000`) and reject an exported
+  class or missing export (`6F00`), all 3/3. This supports, but does not prove,
+  a stale/mismatched pre-existing dependency package as the cause of the
+  physical stage-9 result. Logs: `artifacts/logs/rmi-external-link-valid-interface-20261102T000421Z.log`
+  (SHA-256 `aac5570d8c5cbc8caa812996f8d9eb6951c49e9a2487dcbe1a6ce76fa72965a2`),
+  `artifacts/logs/rmi-external-link-exported-class-20261102T000459Z.log`
+  (`eb47dd4fb5ac3e62e938d73b82ee4f2a677a34f6005ca448419a8b931bdf34b2`),
+  and `artifacts/logs/rmi-external-link-missing-export-20261102T000533Z.log`
+  (`3fae07042f5865e22119b808ca7fcd7fa7e3a1b8684e1719988d55748af18e52`).
 
 ## Cross-AID physical fixture install reaches internal stage 9 — 2026-11-01
 

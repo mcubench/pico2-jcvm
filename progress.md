@@ -19599,3 +19599,30 @@
 - Artifacts/logs: No dedicated raw GPPro transcript was saved; responses are
   recorded above. Existing physical cycle log:
   `artifacts/logs/cycle-choupi-20261101T234222Z.log`.
+
+## 2026-11-02 Compare physical stage-9 install with fresh VPCD 6 minutes
+
+- Step/experiment: `ctx01-physical-stage9-vpcd-compare-20261102`
+- When: '2026-11-02 00:00 UTC' - '2026-11-02 00:06 UTC'
+- Change: Compared the physical stage-9 client INSTALL failure with the focused
+  fresh-state external-interface fixture; clarified in QKB/TODO/HANDOFF that
+  GPPro APP rows are CAP descriptors rather than proof of installed instances.
+- Validation: Elevated `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-external-link-vpcd`
+  passed `TEST:SUMMARY pass=3 fail=0`: valid exported interface INSTALL returned
+  `9000`; exported-class and missing-export fixtures returned expected `6F00`.
+  Read-only GPPro SELECT returned `6A82` for the pre-existing service AID
+  `A00000015100000301`; the client AID likewise remains nonselectable. No card
+  packages were modified during this diagnostic.
+- Result: Fresh emulator dependency packages pass the same remote-interface
+  link validation used by INSTALL. A stale/mismatched physical dependency CAP
+  is a plausible explanation for stage 9, but has not been proven.
+- Decision: Keep the existing card packages untouched. Repeat the physical
+  fixture on a clean-safe card or add firmware-side diagnostics before changing
+  install validation.
+- Commit: `pending`.
+- Artifacts/logs: `artifacts/logs/rmi-external-link-valid-interface-20261102T000421Z.log`
+  (SHA-256 `aac5570d8c5cbc8caa812996f8d9eb6951c49e9a2487dcbe1a6ce76fa72965a2`),
+  `artifacts/logs/rmi-external-link-exported-class-20261102T000459Z.log`
+  (SHA-256 `eb47dd4fb5ac3e62e938d73b82ee4f2a677a34f6005ca448419a8b931bdf34b2`),
+  and `artifacts/logs/rmi-external-link-missing-export-20261102T000533Z.log`
+  (SHA-256 `3fae07042f5865e22119b808ca7fcd7fa7e3a1b8684e1719988d55748af18e52`).
