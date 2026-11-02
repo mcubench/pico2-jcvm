@@ -1,5 +1,30 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Two physical JCVM readers pass read-only runtime checks — 2026-11-02
+
+- **Inventory:** After the user reported three boards in BOOTSEL, the
+  authorized helper exposed two runtime readers, not BOOTSEL devices:
+  `8E464F4E2BBC0A19` and `2BED26ED20556535`. `pcsc_scan -r` listed both.
+- **Validation:** Both identified cards passed `./tools/monitor --seconds 8`
+  with `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. The
+  repository's read-only `tools/test-pico-powerup` check passed on each:
+  JCAlgTest SELECT, GETVERSION `1.8.2_jc305`, and JCSystem info all returned
+  `9000`. Logs: `artifacts/logs/pico-powerup-persistence-20261102T075746Z.log`
+  (SHA-256 `dcc14c18763b93dd9ab325312deeb648f2d2e48a865c76d7e9782fb638e9b0b3`)
+  and `artifacts/logs/pico-powerup-persistence-20261102T075821Z.log`
+  (SHA-256 `639886744de9679f9ffaa63090492f449cbac3cc583f2268dc7f6b99453a8ba2`).
+- **Difference:** Both returned the same JCAlgTest version and JCSystem data.
+  Their installed package sets differ: the first lists JCAlgTest, A000...0201,
+  and ApiSec; the second lists JCAlgTest, Api, and A000...0002/0003/0004.
+  This is a card registry difference, not a difference in the tested calls.
+- **Limits:** No BOOTSEL device was visible; no flash, reset/power-cycle,
+  install, or mutation was performed. This does not validate persistence across
+  a physical power cycle or the pending SIO behavior.
+- **Viable procedure:** Refresh the helper before each USB operation, use the
+  full serial-qualified reader name when multiple cards are present, and pass
+  that same serial to the finite monitor. The no-serial monitor correctly
+  refuses ambiguous multi-device selection.
+
 ## Reported BOOTSEL devices may enumerate as runtime JCVM CCIDs — 2026-11-02
 
 - **Latest observation:** `PICO2_HOST_USB_ACCESS=1 sudo -n

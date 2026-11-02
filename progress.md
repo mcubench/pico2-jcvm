@@ -20004,3 +20004,34 @@
 - Commit: pending.
 - Artifacts/logs: Official specification
   `https://docs.oracle.com/cd/E59935_01/JCCRE.pdf`; no test log.
+
+## 2026-11-02 Validate two physical JCVM readers 6 minutes
+
+- Step/experiment: `physical-reader-pool-readonly-validation-20261102`
+- When: '2026-11-02 08:53 CET' - '2026-11-02 08:59 CET'
+- Change: Validated the currently visible runtime token pool independently on
+  serials `8E464F4E2BBC0A19` and `2BED26ED20556535`; recorded test outcomes,
+  package registry differences and current build artifact measurements in
+  QKB and HANDOFF. No firmware or card contents were changed.
+- Validation: `./tools/build arm` and `./tools/build riscv` passed. Authorized
+  USB helper plus `lsusb -d 2e8a:` found two runtime CCIDs and no BOOTSEL
+  device. `pcsc_scan -r` listed both. Serial-qualified 8-second monitors each
+  reported `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`.
+  `./tools/test-pico-powerup '<exact reader>'` passed on both with SELECT,
+  GETVERSION `1.8.2_jc305`, and JCSystem info returning `9000`. No physical
+  power-cycle was performed. `git diff --check` passed on the owned docs.
+- Result: Both cards report matching JCAlgTest version and JCSystem data, with
+  different installed package sets. ARM full UF2 is 1,854,464 bytes (SHA-256
+  `7a7fea7b44ff8ebbd11f0439f0870ee95c51d59d8e31116c388150197e5c481c`); RISC-V
+  smoke UF2 is 79,872 bytes (SHA-256
+  `7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`).
+  Physical logs: `artifacts/logs/pico-powerup-persistence-20261102T075746Z.log`
+  (SHA-256 `dcc14c18763b93dd9ab325312deeb648f2d2e48a865c76d7e9782fb638e9b0b3`)
+  and `artifacts/logs/pico-powerup-persistence-20261102T075821Z.log`
+  (SHA-256 `639886744de9679f9ffaa63090492f449cbac3cc583f2268dc7f6b99453a8ba2`).
+- Decision: Use both runtime boards for later physical checks and fail over by
+  serial if one disappears. Do not attempt flashing until BOOTSEL enumerates.
+  Continue CTX-01/03 implementation offline.
+- Commit: pending.
+- Artifacts/logs: The two physical logs above; build images under `build/arm/`
+  and `build/riscv/` (not flashed).

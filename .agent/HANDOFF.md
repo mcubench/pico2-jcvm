@@ -1,5 +1,25 @@
 # Session handoff — updated 2026-11-02
 
+## Latest physical pool check — 2026-11-02 07:59 UTC
+
+The user reports three boards in BOOTSEL. The authorized helper and `lsusb`
+instead exposed two runtime CCID devices; `pcsc_scan -r` identified
+`8E464F4E2BBC0A19` and `2BED26ED20556535`. Both finite serial monitors passed
+`TEST:PASS choupi_runtime` / `TEST:SUMMARY pass=1 fail=0`. The read-only
+`tools/test-pico-powerup <exact-reader>` check passed for each: SELECT returned
+`9000`, GETVERSION returned `1.8.2_jc305`, and JCSystem info returned `9000`.
+Logs and hashes are recorded in `.agent/QKB.md`. Installed package registries
+differ between the cards, but these tested outputs matched. No BOOTSEL device
+was visible, and no flash, install, reset, or power-cycle was performed.
+
+ARM and RISC-V wrappers both passed on the current shared tree. Current image
+artifacts: ARM full CHOUPI UF2 1,854,464 bytes, SHA-256
+`7a7fea7b44ff8ebbd11f0439f0870ee95c51d59d8e31116c388150197e5c481c`; RISC-V
+smoke UF2 79,872 bytes, SHA-256
+`7b46029078921f8f2fdd3cf35d07d21cbb3bf1f6984a08921e751b257a77a925`. These
+images were built, not flashed. Continue CTX-01/03 offline; preserve unrelated
+uncommitted source and user files.
+
 ## SIO parameter/access-rule clarification — 2026-11-02 07:53 UTC
 
 Rechecked Java Card RE 3.0.5 §6.2.4.3 against its specific array access rules.
