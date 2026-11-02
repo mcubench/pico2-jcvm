@@ -57,12 +57,17 @@ namespace {
 // the compact Class component flags used by JC_CAP_CLASS_ACC_INTERFACE.
 constexpr uint8_t JC_CAP_DESCRIPTOR_ACC_INTERFACE = 0x80;
 
-bool getShareableMethodSignature(
+enum class ShareableSignatureStatus { Found, DescriptorUnavailable, Invalid };
+
+ShareableSignatureStatus getShareableMethodSignature(
     const Package &package, const jc_cap_interface_info *interface_info,
     const uint8_t method_token, std::array<uint8_t, 128> &nibbles,
     uint8_t &nibble_count) {
   const auto *descriptor = package.getCap().getDescriptor();
-  if (descriptor == nullptr || interface_info == nullptr) return false;
+  if (descriptor == nullptr) {
+    return ShareableSignatureStatus::DescriptorUnavailable;
+  }
+  if (interface_info == nullptr) return ShareableSignatureStatus::Invalid;
 
   const auto *descriptor_bytes =
       reinterpret_cast<const uint8_t *>(descriptor);
@@ -76,7 +81,7 @@ bool getShareableMethodSignature(
   for (uint8_t class_index = 0; class_index < descriptor->class_count;
        ++class_index) {
     if (cursor + sizeof(jc_cap_class_descriptor_info) > component_end) {
-      return false;
+      return ShareableSignatureStatus::Invalid;
     }
     const auto *class_descriptor =
         reinterpret_cast<const jc_cap_class_descriptor_info *>(cursor);
@@ -93,7 +98,7 @@ bool getShareableMethodSignature(
            ++method_index) {
         const auto &method_descriptor = methods.at(method_index);
         if (method_descriptor.token == method_token) {
-          if (method_found) return false;
+          if (method_found) return ShareableSignatureStatus::Invalid;
           method_type_offset = NTOHS(method_descriptor.type_offset);
           method_found = true;
         }
@@ -109,25 +114,29 @@ bool getShareableMethodSignature(
         NTOHS(class_descriptor->method_count) *
             sizeof(jc_cap_method_descriptor_info);
     if (class_record_size > static_cast<size_t>(component_end - cursor)) {
-      return false;
+      return ShareableSignatureStatus::Invalid;
     }
     cursor += class_record_size;
   }
-  if (!method_found || cursor > component_end) return false;
+  if (!method_found || cursor > component_end) {
+    return ShareableSignatureStatus::Invalid;
+  }
 
   // Type offsets are relative to the TypeDescriptor component body, which
   // follows the variable-length class descriptor records. Avoid the legacy
   // accessor's fixed-size class-table assumption here.
   const uint8_t *types = cursor;
   const size_t remaining = static_cast<size_t>(component_end - types);
-  if (method_type_offset >= remaining) return false;
+  if (method_type_offset >= remaining) return ShareableSignatureStatus::Invalid;
   const uint8_t *signature = types + method_type_offset;
-  if (static_cast<size_t>(component_end - signature) < 1) return false;
+  if (static_cast<size_t>(component_end - signature) < 1) {
+    return ShareableSignatureStatus::Invalid;
+  }
   nibble_count = signature[0];
   const size_t byte_count = (static_cast<size_t>(nibble_count) + 1) / 2;
   if (nibble_count == 0 || nibble_count > nibbles.size() ||
       byte_count > static_cast<size_t>(component_end - signature) - 1) {
-    return false;
+    return ShareableSignatureStatus::Invalid;
   }
   for (uint16_t nibble_index = 0; nibble_index < nibble_count;
        ++nibble_index) {
@@ -135,7 +144,7 @@ bool getShareableMethodSignature(
     nibbles[nibble_index] = static_cast<uint8_t>(
         (nibble_index & 1) == 0 ? packed >> 4 : packed & 0x0f);
   }
-  return true;
+  return ShareableSignatureStatus::Found;
 }
 
 bool classImplementsShareableInterface(const Package &package,
@@ -1010,20 +1019,28 @@ void Bytecodes::bc_invokeinterface() {
     // shareable references back to their owning context.
     std::array<uint8_t, 128> signature_nibbles{};
     uint8_t signature_nibble_count = 0;
-    if (!getShareableMethodSignature(
-            interface_info.first, interface_info.second, interface_method,
-            signature_nibbles, signature_nibble_count)) {
-      TRACE_JCVM_DEBUG("SIO_INVOKE descriptor lookup failed");
-      throw Exceptions::SecurityException;
-    }
-
     std::array<InterpretorInitialLocal, 255> initial_locals{};
     uint8_t initial_local_count = 0;
-    if (!buildShareableInitialLocals(
-            signature_nibbles.data(), signature_nibble_count, nargs,
-            server_reference, stack, initial_locals, initial_local_count)) {
-      TRACE_JCVM_DEBUG("SIO_INVOKE argument marshalling failed nibbles=%u",
-                       static_cast<unsigned>(signature_nibble_count));
+    const auto signature_status = getShareableMethodSignature(
+        interface_info.first, interface_info.second, interface_method,
+        signature_nibbles, signature_nibble_count);
+    if (signature_status == ShareableSignatureStatus::Found) {
+      if (!buildShareableInitialLocals(
+              signature_nibbles.data(), signature_nibble_count, nargs,
+              server_reference, stack, initial_locals, initial_local_count)) {
+        TRACE_JCVM_DEBUG("SIO_INVOKE argument marshalling failed nibbles=%u",
+                         static_cast<unsigned>(signature_nibble_count));
+        throw Exceptions::SecurityException;
+      }
+    } else if (signature_status !=
+                   ShareableSignatureStatus::DescriptorUnavailable ||
+               target_handler.getArgumentCount(target_method.second) != 1 ||
+               !buildShareableReceiverOnlyInitialLocals(
+                   nargs, server_reference, initial_locals,
+                   initial_local_count)) {
+      // A no-Descriptor CAP cannot prove the types of explicit arguments.
+      // Keep the firewall closed for those calls.
+      TRACE_JCVM_DEBUG("SIO_INVOKE descriptor unavailable for arguments");
       throw Exceptions::SecurityException;
     }
     TRACE_JCVM_DEBUG("SIO_INVOKE marshalled locals=%u",

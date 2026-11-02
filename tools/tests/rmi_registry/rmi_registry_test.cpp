@@ -175,6 +175,16 @@ void verify_shareable_cross_context_arguments() {
   std::array<jcvm::InterpretorInitialLocal, 255> locals{};
   uint8_t local_count = 0;
 
+  assert(jcvm::buildShareableReceiverOnlyInitialLocals(
+      1, receiver, locals, local_count));
+  assert(local_count == 1);
+  assert(locals[0].type == jcvm::InterpretorLocalType::Reference);
+  assert(locals[0].value == receiver.compact());
+  assert(!jcvm::buildShareableReceiverOnlyInitialLocals(
+      2, receiver, locals, local_count));
+  assert(!jcvm::buildShareableReceiverOnlyInitialLocals(
+      1, jcvm::jref_t{}, locals, local_count));
+
   {
     jcvm::Stack stack;
     stack.push_Frame(0, 0, 3, nullptr);

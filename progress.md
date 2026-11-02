@@ -19648,3 +19648,14 @@
 - Decision: Keep CTX-01 open. Test with new package and applet AIDs before attributing the SIO exception to current code. Current USB enumeration must be refreshed because the user now reports all three Pico 2 boards in BOOTSEL.
 - Commit: `5e13c30` (implementation and regression); this record and tracker updates are committed separately.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T004543Z.log` (SHA-256 `93fa1bda0e6d6d1595d4802ebd6ebb92535b1649000df67c6678434004ad3765`); ARM image `build/arm/pico2_choupi.uf2` (1,847,296 bytes; SHA-256 `0bf2af8f1ecaf97f01e7567bba010293f3ecc1d74b9fc5f2b8482cad307d0248`); RISC-V smoke image end `0x10009a78`.
+
+## 2026-11-02 Allow receiver-only cross-context SIO without Descriptor 8 minutes
+
+- Step/experiment: `sio-optional-descriptor-receiver-only-20261102`
+- When: '2026-11-02 02:40 CET' - '2026-11-02 02:48 CET'
+- Change: Distinguished absent Descriptor data from malformed or mismatched present data. Added a fail-closed fallback that marshals only the receiver when the target method header also has exactly one argument slot; explicit arguments still require a valid Descriptor signature. Added focused registry assertions and recorded the physical observation in TODO/QKB/HANDOFF.
+- Validation: `./tools/test-rmi-registry` passed (`RMI_REGISTRY:PASS ... shareable_cross_context_arguments=1`); `./tools/build arm` passed with full CHOUPI image end `0x100e1790`; `./tools/build riscv` passed with smoke image end `0x10009a78`. Reader refresh (`PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader`) found one USB node, and elevated `lsusb -d 2e8a:` identified only runtime CCID `2e8a:0009`; physical fallback testing and flashing were skipped. Scoped diff checks allow the source's existing CRLF line endings.
+- Result: Descriptor-free zero-argument SIO calls can enter the server context without guessing argument types. Typed calls with missing Descriptor data and any malformed present Descriptor remain rejected. No positive runtime/hardware invocation has yet verified this fallback.
+- Decision: Keep CTX-01 open. Capture a physical GP LOAD stream and find a safe positive receiver-only test route; preserve existing package AIDs and continue cross-context firewall work.
+- Commit: implementation and regression commit recorded below; this entry and tracker updates will be committed in a follow-up metadata commit.
+- Artifacts/logs: `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log` and `artifacts/logs/sio-two-package-probe-20261102T013345Z.log` contain the preceding descriptor-missing hardware trace; current test/build outputs are not retained as separate logs.

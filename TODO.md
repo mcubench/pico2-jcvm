@@ -16,9 +16,10 @@ its acceptance gates remain unverified. Keep upstream CAPs unchanged and follow
 4. Close the current-image coverage and integration gates in **API-03**,
    **GP-01**, **AC-01/02**; do not infer them from runtime heartbeat output.
 
-Physical availability is volatile. Last authorized checks on 2026-11-01 found
-zero Pico devices despite the user's report that boards are connected. Refresh
-identity and access before hardware work; continue useful offline work otherwise.
+Physical availability is volatile. The latest authorized check on 2026-11-02
+found one Pico in runtime CCID mode (`2e8a:0009`), not the three BOOTSEL devices
+reported by the user. Refresh identity and access before hardware work; continue
+useful offline work otherwise.
 See [.agent/HANDOFF.md](.agent/HANDOFF.md) for active continuation and last observations.
 
 ## How to use this backlog
@@ -238,6 +239,16 @@ Archive text is historical evidence, not current device state or priorities.
   heap; array-typed parameters require an array handle, while arrays may also
   be passed where the declared type is `Object`. Applet-local references still
   fail closed pending ownership translation.
+  Physical GPPro LOAD testing found `getDescriptor()==nullptr` for both
+  pre-existing packages and fresh packages whose generated CAP archives include
+  `Descriptor.cap`. This suggests the normal GPPro LOAD stream omits the
+  optional Descriptor component; the exact LOAD payload was not captured.
+  Cross-context calls now have a bounded fallback for receiver-only methods
+  when Descriptor is absent, after checking the server method header. Calls
+  with explicit arguments remain rejected without type metadata, and malformed
+  present Descriptors do not use the fallback. The fallback has registry-unit
+  coverage and passes ARM/RISC-V builds, but has not yet passed a positive
+  physical call.
   The local signature-to-typed-local conversion has focused tests for
   byte/short layout, int word order, null/non-null references, and argument
   count mismatch. A new test-only three-package fixture now passes a positive

@@ -1,5 +1,32 @@
 # Session handoff — updated 2026-11-02
 
+## Current CTX-01 finding: GPPro-loaded CAPs can lack Descriptor data
+
+The physical trace from a fresh two-package probe shows both packages installed
+and the client selected, but `invokeinterface` returned `6F00` because the
+interface package's runtime CAP had no Descriptor component. The generated CAP
+archive did contain `Descriptor.cap`. The exact GP LOAD payload was not
+captured, so GPPro's omission of this optional component is the current
+hypothesis, not a wire-level confirmation. Trace and probe logs are
+`artifacts/logs/sio-two-package-cdc-20261102T013345Z.log` and
+`artifacts/logs/sio-two-package-probe-20261102T013345Z.log`.
+
+The interpreter now has a guarded fallback for descriptor-free cross-context
+calls with no explicit parameters: the operand count and server method header
+must both show only the receiver. Calls with explicit arguments fail closed
+without type metadata; malformed present Descriptor data also fails closed.
+`tools/test-rmi-registry`, ARM current build, and RISC-V current build pass.
+This fallback is not yet positively tested on a Pico. At the latest refreshed
+USB check only one device was visible, as runtime CCID `2e8a:0009`; no BOOTSEL
+device was enumerated, despite the report of three boards. No flash was done.
+
+Next: capture the LOAD component stream to confirm Descriptor omission, then
+exercise a positive receiver-only cross-AID call using an unchanged CAP/test
+path that does not replace baseline packages. Continue to reject explicit
+arguments without reliable type metadata. Preserve unrelated uncommitted
+changes; commit only the fallback, focused regression, and corresponding
+progress/tracker updates.
+
 ## 2026-11-02 persistent-index exhaustion diagnosis and reclaim-on-write
 
 The original physical failure was confirmed: GPPro INSTALL returned stage `09`

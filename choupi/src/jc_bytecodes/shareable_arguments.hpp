@@ -27,6 +27,22 @@
 
 namespace jcvm {
 
+// Descriptor is optional in an uploaded CAP. With no Descriptor component, a
+// receiver-only call can still be marshalled safely; explicit parameters need
+// type information to preserve the cross-context reference firewall.
+inline bool buildShareableReceiverOnlyInitialLocals(
+    const uint8_t argument_word_count, const jref_t server_reference,
+    std::array<InterpretorInitialLocal, 255> &initial_locals,
+    uint8_t &initial_local_count) {
+  if (argument_word_count != 1 || server_reference.isNullPointer()) {
+    return false;
+  }
+  initial_locals[0] = {InterpretorLocalType::Reference,
+                       server_reference.compact()};
+  initial_local_count = 1;
+  return true;
+}
+
 // Convert a CAP Descriptor method signature and the caller's operand words
 // into initial locals for a nested Shareable method call. Caller words remain
 // untouched. Null and JCRE-global references can cross contexts because they

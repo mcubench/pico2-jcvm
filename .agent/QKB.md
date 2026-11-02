@@ -1,5 +1,37 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## GPPro-loaded CAP omits Descriptor data needed for typed cross-context SIO — 2026-11-02
+
+- **Observed:** The runtime `JC_Cap` for the pre-existing SIO contract package
+  and for freshly installed packages reports no Descriptor component. The fresh
+  generated CAP ZIPs do contain `Descriptor.cap`. In the fresh two-package
+  physical probe, both applets installed and the client selected, but its
+  cross-AID call returned `6F00`; serial localized the failure to SIO signature
+  lookup (`descriptor=0`, interface resolved, server method and argument count
+  resolved). The captured CDC evidence is
+  `artifacts/logs/sio-two-package-cdc-20261102T013345Z.log`; the probe result is
+  `artifacts/logs/sio-two-package-probe-20261102T013345Z.log`.
+- **Inference, not yet confirmed at the wire level:** GPPro's normal LOAD stream
+  appears to omit optional `Descriptor.cap`. The GP LOAD frames were not
+  captured, so verify component omission directly before treating GPPro as the
+  cause. Existing CAP loading also permits omitted components while retaining
+  the original Directory sizes; see the CAP Directory note below.
+- **Safe partial fix:** `invokeinterface` distinguishes unavailable Descriptor
+  from malformed/present Descriptor data. If it is unavailable, a cross-context
+  method may proceed only with one operand word (the receiver) and a target
+  method header with exactly one argument slot. Explicit parameters still fail
+  closed because their types and reference ownership cannot be established.
+  Malformed present Descriptor data also fails closed. The focused registry
+  test checks receiver-local construction and rejects extra words/null receivers;
+  ARM and RISC-V current builds pass.
+- **Limit:** This fallback has not yet been exercised by a positive physical
+  receiver-only call. Existing physical fixtures were cleaned up without
+  removing baseline card packages. At the latest check the VM exposed only one
+  Pico, and it was runtime CCID (`2e8a:0009`), not BOOTSEL; the other two boards
+  reported by the user were not guest-visible. Refresh access before hardware
+  work. Keep CTX-01 open for omitted-Descriptor physical coverage, explicit
+  argument behavior, and end-to-end firewall acceptance.
+
 ## Physical GP INSTALL stage 9 and parent-encoded compaction — 2026-11-02
 
 - **Observed:** Repeating GPPro `--install-only --debug` for the loaded SIO
