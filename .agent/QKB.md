@@ -4801,3 +4801,34 @@ original terminology/status; check current summary and later fixes before reuse.
   do not relax the expectation to `6F00`. For Windows, obtain the firmware
   serial log and verbose PC/SC trace from one insertion and correlate the
   CCID power-on/ATR exchange. Do not flash until both architecture builds pass.
+
+
+## Resolution: GP DELETE stale proxy fails closed — 2026-11-03
+
+- **Cause:** GP DELETE deselects the client but preserves its per-applet SIO
+  proxy registry. `checkcast` found a registered proxy, then the helper returned
+  plain `false` when the deleted server context could not be restored. The
+  bytecode consequently threw `ClassCastException`, which bypassed the
+  applet's `SecurityException` handler. Opcode `94` in the trace is `checkcast`
+  (`0x94`), not `invokeinterface`.
+- **Fix:** `shareableProxyCastTarget` now returns a tri-state result: compatible,
+  incompatible, or unavailable/invalid proxy. An incompatible target still
+  produces `ClassCastException`; a missing/deleted target fails closed with
+  `SecurityException` in `checkcast` and `instanceof`.
+- **Validation:** `./tools/test-rmi-registry` passed. VPCD cross-AID suite passed
+  20/20 with Descriptor omitted and 20/20 included. `./tools/build arm` and
+  `./tools/build riscv` passed; ARM image ends at `0x100d06e0`, leaving 194,848
+  bytes. On physical Pico 2 `8E464F4E2BBC0A19`, GPPro LOAD/INSTALL, cross-AID
+  dispatch, reset-stale proxy, exception unwind, opaque non-null reference,
+  service DELETE, stale proxy (`6A0A9000`), fresh lookup (`6A049000`), and
+  cleanup all passed. Full physical log:
+  `artifacts/logs/sio-cross-aid-physical-20261103T110344Z.log`.
+- **Physical failover:** Pico `2BED26ED20556535` had pre-existing JCAlgTest and
+  SIO packages, so the test's safe preflight refused to overwrite it. After a
+  verified reflash it passed finite serial `TEST:PASS choupi_runtime` output;
+  its existing applets were preserved. The 8E board's first cycle flash passed
+  but its CDC monitor did not enumerate in the immediate wait; later CCID and
+  physical APDU checks passed, confirming a transient USB re-enumeration gap.
+- **Windows MUTE remains open:** Windows `certutil -scinfo` reported PRESENT /
+  MUTE. Firmware source sends valid ATR `3B 80 01 81`; a correlated Windows
+  transport trace is still needed to find why Windows does not accept it.

@@ -20894,3 +20894,14 @@
 - Commit: `a1c0a4f`
 - Artifacts/logs: `src/ccid_device.cpp`; Windows output supplied in the
   conversation; no local host-side trace available.
+
+## 2026-11-03 Return catchable error for stale SIO proxy after GP DELETE 48 minutes
+
+- Step/experiment: `ctx-01-gp-delete-stale-proxy-fix-20261103`
+- When: '2026-11-03 10:18 UTC' - '2026-11-03 11:06 UTC'
+- Change: Changed shareable-proxy cast resolution to distinguish an ordinary incompatible cast from an unavailable/deleted server proxy. `checkcast` and `instanceof` now raise a catchable `SecurityException` for the stale proxy. Extended the physical fixture to GP DELETE the service applet and verify both stale-proxy rejection and fresh lookup behavior. Recorded the resolution and remaining lifecycle scope in TODO, QKB, and HANDOFF.
+- Validation: `./tools/build-pc`, `./tools/test-rmi-registry`, ARM and RISC-V wrapper builds passed. VPCD SIO suite passed 20/20 with and without Descriptor. Physical Pico 2 `8E464F4E2BBC0A19` passed the full cross-AID SIO run, including GPPro service DELETE, retained-proxy `6A0A9000`, fresh lookup `6A049000`, and cleanup. A second board `2BED26ED20556535` was flashed and passed finite serial monitor (`TEST:SUMMARY pass=1 fail=0`); its preinstalled packages were preserved. `git diff --check` passed with CRLF handling. Windows `certutil -scinfo` MUTE remains unresolved; no Windows host trace was available.
+- Result: GP DELETE no longer leaves an uncaught `ClassCastException`/`6F00` path when an applet later uses its stale proxy; the failure is catchable and fresh lookup remains available. ARM firmware end `0x100d06e0`, 194,848 bytes remain in the firmware window; UF2 SHA-256 `e6cb1364fdba43e99ca0c043363eb9b7b30d5d23dcd06ceb363ef73afaec6512`.
+- Decision: Commit the focused stale-proxy fix and continue investigating the Windows PRESENT/MUTE symptom. Broader CTX-01 lifecycle/GC acceptance remains open.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T103610Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T103738Z.log`, `artifacts/logs/sio-cross-aid-physical-20261103T110344Z.log`, and finite monitor log for `2BED26ED20556535` (see `.agent/HANDOFF.md`).

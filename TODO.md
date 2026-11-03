@@ -440,12 +440,14 @@ Archive text is historical evidence, not current device state or priorities.
   integration and physical checks.
   General cross-context calls and logical-channel policy remain unimplemented;
   basic channel 0 is the current assignment. No blanket firewall acceptance yet.
-  A new VPCD DELETE regression currently passes GP DELETE (`9000`) for a
-  cross-AID service applet, but dispatching a persistent proxy afterward returns
-  uncaught `6F00` / `ClassCastException` at `invokeinterface` instead of the
-  applet-catching `SecurityException` expected by the test. Investigate stale
-  proxy invalidation and exception delivery after instance deletion; keep this
-  case failing until fixed. See `.agent/QKB.md` and the 2026-11-03 log paths.
+  The GP DELETE/stale-proxy defect is fixed: proxy cast checks now distinguish
+  an unavailable/deleted server from an incompatible cast target. The former
+  raises catchable `SecurityException`; the latter remains `ClassCastException`.
+  VPCD passed 20/20 with Descriptor omitted and included. Physical Pico 2
+  `8E464F4E2BBC0A19` passed cross-AID calls, GP DELETE, stale-proxy rejection
+  (`6A0A9000`), fresh-lookup denial (`6A049000`), and fixture cleanup. See
+  `.agent/QKB.md` and the 2026-11-03 progress record. Other CTX-01 lifecycle,
+  GC-root, multi-package, and channel-policy acceptance remains open.
   Evidence: current HANDOFF, `tools/test-rmi-registry`, context/proxy progress
   records. Preserve unrelated ongoing source changes while continuing this work.
 

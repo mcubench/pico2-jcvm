@@ -1,36 +1,39 @@
-## Follow-up — GP DELETE retained-proxy failure and Windows PC/SC MUTE — 2026-11-03 10:14 UTC
+## Current session — fail closed on deleted SIO proxy — 2026-11-03 11:05 UTC
 
-The VPCD regression now performs a real card-manager path: retain a fresh
-cross-AID Shareable proxy in the client, select/authenticate as ISD, delete the
-service applet, reselect client. GP DELETE returns `9000`; the service instance
-is removed. The client’s retained proxy then returns `6F00` instead of the
-expected catchable `SecurityException`; trace identifies `exception=24`
-(`ClassCastException`) on opcode `94` (`invokeinterface`). The fixture change
-is in `tools/tests/sio_cross_aid_vpcd_test.py`. Four reproducible logs are
-recorded in `.agent/QKB.md`. PC build succeeded. Two speculative guards in
-`bc_invoke.cpp` did not alter behavior and were reverted; do not preserve or
-reintroduce them without tracing the actual throw/dispatch path. Continue with
-the failure as open CTX-01 work; the correct next diagnostic is to determine
-whether the class-cast originates in proxy receiver lookup, exception object
-creation, or Java handler dispatch after DELETE. Never accept `6F00` as the
-expected result.
+Fixed the stale-proxy GP DELETE case. Root cause: `shareableProxyCastTarget`
+returned a boolean and conflated a true cast mismatch with a deleted/unavailable
+server. `checkcast` turned both into `ClassCastException`. It now returns
+`optional<bool>`: missing/invalid routing raises `SecurityException`, while an
+incompatible cast still raises `ClassCastException`. The same fail-closed
+distinction applies to `instanceof`.
 
-The user reports a separate Windows test: `certutil -scinfo` sees reader
-`Pico2 JCVM CCID 0` in `SCARD_STATE_PRESENT | SCARD_STATE_MUTE`, reports an
-unrecognized/nonresponsive card, then exits successfully. This is not a
-successful card test. Source review confirms current firmware sends a valid
-minimal T=1 ATR (`3B 80 01 81`, with TCK XOR checksum zero) in its CCID
-`IccPowerOn` response (`src/ccid_device.cpp`). Therefore the cause is not
-established: response transport/framing or Windows acceptance still needs a
-correlated trace. The VM's authorized PC/SC helper currently finds zero
-physical Pico devices, so no hardware diagnostics or flash can be performed
-here. Ask for a finite serial log and verbose Windows PC/SC trace when
-resuming this hardware issue. ATR format reference: PC/SC specification,
-part 3. The report is in `.agent/QKB.md`.
+Validation: `./tools/test-rmi-registry`; VPCD cross-AID suite 20/20 without
+Descriptor and 20/20 with Descriptor; `./tools/build arm`; `./tools/build
+riscv`. ARM image end `0x100d06e0`, 194,848 bytes remain. Physical Pico 2
+`8E464F4E2BBC0A19` passed the full cross-AID probe, GP DELETE of service
+`A00000015100000301`, retained proxy response `6A0A9000`, fresh lookup response
+`6A049000`, and cleanup. Log:
+`artifacts/logs/sio-cross-aid-physical-20261103T110344Z.log`. The physical
+probe now expects `6A059000` for an opaque non-null reference whose use is a
+null comparison, matching the VPCD test and existing owner-aware semantics.
 
-Keep the failing DELETE regression, root TODO, QKB, handoff and progress in a
-focused documentation/test commit. Preserve all unrelated dirty source,
-dependency, fixture, and evidence files listed in the prior handoff.
+Physical USB observations: 8E was flash-verified, but the immediate `cycle`
+monitor timed out waiting for CDC; the board later returned as a CCID reader
+and passed real APDUs. Pico `2BED26ED20556535` had existing JCAlgTest and SIO
+packages, so its physical regression preflight correctly refused to overwrite
+it. It was separately reflashed by stable chip ID and passed finite serial
+`TEST:PASS choupi_runtime`; existing packages were preserved. This supports
+continuing with another visible physical board when one is unavailable and
+records the CDC re-enumeration gap.
+
+Windows report remains unresolved: Windows sees PRESENT/MUTE in `certutil
+-scinfo`, while `src/ccid_device.cpp` sends valid ATR `3B 80 01 81` on CCID
+power-on. Need correlated Windows PC/SC trace and serial capture; do not infer
+that the ATR bytes themselves are invalid. See `.agent/QKB.md`.
+
+Next: continue remaining CTX-01 lifecycle, GC/root, stale owner, multi-package,
+and channel policy acceptance. Preserve unrelated dirty worktree changes listed
+in the prior handoff.
 
 ## Current session — owner-aware null and identity comparisons — 2026-11-03 04:35 UTC
 

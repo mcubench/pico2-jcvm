@@ -27,6 +27,7 @@ log="${root}/artifacts/logs/sio-cross-aid-physical-${timestamp}.log"
 gp_list="${build_dir}/physical-gp-list-${timestamp}.log"
 gp_install="${build_dir}/physical-gp-install-${timestamp}.log"
 gp_delete="${build_dir}/physical-gp-delete-${timestamp}.log"
+service_applet_deleted=0
 gp=("${root}/tools/env" java -jar "${gp_jar}" "--reader=${reader_name}")
 
 exec > >(tee "${log}") 2>&1
@@ -51,16 +52,24 @@ cleanup() {
       >"${gp_list}" 2>&1; then
     for aid in A00000015100000401 A000000151000004 \
                A00000015100000301 A000000151000003 A000000151000002; do
+      if [[ "${service_applet_deleted}" == 1 &&
+            "${aid}" == A00000015100000301 ]]; then
+        continue
+      fi
       if grep -Fq "${aid}" "${gp_list}"; then
+        local delete_status=0
         if ! timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
              --delete "${aid}" >>"${gp_delete}" 2>&1; then
           printf 'SIO_PHYSICAL:CLEANUP_FAIL aid=%s\n' "${aid}"
-          cleanup_status=1
+          delete_status=1
         fi
         if ! timeout --signal=TERM --kill-after=5s 45s "${gp[@]}" --list \
              >"${gp_list}" 2>&1; then
           cleanup_status=1
           break
+        fi
+        if (( delete_status != 0 )) && grep -Fq "${aid}" "${gp_list}"; then
+          cleanup_status=1
         fi
       fi
     done
@@ -101,4 +110,16 @@ printf 'SIO_PHYSICAL:INSTALL package=A000000151000004 applet=A00000015100000401 
 
 timeout --signal=TERM --kill-after=5s 90s "${root}/tools/env" java \
   -cp "${probe_classes}" SioCrossAidPhysicalProbe "${reader_name}"
+timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+  --delete A00000015100000301 >"${gp_delete}" 2>&1 || \
+  die "service applet DELETE failed; see ${gp_delete}"
+service_applet_deleted=1
+printf 'SIO_PHYSICAL:DELETE applet=A00000015100000301 result=PASS\n'
+timeout --signal=TERM --kill-after=5s 45s "${gp[@]}" --list \
+  >"${gp_list}" 2>&1 || die "GPPro list after service DELETE failed; see ${gp_list}"
+if grep -Fq 'APP: A00000015100000301' "${gp_list}"; then
+  die "service applet is still present after GPPro DELETE; see ${gp_list}"
+fi
+timeout --signal=TERM --kill-after=5s 90s "${root}/tools/env" java \
+  -cp "${probe_classes}" SioCrossAidPhysicalProbe "${reader_name}" --after-delete
 printf 'SIO_PHYSICAL:PASS log=%s\n' "${log#${root}/}"

@@ -25,7 +25,13 @@ public final class SioCrossAidPhysicalProbe {
   }
 
   public static void main(String[] args) throws Exception {
-    if (args.length != 1) throw new IllegalArgumentException("reader name required");
+    if (args.length < 1 || args.length > 2) {
+      throw new IllegalArgumentException("reader name and optional --after-delete required");
+    }
+    boolean afterDelete = args.length == 2 && "--after-delete".equals(args[1]);
+    if (args.length == 2 && !afterDelete) {
+      throw new IllegalArgumentException("unknown probe mode: " + args[1]);
+    }
     List<CardTerminal> terminals = TerminalFactory.getDefault().terminals().list();
     CardTerminal target = terminals.stream().filter(t -> t.getName().equals(args[0]))
         .findFirst().orElseThrow(() -> new IllegalStateException("reader not found: " + args[0]));
@@ -38,6 +44,26 @@ public final class SioCrossAidPhysicalProbe {
           0x00, 0xA4, 0x04, 0x00, APPLET_AID, 256));
       System.out.println("SIO_PHYSICAL:SELECT response=" + hex(selected.getBytes()));
       if (selected.getSW() != 0x9000) throw new AssertionError("SELECT failed");
+
+      if (afterDelete) {
+        ResponseAPDU response = channel.transmit(
+            new CommandAPDU(hex("8016000000")));
+        String actual = hex(response.getBytes());
+        System.out.println("SIO_PHYSICAL:staleProxyAfterDelete response=" + actual);
+        if (!actual.equals("6A0A9000")) {
+          throw new AssertionError("stale proxy after DELETE should raise " +
+                                   "catchable SecurityException 6A0A9000, got " + actual);
+        }
+        response = channel.transmit(new CommandAPDU(hex("8010000000")));
+        actual = hex(response.getBytes());
+        System.out.println("SIO_PHYSICAL:lookupAfterDelete response=" + actual);
+        if (!actual.equals("6A049000")) {
+          throw new AssertionError("fresh lookup after DELETE should return " +
+                                   "6A049000, got " + actual);
+        }
+        System.out.println("SIO_PHYSICAL:PASS stale_proxy_after_delete fresh_lookup");
+        return;
+      }
 
       ResponseAPDU response = channel.transmit(
           new CommandAPDU(hex("8010000000")));
@@ -115,9 +141,10 @@ public final class SioCrossAidPhysicalProbe {
 
       response = channel.transmit(new CommandAPDU(hex("8012000000")));
       actual = hex(response.getBytes());
-      System.out.println("SIO_PHYSICAL:localReference response=" + actual);
-      if (!actual.equals("6A039000")) {
-        throw new AssertionError("expected 6A039000, got " + actual);
+      System.out.println("SIO_PHYSICAL:opaqueNonNullReference response=" + actual);
+      if (!actual.equals("6A059000")) {
+        throw new AssertionError("opaque non-null reference should cross for " +
+                                 "null comparison, expected 6A059000, got " + actual);
       }
 
       response = channel.transmit(new CommandAPDU(hex("8017000000")));
