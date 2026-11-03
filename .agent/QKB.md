@@ -1,5 +1,24 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## 1.8.4 BASIC transport failure did not reproduce on rerun — 2026-11-03
+
+- **Observation:** The supplied upstream 1.8.4 client completed the unchanged
+  1.8.4 CAP's complete `ALG_SUPPORT_BASIC` operation on Pico 2
+  `2BED26ED20556535`, recording 4,446 yes/no results (148 yes, 4,298 no).
+  It passed the earlier 2,680-row `SCARD_E_NOT_TRANSACTED` point and exited 0.
+- **Resolution status:** The earlier PC/SC/CCID/USB/client transport drop did
+  not recur and its cause remains unknown. A successful rerun is not a root
+  cause fix; keep long physical runs bounded and preserve full APDU logs.
+- **Client metadata:** Startup banner reports 1.8.4 while CSV metadata says
+  1.8.3. Treat the supplied JAR as 1.8.4 based on its banner and the applet's
+  `1.8.4_jc305` response; preserve this metadata discrepancy in any report.
+- **Tooling note:** `tools/probe-jc-algtest` currently asserts 1.8.2 and exits
+  nonzero after it correctly reads the 1.8.4 applet version. Use the official
+  matching client for 1.8.4; update the probe's expected-version handling if
+  the standalone probe is needed for this CAP.
+- **Evidence:** See the 2026-11-03 `jcalgtest-184-basic-physical-current-client`
+  progress entry for the command, row counts, and hashes.
+
 ## 1.8.4 physical BASIC sweep drops PC/SC reader — 2026-11-03
 
 - **Observation:** On Pico 2 `2BED26ED20556535`, the matching 1.8.4 client's

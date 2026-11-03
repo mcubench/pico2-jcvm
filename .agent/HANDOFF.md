@@ -1,3 +1,27 @@
+## Current session — full 1.8.4 BASIC support completes on physical Pico — 2026-11-03 03:12 UTC
+
+Used the supplied upstream `AlgTestJClient_v1.8.4.jar` with the unchanged
+`AlgTest_v1.8.4_jc305.cap` on Pico 2 `2BED26ED20556535`. The official client
+completed `ALG_SUPPORT_BASIC` in 24 minutes 20 seconds and exited 0. It
+recorded 4,446 yes/no rows: 148 `yes`, 4,298 `no`, and no unexpected result
+status. SELECT, GETVERSION `1.8.4_jc305`, JCSystem info, and the complete BASIC
+matrix passed without PC/SC errors. This run passed the prior drop point of
+2,680 rows, so the earlier `SCARD_E_NOT_TRANSACTED` did not reproduce; its
+cause remains unknown.
+
+Use the matching client path exactly as above. Client banner says 1.8.4 but the
+generated CSV still says client version 1.8.3. The repository's standalone
+`probe-jc-algtest` asserts applet version 1.8.2 and therefore exits nonzero on
+the correctly responding 1.8.4 applet; do not interpret that assertion as a
+card failure. The full official client run passed. No firmware was flashed.
+Artifacts, hashes, and exact command are in the newest 2026-11-03 progress
+entry. The earlier incomplete BASIC attempt remains in its separate directory.
+
+Next: proceed with remaining JCAlgTest 1.8.4 operations only as separately
+bounded runs if needed; keep source and upstream CAP/client untouched. Continue
+the project backlog at CTX-01/03 when testing work is complete. Preserve the
+pre-existing dirty changes listed in the earlier handoff sections.
+
 ## Current session — isolate final 1.8.4 mode APDU; no reproduction — 2026-11-03 02:38 UTC
 
 The last request in the interrupted 1.8.4 BASIC log was
