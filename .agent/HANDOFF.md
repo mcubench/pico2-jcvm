@@ -1,3 +1,13 @@
+## Current session — USB failover board not enumerated by PC/SC — 2026-11-03 00:51 UTC
+
+Host USB inventory sees both Pico 2 boards: `8E464F4E2BBC0A19` at bus 001
+device 029 and `2BED26ED20556535` at device 031. Both enumerate as `2e8a:0009`
+with the CDC and CCID interfaces. The authorized PC/SC helper grants `pcscd`
+read/write access to both device nodes, but `pcsc_scan -r` lists only 2BED.
+The 8E board cannot currently serve as APDU failover, despite USB enumeration.
+No APDU was sent to 8E and it was not flashed. Next retry PC/SC discovery if
+its reader appears; keep investigating 2BED's `FF05` applet failure offline.
+
 ## Current session — reflash did not restore JCAlgTest APDU behavior — 2026-11-03 00:45 UTC
 
 After the 1.8.4 client run, the unchanged 1.8.2 CAP was reinstalled twice and

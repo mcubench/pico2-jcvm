@@ -1,5 +1,17 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Second Pico enumerates on USB but not in PC/SC — 2026-11-03
+
+- **Observation:** USB descriptors show Pico 2 `8E464F4E2BBC0A19` at bus
+  `001:029` and `2BED26ED20556535` at `001:031`; both are `2e8a:0009` and have
+  CDC plus CCID interfaces. The authorized helper reports `count=2` and grants
+  `pcscd` read/write on both USB device nodes, but repeated `pcsc_scan -r`
+  lists only the 2BED reader plus two virtual readers.
+- **Effect:** 8E is not currently usable as a physical SmartcardIO/GPPro
+  failover target. USB visibility alone does not prove PC/SC can transact.
+- **Next:** Refresh through the authorized helper and try 8E again if PC/SC
+  enumerates it. No APDU or flash operation was performed on 8E.
+
 ## Reflash and clean reinstall did not recover physical JCAlgTest GETVERSION — 2026-11-03
 
 - **Follow-up:** Reinstalled the unchanged 1.8.2 CAP after the 1.8.4 test, then

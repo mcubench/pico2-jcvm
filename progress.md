@@ -20674,3 +20674,14 @@
 - Decision: Inspect physical per-package instance/static state and correlate actual CCID APDUs with VM traces before another support sweep. Fail over to another identified board if available.
 - Commit: `a951dea`
 - Artifacts/logs: ARM build log SHA-256 `cf9bcfaabcec655b6e5d95851ba2bdbfba63f836dc8c35c02b9e9cc42b9fb49b`; RISC-V build log SHA-256 `6b05eac977fdefac2ed6c3469dbc0d4c10f4f8ef1950e3c6aad4eb0cec867c79`; cycle `artifacts/logs/cycle-choupi-20261103T003857Z.log` SHA-256 `c55aab88dedc50f91f19e1c537f1c3aa12fc82776a6c0787b3d048edd342685e`; physical probe/serial `artifacts/logs/jcalgtest-182-getversion-after-reflash-2bed-20261103T004117Z.log` SHA-256 `03aa9fafebfa6ae945f75ba2c8e7fa1a7bc13c507a1de174cc90284bfe4cebf8`; VPCD `artifacts/logs/host-vpcd-jcalgtest-20261103T0043Z.log` SHA-256 `4b9ea019f45e54dda0820af322d17467f93fcb00bfe19c2fe61709163d1afbe0`. Original VPCD log was recovered exactly with its recorded SHA-256 `b612c9f275c898a73221d1694e21f7b8dda06d9d986b8cb54eff5918383ee7c0`.
+
+## 2026-11-03 Check alternate Pico PC/SC availability 6 minutes
+
+- Step/experiment: `jcalgtest-pcsc-failover-discovery-20261103`
+- When: '2026-11-03 00:45 UTC' - '2026-11-03 00:51 UTC'
+- Change: Checked whether the second USB-enumerated Pico could be used to continue physical JCAlgTest testing after 2BED's applet failure. No source or device state was changed.
+- Validation: Elevated host-path `lsusb -v -s 001:029` and `-s 001:031` identified 8E and 2BED as `2e8a:0009`, both with CDC and CCID interfaces. `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported `count=2`; elevated `getfacl` showed `user:pcscd:rw-` on both nodes. Repeated `PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` listed only 2BED and the two Virtual PCD readers. No APDU or flash operation was attempted on 8E.
+- Result: 8E is attached at USB but cannot currently serve as PC/SC failover. Both device nodes have PCSC permissions, so lack of ACL is not the observed cause.
+- Decision: Retry discovery later and use 8E if it appears as a PC/SC reader; meanwhile continue diagnosis on 2BED without claiming the second board is available for APDUs.
+- Commit: `pending (recorded in metadata follow-up)`
+- Artifacts/logs: USB descriptor, ACL and PC/SC output were inspected live and not archived; board serials and observed enumeration state are recorded above.
