@@ -199,6 +199,17 @@ def main() -> int:
                 )
             print("TEST:PASS if_acmp compares opaque references by owner and "
                   "handle; ifnull accepts owner-tagged references")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("801E000000"),
+                "checkcast and instanceof reject foreign private references"
+            )
+            if response != bytes.fromhex("6A249000"):
+                raise RuntimeError(
+                    f"foreign cast/instanceof result {response.hex().upper()}, "
+                    "expected caught SecurityException 6A249000"
+                )
+            print("TEST:PASS checkcast and instanceof reject owner-tagged "
+                  "foreign references with catchable SecurityException")
             response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
                                      "retain Shareable proxy across APDUs")
             if response != bytes.fromhex("6A109000"):

@@ -71,6 +71,15 @@ public final class ClientApplet extends Applet {
       boolean sameNullReference = probe.sameReferences(null, null);
       result = sameForeignReference && sameNullReference
           ? (short) 0x6A22 : (short) 0x6A23;
+    } else if (buffer[1] == 0x1E) {
+      Probe probe = (Probe) shareable;
+      byte[] original = new byte[] { 0x2C };
+      short castResult = probe.inspectForeignCast(original);
+      short instanceofResult = probe.inspectForeignInstanceof(original);
+      result = castResult == (short)0x6B32 &&
+                       instanceofResult == (short)0x6B32
+                   ? (short)0x6A24
+                   : (short)0x6A25;
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

@@ -4752,3 +4752,19 @@ original terminology/status; check current summary and later fixes before reuse.
   method, the same-reference and null-pair comparisons passed in both
   Descriptor-free and Descriptor-included runs. Root cause of the earlier
   fixture result is unknown; do not treat it as a confirmed runtime defect.
+
+
+## Foreign-reference casts stay behind the owner firewall — 2026-11-03
+
+- **Finding:** `checkcast` and `instanceof` need class/type inspection for
+  non-null objects. An opaque reference must not reach the receiving package's
+  heap or class metadata using only its compact handle.
+- **Implementation observed:** Both bytecodes consume through
+  `Stack::pop_Reference()`, which validates Reference kind and current/global
+  ownership before resolving type information. This preserves catchable
+  `SecurityException` for a foreign private reference.
+- **Regression:** Added test-only Shareable methods that perform `(Probe)value`
+  and `value instanceof Probe`, called with a client-owned byte array. Each
+  catches `SecurityException` and returns a distinct status. The full VPCD
+  cross-AID suite passes 18/18 both with Descriptor omitted and included; array
+  dereference and virtual `Object.equals` remain denied as separate checks.

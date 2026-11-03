@@ -13,4 +13,6 @@ public interface Probe extends Shareable {
   byte[] echoArray(byte[] value);
   boolean sameReference(byte[] reference);
   boolean sameReferences(byte[] left, byte[] right);
+  short inspectForeignCast(Object value);
+  short inspectForeignInstanceof(Object value);
 }

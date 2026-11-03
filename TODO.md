@@ -334,10 +334,12 @@ Archive text is historical evidence, not current device state or priorities.
   null/JCRE-global values share the global identity domain. VPCD exercises
   same-handle/null comparisons in the foreign service context (18/18 with and
   without Descriptor). Virtual calls and casts remain fail-closed for foreign
-  private references. A two-array SIO probe once returned `6F00` with a
-  suspicious second local, but the issue did not reproduce after rebuilding all
-  fixture CAPs and using a distinct two-argument interface method; both
-  Descriptor modes pass. Keep this path in regression coverage.
+  private references; generated SIO tests verify foreign `checkcast` and
+  `instanceof` raise catchable `SecurityException`. A two-array SIO probe once
+  returned `6F00` with a suspicious second local, but the issue did not
+  reproduce after rebuilding all fixture CAPs and using a distinct two-argument
+  interface method; both Descriptor modes pass. Keep this path in regression
+  coverage.
   `Stack::get_Pushed_Element()` now remains potentially throwing when optional
   bounds checks are disabled, preserving catchable `SecurityException`; a
   compile-time no-checks contract test guards the exception specification.

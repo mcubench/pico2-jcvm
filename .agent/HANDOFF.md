@@ -5,12 +5,15 @@ Added `Stack::referencesEqual()` and switched narrow/wide `if_acmp*` plus
 handles in a heap; equality requires both compact handle and normalized owner.
 The current owner marker resolves to the executing package, while null/global
 references share a global identity domain. Updated the generated SIO fixture:
-opaque foreign references compare safely, but the global Object[] test now
-attempts `Object.equals` to ensure a real dereference/dispatch remains denied.
+opaque foreign references compare safely, while global Object[] virtual
+`Object.equals`, foreign `checkcast`, and foreign `instanceof` remain denied
+with catchable security exceptions. Multi-reference comparisons also pass after
+fixture CAP regeneration.
 
 Validation: `./tools/test-rmi-registry`; `./tools/build arm` and
 `./tools/build riscv` passed. Cross-AID VPCD suite passed 18/18 with Descriptor
-omitted and 18/18 with Descriptor included. ARM firmware ends at `0x100d06a8`,
+omitted and 18/18 with Descriptor included. Comparison implementation commit
+`1aaf7cd`; fixture regression follow-up `dc8769e`. ARM firmware ends at `0x100d06a8`,
 leaving 194,904 bytes in the 1 MiB window. The authorized reader helper found
 zero physical Pico 2 readers, so no flash/physical check occurred. The supplied
 upstream AlgTest 1.8.4 client remains
@@ -23,7 +26,8 @@ and adding a distinct two-array interface method: identical foreign references
 and null pairs now pass in both Descriptor-free and Descriptor-included suites.
 The earlier fixture anomaly remains unexplained, but multi-reference marshalling
 is exercised and passing. Continue CTX-01 collision, storage/GC, stale-owner,
-cast and DELETE audit. Preserve all pre-existing user worktree changes.
+cast and DELETE audit. The explicit cast/instanceof regression is recorded
+in the latest progress entry. Preserve all pre-existing user worktree changes.
 
 ## Current session — root return owner/GC regression — 2026-11-03 04:15 UTC
 

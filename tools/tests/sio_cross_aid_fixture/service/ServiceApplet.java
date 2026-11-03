@@ -91,5 +91,22 @@ public final class ServiceApplet extends Applet implements Probe {
     return left == right;
   }
 
+  public short inspectForeignCast(Object value) {
+    try {
+      Probe ignored = (Probe) value;
+      return (short)0x6B33;
+    } catch (SecurityException expected) {
+      return (short)0x6B32;
+    }
+  }
+
+  public short inspectForeignInstanceof(Object value) {
+    try {
+      return value instanceof Probe ? (short)0x6B34 : (short)0x6B35;
+    } catch (SecurityException expected) {
+      return (short)0x6B32;
+    }
+  }
+
   public void process(APDU apdu) {}
 }
