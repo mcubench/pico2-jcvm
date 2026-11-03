@@ -4746,8 +4746,9 @@ original terminology/status; check current summary and later fixes before reuse.
   on the foreign reference and gets caught `SecurityException` (`6B31`), rather
   than treating a null comparison as an access. The authorized PC/SC helper
   found zero physical Pico readers, so no hardware validation occurred.
-- **Open observation:** A temporary two-array-argument SIO probe produced
-  `6F00`; server locals showed the second operand as `0x005A`. The final focused
-  identity fixture uses one foreign reference and passes. Reproduce and isolate
-  multi-reference descriptor marshalling before relying on multiple opaque
-  object arguments in a cross-context call.
+- **Nonreproducing observation:** An early two-array-argument SIO fixture run
+  produced `6F00` and logged a suspicious second local value `0x005A`. After
+  rebuilding all three fixture CAPs and using a distinct two-argument interface
+  method, the same-reference and null-pair comparisons passed in both
+  Descriptor-free and Descriptor-included runs. Root cause of the earlier
+  fixture result is unknown; do not treat it as a confirmed runtime defect.

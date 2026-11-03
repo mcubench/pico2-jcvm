@@ -66,8 +66,9 @@ public final class ClientApplet extends Applet {
     } else if (buffer[1] == 0x1D) {
       Probe probe = (Probe) shareable;
       byte[] original = new byte[] { 0x2B };
-      boolean sameForeignReference = probe.sameReference(original);
-      boolean sameNullReference = probe.sameReference(null);
+      boolean sameForeignReference =
+          probe.sameReferences(original, original);
+      boolean sameNullReference = probe.sameReferences(null, null);
       result = sameForeignReference && sameNullReference
           ? (short) 0x6A22 : (short) 0x6A23;
     } else if (buffer[1] == 0x16) {

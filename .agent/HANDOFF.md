@@ -17,13 +17,13 @@ upstream AlgTest 1.8.4 client remains
 `AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar`; its completed full
 BASIC run is recorded in the preceding handoff section.
 
-One exploratory two-reference SIO probe returned `6F00`; the server method
-trace showed the second reference local as `0x005A`. This was avoided in the
-focused identity fixture by comparing one opaque reference against itself and
-checking null separately. Treat multi-reference SIO argument ordering as an
-open issue; do not claim it passes. Continue CTX-01 collision, storage/GC,
-stale-owner, cast and DELETE audit, and investigate that SIO marshalling case.
-Preserve all pre-existing user worktree changes.
+An initial two-reference SIO probe returned `6F00` and logged a suspicious
+second local `0x005A`. That did not reproduce after rebuilding all fixture CAPs
+and adding a distinct two-array interface method: identical foreign references
+and null pairs now pass in both Descriptor-free and Descriptor-included suites.
+The earlier fixture anomaly remains unexplained, but multi-reference marshalling
+is exercised and passing. Continue CTX-01 collision, storage/GC, stale-owner,
+cast and DELETE audit. Preserve all pre-existing user worktree changes.
 
 ## Current session — root return owner/GC regression — 2026-11-03 04:15 UTC
 

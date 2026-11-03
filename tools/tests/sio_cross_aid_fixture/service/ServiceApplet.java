@@ -87,5 +87,9 @@ public final class ServiceApplet extends Applet implements Probe {
     return reference == reference;
   }
 
+  public boolean sameReferences(byte[] left, byte[] right) {
+    return left == right;
+  }
+
   public void process(APDU apdu) {}
 }
