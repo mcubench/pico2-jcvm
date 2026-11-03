@@ -20968,5 +20968,5 @@
 - Validation: VPCD cross-AID suite passed 20/20 with Descriptor omitted and included. Physical exact-reader test on Pico 2 `8E464F4E2BBC0A19` passed global-array denials (`6B339000`), SIO/firewall cases, reset and GP DELETE stale-proxy checks, and fixture cleanup. CAP conversion completed with zero errors and the existing int-support warning. No firmware source changed, so architecture builds were not required.
 - Result: Static, instance, and array-component retention of a global transient array is rejected as required; passing it temporarily across SIO remains supported. The `RESTORE_READ_FAIL` was caused by the test attempting a prohibited store.
 - Decision: Close this global-array retention item; continue CTX-01 owner collision, stale-owner and broader native-reference acceptance.
-- Commit: `pending`
+- Commit: `0ec3d92`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T115208Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T115407Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T115608Z.log`.
