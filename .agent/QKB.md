@@ -1,5 +1,41 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## CCID receive reset/BOOTSEL and failover — 2026-11-03
+
+- **Finding/fix:** `src/ccid_device.cpp` formerly evaluated untrusted
+  `dwLength + 10` before checking the receive limit. The sum could wrap and
+  later endpoint rearming could extend beyond remaining buffer space. The
+  production driver now calls `ccid_rx::inspect()` to compare payload length
+  against `max_message - header_size`, validate slot 0 and active-card state
+  for XfrBlock, reject extra bytes, and report exact completion. Its OUT queue
+  bounds each transfer to the minimum of endpoint size, remaining buffer and
+  remaining frame; callback byte counts are checked against the armed length.
+- **Host validation:** `./tools/test-ccid-rx-framing` passes wrapped lengths
+  `0xfffffff6` through `0xffffffff` (ten values), max/over-max sizes, partial
+  header and payload reception, slot/state, exact lengths and endpoint/buffer
+  limits. ARM and RISC-V `max_crypto` builds pass.
+- **Hardware access problem:** `./tools/cycle choupi --profile max_crypto
+  --serial 8E464F4E2BBC0A19` initially failed because picotool could not find
+  the reset interface; CDC fallback and three reset retries timed out. The
+  board later appeared in BOOTSEL; `picotool info` identified chip ID
+  `8E464F4E2BBC0A19`, and targeting `--chipid` flashed and verified the image.
+  It then had no serial or PC/SC enumeration. Do not attribute the only
+  enumerated USB reader to 8E: its descriptor identified it as `2BED...`.
+- **Viable failover path:** use the authorized elevated USB path for every
+  probe. Refresh reader permissions, identify runtime reader serial or read
+  the BOOTSEL chip ID, and pass that identity to repository cycle/flash tools.
+  If the first board's reset/re-enumeration fails, enumerate a second board
+  and continue on that identified board. On 2BED (`2BED26ED20556535`), the
+  same ARM cycle reached BOOTSEL after a short wait, flash verification
+  passed, and the finite monitor ended with `TEST:SUMMARY pass=1 fail=0`.
+  Refreshed PC/SC then found 2BED; read-only GPPro `--info` succeeded through
+  SELECT, CPLC, Card Data and GET DATA exchanges. Transcript:
+  `artifacts/logs/ccid-rx-framing-gppro-2bed-20261103.log`, SHA-256
+  `6c1a7977fb2a97a9dad8b38405373916176a507831c4a915d8e84503567d1127`.
+- **Current state:** 2BED runtime validation succeeded. 8E was not validated
+  after its flash. The CCID malformed-frame cases were tested in the host shim;
+  no malformed USB command was sent to hardware.
+
 ## Max-profile physical acceptance and package DELETE timeout — 2026-11-03
 
 - **Image:** `max_crypto` ARM UF2 SHA-256

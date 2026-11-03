@@ -23,6 +23,7 @@
 #include "ccid_progress_flow.hpp"
 #include "vm_filesystem.h"
 #include "usb_task_budget.hpp"
+#include "ccid_rx_framing.hpp"
 
 namespace {
 constexpr uint8_t kCcidInterface = 2;
@@ -82,6 +83,7 @@ uint8_t rx_buffer[kMaxMessage];
 uint8_t tx_buffer[kMaxCcidResponse];
 size_t rx_length = 0;
 size_t rx_expected = 0;
+size_t rx_armed_length = 0;
 uint8_t slot_state = 1; // present, inactive
 uint8_t ep_out = 0;
 uint8_t ep_in = 0;
@@ -161,13 +163,6 @@ bool segment_card_manager_response(const uint8_t *command,
   response[data_limit + 1] = static_cast<uint8_t>(sw2);
   response_length = data_limit + 2;
   return true;
-}
-
-uint32_t read_le32(const uint8_t *p) {
-  return static_cast<uint32_t>(p[0]) |
-         (static_cast<uint32_t>(p[1]) << 8) |
-         (static_cast<uint32_t>(p[2]) << 16) |
-         (static_cast<uint32_t>(p[3]) << 24);
 }
 
 uint16_t build_dynamic_get_applications_response(
@@ -303,9 +298,20 @@ uint16_t build_dynamic_get_status_page(
 
 void queue_out(uint8_t rhport) {
   if (ep_out != 0 && !usbd_edpt_busy(rhport, ep_out)) {
+    const size_t transfer_length = ccid_rx::next_transfer_size(
+        sizeof(rx_buffer), kEndpointSize, rx_length, rx_expected);
+    if (transfer_length == 0) {
+      ++debug_invalid_messages;
+      rx_length = 0;
+      rx_expected = 0;
+      rx_armed_length = 0;
+      return;
+    }
     if (!usbd_edpt_xfer(rhport, ep_out, rx_buffer + rx_length,
-                        static_cast<uint16_t>(kEndpointSize))) {
+                        static_cast<uint16_t>(transfer_length))) {
       ++debug_out_rearm_errors;
+    } else {
+      rx_armed_length = transfer_length;
     }
   }
 }
@@ -364,6 +370,7 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   }
   rx_length = 0;
   rx_expected = 0;
+  rx_armed_length = 0;
   const uint16_t transfer_length = static_cast<uint16_t>(payload_length + 10);
   // Bulk IN transfers ending on a full packet need a terminating ZLP so the
   // host can distinguish completion from a longer CCID response. TinyUSB's
@@ -929,6 +936,7 @@ void driver_init() {
   debug_stage = 1;
   rx_length = 0;
   rx_expected = 0;
+  rx_armed_length = 0;
   message_pending = false;
   tx_zlp_pending = false;
   native_operation_active = false;
@@ -952,6 +960,7 @@ void driver_reset(uint8_t) {
   choupi_vm_clear_selected_applet();
   rx_length = 0;
   rx_expected = 0;
+  rx_armed_length = 0;
   message_pending = false;
   tx_zlp_pending = false;
   native_operation_active = false;
@@ -1031,6 +1040,7 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     // subsequent CCID command can recover without a USB re-enumeration.
     rx_length = 0;
     rx_expected = 0;
+    rx_armed_length = 0;
     message_pending = false;
     tx_zlp_pending = false;
     native_extension_in_flight = false;
@@ -1060,7 +1070,12 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
     queue_out(rhport);
     return true;
   }
-  if (endpoint != ep_out || rx_length + transferred > sizeof(rx_buffer)) {
+  const size_t armed_length = rx_armed_length;
+  rx_armed_length = 0;
+  if (endpoint != ep_out ||
+      !ccid_rx::transfer_fits(transferred, armed_length, rx_length,
+                              sizeof(rx_buffer)) ||
+      transferred == 0) {
     ++debug_invalid_messages;
     rx_length = 0;
     rx_expected = 0;
@@ -1071,18 +1086,17 @@ bool driver_xfer(uint8_t rhport, uint8_t endpoint, xfer_result_t result,
   ++debug_rx_events;
   debug_stage = 3;
   rx_length += transferred;
-  if (rx_expected == 0 && rx_length >= 10) {
-    const uint32_t payload_length = read_le32(rx_buffer + 1);
-    if (payload_length + 10 > kMaxCcidMessage) {
-      ++debug_invalid_messages;
-      rx_length = 0;
-      rx_expected = 0;
-      queue_out(rhport);
-      return false;
-    }
-    rx_expected = payload_length + 10;
+  const ccid_rx::FrameStatus frame_status = ccid_rx::inspect(
+      rx_buffer, rx_length, sizeof(rx_buffer), kMaxCcidMessage, slot_state,
+      rx_expected);
+  if (frame_status == ccid_rx::FrameStatus::Invalid) {
+    ++debug_invalid_messages;
+    rx_length = 0;
+    rx_expected = 0;
+    queue_out(rhport);
+    return false;
   }
-  if (rx_expected != 0 && rx_length >= rx_expected) {
+  if (frame_status == ccid_rx::FrameStatus::Complete) {
     // TinyUSB invokes this class callback from its low-priority USB worker
     // IRQ. Defer APDU parsing and especially VM INSTALL execution to the main
     // loop so the IRQ never performs flash, allocation, or Java bytecode work.

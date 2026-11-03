@@ -46,9 +46,17 @@ during the review.
 
 ### RV-20261103-01
 
-- [ ] **P1: CCID length overflow defeats receive bounds.**
+- [x] **P1: CCID length overflow defeats receive bounds.**
   Owner: HARD-01, HOST-01. Evidence: Source; [review R01](docs/review_20261103.md#r01--ccid-length-overflow-can-escape-the-receive-buffer-limit).
   Acceptance: compare `payload_length` to `max_total - header_size` before adding; validate minimum header/slot/state and exact frame length; never arm an endpoint beyond remaining capacity. Exercise all wrap values and packet fragmentation in a host shim of the production driver. No malformed USB command was sent to hardware.
+  Progress: the production CCID path now uses checked framing and only arms
+  Bulk OUT for the remaining buffer/frame capacity. Focused host test passes
+  all ten wrapped lengths, maximum/oversize boundaries, header fragmentation,
+  slot/state checks, exact-frame checks and receive-size bounds. ARM and
+  RISC-V max_crypto builds pass. Physical flash verification and finite serial
+  passed on failover board 2BED; its PC/SC reader was found and read-only GPPro
+  APDU exchange passed. The separate 8E post-flash enumeration failure is
+  recorded in QKB and does not block this acceptance.
 
 ### RV-20261103-02
 

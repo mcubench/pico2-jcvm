@@ -21369,6 +21369,43 @@
 - Commit: pending review commit; SHA to be recorded in metadata follow-up.
 - Artifacts/logs: `docs/review_20261103.md`; `artifacts/reviews/review_20261103/` logs, probe sources, JSON results and `reviewed-sources.sha256`.
 
+## 2026-11-03 Bound CCID receive framing and validate failover board 29 minutes
+
+- Step/experiment: `rv01-ccid-rx-bounds-20261103`
+- When: '2026-11-03 23:14 UTC' - '2026-11-03 23:43 UTC'
+- Change: Added production CCID framing/bounds helpers and routed the TinyUSB
+  receive callback through them. The driver now rejects wrapping payload
+  lengths, wrong slots, inactive-slot XfrBlock, and extra bytes; it caps each
+  Bulk OUT receive to the remaining endpoint/frame/buffer capacity and checks
+  the transferred count against the armed size. Added a focused host test and
+  executable repository wrapper. Updated TODO/QKB/HANDOFF and refreshed the
+  current max firmware alias/README for the new source image.
+- Validation: `./tools/test-ccid-rx-framing` passed all wrapped payload values
+  `0xfffffff6..0xffffffff`, maximum and over-limit frames, partial header and
+  payload reception, invalid slot/state, exact frame length, and receive
+  capacity. ARM and RISC-V `max_crypto` builds passed. ARM image end
+  `0x100e88b8`, 96,072 bytes remain. Physical 8E flash verification succeeded
+  from BOOTSEL but finite serial/PCSC did not return, so its runtime was not
+  accepted. Failover to 2BED completed flash verification and finite serial
+  with repeated `TEST:SUMMARY pass=1 fail=0`; `pcsc_scan -r` showed the physical
+  reader, and read-only GPPro `--info` passed ATR/SELECT/CPLC/Card Data and GET
+  DATA commands. Malformed USB frames were not sent to hardware.
+- Result: The tested production framing helper and normal CCID path pass host
+  checks, both architecture builds, and valid physical APDU exchange on 2BED.
+  8E remains a physical startup/re-enumeration issue; physical 8E runtime is
+  unverified. Full API suites were not rerun against this changed image hash.
+- Decision: Close RV-01 on the passing 2BED failover validation; track 8E's
+  post-flash enumeration issue as a separate board-level item. Continue with
+  the next P1 implementation/offline integration proof.
+- Commit: pending (SHA to be recorded in metadata follow-up)
+- Artifacts/logs: `tools/tests/ccid_rx_framing_test.cpp`;
+  cycle recovery `artifacts/logs/cycle-choupi-20261103T232334Z.log`;
+  8E flash/monitor `artifacts/logs/cycle-choupi-20261103T232841Z.log`;
+  2BED pass `artifacts/logs/cycle-choupi-20261103T233549Z.log`;
+  GPPro `artifacts/logs/ccid-rx-framing-gppro-2bed-20261103.log` SHA-256
+  `6c1a7977fb2a97a9dad8b38405373916176a507831c4a915d8e84503567d1127`;
+  current UF2 SHA-256 `86081613e6ab0e2ee88be2c679d6f2005672d283b51dfd5d0f6747de7205b2b9`.
+
 ## 2026-11-03 Rebuild and verify current max empty-card firmware 5 minutes
 
 - Step/experiment: `max-crypto-current-empty-card-refresh-20261103`

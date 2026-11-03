@@ -1,4 +1,39 @@
-# Current session — current max firmware and physical API sweeps — 2026-11-04 00:14 CET
+# Current session — CCID RX bounds and physical failover — 2026-11-04 00:43 CET
+
+Implemented RV-20261103-01 in the production CCID receive path. New
+`src/ccid_rx_framing.hpp` compares payload length to the available limit before
+addition, requires a valid 10-byte header and slot 0, requires active slot
+state for XfrBlock, rejects overlong frames, and provides bounded next-transfer
+sizes. `queue_out()` requests at most the endpoint size, remaining frame size,
+and remaining receive-buffer capacity; `driver_xfer()` checks the reported
+byte count against the armed transfer. Focused host shim
+`./tools/test-ccid-rx-framing` passes all wrapped 32-bit lengths, exact and
+oversize boundaries, fragmented headers/payloads, slot/state and buffer-bound
+cases. Both `./tools/build arm --profile max_crypto` and RISC-V builds pass.
+
+Hardware recovery: cycle by 8E's runtime serial first failed reset-interface
+discovery. The board later appeared in BOOTSEL and `picotool info` confirmed
+chip ID 8E; `cycle ... --chipid 8E...` flash verification passed, but its
+serial monitor found no CDC port and PC/SC did not list 8E afterward. USB
+descriptor checks showed the remaining runtime board was 2BED, so no results
+were attributed across identities. Failover to 2BED passed the ARM cycle and
+finite monitor (`TEST:SUMMARY pass=1 fail=0`); after authorized reader refresh,
+PC/SC saw 2BED and read-only GPPro `--info` completed ATR, SELECT, CPLC, Card
+Data and GET DATA. Transcript: `artifacts/logs/ccid-rx-framing-gppro-2bed-20261103.log`.
+
+The current firmware alias
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` now
+matches the changed build: 1,905,664 bytes, SHA-256
+`86081613e6ab0e2ee88be2c679d6f2005672d283b51dfd5d0f6747de7205b2b9`, ARM
+image end `0x100e88b8`, 96,072 bytes remaining. This updated hash has passing
+builds and verified flash on 2BED, plus valid physical CCID APDUs. It contains
+no applet; firmware updates still do not erase persistent packages. The
+previous hash's full API Security/Crypto sweeps do not verify this changed
+hash. Runtime state of 8E remains unconfirmed, separately from RV-01, which
+passed on 2BED. Continue with RV-02 or another P1 offline item. Preserve
+unrelated worktree changes.
+
+# Previous session — current max firmware and physical API sweeps — 2026-11-04 00:14 CET
 
 Rebuilt the current `max_crypto` profile using `./tools/build arm --profile
 max_crypto` and `./tools/build riscv --profile max_crypto`; both passed. ARM
