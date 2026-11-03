@@ -324,8 +324,12 @@ Archive text is historical evidence, not current device state or priorities.
   reference-consuming bytecode/native entry for owner enforcement, and test
   equal-handle collisions, foreign-reference returns, storage/GC roots, stale
   owners and package deletion. Object comparison, casts and returns currently
-  fail closed rather than implementing all Java Card cross-context cases. Keep
-  foreign references out of persistent state and applet-local arrays; global
+  fail closed rather than implementing all Java Card cross-context cases.
+  `Stack::get_Pushed_Element()` now remains potentially throwing when optional
+  bounds checks are disabled, preserving catchable `SecurityException`; a
+  compile-time no-checks contract test guards the exception specification.
+  Continue auditing every reference consumer and foreign-owner lifecycle path.
+  Keep foreign references out of persistent state and applet-local arrays; global
   Object[] storage is covered by per-slot owner metadata but needs the remaining
   lifecycle acceptance above. Java Card RE 3.0.5 permits parameters to
   cross an SIO call but still applies caller-context firewall checks to later

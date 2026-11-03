@@ -1,3 +1,32 @@
+## Current session — preserve catchable foreign-reference rejection — 2026-11-03 03:43 UTC
+
+`Stack::get_Pushed_Element()` checks owner metadata and throws
+`SecurityException` for a foreign reference. Its old exception specification
+was conditionally `noexcept` when optional stack bounds checks were disabled,
+which would turn the intended applet exception into termination. Removed that
+conditional from declaration and definition, and added a compile-time
+regression translation unit that disables both checks and asserts the accessor
+remains potentially throwing.
+
+Validation passed: `./tools/test-rmi-registry`; `./tools/build arm`;
+`./tools/build riscv`; escalated `PICO2_HOST_USB_ACCESS=1
+./tools/test-vpcd-multipackage` (47/47); and escalated
+`PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` (18/18). On physical
+Pico 2 `2BED26ED20556535`, the ARM image
+`build/arm/pico2_choupi.uf2` was flashed from BOOTSEL and fully verified by
+picotool. The 18-second finite monitor reported repeated
+`TEST:SUMMARY pass=1 fail=0`; no failure/fault markers appeared. Firmware SHA-256
+`1ca1093340e936276b52869c9637adf22c8627fe21598c8b6cf1d0379b85d963`. The first
+cycle attempt failed to enter BOOTSEL promptly (`Unable to locate reset
+interface`); delayed BOOTSEL enumeration appeared afterward and direct wrapper
+flashing succeeded.
+
+Next: continue CTX-01 by auditing all reference-consuming bytecodes and native
+entry points for owner checks, aliasing/collision, return, storage, GC, stale
+owner, and DELETE behavior. Keep unverified routes fail-closed. Preserve the
+pre-existing dirty files listed in the worktree; commit only this stack fix and
+its focused regression with its progress/handoff/TODO/QKB records.
+
 ## Current session — full 1.8.4 BASIC support completes on physical Pico — 2026-11-03 03:12 UTC
 
 Used the supplied upstream `AlgTestJClient_v1.8.4.jar` with the unchanged

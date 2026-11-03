@@ -399,9 +399,6 @@ jreturnaddress_t Stack::pop_ReturnAddress() {
  * @return the n-th pushed element to return.
  */
 jref_t Stack::get_Pushed_Element(uint16_t n)
-#if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
-    noexcept
-#endif
 {
   assert(n > 0);
 

@@ -4639,3 +4639,23 @@ original terminology/status; check current summary and later fixes before reuse.
   define permitted cross-context reference comparison, return, and storage.
   Foreign references must not become roots in another package's heap or survive
   into persistent state without explicit owner-aware lifecycle handling.
+
+
+## Foreign-reference stack accessor must remain throwable — 2026-11-03
+
+- **Finding:** `Stack::get_Pushed_Element()` rejects foreign-owner references by
+  throwing `SecurityException`. Its declaration and definition previously
+  became `noexcept` when both optional bounds-check macros were disabled. A
+  foreign-reference access in that configuration would therefore terminate
+  instead of allowing the applet to catch the security exception.
+- **Fix and regression:** Removed the conditional `noexcept` from declaration
+  and definition. `tools/tests/rmi_registry/stack_no_checks_contract.cpp`
+  undefines both bounds-check macros and statically asserts the accessor is not
+  `noexcept`.
+- **Validation:** `./tools/test-rmi-registry`, ARM and RISC-V wrapper builds, and
+  VPCD multipackage (47/47) and RMI client (18/18) passed. Pico 2
+  `2BED26ED20556535` was flashed from BOOTSEL; picotool verified the full ARM
+  image, then an 18-second serial monitor reported repeated
+  `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`.
+- **Remaining:** This closes one exception-contract hole; continue auditing every
+  reference consumer and foreign-owner lifecycle path under CTX-01.

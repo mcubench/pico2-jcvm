@@ -5,6 +5,7 @@ set(CHOUPI_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../../../choupi/src")
 add_executable(
   rmi_registry_test
   rmi_registry_test.cpp
+  stack_no_checks_contract.cpp
   "${CHOUPI_SOURCE_DIR}/context.cpp"
   "${CHOUPI_SOURCE_DIR}/frame.cpp"
   "${CHOUPI_SOURCE_DIR}/heap.cpp"

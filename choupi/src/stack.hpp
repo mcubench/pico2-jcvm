@@ -224,11 +224,9 @@ public:
   jreturnaddress_t pop_ReturnAddress();
   // Get a pushing element which as not the last pushed element. This function
   // returns the n-th pushed word without popped it.
-  jref_t get_Pushed_Element(uint16_t n)
-#if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)
-      noexcept
-#endif
-      ;
+  // This accessor can reject a foreign reference with SecurityException even
+  // when optional stack bounds checks are disabled.
+  jref_t get_Pushed_Element(uint16_t n);
   void set_Pushed_Element(
       uint16_t n, jref_t value,
       uint8_t owner = kCurrentReferenceOwner)
