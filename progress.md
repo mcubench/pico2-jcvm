@@ -20927,3 +20927,13 @@
 - Decision: Commit the focused fixture and acceptance coverage; continue CTX-01's remaining stale-owner, GC-root and multi-package audit.
 - Commit: `a3660d4`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T112302Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T112447Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T112637Z.log`.
+## 2026-11-03 Windows MUTE Linux cross-check 5 minutes
+
+- Step/experiment: `windows-ccid-mute-cross-check`
+- When: '2026-11-03 11:28 UTC' - '2026-11-03 11:33 UTC'
+- Change: Recorded the Windows `certutil -scinfo` PRESENT/MUTE report and compared it against bounded Linux PC/SC power-on and GPPro listing on both currently enumerated physical Pico 2 readers.
+- Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader && pcsc_scan -r` passed; escalated host-access exact-reader GPPro `--list` passed on `8E464F4E2BBC0A19` and `2BED26ED20556535`. No firmware build or flash was performed.
+- Result: Both Linux devices completed card activation and APDU listing. Windows MUTE is narrowed to Windows/host-path behavior, but the exact cause is unknown without a USBPcap trace, correlated serial log, and image hash.
+- Decision: Keep CCID behavior unchanged pending those diagnostics; inspect CCID power-on command `0x62` and response `0x80` in the trace.
+- Commit: `pending`
+- Artifacts/logs: read-only command output in this session; no archived log.

@@ -4850,3 +4850,26 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Evidence:** `artifacts/logs/sio-cross-aid-vpcd-20261103T112302Z.log`,
   `artifacts/logs/sio-cross-aid-vpcd-20261103T112447Z.log`, and
   `artifacts/logs/sio-cross-aid-physical-20261103T112637Z.log`.
+
+
+## Windows certutil reports PRESENT/MUTE while Linux powers on — 2026-11-03
+
+- **Observation:** Windows `certutil -scinfo` enumerated the Pico2 JCVM reader
+  but reported `SCARD_STATE_PRESENT | SCARD_STATE_MUTE`, no recognized card,
+  and took several minutes. This indicates activation/ATR handling did not
+  complete from Windows' perspective; it does not identify the failed USB or
+  CCID stage.
+- **Cross-check:** On 2026-11-03, exact-reader GPPro `--list` commands completed
+  on Linux for `8E464F4E2BBC0A19` (`00 00`) and `2BED26ED20556535` (`01 00`).
+  Both returned ISD and package/applet listings, proving each Linux PC/SC path
+  received usable activation and APDU exchange. The configured ATR is
+  `3B800181` and is valid for the advertised minimal T=1 parameters, but the
+  actual Windows wire exchange remains unobserved.
+- **Diagnosis:** Likely Windows-specific transport/driver or a host-specific
+  interaction, not a general inability of current firmware to power on. This
+  is an inference: the tested Windows image hash and correlated logs are
+  missing.
+- **Next:** Capture Windows USBPcap from device enumeration through
+  `PC_to_RDR_IccPowerOn` / `RDR_to_PC_DataBlock`, plus the simultaneous Pico CDC
+  serial trace. Check command `0x62`, response `0x80`, response payload length,
+  and ATR bytes. Preserve current behavior until the trace localizes the fault.

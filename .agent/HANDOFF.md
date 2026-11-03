@@ -1,3 +1,27 @@
+## Current session — Windows MUTE Linux cross-check — 2026-11-03 11:33 UTC
+
+User tested the current max firmware in Windows `certutil -scinfo`: the reader
+enumerates, but card status is `PRESENT | MUTE` and no card is recognized; the
+command takes several minutes. This means Windows did not complete card
+activation/ATR handling. It does not by itself establish an invalid ATR or an
+applet failure.
+
+Refreshed the authorized PC/SC path on Linux. Both physical reader IDs
+enumerated: `8E464F4E2BBC0A19` (suffix `00 00`) and `2BED26ED20556535` (suffix
+`01 00`). Bounded, read-only GlobalPlatformPro `--list` / PC/SC power-on
+succeeded on each and returned ISD and installed applet/package listings. This
+narrows the reported failure to a Windows-specific or host/USB-path interaction,
+but does not isolate it because no Windows transfer trace or correlated
+firmware serial log was captured, and the tested image hash is unknown.
+
+Next: on Windows, capture a USBPcap trace covering enumeration through the
+first `PC_to_RDR_IccPowerOn` response while capturing the Pico CDC serial log
+for the same test; record the flashed UF2 SHA-256. Check whether CCID command
+`0x62` reaches firmware and whether response `0x80` carries ATR `3B800181`.
+Keep current CCID behavior unchanged until the trace distinguishes missing
+command, missing/short USB response, and Windows ATR rejection. Linux checks
+were read-only; no card contents were changed.
+
 ## Current session — cover foreign references at native Util entry — 2026-11-03 11:28 UTC
 
 Added a test-only cross-AID Shareable method that passes a caller-owned byte
