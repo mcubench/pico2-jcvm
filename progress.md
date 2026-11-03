@@ -21086,3 +21086,14 @@
 - Decision: No implementation action; continue with the project backlog and Windows trace-based diagnosis.
 - Commit: `c2f331d`
 - Artifacts/logs: none.
+
+## 2026-11-03 Refresh physical SIO test availability 2 minutes
+
+- Step/experiment: `ctx01-sio-physical-reader-inventory-20261103`
+- When: '2026-11-03 14:02 UTC' - '2026-11-03 14:04 UTC'
+- Change: Refreshed authorized PC/SC inventory and exact-reader GPPro applet/package listing before attempting the outstanding physical same-AID SIO test.
+- Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader && PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` succeeded and exposed one physical reader, `2BED26ED20556535`. Exact-reader `./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar --reader 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00' --list` succeeded. No firmware was flashed and no applet/package was modified.
+- Result: The reader already contains both SIO fixture packages `A000000151000003` and `A000000151000004`, so the physical delete/reinstall test was not run. The harness would require those AIDs absent and refuses overwriting them. JCAlgTest and API applets are also installed and preserved.
+- Decision: Keep the physical same-AID acceptance open; use a different identified token without conflicting AIDs when one is available and continue offline work meanwhile.
+- Commit: pending
+- Artifacts/logs: live command output only; no new log file.

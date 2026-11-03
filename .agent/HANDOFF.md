@@ -1,4 +1,17 @@
-# Current session — Windows certutil MUTE reproduced in report — 2026-11-03 13:59 UTC
+# Current session — refresh physical SIO test availability — 2026-11-03 14:04 UTC
+
+Authorized refresh (`PICO2_HOST_USB_ACCESS=1 sudo -n
+/usr/local/sbin/pico2-pcsc-reader`, followed by `pcsc_scan -r`) sees one
+physical device: Pico 2 `2BED26ED20556535`. Exact-reader GPPro `--list`
+confirms the SIO client and service fixture packages `A000000151000004` and
+`A000000151000003` are already installed (along with JCAlgTest and API applets).
+The physical same-AID delete/reinstall regression cannot run safely on this
+board because its harness requires absent fixture AIDs and will not overwrite
+them. No card state was changed. Continue with offline SIO/reference audit;
+retry physical coverage only on another identified token with no conflicting
+fixture AIDs. The Windows MUTE trace remains separately pending.
+
+# Previous session — Windows certutil MUTE reproduced in report — 2026-11-03 13:59 UTC
 
 User reports a Windows `certutil -scinfo` run taking several minutes, then
 listing one reader `Pico2 JCVM CCID 0`, state `SCARD_STATE_PRESENT |
