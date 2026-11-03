@@ -33,8 +33,8 @@ fixture packages were preserved.
 Files changed for this work: `choupi/src/interpretor.cpp`,
 `src/choupi_pico2.cpp`, `docs/NATIVE_PROGRESS_CALLBACKS.md`, and
 `choupi/src/jc_handlers/jc_cp.cpp`; progress/QKB/TODO are updated. Cooperative
-progress commit: `2d55ad5`. DES mapping plus final knowledge/progress update is
-not yet committed. Preserve other dirty changes (notably AGENTS.md,
+progress commit: `2d55ad5`. DES mapping and final knowledge/progress update are
+committed as `a9d0fdf`. Preserve other dirty changes (notably AGENTS.md,
 `choupi/src/heap.*`, `src/cap_load.cpp`, and the physical JCSystem probe).
 
 Evidence:
