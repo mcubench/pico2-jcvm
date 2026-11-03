@@ -4840,3 +4840,19 @@ passed. The user reports physical devices connected, but the VM's elevated
 `lsusb -d 2e8a:` returned no devices and PC/SC lists only VPCD; no flash or
 physical test was performed. Continue CTX-01 offline until an unchanged
 upstream CAP exercises cross-AID invocation or a valid fixture is available.
+
+## CTO implementation review — 2026-11-03 19:55 UTC
+
+Completed the requested leadership-level retrospective in
+`docs/CTO_IMPLEMENTATION_REVIEW.md`: approximately 3,650 words, eight numbered
+page sections with seven explicit print page breaks. Covers original scope,
+implemented architecture and deviations, dated delivery phases, runtime and
+context correctness, persistence/capacity, crypto/transport, operating lessons,
+and prioritized unfinished acceptance. Distinguishes historical physical passes,
+latest emulator evidence, and current-image gaps; incorporates successful Windows
+GPPro evidence and the completed 466-call Crypto VPCD sweep. All document links
+and anchors resolve; the latest Crypto CSV counts were independently recounted.
+Documentation only: no build, firmware, CAP, flash, USB or PC/SC changes/tests.
+Pre-existing source changes, documentation moves and untracked artifacts were
+preserved. Continue the active implementation using TODO task owners; this review
+does not close or reprioritize their acceptance gates.
