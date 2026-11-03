@@ -21322,5 +21322,5 @@
 - Validation: `sha256sum` confirmed source and packaged image both equal `756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`; both are 1,905,664 bytes. No firmware rebuild or physical flash was performed in this packaging step.
 - Result: A current, shareable max_crypto image is available without replacing the older packaged artifact. It enables RSA and ECC and does not bundle the upstream JCAlgTest CAP.
 - Decision: Use the newly dated artifact for external validation. The exact image is build-validated but not hardware-runtime-validated; it was generated from the shared worktree containing uncommitted local source changes.
-- Commit: pending
+- Commit: `8751e26`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-20261103-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
