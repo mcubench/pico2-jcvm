@@ -21344,5 +21344,5 @@
 - Validation: `api_card_runner.py --api 305 --areas Crypto --reader-name 'Virtual PCD 00 00' --test-timeout 14400` completed 466/466 calls. GPPro upload and cleanup both passed. Total elapsed upload-to-cleanup 1:45:54. Outcomes: 304 `OK`, 161 `UNSUPPORTED_PER_SPEC`, and one known `EXC_CARDRUNTIME reason=0x0001` for upstream `ALG_RSA_SHA_512_PKCS1_PSS`; zero `WRONG_RESULT`, transport errors, or missing calls. Reader presence probe passed after keeping a live `pcsc_scan` poller active.
 - Result: A full Crypto sweep completes reliably within the finite deadline on this emulator setup. The PSS exception is the previously documented correct rejection of an undersized 1024-bit test key with default SHA-512 PSS salt; not a firmware defect. No physical board was involved.
 - Decision: EMU-01 is closed. Keep API-03 physical Crypto acceptance open and retain the upstream CAP unchanged.
-- Commit: pending
+- Commit: `65b0e65`
 - Artifacts/logs: CSV `artifacts/results/deploy/vpcd-full-crypto-current-max-20261103/crypto.csv` SHA-256 `bee902ce4129238268c061f0e32334ba06c9f8f81e34cd9ddbf8dcf13c9e44f0`; runner log SHA-256 `9fa53e11f874a618ba287bf1760b62419ab58b9ec53fb0a5f2fe61c368672a64`; emulator log SHA-256 `204eafd093875401e926bd9802562ad3daca4a5a416226b498779b17a647a3dc`; unchanged CAP SHA-256 `f3dc5edd5b65817c8663ea1018128448052816c1a323c8cc2211027e9f8e4899`.
