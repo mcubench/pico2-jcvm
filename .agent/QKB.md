@@ -4937,8 +4937,12 @@ original terminology/status; check current summary and later fixes before reuse.
   `Object[]` arrays, and `aaload` returns the opaque reference with provenance
   intact. The Descriptor-free VPCD suite passes 20/20; the result is `6B43`,
   meaning the transient array store/read succeeds while static and instance
-  stores still fail closed. ARM, RISC-V, and PC builds pass. This is partial
-  support only.
+  stores still fail closed. ARM, RISC-V, and PC builds pass. On Pico 2
+  `8E464F4E2BBC0A19`, the same APDU returned `6B439000` after a verified ARM
+  flash; the complete cross-AID suite and temporary package cleanup passed.
+  This is partial support only. Logs:
+  `artifacts/logs/sio-cross-aid-physical-20261103T122634Z.log` and
+  `artifacts/logs/cycle-choupi-20261103T122420Z.log`.
 - **Remaining:** Add stable cross-package identity encoding and owner-aware
   persistence/restore/root behavior for static fields, instance fields, and
   persistent array elements. Then allow and test typed array stores with

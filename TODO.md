@@ -360,8 +360,10 @@ Archive text is historical evidence, not current device state or priorities.
   point objects and global-array references are forbidden values for these
   stores. A cross-AID VPCD regression initially denied all three ordinary
   foreign-reference stores. The VM now preserves owner metadata in
-  applet-owned transient wildcard `Object[]` arrays, and the Descriptor-free
-  integration suite verifies identity on read. Persistent foreign references
+  applet-owned transient wildcard `Object[]` arrays. Descriptor-free VPCD
+  verifies identity on read, and Pico 2 `8E464F4E2BBC0A19` returned `6B439000`
+  after the current ARM image was flash-verified; the full GPPro fixture
+  cleanup passed. Persistent foreign references
   still fail closed because static/instance fields and persistent arrays need
   a stable cross-package identity encoding and owner-aware roots/restoration.
   Instance/static stores and typed foreign array stores remain unimplemented.

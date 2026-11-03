@@ -1,3 +1,24 @@
+## Current session — physical foreign-reference retention check — 2026-11-03 12:28 UTC
+
+Flashed and verified current ARM image on Pico 2 `8E464F4E2BBC0A19`; finite
+serial monitor passed `TEST:PASS choupi_runtime` and
+`TEST:SUMMARY pass=1 fail=0`. A retained `WATCHDOG_RECOVERY cause=other`
+startup marker was also printed; QKB records this existing marker as retained
+reset context, not proof of a current watchdog failure.
+
+The physical three-package SIO suite passed on the exact reader. The new
+ordinary foreign-reference retention APDU returned `6B439000` (volatile
+transient Object[] retention and identity pass; static/instance field stores
+remain denied). Existing cross-AID, reset, stale proxy, exception, and firewall
+checks passed; GPPro deleted all temporary fixture packages. Log:
+`artifacts/logs/sio-cross-aid-physical-20261103T122634Z.log` (SHA-256
+`5fb0036a5b871c8ebad9a2e3e6ef431e9a334c9a96f4bc744f5b21b96e52bda4`). The
+cycle log is `artifacts/logs/cycle-choupi-20261103T122420Z.log`; flashed UF2
+SHA-256 `d1d3f5d9a54368905644cbbbe45da8c781b1a9d2ddf083cf00a8fb5b538be8cd`.
+
+Continue with owner-preserving static/instance field and persistent-array
+storage. No other user packages were changed.
+
 ## Current session — retain foreign refs in volatile Object[] — 2026-11-03 12:17 UTC
 
 Verified against the official Java Card RE 3.0.5 §6.2.8 that ordinary

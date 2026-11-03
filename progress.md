@@ -20980,3 +20980,13 @@
 - Decision: Keep CTX-01 open. Next implement owner-preserving persistent references for static/instance fields and persistent arrays without resolving foreign handles in the current heap; then add typed component compatibility and reset/delete/GC coverage.
 - Commit: `ace5a37`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T121552Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T121825Z.log`; official source [Oracle JCRE 3.0.5 §6.2.8](https://docs.oracle.com/cd/E59935_01/JCCRE.pdf).
+## 2026-11-03 Validate foreign-reference array retention on Pico 2 8 minutes
+
+- Step/experiment: `ctx01-foreign-reference-volatile-array-physical-20261103`
+- When: '2026-11-03 12:20 UTC' - '2026-11-03 12:28 UTC'
+- Change: Extended the exact-reader physical SIO probe to exercise the volatile foreign-reference array-retention APDU introduced in the preceding implementation step. Flashed current ARM firmware to Pico 2 `8E464F4E2BBC0A19` only after ARM and RISC-V builds passed.
+- Validation: `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile current --chipid 8E464F4E2BBC0A19` passed build gates, flash verification, and finite monitor (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). `PICO2_HOST_USB_ACCESS=1 ./tools/test-sio-cross-aid-physical 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00'` passed the physical suite and cleanup. APDU result was `6B439000`; GPPro installed and removed all three temporary fixtures. Targeted `git diff --check` passed.
+- Result: Volatile applet-owned wildcard Object[] retention preserves opaque foreign-reference identity on real hardware. Static and instance foreign-reference stores remain denied and are not accepted. No other package or user-installed applet was altered. The monitor printed a retained `WATCHDOG_RECOVERY cause=other` startup marker followed by repeated runtime PASS; QKB records its established interpretation as retained reset context rather than current failure.
+- Decision: Physical validation for this volatile-array slice is closed on 8E. Continue with persistent owner-preserving references and their reset/delete/GC behavior; this does not close CTX-01.
+- Commit: `<pending>`
+- Artifacts/logs: cycle `artifacts/logs/cycle-choupi-20261103T122420Z.log` SHA-256 `a96fc72bbcf0e1c1ab7087055cc52a38fa40584fd59d5ebbb26fa146c2988765`; physical suite `artifacts/logs/sio-cross-aid-physical-20261103T122634Z.log` SHA-256 `5fb0036a5b871c8ebad9a2e3e6ef431e9a334c9a96f4bc744f5b21b96e52bda4`; UF2 SHA-256 `d1d3f5d9a54368905644cbbbe45da8c781b1a9d2ddf083cf00a8fb5b538be8cd`.

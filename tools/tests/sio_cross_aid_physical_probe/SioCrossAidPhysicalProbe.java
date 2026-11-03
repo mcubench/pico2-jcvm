@@ -99,6 +99,15 @@ public final class SioCrossAidPhysicalProbe {
                                  "field/array retention denials 6B339000, got " + actual);
       }
 
+      response = channel.transmit(new CommandAPDU(hex("8020000000")));
+      actual = hex(response.getBytes());
+      System.out.println("SIO_PHYSICAL:foreignReferenceRetention response=" + actual);
+      if (!actual.equals("6B439000")) {
+        throw new AssertionError("expected volatile foreign Object[] retention " +
+                                 "with static/instance fields still denied " +
+                                 "(6B439000), got " + actual);
+      }
+
       response = channel.transmit(new CommandAPDU(hex("8015000000")));
       actual = hex(response.getBytes());
       if (!actual.equals("6A109000")) {
