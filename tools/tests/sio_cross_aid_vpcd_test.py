@@ -114,9 +114,12 @@ def main() -> int:
             vpcd.EMPTY_CARD_AID.hex(), "--package-id", "63", "--cap-code",
             str(dummy), "--rom-mask", str(rom_mask),
         ]
+        emulator_env = os.environ.copy()
+        emulator_env["CHOUPI_TRACE_REFERENCE_COLLISIONS"] = "1"
         with log_path.open("wb") as log:
             process = subprocess.Popen(command, cwd=ROOT, stdout=log,
-                                       stderr=log, start_new_session=True)
+                                       stderr=log, start_new_session=True,
+                                       env=emulator_env)
         connection = None
         try:
             connection, _ = vpcd.accept_vpcd(listener, process, CONNECT_TIMEOUT,
@@ -251,9 +254,22 @@ def main() -> int:
                 raise RuntimeError(
                     f"first emulator exited with {process.returncode} before restart"
                 )
+            first_run_log = log_path.read_text(errors="replace")
+            collision_lines = [
+                line for line in first_run_log.splitlines()
+                if "JCVM:REFERENCE_HANDLE_COLLISION " in line
+            ]
+            if not collision_lines:
+                raise RuntimeError(
+                    "SIO identity fixture did not produce an equal compact "
+                    "handle owned by different packages"
+                )
+            print("TEST:PASS equal compact reference handles remain distinct "
+                  f"across owners; trace={collision_lines[0].strip()}")
             with log_path.open("ab") as log:
                 process = subprocess.Popen(command, cwd=ROOT, stdout=log,
-                                           stderr=log, start_new_session=True)
+                                           stderr=log, start_new_session=True,
+                                           env=emulator_env)
             connection, _ = vpcd.accept_vpcd(
                 listener, process, CONNECT_TIMEOUT, log_path,
                 "cross-AID SIO restart"

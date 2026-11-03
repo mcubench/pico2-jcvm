@@ -4987,3 +4987,19 @@ original terminology/status; check current summary and later fixes before reuse.
   read/use, and retain rejection for temporary JCRE entry-point objects and
   global-array references. Reset, deletion, GC, and compact-handle collision
   coverage are required before marking CTX-01 complete.
+
+## Equal compact SIO reference handles remain owner-distinct — 2026-11-03
+
+- **Observation:** The three-package SIO VPCD fixture creates a real compact
+  handle collision while the service compares the foreign client applet object
+  with its local applet instance: both handles are `0x0002`, but their package
+  owners are 58 and 57. `Stack::referencesEqual` compares normalized owner as
+  well as the compact handle; the references remain unequal.
+- **Resolution:** Added an opt-in `PC_VERSION` trace controlled by
+  `CHOUPI_TRACE_REFERENCE_COLLISIONS`; the VPCD integration test enables it and
+  requires the collision line, so allocation changes that remove the collision
+  will fail the test instead of silently losing this coverage. Embedded builds
+  compile no trace path.
+- **Evidence:** VPCD SIO test passed 20/20. See progress entry
+  `ctx01-sio-equal-handle-collision-20261103` and log
+  `artifacts/logs/sio-cross-aid-vpcd-20261103T131843Z.log`.

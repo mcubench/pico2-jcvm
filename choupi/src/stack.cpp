@@ -31,6 +31,10 @@
 #include "jc_utils.hpp"
 
 #include <cassert> // for check when NDEBUG is undefined.
+#ifdef PC_VERSION
+#include <cstdio>
+#include <cstdlib>
+#endif
 
 namespace jcvm {
 
@@ -403,8 +407,22 @@ bool Stack::referencesEqual(const ReferenceValue left,
     return value.owner == kCurrentReferenceOwner ? current_package_id
                                                   : value.owner;
   };
-  return left.reference == right.reference &&
-         normalized_owner(left) == normalized_owner(right);
+  const uint8_t left_owner = normalized_owner(left);
+  const uint8_t right_owner = normalized_owner(right);
+  const bool same_handle = left.reference == right.reference;
+  if (same_handle && left_owner != right_owner) {
+#ifdef PC_VERSION
+    if (std::getenv("CHOUPI_TRACE_REFERENCE_COLLISIONS") != nullptr) {
+      std::fprintf(stderr,
+                   "JCVM:REFERENCE_HANDLE_COLLISION handle=%04X "
+                   "left_owner=%u right_owner=%u current_package=%u\n",
+                   left.reference.compact(), static_cast<unsigned>(left_owner),
+                   static_cast<unsigned>(right_owner),
+                   static_cast<unsigned>(current_package_id));
+    }
+#endif
+  }
+  return same_handle && left_owner == right_owner;
 }
 
 /**

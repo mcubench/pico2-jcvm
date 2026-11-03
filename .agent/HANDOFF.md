@@ -1,3 +1,23 @@
+# Current session — prove SIO equal-handle owner collision — 2026-11-03 13:20 UTC
+
+Closed CTX-01's deterministic equal-compact-handle integration gap. Added
+opt-in PC-only trace output in `Stack::referencesEqual` and made the VPCD
+cross-AID test require the trace. The unchanged fixture produced handle
+`0002` for both sides, with owners 58 and 57 (`current_package=57`); the
+comparison remained unequal. ARM and RISC-V builds, PC build and the VPCD
+cross-AID suite passed (`TEST:SUMMARY pass=20 fail=0`). The fixture build emits
+the existing converter warning that each package requires int support; it
+completed with zero conversion errors. No firmware was flashed because the
+diagnostic is compiled only for PC builds. Log:
+`artifacts/logs/sio-cross-aid-vpcd-20261103T131843Z.log` SHA-256
+`036b857c46f57bd0170880d63379b2ba7175f302ab7e24b9c39b3c877a8c2dd2`.
+
+Next CTX-01 work: stale-owner lifecycle after applet deletion/reinstallation
+and continue auditing all foreign-reference consumers/retention paths. The six
+JCAlgTest 1.8.4 static `CANT_BE_MEASURED` cases are separately open under
+API-03. Windows still needs a paired USBPcap and Pico serial trace for the
+reported `PRESENT | MUTE` state.
+
 # Current session — JCAlgTest 1.8.4 static sweep and Windows MUTE report — 2026-11-03 13:08 UTC
 
 The unchanged upstream JCAlgTest 1.8.4 applet/client completed

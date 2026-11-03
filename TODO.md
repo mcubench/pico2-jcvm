@@ -413,9 +413,12 @@ Archive text is historical evidence, not current device state or priorities.
   read from a global `Object[]` with the service applet's local `this` before
   attempting virtual dispatch. This exercises cross-owner object identity
   separately from foreign-vs-null and same-foreign-reference checks.
-  Remaining: prove a deterministic equal-compact-handle collision in this
-  integration fixture, stale-owner lifecycle tests, and audit all paths that
-  can consume or retain a foreign value. See `.agent/QKB.md`.
+  The VPCD integration fixture now proves the equal-handle case directly: the
+  caller's foreign applet and service's local applet both use compact handle
+  `0002`, with package owners 58 and 57, and compare unequal. A PC-only opt-in
+  trace asserts that the integration test actually exercises this collision.
+  Remaining: stale-owner lifecycle tests and audit all paths that can consume
+  or retain a foreign value. See `.agent/QKB.md`.
   No types are inferred from raw values. The
   descriptor-free VPCD fixture passes 18/18; the Descriptor-present regression
   also passes 18/18 through the existing signature path. Physical typed
