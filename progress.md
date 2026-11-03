@@ -20874,3 +20874,23 @@
   `artifacts/logs/sio-cross-aid-vpcd-20261103T100259Z.log`,
   `artifacts/logs/sio-cross-aid-vpcd-20261103T100540Z.log`,
   `artifacts/logs/sio-cross-aid-vpcd-20261103T101052Z.log`.
+## 2026-11-03 Check Windows MUTE against firmware ATR 3 minutes
+
+- Step/experiment: `windows-certutil-mute-atr-source-check-20261103`
+- When: '2026-11-03 10:15 UTC' - '2026-11-03 10:18 UTC'
+- Change: Compared the reported Windows PRESENT/MUTE result with the current
+  firmware CCID `IccPowerOn` code. Recorded that it transmits ATR
+  `3B 80 01 81`, a valid minimal T=1 ATR whose TCK XOR is zero; updated QKB
+  and handoff to avoid incorrectly attributing MUTE to an invalid ATR.
+- Validation: Inspected `src/ccid_device.cpp`; verified T0 `80`, TD1 `01`,
+  TCK `81`, with XOR zero per the PC/SC ATR format. The earlier PC build and
+  VPCD regression result are recorded in the prior step. No hardware is
+  attached to this VM, so Windows/USB transfer was not revalidated.
+- Result: Windows PC/SC is not receiving/accepting a card despite reader
+  enumeration; cause is still unresolved between CCID response transport,
+  framing, and host interpretation.
+- Decision: Capture a firmware serial log and Windows PC/SC trace together
+  before changing CCID framing or ATR bytes.
+- Commit: `a1c0a4f`
+- Artifacts/logs: `src/ccid_device.cpp`; Windows output supplied in the
+  conversation; no local host-side trace available.
