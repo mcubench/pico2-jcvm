@@ -20576,7 +20576,7 @@
 - Validation: ARM and RISC-V wrappers passed before flash. A serial-targeted cycle entered BOOTSEL but timed out while polling; `picotool info -a` then identified BOOTSEL chip ID `2BED26ED20556535`. Chip-ID-targeted `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 2BED26ED20556535` passed: flash write and verification reached 100%, monitor showed repeated `TEST:PASS choupi_runtime` and `TEST:SUMMARY pass=1 fail=0`. API runner uploaded `AlgTestApiCrypto_305.cap`, ran 466 catalog rows with 463 intentionally skipped and the three target rows all `OK`, and removed the CAP (`CLEANUP OK`).
 - Result: On flashed board 2BED, DES-MAC8-NOPAD IV row returned 8 bytes, AES-MAC-128 IV row 16 bytes, and DES-MAC8-ISO9797-M2 IV row 8 bytes; each matched expected behavior. UF2 is 1,895,936 bytes, SHA-256 `16fd3afabc24b447a9eaf94989b676bdaa8e929b399cea5056b5b9be7b906b4c`; firmware uses 947,700/1,048,576 bytes and leaves 100,876 bytes. Full Crypto sweep remains open.
 - Decision: API-02 physical acceptance is closed. Use stable chip-ID selection when this VM path loses serial-based BOOTSEL selection; continue API-03 and remaining acceptance with fresh device identification.
-- Commit: `pending`
+- Commit: `47db89c`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261102T123918Z.log`; `artifacts/results/Pico2_2BED_api305_signature-iv_maxcrypto_20261102.csv` SHA-256 `0c88385d492e08d0c1dd40c8328176b08fe86fc01abd9929695848635332cbba`.
 
 ## 2026-11-02 Complete JCAlgTest BASIC support and diagnose EXTENDED timeout 34 minutes
@@ -21253,3 +21253,17 @@
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T163223Z.log`,
   SHA-256 `61c7955c8b267f8fed7859a1c3f49aba65c76a114c609275de2efddee8eecc7a`.
+
+## 2026-11-03 Record Signature false-result test commit metadata 1 minute
+
+- Step/experiment: `ctx02-signature-false-result-metadata-20261103`
+- When: '2026-11-03 16:34 UTC' - '2026-11-03 16:35 UTC'
+- Change: Recorded implementation commit `47db89c` in the false-result test
+  progress entry and session handoff.
+- Validation: Confirmed commit `47db89c` contains the interpreted fixture,
+  TODO/QKB/handoff updates, and its progress record. No test or firmware code
+  changed in this metadata update.
+- Result: The test change is traceable to its implementation commit.
+- Decision: Continue CTX-01/03 work.
+- Commit: metadata-only follow-up
+- Artifacts/logs: none.

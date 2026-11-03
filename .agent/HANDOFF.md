@@ -13,7 +13,8 @@ firmware code changed in this step; the prior native fix has PC, ARM, and
 RISC-V build coverage. No physical reader was available. The suite's printed
 summary count is 31 even though it now includes the new check; keep the exact
 reported count rather than inferring an increment from the assertion count.
-Next: continue CTX-01/03 foreign-reference lifecycle and consumer audit.
+Commit: `47db89c`. Next: continue CTX-01/03 foreign-reference lifecycle and
+consumer audit.
 
 ## Follow-up: native Signature SensitiveResult propagation — 2026-11-03 16:25 UTC
 
