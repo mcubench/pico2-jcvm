@@ -1,3 +1,51 @@
+# Current session — JCAlgTest 1.8.4 static failures fixed on 2BED — 2026-11-03 15:10 UTC
+
+Completed a full upstream `ALG_PERFORMANCE_STATIC` run with
+`AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar` and unchanged
+`AlgTest_v1.8.4_jc305.cap` on Pico 2 `2BED26ED20556535`. It took 2,209 seconds,
+with 1,847 expected `NO_SUCH_ALGORITHM` cases, four `CANT_BE_MEASURED`, zero
+reconnects, and zero manual resets. The first two prior `6400` results
+(`Util_arrayCopy_EEPROM`, `Util_arrayCopy_RAM2EEPROM`) passed under cooperative
+progress and a 60-second guard; their averages were 496.33 and 472.22 ms/op.
+`SWAlgs_AES()` still hit the 60-second guard at 60,497 ms. The non-install
+budget is now bounded at 120 seconds and interpreted bytecode services the
+watchdog/CCID every 4,096 instructions without refreshing that deadline. The
+exact 50-iteration SW AES APDU returned `AA9000` on hardware with that limit.
+SHA-256 doFinal measured 5.79 ms/op.
+
+The three DES `clearKey()` `6F00`s came from the JC305 DESKey interface map:
+class token 10 swapped set/get but omitted the inherited Key-method remap.
+`choupi/src/jc_handlers/jc_cp.cpp` now maps methods as `{1,3,2,0,5,4}`. Focused
+exact clearKey sequences all return `AA9000` for DES 64/128/192 bits on the
+final ARM image. PC/ARM/RISC-V builds pass; native-progress tests pass 6/6 and
+CCID flow tests pass 9/9. Final firmware hash:
+`07605231943cf52dbfaeeb3e17ff7e7b621cf5b904fc5e63a74ca7d886e16010`. Verified
+flash and finite serial runtime monitoring passed on 2BED.
+
+The full combined-image rerun did not start: the authorized reader helper found
+zero physical readers, and `pcsc_scan -r` listed only the two VPCD readers.
+This remains the only acceptance gap for this work: rerun the complete unchanged
+1.8.4 static operation on the combined image when a physical Pico re-enumerates.
+Do not treat the reader disappearance as a test or firmware failure. JCAlgTest
+1.8.4 remains installed on 2BED; no CAP/app content changed. Existing SIO
+fixture packages were preserved.
+
+Files changed for this work: `choupi/src/interpretor.cpp`,
+`src/choupi_pico2.cpp`, `docs/NATIVE_PROGRESS_CALLBACKS.md`, and
+`choupi/src/jc_handlers/jc_cp.cpp`; progress/QKB/TODO are updated. Cooperative
+progress commit: `2d55ad5`. DES mapping plus final knowledge/progress update is
+not yet committed. Preserve other dirty changes (notably AGENTS.md,
+`choupi/src/heap.*`, `src/cap_load.cpp`, and the physical JCSystem probe).
+
+Evidence:
+- Full run: `artifacts/results/jcalgtest-184-static-2bed-cooperative-20261103/`
+  (log SHA-256 `c333e47f33e4833938f4f079e36eba3debf7341b6e032f9f2227c0f57a913867`).
+- DES focused run: `artifacts/logs/jcalgtest-184-des-clear-2bed-20261103.log`.
+- Final flash/runtime: `artifacts/logs/cycle-choupi-20261103T150345Z.log`.
+- Support files and exact details: latest `progress.md` records and `.agent/QKB.md`.
+
+---
+
 # Current session — refresh physical SIO test availability — 2026-11-03 14:04 UTC
 
 Authorized refresh (`PICO2_HOST_USB_ACCESS=1 sudo -n

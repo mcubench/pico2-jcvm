@@ -373,10 +373,12 @@ uint8_t remap_imported_interface_method_token(
       method_token < sizeof(security_key_interface_methods)) {
     return security_key_interface_methods[method_token];
   }
-  // JC305's DESKey interface assigns getKey=4 and setKey=5. The embedded API
-  // export declares setKey before getKey, so swap those two interface tokens.
+  // JC305's DESKey interface orders inherited Key methods as clearKey,
+  // getSize, getType, isInitialized, then assigns getKey=4 and setKey=5. The
+  // embedded API export uses isInitialized, clearKey, getType, getSize,
+  // setKey, getKey, so remap both the inherited prefix and the DES accessors.
   static constexpr uint8_t security_des_key_interface_methods[] = {
-      0, 1, 2, 3, 5, 4};
+      1, 3, 2, 0, 5, 4};
   if (package_info.AID_length == 7 &&
       std::memcmp(package_info.AID,
                   "\xA0\x00\x00\x00\x62\x01\x02", 7) == 0 &&

@@ -5111,3 +5111,49 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Evidence:** VPCD SIO test passed 20/20. See progress entry
   `ctx01-sio-equal-handle-collision-20261103` and log
   `artifacts/logs/sio-cross-aid-vpcd-20261103T131843Z.log`.
+
+## JCAlgTest 1.8.4 static-case follow-up: interpreter and DESKey fixes — 2026-11-03
+
+- **Full 1.8.4 run:** On Pico 2 `2BED26ED20556535`, the unchanged upstream
+  `AlgTest_v1.8.4_jc305.cap` (SHA-256
+  `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`) and
+  `AlgTestJClient_v1.8.4.jar` (SHA-256
+  `fb655aef78843da9022b2efa58b241e347013be28772edf524b1454320732025`) ran
+  `ALG_PERFORMANCE_STATIC` to completion in 2,209 seconds on firmware with a
+  60-second non-install guard. There were 1,847 expected
+  `NO_SUCH_ALGORITHM` outcomes, zero reconnects/resets, and four
+  `CANT_BE_MEASURED` cases: three DES `clearKey()` sizes plus `SWAlgs_AES()`.
+  The EEPROM copy cases that previously hit the 15-second limit now passed;
+  `Util_arrayCopy_EEPROM()` measured 496.33 ms/op and
+  `Util_arrayCopy_RAM2EEPROM()` 472.22 ms/op over 250 operations. SHA-256
+  `MessageDigest_doFinal()` measured 5.79 ms/op (min 5.58, max 5.92).
+- **SW AES resolution:** The full run showed `SWAlgs_AES()` still returned
+  `6400` at 60,497 ms. The firmware now services watchdog/CCID progress every
+  4,096 interpreted bytecodes and allows at most 120 seconds for a non-install
+  applet call (install remains 5 seconds). Replaying the exact official
+  50-iteration SW AES APDU on 2BED returned `AA9000` with the 120-second image.
+  The cooperative progress callback does not refresh the applet deadline.
+- **DES `clearKey()` root cause and fix:** CAP interface class token 10 (JC305
+  `DESKey`) had a special mapping that swapped `setKey/getKey` but left the
+  inherited `clearKey/getSize/getType/isInitialized` method tokens unmapped.
+  The embedded interface order differs. The map is now `{1,3,2,0,5,4}`; the
+  previous `{0,1,2,3,5,4}` routed the JC305 `clearKey()` token to the wrong
+  embedded method and caused `6F00`. After the fix, exact static `clearKey()`
+  prepare/five-baseline/measurement sequences on the final ARM image returned
+  `AA9000` for DES 64, 128 and 192 bits.
+- **Final combined image and remaining gate:** PC, ARM and RISC-V builds passed;
+  progress tests passed 6/6 and 9/9. The final image SHA-256 is
+  `07605231943cf52dbfaeeb3e17ff7e7b621cf5b904fc5e63a74ca7d886e16010`; its
+  verified flash and finite runtime monitor passed on 2BED. A final full sweep
+  was attempted, but the authorized helper and PC/SC scan then found no physical
+  Pico reader (only VPCD); the suite did not start. The exact focused failure
+  cases all passed individually, but full-suite acceptance on the combined
+  image remains open until a physical reader is available.
+- **Evidence:** Full 60-second run is in
+  `artifacts/results/jcalgtest-184-static-2bed-cooperative-20261103/`;
+  focused DES output is `artifacts/logs/jcalgtest-184-des-clear-2bed-20261103.log`;
+  final physical cycle is `artifacts/logs/cycle-choupi-20261103T150345Z.log`.
+  The attempted full rerun stopped before test launch with helper output
+  `Expected 1 to 3 Pico 2 CHOUPI CCID devices (2e8a:0009); found 0` and
+  `pcsc_scan -r` listing only VPCD readers. Do not classify this as firmware or
+  JCAlgTest failure.

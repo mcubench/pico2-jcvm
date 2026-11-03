@@ -245,30 +245,31 @@ Archive text is historical evidence, not current device state or priorities.
   retain exact CSV/log paths, hashes, selected calls and historical baselines.
 
 - [ ] **Resolve JCAlgTest 1.8.4 static-performance cases that could not be measured.**
-  Status: the complete upstream `ALG_PERFORMANCE_STATIC` run on Pico 2
-  `8E464F4E2BBC0A19` completed with 1,847 expected `NO_SUCH_ALGORITHM`
-  results and six `CANT_BE_MEASURED` cases. The affected cases were DES
-  `clearKey()` at 64/128/192 bits, `Util_arrayCopy_EEPROM()`,
-  `Util_arrayCopy_RAM2EEPROM()`, and `SWAlgs_AES()`; the detailed log includes
-  `6F00` and `6400` responses in these cases. Log correlation with
-  `Interpretor::run()` establishes that EEPROM copy to/from persistent arrays
-  and `SWAlgs_AES()` returned `6400` after 15,074–15,421 ms, matching the
-  firmware's explicit 15-second applet execution budget. These are interpreted
-  applet workloads that exceed the current guard; they are not evidence of a
-  PC/SC transport failure. The three DES clearKey cases returned `6F00` in
-  715–750 ms, so they have a separate native/persistent-write or dispatch cause
-  that remains unidentified. The client completed with no reconnects or manual
-  resets, and post-run SELECT/version/JCSystem probes passed.
-  Remaining: design bounded cooperative progress for long interpreted applet
-  workloads (watchdog plus CCID time extension and host limits) before changing
-  the 15-second guard; then rerun the unchanged CAP/client operations. Separately
-  capture firmware exception/flash diagnostics for each DES clearKey case.
+  Status: on Pico 2 `2BED26ED20556535`, the unchanged upstream 1.8.4 client
+  completed the full static matrix in 2,209 seconds on the 60-second-budget
+  firmware: 1,847 expected `NO_SUCH_ALGORITHM` results and four
+  `CANT_BE_MEASURED` cases. The two EEPROM copy calls that had returned `6400`
+  at 15 seconds now completed (about 25 seconds per APDU). `SWAlgs_AES()` hit
+  the 60-second guard at 60,497 ms. Raising the finite non-install budget to
+  120 seconds and servicing watchdog/CCID progress every 4,096 bytecodes made
+  the exact 50-iteration SW AES APDU return `AA9000` on hardware.
+  The three DES `clearKey()` `6F00` errors were caused by the JC305 DESKey
+  interface-token map omitting the inherited Key-method remap. Correcting the
+  map to `{1,3,2,0,5,4}` made the exact 64/128/192-bit `clearKey()` measurements
+  return `AA9000` on the final ARM image. The final image passed a verified
+  flash and finite runtime monitor on 2BED.
+  Remaining: rerun the complete unchanged 1.8.4 static suite on the combined
+  final image. The attempted final run did not start because authorized host
+  refresh and PC/SC enumeration found zero physical Pico readers (only the two
+  VPCD readers); this is a device-availability gap, not a test failure.
   Do not classify `NO_SUCH_ALGORITHM` results as failures.
   Acceptance: each supported operation returns a valid result and each
-  unsupported operation returns the expected client status; no `6F00`/`6400`
-  or reader loss in repeated focused runs.
-  Evidence: `artifacts/results/jcalgtest-184-static-8e-20261103/` and the
-  corresponding 2026-11-03 progress/QKB entries.
+  unsupported operation returns the expected client status; full final sweep
+  has no unexpected `6F00`/`6400`, reader loss, or `CANT_BE_MEASURED` cases.
+  Evidence: full 2BED run in
+  `artifacts/results/jcalgtest-184-static-2bed-cooperative-20261103/`, focused
+  DES validation in `artifacts/logs/jcalgtest-184-des-clear-2bed-20261103.log`,
+  and final flash/runtime log `artifacts/logs/cycle-choupi-20261103T150345Z.log`.
 
 ### EMU-01
 
