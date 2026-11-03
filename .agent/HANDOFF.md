@@ -1,4 +1,4 @@
-## Current session — Windows MUTE Linux cross-check — 2026-11-03 11:33 UTC
+## Current session — Windows MUTE Linux cross-check — 2026-11-03 11:35 UTC
 
 User tested the current max firmware in Windows `certutil -scinfo`: the reader
 enumerates, but card status is `PRESENT | MUTE` and no card is recognized; the
@@ -13,6 +13,13 @@ succeeded on each and returned ISD and installed applet/package listings. This
 narrows the reported failure to a Windows-specific or host/USB-path interaction,
 but does not isolate it because no Windows transfer trace or correlated
 firmware serial log was captured, and the tested image hash is unknown.
+
+A paired repeat on `8E464F4E2BBC0A19` succeeded: exact-reader GPPro `--list`
+completed while `./tools/monitor --serial 8E464F4E2BBC0A19 --seconds 8`
+captured ongoing CCID traffic, successful APDU responses (`9000`), and
+`TEST:PASS choupi_runtime`. The first monitor invocation without `--serial`
+refused to guess because two CDC devices were present; this is selection
+behavior, not a firmware failure. These command outputs were not archived.
 
 Next: on Windows, capture a USBPcap trace covering enumeration through the
 first `PC_to_RDR_IccPowerOn` response while capturing the Pico CDC serial log

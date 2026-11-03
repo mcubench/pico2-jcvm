@@ -4865,6 +4865,12 @@ original terminology/status; check current summary and later fixes before reuse.
   received usable activation and APDU exchange. The configured ATR is
   `3B800181` and is valid for the advertised minimal T=1 parameters, but the
   actual Windows wire exchange remains unobserved.
+- **Paired serial check:** On `8E464F4E2BBC0A19`, a bounded exact-reader GPPro
+  listing ran alongside `./tools/monitor --serial 8E464F4E2BBC0A19 --seconds 8`.
+  PC/SC listing succeeded; serial showed CCID/APDU traffic, `9000`, and
+  `TEST:PASS choupi_runtime`. The initial monitor call without `--serial`
+  refused selection because two CDC devices were present; use the Pico chip ID
+  with `--serial` when several boards are connected.
 - **Diagnosis:** Likely Windows-specific transport/driver or a host-specific
   interaction, not a general inability of current firmware to power on. This
   is an inference: the tested Windows image hash and correlated logs are

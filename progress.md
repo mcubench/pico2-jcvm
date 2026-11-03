@@ -20937,3 +20937,14 @@
 - Decision: Keep CCID behavior unchanged pending those diagnostics; inspect CCID power-on command `0x62` and response `0x80` in the trace.
 - Commit: `pending`
 - Artifacts/logs: read-only command output in this session; no archived log.
+
+## 2026-11-03 Correlate Linux CCID APDU and serial behavior 2 minutes
+
+- Step/experiment: `windows-ccid-mute-linux-serial-cross-check`
+- When: '2026-11-03 11:33 UTC' - '2026-11-03 11:35 UTC'
+- Change: Correlated a bounded read-only GPPro inventory request with an exact-device finite CDC monitor to compare working Linux activation against the Windows MUTE report.
+- Validation: Exact Pico `8E464F4E2BBC0A19` GPPro `--list` exited 0; `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial 8E464F4E2BBC0A19 --seconds 8` exited 0 and showed CCID/APDU traffic, `9000`, and `TEST:PASS choupi_runtime`. The first monitor call omitted `--serial` and correctly failed because two CDC devices were attached; rerun with exact identity passed.
+- Result: Current Linux reader path completes APDU exchange and runtime checks; this does not determine why Windows reports MUTE.
+- Decision: Keep firmware unchanged and request a Windows USBPcap trace correlated with serial output and the flashed image hash.
+- Commit: `pending`
+- Artifacts/logs: monitor and GPPro output observed in session; not archived.
