@@ -1,3 +1,21 @@
+## Current session — SIO boundary committed; physical GETVERSION still FF05 — 2026-11-03 01:06 UTC
+
+Committed cross-context private-reference owner enforcement as `9165fc4`.
+Current validation passes PC, ARM and RISC-V `max_crypto` builds, the RMI
+registry suite, and the complete cross-AID VPCD suite 18/18 both with and
+without Descriptor. The 8E board still enumerates at USB but does not appear
+as a PC/SC reader; 2BED is the only physical reader available.
+
+On 2BED, the exact-reader JCAlgTest probe again selected 1.8.2 with `9000` but
+GETVERSION returned `FF05`. A finite serial capture reports the firmware
+startup self-check passing. Its CCID status snapshot was overwritten by later
+host slot-status polling, so the capture did not reveal the applet response.
+Next implement/test a retained XfrBlock response snapshot, then rerun the
+bounded GETVERSION probe. Do not run the long support sweep until GETVERSION is
+healthy. In parallel, continue CTX-01 with an equal-handle collision fixture
+and audit remaining reference consumers. See the 2026-11-03 progress entry and
+QKB for the exact tests and limitations.
+
 ## Current session — USB failover board not enumerated by PC/SC — 2026-11-03 00:51 UTC
 
 Host USB inventory sees both Pico 2 boards: `8E464F4E2BBC0A19` at bus 001

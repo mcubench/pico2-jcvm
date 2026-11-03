@@ -20597,6 +20597,17 @@
 - Commit: `pending (recorded in metadata follow-up)`
 - Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `78e7fdbffa6654091963c81e8839b4034646db1d02047d4c268ff4f504e42e43`; cycle `artifacts/logs/cycle-choupi-20261102T195753Z.log`, SHA-256 `fa7cf70db4a339e920e1f8c455cc7368f29d9986a431d876ec1b35c565a67fe0`; descriptor-omitted VPCD `artifacts/logs/sio-cross-aid-vpcd-20261102T201840Z.log` (SHA-256 `916f1583f7956f1eb2075a6850bd9e1e9b3f951d2873d7bbf1d8b649cb62665c`), Descriptor-included VPCD `artifacts/logs/sio-cross-aid-vpcd-20261102T201937Z.log` (SHA-256 `409ad950198d0cbade9281d9cda4836f9ffccd3778400c412704de79cf824ebc`); physical `artifacts/logs/sio-cross-aid-physical-20261102T201442Z.log`, SHA-256 `79116b74e1d3c70efc6f681d0056e88a7afe428ba68ba3d5c6f5849b092989d9`.
 
+## 2026-11-03 Revalidate SIO owner boundary and reproduce physical JCAlgTest failure 15 minutes
+
+- Step/experiment: `ctx01-revalidation-and-jcalgtest-ff05-20261103`
+- When: '2026-11-03 00:51 UTC' - '2026-11-03 01:06 UTC'
+- Change: Re-read the updated repository instructions and handoff, then committed the validated pending cross-context private-reference boundary as `9165fc4`.
+- Validation: `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed. `./tools/test-rmi-registry` passed. `tools/tests/sio_cross_aid_vpcd_test.py` passed 18/18 with Descriptor omitted and 18/18 with Descriptor included. Authorized PC/SC refresh reported two USB nodes; `pcsc_scan -r` showed only 2BED plus two virtual readers. Read-only physical probe on 2BED returned SELECT `9000`, GETVERSION `FF05`. Concurrent finite serial capture reported `TEST:SUMMARY pass=1 fail=0` for the startup runtime self-check, but host polling had already replaced the CCID response snapshot with a slot-status response, so it did not correlate the failed GETVERSION response.
+- Result: Owner-tagged SIO behavior remains green in both VPCD loading modes and both physical Pico boards had not been changed in this step. The 1.8.2 physical applet failure remains reproducible after the prior firmware reflash; no root cause was established.
+- Decision: Continue CTX-01 with a deliberate equal-handle collision regression and the remaining reference-consumer audit. For the independent FF05 issue, retain the last actual XfrBlock response separately from later CCID slot-status responses, then rerun the exact-reader probe before any long JCAlgTest sweep.
+- Commit: `9165fc4`
+- Artifacts/logs: Descriptor-omitted VPCD `artifacts/logs/sio-cross-aid-vpcd-20261103T010107Z.log`, SHA-256 `8616921d1bce2c4ed5d5e77428db6731ac46b4eb0f521607226928bbeb5e7ca8`; Descriptor-included VPCD `artifacts/logs/sio-cross-aid-vpcd-20261103T010308Z.log`, SHA-256 `b8478eb69d56e87d0efa626bb0f07a3082d09a23a18355889ae0562dcd055b20`; serial and APDU output were observed live and not archived.
+
 ## 2026-11-02 Archive completed fix checklist and dated reviews 6 minutes
 
 - Step/experiment: `markdown-tidy-reviews`

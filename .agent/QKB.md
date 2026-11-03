@@ -36,6 +36,23 @@
   PC VPCD log `artifacts/logs/host-vpcd-jcalgtest-20261103T0043Z.log` SHA-256
   `4b9ea019f45e54dda0820af322d17467f93fcb00bfe19c2fe61709163d1afbe0`.
 
+## CCID periodic snapshot is overwritten by reader polling — 2026-11-03
+
+- **Observation:** While reproducing 2BED's physical GETVERSION failure, the
+  exact-reader probe returned SELECT `9000` and GETVERSION `FF05`. A concurrent
+  12-second serial capture showed the VM startup self-check passing, then
+  reported the last APDU header as `B0E1000000` with response length zero and
+  status `0000` while the last CCID message was `0x65` (`PC_to_RDR_GetSlotStatus`).
+- **Cause:** `send_response()` updates the single debug response snapshot for
+  every CCID response type. Reader slot-status polling therefore overwrites the
+  prior `PC_to_RDR_XfrBlock` response before the once-per-second serial report.
+  The displayed `0000` is not evidence that GETVERSION returned that status.
+- **Viable diagnostic fix:** Keep the latest XfrBlock command/response in
+  separate fields and update them only for a completed XfrBlock response;
+  continue tracking slot state independently. Then correlate the APDU probe
+  with the serial snapshot. No firmware change or board state change has yet
+  been made for this diagnostic issue.
+
 ## Fresh JCAlgTest install returned `FF05` on 2BED — 2026-11-03
 
 - **Symptom:** On Pico 2 `2BED26ED20556535`, the supplied client
