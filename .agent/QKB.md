@@ -1,5 +1,29 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## 8E lost USB serial/PCSC enumeration after verified flash; 2BED failover passed — 2026-11-03
+
+- **Observation:** Current ARM `max_crypto` image SHA-256
+  `13f39ce7139297e423c63bf3b6ecd15386c2e550edd932e23efb612df082d863` was
+  flashed and verified on Pico 2 `8E464F4E2BBC0A19`, but the cycle failed its
+  finite monitor with `ERROR: no USB serial device found`. The next authorized
+  reader refresh listed only Pico 2 `2BED26ED20556535`; 8E was absent from
+  PC/SC. No cause is established.
+- **Failover:** The same image was flashed and verified on 2BED. Its finite
+  monitor passed `TEST:PASS choupi_runtime` and
+  `TEST:SUMMARY pass=1 fail=0`. The read-only JCAlgTest power-up probe then
+  passed ATR `3B800181`, SELECT, GETVERSION `1.8.4_jc305`, and JCSystem info.
+- **Test constraint:** 2BED already contains packages/applets with fixture
+  AIDs `A000000151000003` and `A000000151000004`. The physical wrapper refuses
+  to overwrite those identifiers; those applets were preserved. Therefore the
+  newly added same-AID DELETE/reinstall physical case could not be run on 2BED.
+- **Next:** Use a board where those fixture AIDs are absent for
+  `tools/test-sio-cross-aid-physical`; refresh the authorized reader path first.
+  Retry 8E only after it re-enumerates. Preserve all existing applets.
+- **Evidence:** cycles `artifacts/logs/cycle-choupi-20261103T134713Z.log` (8E,
+  monitor failure after flash verification) and
+  `artifacts/logs/cycle-choupi-20261103T134916Z.log` (2BED pass); 2BED probe
+  `artifacts/logs/pico-powerup-persistence-20261103T135041Z.log`.
+
 ## Recheck Linux behavior after Windows PRESENT | MUTE report — 2026-11-03
 
 - **Observation:** After Windows `certutil -scinfo` reported the reader as

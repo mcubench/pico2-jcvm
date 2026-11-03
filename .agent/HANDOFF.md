@@ -1,3 +1,23 @@
+# Current session — physical failover after 8E re-enumeration failure — 2026-11-03 13:51 UTC
+
+Flashed current ARM `max_crypto` image SHA-256
+`13f39ce7139297e423c63bf3b6ecd15386c2e550edd932e23efb612df082d863` to 8E
+and 2BED after ARM/RISC-V builds passed. Both flash verifications passed. 8E's
+cycle then failed finite monitoring (`no USB serial device found`) and the
+authorized reader refresh showed only 2BED. Per failover instructions, used
+2BED: its finite monitor passed `TEST:SUMMARY pass=1 fail=0`, and its
+read-only JCAlgTest 1.8.4 power-up probe returned ATR `3B800181` plus successful
+SELECT/GETVERSION/JCSystem responses. Logs and SHA details are in QKB and
+`progress.md`.
+
+Extended `tools/test-sio-cross-aid-physical` and its Java probe with an
+install-only same-AID reinstall phase and checks for stale-proxy rejection and
+fresh lookup. `bash -n` and `./tools/env javac` passed. The hardware case was
+not run: 2BED already has the service/client fixture package AIDs, so the
+wrapper correctly refuses to replace them; 8E is currently absent. Next run
+the wrapper on a re-enumerated board where those fixture AIDs are absent. Do
+not remove existing packages. 2BED's applets remain intact.
+
 # Current session — cross-check Windows MUTE report on Linux readers — 2026-11-03 13:44 UTC
 
 Refreshed authorized Linux PC/SC access and found Pico 2

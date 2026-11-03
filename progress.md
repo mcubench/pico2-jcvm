@@ -21042,3 +21042,14 @@
 - Decision: Linux card activation and applet communication currently work on both connected boards. Keep Windows MUTE diagnosis open pending USBPcap plus same-run Pico serial evidence.
 - Commit: `59f124c`.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261103T134305Z.log` SHA-256 `1e5ba35569b26bc474d9693cbf1e5a9d4ec67bd324de0293b4bb017278f71f25`; `artifacts/logs/pico-powerup-persistence-20261103T134321Z.log` SHA-256 `95766be0b144662faf0e7f20f2eba9582d9f49717a8671150f67ca1b142bf989`.
+
+## 2026-11-03 Flash failover and prepare physical same-AID SIO check 7 minutes
+
+- Step/experiment: `ctx01-sio-physical-delete-reinstall-preparation-20261103`
+- When: '2026-11-03 13:44 UTC' - '2026-11-03 13:51 UTC'
+- Change: Extended the exact-reader physical SIO wrapper and Java probe to perform GPPro install-only after service DELETE, then assert the old proxy is blocked and a fresh lookup succeeds. Flashed current ARM `max_crypto` firmware on two identified Pico 2 boards using failover.
+- Validation: `bash -n tools/test-sio-cross-aid-physical` and `./tools/env javac -d build/sio-cross-aid-fixture/physical-probe-classes tools/tests/sio_cross_aid_physical_probe/SioCrossAidPhysicalProbe.java` passed. The 8E cycle passed flash verification but failed finite monitoring (`ERROR: no USB serial device found`); subsequent authorized enumeration listed only 2BED. The 2BED cycle then passed flash verification and finite serial monitoring (`TEST:PASS choupi_runtime`, `TEST:SUMMARY pass=1 fail=0`). Its post-flash read-only `test-pico-powerup` passed ATR `3B800181`, SELECT, GETVERSION `1.8.4_jc305`, and JCSystem info. The physical same-AID fixture itself was not run because 2BED already contains the fixture package AIDs and the wrapper refuses to overwrite them; 8E was unavailable.
+- Result: Failover kept hardware validation moving on 2BED and confirmed existing user applets remained installed and responsive. 8E's failure is a USB serial/PCSC enumeration issue after verified flash; its cause is unknown. The same-AID physical regression harness is compiled but awaits a board without these fixture AIDs.
+- Decision: Keep 8E offline until it re-enumerates; do not delete or overwrite 2BED's existing fixture packages. Continue with offline work until an eligible physical board is available.
+- Commit: pending.
+- Artifacts/logs: image SHA-256 `13f39ce7139297e423c63bf3b6ecd15386c2e550edd932e23efb612df082d863`; 8E cycle `artifacts/logs/cycle-choupi-20261103T134713Z.log` SHA-256 `2b1a4704d3fdd389defc5941282ec3a4662be8bf1fc97d95704f5d7cb4d60ecd`; 2BED cycle `artifacts/logs/cycle-choupi-20261103T134916Z.log` SHA-256 `4e6eb8c8f8dba428800e4683d83166548d404ebea5ebe33856532b85d7ab643f`; post-flash probe `artifacts/logs/pico-powerup-persistence-20261103T135041Z.log` SHA-256 `c981d9a64741a6dccffd1bf8aaeda7c3a8fc8e9223e33b0a64e1c059848dc03c`.

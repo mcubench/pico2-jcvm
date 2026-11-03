@@ -26,10 +26,13 @@ public final class SioCrossAidPhysicalProbe {
 
   public static void main(String[] args) throws Exception {
     if (args.length < 1 || args.length > 2) {
-      throw new IllegalArgumentException("reader name and optional --after-delete required");
+      throw new IllegalArgumentException(
+          "reader name and optional --after-delete/--after-reinstall required");
     }
     boolean afterDelete = args.length == 2 && "--after-delete".equals(args[1]);
-    if (args.length == 2 && !afterDelete) {
+    boolean afterReinstall = args.length == 2 &&
+        "--after-reinstall".equals(args[1]);
+    if (args.length == 2 && !afterDelete && !afterReinstall) {
       throw new IllegalArgumentException("unknown probe mode: " + args[1]);
     }
     List<CardTerminal> terminals = TerminalFactory.getDefault().terminals().list();
@@ -44,6 +47,26 @@ public final class SioCrossAidPhysicalProbe {
           0x00, 0xA4, 0x04, 0x00, APPLET_AID, 256));
       System.out.println("SIO_PHYSICAL:SELECT response=" + hex(selected.getBytes()));
       if (selected.getSW() != 0x9000) throw new AssertionError("SELECT failed");
+
+      if (afterReinstall) {
+        ResponseAPDU response = channel.transmit(
+            new CommandAPDU(hex("8016000000")));
+        String actual = hex(response.getBytes());
+        System.out.println("SIO_PHYSICAL:staleProxyAfterReinstall response=" + actual);
+        if (!actual.equals("6A0A9000")) {
+          throw new AssertionError("stale proxy after same-AID reinstall should " +
+                                   "raise catchable SecurityException 6A0A9000, got " + actual);
+        }
+        response = channel.transmit(new CommandAPDU(hex("8010000000")));
+        actual = hex(response.getBytes());
+        System.out.println("SIO_PHYSICAL:freshLookupAfterReinstall response=" + actual);
+        if (!actual.equals("45679000")) {
+          throw new AssertionError("fresh lookup after reinstall should return " +
+                                   "45679000, got " + actual);
+        }
+        System.out.println("SIO_PHYSICAL:PASS stale_proxy_after_reinstall fresh_lookup");
+        return;
+      }
 
       if (afterDelete) {
         ResponseAPDU response = channel.transmit(

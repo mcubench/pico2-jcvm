@@ -122,4 +122,12 @@ if grep -Fq 'APP: A00000015100000301' "${gp_list}"; then
 fi
 timeout --signal=TERM --kill-after=5s 90s "${root}/tools/env" java \
   -cp "${probe_classes}" SioCrossAidPhysicalProbe "${reader_name}" --after-delete
+timeout --signal=TERM --kill-after=5s 60s "${gp[@]}" \
+  --install-only A00000015100000301 --package A000000151000003 \
+  --applet A00000015100000301 >>"${gp_install}" 2>&1 || \
+  die "service same-AID reinstall failed; see ${gp_install}"
+service_applet_deleted=0
+printf 'SIO_PHYSICAL:REINSTALL package=A000000151000003 applet=A00000015100000301 result=PASS\n'
+timeout --signal=TERM --kill-after=5s 90s "${root}/tools/env" java \
+  -cp "${probe_classes}" SioCrossAidPhysicalProbe "${reader_name}" --after-reinstall
 printf 'SIO_PHYSICAL:PASS log=%s\n' "${log#${root}/}"
