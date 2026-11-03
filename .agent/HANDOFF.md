@@ -18,11 +18,15 @@ expected result.
 The user reports a separate Windows test: `certutil -scinfo` sees reader
 `Pico2 JCVM CCID 0` in `SCARD_STATE_PRESENT | SCARD_STATE_MUTE`, reports an
 unrecognized/nonresponsive card, then exits successfully. This is not a
-successful card test and suggests no usable ATR/card activation. The VM's
-authorized PC/SC helper currently finds zero physical Pico devices, so no
-hardware diagnostics or flash can be performed here. Ask for a correlated
-finite serial log and verbose Windows PC/SC trace when resuming this hardware
-issue. The report is in `.agent/QKB.md`.
+successful card test. Source review confirms current firmware sends a valid
+minimal T=1 ATR (`3B 80 01 81`, with TCK XOR checksum zero) in its CCID
+`IccPowerOn` response (`src/ccid_device.cpp`). Therefore the cause is not
+established: response transport/framing or Windows acceptance still needs a
+correlated trace. The VM's authorized PC/SC helper currently finds zero
+physical Pico devices, so no hardware diagnostics or flash can be performed
+here. Ask for a finite serial log and verbose Windows PC/SC trace when
+resuming this hardware issue. ATR format reference: PC/SC specification,
+part 3. The report is in `.agent/QKB.md`.
 
 Keep the failing DELETE regression, root TODO, QKB, handoff and progress in a
 focused documentation/test commit. Preserve all unrelated dirty source,

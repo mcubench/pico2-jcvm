@@ -4789,10 +4789,13 @@ original terminology/status; check current summary and later fixes before reuse.
   authorized reader helper reports zero attached Pico readers.
 - **Windows report:** User observed `Pico2 JCVM CCID 0` as PRESENT/MUTE in
   `certutil -scinfo`; Windows Resource Manager was running and the scan command
-  completed, but no card ATR was recognized. Treat this as a reader/card
-  activation failure, not successful card communication. Firmware/Windows
-  trace is still needed to locate whether power-on, ATR delivery, or protocol
-  negotiation is failing.
+  completed, but no card ATR was recognized. The current firmware does answer
+  `PC_to_RDR_IccPowerOn` with `3B 80 01 81`; this is a valid minimal T=1 ATR
+  (T0 `80` XOR TD1 `01` XOR TCK `81` is zero). The source is
+  `src/ccid_device.cpp`. So the Windows result points to failure to receive or
+  accept the CCID power-on response, but cannot distinguish USB transfer,
+  response framing, or PC/SC interpretation without a host trace. ATR format
+  reference: [PC/SC specification, part 3](https://pcscworkgroup.com/Download/Specifications/pcsc3_v2.01.09.pdf).
 - **Next:** Keep the new DELETE sequence as a regression. Trace exception
   delivery at `invokeinterface` for a retained proxy after instance deletion;
   do not relax the expectation to `6F00`. For Windows, obtain the firmware
