@@ -21357,3 +21357,14 @@
 - Decision: Deliver the report; continue implementation under existing TODO acceptance owners. This analysis closes no firmware or physical acceptance gate.
 - Commit: `ad2cceb` (SHA recorded in metadata follow-up).
 - Artifacts/logs: `docs/CTO_IMPLEMENTATION_REVIEW.md`; existing linked evidence only; no new runtime logs.
+
+## 2026-11-03 Detailed current-code functionality review approximately 40 minutes
+
+- Step/experiment: `functionality-review-first-iteration-20261103`
+- When: '2026-11-03 (review start time not instrumented)' - '2026-11-03 21:17 UTC'
+- Change: Added `docs/review_20261103.md`, 28 concrete review follow-ups in the existing `TODO.md`, offline production-method probes/logs and source hashes. Updated QKB and handoff. Preserved pre-existing code changes and upstream CAPs.
+- Validation: Parser 4,208 checks / 100,000 fuzz inputs / 48 CAPs passed; overlay, persistent transaction/inventory, RMI registry, short APDU/context, GP DELETE 26/26, GET DATA 25/25, registry 54/54, progress flow 9/9 and guard 6/6 passed. VPCD protocol passed 18/18 through elevated local socket execution after restricted send() EPERM. Existing VPCD session test fails to compile; constructor-only adapted review copy reports 19 pass / 2 fail. New review probes report 2 pass / 10 fail; UBSan mode reports 0 pass / 2 fail. Link/anchor and scoped whitespace checks passed after correcting one anchor. Full firmware builds and physical tests intentionally skipped: runtime source was not changed.
+- Result: Reproduced array-alias corruption, stale static-reference rollback cache, foreign-owner GC confusion, SensitiveResult collision, reset/transient length/Signature allocation errors, large int-array truncation and division errors. Additional source-confirmed loader/DELETE/crypto/CCID/execution issues have explicit verification limits and acceptance tasks. Work duration is an estimate; no hardware or crypto performance metric was measured.
+- Decision: Keep all identified defects open and continue the user's requested iterative review for similar problems. Do not enable persistent reclamation or infer physical acceptance from these host tests.
+- Commit: pending review commit; SHA to be recorded in metadata follow-up.
+- Artifacts/logs: `docs/review_20261103.md`; `artifacts/reviews/review_20261103/` logs, probe sources, JSON results and `reviewed-sources.sha256`.

@@ -4856,3 +4856,30 @@ Documentation only: no build, firmware, CAP, flash, USB or PC/SC changes/tests.
 Pre-existing source changes, documentation moves and untracked artifacts were
 preserved. Continue the active implementation using TODO task owners; this review
 does not close or reprioritize their acceptance gates.
+
+## Functional implementation review, first iteration — 2026-11-03 21:17 UTC
+
+User requested a thorough current-code review and then explicitly requested
+continued iteration and checks for similar problems elsewhere. The goal remains
+active. Initial findings are in `docs/review_20261103.md`; 28 actionable
+`RV-20261103-*` checklists were inserted in the existing root `TODO.md` under
+existing task owners. Offline source/probe evidence is archived under
+`artifacts/reviews/review_20261103/`, including a 143-file source hash manifest.
+No firmware, CAP or existing test source changed. All pre-existing dirty files
+and documentation moves remain untouched.
+
+Validation: existing parser/overlay/transaction/inventory/RMI/APDU/GP/progress
+checks pass. VPCD protocol passes 18/18 with elevated local socket access after
+restricted send() EPERM. Existing VPCD session suite fails compilation; a copy
+with only constructor compatibility adapted fails two semantic assertions.
+The new review runner deliberately reports 10 failing contract cases / 2 pass;
+its UBSan mode reports 2 failing diagnostic cases. These are outstanding defects.
+No full target build, physical flash, USB/PCSC or cold-power test was performed.
+
+Continue review, not runtime fixes: revisit persistent array alias replacement
+in instance/object/reference-array paths, before-image bypass in delete/cleanup,
+transaction caches outside statics, reset state in all native crypto objects,
+width overflow in serialization/RMI and arithmetic helpers, and the CAP/native
+opcode trust boundary. Append verified related findings and tighten any claims
+whose integration trigger is not established. Preserve the first iteration's
+source hashes/logs when adding later evidence.

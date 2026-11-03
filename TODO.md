@@ -35,6 +35,188 @@ preserved byte-for-byte with a SHA-256 manifest. The [migration map](.agent/arch
 accounts for every original unchecked item, including historical entries.
 Archive text is historical evidence, not current device state or priorities.
 
+## Functionality review — 2026-11-03
+
+The detailed current-code review is [docs/review_20261103.md](docs/review_20261103.md).
+These are concrete review follow-ups under the existing task owners.
+Reproduced failures and source-confirmed paths remain open until corrected and
+validated; passing unrelated helper tests does not close them. Review probes are
+archived under `artifacts/reviews/review_20261103/`. No runtime fixes were made
+during the review.
+
+### RV-20261103-01
+
+- [ ] **P1: CCID length overflow defeats receive bounds.**
+  Owner: HARD-01, HOST-01. Evidence: Source; [review R01](docs/review_20261103.md#r01--ccid-length-overflow-can-escape-the-receive-buffer-limit).
+  Acceptance: compare `payload_length` to `max_total - header_size` before adding; validate minimum header/slot/state and exact frame length; never arm an endpoint beyond remaining capacity. Exercise all wrap values and packet fragmentation in a host shim of the production driver. No malformed USB command was sent to hardware.
+
+### RV-20261103-02
+
+- [ ] **P1: Replacing an array overwrites older aliases.**
+  Owner: PERSIST-01/02. Evidence: Reproduced; [review R02](docs/review_20261103.md#r02--persistent-array-replacement-overwrites-an-older-objects-identity).
+  Acceptance: assign durable identities per object allocation/generation; make fields point to those identities. Preserve A until its last reference is gone. Test replacement, clearing, aliases read in either order, GC, transactions and fresh-heap restore.
+
+### RV-20261103-03
+
+- [ ] **P1: Aborted static reference remains cached.**
+  Owner: PERSIST-02/03. Evidence: Reproduced; [review R03](docs/review_20261103.md#r03--transaction-abort-does-not-restore-cached-static-references).
+  Acceptance: restore or invalidate cached static references on successful abort and failed commit; preserve canonical object identity when reloading. Cover null, object and array substitutions, aliases and collection immediately after abort.
+
+### RV-20261103-04
+
+- [ ] **P1: DELETE rollback cannot undo raw erases.**
+  Owner: PERSIST-03, STORE-01. Evidence: Source; [review R04](docs/review_20261103.md#r04--delete-prefix-erases-bypass-transaction-before-images).
+  Acceptance: make namespace deletion participate in a rollback/recovery protocol at the actual storage boundary. Inject a failure after one real deletion and before publication; require all prior live values and registry entries to remain usable. A passing mock rollback is insufficient.
+
+### RV-20261103-05
+
+- [ ] **P1: Lifecycle publication can leave inconsistent stores.**
+  Owner: PERSIST-03, GP-01. Evidence: Source; [review R05](docs/review_20261103.md#r05--delete-and-load-publication-lack-complete-cross-store-recovery).
+  Acceptance: define and implement recovery for each publication point, including retry semantics and cleanup of incomplete LOADs. Fault-inject between stores and after each durable transition. Successful filesystem snapshots alone do not establish atomic package lifecycle.
+
+### RV-20261103-06
+
+- [ ] **P1: Duplicate/full-registry INSTALL is rejected too late.**
+  Owner: PERSIST-03, GP-01. Evidence: Source; [review R06](docs/review_20261103.md#r06--install-checks-registry-conflicts-after-committing-applet-state).
+  Acceptance: preflight/reserve registry capacity and AID ownership before invoking INSTALL, then recheck publication invariants and recover idempotently. Test duplicates in the same/different package and a full instance table; rejected requests must leave existing state untouched and future installation usable.
+
+### RV-20261103-07
+
+- [ ] **P1: Missing automatic transaction abortion.**
+  Owner: PERSIST-02/03, PROFILE-01. Evidence: Source; [review R07](docs/review_20261103.md#r07--applet-transactions-can-escape-lifecycle-and-reset-boundaries).
+  Acceptance: add a lifecycle transaction guard that distinguishes runtime-internal INSTALL transactions from applet transactions. Validate normal return, uncaught exception, timeout, rejected selection, deselection and warm reset, followed by an unrelated applet command.
+
+### RV-20261103-08
+
+- [ ] **P1: Foreign retained references are traced in the wrong heap.**
+  Owner: CTX-01/03, PERSIST-01. Evidence: Reproduced; [review R08](docs/review_20261103.md#r08--gc-drops-reference-owner-tags-in-volatile-object-arrays).
+  Acceptance: carry owner provenance through graph edges and route foreign roots to the owning package, or disable this newly allowed retention until that is safe. Include owner slot reuse, package deletion and non-colliding handles.
+
+### RV-20261103-09
+
+- [ ] **P2: Object result assertions and roots confuse owners.**
+  Owner: CTX-02. Evidence: Reproduced; [review R09](docs/review_20261103.md#r09--object-sensitive-results-have-no-owner-provenance).
+  Acceptance: store owner plus handle, normalize global references, compare full identity and root only in the owning heap. Add an interpreted SIO producer/assertion test with distinct owners and equal compact values.
+
+### RV-20261103-10
+
+- [ ] **P1: Claimed finite execution budget is renewable.**
+  Owner: HARD-01, API-03. Evidence: Source; [review R10](docs/review_20261103.md#r10--the-applet-timeout-is-renewable-through-native-and-nested-calls).
+  Acceptance: separate an immutable top-level deadline from watchdog/progress timestamps; share that deadline across nested calls and enforce it in interruptible native loops. Use an injectable clock to test native progress, repeated SIO, nesting and timeout unwind without waiting minutes. Preserve successful long RSA behavior within the chosen policy.
+
+### RV-20261103-11
+
+- [ ] **P1: Cipher key copies survive original transient-key clearing.**
+  Owner: PROFILE-01, HARD-01. Evidence: Source; [review R11](docs/review_20261103.md#r11--cipher-copies-outlive-transient-key-clear-events).
+  Acceptance: retain checked key identity and appropriate lifetime metadata, or use workspace that clears with the key. Test retained Cipher objects across deselect, reader reset and fresh restore for symmetric and RSA transient keys. Modification of a key after `init()` is separately unspecified; this finding concerns defined lifecycle clear events.
+
+### RV-20261103-12
+
+- [ ] **P1: Reset preserves deselect-cleared sensitive data.**
+  Owner: CTX-03, PERSIST-02. Evidence: Reproduced; [review R12](docs/review_20261103.md#r12--reset-does-not-clear-clear_on_deselect-arrays).
+  Acceptance: reset must clear both classes across active and inactive contexts without invoking applet `deselect()` as a reset callback. Test reset directly from the active applet, inactive package contexts and transient-key flags.
+
+### RV-20261103-13
+
+- [ ] **P2: Restore includes tag bytes in array length.**
+  Owner: PERSIST-02, PROFILE-01. Evidence: Reproduced/source; [review R13](docs/review_20261103.md#r13--restored-transient-arrays-have-the-wrong-length-and-uninitialized-storage).
+  Acceptance: represent logical length separately or calculate it correctly; initialize only the data region and preserve its tag metadata. Validate byte/short/int/reference arrays after fresh restore and after clear/reset, including the largest accepted sizes.
+
+### RV-20261103-14
+
+- [ ] **P2: Signature workspace is ordinary memory.**
+  Owner: API-03, PROFILE-01. Evidence: Reproduced; [review R14](docs/review_20261103.md#r14--signature-workspace-allocation-selects-the-wrong-overload).
+  Acceptance: construct transient arrays explicitly and make the API type-safe so the enum cannot silently bind as a component token. Verify both initial and expanded buffers.
+
+### RV-20261103-15
+
+- [ ] **P2: Digest/cipher/signature intermediate state has wrong lifetime.**
+  Owner: PROFILE-01, PERSIST-02. Evidence: Source; [review R15](docs/review_20261103.md#r15--crypto-session-metadata-is-not-reset-or-excluded-from-transactions).
+  Acceptance: define native engine session state separately from persistent Java object identity. Test update → warm reset → final, update inside an aborted transaction, retained objects after cold restore and Signature recovery state. Fixing buffer allocation alone is insufficient.
+
+### RV-20261103-16
+
+- [ ] **P2: Reused CBC object starts with wrong IV.**
+  Owner: API-03, PROFILE-01. Evidence: Source; [review R16](docs/review_20261103.md#r16--cbc-dofinal-restores-the-supplied-iv-instead-of-zero).
+  Acceptance: implement the selected API version's algorithm-specific post-final state. Compare the second AES/DES CBC result to a newly initialized zero-IV engine, then verify that an explicit new `init()` restores the supplied IV. Keep CTR policy separate.
+
+### RV-20261103-17
+
+- [ ] **P2: Streaming digest is a small whole-message buffer.**
+  Owner: PROFILE-01, API-01. Evidence: Source; [review R17](docs/review_20261103.md#r17--messagedigest-update-is-limited-to-2046-total-bytes).
+  Acceptance: use native incremental digest contexts with correct reset/transaction lifetime, or explicitly narrow the declared compatibility contract until implemented. Test more than 2,046 cumulative bytes across APDUs and block boundaries, including empty final input and reuse after completion.
+
+### RV-20261103-18
+
+- [ ] **P2: Legal `int[]` length silently becomes zero.**
+  Owner: PROFILE-01, API-01. Evidence: Reproduced; [review R18](docs/review_20261103.md#r18--large-int-array-allocation-silently-wraps-its-byte-length).
+  Acceptance: use checked wide arithmetic before allocation/serialization. Either support the logical length or reject it with the documented Java Card resource error before returning an object. Test boundaries around 16,383/16,384 ints and record/header limits for all primitive types.
+
+### RV-20261103-19
+
+- [ ] **P2: `MIN_VALUE / -1` has wrong result.**
+  Owner: PROFILE-01. Evidence: Reproduced; [review R19](docs/review_20261103.md#r19--minimum-value-division-returns-zero).
+  Acceptance: return the minimum dividend for division and add short/int edge vectors for sign combinations, remainder and division by zero. Test actual bytecode execution on both compiler targets after the change.
+
+### RV-20261103-20
+
+- [ ] **P2: Shifts, overflow and word assembly invoke UB.**
+  Owner: HARD-01, PROFILE-01. Evidence: Sanitizer; [review R20](docs/review_20261103.md#r20--arithmetic-and-word-reconstruction-use-undefined-c-operations).
+  Acceptance: implement wrapping operations and reconstruction in unsigned fixed-width types with explicit signed interpretation. Respect Java Card short-shift semantics, which use sign extension to 32 bits; do not blindly substitute a 16-bit logical shift. ,
+
+### RV-20261103-21
+
+- [ ] **P2: SIO loses exception class/reason.**
+  Owner: CTX-01/02. Evidence: Source; [review R21](docs/review_20261103.md#r21--cross-context-sio-calls-replace-server-exceptions-with-securityexception).
+  Acceptance: distinguish a transport/firewall denial from a Java exception crossing the SIO boundary. Implement owner-safe exception propagation and caller context restoration, including subclass identity and reason. Test at least two exception classes with distinct catch blocks and a successful follow-up call.
+
+### RV-20261103-22
+
+- [ ] **P2: Inherited interface membership is missed.**
+  Owner: PROFILE-01, CTX-01. Evidence: Source; [review R22](docs/review_20261103.md#r22--class-to-interface-casts-do-not-search-superclasses).
+  Acceptance: walk the class hierarchy with bounded cycle detection and correct package resolution; retain recursive superinterface handling. Validate same-package and imported superclass cases. This finding is source-based; no new CAP was produced to exercise it.
+
+### RV-20261103-23
+
+- [ ] **P2: Invalid Util arguments can succeed or partially write.**
+  Owner: PROFILE-01. Evidence: Source; [review R23](docs/review_20261103.md#r23--non-atomic-util-methods-do-not-prevalidate-their-ranges).
+  Acceptance: enforce complete validation in native API dispatch before mutation, with tests for negative/zero lengths, nulls, boundary offsets and invalid overlapping ranges. Verify exception type, destination contents and SensitiveResult after failure.
+
+### RV-20261103-24
+
+- [ ] **P2: Non-atomic APIs consume commit capacity and roll back.**
+  Owner: PROFILE-01, PERSIST-03. Evidence: Source; [review R24](docs/review_20261103.md#r24--non-atomic-persistent-updates-still-enter-the-transaction-journal).
+  Acceptance: provide a native mutation path with the selected non-atomic semantics, including interaction with records already journaled by atomic writes. Test mixed atomic/non-atomic writes and abort on the same and different persistent arrays, including a record larger than commit capacity. Do not weaken ordinary transaction accounting globally.
+
+### RV-20261103-25
+
+- [ ] **P2: CCID double dispatch and explicit-ISD selection mismatch.**
+  Owner: GP-01, HOST-01. Evidence: Source; [review R25](docs/review_20261103.md#r25--physical-card-management-and-applet-routing-have-different-contracts).
+  Acceptance: define one card-session dispatch contract with exactly one route per command, explicit ISD identity and activation/slot checks. Test GP commands while an applet is selected, failed authentication, explicit/default ISD selection and APDUs while powered off. Cover the production CCID path, not just helper encoders.
+
+### RV-20261103-26
+
+- [ ] **P2: Lost final response can stall subsequent commands.**
+  Owner: HOST-01. Evidence: Source; [review R26](docs/review_20261103.md#r26--failed-final-ccid-submission-can-leave-the-reader-unarmed).
+  Acceptance: retain a pending final response for bounded retry, or transition to an explicit recoverable abort/reset state that safely rearms the endpoint. Test extension completion just after the wait bound, failed IN submission and subsequent slot-status/APDU recovery.
+
+### RV-20261103-27
+
+- [ ] **P2: Test compile drift plus wrong reselection/restore status.**
+  Owner: PROFILE-01, GP-01. Evidence: Reproduced; [review R27](docs/review_20261103.md#r27--vpcd-session-tests-are-stale-and-mask-selection-regressions).
+  Acceptance: restore the test's build, track the actual selected AID and retain meaningful restore failure status. Expand to two known applets, unknown AID, same-AID reselection, rejected `select()` and corrupted restore. Do not simply change assertions to the current wrong behavior. ,
+
+### RV-20261103-28
+
+- [ ] **P1: Unbounded fetch, unrestricted native opcode and unchecked field kinds.**
+  Owner: HARD-01. Evidence: Source; [review R28](docs/review_20261103.md#r28--uploaded-cap-execution-does-not-have-a-complete-trust-boundary).
+  Acceptance: define the uploaded-CAP trust model explicitly; enforce execution bounds and privileged-opcode origin regardless of parser success, and add verification or dynamic field-kind/access checks. Test malformed instructions and nested linkage under sanitizers, then controlled physical failure/recovery. Keep valid upstream CAPs unchanged.
+
+Additional scoped investigations: GP-01 should test deletion of a library
+package imported by an installed client; CTX-01/STORE-01 should establish
+bounded lifetime/reclamation for user-created global arrays. These are
+source-based follow-ups, without a new physical reproduction in this review.
+
 ## Open architecture acceptance
 
 ### ARCH-08

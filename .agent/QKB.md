@@ -5313,3 +5313,26 @@ original terminology/status; check current summary and later fixes before reuse.
   `204eafd093875401e926bd9802562ad3daca4a5a416226b498779b17a647a3dc`). The
   unchanged CAP SHA-256 is
   `f3dc5edd5b65817c8663ea1018128448052816c1a323c8cc2211027e9f8e4899`.
+
+## Functionality review probes and local socket restriction — 2026-11-03
+
+- **Current-source findings:** `docs/review_20261103.md` records 28 concrete
+  functionality/trust-boundary findings, with `RV-20261103-01` through `-28`
+  in TODO. The offline probes invoke production methods over existing test
+  stubs: ten of twelve contract cases fail, and both UBSan arithmetic cases
+  produce diagnostics. These are unresolved failures, not passing acceptance.
+  Sources, reproduction commands and logs are archived in
+  `artifacts/reviews/review_20261103/`; runtime source and upstream CAPs were
+  not changed by the review.
+- **Local socket restriction:** `tools/test-vpcd-protocol` created an AF_UNIX
+  socket pair in the restricted sandbox but failed at its first `send()`.
+  A separate Python diagnostic confirmed `PermissionError(EPERM)` on send.
+- **Viable solution:** running the unchanged repository wrapper through
+  elevated host execution passed `TEST:SUMMARY pass=18 fail=0`. This is a local
+  socket-only test; no PC/SC or physical USB operation was involved. Preserve
+  the restricted failure alongside the successful host run and do not
+  classify the EPERM as a firmware/protocol defect.
+- **Independent test drift:** `tools/test-vpcd-session` really fails to compile
+  because its constructor invocation is obsolete. A review copy adapting only
+  that invocation then fails two existing assertions (19 pass / 2 fail).
+  See review R27; do not hide the semantic failures by rewriting expectations.
