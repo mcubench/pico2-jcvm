@@ -1,3 +1,14 @@
+## 2026-11-03 Classify Windows GPPro and certutil results 3 minutes
+
+- Step/experiment: `windows-gppro-certutil-classification-20261103`
+- When: '2026-11-03 15:13 UTC' - '2026-11-03 15:16 UTC'
+- Change: Recorded the latest user-provided Windows results in `.agent/QKB.md` and `.agent/HANDOFF.md`, separating successful GPPro/PCSC APDU exchange from the later Windows card-type/provider lookup failure. Clarified that old GPPro's rendering of CPLC date `6304` as 2016-10-30 differs from the repository-pinned newer decoder's relative-decade interpretation.
+- Validation: Inspected repository CPLC bytes and the pinned GlobalPlatformPro date decoder/tests; compared them with the exact GPPro and certutil output. Confirmed Microsoft discovery/minidriver behavior against official documentation. No firmware, CAP, applet state, or physical device was changed; no build or hardware validation was required.
+- Result: Both Windows reader slots connect with ATR `3B800181`; ISD SELECT, CPLC, and Card Data return `9000`. Optional IIN/CIN/Card Capabilities/Key Info Template return `6A88`. `certutil` reaches provider lookup after identifying the available, unpowered card and fails with `ERROR_FILE_NOT_FOUND`, indicating no Windows card-type/provider association for that ATR.
+- Decision: No firmware change is indicated. Windows certificate/minidriver integration would require a separately defined provider/ATR mapping requirement. The earlier MUTE hypothesis is superseded for this successful GPPro session.
+- Commit: pending
+- Artifacts/logs: user-provided Windows output; none archived locally. Microsoft references are linked in `.agent/QKB.md`.
+
 ## 2026-11-03 Complete JCAlgTest 1.8.4 BASIC on physical Pico 2 25 minutes
 
 - Step/experiment: `jcalgtest-184-basic-physical-current-client-20261103`

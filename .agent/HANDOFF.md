@@ -1,3 +1,33 @@
+# Current session — classify Windows GPPro and certutil results — 2026-11-03 15:16 UTC
+
+The latest Windows 10 report changes the earlier MUTE diagnosis. GPPro 20.01.23
+sees both `Pico2 JCVM CCID 0` and `Pico2 JCVM CCID 1`; both power/connect at T=1
+with ATR `3B800181`, select the ISD, and successfully read CPLC and Card Data
+(`9000`). Optional IIN/CIN, Card Capabilities and Key Info Template return
+`6A88`. This confirms Windows reader enumeration, activation and APDU traffic
+work in this run.
+
+`certutil -scinfo` separately sees reader 0 as `PRESENT | UNPOWERED`, says the
+card is available, and reads the ATR, then fails at
+`SCardGetCardTypeProviderName` with `ERROR_FILE_NOT_FOUND (0x2)`. This is a
+missing Windows card-type/provider/minidriver association for the ATR, not a
+firmware APDU failure. No firmware change is indicated unless Windows
+certificate-store/minidriver integration is an explicit product requirement.
+The earlier Windows MUTE/USBPcap investigation is superseded for the tested
+session; retain capture instructions only if the failure recurs.
+
+The CPLC `6304` date values are unchanged. Repository-pinned newer GPPro treats
+them as year digit 6, day 304 (2026-10-31); the older Windows GPPro 20.01.23
+prints 2016-10-30. This is a date-epoch interpretation difference. Details and
+Microsoft references are in the newest section of `.agent/QKB.md`.
+
+No firmware, test CAP, or applet state changed. No hardware was accessed from
+this VM for this report; results are user-provided Windows evidence. Continue
+with the open combined-image full JCAlgTest static rerun only when a physical
+reader is passed through to this VM.
+
+---
+
 # Current session — JCAlgTest 1.8.4 static failures fixed on 2BED — 2026-11-03 15:10 UTC
 
 Completed a full upstream `ALG_PERFORMANCE_STATIC` run with

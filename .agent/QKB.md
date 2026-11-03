@@ -1,5 +1,38 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Windows GPPro succeeds; certutil lacks ATR card-type mapping — 2026-11-03
+
+- **Observation:** User's Windows 10 / Java 8 run of GPPro 20.01.23 sees both
+  `Pico2 JCVM CCID 0` and `Pico2 JCVM CCID 1`. Both connect at T=1 with ATR
+  `3B800181`; SELECT of ISD `A000000151000000`, GET DATA CPLC, and Card Data
+  all return `9000`. IIN, CIN, Card Capabilities, and Key Info Template return
+  `6A88`, meaning those optional GET DATA objects are absent. This supersedes
+  the earlier Windows MUTE report for these two readers: Windows PC/SC and
+  card APDU exchange are working in this run.
+- **Separate certutil result:** `certutil -scinfo` sees reader 0 as
+  `PRESENT | UNPOWERED`, reports that the card is available, and reads ATR
+  `3B800181`; it then fails at `SCardGetCardTypeProviderName` with
+  `ERROR_FILE_NOT_FOUND (0x2)`. This is Windows card-type/provider discovery,
+  not evidence of a CCID or APDU failure. Windows associates an ATR with a
+  named card and provider/minidriver through the Calais SmartCards registry
+  entries. GPPro does not depend on that certificate/minidriver mapping. A
+  JCVM that is intended for GPPro/PCSC APDU use does not need a Windows
+  certificate minidriver unless Windows certificate-store integration is a
+  product requirement.
+- **CPLC date display:** Response bytes use `6304`. Newer repository-pinned
+  GlobalPlatformPro interprets CPLC dates relative to the current decade and
+  current date; GPPro 20.01.23 in the supplied output renders the same bytes as
+  2016-10-30. This is a decoder-version interpretation difference, not a
+  changed/malformed CPLC response. `src/gp_get_data.hpp` currently labels
+  `6304` as year digit 6/day 304 (2026-10-31).
+- **Next:** No firmware change is indicated by this report. If Windows card
+  certificate/minidriver integration is required, define the intended provider
+  and install an ATR mapping/minidriver on Windows. If APDU failures recur,
+  capture USBPcap plus same-run Pico serial; the earlier MUTE hypothesis is not
+  supported by this successful GPPro exchange.
+- **Sources:** [Microsoft discovery process](https://learn.microsoft.com/en-us/windows-hardware/drivers/smartcard/discovery-process),
+  [Microsoft minidriver registration](https://learn.microsoft.com/en-us/windows-hardware/drivers/smartcard/minidriver-registration).
+
 ## Windows MUTE report: static CCID review narrows the trace needed — 2026-11-03
 
 - **Observation:** Windows reports `PRESENT | MUTE`; Linux receives ATR
