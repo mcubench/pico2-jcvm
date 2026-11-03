@@ -21064,3 +21064,14 @@
 - Decision: Do not change CCID behavior until Windows capture proves which command/response fails. Obtain USBPcap through PowerOn and follow-on command(s), paired with CDC serial, exact board ID, and UF2 hash.
 - Commit: `103bceb`.
 - Artifacts/logs: no new logs. Sources: USB-IF CCID Rev 1.1 and Microsoft reader-state documentation, linked in `.agent/QKB.md`.
+
+## 2026-11-03 Record repeated Windows certutil MUTE result 3 minutes
+
+- Step/experiment: `windows-mute-certutil-repeat-20261103`
+- When: '2026-11-03 13:57 UTC' - '2026-11-03 14:00 UTC'
+- Change: Recorded the user's latest Windows `certutil -scinfo` output in `.agent/QKB.md` and `.agent/HANDOFF.md`, including exact reader/card state and the distinction between successful diagnostic completion and successful card activation.
+- Validation: Compared the new output to the existing Windows MUTE investigation and current CCID trace requirements. No firmware, CCID descriptor, APDU, or card state was changed. No USBPcap or same-run Pico CDC trace was supplied.
+- Result: Windows enumerates `Pico2 JCVM CCID 0`, reports `SCARD_STATE_PRESENT | SCARD_STATE_MUTE` and “The card is unrecognized or not responding,” then exits `certutil` successfully after several minutes. The failed card activation remains localized only to the Windows PC/SC/CCID path; the failed USB message is not identified. Host-side delay is consistent with retries/timeouts but is not proof of their exact cause.
+- Decision: Continue to require a Windows USBPcap capture through `PC_to_RDR_IccPowerOn` and subsequent commands, correlated with CDC serial, board ID, and UF2 SHA-256, before changing CCID behavior.
+- Commit: pending
+- Artifacts/logs: user-provided `certutil -scinfo` output; no PCAP or serial artifact.

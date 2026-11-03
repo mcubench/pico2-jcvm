@@ -5,7 +5,13 @@
 - **Observation:** Windows reports `PRESENT | MUTE`; Linux receives ATR
   `3B800181` and runs JCAlgTest on both currently attached boards. Microsoft
   defines `SCARD_STATE_MUTE` as an unresponsive card or one unsupported by the
-  reader/software; it does not identify the failed USB exchange.
+  reader/software; it does not identify the failed USB exchange. The latest
+  `certutil -scinfo` output again enumerates one reader, `Pico2 JCVM CCID 0`,
+  marks the slot `PRESENT | MUTE`, says the card is unrecognized/not responding,
+  and exits with `CertUtil: -SCInfo command completed successfully` after
+  several minutes. That exit only shows the diagnostic completed; card
+  activation and recognition did not pass. Host-side elapsed time is consistent
+  with a timeout/retry path but does not identify which exchange timed out.
 - **Static review:** Current descriptor advertises one slot, T=1, short-APDU
   exchange, `dwFeatures=0x00020042`, and voltages 5/3/1.8 V. Per USB-IF CCID
   Rev 1.1, `0x2` is automatic parameter configuration from ATR, `0x40` is

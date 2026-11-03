@@ -1,4 +1,17 @@
-# Current session — static CCID review of Windows MUTE report — 2026-11-03 13:54 UTC
+# Current session — Windows certutil MUTE reproduced in report — 2026-11-03 13:59 UTC
+
+User reports a Windows `certutil -scinfo` run taking several minutes, then
+listing one reader `Pico2 JCVM CCID 0`, state `SCARD_STATE_PRESENT |
+SCARD_STATE_MUTE`, and “The card is unrecognized or not responding.” CertUtil
+then says its diagnostic completed successfully. This means the enumeration
+command completed; it is not evidence that card activation succeeded. Windows
+board identity and flashed UF2 hash are still unknown. The current CCID source
+and Linux results do not isolate the failure. Obtain USBPcap covering the first
+`PC_to_RDR_IccPowerOn` and following messages, paired with the Pico CDC log,
+exact board ID, and UF2 hash. Keep CCID behavior unchanged until this exchange
+is captured. Details are in `.agent/QKB.md`.
+
+# Previous session — static CCID review of Windows MUTE report — 2026-11-03 13:54 UTC
 
 Reviewed the CCID descriptor against USB-IF Rev 1.1. Advertised one slot,
 T=1, short APDU, and `dwFeatures=0x00020042` (automatic ATR parameter
