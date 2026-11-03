@@ -7,6 +7,9 @@ import javacard.framework.JCSystem;
 import javacard.framework.Shareable;
 import javacard.framework.Util;
 import javacard.security.MessageDigest;
+import javacard.security.AESKey;
+import javacard.security.KeyBuilder;
+import javacardx.crypto.Cipher;
 import javacardx.security.SensitiveResult;
 import sio.contract.Probe;
 
@@ -121,6 +124,31 @@ public final class ServiceApplet extends Applet implements Probe {
       return (short)0x6A3C;
     } catch (ArrayIndexOutOfBoundsException expected) {
       return (short)0x6A3D;
+    }
+  }
+
+  public short sensitiveCipherResult() {
+    try {
+      AESKey key = (AESKey)KeyBuilder.buildKey(
+          KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
+      byte[] keyData = new byte[16];
+      key.setKey(keyData, (short)0);
+      Cipher cipher = Cipher.getInstance(
+          Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+      cipher.init(key, Cipher.MODE_ENCRYPT);
+      byte[] input = new byte[16];
+      byte[] output = new byte[32];
+      short updated = cipher.update(input, (short)0, (short)16,
+                                    output, (short)0);
+      if (updated != 16) return (short)0x6A41;
+      try {
+        SensitiveResult.assertEquals(updated);
+      } catch (SecurityException missingUpdateResult) {
+        return (short)0x6A45;
+      }
+      return cipher.doFinal(input, (short)0, (short)16, output, (short)16);
+    } catch (SecurityException runtimeSecurityFailure) {
+      return (short)0x6A46;
     }
   }
 

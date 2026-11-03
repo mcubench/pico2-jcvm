@@ -1,5 +1,24 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Native Cipher omitted SensitiveResult updates — 2026-11-03
+
+- **Symptom:** The Java Card `Cipher.update()` and `Cipher.doFinal()` methods
+  return short output lengths and are listed as SensitiveResult producers, but
+  their native C++ handlers returned without updating the per-Context result.
+- **Fix:** Both handlers now clear stale state before validation/execution and
+  set a short SensitiveResult only after the underlying RSA or symmetric
+  operation completes successfully. Exceptions therefore leave the result
+  unassigned.
+- **Validation:** Added an interpreted three-package AES CBC SIO fixture. It
+  checks the update length inside the service and the doFinal length in the
+  caller after the service returns. PC, ARM, and RISC-V builds passed; the full
+  loopback VPCD suite passed `TEST:SUMMARY pass=31 fail=0`. Physical-reader
+  refresh found zero devices, so no flash or hardware validation occurred.
+- **Viable practice:** Use the persistent `KeyBuilder.TYPE_AES` form in this
+  fixture; a first transient-key variant failed with an uncaught
+  `SecurityException` and was not used as evidence against the runtime API.
+
+
 ## Native MessageDigest.doFinal omitted SensitiveResult update — 2026-11-03
 
 - **Symptom:** In an interpreted cross-AID SIO fixture, SHA-256

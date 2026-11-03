@@ -539,10 +539,15 @@ Archive text is historical evidence, not current device state or priorities.
   length only after digest and cleanup succeed. Success and invalid-range
   behavior both pass the 31/31 VPCD fixture suite; the SHA-256 output is checked
   against a known answer.
-  Remaining: exercise other result producers (PIN, signature and key APIs
-  where enabled), verify GC rooting of object results after ordinary locals
-  are dropped through interpreted SIO, and repeat selected coverage on
-  physical hardware when available.
+  Native `Cipher.update()` and `Cipher.doFinal()` now also clear stale state on
+  entry and record the short output length on success. An interpreted AES CBC
+  fixture asserts update's result in the service and finalization's result
+  after SIO return; VPCD remains 31/31. The current device pool is empty, so
+  physical validation is outstanding.
+  Remaining: exercise other result producers (PIN, signature, random-data,
+  checksum, AEAD and key APIs where enabled), verify GC rooting of object
+  results after ordinary locals are dropped through interpreted SIO, and
+  repeat selected coverage on physical hardware when available.
   Acceptance: correct result ownership/lifetime across cross-applet call/return,
   GC and reset; preserve tests distinguishing native simulation from applet calls.
   Evidence: original SensitiveResult task and `tools/test-rmi-registry`.

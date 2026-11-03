@@ -1,5 +1,19 @@
 # Current session — fix MessageDigest SensitiveResult propagation — 2026-11-03 15:46 UTC
 
+Follow-up: extended the native SensitiveResult audit to `Cipher.update()` and
+`Cipher.doFinal()`. Both handlers clear previous state on entry and publish the
+short result only after the RSA or symmetric operation succeeds. The
+interpreted three-package fixture creates a persistent AES-128 key, calls AES
+CBC update/final, asserts update's result inside the service, then asserts the
+final output length after SIO returns. This extends the existing VPCD suite to
+`TEST:SUMMARY pass=31 fail=0`; PC, ARM, and RISC-V builds passed. A transient
+AES key fixture initially failed with uncaught `SecurityException`; using the
+same persistent AES key form used by the symmetric crypto probe passes.
+Authorized reader refresh still reports zero Pico devices, so hardware
+validation remains outstanding. Commit `TBD` contains the Cipher change and
+tests. Next CTX-02 audit targets additional declared producers (PIN, signature,
+random data, checksum, AEAD and enabled key APIs), then object-result GC rooting.
+
 Implemented the next CTX-02 gap after the Java-level SIO tests exposed a native
 API omission. `MessageDigest.doFinal()` returned the right SHA-256 output length
 but did not update SensitiveResult, so the caller's assertion after SIO failed.

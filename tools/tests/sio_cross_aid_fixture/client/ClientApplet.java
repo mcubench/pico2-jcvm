@@ -86,6 +86,16 @@ public final class ClientApplet extends Applet {
     }
   }
 
+  private short checkSensitiveCipherResult(Probe probe) {
+    short outputLength = probe.sensitiveCipherResult();
+    try {
+      SensitiveResult.assertEquals(outputLength);
+      return outputLength == 16 ? (short)0x6A42 : (short)0x6A43;
+    } catch (SecurityException missingSensitiveResult) {
+      return (short)0x6A44;
+    }
+  }
+
   public void process(APDU apdu) {
     if (selectingApplet()) {
       return;
@@ -195,6 +205,9 @@ public final class ClientApplet extends Applet {
     } else if (buffer[1] == 0x26) {
       Probe probe = (Probe) shareable;
       result = checkFailedSensitiveDigest(probe);
+    } else if (buffer[1] == 0x27) {
+      Probe probe = (Probe) shareable;
+      result = checkSensitiveCipherResult(probe);
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

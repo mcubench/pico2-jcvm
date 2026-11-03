@@ -225,6 +225,17 @@ def main() -> int:
             print("TEST:PASS invalid SHA-256 doFinal clears prior object "
                   "SensitiveResult before SIO returns")
             response = vpcd.exchange(
+                connection, bytes.fromhex("8027000000"),
+                "Cipher update/final SensitiveResult across SIO"
+            )
+            if response != bytes.fromhex("6A429000"):
+                raise RuntimeError(
+                    "Cipher SensitiveResult returned "
+                    f"{response.hex().upper()}, expected 6A429000"
+                )
+            print("TEST:PASS native AES Cipher update and doFinal results "
+                  "are assertable across SIO")
+            response = vpcd.exchange(
                 connection, bytes.fromhex("801A000000"),
                 "cross-context private array reference firewall"
             )

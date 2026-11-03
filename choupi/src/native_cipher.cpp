@@ -762,32 +762,48 @@ jbyte_t javacardx_crypto_Cipher_getPaddingAlgorithm(jref_t receiver) {
 jshort_t javacardx_crypto_Cipher_update(jref_t receiver,
     std::shared_ptr<JC_Array> input, jshort_t inputOffset, jshort_t inputLength,
     std::shared_ptr<JC_Array> output, jshort_t outputOffset) {
+  auto &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   auto cipher = cipherInstance(receiver);
   const uint8_t algorithm = static_cast<uint8_t>(cipher->getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
   if (isRsaAlgorithm(algorithm)) {
 #if JC_SUPPORT_CIPHER_RSA_PKCS1 || JC_SUPPORT_CIPHER_RSA_NOPAD || JC_SUPPORT_CIPHER_RSA_OAEP
-    return updateRsaCipher(cipher, input, inputOffset, inputLength, output, outputOffset);
+    const jshort_t result = updateRsaCipher(
+        cipher, input, inputOffset, inputLength, output, outputOffset);
+    context.setSensitiveResultShort(result);
+    return result;
 #else
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
 #endif
   }
-  return updateSymmetric(*cipher, input, inputOffset, inputLength, output, outputOffset);
+  const jshort_t result = updateSymmetric(
+      *cipher, input, inputOffset, inputLength, output, outputOffset);
+  context.setSensitiveResultShort(result);
+  return result;
 }
 
 jshort_t javacardx_crypto_Cipher_doFinal(jref_t receiver,
     std::shared_ptr<JC_Array> input, jshort_t inputOffset, jshort_t inputLength,
     std::shared_ptr<JC_Array> output, jshort_t outputOffset) {
+  auto &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   auto cipher = cipherInstance(receiver);
   const uint8_t algorithm = static_cast<uint8_t>(cipher->getField_Byte(
       ROM_FIELD_INDEX_JAVACARDX_CRYPTO_CIPHER_CIPHER_ALGORITHM));
   if (isRsaAlgorithm(algorithm)) {
 #if JC_SUPPORT_CIPHER_RSA_PKCS1 || JC_SUPPORT_CIPHER_RSA_NOPAD || JC_SUPPORT_CIPHER_RSA_OAEP
-    return doFinalRsaCipher(cipher, input, inputOffset, inputLength, output, outputOffset);
+    const jshort_t result = doFinalRsaCipher(
+        cipher, input, inputOffset, inputLength, output, outputOffset);
+    context.setSensitiveResultShort(result);
+    return result;
 #else
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
 #endif
   }
-  return doFinalSymmetric(*cipher, input, inputOffset, inputLength, output, outputOffset);
+  const jshort_t result = doFinalSymmetric(
+      *cipher, input, inputOffset, inputLength, output, outputOffset);
+  context.setSensitiveResultShort(result);
+  return result;
 }
 } // namespace jcvm

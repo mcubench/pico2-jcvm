@@ -20,6 +20,17 @@
 - Commit: pending
 - Artifacts/logs: Windows output supplied in conversation; no local artifact.
 
+## 2026-11-03 Fix native Cipher SensitiveResult propagation 13 minutes
+
+- Step/experiment: `ctx02-cipher-sensitive-result-20261103`
+- When: '2026-11-03 15:46 UTC' - '2026-11-03 15:59 UTC'
+- Change: Updated native `Cipher.update()` and `Cipher.doFinal()` to clear stale SensitiveResult before validation and set the returned short only after successful RSA or symmetric processing. Added a Java Card CAP fixture that checks AES CBC update inside the service and asserts doFinal's output length after SIO return. Updated CTX-02 TODO, QKB and HANDOFF.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed; `./tools/build-sio-cross-aid-fixture` converted all three CAPs with zero conversion errors (expected int-support warnings); elevated VPCD SIO suite passed `TEST:SUMMARY pass=31 fail=0`. Authorized Pico reader refresh found zero devices, so physical flash/validation was skipped.
+- Result: The interpreter now preserves the native Cipher result through cross-applet calls and leaves failed calls unassigned by construction. The first transient AES key fixture returned uncaught `SecurityException`; using the persistent key form used by the existing symmetric crypto fixture passed. ARM image ends at `0x100d0a00`, leaving 194,048 bytes in the 1 MiB window.
+- Decision: Keep CTX-02 open for PIN, signature, random data, checksum, AEAD, key API producers, object-result GC rooting after locals drop, and physical validation.
+- Commit: to be recorded in a follow-up metadata commit
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T155804Z.log`.
+
 ## 2026-11-03 Fix native MessageDigest SensitiveResult propagation 10 minutes
 
 - Step/experiment: `ctx02-message-digest-sensitive-result-20261103`
