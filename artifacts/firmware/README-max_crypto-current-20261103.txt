@@ -32,8 +32,19 @@ list has no `APP:` or `PKG:` entries before installing any CAP. If other AIDs
 are listed, remove them too if the intended test requires a fully empty card.
 Install the unchanged upstream CAP only after this check.
 
-The exact image hash has not been runtime-tested on a physical Pico 2. The
-authorized reader helper found no attached devices during this session. The
-build was produced from the current shared worktree, which contains local
-uncommitted source changes; this image may not be reproducible from a clean
-checkout until those changes are committed or otherwise preserved.
+The exact image hash was flashed and runtime-tested on physical Pico 2 boards
+2BED (`2BED26ED20556535`) and 8E (`8E464F4E2BBC0A19`). Both ARM flash
+verification cycles and finite startup monitors passed (`TEST:SUMMARY pass=1
+fail=0`). On 2BED, the unchanged API 3.0.5 Security CAP completed 901/901 calls
+(397 OK, 504 expected unsupported, no unexpected results). Crypto completed
+466/466 calls on both boards (304 OK, 161 expected unsupported, one expected
+`ILLEGAL_VALUE`/`EXC_CARDRUNTIME` for the undersized upstream SHA-512 PSS
+vector); results matched the VPCD run. These runtime tests installed test
+CAPs on cards with existing persistent content, so they do not establish that
+those physical cards are empty. A firmware flash does not clear that content.
+
+The image was rebuilt again with both repository wrappers on 2026-11-03. The
+fresh ARM and RISC-V builds passed and the output hash remains the one above.
+The build used the shared worktree, which contains unrelated uncommitted local
+source changes; this image may not be reproducible from a clean checkout until
+those changes are committed or otherwise preserved.

@@ -21369,6 +21369,41 @@
 - Commit: pending review commit; SHA to be recorded in metadata follow-up.
 - Artifacts/logs: `docs/review_20261103.md`; `artifacts/reviews/review_20261103/` logs, probe sources, JSON results and `reviewed-sources.sha256`.
 
+## 2026-11-03 Rebuild and verify current max empty-card firmware 5 minutes
+
+- Step/experiment: `max-crypto-current-empty-card-refresh-20261103`
+- When: '2026-11-03 23:09 UTC' - '2026-11-03 23:14 UTC'
+- Change: Rebuilt the `max_crypto` ARM and RISC-V profiles and checked the
+  external ARM UF2 against the fresh output. Updated the artifact README,
+  TODO, QKB, and HANDOFF with current physical-test and cleanup status. Copied
+  both physical Crypto client raw logs into their result artifact directories.
+- Validation: `./tools/build arm --profile max_crypto` and
+  `./tools/build riscv --profile max_crypto` passed. ARM flash-boundary check
+  passed at `0x100e8820`, with 96,224 bytes remaining. Fresh ARM output and
+  `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` both
+  measure 1,905,664 bytes and SHA-256
+  `756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`.
+  Physical evidence for this exact hash: 2BED Security 901/901 (397 OK, 504
+  expected unsupported, zero unexpected); Crypto 466/466 on 2BED and 8E
+  (304 OK, 161 expected unsupported, one expected undersized SHA-512 PSS
+  rejection), matching VPCD. Both board cycle logs show flash verification and
+  finite `TEST:SUMMARY pass=1 fail=0`. Crypto test-package cleanup remains
+  unresolved on 2BED: runner reported reader loss, package remained listed,
+  and two targeted GPPro DELETE attempts timed out. No applet is bundled in
+  the firmware, but flashing does not clear persistent card contents.
+- Result: The downloadable file is the fresh current max image. It is a
+  firmware-only image with no preinstalled applet; physical boards used for
+  runtime testing were not empty. Windows cleanup must verify zero `APP:` and
+  `PKG:` entries before explicit CAP installation.
+- Decision: Provide the `*-empty-card-current.uf2` artifact and retain
+  HOST-01/STORE-01 follow-up for package DELETE transport and storage cleanup.
+- Commit: pending (SHA to be recorded in metadata follow-up)
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`;
+  Security CSV SHA-256 `bd1476f53c853dbf5000ff3cffe5b06575bca0e02ac79a20630801e531e557d8`;
+  2BED Crypto CSV SHA-256 `e5df54bec9e09a3f26c0e1551b315fbc616fc460cab9887c566e767290860f0d`;
+  8E Crypto CSV SHA-256 `68553084330015e69a454769abc44c2adbfb4734ab7c61941440473177059b17`;
+  raw Crypto logs and hashes are in `.agent/QKB.md` and the per-board result directories.
+
 ## 2026-11-03 Complete full Security VPCD acceptance sweep 201 minutes
 
 - Step/experiment: `api305-security-vpcd-max-20261103`

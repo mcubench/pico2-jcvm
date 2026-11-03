@@ -1,5 +1,42 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Max-profile physical acceptance and package DELETE timeout — 2026-11-03
+
+- **Image:** `max_crypto` ARM UF2 SHA-256
+  `756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6` was
+  flashed and cycle-verified on Pico 2 `2BED26ED20556535` and
+  `8E464F4E2BBC0A19`. Finite startup monitors passed on both. A fresh ARM and
+  RISC-V wrapper build on 2026-11-03 reproduced the same ARM hash; ARM end was
+  `0x100e8820`, with 96,224 bytes remaining. Firmware contains no preinstalled
+  CAP/applet, but flashing preserves existing persistent card contents.
+- **Physical API results:** unchanged API 3.0.5 Security on 2BED completed
+  901 calls (397 OK, 504 expected unsupported, zero unexpected results).
+  Unchanged Crypto completed 466 calls on each board: 304 OK, 161 expected
+  unsupported, one expected `ILLEGAL_VALUE`/`EXC_CARDRUNTIME` from the upstream
+  SHA-512 PSS vector's insufficient 1024-bit RSA encoding. Both board result
+  sets matched VPCD. These runs prove execution on the max image, not an empty
+  physical card; they installed test packages alongside persistent contents.
+- **Symptom:** Crypto cleanup was reported as “reader not found” on both
+  boards. A later GPPro listing on 2BED showed the test package remained.
+  Two targeted GPPro DELETE attempts sent the DELETE APDU but ended in
+  `SCARD_E_NOT_TRANSACTED`; a finite serial monitor still showed the board
+  alive. Reflashing restored PC/SC but did not erase the package. The 8E
+  follow-up listing did not show the test package, but cleanup was not
+  independently confirmed by a successful runner result.
+- **Viable operational rule:** do not treat UF2 flashing as card cleanup. On
+  Windows, list packages after flashing, delete installed applets and packages
+  explicitly, then require an empty `--list` result before installing the
+  requested upstream CAP. If GPPro DELETE stalls, capture the precise reader,
+  serial and APDU logs; do not claim the card is empty based on firmware alone.
+- **Artifacts:** `artifacts/results/deploy/physical-security-2bed-maxcrypto-20261103/`;
+  `artifacts/results/deploy/physical-crypto-2bed-maxcrypto-20261103/`;
+  `artifacts/results/deploy/physical-crypto-8e-maxcrypto-20261103/`;
+  cycle logs `artifacts/logs/cycle-choupi-20261103T223601Z.log`,
+  `...T225358Z.log`, and recovery `...T230614Z.log`. Crypto raw client logs
+  are archived in each board's result directory: 2BED SHA-256
+  `7a643dd4ac31bcaba6f5d7b8d5c06d742823a76af86508d556ca969223d38459`, 8E
+  SHA-256 `a960777435940f99d16fc08fe3aeaf5c9d8fc9d23de47bc7860b38de40386dfa`.
+
 ## Foreign typed-array stores require owner-aware class resolution — 2026-11-03
 
 - **Finding:** `bc_aastore()` preserves the pushed reference's owner package

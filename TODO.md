@@ -268,6 +268,13 @@ source-based follow-ups, without a new physical reproduction in this review.
   explain residual failures without assuming every `NO_MEMORY` is a GC defect.
   Dependencies: API-01 measures in-run pressure; PERSIST-01 owns object deletion.
   Evidence: original max_crypto storage-capacity section and current QKB/progress.
+  Latest max-profile evidence (2026-11-03): physical API 3.0.5 Security and
+  Crypto sweeps completed on identified boards; the result sets matched VPCD.
+  Crypto runner cleanup reported reader loss on both boards, and the test
+  package remained listed on 2BED. Two targeted GPPro DELETE attempts timed
+  out after sending DELETE; reflashing restored the reader but preserved the
+  package. This leaves repeated install/run/uninstall acceptance open; see
+  `.agent/QKB.md` and `.agent/HANDOFF.md` for exact board IDs and artifacts.
 
 ### PERSIST-01
 

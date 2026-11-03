@@ -1,4 +1,38 @@
-# Current session — API 3.0.5 Security VPCD sweep — 2026-11-03 23:18 CET
+# Current session — current max firmware and physical API sweeps — 2026-11-04 00:14 CET
+
+Rebuilt the current `max_crypto` profile using `./tools/build arm --profile
+max_crypto` and `./tools/build riscv --profile max_crypto`; both passed. ARM
+image ends at `0x100e8820` (96,224 bytes remain). Its freshly built UF2 matches
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` exactly:
+1,905,664 bytes, SHA-256
+`756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`. This
+firmware bundles no CAP/applet. It does not erase installed applets retained in
+the token's persistent store. The updated artifact README provides Windows
+GPPro cleanup commands and records the exact image's physical testing.
+
+Physical testing already completed on the same image hash: ARM cycle and
+finite serial passed on 2BED (`2BED26ED20556535`) and 8E
+(`8E464F4E2BBC0A19`). On 2BED, API 3.0.5 Security completed 901 calls (397 OK,
+504 expected unsupported, no unexpected results). Crypto completed all 466
+calls on both boards (304 OK, 161 expected unsupported, one expected upstream
+SHA-512 PSS `ILLEGAL_VALUE`); both matched VPCD. Test CAP cleanup was not
+reliably confirmed: the Crypto runner reported reader-not-found after the test;
+2BED still listed its test package, and two direct GPPro DELETE attempts timed
+out after sending DELETE. A reflashing cycle restored PC/SC without deleting
+the package. The 8E registry did not list Crypto afterward, but runner cleanup
+still reported reader-not-found. Per-board data/logs and hashes are in
+`.agent/QKB.md` and `artifacts/results/deploy/physical-crypto-*/`.
+
+The external Windows image is ready at
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`. Confirm
+`gp --list` has no `APP:` or `PKG:` rows before installing any CAP; BOOTSEL
+flashing alone never empties the persistent card store. Do not use the stale
+non-current max artifact. Existing unrelated shared-worktree edits remain
+untouched. Next: investigate/reproduce the physical DELETE/CCID timeout under
+HOST-01/STORE-01 without deleting existing user packages; otherwise hand the
+current UF2 and explicit Windows cleanup flow to the user.
+
+# Previous session — API 3.0.5 Security VPCD sweep — 2026-11-03 23:18 CET
 
 ## Full API 3.0.5 Security VPCD sweep — 2026-11-03 23:17 CET
 
