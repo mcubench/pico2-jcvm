@@ -20488,7 +20488,7 @@
 - Validation: `./tools/test-rmi-registry` passed (`owner_id_exhaustion=1`); a first tightened assertion failed because the test had left the expected output sentinel at the prior success value, then passed after resetting the sentinel. `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). PC, ARM and RISC-V max_crypto builds passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-delete-reinstall --timeout 60` passed 9/9. Targeted `git diff --check` passed. USB inventory found two runtime readers and no BOOTSEL; no flash or physical card test.
 - Result: Both backends now share one selection algorithm. The test rejects all 255 occupied IDs, chooses ID 17 when it is the only free ID, rejects allocation when all persistent assignments are cleared but objects still retain each owner, then returns ID 1 after GC. RP2350 metadata exhaustion/reuse and PC/VPCD owner lifecycle regressions pass. Full 255-entry serialized PC VCR2 restore remains untested. ARM firmware end `0x100e75f4`, leaving 100,876 bytes in the 1 MiB firmware window.
 - Decision: Close selection-loop parity and full search-boundary coverage. Keep serialized PC registry exhaustion and remaining GC/reset/persistence acceptance open; hardware work waits for BOOTSEL enumeration.
-- Commit: `pending`
+- Commit: `faeca16`
 - Artifacts/logs: `tools/test-rmi-registry`, `tools/test-rp2350-fs-overlay`, `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T122308Z.log`; no board image was written.
 
 ## 2026-11-02 Run physical read-only persistence probes on two boards 2 minutes
