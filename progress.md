@@ -21397,7 +21397,7 @@
 - Decision: Close RV-01 on the passing 2BED failover validation; track 8E's
   post-flash enumeration issue as a separate board-level item. Continue with
   the next P1 implementation/offline integration proof.
-- Commit: pending (SHA to be recorded in metadata follow-up)
+- Commit: `85eda56` (metadata follow-up records this SHA)
 - Artifacts/logs: `tools/tests/ccid_rx_framing_test.cpp`;
   cycle recovery `artifacts/logs/cycle-choupi-20261103T232334Z.log`;
   8E flash/monitor `artifacts/logs/cycle-choupi-20261103T232841Z.log`;
