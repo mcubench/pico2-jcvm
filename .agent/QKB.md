@@ -17,7 +17,7 @@
   or client) is not established. The helper refresh is a recovery step, not a
   fix; keep long physical sweeps bounded and retain per-board logs.
 - **Isolation follow-up:** The last pending request,
-  `B0752A000307081000` (HMAC/PKCS1_OAEP_SHA3_512/SHA-512), returned `9000`
+  `B0752A000307081000` (HMAC/PKCS1_OAEP_SHA512/SHA-512), returned `9000`
   twice when sent alone to the same board; JCAlgTest status `03` means
   unsupported and is expected. It does not reproduce the disconnect. This
   points to cumulative/time-dependent behavior or transport handling, without
