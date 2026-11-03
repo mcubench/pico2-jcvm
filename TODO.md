@@ -352,7 +352,13 @@ source-based follow-ups, without a new physical reproduction in this review.
 ### API-01
 
 - [ ] **Diagnose cumulative Security/Crypto memory pressure and finish Security.**
-  Status: the 2026-11-01 max_crypto Crypto run completed all 466 rows on 2BED:
+  Status: the current max_crypto source completed the full API 3.0.5 Security
+  area on fresh PC JCVM storage over VPCD on 2026-11-03: all 901 calls finished
+  (397 OK, 504 expected `UNSUPPORTED_PER_SPEC`), and GPPro removed the test CAP.
+  There were no `NO_MEMORY`, `WRONG_RESULT`, `EXC_RUNTIME`, SW, transport, or
+  missing-call results. This emulator run did not reproduce cumulative memory
+  pressure; it does not replace physical acceptance. Older 2026-11-01 max_crypto
+  Crypto results on 2BED were:
   292 OK, 161 unsupported, nine NO_MEMORY, three WRONG_RESULT and one
   EXC_CARDRUNTIME; zero EXC_RUNTIME. Earlier 543 Security / 206 Crypto runtime
   outcomes and isolated null-receiver failures are historical baselines, not
@@ -361,11 +367,13 @@ source-based follow-ups, without a new physical reproduction in this review.
   Cipher returned 50 OK and 15 unsupported without NO_MEMORY, then timed out
   before AEAD. Security on 8E stopped at transient RSA-private-2048 allocation
   with SCARD_E_NOT_TRANSACTED; the reader vanished before cleanup.
-  Remaining: capture the first failing full-sweep APDU and allocator/persistent
-  state; reproduce cumulative pressure versus genuine live-data limits; complete
-  Security and check cleanup/registry after interrupted attempts when accessible.
-  Acceptance: complete current-image sweeps, account for every unexpected result
-  and resource limit, and do not treat filtered timeouts as complete isolation.
+  Remaining: complete the current-image physical Security/Crypto sweeps when a
+  Pico is available; capture APDU and allocator/persistent state if an unexpected
+  failure recurs; check cleanup/registry after interrupted attempts. The VPCD
+  Security sweep is complete, but physical memory behavior remains unverified.
+  Acceptance: complete current-image physical sweeps, account for every
+  unexpected result and resource limit, and do not treat filtered timeouts as
+  complete isolation.
   Dependencies: STORE-01, PERSIST-01; IV rows are owned by API-02.
 
 ### API-02

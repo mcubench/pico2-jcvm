@@ -1,4 +1,24 @@
-# Current session — native Cipher SensitiveResult propagation — 2026-11-03 15:59 UTC
+# Current session — API 3.0.5 Security VPCD sweep — 2026-11-03 23:18 CET
+
+## Full API 3.0.5 Security VPCD sweep — 2026-11-03 23:17 CET
+
+Completed the unchanged `AlgTestApiSecurity_305.cap` on fresh PC JCVM storage
+through `Virtual PCD 00 00`. All 901 calls completed in 3:21:12 (upload at
+19:56:27 CET, cleanup at 23:17:39 CET): 397 `OK`, 504 expected
+`UNSUPPORTED_PER_SPEC`, no unexpected result or resource error. GPPro cleanup
+removed the CAP. The run did not reproduce cumulative memory pressure in the PC
+emulator; API-01 remains open for physical Security/Crypto validation and
+allocator-state capture if hardware failures recur. Large RSA/EC API calls
+occasionally took multiple minutes but did advance. Keep a live `pcsc_scan`
+poller running when starting VPCD; otherwise its TCP endpoint may refuse the
+connection. Full result artifacts and checksums are in `.agent/QKB.md` and
+`progress.md`; raw client log is archived under
+`artifacts/results/deploy/vpcd-full-security-current-max-20261103/`.
+
+Next: continue API-01/03 acceptance with physical devices when enumerated;
+otherwise pick the next offline implementation/verification item from TODO.
+Current authorized reader state was last zero physical readers; refresh the
+host-access reader helper before any hardware test.
 
 ## Full API 3.0.5 Crypto VPCD sweep — 2026-11-03 18:46 UTC
 

@@ -5314,6 +5314,36 @@ original terminology/status; check current summary and later fixes before reuse.
   unchanged CAP SHA-256 is
   `f3dc5edd5b65817c8663ea1018128448052816c1a323c8cc2211027e9f8e4899`.
 
+## Full API 3.0.5 Security VPCD sweep completed on current max source (2026-11-03)
+
+- **Result:** The unchanged `AlgTestApiSecurity_305.cap` completed all 901 calls
+  on a fresh, zero-length PC JCVM storage image through `Virtual PCD 00 00`.
+  Upload at 19:56:27 and cleanup at 23:17:39 CET took 3 hours 21 minutes 12
+  seconds under a finite 14,400-second client deadline. Outcomes: 397 `OK` and
+  504 expected `UNSUPPORTED_PER_SPEC`; no `NO_MEMORY`, `WRONG_RESULT`,
+  `EXC_RUNTIME`, unexpected `EXC_CARDRUNTIME`, SW/transport error, or missing
+  calls. GPPro removed the CAP successfully.
+- **Memory-pressure finding:** The complete Security area did not reproduce
+  cumulative allocation failure on PC VPCD storage, including RSA/CRT and EC
+  key API coverage. This does not settle physical Pico memory behavior; API-01
+  remains open for current-image hardware sweeps and allocator/persistent-state
+  capture if an unexpected result recurs.
+- **Slow-call observation:** Some RSA and EC key operations took multiple
+  minutes per call in the PC emulator. They did eventually complete. This was
+  slow progress, not a transport loss or a confirmed busy-wait loop. The live
+  `pcsc_scan` poller had to remain active to keep `Virtual PCD 00 00` available.
+- **Artifacts:** `artifacts/results/deploy/vpcd-full-security-current-max-20261103/`
+  (`security.csv` SHA-256
+  `7124660ce335ba7bd5034e67a30a45c45e8da1b65030cc36e5fc668b05d5e776`,
+  `runner.log` SHA-256
+  `2fa3c22236d3807419a6f64a9f88536952f35dd949d51cc5b8fed2a45bf313c`,
+  emulator log SHA-256
+  `b08dee107daa35d9eb4d7727db15db433a0acedf09a74f97817577f7b5791a48`,
+  raw client log SHA-256
+  `8b81f0836159f77e44eb3b36d8f897fc488f9aafc952dfabf7c95590d3b4477e`).
+  Unchanged CAP SHA-256:
+  `bf9fb13fa342aa6c7739eb5750897011d25801d1db50ee9a75e7a714d11fef70`.
+
 ## Functionality review probes and local socket restriction — 2026-11-03
 
 - **Current-source findings:** `docs/review_20261103.md` records 28 concrete

@@ -21368,3 +21368,14 @@
 - Decision: Keep all identified defects open and continue the user's requested iterative review for similar problems. Do not enable persistent reclamation or infer physical acceptance from these host tests.
 - Commit: pending review commit; SHA to be recorded in metadata follow-up.
 - Artifacts/logs: `docs/review_20261103.md`; `artifacts/reviews/review_20261103/` logs, probe sources, JSON results and `reviewed-sources.sha256`.
+
+## 2026-11-03 Complete full Security VPCD acceptance sweep 201 minutes
+
+- Step/experiment: `api305-security-vpcd-max-20261103`
+- When: '2026-11-03 19:56:27 CET' - '2026-11-03 23:17:39 CET'
+- Change: Ran the unchanged API 3.0.5 Security CAP through `Virtual PCD 00 00` on fresh PC JCVM storage; archived the raw client log. Updated API-01 to distinguish completed emulator coverage from outstanding physical memory validation, and recorded repeatable VPCD startup requirements and observations in QKB/HANDOFF.
+- Validation: `api_card_runner.py --cap-dir AlgTest_JavaCard/deploy/caps --gp AlgTest_JavaCard/deploy/gp.jar --client AlgTest_JavaCard/deploy/client/AlgTestJClient.jar --api 305 --areas Security --reader-name 'Virtual PCD 00 00' --pcsc-lib /usr/lib/x86_64-linux-gnu/libpcsclite.so.1 --no-scenarios --test-timeout 14400 --gp-timeout 240` completed with exit 0; upload and GPPro cleanup succeeded. Full result: 901 calls, 397 `OK`, 504 `UNSUPPORTED_PER_SPEC`; no unexpected runtime, memory, result, SW, transport, or missing-call errors. A live `pcsc_scan` poller remained active throughout.
+- Result: Full Security API coverage completed on PC VPCD in 3:21:12. Large RSA/EC API calls took multiple minutes but completed. The run did not reproduce cumulative memory pressure on emulator storage; physical behavior remains unverified.
+- Decision: Keep API-01 open for current-image physical Security/Crypto sweeps and allocator-state capture on any future unexpected failure; continue with API-03 when a physical Pico is available.
+- Commit: pending
+- Artifacts/logs: `artifacts/results/deploy/vpcd-full-security-current-max-20261103/security.csv` SHA-256 `7124660ce335ba7bd5034e67a30a45c45e8da1b65030cc36e5fc668b05d5e776`; `security-client-raw.log` SHA-256 `8b81f0836159f77e44eb3b36d8f897fc488f9aafc952dfabf7c95590d3b4477e`; emulator and runner hashes in `.agent/QKB.md`; `AlgTestApiSecurity_305.cap` SHA-256 `bf9fb13fa342aa6c7739eb5750897011d25801d1db50ee9a75e7a714d11fef70`.
