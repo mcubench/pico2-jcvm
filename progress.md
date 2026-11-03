@@ -20809,5 +20809,5 @@
 - Validation: `./tools/test-rmi-registry` passed. No firmware source changed; ARM/RISC-V build and physical validation were not required for this test-only addition.
 - Result: Root return owner tracking and GC filtering have direct regression coverage in addition to the cross-AID VPCD round-trip test.
 - Decision: Commit the focused regression and continue CTX-01 audit.
-- Commit: pending
+- Commit: `fbc7413`
 - Artifacts/logs: test output inspected live; no separate log.
