@@ -21062,5 +21062,5 @@
 - Validation: Inspected `src/ccid_device.cpp` and the official CCID Rev 1.1 fields for `dwFeatures`, supported protocols, PowerOn, and DataBlock. Linux exact-reader checks on both boards passed earlier in this session. No Windows USBPcap or same-run serial trace was available.
 - Result: Descriptor advertises T=1 and short-APDU, with `dwFeatures=0x00020042` comprising automatic ATR parameter configuration, automatic parameter negotiation, and short-APDU exchange; this matches the T=1 ATR and required APDU-level feature bits. PowerOn returns a success DataBlock containing ATR. An unproven risk remains: the default handler responds to unsupported CCID commands with SlotStatus, potentially incorrect for a command such as GetParameters.
 - Decision: Do not change CCID behavior until Windows capture proves which command/response fails. Obtain USBPcap through PowerOn and follow-on command(s), paired with CDC serial, exact board ID, and UF2 hash.
-- Commit: pending.
+- Commit: `103bceb`.
 - Artifacts/logs: no new logs. Sources: USB-IF CCID Rev 1.1 and Microsoft reader-state documentation, linked in `.agent/QKB.md`.
