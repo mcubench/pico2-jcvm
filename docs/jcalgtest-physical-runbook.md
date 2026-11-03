@@ -10,6 +10,12 @@ wrapper builds both architectures before flashing the ARM CHOUPI image.
 Replace the example serials and reader names below with the identities from
 that authorized discovery. Keep per-board results separate.
 
+`tools/run-jcalgtest` defaults to the extracted 1.8.2 client for the 1.8.2 CAP
+examples below. For an upstream 1.8.4 CAP test, select the supplied matching
+client explicitly with
+`--client-jar AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar` on the
+test command.
+
 ```sh
 # One-time: extract the official JCAlgTest 1.8.2 client (archive already downloaded).
 mkdir -p build/algtest-client-1.8.2

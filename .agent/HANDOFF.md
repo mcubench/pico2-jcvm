@@ -1,3 +1,25 @@
+## Current session — selectable JCAlgTest client and 1.8.4 recheck — 2026-11-03
+
+`tools/run-jcalgtest` now accepts `--client-jar PATH` (repo-relative or
+absolute); its default remains the extracted 1.8.2 client. The physical runbook
+documents selecting `AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar`
+for the unchanged 1.8.4 CAP.
+
+Rechecked Pico 2 `2BED26ED20556535` with that exact 1.8.4 client and CAP. The
+reader was listed at PC/SC index 3; SELECT succeeded, but applet GETVERSION
+returned `FF05`. BASIC was stopped after 3,275 result rows, all labeled
+`NullPointerException`. The finite monitor still passed the firmware runtime
+check. The cleanup path uninstalled 1.8.4 and reinstalled unchanged 1.8.2;
+GPPro lists the applet, but a subsequent SELECT/GETVERSION probe still gets
+`FF05`. Treat the card as not verified restored, despite package inventory.
+No firmware was flashed. Logs and hashes are in the 2026-11-03 progress entry
+and `.agent/QKB.md`.
+
+Next investigate the GETVERSION/uncaught-ISOException path on this card before
+running another long support sweep. The earlier 2026-11-02 full matching-client
+runs remain valid for their recorded board state. Preserve all unrelated
+worktree changes.
+
 ## Current session — matching JCAlgTest 1.8.4 client runs — 2026-11-02 21:08–23:41 UTC
 
 Used `AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar` with the unchanged upstream 1.8.4 CAP. Runs on 8E and 2BED are recorded with hashes and row counts in the matching 2026-11-02 `progress.md` entry. Extended support on 8E ended with `SCARD_E_NOT_TRANSACTED` after 7,875 result rows and the reader disappeared; root cause is unknown. On 2BED, extended reached 5,836 rows in its 3,600-second bound, BASIC reached 1,421 rows in its 900-second bound, and static performance reached 170 timing values in its 900-second bound. No transport errors occurred on 2BED. The matching jar’s help/banner says 1.8.4, but generated CSV metadata says client 1.8.3; applet metadata correctly says 1.8.4.

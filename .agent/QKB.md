@@ -1,5 +1,34 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Fresh JCAlgTest install returned `FF05` on 2BED — 2026-11-03
+
+- **Symptom:** On Pico 2 `2BED26ED20556535`, the supplied client
+  `AlgTestJClient_v1.8.4.jar` (SHA-256
+  `fb655aef78843da9022b2efa58b241e347013be28772edf524b1454320732025`) ran
+  against unchanged upstream `AlgTest_v1.8.4_jc305.cap` (SHA-256
+  `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`).
+  SELECT returned `9000`, but GETVERSION returned `FF05`; all 3,275 support
+  rows collected before stopping reported `NullPointerException`. Reinstalling
+  the unchanged 1.8.2 CAP did not restore GETVERSION: SELECT still returned
+  `9000`, GETVERSION still returned `FF05`, and GPPro listed the applet
+  selectable.
+- **State:** The finite serial monitor continued to report
+  `TEST:SUMMARY pass=1 fail=0`; no firmware was flashed. The exact runtime
+  cause is unresolved. The cleanup trap printed failure because the terminated
+  client propagated exit 143, although it did reinstall 1.8.2 and GPPro listed
+  the applet; do not call the card restored until GETVERSION succeeds.
+- **Next diagnostic:** Reproduce GETVERSION with serial capture and inspect the
+  uncaught Java exception/APDU path before another long support sweep. Preserve
+  the current 1.8.2 installation and use another identified reader if one
+  becomes available. Do not classify `NO_SUCH_ALGORITHM` as a defect.
+- **Artifacts:** CSV SHA-256
+  `b7ffdc9de78ae9bb7780a8b61b57e69a77b4eb17a884d97ffd224cd55f439b08`; client
+  log SHA-256
+  `faffffffd7096810ab51b06205d5455baea3c627d446b9940ec6b433dd1a61c2`;
+  restore/probe logs and monitor trace are recorded in the 2026-11-03
+  progress entry.
+
+
 ## Long JCAlgTest 1.8.4 runs can lose a physical PC/SC reader — 2026-11-02
 
 - **Symptom:** On Pico 2 `8E464F4E2BBC0A19`, the matching 1.8.4 client’s `ALG_SUPPORT_EXTENDED` run ended with `SCARD_E_NOT_TRANSACTED` after 7,881 successful responses, and that reader disappeared from PC/SC. A second physical reader `2BED26ED20556535` continued responding to bounded 1.8.4 support and static-performance runs.
