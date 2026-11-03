@@ -417,8 +417,11 @@ Archive text is historical evidence, not current device state or priorities.
   caller's foreign applet and service's local applet both use compact handle
   `0002`, with package owners 58 and 57, and compare unequal. A PC-only opt-in
   trace asserts that the integration test actually exercises this collision.
-  Remaining: stale-owner lifecycle tests and audit all paths that can consume
-  or retain a foreign value. See `.agent/QKB.md`.
+  A VPCD GP DELETE/reinstall regression now confirms that cached proxies for
+  the deleted server are invalidated across client contexts: the old proxy
+  fails closed after reinstall under the same AID, while a fresh lookup works.
+  Remaining: additional stale-owner lifecycle cases and audit all paths that
+  can consume or retain a foreign value. See `.agent/QKB.md`.
   No types are inferred from raw values. The
   descriptor-free VPCD fixture passes 18/18; the Descriptor-present regression
   also passes 18/18 through the existing signature path. Physical typed
@@ -492,6 +495,12 @@ Archive text is historical evidence, not current device state or priorities.
   (`6A0A9000`), fresh-lookup denial (`6A049000`), and fixture cleanup. See
   `.agent/QKB.md` and the 2026-11-03 progress record. Other CTX-01 lifecycle,
   GC-root, multi-package, and channel-policy acceptance remains open.
+  Same-AID reinstall coverage is now included: the VPCD test reselects ISD,
+  opens a fresh SCP03 channel, reinstalls the deleted service applet, confirms
+  it is selectable, verifies the old client proxy remains blocked, and checks
+  a fresh lookup. This caught and fixed proxy-route invalidation that previously
+  only ran in the deleted server's own cached Context. PC, ARM and RISC-V builds
+  pass; VPCD summary is 25/25. Physical same-AID reinstall remains unverified.
   A new test-only SIO method passes a caller-owned byte array into native
   `Util.arrayCopyNonAtomic`. Generated JNI dispatch rejects the foreign owner
   before resolving the compact handle in the service heap; the applet catches

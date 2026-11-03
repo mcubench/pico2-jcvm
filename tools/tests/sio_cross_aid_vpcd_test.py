@@ -479,7 +479,73 @@ def main() -> int:
                     "expected no Shareable service 6A049000"
                 )
             print("TEST:PASS fresh lookup returns no service after DELETE")
-            print("TEST:SUMMARY pass=20 fail=0")
+            response = vpcd.exchange(connection, bytes.fromhex("00A4040000"),
+                                     "SELECT ISD before reinstall")
+            if response[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    f"SELECT ISD before reinstall {response.hex().upper()}"
+                )
+            reinstall_scp = vpcd.Scp03(connection)
+            reinstall_scp.authenticate()
+            reinstall_data = (
+                vpcd.lv(SERVICE_PACKAGE) + vpcd.lv(SERVICE_APPLET) +
+                vpcd.lv(SERVICE_APPLET) + bytes.fromhex("03000000") +
+                b"\x00\x00"
+            )
+            reinstall_response = reinstall_scp.command(
+                0xE6, 0x0C, 0x00, reinstall_data,
+                "reinstall service applet with same AID",
+                expected_statuses=(0x9000,)
+            )
+            if reinstall_response != bytes.fromhex("9000"):
+                raise RuntimeError(
+                    f"same-AID reinstall returned "
+                    f"{reinstall_response.hex().upper()}, expected 9000"
+                )
+            print("TEST:PASS reinstalled deleted service applet with same AID")
+            select_service = (
+                bytes((0x00, 0xA4, 0x04, 0x00, len(SERVICE_APPLET))) +
+                SERVICE_APPLET
+            )
+            response = vpcd.exchange(
+                connection, select_service,
+                "select service after same-AID reinstall"
+            )
+            if response[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    f"service SELECT after reinstall {response.hex().upper()}"
+                )
+            print("TEST:PASS reinstalled service applet is directly selectable")
+            response = vpcd.exchange(
+                connection, select_client,
+                "reselect client after same-AID service reinstall"
+            )
+            if response[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    f"client reselect after service reinstall "
+                    f"{response.hex().upper()}"
+                )
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8016000000"),
+                "reject old proxy after same-AID service reinstall"
+            )
+            if response != bytes.fromhex("6A0A9000"):
+                raise RuntimeError(
+                    f"old proxy after same-AID reinstall "
+                    f"{response.hex().upper()}, expected 6A0A9000"
+                )
+            print("TEST:PASS old proxy remains blocked after same-AID reinstall")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8010000000"),
+                "fresh lookup after same-AID service reinstall"
+            )
+            if response != bytes.fromhex("45679000"):
+                raise RuntimeError(
+                    f"fresh lookup after same-AID reinstall "
+                    f"{response.hex().upper()}, expected 45679000"
+                )
+            print("TEST:PASS fresh proxy dispatch works after same-AID reinstall")
+            print("TEST:SUMMARY pass=25 fail=0")
             return 0
         finally:
             if connection is not None:

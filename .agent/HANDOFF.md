@@ -1,3 +1,25 @@
+# Current session — invalidate stale SIO proxies across DELETE/reinstall — 2026-11-03 13:40 UTC
+
+Fixed a real stale-owner lifecycle defect. `Context::forgetAppletInstance()`
+now invalidates proxy routes matching the deleted server AID in every cached
+applet instance, including client contexts that do not own the server. The
+cross-AID VPCD regression now sends GP INSTALL from the ISD on a fresh SCP03
+channel, verifies the reinstalled service is selectable, confirms its old
+proxy fails closed (`6A0A9000`), and confirms a fresh lookup succeeds
+(`45679000`). Summary: `TEST:SUMMARY pass=25 fail=0`.
+
+Validation passed: `./tools/build-pc`, `./tools/build arm`,
+`./tools/build riscv`, and the elevated loopback-only
+`SIO_CROSS_AID_REUSE_FIXTURE=1 python3 tools/tests/sio_cross_aid_vpcd_test.py`.
+No physical token was used. A first failing run sent INSTALL while the client
+applet was selected; VPCD correctly routed it to the client, which returned
+`6A04 9000`. The test now selects ISD and reauthenticates SCP03 before INSTALL.
+Next: continue auditing foreign-reference consumers and other stale-owner
+lifecycle cases; separately the Windows `certutil -scinfo` MUTE report still
+needs a paired USBPcap and Pico serial trace. Preserve existing uncommitted
+user changes, especially `src/cap_load.cpp`, `choupi/src/heap.*`, and the
+physical JCSystem probe files.
+
 # Current session — prove SIO equal-handle owner collision — 2026-11-03 13:20 UTC
 
 Closed CTX-01's deterministic equal-compact-handle integration gap. Added

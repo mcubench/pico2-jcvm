@@ -118,6 +118,23 @@ bool Context::forgetAppletInstance(const uint8_t *aid,
   if (aid == nullptr || aid_length < 5 || aid_length > 16) return false;
   auto deleted_aid = std::array<uint8_t, 16>{};
   std::copy_n(aid, aid_length, deleted_aid.begin());
+  // A client context can cache a proxy for an applet in a different package,
+  // so it may not contain an AppletInstanceState whose AID matches the deleted
+  // server. Invalidate those routes independently of whether this Context
+  // owns the deleted applet. Otherwise reinstalling the same AID can reuse the
+  // old owner/handle pair and make a stale proxy alias the new instance.
+  bool changed = false;
+  for (auto &instance : this->applet_instances) {
+    for (auto &proxy : instance.shareable_proxies) {
+      if (proxy.server_aid_length == aid_length &&
+          std::equal(deleted_aid.begin(),
+                     deleted_aid.begin() + aid_length,
+                     proxy.server_aid.begin())) {
+        proxy = ShareableProxyEntry{};
+        changed = true;
+      }
+    }
+  }
   for (auto &instance : this->applet_instances) {
     if (instance.aid_length != aid_length ||
         !std::equal(aid, aid + aid_length, instance.aid.begin())) {
@@ -136,19 +153,10 @@ bool Context::forgetAppletInstance(const uint8_t *aid,
     instance.shareable_proxies = {};
     instance.shareable_object_roots.fill(jref_t{});
     instance.next_remote_object_id = 1;
-    for (auto &sibling : this->applet_instances) {
-      for (auto &proxy : sibling.shareable_proxies) {
-        if (proxy.server_aid_length == aid_length &&
-            std::equal(deleted_aid.begin(),
-                       deleted_aid.begin() + aid_length,
-                       proxy.server_aid.begin())) {
-          proxy = ShareableProxyEntry{};
-        }
-      }
-    }
+    changed = true;
     return true;
   }
-  return false;
+  return changed;
 }
 
 void Context::pruneForgottenAppletInstances() noexcept {

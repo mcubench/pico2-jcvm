@@ -21020,3 +21020,14 @@
 - Decision: Close deterministic equal-handle collision coverage in CTX-01. Continue stale-owner lifecycle and all reference-consumer audits.
 - Commit: pending
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T131843Z.log` SHA-256 `036b857c46f57bd0170880d63379b2ba7175f302ab7e24b9c39b3c877a8c2dd2`; build outputs `build/arm/pico2_choupi.uf2` (end `0x100d0804`, 194,556 bytes remain), `build/riscv` VM-core build and `build/choupi-pc/choupi`.
+
+## 2026-11-03 Fix stale SIO proxy after same-AID reinstall 20 minutes
+
+- Step/experiment: `ctx01-delete-reinstall-stale-proxy-vpcd-20261103`
+- When: '2026-11-03 13:20 UTC' - '2026-11-03 13:40 UTC'
+- Change: `Context::forgetAppletInstance()` now clears proxy routes for the deleted server AID across all cached applet instances, including client contexts that do not contain the server applet. Extended the VPCD cross-AID scenario to SELECT ISD and authenticate a fresh SCP03 channel before GP INSTALL, then verify direct server selection, rejection of the stale proxy, and successful fresh lookup.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. `SIO_CROSS_AID_REUSE_FIXTURE=1 python3 tools/tests/sio_cross_aid_vpcd_test.py` passed with `TEST:SUMMARY pass=25 fail=0`. The test's converter emitted its existing int-support warning but completed with zero conversion errors. `git -c core.whitespace=cr-at-eol diff --check -- choupi/src/context.cpp tools/tests/sio_cross_aid_vpcd_test.py` passed. No hardware test or flash was performed.
+- Result: Before the fix, after deleting and reinstalling a service applet under the same AID, its retained client proxy dispatched into the new service (`45679000`). After invalidating cross-context proxy routes, the old proxy fails closed (`6A0A9000`) and a fresh lookup dispatches successfully (`45679000`). An initial test attempt sent INSTALL while the client applet remained selected; VPCD correctly routed it to the applet and returned the applet's `6A04` result. The test now uses ISD selection and reauthentication.
+- Decision: Close this VPCD stale-proxy same-AID reinstall case. Physical same-AID reinstall, remaining foreign-reference consumers, GC roots, and other CTX-01 lifecycle cases remain open.
+- Commit: pending.
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T133845Z.log`, SHA-256 `bc29a6ec386cbdc7b4ce6ed88b729975152b79dc41aafa37d3c309dca2d76fb3`.

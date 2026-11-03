@@ -1,5 +1,28 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Same-AID applet reinstall could revive a stale SIO proxy — 2026-11-03
+
+- **Observation:** The cross-AID VPCD fixture retained a client proxy, deleted
+  the service applet, and reinstalled it with the same AID. Before the fix, the
+  old proxy dispatched successfully to the new service (`45679000`). The
+  service's owner/compact-handle pair could be reused, so server-AID equality
+  alone was not enough to establish proxy freshness.
+- **Cause:** `Context::forgetAppletInstance()` removed matching Shareable proxy
+  routes only after finding the deleted applet among that Context's own applet
+  instances. A client Context caching a proxy for a server in another package
+  did not contain the server instance and retained the old route.
+- **Viable fix:** Invalidate matching server-AID proxy routes across every
+  cached applet instance in each Context before searching for a locally owned
+  instance to forget. DELETE cleanup already visits selected and inactive
+  Contexts, so this closes stale routes without coupling client and server
+  package ownership.
+- **Validation:** Rebuilt PC, ARM, and RISC-V; VPCD cross-AID suite passed
+  25/25, including direct server SELECT after reinstall, stale proxy rejection
+  (`6A0A9000`), and successful fresh proxy lookup (`45679000`). The test must
+  SELECT ISD and authenticate a new SCP03 channel before GP INSTALL; sending
+  INSTALL while the client applet is selected routes the command to the applet
+  and is a test setup error. Physical same-AID reinstall is still unverified.
+
 ## JCAlgTest 1.8.4 static performance completes with six unmeasurable cases — 2026-11-03
 
 - **Observation:** The supplied upstream 1.8.4 client completed
