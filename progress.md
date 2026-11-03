@@ -20833,5 +20833,5 @@
 - Validation: Rebuilt fixture CAPs through `./tools/build-sio-cross-aid-fixture` as part of `./tools/env python3 tools/tests/sio_cross_aid_vpcd_test.py`; VPCD passed 18/18 without Descriptor and 18/18 with Descriptor. The 2-argument path, global Object[] virtual-call denial, caller-owned array return, and null/identity behavior passed. No firmware source changed, so ARM/RISC-V build and hardware flash were not repeated; physical reader helper had already found zero Pico devices.
 - Result: The earlier `6F00` / suspicious second local `0x005A` observation did not reproduce with the regenerated CAPs and distinct method token. Its original cause remains unknown; no multi-reference runtime defect is established.
 - Decision: Keep the multi-reference regression and treat the earlier failure as nonreproducing. Continue the CTX-01 owner/lifecycle audit.
-- Commit: `pending; SHA added in follow-up metadata commit`
+- Commit: `dc8769e`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T043825Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261103T044006Z.log`.
