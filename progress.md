@@ -21324,3 +21324,14 @@
 - Decision: Use the newly dated artifact for external validation. The exact image is build-validated but not hardware-runtime-validated; it was generated from the shared worktree containing uncommitted local source changes.
 - Commit: `8751e26`
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-20261103-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
+
+## 2026-11-03 Clarify empty-card max firmware delivery 2 minutes
+
+- Step/experiment: `max-crypto-empty-card-windows-delivery-20261103`
+- When: '2026-11-03 16:50 UTC' - '2026-11-03 16:52 UTC'
+- Change: Added an explicitly named empty-card alias of the current max ARM image and updated its README with Windows GPPro cleanup and verification steps. Recorded the standing preference to provide Windows test firmware without a bundled applet and to include cleanup before CAP installation.
+- Validation: `sha256sum` confirms `build/arm/pico2_choupi.uf2` and the new `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2` match (`756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`). No rebuild or physical card operation was needed. Reviewed the deletion/list-verification flow against `docs/windows-asymm-symm-test.md` and `docs/symm-crypto-windows-test.md`.
+- Result: Current max firmware bundles no applet. Because firmware flashing preserves the token's separate CAP store, the runbook now requires GPPro deletion and a zero-APP/PKG list before loading JCAlgTest to establish a clean card state.
+- Decision: Use the explicitly named empty-card current UF2 for Windows tests; never imply BOOTSEL alone clears previously installed CAPs.
+- Commit: pending
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`; updated `artifacts/firmware/README-max_crypto-current-20261103.txt` and `.agent/HANDOFF.md`.
