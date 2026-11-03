@@ -20775,3 +20775,15 @@
 - Decision: Commit the exception contract fix and test. Continue CTX-01 with a complete audit of reference-consuming operations and owner-aware lifecycle.
 - Commit: `a8258a3`
 - Artifacts/logs: VPCD and RMI logs at `artifacts/logs/host-vpcd-multipackage-*` and `artifacts/logs/rmi-client-official-vpcd-client-20261103T033058Z.log`; physical monitor was inspected directly and not archived.
+
+
+## 2026-11-03 Require typed local receivers at method dispatch 16 minutes
+
+- Step/experiment: `ctx-01-typed-invoke-receiver-firewall-20261103`
+- When: '2026-11-03 03:43 UTC' - '2026-11-03 03:59 UTC'
+- Change: Added `Stack::get_Pushed_Reference()` to reject stack operands not tagged as references and references owned by another applet package. `invokevirtual`, `invokespecial`, `invokeinterface`, and the intercepted Shareable lookup client-AID operand now use the checked accessor. The generic raw-word accessor remains for type-validated argument decoding. Added registry regressions for primitive and foreign-owner receiver rejection.
+- Validation: `./tools/test-rmi-registry` passed. `./tools/build arm` and `./tools/build riscv` passed. Escalated `PICO2_HOST_USB_ACCESS=1 ./tools/test-vpcd-multipackage` passed 47/47; `PICO2_HOST_USB_ACCESS=1 ./tools/test-rmi-client-vpcd` passed 18/18. ARM firmware ends at `0x100d050c`, leaving 195,316 bytes of the 1 MiB firmware window. Attempted escalated `PICO2_HOST_USB_ACCESS=1 ./tools/flash --serial 2BED26ED20556535 build/arm/pico2_choupi.uf2`; picotool again lacked the composite reset interface, CDC 1200-baud reset was requested, then `sudo -n /usr/local/sbin/pico2-pcsc-reader` found zero devices and escalated `lsusb -d 2e8a:` also found none. Physical flash/monitor validation is incomplete.
+- Result: Cross-package invocations and RMI behavior still pass on VPCD; malformed primitive and foreign-owner receiver references fail closed. Physical hardware identity and state became unavailable during reset; cause unknown.
+- Decision: Commit the locally validated typed-reference boundary. Continue CTX-01 offline, then flash and capture finite serial output when a physical board is again enumerated.
+- Commit: pending
+- Artifacts/logs: VPCD APDU/restart/reject logs `artifacts/logs/host-vpcd-multipackage-*20261103T035537Z.log`; RMI client log `artifacts/logs/rmi-client-official-vpcd-client-20261103T035809Z.log`; no physical log was captured.

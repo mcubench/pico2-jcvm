@@ -227,6 +227,8 @@ public:
   // This accessor can reject a foreign reference with SecurityException even
   // when optional stack bounds checks are disabled.
   jref_t get_Pushed_Element(uint16_t n);
+  /// Read a reference operand, rejecting non-reference and foreign-owner words.
+  jref_t get_Pushed_Reference(uint16_t n);
   void set_Pushed_Element(
       uint16_t n, jref_t value,
       uint8_t owner = kCurrentReferenceOwner)

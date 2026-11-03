@@ -425,6 +425,15 @@ jref_t Stack::get_Pushed_Element(uint16_t n)
   return jref_t(*value);
 }
 
+jref_t Stack::get_Pushed_Reference(const uint16_t n) {
+  const ReferenceValue value = this->get_Pushed_ReferenceValue(n);
+  if (value.owner != kCurrentReferenceOwner &&
+      value.owner != kGlobalReferenceOwner) {
+    throw Exceptions::SecurityException;
+  }
+  return value.reference;
+}
+
 void Stack::set_Pushed_Element(const uint16_t n, const jref_t value,
                                const uint8_t owner)
 #if !defined(JCRE_STACK_OVERFLOW_PROTECTION) && !defined(JCVM_ARRAY_SIZE_CHECK)

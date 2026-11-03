@@ -4659,3 +4659,26 @@ original terminology/status; check current summary and later fixes before reuse.
   `TEST:SUMMARY pass=1 fail=0`, with no `TEST:FAIL` or `FAULT`.
 - **Remaining:** This closes one exception-contract hole; continue auditing every
   reference consumer and foreign-owner lifecycle path under CTX-01.
+
+
+## Invoke receivers must be typed references before heap lookup — 2026-11-03
+
+- **Finding:** `invokevirtual` and `invokeinterface` read the receiver with the
+  generic `get_Pushed_Element()` accessor. It checks provenance only if the
+  operand is tagged Reference; a malformed/type-confused primitive operand
+  could be wrapped as a compact handle and reach proxy/heap lookup.
+- **Fix and regression:** Added `Stack::get_Pushed_Reference()`, which requires
+  the Reference value tag and a current/global owner. Instance method dispatch
+  and the intercepted SIO lookup client-AID read now use it. The registry test
+  verifies primitive and foreign-owner words both throw catchable
+  `SecurityException`. Generic raw-word reads remain in signature-checked
+  Shareable argument decoding.
+- **Validation:** `./tools/test-rmi-registry`, ARM and RISC-V wrapper builds,
+  VPCD multipackage (47/47), and VPCD RMI client (18/18) passed. Firmware
+  ends at `0x100d050c`, leaving 195,316 bytes in the 1 MiB firmware window.
+  Physical flash/runtime validation was attempted on 2BED but not completed: the
+  composite reset interface was unavailable, CDC reset was requested, then the
+  authorized reader helper found zero Pico devices and `lsusb` found no RP USB
+  device. Do not infer whether this was host passthrough or board removal.
+- **Remaining:** Reflash and capture finite serial output when an identified
+  board is enumerated. Continue auditing every reference-consuming operation.

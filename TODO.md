@@ -328,7 +328,11 @@ Archive text is historical evidence, not current device state or priorities.
   `Stack::get_Pushed_Element()` now remains potentially throwing when optional
   bounds checks are disabled, preserving catchable `SecurityException`; a
   compile-time no-checks contract test guards the exception specification.
-  Continue auditing every reference consumer and foreign-owner lifecycle path.
+  Dispatch now reads virtual/interface receivers through a typed accessor that
+  rejects primitive and foreign-owner words before treating them as handles;
+  the existing raw-word accessor remains for signature-checked argument
+  marshalling. The registry test covers both rejection cases. Continue auditing
+  every reference consumer and foreign-owner lifecycle path.
   Keep foreign references out of persistent state and applet-local arrays; global
   Object[] storage is covered by per-slot owner metadata but needs the remaining
   lifecycle acceptance above. Java Card RE 3.0.5 permits parameters to

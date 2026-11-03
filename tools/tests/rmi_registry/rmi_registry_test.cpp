@@ -591,6 +591,14 @@ void verify_shareable_cross_context_arguments() {
           error == jcvm::Exceptions::SecurityException;
     }
     assert(unqualified_stack_read_rejected);
+    bool typed_stack_read_rejected = false;
+    try {
+      (void)reference_provenance_stack.get_Pushed_Reference(1);
+    } catch (jcvm::Exceptions error) {
+      typed_stack_read_rejected =
+          error == jcvm::Exceptions::SecurityException;
+    }
+    assert(typed_stack_read_rejected);
     bool unqualified_pop_rejected = false;
     try {
       (void)reference_provenance_stack.pop_Reference();
@@ -601,6 +609,16 @@ void verify_shareable_cross_context_arguments() {
     assert(unqualified_pop_rejected);
     assert(reference_provenance_stack.pop_ReferenceFromPackage(17) ==
            foreign_reference);
+    reference_provenance_stack.push_Short(0x1234);
+    bool primitive_receiver_rejected = false;
+    try {
+      (void)reference_provenance_stack.get_Pushed_Reference(1);
+    } catch (jcvm::Exceptions error) {
+      primitive_receiver_rejected =
+          error == jcvm::Exceptions::SecurityException;
+    }
+    assert(primitive_receiver_rejected);
+    assert(reference_provenance_stack.pop_Short() == 0x1234);
     reference_provenance_stack.push_Reference(foreign_reference, 17);
     reference_provenance_stack.dup(1, 0);
     assert(reference_provenance_stack.get_Pushed_ReferenceOwner(1) == 17);

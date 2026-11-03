@@ -315,7 +315,7 @@ void Bytecodes::bc_invokevirtual() {
       static_cast<uint32_t>(caller_frame.getTOS() - caller_frame.getOP())) {
     throw Exceptions::StackUnderflowException;
   }
-  const jref_t receiver = stack.get_Pushed_Element(nargs);
+  const jref_t receiver = stack.get_Pushed_Reference(nargs);
   if (receiver.isNullPointer()) {
     const auto &frame = stack.getCurrentFrame();
     const auto *method_component =
@@ -574,7 +574,7 @@ void Bytecodes::bc_invokespecial() {
   // The receiver is the nargs-th word from the top, before the call consumes
   // the receiver and arguments. Checking local 0 after the call is incorrect:
   // the current frame is then the caller, whose local 0 need not be a reference.
-  const jref_t receiver = stack.get_Pushed_Element(nargs);
+  const jref_t receiver = stack.get_Pushed_Reference(nargs);
   if (receiver.isNullPointer()) {
     throw Exceptions::NullPointerException;
   }
@@ -782,7 +782,8 @@ void Bytecodes::bc_invokestatic() {
         expected_arguments) {
       throw Exceptions::SecurityException;
     }
-    const jref_t client_aid = stack.get_Pushed_Element(expected_arguments);
+    const jref_t client_aid =
+        stack.get_Pushed_Reference(expected_arguments);
     const int8_t parameter = static_cast<int8_t>(stack.pop_Byte());
     (void)stack.pop_Reference();
     stack.push_Reference(choupi_vm_get_applet_shareable_interface_object(
@@ -909,7 +910,7 @@ void Bytecodes::bc_invokeinterface() {
   }
 
   // nargs-th arguments should be popped to access the objectref.
-  jref_t objectref = stack.get_Pushed_Element(nargs);
+  jref_t objectref = stack.get_Pushed_Reference(nargs);
 
   if (objectref.isNullPointer()) {
     const auto &frame = stack.getCurrentFrame();

@@ -1,3 +1,29 @@
+## Current session — type-check reference receivers before dispatch — 2026-11-03 03:59 UTC
+
+Extended CTX-01 after auditing invoke receiver reads. The generic stack accessor
+returns raw words and only performs the owner check when the runtime word is
+already tagged Reference. Added `Stack::get_Pushed_Reference()`, requiring both
+a Reference tag and current/global ownership, and used it for virtual/special/
+interface receiver dispatch plus the intercepted Shareable lookup client AID.
+The raw accessor remains in argument decoding where the signature or runtime
+kind tags establish the expected type. Regression tests verify primitive and
+foreign-owner receiver words both raise catchable `SecurityException`.
+
+Validation passed: `./tools/test-rmi-registry`; `./tools/build arm`;
+`./tools/build riscv`; escalated VPCD multipackage 47/47; and escalated VPCD
+RMI client 18/18. Firmware size ends at `0x100d050c`, leaving 195,316 bytes; UF2 SHA-256 is `3afb79ed6922bb7611bce5c4555ea9572ef64001de0f675aa6ebf130eebb644e`.
+Physical validation did not complete. The flash wrapper could not access the
+composite reset interface and requested CDC BOOTSEL; afterward the authorized
+reader helper found zero Pico readers and `lsusb -d 2e8a:` returned no device.
+The VM cannot currently identify a physical target, so this change is not
+physically verified. The exact v1.8.4 JCAlgTest client remains
+`AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar`; its full BASIC run
+on 2BED was already completed and recorded earlier in this handoff.
+
+Next: continue CTX-01 audit offline. When a Pico is again visible, identify it,
+flash the current ARM image, and inspect finite serial output before claiming
+physical acceptance. Preserve unrelated worktree changes.
+
 ## Current session — preserve catchable foreign-reference rejection — 2026-11-03 03:43 UTC
 
 `Stack::get_Pushed_Element()` checks owner metadata and throws
