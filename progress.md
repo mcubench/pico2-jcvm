@@ -20565,7 +20565,7 @@
 - Validation: After authorized helper refresh and `pcsc_scan -r`, readers `8E464F4E2BBC0A19` and `2BED26ED20556535` each passed `PICO2_HOST_USB_ACCESS=1 ./tools/test-pico-powerup '<exact reader>'`. Both showed JCAlgTest package/applet, ATR `3B800181`, SELECT `9000`, GETVERSION `1.8.2_jc305`, and JCSystem info `9000`.
 - Result: SELECT/GETVERSION/JCSystem timings were 75/59/129 ms on 8E and 47/73/121 ms on 2BED. Existing package inventories differ between devices. The probe did not verify firmware hash or remove USB power, so PERSIST-02 cold-power acceptance remains open.
 - Decision: Both current runtime cards are reachable and the JCAlgTest read path works; use their exact reader identities for later physical acceptance. Keep BOOTSEL/flash tasks gated on actual enumeration.
-- Commit: `pending`
+- Commit: `9ce59e9`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261102T122841Z.log`, `artifacts/logs/pico-powerup-persistence-20261102T122908Z.log`.
 
 ## 2026-11-02 Flash max_crypto and close Signature IV physical retest 10 minutes
@@ -21217,3 +21217,18 @@
 - Commit: `pending`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T162028Z.log`;
   no hardware log.
+
+## 2026-11-03 Record Signature fix commit metadata 1 minute
+
+- Step/experiment: `ctx02-signature-sensitive-result-metadata-20261103`
+- When: '2026-11-03 16:26 UTC' - '2026-11-03 16:27 UTC'
+- Change: Replaced the pending commit reference for the completed Signature
+  SensitiveResult step with its implementation commit SHA in this log and the
+  session handoff.
+- Validation: Confirmed commit `9ce59e9` contains the Signature implementation,
+  interpreted fixture, TODO, QKB, handoff, and original progress record. No
+  runtime code changed in this metadata follow-up.
+- Result: Implementation commit is recorded as `9ce59e9`.
+- Decision: Continue the CTX-02 audit.
+- Commit: metadata-only follow-up
+- Artifacts/logs: none.

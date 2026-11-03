@@ -12,7 +12,7 @@ the cross-AID loopback suite passed `TEST:SUMMARY pass=32 fail=0` in
 `artifacts/logs/sio-cross-aid-vpcd-20261103T162028Z.log`. No physical Pico
 reader was attached, so hardware validation remains outstanding. A first
 2-byte AES MAC NOPAD input was invalid; block-aligned 16-byte input passes.
-Commit is pending. Next CTX-02 targets include PIN, random-data, checksum,
+Implementation commit: `9ce59e9`. Next CTX-02 targets include PIN, random-data, checksum,
 AEAD/key APIs, object-result GC rooting, then physical validation.
 
 Follow-up: extended the native SensitiveResult audit to `Cipher.update()` and
