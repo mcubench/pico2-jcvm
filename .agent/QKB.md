@@ -1,5 +1,24 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Recheck Linux behavior after Windows PRESENT | MUTE report — 2026-11-03
+
+- **Observation:** After Windows `certutil -scinfo` reported the reader as
+  `PRESENT | MUTE`, the authorized Linux host path enumerated two physical
+  readers. Read-only probes on Pico 2 `8E464F4E2BBC0A19` and
+  `2BED26ED20556535` both received ATR `3B800181`; JCAlgTest SELECT and
+  GETVERSION `1.8.4_jc305` returned `9000`; JCSystem info also returned
+  `9000`. Each probe completed in under one second after GPPro inventory.
+- **Limit:** The Windows-tested board and UF2 hash were not reported, so this
+  does not prove Windows tested the same physical unit/image or isolate the
+  failure to Windows. No Windows USB transfer trace or correlated serial log
+  is available.
+- **Next:** Keep CCID behavior unchanged until a Windows USBPcap capture and
+  simultaneous Pico serial log identify whether `PC_to_RDR_IccPowerOn` was
+  delivered and whether the `RDR_to_PC_DataBlock` contained ATR `3B800181`.
+- **Evidence:** Exact-reader logs:
+  `artifacts/logs/pico-powerup-persistence-20261103T134305Z.log` (8E) and
+  `artifacts/logs/pico-powerup-persistence-20261103T134321Z.log` (2BED).
+
 ## Same-AID applet reinstall could revive a stale SIO proxy — 2026-11-03
 
 - **Observation:** The cross-AID VPCD fixture retained a client proxy, deleted

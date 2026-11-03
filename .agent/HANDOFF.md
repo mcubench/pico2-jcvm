@@ -1,3 +1,16 @@
+# Current session — cross-check Windows MUTE report on Linux readers — 2026-11-03 13:44 UTC
+
+Refreshed authorized Linux PC/SC access and found Pico 2
+`8E464F4E2BBC0A19` and `2BED26ED20556535`. The read-only power-up probe passed
+on both: ATR `3B800181`, JCAlgTest 1.8.4 SELECT/GETVERSION, and JCSystem info
+all returned `9000`. Logs are
+`artifacts/logs/pico-powerup-persistence-20261103T134305Z.log` and
+`artifacts/logs/pico-powerup-persistence-20261103T134321Z.log`. This is Linux
+evidence only; Windows board identity and flashed UF2 hash are unknown. Continue
+without CCID changes until Windows USBPcap and same-run serial capture show the
+power-on command and ATR response. The same-AID SIO proxy lifecycle fix remains
+committed as `eddf1f4` (progress metadata `328a651`).
+
 # Current session — invalidate stale SIO proxies across DELETE/reinstall — 2026-11-03 13:40 UTC
 
 Fixed a real stale-owner lifecycle defect. `Context::forgetAppletInstance()`
