@@ -20799,3 +20799,15 @@
 - Decision: Commit this SIO return implementation and test. Continue CTX-01 GC/lifecycle and opaque third-party return audit; perform hardware validation when a board is again visible.
 - Commit: `b70fa32`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T041029Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261103T041135Z.log`; first failed diagnostic run `artifacts/logs/sio-cross-aid-vpcd-20261103T040743Z.log`; debug emulator log contains trace output.
+
+
+## 2026-11-03 Cover root-return owner and GC filtering 3 minutes
+
+- Step/experiment: `ctx-01-root-return-owner-gc-unit-regression-20261103`
+- When: '2026-11-03 04:12 UTC' - '2026-11-03 04:15 UTC'
+- Change: Extended `tools/tests/rmi_registry/rmi_registry_test.cpp` to verify root reference return retrieval preserves its owner, foreign package references do not enter the current Context's root set, and current-context root references remain enumerated.
+- Validation: `./tools/test-rmi-registry` passed. No firmware source changed; ARM/RISC-V build and physical validation were not required for this test-only addition.
+- Result: Root return owner tracking and GC filtering have direct regression coverage in addition to the cross-AID VPCD round-trip test.
+- Decision: Commit the focused regression and continue CTX-01 audit.
+- Commit: pending
+- Artifacts/logs: test output inspected live; no separate log.

@@ -992,6 +992,24 @@ int main() {
   assert(contains(lifecycle_roots, root_return));
   assert(contains(lifecycle_roots, static_reference));
 
+  const auto foreign_root_return = make_reference(9);
+  context.getStack().setRootReferenceReturnValue(
+      jcvm::Stack::ReferenceValue{foreign_root_return, 2});
+  jcvm::Stack::ReferenceValue returned_value{};
+  assert(context.getStack().getRootReferenceReturnValue(returned_value));
+  assert(returned_value.reference == foreign_root_return);
+  assert(returned_value.owner == 2);
+  VisitedReferences foreign_return_roots;
+  context.visitRootReferences(record_reference, &foreign_return_roots);
+  assert(!contains(foreign_return_roots, foreign_root_return));
+
+  context.getStack().setRootReferenceReturnValue(
+      jcvm::Stack::ReferenceValue{root_return,
+                                  jcvm::Stack::kCurrentReferenceOwner});
+  VisitedReferences local_return_roots;
+  context.visitRootReferences(record_reference, &local_return_roots);
+  assert(contains(local_return_roots, root_return));
+
   context.getStack().setRootReturnValue(0x1234);
   assert(context.getStack().getRootReturnKind() ==
          jcvm::Stack::ReturnKind::Short);

@@ -4712,3 +4712,15 @@ original terminology/status; check current summary and later fixes before reuse.
   devices. Do not claim physical coverage.
 - **Remaining:** Add return/reference GC pressure and third-party opaque return
   tests; continue comparison/cast and package deletion/lifecycle audit.
+
+
+## Root SIO return must not mark a foreign compact handle in server GC — 2026-11-03
+
+- **Regression:** Added focused `tools/tests/rmi_registry/rmi_registry_test.cpp`
+  coverage for `Stack::ReferenceValue` root returns. It verifies both reference
+  and owner survive the root-result accessor, a package-2 reference is excluded
+  from package-1 Context root visitation, and a current-context root remains
+  enumerated.
+- **Validation:** `./tools/test-rmi-registry` passed. This is unit coverage for
+  the GC filtering used by the cross-AID return path; no firmware build or
+  physical test was needed for the test-only change.

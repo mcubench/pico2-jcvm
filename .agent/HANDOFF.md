@@ -1,3 +1,16 @@
+## Current session — root return owner/GC regression — 2026-11-03 04:15 UTC
+
+Added direct registry-suite coverage for the SIO root return metadata: the
+reference owner survives root-result retrieval, a package-2 handle is not
+enumerated as a root by a package-1 Context, and a current-context root still
+is enumerated. `./tools/test-rmi-registry` passes. This was a test-only step, so
+no ARM/RISC-V rebuild or hardware operation was run. The production change and
+Descriptor-free/Descriptor-included SIO integration results are in the
+preceding handoff section.
+
+Next: continue CTX-01 foreign-reference lifecycle and comparison/cast audit;
+physical validation remains pending until a Pico is enumerated.
+
 ## Current session — preserve private reference returns across SIO — 2026-11-03 04:12 UTC
 
 Fixed cross-context `areturn` provenance. It now pops a `ReferenceValue` rather
