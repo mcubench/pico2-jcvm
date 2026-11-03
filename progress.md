@@ -20998,5 +20998,5 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 JCALGTEST_EXPECTED_VERSION=1.8.4_jc305 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00'` passed. GPPro listed the ISD and three installed applets/packages; ATR was `3B800181`; SELECT, GETVERSION `1.8.4_jc305`, and JCSystem info all returned `9000`. No firmware or card contents were changed by the probe.
 - Result: Existing JCAlgTest 1.8.4 and two additional applets remained available after the firmware flash. This is a warm PC/SC reader check, not a cold-power persistence test.
 - Decision: Preserve the current applet state. Continue CTX-01 persistent foreign-reference support.
-- Commit: `<pending>`
+- Commit: `1ba12a4`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261103T123155Z.log` SHA-256 `54fc6a4c7ffe003d98e80c09d3712d8521263c684f61883487c2d8062ef16232`.
