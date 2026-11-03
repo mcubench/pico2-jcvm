@@ -1,5 +1,34 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Fresh package install clears JCAlgTest GETVERSION FF05 — 2026-11-03
+
+- **Observation:** On Pico 2 `2BED26ED20556535`, the pre-existing JCAlgTest
+  applet selected with `9000` but GETVERSION returned `FF05`; the retained
+  VM trace showed a null `ALGTEST_JAVACARD_VERSION_CURRENT` reference at
+  `arraylength`. The generic VPCD persistent-reference restore suite passes
+  38/38, so it has not reproduced this CAP-specific state.
+- **Viable workaround:** Use GPPro to delete only the applet AID
+  `4A43416C675465737431` and package AID `4A43416C6754657374`, then reinstall
+  the unchanged matching CAP. Fresh install of upstream 1.8.4 produced
+  SELECT `9000`, GETVERSION `1.8.4_jc305`/`9000`, and JCSystem info `9000`.
+  This restores the reported APDU path without firmware flash or card erase.
+- **Limit:** The reason the prior persisted applet had a null field is not
+  established. Keep the APDU/field persistence investigation open, and verify
+  fresh-install state across reset before treating the issue as fixed.
+- **1.8.4 physical run:** The supplied matching client banner says 1.8.4, while
+  its CSV metadata reports 1.8.3. BASIC was bounded at 900 seconds; it returned
+  valid APDUs with no transport error and produced 2,617 partial result rows
+  (148 yes, 2,427 no). It timed out mid-matrix (exit 124), so it is not a
+  complete support run. A post-timeout version/JCSystem probe still passed.
+- **Evidence:** CAP SHA-256
+  `cac42cd3f83e91530f4fd50ae7c3412a2035f076945e3428238f9a84534dbfad`; client
+  SHA-256 `fb655aef78843da9022b2efa58b241e347013be28772edf524b1454320732025`.
+  Partial CSV SHA-256
+  `77a1eadd49efeca49ff7145e399d150a042a883ad95aaae9775a900ff31633ca` and
+  run log SHA-256
+  `7d488e4baa0ec5420e05743051a01a285632d18f1339980d74581ee90f54ed36` under
+  `artifacts/results/jcalgtest-184-basic-2bed-20261103/`.
+
 ## Second Pico enumerates on USB but not in PC/SC — 2026-11-03
 
 - **Observation:** USB descriptors show Pico 2 `8E464F4E2BBC0A19` at bus

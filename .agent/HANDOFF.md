@@ -1,3 +1,38 @@
+## Current session — fresh install restores JCAlgTest 1.8.4 APDUs — 2026-11-03 02:06 UTC
+
+Read the tidied repository instructions and ran the isolated VPCD persistence
+regression: install/commit passed 3/3, restored state plus four GC-pressure
+rounds passed 38/38. This confirms the generic persistent field/reference
+restore fixture, but does not explain the JCAlgTest-specific physical failure.
+
+On Pico 2 `2BED26ED20556535`, PC/SC and USB access were refreshed. GPPro listed
+JCAlgTest plus the unrelated API applets. Deleted only the JCAlgTest applet AID
+`4A43416C675465737431` and its package AID `4A43416C6754657374`, then installed
+the unchanged upstream `AlgTest_v1.8.4_jc305.cap`. With the matching supplied
+`AlgTestJClient_v1.8.4.jar`, SELECT returned `9000`, GETVERSION returned
+`1.8.4_jc305`/`9000`, and JCSystem info returned `9000`. The former physical
+GETVERSION `FF05` is therefore cleared by deleting/reloading the whole
+JCAlgTest package. The precise cause remains unknown; do not treat this as a
+general fix for instance-field restore.
+
+The matching 1.8.4 `ALG_SUPPORT_BASIC` operation was attempted twice with a
+900-second cap. Both runs made valid progress without PC/SC transport errors;
+the second left a 2,617-result partial CSV (148 `yes`, 2,427 `no`) and timed
+out mid-matrix with exit 124. The current CSV and complete APDU log are in
+`artifacts/results/jcalgtest-184-basic-2bed-20261103/`. The new client banner
+reports 1.8.4, while its generated CSV metadata says client 1.8.3. After the
+timeout, a fresh exact-reader probe again passed version and JCSystem info.
+No firmware was flashed; the only card mutation was replacement of the
+JCAlgTest package. 8E remains USB-visible but absent from PC/SC; 2BED is the
+only physical reader.
+
+Next: investigate why the old installed instance returned a null version
+field, then verify the freshly installed 1.8.4 instance across reset. For a
+complete support report, rerun the 1.8.4 client with a longer explicit timeout
+and a separate output directory; omitting `-fresh` restarts the run instead of
+resuming rows. Keep using the 1.8.4 client for this CAP. Preserve the currently
+installed 1.8.4 package and do not change upstream CAPs.
+
 ## Current session — trace JCAlgTest FF05 to null version instance field — 2026-11-03 01:20 UTC
 
 Fixed CCID diagnostics so slot-status polling no longer overwrites the last
