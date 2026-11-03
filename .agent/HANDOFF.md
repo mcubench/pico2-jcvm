@@ -1,3 +1,20 @@
+## Current session — isolate final 1.8.4 mode APDU; no reproduction — 2026-11-03 02:38 UTC
+
+The last request in the interrupted 1.8.4 BASIC log was
+`B0752A000307081000` (SIG_CIPHER_HMAC / OAEP / SHA-512). Sent it twice in
+isolation to Pico 2 `2BED26ED20556535`, each time after selecting the 1.8.4
+applet. Both returned SW `9000` with JCAlgTest result status `03` (unsupported,
+expected). The exact request does not reproduce the long-run disconnect.
+The second run is archived at
+`artifacts/logs/jcalgtest-184-single-hmac-mode-2bed-20261103.log`.
+
+This narrows the failure toward cumulative/time-dependent behavior or PC/SC
+transport handling; cause remains unknown. Do not claim the full BASIC matrix
+passed. Keep the current 1.8.4 installation; the long sweep’s reader
+rediscovery, post-failure version probe, and runtime monitor evidence are in
+the preceding handoff section. The alternate 8E Pico still is not a PC/SC
+reader, and no firmware or CAP changes were made.
+
 ## Current session — 1.8.4 physical sweep disconnect and reader recovery — 2026-11-03 02:32 UTC
 
 The extended matching-client `ALG_SUPPORT_BASIC` attempt on Pico 2

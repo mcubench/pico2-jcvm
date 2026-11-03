@@ -16,6 +16,12 @@
   was responsive after rediscovery. The failure source (reader/driver/USB/CCID
   or client) is not established. The helper refresh is a recovery step, not a
   fix; keep long physical sweeps bounded and retain per-board logs.
+- **Isolation follow-up:** The last pending request,
+  `B0752A000307081000` (HMAC/PKCS1_OAEP_SHA3_512/SHA-512), returned `9000`
+  twice when sent alone to the same board; JCAlgTest status `03` means
+  unsupported and is expected. It does not reproduce the disconnect. This
+  points to cumulative/time-dependent behavior or transport handling, without
+  establishing which one.
 - **Evidence:** partial CSV SHA-256
   `7912582d59b97dd0c52d995cd63b1424a2fa41cad30e09276603a43e5d6e2aeb`, JCAlgTest
   log SHA-256
@@ -23,7 +29,9 @@
   failure version probe SHA-256
   `725459fd25561cd4509547ec8263b244cae2c3340d43f3cdd55dc5e57c279966`, and
   serial monitor SHA-256
-  `f91e1fe1e6427be2be9905a834385896c0d0a2c527d05e54fbf50e0c8c78b25d`.
+  `f91e1fe1e6427be2be9905a834385896c0d0a2c527d05e54fbf50e0c8c78b25d`. The
+  isolated APDU log SHA-256 is
+  `592674c04c5a3c2eb2383c3fa704d7c54acd12af4945424e2f0e70a80c4bf17d`.
 
 ## Fresh package install clears JCAlgTest GETVERSION FF05 — 2026-11-03
 
