@@ -17391,7 +17391,7 @@
 - Result: Current-source VPCD vector results and their emulator-only scope are
   committed.
 - Decision: Continue prioritized offline correctness work.
-- Commit: pending.
+- Commit: `3ede9fd`.
 - Artifacts/logs: The three VPCD logs listed in QKB.
 
 ## 2026-10-30 Validate CAP 2.2 remote method tokens 9 minutes
@@ -21040,5 +21040,5 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader && PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` enumerated 8E and 2BED. `PICO2_HOST_USB_ACCESS=1 JCALGTEST_EXPECTED_VERSION=1.8.4_jc305 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00'` and the equivalent exact-reader command for `2BED26ED20556535` passed.
 - Result: Both readers returned ATR `3B800181`; SELECT, GETVERSION `1.8.4_jc305`, and JCSystem info returned `9000`. The test does not establish that Windows used either of these exact boards or the same UF2 image.
 - Decision: Linux card activation and applet communication currently work on both connected boards. Keep Windows MUTE diagnosis open pending USBPcap plus same-run Pico serial evidence.
-- Commit: pending.
+- Commit: `59f124c`.
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261103T134305Z.log` SHA-256 `1e5ba35569b26bc474d9693cbf1e5a9d4ec67bd324de0293b4bb017278f71f25`; `artifacts/logs/pico-powerup-persistence-20261103T134321Z.log` SHA-256 `95766be0b144662faf0e7f20f2eba9582d9f49717a8671150f67ca1b142bf989`.
