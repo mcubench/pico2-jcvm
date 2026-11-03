@@ -1,5 +1,24 @@
 # Current session — native Cipher SensitiveResult propagation — 2026-11-03 15:59 UTC
 
+## Full API 3.0.5 Crypto VPCD sweep — 2026-11-03 18:46 UTC
+
+Closed EMU-01 using the unchanged Crypto CAP on fresh PC JCVM storage through
+`Virtual PCD 00 00`. `AlgTestApiCrypto_305.cap` completed all 466 calls; upload
+to cleanup took 1:45:54 under a finite 14,400-second area deadline. Outcomes:
+304 `OK`, 161 expected `UNSUPPORTED_PER_SPEC`, and one known
+`EXC_CARDRUNTIME reason=0x0001` on `ALG_RSA_SHA_512_PKCS1_PSS`. The QKB explains
+that the upstream vector's 1024-bit RSA-CRT key cannot fit SHA-512's default
+64-byte PSS salt, so `ILLEGAL_VALUE` is correct. No `WRONG_RESULT`, transport
+error, or missing result occurred. GPPro cleanup removed the test CAP.
+
+The first emulator starts failed because the VPCD endpoint refused connection;
+a short `pcsc_scan -r` had exited. Keeping a live `pcsc_scan` poller running
+while starting the emulator made the reader present (`VpcdPresenceProbe
+present=true`) and enabled the complete sweep. Artifacts and hashes are in the
+new QKB section and `progress.md` record. Full CSV:
+`artifacts/results/deploy/vpcd-full-crypto-current-max-20261103/crypto.csv`.
+This is emulator evidence only; API-03 physical acceptance remains open.
+
 ## Verify max_crypto build artifact — 2026-11-03 16:48 UTC
 
 The exact `build/arm/pico2_choupi.uf2` the user referenced is generated with

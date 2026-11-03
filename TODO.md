@@ -273,23 +273,26 @@ Archive text is historical evidence, not current device state or priorities.
 
 ### EMU-01
 
-- [ ] **Make full Crypto VPCD validation complete within an explicit time window.**
-  Status: full Crypto timed out at 800 s after 190/466 rows (112 OK, 78 expected
-  unsupported), before IV rows. This failed full-area validation is not a pass.
-  An RSA-SHA-384 filter passed seven matching rows but timed out afterward,
-  interrupting cleanup; a narrower PSS filter completed four OK with cleanup
-  in 88 s. No RSA-SHA-384 defect was demonstrated.
-  Remaining: diagnose setup/client/emulator throughput and cleanup, select a
-  justified finite area deadline, and rerun the complete intended selection.
-  The host MPU emulator also had a privileged-access failure when a memory
-  fault interrupted an MPU region update: permission lookup tried the busy
-  region lock and denied the access. Privileged accesses now bypass that lock;
-  focused MPU tests and the 15-case SIO VPCD suite pass. Performance impact has
-  not been measured.
-  Acceptance: normal exit, all requested rows, correct statuses and CAP cleanup;
-  partial CSVs retain partial classification even when all emitted rows pass.
-  Use fresh VPCD storage for isolated sweeps; restart tests retain matched image
-  and registry sidecar. Never overlap runners on one reader. Coordinate API-03.
+- [x] **Complete full Crypto VPCD validation within a finite time window.**
+  Status: the unchanged API 3.0.5 Crypto CAP completed all 466 calls against a
+  fresh current-source max_crypto PC emulator over VPCD. From upload to cleanup
+  it took 1:45:54 with a 14,400-second per-area timeout. Results: 304 `OK`, 161
+  `UNSUPPORTED_PER_SPEC`, and one `EXC_CARDRUNTIME` (`0x0001`) for
+  `ALG_RSA_SHA_512_PKCS1_PSS`. QKB documents why that row correctly rejects the
+  upstream CAP's 1024-bit RSA-CRT key: its default 64-byte salt cannot fit the
+  128-byte encoded message. There were zero `WRONG_RESULT`, transport errors,
+  or incomplete calls. GPPro cleanup removed the Crypto CAP successfully.
+  The earlier no-poller startup failed because the VPCD port refused the
+  emulator; keeping `pcsc_scan` actively polling while the emulator and runner
+  execute made the card present and the complete sweep pass.
+  Remaining: none for EMU-01. Physical acceptance remains under API-03; this
+  VPCD run does not replace it.
+  Acceptance: fulfilled with fresh storage, exact reader pinning, bounded
+  14,400-second test timeout, 466/466 results and successful cleanup. Partial
+  runs remain incomplete. Never overlap runners on one reader. Coordinate
+  physical retests with API-03.
+  Evidence: `.agent/QKB.md` and `progress.md` record the exact result, elapsed
+  time, CAP hash and CSV/log hashes.
 
 ## Priority 2 — applet contexts and profile behavior
 

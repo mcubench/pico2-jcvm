@@ -5286,3 +5286,30 @@ original terminology/status; check current summary and later fixes before reuse.
   `Expected 1 to 3 Pico 2 CHOUPI CCID devices (2e8a:0009); found 0` and
   `pcsc_scan -r` listing only VPCD readers. Do not classify this as firmware or
   JCAlgTest failure.
+## Full API 3.0.5 Crypto VPCD sweep completed on current max source (2026-11-03)
+
+- **Result:** The unchanged `AlgTestApiCrypto_305.cap` completed all 466 calls
+  on fresh PC JCVM storage through `Virtual PCD 00 00`. From upload through
+  successful cleanup, elapsed time was 1:45:54 with a finite 14,400-second
+  client deadline. Counts: 304 `OK`, 161 `UNSUPPORTED_PER_SPEC`, and one
+  `EXC_CARDRUNTIME` (`0x0001`); zero `WRONG_RESULT`, SW/transport errors, or
+  missing calls.
+- **Known exception:** The one exception is
+  `ALG_RSA_SHA_512_PKCS1_PSS`. It is the previously investigated upstream
+  test-vector mismatch: the CAP uses a 1024-bit RSA-CRT key with default
+  SHA-512 PSS salt, which cannot fit (`hLen + sLen + 2 = 130` bytes) in a
+  128-byte RSA encoded message. `ILLEGAL_VALUE` is correct; do not change the
+  firmware or upstream CAP for this result. See the 2026-10-29 QKB entry below.
+- **VPCD startup:** A brief `pcsc_scan -r` confirms reader enumeration but can
+  exit before the VPCD driver accepts the emulator's TCP connection. Keep a
+  live `pcsc_scan` process polling while starting the emulator and running the
+  client. With that ordering, `VpcdPresenceProbe` returned `present=true` and
+  the complete area plus GPPro cleanup succeeded. The failed startup attempts
+  made no test CAP changes and are retained in the result directory.
+- **Artifacts:** `artifacts/results/deploy/vpcd-full-crypto-current-max-20261103/`
+  (`crypto.csv` SHA-256 `bee902ce4129238268c061f0e32334ba06c9f8f81e34cd9ddbf8dcf13c9e44f0`,
+  `runner.log` SHA-256 `9fa53e11f874a618ba287bf1760b62419ab58b9ec53fb0a5f2fe61c368672a64`,
+  emulator log SHA-256
+  `204eafd093875401e926bd9802562ad3daca4a5a416226b498779b17a647a3dc`). The
+  unchanged CAP SHA-256 is
+  `f3dc5edd5b65817c8663ea1018128448052816c1a323c8cc2211027e9f8e4899`.
