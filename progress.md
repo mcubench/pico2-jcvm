@@ -21000,3 +21000,13 @@
 - Decision: Preserve the current applet state. Continue CTX-01 persistent foreign-reference support.
 - Commit: `1ba12a4`
 - Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261103T123155Z.log` SHA-256 `54fc6a4c7ffe003d98e80c09d3712d8521263c684f61883487c2d8062ef16232`.
+## 2026-11-03 Complete JCAlgTest 1.8.4 static performance on Pico 2 34 minutes
+
+- Step/experiment: `jcalgtest-184-static-physical-20261103`
+- When: '2026-11-03 12:34 UTC' - '2026-11-03 13:08 UTC'
+- Change: Ran the unchanged upstream JCAlgTest 1.8.4 static performance operation on Pico 2 `8E464F4E2BBC0A19` using `AlgTestJClient_v1.8.4.jar`; no source, CAP, firmware, or applet changes.
+- Validation: `PICO2_HOST_USB_ACCESS=1 JCALGTEST_TIMEOUT_SECONDS=2400 ./tools/run-jcalgtest --client-jar AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar --reader-name 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00' -op ALG_PERFORMANCE_STATIC -fresh -outpath artifacts/results/jcalgtest-184-static-8e-20261103` completed normally. Upstream footer: total test time 1,976 seconds, 0 reconnects, 0 human resets, 1,847 `NO_SUCH_ALGORITHM`, 6 `CANT_BE_MEASURED`. Post-run read-only probe passed ATR `3B800181`, SELECT, GETVERSION `1.8.4_jc305`, and JCSystem info with `9000`.
+- Result: `NO_SUCH_ALGORITHM` results are expected. Six `CANT_BE_MEASURED` cases remain unresolved: DES clearKey at 64/128/192 bits, `Util_arrayCopy_EEPROM()`, `Util_arrayCopy_RAM2EEPROM()`, and `SWAlgs_AES()`. The detailed log contains `6F00` and `6400` results for the affected benchmark operations; card transport and applet selection remained usable afterward. No build/flash was needed or run.
+- Decision: Record the six cases for focused isolation; do not classify unsupported algorithms as defects. Windows `certutil -scinfo` still reports `PRESENT | MUTE`; Linux post-run activation works, but Windows requires a paired USBPcap/serial trace before any CCID change.
+- Commit: pending
+- Artifacts/logs: `artifacts/results/jcalgtest-184-static-8e-20261103/ALGTEST_log_1793709244220.log` SHA-256 `88372e0723cc91a3b9d928c8f8016c18702aeec095e51be199beec44b24204ce`; CSV `Pico_2_CHOUPI_CCID_[JCVM_CCID]_(8E464F4E2BBC0A19)_00_00____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_1793709244220__3b_80_01_81.csv` SHA-256 `c269c460b2822d8a8bd9184113081283e27ebd456bc38d5852b5ee799c7762a3`; post-run probe `post-run-probe.log` SHA-256 `4e3969f13ea455f732dcce33cb335c2fdb701b501b45f4ca43c6f912d44489ef`; client SHA-256 `fb655aef78843da9022b2efa58b241e347013be28772edf524b1454320732025`.

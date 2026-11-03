@@ -1,5 +1,42 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## JCAlgTest 1.8.4 static performance completes with six unmeasurable cases — 2026-11-03
+
+- **Observation:** The supplied upstream 1.8.4 client completed
+  `ALG_PERFORMANCE_STATIC` on Pico 2 `8E464F4E2BBC0A19` in 1,976 seconds.
+  The client reported 1,847 `NO_SUCH_ALGORITHM` results (expected unsupported
+  combinations) and six `CANT_BE_MEASURED` cases: DES `clearKey()` at 64,
+  128 and 192 bits; `Util_arrayCopy_EEPROM()`;
+  `Util_arrayCopy_RAM2EEPROM()`; and `SWAlgs_AES()`. The detailed APDU log
+  contains `6F00` and `6400` responses among the failed benchmark cases.
+- **Transport/state:** Zero reconnects and zero human resets were reported.
+  A subsequent exact-reader probe returned ATR `3B800181`, SELECT `9000`,
+  GETVERSION `1.8.4_jc305`/`9000`, and JCSystem info `9000`. The card remained
+  usable after the sweep. This does not establish the cause of the six
+  benchmark failures.
+- **Resolution status:** Open. Isolate the six cases with bounded single-case
+  runs and correlate APDU response, VM diagnostics, and client timeout behavior.
+  Do not treat `NO_SUCH_ALGORITHM` as a defect.
+- **Evidence:** See the `jcalgtest-184-static-physical-20261103` progress entry;
+  full log and CSV are in `artifacts/results/jcalgtest-184-static-8e-20261103/`.
+
+## Windows reports the current JCVM card as PRESENT | MUTE — 2026-11-03
+
+- **Observation:** Windows `certutil -scinfo` took several minutes, then
+  reported the reader `Pico2 JCVM CCID 0` with `SCARD_STATE_PRESENT |
+  SCARD_STATE_MUTE` and no recognized card. Reader enumeration therefore
+  succeeded, but the host did not complete usable card activation/ATR handling.
+- **Cross-check:** Linux PC/SC on the same identified Pico 2 later received ATR
+  `3B800181`; JCAlgTest 1.8.4 SELECT/version/JCSystem calls succeeded after the
+  full static sweep. This narrows the report to a Windows-specific or
+  Windows-host USB/CCID interaction, but no USB transfer trace or paired Pico
+  serial log exists, so the precise failure stage is unproven.
+- **Resolution status:** Open. Capture Windows USBPcap through
+  `PC_to_RDR_IccPowerOn` and the response while capturing serial output from
+  the same firmware run; record the flashed UF2 hash. Keep firmware changes
+  deferred until the trace shows whether power-on was not delivered, the CCID
+  response was missing/short, or Windows rejected the ATR.
+
 ## 1.8.4 BASIC transport failure did not reproduce on rerun — 2026-11-03
 
 - **Observation:** The supplied upstream 1.8.4 client completed the unchanged

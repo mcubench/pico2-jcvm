@@ -244,6 +244,25 @@ Archive text is historical evidence, not current device state or priorities.
   Evidence: current progress/QKB; original deploy and focused retest entries
   retain exact CSV/log paths, hashes, selected calls and historical baselines.
 
+- [ ] **Resolve JCAlgTest 1.8.4 static-performance cases that could not be measured.**
+  Status: the complete upstream `ALG_PERFORMANCE_STATIC` run on Pico 2
+  `8E464F4E2BBC0A19` completed with 1,847 expected `NO_SUCH_ALGORITHM`
+  results and six `CANT_BE_MEASURED` cases. The affected cases were DES
+  `clearKey()` at 64/128/192 bits, `Util_arrayCopy_EEPROM()`,
+  `Util_arrayCopy_RAM2EEPROM()`, and `SWAlgs_AES()`; the detailed log includes
+  `6F00` and `6400` responses in these cases. The client completed with no
+  reconnects or manual resets, and post-run SELECT/version/JCSystem probes
+  passed.
+  Remaining: isolate each exact operation with the unchanged CAP/client and
+  capture VM/CCID diagnostics; determine whether failures are JCVM exceptions,
+  bounded-operation timeouts, or client calibration artifacts. Do not classify
+  `NO_SUCH_ALGORITHM` results as failures.
+  Acceptance: each supported operation returns a valid result and each
+  unsupported operation returns the expected client status; no `6F00`/`6400`
+  or reader loss in repeated focused runs.
+  Evidence: `artifacts/results/jcalgtest-184-static-8e-20261103/` and the
+  corresponding 2026-11-03 progress/QKB entries.
+
 ### EMU-01
 
 - [ ] **Make full Crypto VPCD validation complete within an explicit time window.**

@@ -1,3 +1,25 @@
+# Current session — JCAlgTest 1.8.4 static sweep and Windows MUTE report — 2026-11-03 13:08 UTC
+
+The unchanged upstream JCAlgTest 1.8.4 applet/client completed
+`ALG_PERFORMANCE_STATIC` on Pico 2 `8E464F4E2BBC0A19`. Client-reported duration
+was 1,976 seconds; 1,847 `NO_SUCH_ALGORITHM` outcomes are expected, and six
+`CANT_BE_MEASURED` cases remain to isolate (DES clearKey at 64/128/192 bits,
+EEPROM array copy, RAM-to-EEPROM array copy, and SWAlgs AES). No reconnects or
+manual resets occurred. The exact-reader post-run probe passed ATR, SELECT,
+GETVERSION `1.8.4_jc305`, and JCSystem info. Results/logs:
+`artifacts/results/jcalgtest-184-static-8e-20261103/`; client log SHA-256
+`88372e0723cc91a3b9d928c8f8016c18702aeec095e51be199beec44b24204ce`, CSV SHA-256
+`c269c460b2822d8a8bd9184113081283e27ebd456bc38d5852b5ee799c7762a3`.
+
+Windows `certutil -scinfo` reports `PRESENT | MUTE` after several minutes.
+Linux on this board returns ATR `3B800181` and successfully runs the applet, so
+Windows has not reached a working card session; the exact host/CCID failure is
+not yet known. Next, request/capture a Windows USBPcap trace through the first
+`PC_to_RDR_IccPowerOn`, paired with the Pico serial log and flashed UF2 hash.
+Do not change CCID/ATR behavior without this evidence. Separately isolate the
+six static-performance failures using exact upstream tests. Broader next
+implementation remains CTX-01 persistent foreign-reference identity.
+
 ## Current session — recheck installed JCAlgTest after firmware flash — 2026-11-03 12:32 UTC
 
 After the current ARM image was flashed to Pico 2 `8E464F4E2BBC0A19`, the
