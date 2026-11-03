@@ -21397,7 +21397,7 @@
   `PKG:` entries before explicit CAP installation.
 - Decision: Provide the `*-empty-card-current.uf2` artifact and retain
   HOST-01/STORE-01 follow-up for package DELETE transport and storage cleanup.
-- Commit: pending (SHA to be recorded in metadata follow-up)
+- Commit: `afb32f8` (metadata follow-up records this SHA)
 - Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card-current.uf2`;
   Security CSV SHA-256 `bd1476f53c853dbf5000ff3cffe5b06575bca0e02ac79a20630801e531e557d8`;
   2BED Crypto CSV SHA-256 `e5df54bec9e09a3f26c0e1551b315fbc616fc460cab9887c566e767290860f0d`;
