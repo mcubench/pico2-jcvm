@@ -111,6 +111,12 @@ public final class ClientApplet extends Applet {
           new byte[] { 0x2D });
       result = nativeResult == (short)0x6B37
           ? (short)0x6A26 : (short)0x6A27;
+    } else if (buffer[1] == 0x20) {
+      Probe probe = (Probe) shareable;
+      Object[] global = (Object[])JCSystem.makeGlobalArray(
+          JCSystem.ARRAY_TYPE_OBJECT, (short)1);
+      global[0] = this;
+      result = probe.retainForeignReference(global);
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

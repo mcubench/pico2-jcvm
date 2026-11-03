@@ -74,6 +74,10 @@ private:
   /// Object[]. 0xFF means the slot is empty; 0xFE denotes a JCRE global
   /// instance which may be shared across contexts.
   std::vector<jpackage_ID_t> global_reference_owners;
+  /// Provenance for opaque foreign references retained by applet-owned
+  /// reference arrays. Empty slots and references local to this package use
+  /// 0xFF; global-array ownership continues to use the vector above.
+  std::vector<jpackage_ID_t> reference_value_owners;
 
   ///  Get an entry size from the size type.
   static const uint16_t getEntrySize(const jc_array_type type);

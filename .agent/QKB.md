@@ -4918,3 +4918,31 @@ original terminology/status; check current summary and later fixes before reuse.
   `artifacts/logs/sio-cross-aid-physical-20261103T115608Z.log`.
 - **Status:** This global-array retention rule is verified; broader context
   ownership, root, and lifecycle acceptance remains open.
+
+## Ordinary foreign applet references may be retained — 2026-11-03
+
+- **Specification:** Java Card RE 3.0.5 §§6.2.8.1–6.2.8.3 permit a reference
+  store unless its value is a temporary JCRE entry-point object or global
+  array. Static stores are otherwise allowed; instance stores are allowed when
+  the receiver belongs to the active context; array stores are allowed when
+  the array is owned by that context or is global. Later use of a retained
+  foreign reference still requires the normal firewall check. Source:
+  [Oracle Java Card RE Specification 3.0.5, §6.2.8](https://docs.oracle.com/cd/E59935_01/JCCRE.pdf).
+- **Reproduction:** The cross-AID fixture passed a client-owned applet object
+  to the service through a global `Object[]`, then tried storing it in service
+  static state, a service applet instance field, and a service-owned transient
+  `Object[]`. Before the change, all three stores were denied (`6B47`).
+- **Implemented slice:** Applet-owned in-memory reference arrays now carry
+  per-slot owner IDs. Foreign references can be retained in volatile wildcard
+  `Object[]` arrays, and `aaload` returns the opaque reference with provenance
+  intact. The Descriptor-free VPCD suite passes 20/20; the result is `6B43`,
+  meaning the transient array store/read succeeds while static and instance
+  stores still fail closed. ARM, RISC-V, and PC builds pass. This is partial
+  support only.
+- **Remaining:** Add stable cross-package identity encoding and owner-aware
+  persistence/restore/root behavior for static fields, instance fields, and
+  persistent array elements. Then allow and test typed array stores with
+  cross-package class compatibility. Preserve firewall checks on every later
+  read/use, and retain rejection for temporary JCRE entry-point objects and
+  global-array references. Reset, deletion, GC, and compact-handle collision
+  coverage are required before marking CTX-01 complete.

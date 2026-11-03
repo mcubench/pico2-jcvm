@@ -354,12 +354,19 @@ Archive text is historical evidence, not current device state or priorities.
   the existing raw-word accessor remains for signature-checked argument
   marshalling. The registry test covers both rejection cases. Continue auditing
   every reference consumer and foreign-owner lifecycle path.
-  Keep foreign references out of persistent state and applet-local arrays; global
-  Object[] storage is covered by per-slot owner metadata but needs the remaining
-  lifecycle acceptance above. Java Card RE 3.0.5 permits parameters to
-  cross an SIO call but still applies caller-context firewall checks to later
-  object access (§§6.1.4, 6.2.4.3, 6.2.8). Never resolve a foreign compact
-  handle in the receiving package's heap. See `.agent/QKB.md`.
+  Java Card RE 3.0.5 §6.2.8 permits ordinary foreign applet references to be
+  retained in static fields, fields of an object owned by the active applet,
+  and components of an accessible reference array. Only temporary JCRE entry
+  point objects and global-array references are forbidden values for these
+  stores. A cross-AID VPCD regression initially denied all three ordinary
+  foreign-reference stores. The VM now preserves owner metadata in
+  applet-owned transient wildcard `Object[]` arrays, and the Descriptor-free
+  integration suite verifies identity on read. Persistent foreign references
+  still fail closed because static/instance fields and persistent arrays need
+  a stable cross-package identity encoding and owner-aware roots/restoration.
+  Instance/static stores and typed foreign array stores remain unimplemented.
+  Every later access must still apply firewall rules; never resolve a foreign
+  compact handle in the receiving package's heap. See `.agent/QKB.md`.
   Global `Object[]` support is partially implemented for volatile JCRE global
   arrays: non-null applet references can be stored and read by their owning
   package, with per-slot package ownership, package-scoped GC roots, transient

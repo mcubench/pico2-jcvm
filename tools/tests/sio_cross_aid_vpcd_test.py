@@ -168,7 +168,7 @@ def main() -> int:
                   "reference and its server-side array access is denied")
             response = vpcd.exchange(
                 connection, bytes.fromhex("801B000000"),
-                "global Object[] identity and forbidden retention rules"
+                "global Object[] identity and forbidden global-array retention"
             )
             if response != bytes.fromhex("6B339000"):
                 raise RuntimeError(
@@ -177,8 +177,8 @@ def main() -> int:
                     "6B339000"
                 )
             print("TEST:PASS global Object[] preserves foreign identity against "
-                  "the service local reference; static, instance and array "
-                  "retention are rejected; foreign use is blocked")
+                  "the service local reference; retaining the global-array "
+                  "reference is rejected and foreign use is blocked")
             response = vpcd.exchange(
                 connection, bytes.fromhex("801C000000"),
                 "return caller-owned array through SIO"
@@ -224,6 +224,19 @@ def main() -> int:
                 )
             print("TEST:PASS native Util arrayCopy rejects foreign array "
                   "before resolving it in the server heap")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8020000000"),
+                "retain ordinary foreign object reference in applet state"
+            )
+            if response != bytes.fromhex("6B439000"):
+                raise RuntimeError(
+                    f"foreign object retention result {response.hex().upper()}, "
+                    "expected the current static/instance gap and successful "
+                    "transient-array retention 6B439000"
+                )
+            print("TEST:PASS foreign reference retained in an applet-owned "
+                  "transient Object[]; static and instance field retention "
+                  "remain open")
             response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
                                      "retain Shareable proxy across APDUs")
             if response != bytes.fromhex("6A109000"):

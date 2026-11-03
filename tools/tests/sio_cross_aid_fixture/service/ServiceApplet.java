@@ -15,6 +15,8 @@ public final class ServiceApplet extends Applet implements Probe {
   private static final byte[] SERVICE_AID = {
     (byte) 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x03, 0x01
   };
+  private static Object retainedForeignStatic;
+  private Object retainedForeignInstance;
 
   private ServiceApplet() {
     register();
@@ -92,6 +94,38 @@ public final class ServiceApplet extends Applet implements Probe {
     } catch (SecurityException expected) {
       return (short)0x6B31;
     }
+  }
+
+  public short retainForeignReference(Object[] values) {
+    Object foreign = values[0];
+    boolean staticStored = false;
+    boolean instanceStored = false;
+    boolean arrayStored = false;
+    try {
+      retainedForeignStatic = foreign;
+      staticStored = retainedForeignStatic == foreign;
+    } catch (SecurityException denied) {
+      // A normal applet object is not a temporary JCRE object.
+    }
+    try {
+      retainedForeignInstance = foreign;
+      instanceStored = retainedForeignInstance == foreign;
+    } catch (SecurityException denied) {
+      // The receiver is owned here; only the stored value is foreign.
+    }
+    try {
+      Object[] local = JCSystem.makeTransientObjectArray(
+          (short)1, JCSystem.CLEAR_ON_RESET);
+      local[0] = foreign;
+      arrayStored = local[0] == foreign;
+    } catch (SecurityException denied) {
+      // Applet-owned arrays may retain non-temporary foreign object refs.
+    }
+    short failures = 0;
+    if (!staticStored) failures |= 1;
+    if (!instanceStored) failures |= 2;
+    if (!arrayStored) failures |= 4;
+    return (short)(0x6B40 | failures);
   }
 
   public byte[] echoArray(byte[] value) {

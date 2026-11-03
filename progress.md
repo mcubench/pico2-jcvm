@@ -20970,3 +20970,13 @@
 - Decision: Close this global-array retention item; continue CTX-01 owner collision, stale-owner and broader native-reference acceptance.
 - Commit: `0ec3d92`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T115208Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T115407Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T115608Z.log`.
+## 2026-11-03 Retain foreign refs in volatile Object arrays 16 minutes
+
+- Step/experiment: `ctx01-foreign-reference-volatile-array-20261103`
+- When: '2026-11-03 12:04 UTC' - '2026-11-03 12:20 UTC'
+- Change: Verified Java Card RE 3.0.5 §6.2.8: ordinary foreign applet references may be stored in active-context-owned fields/arrays; only temporary JCRE entry-point objects and global-array references are barred. Added owner metadata for applet-owned reference arrays and allowed foreign references in volatile wildcard `Object[]` arrays. Extended the unchanged firmware test fixture sources only; no CAP implementation changes were made.
+- Validation: `./tools/build arm` passed (firmware end `0x100d07fc`, 194,564 bytes remain); `./tools/build riscv` passed its VM-core build; `./tools/build-pc` passed; `./tools/test-rmi-registry` passed. VPCD cross-AID suite passed 20/20 without Descriptor and 20/20 with Descriptor. The new status `6B43` proves same-reference identity after volatile array retention while static/instance stores remain denied. `git diff --check` is pending before commit. No physical device was used.
+- Result: Volatile applet-owned wildcard Object[] storage preserves foreign package provenance through `aastore`/`aaload`; later foreign dereference checks remain owner-aware. Static and instance fields, typed arrays, persistent arrays, and stable foreign-reference serialization remain incomplete. PC build emits pre-existing Rust/dependency warnings; no new C++ warnings were observed.
+- Decision: Keep CTX-01 open. Next implement owner-preserving persistent references for static/instance fields and persistent arrays without resolving foreign handles in the current heap; then add typed component compatibility and reset/delete/GC coverage.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T121552Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T121825Z.log`; official source [Oracle JCRE 3.0.5 §6.2.8](https://docs.oracle.com/cd/E59935_01/JCCRE.pdf).

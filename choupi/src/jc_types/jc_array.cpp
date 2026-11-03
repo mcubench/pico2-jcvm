@@ -59,7 +59,9 @@ JC_Array::JC_Array(Heap &owner, const uint16_t size, const jc_array_type type,
     : JC_Object(owner, false), isTransient(isTransientArray),
       type(type), reference_type(0xFFFF),
       array(size * JC_Array::getEntrySize(type)), clear(event),
-      global_reference_owners() {
+      global_reference_owners(),
+      reference_value_owners(type == JAVA_ARRAY_T_REFERENCE ? size : 0,
+                             kNoGlobalReferenceOwner) {
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   switch (this->type) {
@@ -94,7 +96,9 @@ JC_Array::JC_Array(Heap &owner, const uint16_t size, const jc_array_type type,
           owner.isGlobalHeap() && type == JAVA_ARRAY_T_REFERENCE
               ? size
               : 0,
-          kNoGlobalReferenceOwner) {}
+          kNoGlobalReferenceOwner),
+      reference_value_owners(type == JAVA_ARRAY_T_REFERENCE ? size : 0,
+                             kNoGlobalReferenceOwner) {}
 
 /**
  * Constructor
@@ -114,7 +118,9 @@ JC_Array::JC_Array(Heap &owner, const jc_array_type type,
                              : 0) +
                         sizeof(uint8_t)],
             true),
-      clear(event) {
+      clear(event), global_reference_owners(),
+      reference_value_owners(type == JAVA_ARRAY_T_REFERENCE ? length : 0,
+                             kNoGlobalReferenceOwner) {
   this->persistent_tag = tag;
   this->has_persistent_tag = true;
   this->array[0] = tag.len;
@@ -451,11 +457,13 @@ bool JC_Array::isReferenceEntryAccessible(const uint16_t index,
 
 jpackage_ID_t JC_Array::getReferenceEntryOwner(const uint16_t index) {
   checkArrayEntryIndex(*this, index);
-  if (!this->getOwner().isGlobalHeap() ||
-      this->type != JAVA_ARRAY_T_REFERENCE) {
+  if (this->type != JAVA_ARRAY_T_REFERENCE) {
     return kNoGlobalReferenceOwner;
   }
-  return this->global_reference_owners.at(index);
+  if (this->getOwner().isGlobalHeap()) {
+    return this->global_reference_owners.at(index);
+  }
+  return this->reference_value_owners.at(index);
 }
 
 void JC_Array::visitGlobalReferences(
@@ -661,6 +669,22 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
 
 #endif /* JCVM_SECURE_HEAP_ACCESS */
 
+  const bool foreign_reference =
+      value_owner != 0xff && value_owner != 0xfe &&
+      value_owner != context.getCurrentPackageID();
+  if (foreign_reference && this->isPersistent()) {
+    // Persistent foreign references need a stable cross-package object
+    // identity in the flash format. Keep failing closed until that format is
+    // implemented; volatile applet-owned arrays can retain the owner tag.
+    throw Exceptions::SecurityException;
+  }
+  if (foreign_reference &&
+      (this->reference_type != 0xFFFF ||
+       (!this->getOwner().isGlobalHeap() &&
+        this->getOwner().getOwner() != context.getAppletID()))) {
+    throw Exceptions::SecurityException;
+  }
+
 #ifdef JCVM_FIREWALL_CHECKS
   // Check if types are compatible.
   Heap &heap = context.getHeap();
@@ -670,13 +694,6 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
 
   // Native-created Object[] arrays use 0xFFFF as a wildcard component type;
   // unlike CAP-backed arrays, they have no component class in a CAP pool.
-  const bool foreign_reference =
-      value_owner != 0xff && value_owner != 0xfe &&
-      value_owner != context.getCurrentPackageID();
-  if (foreign_reference &&
-      (!this->getOwner().isGlobalHeap() || this->reference_type != 0xFFFF)) {
-    throw Exceptions::SecurityException;
-  }
   if (this->reference_type == 0xFFFF || value.isNullPointer()) {
     // Wildcard arrays accept any reference; null is valid for all arrays.
     ;
@@ -784,6 +801,12 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
   if (!this->global_reference_owners.empty()) {
     this->global_reference_owners[index] = global_reference_owner;
   }
+  if (!this->reference_value_owners.empty()) {
+    this->reference_value_owners[index] =
+        value.isNullPointer() || !foreign_reference
+            ? kNoGlobalReferenceOwner
+            : value_owner;
+  }
 }
 
 /*
@@ -833,6 +856,8 @@ void JC_Array::clearTransientData() {
   this->array.fill(0);
   std::fill(this->global_reference_owners.begin(),
             this->global_reference_owners.end(), kNoGlobalReferenceOwner);
+  std::fill(this->reference_value_owners.begin(),
+            this->reference_value_owners.end(), kNoGlobalReferenceOwner);
 }
 
 } // namespace jcvm

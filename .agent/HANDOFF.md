@@ -1,3 +1,27 @@
+## Current session — retain foreign refs in volatile Object[] — 2026-11-03 12:17 UTC
+
+Verified against the official Java Card RE 3.0.5 §6.2.8 that ordinary
+foreign applet references may be stored in static fields, fields of an
+active-context-owned object, and accessible reference arrays. Only temporary
+JCRE entry-point objects and global-array references are prohibited store
+values. This corrects the earlier over-broad TODO wording.
+
+Added per-slot owner metadata for applet-owned reference arrays and allowed
+foreign references in volatile wildcard `Object[]` arrays. The Descriptor-free
+VPCD cross-AID test passed 20/20. Result `6B43` proves transient array
+store/read and owner-preserving identity work; static and instance field
+stores remain denied. ARM and RISC-V wrappers and `./tools/build-pc` passed.
+Descriptor-included and Descriptor-free VPCD runs both pass 20/20. Logs:
+`artifacts/logs/sio-cross-aid-vpcd-20261103T121552Z.log` (Descriptor-free) and
+`artifacts/logs/sio-cross-aid-vpcd-20261103T121825Z.log` (Descriptor included).
+`./tools/test-rmi-registry` also passes with `global_object_array_owner=1` and
+the stack owner/type checks enabled.
+
+Persistent field/array storage still needs a stable cross-package reference
+identity encoding, owner-aware restoration and GC roots. Typed foreign-array
+component checks also need implementation. No physical hardware operation was
+attempted.
+
 ## Current session — enforce global-array non-retention rule — 2026-11-03 11:57 UTC
 
 Confirmed the old `RESTORE_READ_FAIL` from storing a global transient array in
