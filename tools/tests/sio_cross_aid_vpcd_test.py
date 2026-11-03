@@ -376,7 +376,67 @@ def main() -> int:
                 )
             print("TEST:PASS Object.equals on proxy is blocked; "
                   "response=6A099000")
-            print("TEST:SUMMARY pass=18 fail=0")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8010000000"),
+                "refresh Shareable before service DELETE"
+            )
+            if response != bytes.fromhex("45679000"):
+                raise RuntimeError(
+                    f"pre-DELETE lookup {response.hex().upper()}, expected 45679000"
+                )
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8015000000"),
+                "retain fresh proxy before service DELETE"
+            )
+            if response != bytes.fromhex("6A109000"):
+                raise RuntimeError(
+                    f"pre-DELETE proxy retention {response.hex().upper()}, "
+                    "expected 6A109000"
+                )
+            response = vpcd.exchange(connection, bytes.fromhex("00A4040000"),
+                                     "SELECT ISD before DELETE")
+            if response[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    f"SELECT ISD before DELETE {response.hex().upper()}"
+                )
+            scp = vpcd.Scp03(connection)
+            scp.authenticate()
+            response = vpcd.delete_object(
+                scp, SERVICE_APPLET, False, "DELETE cross-AID service applet"
+            )
+            if response != bytes.fromhex("9000"):
+                raise RuntimeError(
+                    f"DELETE service applet {response.hex().upper()}, expected 9000"
+                )
+            print("TEST:PASS deleted cross-AID service applet through card manager")
+            response = vpcd.exchange(connection, select_client,
+                                     "reselect client after service DELETE")
+            if response[-2:] != b"\x90\x00":
+                raise RuntimeError(
+                    f"reselect client after DELETE {response.hex().upper()}"
+                )
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8016000000"),
+                "reject retained interface proxy after service DELETE"
+            )
+            if response != bytes.fromhex("6A0A9000"):
+                raise RuntimeError(
+                    f"interface dispatch after service DELETE "
+                    f"{response.hex().upper()}, expected caught SecurityException "
+                    "6A0A9000"
+                )
+            print("TEST:PASS retained interface proxy fails closed after DELETE")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8010000000"),
+                "fresh lookup after service DELETE"
+            )
+            if response != bytes.fromhex("6A049000"):
+                raise RuntimeError(
+                    f"fresh lookup after service DELETE {response.hex().upper()}, "
+                    "expected no Shareable service 6A049000"
+                )
+            print("TEST:PASS fresh lookup returns no service after DELETE")
+            print("TEST:SUMMARY pass=20 fail=0")
             return 0
         finally:
             if connection is not None:

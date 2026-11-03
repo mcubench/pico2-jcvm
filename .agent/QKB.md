@@ -4768,3 +4768,33 @@ original terminology/status; check current summary and later fixes before reuse.
   catches `SecurityException` and returns a distinct status. The full VPCD
   cross-AID suite passes 18/18 both with Descriptor omitted and included; array
   dereference and virtual `Object.equals` remain denied as separate checks.
+
+
+## Stale SIO proxy after GP DELETE and Windows PC/SC MUTE — 2026-11-03
+
+- **Reproduction:** The VPCD SIO fixture now retains a fresh cross-AID proxy,
+  selects the ISD, authenticates, deletes the service applet with GP DELETE,
+  and reselects the client. DELETE returns `9000` and removes the service
+  instance, but invoking the persistent proxy returns `6F00`. Emulator trace:
+  `exception=24` (`ClassCastException`), opcode `94` (`invokeinterface`). The
+  intended applet handler should catch `SecurityException`; the exception is
+  currently raised before/while ordinary local interface dispatch proceeds.
+- **Validation:** Reproduced on 2026-11-03 in
+  `artifacts/logs/sio-cross-aid-vpcd-20261103T095524Z.log`,
+  `artifacts/logs/sio-cross-aid-vpcd-20261103T100259Z.log`,
+  `artifacts/logs/sio-cross-aid-vpcd-20261103T100540Z.log`, and
+  `artifacts/logs/sio-cross-aid-vpcd-20261103T101052Z.log`. PC build succeeded.
+  Two speculative `invokeinterface` guards were tried and reverted because
+  they did not change the failure. Physical token test unavailable: the
+  authorized reader helper reports zero attached Pico readers.
+- **Windows report:** User observed `Pico2 JCVM CCID 0` as PRESENT/MUTE in
+  `certutil -scinfo`; Windows Resource Manager was running and the scan command
+  completed, but no card ATR was recognized. Treat this as a reader/card
+  activation failure, not successful card communication. Firmware/Windows
+  trace is still needed to locate whether power-on, ATR delivery, or protocol
+  negotiation is failing.
+- **Next:** Keep the new DELETE sequence as a regression. Trace exception
+  delivery at `invokeinterface` for a retained proxy after instance deletion;
+  do not relax the expectation to `6F00`. For Windows, obtain the firmware
+  serial log and verbose PC/SC trace from one insertion and correlate the
+  CCID power-on/ATR exchange. Do not flash until both architecture builds pass.

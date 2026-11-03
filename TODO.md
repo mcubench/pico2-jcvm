@@ -440,6 +440,12 @@ Archive text is historical evidence, not current device state or priorities.
   integration and physical checks.
   General cross-context calls and logical-channel policy remain unimplemented;
   basic channel 0 is the current assignment. No blanket firewall acceptance yet.
+  A new VPCD DELETE regression currently passes GP DELETE (`9000`) for a
+  cross-AID service applet, but dispatching a persistent proxy afterward returns
+  uncaught `6F00` / `ClassCastException` at `invokeinterface` instead of the
+  applet-catching `SecurityException` expected by the test. Investigate stale
+  proxy invalidation and exception delivery after instance deletion; keep this
+  case failing until fixed. See `.agent/QKB.md` and the 2026-11-03 log paths.
   Evidence: current HANDOFF, `tools/test-rmi-registry`, context/proxy progress
   records. Preserve unrelated ongoing source changes while continuing this work.
 

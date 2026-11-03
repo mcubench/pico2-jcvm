@@ -1,3 +1,33 @@
+## Follow-up — GP DELETE retained-proxy failure and Windows PC/SC MUTE — 2026-11-03 10:14 UTC
+
+The VPCD regression now performs a real card-manager path: retain a fresh
+cross-AID Shareable proxy in the client, select/authenticate as ISD, delete the
+service applet, reselect client. GP DELETE returns `9000`; the service instance
+is removed. The client’s retained proxy then returns `6F00` instead of the
+expected catchable `SecurityException`; trace identifies `exception=24`
+(`ClassCastException`) on opcode `94` (`invokeinterface`). The fixture change
+is in `tools/tests/sio_cross_aid_vpcd_test.py`. Four reproducible logs are
+recorded in `.agent/QKB.md`. PC build succeeded. Two speculative guards in
+`bc_invoke.cpp` did not alter behavior and were reverted; do not preserve or
+reintroduce them without tracing the actual throw/dispatch path. Continue with
+the failure as open CTX-01 work; the correct next diagnostic is to determine
+whether the class-cast originates in proxy receiver lookup, exception object
+creation, or Java handler dispatch after DELETE. Never accept `6F00` as the
+expected result.
+
+The user reports a separate Windows test: `certutil -scinfo` sees reader
+`Pico2 JCVM CCID 0` in `SCARD_STATE_PRESENT | SCARD_STATE_MUTE`, reports an
+unrecognized/nonresponsive card, then exits successfully. This is not a
+successful card test and suggests no usable ATR/card activation. The VM's
+authorized PC/SC helper currently finds zero physical Pico devices, so no
+hardware diagnostics or flash can be performed here. Ask for a correlated
+finite serial log and verbose Windows PC/SC trace when resuming this hardware
+issue. The report is in `.agent/QKB.md`.
+
+Keep the failing DELETE regression, root TODO, QKB, handoff and progress in a
+focused documentation/test commit. Preserve all unrelated dirty source,
+dependency, fixture, and evidence files listed in the prior handoff.
+
 ## Current session — owner-aware null and identity comparisons — 2026-11-03 04:35 UTC
 
 Added `Stack::referencesEqual()` and switched narrow/wide `if_acmp*` plus
