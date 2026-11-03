@@ -372,16 +372,19 @@ Archive text is historical evidence, not current device state or priorities.
   global Object[], reads it in the service package, and verifies cross-package
   use is caught as `SecurityException` (`6B31`); VPCD and physical Pico 2 runs
   passed. This preserves opaque identity only while provenance stays attached
-  to the VM stack/local path. Persistent global reference slots are not
-  applicable to the current transient arrays. A fixture prototype that cached
-  a transient global array in an applet static reference hit
-  `RESTORE_READ_FAIL` (`tag=023904`); the regression now passes the array as an
-  SIO argument. Determine the required persistent/transient reference rule and
-  either reject that static assignment or implement its representation safely.
-  The three-package SIO fixture now also compares a client-owned applet
-  reference read from a global `Object[]` with the service applet's local
-  `this` before attempting virtual dispatch. This exercises cross-owner object
-  identity separately from foreign-vs-null and same-foreign-reference checks.
+  to the VM stack/local path. Java Card specifies that global-array references
+  cannot be stored in class fields, instance fields, or array components. The
+  old fixture that cached one in a static field and later hit
+  `RESTORE_READ_FAIL` (`tag=023904`) exercised invalid CAP behavior, not a
+  missing persistent encoding. The current static, instance, and array-element
+  guards raise `SecurityException`; the three-package regression verifies
+  these denials while continuing to pass the global array as an SIO argument.
+  This global-array retention rule is accepted; the separate foreign-reference
+  lifecycle and GC-root audit remains open.
+  The three-package SIO fixture also compares a client-owned applet reference
+  read from a global `Object[]` with the service applet's local `this` before
+  attempting virtual dispatch. This exercises cross-owner object identity
+  separately from foreign-vs-null and same-foreign-reference checks.
   Remaining: prove a deterministic equal-compact-handle collision in this
   integration fixture, stale-owner lifecycle tests, and audit all paths that
   can consume or retain a foreign value. See `.agent/QKB.md`.

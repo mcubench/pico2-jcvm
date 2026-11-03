@@ -1,3 +1,24 @@
+## Current session — enforce global-array non-retention rule — 2026-11-03 11:57 UTC
+
+Confirmed the old `RESTORE_READ_FAIL` from storing a global transient array in
+a static field came from a spec-forbidden operation. Java Card 3.0.5 explicitly
+forbids retaining a global-array reference in class fields, instance fields,
+or array components. The current VM has guards in static storage, instance
+field storage, and `JC_Array::setReferenceEntry`; no persistence format should
+be added for this reference.
+
+Extended the cross-AID fixture to attempt all three invalid stores and catch
+`SecurityException`, then pass the same global Object[] through the permitted
+SIO call. VPCD passed 20/20 with Descriptor omitted and included. Physical Pico
+2 `8E464F4E2BBC0A19` returned `6B339000` for all three retention denials plus
+the cross-context identity/firewall check, and passed reset, stale-proxy,
+DELETE, and cleanup checks. Log:
+`artifacts/logs/sio-cross-aid-physical-20261103T115608Z.log`.
+
+Next: continue CTX-01 lifecycle and native-reference audit; the deterministic
+equal-compact-handle integration proof remains open. Do not treat the
+global-array retention rule as evidence that the full firewall is complete.
+
 ## Current session — cross-owner SIO reference identity regression — 2026-11-03 11:47 UTC
 
 Extended the existing three-package SIO fixture. The service now compares a

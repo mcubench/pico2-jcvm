@@ -15,6 +15,8 @@ public final class ClientApplet extends Applet {
   // alias path before the canonical field has loaded its target reference.
   private Shareable retainedShareableAlias;
   private Shareable retainedShareable;
+  private static Object[] retainedGlobalStatic;
+  private Object[] retainedGlobalInstance;
 
   private ClientApplet() {
     register();
@@ -57,7 +59,30 @@ public final class ClientApplet extends Applet {
       Object[] global = (Object[])JCSystem.makeGlobalArray(
           JCSystem.ARRAY_TYPE_OBJECT, (short)1);
       global[0] = this;
-      result = probe.inspectGlobalReference(global);
+      boolean staticRejected = false;
+      boolean instanceRejected = false;
+      boolean arrayRejected = false;
+      try {
+        retainedGlobalStatic = global;
+      } catch (SecurityException expected) {
+        staticRejected = true;
+      }
+      try {
+        retainedGlobalInstance = global;
+      } catch (SecurityException expected) {
+        instanceRejected = true;
+      }
+      try {
+        Object[] sink = new Object[1];
+        sink[0] = global;
+      } catch (SecurityException expected) {
+        arrayRejected = true;
+      }
+      short foreignResult = probe.inspectGlobalReference(global);
+      result = staticRejected && instanceRejected && arrayRejected &&
+                       foreignResult == (short)0x6B31
+                   ? (short)0x6B33
+                   : (short)0x6B34;
     } else if (buffer[1] == 0x1C) {
       byte[] original = new byte[] { 0x2A };
       byte[] returned = ((Probe) shareable).echoArray(original);

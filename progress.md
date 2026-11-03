@@ -20959,3 +20959,14 @@
 - Decision: Retain the integration regression; continue CTX-01 with deterministic collision and foreign-owner lifecycle coverage.
 - Commit: `9288592`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T114056Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T114257Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T114515Z.log`.
+
+## 2026-11-03 Verify global array non-retention rules 10 minutes
+
+- Step/experiment: `ctx-01-global-array-reference-retention-20261103`
+- When: '2026-11-03 11:47 UTC' - '2026-11-03 11:57 UTC'
+- Change: Updated the cross-AID fixture to catch `SecurityException` when a global transient array is stored in a static field, instance field, or reference-array element, then reuse it as a valid SIO argument. Reclassified the earlier restore failure according to the Java Card 3.0.5 API contract and updated TODO/QKB/HANDOFF.
+- Validation: VPCD cross-AID suite passed 20/20 with Descriptor omitted and included. Physical exact-reader test on Pico 2 `8E464F4E2BBC0A19` passed global-array denials (`6B339000`), SIO/firewall cases, reset and GP DELETE stale-proxy checks, and fixture cleanup. CAP conversion completed with zero errors and the existing int-support warning. No firmware source changed, so architecture builds were not required.
+- Result: Static, instance, and array-component retention of a global transient array is rejected as required; passing it temporarily across SIO remains supported. The `RESTORE_READ_FAIL` was caused by the test attempting a prohibited store.
+- Decision: Close this global-array retention item; continue CTX-01 owner collision, stale-owner and broader native-reference acceptance.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T115208Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T115407Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T115608Z.log`.

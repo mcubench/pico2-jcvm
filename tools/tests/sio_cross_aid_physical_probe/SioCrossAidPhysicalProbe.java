@@ -94,9 +94,9 @@ public final class SioCrossAidPhysicalProbe {
       response = channel.transmit(new CommandAPDU(hex("801B000000")));
       actual = hex(response.getBytes());
       System.out.println("SIO_PHYSICAL:globalObjectArrayFirewall response=" + actual);
-      if (!actual.equals("6B319000")) {
-        throw new AssertionError("expected caught global Object[] " +
-                                 "SecurityException 6B319000, got " + actual);
+      if (!actual.equals("6B339000")) {
+        throw new AssertionError("expected global identity check and caught " +
+                                 "field/array retention denials 6B339000, got " + actual);
       }
 
       response = channel.transmit(new CommandAPDU(hex("8015000000")));

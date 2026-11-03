@@ -4897,3 +4897,24 @@ original terminology/status; check current summary and later fixes before reuse.
   observed run. Add a deterministic collision if practical; the Stack unit test
   separately asserts equal compact references with different owner IDs are
   unequal.
+
+
+## Global transient array references cannot be retained — 2026-11-03
+
+- **Specification:** Java Card API 3.0.5 `JCSystem.makeGlobalArray` says a
+  global array is transient and its reference cannot be stored in class
+  variables, instance variables, or array components. Such stores must throw
+  `SecurityException` ([official API documentation](https://docs.oracle.com/cd/E59935_01/api/javacard/framework/JCSystem.html)).
+- **Prior symptom explained:** A test prototype persisted the global array in
+  a static field and later caused `RESTORE_READ_FAIL` (`tag=023904`). The
+  assignment violated the API contract; adding a persistent encoding would be
+  incorrect. Current `Static_Handler`, `JC_Instance`, and
+  `JC_Array::setReferenceEntry` guards reject the three storage destinations.
+- **Regression:** The cross-AID fixture catches `SecurityException` for
+  static-field, instance-field, and array-component assignments, then passes
+  the global array as an SIO argument. VPCD passes 20/20 with Descriptor
+  omitted and included; physical Pico 2 `8E464F4E2BBC0A19` passes `6B339000`
+  and fixture cleanup. Log:
+  `artifacts/logs/sio-cross-aid-physical-20261103T115608Z.log`.
+- **Status:** This global-array retention rule is verified; broader context
+  ownership, root, and lifecycle acceptance remains open.

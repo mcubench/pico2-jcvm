@@ -168,15 +168,17 @@ def main() -> int:
                   "reference and its server-side array access is denied")
             response = vpcd.exchange(
                 connection, bytes.fromhex("801B000000"),
-                "cross-package global Object[] reference firewall"
+                "global Object[] identity and forbidden retention rules"
             )
-            if response != bytes.fromhex("6B319000"):
+            if response != bytes.fromhex("6B339000"):
                 raise RuntimeError(
                     f"global Object[] reference result {response.hex().upper()}, "
-                    "expected caught SecurityException 6B319000"
+                    "expected identity and three caught SecurityExceptions "
+                    "6B339000"
                 )
             print("TEST:PASS global Object[] preserves foreign identity against "
-                  "the service local reference and blocks cross-package use")
+                  "the service local reference; static, instance and array "
+                  "retention are rejected; foreign use is blocked")
             response = vpcd.exchange(
                 connection, bytes.fromhex("801C000000"),
                 "return caller-owned array through SIO"
