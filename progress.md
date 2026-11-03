@@ -17376,7 +17376,7 @@
   a single combined `max_crypto` emulator run or physical hardware behavior.
 - Decision: Keep previous physical reports distinct from these fresh VPCD
   results; rerun external/physical acceptance when the reader is available.
-- Commit: pending.
+- Commit: `eddf1f4`.
 - Artifacts/logs: See QKB's “Current-source cryptographic VPCD vectors” with
   paths and SHA-256 hashes for all three runs.
 
