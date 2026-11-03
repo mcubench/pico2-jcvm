@@ -21302,3 +21302,14 @@
 - Decision: Continue with the owner-aware lookup design and implementation.
 - Commit: metadata-only follow-up
 - Artifacts/logs: none.
+
+## 2026-11-03 Verify max_crypto ARM artifact 5 minutes
+
+- Step/experiment: `max-crypto-current-arm-build-20261103`
+- When: '2026-11-03 16:43 UTC' - '2026-11-03 16:48 UTC'
+- Change: Verified the exact `build/arm/pico2_choupi.uf2` identified by the user and updated `.agent/HANDOFF.md` with its selected profile, enabled RSA/ECC support, image identity, build status, and physical-validation limitation.
+- Validation: `./tools/build arm --profile max_crypto` passed and reported RP2350 ARM Secure; `./tools/build riscv --profile max_crypto` passed (VM core build). UF2 block magic validated across all 3,722 blocks. `tools/check-firmware-flash-boundary build/arm/pico2_choupi.elf.map` passed: firmware end `0x100e8820`, 96,224 bytes remaining. Generated support header has RSA-2048, RSA cipher/signature, EC-256, ECDSA, and EC key-pair support enabled. Authorized physical-reader helper found zero devices; hardware runtime was not tested.
+- Result: The current ARM file is a structurally valid, build-passing `max_crypto` image containing RSA/ECC capability selection. No evidence establishes physical operation of this exact image hash.
+- Decision: Keep hardware acceptance open. Reconfirm reader identity and flash this exact image only after both architecture builds pass and a reader is available; run finite serial monitor and unchanged upstream JCAlgTest CAP/client.
+- Commit: pending
+- Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`; `.agent/HANDOFF.md`; no hardware log.

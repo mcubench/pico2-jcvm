@@ -1,5 +1,24 @@
 # Current session — native Cipher SensitiveResult propagation — 2026-11-03 15:59 UTC
 
+## Verify max_crypto build artifact — 2026-11-03 16:48 UTC
+
+The exact `build/arm/pico2_choupi.uf2` the user referenced is generated with
+`JC_SUPPORT_PROFILE "max_crypto"` and enables RSA and ECC selectors (including
+RSA-2048, RSA cipher/signature, EC-256, ECDSA, and EC key-pair generation). Its
+UF2 block structure is valid. Rebuilt via repository wrappers:
+`./tools/build arm --profile max_crypto` and
+`./tools/build riscv --profile max_crypto`; both passed. ARM ends at
+`0x100e8820`, leaving 96,224 bytes before the 1 MiB firmware boundary. The
+rechecked ARM hash is
+`756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`.
+No physical Pico reader was present (authorized helper found zero), so this
+exact image has not been runtime-validated on hardware. The packaged
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-empty-card.uf2` is a different
+hash/image; do not conflate its prior acceptance state with this build output.
+Next: when a physical reader is enumerated, flash this exact ARM image and run
+finite serial plus the unchanged upstream JCAlgTest support check; retain the
+upstream CAP unchanged.
+
 ## CTX-01 owner-aware array-store audit — 2026-11-03 16:36 UTC
 
 Source review confirms `bc_aastore()` preserves reference owner provenance,
