@@ -20847,3 +20847,30 @@
 - Decision: Keep the end-to-end regression. Continue the remaining CTX-01 collision/storage/GC/stale-owner/DELETE audit.
 - Commit: `18afebd`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T044420Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261103T044608Z.log`.
+## 2026-11-03 Reproduce stale SIO proxy after GP DELETE 16 minutes
+
+- Step/experiment: `ctx-01-gp-delete-stale-proxy-repro-20261103`
+- When: '2026-11-03 09:59 UTC' - '2026-11-03 10:15 UTC'
+- Change: Extended the generated cross-AID VPCD regression to retain a fresh
+  proxy, select/authenticate the ISD, GP DELETE the service applet, reselect
+  the client, and require the retained proxy dispatch to raise a catchable
+  `SecurityException`. Recorded the failure and the user's Windows
+  `certutil -scinfo` PRESENT/MUTE report in TODO, QKB, and HANDOFF.
+- Validation: `./tools/build-pc` passed. The VPCD suite reproducibly passes
+  GP DELETE (`9000`) and then fails the new assertion: retained proxy returns
+  `6F00`; emulator reports `exception=24` (`ClassCastException`) at opcode
+  `94` (`invokeinterface`). `git diff --check` passed. Attempted two speculative
+  runtime guards, but they did not alter the failure and were reverted. No
+  ARM/RISC-V builds or hardware checks: the source was restored unchanged and
+  the authorized reader helper reports zero attached Pico readers.
+- Result: Deletion succeeds and invalidates the service instance, but stale
+  proxy dispatch after DELETE remains a reproducible VM defect. Windows reader
+  enumeration succeeds but the card does not answer/produce an accepted ATR.
+- Decision: Keep the failing regression and trace the precise exception path
+  before implementing a fix. Windows diagnosis needs a correlated firmware
+  serial log and Windows PC/SC trace.
+- Commit: `789c79d`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T095524Z.log`,
+  `artifacts/logs/sio-cross-aid-vpcd-20261103T100259Z.log`,
+  `artifacts/logs/sio-cross-aid-vpcd-20261103T100540Z.log`,
+  `artifacts/logs/sio-cross-aid-vpcd-20261103T101052Z.log`.
