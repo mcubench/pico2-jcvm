@@ -28,7 +28,7 @@
 - Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed; `./tools/build-sio-cross-aid-fixture` converted all three CAPs with zero conversion errors (expected int-support warnings); elevated VPCD SIO suite passed `TEST:SUMMARY pass=31 fail=0`. Authorized Pico reader refresh found zero devices, so physical flash/validation was skipped.
 - Result: The interpreter now preserves the native Cipher result through cross-applet calls and leaves failed calls unassigned by construction. The first transient AES key fixture returned uncaught `SecurityException`; using the persistent key form used by the existing symmetric crypto fixture passed. ARM image ends at `0x100d0a00`, leaving 194,048 bytes in the 1 MiB window.
 - Decision: Keep CTX-02 open for PIN, signature, random data, checksum, AEAD, key API producers, object-result GC rooting after locals drop, and physical validation.
-- Commit: to be recorded in a follow-up metadata commit
+- Commit: `c98d59a`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T155804Z.log`.
 
 ## 2026-11-03 Fix native MessageDigest SensitiveResult propagation 10 minutes

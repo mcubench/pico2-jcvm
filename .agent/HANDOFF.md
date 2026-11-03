@@ -1,4 +1,4 @@
-# Current session — fix MessageDigest SensitiveResult propagation — 2026-11-03 15:46 UTC
+# Current session — native Cipher SensitiveResult propagation — 2026-11-03 15:59 UTC
 
 Follow-up: extended the native SensitiveResult audit to `Cipher.update()` and
 `Cipher.doFinal()`. Both handlers clear previous state on entry and publish the
@@ -10,7 +10,7 @@ final output length after SIO returns. This extends the existing VPCD suite to
 AES key fixture initially failed with uncaught `SecurityException`; using the
 same persistent AES key form used by the symmetric crypto probe passes.
 Authorized reader refresh still reports zero Pico devices, so hardware
-validation remains outstanding. Commit `TBD` contains the Cipher change and
+validation remains outstanding. Commit `c98d59a` contains the Cipher change and
 tests. Next CTX-02 audit targets additional declared producers (PIN, signature,
 random data, checksum, AEAD and enabled key APIs), then object-result GC rooting.
 
