@@ -20,6 +20,17 @@
 - Commit: pending
 - Artifacts/logs: Windows output supplied in conversation; no local artifact.
 
+## 2026-11-03 Verify object SensitiveResult producers across SIO 5 minutes
+
+- Step/experiment: `ctx02-sensitive-object-result-sio-20261103`
+- When: '2026-11-03 15:30 UTC' - '2026-11-03 15:35 UTC'
+- Change: Extended the interpreted three-package CAP fixture to assert object SensitiveResult values from `JCSystem.getAID()` and `getPreviousContextAID()` inside the service, and to assert that the caller's `getAID()` result survives a passive SIO context switch. Updated CTX-02 TODO and session handoff.
+- Validation: `./tools/build-sio-cross-aid-fixture` converted all CAPs with zero conversion errors (expected int-support warnings); Python syntax check passed. Elevated loopback VPCD run passed `TEST:SUMMARY pass=29 fail=0`. No firmware or upstream CAP was changed; no physical reader was available.
+- Result: Interpreted Java Card code confirms both API object-result assertions and pass-through of a caller object result when SIO service performs no sensitive API call.
+- Decision: Continue CTX-02 with GC-rooting of object results after local references are dropped, additional result-producing APIs, and physical validation. Current test scope remains VPCD only.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T153220Z.log`.
+
 ## 2026-11-03 Add interpreted SensitiveResult checks across SIO 10 minutes
 
 - Step/experiment: `ctx02-sensitive-result-sio-java-caps-20261103`

@@ -1,3 +1,23 @@
+# Current session — extend SensitiveResult object-result SIO coverage — 2026-11-03 15:35 UTC
+
+Extended the current cross-AID fixture with two additional interpreted SIO
+checks. First, the client saves its object SensitiveResult from
+`JCSystem.getAID()`, calls a passive service method that invokes no sensitive
+API, then asserts the same object result after returning. Second, the service
+asserts object results from its own `JCSystem.getAID()` and
+`getPreviousContextAID()` calls. The fixture converted cleanly; the elevated
+loopback VPCD suite passed `TEST:SUMMARY pass=29 fail=0`, including all previous
+short-result, exceptional-result, firewall, restart, DELETE and reinstall
+checks. Log: `artifacts/logs/sio-cross-aid-vpcd-20261103T153220Z.log`.
+
+No runtime firmware or upstream CAP changed. The physical reader helper still
+reports zero Pico devices in this VM. CTX-02 remains open for GC-rooting an
+object-valued result after ordinary Java locals are dropped, additional
+producers (PIN and enabled crypto APIs), and physical validation. TODO reflects
+the 29/29 coverage; previous step `6911fb6` covered the initial two SIO checks.
+
+---
+
 # Current session — Java-level SensitiveResult across SIO — 2026-11-03 15:30 UTC
 
 Added cross-AID CAP fixtures that exercise Java Card `SensitiveResult` from an

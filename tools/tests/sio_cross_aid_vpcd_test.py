@@ -181,6 +181,28 @@ def main() -> int:
             print("TEST:PASS failed service Util.arrayCopyNonAtomic clears "
                   "SensitiveResult before the caller assertion")
             response = vpcd.exchange(
+                connection, bytes.fromhex("8023000000"),
+                "SensitiveResult object results from AID APIs in service"
+            )
+            if response != bytes.fromhex("6A319000"):
+                raise RuntimeError(
+                    "service AID SensitiveResult checks returned "
+                    f"{response.hex().upper()}, expected 6A319000"
+                )
+            print("TEST:PASS interpreted service asserts getAID and "
+                  "getPreviousContextAID object results")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8024000000"),
+                "caller AID SensitiveResult survives a passive SIO call"
+            )
+            if response != bytes.fromhex("6A359000"):
+                raise RuntimeError(
+                    "caller AID SensitiveResult did not survive passive SIO: "
+                    f"{response.hex().upper()}, expected 6A359000"
+                )
+            print("TEST:PASS caller getAID object result survives SIO when "
+                  "service invokes no sensitive API")
+            response = vpcd.exchange(
                 connection, bytes.fromhex("801A000000"),
                 "cross-context private array reference firewall"
             )
@@ -567,7 +589,7 @@ def main() -> int:
                     f"{response.hex().upper()}, expected 45679000"
                 )
             print("TEST:PASS fresh proxy dispatch works after same-AID reinstall")
-            print("TEST:SUMMARY pass=27 fail=0")
+            print("TEST:SUMMARY pass=29 fail=0")
             return 0
         finally:
             if connection is not None:

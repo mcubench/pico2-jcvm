@@ -528,10 +528,12 @@ Archive text is historical evidence, not current device state or priorities.
   package CAPs: the service applet's successful `Util.arrayCopyNonAtomic`
   result is asserted by the caller after the SIO context switch, and an invalid
   service copy clears the result so the caller's assertion throws
-  `SecurityException`. The VPCD cross-AID suite passes 27/27 including both
-  cases and the existing lifecycle/firewall regressions. This is emulator
-  evidence, not physical acceptance.
-  Remaining: exercise additional result producers (AID/JCSystem, PIN, digest,
+  `SecurityException`. The caller's object result from `JCSystem.getAID()` also
+  survives a passive SIO call, and the service successfully asserts its
+  `getAID()` and `getPreviousContextAID()` object results. The VPCD cross-AID
+  suite passes 29/29 with these cases and the existing lifecycle/firewall
+  regressions. This is emulator evidence, not physical acceptance.
+  Remaining: exercise additional result producers (PIN, digest,
   signature and key APIs where enabled), including normal and exceptional
   returns; verify GC rooting of object results through an interpreted SIO call;
   and repeat selected coverage on physical hardware when available.

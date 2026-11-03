@@ -6,6 +6,7 @@ import javacard.framework.Applet;
 import javacard.framework.JCSystem;
 import javacard.framework.Shareable;
 import javacard.framework.Util;
+import javacardx.security.SensitiveResult;
 import sio.contract.Probe;
 
 public final class ServiceApplet extends Applet implements Probe {
@@ -70,6 +71,22 @@ public final class ServiceApplet extends Applet implements Probe {
     } catch (ArrayIndexOutOfBoundsException expected) {
       return (short)0x0123;
     }
+  }
+
+  public short sensitiveAIDResults() {
+    AID self = JCSystem.getAID();
+    SensitiveResult.assertEquals(self);
+    AID previous = JCSystem.getPreviousContextAID();
+    SensitiveResult.assertEquals(previous);
+    return self.equals(SERVICE_AID, (short)0, (byte)SERVICE_AID.length) &&
+                   previous != null &&
+                   previous.equals(CLIENT_AID, (short)0,
+                                   (byte)CLIENT_AID.length)
+        ? (short)0x6A31 : (short)0x6A32;
+  }
+
+  public short noSensitiveApi() {
+    return (short)0x6A33;
   }
 
   public short throwSecurityException() {
