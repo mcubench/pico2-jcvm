@@ -19,6 +19,13 @@ Next: when a physical reader is enumerated, flash this exact ARM image and run
 finite serial plus the unchanged upstream JCAlgTest support check; retain the
 upstream CAP unchanged.
 
+The current build output was also copied without modification to
+`artifacts/firmware/pico2-jcvm-max_crypto-arm-20261103-current.uf2` for external
+testing. Its checksum and transfer instructions are in
+`artifacts/firmware/README-max_crypto-current-20261103.txt`. Do not direct the
+user to the older `pico2-jcvm-max_crypto-arm-empty-card.uf2` artifact for this
+current build request.
+
 ## CTX-01 owner-aware array-store audit — 2026-11-03 16:36 UTC
 
 Source review confirms `bc_aastore()` preserves reference owner provenance,

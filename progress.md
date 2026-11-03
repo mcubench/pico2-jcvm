@@ -6,7 +6,7 @@
 - Validation: Inspected repository CPLC bytes and the pinned GlobalPlatformPro date decoder/tests; compared them with the exact GPPro and certutil output. Confirmed Microsoft discovery/minidriver behavior against official documentation. No firmware, CAP, applet state, or physical device was changed; no build or hardware validation was required.
 - Result: Both Windows reader slots connect with ATR `3B800181`; ISD SELECT, CPLC, and Card Data return `9000`. Optional IIN/CIN/Card Capabilities/Key Info Template return `6A88`. `certutil` reaches provider lookup after identifying the available, unpowered card and fails with `ERROR_FILE_NOT_FOUND`, indicating no Windows card-type/provider association for that ATR.
 - Decision: No firmware change is indicated. Windows certificate/minidriver integration would require a separately defined provider/ATR mapping requirement. The earlier MUTE hypothesis is superseded for this successful GPPro session.
-- Commit: pending
+- Commit: `30e840b`
 - Artifacts/logs: user-provided Windows output; none archived locally. Microsoft references are linked in `.agent/QKB.md`.
 
 ## 2026-11-03 Update Windows acceptance from GPPro evidence 3 minutes
@@ -21311,5 +21311,16 @@
 - Validation: `./tools/build arm --profile max_crypto` passed and reported RP2350 ARM Secure; `./tools/build riscv --profile max_crypto` passed (VM core build). UF2 block magic validated across all 3,722 blocks. `tools/check-firmware-flash-boundary build/arm/pico2_choupi.elf.map` passed: firmware end `0x100e8820`, 96,224 bytes remaining. Generated support header has RSA-2048, RSA cipher/signature, EC-256, ECDSA, and EC key-pair support enabled. Authorized physical-reader helper found zero devices; hardware runtime was not tested.
 - Result: The current ARM file is a structurally valid, build-passing `max_crypto` image containing RSA/ECC capability selection. No evidence establishes physical operation of this exact image hash.
 - Decision: Keep hardware acceptance open. Reconfirm reader identity and flash this exact image only after both architecture builds pass and a reader is available; run finite serial monitor and unchanged upstream JCAlgTest CAP/client.
-- Commit: pending
+- Commit: `30e840b`
 - Artifacts/logs: `build/arm/pico2_choupi.uf2` SHA-256 `756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`; `.agent/HANDOFF.md`; no hardware log.
+
+## 2026-11-03 Package current max_crypto firmware for external testing 2 minutes
+
+- Step/experiment: `package-current-max-crypto-arm-20261103`
+- When: '2026-11-03 16:48 UTC' - '2026-11-03 16:50 UTC'
+- Change: Copied the current `build/arm/pico2_choupi.uf2` to a new dated file under `artifacts/firmware/` after identifying that the previously referenced package was an older build. Added matching image metadata and corrected the session handoff.
+- Validation: `sha256sum` confirmed source and packaged image both equal `756fc23ca143f93625752855f2389eca201c6da11cd630b779f93d898f3d4bc6`; both are 1,905,664 bytes. No firmware rebuild or physical flash was performed in this packaging step.
+- Result: A current, shareable max_crypto image is available without replacing the older packaged artifact. It enables RSA and ECC and does not bundle the upstream JCAlgTest CAP.
+- Decision: Use the newly dated artifact for external validation. The exact image is build-validated but not hardware-runtime-validated; it was generated from the shared worktree containing uncommitted local source changes.
+- Commit: pending
+- Artifacts/logs: `artifacts/firmware/pico2-jcvm-max_crypto-arm-20261103-current.uf2`; `artifacts/firmware/README-max_crypto-current-20261103.txt`.
