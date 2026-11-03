@@ -21095,5 +21095,5 @@
 - Validation: `PICO2_HOST_USB_ACCESS=1 sudo -n /usr/local/sbin/pico2-pcsc-reader && PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` succeeded and exposed one physical reader, `2BED26ED20556535`. Exact-reader `./tools/env java -jar .local-toolchain/globalplatformpro/tool/target/gp.jar --reader 'Pico 2 CHOUPI CCID [JCVM CCID] (2BED26ED20556535) 00 00' --list` succeeded. No firmware was flashed and no applet/package was modified.
 - Result: The reader already contains both SIO fixture packages `A000000151000003` and `A000000151000004`, so the physical delete/reinstall test was not run. The harness would require those AIDs absent and refuses overwriting them. JCAlgTest and API applets are also installed and preserved.
 - Decision: Keep the physical same-AID acceptance open; use a different identified token without conflicting AIDs when one is available and continue offline work meanwhile.
-- Commit: pending
+- Commit: `66364ba`
 - Artifacts/logs: live command output only; no new log file.
