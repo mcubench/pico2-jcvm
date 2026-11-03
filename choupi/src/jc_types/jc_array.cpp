@@ -449,6 +449,15 @@ bool JC_Array::isReferenceEntryAccessible(const uint16_t index,
          owner == kJCREGlobalReferenceOwner || owner == package_id;
 }
 
+jpackage_ID_t JC_Array::getReferenceEntryOwner(const uint16_t index) {
+  checkArrayEntryIndex(*this, index);
+  if (!this->getOwner().isGlobalHeap() ||
+      this->type != JAVA_ARRAY_T_REFERENCE) {
+    return kNoGlobalReferenceOwner;
+  }
+  return this->global_reference_owners.at(index);
+}
+
 void JC_Array::visitGlobalReferences(
     const jpackage_ID_t package_id, void (*visitor)(jref_t, void *),
     void *visitor_context) {
@@ -636,7 +645,8 @@ void JC_Array::setIntEntry(const uint16_t index, const jint_t value)
  * @param[value] the new value
  */
 void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
-                                 Context &context)
+                                 Context &context,
+                                 const jpackage_ID_t value_owner)
 {
   checkArrayEntryIndex(*this, index);
   if (value.isGlobalArray()) {
@@ -660,6 +670,13 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
 
   // Native-created Object[] arrays use 0xFFFF as a wildcard component type;
   // unlike CAP-backed arrays, they have no component class in a CAP pool.
+  const bool foreign_reference =
+      value_owner != 0xff && value_owner != 0xfe &&
+      value_owner != context.getCurrentPackageID();
+  if (foreign_reference &&
+      (!this->getOwner().isGlobalHeap() || this->reference_type != 0xFFFF)) {
+    throw Exceptions::SecurityException;
+  }
   if (this->reference_type == 0xFFFF || value.isNullPointer()) {
     // Wildcard arrays accept any reference; null is valid for all arrays.
     ;
@@ -725,12 +742,15 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
 
   jpackage_ID_t global_reference_owner = kNoGlobalReferenceOwner;
   if (this->getOwner().isGlobalHeap() && !value.isNullPointer()) {
-    Heap &heap = context.getHeap();
     if (value.isGlobalInstance()) {
       global_reference_owner = kJCREGlobalReferenceOwner;
+    } else if (value_owner != kNoGlobalReferenceOwner &&
+               value_owner != kJCREGlobalReferenceOwner) {
+      global_reference_owner = value_owner;
     } else {
       // Validate the local handle before retaining it and associate it with
       // the CAP package heap so equal handles in another package cannot alias.
+      Heap &heap = context.getHeap();
       if (value.isInstance()) {
         (void)heap.getInstance(value);
       } else {

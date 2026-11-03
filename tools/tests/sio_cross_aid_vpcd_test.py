@@ -155,6 +155,28 @@ def main() -> int:
                 )
             print("TEST:PASS cross-AID SIO byte/short args, global AID and "
                   "null array; response=45679000")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("801A000000"),
+                "cross-context private array reference firewall"
+            )
+            if response != bytes.fromhex("5A319000"):
+                raise RuntimeError(
+                    f"private-array firewall result {response.hex().upper()}, "
+                    "expected caught SecurityException 5A319000"
+                )
+            print("TEST:PASS private byte[] argument crosses as an owned "
+                  "reference and its server-side array access is denied")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("801B000000"),
+                "cross-package global Object[] reference firewall"
+            )
+            if response != bytes.fromhex("6B319000"):
+                raise RuntimeError(
+                    f"global Object[] reference result {response.hex().upper()}, "
+                    "expected caught SecurityException 6B319000"
+                )
+            print("TEST:PASS global Object[] returns an owner-tagged foreign "
+                  "reference and blocks its cross-package use")
             response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
                                      "retain Shareable proxy across APDUs")
             if response != bytes.fromhex("6A109000"):
@@ -321,7 +343,7 @@ def main() -> int:
                 )
             print("TEST:PASS Object.equals on proxy is blocked; "
                   "response=6A099000")
-            print("TEST:SUMMARY pass=15 fail=0")
+            print("TEST:SUMMARY pass=18 fail=0")
             return 0
         finally:
             if connection is not None:

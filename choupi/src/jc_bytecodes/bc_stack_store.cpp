@@ -203,14 +203,17 @@ void Bytecodes::bc_istore() {
  *   of 0, except that the operand 0 is implicit.
  */
 void Bytecodes::bc_astore_0() {
-  jref_t objectref;
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("ASTORE_0");
 
   // TODO: The popped reference may have the type returnAddress ...
-  objectref = stack.pop_Reference();
-  stack.writeLocal_Reference(0, objectref);
+  if (stack.get_Pushed_ValueKind(1) == Stack::ValueKind::Reference) {
+    const auto reference = stack.pop_ReferenceValue();
+    stack.writeLocal_Reference(0, reference.reference, reference.owner);
+  } else {
+    stack.writeLocal_ReturnAddress(0, stack.pop_ReturnAddress());
+  }
 
   return;
 }
@@ -247,13 +250,16 @@ void Bytecodes::bc_astore_0() {
  *   of 1, except that the operand 1 is implicit.
  */
 void Bytecodes::bc_astore_1() {
-  jref_t objectref;
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("ASTORE_1");
 
-  objectref = stack.pop_Reference();
-  stack.writeLocal_Reference(1, objectref);
+  if (stack.get_Pushed_ValueKind(1) == Stack::ValueKind::Reference) {
+    const auto reference = stack.pop_ReferenceValue();
+    stack.writeLocal_Reference(1, reference.reference, reference.owner);
+  } else {
+    stack.writeLocal_ReturnAddress(1, stack.pop_ReturnAddress());
+  }
 
   return;
 }
@@ -290,13 +296,16 @@ void Bytecodes::bc_astore_1() {
  *   of 2, except that the operand 2 is implicit.
  */
 void Bytecodes::bc_astore_2() {
-  jref_t objectref;
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("ASTORE_2");
 
-  objectref = stack.pop_Reference();
-  stack.writeLocal_Reference(2, objectref);
+  if (stack.get_Pushed_ValueKind(1) == Stack::ValueKind::Reference) {
+    const auto reference = stack.pop_ReferenceValue();
+    stack.writeLocal_Reference(2, reference.reference, reference.owner);
+  } else {
+    stack.writeLocal_ReturnAddress(2, stack.pop_ReturnAddress());
+  }
 
   return;
 }
@@ -333,14 +342,17 @@ void Bytecodes::bc_astore_2() {
  *   of 3, except that the operand 0 is implicit.
  */
 void Bytecodes::bc_astore_3() {
-  jref_t objectref;
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("ASTORE_3");
 
   // TODO: The reference popped may have the type returnAddress ...
-  objectref = stack.pop_Reference();
-  stack.writeLocal_Reference(3, objectref);
+  if (stack.get_Pushed_ValueKind(1) == Stack::ValueKind::Reference) {
+    const auto reference = stack.pop_ReferenceValue();
+    stack.writeLocal_Reference(3, reference.reference, reference.owner);
+  } else {
+    stack.writeLocal_ReturnAddress(3, stack.pop_ReturnAddress());
+  }
 
   return;
 }

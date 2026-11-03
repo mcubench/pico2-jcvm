@@ -326,7 +326,38 @@ jint_t Stack::pop_Int() {
  * @return the top of stack element as a reference value.
  */
 jref_t Stack::pop_Reference() {
-  return this->pop_ReferenceValue().reference;
+  Frame &current_frame = this->getCurrentFrame();
+  if (current_frame.getTOS() <= current_frame.getOP()) {
+    throw Exceptions::StackUnderflowException;
+  }
+  jword_t *slot = current_frame.getTOS() - 1;
+  if (this->getValueKind(slot) != ValueKind::Reference) {
+    throw Exceptions::SecurityException;
+  }
+  const uint8_t owner =
+      this->jc_stack_reference_owners[slot - this->jc_stack];
+  if (owner != kCurrentReferenceOwner && owner != kGlobalReferenceOwner) {
+    throw Exceptions::SecurityException;
+  }
+  return jref_t(current_frame.pop_Value());
+}
+
+jref_t Stack::pop_ReferenceFromPackage(const jpackage_ID_t package_id) {
+  Frame &current_frame = this->getCurrentFrame();
+  if (current_frame.getTOS() <= current_frame.getOP()) {
+    throw Exceptions::StackUnderflowException;
+  }
+  jword_t *slot = current_frame.getTOS() - 1;
+  if (this->getValueKind(slot) != ValueKind::Reference) {
+    throw Exceptions::SecurityException;
+  }
+  const uint8_t owner =
+      this->jc_stack_reference_owners[slot - this->jc_stack];
+  if (owner != kCurrentReferenceOwner && owner != kGlobalReferenceOwner &&
+      owner != package_id) {
+    throw Exceptions::SecurityException;
+  }
+  return jref_t(current_frame.pop_Value());
 }
 
 Stack::ReferenceValue Stack::pop_ReferenceValue() {
@@ -386,6 +417,14 @@ jref_t Stack::get_Pushed_Element(uint16_t n)
 
 #endif /* JCRE_STACK_OVERFLOW_PROTECTION */
 
+  if (this->getValueKind(value) == ValueKind::Reference) {
+    const uint8_t owner =
+        this->jc_stack_reference_owners[value - this->jc_stack];
+    if (owner != kCurrentReferenceOwner && owner != kGlobalReferenceOwner) {
+      throw Exceptions::SecurityException;
+    }
+  }
+
   return jref_t(*value);
 }
 
@@ -430,6 +469,22 @@ uint8_t Stack::get_Pushed_ReferenceOwner(const uint16_t n) {
     throw Exceptions::SecurityException;
   }
   return this->jc_stack_reference_owners[word - this->jc_stack];
+}
+
+Stack::ReferenceValue Stack::get_Pushed_ReferenceValue(const uint16_t n) {
+  assert(n > 0);
+  Frame &current_frame = this->getCurrentFrame();
+  jword_t *word = current_frame.getTOS() - n;
+#ifdef JCRE_STACK_OVERFLOW_PROTECTION
+  if (word < current_frame.getOP()) {
+    throw Exceptions::StackUnderflowException;
+  }
+#endif
+  if (this->getValueKind(word) != ValueKind::Reference) {
+    throw Exceptions::SecurityException;
+  }
+  return {jref_t(*word),
+          this->jc_stack_reference_owners[word - this->jc_stack]};
 }
 
 Stack::ValueKind Stack::get_Pushed_ValueKind(const uint16_t n)
@@ -488,7 +543,12 @@ jint_t Stack::readLocal_Int(const uint8_t local_number) {
  * @return the local variable value at 'local_number' position.
  */
 jref_t Stack::readLocal_Reference(const uint8_t local_number) {
-  return this->readLocal_ReferenceValue(local_number).reference;
+  const ReferenceValue value = this->readLocal_ReferenceValue(local_number);
+  if (value.owner != kCurrentReferenceOwner &&
+      value.owner != kGlobalReferenceOwner) {
+    throw Exceptions::SecurityException;
+  }
+  return value.reference;
 }
 
 Stack::ReferenceValue

@@ -42,7 +42,6 @@ converter_int=(env "JAVA_HOME=${java8_home}" "PATH=${java8_home}/bin:${PATH}"
   -applet 0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03:0x01 \
   sio.service.ServiceApplet sio.service \
   0xA0:0x00:0x00:0x01:0x51:0x00:0x00:0x03 1.0
-
 "${repo_root}/tools/env" "${java8_home}/bin/javac" \
   -source 1.7 -target 1.7 -Xlint:-options \
   -classpath "${kit}/lib/api_classic.jar:${build_dir}/contract-classes" \

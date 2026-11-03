@@ -226,7 +226,7 @@ void Bytecodes::bc_arraylength() {
 
   TRACE_JCVM_DEBUG("ARRAY_LENGTH");
 
-  arrayref = stack.pop_Reference();
+  arrayref = stack.pop_ReferenceFromPackage(context.getCurrentPackageID());
   auto array = heap.getArray(arrayref);
 
   switch (array->getType()) {
@@ -298,7 +298,7 @@ void Bytecodes::bc_aaload() {
   TRACE_JCVM_DEBUG("AALOAD");
 
   index = stack.pop_Short();
-  arrayref = stack.pop_Reference();
+  arrayref = stack.pop_ReferenceFromPackage(context.getCurrentPackageID());
 
   // Check if index is >= 0
   if (index < 0) {
@@ -307,11 +307,17 @@ void Bytecodes::bc_aaload() {
 
   auto array = heap.getArray(arrayref);
   jref_t ref = array->getReferenceEntry(index);
-  if (!array->isReferenceEntryAccessible(
-          index, context.getCurrentPackageID())) {
-    throw Exceptions::SecurityException;
+  uint8_t reference_owner = array->getReferenceEntryOwner(index);
+  if (reference_owner == Stack::kGlobalReferenceOwner || ref.isNullPointer() ||
+      reference_owner == context.getCurrentPackageID()) {
+    reference_owner = Stack::kGlobalReferenceOwner == reference_owner &&
+                              !ref.isNullPointer()
+                          ? Stack::kGlobalReferenceOwner
+                          : Stack::kCurrentReferenceOwner;
+  } else if (reference_owner == 0xff) {
+    reference_owner = Stack::kCurrentReferenceOwner;
   }
-  stack.push_Reference(ref);
+  stack.push_Reference(ref, reference_owner);
 
   return;
 }
@@ -416,9 +422,10 @@ void Bytecodes::bc_aastore() {
 
   TRACE_JCVM_DEBUG("AASTORE");
 
-  value = stack.pop_Reference();
+  const auto reference_value = stack.pop_ReferenceValue();
+  value = reference_value.reference;
   index = stack.pop_Short();
-  arrayref = stack.pop_Reference();
+  arrayref = stack.pop_ReferenceFromPackage(context.getCurrentPackageID());
 
   // Check if index is >= 0
   if (index < 0) {
@@ -426,7 +433,7 @@ void Bytecodes::bc_aastore() {
   }
 
   auto array = heap.getArray(arrayref);
-  array->setReferenceEntry(index, value, context);
+  array->setReferenceEntry(index, value, context, reference_value.owner);
 
   return;
 }
@@ -479,7 +486,7 @@ void Bytecodes::bc_baload() {
   TRACE_JCVM_DEBUG("BALOAD");
 
   index = stack.pop_Short();
-  arrayref = stack.pop_Reference();
+  arrayref = stack.pop_ReferenceFromPackage(context.getCurrentPackageID());
 
   // Check if index is >= 0
   if (index < 0) {
@@ -551,7 +558,7 @@ void Bytecodes::bc_bastore() {
 
   value = stack.pop_Byte();
   index = stack.pop_Short();
-  arrayref = stack.pop_Reference();
+  arrayref = stack.pop_ReferenceFromPackage(context.getCurrentPackageID());
 
   // Check if index is >= 0
   if (index < 0) {
@@ -615,7 +622,7 @@ void Bytecodes::bc_saload() {
   TRACE_JCVM_DEBUG("SALOAD");
 
   index = stack.pop_Short();
-  arrayref = stack.pop_Reference();
+  arrayref = stack.pop_ReferenceFromPackage(context.getCurrentPackageID());
 
   // Check if index is >= 0
   if (index < 0) {
@@ -679,7 +686,7 @@ void Bytecodes::bc_iaload() {
   TRACE_JCVM_DEBUG("IALOAD");
 
   index = stack.pop_Short();
-  arrayref = stack.pop_Reference();
+  arrayref = stack.pop_ReferenceFromPackage(context.getCurrentPackageID());
 
   // Check if index is >= 0
   if (index < 0) {
@@ -752,7 +759,7 @@ void Bytecodes::bc_sastore() {
 
   value = stack.pop_Short();
   index = stack.pop_Short();
-  arrayref = stack.pop_Reference();
+  arrayref = stack.pop_ReferenceFromPackage(context.getCurrentPackageID());
 
   // Check if index is >= 0
   if (index < 0) {
@@ -828,7 +835,7 @@ void Bytecodes::bc_iastore() {
 
   value = stack.pop_Int();
   index = stack.pop_Short();
-  arrayref = stack.pop_Reference();
+  arrayref = stack.pop_ReferenceFromPackage(context.getCurrentPackageID());
 
   // Check if index is >= 0
   if (index < 0) {

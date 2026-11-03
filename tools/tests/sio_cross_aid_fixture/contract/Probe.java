@@ -8,4 +8,6 @@ public interface Probe extends Shareable {
                  byte[] nullable);
   int exerciseWide(int value);
   short throwSecurityException();
+  short inspectPrivateArray(byte[] value);
+  short inspectGlobalReference(Object[] values);
 }

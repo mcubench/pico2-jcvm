@@ -20585,6 +20585,18 @@
 - Commit: `2c2cf93`
 - Artifacts/logs: No hardware artifacts; focused test output `RMI_REGISTRY:PASS`; ARM/RISC-V build output was not archived.
 
+
+## 2026-11-02 Enforce owner tags on private SIO references 48 minutes
+
+- Step/experiment: `ctx01-private-reference-firewall-20261102`
+- When: '2026-11-02 19:29 UTC' - '2026-11-02 20:17 UTC'
+- Change: Marshalled non-null SIO reference arguments with their source package owner. Preserved owner tags through generic and compact `aload`/`astore`, including `aload_0..3` and `astore_0..3`, and made array dereference bytecodes reject references owned by another package. Extended the cross-AID fixture to pass a private byte array through `astore_2`/`aload_2` before a caught `SecurityException`, and to store a client instance in global `Object[]`, read it in the service package, and deny its unauthorized use. Updated CTX-01 and QKB with the implemented boundary and remaining firewall audit.
+- Validation: `./tools/test-rmi-registry` passed. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile max_crypto`, and `./tools/build riscv --profile max_crypto` passed (147/150 selectable capabilities); ARM image ends at `0x100e83bc`, leaving 97,348 bytes in the 1 MiB firmware window. Descriptor-omitted and Descriptor-included VPCD each passed 18/18. `javap -c` confirmed the private-array fixture emits `aload_1; astore_2; aload_2; arraylength`. Physical cycle on Pico 2 `8E464F4E2BBC0A19` flashed and verified the ARM image; its finite serial monitor passed repeatedly with `TEST:SUMMARY pass=1 fail=0`. Three-package physical GPPro LOAD/INSTALL/SELECT passed both private-array denial (`5A319000`) and global-Object[] denial (`6B319000`), then cleaned up all fixtures. Scoped `git -c core.whitespace=cr-at-eol diff --check` passed.
+- Result: Private reference parameters and references stored in a transient JCRE global Object[] retain their source owner across applet contexts. The receiver's array/object use is denied before its heap can resolve an aliasing compact handle. An earlier fixture that persisted the transient global-array handle in a static field produced `RESTORE_READ_FAIL tag=023904`; the final regression passes the array as an SIO argument, and the persistence rule is tracked separately in TODO/QKB. Other foreign-reference operations remain fail-closed pending broader audit; this does not complete CTX-01.
+- Decision: Continue the CTX-01 audit for every reference-consuming bytecode/native path, collision behavior, returns, roots/GC, storage and owner deletion. Do not infer full cross-context firewall completion from the array cases.
+- Commit: `pending (recorded in metadata follow-up)`
+- Artifacts/logs: UF2 `build/arm/pico2_choupi.uf2`, SHA-256 `78e7fdbffa6654091963c81e8839b4034646db1d02047d4c268ff4f504e42e43`; cycle `artifacts/logs/cycle-choupi-20261102T195753Z.log`, SHA-256 `fa7cf70db4a339e920e1f8c455cc7368f29d9986a431d876ec1b35c565a67fe0`; descriptor-omitted VPCD `artifacts/logs/sio-cross-aid-vpcd-20261102T201840Z.log` (SHA-256 `916f1583f7956f1eb2075a6850bd9e1e9b3f951d2873d7bbf1d8b649cb62665c`), Descriptor-included VPCD `artifacts/logs/sio-cross-aid-vpcd-20261102T201937Z.log` (SHA-256 `409ad950198d0cbade9281d9cda4836f9ffccd3778400c412704de79cf824ebc`); physical `artifacts/logs/sio-cross-aid-physical-20261102T201442Z.log`, SHA-256 `79116b74e1d3c70efc6f681d0056e88a7afe428ba68ba3d5c6f5849b092989d9`.
+
 ## 2026-11-02 Archive completed fix checklist and dated reviews 6 minutes
 
 - Step/experiment: `markdown-tidy-reviews`

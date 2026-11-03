@@ -1045,7 +1045,8 @@ void Bytecodes::bc_invokeinterface() {
     if (signature_status == ShareableSignatureStatus::Found) {
       if (!buildShareableInitialLocals(
               signature_nibbles.data(), signature_nibble_count, nargs,
-              server_reference, stack, initial_locals, initial_local_count)) {
+              server_reference, stack, initial_locals, initial_local_count,
+              context.getCurrentPackageID())) {
         TRACE_JCVM_DEBUG("SIO_INVOKE argument marshalling failed nibbles=%u",
                          static_cast<unsigned>(signature_nibble_count));
         throw Exceptions::SecurityException;
@@ -1054,9 +1055,9 @@ void Bytecodes::bc_invokeinterface() {
                    ShareableSignatureStatus::DescriptorUnavailable ||
                !buildShareableTaggedInitialLocals(
                    nargs, server_reference, stack, initial_locals,
-                   initial_local_count)) {
-      // Missing type tags or private references fail closed. The method
-      // header above has already verified the target's argument word count.
+                   initial_local_count, context.getCurrentPackageID())) {
+      // Missing type tags or malformed reference provenance fail closed. The
+      // method header above has verified the target's argument word count.
       TRACE_JCVM_DEBUG("SIO_INVOKE descriptor-free argument tags rejected");
       throw Exceptions::SecurityException;
     }

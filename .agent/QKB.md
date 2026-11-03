@@ -627,10 +627,14 @@
   than the specified behavior. Source: [Oracle Java Card RE Specification
   3.0.5, §§6.2.2 and 6.2.8.2](https://docs.oracle.com/cd/E59935_01/JCCRE.pdf).
 - **Current implementation (partial):** volatile JCRE global `Object[]`
-  entries now carry per-slot owning package IDs. Same-package store/read works;
-  `aaload` from a different package fails closed before exposing the compact
-  heap-local handle. `JCTransactionProbe` case 41 now stores `this`, reads it
-  back, checks identity, and expects success (`009000`).
+  entries carry per-slot owning package IDs. Cross-package `aastore` stores the
+  source owner; `aaload` returns the compact handle with that owner tag, without
+  presenting it as receiver-local. Ordinary reference consumption and array
+  dereference reject foreign owners before resolving the handle in the
+  receiver's heap. `JCTransactionProbe` case 41 verifies same-package
+  store/read identity (`009000`). A three-package SIO fixture stores the client
+  instance in a global Object[], reads it in the service package, then catches
+  `SecurityException` on cross-package use (`6B319000`).
 - **Why direct relaxation is unsafe:** global arrays use shared 16-bit
   references, while each applet heap independently allocates the same compact
   handle range. Returning a foreign handle unchanged in another context could
@@ -644,11 +648,20 @@
   independent heaps, owner-only roots, GC retention/reclamation, reset, and
   package deletion. These global arrays are transient, so persistent-slot
   behavior is not involved.
-- **Remaining limitation:** cross-package `aaload` still throws
-  `SecurityException`. Full support needs an opaque owner-tagged reference or
-  proxy that does not alias a local handle and continues to enforce the normal
-  firewall on use. Do not relax this fail-closed behavior until cross-package
-  read, unauthorized access, stale-owner, and lifecycle tests exist.
+- **Remaining limitation:** foreign values are opaque only while the owner tag
+  remains attached to VM stack/local state. Equality, casts, returns, arbitrary
+  storage, native consumers, GC roots, and stale-owner deletion need a complete
+  policy and tests. Many of these paths still fail closed; the 6B31 test proves
+  only array-read propagation followed by denied use, not the whole firewall.
+- **Persistence test pitfall:** An earlier fixture cached a
+  `CLEAR_ON_RESET` global Object[] returned by `JCSystem.makeGlobalArray` in an
+  applet static reference. A later service-context restore reported
+  `CHOUPI:RESTORE_READ_FAIL id=5 tag=023904` and the APDU returned `6F00`. This
+  fixture shape was removed; the final test passes the global array as a
+  temporary SIO argument. Do not treat the failed fixture as proof of correct
+  Java Card semantics or as a fixed VM bug. Determine whether persistent static
+  assignment of a transient global reference must be rejected or represented
+  differently, then add a focused regression.
 - **Validation:** `./tools/test-rmi-registry` passed with
   `global_object_array_owner=1`; current ARM firmware and RISC-V wrapper builds
   passed. Focused VPCD case 41 returned `009000` and passed in 71.496 s.
@@ -4473,13 +4486,43 @@ original terminology/status; check current summary and later fixes before reuse.
   cross-context arguments remain rejected; no raw cross-heap handles should be
   enabled until every object access checks provenance and reference identity
   comparisons and permitted returns/storage preserve it.
-- **Validation:** `./tools/test-rmi-registry`, ARM `max_crypto`, and RISC-V
-  `max_crypto` wrapper builds passed. The focused test covers local, stack,
-  duplicate/swap and global-owner propagation. At 2026-11-02 19:27 UTC,
-  elevated `lsusb -d 2e8a:000f` returned no devices despite the user reporting
-  three boards in BOOTSEL; no physical flash was attempted. Continue offline and
-  re-enumerate through host access before hardware validation.
-- **Next:** Carry owner tags across accepted reference arguments, enforce them
-  on dereference and equality, then cover return/storage/GC/delete and global
-  `Object[]` access. Preserve fail-closed behavior until the end-to-end checks
-  pass.
+- **Validation:** `./tools/test-rmi-registry`, PC/ARM/RISC-V max_crypto wrapper
+  builds, and VPCD descriptor-omitted and descriptor-included cross-AID suites
+  passed (15/15 each). On Pico 2 `8E464F4E2BBC0A19`, the firmware passed its
+  finite monitor; GPPro LOAD/INSTALL and the cross-AID/global-array probe passed
+  with cleanup. The physical probe returned `5A319000` for private-array access
+  denial and `6B319000` for cross-package global Object[] use denial. Logs and
+  image hash are in the 2026-11-02 progress entry.
+- **Next:** Audit all foreign-reference consumers, then cover equal-handle
+  collisions, comparison/return semantics, GC roots, storage, stale owners and
+  deletion. Preserve fail-closed behavior in unverified paths.
+
+## Private SIO arguments retain source ownership — 2026-11-02
+
+- **Finding:** Passing a non-null array through `invokeinterface` is allowed;
+  dereferencing it from the receiving applet context must be checked against
+  its original owner. Copying the compact handle without its owner tag caused
+  one earlier attempt to treat it as receiver-local. Descriptor-free GPPro
+  LOAD also means argument types must be recovered from the stack word tags.
+- **Fix:** SIO argument marshalling now pairs a non-null local reference with
+  its source package ID. Generic and compact `aload`/`astore` bytecodes preserve
+  that tag. Array bytecodes compare the carried owner to the active package
+  before resolving the handle. Ordinary local reads and reference pops continue
+  to reject foreign references, so the receiver cannot resolve an aliasing
+  handle from its own heap.
+- **Regression:** The fixture explicitly executes `aload_1; astore_2; aload_2;
+  arraylength`, catches `SecurityException`, and returns `5A31`. It also stores
+  the client instance in a transient global Object[], reads it in the service,
+  and catches `SecurityException` on use (`6B31`). VPCD passed 18/18 with
+  Descriptor omitted and 18/18 with Descriptor included. On Pico 2
+  `8E464F4E2BBC0A19`, firmware hash
+  `78e7fdbffa6654091963c81e8839b4034646db1d02047d4c268ff4f504e42e43` passed
+  its finite monitor; GPPro contract LOAD plus service/client INSTALL, SELECT,
+  cross-AID calls, the private-array denial, and cleanup all passed. Physical
+  test log SHA-256:
+  `79116b74e1d3c70efc6f681d0056e88a7afe428ba68ba3d5c6f5849b092989d9`.
+- **Remaining:** This is scoped enforcement, not full firewall completion.
+  Audit every reference-consuming bytecode/native path; add collision tests and
+  define permitted cross-context reference comparison, return, and storage.
+  Foreign references must not become roots in another package's heap or survive
+  into persistent state without explicit owner-aware lifecycle handling.

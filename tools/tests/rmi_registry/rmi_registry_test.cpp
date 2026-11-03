@@ -376,6 +376,7 @@ void verify_global_object_array_package_ownership() {
 
   object_array->setReferenceEntry(0, local_array, owner_context);
   assert(object_array->getReferenceEntry(0) == local_array);
+  assert(object_array->getReferenceEntryOwner(0) == owner_package);
   assert(object_array->isReferenceEntryAccessible(0, owner_package));
   assert(!object_array->isReferenceEntryAccessible(0, other_package));
 
@@ -383,8 +384,23 @@ void verify_global_object_array_package_ownership() {
   const jcvm::jref_t colliding_array = other_context.getHeap().addArray(
       1, jcvm::JAVA_ARRAY_T_BYTE);
   assert(colliding_array == local_array);
+  object_array->setReferenceEntry(0, local_array, other_context, owner_package);
+  assert(object_array->getReferenceEntryOwner(0) == owner_package);
   assert(!object_array->isReferenceEntryAccessible(
       0, other_context.getCurrentPackageID()));
+
+  jcvm::Stack foreign_reference_stack;
+  foreign_reference_stack.push_Frame(0, 0, 2, nullptr);
+  foreign_reference_stack.push_Reference(local_array, owner_package);
+  bool foreign_access_rejected = false;
+  try {
+    (void)foreign_reference_stack.pop_ReferenceFromPackage(other_package);
+  } catch (jcvm::Exceptions error) {
+    foreign_access_rejected = error == jcvm::Exceptions::SecurityException;
+  }
+  assert(foreign_access_rejected);
+  assert(foreign_reference_stack.pop_ReferenceFromPackage(owner_package) ==
+         local_array);
 
   VisitedReferences owner_roots;
   owner_context.visitRootReferences(record_reference, &owner_roots);
@@ -545,6 +561,10 @@ void verify_shareable_cross_context_arguments() {
     private_reference_stack.push_Reference(make_reference(23));
     assert(!jcvm::buildShareableTaggedInitialLocals(
         2, receiver, private_reference_stack, locals, local_count));
+    assert(jcvm::buildShareableTaggedInitialLocals(
+        2, receiver, private_reference_stack, locals, local_count, 22));
+    assert(locals[1].type == jcvm::InterpretorLocalType::Reference);
+    assert(locals[1].reference_owner == 22);
 
     jcvm::Stack reference_provenance_stack;
     reference_provenance_stack.push_Frame(0, 2, 8, nullptr);
@@ -554,6 +574,33 @@ void verify_shareable_cross_context_arguments() {
         reference_provenance_stack.readLocal_ReferenceValue(0);
     assert(local_reference.reference == foreign_reference);
     assert(local_reference.owner == 17);
+    bool unqualified_local_read_rejected = false;
+    try {
+      (void)reference_provenance_stack.readLocal_Reference(0);
+    } catch (jcvm::Exceptions error) {
+      unqualified_local_read_rejected =
+          error == jcvm::Exceptions::SecurityException;
+    }
+    assert(unqualified_local_read_rejected);
+    reference_provenance_stack.push_Reference(foreign_reference, 17);
+    bool unqualified_stack_read_rejected = false;
+    try {
+      (void)reference_provenance_stack.get_Pushed_Element(1);
+    } catch (jcvm::Exceptions error) {
+      unqualified_stack_read_rejected =
+          error == jcvm::Exceptions::SecurityException;
+    }
+    assert(unqualified_stack_read_rejected);
+    bool unqualified_pop_rejected = false;
+    try {
+      (void)reference_provenance_stack.pop_Reference();
+    } catch (jcvm::Exceptions error) {
+      unqualified_pop_rejected =
+          error == jcvm::Exceptions::SecurityException;
+    }
+    assert(unqualified_pop_rejected);
+    assert(reference_provenance_stack.pop_ReferenceFromPackage(17) ==
+           foreign_reference);
     reference_provenance_stack.push_Reference(foreign_reference, 17);
     reference_provenance_stack.dup(1, 0);
     assert(reference_provenance_stack.get_Pushed_ReferenceOwner(1) == 17);
@@ -656,6 +703,11 @@ void verify_shareable_cross_context_arguments() {
     assert(!jcvm::buildShareableInitialLocals(
         signature, sizeof(signature), 2, receiver, stack, locals,
         local_count));
+    assert(jcvm::buildShareableInitialLocals(
+        signature, sizeof(signature), 2, receiver, stack, locals,
+        local_count, 23));
+    assert(locals[1].type == jcvm::InterpretorLocalType::Reference);
+    assert(locals[1].reference_owner == 23);
   }
 
   {

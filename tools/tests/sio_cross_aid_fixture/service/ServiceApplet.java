@@ -54,5 +54,23 @@ public final class ServiceApplet extends Applet implements Probe {
     throw new SecurityException();
   }
 
+  public short inspectPrivateArray(byte[] value) {
+    byte[] forwarded = value;
+    try {
+      return (short) forwarded.length;
+    } catch (SecurityException expected) {
+      return (short) 0x5A31;
+    }
+  }
+
+  public short inspectGlobalReference(Object[] values) {
+    try {
+      Object value = values[0];
+      return value == null ? (short)0x6B01 : (short)0x6B02;
+    } catch (SecurityException expected) {
+      return (short)0x6B31;
+    }
+  }
+
   public void process(APDU apdu) {}
 }

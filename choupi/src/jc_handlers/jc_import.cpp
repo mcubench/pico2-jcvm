@@ -32,11 +32,23 @@
 #include "jc_remote_interface_validation.hpp"
 #include "flashmemory.hpp"
 
+#include <cstdio>
 #include <cstring>
 
 namespace jcvm {
 
 namespace {
+void print_package_aid(const char *prefix,
+                       const jc_cap_package_info &package) {
+  std::printf("CHOUPI:%s aid=", prefix);
+  for (uint8_t index = 0; index < package.AID_length; ++index) {
+    std::printf("%02X", package.AID[index]);
+  }
+  std::printf(" version=%u.%u\r\n",
+              static_cast<unsigned>(package.major_version),
+              static_cast<unsigned>(package.minor_version));
+}
+
 bool imported_aid_matches_resident(const jc_cap_package_info &imported,
                                    const jc_cap_package_info &resident) {
   if (imported.AID_length == resident.AID_length &&
@@ -143,6 +155,7 @@ Import_Handler::getPackageIndex(const jc_cap_package_info *pinfo) {
     }
   }
 
+  print_package_aid("CAP_IMPORT_PACKAGE_NOT_FOUND", *pinfo);
   throw Exceptions::RuntimeException;
 }
 
@@ -169,7 +182,8 @@ void Import_Handler::validateRemoteInterfaceReferences() {
   Import_Handler imported_packages(this->package);
   const bool use_jc305_compatibility_tokens =
       usesJC305CompatibilityTokens(this->package);
-  validateRemoteInterfaceTargets(
+  try {
+    validateRemoteInterfaceTargets(
       cap.getClass(), [&resolver, &imported_packages,
                        use_jc305_compatibility_tokens](
                           const jc_cap_class_ref reference) {
@@ -188,13 +202,40 @@ void Import_Handler::validateRemoteInterfaceReferences() {
         const jc_cap_export_component *exports =
             Package(target_id).getCap().getExport();
         if (exports == nullptr || export_token >= exports->class_count) {
+          print_package_aid("CAP_REMOTE_EXPORT_MISSING", *imported_package);
+          std::printf(
+              "CHOUPI:CAP_REMOTE_EXPORT_DETAIL package=%u import=%u token=%u "
+              "export_token=%u exports=%u\r\n",
+              static_cast<unsigned>(target_id),
+              static_cast<unsigned>(import_token),
+              static_cast<unsigned>(reference.external_classref.class_token),
+              static_cast<unsigned>(export_token),
+              exports == nullptr ? 0u
+                                 : static_cast<unsigned>(exports->class_count));
           return false;
         }
 
         const auto resolved = resolver.classref2interface(reference);
-        return resolved.second != nullptr &&
-               !IS_CLASS(reinterpret_cast<const uint8_t *>(resolved.second));
+        const bool valid_interface =
+            resolved.second != nullptr &&
+            !IS_CLASS(reinterpret_cast<const uint8_t *>(resolved.second));
+        if (!valid_interface) {
+          print_package_aid("CAP_REMOTE_NOT_INTERFACE", *imported_package);
+          std::printf(
+              "CHOUPI:CAP_REMOTE_INTERFACE_DETAIL package=%u import=%u token=%u "
+              "resolved=%u\r\n",
+              static_cast<unsigned>(target_id),
+              static_cast<unsigned>(import_token),
+              static_cast<unsigned>(reference.external_classref.class_token),
+              resolved.second == nullptr ? 0u : 1u);
+        }
+        return valid_interface;
       });
+  } catch (...) {
+    std::printf("CHOUPI:CAP_REMOTE_VALIDATION_EXCEPTION package=%u\r\n",
+                static_cast<unsigned>(this->package.getPackageID()));
+    throw;
+  }
 }
 
 } // namespace jcvm

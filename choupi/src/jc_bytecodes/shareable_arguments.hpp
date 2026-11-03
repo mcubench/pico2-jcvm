@@ -44,13 +44,15 @@ inline bool buildShareableReceiverOnlyInitialLocals(
 }
 
 // Marshal a descriptor-free call from runtime operand type tags. One-word
-// primitive values and int pairs retain their widths; only null/global refs
-// may cross applet heaps. Unknown words and private references fail closed.
+// primitive values and int pairs retain their widths. Reference words carry
+// their original owner so the receiving context can reject later access
+// without resolving the handle in a different heap. Unknown words fail closed.
 inline bool buildShareableTaggedInitialLocals(
     const uint8_t argument_word_count, const jref_t server_reference,
     Stack &caller_stack,
     std::array<InterpretorInitialLocal, 255> &initial_locals,
-    uint8_t &initial_local_count) {
+    uint8_t &initial_local_count,
+    const uint8_t caller_package_id = 0xff) {
   if (argument_word_count == 0 || server_reference.isNullPointer()) {
     return false;
   }
@@ -64,25 +66,33 @@ inline bool buildShareableTaggedInitialLocals(
     const uint16_t stack_position =
         static_cast<uint16_t>(argument_word_count - word_index);
     const auto kind = caller_stack.get_Pushed_ValueKind(stack_position);
-    const uint16_t raw =
-        caller_stack.get_Pushed_Element(stack_position).compact();
     switch (kind) {
     case Stack::ValueKind::Primitive:
       initial_locals[initial_local_count++] = {
           InterpretorLocalType::Short,
-          static_cast<uint32_t>(static_cast<int16_t>(raw))};
+          static_cast<uint32_t>(static_cast<int16_t>(
+              caller_stack.get_Pushed_Element(stack_position).compact()))};
       ++word_index;
       break;
     case Stack::ValueKind::Reference: {
-      const jref_t reference(raw);
-      if (!reference.isNullPointer() && !reference.isGlobalArray() &&
-          !reference.isGlobalInstance()) {
-        return false;
-      }
+      const auto reference_value =
+          caller_stack.get_Pushed_ReferenceValue(stack_position);
+      const jref_t reference = reference_value.reference;
       initial_locals[initial_local_count++] = {
           InterpretorLocalType::Reference, reference.compact()};
-      initial_locals[initial_local_count - 1].reference_owner =
-          caller_stack.get_Pushed_ReferenceOwner(stack_position);
+      const uint8_t owner = reference_value.owner;
+      if (!reference.isNullPointer() && !reference.isGlobalArray() &&
+          !reference.isGlobalInstance() &&
+          owner == Stack::kCurrentReferenceOwner) {
+        if (caller_package_id == Stack::kCurrentReferenceOwner ||
+            caller_package_id == Stack::kGlobalReferenceOwner) {
+          return false;
+        }
+        initial_locals[initial_local_count - 1].reference_owner =
+            caller_package_id;
+      } else {
+        initial_locals[initial_local_count - 1].reference_owner = owner;
+      }
       ++word_index;
       break;
     }
@@ -94,7 +104,9 @@ inline bool buildShareableTaggedInitialLocals(
               Stack::ValueKind::IntHighWord) {
         return false;
       }
-      const uint16_t low = raw;
+      const uint16_t low = caller_stack
+                               .get_Pushed_Element(stack_position)
+                               .compact();
       const uint16_t high = caller_stack
                                 .get_Pushed_Element(
                                     static_cast<uint16_t>(stack_position - 1))
@@ -120,15 +132,15 @@ inline bool buildShareableTaggedInitialLocals(
 
 // Convert a CAP Descriptor method signature and the caller's operand words
 // into initial locals for a nested Shareable method call. Caller words remain
-// untouched. Null and JCRE-global references can cross contexts because they
-// are not owned by either applet heap. Applet-local references remain rejected
-// until ownership can be translated safely.
+// untouched. Private references cross as raw words plus explicit source-owner
+// metadata; subsequent accesses in the receiving context fail closed.
 inline bool buildShareableInitialLocals(
     const uint8_t *signature_nibbles, const uint8_t signature_nibble_count,
     const uint8_t argument_word_count, const jref_t server_reference,
     Stack &caller_stack,
     std::array<InterpretorInitialLocal, 255> &initial_locals,
-    uint8_t &initial_local_count) {
+    uint8_t &initial_local_count,
+    const uint8_t caller_package_id = 0xff) {
   if (signature_nibbles == nullptr || signature_nibble_count == 0 ||
       argument_word_count == 0) {
     return false;
@@ -208,11 +220,11 @@ inline bool buildShareableInitialLocals(
     case 0x0c: // short[]
     case 0x0d: // int[]
     case 0x0e: { // reference[]
-      const jref_t reference(caller_word(argument_word_index));
-      if (!reference.isNullPointer() && !reference.isGlobalArray() &&
-          !reference.isGlobalInstance()) {
-        return false;
-      }
+      const uint16_t stack_position = static_cast<uint16_t>(
+          argument_word_count - argument_word_index);
+      const auto reference_value =
+          caller_stack.get_Pushed_ReferenceValue(stack_position);
+      const jref_t reference = reference_value.reference;
       const bool expected_array = type != 0x06;
       if (!reference.isNullPointer() && expected_array &&
           !reference.isArray()) {
@@ -220,9 +232,19 @@ inline bool buildShareableInitialLocals(
       }
       initial_locals[initial_local_count++] = {
           InterpretorLocalType::Reference, reference.compact()};
-      initial_locals[initial_local_count - 1].reference_owner =
-          caller_stack.get_Pushed_ReferenceOwner(static_cast<uint16_t>(
-              argument_word_count - argument_word_index));
+      const uint8_t owner = reference_value.owner;
+      if (!reference.isNullPointer() && !reference.isGlobalArray() &&
+          !reference.isGlobalInstance() &&
+          owner == Stack::kCurrentReferenceOwner) {
+        if (caller_package_id == Stack::kCurrentReferenceOwner ||
+            caller_package_id == Stack::kGlobalReferenceOwner) {
+          return false;
+        }
+        initial_locals[initial_local_count - 1].reference_owner =
+            caller_package_id;
+      } else {
+        initial_locals[initial_local_count - 1].reference_owner = owner;
+      }
       ++argument_word_index;
       ++expected_argument_words;
       break;

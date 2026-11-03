@@ -49,6 +49,15 @@ public final class ClientApplet extends Applet {
       result = shareable == null ? (short) 0x6A11 : (short) 0x6A10;
     } else if (shareable == null) {
       result = (short) 0x6A04;
+    } else if (buffer[1] == 0x1A) {
+      Probe probe = (Probe) shareable;
+      result = probe.inspectPrivateArray(new byte[] { 0x33 });
+    } else if (buffer[1] == 0x1B) {
+      Probe probe = (Probe) shareable;
+      Object[] global = (Object[])JCSystem.makeGlobalArray(
+          JCSystem.ARRAY_TYPE_OBJECT, (short)1);
+      global[0] = this;
+      result = probe.inspectGlobalReference(global);
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

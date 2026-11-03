@@ -98,6 +98,33 @@ worktree changes.
   changes. Preserve unrelated pre-existing source and documentation edits,
   including the uncommitted firmware-architecture move and practical guide.
 
+## Current session — private-reference SIO firewall boundary — 2026-11-02 20:06 UTC
+
+Cross-context SIO argument marshalling now retains the caller package ID beside
+non-null local reference handles. Generic and compact `aload`/`astore`
+bytecodes preserve that owner, and array dereference bytecodes deny access
+before resolving a foreign handle in the receiving heap. The regression forces
+`aload_1; astore_2; aload_2; arraylength`; the service catches
+`SecurityException` and returns `5A31`.
+
+`./tools/test-rmi-registry`, PC/ARM/RISC-V max_crypto builds, VPCD with
+Descriptor omitted (18/18) and included (18/18), and the expanded physical
+GPPro LOAD, INSTALL, SELECT, SIO/private-array/global-Object[] firewall probe
+and cleanup all passed. Cross-package global `aaload` now yields an opaque
+reference retaining its source package tag; a later server-side use is denied
+with `6B319000`. Pico 2
+`8E464F4E2BBC0A19` runs the ARM image with UF2 SHA-256
+`78e7fdbffa6654091963c81e8839b4034646db1d02047d4c268ff4f504e42e43`; finite
+monitor passed repeatedly. Firmware ends at `0x100e83bc`, leaving 97,348 bytes
+in the 1 MiB firmware window.
+
+This covers private array parameter transport and array access plus opaque
+cross-package global `Object[]` read/use only. Continue auditing all other
+reference-consuming bytecode/native paths; define collision, comparison,
+return, storage/GC, stale-owner, and deletion behavior. Implementation commit
+and final logs are recorded in the 2026-11-02 progress entry; preserve
+unrelated worktree edits in AGENTS, heap/import/cap loading, scripts and docs.
+
 ## Current session — reference-owner provenance sidecar — 2026-11-02 19:29 UTC
 
 Added one byte of owner provenance alongside each VM operand-stack word.

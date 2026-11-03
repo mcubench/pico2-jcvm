@@ -138,6 +138,8 @@ public:
       noexcept(noexcept(std::declval<JCVMArray<uint8_t> &>()[index]))
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
           ;
+  /// Owner provenance for a reference element; local arrays return 0xff.
+  jpackage_ID_t getReferenceEntryOwner(const uint16_t index);
   /// Whether a reference-array entry may be returned to this package.
   bool isReferenceEntryAccessible(const uint16_t index,
                                   jpackage_ID_t package_id);
@@ -170,7 +172,8 @@ public:
 #endif /* JCVM_INT_SUPPORTED */
   /// Write a reference element from an array.
   void setReferenceEntry(const uint16_t index, const jref_t value,
-                         Context &context);
+                         Context &context,
+                         jpackage_ID_t value_owner = 0xff);
 
   /// Get a const pointer to array data
   const uint8_t *getData() const;

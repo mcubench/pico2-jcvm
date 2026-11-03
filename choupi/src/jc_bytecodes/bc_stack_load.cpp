@@ -183,13 +183,12 @@ void Bytecodes::bc_iload() {
  *
  */
 void Bytecodes::bc_aload_0() {
-  jref_t objectref;
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("ALOAD_0");
 
-  objectref = stack.readLocal_Reference(0);
-  stack.push_Reference(objectref);
+  const auto reference = stack.readLocal_ReferenceValue(0);
+  stack.push_Reference(reference.reference, reference.owner);
 
   return;
 }
@@ -215,13 +214,12 @@ void Bytecodes::bc_aload_0() {
  *
  */
 void Bytecodes::bc_aload_1() {
-  jref_t objectref;
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("ALOAD_1");
 
-  objectref = stack.readLocal_Reference(1);
-  stack.push_Reference(objectref);
+  const auto reference = stack.readLocal_ReferenceValue(1);
+  stack.push_Reference(reference.reference, reference.owner);
 
   return;
 }
@@ -247,13 +245,12 @@ void Bytecodes::bc_aload_1() {
  *
  */
 void Bytecodes::bc_aload_2() {
-  jref_t objectref;
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("ALOAD_2");
 
-  objectref = stack.readLocal_Reference(2);
-  stack.push_Reference(objectref);
+  const auto reference = stack.readLocal_ReferenceValue(2);
+  stack.push_Reference(reference.reference, reference.owner);
 
   return;
 }
@@ -279,14 +276,12 @@ void Bytecodes::bc_aload_2() {
  *
  */
 void Bytecodes::bc_aload_3() {
-  jref_t objectref;
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("ALOAD_3");
 
-  objectref = stack.readLocal_Reference(3);
-
-  stack.push_Reference(objectref);
+  const auto reference = stack.readLocal_ReferenceValue(3);
+  stack.push_Reference(reference.reference, reference.owner);
 
   return;
 }

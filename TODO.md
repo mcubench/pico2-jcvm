@@ -285,12 +285,12 @@ Archive text is historical evidence, not current device state or priorities.
   JCRE-global references cross directly; server-local reference returns are
   wrapped in new client proxies only when the server class implements a
   Shareable interface. Same-context arguments stay in their owning heap;
-  cross-context arguments are now decoded from the interface CAP Descriptor
-  signature and copied by primitive type. Null and JCRE-global array/instance
-  arguments may cross because their handles resolve through the shared global
-  heap; array-typed parameters require an array handle, while arrays may also
-  be passed where the declared type is `Object`. Applet-local references still
-  fail closed pending ownership translation.
+  cross-context arguments are decoded from the interface CAP Descriptor
+  signature when present, or from runtime word-kind tags when Descriptor is
+  absent. Non-null private arguments cross as raw handles paired with their
+  source-package owner tag; the receiver never treats the handle as local.
+  Null and JCRE-global arguments retain their shared-heap behavior, and
+  array-typed parameters require an array handle.
   Physical GPPro LOAD testing found `getDescriptor()==nullptr` for both
   pre-existing packages and fresh packages whose generated CAP archives include
   `Descriptor.cap`. This is confirmed GPPro behavior: pinned
@@ -308,42 +308,55 @@ Archive text is historical evidence, not current device state or priorities.
   initial locals, including ordered low/high int word pairing. A malformed or
   split int pair fails closed. Tags are maintained by typed
   pushes, local writes, frame-local initialization, `dup`, `swap`, and
-  `set_Pushed_Element`; unknown values and applet-private references fail
-  closed. Null and JCRE-global references may cross. Three-bit type-tag storage
-  costs 96 bytes per 256-word Stack. A one-byte-per-word reference-owner
-  sidecar now follows references through `aload`/`astore`, operand duplication
-  and swapping, and typed nested-call locals; this adds 256 bytes per
-  256-word Stack. This is provenance plumbing only: access-site enforcement and
-  private-reference transport remain open, so private references still fail
-  closed. Java Card RE 3.0.5 permits parameters to
+  `set_Pushed_Element`; unknown values fail closed. Null and JCRE-global
+  references may cross. Three-bit type-tag storage costs 96 bytes per 256-word
+  Stack. A one-byte-per-word reference-owner sidecar follows references
+  through generic and compact `aload`/`astore`, operand duplication and
+  swapping, and typed nested-call locals; this adds 256 bytes per 256-word
+  Stack. The receiver rejects foreign references on ordinary local reads and
+  stack pops; array dereference bytecodes compare the retained owner to the
+  active package and raise `SecurityException` on mismatch. A regression
+  forces a private byte array through `astore_2`/`aload_2`, then verifies caught
+  `SecurityException` on `arraylength`. VPCD passes 18/18 with Descriptor
+  omitted and 18/18 with it present. The same three-package GPPro LOAD/INSTALL
+  scenario passed on Pico 2 `8E464F4E2BBC0A19`, including private-array and
+  global-Object[] denial and cleanup. This does not close the firewall: finish auditing every
+  reference-consuming bytecode/native entry for owner enforcement, and test
+  equal-handle collisions, foreign-reference returns, storage/GC roots, stale
+  owners and package deletion. Object comparison, casts and returns currently
+  fail closed rather than implementing all Java Card cross-context cases. Keep
+  foreign references out of persistent state and applet-local arrays; global
+  Object[] storage is covered by per-slot owner metadata but needs the remaining
+  lifecycle acceptance above. Java Card RE 3.0.5 permits parameters to
   cross an SIO call but still applies caller-context firewall checks to later
-  object access (§§6.1.4, 6.2.4.3, 6.2.8). Do not copy private compact
-  references between heaps: handles are heap-local and can alias a different
-  server object. Applet-local reference arguments currently fail closed before
-  entering the server. Keep that as the safe incomplete behavior until
-  invocation arguments can carry an owner-tagged opaque reference without
-  aliasing a server-local handle. The SIO parameter contract permits receiving
-  parameters, but array operations remain subject to §6.2.8.2: only arrays
-  owned in the active context or designated global arrays are accessible. Add
-  a fixture proving private-array argument transport followed by caught
-  `SecurityException` on server access, along with equal-handle collision,
-  return, storage, GC and deletion tests. Never copy raw handles between
-  independent heaps. See `.agent/QKB.md`.
+  object access (§§6.1.4, 6.2.4.3, 6.2.8). Never resolve a foreign compact
+  handle in the receiving package's heap. See `.agent/QKB.md`.
   Global `Object[]` support is partially implemented for volatile JCRE global
   arrays: non-null applet references can be stored and read by their owning
   package, with per-slot package ownership, package-scoped GC roots, transient
-  reset clearing, and package-delete cleanup. Case 41 now verifies same-package
+  reset clearing, and package-delete cleanup. Case 41 verifies same-package
   store/read identity and returns `009000`; focused VPCD and physical Pico 2
-  transaction probes passed. Cross-package reads still fail closed because
-  there is not yet an opaque owner-aware reference/proxy that preserves normal
-  firewall checks without exposing aliasing heap-local handles. Persistent
-  global reference slots are not applicable to the current transient global
-  arrays. Add cross-package read/firewall and stale-owner lifecycle coverage
-  before closing CTX-01. See `.agent/QKB.md`.
+  transaction probes passed. Cross-package `aaload` now returns the compact
+  value with its original package owner tag. Ordinary reference consumption
+  and array dereference reject that foreign owner before consulting the current
+  package heap. A three-package regression stores the client instance in a
+  global Object[], reads it in the service package, and verifies cross-package
+  use is caught as `SecurityException` (`6B31`); VPCD and physical Pico 2 runs
+  passed. This preserves opaque identity only while provenance stays attached
+  to the VM stack/local path. Persistent global reference slots are not
+  applicable to the current transient arrays. A fixture prototype that cached
+  a transient global array in an applet static reference hit
+  `RESTORE_READ_FAIL` (`tag=023904`); the regression now passes the array as an
+  SIO argument. Determine the required persistent/transient reference rule and
+  either reject that static assignment or implement its representation safely.
+  Remaining: stale-owner and
+  equal-handle collision lifecycle tests, and audit all paths that can consume
+  or retain a foreign value. See `.agent/QKB.md`.
   No types are inferred from raw values. The
-  descriptor-free VPCD fixture passes 15/15; the Descriptor-present regression
-  also passes 14/14 through the existing signature path. Physical typed
-  cross-AID execution remains unverified. Typed local reads now check their
+  descriptor-free VPCD fixture passes 18/18; the Descriptor-present regression
+  also passes 18/18 through the existing signature path. Physical typed
+  cross-AID execution for the private-array argument passed after flash and
+  monitor. Typed local reads now check their
   stored kind and throw `SecurityException` on a mismatch, so caller-derived
   metadata is checked against the server bytecodes' actual local use. `astore`
   preserves a return-address tag for valid `jsr`/`ret` use and rejects other

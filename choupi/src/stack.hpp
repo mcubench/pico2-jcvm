@@ -216,6 +216,8 @@ public:
 #endif /* JCVM_INT_SUPPORTED */
   // Popping a reference from the stack
   jref_t pop_Reference();
+  /// Pop a reference only when it is local to or global for this package.
+  jref_t pop_ReferenceFromPackage(jpackage_ID_t package_id);
   /// Pop a reference while retaining its package provenance.
   ReferenceValue pop_ReferenceValue();
   // Popping a return address element from the stack
@@ -243,6 +245,8 @@ public:
       ;
   /// Return the owner tag for the n-th pushed reference word.
   uint8_t get_Pushed_ReferenceOwner(uint16_t n);
+  /// Read a reference operand and its owner without dropping provenance.
+  ReferenceValue get_Pushed_ReferenceValue(uint16_t n);
 
   /// Reading a local variable as a short value
   int16_t readLocal_Short(const uint8_t local_number);
