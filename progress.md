@@ -9,6 +9,17 @@
 - Commit: pending
 - Artifacts/logs: user-provided Windows output; none archived locally. Microsoft references are linked in `.agent/QKB.md`.
 
+## 2026-11-03 Update Windows acceptance from GPPro evidence 3 minutes
+
+- Step/experiment: `ac01-windows-gppro-evidence-20261103`
+- When: '2026-11-03 15:16 UTC' - '2026-11-03 15:19 UTC'
+- Change: Updated AC-01 in `TODO.md` to distinguish the now-demonstrated Windows CCID/PCSC/GPPro APDU path from the still-unverified symmetric and combined-profile acceptance runs. Recorded the independent certutil provider lookup error and legacy/new GlobalPlatformPro CPLC-date decoding difference.
+- Validation: Cross-checked the exact user-provided trace against `.agent/QKB.md`, pinned GlobalPlatformPro CPLC date parsing, and the Windows acceptance guides. No firmware or device state changed. No build/test needed for this backlog correction.
+- Result: Basic Windows reader activation and APDU exchange are evidenced on two reader slots; profile installation and complete JCAlgTest acceptance remain open.
+- Decision: Preserve AC-01 as open until both packaged workflows and reports are run on Windows; do not treat certutil's missing provider mapping as a firmware APDU failure.
+- Commit: pending
+- Artifacts/logs: Windows output supplied in conversation; no local artifact.
+
 ## 2026-11-03 Complete JCAlgTest 1.8.4 BASIC on physical Pico 2 25 minutes
 
 - Step/experiment: `jcalgtest-184-basic-physical-current-client-20261103`

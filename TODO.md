@@ -671,8 +671,18 @@ Archive text is historical evidence, not current device state or priorities.
 ### AC-01
 
 - [ ] **Verify Windows PCSC/GPPro and both packaged profile workflows.**
-  Status: Linux enumeration, GPPro install and official JCAlgTest reports have
-  evidence; Windows remains unverified.
+  Status: a user-provided Windows 10 run with GlobalPlatformPro 20.01.23 sees
+  both readers (`Pico2 JCVM CCID 0/1`), connects at T=1 with ATR `3B800181`,
+  selects the ISD, and reads CPLC and Card Data successfully (`9000`). Optional
+  IIN/CIN/Card Capabilities/Key Info Template return `6A88`. `certutil -scinfo`
+  separately reads the ATR and reports the card available, then fails at
+  `SCardGetCardTypeProviderName` with `ERROR_FILE_NOT_FOUND`; this is missing
+  Windows ATR card-type/provider discovery, not failed PC/SC APDU exchange.
+  The old GPPro renders CPLC date `6304` as 2016-10-30; the repository-pinned
+  newer GPPro resolves it as 2026-10-31. This is a decoder date-epoch
+  difference. The supplied report establishes basic Windows CCID/GPPro
+  communication only; packaged symmetric and combined-profile workflows and
+  their complete JCAlgTest comparison remain unverified.
   Remaining: run [combined-profile guide](docs/windows-asymm-symm-test.md) and
   [symmetric-only guide](docs/symm-crypto-windows-test.md) on the actual Windows
   host. Check reader/driver behavior, explicit unchanged CAP install, complete
