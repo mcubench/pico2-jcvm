@@ -1,3 +1,15 @@
+## Current session — recheck installed JCAlgTest after firmware flash — 2026-11-03 12:32 UTC
+
+After the current ARM image was flashed to Pico 2 `8E464F4E2BBC0A19`, the
+read-only `tools/test-pico-powerup` probe passed against the existing upstream
+JCAlgTest 1.8.4 applet. PC/SC saw ATR `3B800181`; exact-reader GPPro listing
+retained the ISD and three installed packages/applets. SELECT, GETVERSION
+(`1.8.4_jc305`), and `JCSystem` info all returned `9000`. Log:
+`artifacts/logs/pico-powerup-persistence-20261103T123155Z.log` (SHA-256
+`54fc6a4c7ffe003d98e80c09d3712d8521263c684f61883487c2d8062ef16232`). This is
+a warm reader check and does not establish cold-power persistence. Continue
+CTX-01 persistent foreign-reference encoding; preserve the applets.
+
 ## Current session — physical foreign-reference retention check — 2026-11-03 12:28 UTC
 
 Flashed and verified current ARM image on Pico 2 `8E464F4E2BBC0A19`; finite

@@ -20990,3 +20990,13 @@
 - Decision: Physical validation for this volatile-array slice is closed on 8E. Continue with persistent owner-preserving references and their reset/delete/GC behavior; this does not close CTX-01.
 - Commit: `bd6761c`
 - Artifacts/logs: cycle `artifacts/logs/cycle-choupi-20261103T122420Z.log` SHA-256 `a96fc72bbcf0e1c1ab7087055cc52a38fa40584fd59d5ebbb26fa146c2988765`; physical suite `artifacts/logs/sio-cross-aid-physical-20261103T122634Z.log` SHA-256 `5fb0036a5b871c8ebad9a2e3e6ef431e9a334c9a96f4bc744f5b21b96e52bda4`; UF2 SHA-256 `d1d3f5d9a54368905644cbbbe45da8c781b1a9d2ddf083cf00a8fb5b538be8cd`.
+## 2026-11-03 Verify JCAlgTest survived firmware flash 4 minutes
+
+- Step/experiment: `current-image-jcalgtest-184-postflash-20261103`
+- When: '2026-11-03 12:28 UTC' - '2026-11-03 12:32 UTC'
+- Change: Ran the read-only JCAlgTest power-up probe after reflashing Pico 2 `8E464F4E2BBC0A19`, to verify the existing upstream applets and registry remained usable.
+- Validation: `PICO2_HOST_USB_ACCESS=1 JCALGTEST_EXPECTED_VERSION=1.8.4_jc305 ./tools/test-pico-powerup 'Pico 2 CHOUPI CCID [JCVM CCID] (8E464F4E2BBC0A19) 00 00'` passed. GPPro listed the ISD and three installed applets/packages; ATR was `3B800181`; SELECT, GETVERSION `1.8.4_jc305`, and JCSystem info all returned `9000`. No firmware or card contents were changed by the probe.
+- Result: Existing JCAlgTest 1.8.4 and two additional applets remained available after the firmware flash. This is a warm PC/SC reader check, not a cold-power persistence test.
+- Decision: Preserve the current applet state. Continue CTX-01 persistent foreign-reference support.
+- Commit: `<pending>`
+- Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261103T123155Z.log` SHA-256 `54fc6a4c7ffe003d98e80c09d3712d8521263c684f61883487c2d8062ef16232`.
