@@ -1,5 +1,20 @@
 # Current session — native Cipher SensitiveResult propagation — 2026-11-03 15:59 UTC
 
+## Follow-up: verify false Signature results across SIO — 2026-11-03 16:34 UTC
+
+Extended the interpreted Signature SensitiveResult fixture with a corrupted
+AES MAC. Native `verify()` returns `false` without throwing; the service result
+now survives SIO and the client successfully calls `SensitiveResult.assertFalse()`.
+CAP conversion passed and the loopback VPCD suite passed `TEST:SUMMARY
+pass=31 fail=0`; log:
+`artifacts/logs/sio-cross-aid-vpcd-20261103T163223Z.log` (SHA-256
+`61c7955c8b267f8fed7859a1c3f49aba65c76a114c609275de2efddee8eecc7a`). No
+firmware code changed in this step; the prior native fix has PC, ARM, and
+RISC-V build coverage. No physical reader was available. The suite's printed
+summary count is 31 even though it now includes the new check; keep the exact
+reported count rather than inferring an increment from the assertion count.
+Next: continue CTX-01/03 foreign-reference lifecycle and consumer audit.
+
 ## Follow-up: native Signature SensitiveResult propagation — 2026-11-03 16:25 UTC
 
 Implemented SensitiveResult propagation for native `Signature.sign()` and

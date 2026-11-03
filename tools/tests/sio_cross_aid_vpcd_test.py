@@ -247,6 +247,17 @@ def main() -> int:
             print("TEST:PASS native Signature sign length and verify result "
                   "are assertable across SIO")
             response = vpcd.exchange(
+                connection, bytes.fromhex("8029000000"),
+                "Signature verify false SensitiveResult across SIO"
+            )
+            if response != bytes.fromhex("6A569000"):
+                raise RuntimeError(
+                    "Signature false SensitiveResult returned "
+                    f"{response.hex().upper()}, expected 6A569000"
+                )
+            print("TEST:PASS native Signature verify false result is "
+                  "assertable across SIO")
+            response = vpcd.exchange(
                 connection, bytes.fromhex("801A000000"),
                 "cross-context private array reference firewall"
             )

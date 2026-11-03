@@ -11,9 +11,10 @@
   publish the successful return value only after the signature operation
   completes. Exceptions leave the result unassigned.
 - **Validation:** Added an interpreted AES MAC sign/verify fixture. The service
-  asserts the sign length, and the client asserts the verify boolean after SIO.
-  PC, ARM, and RISC-V builds pass; the cross-AID VPCD suite passes 32/32. No
-  physical reader was attached for hardware validation.
+  asserts the sign length, and the client asserts both true and false verify
+  booleans after SIO. PC, ARM, and RISC-V builds passed for the native change;
+  the cross-AID VPCD suite reports `TEST:SUMMARY pass=31 fail=0` with the false
+  result case included. No physical reader was attached for hardware validation.
 - **Fixture detail:** AES MAC NOPAD requires block-aligned input; a 2-byte
   attempt correctly raised `ILLEGAL_USE`. A 16-byte input passed and is the
   valid regression case.

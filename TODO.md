@@ -546,9 +546,10 @@ Archive text is historical evidence, not current device state or priorities.
   physical validation is outstanding.
   Native `Signature.sign()` variants now publish their output length, while
   `verify()` variants publish their boolean result only after success. The
-  interpreted fixture uses AES MAC sign/verify and asserts both results across
-  SIO; the expanded VPCD suite passes 32/32. PC, ARM, and RISC-V builds pass;
-  physical validation is still outstanding.
+  interpreted fixture uses AES MAC sign/verify and asserts both true and false
+  verification results across SIO. The VPCD suite passes 31/31, including this
+  added false-result case. PC, ARM, and RISC-V builds passed for the preceding
+  native implementation; physical validation is still outstanding.
   Remaining: exercise other result producers (PIN, random-data,
   checksum, AEAD and key APIs where enabled), verify GC rooting of object
   results after ordinary locals are dropped through interpreted SIO, and

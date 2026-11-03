@@ -107,6 +107,17 @@ public final class ClientApplet extends Applet {
     }
   }
 
+  private short checkSensitiveSignatureMismatchResult(Probe probe) {
+    short result = probe.sensitiveSignatureMismatchResult();
+    if (result != 1) return (short)0x6A55;
+    try {
+      SensitiveResult.assertFalse();
+      return (short)0x6A56;
+    } catch (SecurityException missingFalseResult) {
+      return (short)0x6A57;
+    }
+  }
+
   public void process(APDU apdu) {
     if (selectingApplet()) {
       return;
@@ -222,6 +233,9 @@ public final class ClientApplet extends Applet {
     } else if (buffer[1] == 0x28) {
       Probe probe = (Probe) shareable;
       result = checkSensitiveSignatureResult(probe);
+    } else if (buffer[1] == 0x29) {
+      Probe probe = (Probe) shareable;
+      result = checkSensitiveSignatureMismatchResult(probe);
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

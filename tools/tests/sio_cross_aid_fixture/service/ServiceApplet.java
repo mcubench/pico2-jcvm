@@ -182,6 +182,27 @@ public final class ServiceApplet extends Applet implements Probe {
     }
   }
 
+  public short sensitiveSignatureMismatchResult() {
+    AESKey key = (AESKey)KeyBuilder.buildKey(
+        KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
+    byte[] keyData = new byte[16];
+    key.setKey(keyData, (short)0);
+    byte[] input = new byte[16];
+    byte[] mac = new byte[16];
+    Signature signer = Signature.getInstance(
+        Signature.ALG_AES_MAC_128_NOPAD, false);
+    signer.init(key, Signature.MODE_SIGN);
+    short macLength = signer.sign(input, (short)0, (short)input.length,
+                                  mac, (short)0);
+    mac[0] = (byte)(mac[0] ^ 1);
+    Signature verifier = Signature.getInstance(
+        Signature.ALG_AES_MAC_128_NOPAD, false);
+    verifier.init(key, Signature.MODE_VERIFY);
+    boolean valid = verifier.verify(input, (short)0, (short)input.length,
+                                    mac, (short)0, macLength);
+    return valid ? (short)0 : (short)1;
+  }
+
   public short throwSecurityException() {
     throw new SecurityException();
   }

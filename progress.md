@@ -21232,3 +21232,24 @@
 - Decision: Continue the CTX-02 audit.
 - Commit: metadata-only follow-up
 - Artifacts/logs: none.
+## 2026-11-03 Verify false Signature SensitiveResult across SIO 7 minutes
+
+- Step/experiment: `ctx02-signature-false-sensitive-result-20261103`
+- When: '2026-11-03 16:27 UTC' - '2026-11-03 16:34 UTC'
+- Change: Extended the interpreted three-package fixture with an AES MAC
+  mismatch case. The valid `Signature.verify()` call returns false, and the
+  client applet asserts `SensitiveResult.assertFalse()` after SIO.
+- Validation: `./tools/build-sio-cross-aid-fixture` converted all three fixture
+  CAPs with zero converter errors (expected int-support warnings). The elevated
+  loopback integration passed and logged `TEST:SUMMARY pass=31 fail=0`, including
+  `TEST:PASS native Signature verify false result is assertable across SIO`.
+  `git diff --check` passed. This changed only the test fixture; firmware builds
+  were not repeated.
+- Result: Both true and false return values from native Signature verification
+  are assertable across SIO. Physical test was unavailable: the authorized
+  reader helper reported zero attached Pico 2 devices.
+- Decision: Continue CTX-01/03 audit, then return to the remaining CTX-02
+  producers and physical acceptance when hardware is available.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T163223Z.log`,
+  SHA-256 `61c7955c8b267f8fed7859a1c3f49aba65c76a114c609275de2efddee8eecc7a`.
