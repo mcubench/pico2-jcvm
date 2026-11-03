@@ -21097,3 +21097,14 @@
 - Decision: Keep the physical same-AID acceptance open; use a different identified token without conflicting AIDs when one is available and continue offline work meanwhile.
 - Commit: `66364ba`
 - Artifacts/logs: live command output only; no new log file.
+
+## 2026-11-03 Classify JCAlgTest static-performance failures 5 minutes
+
+- Step/experiment: `api03-jcalgtest184-static-failure-classification-20261103`
+- When: '2026-11-03 14:02 UTC' - '2026-11-03 14:07 UTC'
+- Change: Cross-referenced the exact JCAlgTest 1.8.4 static-performance log with the interpreter execution guard and documented separate causes for `6400` and `6F00` outcomes in TODO/QKB/HANDOFF.
+- Validation: Read-only source/log inspection. `Util_arrayCopy_EEPROM`, `Util_arrayCopy_RAM2EEPROM`, and `SWAlgs_AES` return `6400` at 15,421/15,074/15,107 ms; `Interpretor::run()` has a 15,000,000-us non-install budget returning `0x6400`. DES `clearKey()` at 64/128/192 bits returns `6F00` after 715–750 ms. No firmware or CAP was changed and no test was rerun.
+- Result: The three `6400` failures are explained by the configured interpreter budget; the three DES failures are not and remain unisolated. Prior blanket classification of all six as undiagnosed is now superseded.
+- Decision: Design a cooperative bytecode progress/CCID extension mechanism before changing the guard; separately instrument the DES persistent-key path. Preserve upstream CAP/client bytes.
+- Commit: pending
+- Artifacts/logs: existing `artifacts/results/jcalgtest-184-static-8e-20261103/ALGTEST_log_1793709244220.log`; code path `choupi/src/interpretor.cpp`.

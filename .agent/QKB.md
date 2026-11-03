@@ -35,6 +35,13 @@
   [Microsoft reader states](https://learn.microsoft.com/en-us/windows-hardware/drivers/smartcard/smart-card-reader-states),
   [Microsoft SCARD_STATE_MUTE description](https://learn.microsoft.com/de-at/openspecs/windows_protocols/ms-rdpesc/3a235960-2fec-446b-8ed1-50bcc70e3c5f).
 
+## JCAlgTest 1.8.4 static workloads hit interpreter limit; DES clearKey differs — 2026-11-03
+
+- **Evidence:** In the unchanged `ALG_PERFORMANCE_STATIC` output, `Util_arrayCopy_EEPROM()` returned `6400` after 15,421 ms, `Util_arrayCopy_RAM2EEPROM()` returned `6400` after 15,074 ms, and `SWAlgs_AES()` returned `6400` after 15,107 ms. `choupi/src/interpretor.cpp` sets `applet_execution_budget_us` to 15,000,000 for non-install applet entry points and returns `0x6400` when that deadline expires. These three are deterministic applet-workload budget aborts, not established transport failures.
+- **Separate failures:** DES `clearKey()` at 64/128/192 bits returns `6F00` after 715–750 ms, so the same time-budget explanation does not apply. `native_key.cpp` stores persistent key bytes and `clearKeyBytes` uses persistent-array writes; this is a plausible flash/storage path to inspect, not yet a proven cause.
+- **Viable next diagnostic:** add temporary native/flash status telemetry to a test build or reproduce the exact operations with the existing upstream client on a known clean board. For the `6400` cases, design cooperative interpreter progress that services watchdog and CCID time extensions before changing the 15-second guard; simply raising the guard could block the host from receiving timely CCID responses. Keep the upstream CAP/client unchanged.
+- **Evidence paths:** `artifacts/results/jcalgtest-184-static-8e-20261103/ALGTEST_log_1793709244220.log`, `choupi/src/interpretor.cpp` around the `applet_execution_budget_us` check, and the API-03 subsection in `TODO.md`.
+
 ## 8E lost USB serial/PCSC enumeration after verified flash; 2BED failover passed — 2026-11-03
 
 - **Observation:** Current ARM `max_crypto` image SHA-256

@@ -11,6 +11,20 @@ them. No card state was changed. Continue with offline SIO/reference audit;
 retry physical coverage only on another identified token with no conflicting
 fixture AIDs. The Windows MUTE trace remains separately pending.
 
+# Current session — classify JCAlgTest 1.8.4 static timeout results — 2026-11-03 14:07 UTC
+
+Analyzed the exact static-performance run. Three `6400` cases
+(`Util_arrayCopy_EEPROM`, `Util_arrayCopy_RAM2EEPROM`, `SWAlgs_AES`) terminate
+at 15,074–15,421 ms, matching `Interpretor::run()`'s 15,000,000-us non-install
+applet execution budget. This is an explicit firmware workload cutoff. Three
+DES `clearKey()` cases instead return `6F00` in 715–750 ms; they are a separate
+unresolved cause. TODO and QKB now distinguish these classes. Next: design
+cooperative interpreter progress (watchdog and CCID extension servicing) for
+long interpreted applet work before changing the budget, and separately
+instrument the DES persistent-key path. The upstream CAP/client remain unchanged.
+The only physical reader is still 2BED and contains SIO fixture packages; do
+not overwrite them. Windows USBPcap remains pending.
+
 # Previous session — Windows certutil MUTE reproduced in report — 2026-11-03 13:59 UTC
 
 User reports a Windows `certutil -scinfo` run taking several minutes, then

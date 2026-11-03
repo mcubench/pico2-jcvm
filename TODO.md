@@ -250,13 +250,20 @@ Archive text is historical evidence, not current device state or priorities.
   results and six `CANT_BE_MEASURED` cases. The affected cases were DES
   `clearKey()` at 64/128/192 bits, `Util_arrayCopy_EEPROM()`,
   `Util_arrayCopy_RAM2EEPROM()`, and `SWAlgs_AES()`; the detailed log includes
-  `6F00` and `6400` responses in these cases. The client completed with no
-  reconnects or manual resets, and post-run SELECT/version/JCSystem probes
-  passed.
-  Remaining: isolate each exact operation with the unchanged CAP/client and
-  capture VM/CCID diagnostics; determine whether failures are JCVM exceptions,
-  bounded-operation timeouts, or client calibration artifacts. Do not classify
-  `NO_SUCH_ALGORITHM` results as failures.
+  `6F00` and `6400` responses in these cases. Log correlation with
+  `Interpretor::run()` establishes that EEPROM copy to/from persistent arrays
+  and `SWAlgs_AES()` returned `6400` after 15,074–15,421 ms, matching the
+  firmware's explicit 15-second applet execution budget. These are interpreted
+  applet workloads that exceed the current guard; they are not evidence of a
+  PC/SC transport failure. The three DES clearKey cases returned `6F00` in
+  715–750 ms, so they have a separate native/persistent-write or dispatch cause
+  that remains unidentified. The client completed with no reconnects or manual
+  resets, and post-run SELECT/version/JCSystem probes passed.
+  Remaining: design bounded cooperative progress for long interpreted applet
+  workloads (watchdog plus CCID time extension and host limits) before changing
+  the 15-second guard; then rerun the unchanged CAP/client operations. Separately
+  capture firmware exception/flash diagnostics for each DES clearKey case.
+  Do not classify `NO_SUCH_ALGORITHM` results as failures.
   Acceptance: each supported operation returns a valid result and each
   unsupported operation returns the expected client status; no `6F00`/`6400`
   or reader loss in repeated focused runs.
