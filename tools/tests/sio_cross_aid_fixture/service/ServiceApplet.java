@@ -6,6 +6,7 @@ import javacard.framework.Applet;
 import javacard.framework.JCSystem;
 import javacard.framework.Shareable;
 import javacard.framework.Util;
+import javacard.security.MessageDigest;
 import javacardx.security.SensitiveResult;
 import sio.contract.Probe;
 
@@ -87,6 +88,40 @@ public final class ServiceApplet extends Applet implements Probe {
 
   public short noSensitiveApi() {
     return (short)0x6A33;
+  }
+
+  public short sensitiveDigestResult() {
+    MessageDigest digest = MessageDigest.getInstance(
+        MessageDigest.ALG_SHA_256, false);
+    byte[] input = { 0x12, 0x34 };
+    byte[] output = new byte[32];
+    byte[] expected = {
+      0x3a, 0x10, 0x3a, 0x4e, 0x57, 0x29, (byte)0xad, 0x68,
+      (byte)0xc0, 0x2a, 0x67, (byte)0x8a, (byte)0xe3, (byte)0x9a,
+      (byte)0xcc, (byte)0xfb, (byte)0xc0, (byte)0xae, 0x20, (byte)0x80,
+      (byte)0x96, 0x43, 0x74, 0x01, (byte)0xb7, (byte)0xce, (byte)0xab,
+      0x63, (byte)0xcc, (byte)0xa0, 0x62, 0x2f
+    };
+    short length = digest.doFinal(input, (short)0, (short)input.length,
+                                  output, (short)0);
+    if (length != expected.length) return (short)0;
+    for (short index = 0; index < length; index++) {
+      if (output[index] != expected[index]) return (short)0;
+    }
+    return length;
+  }
+
+  public short sensitiveDigestFailure() {
+    MessageDigest digest = MessageDigest.getInstance(
+        MessageDigest.ALG_SHA_256, false);
+    byte[] input = { 0x12, 0x34 };
+    byte[] output = new byte[32];
+    try {
+      digest.doFinal(input, (short)1, (short)2, output, (short)0);
+      return (short)0x6A3C;
+    } catch (ArrayIndexOutOfBoundsException expected) {
+      return (short)0x6A3D;
+    }
   }
 
   public short throwSecurityException() {

@@ -1,3 +1,25 @@
+# Current session — fix MessageDigest SensitiveResult propagation — 2026-11-03 15:46 UTC
+
+Implemented the next CTX-02 gap after the Java-level SIO tests exposed a native
+API omission. `MessageDigest.doFinal()` returned the right SHA-256 output length
+but did not update SensitiveResult, so the caller's assertion after SIO failed.
+`choupi/src/native_message_digest.cpp` now resets prior state at method entry
+and records the output length only after digest completion and buffered-input
+cleanup succeed. The Java Card fixture checks successful SHA-256 output bytes,
+asserts the length in the caller after SIO, and verifies an invalid input range
+leaves a prior object result unassigned.
+
+Validation passed: `./tools/build-pc`, `./tools/build arm` and
+`./tools/build riscv`; test CAP conversion; Python syntax check; and elevated
+loopback VPCD integration with `TEST:SUMMARY pass=31 fail=0`. Final log:
+`artifacts/logs/sio-cross-aid-vpcd-20261103T154309Z.log`. The authorized reader
+helper found zero physical devices, so no firmware flash or physical API check
+was possible. The code change needs a physical rerun when USB passthrough
+returns. QKB records the cause and viable fix; TODO CTX-02 tracks remaining
+producers, GC rooting and physical coverage.
+
+---
+
 # Current session — extend SensitiveResult object-result SIO coverage — 2026-11-03 15:35 UTC
 
 Extended the current cross-AID fixture with two additional interpreted SIO

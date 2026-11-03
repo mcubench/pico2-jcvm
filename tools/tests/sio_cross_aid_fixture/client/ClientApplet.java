@@ -64,6 +64,28 @@ public final class ClientApplet extends Applet {
     }
   }
 
+  private short checkSensitiveDigestResult(Probe probe) {
+    short outputLength = probe.sensitiveDigestResult();
+    try {
+      SensitiveResult.assertEquals(outputLength);
+      return outputLength == 32 ? (short)0x6A37 : (short)0x6A38;
+    } catch (SecurityException missingSensitiveResult) {
+      return (short)0x6A39;
+    }
+  }
+
+  private short checkFailedSensitiveDigest(Probe probe) {
+    AID own = JCSystem.getAID();
+    short marker = probe.sensitiveDigestFailure();
+    if (marker != (short)0x6A3D) return (short)0x6A3E;
+    try {
+      SensitiveResult.assertEquals(own);
+      return (short)0x6A3F;
+    } catch (SecurityException correctlyUnassigned) {
+      return (short)0x6A40;
+    }
+  }
+
   public void process(APDU apdu) {
     if (selectingApplet()) {
       return;
@@ -167,6 +189,12 @@ public final class ClientApplet extends Applet {
     } else if (buffer[1] == 0x24) {
       Probe probe = (Probe) shareable;
       result = checkPreservedSensitiveAID(probe);
+    } else if (buffer[1] == 0x25) {
+      Probe probe = (Probe) shareable;
+      result = checkSensitiveDigestResult(probe);
+    } else if (buffer[1] == 0x26) {
+      Probe probe = (Probe) shareable;
+      result = checkFailedSensitiveDigest(probe);
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

@@ -203,6 +203,28 @@ def main() -> int:
             print("TEST:PASS caller getAID object result survives SIO when "
                   "service invokes no sensitive API")
             response = vpcd.exchange(
+                connection, bytes.fromhex("8025000000"),
+                "SHA-256 doFinal SensitiveResult survives SIO"
+            )
+            if response != bytes.fromhex("6A379000"):
+                raise RuntimeError(
+                    "SHA-256 doFinal SensitiveResult returned "
+                    f"{response.hex().upper()}, expected 6A379000"
+                )
+            print("TEST:PASS native SHA-256 doFinal output-length result is "
+                  "assertable by the caller after SIO")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("8026000000"),
+                "failed SHA-256 doFinal clears prior SensitiveResult"
+            )
+            if response != bytes.fromhex("6A409000"):
+                raise RuntimeError(
+                    "failed SHA-256 doFinal left a stale SensitiveResult: "
+                    f"{response.hex().upper()}, expected 6A409000"
+                )
+            print("TEST:PASS invalid SHA-256 doFinal clears prior object "
+                  "SensitiveResult before SIO returns")
+            response = vpcd.exchange(
                 connection, bytes.fromhex("801A000000"),
                 "cross-context private array reference firewall"
             )
@@ -589,7 +611,7 @@ def main() -> int:
                     f"{response.hex().upper()}, expected 45679000"
                 )
             print("TEST:PASS fresh proxy dispatch works after same-AID reinstall")
-            print("TEST:SUMMARY pass=29 fail=0")
+            print("TEST:SUMMARY pass=31 fail=0")
             return 0
         finally:
             if connection is not None:

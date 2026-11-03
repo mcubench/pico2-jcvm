@@ -20,6 +20,17 @@
 - Commit: pending
 - Artifacts/logs: Windows output supplied in conversation; no local artifact.
 
+## 2026-11-03 Fix native MessageDigest SensitiveResult propagation 10 minutes
+
+- Step/experiment: `ctx02-message-digest-sensitive-result-20261103`
+- When: '2026-11-03 15:36 UTC' - '2026-11-03 15:46 UTC'
+- Change: Fixed native `MessageDigest.doFinal()` to clear stale SensitiveResult state before validation and record the digest output length only after successful digest execution and input-buffer cleanup. Expanded the interpreted SIO fixture to verify SHA-256 known-answer output, caller assertion after SIO, and invalid-range failure clearing a prior object result. Updated CTX-02 TODO, QKB and HANDOFF.
+- Validation: `./tools/build-pc`, `./tools/build arm`, and `./tools/build riscv` passed. Fixture CAP conversion and Python syntax check passed. Elevated local VPCD cross-AID integration passed `TEST:SUMMARY pass=31 fail=0`, including the SHA known-answer and both SensitiveResult outcomes. Authorized physical-reader refresh found zero Pico devices, so physical flash/validation was skipped.
+- Result: A real runtime defect was found: SHA-256 returned 32 but left SensitiveResult unset. The fixed interpreter path returns 32 with the expected SHA-256 of `1234`, and exceptions leave the result unassigned. ARM image uses `0x100d09d8` endpoint with 194,088 bytes remaining in the current 1 MiB window.
+- Decision: Keep CTX-02 open for additional PIN/signature/key result producers, object-result GC rooting after locals drop, and physical acceptance of this native change when a device is passed through.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T154309Z.log`.
+
 ## 2026-11-03 Verify object SensitiveResult producers across SIO 5 minutes
 
 - Step/experiment: `ctx02-sensitive-object-result-sio-20261103`

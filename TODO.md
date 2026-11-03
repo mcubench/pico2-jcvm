@@ -531,12 +531,18 @@ Archive text is historical evidence, not current device state or priorities.
   `SecurityException`. The caller's object result from `JCSystem.getAID()` also
   survives a passive SIO call, and the service successfully asserts its
   `getAID()` and `getPreviousContextAID()` object results. The VPCD cross-AID
-  suite passes 29/29 with these cases and the existing lifecycle/firewall
+  suite passes 31/31 with these cases and the existing lifecycle/firewall
   regressions. This is emulator evidence, not physical acceptance.
-  Remaining: exercise additional result producers (PIN, digest,
-  signature and key APIs where enabled), including normal and exceptional
-  returns; verify GC rooting of object results through an interpreted SIO call;
-  and repeat selected coverage on physical hardware when available.
+  This exposed and fixed a runtime omission: native
+  `MessageDigest.doFinal()` returned the correct SHA-256 length but did not set
+  `SensitiveResult`. It now clears stale state at entry and records the output
+  length only after digest and cleanup succeed. Success and invalid-range
+  behavior both pass the 31/31 VPCD fixture suite; the SHA-256 output is checked
+  against a known answer.
+  Remaining: exercise other result producers (PIN, signature and key APIs
+  where enabled), verify GC rooting of object results after ordinary locals
+  are dropped through interpreted SIO, and repeat selected coverage on
+  physical hardware when available.
   Acceptance: correct result ownership/lifetime across cross-applet call/return,
   GC and reset; preserve tests distinguishing native simulation from applet calls.
   Evidence: original SensitiveResult task and `tools/test-rmi-registry`.

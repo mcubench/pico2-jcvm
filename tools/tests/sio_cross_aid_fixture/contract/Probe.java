@@ -10,6 +10,8 @@ public interface Probe extends Shareable {
   short sensitiveFailedCopy();
   short sensitiveAIDResults();
   short noSensitiveApi();
+  short sensitiveDigestResult();
+  short sensitiveDigestFailure();
   int exerciseWide(int value);
   short throwSecurityException();
   short inspectPrivateArray(byte[] value);

@@ -177,6 +177,8 @@ jshort_t javacard_security_MessageDigest_doFinal(
     const jref_t receiver, std::shared_ptr<JC_Array> input,
     const jshort_t inputOffset, const jshort_t inputLength,
     std::shared_ptr<JC_Array> output, const jshort_t outputOffset) {
+  Context &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   auto instance = digestInstance(receiver);
   if (!output) throw Exceptions::NullPointerException;
   if (output->getType() != JAVA_ARRAY_T_BYTE)
@@ -208,6 +210,7 @@ jshort_t javacard_security_MessageDigest_doFinal(
 #endif
   if (!success) throwCryptoException(CryptoExceptionReason::IllegalUse);
   clearInput(*instance);
+  context.setSensitiveResultShort(static_cast<jshort_t>(resultLength));
   return static_cast<jshort_t>(resultLength);
 }
 

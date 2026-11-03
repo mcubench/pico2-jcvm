@@ -1,5 +1,24 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Native MessageDigest.doFinal omitted SensitiveResult update — 2026-11-03
+
+- **Symptom:** In an interpreted cross-AID SIO fixture, SHA-256
+  `MessageDigest.doFinal()` returned output length 32, but the caller's
+  `SensitiveResult.assertEquals((short)32)` failed after the service returned.
+  Existing Util array-copy short-result propagation worked.
+- **Cause:** `choupi/src/native_message_digest.cpp` produced the digest and
+  returned its length without resetting or setting `Context`'s SensitiveResult
+  state. The Java Card API declares `MessageDigest.doFinal` as a sensitive
+  result producer.
+- **Fix:** Reset the state at native method entry (so any validation or digest
+  exception leaves it unassigned), then set the short output length only after
+  the digest succeeds and intermediate input is cleared. The fixture verifies
+  caller assertion after SIO, invalid-range failure clearing a previous object
+  result, and the SHA-256 known-answer bytes.
+- **Validation:** PC, ARM and RISC-V repository builds passed. The VPCD SIO
+  suite passed `TEST:SUMMARY pass=31 fail=0`. No physical Pico was present for
+  validation; repeat this result on hardware when a reader becomes available.
+
 ## JC305 converter internal error when a test applet method grows — 2026-11-03
 
 - **Symptom:** After adding a SensitiveResult assertion branch directly to the
