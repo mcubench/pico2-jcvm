@@ -20608,6 +20608,17 @@
 - Commit: `9165fc4`
 - Artifacts/logs: Descriptor-omitted VPCD `artifacts/logs/sio-cross-aid-vpcd-20261103T010107Z.log`, SHA-256 `8616921d1bce2c4ed5d5e77428db6731ac46b4eb0f521607226928bbeb5e7ca8`; Descriptor-included VPCD `artifacts/logs/sio-cross-aid-vpcd-20261103T010308Z.log`, SHA-256 `b8478eb69d56e87d0efa626bb0f07a3082d09a23a18355889ae0562dcd055b20`; serial and APDU output were observed live and not archived.
 
+## 2026-11-03 Retain CCID APDU response and trace JCAlgTest FF05 14 minutes
+
+- Step/experiment: `ccid-retained-apdu-and-jcalgtest-ff05-20261103`
+- When: '2026-11-03 01:06 UTC' - '2026-11-03 01:20 UTC'
+- Change: Updated CCID debug state to retain the latest XfrBlock DataBlock response across later GetSlotStatus polling. Did not change the upstream JCAlgTest CAP.
+- Validation: `git -c core.whitespace=cr-at-eol diff --check -- src/ccid_device.cpp` passed. ARM and RISC-V `max_crypto` wrapper builds passed. Refreshed PC/SC access, flashed Pico 2 `2BED26ED20556535` with `PICO2_HOST_USB_ACCESS=1 ./tools/cycle choupi --profile max_crypto --chipid 2BED26ED20556535`; flash verify reached 100%, finite monitor passed `TEST:SUMMARY pass=1 fail=0` (one `WATCHDOG_RECOVERY cause=other` marker appeared at boot). Concurrent physical probe returned SELECT `9000`, GETVERSION `FF05`; retained CCID telemetry reported APDU `B0E1000000`, length 2, status `FF05` after subsequent slot-status messages.
+- Result: The applet exception is a NullPointerException (`id=28`) at `arraylength` (`opcode=0x92`) in package 56, Method PC 15865. CAP class disassembly shows `JCAlgTestApplet.GetVersion` reads instance field `ALGTEST_JAVACARD_VERSION_CURRENT` and executes `arraylength`; the field is null at runtime although the constructor assigns the JC305 version array. This localizes the physical failure to instance-field initialization/persistence/restore but does not yet explain why the value is lost.
+- Decision: Trace the constructor `putfield_a_this`, serialized field record and persistent restore; add a focused reference-valued applet-instance-field reset regression. Keep the upstream CAP and unrelated persistent card contents unchanged. Do not run another full JCAlgTest sweep until GETVERSION succeeds.
+- Commit: `pending`
+- Artifacts/logs: cycle `artifacts/logs/cycle-choupi-20261103T010854Z.log`, SHA-256 `82e52063d48caa67210a0222e04e02274836041aabf94b7a0111616613fa47d9`; ARM UF2 SHA-256 `12dcd6db3e410923740e3c9de255ab0c334113fa5cb6159207a25a0782857d9d`; serial trace `artifacts/logs/ccid-retained-apdu-monitor-2bed-20261103T0120Z.log`, SHA-256 `6badf32af9a654af0a0991dbf3371a22a0a9461f4c13ec9ae505ffdf02d802cb`; probe `artifacts/logs/ccid-retained-apdu-probe-2bed-20261103T0120Z.log`, SHA-256 `7e1b4d1f80b32badce113a58e8ca6b497030e6a864444c8c412738d10506a662`.
+
 ## 2026-11-02 Archive completed fix checklist and dated reviews 6 minutes
 
 - Step/experiment: `markdown-tidy-reviews`

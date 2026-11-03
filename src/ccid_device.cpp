@@ -329,32 +329,34 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   tx_buffer[7] = status;
   tx_buffer[8] = error;
   tx_buffer[9] = specific;
-  debug_last_response_length = static_cast<uint16_t>(payload_length);
-  debug_last_response_status =
-      payload != nullptr && payload_length >= 2
-          ? static_cast<uint16_t>(
-                (static_cast<uint16_t>(payload[payload_length - 2]) << 8) |
-                payload[payload_length - 1])
-          : 0;
-  for (uint8_t index = 0; index < sizeof(debug_last_response_apdu); ++index) {
-    debug_last_response_apdu[index] =
-        rx_buffer[0] == 0x6f && rx_expected >= 15 ? rx_buffer[10 + index] : 0;
-  }
-  if (rx_buffer[0] == 0x6f) {
-    debug_response_data_available = false;
-  }
-  if (rx_buffer[0] == 0x6f && rx_expected >= 15 &&
-      rx_buffer[11] == 0xf2 && rx_buffer[12] == 0x10) {
-    const size_t debug_data_length =
-        payload_length < sizeof(debug_last_response_data)
-            ? payload_length
-            : sizeof(debug_last_response_data);
-    debug_last_response_data_length = static_cast<uint8_t>(debug_data_length);
-    for (size_t index = 0; index < sizeof(debug_last_response_data); ++index) {
-      debug_last_response_data[index] =
-          payload != nullptr && index < debug_data_length ? payload[index] : 0;
+  // Preserve the last APDU transfer result across the reader's subsequent
+  // GetSlotStatus polling. Updating this snapshot for every CCID response
+  // loses the useful APDU response before the periodic serial report.
+  if (type == 0x80 && rx_buffer[0] == 0x6f && rx_expected >= 15) {
+    debug_last_response_length = static_cast<uint16_t>(payload_length);
+    debug_last_response_status =
+        payload != nullptr && payload_length >= 2
+            ? static_cast<uint16_t>(
+                  (static_cast<uint16_t>(payload[payload_length - 2]) << 8) |
+                  payload[payload_length - 1])
+            : 0;
+    for (uint8_t index = 0; index < sizeof(debug_last_response_apdu); ++index) {
+      debug_last_response_apdu[index] = rx_buffer[10 + index];
     }
-    debug_response_data_available = true;
+    debug_response_data_available = false;
+    if (rx_buffer[11] == 0xf2 && rx_buffer[12] == 0x10) {
+      const size_t debug_data_length =
+          payload_length < sizeof(debug_last_response_data)
+              ? payload_length
+              : sizeof(debug_last_response_data);
+      debug_last_response_data_length =
+          static_cast<uint8_t>(debug_data_length);
+      for (size_t index = 0; index < sizeof(debug_last_response_data); ++index) {
+        debug_last_response_data[index] =
+            payload != nullptr && index < debug_data_length ? payload[index] : 0;
+      }
+      debug_response_data_available = true;
+    }
   }
   debug_stage = 6;
   if (payload_length != 0) {

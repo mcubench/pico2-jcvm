@@ -38,20 +38,35 @@
 
 ## CCID periodic snapshot is overwritten by reader polling — 2026-11-03
 
-- **Observation:** While reproducing 2BED's physical GETVERSION failure, the
-  exact-reader probe returned SELECT `9000` and GETVERSION `FF05`. A concurrent
-  12-second serial capture showed the VM startup self-check passing, then
-  reported the last APDU header as `B0E1000000` with response length zero and
-  status `0000` while the last CCID message was `0x65` (`PC_to_RDR_GetSlotStatus`).
-- **Cause:** `send_response()` updates the single debug response snapshot for
-  every CCID response type. Reader slot-status polling therefore overwrites the
-  prior `PC_to_RDR_XfrBlock` response before the once-per-second serial report.
-  The displayed `0000` is not evidence that GETVERSION returned that status.
-- **Viable diagnostic fix:** Keep the latest XfrBlock command/response in
-  separate fields and update them only for a completed XfrBlock response;
-  continue tracking slot state independently. Then correlate the APDU probe
-  with the serial snapshot. No firmware change or board state change has yet
-  been made for this diagnostic issue.
+- **Cause:** `send_response()` updated the single debug response snapshot for
+  every CCID response type. Reader slot-status polling overwrote the prior
+  `PC_to_RDR_XfrBlock` response before the once-per-second serial report.
+- **Viable diagnostic fix:** `send_response()` now retains the latest APDU
+  response only when it sends a CCID DataBlock for XfrBlock. Later
+  GetSlotStatus traffic leaves the APDU snapshot intact.
+- **Validation:** Rebuilt and flashed ARM `max_crypto` to Pico 2
+  `2BED26ED20556535`; both ARM and RISC-V builds passed, flash verification
+  reached 100%, and the finite monitor passed its runtime test. During a
+  read-only GETVERSION probe, the serial trace retained APDU `B0E1000000`,
+  response length 2, status `FF05`, despite subsequent `0x65` slot-status
+  messages. The VM trace reports NullPointerException (`id=28`) at
+  `arraylength` (`opcode=0x92`) in package 56, Method component PC 15865.
+- **Diagnosis:** The unchanged JCAlgTest 1.8.2 CAP's `GetVersion` loads the
+  instance field `ALGTEST_JAVACARD_VERSION_CURRENT` and then executes
+  `arraylength`. The exception therefore shows that this field is null at
+  runtime. Its constructor assigns the 1.8.2 JC305 version array, so the
+  remaining issue is in instance-field initialization/persistence/restoration;
+  the reason the value becomes null is not yet established. The CAP was not
+  modified.
+- **Next:** Trace this field's constructor `putfield_a_this` write and its
+  persistent field record/restore, and add an isolated regression for a
+  reference-valued applet instance field across reset. Do not erase storage,
+  delete unrelated packages, or run another long support sweep until the
+  failure is resolved.
+- **Artifacts:** cycle log and firmware hash are in the 2026-11-03 progress
+  entry; monitor and exact-reader probe logs are
+  `artifacts/logs/ccid-retained-apdu-monitor-2bed-20261103T0120Z.log` and
+  `artifacts/logs/ccid-retained-apdu-probe-2bed-20261103T0120Z.log`.
 
 ## Fresh JCAlgTest install returned `FF05` on 2BED — 2026-11-03
 

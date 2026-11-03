@@ -1,3 +1,27 @@
+## Current session — trace JCAlgTest FF05 to null version instance field — 2026-11-03 01:20 UTC
+
+Fixed CCID diagnostics so slot-status polling no longer overwrites the last
+XfrBlock APDU response. Rebuilt and flashed the debug image to Pico 2
+`2BED26ED20556535`; ARM/RISC-V builds and flash verification passed, and the
+finite monitor reported `TEST:SUMMARY pass=1 fail=0`. The exact-reader physical
+probe still returns SELECT `9000`, GETVERSION `FF05`.
+
+The retained serial trace now correlates GETVERSION with status `FF05` and
+shows `NullPointerException` (`id=28`) at `arraylength` opcode `0x92` in
+package 56, Method PC 15865. Inspection of the unchanged CAP class shows
+`GetVersion` reads instance field `ALGTEST_JAVACARD_VERSION_CURRENT` and then
+executes `arraylength`; the field is null at runtime although the constructor
+assigns its JC305 version array. This narrows the failure to instance-field
+initialization/persistence/restore; why the value becomes null remains open.
+Do not change the upstream CAP, erase storage, delete unrelated packages, or
+run another long support sweep.
+
+Next: follow `putfield_a_this` during constructor/install, inspect the
+serialized field tag and `JC_Instance::getFields()` restore path, and create an
+isolated reference-valued instance-field reset regression. Exact run logs and
+firmware hash are in the 2026-11-03 progress entry and QKB. The 8E device is
+still not a PC/SC reader; 2BED remains the only physical target.
+
 ## Current session — SIO boundary committed; physical GETVERSION still FF05 — 2026-11-03 01:06 UTC
 
 Committed cross-context private-reference owner enforcement as `9165fc4`.
