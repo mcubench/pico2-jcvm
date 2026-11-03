@@ -20787,3 +20787,15 @@
 - Decision: Commit the locally validated typed-reference boundary. Continue CTX-01 offline, then flash and capture finite serial output when a physical board is again enumerated.
 - Commit: `d627e9a`
 - Artifacts/logs: VPCD APDU/restart/reject logs `artifacts/logs/host-vpcd-multipackage-*20261103T035537Z.log`; RMI client log `artifacts/logs/rmi-client-official-vpcd-client-20261103T035809Z.log`; no physical log was captured.
+
+
+## 2026-11-03 Preserve caller-owned references across SIO returns 12 minutes
+
+- Step/experiment: `ctx-01-sio-reference-return-provenance-20261103`
+- When: '2026-11-03 04:00 UTC' - '2026-11-03 04:12 UTC'
+- Change: `areturn` now moves a typed `ReferenceValue` and preserves its package owner through nested calls and interpreter root results. Root return state retains reference ownership; GC root enumeration skips foreign compact handles in the server context. SIO return dispatch restores a caller-owned reference to the caller-local marker, wraps server-owned Shareable objects, and keeps global or third-party references opaque. Extended the generated cross-AID test fixture with `byte[] echoArray(byte[])` and client identity/access assertions.
+- Validation: Initial `./tools/test-rmi-registry` and ARM/RISC-V builds exposed and caught a const-correctness error in the root filter; corrected it to compare against the stored applet package ID. The final `./tools/test-rmi-registry`, `./tools/build arm`, and `./tools/build riscv` passed. `CHOUPI_JCVM_DEBUG=ON ./tools/build-pc` passed (upstream Rust/packed-member warnings remain). VPCD SIO fixture passed 18/18 with Descriptor omitted and 18/18 with Descriptor included. The first new return probe failed `6F00`; trace isolated owner normalization comparing applet-instance ID against the package ID used during argument marshalling. Comparing with `context.getCurrentPackageID()` fixed it. ARM firmware end is `0x100d05d8`, remaining 195,112 bytes; UF2 SHA-256 `98f4c036d6fe56b80cbcf0582ff6a8ec60bea6b3de83a2770220b59234190873`. Physical flash/runtime was intentionally not retried because escalated USB inventory and the authorized reader helper found zero Pico devices.
+- Result: A client-private array now survives a cross-AID Shareable call/return with identity preserved and can be dereferenced after the caller context is restored. VPCD passed both Descriptor paths; physical validation remains open.
+- Decision: Commit this SIO return implementation and test. Continue CTX-01 GC/lifecycle and opaque third-party return audit; perform hardware validation when a board is again visible.
+- Commit: pending
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T041029Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261103T041135Z.log`; first failed diagnostic run `artifacts/logs/sio-cross-aid-vpcd-20261103T040743Z.log`; debug emulator log contains trace output.

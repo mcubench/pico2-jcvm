@@ -55,12 +55,12 @@ namespace jcvm {
  *
  */
 void Bytecodes::bc_areturn() {
-  jref_t returned_value;
+  Stack::ReferenceValue returned_value;
   Stack &stack = this->context.getStack();
 
   TRACE_JCVM_DEBUG("ARETURN");
 
-  returned_value = stack.pop_Reference();
+  returned_value = stack.pop_ReferenceValue();
   stack.recordMethodReturn(Stack::ReturnKind::Reference);
 
   const bool root_frame = stack.isRootFrame();
@@ -70,7 +70,7 @@ void Bytecodes::bc_areturn() {
   if (root_frame) {
     stack.setRootReferenceReturnValue(returned_value);
   } else {
-    stack.push_Reference(returned_value);
+    stack.push_Reference(returned_value.reference, returned_value.owner);
   }
   return;
 }

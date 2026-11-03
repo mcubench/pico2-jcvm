@@ -883,10 +883,13 @@ void Context::visitRootReferences(const Heap::ReferenceVisitor visitor,
       visitor(reference, visitor_context);
     }
   }
-  jref_t root_return_reference;
+  Stack::ReferenceValue root_return_reference{};
   if (this->stack.getRootReferenceReturnValue(root_return_reference) &&
-      !root_return_reference.isNullPointer()) {
-    visitor(root_return_reference, visitor_context);
+      !root_return_reference.reference.isNullPointer() &&
+      (root_return_reference.owner == Stack::kCurrentReferenceOwner ||
+       root_return_reference.owner == Stack::kGlobalReferenceOwner ||
+       root_return_reference.owner == this->getAppletPackageID())) {
+    visitor(root_return_reference.reference, visitor_context);
   }
   const auto append_array_mirror = [&](const std::shared_ptr<JC_Array> &array) {
     if (!array) {

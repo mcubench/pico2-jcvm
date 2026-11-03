@@ -57,6 +57,7 @@ void Stack::push_Frame(const uint8_t nargs, const uint8_t max_locals,
     this->root_return_value_available = false;
     this->root_return_value_is_reference = false;
     this->root_return_value = 0;
+    this->root_reference_return_owner = kCurrentReferenceOwner;
     this->root_return_kind = ReturnKind::None;
     this->last_method_return_kind = ReturnKind::None;
     new_fp = &(this->jc_stack[0]);
@@ -148,14 +149,21 @@ void Stack::setRootReturnValue(const uint32_t value,
   this->root_return_value = value;
   this->root_return_value_available = true;
   this->root_return_value_is_reference = false;
+  this->root_reference_return_owner = kCurrentReferenceOwner;
   this->root_return_kind = kind;
   this->last_method_return_kind = kind;
 }
 
 void Stack::setRootReferenceReturnValue(const jref_t value) noexcept {
-  this->root_return_value = value.compact();
+  this->setRootReferenceReturnValue(
+      ReferenceValue{value, kCurrentReferenceOwner});
+}
+
+void Stack::setRootReferenceReturnValue(const ReferenceValue value) noexcept {
+  this->root_return_value = value.reference.compact();
   this->root_return_value_available = true;
   this->root_return_value_is_reference = true;
+  this->root_reference_return_owner = value.owner;
   this->root_return_kind = ReturnKind::Reference;
   this->last_method_return_kind = ReturnKind::Reference;
 }
@@ -174,6 +182,16 @@ bool Stack::getRootReferenceReturnValue(jref_t &value) const noexcept {
     return false;
   }
   value = jref_t(static_cast<uint16_t>(this->root_return_value));
+  return true;
+}
+
+bool Stack::getRootReferenceReturnValue(ReferenceValue &value) const noexcept {
+  if (!this->root_return_value_available ||
+      !this->root_return_value_is_reference) {
+    return false;
+  }
+  value = {jref_t(static_cast<uint16_t>(this->root_return_value)),
+           this->root_reference_return_owner};
   return true;
 }
 

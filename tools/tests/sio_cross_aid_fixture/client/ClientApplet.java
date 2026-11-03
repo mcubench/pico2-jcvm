@@ -58,6 +58,11 @@ public final class ClientApplet extends Applet {
           JCSystem.ARRAY_TYPE_OBJECT, (short)1);
       global[0] = this;
       result = probe.inspectGlobalReference(global);
+    } else if (buffer[1] == 0x1C) {
+      byte[] original = new byte[] { 0x2A };
+      byte[] returned = ((Probe) shareable).echoArray(original);
+      result = returned == original && returned[0] == 0x2A
+          ? (short) 0x6A20 : (short) 0x6A21;
     } else if (buffer[1] == 0x16) {
       try {
         AID callerAID = JCSystem.getAID();

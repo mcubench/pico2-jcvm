@@ -322,9 +322,13 @@ Archive text is historical evidence, not current device state or priorities.
   scenario passed on Pico 2 `8E464F4E2BBC0A19`, including private-array and
   global-Object[] denial and cleanup. This does not close the firewall: finish auditing every
   reference-consuming bytecode/native entry for owner enforcement, and test
-  equal-handle collisions, foreign-reference returns, storage/GC roots, stale
-  owners and package deletion. Object comparison, casts and returns currently
-  fail closed rather than implementing all Java Card cross-context cases.
+  equal-handle collisions, storage/GC roots, stale owners and package deletion.
+  Cross-context `areturn` now preserves owner provenance through the nested
+  interpreter root result; references returned to their original package are
+  restored as local references, while other-owner/global references remain
+  opaque. The cross-AID fixture verifies byte-array identity and access after
+  returning a client-owned array (18/18 with Descriptor absent and present).
+  Object comparison and casts on foreign private references still fail closed.
   `Stack::get_Pushed_Element()` now remains potentially throwing when optional
   bounds checks are disabled, preserving catchable `SecurityException`; a
   compile-time no-checks contract test guards the exception specification.

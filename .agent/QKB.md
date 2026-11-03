@@ -4682,3 +4682,33 @@ original terminology/status; check current summary and later fixes before reuse.
   device. Do not infer whether this was host passthrough or board removal.
 - **Remaining:** Reflash and capture finite serial output when an identified
   board is enumerated. Continue auditing every reference-consuming operation.
+
+
+## SIO reference return must carry owner provenance back to caller — 2026-11-03
+
+- **Finding:** Cross-context argument marshalling tags a private reference with
+  its original package ID. `areturn` used `pop_Reference()`, which rejected that
+  tag, so a server could neither return a caller-supplied reference nor preserve
+  it as an opaque value. The root interpreter result also stored only the compact
+  handle, losing provenance.
+- **Fix:** `areturn` now pops a `ReferenceValue`, carries its owner through nested
+  caller frames, and stores it with root return results. Root GC enumeration does
+  not treat a foreign owner handle as a root in the server heap. On the context
+  switch back, a reference tagged with the original caller package is restored
+  to the caller's local marker; server-owned Shareable references still become
+  client proxies, and global/third-party references remain owner-tagged opaque
+  values.
+- **Regression:** Extended the generated cross-AID service/client fixture with
+  `byte[] echoArray(byte[])`. The client passes a private array through the
+  server and verifies returned identity plus array access. Both GPPro-compatible
+  Descriptor-free and Descriptor-included VPCD runs passed 18/18. The first run
+  failed with `6F00`: root cause was comparing the carried caller package owner
+  against applet-instance ID instead of the caller package ID used during
+  marshalling. Comparing against `getCurrentPackageID()` fixed the mismatch.
+- **Validation:** `./tools/test-rmi-registry` and ARM/RISC-V wrapper builds pass.
+  ARM image ends at `0x100d05d8`, leaving 195,112 bytes; SHA-256
+  `98f4c036d6fe56b80cbcf0582ff6a8ec60bea6b3de83a2770220b59234190873`. Physical
+  validation remains unavailable: the VM currently enumerates no Pico USB
+  devices. Do not claim physical coverage.
+- **Remaining:** Add return/reference GC pressure and third-party opaque return
+  tests; continue comparison/cast and package deletion/lifecycle audit.

@@ -1,3 +1,35 @@
+## Current session — preserve private reference returns across SIO — 2026-11-03 04:12 UTC
+
+Fixed cross-context `areturn` provenance. It now pops a `ReferenceValue` rather
+than rejecting foreign owners, carries its owner through same-context frames,
+and stores owner metadata with the root interpreter result. Root GC visits a
+root return only if its owner is local/current/global, avoiding aliasing a
+foreign compact handle in the server heap. On return from an SIO call, a
+reference belonging to the original caller package is normalized back to the
+caller-local marker; server-owned Shareable objects are proxied, and global or
+third-party references retain their owner tag.
+
+Extended the generated cross-AID SIO fixture with `byte[] echoArray(byte[])`.
+The client verifies that the returned array is identical and readable in its
+owning context. `./tools/test-rmi-registry` and ARM/RISC-V builds pass. The
+VPCD SIO fixture passes 18/18 with Descriptor omitted and 18/18 with Descriptor
+included. The first Descriptor-free run returned `6F00`; debug trace localized
+the mismatch to applet-instance ID versus package ID during owner normalization.
+After fixing the comparison, both runs pass. Current ARM image ends at
+`0x100d05d8`, leaving 195,112 bytes; UF2 SHA-256
+`98f4c036d6fe56b80cbcf0582ff6a8ec60bea6b3de83a2770220b59234190873`.
+
+Physical validation is still outstanding. The authorized reader refresh and
+USB inventory found no Pico after the previous BOOTSEL reset attempt. Do not
+claim the latest changes are physically tested. The earlier full JCAlgTest
+1.8.4 BASIC run used `AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar`
+and remains recorded in the prior handoff section.
+
+Next: continue CTX-01 offline with GC/return pressure and third-party opaque
+reference return tests, then continue the collision, storage, comparison/cast,
+stale-owner and DELETE audit. Flash and capture a finite serial log when a Pico
+is again enumerated. Preserve all pre-existing uncommitted changes.
+
 ## Current session — type-check reference receivers before dispatch — 2026-11-03 03:59 UTC
 
 Extended CTX-01 after auditing invoke receiver reads. The generic stack accessor

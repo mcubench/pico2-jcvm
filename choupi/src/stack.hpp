@@ -91,6 +91,7 @@ private:
   bool root_return_value_available = false;
   bool root_return_value_is_reference = false;
   uint32_t root_return_value = 0;
+  uint8_t root_reference_return_owner = kCurrentReferenceOwner;
   ReturnKind root_return_kind = ReturnKind::None;
   ReturnKind last_method_return_kind = ReturnKind::None;
 
@@ -145,6 +146,7 @@ public:
     this->root_return_value_available = false;
     this->root_return_value_is_reference = false;
     this->root_return_value = 0;
+    this->root_reference_return_owner = kCurrentReferenceOwner;
     this->root_return_kind = ReturnKind::None;
     this->last_method_return_kind = ReturnKind::None;
   }
@@ -157,6 +159,7 @@ public:
       this->root_return_value_available = false;
       this->root_return_value_is_reference = false;
       this->root_return_value = 0;
+      this->root_reference_return_owner = kCurrentReferenceOwner;
       this->root_return_kind = ReturnKind::None;
       this->last_method_return_kind = ReturnKind::None;
     }
@@ -173,6 +176,7 @@ public:
   void setRootReturnValue(uint32_t value, ReturnKind kind) noexcept;
   /// Save a reference result so root enumeration preserves its heap handle.
   void setRootReferenceReturnValue(jref_t value) noexcept;
+  void setRootReferenceReturnValue(ReferenceValue value) noexcept;
   void recordMethodReturn(ReturnKind kind) noexcept {
     this->last_method_return_kind = kind;
   }
@@ -183,6 +187,7 @@ public:
   bool hasRootReturnValue() const noexcept;
   uint32_t getRootReturnValue() const noexcept;
   bool getRootReferenceReturnValue(jref_t &value) const noexcept;
+  bool getRootReferenceReturnValue(ReferenceValue &value) const noexcept;
 
   // Pushing a byte to the operand stack
   void push_Byte(const jbyte_t value) noexcept(

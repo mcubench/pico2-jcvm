@@ -177,6 +177,17 @@ def main() -> int:
                 )
             print("TEST:PASS global Object[] returns an owner-tagged foreign "
                   "reference and blocks its cross-package use")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("801C000000"),
+                "return caller-owned array through SIO"
+            )
+            if response != bytes.fromhex("6A209000"):
+                raise RuntimeError(
+                    f"SIO caller-owned reference return {response.hex().upper()}, "
+                    "expected same accessible array 6A209000"
+                )
+            print("TEST:PASS SIO returns caller-owned byte[] with identity and "
+                  "owner restored for client access")
             response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
                                      "retain Shareable proxy across APDUs")
             if response != bytes.fromhex("6A109000"):

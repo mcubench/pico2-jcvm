@@ -1097,13 +1097,29 @@ void Bytecodes::bc_invokeinterface() {
 #endif
       break;
     case Stack::ReturnKind::Reference: {
-      jref_t returned_reference;
+      Stack::ReferenceValue returned_reference{};
       if (!server_stack.getRootReferenceReturnValue(returned_reference)) {
         throw Exceptions::SecurityException;
       }
-      stack.push_Reference(wrapShareableReference(
-          context, *server_context, server_aid, server_aid_length,
-          returned_reference));
+      if (!returned_reference.reference.isNullPointer() &&
+          returned_reference.owner ==
+              static_cast<uint8_t>(context.getCurrentPackageID())) {
+        // The server returned a reference supplied by this caller. Restore its
+        // local marker only after returning to the reference's owner context.
+        stack.push_Reference(returned_reference.reference,
+                             Stack::kCurrentReferenceOwner);
+      } else if (!returned_reference.reference.isNullPointer() &&
+                 returned_reference.owner ==
+                     Stack::kCurrentReferenceOwner) {
+        stack.push_Reference(wrapShareableReference(
+            context, *server_context, server_aid, server_aid_length,
+            returned_reference.reference));
+      } else {
+        // Global references and opaque references owned by other applets keep
+        // their provenance while crossing back to the original caller.
+        stack.push_Reference(returned_reference.reference,
+                             returned_reference.owner);
+      }
       break;
     }
     case Stack::ReturnKind::None:

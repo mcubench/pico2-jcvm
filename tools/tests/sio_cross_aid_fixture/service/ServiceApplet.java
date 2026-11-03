@@ -72,5 +72,9 @@ public final class ServiceApplet extends Applet implements Probe {
     }
   }
 
+  public byte[] echoArray(byte[] value) {
+    return value;
+  }
+
   public void process(APDU apdu) {}
 }
