@@ -3692,7 +3692,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` rebuilt both architectures but flashing failed before upload because picotool could not initialize libusb (`status=250`); therefore no hardware validation was performed. `sudo -n /usr/local/sbin/pico2-pcsc-reader` was also blocked by this execution context's `no_new_privileges` setting.
 - Result: The prior hardware trace still establishes that SELECT matches package 63/class `0x0094` and restore returns null. The new diagnostic is compiled but not yet run on the board. Current USB access is unavailable to this session (`lsusb`: libusb `-99`).
 - Decision: Preserve the new trace and rerun the physical SELECT probe when USB access is restored; do not claim applet/JCSystem hardware verification yet.
-- Commit: pending
+- Commit: `c261035`
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261015T101749Z.log` (SHA-256 `3f6e644789143bebc2394f7b756f452d417d52bc7d23132a9428f042297f5cb3`); ARM UF2 SHA-256 `653622ffd0cbb12e1e3435b9a00926572d5cffa8b87a72a4d6edb7da6c74eee9`.
 
 ## 2026-10-15 — Make restore diagnostics safe on denied reads
@@ -21073,5 +21073,5 @@
 - Validation: Compared the new output to the existing Windows MUTE investigation and current CCID trace requirements. No firmware, CCID descriptor, APDU, or card state was changed. No USBPcap or same-run Pico CDC trace was supplied.
 - Result: Windows enumerates `Pico2 JCVM CCID 0`, reports `SCARD_STATE_PRESENT | SCARD_STATE_MUTE` and “The card is unrecognized or not responding,” then exits `certutil` successfully after several minutes. The failed card activation remains localized only to the Windows PC/SC/CCID path; the failed USB message is not identified. Host-side delay is consistent with retries/timeouts but is not proof of their exact cause.
 - Decision: Continue to require a Windows USBPcap capture through `PC_to_RDR_IccPowerOn` and subsequent commands, correlated with CDC serial, board ID, and UF2 SHA-256, before changing CCID behavior.
-- Commit: pending
+- Commit: `c261035`
 - Artifacts/logs: user-provided `certutil -scinfo` output; no PCAP or serial artifact.
