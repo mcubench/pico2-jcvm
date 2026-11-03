@@ -21053,3 +21053,14 @@
 - Decision: Keep 8E offline until it re-enumerates; do not delete or overwrite 2BED's existing fixture packages. Continue with offline work until an eligible physical board is available.
 - Commit: `58e493b`.
 - Artifacts/logs: image SHA-256 `13f39ce7139297e423c63bf3b6ecd15386c2e550edd932e23efb612df082d863`; 8E cycle `artifacts/logs/cycle-choupi-20261103T134713Z.log` SHA-256 `2b1a4704d3fdd389defc5941282ec3a4662be8bf1fc97d95704f5d7cb4d60ecd`; 2BED cycle `artifacts/logs/cycle-choupi-20261103T134916Z.log` SHA-256 `4e6eb8c8f8dba428800e4683d83166548d404ebea5ebe33856532b85d7ab643f`; post-flash probe `artifacts/logs/pico-powerup-persistence-20261103T135041Z.log` SHA-256 `c981d9a64741a6dccffd1bf8aaeda7c3a8fc8e9223e33b0a64e1c059848dc03c`.
+
+## 2026-11-03 Review CCID implementation against Windows MUTE report 3 minutes
+
+- Step/experiment: `windows-mute-static-ccid-review-20261103`
+- When: '2026-11-03 13:51 UTC' - '2026-11-03 13:54 UTC'
+- Change: Compared the current CCID class descriptor and PowerOn response path with USB-IF CCID Rev 1.1 and recorded a trace-oriented Windows MUTE hypothesis in QKB/HANDOFF. No runtime code or descriptors changed.
+- Validation: Inspected `src/ccid_device.cpp` and the official CCID Rev 1.1 fields for `dwFeatures`, supported protocols, PowerOn, and DataBlock. Linux exact-reader checks on both boards passed earlier in this session. No Windows USBPcap or same-run serial trace was available.
+- Result: Descriptor advertises T=1 and short-APDU, with `dwFeatures=0x00020042` comprising automatic ATR parameter configuration, automatic parameter negotiation, and short-APDU exchange; this matches the T=1 ATR and required APDU-level feature bits. PowerOn returns a success DataBlock containing ATR. An unproven risk remains: the default handler responds to unsupported CCID commands with SlotStatus, potentially incorrect for a command such as GetParameters.
+- Decision: Do not change CCID behavior until Windows capture proves which command/response fails. Obtain USBPcap through PowerOn and follow-on command(s), paired with CDC serial, exact board ID, and UF2 hash.
+- Commit: pending.
+- Artifacts/logs: no new logs. Sources: USB-IF CCID Rev 1.1 and Microsoft reader-state documentation, linked in `.agent/QKB.md`.

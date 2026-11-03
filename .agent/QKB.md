@@ -1,5 +1,34 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Windows MUTE report: static CCID review narrows the trace needed — 2026-11-03
+
+- **Observation:** Windows reports `PRESENT | MUTE`; Linux receives ATR
+  `3B800181` and runs JCAlgTest on both currently attached boards. Microsoft
+  defines `SCARD_STATE_MUTE` as an unresponsive card or one unsupported by the
+  reader/software; it does not identify the failed USB exchange.
+- **Static review:** Current descriptor advertises one slot, T=1, short-APDU
+  exchange, `dwFeatures=0x00020042`, and voltages 5/3/1.8 V. Per USB-IF CCID
+  Rev 1.1, `0x2` is automatic parameter configuration from ATR, `0x40` is
+  automatic parameter negotiation, and `0x20000` is short-APDU exchange; the
+  CCID APDU-level requirements include `0x2` and one of `0x40`/`0x80`. The ATR
+  protocol bit agrees with the T=1 descriptor. The PowerOn handler returns a
+  `RDR_to_PC_DataBlock` containing ATR with matching sequence and success
+  status.
+- **Unproven risk to check:** The firmware's default response for unhandled
+  CCID message types is `RDR_to_PC_SlotStatus`. If Windows sends a command such
+  as `PC_to_RDR_GetParameters` during activation, this fallback may be the
+  wrong response type. No Windows trace currently shows that request, so this
+  is a hypothesis and not a root cause. Do not change CCID behavior until a
+  USBPcap trace shows the request sequence and response.
+- **Next:** Capture USBPcap through the first `PC_to_RDR_IccPowerOn` and any
+  subsequent CCID command; correlate it with CDC serial `CHOUPI:CCID_COMMANDS`
+  and record exact Pico ID/UF2 hash. Determine whether Windows receives ATR
+  `3B800181`, an error status, a malformed response, or an unexpected response
+  type.
+- **Sources:** [USB-IF CCID Rev 1.1](https://www.usb.org/sites/default/files/DWG_Smart-Card_CCID_Rev110.pdf),
+  [Microsoft reader states](https://learn.microsoft.com/en-us/windows-hardware/drivers/smartcard/smart-card-reader-states),
+  [Microsoft SCARD_STATE_MUTE description](https://learn.microsoft.com/de-at/openspecs/windows_protocols/ms-rdpesc/3a235960-2fec-446b-8ed1-50bcc70e3c5f).
+
 ## 8E lost USB serial/PCSC enumeration after verified flash; 2BED failover passed — 2026-11-03
 
 - **Observation:** Current ARM `max_crypto` image SHA-256

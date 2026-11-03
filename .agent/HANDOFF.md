@@ -1,3 +1,18 @@
+# Current session — static CCID review of Windows MUTE report — 2026-11-03 13:54 UTC
+
+Reviewed the CCID descriptor against USB-IF Rev 1.1. Advertised one slot,
+T=1, short APDU, and `dwFeatures=0x00020042` (automatic ATR parameter
+configuration, automatic parameter negotiation, short APDU); ATR `3B800181`
+also identifies T=1. The PowerOn handler emits DataBlock with the ATR. There
+is no static mismatch explaining Windows `PRESENT | MUTE`. A concrete
+unproven risk is the default response for unsupported CCID messages: it always
+returns `RDR_to_PC_SlotStatus`, which may be wrong if Windows sends
+`PC_to_RDR_GetParameters`. Do not modify CCID behavior without USBPcap evidence.
+Next capture first PowerOn and any subsequent requests plus same-run CDC serial
+log, exact Pico ID and UF2 hash. 2BED is currently reachable and passed the
+post-flash probe; 8E disappeared after its verified flash. Details/sources are
+in `.agent/QKB.md`.
+
 # Current session — physical failover after 8E re-enumeration failure — 2026-11-03 13:51 UTC
 
 Flashed current ARM `max_crypto` image SHA-256
