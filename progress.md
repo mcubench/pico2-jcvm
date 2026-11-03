@@ -20845,5 +20845,5 @@
 - Validation: Rebuilt the test-only contract, service, and client CAPs. `./tools/env python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 18/18 without Descriptor; `SIO_CROSS_AID_REUSE_FIXTURE=1 SIO_CROSS_AID_INCLUDE_DESCRIPTOR=1 ./tools/env python3 tools/tests/sio_cross_aid_vpcd_test.py` passed 18/18 with Descriptor. The reference identity/null, two-reference, array dereference, virtual-call, cast, and instanceof probes passed. No firmware source changed, so ARM/RISC-V builds and hardware flashing were not repeated; physical reader discovery remains zero.
 - Result: The current `pop_Reference()` ownership checks prevent a foreign compact handle reaching class lookup through `checkcast` or `instanceof`; each rejection is catchable by the applet.
 - Decision: Keep the end-to-end regression. Continue the remaining CTX-01 collision/storage/GC/stale-owner/DELETE audit.
-- Commit: `pending; SHA added in follow-up metadata commit`
+- Commit: `18afebd`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T044420Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261103T044608Z.log`.
