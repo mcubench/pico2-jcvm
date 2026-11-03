@@ -1182,6 +1182,8 @@ jshort_t javacard_security_Signature_beginVerify(
 jshort_t javacard_security_Signature_sign(
     jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t offset,
     jshort_t length, std::shared_ptr<JC_Array> output, jshort_t outputOffset) {
+  auto &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   auto signature = signatureInstance(receiver);
   requireInitialized(*signature, kModeSign);
   if (isMessageRecoverySignature(*signature))
@@ -1199,21 +1201,28 @@ jshort_t javacard_security_Signature_sign(
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
   if (isEcdsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
-          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
-    return ecdsaSignatureSign(*signature, input, offset, length, output,
-                              outputOffset);
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM)))) {
+    const jshort_t result = ecdsaSignatureSign(
+        *signature, input, offset, length, output, outputOffset);
+    context.setSensitiveResultShort(result);
+    return result;
+  }
 #endif
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
-          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
-    return rsaSignatureSign(*signature, input, offset, length, output,
-                            outputOffset);
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM)))) {
+    const jshort_t result = rsaSignatureSign(
+        *signature, input, offset, length, output, outputOffset);
+    context.setSensitiveResultShort(result);
+    return result;
+  }
 #endif
   const auto result = runMac(*signature, input, offset, length);
   for (jshort_t i = 0; i < resultSize; ++i)
     output->setByteEntry(static_cast<uint16_t>(outputOffset + i),
                          static_cast<jbyte_t>(result[static_cast<size_t>(i)]));
   clearMacMessage(*signature);
+  context.setSensitiveResultShort(resultSize);
   return resultSize;
 }
 
@@ -1221,14 +1230,18 @@ jshort_t javacard_security_Signature_sign(
     jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t offset,
     jshort_t length, std::shared_ptr<JC_Array> output, jshort_t outputOffset,
     std::shared_ptr<JC_Array> recoveredLength, jshort_t recoveredLengthOffset) {
+  auto &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   auto signature = signatureInstance(receiver);
   requireInitialized(*signature, kModeSign);
   if (!isMessageRecoverySignature(*signature))
     throwCryptoException(CryptoExceptionReason::IllegalUse);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_ISO9796_MR
-  return rsaSignatureSignRecovery(*signature, input, offset, length, output,
-                                  outputOffset, recoveredLength,
-                                  recoveredLengthOffset);
+  const jshort_t result = rsaSignatureSignRecovery(
+      *signature, input, offset, length, output, outputOffset,
+      recoveredLength, recoveredLengthOffset);
+  context.setSensitiveResultShort(result);
+  return result;
 #else
   (void)input; (void)offset; (void)length; (void)output; (void)outputOffset;
   (void)recoveredLength; (void)recoveredLengthOffset;
@@ -1238,6 +1251,8 @@ jshort_t javacard_security_Signature_sign(
 jshort_t javacard_security_Signature_signPreComputedHash(
     jref_t receiver, std::shared_ptr<JC_Array> hash, jshort_t offset,
     jshort_t length, std::shared_ptr<JC_Array> output, jshort_t outputOffset) {
+  auto &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   auto signature = signatureInstance(receiver);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   requireInitialized(*signature, kModeSign);
@@ -1245,8 +1260,10 @@ jshort_t javacard_security_Signature_signPreComputedHash(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM)))) {
     const jshort_t resultSize = rsaSignatureLength(*signature);
     checkRange(output, outputOffset, resultSize);
-    return rsaSignatureSignHash(*signature, hash, offset, length, output,
-                                outputOffset);
+    const jshort_t result = rsaSignatureSignHash(
+        *signature, hash, offset, length, output, outputOffset);
+    context.setSensitiveResultShort(result);
+    return result;
   }
 #endif
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
@@ -1258,9 +1275,11 @@ jshort_t javacard_security_Signature_signPreComputedHash(
     if (signatureHasInitialDigest(*signature))
       throwCryptoException(CryptoExceptionReason::IllegalUse);
     checkRange(hash, offset, length);
-    return ecdsaSignatureSignHash(*signature,
+    const jshort_t result = ecdsaSignatureSignHash(*signature,
         readBytes(*hash, static_cast<uint16_t>(offset),
                   static_cast<uint16_t>(length)), output, outputOffset);
+    context.setSensitiveResultShort(result);
+    return result;
   }
 #endif
   (void)hash; (void)offset; (void)length; (void)output; (void)outputOffset;
@@ -1270,6 +1289,8 @@ jbool_t javacard_security_Signature_verify(
     jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t offset,
     jshort_t length, std::shared_ptr<JC_Array> expected, jshort_t expectedOffset,
     jshort_t expectedLength) {
+  auto &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   auto signature = signatureInstance(receiver);
   requireInitialized(*signature, kModeVerify);
   if (isMessageRecoverySignature(*signature))
@@ -1280,16 +1301,25 @@ jbool_t javacard_security_Signature_verify(
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_512
   if (isEcdsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
-    return ecdsaSignatureVerify(*signature, input, offset, length, expected,
-                                expectedOffset, expectedLength);
+  {
+    const jbool_t result = ecdsaSignatureVerify(
+        *signature, input, offset, length, expected, expectedOffset,
+        expectedLength);
+    context.setSensitiveResultBoolean(result != FALSE);
+    return result;
+  }
 #endif
   const jshort_t resultSize = signature->getField_Short(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_OUTPUTLENGTH);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
-          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
-    return rsaSignatureVerify(*signature, input, offset, length, expected,
-                              expectedOffset, expectedLength);
+          ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM)))) {
+    const jbool_t result = rsaSignatureVerify(
+        *signature, input, offset, length, expected, expectedOffset,
+        expectedLength);
+    context.setSensitiveResultBoolean(result != FALSE);
+    return result;
+  }
 #endif
   const auto result = runMac(*signature, input, offset, length);
   uint8_t difference = expectedLength == resultSize ? 0 : 1;
@@ -1299,12 +1329,16 @@ jbool_t javacard_security_Signature_verify(
           static_cast<uint8_t>(expected->getByteEntry(
               static_cast<uint16_t>(expectedOffset + i))));
   clearMacMessage(*signature);
-  return difference == 0 ? TRUE : FALSE;
+  const jbool_t verified = difference == 0 ? TRUE : FALSE;
+  context.setSensitiveResultBoolean(verified != FALSE);
+  return verified;
 }
 
 jbool_t javacard_security_Signature_verify(
     jref_t receiver, std::shared_ptr<JC_Array> input, jshort_t offset,
     jshort_t length) {
+  auto &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   auto signature = signatureInstance(receiver);
   requireInitialized(*signature, kModeVerify);
   if (!isMessageRecoverySignature(*signature))
@@ -1335,19 +1369,28 @@ jbool_t javacard_security_Signature_verify(
   const bool valid = false;
 #endif
   clearMessage(*signature);
-  return valid ? TRUE : FALSE;
+  const jbool_t result = valid ? TRUE : FALSE;
+  context.setSensitiveResultBoolean(result != FALSE);
+  return result;
 }
 jbool_t javacard_security_Signature_verifyPreComputedHash(
     jref_t receiver, std::shared_ptr<JC_Array> hash, jshort_t hashOffset,
     jshort_t hashLength, std::shared_ptr<JC_Array> expected,
     jshort_t expectedOffset, jshort_t expectedLength) {
+  auto &context = Context::getActiveContext();
+  context.resetSensitiveResult();
   auto signature = signatureInstance(receiver);
 #if JC_SUPPORT_SIGNATURE_RSA_SHA_PKCS1_ANY
   requireInitialized(*signature, kModeVerify);
   if (isRsaSignatureAlgorithm(static_cast<uint8_t>(signature->getField_Byte(
           ROM_FIELD_INDEX_JAVACARD_SECURITY_SIGNATURE_SIGNATURE_ALGORITHM))))
-    return rsaSignatureVerifyHash(*signature, hash, hashOffset, hashLength,
-                                  expected, expectedOffset, expectedLength);
+  {
+    const jbool_t result = rsaSignatureVerifyHash(
+        *signature, hash, hashOffset, hashLength, expected, expectedOffset,
+        expectedLength);
+    context.setSensitiveResultBoolean(result != FALSE);
+    return result;
+  }
 #endif
 #if JC_SUPPORT_SIGNATURE_ECDSA_SHA || JC_SUPPORT_SIGNATURE_ECDSA_SHA_224 || \
     JC_SUPPORT_SIGNATURE_ECDSA_SHA_256 || JC_SUPPORT_SIGNATURE_ECDSA_SHA_384 || \
@@ -1358,10 +1401,12 @@ jbool_t javacard_security_Signature_verifyPreComputedHash(
     if (signatureHasInitialDigest(*signature))
       throwCryptoException(CryptoExceptionReason::IllegalUse);
     checkRange(hash, hashOffset, hashLength);
-    return ecdsaSignatureVerifyHash(*signature,
+    const jbool_t result = ecdsaSignatureVerifyHash(*signature,
         readBytes(*hash, static_cast<uint16_t>(hashOffset),
                   static_cast<uint16_t>(hashLength)), expected,
         expectedOffset, expectedLength);
+    context.setSensitiveResultBoolean(result != FALSE);
+    return result;
   }
 #endif
   (void)hash; (void)hashOffset; (void)hashLength; (void)expected;

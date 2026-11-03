@@ -1,5 +1,20 @@
 # Current session — native Cipher SensitiveResult propagation — 2026-11-03 15:59 UTC
 
+## Follow-up: native Signature SensitiveResult propagation — 2026-11-03 16:25 UTC
+
+Implemented SensitiveResult propagation for native `Signature.sign()` and
+`verify()` methods, including message-recovery and precomputed-hash variants.
+Handlers clear stale state on entry and set short/boolean values after
+successful completion. The interpreted three-package fixture performs AES MAC
+sign/verify: the service asserts the signature length and the client asserts
+the boolean verification result after SIO. PC, ARM, and RISC-V builds passed;
+the cross-AID loopback suite passed `TEST:SUMMARY pass=32 fail=0` in
+`artifacts/logs/sio-cross-aid-vpcd-20261103T162028Z.log`. No physical Pico
+reader was attached, so hardware validation remains outstanding. A first
+2-byte AES MAC NOPAD input was invalid; block-aligned 16-byte input passes.
+Commit is pending. Next CTX-02 targets include PIN, random-data, checksum,
+AEAD/key APIs, object-result GC rooting, then physical validation.
+
 Follow-up: extended the native SensitiveResult audit to `Cipher.update()` and
 `Cipher.doFinal()`. Both handlers clear previous state on entry and publish the
 short result only after the RSA or symmetric operation succeeds. The

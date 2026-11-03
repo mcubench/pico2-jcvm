@@ -544,7 +544,12 @@ Archive text is historical evidence, not current device state or priorities.
   fixture asserts update's result in the service and finalization's result
   after SIO return; VPCD remains 31/31. The current device pool is empty, so
   physical validation is outstanding.
-  Remaining: exercise other result producers (PIN, signature, random-data,
+  Native `Signature.sign()` variants now publish their output length, while
+  `verify()` variants publish their boolean result only after success. The
+  interpreted fixture uses AES MAC sign/verify and asserts both results across
+  SIO; the expanded VPCD suite passes 32/32. PC, ARM, and RISC-V builds pass;
+  physical validation is still outstanding.
+  Remaining: exercise other result producers (PIN, random-data,
   checksum, AEAD and key APIs where enabled), verify GC rooting of object
   results after ordinary locals are dropped through interpreted SIO, and
   repeat selected coverage on physical hardware when available.

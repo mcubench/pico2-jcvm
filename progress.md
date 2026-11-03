@@ -21196,3 +21196,24 @@
 - Decision: Preserve the DES interface map fix. When a physical Pico reader reappears, run the complete unchanged `ALG_PERFORMANCE_STATIC` operation with the 1.8.4 client before closing API-03 static-performance acceptance.
 - Commit: `a9d0fdf` (progress reference is recorded in the follow-up metadata commit)
 - Artifacts/logs: Final UF2 SHA-256 `07605231943cf52dbfaeeb3e17ff7e7b621cf5b904fc5e63a74ca7d886e16010`; flash/runtime `artifacts/logs/cycle-choupi-20261103T150345Z.log`; focused results `artifacts/logs/jcalgtest-184-des-clear-2bed-20261103.log` SHA-256 `0a7490531f73b30b39c41a1d5ee234cc40052bce67191285ef382c208a70a359`; serial `artifacts/logs/jcalgtest-184-des-clear-2bed-monitor-20261103.log` SHA-256 `0d5c71eb57f75a8ac5f91196349739e227c06264d87d058c779d31b798ac8e8a`.
+## 2026-11-03 Native Signature SensitiveResult propagation 24 minutes
+
+- Step/experiment: `ctx02-signature-sensitive-result-20261103`
+- When: '2026-11-03 16:02 UTC' - '2026-11-03 16:26 UTC'
+- Change: Native `Signature.sign()` and `verify()` overloads now clear stale
+  SensitiveResult on entry and publish short/boolean results after successful
+  completion. Extended the interpreted cross-AID fixture to assert AES MAC
+  sign and verify results across SIO.
+- Validation: Test CAP conversion passed; Python syntax and whitespace checks
+  passed. `./tools/build-pc --profile max_crypto`, `./tools/build arm --profile
+  max_crypto`, and `./tools/build riscv --profile max_crypto` passed. The
+  elevated loopback VPCD suite passed `TEST:SUMMARY pass=32 fail=0`. Physical
+  validation was skipped because no Pico reader was available.
+- Result: Signature result propagation now survives interpreted SIO for AES
+  MAC. The initial 2-byte AES MAC NOPAD fixture was invalid; 16-byte aligned
+  input passes. ARM endpoint is `0x100e8820`, leaving 96,224 bytes in 1 MiB.
+- Decision: Continue CTX-02 with remaining result producers, object-result GC
+  rooting, and physical validation.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T162028Z.log`;
+  no hardware log.

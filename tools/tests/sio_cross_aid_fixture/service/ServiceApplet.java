@@ -9,6 +9,7 @@ import javacard.framework.Util;
 import javacard.security.MessageDigest;
 import javacard.security.AESKey;
 import javacard.security.KeyBuilder;
+import javacard.security.Signature;
 import javacardx.crypto.Cipher;
 import javacardx.security.SensitiveResult;
 import sio.contract.Probe;
@@ -149,6 +150,35 @@ public final class ServiceApplet extends Applet implements Probe {
       return cipher.doFinal(input, (short)0, (short)16, output, (short)16);
     } catch (SecurityException runtimeSecurityFailure) {
       return (short)0x6A46;
+    }
+  }
+
+  public short sensitiveSignatureResult() {
+    try {
+      AESKey key = (AESKey)KeyBuilder.buildKey(
+          KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
+      byte[] keyData = new byte[16];
+      key.setKey(keyData, (short)0);
+      byte[] input = new byte[16];
+      byte[] mac = new byte[16];
+      Signature signer = Signature.getInstance(
+          Signature.ALG_AES_MAC_128_NOPAD, false);
+      signer.init(key, Signature.MODE_SIGN);
+      short macLength = signer.sign(input, (short)0, (short)input.length,
+                                    mac, (short)0);
+      try {
+        SensitiveResult.assertEquals(macLength);
+      } catch (SecurityException missingSignResult) {
+        return (short)0x6A53;
+      }
+      Signature verifier = Signature.getInstance(
+          Signature.ALG_AES_MAC_128_NOPAD, false);
+      verifier.init(key, Signature.MODE_VERIFY);
+      boolean valid = verifier.verify(input, (short)0, (short)input.length,
+                                      mac, (short)0, macLength);
+      return valid ? (short)1 : (short)0;
+    } catch (SecurityException signatureSecurityFailure) {
+      return (short)0x6A54;
     }
   }
 

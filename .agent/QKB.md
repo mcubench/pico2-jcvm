@@ -1,5 +1,23 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Native Signature methods omitted SensitiveResult updates — 2026-11-03
+
+- **Symptom:** Java Card `Signature.sign()` and `verify()` returned expected
+  values from native handlers, but an interpreted caller could not assert the
+  declared SensitiveResult after a cross-AID SIO call.
+- **Cause and fix:** Native Signature sign variants did not clear stale
+  SensitiveResult state or publish their short output length; verify variants
+  likewise omitted their boolean result. Handlers now reset state on entry and
+  publish the successful return value only after the signature operation
+  completes. Exceptions leave the result unassigned.
+- **Validation:** Added an interpreted AES MAC sign/verify fixture. The service
+  asserts the sign length, and the client asserts the verify boolean after SIO.
+  PC, ARM, and RISC-V builds pass; the cross-AID VPCD suite passes 32/32. No
+  physical reader was attached for hardware validation.
+- **Fixture detail:** AES MAC NOPAD requires block-aligned input; a 2-byte
+  attempt correctly raised `ILLEGAL_USE`. A 16-byte input passed and is the
+  valid regression case.
+
 ## Native Cipher omitted SensitiveResult updates — 2026-11-03
 
 - **Symptom:** The Java Card `Cipher.update()` and `Cipher.doFinal()` methods
