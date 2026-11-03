@@ -20683,5 +20683,5 @@
 - Validation: Elevated host-path `lsusb -v -s 001:029` and `-s 001:031` identified 8E and 2BED as `2e8a:0009`, both with CDC and CCID interfaces. `sudo -n /usr/local/sbin/pico2-pcsc-reader` reported `count=2`; elevated `getfacl` showed `user:pcscd:rw-` on both nodes. Repeated `PICO2_HOST_USB_ACCESS=1 pcsc_scan -r` listed only 2BED and the two Virtual PCD readers. No APDU or flash operation was attempted on 8E.
 - Result: 8E is attached at USB but cannot currently serve as PC/SC failover. Both device nodes have PCSC permissions, so lack of ACL is not the observed cause.
 - Decision: Retry discovery later and use 8E if it appears as a PC/SC reader; meanwhile continue diagnosis on 2BED without claiming the second board is available for APDUs.
-- Commit: `pending (recorded in metadata follow-up)`
+- Commit: `23d2520`
 - Artifacts/logs: USB descriptor, ACL and PC/SC output were inspected live and not archived; board serials and observed enumeration state are recorded above.
