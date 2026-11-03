@@ -175,8 +175,8 @@ def main() -> int:
                     f"global Object[] reference result {response.hex().upper()}, "
                     "expected caught SecurityException 6B319000"
                 )
-            print("TEST:PASS global Object[] returns an owner-tagged foreign "
-                  "reference and blocks its cross-package use")
+            print("TEST:PASS global Object[] preserves foreign identity against "
+                  "the service local reference and blocks cross-package use")
             response = vpcd.exchange(
                 connection, bytes.fromhex("801C000000"),
                 "return caller-owned array through SIO"

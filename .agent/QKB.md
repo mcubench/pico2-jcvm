@@ -4879,3 +4879,21 @@ original terminology/status; check current summary and later fixes before reuse.
   `PC_to_RDR_IccPowerOn` / `RDR_to_PC_DataBlock`, plus the simultaneous Pico CDC
   serial trace. Check command `0x62`, response `0x80`, response payload length,
   and ATR bytes. Preserve current behavior until the trace localizes the fault.
+
+
+## Compare foreign SIO object identity before dereference — 2026-11-03
+
+- **Regression:** In the three-package SIO fixture, the client stores its own
+  applet object in a transient global `Object[]` and passes that array to the
+  service. The service compares the recovered object against its local `this`
+  before calling `equals`; owner-aware comparison must report unequal and the
+  later virtual call must raise catchable `SecurityException`.
+- **Validation:** VPCD passes 20/20 with Descriptor absent and present. Exact
+  physical Pico 2 `8E464F4E2BBC0A19` passes the same `6B319000` result, reset,
+  stale proxy and GP DELETE checks, and fixture cleanup. Physical log:
+  `artifacts/logs/sio-cross-aid-physical-20261103T114515Z.log`.
+- **Limit:** The fixture does not expose compact object handles, so it does not
+  demonstrate that this client/service pair had equal compact handles in the
+  observed run. Add a deterministic collision if practical; the Stack unit test
+  separately asserts equal compact references with different owner IDs are
+  unequal.

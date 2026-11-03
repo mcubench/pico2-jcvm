@@ -1,3 +1,26 @@
+## Current session — cross-owner SIO reference identity regression — 2026-11-03 11:47 UTC
+
+Extended the existing three-package SIO fixture. The service now compares a
+client-owned applet object read from global `Object[]` against its own local
+`this` before virtual dispatch; the expected behavior is unequal, followed by
+a caught `SecurityException` when trying to invoke `equals` on the foreign
+object. This covers cross-owner identity separately from comparisons against
+null or the same foreign reference.
+
+The VPCD suite passed 20/20 both with Descriptor omitted and included. Physical
+Pico 2 `8E464F4E2BBC0A19` passed GPPro LOAD/INSTALL, SELECT, the global Object[]
+case (`6B319000`), reset/stale-proxy and exception checks, GP DELETE/stale-proxy
+checks, and cleanup. Log:
+`artifacts/logs/sio-cross-aid-physical-20261103T114515Z.log`. The first VPCD
+attempt lacked loopback permission and failed `EPERM`; the approved elevated
+rerun passed. The first generic serial monitor selection also refused to guess
+between two CDC devices; an exact chip-ID selection worked.
+
+Limit: these integration runs do not log the two compact reference values, so
+they do not prove that this particular client/service object pair collided in
+the compact handle. A deterministic equal-handle cross-owner integration case
+remains open. Continue CTX-01 audit after this regression.
+
 ## Current session — Windows MUTE Linux cross-check — 2026-11-03 11:35 UTC
 
 User tested the current max firmware in Windows `certutil -scinfo`: the reader

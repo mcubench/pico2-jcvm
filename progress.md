@@ -20488,7 +20488,7 @@
 - Validation: `./tools/test-rmi-registry` passed (`owner_id_exhaustion=1`); a first tightened assertion failed because the test had left the expected output sentinel at the prior success value, then passed after resetting the sentinel. `./tools/test-rp2350-fs-overlay` passed (`TEST:SUMMARY fail=0`). PC, ARM and RISC-V max_crypto builds passed. `PICO2_HOST_USB_ACCESS=1 ./tools/test-same-cap-delete-reinstall --timeout 60` passed 9/9. Targeted `git diff --check` passed. USB inventory found two runtime readers and no BOOTSEL; no flash or physical card test.
 - Result: Both backends now share one selection algorithm. The test rejects all 255 occupied IDs, chooses ID 17 when it is the only free ID, rejects allocation when all persistent assignments are cleared but objects still retain each owner, then returns ID 1 after GC. RP2350 metadata exhaustion/reuse and PC/VPCD owner lifecycle regressions pass. Full 255-entry serialized PC VCR2 restore remains untested. ARM firmware end `0x100e75f4`, leaving 100,876 bytes in the 1 MiB firmware window.
 - Decision: Close selection-loop parity and full search-boundary coverage. Keep serialized PC registry exhaustion and remaining GC/reset/persistence acceptance open; hardware work waits for BOOTSEL enumeration.
-- Commit: `faeca16`
+- Commit: `30904e6`
 - Artifacts/logs: `tools/test-rmi-registry`, `tools/test-rp2350-fs-overlay`, `artifacts/logs/same-cap-delete-reinstall-vpcd-20261102T122308Z.log`; no board image was written.
 
 ## 2026-11-02 Run physical read-only persistence probes on two boards 2 minutes
@@ -20935,7 +20935,7 @@
 - Validation: `sudo -n /usr/local/sbin/pico2-pcsc-reader && pcsc_scan -r` passed; escalated host-access exact-reader GPPro `--list` passed on `8E464F4E2BBC0A19` and `2BED26ED20556535`. No firmware build or flash was performed.
 - Result: Both Linux devices completed card activation and APDU listing. Windows MUTE is narrowed to Windows/host-path behavior, but the exact cause is unknown without a USBPcap trace, correlated serial log, and image hash.
 - Decision: Keep CCID behavior unchanged pending those diagnostics; inspect CCID power-on command `0x62` and response `0x80` in the trace.
-- Commit: `pending`
+- Commit: `b91a255`
 - Artifacts/logs: read-only command output in this session; no archived log.
 
 ## 2026-11-03 Correlate Linux CCID APDU and serial behavior 2 minutes
@@ -20946,5 +20946,16 @@
 - Validation: Exact Pico `8E464F4E2BBC0A19` GPPro `--list` exited 0; `PICO2_HOST_USB_ACCESS=1 ./tools/monitor --serial 8E464F4E2BBC0A19 --seconds 8` exited 0 and showed CCID/APDU traffic, `9000`, and `TEST:PASS choupi_runtime`. The first monitor call omitted `--serial` and correctly failed because two CDC devices were attached; rerun with exact identity passed.
 - Result: Current Linux reader path completes APDU exchange and runtime checks; this does not determine why Windows reports MUTE.
 - Decision: Keep firmware unchanged and request a Windows USBPcap trace correlated with serial output and the flashed image hash.
-- Commit: `pending`
+- Commit: `faeca16`
 - Artifacts/logs: monitor and GPPro output observed in session; not archived.
+
+## 2026-11-03 Exercise cross-owner SIO object identity 11 minutes
+
+- Step/experiment: `ctx-01-sio-cross-owner-object-identity-20261103`
+- When: '2026-11-03 11:36 UTC' - '2026-11-03 11:47 UTC'
+- Change: Extended the three-package SIO fixture so the service compares a client-owned applet object from a transient global `Object[]` with its own local `this` before attempting `equals`. Updated the VPCD assertion label and CTX-01 status.
+- Validation: The first VPCD attempt failed with restricted-loopback `EPERM`; elevated rerun passed 20/20 with Descriptor omitted. Descriptor-included VPCD passed 20/20. Exact-reader physical regression on Pico 2 `8E464F4E2BBC0A19` passed cross-AID calls, global Object[] owner firewall (`6B319000`), reset and stale-proxy checks, exception handling, GP DELETE, and cleanup. CAP conversion completed with zero errors and the existing int-support warning.
+- Result: Cross-owner object identity comparison and subsequent foreign virtual-call denial pass in emulator and hardware. The test does not expose compact handles, so an equal-handle collision is not proven by this particular integration run.
+- Decision: Retain the integration regression; continue CTX-01 with deterministic collision and foreign-owner lifecycle coverage.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T114056Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T114257Z.log`, and `artifacts/logs/sio-cross-aid-physical-20261103T114515Z.log`.

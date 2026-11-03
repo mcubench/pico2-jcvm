@@ -81,6 +81,12 @@ public final class ServiceApplet extends Applet implements Probe {
       if (value == null) {
         return (short)0x6B01;
       }
+      // Client and service applet instances commonly occupy the same compact
+      // slot in their separate package heaps. Owner provenance must keep
+      // those distinct objects unequal across this SIO boundary.
+      if (value == this) {
+        return (short)0x6B30;
+      }
       value.equals(this);
       return (short)0x6B02;
     } catch (SecurityException expected) {

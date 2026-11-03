@@ -378,9 +378,13 @@ Archive text is historical evidence, not current device state or priorities.
   `RESTORE_READ_FAIL` (`tag=023904`); the regression now passes the array as an
   SIO argument. Determine the required persistent/transient reference rule and
   either reject that static assignment or implement its representation safely.
-  Remaining: stale-owner and
-  equal-handle collision lifecycle tests, and audit all paths that can consume
-  or retain a foreign value. See `.agent/QKB.md`.
+  The three-package SIO fixture now also compares a client-owned applet
+  reference read from a global `Object[]` with the service applet's local
+  `this` before attempting virtual dispatch. This exercises cross-owner object
+  identity separately from foreign-vs-null and same-foreign-reference checks.
+  Remaining: prove a deterministic equal-compact-handle collision in this
+  integration fixture, stale-owner lifecycle tests, and audit all paths that
+  can consume or retain a foreign value. See `.agent/QKB.md`.
   No types are inferred from raw values. The
   descriptor-free VPCD fixture passes 18/18; the Descriptor-present regression
   also passes 18/18 through the existing signature path. Physical typed
