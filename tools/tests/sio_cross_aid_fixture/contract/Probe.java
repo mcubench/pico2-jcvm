@@ -11,4 +11,5 @@ public interface Probe extends Shareable {
   short inspectPrivateArray(byte[] value);
   short inspectGlobalReference(Object[] values);
   byte[] echoArray(byte[] value);
+  boolean sameReference(byte[] reference);
 }

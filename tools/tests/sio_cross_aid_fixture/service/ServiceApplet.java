@@ -66,7 +66,11 @@ public final class ServiceApplet extends Applet implements Probe {
   public short inspectGlobalReference(Object[] values) {
     try {
       Object value = values[0];
-      return value == null ? (short)0x6B01 : (short)0x6B02;
+      if (value == null) {
+        return (short)0x6B01;
+      }
+      value.equals(this);
+      return (short)0x6B02;
     } catch (SecurityException expected) {
       return (short)0x6B31;
     }
@@ -74,6 +78,13 @@ public final class ServiceApplet extends Applet implements Probe {
 
   public byte[] echoArray(byte[] value) {
     return value;
+  }
+
+  public boolean sameReference(byte[] reference) {
+    if (reference == null) {
+      return true;
+    }
+    return reference == reference;
   }
 
   public void process(APDU apdu) {}

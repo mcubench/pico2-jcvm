@@ -392,6 +392,21 @@ Stack::ReferenceValue Stack::pop_ReferenceValue() {
   return {jref_t(current_frame.pop_Value()), owner};
 }
 
+bool Stack::referencesEqual(const ReferenceValue left,
+                            const ReferenceValue right,
+                            const jpackage_ID_t current_package_id) noexcept {
+  const auto normalized_owner = [current_package_id](const ReferenceValue value) {
+    if (value.reference.isNullPointer() || value.reference.isGlobalArray() ||
+        value.reference.isGlobalInstance()) {
+      return kGlobalReferenceOwner;
+    }
+    return value.owner == kCurrentReferenceOwner ? current_package_id
+                                                  : value.owner;
+  };
+  return left.reference == right.reference &&
+         normalized_owner(left) == normalized_owner(right);
+}
+
 /**
  * Popping a return address element from the stack
  *

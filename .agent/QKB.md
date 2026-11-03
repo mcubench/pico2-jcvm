@@ -4724,3 +4724,30 @@ original terminology/status; check current summary and later fixes before reuse.
 - **Validation:** `./tools/test-rmi-registry` passed. This is unit coverage for
   the GC filtering used by the cross-AID return path; no firmware build or
   physical test was needed for the test-only change.
+
+
+## Opaque cross-context reference identity and null checks — 2026-11-03
+
+- **Finding:** Treating `ifnull`, `ifnonnull`, or `if_acmp*` as heap access
+  wrongly rejects an opaque foreign reference before the bytecode can test only
+  nullness or identity. Oracle Java Card RE 3.1 §6.1.4 enumerates object-access
+  operations; these branch comparisons are not among them. This is a spec-based
+  inference for allowing the comparison while preserving all dereference checks:
+  https://docs.oracle.com/javacard/3.1/related-docs/JCCRE/JCCRE.pdf
+- **Fix:** Branch bytecodes now consume typed `ReferenceValue`s. Identity
+  compares both compact handle and normalized owner; the current-package marker
+  resolves to the active package ID, and null/JCRE-global references normalize
+  to the shared global identity domain. Comparison never consults either applet
+  heap. Virtual method calls and casts continue to reject foreign private
+  references.
+- **Validation:** `./tools/test-rmi-registry`; `./tools/build arm`;
+  `./tools/build riscv`; VPCD cross-AID suite 18/18 with Descriptor omitted and
+  18/18 included. The global Object[] fixture now tests an actual virtual call
+  on the foreign reference and gets caught `SecurityException` (`6B31`), rather
+  than treating a null comparison as an access. The authorized PC/SC helper
+  found zero physical Pico readers, so no hardware validation occurred.
+- **Open observation:** A temporary two-array-argument SIO probe produced
+  `6F00`; server locals showed the second operand as `0x005A`. The final focused
+  identity fixture uses one foreign reference and passes. Reproduce and isolate
+  multi-reference descriptor marshalling before relying on multiple opaque
+  object arguments in a cross-context call.

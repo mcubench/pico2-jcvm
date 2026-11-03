@@ -353,7 +353,7 @@ void Bytecodes::bc_ifnull() {
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
-  value = stack.pop_Reference();
+  value = stack.pop_ReferenceValue().reference;
   branch = pc.getNextByte();
 
   TRACE_JCVM_DEBUG("IFNULL 0x%02X", branch);
@@ -403,7 +403,7 @@ void Bytecodes::bc_ifnonnull() {
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
-  value = stack.pop_Reference();
+  value = stack.pop_ReferenceValue().reference;
   branch = pc.getNextByte();
 
   TRACE_JCVM_DEBUG("IFNONNULL 0x%02X", branch);
@@ -444,19 +444,20 @@ void Bytecodes::bc_ifnonnull() {
  *   following this if_acmpeq instruction.
  */
 void Bytecodes::bc_if_acmpeq() {
-  jref_t value1;
-  jref_t value2;
+  Stack::ReferenceValue value1{};
+  Stack::ReferenceValue value2{};
   jbyte_t branch;
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
-  value2 = stack.pop_Reference();
-  value1 = stack.pop_Reference();
+  value2 = stack.pop_ReferenceValue();
+  value1 = stack.pop_ReferenceValue();
   branch = pc.getNextByte();
 
   TRACE_JCVM_DEBUG("IF_ACMPEQ 0x%02X", branch);
 
-  if (value1 == value2) {
+  if (Stack::referencesEqual(value1, value2,
+                             this->context.getCurrentPackageID())) {
     pc.updateFromOffset(branch - sizeof(branch) - 1);
   }
 
@@ -492,19 +493,20 @@ void Bytecodes::bc_if_acmpeq() {
  *   following this if_acmpne instruction.
  */
 void Bytecodes::bc_if_acmpne() {
-  jref_t value1;
-  jref_t value2;
+  Stack::ReferenceValue value1{};
+  Stack::ReferenceValue value2{};
   jbyte_t branch;
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
-  value2 = stack.pop_Reference();
-  value1 = stack.pop_Reference();
+  value2 = stack.pop_ReferenceValue();
+  value1 = stack.pop_ReferenceValue();
   branch = pc.getNextByte();
 
   TRACE_JCVM_DEBUG("IF_ACMPNE 0x%02X", branch);
 
-  if (value1 != value2) {
+  if (!Stack::referencesEqual(value1, value2,
+                              this->context.getCurrentPackageID())) {
     pc.updateFromOffset(branch - sizeof(branch) - 1);
   }
 
@@ -1703,7 +1705,7 @@ void Bytecodes::bc_ifnull_w() {
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
-  value = stack.pop_Reference();
+  value = stack.pop_ReferenceValue().reference;
   branch = pc.getNextShort();
 
   TRACE_JCVM_DEBUG("IFNULL_W 0x%04X", branch);
@@ -1752,7 +1754,7 @@ void Bytecodes::bc_ifnonnull_w() {
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
-  value = stack.pop_Reference();
+  value = stack.pop_ReferenceValue().reference;
   branch = pc.getNextShort();
 
   TRACE_JCVM_DEBUG("IFNONNULL_W 0x%04X", branch);
@@ -1796,19 +1798,20 @@ void Bytecodes::bc_ifnonnull_w() {
  *   following this if_acmpeq_w instruction.
  */
 void Bytecodes::bc_if_acmpeq_w() {
-  jref_t value1;
-  jref_t value2;
+  Stack::ReferenceValue value1{};
+  Stack::ReferenceValue value2{};
   jshort_t branch;
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
-  value2 = stack.pop_Reference();
-  value1 = stack.pop_Reference();
+  value2 = stack.pop_ReferenceValue();
+  value1 = stack.pop_ReferenceValue();
   branch = pc.getNextShort();
 
   TRACE_JCVM_DEBUG("IFACMPEQ_W 0x%04X", branch);
 
-  if (value1 == value2) {
+  if (Stack::referencesEqual(value1, value2,
+                             this->context.getCurrentPackageID())) {
     pc.updateFromOffset(branch - sizeof(branch) - 1);
   }
 
@@ -1847,19 +1850,20 @@ void Bytecodes::bc_if_acmpeq_w() {
  *   following this if_acmpeq_w instruction.
  */
 void Bytecodes::bc_if_acmpne_w() {
-  jref_t value1;
-  jref_t value2;
+  Stack::ReferenceValue value1{};
+  Stack::ReferenceValue value2{};
   jshort_t branch;
   Stack &stack = this->context.getStack();
   pc_t &pc = stack.getPC();
 
-  value2 = stack.pop_Reference();
-  value1 = stack.pop_Reference();
+  value2 = stack.pop_ReferenceValue();
+  value1 = stack.pop_ReferenceValue();
   branch = pc.getNextShort();
 
   TRACE_JCVM_DEBUG("IFACMPNE_W 0x%04X", branch);
 
-  if (value1 != value2) {
+  if (!Stack::referencesEqual(value1, value2,
+                              this->context.getCurrentPackageID())) {
     pc.updateFromOffset(branch - sizeof(branch) - 1);
   }
 

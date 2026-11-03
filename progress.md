@@ -20811,3 +20811,15 @@
 - Decision: Commit the focused regression and continue CTX-01 audit.
 - Commit: `fbc7413`
 - Artifacts/logs: test output inspected live; no separate log.
+
+
+## 2026-11-03 Preserve opaque reference comparisons across SIO 20 minutes
+
+- Step/experiment: `ctx-01-owner-aware-null-and-identity-comparison-20261103`
+- When: '2026-11-03 04:15 UTC' - '2026-11-03 04:35 UTC'
+- Change: Added owner-aware reference identity comparison and changed narrow/wide `if_acmp*` plus `ifnull`/`ifnonnull` to consume typed reference values without dereferencing the opaque handle. Current-owner markers normalize to the active package; null and global references normalize to the shared global domain. Updated CTX-01 notes and the generated cross-AID fixture so identity/null comparison is allowed while a virtual call on a foreign reference remains blocked.
+- Validation: `./tools/test-rmi-registry` passed. `./tools/build arm` and `./tools/build riscv` passed; ARM image end `0x100d06a8`, 194,904 bytes remain in the firmware window. VPCD SIO fixture passed 18/18 without Descriptor and 18/18 with Descriptor. `git diff --check` passed on the focused step files. Refreshed the authorized PC/SC helper; it found zero Pico devices, so physical validation was unavailable. Several exploratory fixture runs intentionally failed while exposing stale CAP reuse, outdated firewall expectations, and a multi-reference marshalling anomaly; see QKB and HANDOFF.
+- Result: Foreign opaque handles retain identity for branch tests without becoming resolvable in the receiver heap; dereference and virtual dispatch denial remain covered. A temporary two-reference SIO probe observed second server local `0x005A` and `6F00`; this remains unverified/open.
+- Decision: Commit this focused comparison fix and continue CTX-01 collision, lifecycle, casts, and multi-reference SIO marshalling audit. No firmware flash or JCAlgTest run was possible/needed in this step. The upstream AlgTest client for subsequent client runs is `AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar`.
+- Commit: `pending; SHA added in follow-up metadata commit`
+- Artifacts/logs: Passing VPCD logs `artifacts/logs/sio-cross-aid-vpcd-20261103T043054Z.log` and `artifacts/logs/sio-cross-aid-vpcd-20261103T043207Z.log`; exploratory multi-reference failure `artifacts/logs/sio-cross-aid-vpcd-20261103T042112Z.log`.

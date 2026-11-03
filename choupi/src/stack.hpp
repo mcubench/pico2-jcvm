@@ -69,6 +69,9 @@ public:
     jref_t reference;
     uint8_t owner;
   };
+  /// Compare opaque reference identity without resolving a handle in a heap.
+  static bool referencesEqual(ReferenceValue left, ReferenceValue right,
+                              jpackage_ID_t current_package_id) noexcept;
   // Runtime type category for operand words. This compact tag is used by
   // cross-context calls when optional CAP Descriptor metadata is unavailable.
   enum class ValueKind : uint8_t {

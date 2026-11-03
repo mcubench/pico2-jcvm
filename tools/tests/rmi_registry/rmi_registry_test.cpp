@@ -582,6 +582,18 @@ void verify_shareable_cross_context_arguments() {
           error == jcvm::Exceptions::SecurityException;
     }
     assert(unqualified_local_read_rejected);
+    const jcvm::Stack::ReferenceValue local_reference_value{
+        foreign_reference, jcvm::Stack::kCurrentReferenceOwner};
+    const jcvm::Stack::ReferenceValue returned_reference_value{
+        foreign_reference, 17};
+    const jcvm::Stack::ReferenceValue other_owner_reference_value{
+        foreign_reference, 23};
+    assert(jcvm::Stack::referencesEqual(local_reference_value,
+                                        returned_reference_value, 17));
+    assert(jcvm::Stack::referencesEqual(returned_reference_value,
+                                        returned_reference_value, 23));
+    assert(!jcvm::Stack::referencesEqual(returned_reference_value,
+                                         other_owner_reference_value, 17));
     reference_provenance_stack.push_Reference(foreign_reference, 17);
     bool unqualified_stack_read_rejected = false;
     try {

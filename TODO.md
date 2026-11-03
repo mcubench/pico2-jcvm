@@ -328,7 +328,15 @@ Archive text is historical evidence, not current device state or priorities.
   restored as local references, while other-owner/global references remain
   opaque. The cross-AID fixture verifies byte-array identity and access after
   returning a client-owned array (18/18 with Descriptor absent and present).
-  Object comparison and casts on foreign private references still fail closed.
+  Opaque `ifnull`/`ifnonnull` and `if_acmp*` comparisons now retain provenance
+  without resolving a foreign handle. Local markers normalize to the active
+  package ID; equal compact handles from different owners compare unequal, and
+  null/JCRE-global values share the global identity domain. VPCD exercises
+  same-handle/null comparisons in the foreign service context (18/18 with and
+  without Descriptor). Virtual calls and casts remain fail-closed for foreign
+  private references. A two-reference SIO probe once reached the server with
+  an unexpected second local (`0x005A`) and raised `6F00`; validate multi-object
+  argument ordering before broadening this conclusion.
   `Stack::get_Pushed_Element()` now remains potentially throwing when optional
   bounds checks are disabled, preserving catchable `SecurityException`; a
   compile-time no-checks contract test guards the exception specification.
@@ -381,9 +389,10 @@ Archive text is historical evidence, not current device state or priorities.
   count mismatch. A new test-only three-package fixture now passes a positive
   cross-AID VPCD call with byte/short arguments, a global AID argument, and a
   null array; it verifies `getPreviousContextAID()` and the server AID and
-  returns `4567`. It also verifies denied lookup returns null and applet-local
-  array arguments fail closed (`6A03`), and a cross-context int argument and
-  return round-trip produces `76543210`. A server-thrown SecurityException is
+  returns `4567`. It also verifies denied lookup returns null, opaque
+  applet-local references pass identity/null comparisons while array
+  dereference and virtual dispatch fail closed, and a cross-context int
+  argument and return round-trip produces `76543210`. A server-thrown SecurityException is
   caught by the client, and a subsequent SIO call succeeds. A proxy stored in
   an applet instance field survives the end-of-APDU GC and is reusable on the
   next APDU. Calling `Object.equals` directly on a proxy fails closed with

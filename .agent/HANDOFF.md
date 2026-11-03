@@ -1,3 +1,30 @@
+## Current session — owner-aware null and identity comparisons — 2026-11-03 04:35 UTC
+
+Added `Stack::referencesEqual()` and switched narrow/wide `if_acmp*` plus
+`ifnull`/`ifnonnull` to typed `ReferenceValue` pops. Comparisons do not resolve
+handles in a heap; equality requires both compact handle and normalized owner.
+The current owner marker resolves to the executing package, while null/global
+references share a global identity domain. Updated the generated SIO fixture:
+opaque foreign references compare safely, but the global Object[] test now
+attempts `Object.equals` to ensure a real dereference/dispatch remains denied.
+
+Validation: `./tools/test-rmi-registry`; `./tools/build arm` and
+`./tools/build riscv` passed. Cross-AID VPCD suite passed 18/18 with Descriptor
+omitted and 18/18 with Descriptor included. ARM firmware ends at `0x100d06a8`,
+leaving 194,904 bytes in the 1 MiB window. The authorized reader helper found
+zero physical Pico 2 readers, so no flash/physical check occurred. The supplied
+upstream AlgTest 1.8.4 client remains
+`AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar`; its completed full
+BASIC run is recorded in the preceding handoff section.
+
+One exploratory two-reference SIO probe returned `6F00`; the server method
+trace showed the second reference local as `0x005A`. This was avoided in the
+focused identity fixture by comparing one opaque reference against itself and
+checking null separately. Treat multi-reference SIO argument ordering as an
+open issue; do not claim it passes. Continue CTX-01 collision, storage/GC,
+stale-owner, cast and DELETE audit, and investigate that SIO marshalling case.
+Preserve all pre-existing user worktree changes.
+
 ## Current session — root return owner/GC regression — 2026-11-03 04:15 UTC
 
 Added direct registry-suite coverage for the SIO root return metadata: the

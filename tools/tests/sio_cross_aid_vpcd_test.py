@@ -188,6 +188,17 @@ def main() -> int:
                 )
             print("TEST:PASS SIO returns caller-owned byte[] with identity and "
                   "owner restored for client access")
+            response = vpcd.exchange(
+                connection, bytes.fromhex("801D000000"),
+                "compare opaque caller references through SIO"
+            )
+            if response != bytes.fromhex("6A229000"):
+                raise RuntimeError(
+                    f"SIO reference identity comparison {response.hex().upper()}, "
+                    "expected same foreign and null references 6A229000"
+                )
+            print("TEST:PASS if_acmp compares opaque references by owner and "
+                  "handle; ifnull accepts owner-tagged references")
             response = vpcd.exchange(connection, bytes.fromhex("8015000000"),
                                      "retain Shareable proxy across APDUs")
             if response != bytes.fromhex("6A109000"):
@@ -337,14 +348,14 @@ def main() -> int:
                 )
             print("TEST:PASS service denial returns null; response=6A019000")
             response = vpcd.exchange(connection, bytes.fromhex("8012000000"),
-                                     "applet-local reference firewall")
-            if response != bytes.fromhex("6A039000"):
+                                     "opaque reference equality across contexts")
+            if response != bytes.fromhex("6A059000"):
                 raise RuntimeError(
-                    f"applet-local reference result {response.hex().upper()}, "
-                    "expected 6A039000"
+                    f"opaque reference comparison result {response.hex().upper()}, "
+                    "expected 6A059000"
                 )
-            print("TEST:PASS applet-local array rejected across contexts; "
-                  "response=6A039000")
+            print("TEST:PASS opaque references pass identity/null comparisons; "
+                  "dereference remains blocked; response=6A059000")
             response = vpcd.exchange(connection, bytes.fromhex("8017000000"),
                                      "proxy Object.equals firewall")
             if response != bytes.fromhex("6A099000"):
