@@ -3692,7 +3692,7 @@
 - Validation: `./tools/build arm` and `./tools/build riscv` passed. `./tools/cycle choupi` rebuilt both architectures but flashing failed before upload because picotool could not initialize libusb (`status=250`); therefore no hardware validation was performed. `sudo -n /usr/local/sbin/pico2-pcsc-reader` was also blocked by this execution context's `no_new_privileges` setting.
 - Result: The prior hardware trace still establishes that SELECT matches package 63/class `0x0094` and restore returns null. The new diagnostic is compiled but not yet run on the board. Current USB access is unavailable to this session (`lsusb`: libusb `-99`).
 - Decision: Preserve the new trace and rerun the physical SELECT probe when USB access is restored; do not claim applet/JCSystem hardware verification yet.
-- Commit: `c261035`
+- Commit: pending
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261015T101749Z.log` (SHA-256 `3f6e644789143bebc2394f7b756f452d417d52bc7d23132a9428f042297f5cb3`); ARM UF2 SHA-256 `653622ffd0cbb12e1e3435b9a00926572d5cffa8b87a72a4d6edb7da6c74eee9`.
 
 ## 2026-10-15 — Make restore diagnostics safe on denied reads
@@ -21075,3 +21075,14 @@
 - Decision: Continue to require a Windows USBPcap capture through `PC_to_RDR_IccPowerOn` and subsequent commands, correlated with CDC serial, board ID, and UF2 SHA-256, before changing CCID behavior.
 - Commit: `c261035`
 - Artifacts/logs: user-provided `certutil -scinfo` output; no PCAP or serial artifact.
+
+## 2026-11-03 Restore historical progress placeholder 1 minute
+
+- Step/experiment: `progress-history-metadata-correction-20261103`
+- When: '2026-11-03 14:00 UTC' - '2026-11-03 14:02 UTC'
+- Change: Restored the historical `Commit: pending` field in the 2026-10-15 physical restore diagnostic record after an overly broad commit-reference substitution changed it accidentally. The 2026-11-03 Windows MUTE record continues to point to its correct commit, `c261035`.
+- Validation: Reviewed the complete diff for both progress entries; only the unintended historical metadata hunk and this correction record changed. No code or hardware validation was involved.
+- Result: The historical progress record is back to its committed content, and the current documentation record retains the correct commit reference.
+- Decision: No implementation action; continue with the project backlog and Windows trace-based diagnosis.
+- Commit: pending
+- Artifacts/logs: none.
