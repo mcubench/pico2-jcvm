@@ -1,5 +1,29 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Reflash and clean reinstall did not recover physical JCAlgTest GETVERSION — 2026-11-03
+
+- **Follow-up:** Reinstalled the unchanged 1.8.2 CAP after the 1.8.4 test, then
+  built ARM and RISC-V `max_crypto` successfully and flashed the matching ARM
+  image to 2BED. The 18-line finite runtime monitor passed, with one
+  `WATCHDOG_RECOVERY cause=other` marker. After re-enumeration, 1.8.2 SELECT
+  still returned `9000` and GETVERSION still returned `FF05`.
+- **Isolation evidence:** The same current source and unchanged 1.8.2 CAP pass
+  the current PC VPCD integration (15/15), including GETVERSION, JCSystem,
+  SHA-256 prepare/doFinal/performance, and expected `NO_SUCH_ALGORITHM`.
+  Firmware build/boot is therefore not sufficient to explain the physical
+  APDU failure. A stale persistent package/app instance or physical PC/SC path
+  remains possible; neither is proven.
+- **Next:** Inspect physical per-package instance/static state and correlate
+  the CCID transfer with interpreter traces. Do not erase the card or delete
+  unrelated packages. Use another identified physical device if it appears.
+- **Evidence:** cycle log `artifacts/logs/cycle-choupi-20261103T003857Z.log`
+  SHA-256 `c55aab88dedc50f91f19e1c537f1c3aa12fc82776a6c0787b3d048edd342685e`;
+  post-flash probe log
+  `artifacts/logs/jcalgtest-182-getversion-after-reflash-2bed-20261103T004117Z.log`
+  SHA-256 `03aa9fafebfa6ae945f75ba2c8e7fa1a7bc13c507a1de174cc90284bfe4cebf8`;
+  PC VPCD log `artifacts/logs/host-vpcd-jcalgtest-20261103T0043Z.log` SHA-256
+  `4b9ea019f45e54dda0820af322d17467f93fcb00bfe19c2fe61709163d1afbe0`.
+
 ## Fresh JCAlgTest install returned `FF05` on 2BED — 2026-11-03
 
 - **Symptom:** On Pico 2 `2BED26ED20556535`, the supplied client

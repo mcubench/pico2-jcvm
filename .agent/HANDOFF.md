@@ -1,3 +1,22 @@
+## Current session — reflash did not restore JCAlgTest APDU behavior — 2026-11-03 00:45 UTC
+
+After the 1.8.4 client run, the unchanged 1.8.2 CAP was reinstalled twice and
+the card remained listed, but GETVERSION returned `FF05`. Both ARM and
+RISC-V `max_crypto` builds pass. Reflashed Pico 2 `2BED26ED20556535` with ARM
+UF2 SHA-256 `78e7fdbffa6654091963c81e8839b4034646db1d02047d4c268ff4f504e42e43`;
+the finite monitor passed 18/18 `TEST:SUMMARY pass=1 fail=0` checks, with one
+`WATCHDOG_RECOVERY cause=other` marker. After the flash, SELECT still returned
+`9000` while 1.8.2 GETVERSION still returned `FF05`.
+
+The current PC VPCD `max_crypto` integration test independently passes 15/15,
+including 1.8.2 GETVERSION, JCSystem info, SHA-256 prepare/doFinal/static
+performance, and the expected unsupported-algorithm case. Thus a clean current
+PC image and CAP pass; the physical card/APDU path remains broken after
+package replacement and firmware reflash. Do not clear other applet packages
+or erase persistent storage. Diagnose package instance/static state and
+physical PC/SC routing; retry on another identified board if one is available.
+Logs and hashes are in the 2026-11-03 progress entry and `.agent/QKB.md`.
+
 ## Current session — selectable JCAlgTest client and 1.8.4 recheck — 2026-11-03
 
 `tools/run-jcalgtest` now accepts `--client-jar PATH` (repo-relative or
