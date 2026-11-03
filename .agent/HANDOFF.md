@@ -1,3 +1,28 @@
+## Current session — 1.8.4 physical sweep disconnect and reader recovery — 2026-11-03 02:32 UTC
+
+The extended matching-client `ALG_SUPPORT_BASIC` attempt on Pico 2
+`2BED26ED20556535` ended with `SCARD_E_NOT_TRANSACTED` after 2,680 result
+rows (148 `yes`, 2,532 `no`); exit status 1. The run log and partial CSV are
+under `artifacts/results/jcalgtest-184-basic-2bed-20261103-complete-attempt/`.
+This is not a complete report. The log ends mid-APDU. No firmware was flashed.
+
+After the failure, the authorized helper first reported one USB device and
+`pcsc_scan -r` showed only VPCD. `lsusb` later showed two Pico devices, and
+serial by-id identified both `8E464F4E2BBC0A19` and 2BED. A subsequent helper
+refresh restored 2BED as a PC/SC reader; 8E still did not appear as a reader,
+so there was no physical failover target. A post-failure 1.8.4 SELECT/version/
+JCSystem probe passed, and a 10-second serial monitor showed repeated
+`TEST:SUMMARY pass=1 fail=0`. Thus the applet/runtime remained responsive after
+PC/SC rediscovery; the transport-drop cause is unknown.
+
+The current card still has the freshly installed unchanged 1.8.4 CAP. Keep
+using `AlgTest_JavaCard/deploy/client/AlgTestJClient_v1.8.4.jar`. Do not start
+another long physical matrix until the reader-drop behavior is isolated or
+another PC/SC board is available. The previous 900-second attempts and clean
+install resolution are documented immediately below. Also investigate why the
+old installed instance had a null version field; generic VPCD restore passes
+do not close this CAP-specific issue.
+
 ## Current session — fresh install restores JCAlgTest 1.8.4 APDUs — 2026-11-03 02:06 UTC
 
 Read the tidied repository instructions and ran the isolated VPCD persistence

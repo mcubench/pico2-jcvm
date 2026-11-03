@@ -1,5 +1,30 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## 1.8.4 physical BASIC sweep drops PC/SC reader — 2026-11-03
+
+- **Observation:** On Pico 2 `2BED26ED20556535`, the matching 1.8.4 client's
+  extended-timeout `ALG_SUPPORT_BASIC` run stopped with
+  `SCARD_E_NOT_TRANSACTED` after 2,680 valid result records (148 `yes`, 2,532
+  `no`). It was incomplete and exited nonzero mid-APDU.
+- **Recovery:** Refreshing the authorized PC/SC helper initially showed one
+  USB device but no physical reader. `lsusb` and serial by-id later showed both
+  8E and 2BED connected. Refreshing the helper again restored only 2BED in
+  `pcsc_scan -r`; 8E did not enumerate as PC/SC and could not be used for
+  failover. After rediscovery, SELECT, GETVERSION `1.8.4_jc305`, JCSystem info,
+  and the finite runtime serial monitor all passed.
+- **Cause/workaround status:** The device remained alive on CDC and its applet
+  was responsive after rediscovery. The failure source (reader/driver/USB/CCID
+  or client) is not established. The helper refresh is a recovery step, not a
+  fix; keep long physical sweeps bounded and retain per-board logs.
+- **Evidence:** partial CSV SHA-256
+  `7912582d59b97dd0c52d995cd63b1424a2fa41cad30e09276603a43e5d6e2aeb`, JCAlgTest
+  log SHA-256
+  `7591f2c857a2213a0098b1a63ab4302cb54b9828025bb1e4df83c7193472fac0`, post-
+  failure version probe SHA-256
+  `725459fd25561cd4509547ec8263b244cae2c3340d43f3cdd55dc5e57c279966`, and
+  serial monitor SHA-256
+  `f91e1fe1e6427be2be9905a834385896c0d0a2c527d05e54fbf50e0c8c78b25d`.
+
 ## Fresh package install clears JCAlgTest GETVERSION FF05 — 2026-11-03
 
 - **Observation:** On Pico 2 `2BED26ED20556535`, the pre-existing JCAlgTest
