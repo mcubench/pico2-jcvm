@@ -1,5 +1,30 @@
 # Issue knowledge base — compacted 2026-10-29
 
+## Foreign typed-array stores require owner-aware class resolution — 2026-11-03
+
+- **Finding:** `bc_aastore()` preserves the pushed reference's owner package
+  and passes it to `JC_Array::setReferenceEntry()`. That setter currently
+  rejects foreign references unless the destination is an applet-owned
+  transient wildcard `Object[]`. The check is deliberately fail-closed for
+  typed arrays.
+- **Why the guard cannot simply be removed:** For typed arrays, the existing
+  assignability check calls `context.getHeap().getInstance(value)` on the
+  active service package heap. A foreign compact handle can collide with a
+  different local object handle, so resolving it there could validate the
+  wrong class. The repository already has a regression proving equal compact
+  handle values occur across package heaps.
+- **Related stores:** `putfield_a` and `putstatic_a` pop references using the
+  current-package-only accessor, so ordinary foreign values fail before
+  retention. Persistent array/instance/static fields need stable owner
+  serialization and owner-aware root tracing before they can retain foreign
+  references.
+- **Next implementation prerequisite:** Provide a safe lookup of the retained
+  Context/Heap that owns the reference package, use that Heap to obtain the
+  runtime class, and compare it with the destination component type. Add a
+  typed-array test that forces equal compact handles in both packages and
+  confirms the foreign object's real class controls `aastore` acceptance.
+  Keep current guards until that path exists.
+
 ## Native Signature methods omitted SensitiveResult updates — 2026-11-03
 
 - **Symptom:** Java Card `Signature.sign()` and `verify()` returned expected

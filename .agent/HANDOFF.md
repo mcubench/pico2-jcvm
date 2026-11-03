@@ -1,5 +1,19 @@
 # Current session — native Cipher SensitiveResult propagation — 2026-11-03 15:59 UTC
 
+## CTX-01 owner-aware array-store audit — 2026-11-03 16:36 UTC
+
+Source review confirms `bc_aastore()` preserves reference owner provenance,
+but `JC_Array::setReferenceEntry()` rejects foreign values for typed arrays.
+Removing that guard would be unsafe: the assignability check resolves the
+compact handle through the active service heap, and compact values can collide
+across package heaps. `putfield_a` and `putstatic_a` use current-package-only
+reference pops, so foreign values are rejected before storage. Persistent
+instance/static/array support also needs a serialized owner identity and
+owner-aware GC roots. Details are in TODO CTX-01 and QKB. No code changed and no
+build or test was run for this source audit. Next implementation prerequisite:
+add safe retained-Context/Heap resolution by owner package and test typed
+`aastore` with equal compact handles; keep fail-closed guards until then.
+
 ## Follow-up: verify false Signature results across SIO — 2026-11-03 16:34 UTC
 
 Extended the interpreted Signature SensitiveResult fixture with a corrupted

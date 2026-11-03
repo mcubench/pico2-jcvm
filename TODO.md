@@ -394,6 +394,12 @@ Archive text is historical evidence, not current device state or priorities.
   still fail closed because static/instance fields and persistent arrays need
   a stable cross-package identity encoding and owner-aware roots/restoration.
   Instance/static stores and typed foreign array stores remain unimplemented.
+  Do not relax the `aastore` guard alone: the current typed-array assignability
+  path resolves an instance handle through the active package Heap, which can
+  alias an equal compact handle from that package. First add owner-aware lookup
+  of the referenced package's retained Context/Heap, then test assignability
+  across equal-handle collisions. Field and persistent-array stores also need
+  to retain/serialize the package owner and add owner-aware GC roots.
   Every later access must still apply firewall rules; never resolve a foreign
   compact handle in the receiving package's heap. See `.agent/QKB.md`.
   Global `Object[]` support is partially implemented for volatile JCRE global

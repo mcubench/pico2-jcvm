@@ -21267,3 +21267,25 @@
 - Decision: Continue CTX-01/03 work.
 - Commit: metadata-only follow-up
 - Artifacts/logs: none.
+## 2026-11-03 Audit foreign reference store paths 2 minutes
+
+- Step/experiment: `ctx01-foreign-reference-store-audit-20261103`
+- When: '2026-11-03 16:34 UTC' - '2026-11-03 16:36 UTC'
+- Change: Audited `aastore`, `putfield_a`, and `putstatic_a` handling for
+  foreign package references. Documented the safe prerequisite for typed
+  transient array stores and the separate persistence/rooting requirement for
+  instance, static, and persistent-array stores.
+- Validation: Read-only inspection of `bc_aastore()` and
+  `JC_Array::setReferenceEntry()` confirmed the owner tag is preserved into
+  the setter, but typed-array compatibility lookup uses the active package
+  Heap. Existing equal-compact-handle regression demonstrates why that lookup
+  cannot safely resolve a foreign object. Instance/static stores use
+  `pop_Reference()`, which rejects a foreign owner before storage. No code
+  changed; build and runtime tests were intentionally skipped.
+- Result: Simply relaxing the current typed-array guard could resolve a foreign
+  reference as an unrelated local object. Safe support needs owner-package
+  Context/Heap resolution first. Current guards remain intact.
+- Decision: Implement owner-aware lookup and equal-handle typed-array coverage
+  before enabling that store path; then design persistent owner encoding.
+- Commit: `pending`
+- Artifacts/logs: source inspection only; no test log.
