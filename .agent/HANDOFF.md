@@ -1,3 +1,24 @@
+## Current session — support explicit JCAlgTest version in power-up probe — 2026-11-03 11:19 UTC
+
+The read-only `tools/test-pico-powerup` probe hardcoded applet version
+`1.8.2_jc305`, so it falsely failed when both boards had the unchanged upstream
+`1.8.4_jc305` applet installed. Added `JCALGTEST_EXPECTED_VERSION`, preserving
+the 1.8.2 default. Sequential exact-reader runs passed on both physical boards:
+`8E464F4E2BBC0A19` (ATR `3B800181`, SELECT/GETVERSION/JCSystem info `9000`) and
+`2BED26ED20556535` (same results). Logs:
+`artifacts/logs/pico-powerup-persistence-20261103T111821Z.log` and
+`artifacts/logs/pico-powerup-persistence-20261103T111840Z.log`.
+
+Two initial simultaneous attempts failed only because of the old version
+assertion; one also hit a transient `SCARD_F_COMM_ERROR`. Re-running one board
+at a time with the expected version set passed. The concurrent communication
+error is not diagnosed. These are warm read-only checks, not proof of USB
+power-loss persistence. No firmware or card contents were changed.
+
+Next: continue CTX-01's remaining stale-owner/global-reference lifecycle and
+reference-consumer audit. The project remains incomplete; preserve all other
+worktree changes.
+
 ## Current session — fail closed on deleted SIO proxy — 2026-11-03 11:05 UTC
 
 Fixed the stale-proxy GP DELETE case. Root cause: `shareableProxyCastTarget`

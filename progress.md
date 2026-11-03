@@ -20905,3 +20905,14 @@
 - Decision: Commit the focused stale-proxy fix and continue investigating the Windows PRESENT/MUTE symptom. Broader CTX-01 lifecycle/GC acceptance remains open.
 - Commit: `e09d677`
 - Artifacts/logs: `artifacts/logs/sio-cross-aid-vpcd-20261103T103610Z.log`, `artifacts/logs/sio-cross-aid-vpcd-20261103T103738Z.log`, `artifacts/logs/sio-cross-aid-physical-20261103T110344Z.log`, and finite monitor log for `2BED26ED20556535` (see `.agent/HANDOFF.md`).
+
+## 2026-11-03 Make Pico power-up probe version-selectable 11 minutes
+
+- Step/experiment: `powerup-probe-jcalgtest-version-override-20261103`
+- When: '2026-11-03 11:08 UTC' - '2026-11-03 11:19 UTC'
+- Change: Added `JCALGTEST_EXPECTED_VERSION` to the standalone JCAlgTest APDU probe and `tools/test-pico-powerup`, retaining `1.8.2_jc305` as the default. Updated PERSIST-02 evidence, QKB diagnosis and HANDOFF.
+- Validation: `bash -n tools/test-pico-powerup tools/probe-jc-algtest` and scoped `git diff --check` passed. Initial simultaneous probes against 8E and 2BED failed the hardcoded 1.8.2 assertion after reading the valid installed `1.8.4_jc305`; one attempt also had a transient `SCARD_F_COMM_ERROR`. After the override, sequential read-only physical probes passed on 8E `8E464F4E2BBC0A19` and 2BED `2BED26ED20556535`: ATR `3B800181`, SELECT/GETVERSION `9000`, version `1.8.4_jc305`, JCSystem info `9000`. No firmware build/flash or card modification was needed.
+- Result: The power-up probe now works with both supported installed JCAlgTest versions. USB power-removal persistence remains untested. The concurrent PC/SC error was not reproduced or diagnosed.
+- Decision: Commit the focused tooling and documentation update; continue CTX-01 lifecycle/firewall work.
+- Commit: `pending`
+- Artifacts/logs: `artifacts/logs/pico-powerup-persistence-20261103T111821Z.log` and `artifacts/logs/pico-powerup-persistence-20261103T111840Z.log`.

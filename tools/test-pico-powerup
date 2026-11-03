@@ -17,6 +17,9 @@ list_timeout="${PICO2_POWERUP_LIST_TIMEOUT_SECONDS:-20}"
 apdu_timeout="${PICO2_APDU_TIMEOUT_SECONDS:-20}"
 [[ "${apdu_timeout}" =~ ^[1-9][0-9]*$ ]] || \
   die "PICO2_APDU_TIMEOUT_SECONDS must be a positive integer"
+expected_version="${JCALGTEST_EXPECTED_VERSION:-1.8.2_jc305}"
+[[ "${expected_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+_jc305$ ]] || \
+  die "JCALGTEST_EXPECTED_VERSION must look like 1.8.2_jc305"
 
 reader_name="${1:-Pico 2 CHOUPI CCID [JCVM CCID] (D92E743D5F640C0F) 00 00}"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
@@ -67,6 +70,7 @@ for ((attempt = 1; attempt <= attempts; ++attempt)); do
   fi
   probe_status=0
   if PICO2_HOST_USB_ACCESS=1 \
+      JCALGTEST_EXPECTED_VERSION="${expected_version}" \
       PICO2_APDU_TIMEOUT_SECONDS="${apdu_timeout}" \
       "${repo_root}/tools/probe-jc-algtest" --version-only 2>&1 | \
       tee -a "${log}"; then
@@ -75,7 +79,7 @@ for ((attempt = 1; attempt <= attempts; ++attempt)); do
     probe_status=$?
   fi
   if [[ "${probe_status}" == 0 ]] && \
-      grep -Fq 'TEST:PASS jc_algtest_persistence_probe version=1.8.2_jc305' \
+      grep -Fq "TEST:PASS jc_algtest_persistence_probe version=${expected_version}" \
         "${log}"; then
     probe_verified=1
     break

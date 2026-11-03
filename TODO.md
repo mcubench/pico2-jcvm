@@ -131,7 +131,11 @@ Archive text is historical evidence, not current device state or priorities.
   read-only `tools/test-pico-powerup` registry and JCAlgTest probe; each
   returned ATR `3B800181`, SELECT `9000`, version `1.8.2_jc305`, and JCSystem
   info `9000`. This was not a USB power-removal test and the deployed image hash
-  was not identified by the probe.
+  was not identified by the probe. On 2026-11-03, both boards also passed the
+  same probe against the installed upstream `1.8.4_jc305` applet after adding
+  `JCALGTEST_EXPECTED_VERSION` support; each returned the same ATR, successful
+  SELECT, GETVERSION, and JCSystem info. This remains a warm read-only probe,
+  not a USB power-removal test.
   Remaining: cold-power restoration of instance identity/fields, nested aliases,
   static roots and multi-instance owner state; verify corrupted/incomplete
   records cannot authorize reclamation after restart.
@@ -139,6 +143,8 @@ Archive text is historical evidence, not current device state or priorities.
   verify data and isolation after boot, with negative recovery cases as relevant.
   `tools/test-pico-powerup` is read-only and explicitly reports
   `power_cycle=not_verified_by_script`; it cannot itself prove power removal.
+  Its expected applet version defaults to `1.8.2_jc305` and can be selected
+  explicitly for other compatible upstream versions.
   Historical AC5 ordinary JCAlgTest power-cycle evidence is retained, but does
   not close these newer alias/reclaimer gates. Coordinate PERSIST-01 and AC-02.
 

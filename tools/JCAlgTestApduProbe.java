@@ -53,6 +53,14 @@ public final class JCAlgTestApduProbe {
 
   public static void main(String[] args) throws Exception {
     String requestedReader = null;
+    String expectedVersion = System.getenv("JCALGTEST_EXPECTED_VERSION");
+    if (expectedVersion == null || expectedVersion.isEmpty()) {
+      expectedVersion = "1.8.2_jc305";
+    }
+    if (!expectedVersion.matches("[0-9]+\\.[0-9]+\\.[0-9]+_jc305")) {
+      throw new IllegalArgumentException(
+          "JCALGTEST_EXPECTED_VERSION must look like 1.8.2_jc305");
+    }
     boolean skipJcSystemInfo = false;
     int jcSystemInfoP1 = 0x01;
     List<String> probeArgs = new ArrayList<>();
@@ -111,7 +119,7 @@ public final class JCAlgTestApduProbe {
       ResponseAPDU version = transmit(channel, "GETVERSION",
           new CommandAPDU(0xB0, 0xE1, 0x00, 0x00, 256));
       String versionText = new String(version.getData(), "US-ASCII");
-      if (!"1.8.2_jc305".equals(versionText)) {
+      if (!expectedVersion.equals(versionText)) {
         throw new IllegalStateException("unexpected applet version: " + versionText);
       }
 

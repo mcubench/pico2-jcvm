@@ -12,10 +12,13 @@
 - **Client metadata:** Startup banner reports 1.8.4 while CSV metadata says
   1.8.3. Treat the supplied JAR as 1.8.4 based on its banner and the applet's
   `1.8.4_jc305` response; preserve this metadata discrepancy in any report.
-- **Tooling note:** `tools/probe-jc-algtest` currently asserts 1.8.2 and exits
-  nonzero after it correctly reads the 1.8.4 applet version. Use the official
-  matching client for 1.8.4; update the probe's expected-version handling if
-  the standalone probe is needed for this CAP.
+- **Tooling resolution:** `tools/probe-jc-algtest` and
+  `tools/test-pico-powerup` accept `JCALGTEST_EXPECTED_VERSION`, defaulting to
+  `1.8.2_jc305` for compatibility. `test-pico-powerup` passed on both attached
+  physical boards with the explicit value `1.8.4_jc305`; the official full
+  client run remains separate evidence. One first concurrent probe attempt
+  encountered `SCARD_F_COMM_ERROR`; sequential retries after the version
+  override passed, so the concurrent error was not reproduced or diagnosed.
 - **Evidence:** See the 2026-11-03 `jcalgtest-184-basic-physical-current-client`
   progress entry for the command, row counts, and hashes.
 
