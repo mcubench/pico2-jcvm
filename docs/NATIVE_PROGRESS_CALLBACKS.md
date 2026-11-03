@@ -24,6 +24,13 @@ sustained USB control-event stream. It does not by itself bound the execution
 time of an individual callback; the CCID callbacks used here only update
 transport state or queue APDU work.
 
+Interpreted applet execution also calls `choupi_vm_cooperative_progress()` at
+4,096-bytecode intervals. This services the watchdog and CCID/TinyUSB progress
+without refreshing the applet execution deadline. The non-install APDU budget
+is 120 seconds; the install-method budget remains 5 seconds. Thus a long applet
+loop can return CCID time extensions while the interpreter still has a finite
+per-APDU cutoff.
+
 Two reentry guards enforce the dispatch boundary. The CCID progress guard
 prevents a nested progress callback from pumping TinyUSB recursively. The CCID
 task guard prevents nested dispatch while `process_message()` is running. USB

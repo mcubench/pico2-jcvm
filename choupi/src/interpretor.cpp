@@ -41,6 +41,7 @@
 
 #ifndef PC_VERSION
 extern "C" void choupi_watchdog_update(void);
+extern "C" void choupi_vm_cooperative_progress(void);
 extern "C" uint32_t choupi_time_us_32(void);
 static volatile uint32_t applet_execution_progress_us = 0;
 
@@ -379,7 +380,7 @@ uint16_t Interpretor::run() noexcept {
   const uint32_t execution_start_time_us = choupi_time_us_32();
   applet_execution_progress_us = execution_start_time_us;
   const uint32_t applet_execution_budget_us =
-      this->installMethodEntry ? 5000000u : 15000000u;
+      this->installMethodEntry ? 5000000u : 120000000u;
 #endif
   while (stack.frameDepth() > this->entryFrameDepth) {
 #ifndef PC_VERSION
@@ -391,6 +392,15 @@ uint16_t Interpretor::run() noexcept {
     const auto instruction_pc = stack.getPC().getValue();
     uint8_t bytecode = stack.getPC().getNextByte();
     ++instruction_count;
+#ifndef PC_VERSION
+    // Keep CCID control traffic and reader time extensions alive during long
+    // interpreted applet loops (for example, persistent Util copies or
+    // software crypto). This callback does not refresh the execution budget:
+    // the 120-second guard still bounds the complete applet operation.
+    if ((instruction_count & 0x0fffu) == 0) {
+      choupi_vm_cooperative_progress();
+    }
+#endif
     const auto operand_depth = static_cast<uint8_t>(
         stack.getCurrentFrame().getTOS() - stack.getCurrentFrame().getOP());
     this->opcode_history = (this->opcode_history << 8) | bytecode;
